@@ -118,18 +118,18 @@ describe('a flat topic split into a docs-tree namespace', () => {
 
   it('makes the guide a short landing page that links a page per child', async () => {
     const pages = (await guidePages(splitReader(guides), 'widgets')) ?? [];
-    expect(pages.map((page: any) => page.topic)).toEqual([
+    expect(pages.map(page => page.topic)).toEqual([
       'widgets-basics',
       'widgets-advanced',
       'widgets',
     ]);
-    const landing: any = pages.at(-1);
-    expect(landing.sections).toEqual([]);
-    expect(landing.children).toEqual([
+    const landing = pages.at(-1);
+    expect(landing?.sections).toEqual([]);
+    expect(landing?.children).toEqual([
       {title: 'Basics', href: '/docs/widgets-basics', summary: ''},
       {title: 'Advanced', href: '/docs/widgets-advanced', summary: ''},
     ]);
-    expect((pages[1] as any).sections).toEqual(guides[1].sections);
+    expect(pages[1].sections).toEqual(guides[1].sections);
   });
 
   it("sends each anchor of the guide's old page to the child page that holds it", async () => {

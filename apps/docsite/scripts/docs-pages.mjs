@@ -411,7 +411,8 @@ export async function namespacePage(readDocs, route, options = {}) {
  * @param {string} route
  * @param {{globalRoute?: string}} [options] the route whose sections are
  *   marked `globalMode`
- * @returns {Promise<Array<object> | null>} every page, the guide's landing last
+ * @returns {Promise<Array<{topic: string, title: string, description: string, category: string, sections: any[], children?: Array<{title: string, href: string, summary: string}>}> | null>}
+ *   every page, the guide's landing last
  */
 export async function guidePages(readDocs, route, options = {}) {
   const {globalRoute = 'get-started/on-your-computer'} = options;

@@ -61,7 +61,9 @@ export default function DocsHomePage() {
       </Grid>
       {reference ? (
         <Text type="body">
-          <Link href={reference.href ?? `/docs/${reference.topic}`} isStandalone>
+          <Link
+            href={reference.href ?? `/docs/${reference.topic}`}
+            isStandalone>
             {reference.title}
           </Link>
           {`: ${reference.promise}`}

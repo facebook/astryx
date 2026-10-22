@@ -86,11 +86,14 @@ describe('route resolution', () => {
       expect(guide.command, guide.topic).toMatch(/^npx @astryxdesign\/cli /);
       expect(guide.children.length, guide.topic).toBeGreaterThan(0);
       for (const link of allLinks(guide.children)) {
-        expect(pageBySlug.has(link.href.slice('/docs/'.length)), link.href).toBe(
-          true,
-        );
+        expect(
+          pageBySlug.has(link.href.slice('/docs/'.length)),
+          link.href,
+        ).toBe(true);
       }
-      if (guide.topic === 'foundations') continue;
+      if (guide.topic === 'foundations') {
+        continue;
+      }
       expect(guide.href, guide.topic).toBe(`/docs/${guide.topic}`);
       const page = pageBySlug.get(guide.topic);
       // A landing page links to its children instead of pasting their text.
@@ -140,7 +143,9 @@ describe('route resolution', () => {
       ['side-panels', 'build-a-page-side-panels'],
       ['responsive-contract', 'build-a-page-responsive'],
     ]) {
-      expect(anchors[anchor], anchor).toMatch(new RegExp(`^/docs/${page}(#|$)`));
+      expect(anchors[anchor], anchor).toMatch(
+        new RegExp(`^/docs/${page}(#|$)`),
+      );
     }
     for (const href of Object.values(anchors)) {
       const [, target, anchor] = /^\/docs\/([^#]+)(?:#(.+))?$/.exec(href) ?? [];
@@ -153,8 +158,10 @@ describe('route resolution', () => {
   });
 
   it('shows the full theme text on the Theme your app pages', () => {
-    const titles = ['theme-your-app-use-a-theme', 'theme-your-app-author-a-theme']
-      .flatMap(slug => pageBySlug.get(slug)?.sections.map(s => s.title) ?? []);
+    const titles = [
+      'theme-your-app-use-a-theme',
+      'theme-your-app-author-a-theme',
+    ].flatMap(slug => pageBySlug.get(slug)?.sections.map(s => s.title) ?? []);
     for (const title of [
       'Wrap your app in a theme',
       'Available Themes',
@@ -195,7 +202,9 @@ describe('route resolution', () => {
 
   it('opens global mode on its own page, from its older slugs too', () => {
     const href = '/docs/get-started-on-your-computer';
-    expect(pageBySlug.get('get-started-on-your-computer')?.children?.length).toBeGreaterThan(0);
+    expect(
+      pageBySlug.get('get-started-on-your-computer')?.children?.length,
+    ).toBeGreaterThan(0);
     for (const old of ['global', 'cli-global', 'cli-install-once']) {
       expect(docRedirects[old], old).toBe(href);
     }

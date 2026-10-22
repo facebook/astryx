@@ -245,7 +245,9 @@ describeHiddenProduction('hidden production ShadCN discovery', () => {
         // The migration guide, a page of its own per part.
         expect(result).toMatchObject({
           type: 'doc',
-          topic: expect.stringMatching(/^upgrade-and-migrate-move-an-app(?:-|$)/),
+          topic: expect.stringMatching(
+            /^upgrade-and-migrate-move-an-app(?:-|$)/,
+          ),
         });
         expectNoRegistryDiscovery(result, 'allowed MCP migration result');
       } else {

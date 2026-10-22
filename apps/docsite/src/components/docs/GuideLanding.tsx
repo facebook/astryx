@@ -43,7 +43,9 @@ export function GuideLanding({
   useEffect(() => {
     const hash = decodeURIComponent(window.location.hash.slice(1));
     const target = hash ? anchors?.[hash] : undefined;
-    if (target) window.location.replace(target);
+    if (target) {
+      window.location.replace(target);
+    }
   }, [anchors]);
 
   return (
