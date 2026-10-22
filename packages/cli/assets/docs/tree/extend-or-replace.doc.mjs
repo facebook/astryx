@@ -65,7 +65,7 @@ export const docs = {
           style: 'unordered',
           items: [
             "Read the base topic's keys with `--index`, and give a section that replaces one that key as its `id`. A section that replaces one keeps its place. A section without an `id` matches only a base section with exactly its title, or one whose `id` is the key its title makes, so `Integration Themes` is added beside a base `Integration themes` that has no `id`.",
-            "Set `before` or `after` to a base section's key to add a new section there instead of at the end. A key that names no section adds it at the end, and `astryx doctor integration validate` lists a note.",
+            "Set `before` or `after` to a base section's key to add a new section there instead of at the end. A key that names no section adds it at the end, and `astryx doctor integration validate` lists a note. An older CLI rejects these fields, so declare an `@astryxdesign/cli` peer range that starts at the release that reads them; `astryx integration verify` warns without it.",
             "The topic keeps the base's title and description, and readers open it by the base's name.",
             'Replace the `Overview` placeholder that `integration add` writes, or it is added to the base topic.',
             "Extend a topic to correct or add to it. A copy made with `replaces` stops getting the owner's fixes.",

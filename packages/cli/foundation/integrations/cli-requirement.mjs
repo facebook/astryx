@@ -71,6 +71,13 @@ export const THEMES_CLI = '0.6.4';
  */
 export const SECTION_IDS_CLI = '0.6.4';
 
+/**
+ * The first CLI release that reads a doc section's `before` and `after`.
+ * Earlier releases reject the fields and hide every doc topic the package
+ * ships.
+ */
+export const SECTION_POSITION_CLI = '0.7.3';
+
 const VERSION_RE = /^v?(\d+|[xX*])(?:\.(\d+|[xX*]))?(?:\.(\d+|[xX*]))?(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 
 /**
@@ -223,6 +230,22 @@ export function sectionIdsCliProblem(pkg) {
     'has a doc section that sets `id`',
     'rejects the field, and can hide every doc topic the package ships',
     SECTION_IDS_CLI,
+  );
+}
+
+/**
+ * Why a package with a doc section that sets `before` or `after` would lose
+ * its doc topics on an older CLI, or null when its declared CLI range admits
+ * only CLIs that read the fields (spec:AST-046 FR11).
+ * @param {any} pkg package.json
+ * @returns {string | null}
+ */
+export function sectionPositionCliProblem(pkg) {
+  return cliRangeProblem(
+    pkg,
+    'has a doc section that sets `before` or `after`',
+    'rejects the fields, and can hide every doc topic the package ships',
+    SECTION_POSITION_CLI,
   );
 }
 

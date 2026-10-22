@@ -18,6 +18,7 @@ import {validateIntegration} from '../integration/validate-integration.mjs';
 import {integrationCheck} from '../integration/check/check.mjs';
 import {runCli} from '../../test-utils/run-cli.mjs';
 import {search} from '../search/search.mjs';
+import {sectionPositionCliProblem} from '../../foundation/integrations/cli-requirement.mjs';
 import {
   DocsCatalog,
   mergeTopic,
@@ -569,32 +570,108 @@ describe('review follow-ups', () => {
     SLOW,
   );
 
-  it('lets the later of two replacements of one guide win, failing nothing', async () => {
-    const catalog = DocsCatalog.fromBuiltins();
-    const record = (/** @type {string} */ pkg) => ({
-      name: `${pkg.split('/')[1]}-start`,
-      package: pkg,
-      path: `/x/${pkg}.doc.mjs`,
-      replaces: GUIDE,
-    });
-    expect(catalog.add(record('@acme/one'))).toBeNull();
-    expect(catalog.add(record('@acme/two'))).toBeNull();
-    expect(catalog.guideOverlay(GUIDE)).toMatchObject({
-      replacement: {package: '@acme/two'},
-      replacedPackage: '@acme/one',
-    });
+  it(
+    'lets the later of two replacements of one guide win, failing nothing',
+    async () => {
+      const catalog = DocsCatalog.fromBuiltins();
+      const record = (/** @type {string} */ pkg) => ({
+        name: `${pkg.split('/')[1]}-start`,
+        package: pkg,
+        path: `/x/${pkg}.doc.mjs`,
+        replaces: GUIDE,
+      });
+      expect(catalog.add(record('@acme/one'))).toBeNull();
+      expect(catalog.add(record('@acme/two'))).toBeNull();
+      expect(catalog.guideOverlay(GUIDE)).toMatchObject({
+        replacement: {package: '@acme/two'},
+        replacedPackage: '@acme/one',
+      });
 
-    scaffold({
-      'a.doc.mjs': topic('acme-a', {replaces: GUIDE}),
-      'b.doc.mjs': topic('acme-b', {replaces: GUIDE}),
-    });
-    const validated = await validateIntegration(KIT, {cwd: tmpDir});
-    expect(validated.data.issues).toEqual([]);
-    expect(validated.data.notes).toContainEqual({
-      code: 'duplicate_guide_replacement',
-      message: expect.stringContaining('"acme-b", is read'),
-    });
-    const check = await integrationCheck({cwd: kitDir(), strict: true});
-    expect(check.data.failed).toBe(false);
-  }, SLOW);
+      scaffold({
+        'a.doc.mjs': topic('acme-a', {replaces: GUIDE}),
+        'b.doc.mjs': topic('acme-b', {replaces: GUIDE}),
+      });
+      const validated = await validateIntegration(KIT, {cwd: tmpDir});
+      expect(validated.data.issues).toEqual([]);
+      expect(validated.data.notes).toContainEqual({
+        code: 'duplicate_guide_replacement',
+        message: expect.stringContaining('"acme-b", is read'),
+      });
+      const check = await integrationCheck({cwd: kitDir(), strict: true});
+      expect(check.data.failed).toBe(false);
+    },
+    SLOW,
+  );
+});
+
+describe('second review follow-ups', () => {
+  it(
+    'names the earlier replacer in the namespace listing too',
+    async () => {
+      scaffold({
+        'a.doc.mjs': topic('acme-a', {replaces: GUIDE}),
+        'b.doc.mjs': topic('acme-b', {replaces: GUIDE}),
+      });
+      const parent = await docs('authoring', undefined, {cwd: tmpDir});
+      const child = parent.data.slots
+        .flatMap(slot => slot.children)
+        .find(each => each.route === GUIDE);
+      const read = await docs(GUIDE, undefined, {cwd: tmpDir});
+      expect(child?.replacedPackage).toBe(read.data.replacedPackage);
+      expect(child?.title).toBe('Acme acme-b');
+    },
+    SLOW,
+  );
+
+  it(
+    'stacks docs that name a guide by its old and its new route, in order',
+    async () => {
+      scaffold({
+        'a.doc.mjs': topic('acme-a', {
+          replaces: 'cli/integrations/quick-start',
+        }),
+        'b.doc.mjs': topic('acme-b', {
+          extends: GUIDE,
+          sections: [section('acme-extra')],
+        }),
+      });
+      const index = await docs(GUIDE, undefined, {cwd: tmpDir, index: true});
+      expect(index.data.sections.map(each => each.id)).toEqual([
+        'acme-acme-a',
+        'acme-extra',
+      ]);
+    },
+    SLOW,
+  );
+
+  it(
+    'lets a later replacement by the old route drop an earlier extension',
+    async () => {
+      scaffold({
+        'a.doc.mjs': topic('acme-a', {
+          extends: GUIDE,
+          sections: [section('acme-extra')],
+        }),
+        'b.doc.mjs': topic('acme-b', {
+          replaces: 'cli/integrations/quick-start',
+        }),
+      });
+      const index = await docs(GUIDE, undefined, {cwd: tmpDir, index: true});
+      expect(index.data.sections.map(each => each.id)).toEqual(['acme-acme-b']);
+    },
+    SLOW,
+  );
+
+  it('asks a package that places sections for a CLI that reads before and after', () => {
+    expect(
+      sectionPositionCliProblem({
+        peerDependencies: {'@astryxdesign/cli': '>=0.6.0'},
+      }),
+    ).toContain('`before` or `after`');
+    expect(
+      sectionPositionCliProblem({
+        peerDependencies: {'@astryxdesign/cli': '>=0.7.3'},
+      }),
+    ).toBeNull();
+  });
 });

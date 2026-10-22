@@ -444,17 +444,42 @@ async function buildProjectTree(catalog, fresh) {
   // A guide the tree places that an integration replaces or extends by its
   // route, or by the route it had before it moved: reads apply what it does,
   // and a replacement lists under its own title and summary.
-  for (const [route, overlay] of catalog.guideOverlays()) {
-    const node = placedGuideAt(result, route);
+  // Each doc applies in configured order to the guide its route names, so a
+  // doc naming a guide's old route and one naming its new route stack as if
+  // both named the same one.
+  for (const record of catalog.guideTargeters) {
+    const node = placedGuideAt(
+      result,
+      /** @type {string} */ (record.replaces ?? record.extendsTopic),
+    );
     if (!node) continue;
-    const before = node.guideOverlay;
-    node.guideOverlay =
-      before == null
-        ? overlay
-        : overlay.replacement
-          ? overlay
-          : {...before, extensions: [...before.extensions, ...overlay.extensions]};
-    const replacement = node.guideOverlay.replacement;
+    /** @type {import('../../foundation/discovery/docs-discovery.mjs').GuideOverlay} */
+    const overlay = node.guideOverlay ?? {replacement: null, extensions: []};
+    if (record.replaces != null) {
+      node.guideOverlay = {
+        replacement: record,
+        // Extensions were authored against the content that just went away.
+        extensions: [],
+        ...(overlay.replacement
+          ? {replacedPackage: overlay.replacement.package}
+          : {}),
+      };
+    } else {
+      node.guideOverlay = {
+        ...overlay,
+        extensions: [
+          ...overlay.extensions,
+          {
+            package: record.package,
+            path: record.path,
+            ...(record.providerId ? {providerId: record.providerId} : {}),
+          },
+        ],
+      };
+    }
+  }
+  for (const node of result.nodes.values()) {
+    const replacement = node.guideOverlay?.replacement;
     if (replacement) {
       node.title = replacement.title ?? node.title;
       node.summary = replacement.description ?? node.summary;

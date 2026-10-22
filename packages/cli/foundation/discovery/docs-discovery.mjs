@@ -892,14 +892,6 @@ export class DocsCatalog {
   }
 
   /**
-   * Every route a doc replaces or extends, lowercased, with what applies there.
-   * @returns {Array<[string, GuideOverlay]>}
-   */
-  guideOverlays() {
-    return [...this.#guideOverlays];
-  }
-
-  /**
    * Every doc that replaces or extends a guide by its route, in configured
    * order, so a check can name a route that holds no guide.
    * @returns {ReadonlyArray<DocsTopicRecord>}

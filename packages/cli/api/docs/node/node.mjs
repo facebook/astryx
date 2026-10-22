@@ -97,7 +97,11 @@ function childIdentity(child) {
     package: child.guideOverlay?.replacement?.package ?? child.provider,
     // A guide an integration's doc took the place of names whose it was.
     ...(child.guideOverlay?.replacement
-      ? {replaces: child.route, replacedPackage: child.provider}
+      ? {
+          replaces: child.route,
+          replacedPackage:
+            child.guideOverlay.replacedPackage ?? child.provider,
+        }
       : {}),
     kind: child.kind,
     title: child.title,

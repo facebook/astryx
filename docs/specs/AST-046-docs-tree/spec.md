@@ -170,14 +170,17 @@ and references from other packages are an open question (OQ2).
   hold them to FR2–FR8. A placed guide MUST NOT also `replaces` or `extends` a
   topic. A flat topic MAY name a placed guide by its route, or by a route it
   moved from, in `replaces` or `extends`; this claims no route, so the guide
-  keeps its place and route. A replacement MUST be read at that route as its
-  own package's doc, and an extension's sections MUST merge onto the guide
-  as they merge onto a topic. An extension's section MAY set `before` or
-  `after` to the key of a section of the doc it extends, and MUST be placed
-  there; with neither, or with a key that names no section, it MUST be added
-  at the end, and neither field is read back. A replaced topic or guide MUST
-  name the package it replaced as `replacedPackage`, beside `replaces`. A
-  `replaces` or `extends` that names no topic and no guide changes nothing.
+  keeps its place and route, and a read of a moved route still fails as FR9
+  states. A replacement MUST be read at that route as its own package's doc,
+  and an extension's sections MUST merge onto the guide as they merge onto a
+  topic; docs that name one guide by its old and its new route apply in
+  configured order. An extension's section MAY set `before` or `after` to the
+  key of a section of the doc it extends, and MUST be placed there, in
+  authored order; with neither, or with a key that names no section, it MUST
+  be added at the end, and neither field is read back. A replaced topic or
+  guide MUST name the package it replaced as `replacedPackage`, beside
+  `replaces`. A `replaces` or `extends` that names no topic and no guide,
+  such as a namespace, changes nothing.
   When two providers claim one route, the CLI's own docs MUST keep it,
   including its flat topics' names and the generated topic levels, then integrations
   in configured order; between integrations a namespace keeps its route over a
@@ -199,6 +202,8 @@ and references from other packages are an open question (OQ2).
   covers a template that sets `replaces` (`spec:AST-035`), a doc section that
   sets `id`, and a theme, whose typed descriptor an older CLI rejects along
   with the package's doc topics; `integration add theme` declares the peer.
+  A doc section that sets `before` or `after` needs the same range from the
+  CLI that reads those fields; `integration verify` warns without it.
 - **FR12 — Every doc has a named home.** Every flat topic, the CLI's and
   each integration's, MUST sit in the generated level for its category, in the
   order the topic list reads: `foundations` (Foundations) for a foundations
