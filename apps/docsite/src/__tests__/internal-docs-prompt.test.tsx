@@ -93,7 +93,7 @@ function showPrompt() {
 
 function prompt() {
   return screen.queryByRole('complementary', {
-    name: 'Internal Astryx documentation',
+    name: 'Meta internal docs',
   });
 }
 
@@ -145,14 +145,15 @@ describe('InternalDocsPrompt', () => {
     send(target);
     expect(prompt()).not.toBeNull();
     const link = screen.getByRole('link', {
-      name: /Internal docs — open Astryx documentation/,
+      name: /Meta internal docs/,
     });
-    expect(link.textContent).toBe('Internal docs');
+    expect(screen.getByText('Meta internal docs', {exact: true})).toBeTruthy();
     expect(prompt()?.textContent).not.toContain("On Meta's network?");
     expect(prompt()?.textContent).not.toContain('Meta-specific components');
     expect(prompt()?.querySelectorAll('a')).toHaveLength(1);
     expect(prompt()?.querySelectorAll('button')).toHaveLength(1);
-    expect(link.getAttribute('aria-label')).toContain('Meta network detected');
+    expect(link.getAttribute('aria-label')).toBeNull();
+    expect(link.textContent).toContain('opens in new tab');
     expect(link.getAttribute('href')).toBe(
       `${internalOrigin}/components/Button?tab=props`,
     );
@@ -303,7 +304,7 @@ describe('InternalDocsPrompt', () => {
       cookie: document.cookie,
     };
     const close = screen.getByRole('button', {
-      name: 'Dismiss internal docs prompt',
+      name: 'Dismiss Meta internal docs for this page view',
     });
     expect(close.getAttribute('tabindex')).not.toBe('-1');
     fireEvent.click(close);
@@ -334,7 +335,9 @@ describe('InternalDocsPrompt', () => {
       ['/components/Button', 'tab=props'],
     ]) {
       fireEvent.click(
-        screen.getByRole('button', {name: 'Dismiss internal docs prompt'}),
+        screen.getByRole('button', {
+          name: 'Dismiss Meta internal docs for this page view',
+        }),
       );
       expect(prompt()).toBeNull();
       route.pathname = pathname;
@@ -376,7 +379,7 @@ describe('InternalDocsPrompt', () => {
     );
     expect(
       screen
-        .getByRole('link', {name: /Internal docs — open Astryx documentation/})
+        .getByRole('link', {name: /Meta internal docs/})
         .getAttribute('href'),
     ).toBe(`${internalOrigin}/docs/tokens?mode=dark&query=a%26b`);
     expect(document.querySelector('iframe')).toBeNull();

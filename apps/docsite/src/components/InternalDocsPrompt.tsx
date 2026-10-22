@@ -4,15 +4,15 @@
 
 /**
  * @input Positive reachability, mounted-view dismissal, and the current docs route
- * @output A compact, non-modal pill floating above the page at every width
+ * @output A compact, non-modal utility bar fixed at the bottom center
  * @position Client leaf mounted once inside the docsite's server root layout
  */
 
 import {useState} from 'react';
 import {usePathname, useSearchParams} from 'next/navigation';
-import {BookOpen} from 'lucide-react';
 import * as stylex from '@stylexjs/stylex';
 import {Card} from '@astryxdesign/core/Card';
+import {Divider} from '@astryxdesign/core/Divider';
 import {Icon} from '@astryxdesign/core/Icon';
 import {IconButton} from '@astryxdesign/core/IconButton';
 import {HStack} from '@astryxdesign/core/Layout';
@@ -26,12 +26,22 @@ const styles = stylex.create({
   prompt: {
     position: 'fixed',
     bottom: 'max(var(--spacing-4), env(safe-area-inset-bottom))',
-    right: 'max(var(--spacing-4), env(safe-area-inset-right))',
+    left: '50%',
+    transform: 'translateX(-50%)',
     width: 'fit-content',
-    maxWidth: 'calc(100vw - var(--spacing-4) * 2)',
-    borderRadius: 'var(--radius-full)',
+    maxWidth:
+      'calc(100vw - max(var(--spacing-4), env(safe-area-inset-left)) - max(var(--spacing-4), env(safe-area-inset-right)))',
+    borderRadius: 'var(--radius-element)',
+    overflow: 'visible',
     zIndex: 100,
     whiteSpace: 'nowrap',
+  },
+  link: {
+    minHeight: 'var(--size-element-sm)',
+    paddingInline: 'var(--spacing-2)',
+  },
+  divider: {
+    height: 'var(--spacing-4)',
   },
 });
 
@@ -55,17 +65,17 @@ export function InternalDocsPrompt() {
   const pathname = usePathname();
   const search = useSearchParams().toString();
 
-  // Keep detection mounted across navigation, but reset only the pill's local
-  // dismissal state when the current path/query changes.
+  // Keep detection mounted across navigation, but reset only the indicator's
+  // local dismissal state when the current path/query changes.
   return isReachable ? (
-    <InternalDocsPill
+    <InternalDocsUtilityBar
       key={`${pathname}?${search}`}
       href={internalDocsHref(pathname, search)}
     />
   ) : null;
 }
 
-function InternalDocsPill({href}: {href: string}) {
+function InternalDocsUtilityBar({href}: {href: string}) {
   const [isDismissed, setIsDismissed] = useState(false);
   if (isDismissed) {
     return null;
@@ -74,25 +84,26 @@ function InternalDocsPill({href}: {href: string}) {
   return (
     <Card
       role="complementary"
-      aria-label="Internal Astryx documentation"
-      elevation="high"
-      padding={2}
+      aria-label="Meta internal docs"
+      elevation="none"
+      padding={0.5}
       xstyle={styles.prompt}>
-      <HStack gap={2} vAlign="center">
-        <Icon icon={BookOpen} size="sm" color="accent" />
+      <HStack gap={1} vAlign="center">
         <Link
           href={href}
-          label="Internal docs — open Astryx documentation (Meta network detected, opens in a new tab)"
           isStandalone
-          target="_blank"
-          rel="noopener noreferrer">
-          Internal docs
+          isExternalLink
+          color="primary"
+          xstyle={styles.link}>
+          Meta internal docs
         </Link>
+        <Divider orientation="vertical" xstyle={styles.divider} />
         <IconButton
-          label="Dismiss internal docs prompt"
-          tooltip="Dismiss internal docs prompt"
-          icon={<Icon icon="close" />}
+          label="Dismiss Meta internal docs for this page view"
+          tooltip="Dismiss for this page view"
+          icon={<Icon icon="close" size="xsm" color="secondary" />}
           variant="ghost"
+          size="sm"
           onClick={() => setIsDismissed(true)}
         />
       </HStack>
