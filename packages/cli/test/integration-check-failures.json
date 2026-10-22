@@ -70,6 +70,7 @@
     "public_imports_skipped",
     "required_mismatch",
     "root_outside_package",
+    "runner_command",
     "shadowed_component_name",
     "source_without_component_doc",
     "source_without_template_doc",

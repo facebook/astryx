@@ -44,7 +44,11 @@ import {
   quoteCommandArgument,
 } from '../../foundation/env/package-manager.mjs';
 import {isValidSemver, semverGt} from '../../foundation/env/semver.mjs';
-import {CLI_ROOT} from '../../foundation/fs/paths.mjs';
+import {
+  CLI_ROOT,
+  findAstryxProject,
+  findProjectPackageOf,
+} from '../../foundation/fs/paths.mjs';
 import {Project, providerLedgerOf} from '../../foundation/config/project.mjs';
 import {loadIntegrations} from '../../foundation/integrations/integrations.mjs';
 import {resolveProviders} from '../../foundation/integrations/provider-resolution.mjs';
@@ -84,26 +88,125 @@ const execFileAsync = promisify(execFile);
  */
 
 /**
- * Detect the installed target version from node_modules.
+ * Where an upgrade runs: the root of the Astryx project `cwd` belongs to, the
+ * nearest folder at or above it whose package.json declares an Astryx
+ * package or that an Astryx workspace lists as a member, so a run from any
+ * folder inside a project upgrades that project exactly as a run from its
+ * root does. Its source, config, agent docs and
+ * protection declarations all live there. The search stops at a repository
+ * root and ends at the home folder without counting it (see
+ * `findAstryxProject`). A `path` the caller names, in any spelling (`./src`,
+ * `src`, `src/`), is read from `cwd`, where they typed it. With no `path`,
+ * the upgrade scans `./src` at the project root. With no Astryx project, the
+ * upgrade runs in `cwd` as released versions did.
+ * @param {UpgradeOptions} options
+ * @param {string} cwd
+ * @returns {{options: UpgradeOptions, cwd: string, origin?: string}} `origin`
+ *   is the folder the command ran in, when the project root is above it
+ */
+export function scopeToProject(options, cwd) {
+  const here = path.resolve(cwd);
+  const root = findAstryxProject(here) ?? here;
+  if (root === here) return {options, cwd};
+  const namedPath =
+    options.path == null ? {} : {path: path.resolve(here, options.path)};
+  return {options: {...options, ...namedPath}, cwd: root, origin: here};
+}
+
+/**
+ * The result of an upgrade that ran at a project root above the folder the
+ * command ran in, with its file paths made relative to that folder, so each
+ * resolves from where the command ran: `modifiedFiles`, `agentDocs.files`, and
+ * the `file` of each `protectedFiles`, `declinedCandidates` and `errors`
+ * entry. The registry step names copied-composition paths from that folder
+ * itself (see `reconcileRegistryCompositions`), so they pass through. A
+ * result of a run at the project root is returned as it is.
+ * @template {{type: string, data: object}} T
+ * @param {T} result
+ * @param {{cwd: string, origin?: string}} scope from `scopeToProject`
+ * @returns {T}
+ */
+export function relativeToOrigin(result, {cwd: root, origin}) {
+  if (origin == null) return result;
+  /** @param {string} file */
+  const rebase = file =>
+    path.relative(origin, path.resolve(root, file)).split(path.sep).join('/') ||
+    '.';
+  /** @type {Record<string, any>} */
+  const data = {...result.data};
+  if (data.agentDocs) {
+    data.agentDocs = {
+      ...data.agentDocs,
+      files: data.agentDocs.files.map(rebase),
+    };
+  }
+  if (data.modifiedFiles) data.modifiedFiles = data.modifiedFiles.map(rebase);
+  for (const key of ['protectedFiles', 'declinedCandidates', 'errors']) {
+    if (data[key]) {
+      data[key] = data[key].map(
+        (/** @type {{file: string, declarations?: string[]}} */ entry) => ({
+          ...entry,
+          file: rebase(entry.file),
+          ...(Array.isArray(entry.declarations)
+            ? {declarations: entry.declarations.map(rebaseDeclaration(rebase))}
+            : {}),
+        }),
+      );
+    }
+  }
+  return /** @type {T} */ ({...result, data});
+}
+
+/**
+ * The project-relative file a protection declaration names, and the text
+ * around it: the ignore or attributes file that protects a file (and its
+ * line), or the symbolic link on its path. Other declarations name no file.
+ */
+const DECLARATION_PATHS = [
+  /^(excluded by )(.+?)(:\d+)?$/u,
+  /^(linguist-(?:generated|vendored) in )(.+?)(:\d+)$/u,
+  /^(symbolic link at )(.+)()$/u,
+];
+
+/**
+ * A protection declaration with the file it names rebased, as `rebase` does
+ * for result paths.
+ * @param {(file: string) => string} rebase
+ * @returns {(declaration: string) => string}
+ */
+function rebaseDeclaration(rebase) {
+  return declaration => {
+    for (const pattern of DECLARATION_PATHS) {
+      const match = pattern.exec(declaration);
+      if (match) return `${match[1]}${rebase(match[2])}${match[3] ?? ''}`;
+    }
+    return declaration;
+  };
+}
+
+/**
+ * Detect the installed target version: the Core the Astryx project of `cwd`
+ * installed, in its own node_modules or, for a member its workspace lists, in
+ * a folder up to the workspace root. The nearest folder wins, the current
+ * name before the legacy one, then Yarn Plug'n'Play. A Core above a project
+ * no workspace lists does not count, so a nested project that has not
+ * installed its own reports nothing installed. With no Astryx project, only
+ * the node_modules of `cwd` itself is read, as released versions did.
  * @param {string} cwd
  * @returns {{version: string, packageName: string}|null}
  */
 export function detectInstalledTargetVersion(cwd) {
-  for (const packageName of ['@astryxdesign/core', '@xds/core']) {
-    const pkgPath = path.resolve(
-      cwd,
-      'node_modules',
-      ...packageName.split('/'),
-      'package.json',
+  const found = findProjectPackageOf(cwd, ['@astryxdesign/core', '@xds/core']);
+  if (!found) return null;
+  try {
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(found.packageDir, 'package.json'), 'utf-8'),
     );
-    try {
-      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
-      if (pkg.version) return {version: pkg.version, packageName};
-    } catch {
-      // Missing/unreadable — try the next supported package name.
-    }
+    return pkg.version ? {version: pkg.version, packageName: found.name} : null;
+  } catch {
+    // Unreadable package.json: no version to target.
+    return null;
   }
-  return null;
 }
 
 /**
@@ -284,9 +387,25 @@ export async function runPostCodemodHooks(hooks, context) {
 /**
  * @typedef {object} AgentDocsRefreshPlan
  * @property {string} cwd
+ * @property {string} [origin] the folder the command ran in, when the upgrade
+ *   runs at a project root above it
  * @property {string|null} renderedBlock
  * @property {import('./upgrade.type.mjs').AgentDocsSummary} summary
  */
+
+/**
+ * The advice to run `init`, phrased for where the command ran: when the
+ * upgrade runs at a project root above that folder, it names the root, so the
+ * agent docs are installed beside the project's package.json.
+ * @param {string} cwd the folder the upgrade runs at
+ * @param {string} [origin] the folder the command ran in
+ * @returns {string}
+ */
+function initAdvice(cwd, origin) {
+  const command = `\`${formatCliCommand('astryx init --features agents')}\``;
+  if (origin == null) return command;
+  return `${command} in ${path.relative(origin, cwd) || '.'} (the project root)`;
+}
 
 /**
  * Why upgrade leaves the agent docs of a project at the home folder or the
@@ -308,7 +427,7 @@ function homeRefusalLine(err, state = 'stale') {
  * Apply-mode callers commit the prepared bytes only after codemods and hooks
  * succeed.
  *
- * @param {{cwd: string, installedVersion: string, apply: boolean, fresh?: boolean}} ctx
+ * @param {{cwd: string, installedVersion: string, apply: boolean, fresh?: boolean, origin?: string}} ctx
  * @returns {Promise<AgentDocsRefreshPlan>}
  */
 export async function prepareAgentDocsRefresh({
@@ -316,6 +435,7 @@ export async function prepareAgentDocsRefresh({
   installedVersion,
   apply,
   fresh = false,
+  origin,
 }) {
   const initial = inspectAgentDocs(cwd, installedVersion);
   /** @type {import('./upgrade.type.mjs').AgentDocsSummary} */
@@ -337,13 +457,13 @@ export async function prepareAgentDocsRefresh({
       if (!(err instanceof AgentDocsHomeError)) throw err;
       summary.action = 'error';
       logger.warn(homeRefusalLine(err, 'missing'));
-      return {cwd, renderedBlock: null, summary};
+      return {cwd, origin, renderedBlock: null, summary};
     }
     summary.action = 'nudge-init';
     logger.warn(
-      `No Astryx agent-docs block found - AI agents have no component index. Run \`${formatCliCommand('astryx init --features agents')}\` to install it.`,
+      `No Astryx agent-docs block found - AI agents have no component index. Run ${initAdvice(cwd, origin)} to install it.`,
     );
-    return {cwd, renderedBlock: null, summary};
+    return {cwd, origin, renderedBlock: null, summary};
   }
 
   let renderedBlock;
@@ -356,16 +476,18 @@ export async function prepareAgentDocsRefresh({
     summary.action = 'error';
     summary.files = initial.files.map(file => file.path);
     logger.warn(
-      `Could not render the expected agent docs. Run \`${formatCliCommand('astryx init --features agents')}\` to update them manually.`,
+      `Could not render the expected agent docs. Run ${initAdvice(cwd, origin)} to update them manually.`,
     );
-    return {cwd, renderedBlock: null, summary};
+    return {cwd, origin, renderedBlock: null, summary};
   }
 
   const inspection = inspectAgentDocs(cwd, installedVersion, renderedBlock);
   summary.status = inspection.status;
   summary.fromVersions = inspection.blockVersions;
   summary.files = inspection.staleFiles;
-  if (inspection.status === 'current') return {cwd, renderedBlock, summary};
+  if (inspection.status === 'current') {
+    return {cwd, origin, renderedBlock, summary};
+  }
 
   // A project at the home folder or the top of a settings folder is never
   // refreshed (INV31): the dry run says so, as --apply does, rather than
@@ -376,7 +498,7 @@ export async function prepareAgentDocsRefresh({
     if (!(err instanceof AgentDocsHomeError)) throw err;
     summary.action = 'error';
     logger.warn(homeRefusalLine(err));
-    return {cwd, renderedBlock: null, summary};
+    return {cwd, origin, renderedBlock: null, summary};
   }
 
   summary.action = 'would-refresh';
@@ -385,7 +507,7 @@ export async function prepareAgentDocsRefresh({
       `Agent docs differ from the installed Astryx and integration configuration. Re-run with --apply to refresh (${summary.files.join(', ')}).`,
     );
   }
-  return {cwd, renderedBlock, summary};
+  return {cwd, origin, renderedBlock, summary};
 }
 
 /**
@@ -394,7 +516,7 @@ export async function prepareAgentDocsRefresh({
  * @returns {import('./upgrade.type.mjs').AgentDocsSummary}
  */
 export function applyAgentDocsRefresh(plan) {
-  const {cwd, renderedBlock, summary} = plan;
+  const {cwd, origin, renderedBlock, summary} = plan;
   if (summary.action !== 'would-refresh' || renderedBlock == null)
     return summary;
 
@@ -413,7 +535,7 @@ export function applyAgentDocsRefresh(plan) {
       logger.log(`[ok] Agent docs refreshed -> ${written.join(', ')}`);
     } else {
       logger.warn(
-        `Agent docs look stale but couldn't be refreshed. Run \`${formatCliCommand('astryx init --features agents')}\` to reinstall the block.`,
+        `Agent docs look stale but couldn't be refreshed. Run ${initAdvice(cwd, origin)} to reinstall the block.`,
       );
     }
   } catch (err) {
@@ -425,7 +547,7 @@ export function applyAgentDocsRefresh(plan) {
       logger.warn(homeRefusalLine(err));
     } else {
       logger.warn(
-        `Could not refresh agent docs. Run \`${formatCliCommand('astryx init --features agents')}\` to update them manually.`,
+        `Could not refresh agent docs. Run ${initAdvice(cwd, origin)} to update them manually.`,
       );
     }
   }

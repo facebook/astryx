@@ -439,3 +439,51 @@ describe('a stray doc pointer', () => {
     expect(strict.stdout).toContain('stray_doc_pointer');
   });
 });
+describe('a command written with a runner', () => {
+  it('is a note in doctor integration validate, and integration check --strict still passes', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: '@acme/widgets', version: '1.2.3'}),
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      `export default {docs: './docs'};\n`,
+    );
+    fs.mkdirSync(path.join(tmpDir, 'docs'));
+    const doc = {
+      type: 'generic',
+      name: 'acme-setup',
+      title: 'Fixture',
+      description: 'Fixture topic.',
+      sections: [
+        {
+          title: 'Overview',
+          content: [{type: 'code', lang: 'bash', code: 'npx astryx doctor'}],
+        },
+      ],
+    };
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'acme-setup.doc.mjs'),
+      `export default ${JSON.stringify(doc)};\n`,
+    );
+
+    const doctor = await runCli(['doctor', 'integration', 'validate'], tmpDir);
+    expect(doctor.status).toBe(0);
+    expect(doctor.stdout).toContain(
+      'note (runner_command): docs/acme-setup.doc.mjs:',
+    );
+    expect(doctor.stdout).toContain('Write `astryx doctor`');
+
+    const strict = await runCli(
+      ['--json', 'integration', 'check', '--strict'],
+      tmpDir,
+    );
+    expect(strict.status).toBe(0);
+    const validate = JSON.parse(strict.stdout).data.checks.find(
+      (/** @type {any} */ each) => each.check === 'validate',
+    ).response.data;
+    expect(validate.notes.map((/** @type {any} */ note) => note.code)).toEqual([
+      'runner_command',
+    ]);
+  });
+});
