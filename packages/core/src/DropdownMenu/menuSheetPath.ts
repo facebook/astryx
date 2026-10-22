@@ -10,28 +10,31 @@
  * @position Internal; used by the DropdownMenu bottom sheet.
  *
  * The sheet remembers each row it opened as the row was then, where it sat
- * among its level's rows and how many rows the level had. A level's rows,
- * header and footer come from the caller's current items, so a filter field in
- * a level's header filters that level's rows, and a controlled field shows
- * what was typed. A row is found again by identity, then by `id`, then by a
- * text `label` no other row at that level shares. A row without an `id` whose
- * label no row carries any more (a count in it changed, say) is found at its
- * position, while its level still has as many rows and the row there opens a
- * sub-menu: then it can still be the same row. Otherwise it keeps its last
- * known shape, so a row filtered out of its level, or two rows labelled alike
- * without an `id`, never swap levels.
+ * among its level's rows, how many rows the level had, and whether its text
+ * label was its own there. A level's rows, header and footer come from the
+ * caller's current items, so a filter field in a level's header filters that
+ * level's rows, and a controlled field shows what was typed. A row is found
+ * again by identity; a row with an `id` then by that `id` alone. A row without
+ * an `id` is found by its label when the label was its own at its level when
+ * it opened and still is, or, when no row carries the label any more (a count
+ * in it changed, say), at its position, while its level still has as many
+ * rows and the row there opens a sub-menu: then it can still be the same row.
+ * Otherwise it keeps its last known shape, so a row filtered out of its level
+ * never gives way to another, labelled alike or sitting where it sat.
  */
 import type {DropdownMenuItemData, DropdownMenuOption} from './DropdownMenu';
 import {opensSubMenu} from './opensSubMenu';
 
 /**
  * A row the sheet opened, as it was then, its place among its level's rows,
- * and how many rows that level had.
+ * how many rows that level had, and whether no other row there shared its text
+ * label.
  */
 export interface SheetPathEntry {
   row: DropdownMenuItemData;
   index: number;
   count: number;
+  isLabelUnique: boolean;
 }
 
 function levelRows(
@@ -54,7 +57,14 @@ export function openSheetLevel(
   row: DropdownMenuItemData,
 ): SheetPathEntry {
   const rows = levelRows(options);
-  return {row, index: rows.indexOf(row), count: rows.length};
+  return {
+    row,
+    index: rows.indexOf(row),
+    count: rows.length,
+    isLabelUnique:
+      typeof row.label === 'string' &&
+      rows.filter(other => other.label === row.label).length === 1,
+  };
 }
 
 function findRow(
@@ -62,26 +72,24 @@ function findRow(
   opened: SheetPathEntry,
 ): DropdownMenuItemData | undefined {
   const rows = levelRows(options);
-  const {row: openedRow, index, count} = opened;
+  const {row: openedRow, index, count, isLabelUnique} = opened;
+  const same = rows.find(row => row === openedRow);
+  if (same != null || openedRow.id != null) {
+    return same ?? rows.find(row => row.id === openedRow.id);
+  }
   const sameLabel =
     typeof openedRow.label === 'string'
       ? rows.filter(row => row.label === openedRow.label)
       : [];
+  if (sameLabel.length > 0) {
+    return isLabelUnique && sameLabel.length === 1 ? sameLabel[0] : undefined;
+  }
   const atPosition = rows[index];
-  return (
-    rows.find(row => row === openedRow) ??
-    (openedRow.id != null
-      ? rows.find(row => row.id === openedRow.id)
-      : undefined) ??
-    (sameLabel.length === 1 ? sameLabel[0] : undefined) ??
-    (openedRow.id == null &&
-    sameLabel.length === 0 &&
-    rows.length === count &&
+  return rows.length === count &&
     atPosition != null &&
     opensSubMenu(atPosition, {showsRegions: true})
-      ? atPosition
-      : undefined)
-  );
+    ? atPosition
+    : undefined;
 }
 
 /**
