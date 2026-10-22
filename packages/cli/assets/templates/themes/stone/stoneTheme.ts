@@ -178,10 +178,11 @@ export const stoneTheme = defineTheme({
     '--color-on-dark': '#FFFFFF',
     '--color-on-light': ['#25252a', '#28282a'], // light: Stone Neutral T15
     '--color-on-accent': ['#ffffff', '#25252a'], // dark: Stone Neutral T15
-    // Text on top of matching status surface (badge fill, banner content).
-    '--color-on-success': ['#374c36', '#d0e9ce'], // Green T30 / T90
-    '--color-on-error': ['#58413e', '#f9dcd7'], // Red T30 / T90
-    '--color-on-warning': ['#524622', '#f4e1b7'], // Yellow T30 / T90
+    // Contrasting ink on the strong status fills used by Badge, Button, dots,
+    // and Stepper. Light uses white; dark uses the Stone T10 surface ink.
+    '--color-on-success': ['#ffffff', '#1b1b1f'],
+    '--color-on-error': ['#ffffff', '#1b1b1f'],
+    '--color-on-warning': ['#ffffff', '#1b1b1f'],
 
     '--color-info': 'var(--color-accent)',
     '--color-info-muted': 'var(--color-accent-muted)',

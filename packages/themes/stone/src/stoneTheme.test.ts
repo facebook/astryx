@@ -53,6 +53,18 @@ describe('stone input status roles', () => {
   });
 });
 
+describe('stone strong status contrast', () => {
+  it('pairs strong status fills with contrasting light and dark ink', () => {
+    for (const token of [
+      '--color-on-success',
+      '--color-on-warning',
+      '--color-on-error',
+    ] as const) {
+      expect(stoneTheme.tokens[token]).toBe('light-dark(#ffffff, #1b1b1f)');
+    }
+  });
+});
+
 describe('stone secondary ComplexSelector', () => {
   it('keeps the hover fill off a disabled trigger in either form', () => {
     expect(generateThemeCSS(stoneTheme).component).toMatch(
