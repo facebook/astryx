@@ -63,10 +63,14 @@ icon, and the CLI verifies it, writes the files, and checks the set.
     is discover's `icon-set`, read only with the opt-in (FR17, DEC-8);
   - configuration is `experimental.iconSet` in `astryx.config`, the project's
     opt-in, and `experimental.iconSets` in the integration manifest;
-  - the docs live under `cli/experimental` (the guide, the `icon-set-files`
-    reference of the descriptor, data file, and definition schemas, which
-    stable `astryx docs authoring` never lists, and the `icon-definitions`
-    namespace) and carry `stability: 'experimental'`;
+  - the guides and schemas live under `cli/experimental` (the guide, the
+    `icon-set-files` reference of the descriptor, data file, and definition
+    schemas, which the stable field reference never lists, and the
+    `icon-definitions` namespace); the reference docs of the experimental
+    commands and API functions live with every other command and function
+    reference (`cli/api/functions/...` and the command docs), listed only in
+    the `astryx docs cli` listing, the same exception this requirement makes
+    for help; every one of these docs carries `stability: 'experimental'`, and
     API functions and authoring types carry `@experimental`; and
   - every change ships as an `[experimental]` patch Changeset. Promotion to
     stable needs the owner's approval and a `[feat]` Changeset
@@ -74,13 +78,13 @@ icon, and the CLI verifies it, writes the files, and checks the set.
 
   Without `experimental.iconSet`, help (apart from the `experimental` group
   line), the manifest (apart from that group), the `astryx docs cli` listing
-  (apart from the `experimental` namespace), `astryx template`, `astryx
-discover`, Doctor, and `integration check` and `verify` give the output they
-  give without this feature, whatever sets are installed: discover refuses
-  `--type icon-set` and ignores `icon-set` catalog items and their fields
-  exactly as it does any unknown kind or field. With the opt-in, `icon-set`
-  is a discover kind (FR17). `astryx search` never reads icon sets, with or
-  without the opt-in.
+  (apart from the `experimental` namespace and the experimental command and
+  function references), `astryx template`, `astryx discover`, Doctor, and
+  `integration check` and `verify` give the output they give without this
+  feature, whatever sets are installed: discover refuses `--type icon-set` and
+  ignores `icon-set` catalog items and their fields exactly as it does any
+  unknown kind or field. With the opt-in, `icon-set` is a discover kind
+  (FR17). `astryx search` never reads icon sets, with or without the opt-in.
 
 ### What a set declares
 
