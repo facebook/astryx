@@ -69,7 +69,7 @@ import {themes, defaultThemeSlug} from './astryx-themes';`,
         },
         {
           type: 'prose',
-          text: "The Tailwind bridge is the concrete example of the general interop pattern: expose another library's semantic API, but point the values at system token variables.",
+          text: 'The Tailwind bridge is the concrete example of the general interop pattern: expose another library\'s semantic API, but point the values at system token variables.',
         },
       ],
     },

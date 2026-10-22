@@ -319,10 +319,12 @@ works on is `spec:AST-040` FR9's.
     agent-docs block, the computer-level agent text (FR8), and the setup
     reminder wherever it is printed. No surface spells a command name of its
     own.
-  - Docs, guides, agent text, and the text an integration supplies, such as
-    its docs and its agent-doc lines, write every CLI command bare, beginning
-    `astryx`, or as a `{@command …}` token; the CLI puts the picked name in
-    its place when it prints or writes that text. A doc writes a
+  - Astryx's own docs, guides and agent text, and an integration's agent-doc
+    lines, write every CLI command bare, beginning `astryx`, or as a
+    `{@command …}` token. An integration's docs write each as a
+    `{@command …}` token; a bare one there is a `plain_command` note
+    (`architecture:cli-surface` DEC-12). The CLI puts the picked name in
+    place of the leading `astryx` when it prints or writes that text. A doc writes a
     package-manager step as a `{@pm …}` token, or as `{@pm-only <manager>
     "<reason>" …}` for a step only that package manager can do, and `{@@…}`
     shows a token as written. The CLI renders each token as it compiles the

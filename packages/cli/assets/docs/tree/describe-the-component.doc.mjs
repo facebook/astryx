@@ -29,7 +29,7 @@ export const docs = {
   blocks: [
     {
       type: 'prose',
-      text: "A component's `.doc.mjs` is part of the integration's public contract, not optional commentary. Astryx uses it for CLI output and search, and people and agents read it to decide whether the component fits and how to use it.",
+      text: 'A component\'s `.doc.mjs` is part of the integration\'s public contract, not optional commentary. Astryx uses it for CLI output and search, and people and agents read it to decide whether the component fits and how to use it.',
     },
     {
       type: 'list',
@@ -37,7 +37,7 @@ export const docs = {
       items: [
         'Change the source and its `.doc.mjs` together.',
         'Update the doc whenever the public name, import, behavior, props, defaults, examples, or accessibility requirements change.',
-        "`integration verify` checks the doc shape and packed import, and `doctor integration components` compares each props table with the component's TypeScript props ({@link generic:check-the-props}). Neither can prove the prose still matches the component.",
+        '`integration verify` checks the doc shape and packed import, and `doctor integration components` compares each props table with the component\'s TypeScript props ({@link generic:check-the-props}). Neither can prove the prose still matches the component.',
       ],
     },
     {

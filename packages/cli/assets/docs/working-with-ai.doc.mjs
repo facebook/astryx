@@ -113,7 +113,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "Paste this into your AI before writing any component code. If your AI can't answer these questions, it'll know to install the agent docs first.",
+          text: 'Paste this into your AI before writing any component code. If your AI can\'t answer these questions, it\'ll know to install the agent docs first.',
         },
         {
           type: 'code',
