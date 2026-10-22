@@ -27,7 +27,8 @@
  *      *.test.mjs   coverage (may be nested, e.g. api/theme/build/build.test.mjs)
  *
  * 3. Every CLI command and CommandDoc sits where cli-surface INV6 puts it:
- *      clients/cli/commands/<name>.mjs   (or <name>/index.mjs for a group)
+ *      clients/cli/commands/<name>.mjs   (or <name>/index.mjs for a group:
+ *                                         a CommandDoc that lists subcommands)
  *      clients/cli/commands/<name>.doc.mjs
  *      clients/cli/commands/<parent>-<child>.doc.mjs   for each subcommand
  *    Top-level commands come from clients/cli/index.mjs (its `commands`
@@ -342,10 +343,10 @@ const HANDLER_DIR = path.join(CLI, 'clients/cli/commands');
  *  remove an entry when the file is fixed; do not add entries */
 const INV22_KNOWN_GAPS = new Map([
   ['theme.mjs', new Set(['fs', 'child_process', 'project'])],
-  ['component/index.mjs', new Set(['project', 'discovery'])],
+  ['component.mjs', new Set(['project', 'discovery'])],
   ['discover.mjs', new Set(['project'])],
   ['ensure-core-built.mjs', new Set(['fs', 'child_process'])],
-  ['hook/index.mjs', new Set(['discovery'])],
+  ['hook.mjs', new Set(['discovery'])],
   // remove with the layout command
   ['layout.mjs', new Set(['fs'])],
   ['search.mjs', new Set(['project'])],
@@ -776,38 +777,55 @@ export async function checkCommandLayout(cliRoot) {
   /** @type {Set<string>} */
   const expectedDocs = new Set();
   let commands = 0;
-  /** @param {string} name */
+  /**
+   * Check `name`'s CommandDoc and, through its `subcommands`, theirs.
+   * @param {string} name
+   * @returns {Promise<any>} the CommandDoc, or null when it is missing or
+   *   documents another command
+   */
   const checkDoc = async name => {
     const docPath = `${COMMANDS}/${name.replaceAll(' ', '-')}.doc.mjs`;
     expectedDocs.add(docPath);
     const docFile = path.join(cliRoot, docPath);
     if (!fs.existsSync(docFile)) {
       errors.push(`command "${name}" has no CommandDoc at ${docPath}`);
-      return;
+      return null;
     }
     const mod = await import(pathToFileURL(docFile).href);
     const doc = mod.doc ?? mod.docs ?? mod.default;
     if (doc?.name !== name) {
       errors.push(`${docPath} documents "${doc?.name}", not "${name}"`);
-      return;
+      return null;
     }
     commands++;
     for (const child of doc.subcommands ?? [])
       await checkDoc(`${name} ${child}`);
+    return doc;
   };
 
   for (const {name, file} of registered) {
     const flat = `${COMMANDS}/${name}.mjs`;
     const group = `${COMMANDS}/${name}/index.mjs`;
+    const doc = await checkDoc(name);
+    // INV6 allows the folder form only for a group: a command whose
+    // CommandDoc lists subcommands. With no readable doc, that error is
+    // already reported, so the folder is not judged.
+    const isGroup = doc == null || (doc.subcommands ?? []).length > 0;
     if (file === null) {
       errors.push(
         `command "${name}" is registered in ${INDEX}, not in its own ${flat}`,
       );
     } else {
       const actual = path.posix.join('clients/cli', file);
-      if (actual !== flat && actual !== group) {
+      if (actual === group && !isGroup) {
         errors.push(
-          `command "${name}" is registered from ${actual}, not ${flat} or ${group}`,
+          `command "${name}" is registered from ${actual}, but only a group (a CommandDoc that lists subcommands) uses a folder; move it to ${flat}`,
+        );
+      } else if (actual !== flat && actual !== group) {
+        errors.push(
+          isGroup
+            ? `command "${name}" is registered from ${actual}, not ${flat} or ${group}`
+            : `command "${name}" is registered from ${actual}, not ${flat}`,
         );
       } else if (!fs.existsSync(path.join(cliRoot, actual))) {
         errors.push(
@@ -815,7 +833,6 @@ export async function checkCommandLayout(cliRoot) {
         );
       }
     }
-    await checkDoc(name);
   }
 
   for (const file of docFilesUnder(path.join(cliRoot, COMMANDS))) {
@@ -827,7 +844,6 @@ export async function checkCommandLayout(cliRoot) {
 
   return {errors, commands};
 }
-
 
 // Run as a script; stay importable for the tests.
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

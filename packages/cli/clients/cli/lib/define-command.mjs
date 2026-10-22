@@ -63,10 +63,10 @@ export function reportsResultVia(cmd) {
 /**
  * Mark a hand-registered command as reporting its result.
  *
- * For the handful of commands that cannot come from a CommandDoc — the root
- * program, `manifest` (it introspects the live program, so it cannot be
- * declared by one), `postinstall`, and the stub left behind when a command
- * module fails to load. They call {@link recordCommandResult} themselves; this
+ * For what does not come from a CommandDoc: the root program, and the stub
+ * left behind when a command module fails to load. Every command, `manifest`
+ * and the hidden `postinstall` hook included, registers through
+ * {@link defineCommand}. These call {@link recordCommandResult} themselves; this
  * says so, and the coverage test pins the set of commands allowed to, so the
  * mark cannot become a quiet way around the contract.
  *

@@ -38,7 +38,7 @@ program
 
 const commandModules = [
   {name: 'init', path: './commands/init.mjs', register: 'registerInit'},
-  {name: 'component', path: './commands/component/index.mjs', register: 'registerComponent'},
+  {name: 'component', path: './commands/component.mjs', register: 'registerComponent'},
   {name: 'docs', path: './commands/docs.mjs', register: 'registerDocs'},
   {name: 'swizzle', path: './commands/swizzle.mjs', register: 'registerSwizzle'},
   {name: 'template', path: './commands/template.mjs', register: 'registerTemplate'},

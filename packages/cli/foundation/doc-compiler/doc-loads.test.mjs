@@ -143,11 +143,11 @@ const RUNNERS = {
       'import ./build.doc.mjs',
     ],
   },
-  'clients/cli/commands/component/index.mjs': {
+  'clients/cli/commands/component.mjs': {
     runs: SELF_DOCS,
     sites: [
-      'import ../../../../api/component/component.doc.mjs',
-      'import ../component.doc.mjs',
+      'import ../../../api/component/component.doc.mjs',
+      'import ./component.doc.mjs',
     ],
   },
   'clients/cli/commands/discover.mjs': {
@@ -188,11 +188,11 @@ const RUNNERS = {
       'import ./gap-report.doc.mjs',
     ],
   },
-  'clients/cli/commands/hook/index.mjs': {
+  'clients/cli/commands/hook.mjs': {
     runs: SELF_DOCS,
     sites: [
-      'import ../../../../api/hook/hook.doc.mjs',
-      'import ../hook.doc.mjs',
+      'import ../../../api/hook/hook.doc.mjs',
+      'import ./hook.doc.mjs',
     ],
   },
   'clients/cli/commands/init.mjs': {

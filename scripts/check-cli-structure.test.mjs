@@ -126,8 +126,45 @@ describe('checkCommandLayout', () => {
       }),
     );
     expect(errors).toEqual([
-      'command "alpha" is registered from clients/cli/commands/build-alpha.mjs, not clients/cli/commands/alpha.mjs or clients/cli/commands/alpha/index.mjs',
+      'command "alpha" is registered from clients/cli/commands/build-alpha.mjs, not clients/cli/commands/alpha.mjs',
     ]);
+  });
+
+  it('names the folder form too when a group is registered from another file', async () => {
+    const {errors} = await checkCommandLayout(
+      cliTree({
+        ...CONFORMING,
+        registry: {...CONFORMING.registry, beta: './commands/build-beta.mjs'},
+        files: [...CONFORMING.files, 'commands/build-beta.mjs'],
+      }),
+    );
+    expect(errors).toEqual([
+      'command "beta" is registered from clients/cli/commands/build-beta.mjs, not clients/cli/commands/beta.mjs or clients/cli/commands/beta/index.mjs',
+    ]);
+  });
+
+  it('fails when a command with no subcommands uses the folder form', async () => {
+    const {errors} = await checkCommandLayout(
+      cliTree({
+        ...CONFORMING,
+        registry: {...CONFORMING.registry, alpha: './commands/alpha/index.mjs'},
+        files: ['commands/alpha/index.mjs', 'commands/beta/index.mjs'],
+      }),
+    );
+    expect(errors).toEqual([
+      'command "alpha" is registered from clients/cli/commands/alpha/index.mjs, but only a group (a CommandDoc that lists subcommands) uses a folder; move it to clients/cli/commands/alpha.mjs',
+    ]);
+  });
+
+  it('accepts a group in a flat file', async () => {
+    const {errors} = await checkCommandLayout(
+      cliTree({
+        ...CONFORMING,
+        registry: {...CONFORMING.registry, beta: './commands/beta.mjs'},
+        files: ['commands/alpha.mjs', 'commands/beta.mjs'],
+      }),
+    );
+    expect(errors).toEqual([]);
   });
 
   it('fails when the registered file is missing', async () => {

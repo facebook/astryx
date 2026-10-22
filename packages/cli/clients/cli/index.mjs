@@ -296,7 +296,7 @@ function captureInvocation(actionCommand, root) {
  */
 const commands = [
   {name: 'init', path: './commands/init.mjs', register: 'registerInit'},
-  {name: 'component', path: './commands/component/index.mjs', register: 'registerComponent'},
+  {name: 'component', path: './commands/component.mjs', register: 'registerComponent'},
   {name: 'docs', path: './commands/docs.mjs', register: 'registerDocs'},
   {name: 'blog', path: './commands/blog.mjs', register: 'registerBlog'},
   {name: 'swizzle', path: './commands/swizzle.mjs', register: 'registerSwizzle'},
@@ -306,7 +306,7 @@ const commands = [
   {name: 'upgrade', path: './commands/upgrade.mjs', register: 'registerUpgrade'},
   {name: 'theme', path: './commands/theme.mjs', register: 'registerTheme'},
   {name: 'integration', path: './commands/integration.mjs', register: 'registerIntegration'},
-  {name: 'hook', path: './commands/hook/index.mjs', register: 'registerHook'},
+  {name: 'hook', path: './commands/hook.mjs', register: 'registerHook'},
   {name: 'discover', path: './commands/discover.mjs', register: 'registerDiscover'},
   {name: 'search', path: './commands/search.mjs', register: 'registerSearch'},
   {name: 'build', path: './commands/build.mjs', register: 'registerBuild'},
