@@ -198,6 +198,23 @@ describe('AvatarStatusDot', () => {
       }
     });
 
+    it('uses surface ink on the filled success and error plates', () => {
+      const probe = stylex.create({
+        surfaceInk: {color: colorVars['--color-background-surface']},
+      });
+      const surfaceInkClasses = (stylex.props(probe.surfaceInk).className ?? '')
+        .split(' ')
+        .filter(cls => !cls.includes('__'));
+      expect(surfaceInkClasses.length).toBeGreaterThan(0);
+
+      for (const variant of ['success', 'error'] as const) {
+        const dot = renderDot({variant}, 48);
+        for (const cls of surfaceInkClasses) {
+          expect(dot.className).toContain(cls);
+        }
+      }
+    });
+
     it('lets a user icon inherit the dot ink instead of hard-coding surface', () => {
       // Surface ink on the surface-filled ring variant would be invisible.
       const probe = stylex.create({

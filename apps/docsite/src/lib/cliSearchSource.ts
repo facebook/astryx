@@ -129,7 +129,7 @@ export function createCliSearchSource(
         const opened = new Set<string>();
         const items = body.data.results
           .filter(result => {
-            if (opened.has(result.href)) {return false;}
+            if (opened.has(result.href)) return false;
             opened.add(result.href);
             return true;
           })
