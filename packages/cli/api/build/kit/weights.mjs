@@ -19,6 +19,8 @@
  *   (`ownWords`), so a new template can start a build.
  */
 
+import {STOPWORDS} from '../../search/search.mjs';
+
 /** The app shell, as one candidate. */
 export const SHELL = 'SHELL';
 const SHELL_FAMILY = 'Shell';
@@ -235,7 +237,7 @@ function memberFeatures(v) {
 
 /**
  * How many of the idea's stemmed words a template's own descriptor names: its
- * display name, its category, and its keywords.
+ * display name, its category, and its keywords, less search's stopwords.
  * @param {string} name
  * @param {DescribedTemplate[]} catalog
  * @param {Set<string>} words the idea's stemmed words
@@ -243,10 +245,14 @@ function memberFeatures(v) {
 function ownWords(name, catalog, words) {
   const t = catalog.find(c => c.name === name);
   if (!t) return 0;
+  // Search's stopwords are no evidence: "to" in a "to-do list" keyword must
+  // not answer the "to" of "rows to track orders".
   const own = new Set(
     weightWords(
       [t.displayName ?? '', t.category ?? '', ...(t.keywords ?? [])].join(' '),
-    ).map(stem),
+    )
+      .filter(w => !STOPWORDS.has(w))
+      .map(stem),
   );
   let n = 0;
   for (const w of words) if (own.has(w)) n++;

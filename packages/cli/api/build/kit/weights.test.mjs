@@ -164,6 +164,25 @@ describe('weighStart', () => {
       expect(start).toBe('gauge-fleet');
     });
 
+    it("never counts a stopword from another template's keywords", () => {
+      // "to" in grid's "to-do list" keyword must not answer the idea's "to".
+      const own = [
+        {name: 'board'},
+        {name: 'charts'},
+        {name: 'grid', displayName: 'Grid', keywords: ['to-do list', 'orders']},
+        {name: 'fold', displayName: 'Folding Rows'},
+      ];
+      const ranked = [page('fold', 9, 'Fold'), ...RANKED];
+      const start = weighStart(
+        'rows to track orders on cards',
+        ranked,
+        ranked[0],
+        own,
+        {weights: WEIGHTS},
+      );
+      expect(start).toBe('fold');
+    });
+
     it('yields to the listed template whose own words the idea names more', () => {
       const ranked = [page('gauge-fleet', 9, 'Gauges'), ...RANKED];
       const start = weighStart(
