@@ -1503,6 +1503,37 @@ describe('declaration files follow TypeScript', () => {
     ).toContain('"src/augment.ts"');
   });
 
+  it('reads a `.ts` file with an angle-bracket assertion for its augmentation', async () => {
+    write(
+      'src/augment.ts',
+      "declare const value: unknown;\nconst s = <string>value;\ndeclare module './widget.js' {\n  interface AcmeWidgetSize {}\n}\nexport {s};\n",
+    );
+    write('dist/widget.d.ts', LISTED);
+    write('templates/account-card.tsx', template('AcmeWidget, AcmeWidgetSize'));
+    const result = await validateIntegration(undefined, {cwd: dir});
+    expect(await codes()).toEqual([]);
+    expect(result.data.publicImports?.unchecked).toEqual([
+      expect.objectContaining({
+        specifier: '@acme/widgets/widget',
+        reason: expect.stringContaining('"src/augment.ts"'),
+      }),
+    ]);
+  });
+
+  it('counts a file with `declare module` that does not parse as augmenting', async () => {
+    write(
+      'src/augment.ts',
+      "declare module './widget.js' {\n  interface AcmeWidgetSize {\n",
+    );
+    write('dist/widget.d.ts', LISTED);
+    write('templates/account-card.tsx', template('AcmeWidget, AcmeWidgetSize'));
+    const result = await validateIntegration(undefined, {cwd: dir});
+    expect(await codes()).toEqual([]);
+    expect(
+      result.data.publicImports?.unchecked.map(u => u.reason).join('\n'),
+    ).toContain('"src/augment.ts"');
+  });
+
   it('leaves a declaration file with no import or export (a global script) unchecked', async () => {
     write(
       'dist/widget.d.ts',

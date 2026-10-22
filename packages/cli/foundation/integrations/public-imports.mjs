@@ -120,15 +120,23 @@ const PARSE_PLUGINS = /** @type {any} */ ([
   'exportDefaultFrom',
 ]);
 
-/** @param {string} text */
-function parseModuleText(text) {
+/** The plugins without `jsx`: `.ts` files allow `<T>value` assertions. */
+const TS_PARSE_PLUGINS = PARSE_PLUGINS.filter(
+  (/** @type {unknown} */ plugin) => plugin !== 'jsx',
+);
+
+/**
+ * @param {string} text
+ * @param {{jsx?: boolean}} [options] `jsx: false` parses TypeScript only
+ */
+function parseModuleText(text, {jsx = true} = {}) {
   return parse(text, {
     sourceType: 'module',
     allowImportExportEverywhere: true,
     allowReturnOutsideFunction: true,
     allowAwaitOutsideFunction: true,
     errorRecovery: true,
-    plugins: PARSE_PLUGINS,
+    plugins: jsx ? PARSE_PLUGINS : TS_PARSE_PLUGINS,
   });
 }
 
@@ -724,17 +732,21 @@ const AUGMENTATION_WALK_LIMIT = 5000;
  * Whether a TypeScript file has a real `declare module '<spec>'` block for a
  * module of this package: a relative spec, or the package's own name or a
  * subpath of it. Comments, `declare global`, wildcard specs (`'*.css'`) and
- * other packages' names do not count.
+ * other packages' names do not count. A `.tsx` file is parsed with JSX, any
+ * other TypeScript file without it (so `<T>value` assertions parse); a file
+ * with `declare module` in its text that still fails to parse counts as
+ * augmenting.
  * @param {Context} ctx
  * @param {string} text
+ * @param {string} file
  */
-function augmentsOwnModule(ctx, text) {
+function augmentsOwnModule(ctx, text, file) {
   if (!AUGMENTATION_HINT_RE.test(text)) return false;
   let body;
   try {
-    body = parseModuleText(text).program.body;
+    body = parseModuleText(text, {jsx: file.endsWith('.tsx')}).program.body;
   } catch {
-    return false;
+    return true;
   }
   return body.some(node => {
     const d = node.type === 'ExportNamedDeclaration' ? node.declaration : node;
@@ -793,7 +805,7 @@ function augmentationReason(ctx) {
       } catch {
         continue;
       }
-      if (augmentsOwnModule(ctx, text)) {
+      if (augmentsOwnModule(ctx, text, entry.name)) {
         reason = `"${rel(root, full)}" has a \`declare module\` block for a module of the package, which can add names to it, so the names it imports were not checked`;
         break walk;
       }
