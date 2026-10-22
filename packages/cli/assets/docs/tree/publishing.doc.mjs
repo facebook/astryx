@@ -12,7 +12,11 @@ export const docs = {
   placement: {parent: 'namespace:ship', slot: 'guides', order: 40},
   title: 'Publish an integration',
   category: 'guide',
-  keywords: ['publish an integration', 'npm publish', 'release'],
+  keywords: [
+    'publish an integration',
+    '{@pm-only npm "publishing goes through npm, which every Node install carries" publish}',
+    'release',
+  ],
   description:
     'Publish your package to npm under the right release tag, checking it before and after.',
   sections: [
@@ -22,12 +26,12 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Publish only a package that passes every check, then preview the upload with `npm publish --dry-run`. The dry run lists the files and the tag without uploading.',
+          text: 'Publish only a package that passes every check, then preview the upload with `{@pm-only npm "publishing goes through npm, which every Node install carries" publish --dry-run}`. The dry run lists the files and the tag without uploading.',
         },
         {
           type: 'code',
           lang: 'bash',
-          code: '{@command doctor integration validate} && {@command doctor integration components} && {@command doctor integration templates} && {@command doctor integration docs} && {@command integration verify}\nnpm publish --dry-run --access public',
+          code: '{@command doctor integration validate} && {@command doctor integration components} && {@command doctor integration templates} && {@command doctor integration docs} && {@command integration verify}\n{@pm-only npm "publishing goes through npm, which every Node install carries" publish --dry-run --access public}',
         },
         {
           type: 'code',
@@ -75,7 +79,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: '# Publish a release\nnpm publish --access public\n\n# Or set the access once in package.json\nnpm pkg set publishConfig.access=public',
+          code: '# Publish a release\n{@pm-only npm "publishing goes through npm, which every Node install carries" publish --access public}\n\n# Or set the access once in package.json\n{@pm-only npm "Yarn has no pkg command" pkg set publishConfig.access=public}',
         },
         {
           type: 'prose',
@@ -84,7 +88,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: '# Only apps that ask for next get it: npm install @acme/astryx-widgets@next\nnpm publish --tag next\n\n# Make that version the default\nnpm dist-tag add @acme/astryx-widgets@1.1.0 latest\nnpm dist-tag ls @acme/astryx-widgets',
+          code: '# Only apps that ask for next get it: npm install @acme/astryx-widgets@next\n{@pm-only npm "publishing goes through npm, which every Node install carries" publish --tag next}\n\n# Make that version the default\n{@pm-only npm "dist-tags are set with npm, which every Node install carries" dist-tag add @acme/astryx-widgets@1.1.0 latest}\n{@pm-only npm "dist-tags are set with npm, which every Node install carries" dist-tag ls @acme/astryx-widgets}',
         },
       ],
     },
@@ -99,7 +103,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'mkdir check-release && cd check-release\nnpm init -y\n{@pm install @astryxdesign/core @astryxdesign/cli @acme/astryx-widgets@1.0.0}\n{@command component AcmeCarousel}\n{@command doctor integration validate @acme/astryx-widgets}',
+          code: 'mkdir check-release && cd check-release\n{@pm-only npm "npm, which every Node install carries, writes the package.json" init -y}\n{@pm install @astryxdesign/core @astryxdesign/cli @acme/astryx-widgets@1.0.0}\n{@command component AcmeCarousel}\n{@command doctor integration validate @acme/astryx-widgets}',
         },
         {
           type: 'prose',

@@ -92,7 +92,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npm pack\n{@pm install @astryxdesign/cli ./your-package-1.0.0.tgz --global}\nmkdir -p /tmp/try-global && cd /tmp/try-global\n{@command discover}\n{@command docs}\n{@command doctor}',
+          code: '{@pm-only npm "the tarball the registry receives" pack}\n{@pm install @astryxdesign/cli ./your-package-1.0.0.tgz --global}\nmkdir -p /tmp/try-global && cd /tmp/try-global\n{@command discover}\n{@command docs}\n{@command doctor}',
         },
         {
           type: 'list',

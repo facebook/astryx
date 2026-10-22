@@ -31,7 +31,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: '`integration verify` runs `npm pack`, including lifecycle scripts, unpacks the `.tgz` file into a temporary app without installing its dependencies, and checks the unpacked integration. It publishes nothing and removes the `.tgz` file and the temporary app.',
+          text: '`integration verify` runs `{@pm-only npm "the tarball the registry receives" pack}`, including lifecycle scripts, unpacks the `.tgz` file into a temporary app without installing its dependencies, and checks the unpacked integration. It publishes nothing and removes the `.tgz` file and the temporary app.',
         },
         {
           type: 'list',

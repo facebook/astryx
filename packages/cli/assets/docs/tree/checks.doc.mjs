@@ -110,7 +110,7 @@ export const docs = {
           type: 'list',
           style: 'ordered',
           items: [
-            'It runs `npm pack` the way `npm publish` would, including your `prepack` script.',
+            'It runs `{@pm-only npm "the tarball the registry receives" pack}` the way `{@pm-only npm "publishing goes through npm, which every Node install carries" publish}` would, including your `prepack` script.',
             'It checks that every contribution file is in the `.tgz` file. A root missing from `files` fails with `Add "templates" to "files" in package.json.`',
             'It lists the components, templates, themes, docs, and codemods the temporary app sees, and compares them with your source.',
             "It resolves each component's `import`, and each template's public import, the way Node does, and checks that the module exports the component under the name its doc documents, or a default export for a template. A type-only export does not count.",

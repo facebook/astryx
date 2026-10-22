@@ -63,7 +63,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npm config set prefix ~/.npm-global\nexport PATH="$HOME/.npm-global/bin:$PATH"\n{@pm install @astryxdesign/cli --global}',
+          code: '{@pm-only npm "moves the npm global folder" config set prefix ~/.npm-global}\nexport PATH="$HOME/.npm-global/bin:$PATH"\n{@pm install @astryxdesign/cli --global}',
         },
         {
           type: 'prose',

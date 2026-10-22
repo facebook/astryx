@@ -28,7 +28,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: '# 1.0.0 -> 2.0.0: a breaking change\nnpm version major\n# 1.0.0 -> 1.1.0: a new feature\nnpm version minor\n# 1.0.0 -> 1.0.1: a fix\nnpm version patch',
+          code: '# 1.0.0 -> 2.0.0: a breaking change\n{@pm-only npm "npm, which every Node install carries, sets the version" version major}\n# 1.0.0 -> 1.1.0: a new feature\n{@pm-only npm "npm, which every Node install carries, sets the version" version minor}\n# 1.0.0 -> 1.0.1: a fix\n{@pm-only npm "npm, which every Node install carries, sets the version" version patch}',
         },
         {
           type: 'list',
