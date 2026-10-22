@@ -297,7 +297,8 @@ export function renderPmStep(step, pm) {
       return {
         npm: join('npm update', args),
         pnpm: join('pnpm update', args),
-        yarn: join('yarn up', args),
+        // `yarn up` moves to the newest release; -R stays in the range.
+        yarn: join('yarn up -R', args),
         'yarn-classic': join('yarn upgrade', args),
         bun: join('bun update', args),
       }[pm];

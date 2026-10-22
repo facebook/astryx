@@ -307,6 +307,9 @@ describe('combineChecks', () => {
       failures: [],
       failed: false,
     });
+    // validate's own summary row shows the note it now counts.
+    expect(combineChecks(withNotes, false, true).checks[0].warnings).toBe(1);
+    expect(combineChecks(withNotes, false).checks[0].warnings).toBe(0);
     expect(combineChecks(withNotes, true, true)).toMatchObject({
       upcoming: 1,
       warnings: 1,

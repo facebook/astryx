@@ -225,6 +225,21 @@ function locate(lines, written, cursor) {
  */
 
 /** Code-block languages whose lines are shell commands. */
+/** Package-manager verbs that take an argument: named alone, a mention. */
+const MENTION_VERBS = new Set([
+  'run',
+  'dlx',
+  'exec',
+  'x',
+  'add',
+  'remove',
+  'rm',
+  'uninstall',
+  'create',
+  'up',
+  'upgrade',
+]);
+
 const SHELL_LANGS = new Set(['', 'bash', 'sh', 'shell', 'zsh', 'console']);
 
 /** Package-manager binaries a written command may start with. */
@@ -296,6 +311,10 @@ export function docCommandsIn(text, lang) {
   }
   for (const {at, command} of commands) {
     if (found.some(each => command.includes(each.written))) continue;
+    // A verb named without what it acts on (`npm run`, `pnpm dlx`) is a
+    // mention of the verb, not a step to run.
+    const words = command.trim().split(/\s+/);
+    if (words.length <= 2 && MENTION_VERBS.has(words[1] ?? '')) continue;
     if (PM_START.test(command)) {
       const token = tokenForCommand(command);
       if (token == null || token.startsWith('{@command')) continue;
@@ -336,7 +355,10 @@ export function docCommandsIn(text, lang) {
       });
     }
   }
-  for (const token of unknownTokensIn(source)) {
+  // A sample in another language has tokens of its own, such as TSDoc's
+  // `{@inheritDoc}`: only prose and shell blocks are read for doc tokens.
+  const readsTokens = lang == null || SHELL_LANGS.has(lang.toLowerCase());
+  for (const token of readsTokens ? unknownTokensIn(source) : []) {
     found.push({
       at: source.indexOf(token),
       written: token,

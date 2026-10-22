@@ -129,10 +129,7 @@ function resolveBaseTheme(slug, packageDir, owner, themesRoot) {
   // Also check the package's own themes root.
   if (themesRoot && fs.existsSync(themesRoot)) {
     try {
-      candidates = [
-        ...candidates,
-        ...discoverThemeDirectory(themesRoot, owner),
-      ];
+      candidates = [...candidates, ...discoverThemeDirectory(themesRoot, owner)];
     } catch {
       // A broken local root is not the caller's problem here.
     }
@@ -206,7 +203,10 @@ function rewriteThemeSource(
   );
   // 3. CSS custom properties scoped to the base theme
   result = result.replace(
-    new RegExp(`--astryx-theme-${escapeRegExp(baseSlug)}-`, 'gu'),
+    new RegExp(
+      `--astryx-theme-${escapeRegExp(baseSlug)}-`,
+      'gu',
+    ),
     `--astryx-theme-${newSlug}-`,
   );
   return result;

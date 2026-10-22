@@ -108,6 +108,16 @@ describe('renderPmStep', () => {
     });
   });
 
+  it('updates within the declared range unless asked for the latest', () => {
+    expect(everyManager('update @acme/x')).toEqual({
+      npm: 'npm update @acme/x',
+      pnpm: 'pnpm update @acme/x',
+      yarn: 'yarn up -R @acme/x',
+      'yarn-classic': 'yarn upgrade @acme/x',
+      bun: 'bun update @acme/x',
+    });
+  });
+
   it('passes an initializer its flags, after `--` on npm', () => {
     expect(everyManager('create vite my-app --template react')).toEqual({
       npm: 'npm create vite my-app -- --template react',
