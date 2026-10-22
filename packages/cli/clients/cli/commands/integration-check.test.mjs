@@ -289,7 +289,7 @@ describe('astryx integration check', () => {
       'invalid_cli_command',
     );
     expect(validate.notes).toEqual([
-      {code: 'invalid_cli_command', message: expect.any(String)},
+      {code: 'invalid_cli_command', message: expect.any(String), next: true},
     ]);
     expect(envelope.data.failed).toBe(false);
     expect(json.status).toBe(0);
@@ -472,7 +472,7 @@ describe('a command written with a runner', () => {
     expect(doctor.stdout).toContain(
       'note (runner_command): docs/acme-setup.doc.mjs:',
     );
-    expect(doctor.stdout).toContain('Write `astryx doctor`');
+    expect(doctor.stdout).toContain('Write the token `{@command doctor}`');
 
     const strict = await runCli(
       ['--json', 'integration', 'check', '--strict'],

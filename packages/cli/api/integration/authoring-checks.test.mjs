@@ -1401,7 +1401,7 @@ describe('validateIntegration runner-command notes', () => {
       line: 1,
       command: 'pnpm exec astryx doctor',
     });
-    expect(hit.message).toContain('Write `astryx doctor`');
+    expect(hit.message).toContain('Write the token `{@command doctor}`');
     // A note only: no issue, so no exit changes on it.
     expect(
       data.issues.map((/** @type {any} */ issue) => issue.code),

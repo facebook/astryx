@@ -302,7 +302,8 @@ works on is `spec:AST-040` FR9's.
     counts as absent, never withdraws the integration's other contributions, and
     `doctor` warns about it; `doctor integration validate` and
     `integration check` report it as a note (`invalid_cli_command`) beside
-    their issues, which fails nothing.
+    their issues, marked `next`: it fails nothing until the next minor release
+    (`architecture:cli-surface` INV35).
   - The picker names every command the CLI prints or writes: hints and next
     steps, errors and their suggestions, `doctor` fixes, help, docs moves
     (`spec:AST-047`), recommended commands (`spec:AST-048`), the project's
