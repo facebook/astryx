@@ -1793,9 +1793,10 @@ export function checkComputerIntegrations(ctx) {
  * Inside a project, the integrations installed for the computer that the
  * project does not install: available, never used (spec AST-081 FR12).
  * Always info.
- * @param {{installed: Set<string>, candidates: import('../../foundation/integrations/computer-integrations.mjs').ComputerIntegrationCandidate[], install: (name: string) => string}} input
+ * @param {{installed: Set<string>, candidates: import('../../foundation/integrations/computer-integrations.mjs').ComputerIntegrationCandidate[], install: ((name: string) => string) | null}} input
  *   `install`: the command that adds a package with the project's package
- *   manager (read by the adapter)
+ *   manager, in the project's folder (read by the adapter); null when the
+ *   folder belongs to no project, so no command is named
  * @returns {DoctorCheck}
  */
 export function checkComputerIntegrationsAvailable({installed, candidates, install}) {
@@ -1808,7 +1809,7 @@ export function checkComputerIntegrationsAvailable({installed, candidates, insta
   return {
     ...base,
     message: `Installed for this computer but not in this project, so not used here: ${available.map(c => c.name).join(', ')}.`,
-    fix: `To use one in this project, run ${available.map(c => `\`${add(c.name)}\``).join(' or ')}.`,
+    ...(add ? {fix: `To use one in this project, run ${available.map(c => `\`${add(c.name)}\``).join(' or ')}.`} : {}),
   };
 }
 

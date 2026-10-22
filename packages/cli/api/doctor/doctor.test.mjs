@@ -31,7 +31,9 @@ import {
   checkIntegrationIssues,
   checkVersionAlignment,
   checkPackageManager,
+  checkComputerIntegrationsAvailable,
 } from './doctor.mjs';
+import {installCommandFor} from './_adapter.mjs';
 import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
 import {Project} from '../../foundation/config/project.mjs';
 
@@ -286,6 +288,44 @@ describe("doctor — the project's own CLI and Core on different releases", () =
       `This project has no Astryx CLI installed; CLI ${cli}, the one you started, answered while its Core is 0.0.1.`,
     );
     expect(c.fix).toBe('To match, run: npm install @astryxdesign/cli@0.0.1.');
+  });
+});
+
+describe('the command that adds an integration installed for the computer', () => {
+  const app = () =>
+    mkProject({
+      'package.json': JSON.stringify({
+        name: 'app',
+        dependencies: {'@astryxdesign/core': '0.7.0'},
+      }),
+      'pnpm-lock.yaml': '',
+      'tools/codegen/package.json': JSON.stringify({name: 'codegen'}),
+    });
+
+  it('adds it in the project, with its package manager', () => {
+    const dir = app();
+    expect(installCommandFor(dir)?.('@acme/a')).toBe('pnpm add @acme/a');
+  });
+
+  // A package.json that is not the project's (spec AST-040 FR9): adding
+  // there would leave the integration out of the project.
+  it("from a tool folder inside the project, adds it in the project's folder", () => {
+    const dir = app();
+    expect(
+      installCommandFor(path.join(dir, 'tools', 'codegen'))?.('@acme/a'),
+    ).toBe(`cd ${dir} && pnpm add @acme/a`);
+  });
+
+  it('in a folder that belongs to no project, names no command', () => {
+    const dir = mkProject({'package.json': JSON.stringify({name: 'tool'})});
+    expect(installCommandFor(dir)).toBeNull();
+    const c = checkComputerIntegrationsAvailable({
+      installed: new Set(),
+      candidates: [/** @type {any} */ ({name: '@acme/a'})],
+      install: null,
+    });
+    expect(c.status).toBe('info');
+    expect(c).not.toHaveProperty('fix');
   });
 });
 

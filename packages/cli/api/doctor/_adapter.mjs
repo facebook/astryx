@@ -12,6 +12,7 @@ import {
 import {
   alignCliAndCore,
   cliInstallAdvice,
+  installFolder,
   globalBehind,
   globalUpgradeCommand,
   lastNoticeSkip,
@@ -19,7 +20,10 @@ import {
 } from '../../foundation/release/notices.mjs';
 import {coreVersionOf, isGlobalCopy} from '../../foundation/release/choose.mjs';
 import {readReleaseFacts} from '../../foundation/release/project.mjs';
-import {detectPackageManager} from '../../foundation/env/package-manager.mjs';
+import {
+  commandInFolder,
+  detectPackageManager,
+} from '../../foundation/env/package-manager.mjs';
 import {astryxCommandsOnSearchPath} from '../../foundation/env/search-path.mjs';
 import {readDeclaredDependencies} from '../../foundation/integrations/autolink.mjs';
 import {
@@ -390,13 +394,28 @@ export function addCliCommandFor(cwd, version) {
 }
 
 /**
- * The command that adds a package with the folder's package manager, read
- * from its lockfiles and `packageManager` field.
+ * The command that adds a package to the project of `cwd` with the project's
+ * package manager, read from its lockfiles and `packageManager` field: from a
+ * folder inside the project whose package.json is not the project's, in the
+ * project's folder (`spec:AST-040` FR9, see `installFolder`). Null when `cwd`
+ * belongs to no such project.
  * @param {string} cwd
- * @returns {(name: string) => string}
+ * @returns {((name: string) => string) | null}
  */
 export function installCommandFor(cwd) {
-  const pm = detectPackageManager(cwd);
+  const target = installFolder(cwd);
+  if (target == null) return null;
+  const add = addCommandIn(target.moved ? target.dir : cwd);
+  return target.moved ? name => commandInFolder(target.dir, add(name)) : add;
+}
+
+/**
+ * The command that adds a package with the package manager of `dir`.
+ * @param {string} dir
+ * @returns {(name: string) => string}
+ */
+function addCommandIn(dir) {
+  const pm = detectPackageManager(dir);
   const verb =
     pm === 'pnpm'
       ? 'pnpm add'

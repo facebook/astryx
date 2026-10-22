@@ -207,10 +207,16 @@ describe('enforcement layer 3 — per-command setup nudge', () => {
   // the nested package.json (spec AST-081 FR2).
   it("in a nested package whose package.json is not the project's, says to run from the project's folder", async () => {
     write('package.json', JSON.stringify({name: 'app', dependencies: {'@astryxdesign/core': '0.7.0'}}));
+    write('package-lock.json', '{}');
     write('functions/package.json', '{"name":"functions"}');
     const r = await runCli(['docs', 'tokens'], path.join(tmp, 'functions'));
-    expect(r.stderr).toContain(`run \`cd ${tmp}\`, then`);
-    expect(r.stderr).not.toMatch(/install @astryxdesign\/cli/u);
+    // Only `cd` comes first, so the app has no CLI of its own yet: the
+    // command is the scoped package at the answering release, never the bare
+    // `astryx` name a package runner would fetch from the registry.
+    const {version} = JSON.parse(fs.readFileSync(new URL('../../../package.json', import.meta.url), 'utf8'));
+    expect(r.stderr.trim()).toBe(
+      `Next step: run \`cd ${tmp}\`, then \`npx @astryxdesign/cli@${version} init\` to finish setup and install the Astryx agent prompt.`,
+    );
   });
 
   // Inside a git repository the project-root check above adds nothing to the

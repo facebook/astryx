@@ -660,22 +660,27 @@ export async function createProgram() {
       // then run that CLI's init (spec AST-081 FR2).
       // A folder that belongs to no project spec:AST-040 FR9 defines gets no
       // reminder, as outside a project.
-      if (installFolder(cwd) == null) return;
+      const target = installFolder(cwd);
+      if (target == null) return;
+      // From a folder inside the project whose package.json is not the
+      // project's, init runs from the project's folder. Only `cd` comes
+      // before it, so the command is the picker's for that folder, never the
+      // bare `astryx` name a package runner would fetch from the registry
+      // (spec AST-081 FR5).
+      if (target.moved) {
+        console.error(
+          setupNudge(getCliInvocation(target.dir), {before: `cd ${quoteCommandArgument(target.dir)}`}).trimEnd(),
+        );
+        return;
+      }
       const choice = runChoice(cwd);
       if (choice.copy === 'starting' && choice.coreVersion && choice.coreVersion !== choice.version) {
-        // The daily hint's comparison and advice: from a folder inside the
-        // project whose package.json is not the project's, run from the
-        // project's folder instead of adding the CLI there.
+        // The daily hint's comparison and command: add the CLI at Core's
+        // version, then run that CLI's init.
         const add = cliInstallAdvice({cwd, core: choice.coreVersion});
         if (add?.command) {
           console.error(
             setupNudge(getCliInvocation(add.root, {installed: true}), {before: add.command}).trimEnd(),
-          );
-          return;
-        }
-        if (add) {
-          console.error(
-            setupNudge(getCliInvocation(add.root, {installed: true}), {before: `cd ${quoteCommandArgument(add.root)}`}).trimEnd(),
           );
           return;
         }
