@@ -1339,9 +1339,16 @@ async function componentIssues(ctx, integration) {
         }
         for (const name of missing ?? []) {
           const there = subpathExporting(ctx, name, declared);
+          // The per-component entry helps only when the component's source
+          // exports the name itself and the doc does not already use it.
+          const ownEntry =
+            perComponent != null &&
+            source != null &&
+            entryKey !== split.subpath &&
+            moduleExportNames(source, ctx.exportNames).names.has(name);
           const fix = there
             ? `set import: '${ctx.name}${there === '.' ? '' : there.slice(1)}' in the doc (that subpath exports it), or export "${name}" from the module "${specifier}" loads.`
-            : `export "${name}" from the module "${specifier}" loads${perComponent ? `, or ${perComponent}` : ''}.`;
+            : `export "${name}" from the module "${specifier}" loads${ownEntry ? `, or ${perComponent}` : ''}.`;
           issues.push(
             listed(
               'component_import_missing_name',
@@ -1364,6 +1371,31 @@ async function componentIssues(ctx, integration) {
     }
 
     /**
+     * Whether the module at a declared subpath exports every value name the
+     * statement imports (and it imports at least one).
+     * @param {ImportStatement} statement
+     * @param {string} candidate
+     */
+    const providesAll = (statement, candidate) => {
+      if (!statement.names.some(binding => !binding.typeOnly)) return false;
+      const declaration = declarationIn(
+        ctx.exportsField,
+        ctx.packageDir,
+        candidate,
+      );
+      if (declaration.state !== 'declared' || declaration.value == null)
+        return false;
+      const {files, allPresent} = declaredTargets(ctx.packageDir, declaration);
+      const missing = missingNames(
+        statement,
+        files,
+        ctx.exportNames,
+        allPresent,
+      );
+      return Array.isArray(missing) && missing.length === 0;
+    };
+
+    /**
      * Where an example with an undeclared import should import from: the
      * doc's own import, when it differs from the example's and is declared;
      * else the subpath the component's source is already exported under;
@@ -1376,26 +1408,7 @@ async function componentIssues(ctx, integration) {
      */
     const exampleFix = (statement, subpath, undeclared) => {
       /** @param {string} candidate */
-      const provides = candidate => {
-        const declaration = declarationIn(
-          ctx.exportsField,
-          ctx.packageDir,
-          candidate,
-        );
-        if (declaration.state !== 'declared' || declaration.value == null)
-          return false;
-        const {files, allPresent} = declaredTargets(
-          ctx.packageDir,
-          declaration,
-        );
-        const missing = missingNames(
-          statement,
-          files,
-          ctx.exportNames,
-          allPresent,
-        );
-        return Array.isArray(missing) && missing.length === 0;
-      };
+      const provides = candidate => providesAll(statement, candidate);
       const values = statement.names
         .filter(binding => !binding.typeOnly)
         .map(binding => binding.imported);
@@ -1473,7 +1486,13 @@ async function componentIssues(ctx, integration) {
       if (docNames.length > 0) {
         return `import a name that module exports (${docNames.map(n => `"${n}"`).join(', ')} for this doc), or ${exportIt}.`;
       }
-      if (authored && authored !== statement.source) {
+      const own = authored ? splitSpecifier(authored) : null;
+      if (
+        authored &&
+        authored !== statement.source &&
+        own?.pkg === ctx.name &&
+        providesAll(statement, own.subpath)
+      ) {
         return `import from '${authored}', as the doc's import does, or ${exportIt}.`;
       }
       return `${exportIt[0].toUpperCase()}${exportIt.slice(1)}.`;

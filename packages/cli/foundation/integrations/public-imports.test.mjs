@@ -385,11 +385,15 @@ describe('public imports: component examples', () => {
     );
   });
 
-  it("points a missing-name example at the doc's import when that module has none of the doc's names", async () => {
+  it("points a missing-name example at the doc's import only when that module exports the missing name", async () => {
     pkg(p => {
       p.exports['./other'] = './lib/other.ts';
     });
     write('lib/other.ts', 'export const Unrelated = 1;\n');
+    write(
+      'components/AcmeWidget.tsx',
+      'export function AcmeWidget() {\n  return null;\n}\nexport function AcmeGadget() {\n  return null;\n}\n',
+    );
     write(
       'components/AcmeWidget.doc.mjs',
       DOC(
@@ -404,6 +408,16 @@ describe('public imports: component examples', () => {
     expect(issue?.message).toContain(
       "import from '@acme/widgets/components/AcmeWidget', as the doc's import does",
     );
+    // Without the name there, the doc's import is no fix.
+    write(
+      'components/AcmeWidget.tsx',
+      'export function AcmeWidget() {\n  return null;\n}\n',
+    );
+    const generic = (await found()).find(
+      i => i.code === 'example_import_missing_name',
+    );
+    expect(generic?.message).toContain('Fix: Export the name from it.');
+    expect(generic?.message).not.toContain("as the doc's import does");
   });
 
   it('flags a subpath exports does not declare', async () => {
@@ -846,6 +860,25 @@ describe('fixes for two components in one folder', () => {
       '"./components/AcmeBeta": "./components/AcmeBeta.tsx"',
     );
     for (const fix of fixes) expect(fix).not.toContain('"./components":');
+  });
+
+  it('never offers a per-component entry when the source exports the component only as default', async () => {
+    write('components/index.js', 'export const Other = 1;\n');
+    write(
+      'components/AcmeAlpha.tsx',
+      'export default function AcmeAlpha() {\n  return null;\n}\n',
+    );
+    pkg(p => {
+      p.exports['./components'] = './components/index.js';
+      p.exports['.'] = './components/index.js';
+    });
+    const fix = (await found())
+      .filter(i => i.code === 'component_import_missing_name')
+      .map(i => i.message.split('Fix: ')[1])
+      .find(text => text.includes('"AcmeAlpha"'));
+    expect(fix).toBe(
+      'export "AcmeAlpha" from the module "@acme/widgets/components" loads.',
+    );
   });
 });
 
