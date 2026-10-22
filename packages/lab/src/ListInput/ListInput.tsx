@@ -48,8 +48,6 @@ import {useTheme} from '@astryxdesign/core/theme';
 import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
 import {
   colorVars,
-  durationVars,
-  easeVars,
   fontWeightVars,
   sizeVars,
   spacingVars,
@@ -349,22 +347,12 @@ const styles = stylex.create({
     borderStyle: 'none',
     backgroundColor: 'transparent',
     color: {
-      default: colorVars['--color-icon-secondary'],
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        default: null,
-        '@media (hover: hover)': colorVars['--color-icon-primary'],
-      },
+      default: colorVars['--color-icon-primary'],
       ':disabled': colorVars['--color-icon-disabled'],
     },
-    transitionProperty: 'color',
-    transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easeVars['--ease-standard'],
   },
   reorderGripReveal: {
     display: 'flex',
-  },
-  reorderGripActive: {
-    color: colorVars['--color-icon-primary'],
   },
   reorderGripGlyph: {
     display: 'block',
@@ -1602,7 +1590,6 @@ export function ListInput<T>({
                         {...stylex.props(
                           focusOutlineStyles.focusVisible,
                           styles.reorderGrip,
-                          isActiveReorder && styles.reorderGripActive,
                           reorderStyles.handle,
                           isActiveReorder && reorderStyles.handleActive,
                         )}
