@@ -499,6 +499,29 @@ describe('rule order and writes', () => {
     expect(rootCss).toContain('--color-info: var(--color-accent);');
   });
 
+  it('does not treat an important() function as declaration priority', () => {
+    const theme = defineTheme({
+      name: 'important-function-status-reference',
+      tokens: {'--color-accent': '#0099ff'},
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'coarse'},
+            value: {tokens: {'--color-accent': 'red !important()'}},
+          },
+          {
+            when: {pointer: 'coarse'},
+            value: {tokens: {'--color-accent': 'var(--color-info)'}},
+          },
+        ],
+      },
+    });
+
+    expect(generateThemeRules(theme).join('\n')).not.toContain(
+      '--color-info: var(--color-accent);',
+    );
+  });
+
   it('does not model a dropped declaration as a cycle repair', () => {
     const theme = defineTheme({
       name: 'dropped-status-repair',
@@ -524,6 +547,26 @@ describe('rule order and writes', () => {
       '--color-accent: #abcdef;',
     );
     expect(warnings.some(warning => warning.includes('dropped'))).toBe(true);
+  });
+
+  it('keeps a root alias when a matching rule overwrites that alias', () => {
+    const theme = defineTheme({
+      name: 'overwritten-root-status-alias',
+      tokens: {'--color-accent': '#0099ff'},
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'coarse'},
+            value: {tokens: {'--color-info': '#123456'}},
+          },
+        ],
+      },
+    });
+    theme.__adaptationRules![0].tokens['--color-info'] = 'var(--color-info)';
+
+    expect(generateThemeRules(theme).join('\n')).toContain(
+      '--color-info: var(--color-accent);',
+    );
   });
 
   it('emits a guarded alias when only an adaptation authors the source', () => {

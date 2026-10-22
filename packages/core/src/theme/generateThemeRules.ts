@@ -554,7 +554,9 @@ function tokenValuesHaveCycleInvolving(
       continue;
     }
     visited.add(token);
-    stack.push(...(references.get(token) ?? []));
+    for (const reference of references.get(token) ?? []) {
+      stack.push(reference);
+    }
   }
   return false;
 }
@@ -684,19 +686,26 @@ function generatedScopedStatusRoleDefaults(
       continue;
     }
     const tentativeEntries: [string, string][] = [...entries, [role, alias]];
-    const isSafe = matchSets.every(
-      matchingRuleIndexes =>
-        !tokenValuesHaveCycleInvolving(
-          effectiveAdaptationTokenValues(
-            tokens,
-            localTokens,
-            tentativeEntries,
-            rules,
-            matchingRuleIndexes,
-          ),
-          role,
-        ),
-    );
+    const isSafe = matchSets.every(matchingRuleIndexes => {
+      const withAlias = effectiveAdaptationTokenValues(
+        tokens,
+        localTokens,
+        tentativeEntries,
+        rules,
+        matchingRuleIndexes,
+      );
+      const withoutAlias = effectiveAdaptationTokenValues(
+        tokens,
+        localTokens,
+        entries,
+        rules,
+        matchingRuleIndexes,
+      );
+      return (
+        withAlias[role] === withoutAlias[role] ||
+        !tokenValuesHaveCycleInvolving(withAlias, role)
+      );
+    });
     if (isSafe) {
       entries.push([role, alias]);
     }
@@ -725,6 +734,10 @@ function authoredStatusRoleEntries(
   });
 }
 
+function tokenValueIsAliasOf(value: unknown, source: string): boolean {
+  return analyzeDeclarationValue(`${value}`).singleVarReference === source;
+}
+
 function generatedAdaptationStatusRoleDefaults(
   rootTokens: Record<string, string>,
   rootLocalTokens: Record<string, string> | undefined,
@@ -750,27 +763,35 @@ function generatedAdaptationStatusRoleDefaults(
       if (
         authoredRule[role] !== undefined ||
         authoredRule[source] === undefined ||
-        (rootRole !== undefined && rootRole !== alias) ||
-        rootRole === alias
+        rootRole !== undefined
       ) {
         continue;
       }
 
+      const aliasesWithoutCandidate = aliases.map(entries => [...entries]);
       aliases[index].push([role, alias]);
-      const isSafe = matchSets.every(
-        matchingRuleIndexes =>
-          !tokenValuesHaveCycleInvolving(
-            effectiveAdaptationTokenValues(
-              rootTokens,
-              rootLocalTokens,
-              rootAliases,
-              rules,
-              matchingRuleIndexes,
-              aliases,
-            ),
-            role,
-          ),
-      );
+      const isSafe = matchSets.every(matchingRuleIndexes => {
+        const withAlias = effectiveAdaptationTokenValues(
+          rootTokens,
+          rootLocalTokens,
+          rootAliases,
+          rules,
+          matchingRuleIndexes,
+          aliases,
+        );
+        const withoutAlias = effectiveAdaptationTokenValues(
+          rootTokens,
+          rootLocalTokens,
+          rootAliases,
+          rules,
+          matchingRuleIndexes,
+          aliasesWithoutCandidate,
+        );
+        return (
+          withAlias[role] === withoutAlias[role] ||
+          !tokenValuesHaveCycleInvolving(withAlias, role)
+        );
+      });
       if (!isSafe) {
         aliases[index].pop();
       }
@@ -794,6 +815,23 @@ function generatedMediaStatusRoleDefaults(
   ).values;
   const matchSets = reachableAdaptationMatchSets(rules);
   const authoredMedia = createTokenCascade(tokens).values;
+  const effectiveMediaValues = (
+    statusAliases: ReadonlyArray<readonly [string, string]>,
+    matchingRuleIndexes: ReadonlyArray<number>,
+  ): TokenValues => {
+    const local = createTokenCascade(tokens, Object.fromEntries(statusAliases));
+    const generatedRoles = new Set(statusAliases.map(([name]) => name));
+    for (const index of matchingRuleIndexes) {
+      for (const [authoredRole, authoredValue] of authoredStatusRoleEntries(
+        rules[index].tokens,
+      )) {
+        if (generatedRoles.has(authoredRole)) {
+          assignTokenCascade(local, {[authoredRole]: authoredValue});
+        }
+      }
+    }
+    return local.values;
+  };
 
   for (const [role, source] of SCOPED_STATUS_ROLE_DEFAULTS) {
     const alias = `var(${source})`;
@@ -801,28 +839,22 @@ function generatedMediaStatusRoleDefaults(
     if (
       authoredMedia[role] !== undefined ||
       authoredMedia[source] === undefined ||
-      (rootRole !== undefined && rootRole !== alias)
+      (rootRole !== undefined && !tokenValueIsAliasOf(rootRole, source))
     ) {
       continue;
     }
 
     const tentativeAliases: [string, string][] = [...aliases, [role, alias]];
-    const generatedRoles = new Set(tentativeAliases.map(([name]) => name));
     const isSafe = matchSets.every(matchingRuleIndexes => {
-      const local = createTokenCascade(
-        tokens,
-        Object.fromEntries(tentativeAliases),
+      const withAlias = effectiveMediaValues(
+        tentativeAliases,
+        matchingRuleIndexes,
       );
-      for (const index of matchingRuleIndexes) {
-        for (const [authoredRole, authoredValue] of authoredStatusRoleEntries(
-          rules[index].tokens,
-        )) {
-          if (generatedRoles.has(authoredRole)) {
-            assignTokenCascade(local, {[authoredRole]: authoredValue});
-          }
-        }
-      }
-      return !tokenValuesHaveCycleInvolving(local.values, role);
+      const withoutAlias = effectiveMediaValues(aliases, matchingRuleIndexes);
+      return (
+        withAlias[role] === withoutAlias[role] ||
+        !tokenValuesHaveCycleInvolving(withAlias, role)
+      );
     });
     if (isSafe) {
       aliases.push([role, alias]);

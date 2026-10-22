@@ -347,6 +347,7 @@ export interface DeclarationValueAnalysis {
   reason: string | null;
   references: string[];
   important: boolean;
+  singleVarReference: string | null;
 }
 
 function skipWhitespaceAndComments(input: string, start: number): number {
@@ -379,6 +380,53 @@ function varReferenceAt(input: string, openParen: number): string | null {
   return input[end] === ',' || input[end] === ')' ? token.name : null;
 }
 
+function startsNumber(input: string, position: number): boolean {
+  const first = input[position];
+  const second = input[position + 1];
+  const third = input[position + 2];
+  if (first === '+' || first === '-') {
+    return (
+      /^[0-9]$/.test(second ?? '') ||
+      (second === '.' && /^[0-9]$/.test(third ?? ''))
+    );
+  }
+  return (
+    /^[0-9]$/.test(first ?? '') ||
+    (first === '.' && /^[0-9]$/.test(second ?? ''))
+  );
+}
+
+function consumeNumber(input: string, position: number): number {
+  let index = position;
+  if (input[index] === '+' || input[index] === '-') {
+    index++;
+  }
+  while (/^[0-9]$/.test(input[index] ?? '')) {
+    index++;
+  }
+  if (input[index] === '.' && /^[0-9]$/.test(input[index + 1] ?? '')) {
+    index += 2;
+    while (/^[0-9]$/.test(input[index] ?? '')) {
+      index++;
+    }
+  }
+  if (
+    (input[index] === 'e' || input[index] === 'E') &&
+    (/^[0-9]$/.test(input[index + 1] ?? '') ||
+      ((input[index + 1] === '+' || input[index + 1] === '-') &&
+        /^[0-9]$/.test(input[index + 2] ?? '')))
+  ) {
+    index++;
+    if (input[index] === '+' || input[index] === '-') {
+      index++;
+    }
+    while (/^[0-9]$/.test(input[index] ?? '')) {
+      index++;
+    }
+  }
+  return index;
+}
+
 /**
  * Analyze one accepted declaration value using the same CSS tokenization rules
  * as the declaration-boundary check.
@@ -388,19 +436,31 @@ export function analyzeDeclarationValue(
 ): DeclarationValueAnalysis {
   const reason = checkDeclarationValue(input);
   if (reason !== null) {
-    return {reason, references: [], important: false};
+    return {
+      reason,
+      references: [],
+      important: false,
+      singleVarReference: null,
+    };
   }
 
   const value = preprocess(input);
   const references: string[] = [];
   const open: string[] = [];
   type TopLevelToken = {
-    type: 'delim' | 'ident' | 'other';
+    type: 'delim' | 'ident' | 'var-function' | 'other';
     value: string;
+    reference?: string;
   };
   const topLevelTokens: TopLevelToken[] = [];
+  const firstTopLevelTokens: TopLevelToken[] = [];
+  let topLevelTokenCount = 0;
   const recordTopLevel = (token: TopLevelToken): void => {
     if (open.length === 0) {
+      topLevelTokenCount++;
+      if (firstTopLevelTokens.length === 0) {
+        firstTopLevelTokens.push(token);
+      }
       topLevelTokens.push(token);
       if (topLevelTokens.length > 2) {
         topLevelTokens.shift();
@@ -425,16 +485,48 @@ export function analyzeDeclarationValue(
       index = 'end' in string ? string.end : value.length;
       continue;
     }
+    if (character === '#') {
+      const nameStart = index + 1;
+      if (isNameChar(value[nameStart]) || isValidEscape(value, nameStart)) {
+        recordTopLevel({type: 'other', value: '#'});
+        index = consumeIdent(value, nameStart).end;
+        continue;
+      }
+    }
+    if (character === '@' && startsIdent(value, index + 1)) {
+      recordTopLevel({type: 'other', value: '@'});
+      index = consumeIdent(value, index + 1).end;
+      continue;
+    }
+    if (startsNumber(value, index)) {
+      recordTopLevel({type: 'other', value: character});
+      index = consumeNumber(value, index);
+      if (startsIdent(value, index)) {
+        index = consumeIdent(value, index).end;
+      } else if (value[index] === '%') {
+        index++;
+      }
+      continue;
+    }
     if (startsIdent(value, index)) {
       const ident = consumeIdent(value, index);
-      recordTopLevel({type: 'ident', value: ident.name});
       index = ident.end;
-      if (value[index] === '(') {
-        if (ident.name.toLowerCase() === 'var') {
-          const reference = varReferenceAt(value, index);
-          if (reference !== null) {
-            references.push(reference);
-          }
+      const isFunction = value[index] === '(';
+      const reference =
+        isFunction && ident.name.toLowerCase() === 'var'
+          ? varReferenceAt(value, index)
+          : null;
+      recordTopLevel(
+        reference !== null
+          ? {type: 'var-function', value: ident.name, reference}
+          : {
+              type: isFunction ? 'other' : 'ident',
+              value: ident.name,
+            },
+      );
+      if (isFunction) {
+        if (reference !== null) {
+          references.push(reference);
         }
         if (ident.name.toLowerCase() === 'url') {
           let body = index + 1;
@@ -478,7 +570,13 @@ export function analyzeDeclarationValue(
     previousTopLevel.value === '!' &&
     lastTopLevel?.type === 'ident' &&
     lastTopLevel.value.toLowerCase() === 'important';
-  return {reason: null, references, important};
+  const firstTopLevelToken = firstTopLevelTokens[0];
+  const singleVarReference =
+    topLevelTokenCount - (important ? 2 : 0) === 1 &&
+    firstTopLevelToken?.type === 'var-function'
+      ? (firstTopLevelToken.reference ?? null)
+      : null;
+  return {reason: null, references, important, singleVarReference};
 }
 
 /** The browser-canonical spelling of one valid declaration name. */

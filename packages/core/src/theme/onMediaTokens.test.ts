@@ -184,6 +184,26 @@ describe('generateOnMediaCSS', () => {
     expect(canonicalCss).toContain('--color-info: var(--color-accent);');
   });
 
+  it.each([
+    'VAR( /*x*/ --color-accent ) !important',
+    'v\\61r(--color-accent)',
+    'var( --color-accent )',
+    'var(--color-accent) !important',
+  ])('rebinds a semantically equivalent authored root alias: %s', info => {
+    const theme = defineTheme({
+      name: 'status-role-media-equivalent-alias',
+      tokens: {
+        '--color-accent': '#0074E2',
+        '--color-info': info,
+      },
+      onDark: {tokens: {'--color-accent': '#FFFFFF'}},
+    });
+
+    expect(generateOnMediaCSS(theme)).toContain(
+      '--color-info: var(--color-accent);',
+    );
+  });
+
   it('does not let a media alias override an adaptation-authored role', () => {
     const theme = defineTheme({
       name: 'status-role-media-adaptation',

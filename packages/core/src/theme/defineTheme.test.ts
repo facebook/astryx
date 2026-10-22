@@ -173,6 +173,24 @@ describe('defineTheme', () => {
     },
   );
 
+  it.each([
+    'var(--color-text-red, #var(--color-info))',
+    '1var(--color-info)',
+    '@var(--color-info)',
+  ])(
+    'does not create references inside non-function CSS tokens: %s',
+    accent => {
+      const css = generateThemeRules({
+        tokens: {
+          '--color-accent': accent,
+          '--color-text-red': '#123456',
+        },
+      }).join('\n');
+
+      expect(css).toContain('--color-info: var(--color-accent);');
+    },
+  );
+
   it('does not let unquoted URL contents hide a following var() reference', () => {
     const css = generateThemeRules({
       tokens: {
@@ -200,6 +218,16 @@ describe('defineTheme', () => {
     expect(() =>
       generateThemeRules({
         tokens: {'--color-accent': `#123456 ${comments}`},
+      }),
+    ).not.toThrow();
+  });
+
+  it('handles a very wide reference list without argument spreading', () => {
+    const references = 'var(--wide-target) '.repeat(200_000);
+    expect(() =>
+      generateThemeRules({
+        tokens: {'--color-accent': references},
+        localTokens: {'--wide-target': '#123456'},
       }),
     ).not.toThrow();
   });
