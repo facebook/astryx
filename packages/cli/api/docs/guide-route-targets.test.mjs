@@ -968,3 +968,31 @@ describe('whole-diff self-review', () => {
     SLOW,
   );
 });
+
+describe('old routes in messages', () => {
+  it(
+    'names the guide at its route now in notes and doctor findings',
+    async () => {
+      scaffold({
+        'a.doc.mjs': topic('acme-a', {
+          extends: 'cli/integrations/quick-start',
+          sections: [section('acme-x', {after: 'acme-nope'})],
+        }),
+      });
+      const validated = await validateIntegration(KIT, {cwd: tmpDir});
+      const note = (validated.data.notes ?? []).find(
+        n => n.code === 'doc_section_unplaced',
+      );
+      expect(note?.message).toContain(`docs ${GUIDE} --index`);
+      expect(note?.message).not.toContain('cli/integrations');
+      const result = await integrationDocConflicts(KIT, {cwd: tmpDir});
+      const finding = result.data.findings.find(f => f.topic === 'acme-a');
+      expect(finding).toMatchObject({
+        relationship: 'extends',
+        coreTopic: GUIDE,
+      });
+      expect(finding?.message).not.toContain('cli/integrations');
+    },
+    SLOW,
+  );
+});

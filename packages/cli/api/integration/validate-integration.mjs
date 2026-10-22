@@ -760,7 +760,7 @@ async function docTargetNotes(integration) {
     for (const {section, field, key} of each.unplaced) {
       notes.push({
         code: DOC_SECTION_UNPLACED,
-        message: `Section "${section}" of "${each.topic}" goes ${field} "${key}", which is no section of "${each.target}", so it is added at the end. Fix: use a key \`${formatCliCommand(`docs ${each.target} --index`)}\` lists.`,
+        message: `Section "${section}" of "${each.topic}" goes ${field} "${key}", which is no section of "${each.guide ?? each.target}", so it is added at the end. Fix: use a key \`${formatCliCommand(`docs ${each.guide ?? each.target} --index`)}\` lists.`,
       });
     }
   }

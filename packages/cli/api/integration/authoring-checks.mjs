@@ -523,12 +523,14 @@ export async function integrationDocConflicts(pkg, options = {}) {
       if (target.kind !== 'guide' || target.owner !== BUILTIN_DOCS_PACKAGE) {
         continue;
       }
+      // A route the guide moved from names the guide at its route now.
+      const route = target.guide ?? target.target;
       findings.push({
         topic: target.topic,
         severity: 'info',
         relationship: target.relationship,
-        coreTopic: target.target,
-        message: `Intentional ${target.relationship === 'replaces' ? 'override' : 'extension'}: "${target.topic}" ${target.relationship} the CLI guide "${target.target}".`,
+        coreTopic: route,
+        message: `Intentional ${target.relationship === 'replaces' ? 'override' : 'extension'}: "${target.topic}" ${target.relationship} the CLI guide "${route}".`,
       });
     }
   }
