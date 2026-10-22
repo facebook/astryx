@@ -72,6 +72,7 @@ export const CLI_COMMANDS = Object.freeze([
   'init',
   'integration',
   'manifest',
+  'postinstall',
   'search',
   'swizzle',
   'template',
