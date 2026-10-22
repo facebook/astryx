@@ -280,7 +280,7 @@ function isFormatterName(name) {
   }
   // These names describe CSS output, not interface copy. A text-sink suffix
   // still wins: formatColorLabel is not a color serializer.
-  return !/(?:CSS|Css|Style|Styles|Color|Shadow|Transform|Gradient|Length|Angle|RGB|Rgb|HSL|Hsl|Hex)(?:String)?$/.test(
+  return !/(?:CSS|Css|Style|Styles|Color|Shadow|Transform|Gradient|Length|Angle|RGB|Rgb|HSL|Hsl|Hex|Transition|Font|Border|GridTemplate|ClassName|MediaQuery|Selector|Path)(?:String|Value)?$/.test(
     name,
   );
 }
@@ -294,12 +294,24 @@ function getFunctionName(node) {
     return parent.id.name;
   }
   if (
-    (parent?.type === 'Property' || parent?.type === 'MethodDefinition') &&
+    (parent?.type === 'Property' || parent?.type === 'MethodDefinition' || parent?.type === 'PropertyDefinition') &&
     !parent.computed
   ) {
     return parent.key.type === 'Identifier'
       ? parent.key.name
       : parent.key.value;
+  }
+  if (parent?.type === 'AssignmentExpression' && parent.right === node) {
+    const target = parent.left;
+    if (target.type === 'Identifier') return target.name;
+    if (target.type === 'MemberExpression' && !target.computed) return target.property.name;
+  }
+  if (
+    parent?.type === 'CallExpression' && parent.arguments[0] === node &&
+    parent.callee.type === 'Identifier' &&
+    (parent.callee.name === 'useCallback' || parent.callee.name === 'useMemo')
+  ) {
+    return getFunctionName(parent);
   }
   return node.id?.name;
 }

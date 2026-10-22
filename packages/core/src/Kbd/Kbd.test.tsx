@@ -258,6 +258,29 @@ describe('Kbd', () => {
     expect(screen.getByRole('img')).toHaveAccessibleName('Touche traduite');
   });
 
+  it('localizes visible key text and the spoken shortcut combination', () => {
+    render(
+      <InternationalizationProvider
+        locale="de"
+        overrides={{
+          de: {
+            '@astryx.kbd.key.controlShort': 'Strg',
+            '@astryx.kbd.key.escapeShort': 'Abbr',
+            '@astryx.kbd.key.control': 'Steuerung',
+            '@astryx.kbd.key.escape': 'Abbrechen',
+            '@astryx.kbd.shortcut': '{key} mit {shortcut}',
+          },
+        }}>
+        <Kbd keys="mod+esc" />
+      </InternationalizationProvider>,
+    );
+    expect(screen.getByText('Strg')).toBeInTheDocument();
+    expect(screen.getByText('Abbr')).toBeInTheDocument();
+    expect(screen.getByRole('img')).toHaveAccessibleName(
+      'Abbrechen mit Steuerung',
+    );
+  });
+
   it('computed role and aria-label win over consumer-passed overrides', () => {
     // Contract props the component computes must not be clobbered by
     // pass-through attributes: {...rest} is spread before role/aria-label.
