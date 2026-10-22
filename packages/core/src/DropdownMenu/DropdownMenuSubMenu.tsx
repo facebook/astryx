@@ -72,6 +72,7 @@ import {Item} from '../Item';
 import {useLayer} from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {useListFocus} from '../hooks/useListFocus';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {useMenuHover} from '../hooks/useMenuHover';
 import {
   isMenuPressActivation,
@@ -682,6 +683,14 @@ export function DropdownMenuSubMenu(
   // closed from elsewhere is cancelled instead of firing into the hidden
   // menu (#6893).
   const isRootMenuOpen = useDropdownMenuRootOpen();
+  // The loading Spinner on the trigger is decorative; the submenu announces
+  // its busy start instead (spec:AST-086 FR8), once its level is shown: a
+  // closed menu stays mounted but hidden, and announces nothing.
+  useBusyAnnouncement(
+    hasSpinner && isRootMenuOpen,
+    t('@astryx.spinner.loading'),
+    triggerRef,
+  );
   const {triggerProps, contentProps, confirmHoverOpen} =
     useMenuHover<HTMLDivElement>({
       show: showLayer,
@@ -1033,7 +1042,7 @@ export function DropdownMenuSubMenu(
 
   const endAffordance = hasSpinner ? (
     <span {...stylex.props(triggerStyles.caret)}>
-      <Spinner size="sm" />
+      <Spinner size="sm" aria-hidden="true" />
     </span>
   ) : (
     <span {...stylex.props(triggerStyles.caret)}>

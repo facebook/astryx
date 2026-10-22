@@ -38,7 +38,12 @@ describe('Thumbnail', () => {
     );
     const img = screen.getByRole('img');
     expect(img).toHaveAttribute('src', '/local.jpg');
-    expect(screen.getByRole('status')).toBeInTheDocument();
+    // The upload Spinner is decorative; the thumbnail announces its busy
+    // start instead (spec:AST-086 FR8).
+    expect(document.querySelector('.astryx-spinner')).toHaveAttribute(
+      'aria-hidden',
+      'true',
+    );
   });
 
   it('exposes the label as an accessible name via a valid group role', () => {
