@@ -486,11 +486,15 @@ function childRow(child, owner) {
   return {
     // A child another package owns says which one.
     name: child.package === owner ? child.name : `${child.name} (${child.package})`,
-    // An experimental child is marked as help marks an experimental command.
+    // An experimental child is marked as help marks an experimental command,
+    // unless its own summary already opens by saying so.
     summary: prefixCliCommands(
-      `${child.stability === 'experimental' ? '[experimental] ' : ''}${
-        titleAddsIdentity ? `${child.title}: ${child.summary}` : child.summary
-      }`,
+      `${
+        child.stability === 'experimental' &&
+        !/^experimental\b/iu.test(child.summary)
+          ? '[experimental] '
+          : ''
+      }${titleAddsIdentity ? `${child.title}: ${child.summary}` : child.summary}`,
       getCliInvocation(),
     ),
     experimental: child.stability === 'experimental',
@@ -538,8 +542,10 @@ function emitNode(node, detail, run) {
             layout: 'inline',
             // Stable rows set the column, so an experimental entry changes no
             // stable line (spec:AST-017 FR27); a long experimental name
-            // overhangs.
-            sizesColumn: row => !row.experimental,
+            // overhangs. A slot of experimental entries only sizes from them.
+            sizesColumn: row =>
+              !row.experimental ||
+              slot.children.every(child => child.stability === 'experimental'),
           },
         ),
       ]),

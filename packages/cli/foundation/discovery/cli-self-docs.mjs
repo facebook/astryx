@@ -451,6 +451,10 @@ function iconDefinitionSection(doc) {
       type: 'prose',
       text: `An icon set registers the icon that draws this definition in its data file: \`"map": {"${doc.name}": "<icon id>"}\`. Find it in each installed set: \`astryx experimental icon ${doc.name}\`.`,
     },
+    {
+      type: 'prose',
+      text: 'Icon definitions are experimental: they may change or be removed in a patch release.',
+    },
   ];
   return {id: routeSegment(doc.name), title: doc.name, content};
 }

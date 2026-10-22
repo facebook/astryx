@@ -497,6 +497,48 @@ describe('iconSetIssues', () => {
       ]);
     });
 
+    it('follows a const alias of an icon before comparing; one it cannot follow is not checked', () => {
+      const aliased = issuesOf({
+        modules: modules({
+          'icons/x.js':
+            "import {XMark} from './x-mark.js';\nexport const XIcon = XMark;\n",
+          'icons/x-mark.js': 'export function XMark(props) { return null; }\n',
+          'theme.js':
+            "import {XMark} from './icons/x-mark.js';\nimport {SearchIcon as Magnifier} from './icons/search.js';\nexport const themeIcons = {close: XMark, search: Magnifier};\n",
+        }),
+      });
+      expect(aliased).toEqual([]);
+      expect(notChecked.get('glyphs')).toBeUndefined();
+      // An alias of another component is still a proven mismatch.
+      const other = issuesOf({
+        modules: modules({
+          'icons/x.js':
+            "import {XMark} from './x-mark.js';\nexport const XIcon = XMark;\n",
+          'icons/x-mark.js':
+            'export function XMark(props) { return null; }\nexport function Other(props) { return null; }\n',
+          'theme.js':
+            "import {Other} from './icons/x-mark.js';\nimport {SearchIcon as Magnifier} from './icons/search.js';\nexport const themeIcons = {close: Other, search: Magnifier};\n",
+        }),
+      });
+      expect(other).toEqual([
+        expect.objectContaining({code: 'icon_theme_map_mismatch'}),
+      ]);
+      // An alias of a member the reader cannot follow: not checked.
+      const member = issuesOf({
+        modules: modules({
+          'icons/x.js':
+            "import * as all from './x-mark.js';\nexport const XIcon = all.XMark;\n",
+          'icons/x-mark.js': 'export function XMark(props) { return null; }\n',
+          'theme.js':
+            "import {XMark} from './icons/x-mark.js';\nimport {SearchIcon as Magnifier} from './icons/search.js';\nexport const themeIcons = {close: XMark, search: Magnifier};\n",
+        }),
+      });
+      expect(member).toEqual([]);
+      expect(notChecked.get('glyphs')).toEqual([
+        {entry: 'close', reason: expect.stringContaining('alias')},
+      ]);
+    });
+
     it('a set that maps built-in definitions but has no themeMap is an error', () => {
       const issues = issuesOf({data: data(d => delete d.themeMap)});
       expect(issues).toEqual([

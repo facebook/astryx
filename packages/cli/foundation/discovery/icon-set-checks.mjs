@@ -50,6 +50,7 @@ import {
 } from './icon-set-writer.mjs';
 import {
   exportValueKind,
+  aliasedOrigin,
   exportOriginVerdict,
   moduleParseFailure,
   staticExportBindings,
@@ -634,10 +635,18 @@ function checkExports(set, packageDir, packageName, unchecked) {
       continue;
     }
     if (!filler.origin) continue;
-    if (
-      value.file !== filler.origin.file ||
-      value.name !== filler.origin.name
-    ) {
+    // Compare the bindings each finally names: \`const XIcon = X\` is X. A
+    // mismatch is reported only when both are followed to their declarations.
+    const mapped = aliasedOrigin(value);
+    const drawn = aliasedOrigin(filler.origin);
+    if (!mapped || !drawn) {
+      unchecked.push({
+        entry: name,
+        reason: `Theme map "${themeMap}" maps "${name}" through an alias the static reader cannot follow to its declaration, so it was not compared with icon "${filler.id}". Point it at the icon's export, or alias a binding declared in this package.`,
+      });
+      continue;
+    }
+    if (mapped.file !== drawn.file || mapped.name !== drawn.name) {
       issues.push(
         issueError(
           ICON_THEME_MAP_MISMATCH,

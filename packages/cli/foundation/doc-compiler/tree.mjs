@@ -1016,3 +1016,18 @@ export function loadDocsTree({selfDocs = true, fresh = false} = {}) {
   }
   return tree;
 }
+
+/**
+ * Is this node an experimental surface's doc (spec:AST-017 FR27): marked
+ * `stability: 'experimental'` itself, or under a namespace that is? Every
+ * reader that marks or counts experimental docs asks this one question.
+ * @param {DocsTree} tree
+ * @param {TreeNode} node
+ * @returns {boolean}
+ */
+export function isExperimentalTreeNode(tree, node) {
+  return [...tree.ancestors(node), node].some(
+    (/** @type {any} */ each) =>
+      each.ref?.selfDoc?.stability === 'experimental',
+  );
+}

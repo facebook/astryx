@@ -63,6 +63,7 @@ import {
 } from '../docs/_adapter.mjs';
 import {typedEdges} from '../docs/node/node.mjs';
 import {detailView, indexView} from '../../foundation/doc-compiler/lenses.mjs';
+import {isExperimentalTreeNode} from '../../foundation/doc-compiler/tree.mjs';
 import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env/semver.mjs';
 import {checkAppThemes, checkThemes} from './theme-checks.mjs';
 import {availableLine, upgradeLine} from '../../foundation/release/notices.mjs';
@@ -1402,18 +1403,6 @@ export async function checkDocsTree(_ctx, options = {}) {
   }
 }
 
-/**
- * Is this docs-tree node an experimental surface's doc (spec:AST-017 FR27):
- * marked experimental itself, or under an experimental namespace?
- * @param {any} tree
- * @param {any} node
- */
-function isExperimentalTreeNode(tree, node) {
-  return [...tree.ancestors(node), node].some(
-    (/** @type {any} */ each) =>
-      each.ref?.selfDoc?.stability === 'experimental',
-  );
-}
 
 /**
  * Every topic reads progressively, in every language it ships: it loads, its

@@ -1250,6 +1250,50 @@ export function exportScalarType(file, exportName) {
 }
 
 /**
+ * The binding an origin finally names: a top-level `const X = Y` (under `as`
+ * or `satisfies` too) is followed to where `Y` is declared, through imports,
+ * until a declaration that is not such an alias. Two aliases of one component
+ * then have the same final origin. Null when an alias cannot be followed (to
+ * a default or namespace import, a member such as `Icons.X`, or an import
+ * that does not resolve), so a caller leaves the comparison unchecked.
+ * @param {{file: string, name: string}} origin
+ * @param {Set<string>} [seen]
+ * @returns {{file: string, name: string} | null}
+ */
+export function aliasedOrigin(origin, seen = new Set()) {
+  const identity = `${origin.file}\0${origin.name}`;
+  if (seen.has(identity)) return null;
+  seen.add(identity);
+  let ast;
+  try {
+    ast = parseModule(origin.file);
+  } catch {
+    return null;
+  }
+  for (const statement of ast.program.body) {
+    const declaration =
+      statement.type === 'ExportNamedDeclaration'
+        ? statement.declaration
+        : statement;
+    if (declaration?.type !== 'VariableDeclaration') continue;
+    for (const declarator of declaration.declarations) {
+      if (
+        declarator.id?.type !== 'Identifier' ||
+        declarator.id.name !== origin.name
+      ) {
+        continue;
+      }
+      const init = withoutTypeWrappers(declarator.init);
+      if (init?.type === 'MemberExpression') return null;
+      if (init?.type !== 'Identifier') return origin;
+      const next = bindingOrigin(ast, origin.file, init.name, new Set());
+      return next ? aliasedOrigin(next, seen) : null;
+    }
+  }
+  return origin;
+}
+
+/**
  * Where a top-level binding of a parsed module comes from: an import from a
  * local module is followed to its origin; anything else is declared here.
  * @param {any} ast
