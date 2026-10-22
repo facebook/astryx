@@ -198,18 +198,23 @@ describe('AvatarStatusDot', () => {
       }
     });
 
-    it('uses surface ink on the filled success and error plates', () => {
+    it('uses each filled status plate matching on-fill ink role', () => {
       const probe = stylex.create({
-        surfaceInk: {color: colorVars['--color-background-surface']},
+        successInk: {color: colorVars['--color-on-success']},
+        errorInk: {color: colorVars['--color-on-error']},
       });
-      const surfaceInkClasses = (stylex.props(probe.surfaceInk).className ?? '')
-        .split(' ')
-        .filter(cls => !cls.includes('__'));
-      expect(surfaceInkClasses.length).toBeGreaterThan(0);
+      const cases = [
+        ['success', probe.successInk],
+        ['error', probe.errorInk],
+      ] as const;
 
-      for (const variant of ['success', 'error'] as const) {
+      for (const [variant, ink] of cases) {
+        const inkClasses = (stylex.props(ink).className ?? '')
+          .split(' ')
+          .filter(cls => !cls.includes('__'));
+        expect(inkClasses.length).toBeGreaterThan(0);
         const dot = renderDot({variant}, 48);
-        for (const cls of surfaceInkClasses) {
+        for (const cls of inkClasses) {
           expect(dot.className).toContain(cls);
         }
       }
