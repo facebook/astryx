@@ -159,13 +159,16 @@ describe('useMenuPress — tracking inside the menu', () => {
     // shadow root knows the row under the point.
     Object.assign(document, {elementFromPoint: () => host});
     Object.assign(shadow, {elementFromPoint: () => inShadow('C')});
-    const events = {...mouse(), composed: true, bubbles: true};
-    fireEvent.pointerDown(inShadow('A'), events);
-    fireEvent.pointerUp(inShadow('A'), events);
-    expect(onSelect).toHaveBeenCalledWith('C');
-    expect(onSelect).toHaveBeenCalledTimes(1);
-    delete (document as {elementFromPoint?: unknown}).elementFromPoint;
-    host.remove();
+    try {
+      const events = {...mouse(), composed: true, bubbles: true};
+      fireEvent.pointerDown(inShadow('A'), events);
+      fireEvent.pointerUp(inShadow('A'), events);
+      expect(onSelect).toHaveBeenCalledWith('C');
+      expect(onSelect).toHaveBeenCalledTimes(1);
+    } finally {
+      delete (document as {elementFromPoint?: unknown}).elementFromPoint;
+      host.remove();
+    }
   });
 
   it('moves the highlight as focus with preventScroll', () => {

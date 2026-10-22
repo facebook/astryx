@@ -346,6 +346,29 @@ describe('ContextMenu', () => {
     expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
   });
 
+  it('stays open for a press on the menu inside a shadow root', () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    const container = document.createElement('div');
+    host.attachShadow({mode: 'open'}).append(container);
+    try {
+      render(
+        <ContextMenu items={[{label: 'Item 1'}]}>
+          <div>Right-click me</div>
+        </ContextMenu>,
+        {container},
+      );
+      fireEvent.contextMenu(container.querySelector('div div')!);
+      expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+      // At the document this press is retargeted to the shadow host.
+      const item = container.querySelector('[role="menuitem"]')!;
+      fireEvent.mouseDown(item, {composed: true});
+      expect(HTMLElement.prototype.hidePopover).not.toHaveBeenCalled();
+    } finally {
+      host.remove();
+    }
+  });
+
   it('closes the menu when Tab is pressed inside it (APG menu pattern)', () => {
     render(
       <ContextMenu items={[{label: 'Item 1'}]}>

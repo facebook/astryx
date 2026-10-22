@@ -468,7 +468,9 @@ export function ContextMenu({
     }
     const handleClickOutside = (e: MouseEvent) => {
       const menu = listRef.current;
-      if (menu && !menu.contains(e.target as Node)) {
+      // The composed path, not the target: inside a shadow root the document
+      // sees the shadow host as the target of a press on the menu.
+      if (menu && !e.composedPath().includes(menu)) {
         closeMenu();
       }
     };

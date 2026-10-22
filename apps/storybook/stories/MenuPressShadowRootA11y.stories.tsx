@@ -30,7 +30,7 @@ const meta: Meta = {
 export default meta;
 
 function ShadowSelector({onChange}: {onChange: (value: string) => void}) {
-  const [value, setValue] = useState<string | null>(null);
+  const [value, setValue] = useState('');
   return (
     <Selector
       label="Fruit"
@@ -38,7 +38,7 @@ function ShadowSelector({onChange}: {onChange: (value: string) => void}) {
       value={value}
       onChange={next => {
         setValue(next);
-        onChange(next ?? '');
+        onChange(next);
       }}
     />
   );
