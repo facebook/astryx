@@ -32,9 +32,16 @@ const THIN_KIT = 3;
  *
  * @param {import('./signals.mjs').KitSignals} signals
  * @param {string[]} [blocks] block names; build's own when omitted
+ * @param {Map<string, import('../../search/search.type.mjs').SearchResultEntry>} [picked]
+ *   the block picker's own entry (its real score and reason) for each named
+ *   block search did not return
  * @returns {import('../build.type.mjs').BuildKitResponse}
  */
-export function kitAnswer(signals, blocks = signals.kitBlocks) {
+export function kitAnswer(
+  signals,
+  blocks = signals.kitBlocks,
+  picked = new Map(),
+) {
   // Entries by name, in build's order: two packages can ship a block with the
   // same name, and each name in `blocks` takes the next entry of that name, so
   // both stay listed.
@@ -48,11 +55,12 @@ export function kitAnswer(signals, blocks = signals.kitBlocks) {
     .flatMap(name => {
       const entry = own.get(name)?.shift();
       if (entry) return [entry];
-      // A block build does not name itself keeps search's own entry, once.
+      // A block build does not name itself keeps search's own entry, once;
+      // one search did not return keeps the picker's entry.
       const found =
         own.has(name) || added.has(name)
           ? undefined
-          : signals.searchedEntries.get(name);
+          : (signals.searchedEntries.get(name) ?? picked.get(name));
       if (!found) return [];
       added.add(name);
       return [found];

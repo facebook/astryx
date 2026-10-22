@@ -1439,7 +1439,7 @@ async function componentIssues(ctx, integration) {
         ...MODULE_EXTENSIONS,
         ...MODULE_EXTENSIONS.map(ext => `/index${ext}`),
       ]
-        .map(ext => path.resolve(ctx.packageDir, `${subpath.slice(2)}${ext}`))
+        .map(ext => path.resolve(ctx.packageDir, subpath.slice(2) + ext))
         .find(
           file =>
             file.startsWith(path.resolve(ctx.packageDir) + path.sep) &&

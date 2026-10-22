@@ -241,6 +241,28 @@ describe('TimeInput nativePicker', () => {
     expect(input.getAttribute('aria-describedby')).toContain(tooltip?.id);
   });
 
+  it('keeps a disabled native field focusable without native disabled (AST-085 FR1, FR2)', () => {
+    stubPointer(true);
+    const onClick = vi.fn();
+    render(
+      <TimeInput
+        label="Start time"
+        nativePicker="always"
+        isDisabled
+        onClick={onClick}
+        onChange={() => {}}
+      />,
+    );
+    const input = getNativeTimeInput();
+    expect(input).not.toHaveAttribute('disabled');
+    expect(input).toHaveAttribute('aria-disabled', 'true');
+    expect(input).toHaveAttribute('readonly');
+    input.focus();
+    expect(input).toHaveFocus();
+    fireEvent.click(input);
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
   it('forwards refs and autofocus to the native input', () => {
     stubPointer(true);
     const ref = vi.fn();

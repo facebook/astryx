@@ -43,7 +43,13 @@ import {createHash} from 'node:crypto';
 import {cliDoor} from '../env/cli-command.mjs';
 import {astryxCommandsOnSearchPath} from '../env/search-path.mjs';
 import {samePath} from '../fs/path-compare.mjs';
-import {MARKER_START, MARKER_END} from './agent-doc-state.mjs';
+import {
+  MARKER_START,
+  MARKER_END,
+  SELF_CHECK_CSS,
+  WORKFLOW_STEPS,
+  WORKFLOW_TITLE,
+} from './agent-doc-state.mjs';
 
 /** The command the computer-level text uses when no host door is set. */
 export const COMPUTER_COMMAND = 'astryx';
@@ -175,6 +181,15 @@ function bodyLines(run) {
     `Its docs, components, templates, and themes are all reachable through \`${run}\`. Start with \`${run} search '<what you need>'\`.`,
     `Then read \`${run} component <Name>\` or \`${run} docs <topic>\`, not the package's files.`,
     "In a project, the project's version of Astryx answers automatically.",
+    // How to build, which discovery alone leaves to the agent's own page
+    // route: in a project, from the template, with the project agent docs'
+    // own workflow lines.
+    // A project that already installs Core gets the CLI at that version, as
+    // the CLI's own hint for that state says, never a newer CLI beside it.
+    `To build UI, work in a project folder (create one if there is none). Add \`@astryxdesign/core\` and \`@astryxdesign/cli\` to a new project or one without \`@astryxdesign/core\`; to a project that already has \`@astryxdesign/core\`, add \`@astryxdesign/cli\` at the same version. Run \`${run} init\` there and follow the agent docs it writes.`,
+    WORKFLOW_TITLE,
+    ...WORKFLOW_STEPS.map(step => step.replaceAll('`astryx ', `\`${run} `)),
+    `Before you deliver, re-read each file; ${SELF_CHECK_CSS}. Then build the project and deliver that build, not a description of it.`,
   ];
 }
 

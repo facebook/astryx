@@ -355,6 +355,27 @@ describe('globalBehind and projectLag', () => {
   });
 });
 
+describe('projectLag from a tool folder inside a project', () => {
+  it("uses the project's own CLI release, so the project gets one notice and one --from", () => {
+    const stateDir = checked('0.7.3');
+    const app = project(tempDir(), {
+      '@astryxdesign/core': '0.7.1',
+      '@astryxdesign/cli': '0.7.2',
+    });
+    writeJson(path.join(app, 'package-lock.json'), {lockfileVersion: 3});
+    installCore(app, '0.7.1');
+    installStandInCli(app, '0.7.2');
+    const tool = path.join(app, 'tools', 'codegen');
+    writeJson(path.join(tool, 'package.json'), {name: 'codegen'});
+    installCore(tool, '0.7.0');
+
+    const fromApp = projectLag({cwd: app, current: '0.7.2', stateDir});
+    const fromTool = projectLag({cwd: tool, current: '0.7.0', stateDir});
+    expect(fromTool).toMatchObject({root: app, current: '0.7.2'});
+    expect(fromTool?.upgrade).toBe(`cd ${app} && ${fromApp?.upgrade}`);
+  });
+});
+
 describe('the commands notices print go through the command-name picker (spec AST-081 FR5)', () => {
   /** A Core-only npm project behind the newest release. */
   const coreOnlyProject = () => {

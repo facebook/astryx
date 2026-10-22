@@ -10,20 +10,17 @@ import {
   stateLockHolder,
 } from '../../foundation/release/global-state.mjs';
 import {
-  addCliCommand,
   alignCliAndCore,
+  cliInstallAdvice,
+  installFolder,
+  projectAddCommand,
   globalBehind,
   globalUpgradeCommand,
   lastNoticeSkip,
   projectLag,
 } from '../../foundation/release/notices.mjs';
-import {
-  coreVersionOf,
-  isGlobalCopy,
-  projectRootOf,
-} from '../../foundation/release/choose.mjs';
+import {coreVersionOf, isGlobalCopy} from '../../foundation/release/choose.mjs';
 import {readReleaseFacts} from '../../foundation/release/project.mjs';
-import {detectPackageManager} from '../../foundation/env/package-manager.mjs';
 import {astryxCommandsOnSearchPath} from '../../foundation/env/search-path.mjs';
 import {readDeclaredDependencies} from '../../foundation/integrations/autolink.mjs';
 import {
@@ -348,11 +345,12 @@ export function outsideProject(/** @type {string} */ cwd) {
 /**
  * The commands that bring a project's own CLI and Core to one release, with
  * the project's package manager: Core up to the CLI, then its codemods, when
- * the CLI is newer; else the CLI to the Core's release.
+ * the CLI is newer; else the CLI to the Core's release. Null when no
+ * command fits (see `alignCliAndCore`).
  * @param {string} cwd
  * @param {string} cli
  * @param {string} core
- * @returns {string}
+ * @returns {string | null}
  */
 export function alignCommand(cwd, cli, core) {
   return alignCliAndCore({cwd, cli, core});
@@ -380,30 +378,35 @@ export function projectHasOwnCli(cwd) {
 
 /**
  * The command that adds the CLI at `version` with the project's package
- * manager.
+ * manager, and the Core it matches: from a folder whose package.json declares
+ * no Astryx package, in the Astryx project above at that project's Core; null
+ * when there is none (see `cliInstallAdvice`).
  * @param {string} cwd
  * @param {string} version
- * @returns {string}
+ * @returns {{command: string, core: string} | null}
  */
 export function addCliCommandFor(cwd, version) {
-  return addCliCommand(projectRootOf(readReleaseFacts(cwd)) ?? cwd, version);
+  const advice = cliInstallAdvice({cwd, core: version});
+  return advice?.command ? {command: advice.command, core: advice.core} : null;
 }
 
 /**
- * The command that adds a package with the folder's package manager, read
- * from its lockfiles and `packageManager` field.
+ * The command that adds a package to the project of `cwd`; null in a folder
+ * that belongs to no project or whose package.json is not the project's (see
+ * `projectAddCommand`).
  * @param {string} cwd
- * @returns {(name: string) => string}
+ * @returns {((name: string) => string) | null}
  */
 export function installCommandFor(cwd) {
-  const pm = detectPackageManager(cwd);
-  const verb =
-    pm === 'pnpm'
-      ? 'pnpm add'
-      : pm === 'yarn'
-        ? 'yarn add'
-        : pm === 'bun'
-          ? 'bun add'
-          : 'npm install';
-  return name => `${verb} ${name}`;
+  return projectAddCommand(cwd);
+}
+
+/**
+ * Whether `cwd` is inside a project whose package.json is not the project's,
+ * so advice points at the project's folder (see `installFolder`).
+ * @param {string} cwd
+ * @returns {boolean}
+ */
+export function insideProjectElsewhere(cwd) {
+  return installFolder(cwd)?.moved === true;
 }
