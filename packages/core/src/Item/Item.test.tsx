@@ -427,6 +427,38 @@ describe('Item', () => {
     expect(fireEvent.click(link)).toBe(false);
   });
 
+  it('keeps focus on a link row that becomes disabled and enabled again', async () => {
+    const user = userEvent.setup();
+    function RouterLink(props: {href?: string}) {
+      if (props.href == null) {
+        throw new Error('href is required');
+      }
+      return <a {...props} />;
+    }
+    const {rerender} = render(
+      <LinkProvider component={RouterLink}>
+        <Item label="Settings" href="/settings" />
+      </LinkProvider>,
+    );
+    await user.tab();
+    expect(screen.getByRole('link', {name: 'Settings'})).toHaveFocus();
+    // spec:AST-085 FR4: becoming disabled keeps focus.
+    rerender(
+      <LinkProvider component={RouterLink}>
+        <Item label="Settings" href="/settings" isDisabled />
+      </LinkProvider>,
+    );
+    const disabled = screen.getByRole('link', {name: 'Settings'});
+    expect(disabled).toHaveAttribute('aria-disabled', 'true');
+    expect(disabled).toHaveFocus();
+    rerender(
+      <LinkProvider component={RouterLink}>
+        <Item label="Settings" href="/settings" />
+      </LinkProvider>,
+    );
+    expect(screen.getByRole('link', {name: 'Settings'})).toHaveFocus();
+  });
+
   it('does not fire onClick when disabled item is clicked', async () => {
     const onClick = vi.fn();
     render(

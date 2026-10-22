@@ -30,6 +30,7 @@ import {
   Suspense,
   useCallback,
   useId,
+  useLayoutEffect,
   useRef,
   type ReactNode,
 } from 'react';
@@ -586,6 +587,33 @@ export function Item({
 }: ItemProps) {
   const pressable = usePressFeedback();
   const LinkComponent = useLinkComponent();
+  // A link row renders a different anchor once disabled (a router link needs a
+  // live href), so keyboard focus is carried across that swap (spec:AST-085
+  // FR4). A focused element removed from the DOM gets no meaningful blur, so
+  // only a blur while still connected clears the flag.
+  const anchorRef = useRef<HTMLAnchorElement>(null);
+  const anchorHasFocusRef = useRef(false);
+  useLayoutEffect(() => {
+    const anchor = anchorRef.current;
+    if (
+      anchorHasFocusRef.current &&
+      anchor != null &&
+      !anchor.matches(':focus')
+    ) {
+      anchor.focus({preventScroll: true});
+    }
+  }, [isDisabled]);
+  const anchorFocusProps = {
+    ref: anchorRef,
+    onFocus: () => {
+      anchorHasFocusRef.current = true;
+    },
+    onBlur: (event: React.FocusEvent<HTMLAnchorElement>) => {
+      if (event.currentTarget.isConnected) {
+        anchorHasFocusRef.current = false;
+      }
+    },
+  };
 
   // Delegation mode: the row is an enlarged click/tap target for a nested
   // control (e.g. a checkbox) that owns the keyboard access and action. The
@@ -771,6 +799,7 @@ export function Item({
           role="link"
           aria-disabled
           tabIndex={0}
+          {...anchorFocusProps}
           {...disabledInteractionProps()}
           {...stylex.props(
             styles.invisibleAnchor,
@@ -784,6 +813,7 @@ export function Item({
           href={href}
           target={target}
           rel={rel}
+          {...anchorFocusProps}
           {...stylex.props(
             styles.invisibleAnchor,
             isInline && styles.inlineContent,
