@@ -9,12 +9,18 @@
  * SYNC: When Spinner.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi, afterEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {createRef, StrictMode} from 'react';
 import {render, screen} from '@testing-library/react';
 import {Spinner} from './Spinner';
 import {InternationalizationProvider} from '../i18n';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
+
+const {announce} = vi.hoisted(() => ({announce: vi.fn()}));
+vi.mock('../hooks/useAnnounce', () => ({useAnnounce: () => announce}));
+
+beforeEach(() => announce.mockClear());
 
 /** sm/md/lg/xl, as Spinner.tsx defines them. */
 const SIZES = {
@@ -103,9 +109,9 @@ describe('Spinner', () => {
 
   it('does not duplicate a visible string label as aria-label', () => {
     render(<Spinner label="Fetching data" data-testid="spinner" />);
-    const status = screen.getByRole('status');
-    expect(status).not.toHaveAttribute('aria-label');
-    expect(status).toHaveAttribute('aria-labelledby');
+    const progress = screen.getByRole('progressbar', {name: 'Fetching data'});
+    expect(progress).not.toHaveAttribute('aria-label');
+    expect(progress).toHaveAttribute('aria-labelledby');
   });
 
   it('uses explicit aria-label over string label', () => {
@@ -116,7 +122,7 @@ describe('Spinner', () => {
         data-testid="spinner"
       />,
     );
-    expect(screen.getByRole('status')).toHaveAttribute(
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
       'aria-label',
       'Please wait',
     );
@@ -140,7 +146,10 @@ describe('Spinner', () => {
 
   it('defaults aria-label to "Loading" for ReactNode label without explicit aria-label', () => {
     render(<Spinner label={<span>Rich content</span>} data-testid="spinner" />);
-    expect(screen.getByRole('status')).toHaveAttribute('aria-label', 'Loading');
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-label',
+      'Loading',
+    );
   });
 
   it('accepts data-testid', () => {
@@ -480,5 +489,94 @@ describe('geometry var registration', () => {
     vi.resetModules();
     await expect(import('./Spinner')).resolves.toBeDefined();
     expect(registerProperty).toHaveBeenCalledTimes(2);
+  });
+
+  it('announces once per appearance, including a new appearance with the same words', () => {
+    const view = (loading: boolean) => (
+      <StrictMode>{loading && <Spinner label="Loading results" />}</StrictMode>
+    );
+    const {rerender} = render(view(false));
+    expect(announce).not.toHaveBeenCalled();
+
+    rerender(view(true));
+    expect(announce).toHaveBeenCalledExactlyOnceWith(
+      'Loading results',
+      'polite',
+    );
+    expect(announce).toHaveBeenCalledTimes(1);
+  });
+
+  it('announces when the label changes', () => {
+    const {rerender} = render(<Spinner label="Loading results" />);
+
+    expect(announce).toHaveBeenCalledExactlyOnceWith(
+      'Loading results',
+      'polite',
+    );
+
+    rerender(<Spinner label="Saving results" />);
+
+    expect(announce.mock.calls).toEqual([
+      ['Loading results', 'polite'],
+      ['Saving results', 'polite'],
+    ]);
+  });
+
+  it('keeps directly hidden and ancestor-hidden indicators silent', () => {
+    render(
+      <>
+        <Spinner aria-hidden="true" role={undefined} />
+        <Spinner aria-hidden="true" label="Decorative label" />
+        <div aria-hidden="true">
+          <Spinner />
+        </div>
+        <div hidden>
+          <Spinner />
+        </div>
+        <div inert>
+          <Spinner />
+        </div>
+      </>,
+    );
+    expect(announce).not.toHaveBeenCalled();
+  });
+
+  it('leaves announcements to existing live containers', () => {
+    const view = (loading: boolean) => (
+      <>
+        <div role="log">{loading && <Spinner />}</div>
+        <div aria-live="polite">{loading && <Spinner />}</div>
+      </>
+    );
+    const {rerender} = render(view(false));
+    rerender(view(true));
+    expect(announce).not.toHaveBeenCalled();
+  });
+
+  it('does not treat aria-live=off as a live owner', () => {
+    render(
+      <div aria-live="off">
+        <Spinner label="Loading results" />
+      </div>,
+    );
+    expect(announce).toHaveBeenCalledExactlyOnceWith(
+      'Loading results',
+      'polite',
+    );
+  });
+
+  it('preserves refs when switching between labeled and unlabeled roots', () => {
+    const ref = createRef<HTMLSpanElement>();
+    const {rerender, unmount} = render(
+      <Spinner ref={ref} data-testid="spinner" />,
+    );
+    expect(ref.current).toBe(screen.getByTestId('spinner'));
+    rerender(
+      <Spinner ref={ref} label="Loading results" data-testid="spinner" />,
+    );
+    expect(ref.current).toBe(screen.getByTestId('spinner'));
+    expect(announce).toHaveBeenLastCalledWith('Loading results', 'polite');
+    unmount();
+    expect(ref.current).toBeNull();
   });
 });

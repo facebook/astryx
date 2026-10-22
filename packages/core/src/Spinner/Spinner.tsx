@@ -16,12 +16,13 @@
  * - /packages/cli/assets/templates/blocks/components/Spinner/ (showcase blocks)
  */
 
-import {useId, type ReactNode} from 'react';
+import {useEffect, useId, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, durationVars, spacingVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
 import {Text} from '../Text/Text';
-import {mergeProps} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {useTranslator} from '../i18n';
 import {themeProps} from '../utils/themeProps';
 
@@ -332,7 +333,7 @@ const styles = stylex.create({
   arc: {
     // Slow the motion dramatically under reduced-motion rather than freezing
     // it (a frozen spinner reads as broken), matching ProgressBar's approach.
-    // The role="status" + "Loading" label still convey busy state (obs-6).
+    // The indeterminate progressbar and shared-channel message convey loading.
     animationDuration: {
       default: durationVars['--duration-slow-min'],
       '@media (prefers-reduced-motion: reduce)': '3s',
@@ -459,8 +460,9 @@ export interface SpinnerProps extends BaseProps<HTMLSpanElement> {
    * Accepts a string or ReactNode for rich content.
    *
    * When `label` is a string, the visible text also provides the accessible
-   * name of the status element (via aria-labelledby, avoiding a duplicate
-   * announcement) unless `aria-label` is explicitly set.
+   * name of the non-live progressbar (via aria-labelledby) unless `aria-label`
+   * is explicitly set. Standalone spinners send that name to the shared
+   * polite announcement channel when they appear.
    *
    * @example
    * ```
@@ -510,6 +512,13 @@ export function Spinner({
   const hasLabel = label != null;
   const labelId = useId();
   const t = useTranslator();
+  const announce = useAnnounce();
+  const spinnerRef = useRef<HTMLSpanElement>(null);
+  const announcedRef = useRef<string | null>(null);
+  const ringRef = useMemo(
+    () => mergeRefs(spinnerRef, hasLabel ? undefined : ref),
+    [hasLabel, ref],
+  );
 
   // When a visible string label renders (and no explicit aria-label is set),
   // name the status element from the visible Text via aria-labelledby instead
@@ -526,10 +535,40 @@ export function Spinner({
     (typeof label === 'string' ? label : undefined) ??
     t('@astryx.spinner.loading');
 
+  // Synchronize with the document-owned announcement channel (AST-086).
+  // Recheck DOM ownership after each render: the same Spinner can become
+  // hidden or enter a live container without changing its accessible name.
+  useEffect(() => {
+    const element = spinnerRef.current;
+    if (
+      !element ||
+      element.closest('[aria-hidden="true"], [hidden], [inert]')
+    ) {
+      announcedRef.current = null;
+      return;
+    }
+    const liveOwner = element.closest(
+      '[aria-live], [role="status"], [role="alert"], [role="log"]',
+    );
+    if (liveOwner && liveOwner.getAttribute('aria-live') !== 'off') {
+      announcedRef.current = null;
+      return;
+    }
+    if (!resolvedAriaLabel) {
+      announcedRef.current = null;
+      return;
+    }
+    if (announcedRef.current === resolvedAriaLabel) {
+      return;
+    }
+    announcedRef.current = resolvedAriaLabel;
+    announce(resolvedAriaLabel, 'polite');
+  });
+
   const spinner = (
     <span
-      ref={hasLabel ? undefined : ref}
-      role="status"
+      ref={ringRef}
+      role="progressbar"
       aria-label={namedByVisibleLabel ? undefined : resolvedAriaLabel}
       aria-labelledby={namedByVisibleLabel ? labelId : undefined}
       data-testid={hasLabel ? undefined : testId}
