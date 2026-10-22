@@ -23,6 +23,8 @@ function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
 // made every role+name query compute ~85 accessible names through jsdom's
 // slow getComputedStyle (~450ms per query). See fastRoleQueries.ts.
 import {getButton, queryButton} from '../__tests__/fastRoleQueries';
+import * as stylex from '@stylexjs/stylex';
+import {colorVars} from '../theme/tokens.stylex';
 import {DateRangeInput} from './DateRangeInput';
 import type {DateRange} from './DateRangeInput';
 import {Icon} from '../Icon';
@@ -155,7 +157,46 @@ describe('DateRangeInput', () => {
       />,
     );
     const trigger = getButton(/Range/);
-    expect(trigger).toBeDisabled();
+    expect(trigger).not.toHaveAttribute('disabled');
+    expect(trigger).toHaveAttribute('aria-disabled', 'true');
+    trigger.focus();
+    expect(trigger).toHaveFocus();
+  });
+
+  it('restores the focus ring on a focused disabled field (AST-085 FR6)', () => {
+    // The same declarations as the field's ring style compile to the same
+    // atomic classes.
+    const ringClasses = stylex
+      .props(
+        stylex.create({
+          ring: {
+            borderColor: {
+              default: colorVars['--color-border-emphasized'],
+              ':focus-within': colorVars['--color-accent'],
+            },
+            boxShadow: {
+              default: 'none',
+              ':focus-within': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
+            },
+          },
+        }).ring,
+      )
+      .className!.split(' ')
+      // Keep the atomic classes, not the dev-only debug name.
+      .filter(name => !name.includes('__'));
+    render(
+      <DateRangeInput
+        label="Range"
+        isDisabled
+        value={null}
+        onChange={() => {}}
+      />,
+    );
+    // The shared disabled style alone drops these :focus-within declarations.
+    const wrapper = getButton(/Range/).parentElement!;
+    for (const name of ringClasses) {
+      expect(wrapper).toHaveClass(name);
+    }
   });
 
   it('is not disabled by default', () => {
@@ -272,7 +313,8 @@ describe('DateRangeInput', () => {
         onChange={() => {}}
       />,
     );
-    expect(getButton('Open calendar')).toBeDisabled();
+    expect(getButton('Open calendar')).not.toHaveAttribute('disabled');
+    expect(getButton('Open calendar')).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('renders with size="lg"', () => {
@@ -526,7 +568,8 @@ describe('DateRangeInput', () => {
       );
 
       const preset = getButton('Last 7 days');
-      expect(preset).toBeDisabled();
+      expect(preset).not.toHaveAttribute('disabled');
+      expect(preset).toHaveAttribute('aria-disabled', 'true');
       fireEvent.click(preset);
       expect(handleChange).not.toHaveBeenCalled();
     });
@@ -544,7 +587,8 @@ describe('DateRangeInput', () => {
       );
 
       const preset = getButton('Last 7 days');
-      expect(preset).toBeDisabled();
+      expect(preset).not.toHaveAttribute('disabled');
+      expect(preset).toHaveAttribute('aria-disabled', 'true');
       fireEvent.click(preset);
       expect(handleChange).not.toHaveBeenCalled();
     });
@@ -562,7 +606,8 @@ describe('DateRangeInput', () => {
       );
 
       const preset = getButton('Last 7 days');
-      expect(preset).toBeDisabled();
+      expect(preset).not.toHaveAttribute('disabled');
+      expect(preset).toHaveAttribute('aria-disabled', 'true');
       fireEvent.click(preset);
       expect(handleChange).not.toHaveBeenCalled();
     });
@@ -590,7 +635,7 @@ describe('DateRangeInput', () => {
 
       const getRangeCallsBeforeClick = getRange.mock.calls.length;
       const preset = getButton('Allowed range');
-      expect(preset).not.toBeDisabled();
+      expect(preset).not.toHaveAttribute('aria-disabled');
       fireEvent.click(preset);
       expect(handleChange).toHaveBeenCalledWith(range);
       expect(getRangeCallsAtChange).toBe(getRangeCallsBeforeClick);
@@ -613,7 +658,10 @@ describe('DateRangeInput', () => {
     // accessibility tree; use hidden: true to find it.
     const h = {hidden: true} as const;
 
-    function renderDisabled(props?: {disabledMessage?: string}) {
+    function renderDisabled(props?: {
+      disabledMessage?: string;
+      onClick?: () => void;
+    }) {
       return render(
         <DateRangeInput
           label="Range"
@@ -699,11 +747,22 @@ describe('DateRangeInput', () => {
       expect(trigger).toHaveAttribute('aria-expanded', 'false');
     });
 
-    it('remains natively disabled when disabled without a reason', () => {
-      renderDisabled();
+    it('blocks activation and a caller onClick when disabled without a reason (AST-085 FR1, FR2)', async () => {
+      const user = userEvent.setup();
+      const onClick = vi.fn();
+      renderDisabled({onClick});
       const trigger = getButton(/Range:/);
-      expect(trigger).toBeDisabled();
-      expect(trigger).not.toHaveAttribute('aria-disabled');
+      expect(trigger).not.toHaveAttribute('disabled');
+      await user.click(trigger);
+      await user.keyboard('{Enter}');
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(onClick).not.toHaveBeenCalled();
+    });
+
+    it('blocks the calendar button while disabled (AST-085 FR2)', () => {
+      renderDisabled();
+      fireEvent.click(getButton('Open calendar'));
+      expect(getButton(/Range:/)).toHaveAttribute('aria-expanded', 'false');
     });
   });
 });
@@ -1030,9 +1089,10 @@ describe('DateRangeInput range-span forwarding', () => {
     // The 3-day preset fits the 7-day cap; the 30-day preset can't be committed.
     const withinCap = getButton('Last 3 days');
     const overCap = getButton('Last 30 days');
-    expect(withinCap).not.toBeDisabled();
+    expect(withinCap).not.toHaveAttribute('aria-disabled');
     expect(withinCap).not.toHaveAttribute('data-disabled');
-    expect(overCap).toBeDisabled();
+    expect(overCap).not.toHaveAttribute('disabled');
+    expect(overCap).toHaveAttribute('aria-disabled', 'true');
     expect(overCap).toHaveClass('astryx-date-range-input-preset');
     expect(overCap).toHaveAttribute('data-disabled', 'disabled');
 
