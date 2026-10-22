@@ -141,6 +141,21 @@ describe('a token whose body holds braces or quotes', () => {
   });
 });
 
+describe('the token for a script, binary or initializer', () => {
+  it('keeps every word after the name, flags included', () => {
+    expect(tokenForCommand('pnpm exec tsc --noEmit')).toBe(
+      '{@pm exec tsc --noEmit}',
+    );
+    expect(
+      tokenForCommand('pnpm dlx create-vite my-app --template react'),
+    ).toBe('{@pm dlx create-vite my-app --template react}');
+    expect(tokenForCommand('pnpm run build -d')).toBe('{@pm run build -d}');
+    expect(tokenForCommand('npm run test -- -g smoke')).toBe(
+      '{@pm run test -g smoke}',
+    );
+  });
+});
+
 describe('npm script shortcuts', () => {
   it('suggest {@pm run …}, which every package manager runs', () => {
     expect(tokenForCommand('npm test')).toBe('{@pm run test}');

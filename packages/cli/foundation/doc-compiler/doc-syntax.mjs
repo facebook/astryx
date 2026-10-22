@@ -631,18 +631,21 @@ export function tokenForCommand(command) {
     }
     return pmOnly(bin === 'yarn' ? 'yarn' : /** @type {string} */ (bin));
   }
+  // A script, a binary or an initializer takes every word after it as its
+  // own, flags included; the token puts back any `--` npm needs.
+  const passesThrough = ['run', 'exec', 'dlx', 'create'].includes(mapped);
   for (const word of tail) {
+    if (passesThrough) {
+      if (word !== '--') args.push(word);
+      continue;
+    }
     if (['-D', '-d', '--save-dev', '--dev', '-DE', '-ED'].includes(word))
       flags.push('--dev');
     if (['-E', '--exact', '--save-exact', '-DE', '-ED'].includes(word))
       flags.push('--exact');
     if (['-g', '--global'].includes(word)) flags.push('--global');
     if (word === '--latest' || word === '-L') flags.push('--latest');
-    if (!word.startsWith('-') || (mapped === 'run' && args.length > 0)) {
-      if (word !== '--') args.push(word);
-    } else if (mapped === 'run' && word !== '--') {
-      args.push(word);
-    }
+    if (!word.startsWith('-')) args.push(word);
   }
   const unique = [...new Set(flags)];
   // A flag no other package manager shares: one manager only.
