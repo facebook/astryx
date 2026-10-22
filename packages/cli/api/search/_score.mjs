@@ -39,7 +39,7 @@ const MIN_TOKEN_SCORE = 50;
  * (synonym hits are discounted so a direct hit always wins).
  * @param {string} tok
  * @param {Candidate} candidate
- * @param {{fuzzy?: boolean}} [opts]
+ * @param {{fuzzy?: boolean, part?: boolean}} [opts] - see scoreCandidate
  * @returns {{score: number, reason: string} | null}
  */
 export function bestForToken(tok, candidate, opts = {}) {
