@@ -37,6 +37,12 @@ export const doc = {
         'Directory to diagnose. A directory outside any project, a missing one included, gets the computer checks.',
       default: 'process.cwd()',
     },
+    {
+      name: 'options.built',
+      type: 'string',
+      description:
+        'A finished build to check before you deliver it: a project folder, a build output folder, or one built `.html` file, relative to `cwd`. Adds two checks after the others. `built-astryx-usage` fails when the path holds no import from an Astryx package (any `@astryxdesign/*` package or an integration the project loads), no component imported from one, and no Astryx styles in built CSS or HTML. `built-astryx-purity` warns with the source check of `astryx docs is-my-code-good`: raw elements Astryx has a component for, raw SVG and icon-library icons, inline styles, classes, `stylex.create` and imported stylesheets, each with its file and line; it is info when the path holds no source. Files are only read, never run. Without it, doctor runs exactly as before.',
+    },
   ],
   returns: [
     {
@@ -53,6 +59,10 @@ export const doc = {
     {
       label: 'Diagnose a directory',
       code: "await doctor({cwd: '/path/to/app'});",
+    },
+    {
+      label: 'Check a finished build before delivering it',
+      code: "const r = await doctor({built: 'dist'});\nif (r.data.summary.fail > 0) throw new Error('Not built with Astryx');",
     },
   ],
   command: 'doctor',

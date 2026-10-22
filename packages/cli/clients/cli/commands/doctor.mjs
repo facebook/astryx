@@ -563,9 +563,14 @@ export function printIntegrationCheckResponse(response) {
   }
 }
 
-/** @param {import('commander').Command} program */
-async function runProjectDoctor(program) {
-  const report = await runChecks();
+/**
+ * @param {import('commander').Command} program
+ * @param {{built?: string}} [options]
+ */
+async function runProjectDoctor(program, options = {}) {
+  const report = await runChecks(
+    options.built != null ? {built: options.built} : {},
+  );
   if (program.opts().json) jsonOut({type: 'doctor', data: report});
   else printHuman(report);
   if (report.summary.fail > 0) process.exitCode = 1;
@@ -689,7 +694,7 @@ export function registerDoctor(program) {
     action: async (options, invoked) => {
       const word = unknownWord(invoked);
       if (word != null) return unknownSubcommand(doctorCmd, 'doctor', word);
-      return runProjectDoctor(program);
+      return runProjectDoctor(program, options);
     },
   });
   /** @type {import('commander').Command} */

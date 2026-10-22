@@ -1,0 +1,489 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file `astryx doctor --built <path>`: did a finished build actually use
+ * Astryx, and how well? Two checks a coding agent runs before it delivers a
+ * page.
+ *
+ * @input A path: a project folder, a build output folder, or one file (a
+ *   built `.html` page or a source file), and the package names whose
+ *   components count as Astryx: every `@astryxdesign/*` package and each
+ *   integration the project loads (its component catalog's providers).
+ * @output `built-astryx-usage`: fails when the path holds no import from those
+ *   packages, no use of a component imported from them, and no Astryx
+ *   stylesheet in built CSS or HTML. `built-astryx-purity`: warns with the
+ *   findings of the source check in `astryx docs is-my-code-good` (raw
+ *   elements Astryx has a component for, raw SVG and icon-library icons,
+ *   inline styles, classes, StyleX declarations and imported stylesheets),
+ *   each with its file and line; info when the path holds no source.
+ * @position Pure: the doctor adapter reads the files (readBuiltPath); this
+ *   never runs project code or a browser. Plain `astryx doctor` does not run
+ *   it.
+ */
+
+import {
+  BUILT_FILE_LIMIT,
+  readBuiltPath,
+  resolveBuiltPath,
+} from './_adapter.mjs';
+
+/** Source files, read for imports and JSX. */
+const SOURCE_EXT = new Set(['.tsx', '.jsx', '.ts', '.js', '.mjs', '.cjs']);
+
+/**
+ * The lowercased extension of a relative path, with its dot.
+ * @param {string} rel
+ */
+function extensionOf(rel) {
+  const name = rel.slice(rel.lastIndexOf('/') + 1);
+  const dot = name.lastIndexOf('.');
+  return dot > 0 ? name.slice(dot).toLowerCase() : '';
+}
+
+/** Files that can hold JSX. */
+const JSX_EXT = new Set(['.tsx', '.jsx']);
+
+/** Built files, read for an Astryx stylesheet. */
+const BUILT_EXT = new Set(['.css', '.html', '.htm', '.js', '.mjs']);
+
+/** How many findings a check message names before it counts the rest. */
+const SHOWN = 5;
+
+/**
+ * Marks of Astryx's stylesheets that survive a production build: the cascade
+ * layers Core's and the themes' CSS declare, and Astryx's own custom
+ * properties.
+ */
+const STYLESHEET_MARK =
+  /@layer\s+[^{;]*\bastryx-(?:base|theme)\b|--astryx-[\w-]+/;
+
+/**
+ * Raw elements the rubric names a component for (`astryx docs
+ * is-my-code-good`, "Common component replacements"), with that owner.
+ * @type {Readonly<Record<string, string>>}
+ */
+const RAW_ELEMENTS = Object.freeze({
+  div: '`VStack`, `HStack`, `Grid`, `Card`, `Section` or `Center`',
+  span: '`Text`',
+  p: '`Text`',
+  h1: '`Heading`',
+  h2: '`Heading`',
+  h3: '`Heading`',
+  h4: '`Heading`',
+  h5: '`Heading`',
+  h6: '`Heading`',
+  button: '`Button` or `IconButton`',
+  a: '`Link`',
+  nav: '`LayoutPanel`',
+  aside: '`LayoutPanel`',
+  header: '`LayoutHeader`',
+  main: '`LayoutContent`',
+  ul: '`List`',
+  ol: '`List`',
+  li: '`ListItem`',
+  input: 'the matching form control',
+  textarea: 'the matching form control',
+  select: 'the matching form control',
+  table: '`Table`',
+  tr: '`Table`',
+  td: '`Table`',
+  th: '`Table`',
+  hr: '`Divider`',
+  dialog: '`Dialog`',
+  details: '`Collapsible`',
+  summary: '`Collapsible`',
+});
+
+/** Raw SVG elements the rubric counts as hand-drawn icons. */
+const SVG_ELEMENTS = new Set([
+  'svg',
+  'path',
+  'circle',
+  'rect',
+  'line',
+  'polyline',
+  'polygon',
+  'ellipse',
+  'g',
+]);
+
+/** Icon libraries whose components the rubric counts when used directly. */
+const ICON_PACKAGES = [
+  'lucide-react',
+  'react-icons',
+  '@heroicons/react',
+  '@tabler/icons-react',
+  '@phosphor-icons/react',
+  'react-feather',
+  '@mui/icons-material',
+  '@fortawesome/react-fontawesome',
+  '@radix-ui/react-icons',
+];
+
+/**
+ * @typedef {object} BuiltFinding
+ * @property {string} category the rubric category: `Astryx components`,
+ *   `Icons` or `Styling`
+ * @property {string} file relative to the checked path
+ * @property {number} line 1-based
+ * @property {string} message
+ */
+
+/**
+ * @typedef {object} BuiltScan
+ * @property {number} sourceFiles
+ * @property {number} builtFiles
+ * @property {number} imports imports from Astryx packages
+ * @property {number} importFiles files with one
+ * @property {number} componentUses JSX uses of names imported from them
+ * @property {string[]} packages the Astryx packages imported, sorted
+ * @property {string[]} stylesheets built files with an Astryx stylesheet
+ * @property {BuiltFinding[]} findings
+ * @property {boolean} truncated whether the file limit cut the read short
+ */
+
+/**
+ * Whether a package specifier names one of the Astryx packages.
+ * @param {string} spec
+ * @param {readonly string[]} packages
+ */
+function isAstryxSpecifier(spec, packages) {
+  if (spec.startsWith('@astryxdesign/')) return true;
+  return packages.some(name => spec === name || spec.startsWith(`${name}/`));
+}
+
+/** @param {string} spec */
+function isIconSpecifier(spec) {
+  return ICON_PACKAGES.some(
+    name => spec === name || spec.startsWith(`${name}/`),
+  );
+}
+
+/**
+ * The 1-based line of an offset.
+ * @param {string} text
+ * @param {number} at
+ */
+function lineAt(text, at) {
+  let line = 1;
+  for (let i = 0; i < at; i++) if (text.charCodeAt(i) === 10) line++;
+  return line;
+}
+
+/**
+ * Text with comments blanked out, keeping every offset, so a commented-out
+ * tag or import is not read.
+ * @param {string} text
+ */
+function withoutComments(text) {
+  return text
+    .replace(/\/\*[\s\S]*?\*\//g, match => match.replace(/[^\n]/g, ' '))
+    .replace(
+      /(^|[^:"'`\\])\/\/[^\n]*/g,
+      (match, lead) => lead + ' '.repeat(match.length - lead.length),
+    );
+}
+
+/**
+ * The imports of a source file: each specifier with the local names it binds.
+ * @param {string} text
+ * @returns {{spec: string, names: string[], at: number}[]}
+ */
+function importsOf(text) {
+  /** @type {{spec: string, names: string[], at: number}[]} */
+  const found = [];
+  const fromImport =
+    /\bimport\s+(?:type\s+)?([\s\S]*?)\s+from\s+['"]([^'"]+)['"]|\bimport\s+['"]([^'"]+)['"]/g;
+  for (const match of text.matchAll(fromImport)) {
+    const at = /** @type {number} */ (match.index);
+    if (match[3]) {
+      found.push({spec: match[3], names: [], at});
+      continue;
+    }
+    const clause = match[1];
+    /** @type {string[]} */
+    const names = [];
+    const braces = /\{([\s\S]*)\}/.exec(clause);
+    if (braces) {
+      for (const part of braces[1].split(',')) {
+        const local = part
+          .trim()
+          .replace(/^type\s+/, '')
+          .split(/\s+as\s+/)
+          .pop()
+          ?.trim();
+        if (local) names.push(local);
+      }
+    }
+    const outside = clause.replace(/\{[\s\S]*\}/, '');
+    for (const part of outside.split(',')) {
+      const name = part.trim().replace(/^\*\s+as\s+/, '');
+      if (/^[A-Za-z_$][\w$]*$/.test(name)) names.push(name);
+    }
+    found.push({spec: match[2], names, at});
+  }
+  for (const match of text.matchAll(
+    /\brequire\(\s*['"]([^'"]+)['"]\s*\)|\bimport\(\s*['"]([^'"]+)['"]\s*\)/g,
+  )) {
+    found.push({
+      spec: match[1] ?? match[2],
+      names: [],
+      at: /** @type {number} */ (match.index),
+    });
+  }
+  return found;
+}
+
+/**
+ * The source findings of one JSX file.
+ * @param {string} text comments blanked
+ * @param {string} rel
+ * @param {Set<string>} iconNames local names imported from icon libraries
+ * @returns {BuiltFinding[]}
+ */
+function jsxFindings(text, rel, iconNames) {
+  /** @type {BuiltFinding[]} */
+  const findings = [];
+  for (const match of text.matchAll(/<([a-z][a-z0-9]*)(?=[\s/>])([^>]*)/g)) {
+    const tag = match[1];
+    const at = /** @type {number} */ (match.index);
+    const line = lineAt(text, at);
+    if (SVG_ELEMENTS.has(tag)) {
+      // A helper's SVG counts once: by its root element.
+      if (tag === 'svg') {
+        findings.push({
+          category: 'Icons',
+          file: rel,
+          line,
+          message:
+            'raw `<svg>`: render icons through `Icon`, `IconButton` or an icon prop',
+        });
+      }
+      continue;
+    }
+    const owner = RAW_ELEMENTS[tag];
+    if (!owner) continue;
+    // Native semantics the rubric keeps: hidden form state.
+    if (tag === 'input' && /\btype\s*=\s*["']hidden["']/.test(match[2])) {
+      continue;
+    }
+    findings.push({
+      category: 'Astryx components',
+      file: rel,
+      line,
+      message: `raw \`<${tag}>\`: use ${owner}`,
+    });
+  }
+  for (const name of iconNames) {
+    for (const match of text.matchAll(
+      new RegExp(`<${name.replace(/[$]/g, '\\$')}(?=[\\s/>])`, 'g'),
+    )) {
+      findings.push({
+        category: 'Icons',
+        file: rel,
+        line: lineAt(text, /** @type {number} */ (match.index)),
+        message: `\`<${name}>\` from an icon library: render it through \`Icon\` or an icon prop`,
+      });
+    }
+  }
+  for (const [pattern, what] of /** @type {const} */ ([
+    [/\bstyle\s*=\s*\{/g, 'an inline `style`'],
+    [/\bclassName\s*=/g, 'a `className`'],
+  ])) {
+    for (const match of text.matchAll(pattern)) {
+      findings.push({
+        category: 'Styling',
+        file: rel,
+        line: lineAt(text, /** @type {number} */ (match.index)),
+        message: `${what}: use a component prop or token first`,
+      });
+    }
+  }
+  return findings;
+}
+
+/**
+ * Read a path and gather the evidence both checks judge.
+ * @param {string} target an existing file or folder
+ * @param {readonly string[]} packages package names whose components count as
+ *   Astryx, beside every `@astryxdesign/*` package
+ * @returns {BuiltScan}
+ */
+export function scanBuilt(target, packages) {
+  const {files, truncated} = readBuiltPath(target);
+  /** @type {BuiltScan} */
+  const scan = {
+    sourceFiles: 0,
+    builtFiles: 0,
+    imports: 0,
+    importFiles: 0,
+    componentUses: 0,
+    packages: [],
+    stylesheets: [],
+    findings: [],
+    truncated,
+  };
+  const imported = new Set();
+  for (const {rel, built, read} of files) {
+    const ext = extensionOf(rel);
+    const isSource = !built && SOURCE_EXT.has(ext) && !rel.endsWith('.d.ts');
+    const isBuilt = BUILT_EXT.has(ext) && (built || !isSource);
+    if (!isSource && !isBuilt) continue;
+    const raw = read();
+    if (raw == null) continue;
+    if (isBuilt) {
+      scan.builtFiles++;
+      if (STYLESHEET_MARK.test(raw)) scan.stylesheets.push(rel);
+    }
+    if (!isSource) continue;
+    scan.sourceFiles++;
+    const text = withoutComments(raw);
+    const astryxNames = new Set();
+    const iconNames = new Set();
+    let fileImports = 0;
+    for (const {spec, names, at} of importsOf(text)) {
+      if (isAstryxSpecifier(spec, packages)) {
+        fileImports++;
+        imported.add(
+          spec.startsWith('@')
+            ? spec.split('/').slice(0, 2).join('/')
+            : spec.split('/')[0],
+        );
+        for (const name of names) astryxNames.add(name);
+      } else if (isIconSpecifier(spec)) {
+        for (const name of names) iconNames.add(name);
+      } else if (/\.(?:css|scss|sass|less)$/.test(spec)) {
+        scan.findings.push({
+          category: 'Styling',
+          file: rel,
+          line: lineAt(text, at),
+          message: `imports the stylesheet \`${spec}\`: use component props and tokens`,
+        });
+      }
+    }
+    for (const match of text.matchAll(/\bstylex\.create\s*\(/g)) {
+      scan.findings.push({
+        category: 'Styling',
+        file: rel,
+        line: lineAt(text, /** @type {number} */ (match.index)),
+        message:
+          'a `stylex.create` declaration: use a component prop or token first',
+      });
+    }
+    scan.imports += fileImports;
+    if (fileImports > 0) scan.importFiles++;
+    for (const name of astryxNames) {
+      if (!/^[A-Z]/.test(name)) continue;
+      const uses = text.match(new RegExp(`<${name}(?=[\\s/>.])`, 'g'));
+      scan.componentUses += uses?.length ?? 0;
+    }
+    if (JSX_EXT.has(ext))
+      scan.findings.push(...jsxFindings(text, rel, iconNames));
+  }
+  scan.packages = [...imported].sort();
+  scan.findings.sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line);
+  return scan;
+}
+
+/**
+ * @param {number} count
+ * @param {string} word
+ */
+function plural(count, word) {
+  return `${count} ${word}${count === 1 ? '' : 's'}`;
+}
+
+/**
+ * The two checks for a path.
+ * @param {string} target as the caller gave it
+ * @param {{cwd: string, packages: readonly string[]}} options `packages`: the
+ *   integration packages whose components count as Astryx
+ * @returns {import('./doctor.type.mjs').DoctorCheck[]}
+ */
+export function checkBuilt(target, {cwd, packages}) {
+  const resolved = resolveBuiltPath(cwd, target);
+  if (resolved == null) {
+    return [
+      {
+        id: 'built-astryx-usage',
+        label: 'Built output uses Astryx',
+        status: 'fail',
+        message: `${target} does not exist, so nothing was checked.`,
+        fix: 'Pass the project folder, the build output folder, or the built HTML file.',
+      },
+    ];
+  }
+  const scan = scanBuilt(resolved, packages);
+  const used =
+    scan.imports > 0 || scan.componentUses > 0 || scan.stylesheets.length > 0;
+  const read = `${plural(scan.sourceFiles, 'source file')} and ${plural(scan.builtFiles, 'built file')}${scan.truncated ? ` (the first ${BUILT_FILE_LIMIT} files)` : ''}`;
+  const evidence = [
+    scan.imports > 0
+      ? `${plural(scan.imports, 'import')} from ${scan.packages.join(', ')} in ${plural(scan.importFiles, 'file')}`
+      : null,
+    scan.componentUses > 0
+      ? `${plural(scan.componentUses, 'component use')}`
+      : null,
+    scan.stylesheets.length > 0
+      ? `Astryx styles in ${scan.stylesheets.slice(0, 3).join(', ')}${scan.stylesheets.length > 3 ? ` and ${scan.stylesheets.length - 3} more` : ''}`
+      : null,
+  ].filter(Boolean);
+  /** @type {import('./doctor.type.mjs').DoctorCheck} */
+  const usage = used
+    ? {
+        id: 'built-astryx-usage',
+        label: 'Built output uses Astryx',
+        status: 'pass',
+        message: `Read ${read}: ${evidence.join('; ')}.`,
+      }
+    : {
+        id: 'built-astryx-usage',
+        label: 'Built output uses Astryx',
+        status: 'fail',
+        message: `Read ${read}: no import from an Astryx package, no Astryx component, and no Astryx styles, so this output does not use Astryx.`,
+        fix: 'Rebuild the page from an Astryx template: run `astryx build "<what the page is>"`, scaffold the template it names, and fill it with Astryx components. Do not deliver this output.',
+      };
+  /** @type {import('./doctor.type.mjs').DoctorCheck} */
+  let purity;
+  if (scan.sourceFiles === 0) {
+    purity = {
+      id: 'built-astryx-purity',
+      label: 'Source uses Astryx well',
+      status: 'info',
+      message: `No source files under ${target}, so the source check did not run; it reads components, icons and styles in source.`,
+      fix: 'Run `astryx doctor --built <project folder>` to check the source too.',
+    };
+  } else if (scan.findings.length === 0) {
+    purity = {
+      id: 'built-astryx-purity',
+      label: 'Source uses Astryx well',
+      status: 'pass',
+      message: `${plural(scan.sourceFiles, 'source file')}: no raw element Astryx has a component for, no hand-drawn or library icon, and no custom styling.`,
+    };
+  } else {
+    /** @type {Record<string, number>} */
+    const byCategory = {};
+    for (const finding of scan.findings) {
+      byCategory[finding.category] = (byCategory[finding.category] ?? 0) + 1;
+    }
+    const counts = Object.entries(byCategory)
+      .map(([category, count]) => `${category} ${count}`)
+      .join(', ');
+    const shown = scan.findings
+      .slice(0, SHOWN)
+      .map(finding => `${finding.file}:${finding.line} ${finding.message}`)
+      .join('; ');
+    const more =
+      scan.findings.length > SHOWN
+        ? `; and ${scan.findings.length - SHOWN} more`
+        : '';
+    purity = {
+      id: 'built-astryx-purity',
+      label: 'Source uses Astryx well',
+      status: 'warn',
+      message: `${plural(scan.findings.length, 'finding')} (${counts}): ${shown}${more}.`,
+      fix: 'Replace each with the Astryx component, icon surface, prop or token it names; `astryx docs is-my-code-good` has the full rubric. Keep a raw element only where its native meaning is needed.',
+    };
+  }
+  return [usage, purity];
+}

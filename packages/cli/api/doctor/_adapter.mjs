@@ -407,3 +407,85 @@ export function installCommandFor(cwd) {
           : 'npm install';
   return name => `${verb} ${name}`;
 }
+
+/** Folders `doctor --built` never reads: installs and version control. */
+const BUILT_SKIPPED_DIRS = new Set(['node_modules', '.git', '.hg', '.sl']);
+
+/** Folders that hold build output: read for stylesheets, never as source. */
+const BUILD_OUTPUT_DIRS = new Set(['.next', 'dist', 'build', 'out', '.output']);
+
+/** `doctor --built` reads at most this many files, of at most this size. */
+export const BUILT_FILE_LIMIT = 20000;
+const BUILT_FILE_MAX_BYTES = 5 * 1024 * 1024;
+
+/**
+ * The absolute path `doctor --built` checks, or null when it does not exist.
+ * @param {string} cwd
+ * @param {string} target
+ * @returns {string | null}
+ */
+export function resolveBuiltPath(cwd, target) {
+  const resolved = path.resolve(cwd, target);
+  return fs.existsSync(resolved) ? resolved : null;
+}
+
+/**
+ * The files under a `doctor --built` path, in a stable order: each with its
+ * path relative to the folder (a file's own name when the path is one file),
+ * whether it sits in build output, and a reader that returns its text, or
+ * null when it cannot be read or is over 5 MB. Installs and version control
+ * are skipped; at most BUILT_FILE_LIMIT files are listed.
+ * @param {string} target an existing absolute path
+ * @returns {{files: {rel: string, built: boolean, read: () => string | null}[], truncated: boolean}}
+ */
+export function readBuiltPath(target) {
+  /** @param {string} file */
+  const reader = file => () => {
+    try {
+      if (fs.statSync(file).size > BUILT_FILE_MAX_BYTES) return null;
+      return fs.readFileSync(file, 'utf8');
+    } catch {
+      return null;
+    }
+  };
+  if (!fs.statSync(target).isDirectory()) {
+    return {
+      files: [{rel: path.basename(target), built: false, read: reader(target)}],
+      truncated: false,
+    };
+  }
+  /** @type {{rel: string, built: boolean, read: () => string | null}[]} */
+  const files = [];
+  /** @type {{dir: string, built: boolean}[]} */
+  const stack = [{dir: target, built: false}];
+  while (stack.length > 0) {
+    const {dir, built} = /** @type {{dir: string, built: boolean}} */ (
+      stack.pop()
+    );
+    let entries;
+    try {
+      entries = fs.readdirSync(dir, {withFileTypes: true});
+    } catch {
+      continue;
+    }
+    entries.sort((a, b) => a.name.localeCompare(b.name));
+    for (const entry of entries) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (BUILT_SKIPPED_DIRS.has(entry.name)) continue;
+        stack.push({
+          dir: full,
+          built: built || BUILD_OUTPUT_DIRS.has(entry.name),
+        });
+      } else if (entry.isFile()) {
+        if (files.length >= BUILT_FILE_LIMIT) return {files, truncated: true};
+        files.push({
+          rel: path.relative(target, full).split(path.sep).join('/'),
+          built,
+          read: reader(full),
+        });
+      }
+    }
+  }
+  return {files, truncated: false};
+}
