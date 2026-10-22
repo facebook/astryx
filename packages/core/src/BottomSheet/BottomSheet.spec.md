@@ -66,9 +66,7 @@ Consumer migration instructions belong in consumer docs and release notes.
   `architecture:container-padding`.
 - Standalone sheet presentation, including its optional native-dialog Scrim.
 - The native dialog every sheet renders, standalone or switcher-managed
-  (`component:BottomSheetSwitcher` DEC-1). Implementation gap: a
-  switcher-managed sheet renders a panel inside the switcher's one shared
-  dialog and owns no dialog of its own.
+  (`component:BottomSheetSwitcher` DEC-1).
 
 **Does not own / non-goals**
 
@@ -107,8 +105,7 @@ in `BottomSheet.doc.mjs`.
   without a Scrim.
 - A switcher-managed sheet renders the same panel anatomy in its own dialog while
   BottomSheetSwitcher coordinates that dialog's lifecycle and the flow's one Scrim
-  (`component:BottomSheetSwitcher` DEC-1). Implementation gap: the panel
-  renders inside the switcher's one shared dialog.
+  (`component:BottomSheetSwitcher` DEC-1).
 
 ### Transformation and precedence order
 

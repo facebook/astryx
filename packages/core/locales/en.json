@@ -1231,6 +1231,10 @@
     "defaultMessage": "{count} tool calls",
     "description": "Summary label shown in the group header when multiple tool calls are expanded. {count} is the number of calls."
   },
+  "@astryx.chatTriggerMenu.searching": {
+    "defaultMessage": "Searching…",
+    "description": "Shown, and announced politely to screen readers, while a chat composer's @-mention or slash-command menu waits for async search results. Present participle; trailing `…` is one character."
+  },
   "@astryx.chatTriggerMenu.suggestions": {
     "defaultMessage": "Suggestions",
     "description": "Screen-reader-only fallback label for the popover listbox opened by a trigger character (`@`, `/`) in the chat composer when the trigger provides no specific label."
