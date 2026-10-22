@@ -83,7 +83,7 @@ import {
 import {useAnnounce} from '../hooks/useAnnounce';
 import {FOCUSABLE_SELECTOR} from '../hooks/focusableSelector';
 import {
-  renderedText,
+  contentName,
   useAnnounceRenderedText,
 } from '../hooks/useAnnounceRenderedText';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
@@ -1665,17 +1665,21 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const isPanelEmpty =
     surface.isOpen && !isLoading && realItemCount === 0 && !hasCreateRow;
   useAnnounceRenderedText(emptyStateRef, isPanelEmpty, searchQuery);
-  // A create row carrying caller content is named by the text it renders,
-  // so that text, not the default label, is what the region says when the
-  // row is the only result (`spec:AST-056` AR1).
+  // A create row carrying caller content is named by that content, as the
+  // browser names any option (an `aria-label` or `alt` inside counts), so
+  // that name, not the default label, is what the region says when the row
+  // is the only result (`spec:AST-056` AR1).
   const isCreateRowAlone =
     surface.isOpen &&
     hasCreateOptionContent &&
     hasCreateRow &&
     realItemCount === 0;
-  useAnnounceRenderedText(createRowRef, isCreateRowAlone, searchQuery);
-  // Content that renders no readable text leaves the create row with no
-  // accessible name and nothing to announce; say so once in development. A
+  useAnnounceRenderedText(createRowRef, isCreateRowAlone, searchQuery, {
+    read: contentName,
+  });
+  // Content that names nothing (no text, `aria-label`, `alt` or svg title)
+  // leaves the create row with no accessible name and nothing to announce;
+  // say so once in development. A
   // development diagnostic that reads the DOM the row rendered, so it runs
   // after every commit, as the announcement above does.
   const isCreateRowContentShown =
@@ -1690,13 +1694,14 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       return;
     }
     const row = createRowRef.current;
-    if (row != null && renderedText(row) === '') {
+    if (row != null && contentName(row) === '') {
       hasWarnedNamelessCreateRowRef.current = true;
       devWarn(
         'MultiSelector',
-        '`renderCreateOption` rendered no readable text, so the create row ' +
-          'has no accessible name and announces nothing. Render text that ' +
-          'names the creation, such as its `label`, visually hidden if need be.',
+        '`renderCreateOption` rendered nothing that names the create row ' +
+          '(no text, `aria-label` or `alt`), so the row has no accessible ' +
+          'name and announces nothing. Render text that names the creation, ' +
+          'such as its `label`, visually hidden if need be.',
       );
     }
   });

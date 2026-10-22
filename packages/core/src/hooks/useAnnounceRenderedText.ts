@@ -8,7 +8,7 @@
  *   marks a new occasion to speak
  * @output Announces that element's own rendered text through the persistent
  *   polite live region; exports `renderedText`, that text with `aria-hidden`
- *   parts left out
+ *   parts left out, and `contentName`, the name the element's content gives it
  * @position Core a11y hook; mirrors on-screen content into the shared live
  *   region by reading the DOM
  *
@@ -35,8 +35,11 @@
  *
  * Content hidden with `aria-hidden` or `hidden` is excluded,
  * so a decorative icon stays out of the announcement exactly as it stays out
- * of what a screen reader reads. An `aria-label` renaming a descendant is NOT
- * substituted — the region speaks the rendered text.
+ * of what a screen reader reads. By default an `aria-label` renaming a
+ * descendant is NOT substituted — the region speaks the rendered text. An
+ * element the browser names from its content (an `option`) passes
+ * `contentName` instead, which counts such names, so what the region says
+ * matches the name a screen reader reads on that element.
  *
  * SYNC: deliberately NOT exported from /packages/core/src/hooks/index.ts —
  * that barrel is re-exported wholesale from the package entry point, so
@@ -90,6 +93,12 @@ export interface AnnounceRenderedTextOptions {
    * every other message polite (`spec:AST-086` FR5). Defaults to polite.
    */
   politeness?: AnnouncePoliteness;
+  /**
+   * What to speak from the element: its rendered text by default, or
+   * `contentName` for an element the browser names from its content (an
+   * `option`), so the region says the name a screen reader reads on it.
+   */
+  read?: (element: HTMLElement) => string;
 }
 
 /** The rendered text an assistive technology would read from `element`. */
@@ -99,6 +108,49 @@ export function renderedText(element: HTMLElement): string {
   const copy = element.cloneNode(true) as HTMLElement;
   copy.querySelectorAll(HIDDEN).forEach(node => node.remove());
   copy.querySelectorAll(BLOCKS).forEach(node => node.after(' ')); // blocks apart
+  return (copy.textContent ?? '').replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * The name an element's content gives it, as a browser computes the name of
+ * an element named from its content (an `option`, a `button`): hidden
+ * parts left out, and a descendant named by `aria-labelledby` or
+ * `aria-label`, an image by its `alt` and an `svg` by its `<title>` counted
+ * by that name.
+ */
+export function contentName(element: HTMLElement): string {
+  const ownerDocument = element.ownerDocument;
+  const copy = element.cloneNode(true) as HTMLElement;
+  copy.querySelectorAll(HIDDEN).forEach(node => node.remove());
+  // Document order visits an element before its descendants, so a named
+  // element's name replaces its whole subtree; skip what that removed.
+  for (const named of copy.querySelectorAll(
+    '[aria-labelledby], [aria-label], img[alt], svg',
+  )) {
+    if (!copy.contains(named)) {
+      continue;
+    }
+    const labelledBy = (named.getAttribute('aria-labelledby') ?? '')
+      .split(/\s+/)
+      .filter(Boolean)
+      .map(id => {
+        const target = ownerDocument.getElementById(id);
+        return target == null ? '' : renderedText(target);
+      })
+      .join(' ')
+      .trim();
+    const label = (named.getAttribute('aria-label') ?? '').trim();
+    const nativeName =
+      named.tagName === 'IMG'
+        ? (named.getAttribute('alt') ?? '')
+        : named.tagName.toLowerCase() === 'svg'
+          ? (named.querySelector('title')?.textContent ?? '')
+          : null;
+    const name = labelledBy || label || nativeName;
+    if (name != null) {
+      named.replaceWith(ownerDocument.createTextNode(` ${name} `));
+    }
+  }
   return (copy.textContent ?? '').replace(/\s+/g, ' ').trim();
 }
 
@@ -115,6 +167,7 @@ export function renderedText(element: HTMLElement): string {
  * @param occasion - Marks a new reason to speak the same words again; for a
  *   search dead end this is the query, so each new query that matches nothing
  *   is announced rather than only the first
+ * @param options - `skipFirstRender`, and `read` for what to speak
  *
  * @example
  * ```
@@ -129,6 +182,7 @@ export function useAnnounceRenderedText(
   {
     skipFirstRender = false,
     politeness = 'polite',
+    read,
   }: AnnounceRenderedTextOptions = {},
 ): void {
   const announce = useAnnounce();
@@ -164,7 +218,12 @@ export function useAnnounceRenderedText(
     if (skipFirstRender && element.parentElement?.closest(LIVE_CONTAINER)) {
       return;
     }
-    const text = skipFirstRender ? blockText(element) : renderedText(element);
+    const text =
+      read != null
+        ? read(element)
+        : skipFirstRender
+          ? blockText(element)
+          : renderedText(element);
     if (text === '') {
       // Nothing readable on screen either, so there is no announcement that
       // would match what the sighted user is seeing.
