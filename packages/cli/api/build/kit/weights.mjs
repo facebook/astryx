@@ -166,7 +166,7 @@ export function weightWords(idea) {
  * A table's score for every candidate.
  * @param {WeightTable} table
  * @param {Map<string, number>} index word -> row
- * @param {Set<string>} words the idea's stemmed words, less search's stopwords
+ * @param {Set<string>} words the idea's stemmed words
  * @param {number} n candidates
  */
 function tableScores(table, index, words, n) {
@@ -240,7 +240,7 @@ function memberFeatures(v) {
  * display name, its category, and its keywords, less search's stopwords.
  * @param {string} name
  * @param {DescribedTemplate[]} catalog
- * @param {Set<string>} words the idea's stemmed words
+ * @param {Set<string>} words the idea's stemmed words, less search's stopwords
  */
 function ownWords(name, catalog, words) {
   const t = catalog.find(c => c.name === name);

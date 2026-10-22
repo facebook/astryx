@@ -165,16 +165,21 @@ describe('weighStart', () => {
     });
 
     it("never counts a stopword from another template's keywords", () => {
-      // "to" in grid's "to-do list" keyword must not answer the idea's "to".
+      // "side" in grid's "side by side" keyword is one of search's stopwords;
+      // it must not answer the idea's "sides", which is not.
       const own = [
         {name: 'board'},
         {name: 'charts'},
-        {name: 'grid', displayName: 'Grid', keywords: ['to-do list', 'orders']},
+        {
+          name: 'grid',
+          displayName: 'Grid',
+          keywords: ['side by side', 'orders'],
+        },
         {name: 'fold', displayName: 'Folding Rows'},
       ];
       const ranked = [page('fold', 9, 'Fold'), ...RANKED];
       const start = weighStart(
-        'rows to track orders on cards',
+        'rows on two sides with orders on cards',
         ranked,
         ranked[0],
         own,
