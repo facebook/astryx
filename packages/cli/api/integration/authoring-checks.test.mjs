@@ -1546,7 +1546,7 @@ describe('validateIntegration runner-command notes', () => {
 
   it('lists package-manager commands, bare commands and broken tokens with the token to write, all for the next minor', async () => {
     writeTopic(
-      'Add it with `npm install -D @acme/widgets`, run `astryx docs acme`, then {@pm add x} and {@cmd docs}. Only npm: `npm pkg set name=x`.',
+      'Add it with `npm install -D @acme/widgets`, run `astryx search acme`, then {@pm add x} and {@cmd docs}. Only npm: `npm pkg set name=x`.',
     );
 
     const {data} = await validateIntegration(undefined, {cwd: tmpDir});
@@ -1567,7 +1567,7 @@ describe('validateIntegration runner-command notes', () => {
     ]);
     const messages = notes.map((/** @type {any} */ note) => note.message);
     expect(messages[0]).toContain('{@pm install @acme/widgets --dev}');
-    expect(messages[1]).toContain('{@command docs acme}');
+    expect(messages[1]).toContain('{@command search acme}');
     expect(messages[2]).toContain('{@pm}` starts with a verb');
     expect(messages[3]).toContain('Doc tokens are');
     expect(messages[4]).toContain(
@@ -1577,6 +1577,17 @@ describe('validateIntegration runner-command notes', () => {
     expect(data.issues.map((/** @type {any} */ issue) => issue.code)).toEqual(
       [],
     );
+  });
+
+  it('lists a {@command} token that names no Astryx command', async () => {
+    writeTopic('Run {@command dcotor} before you ship.');
+
+    const {data} = await validateIntegration(undefined, {cwd: tmpDir});
+    const tokens = (data.notes ?? []).filter(
+      (/** @type {any} */ note) => note.code === 'doc_token',
+    );
+    expect(tokens).toHaveLength(1);
+    expect(tokens[0].message).toContain('`dcotor` is not an Astryx command');
   });
 
   it('lists nothing for a topic written in the doc syntax', async () => {

@@ -107,6 +107,16 @@ describe('renderPmStep', () => {
       bun: 'bun update --latest @acme/x',
     });
   });
+
+  it('passes an initializer its flags, after `--` on npm', () => {
+    expect(everyManager('create vite my-app --template react')).toEqual({
+      npm: 'npm create vite my-app -- --template react',
+      pnpm: 'pnpm create vite my-app --template react',
+      yarn: 'yarn create vite my-app --template react',
+      'yarn-classic': 'yarn create vite my-app --template react',
+      bun: 'bun create vite my-app --template react',
+    });
+  });
 });
 
 describe('parseCommandToken', () => {
@@ -222,7 +232,7 @@ describe('tokenForCommand', () => {
     ],
     ['npm install', '{@pm install}'],
     ['yarn typecheck', '{@pm run typecheck}'],
-    ['npx tsc --noEmit', '{@pm dlx tsc --noEmit}'],
+    ['npx tsc --noEmit', '{@pm exec tsc --noEmit}'],
     ['npx @astryxdesign/cli init', '{@pm dlx @astryxdesign/cli init}'],
     ['pnpm exec astryx docs theme', '{@command docs theme}'],
     ['yarn astryx integration verify', '{@command integration verify}'],

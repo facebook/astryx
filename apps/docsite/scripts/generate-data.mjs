@@ -1937,7 +1937,10 @@ async function generateDocsRegistry() {
     topic.sections = withCliCommands(
       topic.sections,
       (text, lang = null) =>
-        prefixCliCommands(text, stem, lang, {pm: DOCSITE_PACKAGE_MANAGER}),
+        // The CLI rendered the doc tokens as it compiled the doc (for npm,
+        // under runWithDocPackageManager below), so only bare commands are
+        // prefixed here.
+        prefixCliCommands(text, stem, lang),
       stem,
     );
   }

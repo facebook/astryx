@@ -278,6 +278,9 @@ export function docCommandsIn(text, lang) {
   const commands = [];
   if (lang == null) {
     for (const match of source.matchAll(/`([^`\n]+)`/g)) {
+      // A span that is only `astryx docs <name>` points at a doc: the
+      // stray-pointer check names the {@link} to write for it.
+      if (/^astryx docs [\w-]+$/.test(match[1].trim())) continue;
       for (const command of commandsOf(match[1])) {
         commands.push({at: /** @type {number} */ (match.index), command});
       }
@@ -320,6 +323,16 @@ export function docCommandsIn(text, lang) {
         written: token,
         code: 'doc_token',
         fix: step.error,
+      });
+    } else if (
+      step.kind === 'command' &&
+      !CLI_COMMANDS.includes(/** @type {string} */ (step.args[0]))
+    ) {
+      found.push({
+        at: source.indexOf(token),
+        written: token,
+        code: 'doc_token',
+        fix: `\`${step.args[0]}\` is not an Astryx command; the commands are ${CLI_COMMANDS.join(', ')}`,
       });
     }
   }

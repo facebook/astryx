@@ -838,6 +838,24 @@ Rejected: shipping a new failing check only in a minor release (packages
 learn of it when their build breaks), and a separate draft per check (the
 next minor's changes then live in many places).
 
+### DEC-12 — Doc-syntax findings are listed now and fail in the next minor
+
+**Decider:** `josephfarina`, `2026-10-21`
+
+Docs write commands with the tokens of `spec:AST-081` FR5 so every reader
+sees their own runner and package manager. `validate` lists each command a
+topic writes for one package manager (`package_manager_command`), bare
+(`plain_command`) or with a runner (`runner_command`), and each token that
+does not parse or names no command (`doc_token`), as `next` notes with the
+token to write: `integration check --strict --next` fails on them now, and
+`--strict` from the next minor release (DEC-11). They are doc faults the
+package's code does not contradict, the second exception to DEC-7 after
+DEC-8.
+
+Rejected: failing `--strict` on them in a patch (packages already running the
+check would break on an update), and leaving them unchecked (docs drift back
+to one package manager).
+
 ## Verification
 
 | Invariant | Evidence                                                                                                                                                                                                                                                                                                                                                                                                              | Failure signal                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
