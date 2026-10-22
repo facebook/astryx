@@ -349,7 +349,7 @@ for (const direction of ['ltr', 'rtl'] as const) {
         page.evaluate(() => {
           const spinner = document
             .querySelector('button[aria-label="Clear all"]')
-            ?.parentElement?.querySelector('[role="status"]');
+            ?.parentElement?.querySelector('.astryx-spinner');
           if (!spinner) {
             throw new Error('The lane holds no Spinner');
           }
@@ -385,7 +385,7 @@ for (const direction of ['ltr', 'rtl'] as const) {
         page.evaluate(() => {
           const spinner = document
             .querySelector('button[aria-label="Clear all"]')
-            ?.parentElement?.querySelector('[role="status"]');
+            ?.parentElement?.querySelector('.astryx-spinner');
           if (!spinner) {
             throw new Error('The lane holds no Spinner');
           }
