@@ -1411,6 +1411,14 @@ jobs:
             --project chromium \
             --output multiselector-disabled-focus-output
 
+      # The same guard for Selector and ComplexSelector triggers.
+      - name: Run disabled trigger focus contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/__tests__/DisabledTriggerFocus.a11y.chromium.spec.ts \
+            --project chromium \
+            --output disabled-trigger-focus-output
+
       # Table merges a consumer min-width with its column floors through CSS
       # max(). jsdom keeps any string, so only a real engine shows whether the
       # emitted declaration parses; an invalid one drops the floors entirely.

@@ -1,7 +1,13 @@
 {
   "checks": ["validate", "components", "templates", "docs"],
   "results": {
-    "validate": ["blockComponents", "docNames", "docTypes", "issues"],
+    "validate": [
+      "blockComponents",
+      "docNames",
+      "docTypes",
+      "issues",
+      "publicImports"
+    ],
     "components": ["conflicts", "issues", "propDrift"],
     "templates": ["conflicts", "issues"],
     "docs": ["copiedPassages", "findings", "fluff", "issues", "strayPointers"]
@@ -10,7 +16,8 @@
     "blockComponents": "block_components_skipped",
     "docNames": "doc_names_skipped",
     "docTypes": "doc_types_skipped",
-    "propDrift": "prop_drift_skipped"
+    "propDrift": "prop_drift_skipped",
+    "publicImports": "public_imports_skipped"
   },
   "codes": [
     "ambiguous_component_replacement",
@@ -60,6 +67,7 @@
     "package_not_found",
     "prop_drift_skipped",
     "prop_types_skipped",
+    "public_imports_skipped",
     "required_mismatch",
     "root_outside_package",
     "runner_command",

@@ -91,7 +91,8 @@ describe('route resolution', () => {
     // The Guide section as it was before the CLI integration guide and the
     // other topics were split into short guides. `styling-overview` and
     // `cli-host-entry` are topics added since; `global` is the Global mode
-    // page; `authoring` holds what CLI Integrations and Writing docs did.
+    // page; `authoring` holds what CLI Integrations and Writing docs did;
+    // `use-integrations` is the guide for apps that install one.
     const sidebarGuides = docTopics
       .filter(d => d.category === 'guide' && d.topic !== 'getting-started')
       .map(d => d.topic)
@@ -112,6 +113,7 @@ describe('route resolution', () => {
         'styling-libraries',
         'styling-overview',
         'theme',
+        'use-integrations',
         'working-with-ai',
       ].sort(),
     );
@@ -121,7 +123,9 @@ describe('route resolution', () => {
     expect(pageBySlug.get('authoring')?.category).toBe('guide');
     let guides = 0;
     for (const route of docsTreeRoutes) {
-      if (!route.startsWith('authoring/')) {continue;}
+      if (!route.startsWith('authoring/')) {
+        continue;
+      }
       guides++;
       const slug = route.replaceAll('/', '-');
       expect(pageBySlug.has(slug), slug).toBe(false);
@@ -150,7 +154,9 @@ describe('route resolution', () => {
     expect(docRedirects['cli-global']).toBe('/docs/global');
     expect(docRedirects['cli-install-once']).toBe('/docs/global');
     for (const route of docsTreeRoutes) {
-      if (!route.startsWith('global/')) {continue;}
+      if (!route.startsWith('global/')) {
+        continue;
+      }
       const slug = route.replaceAll('/', '-');
       expect(docRedirects[slug], slug).toMatch(/^\/docs\/global#/);
     }

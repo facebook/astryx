@@ -11,17 +11,17 @@ import {
   formatHookCompact,
   formatHookBrief,
   formatHookParams,
-} from '../../lib/hook-format.mjs';
-import {getCliInvocation} from '../../../../foundation/env/package-manager.mjs';
-import {jsonOut} from '../../../../foundation/response/json.mjs';
-import {emit, section, text, list, records, code, record} from '../../formatters/index.mjs';
-import {cliError} from '../../lib/cli-error.mjs';
-import {defineCommand} from '../../lib/define-command.mjs';
-import {resultSet} from '../../../../foundation/debug/index.mjs';
-import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
-import {hook as hookApi} from '../../../../api/hook/hook.mjs';
-import {doc as hookCommand} from '../hook.doc.mjs';
-import {doc as hookFn} from '../../../../api/hook/hook.doc.mjs';
+} from '../lib/hook-format.mjs';
+import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
+import {jsonOut} from '../../../foundation/response/json.mjs';
+import {emit, section, text, list, records, code, record} from '../formatters/index.mjs';
+import {cliError} from '../lib/cli-error.mjs';
+import {defineCommand} from '../lib/define-command.mjs';
+import {resultSet} from '../../../foundation/debug/index.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
+import {hook as hookApi} from '../../../api/hook/hook.mjs';
+import {doc as hookCommand} from './hook.doc.mjs';
+import {doc as hookFn} from '../../../api/hook/hook.doc.mjs';
 
 /**
  * The api layer's hook() widens its return to `{type: string, data: unknown}`,
@@ -29,9 +29,9 @@ import {doc as hookFn} from '../../../../api/hook/hook.doc.mjs';
  * the colocated api/hook/hook.type.mjs to get narrowing + typed data.
  *
  * @typedef {(
- *   | import('../../../../api/hook/hook.type.mjs').HookListResponse
- *   | import('../../../../api/hook/hook.type.mjs').HookDetailResponse
- *   | import('../../../../api/hook/hook.type.mjs').HookDetailParamsResponse
+ *   | import('../../../api/hook/hook.type.mjs').HookListResponse
+ *   | import('../../../api/hook/hook.type.mjs').HookDetailResponse
+ *   | import('../../../api/hook/hook.type.mjs').HookDetailParamsResponse
  * )} HookResult
  */
 
@@ -40,7 +40,7 @@ import {doc as hookFn} from '../../../../api/hook/hook.doc.mjs';
  * count is every hook across the groups — names or docs, depending on detail.
  *
  * @param {HookResult} result
- * @returns {import('../../../../foundation/debug/command-result.mjs').CommandResult}
+ * @returns {import('../../../foundation/debug/command-result.mjs').CommandResult}
  */
 function summarize(result) {
   if (result.type === 'hook.list') {
@@ -90,7 +90,7 @@ export function registerHook(program) {
           lang, zh,
         }));
       } catch (e) {
-        const err = /** @type {import('../../../../api/error.mjs').AstryxError} */ (e);
+        const err = /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
         return cliError(err.message, {suggestions: err.suggestions, code: err.code});
       }
 
@@ -112,7 +112,7 @@ export function registerHook(program) {
             // The whole view is one markdown document: a `## <category>` heading
             // over each category's concatenated hook docs.
             const groups = result.data.components;
-            /** @type {import('../../formatters/index.mjs').Block[]} */
+            /** @type {import('../formatters/index.mjs').Block[]} */
             const out = [];
             for (const [cat, items] of Object.entries(groups)) {
               const body = items
@@ -130,7 +130,7 @@ export function registerHook(program) {
             // --detail compact — one record (name + description) per hook,
             // grouped by category.
             const groups = result.data.components;
-            /** @type {import('../../formatters/index.mjs').Block[]} */
+            /** @type {import('../formatters/index.mjs').Block[]} */
             const out = [];
             for (const [cat, items] of Object.entries(groups)) {
               out.push(section(cat), records(items, {fields: ['name', 'description']}));
@@ -147,7 +147,7 @@ export function registerHook(program) {
             const [cat, hookNames] = Object.entries(groups)[0];
             emit(section(`${cat}:`), list(hookNames));
           } else {
-            /** @type {import('../../formatters/index.mjs').Block[]} */
+            /** @type {import('../formatters/index.mjs').Block[]} */
             const out = [];
             for (const [category, hookNames] of Object.entries(groups)) {
               out.push(section(category), list(hookNames));
@@ -197,12 +197,12 @@ export function registerHook(program) {
 }
 
 // Re-export lib functions for external consumers
-export {discoverHooks, findHookDoc, getAllHookNames} from '../../../../foundation/discovery/hook-discovery.mjs';
-export {loadDocs} from '../../../../foundation/discovery/component-loader.mjs';
+export {discoverHooks, findHookDoc, getAllHookNames} from '../../../foundation/discovery/hook-discovery.mjs';
+export {loadDocs} from '../../../foundation/discovery/component-loader.mjs';
 export {
   formatHookFull,
   formatHookCompact,
   formatHookBrief,
   formatHookBriefAll,
   formatHookParams,
-} from '../../lib/hook-format.mjs';
+} from '../lib/hook-format.mjs';

@@ -26,12 +26,11 @@ import {projectRootOf} from '../../foundation/release/choose.mjs';
 import {readReleaseFacts} from '../../foundation/release/project.mjs';
 import {buildManifest} from './lib/manifest.mjs';
 import {cliError} from './lib/cli-error.mjs';
-import {emit, section, text, records} from './formatters/index.mjs';
+import {section, text, records} from './formatters/index.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {installJsonShim} from './lib/json-shim.mjs';
-import {addDocHelp, markReportsResult} from './lib/define-command.mjs';
-import {doc as manifestDoc} from './commands/manifest.doc.mjs';
+import {markReportsResult} from './lib/define-command.mjs';
 import {
   agentDocsTargetDir,
   assertAgentDocsTarget,
@@ -297,7 +296,7 @@ function captureInvocation(actionCommand, root) {
  */
 const commands = [
   {name: 'init', path: './commands/init.mjs', register: 'registerInit'},
-  {name: 'component', path: './commands/component/index.mjs', register: 'registerComponent'},
+  {name: 'component', path: './commands/component.mjs', register: 'registerComponent'},
   {name: 'docs', path: './commands/docs.mjs', register: 'registerDocs'},
   {name: 'blog', path: './commands/blog.mjs', register: 'registerBlog'},
   {name: 'swizzle', path: './commands/swizzle.mjs', register: 'registerSwizzle'},
@@ -305,13 +304,17 @@ const commands = [
   // agent-docs folded into init — functions still importable from agent-docs.mjs
   {name: 'template', path: './commands/template.mjs', register: 'registerTemplate'},
   {name: 'upgrade', path: './commands/upgrade.mjs', register: 'registerUpgrade'},
-  {name: 'theme', path: './commands/build-theme.mjs', register: 'registerTheme'},
+  {name: 'theme', path: './commands/theme.mjs', register: 'registerTheme'},
   {name: 'integration', path: './commands/integration.mjs', register: 'registerIntegration'},
-  {name: 'hook', path: './commands/hook/index.mjs', register: 'registerHook'},
+  {name: 'hook', path: './commands/hook.mjs', register: 'registerHook'},
   {name: 'discover', path: './commands/discover.mjs', register: 'registerDiscover'},
   {name: 'search', path: './commands/search.mjs', register: 'registerSearch'},
   {name: 'build', path: './commands/build.mjs', register: 'registerBuild'},
   {name: 'doctor', path: './commands/doctor.mjs', register: 'registerDoctor'},
+  // Registered after every other command: the manifest lists the commands in
+  // registration order.
+  {name: 'manifest', path: './commands/manifest.mjs', register: 'registerManifest'},
+  {name: 'postinstall', path: './commands/postinstall.mjs', register: 'registerPostinstall'},
 ];
 
 const SETUP_NUDGE_EXEMPT = new Set(['init', 'agent-docs']);
@@ -677,7 +680,7 @@ export async function createProgram() {
   for (const cmd of commands) {
     try {
       const mod = await import(cmd.path);
-      mod[cmd.register](program);
+      mod[cmd.register](program, {jsonSupported: JSON_SUPPORTED, version: pkg.version});
     } catch (e) {
       // Command fails to load but CLI still works
       const reason = /** @type {any} */ (e).message;
@@ -696,84 +699,6 @@ export async function createProgram() {
       markReportsResult(stub);
     }
   }
-
-  // Capability manifest — a single, self-describing view of the whole CLI so
-  // agents can discover every command, argument, flag, and response type without
-  // scraping `--help`. `astryx manifest --json` is the dedicated surface; the bare
-  // `xds --json` embeds the same payload under data.manifest for convenience.
-  // Intentionally CLI-special — no `api/manifest`. It introspects the live
-  // Commander `program`, so extracting it to `api/` would create the `api → cli`
-  // cycle from #4302. `buildManifest(program)` lives in lib/; see its header.
-  const manifestCommand = program
-    .command('manifest')
-    .description('Print the full CLI capability manifest (use with --json)')
-    .action(() => {
-      const manifest = buildManifest(program, {
-        jsonSupported: JSON_SUPPORTED,
-        version: pkg.version,
-      });
-      // The manifest IS a result set: one entry per command the CLI ships.
-      debug.recordCommandResult(
-        debug.resultSet({
-          count: manifest.commands.length,
-          resultKind: 'command',
-        }),
-      );
-      if (program.opts().json) {
-        process.__xdsJsonHandled = true;
-        console.log(JSON.stringify({apiVersion: API_VERSION, type: 'manifest', data: manifest, meta: {answeredBy: answeredBy()}}, null, 2));
-        return;
-      }
-      // Human-readable summary as greppable records (agents should use --json).
-      // One record per command: name, whether it supports --json, and the
-      // description. Field names are the manifest entry's own keys.
-      emit(
-        section(`${manifest.name} v${manifest.version} (${manifest.commands.length} commands)`),
-        records(
-          manifest.commands.map(c => ({
-            name: c.name,
-            json: c.json ? 'yes' : '',
-            description: c.description || '',
-          })),
-          {fields: ['name', 'json', 'description']},
-        ),
-        text(`Run \`${getCliInvocation()} manifest --json\` for the full structured manifest.`),
-      );
-    });
-  addDocHelp(manifestCommand, manifestDoc);
-  markReportsResult(manifestCommand);
-
-  // Hidden command used by package.json postinstall scripts
-  const postinstallCommand = program
-    .command('postinstall', {hidden: true})
-    .action(() => {
-      // Prints the welcome box. Nothing is looked up.
-      debug.recordCommandResult(debug.NO_RESULT_SET);
-      const r = getCliInvocation();
-      const pad = (/** @type {string} */ s, /** @type {number} */ len) => s + ' '.repeat(Math.max(0, len - s.length));
-      const W = 49; // inner width of the box
-      const line = (/** @type {string} */ s) => `  │ ${pad(s, W)}│`;
-      console.log(`
-  ╭${'─'.repeat(W + 2)}╮
-${line('')}
-${line('  Design system installed!')}
-${line('')}
-${line('  Get started:')}
-${line(`    ${r} init          Setup + AI agent docs`)}
-${line(`    ${r} --help        See all commands`)}
-${line('')}
-${line('  Or run directly:')}
-${line(`    ${r} init           Setup + AI agent docs`)}
-${line(`    ${r} component     Browse component docs`)}
-${line(`    ${r} hook          Browse hook docs`)}
-${line(`    ${r} docs          Design system reference`)}
-${line(`    ${r} swizzle       Customize a component`)}
-${line(`    ${r} template      Add a page template`)}
-${line('')}
-  ╰${'─'.repeat(W + 2)}╯
-`);
-    });
-  markReportsResult(postinstallCommand);
 
   // Install the JSON shim AFTER all commands are registered so we can
   // patch outputHelp on every command (root + subcommands). The shim
