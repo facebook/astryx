@@ -80,6 +80,16 @@ ruleTester.run('no-hardcoded-i18n-string', noHardcodedI18nStringRule, {
     {code: 'function formatColor(r, g, b) { return `rgb(${r}, ${g}, ${b})`; }'},
     {code: 'const formatShadow = value => `0 0 ${value}px black`;'},
     {code: "function getStyleString() { return 'display: flex; gap: 4px'; }"},
+    ...[
+      'const formatTransition = ms => `opacity ${ms}ms ease`;',
+      'const formatFont = size => `${size}px Inter, sans-serif`;',
+      'const formatBorder = width => `${width}px solid currentColor`;',
+      'const formatGridTemplate = count => `repeat(${count}, 1fr)`;',
+      'const formatBoxShadowValue = y => `0 ${y}px 2px black`;',
+      'const getPathString = width => `M 0 0 L ${width} 0`;',
+      'const getMediaQueryString = width => `(min-width: ${width}px)`;',
+      'const formatClassName = name => `${name} Button-root`;',
+    ].map(code => ({code})),
     {code: 'const formatLength = size => `${size}px`;'},
     {
       code: "function formatLabel() { return 'No results'; }",
@@ -150,6 +160,11 @@ ruleTester.run('no-hardcoded-i18n-string', noHardcodedI18nStringRule, {
     },
     // --- Formatter/helper returns ---
     ...[
+      'const getAriaLabel = useCallback(count => `${count} items`, []);',
+      'const getStatusText = useMemo(() => `Ready to go`, []);',
+      "class Helpers { getStatusText = () => 'Ready'; }",
+      "helpers.formatLabel = () => 'Ready';",
+      "getStatusText = () => 'Ready';",
       "function format() { return 'No results'; }",
       "function getString() { return 'No results'; }",
       'function formatLabel(count) { return `${count} chars`; }',
@@ -183,6 +198,27 @@ ruleTester.run('no-hardcoded-i18n-string', noHardcodedI18nStringRule, {
       code: "function formatLabel() { return 'Copied'; }",
       options: [{allowedCalleeStrings: ['Copied']}],
       errors: [{messageId: 'hardcodedReturn'}],
+    },
+    // Concatenation and assertions also preserve the older text sinks.
+    {
+      code: "announce('Added ' + label);",
+      errors: [{messageId: 'hardcodedCallArg'}],
+    },
+    {
+      code: "<X label={'Hello ' + name} />",
+      errors: [{messageId: 'hardcodedString'}],
+    },
+    {
+      code: "<X label={(name ?? 'No name') as string} />",
+      errors: [{messageId: 'hardcodedString'}],
+    },
+    {
+      code: "function Input({label = 'Hello ' + name}) {}",
+      errors: [{messageId: 'hardcodedDefault'}],
+    },
+    {
+      code: "<X aria-label={`${open ? 'Close' : 'Open'}`} />",
+      errors: [{messageId: 'hardcodedString'}, {messageId: 'hardcodedString'}],
     },
     // --- Pre-existing surfaces still behave ---
     {

@@ -392,7 +392,7 @@
     "description": "Button label on a chip in the chat composer representing a long pasted text block; clicking reveals full content. \"Expand\" here means reveal more, not grow physically."
   },
   "@astryx.chat.pastedText.label": {
-    "defaultMessage": "{lines, plural, one {{chars} chars} other {{lines} lines, {chars} chars}}",
+    "defaultMessage": "{lines, plural, =1 {{chars, plural, other {{chars} chars}}} other {{lines} lines, {chars, plural, other {{chars} chars}}}}",
     "description": "Count label on a pasted-text chip and its hover preview in the chat composer. {lines} is the number of text lines and {chars} is the character count. The single-line branch omits the line count. Translators may reorder the counts and localize the abbreviated units."
   },
   "@astryx.checkboxList.item.checkbox": {
@@ -1335,6 +1335,10 @@
     "defaultMessage": "Control",
     "description": "Spoken name of the Control modifier key in a keyboard shortcut's accessible name. Also resolves the mod key on non-Apple platforms."
   },
+  "@astryx.kbd.key.controlShort": {
+    "defaultMessage": "Ctrl",
+    "description": "Abbreviated visible label of the Control keycap used for mod on non-Apple platforms. Localize to the keyboard's conventional short label."
+  },
   "@astryx.kbd.key.down": {
     "defaultMessage": "Down arrow",
     "description": "Spoken name of the down arrow key in a keyboard shortcut's accessible name."
@@ -1346,6 +1350,10 @@
   "@astryx.kbd.key.escape": {
     "defaultMessage": "Escape",
     "description": "Spoken name of the Escape key in a keyboard shortcut's accessible name. Also used for the esc alias."
+  },
+  "@astryx.kbd.key.escapeShort": {
+    "defaultMessage": "Esc",
+    "description": "Abbreviated visible label of the Escape keycap. Also used for the esc alias."
   },
   "@astryx.kbd.key.left": {
     "defaultMessage": "Left arrow",
@@ -1370,6 +1378,10 @@
   "@astryx.kbd.key.up": {
     "defaultMessage": "Up arrow",
     "description": "Spoken name of the up arrow key in a keyboard shortcut's accessible name."
+  },
+  "@astryx.kbd.shortcut": {
+    "defaultMessage": "{shortcut} + {key}",
+    "description": "Combines spoken key names into one keyboard shortcut's accessible name. {shortcut} is the preceding keys and {key} is the next key's localized spoken name. Applied once for each key after the first; translators may change the separator or order."
   },
   "@astryx.keyboardHint.toNavigate": {
     "defaultMessage": "to navigate",

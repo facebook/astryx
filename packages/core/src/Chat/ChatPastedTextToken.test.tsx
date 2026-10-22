@@ -9,6 +9,7 @@
 import {render, screen} from '@testing-library/react';
 import {describe, expect, it} from 'vitest';
 import {InternationalizationProvider} from '../i18n';
+import en from '../../locales/en.json';
 import {ChatPastedTextToken} from './ChatPastedTextToken';
 
 describe('ChatPastedTextToken', () => {
@@ -25,11 +26,27 @@ describe('ChatPastedTextToken', () => {
     },
   );
 
+  it('keeps 21 lines distinct from exactly one line in a Slavic locale', () => {
+    render(
+      <InternationalizationProvider
+        locale="ru"
+        messages={{
+          ru: {
+            '@astryx.chat.pastedText.label':
+              en['@astryx.chat.pastedText.label'],
+          },
+        }}>
+        <ChatPastedTextToken text={'a\n'.repeat(20) + 'a'} />
+      </InternationalizationProvider>,
+    );
+    expect(screen.getByText('21 lines, 41 chars')).toBeInTheDocument();
+  });
+
   it('updates both count branches when the provider changes', () => {
     const overrides = {
       fr: {
         '@astryx.chat.pastedText.label':
-          '{lines, plural, one {{chars} caractères} other {{chars} caractères sur {lines} lignes}}',
+          '{lines, plural, =1 {{chars, plural, one {un caractère} other {{chars} caractères}}} other {{chars, plural, one {un caractère} other {{chars} caractères}} sur {lines} lignes}}',
       },
     };
     const {rerender} = render(

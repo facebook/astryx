@@ -5,7 +5,7 @@
 /**
  * @file Kbd.tsx
  * @input Uses React, StyleX, theme tokens, shortcut key names, aliases, provider-bound translator
- * @output Exports Kbd component and KbdProps with localized spoken shortcut labels
+ * @output Exports Kbd component and KbdProps with localized shortcut text
  * @position Core implementation; renders styled keyboard shortcut indicators
  *
  * SYNC: When modified, update:
@@ -68,7 +68,6 @@ const KEY_DISPLAY = new Map<string, string>([
   ['shift', '\u21E7'], // ⇧
   ['enter', '\u21B5'], // ↵
   ['backspace', '\u232B'], // ⌫
-  ['escape', 'Esc'],
   ['tab', '\u21E5'], // ⇥
   ['up', '\u2191'],
   ['down', '\u2193'],
@@ -87,10 +86,11 @@ const KBD_KEY_ALIASES = new Map<string, string>([
  * `mod` key (⌘ on macOS, Ctrl on other platforms) and falls back to
  * KEY_DISPLAY or uppercased key name.
  */
-function getKeyDisplay(key: string, isMac: boolean): string {
+function getKeyDisplay(key: string, isMac: boolean, t: TranslatorFn): string {
   if (key === 'mod') {
-    return isMac ? '\u2318' : 'Ctrl';
+    return isMac ? '\u2318' : t('@astryx.kbd.key.controlShort');
   }
+  if (key === 'escape') return t('@astryx.kbd.key.escapeShort');
   return KEY_DISPLAY.get(key) ?? key.toUpperCase();
 }
 
@@ -190,7 +190,11 @@ export function Kbd({keys, ref, xstyle, className, style, ...rest}: KbdProps) {
   // the visual glyphs below are announced meaninglessly by assistive tech.
   const accessibleName = parts
     .map(({key}) => getKeyLabel(key, isMac, t))
-    .join(' + ');
+    .reduce(
+      (shortcut, key, index) =>
+        index === 0 ? key : t('@astryx.kbd.shortcut', {shortcut, key}),
+      '',
+    );
 
   return (
     <span
@@ -206,7 +210,7 @@ export function Kbd({keys, ref, xstyle, className, style, ...rest}: KbdProps) {
       )}>
       {parts.map(({key, reactKey}) => (
         <kbd key={reactKey} aria-hidden="true" {...stylex.props(styles.kbd)}>
-          {getKeyDisplay(key, isMac)}
+          {getKeyDisplay(key, isMac, t)}
         </kbd>
       ))}
     </span>
