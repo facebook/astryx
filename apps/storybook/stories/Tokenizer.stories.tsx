@@ -589,3 +589,197 @@ export const LongTokenEndLane: Story = {
   },
   name: 'Long token beside the end lane',
 };
+
+/**
+ * Where the caret goes once the field has tokens. Focused with an empty query,
+ * it sits right after the last token, on the last row, where typed text will
+ * start (top). A row with no room left for it (bottom, narrowed by the play
+ * function) keeps its height at rest; focusing moves the caret to the start of
+ * a new row, as wrapped text would.
+ */
+export const CaretPlacement: Story = {
+  render: args => {
+    const [wrapped, setWrapped] = useState(users.slice(0, 5));
+    const [oneRow, setOneRow] = useState(users.slice(0, 2));
+    return (
+      <div style={{display: 'grid', gap: 16}}>
+        <Tokenizer
+          {...args}
+          searchSource={userSource}
+          value={wrapped}
+          onChange={items => setWrapped(items)}
+        />
+        <div data-full-row-host="">
+          <Tokenizer
+            {...args}
+            label="Reviewers"
+            searchSource={userSource}
+            value={oneRow}
+            onChange={items => setOneRow(items)}
+          />
+        </div>
+      </div>
+    );
+  },
+  args: {
+    label: 'Team Members',
+    placeholder: 'Add more...',
+    hasClear: true,
+  },
+  name: 'Caret placement',
+  play: async ({canvasElement}) => {
+    const [wrappedField, fullRowField] =
+      canvasElement.querySelectorAll<HTMLElement>('.astryx-tokenizer');
+    const host = canvasElement.querySelector<HTMLElement>(
+      '[data-full-row-host]',
+    );
+    if (!wrappedField || !fullRowField || !host) {
+      throw new Error('Caret fixtures did not render as expected');
+    }
+    const settle = () =>
+      new Promise<void>(resolve =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
+    const parts = (field: HTMLElement) => {
+      const input = field.querySelector<HTMLInputElement>('[role="combobox"]');
+      const tokens = [...field.querySelectorAll<HTMLElement>('.astryx-token')];
+      const lastToken = tokens.at(-1);
+      if (!input || !lastToken) {
+        throw new Error('A caret fixture is missing its input or tokens');
+      }
+      return {input, firstToken: tokens[0], lastToken, tokens};
+    };
+    // Room left between the last token and the field's inline-end content
+    // edge, which already stops short of the end lane.
+    const roomAfter = (field: HTMLElement, token: HTMLElement) => {
+      const style = getComputedStyle(field);
+      const fieldRect = field.getBoundingClientRect();
+      const tokenRect = token.getBoundingClientRect();
+      return style.direction === 'rtl'
+        ? tokenRect.left -
+            (fieldRect.left +
+              Number.parseFloat(style.borderLeftWidth) +
+              Number.parseFloat(style.paddingLeft))
+        : fieldRect.right -
+            Number.parseFloat(style.borderRightWidth) -
+            Number.parseFloat(style.paddingRight) -
+            tokenRect.right;
+    };
+    // An empty input paints its caret at the edge of its content box that its
+    // text alignment starts from.
+    const caretOf = (input: HTMLInputElement) => {
+      const style = getComputedStyle(input);
+      const isRtl = style.direction === 'rtl';
+      const rect = input.getBoundingClientRect();
+      const {textAlign} = style;
+      const alignsRight =
+        textAlign === 'right' ||
+        (textAlign === 'start' && isRtl) ||
+        (textAlign === 'end' && !isRtl);
+      return {
+        isRtl,
+        x: alignsRight
+          ? rect.right - Number.parseFloat(style.paddingRight)
+          : rect.left + Number.parseFloat(style.paddingLeft),
+        y: rect.top + rect.height / 2,
+      };
+    };
+    const heightOf = (field: HTMLElement) =>
+      field.getBoundingClientRect().height;
+
+    await document.fonts.ready;
+    const reserveDeadline = performance.now() + 2000;
+    while (
+      [wrappedField, fullRowField].some(
+        field =>
+          field.style.getPropertyValue('--_tokenizer-end-lane-reserve') === '',
+      )
+    ) {
+      if (performance.now() >= reserveDeadline) {
+        throw new Error('Clear-all lane reserve was not measured');
+      }
+      await new Promise<void>(resolve =>
+        requestAnimationFrame(() => resolve()),
+      );
+    }
+    await settle();
+
+    // Wrapped tokens: the caret follows the last token, on its row.
+    {
+      const {input, lastToken, tokens} = parts(wrappedField);
+      const rows = new Set(
+        tokens.map(token => Math.round(token.getBoundingClientRect().top)),
+      );
+      if (rows.size < 2 || roomAfter(wrappedField, lastToken) < 20) {
+        throw new Error(
+          'Fixture no longer wraps with room after the last token',
+        );
+      }
+      const restingHeight = heightOf(wrappedField);
+      const restingToken = lastToken.getBoundingClientRect();
+      input.focus();
+      await settle();
+      if (document.activeElement !== input) {
+        throw new Error('The combobox did not take focus');
+      }
+      if (Math.abs(heightOf(wrappedField) - restingHeight) > 0.5) {
+        throw new Error(
+          `Focusing changed the field height from ${restingHeight.toFixed(2)} to ${heightOf(wrappedField).toFixed(2)}`,
+        );
+      }
+      const token = lastToken.getBoundingClientRect();
+      if (
+        Math.abs(token.left - restingToken.left) > 0.5 ||
+        Math.abs(token.top - restingToken.top) > 0.5
+      ) {
+        throw new Error('Focusing moved the last token');
+      }
+      const caret = caretOf(input);
+      if (caret.y < token.top || caret.y > token.bottom) {
+        throw new Error(
+          `The caret is not on the last token's row: caret y ${caret.y.toFixed(2)}, last token ${token.top.toFixed(2)}–${token.bottom.toFixed(2)}`,
+        );
+      }
+      const offset = caret.isRtl ? token.left - caret.x : caret.x - token.right;
+      if (offset < 0 || offset > 12) {
+        throw new Error(
+          `The caret is ${offset.toFixed(2)}px from the last token's inline end; expected it right after the token`,
+        );
+      }
+      input.blur();
+    }
+
+    // A row with less room than the caret's text inset: no blank row at rest,
+    // and focusing starts a new row.
+    {
+      const {input, firstToken, lastToken} = parts(fullRowField);
+      const restingHeight = heightOf(fullRowField);
+      const room = roomAfter(fullRowField, lastToken);
+      host.style.width = `${host.getBoundingClientRect().width - (room - 3)}px`;
+      await settle();
+      if (Math.abs(roomAfter(fullRowField, lastToken) - 3) > 0.5) {
+        throw new Error('Could not leave 3px after the last token');
+      }
+      if (Math.abs(heightOf(fullRowField) - restingHeight) > 0.5) {
+        throw new Error(
+          `With 3px left on the row, the resting field grew from ${restingHeight.toFixed(2)} to ${heightOf(fullRowField).toFixed(2)}`,
+        );
+      }
+      input.focus();
+      await settle();
+      const caret = caretOf(input);
+      const token = lastToken.getBoundingClientRect();
+      const rowStart = firstToken.getBoundingClientRect();
+      const startOffset = caret.isRtl
+        ? rowStart.right - caret.x
+        : caret.x - rowStart.left;
+      if (caret.y <= token.bottom || startOffset < 0 || startOffset > 8) {
+        throw new Error(
+          'With no room after the last token, the focused caret did not start a new row',
+        );
+      }
+      input.blur();
+      host.style.width = '';
+    }
+  },
+};

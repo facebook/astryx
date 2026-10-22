@@ -272,12 +272,8 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
 // because the input's reserve is derived from the same value.
 const END_LANE_INSET = spacingVars['--spacing-2'];
 const TOKEN_ROW_INSET = `calc(${spacingVars['--spacing-1']} - 1px)`;
-// InputClearButton grows 2px past its visible box under `(pointer: coarse)`.
-// Keep this maximum reserve in sync with Field/InputClearButton.tsx.
-const INPUT_CLEAR_COARSE_POINTER_OUTSET = '2px';
-// Kept in sync with useEndLaneReserve: wrapperWithTokens and inputCompact read
-// the custom property directly, to keep token rows and the empty-query hit
-// surface short of the lane.
+// Kept in sync with useEndLaneReserve: wrapperWithTokens reads the custom
+// property directly, to keep token rows and the input short of the lane.
 const END_LANE_RESERVE_VAR = '--_tokenizer-end-lane-reserve';
 
 const styles = stylex.create({
@@ -350,47 +346,35 @@ const styles = stylex.create({
     position: 'absolute',
   },
   inputCompact: {
-    position: {
-      default: 'relative',
-      ':placeholder-shown': 'absolute',
-    },
+    position: 'relative',
     boxSizing: 'border-box',
-    insetInlineStart: {
-      default: 'auto',
-      ':placeholder-shown': TOKEN_ROW_INSET,
-    },
     zIndex: 0,
+    // The input follows the last token in flow, so a focused empty input's
+    // caret sits where typed text will start. Empty, it asks only for that
+    // inset, and only while focused: blurred, it claims no room at all, not
+    // even the column gap, so it never grows the field a blank row. Typing
+    // restores the full editing width, which may wrap.
     minWidth: {
       default: '40px',
-      ':placeholder-shown': '1px',
+      ':placeholder-shown': 0,
     },
     flex: {
       default: '1 1 40px',
-      ':placeholder-shown': '0 0 auto',
+      ':placeholder-shown': '1 1 0px',
     },
-    width: {
+    width: 0,
+    marginInlineStart: {
       default: 0,
-      ':placeholder-shown': `calc(100% - ${TOKEN_ROW_INSET} - var(${END_LANE_RESERVE_VAR}, ${TOKEN_ROW_INSET}) - ${INPUT_CLEAR_COARSE_POINTER_OUTSET} - 1px)`,
+      ':placeholder-shown:not(:focus)': `calc(-1 * ${spacingVars['--spacing-1']})`,
     },
-    // The empty input is a first-row background hit surface. Taking it out of
-    // flex layout means it can neither become a blank final row nor compete
-    // with the pills for width. Logical insets stop it before the measured end
-    // lane plus InputClearButton's maximum invisible pointer outset; tokens and
-    // controls sit above it, leaving only genuine whitespace clickable as
-    // search. Typing restores the ordinary in-flow input.
+    // Restore normal text inset when input follows tokens, since the
+    // wrapper padding is reduced for border concentricity.
     paddingInlineStart: {
       default: `calc(${spacingVars['--spacing-2']} - ${spacingVars['--spacing-1']} + 1px)`,
-      ':placeholder-shown': 0,
+      ':placeholder-shown:not(:focus)': 0,
     },
-    paddingInlineEnd: {
-      // wrapperWithTokens already keeps the in-flow input short of the lane.
-      default: 0,
-      ':placeholder-shown': spacingVars['--spacing-1'],
-    },
-    textAlign: {
-      default: 'start',
-      ':placeholder-shown': 'end',
-    },
+    // wrapperWithTokens already keeps the in-flow input short of the lane.
+    paddingInlineEnd: 0,
   },
   truncatedWrapper: {
     flexWrap: 'nowrap',
@@ -429,39 +413,6 @@ const endSectionSizeStyles = stylex.create({
   lg: {
     top: `calc(${sizeVars['--size-element-lg']} / 2 - 1px)`,
     transform: 'translateY(-50%)',
-  },
-});
-
-const compactInputSizeStyles = stylex.create({
-  sm: {
-    insetBlockStart: {
-      default: 'auto',
-      ':placeholder-shown': `calc(${sizeVars['--size-element-sm']} / 2 - 1px)`,
-    },
-    transform: {
-      default: 'none',
-      ':placeholder-shown': 'translateY(-50%)',
-    },
-  },
-  md: {
-    insetBlockStart: {
-      default: 'auto',
-      ':placeholder-shown': `calc(${sizeVars['--size-element-md']} / 2 - 1px)`,
-    },
-    transform: {
-      default: 'none',
-      ':placeholder-shown': 'translateY(-50%)',
-    },
-  },
-  lg: {
-    insetBlockStart: {
-      default: 'auto',
-      ':placeholder-shown': `calc(${sizeVars['--size-element-lg']} / 2 - 1px)`,
-    },
-    transform: {
-      default: 'none',
-      ':placeholder-shown': 'translateY(-50%)',
-    },
   },
 });
 
@@ -1102,11 +1053,11 @@ export function Tokenizer<T extends SearchableItem>({
               isAtMax || isTruncated
                 ? styles.inputAtMax
                 : value.length > 0
-                  ? [styles.inputCompact, compactInputSizeStyles[size]]
+                  ? styles.inputCompact
                   : undefined,
-              // The compact-token style owns the same reserve with an empty-query
-              // exception. This standalone rule is only for an empty Tokenizer;
-              // it still resolves to zero until the lane publishes a width.
+              // With tokens, wrapperWithTokens reserves the lane for every row.
+              // This rule is only for an empty Tokenizer; it still resolves to
+              // zero until the lane publishes a width.
               !(isAtMax || isTruncated || value.length > 0) && laneReserve,
             ]}
           />
