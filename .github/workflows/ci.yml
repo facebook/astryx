@@ -353,8 +353,12 @@ jobs:
           node scripts/release/verify-published.mjs --version "$VERSION"
 
   # Required docsite owner: data tests plus the production browser contract.
+  # Historical required check name (AST-030 FR7). It joins the two docsite
+  # owners, which run side by side: the browser contract (~10 minutes) used to
+  # be followed by this job's own generation and tests (~2.5 minutes). The
+  # spec-only lane validates spec records here, where it always has.
   docsite-test:
-    needs: [check-scope, docsite-browser]
+    needs: [check-scope, docsite-browser, docsite-data]
     if: ${{ github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.release_bump != 'true' && always() && !cancelled() }}
     runs-on: 2-core-ubuntu-arm
     permissions:
@@ -372,20 +376,39 @@ jobs:
           DOCSITE_BROWSER_RESULT: ${{ needs.docsite-browser.result }}
         run: test "$DOCSITE_BROWSER_RESULT" = 'success'
 
+      - name: Require successful docsite data generation and tests
+        if: needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        env:
+          DOCSITE_DATA_RESULT: ${{ needs.docsite-data.result }}
+        run: test "$DOCSITE_DATA_RESULT" = 'success'
+
       - name: Skip docsite work for Node tooling
         if: needs.check-scope.outputs.tooling_only == 'true'
         run: echo "Node-tooling PR — docsite generation is not an owned check"
 
       - uses: actions/checkout@v7
+        if: needs.check-scope.outputs.spec_only == 'true'
 
       # Spec validation imports the canonical CLI discovery path, so the
       # lightweight docs path needs workspace dependencies too.
       - uses: ./.github/actions/setup
-        if: needs.check-scope.outputs.tooling_only != 'true'
+        if: needs.check-scope.outputs.spec_only == 'true'
 
       - name: Validate spec records
         if: needs.check-scope.outputs.spec_only == 'true'
         run: node scripts/check-knowledge.mjs
+
+  # Docsite data generation and tests. Its outcome feeds docsite-test.
+  docsite-data:
+    needs: [check-scope]
+    if: github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+    runs-on: 2-core-ubuntu-arm
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup
 
       # Docsite `generate` runs `astryx theme build`, which imports the compiled
       # @astryxdesign/core/theme entry (dist/theme/index.js). Build core first so that
@@ -422,7 +445,9 @@ jobs:
   docsite-browser:
     needs: [check-scope]
     if: github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
-    runs-on: 2-core-ubuntu-arm
+    # The longest docsite owner; the Next.js production build uses every core
+    # it gets.
+    runs-on: 4-core-ubuntu
     permissions:
       contents: read
     steps:
@@ -434,21 +459,24 @@ jobs:
         run: npx playwright install chromium
 
       # The production build imports every theme package's built entry and the
-      # canary component packages, on top of core.
+      # canary component packages, on top of core. Core builds first; the rest
+      # depend on it and not on each other, so they build side by side.
       - name: Build docsite workspace dependencies
         run: |
           pnpm -F @astryxdesign/core build
-          pnpm -F @astryxdesign/lab build
-          pnpm -F @astryxdesign/charts build
-          pnpm -F @astryxdesign/richtext build
-          pnpm -F @astryxdesign/vega build
-          pnpm -F @astryxdesign/theme-neutral build
-          pnpm -F @astryxdesign/theme-matcha build
-          pnpm -F @astryxdesign/theme-stone build
-          pnpm -F @astryxdesign/theme-gothic build
-          pnpm -F @astryxdesign/theme-chocolate build
-          pnpm -F @astryxdesign/theme-y2k build
-          pnpm -F @astryxdesign/theme-butter build
+          pnpm --workspace-concurrency=4 \
+            -F @astryxdesign/lab \
+            -F @astryxdesign/charts \
+            -F @astryxdesign/richtext \
+            -F @astryxdesign/vega \
+            -F @astryxdesign/theme-neutral \
+            -F @astryxdesign/theme-matcha \
+            -F @astryxdesign/theme-stone \
+            -F @astryxdesign/theme-gothic \
+            -F @astryxdesign/theme-chocolate \
+            -F @astryxdesign/theme-y2k \
+            -F @astryxdesign/theme-butter \
+            build
 
       - name: Build the docsite
         run: pnpm -F @astryxdesign/docsite build
@@ -569,8 +597,18 @@ jobs:
   # still reports for every PR. This mirrors the `build` join over
   # build-storybook + build-sandbox below.
   test-ui:
+    name: test-ui (${{ matrix.shard }}/${{ strategy.job-total }})
     needs: [check-scope]
     if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
+    # One runner ran the whole UI project in ~16 minutes and set the PR's wall
+    # time. Vitest's --shard gives each leg an equal share of the files; the
+    # two slowest files (~3.5 minutes each) bound a leg, so more legs stop
+    # paying. `test` joins the legs: the job result is success only when
+    # every leg passed.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     runs-on: 4-core-ubuntu
     permissions:
       contents: read
@@ -593,6 +631,7 @@ jobs:
 
       - name: Check knowledge schema history
         if: >-
+          matrix.shard == 1 &&
           github.event_name == 'pull_request' &&
           needs.check-scope.outputs.docsite_only != 'true' &&
           needs.check-scope.outputs.spec_only != 'true' &&
@@ -602,38 +641,48 @@ jobs:
           node scripts/check-knowledge.mjs --base "${{ github.event.pull_request.base.sha }}"
 
       - name: Check copyright headers
-        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        if: matrix.shard == 1 && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         run: ./scripts/add-copyright.sh --check
 
       - name: Check package.json exports are in sync
-        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        if: matrix.shard == 1 && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         run: node scripts/sync-exports.js --check
 
       - name: Verify the published CLI ./api type surface
-        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        if: matrix.shard == 1 && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         run: node .github/scripts/cli-api-types-verify.mjs
 
       - name: Check token docs are in sync
-        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        if: matrix.shard == 1 && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         run: node scripts/generate-token-docs.mjs --check
 
       # Fails when the lab readiness manifest claims a check the source tree
       # contradicts — the report is derived, never hand-maintained.
       - name: Check lab readiness manifest is current
-        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        if: matrix.shard == 1 && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         run: pnpm lab:readiness:check
 
-      # A child process isolates engine state, not CPU or memory contention.
-      # FR23 must wait until the other UI workers have exited (AST-036).
-      - name: Run UI tests and isolated Markdown benchmark
-        run: |
-          pnpm vitest run --project ui --exclude packages/core/src/Markdown/Markdown.fr23.perf.test.ts
-          pnpm vitest run --project ui packages/core/src/Markdown/Markdown.fr23.perf.test.ts --no-file-parallelism
+      - name: Run this shard of the UI tests
+        run: pnpm vitest run --project ui --exclude packages/core/src/Markdown/Markdown.fr23.perf.test.ts --shard=${{ matrix.shard }}/${{ strategy.job-total }}
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
 
+      # A child process isolates engine state, not CPU or memory contention.
+      # FR23 must wait until this runner's other UI workers have exited
+      # (AST-036); the other shards run on other machines.
+      - name: Run the isolated Markdown benchmark
+        run: pnpm vitest run --project ui packages/core/src/Markdown/Markdown.fr23.perf.test.ts --no-file-parallelism
+        if: matrix.shard == 1 && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+
   test-node:
+    name: test-node (${{ matrix.shard }}/${{ strategy.job-total }})
     needs: [check-scope]
     if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
+    # One runner ran the Node project in ~12 minutes. Vitest's --shard splits
+    # the files across the legs; `test` joins them.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     # Vitest runs one test file per CPU beyond the first, so the 2-core runner
     # ran this suite one file at a time (~23 min). Four cores give it three.
     runs-on: 4-core-ubuntu
@@ -656,34 +705,43 @@ jobs:
       - uses: ./.github/actions/setup
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
 
-      - run: pnpm vitest run --project node
+      - run: pnpm vitest run --project node --shard=${{ matrix.shard }}/${{ strategy.job-total }}
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
 
       # Theme-family compilation is owned by `theme-build`, not Build. Until
       # that surface has an admitted dedicated lane, broad CI keeps its browser
       # contract inside the existing Node test owner rather than `test-build`.
+      # One leg runs it.
       - name: Install Playwright for theme-family contract
-        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        if: matrix.shard == 1 && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         run: npx playwright install chromium
 
       - name: Build theme-family compiler dependencies
-        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        if: matrix.shard == 1 && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         run: pnpm -F @astryxdesign/core build
 
       - name: Generate the maintained theme-family fixture
-        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        if: matrix.shard == 1 && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         run: pnpm -F @astryxdesign/sandbox generate:theme-family
 
       - name: Run theme family cascade guard
-        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        if: matrix.shard == 1 && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         run: node .github/scripts/theme-family-cascade.js
 
   # Public registry contract. Generation proves schema, dependency, route-lock,
   # alias, and release-gating invariants; the final step drives every canonical
   # item through the exact pinned ShadCN client and compiles every written source.
   registry-contract:
+    name: registry-contract (${{ matrix.leg }})
     needs: [check-scope]
     if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
+    # The preview and hidden production registries are generated and verified
+    # independently, so each gets its own leg (~9 minutes in one job). `test`
+    # joins them: the job result is success only when both passed.
+    strategy:
+      fail-fast: false
+      matrix:
+        leg: [preview, production]
     runs-on: 4-core-ubuntu
     timeout-minutes: 30
     permissions:
@@ -710,34 +768,34 @@ jobs:
         run: pnpm build
 
       - name: Verify hidden production registry contract
-        if: needs.check-scope.outputs.spec_only != 'true'
+        if: matrix.leg == 'production' && needs.check-scope.outputs.spec_only != 'true'
         run: node internal/shadcn-registry/verify-production-gate.mjs
 
       - name: Generate and validate the complete preview registry
-        if: needs.check-scope.outputs.spec_only != 'true'
+        if: matrix.leg == 'preview' && needs.check-scope.outputs.spec_only != 'true'
         env:
           DOCSITE_TARGET: canary
         run: node apps/docsite/scripts/generate-data.mjs
 
       - name: Install and build every preview registry item
-        if: needs.check-scope.outputs.spec_only != 'true'
+        if: matrix.leg == 'preview' && needs.check-scope.outputs.spec_only != 'true'
         run: node internal/shadcn-registry/verify-full-catalog.mjs
 
       - name: Generate the hidden production registry
-        if: needs.check-scope.outputs.spec_only != 'true'
+        if: matrix.leg == 'production' && needs.check-scope.outputs.spec_only != 'true'
         env:
           DOCSITE_TARGET: latest
         run: node apps/docsite/scripts/generate-data.mjs
 
       - name: Verify hidden production discovery surfaces
-        if: needs.check-scope.outputs.spec_only != 'true'
+        if: matrix.leg == 'production' && needs.check-scope.outputs.spec_only != 'true'
         env:
           ASTRYX_VERIFY_HIDDEN_PRODUCTION: '1'
           NEXT_PUBLIC_DOCS_TARGET: latest
         run: pnpm -F @astryxdesign/docsite exec vitest run src/__tests__/hidden-shadcn-production.test.ts
 
       - name: Install and build every hidden production registry item
-        if: needs.check-scope.outputs.spec_only != 'true'
+        if: matrix.leg == 'production' && needs.check-scope.outputs.spec_only != 'true'
         env:
           ASTRYX_SHADCN_USE_PUBLISHED_PACKAGES: '1'
         run: node internal/shadcn-registry/verify-full-catalog.mjs
@@ -3192,10 +3250,12 @@ jobs:
         needs.check-components.outputs.has_stable_visual == 'true' &&
         needs.check-components.outputs.broad_stable_visual == 'true') ||
        (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'))
+    # Five legs: at three, each leg's scout took ~4.5 minutes and the visual
+    # regression waited for the slowest one.
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4, 5]
     # Four pages on four cores: the scout is page-load bound, and on the rig
     # this cut a shard's scout by a quarter against two pages on two cores.
     runs-on: 4-core-ubuntu

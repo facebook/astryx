@@ -2,7 +2,8 @@
 
 /**
  * @file The integration subject's access to the environment (INV21): reading
- * one package's component docs and sources with the project's own TypeScript.
+ * one package's component docs and sources with the project's own TypeScript,
+ * and its topics.
  *
  * @input a loaded integration and the directory the command runs in
  * @output the reports the integration checks attach to their results
@@ -14,9 +15,11 @@ import {
   forEachIntegrationDoc,
   integrationSourceForDoc,
 } from '../../foundation/discovery/component-discovery.mjs';
+import {discoverIntegrationDocs} from '../../foundation/discovery/docs-discovery.mjs';
 import {comparePropDocs} from '../../foundation/discovery/prop-drift.mjs';
 import {findCopiedPassages} from '../../foundation/discovery/copied-passages.mjs';
 import {findFluff} from '../../foundation/discovery/doc-fluff.mjs';
+import {findRunnerCommands} from '../../foundation/discovery/runner-commands.mjs';
 import {findStrayPointers} from '../../foundation/discovery/stray-pointers.mjs';
 
 /**
@@ -109,4 +112,21 @@ export async function integrationStrayPointers(discovered, integration) {
     }
   }
   return findStrayPointers({...discovered, components});
+}
+
+/**
+ * Each Astryx command a package's topics write with a package runner. A
+ * package whose topics cannot be discovered has none here: the other checks
+ * report topics that do not load.
+ * @param {any} integration a loaded integration
+ * @returns {Promise<import('../../foundation/discovery/runner-commands.mjs').RunnerCommand[]>}
+ */
+export async function integrationRunnerCommands(integration) {
+  let discovered;
+  try {
+    discovered = await discoverIntegrationDocs(integration);
+  } catch {
+    return [];
+  }
+  return findRunnerCommands(discovered);
 }
