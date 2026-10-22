@@ -230,7 +230,12 @@ export function parseNpmPackOutput(output) {
     throw new Error('npm pack returned a result without a files array.');
   }
   return {
-    filename: info.filename,
+    // npm 8 names a scoped package's tarball `@scope/name-1.0.0.tgz` in its
+    // JSON but writes `scope-name-1.0.0.tgz`, as every later npm reports.
+    filename:
+      typeof info.filename === 'string' && /^@[^/]+\//.test(info.filename)
+        ? info.filename.slice(1).replace('/', '-')
+        : info.filename,
     fileCount: info.entryCount,
     size: info.size,
     unpackedSize: info.unpackedSize,
