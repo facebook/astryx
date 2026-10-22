@@ -29,6 +29,7 @@ import {DateInput} from '../DateInput';
 import {DateRangeInput} from '../DateRangeInput';
 import {DateTimeInput} from '../DateTimeInput';
 import {TimeInput} from '../TimeInput';
+import {CheckboxInput} from '../CheckboxInput';
 import {BaseTypeahead, Typeahead} from '../Typeahead';
 import type {SearchableItem, SearchSource} from '../Typeahead';
 import type {ISOTimeString} from '../utils';
@@ -131,6 +132,17 @@ const OWNERS: ReadonlyArray<
       ),
     ] as const,
   ]),
+  [
+    'CheckboxInput',
+    isLoading => (
+      <CheckboxInput
+        label="Subscribe"
+        value={false}
+        onChange={() => {}}
+        isLoading={isLoading}
+      />
+    ),
+  ],
   [
     'DateRangeInput',
     isLoading => (
@@ -242,7 +254,8 @@ describe.each(OWNERS)('%s busy state (spec:AST-086)', (_name, renderOwner) => {
     const {container} = render(renderOwner(true));
     const spinner = container.querySelector('.astryx-spinner');
     expect(spinner).not.toBeNull();
-    expect(spinner).toHaveAttribute('aria-hidden', 'true');
+    // Hidden itself, or inside a decorative hidden indicator (CheckboxInput).
+    expect(spinner!.closest('[aria-hidden="true"]')).not.toBeNull();
     expect(screen.queryByRole('status', {name: 'Loading'})).toBeNull();
   });
 
