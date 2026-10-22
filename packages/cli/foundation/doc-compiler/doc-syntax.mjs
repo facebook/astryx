@@ -616,7 +616,8 @@ export function tokenForCommand(command) {
     bin === 'npm' &&
     ['test', 'start', 'stop', 'restart'].includes(verb)
   ) {
-    return `{@pm run ${[verb, ...tail].join(' ')}}`;
+    // The token puts npm's `--` back itself, as for `run`.
+    return `{@pm run ${[verb, ...tail.filter(word => word !== '--')].join(' ')}}`;
   }
   if (!mapped) {
     // `pnpm build`, `yarn test`: a script run without `run`.
