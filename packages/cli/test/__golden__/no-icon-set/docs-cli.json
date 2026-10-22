@@ -1,0 +1,69 @@
+{
+  "apiVersion": 1,
+  "type": "docs.node",
+  "package": "@astryxdesign/cli",
+  "data": {
+    "id": "astryx:artifact:v1/%40astryxdesign%2Fcli/namespace/cli",
+    "route": "cli",
+    "kind": "namespace",
+    "package": "@astryxdesign/cli",
+    "title": "Astryx CLI",
+    "summary": "Commands, programmatic APIs, and output contracts. Building an integration is under `astryx docs authoring`.",
+    "breadcrumb": [],
+    "slots": [
+      {
+        "name": "guides",
+        "title": "Guides",
+        "children": [
+          {
+            "route": "cli/component-lookups",
+            "name": "component-lookups",
+            "package": "@astryxdesign/cli",
+            "kind": "generic",
+            "title": "Looking up components",
+            "summary": "Look up one or several exact component identities, choose a focused projection, and handle complete batch receipts."
+          },
+          {
+            "route": "cli/host-entry",
+            "name": "host-entry",
+            "package": "@astryxdesign/cli",
+            "kind": "generic",
+            "title": "Host entry",
+            "summary": "Run the Astryx CLI from your own command-line tool: the inputs `runHostedCli` takes, what it returns, and when the process ends instead."
+          }
+        ]
+      },
+      {
+        "name": "reference",
+        "title": "Reference",
+        "children": [
+          {
+            "route": "cli/commands",
+            "name": "commands",
+            "package": "@astryxdesign/cli",
+            "kind": "namespace",
+            "title": "Commands",
+            "summary": "Every command and subcommand: usage, options, examples, exit codes, and what it does outside a project."
+          },
+          {
+            "route": "cli/api",
+            "name": "api",
+            "package": "@astryxdesign/cli",
+            "kind": "namespace",
+            "title": "API",
+            "summary": "The programmatic API: functions, the JSON output envelope, error codes, and response types."
+          }
+        ]
+      }
+    ],
+    "content": [
+      {
+        "type": "prose",
+        "text": "Use the CLI in any folder: install it once for your computer, and every project still gets the release that matches its Core. See `astryx docs global`."
+      }
+    ],
+    "links": {
+      "up": "astryx docs"
+    }
+  }
+}

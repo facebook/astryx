@@ -486,8 +486,11 @@ function childRow(child, owner) {
   return {
     // A child another package owns says which one.
     name: child.package === owner ? child.name : `${child.name} (${child.package})`,
+    // An experimental child is marked as help marks an experimental command.
     summary: prefixCliCommands(
-      titleAddsIdentity ? `${child.title}: ${child.summary}` : child.summary,
+      `${child.stability === 'experimental' ? '[experimental] ' : ''}${
+        titleAddsIdentity ? `${child.title}: ${child.summary}` : child.summary
+      }`,
       getCliInvocation(),
     ),
   };

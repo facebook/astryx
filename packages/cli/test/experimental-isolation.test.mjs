@@ -210,6 +210,45 @@ describe('with no icon set, stable output is unchanged', () => {
     );
   }, 120_000);
 
+  // The `cli` listings are FR0's one docs exception: they gain the
+  // experimental group, commands, and API functions, each marked as help marks
+  // the command group. Every entry not marked experimental reads as it does
+  // without the feature: its JSON, and its text row (name and summary; the
+  // column width follows the longest name, so rows are compared unwrapped).
+  it.each(['cli', 'cli/commands', 'cli/api/functions'])(
+    'docs %s: every entry not marked experimental, text and JSON',
+    async route => {
+      const slug = route.replaceAll('/', '-');
+      const json = JSON.parse(astryx(['docs', route, '--json']).stdout);
+      for (const slot of json.data.slots) {
+        slot.children = slot.children.filter(
+          (/** @type {any} */ child) => child.stability !== 'experimental',
+        );
+      }
+      delete json.meta;
+      await expect(`${JSON.stringify(json, null, 2)}\n`).toMatchFileSnapshot(
+        path.join(GOLDEN, `docs-${slug}.json`),
+      );
+      /** @type {string[]} */
+      const rows = [];
+      for (const line of astryx(['docs', route]).stdout.split('\n')) {
+        const continued = /^ {8,}(\S.*)$/u.exec(line);
+        if (continued && rows.length > 0) {
+          rows[rows.length - 1] += ` ${continued[1]}`;
+          continue;
+        }
+        const row = /^(\S+) {2,}(\S.*)$/u.exec(line);
+        rows.push(row ? `${row[1]}  ${row[2]}` : line);
+      }
+      const stable = rows.filter(
+        row => !/^\S+ {2}\[experimental\] /u.test(row),
+      );
+      await expect(`${stable.join('\n')}\n`).toMatchFileSnapshot(
+        path.join(GOLDEN, `docs-${slug}.txt`),
+      );
+    },
+  );
+
   it.each(['delete', 'close', 'icon', 'trash can', 'search'])(
     'search %s, text and JSON',
     async query => {

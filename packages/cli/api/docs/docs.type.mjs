@@ -170,6 +170,8 @@
  * @property {string} package the package that owns the node
  * @property {string} title
  * @property {string} summary
+ * @property {'experimental'} [stability] Present only when the node's doc is
+ *   marked experimental: it may change or be removed in a patch release.
  * @property {DocsNodeLink[]} breadcrumb the namespaces above it, top first
  * @property {DocsNodeSlot[]} slots a namespace's slots that hold children, in
  *   order; empty for a typed doc, and for a depth read of 0
@@ -203,6 +205,8 @@
  * @property {string} kind
  * @property {string} title
  * @property {string} summary
+ * @property {'experimental'} [stability] Present only when the child's doc is
+ *   marked experimental: it may change or be removed in a patch release.
  * @property {DocsNodeSlot[]} [slots] with a depth read, its own slots, while
  *   the read goes deeper
  * @property {number} [childCount] with a depth read, how many docs sit right
