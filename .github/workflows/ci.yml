@@ -2894,6 +2894,39 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+      # DropdownMenuItem owns one interactive pointer-menu row. Its label, icon,
+      # description, and end content follow logical document direction; the row
+      # uses logical inline padding and start-aligned text. Parent DropdownMenu
+      # owns directional placement and keyboard navigation.
+      - name: Run DropdownMenuItem audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuItem:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output dropdown-menu-item-a11y-report.json \
+            --components DropdownMenuItem \
+            --ready-selector '[role="menu"]' \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/DropdownMenu/__tests__/DropdownMenuItemAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload DropdownMenuItem audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuItem:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: dropdown-menu-item-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            dropdown-menu-item-a11y-report.json
+            dropdown-menu-item-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
       # ContextMenu owns pointer and touch presentations across cursor anchoring,
       # selectable rows, sections, inline triggers, RTL, and narrow viewports.
       # Its audit lane binds the rendered matrix to the exact pull-request head.
