@@ -51,6 +51,13 @@ export const COMPUTER_COMMAND = 'astryx';
 /** The install step for the CLI copy the computer-level text relies on. */
 export const COMPUTER_INSTALL_STEP = 'npm i -g @astryxdesign/cli';
 
+/**
+ * What to do when the `astryx` command the text names is not found, as on a
+ * machine whose home folder outlives its system folders: the skill file
+ * survives a restart while the CLI installed for the computer does not.
+ */
+export const COMPUTER_RESTORE_LINE = `If \`${COMPUTER_COMMAND}\` is not found, run \`${COMPUTER_INSTALL_STEP}\` first.`;
+
 /** The skill folder, relative to the home folder, that holds the one file. */
 const SKILL_FOLDER = path.join('.agents', 'skills', 'astryx');
 
@@ -175,7 +182,20 @@ function bodyLines(run) {
     `Its docs, components, templates, and themes are all reachable through \`${run}\`. Start with \`${run} search '<what you need>'\`.`,
     `Then read \`${run} component <Name>\` or \`${run} docs <topic>\`, not the package's files.`,
     "In a project, the project's version of Astryx answers automatically.",
+    // A host's door is the host's to restore; only the global command has an
+    // install step to name.
+    ...(run === COMPUTER_COMMAND ? [COMPUTER_RESTORE_LINE] : []),
   ];
+}
+
+/**
+ * The command a skill file's text names: the one in its "Start with" line,
+ * or null when the text has none.
+ * @param {string} content
+ * @returns {string | null}
+ */
+export function skillCommandOf(content) {
+  return /Start with `(.+?) search '/u.exec(content)?.[1] ?? null;
 }
 
 /**

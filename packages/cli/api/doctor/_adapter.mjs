@@ -27,8 +27,10 @@ import {detectPackageManager} from '../../foundation/env/package-manager.mjs';
 import {astryxCommandsOnSearchPath} from '../../foundation/env/search-path.mjs';
 import {readDeclaredDependencies} from '../../foundation/integrations/autolink.mjs';
 import {
+  computerSkillFile,
   displayHomePath,
   inspectComputerAgentText,
+  skillCommandOf,
 } from '../../foundation/agent-docs/computer-agent-text.mjs';
 import {computerAgentTextSettings} from '../../foundation/env/user-settings.mjs';
 import * as fs from 'node:fs';
@@ -291,12 +293,24 @@ function declaredPackageNames(cwd) {
 }
 
 /**
- * The computer-level agent text's setting and its state on disk.
- * @returns {{settings: import('../../foundation/env/user-settings.mjs').ComputerAgentTextSettings, entries: Array<{path: string, state: import('../../foundation/agent-docs/computer-agent-text.mjs').ComputerAgentTextState, link?: true}>}}
+ * The computer-level agent text's setting, its state on disk, and the command
+ * the skill file tells agents to run (null when there is no file, or it names
+ * none).
+ * @returns {{settings: import('../../foundation/env/user-settings.mjs').ComputerAgentTextSettings, entries: Array<{path: string, state: import('../../foundation/agent-docs/computer-agent-text.mjs').ComputerAgentTextState, link?: true}>, command: string | null}}
  */
 export function computerAgentTextState() {
   const settings = computerAgentTextSettings();
-  return {settings, entries: inspectComputerAgentText({links: settings.links})};
+  let command = null;
+  try {
+    command = skillCommandOf(fs.readFileSync(computerSkillFile(), 'utf8'));
+  } catch {
+    // No skill file, or one that cannot be read: no command to check.
+  }
+  return {
+    settings,
+    entries: inspectComputerAgentText({links: settings.links}),
+    command,
+  };
 }
 
 export {displayHomePath};

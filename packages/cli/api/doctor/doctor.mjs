@@ -66,6 +66,7 @@ import {detailView, indexView} from '../../foundation/doc-compiler/lenses.mjs';
 import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env/semver.mjs';
 import {checkAppThemes, checkThemes} from './theme-checks.mjs';
 import {availableLine, upgradeLine} from '../../foundation/release/notices.mjs';
+import {COMPUTER_COMMAND, COMPUTER_INSTALL_STEP} from '../../foundation/agent-docs/computer-agent-text.mjs';
 import {alignCommand, addCliCommandFor, computerAgentTextState, installCommandFor, projectCoreVersion, projectHasOwnCli, computerIntegrationsOutside, computerIntegrationsToAdd, displayHomePath, outsideProject, releaseFacts} from './_adapter.mjs';
 
 /**
@@ -1460,6 +1461,8 @@ export function checkCliCommand(ctx) {
   *   each file of the computer-level agent text against this release's rendering
  * @property {import('../../foundation/env/user-settings.mjs').ComputerAgentTextSettings} [agentTextSettings]
  *   the person's choices about the computer-level agent text
+ * @property {string | null} [agentTextCommand] the command the skill file
+ *   tells agents to run, or null
   * @property {string} [cwd] the folder doctor runs in, for the printed fix
  * @property {import('../../foundation/release/notices.mjs').GlobalBehind | null} [globalBehind]
  *   the CLI installed for the computer, when it is older than the newest
@@ -1682,6 +1685,7 @@ export function checkComputerAgentText(ctx) {
     };
   }
   const entries = ctx.agentText ?? /** @type {NonNullable<typeof state>} */ (state).entries;
+  const command = ctx.agentText ? (ctx.agentTextCommand ?? null) : /** @type {NonNullable<typeof state>} */ (state).command;
   const fix = `Run \`${formatCliCommand('astryx init --user', ctx.cwd)}\`.`;
   const [file, ...links] = entries;
   const home = (/** @type {{path: string}} */ e) => displayHomePath(e.path);
@@ -1707,6 +1711,17 @@ export function checkComputerAgentText(ctx) {
       ...base,
       message: `No computer-level agent text: agents outside a project with Astryx agent docs do not know Astryx is here.${linkNote}`,
       fix,
+    };
+  }
+  // The skill outlives the CLI it names when the home folder outlasts the
+  // folder the CLI is installed in, as on a machine whose system folders
+  // reset on restart: say so, with the step the skill itself names.
+  const rows = ctx.searchPathCommands;
+  if (command === COMPUTER_COMMAND && rows && !rows[0]?.astryx) {
+    return {
+      ...base,
+      message: `${home(file)} tells agents to run \`${COMPUTER_COMMAND}\`, but no \`${COMPUTER_COMMAND}\` command on the search path runs the Astryx CLI, so agents that read it find no CLI to run (as when a restart removes the CLI installed for the computer and keeps the home folder).${linkNote}`,
+      fix: `Run \`${COMPUTER_INSTALL_STEP}\`, the step the skill names for when \`${COMPUTER_COMMAND}\` is not found.`,
     };
   }
   const current = file.state === 'current';

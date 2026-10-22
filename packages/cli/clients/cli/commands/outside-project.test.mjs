@@ -392,6 +392,50 @@ describe('doctor: the computer-level agent text', () => {
   const A = '/home/me/.agents/skills/astryx/SKILL.md';
   const C = '/home/me/.claude/skills/astryx';
 
+  it('a skill naming `astryx` with no Astryx CLI on the search path: names the install step', () => {
+    const check = checkComputerAgentText({
+      nodeVersion: '22.13.0',
+      answeredBy: {cli: '1.2.0', core: '1.2.0', copy: 'carried'},
+      latest: null,
+      agentText: [{path: A, state: 'current'}],
+      agentTextCommand: 'astryx',
+      searchPathCommands: [],
+      cwd: os.tmpdir(),
+    });
+    expect(check.status).toBe('info');
+    expect(check.message).toContain(
+      'tells agents to run `astryx`, but no `astryx` command on the search path runs the Astryx CLI',
+    );
+    expect(check.fix).toBe(
+      'Run `npm i -g @astryxdesign/cli`, the step the skill names for when `astryx` is not found.',
+    );
+    // With the CLI on the search path, or a skill naming a host's command,
+    // there is nothing to restore.
+    for (const ctx of [
+      {
+        agentTextCommand: 'astryx',
+        searchPathCommands: [
+          /** @type {any} */ ({
+            file: '/usr/bin/astryx',
+            astryx: true,
+            version: '1.2.0',
+          }),
+        ],
+      },
+      {agentTextCommand: 'acme astryx', searchPathCommands: []},
+    ]) {
+      const other = checkComputerAgentText({
+        nodeVersion: '22.13.0',
+        answeredBy: {cli: '1.2.0', core: '1.2.0', copy: 'carried'},
+        latest: null,
+        agentText: [{path: A, state: 'current'}],
+        cwd: os.tmpdir(),
+        ...ctx,
+      });
+      expect(other.message).toContain('matches this release');
+    }
+  });
+
   it('present and current, linked: no fix', () => {
     const check = at([
       {path: A, state: 'current'},
@@ -460,6 +504,14 @@ describe('doctor: the computer-level agent text', () => {
       const home = tmpDir('home');
       vi.stubEnv('HOME', home);
       vi.stubEnv('USERPROFILE', home);
+      // The CLI installed for the computer, first on the search path, as the
+      // skill expects.
+      const bin = tmpDir('bin');
+      fs.symlinkSync(
+        path.join(CLI_ROOT, 'clients', 'cli', 'bin', 'astryx.mjs'),
+        path.join(bin, 'astryx'),
+      );
+      vi.stubEnv('PATH', `${bin}${path.delimiter}${process.env.PATH ?? ''}`);
       try {
         const find = r =>
           r.envelope.data.checks.find(c => c.id === 'computer-agent-text');

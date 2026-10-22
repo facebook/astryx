@@ -134,6 +134,17 @@ describe('renderComputerAgentText', () => {
     expect(text).toContain("`acme astryx search '<what you need>'`");
     expect(text).not.toMatch(/`astryx /u);
   });
+
+  // A machine can keep the home folder and lose the CLI installed for the
+  // computer, so the skill says how to get it back, with no version.
+  it('names the install step for when `astryx` is not found, and only for the global command', () => {
+    expect(renderComputerAgentText({command: 'astryx'})).toContain(
+      'If `astryx` is not found, run `npm i -g @astryxdesign/cli` first.',
+    );
+    expect(renderComputerAgentText({command: 'acme astryx'})).not.toContain(
+      'npm i -g',
+    );
+  });
 });
 
 describe('the link table', () => {
