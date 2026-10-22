@@ -153,3 +153,39 @@ describe('olderCliNotes', () => {
     expect(await validated()).not.toHaveProperty('olderCliNotes');
   });
 });
+
+describe('template icons a template never imports', () => {
+  it('notes each `icons` key the source does not import, never as an issue', async () => {
+    writePackage({peerDependencies: {'@astryxdesign/cli': '>=0.7.3'}}, '');
+    const doc = path.join(dir, 'templates', 'stab-hero.doc.mjs');
+    fs.writeFileSync(
+      doc,
+      fs
+        .readFileSync(doc, 'utf-8')
+        .replace(
+          'componentsUsed: []',
+          "componentsUsed: [], icons: {BinGlyph: 'delete', XIcon: 'close'}",
+        ),
+    );
+    fs.writeFileSync(
+      path.join(dir, 'templates', 'stab-hero.tsx'),
+      "import {BinGlyph} from '@acme/library';\nexport default function StabHero() { return <BinGlyph />; }\n",
+    );
+    const data = await validated();
+    expect(
+      data.notes.filter(
+        (/** @type {any} */ note) => note.code === 'template_icon_not_imported',
+      ),
+    ).toEqual([
+      {
+        code: 'template_icon_not_imported',
+        message: expect.stringContaining(
+          'templates/stab-hero.doc.mjs declares icon "XIcon" in `icons`, which templates/stab-hero.tsx does not import',
+        ),
+      },
+    ]);
+    expect(JSON.stringify(data.issues)).not.toContain('XIcon');
+    const strict = await integrationCheck({cwd: dir, strict: true});
+    expect(JSON.stringify(strict.data.failures)).not.toContain('XIcon');
+  }, 60_000);
+});

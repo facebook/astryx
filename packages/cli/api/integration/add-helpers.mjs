@@ -4,10 +4,12 @@
  * @file Shared helpers for integration contribution writers.
  *
  * Hosts the atomic staged-write transaction, package.json files-array
- * maintenance, package-dir resolution, and project-path normalization that
- * every `integration add <kind>` command needs. `theme add` and `theme build`
- * write through the same transaction. Stateless and side-effect-free
- * outside of {@link applyWrites}.
+ * maintenance, package-dir resolution, project-path normalization, and the
+ * package and manifest plumbing (resolve the package, load its manifest, the
+ * receipt shape, name grammar) that every `integration add <kind>` command
+ * and the icon authoring writes (`experimental icon new-set`,
+ * `new-definition`) need. `theme add` and `theme build` write through the
+ * same transaction. Side-effect-free outside of {@link applyWrites}.
  */
 
 import * as fs from 'node:fs';

@@ -41,6 +41,7 @@ import {
   iconSetIssues,
 } from '../../foundation/discovery/icon-set-checks.mjs';
 import {olderCliNotes} from '../../foundation/discovery/doc-stability.mjs';
+import {templateIconNotes} from '../../foundation/discovery/template-icon-notes.mjs';
 import {integrationDocConsistency} from '../../foundation/discovery/doc-consistency.mjs';
 import {integrationRunnerCommands} from './_adapter.mjs';
 import {
@@ -525,6 +526,10 @@ async function validateAtPackageDir(
     }
     const notes = await olderCliNotes(loaded, pkg, packageDir);
     if (notes.length > 0) result.olderCliNotes = notes;
+    // Each template `icons` key the template's source never imports: a note
+    // with its fix, never an issue (spec:AST-084 FR10).
+    const iconNotes = await templateIconNotes(loaded, packageDir);
+    if (iconNotes.length > 0) (result.notes ??= []).push(...iconNotes);
   }
 
   return result;

@@ -16,12 +16,20 @@
  *      icon definition the source icon draws.
  * Nothing is guessed from names or words. A `likely` reviewed match is never
  * applied: a kept icon names it as a suggestion.
- * The import and every reference to the imported name use the mapped export;
- * a name that would collide with another binding in the file is imported
- * under an alias. An icon from an installed set that draws a variant (such as
- * solid) maps to the target's variant of that name, else its default. An icon with no match keeps its original import and is reported as
- * kept. Without a project icon set the source is unchanged and the report
- * says why.
+ * A declared key names a named import by the name it imports
+ * (`{Trash as TrashIcon}` is `Trash`) and a default import by its local name
+ * (`import DeleteIcon from …` is `DeleteIcon`). A mapped named import and
+ * every reference to it use the mapped export, under an alias when that name
+ * would collide with another binding in the file; a mapped default import
+ * becomes the set's named import aliased to its local name. An icon from an
+ * installed set that draws a variant (such as solid) maps to the target's
+ * variant of that name, else its default. With a project icon set, every
+ * declared key ends up mapped or kept (FR10): an icon with no match keeps its
+ * original import, and a key bound only by a namespace import, a type-only
+ * import, a re-export, an import from an Astryx package or from the project's
+ * own set, or by no import at all, is kept with the reason. A side-effect
+ * import binds nothing. Without a project icon set the source is unchanged
+ * and the report says why.
  *
  * @input Template source, its declared icons, the installed sets, and the
  *   project's choice
@@ -64,8 +72,10 @@ import {astryxDefinitionsByName} from './icon-definition-discovery.mjs';
 /**
  * One icon kept as the template wrote it.
  * @typedef {object} KeptIcon
- * @property {string} module
- * @property {string} export
+ * @property {string | null} module the module it is imported or re-exported
+ *   from; null when the template does not import it
+ * @property {string} export the name it is imported by: `default` for a
+ *   default import, `*` for a namespace import
  * @property {string} reason
  * @property {{set: string, id: string, module: string, export: string, confidence: 'likely'}} [suggestion]
  *   a `likely` reviewed match, suggested and never applied
@@ -295,6 +305,91 @@ function isAstryxModule(module) {
   return module.startsWith('@astryxdesign/');
 }
 
+/**
+ * The name an import specifier reads from its module: `default` for a
+ * default import, `*` for a namespace import.
+ * @param {any} specifier
+ */
+function importedName(specifier) {
+  if (specifier.type === 'ImportDefaultSpecifier') return 'default';
+  if (specifier.type === 'ImportNamespaceSpecifier') return '*';
+  return specifier.imported.name ?? specifier.imported.value;
+}
+
+/**
+ * The key a template's `icons` uses for one import specifier: the name a
+ * named import reads, or the local name of a default or namespace import.
+ * @param {any} specifier
+ */
+function declaredKey(specifier) {
+  return specifier.type === 'ImportSpecifier'
+    ? importedName(specifier)
+    : specifier.local.name;
+}
+
+/**
+ * Every binding in a parsed module that a declared key can name: each import
+ * specifier (with whether it is type-only) and each named re-export.
+ * @param {any} ast
+ * @returns {Array<{key: string, module: string, export: string, form: 'named' | 'default' | 'namespace' | 'type' | 're-export'}>}
+ */
+function iconBindings(ast) {
+  /** @type {Array<{key: string, module: string, export: string, form: 'named' | 'default' | 'namespace' | 'type' | 're-export'}>} */
+  const found = [];
+  for (const node of ast.program.body) {
+    if (node.type === 'ImportDeclaration') {
+      const module = String(node.source.value);
+      for (const specifier of node.specifiers ?? []) {
+        const typeOnly =
+          node.importKind === 'type' || specifier.importKind === 'type';
+        found.push({
+          key: declaredKey(specifier),
+          module,
+          export: importedName(specifier),
+          form: typeOnly
+            ? 'type'
+            : specifier.type === 'ImportDefaultSpecifier'
+              ? 'default'
+              : specifier.type === 'ImportNamespaceSpecifier'
+                ? 'namespace'
+                : 'named',
+        });
+      }
+    } else if (node.type === 'ExportNamedDeclaration' && node.source) {
+      const module = String(node.source.value);
+      for (const specifier of node.specifiers ?? []) {
+        const local = specifier.local?.name ?? specifier.local?.value;
+        const exported = specifier.exported?.name ?? specifier.exported?.value;
+        for (const key of new Set([local, exported])) {
+          if (typeof key === 'string') {
+            found.push({key, module, export: key, form: 're-export'});
+          }
+        }
+      }
+    }
+  }
+  return found;
+}
+
+/**
+ * The keys of a template's `icons` that its source binds by no import or
+ * re-export at all, so they can never map (`integration check` lists them).
+ * Null when the source does not parse.
+ * @param {string} source
+ * @param {Record<string, string>} declared
+ * @returns {string[] | null}
+ */
+export function iconsNotImported(source, declared) {
+  let ast;
+  try {
+    ast = parseSource(source);
+  } catch {
+    return null;
+  }
+  const keys = new Set(iconBindings(ast).map(binding => binding.key));
+  return Object.keys(declared).filter(key => !keys.has(key));
+}
+
 /** What a template reads with no icon-set state given: nothing is mapped. */
 export const NO_ICON_SETS = Object.freeze({
   sets: [],
@@ -381,12 +476,13 @@ export function mapTemplateIcons(source, {sets, choice}, declared = {}) {
     if (targetModules.has(module)) continue;
     for (const specifier of node.specifiers) {
       if (
-        specifier.type !== 'ImportSpecifier' ||
+        specifier.type === 'ImportNamespaceSpecifier' ||
         specifier.importKind === 'type'
       ) {
         continue;
       }
-      const imported = specifier.imported.name ?? specifier.imported.value;
+      const imported = importedName(specifier);
+      const key = declaredKey(specifier);
       const fromSet = index.get(`${module}\0${imported}`);
       // A declared name is the export a template imports from an icon
       // library. Astryx's own packages ship components, not icons, so a
@@ -394,8 +490,8 @@ export function mapTemplateIcons(source, {sets, choice}, declared = {}) {
       // the icon a template imports as `Table as TableIcon`); an installed
       // set's icons are matched through the set instead.
       const meant =
-        !isAstryxModule(module) && Object.hasOwn(declared, imported)
-          ? declared[imported]
+        !isAstryxModule(module) && Object.hasOwn(declared, key)
+          ? declared[key]
           : null;
       /** @type {SourceIcon | null} */
       const record = fromSet
@@ -409,7 +505,7 @@ export function mapTemplateIcons(source, {sets, choice}, declared = {}) {
           ? {
               setName: null,
               export: imported,
-              id: imported,
+              id: key,
               definitions: [meant],
             }
           : null;
@@ -421,6 +517,8 @@ export function mapTemplateIcons(source, {sets, choice}, declared = {}) {
   }
   /** Where the mapped imports go: where the first rewritten import was. */
   let insertAt = -1;
+  /** The declared keys reported as mapped or kept so far. */
+  const accounted = new Set();
 
   for (const node of ast.program.body) {
     if (node.type !== 'ImportDeclaration') continue;
@@ -439,9 +537,10 @@ export function mapTemplateIcons(source, {sets, choice}, declared = {}) {
         keep.push(specifier);
         continue;
       }
-      const imported = specifier.imported.name ?? specifier.imported.value;
+      const imported = importedName(specifier);
       const local = specifier.local.name;
       const {record, match} = plan;
+      accounted.add(declaredKey(specifier));
       if (!match) {
         keep.push(specifier);
         const likely = reviewedMatch(record, target, ['likely']);
@@ -469,11 +568,15 @@ export function mapTemplateIcons(source, {sets, choice}, declared = {}) {
       const key = `${chosen.module}\0${chosen.export}`;
       let entry = added.get(key);
       if (!entry) {
-        let name = chosen.export;
+        // A default import keeps its local name: it becomes the set's named
+        // import under that alias.
+        let name =
+          specifier.type === 'ImportDefaultSpecifier' ? local : chosen.export;
+        const base = name;
         const taken = (/** @type {string} */ candidate) =>
           (written.has(candidate) && !freed.has(candidate)) ||
           [...added.values()].some(each => each.local === candidate);
-        for (let n = 2; taken(name); n++) name = `${chosen.export}${n}`;
+        for (let n = 2; taken(name); n++) name = `${base}${n}`;
         entry = {module: chosen.module, imported: chosen.export, local: name};
         added.set(key, entry);
       }
@@ -514,6 +617,46 @@ export function mapTemplateIcons(source, {sets, choice}, declared = {}) {
         text: `import ${parts.join(', ')} from ${source.slice(node.source.start, node.source.end)};`,
       });
     }
+  }
+
+  // Every other declared key is kept, with why it was not mapped (FR10).
+  const bindings = iconBindings(ast);
+  for (const key of Object.keys(declared)) {
+    if (accounted.has(key)) continue;
+    const forms = bindings.filter(binding => binding.key === key);
+    const pick = (
+      /** @type {(each: (typeof forms)[number]) => boolean} */ test,
+    ) => forms.find(test);
+    const fromTarget = pick(each => targetModules.has(each.module));
+    const fromAstryx = pick(each => isAstryxModule(each.module));
+    const namespace = pick(each => each.form === 'namespace');
+    const typeOnly = pick(each => each.form === 'type');
+    const reExport = pick(each => each.form === 're-export');
+    const [binding, reason] = fromTarget
+      ? [fromTarget, `it is already imported from ${icons.set}`]
+      : namespace
+        ? [
+            namespace,
+            'it is a namespace import, which is not mapped: import the icon by name',
+          ]
+        : reExport
+          ? [
+              reExport,
+              'the template re-exports it rather than importing it, so it is not mapped',
+            ]
+          : typeOnly
+            ? [typeOnly, 'it is a type-only import, which draws no icon']
+            : fromAstryx
+              ? [
+                  fromAstryx,
+                  'it is imported from an Astryx package, which ships components, not icons',
+                ]
+              : [null, 'the template does not import it'];
+    icons.kept.push({
+      module: binding ? binding.module : null,
+      export: binding ? binding.export : key,
+      reason,
+    });
   }
 
   if (added.size === 0) return {source, icons};

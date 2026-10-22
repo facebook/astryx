@@ -355,7 +355,7 @@ astryx experimental icon use outline         # make it the project's icon set`,
             ],
             [
               "A template descriptor's `icons`",
-              "The icon definition each imported icon draws, by imported name (`{TrashIcon: 'delete'}`). `astryx template`, shown or copied, then writes the set's icons and reports `icons` (status, set, mapped, kept).",
+              "The icon definition each imported icon draws (`{TrashIcon: 'delete'}`): a named import by the name it imports, a default import by its local name. `astryx template`, shown or copied, then writes the set's icons and reports `icons` (status, set, mapped, kept): every key is mapped, or kept with why (no match, a namespace or type-only import, a re-export, an Astryx or project-set import, or no import at all). `integration check` notes a key the template's source never imports (`template_icon_not_imported`), never failing.",
             ],
             [
               '`astryx discover`',

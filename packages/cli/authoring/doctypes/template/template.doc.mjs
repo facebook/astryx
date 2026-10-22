@@ -69,7 +69,7 @@ export const doc = {
       type: 'Record<string, string>',
       stability: 'experimental',
       description:
-        "The icon definition each icon the source imports draws, keyed by the name it imports, such as `{TrashIcon: 'delete'}`. When the project sets `experimental.iconSet`, `astryx template` (shown or copied) replaces each declared icon with the set's icon for that definition (`astryx docs cli/experimental/icon-definitions`); an undeclared icon is kept.",
+        "The icon definition each icon the source imports draws, such as `{TrashIcon: 'delete'}`: a named import is keyed by the name it imports (`{Trash as TrashIcon}` is `Trash`), a default import by its local name (`import DeleteIcon from …` is `DeleteIcon`). When the project sets `experimental.iconSet`, `astryx template` (shown or copied) replaces each declared icon with the set's icon for that definition (`astryx docs cli/experimental/icon-definitions`) and reports every key as mapped or kept; an undeclared import is left alone.",
     },
     {
       name: 'isReady',

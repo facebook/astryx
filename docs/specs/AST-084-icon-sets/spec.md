@@ -159,20 +159,27 @@ icon, and the CLI verifies it, writes the files, and checks the set.
 ### Templates and themes
 
 - **FR9 — Templates declare definitions.** A template or block descriptor
-  declares, in `icons`, the definition each imported icon draws
-  (`{TrashIcon: 'delete'}`). In a project with a set (FR8, opted in),
-  `astryx template` (printed or copied) rewrites each declared icon, and each
-  icon another installed set ships, to the project set's icon that names it in
-  an `exact` or `strong` match, else the icon its `map` names for the
-  definition. Every reference uses the mapped export, under an alias when the
-  name is taken. Nothing is guessed from names, and a `likely` match is only
-  suggested.
+  declares, in `icons`, the definition each imported icon draws (`{TrashIcon:
+'delete'}`), keyed by the name a named import reads (`{Trash as TrashIcon}`
+  is `Trash`) or by a default import's local name. In a project with a set
+  (FR8, opted in), `astryx template` (printed or copied) rewrites each
+  declared icon, and each icon another installed set ships, to the project
+  set's icon that names it in an `exact` or `strong` match, else the icon its
+  `map` names for the definition. Every reference uses the mapped export,
+  under an alias when the name is taken; a mapped default import becomes the
+  set's named import aliased to its local name. Nothing is guessed from names,
+  and a `likely` match is only suggested.
 - **FR10 — The template reports every icon.** The result, and the copy
   receipt, gain `icons`: the set state, each icon `mapped` (source, target,
   and the rule) or `kept` (with why, and a `likely` suggestion when one
-  exists). An unmapped icon keeps its import, and its library stays a needed
-  dependency. Printed source keeps the report on stderr. Without the opt-in
-  there is no `icons` field and no rewrite.
+  exists). With a set, every declared key is mapped or kept: a key bound only
+  by a namespace import, a type-only import, a re-export, or an import from an
+  Astryx package or the project's set, or by no import at all (`module` null),
+  is kept with the reason; a side-effect import binds nothing. An unmapped
+  icon keeps its import, and its library stays a needed dependency. Printed
+  source keeps the report on stderr. Without the opt-in there is no `icons`
+  field and no rewrite. `integration check` notes each key a template's source
+  never imports (`template_icon_not_imported`), never counted or failing.
 - **FR11 — Search stays stable.** `astryx search` has no icon domain and no
   `--type icon`, and returns no experimental doc, with or without the opt-in.
   Icons join it only at promotion.

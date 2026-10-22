@@ -8,7 +8,11 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import {mapTemplateIcons, matchIcon} from './template-icons.mjs';
+import {
+  iconsNotImported,
+  mapTemplateIcons,
+  matchIcon,
+} from './template-icons.mjs';
 import {glyphsData} from '../../test-utils/icon-set-fixture.mjs';
 
 const SET = /** @type {any} */ ({
@@ -175,13 +179,201 @@ describe('mapTemplateIcons', () => {
     }
   });
 
-  it('leaves imports from the project set alone', () => {
+  it('leaves imports from the project set alone, and reports them as kept', () => {
     const source =
       "import {XIcon} from '@acme/glyphs';\nexport const A = () => <XIcon />;\n";
     expect(map(source, {XIcon: 'close'})).toEqual({
       source,
-      icons: expect.objectContaining({mapped: [], kept: []}),
+      icons: expect.objectContaining({
+        mapped: [],
+        kept: [
+          {
+            module: '@acme/glyphs',
+            export: 'XIcon',
+            reason: 'it is already imported from @acme/glyphs/glyphs',
+          },
+        ],
+      }),
     });
+  });
+});
+
+describe('every binding form a declared key can name (FR10)', () => {
+  it('a named import maps by the name it imports', () => {
+    const {source, icons} = map(
+      "import {BinGlyph} from '@acme/library';\nexport const A = () => <BinGlyph />;\n",
+      {BinGlyph: 'delete'},
+    );
+    expect(source).toContain("import {TrashIcon} from '@acme/glyphs';");
+    expect(source).toContain('<TrashIcon />');
+    expect(icons?.mapped).toHaveLength(1);
+    expect(icons?.kept).toEqual([]);
+  });
+
+  it('an aliased named import maps by the name it imports, not its local name', () => {
+    const {source, icons} = map(
+      "import {BinGlyph as Bin} from '@acme/library';\nexport const A = () => <Bin />;\n",
+      {BinGlyph: 'delete'},
+    );
+    expect(source).toContain("import {TrashIcon} from '@acme/glyphs';");
+    expect(source).toContain('<TrashIcon />');
+    expect(icons?.mapped[0].source).toEqual({
+      module: '@acme/library',
+      export: 'BinGlyph',
+    });
+    // Its local name is not a key.
+    expect(
+      map(
+        "import {BinGlyph as Bin} from '@acme/library';\nexport const A = () => <Bin />;\n",
+        {Bin: 'delete'},
+      ).icons?.kept,
+    ).toEqual([
+      {module: null, export: 'Bin', reason: 'the template does not import it'},
+    ]);
+  });
+
+  it("a default import maps by its local name, to the set's named import under that name", () => {
+    const {source, icons} = map(
+      "import DeleteIcon from '@mui/icons-material/Delete';\nexport const A = () => <DeleteIcon />;\n",
+      {DeleteIcon: 'delete'},
+    );
+    expect(source).toBe(
+      "import {TrashIcon as DeleteIcon} from '@acme/glyphs';\nexport const A = () => <DeleteIcon />;\n",
+    );
+    expect(icons?.mapped).toEqual([
+      expect.objectContaining({
+        source: {module: '@mui/icons-material/Delete', export: 'default'},
+        target: expect.objectContaining({export: 'TrashIcon'}),
+        by: 'definition',
+      }),
+    ]);
+    expect(icons?.kept).toEqual([]);
+  });
+
+  it('a default import beside named ones keeps the rest of its import', () => {
+    const {source} = map(
+      "import DeleteIcon, {useThing} from '@acme/library';\nexport const A = () => <DeleteIcon />;\n",
+      {DeleteIcon: 'delete'},
+    );
+    expect(source).toContain(
+      "import {TrashIcon as DeleteIcon} from '@acme/glyphs';",
+    );
+    expect(source).toContain("import {useThing} from '@acme/library';");
+  });
+
+  it('a default import the set cannot map is kept', () => {
+    expect(
+      map(
+        "import PencilIcon from '@acme/library/pencil';\nexport const A = () => <PencilIcon />;\n",
+        {PencilIcon: 'edit'},
+      ).icons?.kept,
+    ).toEqual([
+      expect.objectContaining({
+        module: '@acme/library/pencil',
+        export: 'default',
+        reason: expect.stringContaining('"edit"'),
+      }),
+    ]);
+  });
+
+  it('a namespace import is kept, with why', () => {
+    const source =
+      "import * as Icons from '@acme/library';\nexport const A = () => <Icons.BinGlyph />;\n";
+    const result = map(source, {Icons: 'delete'});
+    expect(result.source).toBe(source);
+    expect(result.icons?.kept).toEqual([
+      {
+        module: '@acme/library',
+        export: '*',
+        reason:
+          'it is a namespace import, which is not mapped: import the icon by name',
+      },
+    ]);
+  });
+
+  it('a side-effect import binds nothing: the key is not imported', () => {
+    const source =
+      "import '@acme/library/styles.css';\nexport const A = () => null;\n";
+    const result = map(source, {BinGlyph: 'delete'});
+    expect(result.source).toBe(source);
+    expect(result.icons?.kept).toEqual([
+      {
+        module: null,
+        export: 'BinGlyph',
+        reason: 'the template does not import it',
+      },
+    ]);
+  });
+
+  it('a re-export is kept, with why', () => {
+    const source =
+      "export {BinGlyph} from '@acme/library';\nexport const A = () => null;\n";
+    const result = map(source, {BinGlyph: 'delete'});
+    expect(result.source).toBe(source);
+    expect(result.icons?.kept).toEqual([
+      {
+        module: '@acme/library',
+        export: 'BinGlyph',
+        reason:
+          'the template re-exports it rather than importing it, so it is not mapped',
+      },
+    ]);
+  });
+
+  it('a type-only import is kept, with why', () => {
+    for (const line of [
+      "import type {BinGlyph} from '@acme/library';",
+      "import {type BinGlyph} from '@acme/library';",
+    ]) {
+      const source = `${line}\nexport const A = (p: BinGlyph) => null;\n`;
+      const result = map(source, {BinGlyph: 'delete'});
+      expect(result.source).toBe(source);
+      expect(result.icons?.kept).toEqual([
+        {
+          module: '@acme/library',
+          export: 'BinGlyph',
+          reason: 'it is a type-only import, which draws no icon',
+        },
+      ]);
+    }
+  });
+
+  it('an import from an Astryx package only is kept, with why', () => {
+    const source =
+      "import {Table} from '@astryxdesign/core/Table';\nexport const A = () => <Table />;\n";
+    expect(map(source, {Table: 'table'}).icons?.kept).toEqual([
+      {
+        module: '@astryxdesign/core/Table',
+        export: 'Table',
+        reason:
+          'it is imported from an Astryx package, which ships components, not icons',
+      },
+    ]);
+  });
+
+  it('iconsNotImported lists the keys no import or re-export binds', () => {
+    const source = [
+      "import '@acme/side-effect';",
+      "import Def from 'a';",
+      "import * as Ns from 'b';",
+      "import {Named as Local} from 'c';",
+      "import type {Typed} from 'd';",
+      "export {Again} from 'e';",
+      'export const A = () => null;',
+      '',
+    ].join('\n');
+    expect(
+      iconsNotImported(source, {
+        Def: 'a',
+        Ns: 'b',
+        Named: 'c',
+        Local: 'c',
+        Typed: 'd',
+        Again: 'e',
+        Missing: 'f',
+      }),
+    ).toEqual(['Local', 'Missing']);
+    expect(iconsNotImported('not ( valid', {X: 'y'})).toBeNull();
   });
 });
 

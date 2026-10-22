@@ -425,7 +425,7 @@ export function iconSetKey(set) {
 }
 
 /**
- * Sets in tie order (FR10): the project's set first, then load order.
+ * Sets in tie order (FR6, FR8): the project's set first, then load order.
  * @param {DiscoveredIconSet[]} sets
  * @param {IconSetChoice} choice
  * @returns {DiscoveredIconSet[]}

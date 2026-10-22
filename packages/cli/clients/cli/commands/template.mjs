@@ -53,7 +53,7 @@ function iconLines(icons) {
     ),
     ...icons.kept.map(
       each =>
-        `icons: kept ${each.export} (${each.module}): ${each.reason}` +
+        `icons: kept ${each.export}${each.module == null ? '' : ` (${each.module})`}: ${each.reason}` +
         (each.suggestion
           ? `; likely match: ${each.suggestion.export} (${each.suggestion.module})`
           : ''),

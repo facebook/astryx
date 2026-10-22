@@ -4,12 +4,16 @@
  * @file Static JavaScript module export inspection.
  *
  * Proves a runtime export without executing package code. Local ESM re-exports
- * are followed recursively; unresolved or unparsable modules fail closed.
+ * are followed recursively; unresolved or unparsable modules fail closed. A
+ * check that must fail only what it proves asks for a verdict: an export is
+ * present (followed to its declaration, `const` aliases included), proved
+ * absent, or unknown with the reason.
  *
  * @input A module path and runtime export name, or a module path and the
  *   exports to try
- * @output Whether that export can be proved statically and the file that
- *   declares it, or the exported object literal as plain data
+ * @output Whether that export can be proved statically, the file and binding
+ *   that declare it, a present / absent / unknown verdict with its reason, or
+ *   the exported object literal as plain data
  * @position packages/cli/foundation/discovery — shared package inspection
  */
 

@@ -53,13 +53,17 @@ export interface IconSetDoc {
  * The variant an icon's own `export` draws, when the set declares variants.
  * A variant is a named look the set supplies (for example outline or solid);
  * size comes from CSS.
+ * @experimental May change or be removed in a patch release.
  */
 export interface IconSetDefault {
   /** One of the set's declared `variants`. */
   variant?: string;
 }
 
-/** Another variant of one icon, drawn by its own export. */
+/**
+ * Another variant of one icon, drawn by its own export.
+ * @experimental May change or be removed in a patch release.
+ */
 export interface IconSetVariant {
   /** One of the set's declared `variants`. */
   variant: string;
@@ -69,13 +73,17 @@ export interface IconSetVariant {
   module?: string;
 }
 
-/** How sure a reviewed cross-set match is. */
+/**
+ * How sure a reviewed cross-set match is.
+ * @experimental May change or be removed in a patch release.
+ */
 export type IconSetMatchConfidence = 'exact' | 'strong' | 'likely';
 
 /**
  * A reviewed equivalent of an icon in another icon set or icon library.
  * Template icon mapping applies `exact` and `strong` matches and only
  * suggests `likely` ones.
+ * @experimental May change or be removed in a patch release.
  */
 export interface IconSetMatch {
   /** The other set's name, such as `lines`; never this set's own name. */
@@ -88,7 +96,10 @@ export interface IconSetMatch {
   confidence: IconSetMatchConfidence;
 }
 
-/** One icon of a set. */
+/**
+ * One icon of a set.
+ * @experimental May change or be removed in a patch release.
+ */
 export interface IconSetIcon {
   /** Lower-kebab identity, unique in the set. */
   id: string;
@@ -104,13 +115,19 @@ export interface IconSetIcon {
   matches?: IconSetMatch[];
 }
 
-/** The upstream library and version the data file was generated from. */
+/**
+ * The upstream library and version the data file was generated from.
+ * @experimental May change or be removed in a patch release.
+ */
 export interface IconSetSource {
   package: string;
   version: string;
 }
 
-/** The function that turns a library export into an icon component. */
+/**
+ * The function that turns a library export into an icon component.
+ * @experimental May change or be removed in a patch release.
+ */
 export interface IconSetAdapter {
   /** A path from the package root, such as `./src/adapt.js`. */
   module: string;

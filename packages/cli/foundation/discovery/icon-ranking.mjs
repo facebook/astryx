@@ -24,11 +24,12 @@
  * many icons, so the `user` icon stays ahead of `contact`, which is only
  * tagged `user`).
  *
- * Within one score, a name match on the whole id comes before one on a part
- * of it, and a meaning match whose query sits earlier among the icon's tags
- * comes first (sets list an icon's most telling tags first). Remaining ties
- * keep the set order (the project's set first, then load order) and then id
- * order, so the same installation always answers the same way.
+ * Equal scores keep the set order first (the project's set, then load
+ * order), so the project's set always leads at a score. Within one set, a
+ * name match on the whole id comes before one on a part of it, and a meaning
+ * match whose query sits earlier among the icon's tags comes first (sets list
+ * an icon's most telling tags first). Remaining ties keep id order, so the
+ * same installation always answers the same way.
  *
  * @position foundation/discovery — read by api/icon and icon-set-checks
  */
