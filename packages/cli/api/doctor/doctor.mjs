@@ -1492,6 +1492,8 @@ export function checkCliCommand(ctx) {
   *   each file of the computer-level agent text against this release's rendering
  * @property {import('../../foundation/env/user-settings.mjs').ComputerAgentTextSettings} [agentTextSettings]
  *   the person's choices about the computer-level agent text
+ * @property {boolean} [selfGlobal] whether the copy answering is the CLI
+ *   installed for the computer
  * @property {string | null} [agentTextCommand] the command the skill file
  *   tells agents to run, or null
  * @property {string | null} [agentTextInstall] the install step the skill
@@ -1759,7 +1761,10 @@ export function checkComputerAgentText(ctx) {
   // A package runner's own copy, first on the search path only for the run
   // it starts (the way to run the CLI when the global one is gone), does not
   // count.
-  if (command === COMPUTER_COMMAND && rows && !rows.some(r => r.astryx && !r.runner)) {
+  // Nor when the copy answering is itself the CLI installed for the computer:
+  // its command can be a shim the scan does not trace to the package, as
+  // Volta's is, and reinstalling would change nothing.
+  if (command === COMPUTER_COMMAND && rows && !ctx.selfGlobal && !rows.some(r => r.astryx && !r.runner)) {
     return {
       ...base,
       message: `${status} It tells agents to run \`${COMPUTER_COMMAND}\`, but no \`${COMPUTER_COMMAND}\` command on the search path runs the Astryx CLI, so agents that read it find no CLI to run (as when a restart removes the CLI installed for the computer and keeps the home folder).${linkNote}`,

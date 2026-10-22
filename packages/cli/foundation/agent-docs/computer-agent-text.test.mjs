@@ -181,6 +181,30 @@ describe('renderComputerAgentText', () => {
     expect(skillInstallStepOf(bun)).toBe('bun add -g @astryxdesign/cli');
   });
 
+  // Rendering is pure: its default step never depends on the skill in the
+  // home folder of the computer the test runs on.
+  it("renders npm's step by default, whatever skill the caller's home folder holds", () => {
+    const home = tmp('caller-home');
+    const file = computerSkillFile(home);
+    fs.mkdirSync(path.dirname(file), {recursive: true});
+    fs.writeFileSync(
+      file,
+      renderComputerAgentText({
+        command: 'astryx',
+        install: 'pnpm add -g @astryxdesign/cli',
+      }),
+    );
+    const saved = process.env.HOME;
+    process.env.HOME = home;
+    try {
+      expect(renderComputerAgentText({command: 'astryx'})).toContain(
+        'run `npm i -g @astryxdesign/cli` first.',
+      );
+    } finally {
+      process.env.HOME = saved;
+    }
+  });
+
   // Only the CLI installed for the computer chooses the step; every other
   // copy of the release, such as a project's own CLI, keeps the one the file
   // records, so it neither reports the file as different nor rewrites it.

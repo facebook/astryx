@@ -296,7 +296,7 @@ export function skillCommandOf(content) {
  */
 export function renderComputerAgentText({
   command = computerAgentCommand(),
-  install = computerInstallStep(),
+  install = COMPUTER_INSTALL_STEP,
 } = {}) {
   return withHash(
     [

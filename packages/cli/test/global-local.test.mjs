@@ -848,27 +848,14 @@ describe.skipIf(!POSIX)(
         expect(fs.readFileSync(skill, 'utf8')).toContain(
           `If \`astryx\` is not found, run \`${step}\` first.`,
         );
-        // A restart removes the folder the CLI was installed in from the
-        // search path and keeps the home folder. The CLI still runs as a
-        // package runner would start it.
+        // A restart removes the CLI installed for the computer and keeps the
+        // home folder. The way back is a package runner, whose own temporary
+        // copy answers; started directly, and with the runner's .bin folder
+        // first on the search path, as npx and pnpm dlx put it. That copy
+        // does not count, so doctor names the step either way.
         fs.rmSync(path.join(g.binDir, 'astryx'));
+        fs.rmSync(g.dir, {recursive: true, force: true});
         pc.path.splice(pc.path.indexOf(g.binDir), 1);
-        const doctor = JSON.parse(
-          run(g.bin, ['doctor', '--json'], {cwd: empty, pc}).stdout,
-        );
-        const check = doctor.data.checks.find(
-          (/** @type {any} */ c) => c.id === 'computer-agent-text',
-        );
-        expect(check.message).toContain(
-          'but no `astryx` command on the search path runs the Astryx CLI',
-        );
-        expect(check.fix).toBe(
-          `Run \`${step}\`, the step the skill names for when \`astryx\` is not found.`,
-        );
-        // The route back without the global CLI: a package runner, which
-        // puts its own temporary `astryx` first on the search path for the
-        // run it starts. That copy does not count, so doctor still names the
-        // step.
         const runner = placeCli(
           path.join(
             tempDir('npx'),
@@ -886,17 +873,49 @@ describe.skipIf(!POSIX)(
         );
         fs.mkdirSync(runnerBin, {recursive: true});
         fs.symlinkSync(runner.bin, path.join(runnerBin, 'astryx'));
-        pc.path.unshift(runnerBin);
-        const viaRunner = JSON.parse(
-          run(runner.bin, ['doctor', '--json'], {cwd: empty, pc}).stdout,
-        ).data.checks.find(
-          (/** @type {any} */ c) => c.id === 'computer-agent-text',
-        );
-        expect(viaRunner.fix).toBe(
-          `Run \`${step}\`, the step the skill names for when \`astryx\` is not found.`,
-        );
+        const agentText = () =>
+          JSON.parse(
+            run(runner.bin, ['doctor', '--json'], {cwd: empty, pc}).stdout,
+          ).data.checks.find(
+            (/** @type {any} */ c) => c.id === 'computer-agent-text',
+          );
+        for (const first of [false, true]) {
+          if (first) pc.path.unshift(runnerBin);
+          const check = agentText();
+          expect(check.message).toContain(
+            'but no `astryx` command on the search path runs the Astryx CLI',
+          );
+          expect(check.fix).toBe(
+            `Run \`${step}\`, the step the skill names for when \`astryx\` is not found.`,
+          );
+        }
         pc.path.shift();
       }
+    });
+
+    // Volta's command is a shim of its own, not a link into the package, so
+    // the search-path scan cannot trace it; the working global copy answering
+    // doctor is the proof that the computer has its CLI.
+    it("on a working Volta install, doctor does not report the skill's CLI as gone", () => {
+      const pc = computer();
+      const g = globalCli('volta', '9.0.0', {root: pc.home});
+      fs.rmSync(path.join(g.binDir, 'astryx'));
+      fs.writeFileSync(
+        path.join(g.binDir, 'astryx'),
+        '#!/bin/sh\n# volta-shim\nexit 0\n',
+      );
+      fs.chmodSync(path.join(g.binDir, 'astryx'), 0o755);
+      pc.path.unshift(g.binDir);
+      const empty = tempDir('empty');
+      expect(run(g.bin, ['init', '--user'], {cwd: empty, pc}).status).toBe(0);
+      const check = JSON.parse(
+        run(g.bin, ['doctor', '--json'], {cwd: empty, pc}).stdout,
+      ).data.checks.find(
+        (/** @type {any} */ c) => c.id === 'computer-agent-text',
+      );
+      expect(check.message).toContain('matches this release');
+      expect(check.message).not.toContain('no `astryx` command');
+      expect(check.fix).toBeUndefined();
     });
 
     it('two global installs of one release find the same skill current, and neither rewrites the step the other wrote', () => {
