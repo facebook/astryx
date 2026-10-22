@@ -80,7 +80,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'For the full palette config fields and CLI flags, run `{@command docs cli/commands/theme-palette-generate}`. For the integration-authoring walkthrough of connecting a palette to theme tokens, run `{@command docs cli/integrations/building-blocks/themes/generate-a-palette}`.',
+          text: 'For the full palette config fields and CLI flags, run `{@command docs cli/commands/theme-palette-generate}`. For the integration-authoring walkthrough of connecting a palette to theme tokens, run `{@command docs authoring/building-blocks/themes/generate-a-palette}`.',
         },
       ],
     },
@@ -188,7 +188,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'For the integration-specific guidance on mapping a palette to tokens when extending, see `{@command docs cli/integrations/building-blocks/themes/define-the-theme}`.',
+          text: 'For the integration-specific guidance on mapping a palette to tokens when extending, see `{@command docs authoring/building-blocks/themes/define-the-theme}`.',
         },
       ],
     },

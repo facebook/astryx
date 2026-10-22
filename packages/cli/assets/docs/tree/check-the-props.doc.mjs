@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/building-blocks/components/describe-the-component/check-the-props`:
+ * @file `astryx docs authoring/building-blocks/components/describe-the-component/check-the-props`:
  * compare each component doc's props table with the component's TypeScript
  * props, read each finding, and fix the doc or the code.
  */

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/building-blocks/configuration/cli-command`:
+ * @file `astryx docs authoring/building-blocks/configuration/cli-command`:
  * name the command an integration's users run the CLI with, so every command
  * the CLI prints in their apps starts with it.
  */

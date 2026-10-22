@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/help/troubleshooting`: the messages the CLI
+ * @file `astryx docs authoring/help/troubleshooting`: the messages the CLI
  * prints while you build, verify, and install an integration, and the fix
  * for each.
  */

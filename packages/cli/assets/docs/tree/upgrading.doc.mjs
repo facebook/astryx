@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/ship/upgrading`: update an integration
+ * @file `astryx docs authoring/ship/upgrading`: update an integration
  * package for each Astryx release, and the command apps run to upgrade with
  * it.
  */

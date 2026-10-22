@@ -319,7 +319,7 @@ const HINT_READS = [
   ['docs', 'cli'],
   ['docs', 'cli/api/functions/search'],
   ['docs', 'theme'],
-  ['docs', 'cli/integrations', 'codemods'],
+  ['docs', 'authoring', 'codemods'],
   ['search', 'token-ref', '--type', 'doc'],
   ['--help'],
   ['docs', '--help'],
@@ -394,10 +394,14 @@ describe('the docs graph', () => {
     /** @type {string[]} */
     const unreached = [];
     // Command, API, schema, enum, and authoring docs: a tree leaf, or a section
-    // of `astryx docs authoring`.
+    // of the field reference, which `astryx docs authoring <name>` reads.
     const {loaded, failed} = await loadCliSelfDocs(discoverCliSelfDocSources(CLI), CLI);
     expect(failed).toEqual([]);
-    const authoring = reads.get(`${TOP} authoring --index`)?.data.sections ?? [];
+    const authoring =
+      reads.get(`${TOP} authoring/field-reference --index`)?.data.sections ??
+      reads.get(`${TOP} authoring/field-reference`)?.data.sections ??
+      [];
+    expect(authoring.length).toBeGreaterThan(10);
     for (const {source, doc} of loaded) {
       const leaf = [...tree.nodes.values()].find(
         node => node.kind === doc.type && node.name === doc.name,
@@ -408,7 +412,10 @@ describe('the docs graph', () => {
       const ok = leaf
         ? reached(`${TOP} ${leaf.route}`)
         : section
-          ? reached(`${TOP} authoring ${section.id}`)
+          ? reached(`${TOP} authoring ${section.id}`) ||
+            reached(`${TOP} authoring/field-reference ${section.id}`) ||
+            // The walk opens the field reference whole, with every section.
+            reached(`${TOP} authoring/field-reference`)
           : false;
       if (!ok) unreached.push(source);
     }
@@ -609,7 +616,7 @@ describe('the docs graph', () => {
   it("opens every search hit's command and parent", async () => {
     /** @type {string[]} */
     const broken = [];
-    for (const query of ['assertResponse', 'token-ref', 'codemod protected files', 'agent docs', 'ERR_UNKNOWN_SECTION', 'theme', 'unorganized', 'Astryx CLI']) {
+    for (const query of ['assertResponse', 'token-ref', 'codemod protected files', 'agent docs', 'ERR_UNKNOWN_SECTION', 'theme', 'foundations', 'Astryx CLI']) {
       const {data} = await search(query, {type: 'doc', limit: 20});
       for (const hit of data.results) {
         if (!hit.parent) broken.push(`"${query}": ${hit.name} has no parent`);

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/building-blocks/configuration/debug-and-gap-reports`: receive a record
+ * @file `astryx docs authoring/building-blocks/configuration/debug-and-gap-reports`: receive a record
  * of each CLI run with `debug`, and handle `astryx gap-report` with
  * `gapReport`, both named exports of the integration manifest.
  */

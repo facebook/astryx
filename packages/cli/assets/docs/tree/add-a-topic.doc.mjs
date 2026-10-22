@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/building-blocks/docs/add-a-topic`: add a
+ * @file `astryx docs authoring/building-blocks/docs/add-a-topic`: add a
  * doc topic to an integration package, write its sections, and pick the doc
  * kind for each thing the package ships.
  */

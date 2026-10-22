@@ -45,8 +45,9 @@ This record owns the moves a read offers and how they appear in text and JSON.
   the path of titles above it (`Astryx CLI › API › Functions › search()`).
 - **FR2 — Up.** Every read except the top MUST offer the command that opens the
   level it sits in: for a section, its topic's section list; for a node or a
-  topic, the level it sits in (a guide's namespace, or the Unorganized level for
-  a flat topic, `spec:AST-046` FR12); for a top-level namespace, the topic list.
+  topic, the level it sits in (a guide's namespace, or the Guides or Foundations
+  level for a flat topic, `spec:AST-046` FR12); for a top-level namespace, the
+  topic list.
 - **FR3 — Down.** A read that has children MUST list them, each with its
   summary, and give the command that opens one: a namespace its children, a
   topic's index its sections, and the topic list its topics and namespaces. In text,

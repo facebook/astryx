@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/building-blocks/templates/start-a-template`:
+ * @file `astryx docs authoring/building-blocks/templates/start-a-template`:
  * what a template is, why an integration shares one, whether it is a page or
  * a block, and how to add one.
  */

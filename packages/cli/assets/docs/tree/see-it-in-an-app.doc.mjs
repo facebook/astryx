@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/building-blocks/components/see-it-in-an-app`: inspect an
+ * @file `astryx docs authoring/building-blocks/components/see-it-in-an-app`: inspect an
  * integration component from an app that installs the package.
  */
 

@@ -1,26 +1,35 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @file astryx docs cli/integrations — build an integration package. */
+/**
+ * @file `astryx docs authoring`: everything for integration authors. The
+ * guides build, ship, and fix an integration package; the field reference
+ * covers every file it holds.
+ */
 
 /** @type {import('@astryxdesign/cli/authoring').NamespaceDoc} */
 export const docs = {
   type: 'namespace',
-  name: 'integrations',
-  placement: {parent: 'namespace:cli', slot: 'guides', order: 10},
-  title: 'Build an integration',
+  name: 'authoring',
+  title: 'Authoring',
   summary:
-    'Build an npm package that adds components, templates, themes, docs, and codemods to Astryx apps.',
+    'Build an npm package that adds components, templates, themes, docs, and codemods to Astryx apps, and look up every field of every file it holds.',
   keywords: [
+    'authoring',
     'integration',
     'integration package',
     'make an integration',
     'publish an integration',
     'integration authoring',
+    'authoring reference',
   ],
   slots: {
     guides: {
       title: 'Build an integration',
       accepts: {kinds: ['generic', 'namespace']},
+    },
+    reference: {
+      title: 'Reference',
+      accepts: {kinds: ['generic']},
     },
   },
   blocks: [
@@ -42,7 +51,7 @@ export const docs = {
     },
     {
       type: 'prose',
-      text: 'Every field of every file you write for an integration is in {@link generic:authoring}.',
+      text: 'Every field of every file you write for an integration is in {@link generic:field-reference}.',
     },
     {
       type: 'prose',

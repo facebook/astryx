@@ -5,7 +5,7 @@ export const docs = {
   type: 'generic',
   name: 'quick-start',
   placement: {
-    parent: 'namespace:integrations',
+    parent: 'namespace:authoring',
     slot: 'guides',
     order: 10,
   },

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/building-blocks/components/replace-a-core-component`:
+ * @file `astryx docs authoring/building-blocks/components/replace-a-core-component`:
  * intentionally make an integration component the default for a Core identity.
  */
 

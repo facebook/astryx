@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/building-blocks/docs/doc-syntax`: the
+ * @file `astryx docs authoring/building-blocks/docs/doc-syntax`: the
  * tokens a doc writes for what the CLI shows each reader differently: a link,
  * an Astryx command, a package-manager step, and a step only one package
  * manager can do.

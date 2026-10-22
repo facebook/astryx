@@ -16,7 +16,7 @@ describe('pointersIn', () => {
   it('leaves a walkthrough alone: more words, a flag, or a route', () => {
     expect(
       pointersIn(
-        'Run `astryx docs theme overview`, `astryx docs --json`, `astryx docs cli/integrations`, or `astryx docs`.',
+        'Run `astryx docs theme overview`, `astryx docs --json`, `astryx docs authoring/quick-start`, or `astryx docs`.',
       ),
     ).toEqual([]);
   });

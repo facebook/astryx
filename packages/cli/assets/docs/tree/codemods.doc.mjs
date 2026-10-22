@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/building-blocks/codemods`: add codemods to an
+ * @file `astryx docs authoring/building-blocks/codemods`: add codemods to an
  * integration package, and know which of them `astryx upgrade` runs in an app.
  */
 

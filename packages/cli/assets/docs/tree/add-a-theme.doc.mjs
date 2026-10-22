@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/building-blocks/themes/add-a-theme`:
+ * @file `astryx docs authoring/building-blocks/themes/add-a-theme`:
  * scaffold a theme in a package — blank, or forked from an existing theme.
  */
 
