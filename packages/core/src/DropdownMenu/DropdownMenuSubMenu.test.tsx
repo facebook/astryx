@@ -2133,7 +2133,7 @@ describe('DropdownMenuSubMenu header and footer', () => {
       <DropdownMenu
         button={{label: 'Session'}}
         items={[
-          {label: 'Rename'},
+          {label: 'Rename', header: <input aria-label="Leaf header" />},
           {
             label: 'Labels',
             header: <input aria-label="Filter labels" />,
@@ -2150,7 +2150,10 @@ describe('DropdownMenuSubMenu header and footer', () => {
     const dialog = await screen.findByRole('dialog', {name: /Labels/, ...h});
     expect(dialog).toContainElement(field());
     expect(dialog).toContainElement(create());
-    // A leaf row carries no header or footer of its own.
+    // A leaf row ignores a header: it renders none and passes none on.
+    expect(
+      screen.queryByRole('textbox', {name: 'Leaf header', ...h}),
+    ).toBeNull();
     expect(
       screen.getByRole('menuitem', {name: 'Rename', ...h}),
     ).not.toHaveAttribute('header');
