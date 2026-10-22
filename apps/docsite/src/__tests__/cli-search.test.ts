@@ -35,6 +35,8 @@ const ROOT = path.resolve(import.meta.dirname, '../..');
 const ASTRYX = path.join(ROOT, 'node_modules', '.bin', 'astryx');
 const links = linkTables as SearchLinkTables;
 const SLOW = 120_000;
+/** How many `astryx search` processes the parity test runs at once. */
+const CLI_AT_ONCE = 3;
 
 /** Public, made-up queries across every domain. */
 const QUERIES = [
@@ -72,15 +74,22 @@ describe('site search = astryx search', () => {
   it.skipIf(!documentsEveryIntegration)(
     'answers each query with the results `astryx search --json` prints',
     async () => {
-      const printed = await Promise.all(
-        QUERIES.map(async query => {
-          const {stdout} = await run(ASTRYX, ['search', query, '--json'], {
-            cwd: ROOT,
-            maxBuffer: 16 * 1024 * 1024,
-          });
-          return JSON.parse(stdout) as SearchResponse;
-        }),
-      );
+      // A few CLI processes at a time, so a busy CI runner does not run out
+      // of time starting all of them at once.
+      const printed: SearchResponse[] = [];
+      for (let i = 0; i < QUERIES.length; i += CLI_AT_ONCE) {
+        printed.push(
+          ...(await Promise.all(
+            QUERIES.slice(i, i + CLI_AT_ONCE).map(async query => {
+              const {stdout} = await run(ASTRYX, ['search', query, '--json'], {
+                cwd: ROOT,
+                maxBuffer: 16 * 1024 * 1024,
+              });
+              return JSON.parse(stdout) as SearchResponse;
+            }),
+          )),
+        );
+      }
       for (const [i, query] of QUERIES.entries()) {
         const {data} = await api(query);
         expect(data.results.length, query).toBeGreaterThan(0);
