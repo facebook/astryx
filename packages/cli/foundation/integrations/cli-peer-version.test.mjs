@@ -61,7 +61,7 @@ describe('cliPeerVersionProblem', () => {
     fs.mkdirSync(project, {recursive: true});
     fs.writeFileSync(path.join(project, 'package-lock.json'), '{}\n');
     expect(cliPeerVersionProblem(integration, '0.6.5', project)).toBe(
-      '@test/needs-newer needs @astryxdesign/cli >=0.8.0, but this CLI is 0.6.5, so some of what it ships may not load. Upgrade the CLI: `npm install @astryxdesign/cli@latest`.',
+      '@test/needs-newer needs @astryxdesign/cli >=0.8.0, but this CLI is 0.6.5, so some of what it ships may not load. Upgrade Core and the CLI together: `npm install @astryxdesign/core@latest @astryxdesign/cli@latest`, then `npx astryx upgrade --from 0.6.5 --apply`.',
     );
   });
 
@@ -75,7 +75,23 @@ describe('cliPeerVersionProblem', () => {
       peerDependencies: {'@astryxdesign/cli': '>=0.8.0'},
     });
     expect(cliPeerVersionProblem(integration, '0.6.5', project)).toContain(
-      '`pnpm add @astryxdesign/cli@latest`',
+      '`pnpm add @astryxdesign/core@latest @astryxdesign/cli@latest`, then `pnpm exec astryx upgrade --from 0.6.5 --apply`',
+    );
+  });
+
+  it('installs them as dev dependencies in the package being authored', () => {
+    const project = path.join(tmpDir, 'own-npm-project');
+    fs.mkdirSync(project, {recursive: true});
+    fs.writeFileSync(path.join(project, 'package-lock.json'), '{}\n');
+    const integration = makeIntegration('@test/own-below', {
+      name: '@test/own-below',
+      version: '1.0.0',
+      peerDependencies: {'@astryxdesign/cli': '>=0.8.0'},
+    });
+    expect(
+      cliPeerVersionProblem(integration, '0.6.5', project, {own: true}),
+    ).toContain(
+      '`npm install -D @astryxdesign/core@latest @astryxdesign/cli@latest`, then `npx astryx upgrade --from 0.6.5 --apply`',
     );
   });
 
@@ -208,8 +224,9 @@ describe('as a note that fails nothing', () => {
     return root;
   }
 
-  const below = () =>
-    `@acme/widgets needs @astryxdesign/cli >=99.0.0, but this CLI is ${cliVersion()}, so some of what it ships may not load. Upgrade the CLI: \`npm install @astryxdesign/cli@latest\`.`;
+  /** @param {string} [dev] */
+  const below = (dev = '') =>
+    `@acme/widgets needs @astryxdesign/cli >=99.0.0, but this CLI is ${cliVersion()}, so some of what it ships may not load. Upgrade Core and the CLI together: \`npm install${dev} @astryxdesign/core@latest @astryxdesign/cli@latest\`, then \`npx astryx upgrade --from ${cliVersion()} --apply\`.`;
 
   it('doctor integration validate lists it in data.notes, never in data.issues, and exits 0', async () => {
     const cwd = project('>=99.0.0');
@@ -235,7 +252,10 @@ describe('as a note that fails nothing', () => {
     );
     const envelope = JSON.parse(stdout);
     const validate = envelope.data.checks[0].response.data;
-    expect(validate.notes).toContainEqual({code: 'cli_peer_version', message: below()});
+    expect(validate.notes).toContainEqual({
+      code: 'cli_peer_version',
+      message: below(' -D'),
+    });
     expect(validate.issues.map((/** @type {{code: string}} */ i) => i.code)).not.toContain(
       'cli_peer_version',
     );

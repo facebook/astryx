@@ -21,7 +21,10 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {satisfiesRange, semverCompare} from '../env/semver.mjs';
-import {detectPackageManager} from '../env/package-manager.mjs';
+import {
+  detectPackageManager,
+  getCliInvocation,
+} from '../env/package-manager.mjs';
 import {CLI_PACKAGE, lowestAdmitted} from './cli-requirement.mjs';
 
 /** The command that adds a package, by package manager. */
@@ -58,8 +61,9 @@ export function cliVersion() {
  * `@astryxdesign/cli` peer range, or null when it is inside it (or when no
  * peer is declared or the package.json cannot be read).
  *
- * A CLI below the range is told to upgrade, with the project's own install
- * command. A CLI above it (the range has an upper bound, such as `^0.6.0`) is
+ * A CLI below the range is told to upgrade Core and the CLI together, with
+ * the project's own install command, and then to run the upgrade codemods.
+ * A CLI above it (the range has an upper bound, such as `^0.6.0`) is
  * told to look for a release of the package that supports it, since
  * upgrading the CLI cannot help there; the author of the package in the
  * current folder is told to test with this CLI and widen the range.
@@ -99,11 +103,16 @@ export function cliPeerVersionProblem(
   const name = integration.name ?? pkg.name ?? '(integration)';
   const lowest = lowestAdmitted(range);
   if (lowest != null && semverCompare(ver, lowest) < 0) {
+    // Core and the CLI move together, then the upgrade codemods run, as the
+    // project-upgrade notice does: moving only the CLI would leave it ahead of
+    // Core. A package's own folder holds them as dev dependencies.
     const verb = ADD_VERB[detectPackageManager(cwd)] ?? ADD_VERB.npm;
+    const install = `${verb}${own ? ' -D' : ''} @astryxdesign/core@latest ${CLI_PACKAGE}@latest`;
+    const upgrade = `${getCliInvocation(cwd, {installed: true})} upgrade --from ${ver} --apply`;
     return (
       `${name} needs ${CLI_PACKAGE} ${range}, but this CLI is ${ver}, so ` +
-      `some of what it ships may not load. Upgrade the CLI: ` +
-      `\`${verb} ${CLI_PACKAGE}@latest\`.`
+      `some of what it ships may not load. Upgrade Core and the CLI ` +
+      `together: \`${install}\`, then \`${upgrade}\`.`
     );
   }
   if (own) {

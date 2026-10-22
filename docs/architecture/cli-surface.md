@@ -236,9 +236,10 @@ validate` MUST warn on a PascalCase `.tsx` at the top of the components root
   `astryx doctor integration validate` and `integration check` MUST list a
   `cli_peer_version` note, which fails nothing, `--strict` included, and
   `integration verify` does not report it: below the range it names the
-  project's install command for a newer CLI, and above it, it asks for a
-  release of the package that supports this CLI or, for the package in the
-  current folder, to test with this CLI and widen the range.
+  project's commands to install a newer Core and CLI together and run
+  `upgrade --apply`, and above it, it asks for a release of the package that
+  supports this CLI or, for the package in the current folder, to test with
+  this CLI and widen the range.
 - **INV36 — The person filing a gap report chooses where it goes.**
   `astryx gap-report` MUST send a report to the configured report handlers, or
   with none to the owning package's `issuesUrl` (`spec:AST-031` FR8), unless
