@@ -44,6 +44,7 @@ export function item(packages, packageName, itemName, options = {}) {
         if (set) {
           return {
             type: 'discover.item',
+            package: packageName,
             data: {
               package: packageName,
               ...(pkg.version ? {version: pkg.version} : {}),

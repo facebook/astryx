@@ -58,6 +58,8 @@ describe('discover icon sets', () => {
     const page = await json(['discover', '@acme/glyphs/glyphs']);
     expect(page).toMatchObject({
       type: 'discover.item',
+      // The envelope names the package the answer comes from.
+      package: '@acme/glyphs',
       data: {
         package: '@acme/glyphs',
         kind: 'icon-set',
