@@ -55,6 +55,10 @@ const CLI_LAYER_TYPES = {
 };
 
 const manifest = buildManifest(program, {jsonSupported: JSON_SUPPORTED, version: '0.0.0-test'});
+/** Hidden commands (a package-script hook): documented, never in the manifest. */
+const HIDDEN = new Set(
+  program.commands.filter((c) => /** @type {any} */ (c)._hidden).map((c) => c.name()),
+);
 
 /** Flatten the manifest command tree into fully-qualified names. */
 function flatten(cmds, out = []) {
@@ -116,10 +120,17 @@ describe('manifest: drift guards', () => {
 
   it('takes every command example from its CommandDoc', () => {
     for (const [name, doc] of commandDocs) {
+      if (HIDDEN.has(name)) continue;
       const entry = allEntries.find((c) => c.name === name);
       expect(entry, `CommandDoc "${name}" has no manifest entry`).toBeDefined();
       expect(entry.examples ?? [], name).toEqual((doc.examples ?? []).map((e) => e.cli));
     }
+  });
+
+  it('documents the hidden postinstall hook and keeps it out of the manifest', () => {
+    expect([...HIDDEN]).toEqual(['postinstall']);
+    expect(commandDocs.has('postinstall')).toBe(true);
+    expect(allNames.has('postinstall')).toBe(false);
   });
 
   it('lists every response type the wrapped API function returns', () => {
@@ -152,6 +163,7 @@ describe('manifest: drift guards', () => {
 
   it('takes response types from the wrapped FunctionDoc, plus CLI-layer envelopes', () => {
     for (const [name, doc] of commandDocs) {
+      if (HIDDEN.has(name)) continue;
       const entry = allEntries.find((c) => c.name === name);
       const returns = doc.fn ? functionDocs.get(doc.fn).returns.map((r) => r.type) : [];
       const expected = [...returns, ...(CLI_LAYER_TYPES[name] ?? [])];

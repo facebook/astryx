@@ -44,6 +44,26 @@ export const CURSOR_RULES = '.cursorrules';
 export const HERMES_DOT_MD = '.hermes.md';
 export const HERMES_MD = 'HERMES.md';
 
+/**
+ * The page workflow every Astryx agent text gives, written with the command
+ * name `astryx`: the project agent docs and the computer-level skill both
+ * render these lines, so the two never drift.
+ */
+export const WORKFLOW_TITLE =
+  'WORKFLOW — start every page from a template, never from scratch:';
+export const WORKFLOW_STEPS = Object.freeze([
+  '1. `astryx build "<idea>"` — names the template to scaffold from and the parts it lacks.',
+  '2. `astryx template <name> <path>` — scaffold it; keep its frame, gap and padding; replace the content.',
+  '3. `astryx template <Block>` for parts it lacks; `astryx component <Name>` to read props before using one.',
+]);
+
+/**
+ * The self-check's fix for a project with no StyleX or Tailwind compiler,
+ * and for an agent outside a project.
+ */
+export const SELF_CHECK_CSS =
+  'replace any raw <div>/<span>, imported .css/@apply, or hardcoded #hex/px with the component or a token';
+
 export const MARKER_START = '<!-- ASTRYX:START -->';
 export const MARKER_END = '<!-- ASTRYX:END -->';
 // Legacy markers — read during migration so the script finds existing XDS blocks
@@ -101,7 +121,9 @@ export function holdsAstryxBlock(content) {
     while (at !== -1) {
       const from = at + marker.length;
       const end = content.indexOf('<!--', from);
-      const inner = (end === -1 ? content.slice(from) : content.slice(from, end)).trim();
+      const inner = (
+        end === -1 ? content.slice(from) : content.slice(from, end)
+      ).trim();
       if (!/^@\S+$/.test(inner)) return true;
       at = content.indexOf(marker, from);
     }
@@ -163,7 +185,7 @@ export function isAstryxPromptInReach(startDir = process.cwd()) {
  * @returns {string | null}
  */
 function findRepositoryRoot(start) {
-  for (let dir = start; ; ) {
+  for (let dir = start; ;) {
     if (fs.existsSync(path.join(dir, '.git'))) return dir;
     const parent = path.dirname(dir);
     if (parent === dir) return null;

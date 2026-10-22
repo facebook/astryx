@@ -708,6 +708,32 @@ describe('BottomSheetSwitcher', () => {
     expect(onActiveSheetChange).toHaveBeenNthCalledWith(2, null);
   });
 
+  it('keeps the flow open when a file picker inside a step is dismissed, and still closes on its own close request', () => {
+    // A file input fires a bubbling `cancel` at itself when its picker is
+    // dismissed. A step renders no dialog, so it reaches the switcher's.
+    const onActiveSheetChange = vi.fn();
+    render(
+      <BottomSheetSwitcher
+        activeSheet="upload"
+        onActiveSheetChange={onActiveSheetChange}>
+        <BottomSheet sheetId="upload" label="Upload" purpose="form">
+          <input type="file" aria-label="Picture" />
+        </BottomSheet>
+      </BottomSheetSwitcher>,
+    );
+
+    const fromPicker = new Event('cancel', {bubbles: true, cancelable: true});
+    fireEvent(screen.getByLabelText('Picture'), fromPicker);
+
+    expect(onActiveSheetChange).not.toHaveBeenCalled();
+    expect(fromPicker.defaultPrevented).toBe(false);
+
+    fireEvent(getSharedDialog(), new Event('cancel', {cancelable: true}));
+
+    expect(onActiveSheetChange).toHaveBeenCalledTimes(1);
+    expect(onActiveSheetChange).toHaveBeenCalledWith(null);
+  });
+
   it('honors purpose=required for a switcher-managed sheet', () => {
     const onActiveSheetChange = vi.fn();
     render(

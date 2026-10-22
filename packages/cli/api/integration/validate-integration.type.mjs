@@ -39,9 +39,11 @@
  * "healthy" — the two are otherwise byte-identical.
  * @typedef {object} ValidateIntegrationResponse
  * @property {'integration.validate'} type
- * @property {{validated: boolean, name: string | null, version: string | null, issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[], notes?: Array<{code: string, message: string}>, docTypes?: DocTypesReport, docNames?: DocNamesReport, blockComponents?: BlockComponentsReport}} data
+ * @property {{validated: boolean, name: string | null, version: string | null, issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[], notes?: Array<{code: string, message: string}>, docTypes?: DocTypesReport, docNames?: DocNamesReport, blockComponents?: BlockComponentsReport, publicImports?: PublicImportsReport}} data
  *   `notes`: information beside the issues that fails nothing, such as
- *   `invalid_cli_command`, a `cliCommand` that was ignored as malformed, and
+ *   `invalid_cli_command`, a `cliCommand` that was ignored as malformed;
+ *   `cli_peer_version`, the running CLI outside the package's
+ *   `@astryxdesign/cli` peer range; and
  *   the package layout findings added after the last minor release, each with
  *   its fix in the message: two docs for one component
  *   (`duplicate_component_doc`), a root reached through a symlink
@@ -49,10 +51,11 @@
  *   (`unreadable_file`), a package.json without `name` or `version`
  *   (`invalid_package_json`), no provider ID (`no_provider_id`), and a doc
  *   whose file name differs from its source only in letter case where the two
- *   still pair (`source_without_component_doc`); and `doc_name_mismatch` and
- *   `unknown_block_component` (see `docNames` and `blockComponents`); they
- *   become warnings in the next minor release; and `runner_command`, an
- *   Astryx command a topic writes with a package runner
+ *   still pair (`source_without_component_doc`); `doc_name_mismatch` and
+ *   `unknown_block_component` (see `docNames` and `blockComponents`); and
+ *   since 0.7.3 each public-import finding; they become warnings in the next
+ *   minor release; and `runner_command`, an Astryx command a topic writes
+ *   with a package runner
  */
 
 /**
@@ -99,3 +102,21 @@
  */
 
 export {};
+
+/**
+ * An import the public-import check could not judge.
+ * @typedef {object} PublicImportUnchecked
+ * @property {string} file package-relative file that names it
+ * @property {string} specifier the import specifier
+ * @property {string} reason why it was not checked
+ */
+
+/**
+ * The public-import check's report on validate's result: `unchecked` lists
+ * what it could not judge, never counted or failed on. Its findings are
+ * notes on the result (`data.notes`), so `findings` stays empty.
+ * @typedef {object} PublicImportsReport
+ * @property {'checked'} status
+ * @property {never[]} findings
+ * @property {PublicImportUnchecked[]} unchecked
+ */
