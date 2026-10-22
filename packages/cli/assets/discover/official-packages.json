@@ -239,6 +239,22 @@
         {
           "kind": "template",
           "name": "EmojiPickerShowcase"
+        },
+        {
+          "kind": "template",
+          "name": "ListInputBudgetAllocation"
+        },
+        {
+          "kind": "template",
+          "name": "ListInputFamilyMembers"
+        },
+        {
+          "kind": "template",
+          "name": "ListInputMailingList"
+        },
+        {
+          "kind": "template",
+          "name": "ListInputShowcase"
         }
       ]
     },
