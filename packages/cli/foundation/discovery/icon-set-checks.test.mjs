@@ -39,6 +39,12 @@ afterEach(() => {
 const COVERAGE = new Set(['icon_builtin_definition_missing']);
 
 /**
+ * What the checks could not judge in the last {@link issuesOf} call, by set.
+ * @type {Map<string, import('./icon-set-checks.mjs').IconSetUnchecked[]>}
+ */
+let notChecked = new Map();
+
+/**
  * The set's issues, leaving out the definition-coverage findings that the
  * small fixture set always has; `coverage: true` keeps them.
  * @param {import('../../test-utils/icon-set-fixture.mjs').IconPackageSpec} [spec]
@@ -46,10 +52,15 @@ const COVERAGE = new Set(['icon_builtin_definition_missing']);
  */
 function issuesOf(spec = {}, {coverage = false} = {}) {
   writeIconPackage(dir, spec);
-  const issues = iconSetIssues(dir, {
-    name: spec.name ?? '@acme/glyphs',
-    iconSets: path.join(dir, 'icon-sets'),
-  });
+  notChecked = new Map();
+  const issues = iconSetIssues(
+    dir,
+    {
+      name: spec.name ?? '@acme/glyphs',
+      iconSets: path.join(dir, 'icon-sets'),
+    },
+    notChecked,
+  );
   return coverage ? issues : issues.filter(issue => !COVERAGE.has(issue.code));
 }
 
@@ -222,7 +233,7 @@ describe('iconSetIssues', () => {
       ]);
     });
 
-    it('follows `export *` from an installed package, and says which re-export it could not follow', () => {
+    it('follows `export *` from an installed package, and lists an export behind a re-export it cannot follow as not checked', () => {
       const upstream = path.join(dir, 'node_modules', 'upstream-icons');
       fs.mkdirSync(upstream, {recursive: true});
       fs.writeFileSync(
@@ -254,13 +265,65 @@ describe('iconSetIssues', () => {
           ),
         }),
       });
-      expect(missing).toEqual([
-        expect.objectContaining({code: 'icon_export_missing'}),
+      // The reader cannot judge it, so it is not checked, never an issue.
+      expect(missing).toEqual([]);
+      expect(notChecked.get('glyphs')).toEqual([
+        {
+          icon: 'home',
+          reason: expect.stringContaining(
+            're-export from "not-installed", which the reader could not follow',
+          ),
+        },
       ]);
-      expect(missing[0].message).toContain(
-        'could not follow its re-export from "not-installed"',
+    });
+
+    it('lists an export whose module is an exports target not built yet as not checked, and still fails an export the built file lacks', () => {
+      const unbuilt = issuesOf({
+        name: '@acme/glyphs',
+        data: data(d => {
+          d.icons[0].module = '@acme/glyphs/extra';
+        }),
+      });
+      const pkgFile = path.join(dir, 'package.json');
+      const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'));
+      pkg.exports = {...pkg.exports, './extra': './dist/extra.js'};
+      fs.writeFileSync(pkgFile, JSON.stringify(pkg));
+      notChecked = new Map();
+      const before = iconSetIssues(
+        dir,
+        {name: '@acme/glyphs', iconSets: path.join(dir, 'icon-sets')},
+        notChecked,
+      ).filter(issue => !COVERAGE.has(issue.code));
+      expect(unbuilt.some(issue => issue.code === 'icon_export_missing')).toBe(
+        true,
       );
-      expect(missing[0].message).not.toContain('does not export at runtime');
+      expect(
+        before.filter(issue => issue.code === 'icon_export_missing'),
+      ).toEqual([]);
+      expect(notChecked.get('glyphs')).toEqual([
+        {
+          icon: 'x',
+          reason: expect.stringContaining(
+            'exports target ./dist/extra.js is not there yet',
+          ),
+        },
+      ]);
+      // Built without the export: a real miss, an error.
+      fs.mkdirSync(path.join(dir, 'dist'), {recursive: true});
+      fs.writeFileSync(path.join(dir, 'dist', 'extra.js'), 'export {};\n');
+      notChecked = new Map();
+      const built = iconSetIssues(
+        dir,
+        {name: '@acme/glyphs', iconSets: path.join(dir, 'icon-sets')},
+        notChecked,
+      );
+      expect(built).toContainEqual(
+        expect.objectContaining({
+          code: 'icon_export_missing',
+          severity: 'error',
+        }),
+      );
+      expect(notChecked.get('glyphs')).toBeUndefined();
     });
 
     it('a generated module or adapter the data names must exist', () => {
@@ -329,7 +392,7 @@ describe('iconSetIssues', () => {
       expect(issues).toEqual([]);
     });
 
-    it('reads createElement and jsx calls as the artwork they render, and warns on an entry it cannot read', () => {
+    it('reads createElement and jsx calls as the artwork they render, and lists an entry it cannot read as not checked', () => {
       const read = issuesOf({
         modules: modules({
           'theme.js':
@@ -343,11 +406,12 @@ describe('iconSetIssues', () => {
             "import {XIcon} from './icons/x.js';\nconst pick = icon => icon;\nexport const themeIcons = {close: XIcon, search: pick(XIcon)};\n",
         }),
       });
-      expect(unread).toEqual([
-        expect.objectContaining({
-          code: 'icon_theme_map_unchecked',
-          severity: 'warning',
-        }),
+      expect(unread).toEqual([]);
+      expect(notChecked.get('glyphs')).toEqual([
+        {
+          entry: 'search',
+          reason: expect.stringContaining('the static reader cannot read'),
+        },
       ]);
     });
 

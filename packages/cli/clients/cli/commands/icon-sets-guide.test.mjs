@@ -78,7 +78,7 @@ describe('icon-set guide', () => {
       'unmappedDefinitions',
       'icon_module_not_public',
       'icon_not_component',
-      'icon_theme_map_unchecked',
+      'Not checked',
       'icon_module_invalid',
       'icon_generated_types_mismatch',
       'themeIcons',

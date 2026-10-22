@@ -471,9 +471,12 @@ async function validateAtPackageDir(
   // The icon-set checks (AST-084 FR15): data against descriptor, module
   // exports, and theme map, all read statically.
   if (loaded.iconSets && !rootProblem(loaded.iconSets)) {
-    issues.push(...iconSetIssues(packageDir, loaded));
-    // Which definitions each set leaves unmapped: listed, never an issue.
-    result.iconSets = iconSetCoverage(loaded);
+    /** @type {Map<string, import('../../foundation/discovery/icon-set-checks.mjs').IconSetUnchecked[]>} */
+    const unchecked = new Map();
+    issues.push(...iconSetIssues(packageDir, loaded, unchecked));
+    // Which definitions each set leaves unmapped, and what the checks could
+    // not judge: listed, never an issue.
+    result.iconSets = iconSetCoverage(loaded, unchecked);
   }
   // What the docs say that no reader serves: a prop listed twice, an
   // overlay's text for a prop the doc lacks, an empty or unreachable section,

@@ -19,12 +19,13 @@
  *            or whose name is an Astryx definition; a data file generated from an upstream version
  *            other than the one the package depends on; a set with an
  *            upstream and no license notice file in its directory or package.
- * A theme-map value the reader cannot follow (anything but a binding or
- * `<Name />`) is left unchecked rather than reported
- * (`architecture:cli-surface` DEC-7).
+ * What it cannot judge it lists as not checked, never as an issue
+ * (`architecture:cli-surface` INV35, DEC-7): an export whose module is a
+ * package `exports` target not built yet, an export behind a re-export the
+ * reader cannot follow, and a theme-map entry it cannot read.
  *
  * @input A package directory and its loaded integration roots
- * @output Issues in the integration issue format
+ * @output Issues in the integration issue format, and the items not checked
  * @position packages/cli/foundation/discovery — read by validate-integration
  */
 
@@ -36,7 +37,9 @@ import {
   NOTICE_FILE_RE,
   discoverIconSetDirectory,
   resolveIconModule,
+  splitSpecifier,
 } from './icon-set-discovery.mjs';
+import {inspectPackageExport} from './package-exports.mjs';
 import {
   generatedTypesPath,
   generatedTypesText,
@@ -71,8 +74,6 @@ export const ICON_BUILTIN_DEFINITION_MISSING =
 export const ICON_GENERATED_TYPES_MISMATCH = 'icon_generated_types_mismatch';
 /** A module of the set's package that does not parse. */
 export const ICON_MODULE_INVALID = 'icon_module_invalid';
-/** A theme-map entry the static reader cannot read. */
-export const ICON_THEME_MAP_UNCHECKED = 'icon_theme_map_unchecked';
 /** An icon read from a module other than the set's package public entry. */
 export const ICON_MODULE_NOT_PUBLIC = 'icon_module_not_public';
 /** An icon export not named `<Name>Icon`. */
@@ -101,12 +102,22 @@ function readJson(file) {
 }
 
 /**
+ * One item a check could not judge: listed, never counted, never failing.
+ * @typedef {object} IconSetUnchecked
+ * @property {string} [icon] the icon whose export was not checked
+ * @property {string} [entry] the theme-map entry that was not checked
+ * @property {string} reason why, and what would let the check judge it
+ */
+
+/**
  * Every icon-set issue of one integration package.
  * @param {string} packageDir
  * @param {{name: string, iconSets?: string}} loaded
+ * @param {Map<string, IconSetUnchecked[]>} [unchecked] filled, by set name,
+ *   with what the checks could not judge
  * @returns {Issue[]}
  */
-export function iconSetIssues(packageDir, loaded) {
+export function iconSetIssues(packageDir, loaded, unchecked = new Map()) {
   if (!loaded.iconSets) return [];
   /** @type {Issue[]} */
   const issues = [];
@@ -122,7 +133,12 @@ export function iconSetIssues(packageDir, loaded) {
     // once instead of one missing export per icon.
     const broken = unparsedModule(set, packageDir, loaded.name);
     if (broken) issues.push(broken);
-    else issues.push(...checkExports(set, packageDir, loaded.name));
+    else {
+      /** @type {IconSetUnchecked[]} */
+      const notChecked = [];
+      issues.push(...checkExports(set, packageDir, loaded.name, notChecked));
+      if (notChecked.length > 0) unchecked.set(set.name, notChecked);
+    }
     issues.push(...checkUpstream(set, packageDir, pkg));
   }
   return issues;
@@ -353,6 +369,8 @@ function checkDefinitions(set) {
  *   unmapped definition, built-in, optional, or the set's own, the icon whose
  *   whole id is the definition's name or one of its words; nothing is guessed
  *   beyond that
+ * @property {IconSetUnchecked[]} unchecked what the checks could not judge:
+ *   never counted, never failing, even under `--strict`
  */
 
 /**
@@ -360,9 +378,11 @@ function checkDefinitions(set) {
  * `experimental.iconSets` root leaves unmapped, and the icons that fit them.
  * Reported beside the issues, never as one (spec:AST-084 FR15).
  * @param {{name: string, iconSets?: string}} loaded
+ * @param {Map<string, IconSetUnchecked[]>} [unchecked] what
+ *   {@link iconSetIssues} could not judge, by set name
  * @returns {IconSetCoverage[]}
  */
-export function iconSetCoverage(loaded) {
+export function iconSetCoverage(loaded, unchecked = new Map()) {
   if (!loaded.iconSets) return [];
   const found = discoverIconSetDirectory(loaded.iconSets, loaded.name);
   const astryx = astryxIconDefinitions().definitions.map(each => each.doc);
@@ -390,6 +410,7 @@ export function iconSetCoverage(loaded) {
           ? [{definition: doc.name, icon: suggestion.icon}]
           : [];
       }),
+      unchecked: unchecked.get(set.name) ?? [],
     };
   });
 }
@@ -421,9 +442,10 @@ export function suggestIcon(set, doc) {
  * @param {DiscoveredIconSet} set
  * @param {string} packageDir
  * @param {string} packageName
+ * @param {IconSetUnchecked[]} unchecked filled with what it cannot judge
  * @returns {Issue[]}
  */
-function checkExports(set, packageDir, packageName) {
+function checkExports(set, packageDir, packageName, unchecked) {
   /** @type {Issue[]} */
   const issues = [];
   const label = `Icon set "${set.name}"`;
@@ -442,22 +464,45 @@ function checkExports(set, packageDir, packageName) {
     }
     return /** @type {string | null} */ (files.get(specifier));
   };
+  /**
+   * The `exports` target a specifier of this package declares when its file
+   * is not there yet, as before a build; null otherwise.
+   * @param {string} specifier
+   */
+  const unbuiltTarget = specifier => {
+    const {name, subpath} = splitSpecifier(specifier);
+    if (name !== packageName) return null;
+    const pkg = readJson(path.join(packageDir, 'package.json'));
+    if (!pkg || pkg.exports === undefined) return null;
+    const found = inspectPackageExport(pkg, packageDir, subpath);
+    return found.exported && found.authoredTarget && !found.target
+      ? found.authoredTarget
+      : null;
+  };
   /** @type {Map<string, {file: string, name: string} | null>} */
   const origins = new Map();
   /**
-   * The origin of one export, or an issue when its module lacks it.
+   * The origin of one export, or an issue when its module lacks it. What it
+   * cannot judge it lists as not checked.
    * @param {string} specifier
    * @param {string} name
    * @param {string} what
+   * @param {Omit<IconSetUnchecked, 'reason'>} subject
    * @param {boolean} [component] whether the export must be a component
    */
-  const originOf = (specifier, name, what, component = true) => {
+  const originOf = (specifier, name, what, subject, component = true) => {
     const key = `${specifier}\0${name}`;
     if (origins.has(key)) return origins.get(key) ?? null;
     const file = fileOf(specifier);
     const origin = file ? moduleExportOrigin(file, name) : null;
     origins.set(key, origin);
-    if (!file) {
+    const unbuilt = file ? null : unbuiltTarget(specifier);
+    if (unbuilt) {
+      unchecked.push({
+        ...subject,
+        reason: `${what} is read from "${specifier}", whose exports target ${unbuilt} is not there yet; build the package and run the check again.`,
+      });
+    } else if (!file) {
       issues.push(
         issueError(
           ICON_EXPORT_MISSING,
@@ -466,14 +511,19 @@ function checkExports(set, packageDir, packageName) {
       );
     } else if (!origin) {
       const unfollowed = unfollowedReexports(file);
-      issues.push(
-        issueError(
-          ICON_EXPORT_MISSING,
-          unfollowed.length > 0
-            ? `${label}: ${what} names export "${name}", which could not be found in "${specifier}": the reader could not follow its re-export from ${unfollowed.map(each => `"${each}"`).join(', ')}. Install that package as a dependency, or re-export the icon by name from a file in this package.`
-            : `${label}: ${what} names export "${name}", which "${specifier}" does not export at runtime. Export it, or fix the name in ${set.name}.icons.json.`,
-        ),
-      );
+      if (unfollowed.length > 0) {
+        unchecked.push({
+          ...subject,
+          reason: `${what} names export "${name}", which "${specifier}" may re-export from ${unfollowed.map(each => `"${each}"`).join(', ')}, which the reader could not follow. Install that package as a dependency, or re-export the icon by name from a file in this package.`,
+        });
+      } else {
+        issues.push(
+          issueError(
+            ICON_EXPORT_MISSING,
+            `${label}: ${what} names export "${name}", which "${specifier}" does not export at runtime. Export it, or fix the name in ${set.name}.icons.json.`,
+          ),
+        );
+      }
     } else if (component && exportValueKind(file, name) === 'data') {
       issues.push(
         issueError(
@@ -498,13 +548,14 @@ function checkExports(set, packageDir, packageName) {
     const module = icon.module ?? set.data.module;
     iconOrigins.set(
       icon.id,
-      originOf(module, icon.export, `icon "${icon.id}"`),
+      originOf(module, icon.export, `icon "${icon.id}"`, {icon: icon.id}),
     );
     for (const variant of icon.variants ?? []) {
       originOf(
         variant.module ?? module,
         variant.export,
         `a variant of icon "${icon.id}"`,
+        {icon: icon.id},
       );
     }
   }
@@ -527,7 +578,13 @@ function checkExports(set, packageDir, packageName) {
     );
     return issues;
   }
-  const mapOrigin = originOf(set.data.module, themeMap, `the theme map`, false);
+  const mapOrigin = originOf(
+    set.data.module,
+    themeMap,
+    `the theme map`,
+    {entry: themeMap},
+    false,
+  );
   const file = fileOf(set.data.module);
   if (!mapOrigin || !file) return issues;
   const bindings = staticExportBindings(file, themeMap);
@@ -555,12 +612,10 @@ function checkExports(set, packageDir, packageName) {
     }
     const value = bindings.get(name);
     if (!value) {
-      issues.push(
-        issueWarning(
-          ICON_THEME_MAP_UNCHECKED,
-          `${label}: theme map "${themeMap}" has an entry for "${name}" the static reader cannot read, so it was not checked. Write it as the icon's binding (${name}: TrashIcon), an element (<TrashIcon />), or createElement(TrashIcon).`,
-        ),
-      );
+      unchecked.push({
+        entry: name,
+        reason: `Theme map "${themeMap}" has an entry for "${name}" the static reader cannot read. Write it as the icon's binding (${name}: TrashIcon), an element (<TrashIcon />), or createElement(TrashIcon) to have it checked.`,
+      });
       continue;
     }
     if (!filler.origin) continue;

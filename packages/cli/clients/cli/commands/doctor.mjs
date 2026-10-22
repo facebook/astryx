@@ -307,6 +307,32 @@ function iconSetCoverageBlocks(sets) {
   const listed = (sets ?? []).filter(
     each => each.unmappedDefinitions.length > 0 || each.suggestions.length > 0,
   );
+  const unchecked = (sets ?? []).flatMap(each =>
+    (each.unchecked ?? []).map(item => ({
+      set: each.set,
+      item: item.icon ? `icon ${item.icon}` : `theme map ${item.entry}`,
+      reason: item.reason,
+    })),
+  );
+  return [
+    ...(unchecked.length > 0
+      ? [
+          section('Not checked'),
+          records(unchecked, {fields: ['set', 'item', 'reason']}),
+          text(
+            'The icon-set checks could not judge these; they are never counted and never fail a check.',
+          ),
+        ]
+      : []),
+    ...unmappedBlocks(listed),
+  ];
+}
+
+/**
+ * @param {import('../../../api/integration/validate-integration.type.mjs').IconSetCoverage[]} listed
+ * @returns {import('../formatters/index.mjs').Block[]}
+ */
+function unmappedBlocks(listed) {
   if (listed.length === 0) return [];
   return [
     section('Unmapped icon definitions (optional)'),

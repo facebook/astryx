@@ -106,8 +106,9 @@
 /**
  * Experimental (spec:AST-084 FR15): for a package that declares
  * `experimental.iconSets`, which icon definitions each valid set leaves
- * unmapped. Listed beside the issues and never counted: mapping an optional
- * definition is optional, and nothing here fails a check, even under
+ * unmapped, and what the checks could not judge. Listed beside the issues and
+ * never counted: mapping an optional definition is optional, an item not
+ * checked is not a failure, and nothing here fails a check, even under
  * `--strict`.
  * @experimental May change or be removed in a patch release.
  * @typedef {object} IconSetCoverage
@@ -118,6 +119,11 @@
  * @property {Array<{definition: string, icon: string}>} suggestions For each
  *   unmapped definition (built-in, optional, or the set's own), the icon
  *   whose whole id is the definition's name or one of its words, when one is.
+ * @property {Array<{icon?: string, entry?: string, reason: string}>} unchecked
+ *   What the checks could not judge: an icon export whose module is an
+ *   `exports` target not built yet, or sits behind a re-export the reader
+ *   cannot follow (`icon`), and a theme-map entry the reader cannot read
+ *   (`entry`), each with the reason.
  */
 
 /**

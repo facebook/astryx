@@ -223,7 +223,6 @@ icon, and the CLI verifies it, writes the files, and checks the set.
   | `icon_module_invalid`             | error    | the set's module, a file it re-exports, or the generated module does not parse |
   | `icon_generated_types_mismatch`   | error    | the generated declaration file is missing or stale                             |
   | `icon_theme_map_mismatch`         | error    | the theme map disagrees with the built-in entries of `map`                     |
-  | `icon_theme_map_unchecked`        | warning  | a theme-map entry is not a form the reader can check                           |
   | `icon_source_version_drift`       | warning  | the data names another upstream version than the package depends on            |
   | `icon_license_notice_missing`     | warning  | a set with an upstream ships no license notice                                 |
 
@@ -231,11 +230,16 @@ icon, and the CLI verifies it, writes the files, and checks the set.
   suggests an `icon map` command only when an icon's whole `id` is the
   definition's name or one of its words. Errors fail the check; warnings fail
   under `--strict`. Re-exports are followed through relative files and
-  installed packages for these checks only. The optional Astryx definitions a
-  set leaves unmapped are not issues: the validate result lists them in the
-  additive field `iconSets` (each `{set, unmappedDefinitions, suggestions}`),
-  printed as "Unmapped icon definitions (optional)", never counted and never
-  failing.
+  installed packages for these checks only. Neither is an issue, never counted
+  and never failing, even under `--strict`, in the validate result's additive
+  field `iconSets` (each `{set, unmappedDefinitions, suggestions,
+unchecked}`): the optional Astryx definitions a set leaves unmapped, printed
+  as "Unmapped icon definitions (optional)"; and what a check cannot judge (an
+  icon export whose module is a package `exports` target not built yet, an
+  export behind a re-export the reader cannot follow, and a theme-map entry
+  the reader cannot read), each `{icon}` or `{entry}` with its `reason`,
+  printed under "Not checked" (`architecture:cli-surface` INV35, DEC-7). An
+  export the built module lacks is still `icon_export_missing`.
 
 - **FR16 — Older CLIs.** Published CLI 0.7.2 refuses `stability` on page and
   block templates, namespace docs, and theme descriptors, and refuses a
