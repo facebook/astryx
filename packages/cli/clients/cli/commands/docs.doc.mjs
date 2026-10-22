@@ -52,7 +52,7 @@ export const doc = {
   examples: [
     {label: 'List topics', cli: 'astryx docs'},
     {label: "A topic's sections", cli: 'astryx docs theme-your-app'},
-    {label: 'A whole topic as JSON', cli: 'astryx docs foundations/spacing --json'},
+    {label: 'A whole topic as JSON', cli: 'astryx docs spacing --json'},
     {label: 'One section', cli: 'astryx docs theme-your-app quick-start'},
     {label: 'The CLI docs tree', cli: 'astryx docs reference'},
     {label: 'Every CLI doc, one line each', cli: 'astryx docs reference --depth all'},

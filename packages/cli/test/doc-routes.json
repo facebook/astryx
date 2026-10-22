@@ -2587,7 +2587,7 @@
     {
       "kind": "topic",
       "id": "color",
-      "oldCliRoute": "astryx docs foundations/color",
+      "oldCliRoute": "astryx docs color",
       "oldDocsiteUrl": "/docs/color",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2597,7 +2597,7 @@
     {
       "kind": "section",
       "id": "color#overview",
-      "oldCliRoute": "astryx docs foundations/color overview",
+      "oldCliRoute": "astryx docs color overview",
       "oldDocsiteUrl": "/docs/color#overview",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2607,7 +2607,7 @@
     {
       "kind": "section",
       "id": "color#surface-colors",
-      "oldCliRoute": "astryx docs foundations/color surface-colors",
+      "oldCliRoute": "astryx docs color surface-colors",
       "oldDocsiteUrl": "/docs/color#color-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2617,7 +2617,7 @@
     {
       "kind": "section",
       "id": "color#usage",
-      "oldCliRoute": "astryx docs foundations/color usage",
+      "oldCliRoute": "astryx docs color usage",
       "oldDocsiteUrl": "/docs/color#use-color-tokens-in-stylex",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2627,7 +2627,7 @@
     {
       "kind": "section",
       "id": "color#best-practices",
-      "oldCliRoute": "astryx docs foundations/color best-practices",
+      "oldCliRoute": "astryx docs color best-practices",
       "oldDocsiteUrl": "/docs/color#best-practices",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2637,7 +2637,7 @@
     {
       "kind": "topic",
       "id": "elevation",
-      "oldCliRoute": "astryx docs foundations/elevation",
+      "oldCliRoute": "astryx docs elevation",
       "oldDocsiteUrl": "/docs/elevation",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2647,7 +2647,7 @@
     {
       "kind": "section",
       "id": "elevation#overview",
-      "oldCliRoute": "astryx docs foundations/elevation overview",
+      "oldCliRoute": "astryx docs elevation overview",
       "oldDocsiteUrl": "/docs/elevation#overview",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2657,7 +2657,7 @@
     {
       "kind": "section",
       "id": "elevation#elevation-scale",
-      "oldCliRoute": "astryx docs foundations/elevation elevation-scale",
+      "oldCliRoute": "astryx docs elevation elevation-scale",
       "oldDocsiteUrl": "/docs/elevation#elevation-scale",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2667,7 +2667,7 @@
     {
       "kind": "section",
       "id": "elevation#choosing-a-level",
-      "oldCliRoute": "astryx docs foundations/elevation choosing-a-level",
+      "oldCliRoute": "astryx docs elevation choosing-a-level",
       "oldDocsiteUrl": "/docs/elevation#choosing-a-level",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2677,7 +2677,7 @@
     {
       "kind": "section",
       "id": "elevation#the-elevation-prop",
-      "oldCliRoute": "astryx docs foundations/elevation the-elevation-prop",
+      "oldCliRoute": "astryx docs elevation the-elevation-prop",
       "oldDocsiteUrl": "/docs/elevation#the-elevation-prop",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2687,7 +2687,7 @@
     {
       "kind": "section",
       "id": "elevation#usage",
-      "oldCliRoute": "astryx docs foundations/elevation usage",
+      "oldCliRoute": "astryx docs elevation usage",
       "oldDocsiteUrl": "/docs/elevation#usage",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2697,7 +2697,7 @@
     {
       "kind": "section",
       "id": "elevation#best-practices",
-      "oldCliRoute": "astryx docs foundations/elevation best-practices",
+      "oldCliRoute": "astryx docs elevation best-practices",
       "oldDocsiteUrl": "/docs/elevation#best-practices",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2787,7 +2787,7 @@
     {
       "kind": "topic",
       "id": "icons",
-      "oldCliRoute": "astryx docs foundations/icons",
+      "oldCliRoute": "astryx docs icons",
       "oldDocsiteUrl": "/docs/icons",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2797,7 +2797,7 @@
     {
       "kind": "section",
       "id": "icons#available-names",
-      "oldCliRoute": "astryx docs foundations/icons available-names",
+      "oldCliRoute": "astryx docs icons available-names",
       "oldDocsiteUrl": "/docs/icons#available-names",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2807,7 +2807,7 @@
     {
       "kind": "section",
       "id": "icons#custom-icons",
-      "oldCliRoute": "astryx docs foundations/icons custom-icons",
+      "oldCliRoute": "astryx docs icons custom-icons",
       "oldDocsiteUrl": "/docs/icons#custom-icons",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2817,7 +2817,7 @@
     {
       "kind": "section",
       "id": "icons#theme-overrides",
-      "oldCliRoute": "astryx docs foundations/icons theme-overrides",
+      "oldCliRoute": "astryx docs icons theme-overrides",
       "oldDocsiteUrl": "/docs/icons#theme-overrides",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2827,7 +2827,7 @@
     {
       "kind": "section",
       "id": "icons#component-and-library-icons",
-      "oldCliRoute": "astryx docs foundations/icons component-and-library-icons",
+      "oldCliRoute": "astryx docs icons component-and-library-icons",
       "oldDocsiteUrl": "/docs/icons#component-and-library-icons",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2837,7 +2837,7 @@
     {
       "kind": "topic",
       "id": "illustrations",
-      "oldCliRoute": "astryx docs foundations/illustrations",
+      "oldCliRoute": "astryx docs illustrations",
       "oldDocsiteUrl": "/docs/illustrations",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2847,7 +2847,7 @@
     {
       "kind": "section",
       "id": "illustrations#when-to-use",
-      "oldCliRoute": "astryx docs foundations/illustrations when-to-use",
+      "oldCliRoute": "astryx docs illustrations when-to-use",
       "oldDocsiteUrl": "/docs/illustrations#when-to-use",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2857,7 +2857,7 @@
     {
       "kind": "section",
       "id": "illustrations#guidelines",
-      "oldCliRoute": "astryx docs foundations/illustrations guidelines",
+      "oldCliRoute": "astryx docs illustrations guidelines",
       "oldDocsiteUrl": "/docs/illustrations#guidelines",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2867,7 +2867,7 @@
     {
       "kind": "section",
       "id": "illustrations#placement",
-      "oldCliRoute": "astryx docs foundations/illustrations placement",
+      "oldCliRoute": "astryx docs illustrations placement",
       "oldDocsiteUrl": "/docs/illustrations#placement",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3247,7 +3247,7 @@
     {
       "kind": "topic",
       "id": "motion",
-      "oldCliRoute": "astryx docs foundations/motion",
+      "oldCliRoute": "astryx docs motion",
       "oldDocsiteUrl": "/docs/motion",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3257,7 +3257,7 @@
     {
       "kind": "section",
       "id": "motion#overview",
-      "oldCliRoute": "astryx docs foundations/motion overview",
+      "oldCliRoute": "astryx docs motion overview",
       "oldDocsiteUrl": "/docs/motion#overview",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3267,7 +3267,7 @@
     {
       "kind": "section",
       "id": "motion#duration",
-      "oldCliRoute": "astryx docs foundations/motion duration",
+      "oldCliRoute": "astryx docs motion duration",
       "oldDocsiteUrl": "/docs/motion#duration",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3277,7 +3277,7 @@
     {
       "kind": "section",
       "id": "motion#easing",
-      "oldCliRoute": "astryx docs foundations/motion easing",
+      "oldCliRoute": "astryx docs motion easing",
       "oldDocsiteUrl": "/docs/motion#easing",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3287,7 +3287,7 @@
     {
       "kind": "section",
       "id": "motion#where-motion-helps",
-      "oldCliRoute": "astryx docs foundations/motion where-motion-helps",
+      "oldCliRoute": "astryx docs motion where-motion-helps",
       "oldDocsiteUrl": "/docs/motion#where-motion-helps",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3297,7 +3297,7 @@
     {
       "kind": "section",
       "id": "motion#where-motion-hurts",
-      "oldCliRoute": "astryx docs foundations/motion where-motion-hurts",
+      "oldCliRoute": "astryx docs motion where-motion-hurts",
       "oldDocsiteUrl": "/docs/motion#where-motion-hurts",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3307,7 +3307,7 @@
     {
       "kind": "section",
       "id": "motion#movement-principles",
-      "oldCliRoute": "astryx docs foundations/motion movement-principles",
+      "oldCliRoute": "astryx docs motion movement-principles",
       "oldDocsiteUrl": "/docs/motion#movement-principles",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3317,7 +3317,7 @@
     {
       "kind": "section",
       "id": "motion#respecting-user-preferences",
-      "oldCliRoute": "astryx docs foundations/motion respecting-user-preferences",
+      "oldCliRoute": "astryx docs motion respecting-user-preferences",
       "oldDocsiteUrl": "/docs/motion#respecting-user-preferences",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3327,7 +3327,7 @@
     {
       "kind": "section",
       "id": "motion#usage",
-      "oldCliRoute": "astryx docs foundations/motion usage",
+      "oldCliRoute": "astryx docs motion usage",
       "oldDocsiteUrl": "/docs/motion#animate-with-motion-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3337,7 +3337,7 @@
     {
       "kind": "section",
       "id": "motion#best-practices",
-      "oldCliRoute": "astryx docs foundations/motion best-practices",
+      "oldCliRoute": "astryx docs motion best-practices",
       "oldDocsiteUrl": "/docs/motion#best-practices",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3347,7 +3347,7 @@
     {
       "kind": "topic",
       "id": "principles",
-      "oldCliRoute": "astryx docs foundations/principles",
+      "oldCliRoute": "astryx docs principles",
       "oldDocsiteUrl": "/docs/principles",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3357,7 +3357,7 @@
     {
       "kind": "section",
       "id": "principles#design-philosophy",
-      "oldCliRoute": "astryx docs foundations/principles design-philosophy",
+      "oldCliRoute": "astryx docs principles design-philosophy",
       "oldDocsiteUrl": "/docs/principles#design-philosophy",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3367,7 +3367,7 @@
     {
       "kind": "section",
       "id": "principles#rules",
-      "oldCliRoute": "astryx docs foundations/principles rules",
+      "oldCliRoute": "astryx docs principles rules",
       "oldDocsiteUrl": "/docs/principles#rules",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3377,7 +3377,7 @@
     {
       "kind": "section",
       "id": "principles#styling-approach",
-      "oldCliRoute": "astryx docs foundations/principles styling-approach",
+      "oldCliRoute": "astryx docs principles styling-approach",
       "oldDocsiteUrl": "/docs/principles#styling-approach",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3387,7 +3387,7 @@
     {
       "kind": "section",
       "id": "principles#anti-patterns",
-      "oldCliRoute": "astryx docs foundations/principles anti-patterns",
+      "oldCliRoute": "astryx docs principles anti-patterns",
       "oldDocsiteUrl": "/docs/principles#anti-patterns",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3397,7 +3397,7 @@
     {
       "kind": "section",
       "id": "principles#design-tokens",
-      "oldCliRoute": "astryx docs foundations/principles design-tokens",
+      "oldCliRoute": "astryx docs principles design-tokens",
       "oldDocsiteUrl": "/docs/principles#design-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3407,7 +3407,7 @@
     {
       "kind": "topic",
       "id": "shape",
-      "oldCliRoute": "astryx docs foundations/shape",
+      "oldCliRoute": "astryx docs shape",
       "oldDocsiteUrl": "/docs/shape",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3417,7 +3417,7 @@
     {
       "kind": "section",
       "id": "shape#overview",
-      "oldCliRoute": "astryx docs foundations/shape overview",
+      "oldCliRoute": "astryx docs shape overview",
       "oldDocsiteUrl": "/docs/shape#overview",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3427,7 +3427,7 @@
     {
       "kind": "section",
       "id": "shape#radius-scale",
-      "oldCliRoute": "astryx docs foundations/shape radius-scale",
+      "oldCliRoute": "astryx docs shape radius-scale",
       "oldDocsiteUrl": "/docs/shape#radius-scale",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3437,7 +3437,7 @@
     {
       "kind": "section",
       "id": "shape#concentric-radius",
-      "oldCliRoute": "astryx docs foundations/shape concentric-radius",
+      "oldCliRoute": "astryx docs shape concentric-radius",
       "oldDocsiteUrl": "/docs/shape#concentric-radius",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3447,7 +3447,7 @@
     {
       "kind": "section",
       "id": "shape#best-practices",
-      "oldCliRoute": "astryx docs foundations/shape best-practices",
+      "oldCliRoute": "astryx docs shape best-practices",
       "oldDocsiteUrl": "/docs/shape#best-practices",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3457,7 +3457,7 @@
     {
       "kind": "topic",
       "id": "spacing",
-      "oldCliRoute": "astryx docs foundations/spacing",
+      "oldCliRoute": "astryx docs spacing",
       "oldDocsiteUrl": "/docs/spacing",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3467,7 +3467,7 @@
     {
       "kind": "section",
       "id": "spacing#overview",
-      "oldCliRoute": "astryx docs foundations/spacing overview",
+      "oldCliRoute": "astryx docs spacing overview",
       "oldDocsiteUrl": "/docs/spacing#overview",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3477,7 +3477,7 @@
     {
       "kind": "section",
       "id": "spacing#scale",
-      "oldCliRoute": "astryx docs foundations/spacing scale",
+      "oldCliRoute": "astryx docs spacing scale",
       "oldDocsiteUrl": "/docs/spacing#scale",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3487,7 +3487,7 @@
     {
       "kind": "section",
       "id": "spacing#usage",
-      "oldCliRoute": "astryx docs foundations/spacing usage",
+      "oldCliRoute": "astryx docs spacing usage",
       "oldDocsiteUrl": "/docs/spacing#usage",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3497,7 +3497,7 @@
     {
       "kind": "section",
       "id": "spacing#best-practices",
-      "oldCliRoute": "astryx docs foundations/spacing best-practices",
+      "oldCliRoute": "astryx docs spacing best-practices",
       "oldDocsiteUrl": "/docs/spacing#best-practices",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3977,7 +3977,7 @@
     {
       "kind": "topic",
       "id": "tokens",
-      "oldCliRoute": "astryx docs foundations/all-tokens",
+      "oldCliRoute": "astryx docs tokens",
       "oldDocsiteUrl": "/docs/tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3987,7 +3987,7 @@
     {
       "kind": "section",
       "id": "tokens#color-tokens",
-      "oldCliRoute": "astryx docs foundations/all-tokens color-tokens",
+      "oldCliRoute": "astryx docs tokens color-tokens",
       "oldDocsiteUrl": "/docs/tokens#color-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3997,7 +3997,7 @@
     {
       "kind": "section",
       "id": "tokens#data-visualization-tokens",
-      "oldCliRoute": "astryx docs foundations/all-tokens data-visualization-tokens",
+      "oldCliRoute": "astryx docs tokens data-visualization-tokens",
       "oldDocsiteUrl": "/docs/tokens#data-visualization-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4007,7 +4007,7 @@
     {
       "kind": "section",
       "id": "tokens#syntax-tokens",
-      "oldCliRoute": "astryx docs foundations/all-tokens syntax-tokens",
+      "oldCliRoute": "astryx docs tokens syntax-tokens",
       "oldDocsiteUrl": "/docs/tokens#syntax-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4017,7 +4017,7 @@
     {
       "kind": "section",
       "id": "tokens#spacing-tokens",
-      "oldCliRoute": "astryx docs foundations/all-tokens spacing-tokens",
+      "oldCliRoute": "astryx docs tokens spacing-tokens",
       "oldDocsiteUrl": "/docs/tokens#spacing-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4027,7 +4027,7 @@
     {
       "kind": "section",
       "id": "tokens#size-tokens",
-      "oldCliRoute": "astryx docs foundations/all-tokens size-tokens",
+      "oldCliRoute": "astryx docs tokens size-tokens",
       "oldDocsiteUrl": "/docs/tokens#size-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4037,7 +4037,7 @@
     {
       "kind": "section",
       "id": "tokens#border-tokens",
-      "oldCliRoute": "astryx docs foundations/all-tokens border-tokens",
+      "oldCliRoute": "astryx docs tokens border-tokens",
       "oldDocsiteUrl": "/docs/tokens#border-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4047,7 +4047,7 @@
     {
       "kind": "section",
       "id": "tokens#focus-tokens",
-      "oldCliRoute": "astryx docs foundations/all-tokens focus-tokens",
+      "oldCliRoute": "astryx docs tokens focus-tokens",
       "oldDocsiteUrl": "/docs/tokens#focus-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4057,7 +4057,7 @@
     {
       "kind": "section",
       "id": "tokens#radius-tokens",
-      "oldCliRoute": "astryx docs foundations/all-tokens radius-tokens",
+      "oldCliRoute": "astryx docs tokens radius-tokens",
       "oldDocsiteUrl": "/docs/tokens#radius-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4067,7 +4067,7 @@
     {
       "kind": "section",
       "id": "tokens#shadow-tokens",
-      "oldCliRoute": "astryx docs foundations/all-tokens shadow-tokens",
+      "oldCliRoute": "astryx docs tokens shadow-tokens",
       "oldDocsiteUrl": "/docs/tokens#shadow-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4077,7 +4077,7 @@
     {
       "kind": "section",
       "id": "tokens#duration-tokens",
-      "oldCliRoute": "astryx docs foundations/all-tokens duration-tokens",
+      "oldCliRoute": "astryx docs tokens duration-tokens",
       "oldDocsiteUrl": "/docs/tokens#duration-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4087,7 +4087,7 @@
     {
       "kind": "section",
       "id": "tokens#easing-tokens",
-      "oldCliRoute": "astryx docs foundations/all-tokens easing-tokens",
+      "oldCliRoute": "astryx docs tokens easing-tokens",
       "oldDocsiteUrl": "/docs/tokens#easing-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4097,7 +4097,7 @@
     {
       "kind": "section",
       "id": "tokens#font-family-tokens",
-      "oldCliRoute": "astryx docs foundations/all-tokens font-family-tokens",
+      "oldCliRoute": "astryx docs tokens font-family-tokens",
       "oldDocsiteUrl": "/docs/tokens#font-family-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4107,7 +4107,7 @@
     {
       "kind": "section",
       "id": "tokens#font-size-tokens",
-      "oldCliRoute": "astryx docs foundations/all-tokens font-size-tokens",
+      "oldCliRoute": "astryx docs tokens font-size-tokens",
       "oldDocsiteUrl": "/docs/tokens#font-size-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4117,7 +4117,7 @@
     {
       "kind": "section",
       "id": "tokens#font-weight-tokens",
-      "oldCliRoute": "astryx docs foundations/all-tokens font-weight-tokens",
+      "oldCliRoute": "astryx docs tokens font-weight-tokens",
       "oldDocsiteUrl": "/docs/tokens#font-weight-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4127,7 +4127,7 @@
     {
       "kind": "section",
       "id": "tokens#type-scale-tokens",
-      "oldCliRoute": "astryx docs foundations/all-tokens type-scale-tokens",
+      "oldCliRoute": "astryx docs tokens type-scale-tokens",
       "oldDocsiteUrl": "/docs/tokens#type-scale-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4137,7 +4137,7 @@
     {
       "kind": "section",
       "id": "tokens#usage-in-stylex",
-      "oldCliRoute": "astryx docs foundations/all-tokens usage-in-stylex",
+      "oldCliRoute": "astryx docs tokens usage-in-stylex",
       "oldDocsiteUrl": "/docs/tokens#usage-in-stylex",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4147,7 +4147,7 @@
     {
       "kind": "topic",
       "id": "typography",
-      "oldCliRoute": "astryx docs foundations/typography",
+      "oldCliRoute": "astryx docs typography",
       "oldDocsiteUrl": "/docs/typography",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4157,7 +4157,7 @@
     {
       "kind": "section",
       "id": "typography#overview",
-      "oldCliRoute": "astryx docs foundations/typography overview",
+      "oldCliRoute": "astryx docs typography overview",
       "oldDocsiteUrl": "/docs/typography#overview",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4167,7 +4167,7 @@
     {
       "kind": "section",
       "id": "typography#font-families",
-      "oldCliRoute": "astryx docs foundations/typography font-families",
+      "oldCliRoute": "astryx docs typography font-families",
       "oldDocsiteUrl": "/docs/typography#font-families",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4177,7 +4177,7 @@
     {
       "kind": "section",
       "id": "typography#loading-custom-fonts",
-      "oldCliRoute": "astryx docs foundations/typography loading-custom-fonts",
+      "oldCliRoute": "astryx docs typography loading-custom-fonts",
       "oldDocsiteUrl": "/docs/typography#custom-fonts",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4187,7 +4187,7 @@
     {
       "kind": "section",
       "id": "typography#font-sizes",
-      "oldCliRoute": "astryx docs foundations/typography font-sizes",
+      "oldCliRoute": "astryx docs typography font-sizes",
       "oldDocsiteUrl": "/docs/typography#font-sizes",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4197,7 +4197,7 @@
     {
       "kind": "section",
       "id": "typography#font-weights",
-      "oldCliRoute": "astryx docs foundations/typography font-weights",
+      "oldCliRoute": "astryx docs typography font-weights",
       "oldDocsiteUrl": "/docs/typography#font-weights",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4207,7 +4207,7 @@
     {
       "kind": "section",
       "id": "typography#line-height",
-      "oldCliRoute": "astryx docs foundations/typography line-height",
+      "oldCliRoute": "astryx docs typography line-height",
       "oldDocsiteUrl": "/docs/typography#line-height",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4217,7 +4217,7 @@
     {
       "kind": "section",
       "id": "typography#type-scale",
-      "oldCliRoute": "astryx docs foundations/typography type-scale",
+      "oldCliRoute": "astryx docs typography type-scale",
       "oldDocsiteUrl": "/docs/typography#type-scale",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4227,7 +4227,7 @@
     {
       "kind": "section",
       "id": "typography#display-text",
-      "oldCliRoute": "astryx docs foundations/typography display-text",
+      "oldCliRoute": "astryx docs typography display-text",
       "oldDocsiteUrl": "/docs/typography#display-text",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4237,7 +4237,7 @@
     {
       "kind": "section",
       "id": "typography#usage",
-      "oldCliRoute": "astryx docs foundations/typography usage",
+      "oldCliRoute": "astryx docs typography usage",
       "oldDocsiteUrl": "/docs/typography#headings-and-text",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4247,7 +4247,7 @@
     {
       "kind": "section",
       "id": "typography#custom-type-scale",
-      "oldCliRoute": "astryx docs foundations/typography custom-type-scale",
+      "oldCliRoute": "astryx docs typography custom-type-scale",
       "oldDocsiteUrl": "/docs/typography#custom-type-scale",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4257,7 +4257,7 @@
     {
       "kind": "section",
       "id": "typography#best-practices",
-      "oldCliRoute": "astryx docs foundations/typography best-practices",
+      "oldCliRoute": "astryx docs typography best-practices",
       "oldDocsiteUrl": "/docs/typography#best-practices",
       "placement": "keep-flat",
       "aliasNeeded": false,

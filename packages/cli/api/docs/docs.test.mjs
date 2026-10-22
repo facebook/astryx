@@ -17,7 +17,7 @@ import {GUIDE_ORDER} from '../../foundation/doc-compiler/tree.mjs';
 const SLOW = 30_000;
 
 /** A guide with several sections, read like a topic. */
-const GUIDE = 'foundations/principles';
+const GUIDE = 'get-started/principles';
 
 /**
  * The first guide a namespace places, read from the tree rather than named,
@@ -34,11 +34,19 @@ function placedGuide(node) {
 }
 
 describe('docs() dispatcher routing', () => {
-  it('no topic -> docs.list: no Core flat topic, the twelve guides and Reference in meta', async () => {
+  it('no topic -> docs.list: only the Foundations topics are flat, the guides and Reference in meta', async () => {
     const r = await docs();
     expect(r.type).toBe('docs.list');
-    expect(r.data).toEqual([]);
-    expect(r.meta.namespaces.length).toBe(13);
+    expect(r.data.map(entry => entry.topic)).toEqual([
+      'color',
+      'elevation',
+      'icons',
+      'illustrations',
+      'motion',
+      'shape',
+      'spacing',
+    ]);
+    expect(r.meta.namespaces.length).toBe(15);
   }, SLOW);
 
   it('empty topic -> docs.list (falsy topic routes to list)', async () => {
@@ -196,10 +204,10 @@ describe('docs() dispatcher routing', () => {
       `astryx docs ${guide} ${index.data.sections.at(-2).id}`,
     );
     // A former flat topic is a guide under its guide, and moves across it.
-    const moved = (await docs('foundations/principles')).data.links;
-    expect(moved.up).toBe('astryx docs foundations');
-    expect(moved.next).toMatch(/^astryx docs foundations\/[a-z-]+$/);
-    // No generated level holds Core docs any more.
+    const moved = (await docs('get-started/principles')).data.links;
+    expect(moved.up).toBe('astryx docs get-started');
+    expect(moved.previous).toMatch(/^astryx docs get-started\/[a-z-]+$/);
+    // Only the Foundations level holds Core flat topics.
     for (const level of ['guides', 'more-topics']) {
       await expect(docs(level)).rejects.toMatchObject({code: 'ERR_UNKNOWN_TOPIC'});
     }

@@ -8,7 +8,7 @@ Run it one-off with the scoped package (works whether or not it's installed):
 npx @astryxdesign/cli --help
 npx @astryxdesign/cli search button
 npx @astryxdesign/cli component Button
-npx @astryxdesign/cli docs foundations/all-tokens
+npx @astryxdesign/cli docs tokens
 npx @astryxdesign/cli docs upgrade-and-migrate/from-tailwind-shadcn-radix
 npx @astryxdesign/cli template --list
 ```
@@ -360,7 +360,7 @@ btn.data.name; // 'Button' (typed as ComponentDoc)
 const list = await component(undefined, {list: true});
 list.data; // Record<string, string[]>
 
-// Same result as: astryx --json docs foundations/principles
+// Same result as: astryx --json docs get-started/principles
 const principles = await docs('principles');
 principles.data.title; // 'Principles'
 

@@ -168,7 +168,7 @@ export async function compileDocs(project, {lang = null} = {}) {
   const lowerTarget = async name => {
     const target = catalog.resolve(name);
     if (target) return topics.get(target.name.toLowerCase()) ?? null;
-    // A guide by its route (`foundations/all-tokens`): a route ends in the
+    // A guide by its route (`tokens`): a route ends in the
     // guide's name, which is unique among the CLI's guides.
     if (name.includes('/')) {
       return (

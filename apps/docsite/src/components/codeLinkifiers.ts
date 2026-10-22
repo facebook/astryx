@@ -9,7 +9,7 @@
  *   on the site. Kept separate so the rules are unit-testable without React.
  *
  * Docs prose cites sibling topics as the literal CLI command — "Semantic
- * tokens, not hardcoded values (see `astryx docs foundations/all-tokens`)". That is what an
+ * tokens, not hardcoded values (see `astryx docs tokens`)". That is what an
  * agent should type, so it stays copy-pasteable code; linkifying it gives a
  * human somewhere to click. Component mentions work the same way: authors
  * write `<InternationalizationProvider>` as literal code, and the span
@@ -28,7 +28,7 @@ type CodeLinkifier = (code: string) => string | null;
 const KNOWN_TOPICS = new Set(docTopics.map(d => d.topic));
 
 /**
- * `astryx docs foundations/all-tokens` -> /docs/tokens, `astryx docs` -> the docs index.
+ * `astryx docs tokens` -> /docs/tokens, `astryx docs` -> the docs index.
  *
  * Anything after the topic — a section argument, or a flag like `--dense`
  * that only changes CLI output — still belongs to the topic's page. Unknown

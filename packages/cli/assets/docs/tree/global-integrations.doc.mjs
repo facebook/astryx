@@ -15,7 +15,7 @@ export const docs = {
     slot: 'guides',
     order: 25,
   },
-  title: 'Make your integration work globally',
+  title: 'Work globally',
   category: 'guide',
   keywords: [
     'global integration',

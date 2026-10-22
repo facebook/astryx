@@ -29,10 +29,13 @@ import {
   resolveContentRoot,
 } from './resolve-content-root.mjs';
 import {
+  FOUNDATIONS_ROOT,
+  FULL_PAGE_ROOTS,
   GUIDE_AGENT_COMMANDS,
-  GUIDE_NAMESPACE_PAGES,
-  GUIDE_PAGE_NAMESPACES,
   ROOT_PAGE_ALIASES,
+  foundationsOrder,
+  guidePages,
+  landingAnchors,
   movedGuideRedirects,
   movedPageRedirects,
   mergeFlatTopics,
@@ -1739,26 +1742,24 @@ export const templateMetadataCount = ${templateMetadata.length};
 
 /**
  * The docsite pages of the CLI's docs tree, read through the CLI's public docs
- * API. Every root namespace is one full page at its own slug (docs-pages.mjs),
- * so splitting a flat topic into a namespace keeps its URL, sidebar spot and
- * text; the guides under it redirect to their sections on that page. A root
- * namespace in GUIDE_PAGE_NAMESPACES shows the pages GUIDE_NAMESPACE_PAGES
- * lists, the same way one level down, and its other guides keep a page each.
+ * API. Each guide is a short landing page with a page of its own for each doc
+ * below it (docs-pages.mjs); the anchors of a guide's old single page open the
+ * child page that holds their text. Foundations keeps its layout: its flat
+ * topics are pages of their own (built with the flat topics), and the tokens
+ * and typography namespaces are each one full page.
  */
 async function docsTreePages() {
   const pages = [];
   const redirects = {};
+  /** @type {Record<string, Record<string, string>>} each landing's anchors */
+  const anchors = {};
   // Every route the tree has. A reference to a route without a page of its
   // own (a command or API doc) still opens it in `astryx docs`.
   const routes = [];
   const list = await readDocs();
-  const pending = [];
-  // The CLI's guides, in the order `astryx docs` lists them: the sidebar and
+  // The CLI's roots, in the order `astryx docs` lists them: the sidebar and
   // the docs home read them (spec:AST-046 FR12).
   const guides = [];
-  // Routes a page of a GUIDE_PAGE_NAMESPACES root holds, so their guides get
-  // no page of their own.
-  const held = new Set();
   for (const {topic: root, description, package: owner} of list.meta
     ?.namespaces ?? []) {
     if (owner === '@astryxdesign/cli') {
@@ -1767,65 +1768,40 @@ async function docsTreePages() {
         topic: root,
         title: read.data?.title || root,
         promise: description || '',
-        children: (read.data?.slots ?? [])
-          .flatMap(slot => slot.children)
-          .slice(0, 3)
-          .map(child => ({title: child.title, route: child.route})),
         command: GUIDE_AGENT_COMMANDS[root] ?? `astryx docs ${root}`,
       });
     }
-    if (GUIDE_PAGE_NAMESPACES.has(root)) {
-      pending.push(root);
-      for (const spec of GUIDE_NAMESPACE_PAGES.get(root) ?? []) {
-        for (const route of await treeRoutes(spec.route)) held.add(route);
-        const full = await namespacePage(readDocs, spec.route, spec);
-        if (!full) continue;
-        pages.push(full.page);
-        Object.assign(redirects, full.redirects);
-      }
+    routes.push(...(await treeRoutes(root)));
+    if (root === FOUNDATIONS_ROOT) continue;
+    if (FULL_PAGE_ROOTS.has(root)) {
+      const full = await namespacePage(readDocs, root, {
+        globalRoute: GLOBAL_ROUTE,
+      });
+      if (!full) continue;
+      pages.push(full.page);
+      Object.assign(redirects, full.redirects);
       continue;
     }
-    routes.push(...(await treeRoutes(root)));
+    const own = await guidePages(readDocs, root, {globalRoute: GLOBAL_ROUTE});
+    if (!own) continue;
+    pages.push(...own);
+    const slugs = new Set(own.map(page => page.topic));
     const full = await namespacePage(readDocs, root, {
-      aliases: ROOT_PAGE_ALIASES.get(root) ?? [],
       globalRoute: GLOBAL_ROUTE,
     });
-    if (!full) continue;
-    pages.push(full.page);
+    if (full) anchors[routeSlug(root)] = landingAnchors(full, slugs);
+    for (const alias of ROOT_PAGE_ALIASES.get(root) ?? []) {
+      redirects[alias] = `/docs/${routeSlug(root)}`;
+    }
     Object.assign(
       redirects,
-      full.redirects,
-      movedGuideRedirects(root, full.redirects),
+      movedGuideRedirects(
+        root,
+        Object.fromEntries([...slugs].map(slug => [slug, `/docs/${slug}`])),
+      ),
     );
   }
-  while (pending.length > 0) {
-    const route = pending.shift();
-    routes.push(route);
-    const read = await readDocs(route);
-    if (read.type !== 'docs.node') continue;
-    for (const slot of read.data.slots) {
-      for (const child of slot.children) {
-        if (child.kind !== 'namespace') routes.push(child.route);
-        if (child.kind === 'namespace') {
-          pending.push(child.route);
-        } else if (
-          child.kind === 'generic' &&
-          child.route.includes('/') &&
-          !held.has(child.route)
-        ) {
-          const doc = (await readDocs(child.route)).data;
-          pages.push({
-            topic: routeSlug(child.route),
-            title: doc.title || child.title,
-            description: doc.description || '',
-            category: doc.category || null,
-            sections: doc.sections || [],
-          });
-        }
-      }
-    }
-  }
-  return {pages, redirects, routes, guides};
+  return {pages, redirects, routes, guides, anchors};
 }
 
 /**
@@ -1913,11 +1889,11 @@ async function generateDocsRegistry() {
   docTopics.splice(0, docTopics.length, ...merged.topics);
 
   // Guides the CLI's docs tree places (spec:AST-046) are not topic files: the
-  // CLI reads them only by route. A root namespace is one full page at its
-  // slug (a former flat topic keeps its URL), and each guide under it
-  // redirects to its section there. Guides under GUIDE_PAGE_NAMESPACES keep a
-  // flat page whose slug is the route with "/" as "-", so
-  // `find-a-component/search-and-read` is /docs/cli-component-lookups.
+  // CLI reads them only by route. Each guide is a landing page at its slug,
+  // and each doc below it a page whose slug is its route with "/" as "-", so
+  // `find-a-component/search-and-read` is /docs/find-a-component-search-and-read.
+  // The flat topics are the Foundations pages.
+  const flatSlugs = new Set(docTopics.map(topic => topic.topic));
   const tree = await docsTreePages();
   for (const page of tree.pages) {
     if (docTopics.some(topic => topic.topic === page.topic)) {
@@ -1925,7 +1901,15 @@ async function generateDocsRegistry() {
         `docs: "${page.topic}" is both a flat topic and a docs-tree page. Remove the flat topic file when its namespace replaces it.`,
       );
     }
-    docTopics.push(page);
+    const anchors = tree.anchors[page.topic];
+    docTopics.push(
+      anchors && Object.keys(anchors).length > 0 ? {...page, anchors} : page,
+    );
+  }
+  // Foundations has no page of its own; its old guide-page URL opens the
+  // first page of its group.
+  if (!docTopics.some(topic => topic.topic === 'foundations')) {
+    tree.redirects.foundations ??= '/docs/tokens';
   }
   const docsTreeRoutes = [...new Set(tree.routes)].sort();
   const pageSlugs = new Set(docTopics.map(topic => topic.topic));
@@ -1938,11 +1922,6 @@ async function generateDocsRegistry() {
       ...ownRedirects,
     }).sort(([a], [b]) => a.localeCompare(b)),
   );
-  const hrefOfRoute = route => {
-    const slug = routeSlug(route);
-    return pageSlugs.has(slug) ? `/docs/${slug}` : (docRedirects[slug] ?? null);
-  };
-
   for (const slug of Object.keys(docRedirects)) {
     if (docTopics.some(topic => topic.topic === slug)) {
       throw new Error(`docs: "${slug}" is both a page and a redirect.`);
@@ -1960,14 +1939,42 @@ async function generateDocsRegistry() {
   const globalStem = runWithCliDoor(GLOBAL_PAGE_CLI_COMMAND, () =>
     getCliInvocation(DOCSITE_ROOT),
   );
-  const docGuides = tree.guides.map(guide => ({
-    ...guide,
-    // Shown the way a reader runs it, as every command on the site is.
-    command: guide.command.replace(/^astryx(?=\s|$)/, cliStem),
-    children: guide.children
-      .map(child => ({title: child.title, href: hrefOfRoute(child.route)}))
-      .filter(child => child.href != null),
-  }));
+  const bySlug = new Map(docTopics.map(topic => [topic.topic, topic]));
+  /**
+   * A landing page's children for the sidebar, each landing below it nested.
+   * @param {any} page
+   * @returns {Array<{title: string, href: string, children?: any[]}>}
+   */
+  const childLinks = page =>
+    (page?.children ?? []).map(child => {
+      const below = bySlug.get(child.href.slice('/docs/'.length));
+      return below?.children
+        ? {title: child.title, href: child.href, children: childLinks(below)}
+        : {title: child.title, href: child.href};
+    });
+  // Foundations, as it always listed: All Tokens, then its topics and
+  // Typography by title.
+  const foundations = docTopics
+    .filter(
+      topic =>
+        topic.category === 'foundations' &&
+        (flatSlugs.has(topic.topic) || FULL_PAGE_ROOTS.has(topic.topic)),
+    )
+    .sort(foundationsOrder)
+    .map(topic => ({title: topic.title, href: `/docs/${topic.topic}`}));
+  const docGuides = tree.guides
+    .filter(guide => !FULL_PAGE_ROOTS.has(guide.topic))
+    .map(guide => {
+      const page = bySlug.get(routeSlug(guide.topic));
+      return {
+        ...guide,
+        href: page ? `/docs/${page.topic}` : null,
+        // Shown the way a reader runs it, as every command on the site is.
+        command: guide.command.replace(/^astryx(?=\s|$)/, cliStem),
+        children:
+          guide.topic === FOUNDATIONS_ROOT ? foundations : childLinks(page),
+      };
+    });
   // A section from the global mode guides (marked by namespacePage) shows
   // plain `astryx`, whatever page holds it.
   for (const topic of docTopics) {
@@ -2020,6 +2027,11 @@ export interface DocTopic {
   category: string | null;
   /** Full doc sections with content blocks */
   sections: DocSection[];
+  /** A guide's landing page: each child page, with its one line. */
+  children?: {title: string; href: string; summary: string}[];
+  /** On a landing page, where each anchor of the guide's old single page now
+   *  opens. */
+  anchors?: Record<string, string>;
 }
 
 export const docTopics: DocTopic[] = ${JSON.stringify(docTopics, null, 2)};
@@ -2035,14 +2047,23 @@ export const docsTreeRoutes: string[] = ${JSON.stringify(docsTreeRoutes, null, 2
  *  next.config.mjs serves them as redirects. */
 export const docRedirects: Record<string, string> = ${JSON.stringify(docRedirects, null, 2)};
 
+export interface DocLink {
+  title: string;
+  href: string;
+  /** A landing page's own children. */
+  children?: DocLink[];
+}
+
 export interface DocGuide {
-  /** The guide's route and page slug, e.g. 'build-a-page'. */
+  /** The guide's route, e.g. 'build-a-page'. */
   topic: string;
   title: string;
   /** The guide's one-line promise. */
   promise: string;
-  /** Its first children, each where it opens on the site. */
-  children: {title: string; href: string}[];
+  /** Its landing page, or null for Foundations, which has none. */
+  href: string | null;
+  /** Its children, each where it opens on the site. */
+  children: DocLink[];
   /** The one CLI line an agent runs for this guide. */
   command: string;
 }

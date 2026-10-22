@@ -61,7 +61,7 @@ const styles = stylex.create({
         },
         {
           type: 'prose',
-          text: 'See {@link generic:all-tokens} for the full token reference (all spacing, color, radius, shadow, and typography tokens with values). See {@link generic:author-a-theme} for how to override tokens via defineTheme.',
+          text: 'See {@link namespace:tokens} for the full token reference (all spacing, color, radius, shadow, and typography tokens with values). See {@link generic:author-a-theme} for how to override tokens via defineTheme.',
         },
       ],
     },

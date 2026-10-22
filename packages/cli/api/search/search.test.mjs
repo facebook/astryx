@@ -438,7 +438,7 @@ describe('search leaf — a candidate that matches every word outranks a partial
       expect(r.data.results[0], query).toMatchObject({domain: 'component', name});
     }
     const tokens = await search('all tokens', {cwd});
-    expect(tokens.data.results[0]).toMatchObject({domain: 'doc', name: 'foundations/all-tokens'});
+    expect(tokens.data.results[0]).toMatchObject({domain: 'doc', name: 'tokens'});
     for (const [query, route] of [
       ['codemods', /^make-an-integration\/(?:.+\/)?codemods$/],
       ['quick start', /^make-an-integration\/(?:.+\/)?quick-start$/],

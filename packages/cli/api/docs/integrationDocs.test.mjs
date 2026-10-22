@@ -92,7 +92,7 @@ afterEach(() => {
 /** The guide `theme` became; an extension of `theme` lands on it. */
 const THEME = 'theme-your-app/use-a-theme';
 /** A guide with dense and Chinese overlays. */
-const PRINCIPLES = 'foundations/principles';
+const PRINCIPLES = 'get-started/principles';
 
 describe('integration-contributed topics', () => {
   it('lists and reads like a built-in topic, naming its owner', async () => {
@@ -105,8 +105,10 @@ describe('integration-contributed topics', () => {
       description: 'How to ship an app built with Acme widgets.',
       package: '@acme/widgets',
     });
-    // Core lists no flat topic: its docs are guides, read by route.
-    expect(listed.data.filter(t => t.package === '@astryxdesign/cli')).toEqual([]);
+    // Core's only flat topics are the Foundations topics.
+    expect(
+      listed.data.filter(t => t.package === '@astryxdesign/cli').map(t => t.topic),
+    ).toEqual(['color', 'elevation', 'icons', 'illustrations', 'motion', 'shape', 'spacing']);
 
     const detail = await docs('deploying', undefined, {cwd: tmpDir, full: true});
     expect(detail.type).toBe('docs.detail');
@@ -462,7 +464,7 @@ describe('integration-contributed topics', () => {
   it("falls back to the CLI's own topics when the project config is unreadable", async () => {
     scaffold({'deploying.doc.mjs': topic()}, {config: 'export default {integrations: 42};\n'});
     const catalog = await loadDocsCatalog(tmpDir);
-    expect(catalog.guide('color')).toBeTruthy();
+    expect(catalog.resolve('color')).toBeTruthy();
     expect(catalog.resolve('deploying')).toBeUndefined();
   }, SLOW);
 });

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs foundations/typography/font-setup`: font families, custom fonts,
+ * @file `astryx docs typography/font-setup`: font families, custom fonts,
  * font sizes, and font weights.
  */
 
@@ -49,7 +49,7 @@ export const docs = {
         },
         {
           type: 'token-ref',
-          topic: 'foundations/all-tokens',
+          topic: 'tokens',
           section: 'Font Family Tokens',
         },
       ],
@@ -99,7 +99,7 @@ export const docs = {
         },
         {
           type: 'token-ref',
-          topic: 'foundations/all-tokens',
+          topic: 'tokens',
           section: 'Font Size Tokens',
         },
       ],
@@ -113,7 +113,7 @@ export const docs = {
         },
         {
           type: 'token-ref',
-          topic: 'foundations/all-tokens',
+          topic: 'tokens',
           section: 'Font Weight Tokens',
         },
       ],

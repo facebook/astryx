@@ -672,7 +672,12 @@ export function registerDocs(program) {
               ? {topic: entry.topic, description: entry.description}
               : entry,
           );
-          const topics = result.data;
+          // Core's flat topics are the Foundations topics, which the
+          // foundations row above opens; the second list names only an
+          // integration's.
+          const topics = result.data.filter(
+            entry => entry.package !== CLI_PACKAGE,
+          );
           emit(
             ...(roots.length > 0
               ? [

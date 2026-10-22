@@ -105,13 +105,13 @@ export const docs = {
       name: 'startIcon',
       type: 'IconType',
       description:
-        'Icon to display at the start of the input. See `astryx docs foundations/icons` for valid semantic names.',
+        'Icon to display at the start of the input. See `astryx docs icons` for valid semantic names.',
     },
     {
       name: 'labelIcon',
       type: 'IconType',
       description:
-        'Icon to display before the label text. See `astryx docs foundations/icons` for valid semantic names.',
+        'Icon to display before the label text. See `astryx docs icons` for valid semantic names.',
     },
     {
       name: 'status',

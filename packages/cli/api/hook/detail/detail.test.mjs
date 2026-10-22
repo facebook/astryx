@@ -3,7 +3,7 @@
 /**
  * @file Colocated tests for the hook.detail leaf, run against the real
  * @astryxdesign/core registry. The list leaf is covered end-to-end by
- * reference/commands/detail-levels.test.mjs; this covers the single-hook detail
+ * cli/commands/detail-levels.test.mjs; this covers the single-hook detail
  * projection (envelope shape + the ERR_UNKNOWN_HOOK fuzzy-suggestion path).
  */
 

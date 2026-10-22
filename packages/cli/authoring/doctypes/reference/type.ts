@@ -216,7 +216,7 @@ export interface ReferenceTranslationDoc {
    *  matter, and an overlay may cover any subset — sections it does not name
    *  keep their base content. (These used to be matched by array index, which
    *  meant a reordered or partial overlay grafted every title onto the wrong
-   *  body: `docs foundations/all-tokens --dense` printed the colour table under a "Spacing"
+   *  body: `docs tokens --dense` printed the colour table under a "Spacing"
    *  heading. See #2182.) */
   sections: {
     /** Title of the BASE section this entry overrides, verbatim and in English

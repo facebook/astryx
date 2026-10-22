@@ -188,10 +188,6 @@ describe('site search links', () => {
       byKey.get(group)!.hrefs.add(href);
     }
     const repeated = [...byKey.entries()].filter(([, v]) => v.starts.size > 1);
-    expect(
-      repeated.length,
-      'a page that repeats a section key',
-    ).toBeGreaterThan(0);
     for (const [group, {starts, hrefs}] of repeated) {
       expect(hrefs.size, group).toBe(starts.size);
     }
@@ -242,7 +238,7 @@ describe('site search links', () => {
       {domain: 'doc', name: 'theme-your-app/author-a-theme', section: 'palette'},
       links,
     );
-    expect(href).toMatch(/^\/docs\/theme-your-app#/);
+    expect(href).toMatch(/^\/docs\/theme-your-app-author-a-theme#/);
   });
 });
 

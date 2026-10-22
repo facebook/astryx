@@ -192,7 +192,7 @@ Each built theme imports the same way:
       font-display: swap;
     }
 
-  Recipe and fallback-stack guidance: astryx docs foundations/typography
+  Recipe and fallback-stack guidance: astryx docs typography
 
 
 [ok] Built 15 themes.

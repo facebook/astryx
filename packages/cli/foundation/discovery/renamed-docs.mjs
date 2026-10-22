@@ -25,16 +25,9 @@
 export const FORMER_TOPICS = Object.freeze({
   'author-a-theme': 'author-a-theme',
   'browser-support': 'browser-support',
-  color: 'color',
-  elevation: 'elevation',
   'getting-started': 'add-to-a-project',
-  icons: 'icons',
-  illustrations: 'illustrations',
   'is-my-code-good': 'agent-review',
-  motion: 'motion',
   principles: 'principles',
-  shape: 'shape',
-  spacing: 'spacing',
   'styling-overview': 'css-setup',
   theme: 'use-a-theme',
   'use-a-theme': 'use-a-theme',
@@ -56,7 +49,6 @@ export const RENAMED_DOC_IDENTITIES = Object.freeze({
   'generic:styling-overview': 'generic:css-setup',
   'generic:is-my-code-good': 'generic:agent-review',
   'generic:component-lookups': 'generic:search-and-read',
-  'generic:typography-best-practices': 'generic:best-practices',
   'generic:problems': 'generic:global-mode-messages',
   'generic:reference': 'generic:global-mode',
   'namespace:authoring': 'namespace:make-an-integration',
@@ -67,7 +59,6 @@ export const RENAMED_DOC_IDENTITIES = Object.freeze({
   'namespace:styling-libraries': 'namespace:style-components',
   'namespace:internationalization': 'namespace:translate-your-app',
   'namespace:migration': 'namespace:from-tailwind-shadcn-radix',
-  'namespace:tokens': 'generic:all-tokens',
 });
 
 /**

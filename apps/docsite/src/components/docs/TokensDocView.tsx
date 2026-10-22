@@ -34,16 +34,11 @@ import type {ComponentType} from 'react';
 
 type TableComponent = ComponentType<TokenTableProps>;
 
-/**
- * The Foundations page holds every value page and the all-tokens tables, so
- * one map covers the token sections of each: the all-tokens tables by their
- * category titles, and each value page's own token section.
- */
 const TOPIC_SECTION_OVERRIDES: Record<
   string,
   Record<string, TableComponent>
 > = {
-  foundations: {
+  tokens: {
     'Color Tokens': ColorTokenTable,
     'Spacing Tokens': SpacingTokenTable,
     'Size Tokens': SizeTokenTable,
@@ -56,11 +51,24 @@ const TOPIC_SECTION_OVERRIDES: Record<
     'Font Size Tokens': FontSizeTokenTable,
     'Font Weight Tokens': FontWeightTokenTable,
     'Type Scale Tokens': TypographyTokenTable,
+  },
+  color: {
+    'Color Tokens': ColorTokenTable,
+  },
+  elevation: {
     'Elevation Scale': ElevationTokenTable,
+  },
+  motion: {
     Duration: DurationTokenTable,
     Easing: EasingTokenTable,
+  },
+  shape: {
     'Radius Scale': RadiusTokenTable,
+  },
+  spacing: {
     Scale: SpacingTokenTable,
+  },
+  typography: {
     'Font Families': FontFamilyTokenTable,
     'Font Sizes': FontSizeTokenTable,
     'Font Weights': FontWeightTokenTable,
@@ -114,13 +122,11 @@ export function TokensDocView({
   description,
   sections,
   topic,
-  footer,
 }: {
   title: string;
   description: string;
   sections: DocSection[];
   topic: string;
-  footer?: React.ReactNode;
 }) {
   const theme = useTheme();
   const overrideMap = TOPIC_SECTION_OVERRIDES[topic] ?? {};
@@ -141,7 +147,6 @@ export function TokensDocView({
       description={description}
       sections={sections}
       sectionOverrides={sectionOverrides}
-      footer={footer}
     />
   );
 }

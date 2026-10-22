@@ -7,6 +7,7 @@ import {
   docTopics,
   docsTreeRoutes,
 } from '../generated/docsRegistry';
+import type {DocLink} from '../generated/docsRegistry';
 import {packages} from '../generated/packageRegistry';
 import {linkifyCode} from '../components/codeLinkifiers';
 import {buildOutline} from '../components/docs/docOutline';
@@ -31,94 +32,128 @@ const GUIDES = [
   'reference',
 ];
 
+/** Foundations, as it always listed: one page per topic. */
+const FOUNDATIONS = [
+  ['All Tokens', 'tokens'],
+  ['Color', 'color'],
+  ['Elevation', 'elevation'],
+  ['Icons', 'icons'],
+  ['Illustrations', 'illustrations'],
+  ['Motion', 'motion'],
+  ['Shape', 'shape'],
+  ['Spacing', 'spacing'],
+  ['Typography', 'typography'],
+];
+
 /**
- * Every topic page the site had before the docs were organized into twelve
- * guides, and the guide page that holds its text now. A reorganization
+ * Every other topic page the site had before the docs were organized into
+ * twelve guides, and the page that holds its text now. A reorganization
  * changes where a reader finds a doc, never whether an old link opens it.
  */
 const PAGES_BEFORE_THE_GUIDES: Record<string, string> = {
   authoring: 'make-an-integration',
-  'browser-support': 'reference',
-  'cli-component-lookups': 'find-a-component',
-  'cli-host-entry': 'reference',
-  color: 'foundations',
-  elevation: 'foundations',
-  'getting-started': 'get-started',
-  global: 'get-started',
-  icons: 'foundations',
-  illustrations: 'foundations',
+  'browser-support': 'reference-browser-support',
+  'cli-component-lookups': 'find-a-component-search-and-read',
+  'cli-host-entry': 'reference-host-entry',
+  'getting-started': 'get-started-add-to-a-project',
+  global: 'get-started-on-your-computer',
   internationalization: 'translate-your-app',
-  'is-my-code-good': 'check-your-code',
+  'is-my-code-good': 'check-your-code-agent-review',
   layout: 'build-a-page',
-  migration: 'upgrade-and-migrate',
-  motion: 'foundations',
-  principles: 'foundations',
-  shape: 'foundations',
-  spacing: 'foundations',
+  migration: 'upgrade-and-migrate-from-tailwind-shadcn-radix',
+  principles: 'get-started-principles',
   styling: 'style-components',
   'styling-libraries': 'style-components',
-  'styling-overview': 'style-components',
+  'styling-overview': 'style-components-css-setup',
   theme: 'theme-your-app',
-  tokens: 'foundations',
-  typography: 'foundations',
-  'working-with-ai': 'work-with-agents',
-  'use-integrations': 'find-a-component',
+  'working-with-ai': 'work-with-agents-agent-setup',
+  'use-integrations': 'find-a-component-use-integrations',
 };
 
 const pageBySlug = new Map(docTopics.map(topic => [topic.topic, topic]));
 
+/** Every link below a guide in the sidebar. */
+function allLinks(links: DocLink[]): DocLink[] {
+  return links.flatMap(link => [link, ...allLinks(link.children ?? [])]);
+}
+
 describe('route resolution', () => {
-  it('has one page per guide, in reading order, and no other doc page', () => {
+  it('has a short landing page per guide, in reading order, and Foundations as before', () => {
     expect(docGuides.map(guide => guide.topic)).toEqual(GUIDES);
-    expect([...pageBySlug.keys()].sort()).toEqual([...GUIDES].sort());
     for (const guide of docGuides) {
-      const page = pageBySlug.get(guide.topic);
-      expect(page?.sections.length, guide.topic).toBeGreaterThan(0);
       expect(guide.promise, guide.topic).toMatch(/^[A-Z].+\.$/);
       expect(guide.command, guide.topic).toMatch(/^npx @astryxdesign\/cli /);
-    }
-    // Each of the twelve guides offers up to three children on the home page.
-    for (const guide of docGuides.slice(0, 12)) {
       expect(guide.children.length, guide.topic).toBeGreaterThan(0);
-      expect(guide.children.length, guide.topic).toBeLessThanOrEqual(3);
+      for (const link of allLinks(guide.children)) {
+        expect(pageBySlug.has(link.href.slice('/docs/'.length)), link.href).toBe(
+          true,
+        );
+      }
+      if (guide.topic === 'foundations') continue;
+      expect(guide.href, guide.topic).toBe(`/docs/${guide.topic}`);
+      const page = pageBySlug.get(guide.topic);
+      // A landing page links to its children instead of pasting their text.
+      expect(page?.children?.length, guide.topic).toBeGreaterThan(0);
+      expect(page?.sections.length ?? 0, guide.topic).toBeLessThanOrEqual(1);
       for (const child of guide.children) {
         expect(child.href, child.title).toMatch(
-          new RegExp(`^/docs/${guide.topic}(#|$)`),
+          new RegExp(`^/docs/${guide.topic}-`),
         );
       }
     }
   });
 
+  it('keeps Foundations as it was: one page per topic, in the same order', () => {
+    const foundations = docGuides.find(guide => guide.topic === 'foundations');
+    expect(foundations?.href).toBeNull();
+    expect(
+      foundations?.children.map(child => [
+        child.title,
+        child.href.slice('/docs/'.length),
+      ]),
+    ).toEqual(FOUNDATIONS);
+    for (const [, slug] of FOUNDATIONS) {
+      expect(pageBySlug.get(slug)?.category, slug).toBe('foundations');
+      expect(pageBySlug.get(slug)?.children, slug).toBeUndefined();
+      expect(docRedirects[slug], slug).toBeUndefined();
+    }
+  });
+
   it.each(Object.entries(PAGES_BEFORE_THE_GUIDES))(
     '/docs/%s opens the %s page',
-    (slug, guide) => {
+    (slug, target) => {
       expect(pageBySlug.has(slug), `${slug} is still a page`).toBe(false);
       expect(docRedirects[slug], slug).toMatch(
-        new RegExp(`^/docs/${guide}(#|$)`),
+        new RegExp(`^/docs/${target}(#|$)`),
       );
     },
   );
 
-  it('keeps the old layout section anchors on the Build a page page', () => {
-    const page = pageBySlug.get('build-a-page');
-    const ids = buildOutline(page?.sections ?? []).sectionIds;
-    for (const anchor of [
-      'scaffold',
-      'shell',
-      'navigation',
-      'structure',
-      'headers-and-footers',
-      'side-panels',
-      'breakpoints',
-      'responsive-contract',
+  it('sends the old Build a page section anchors to the page that holds them', () => {
+    const anchors = pageBySlug.get('build-a-page')?.anchors ?? {};
+    for (const [anchor, page] of [
+      ['scaffold', 'build-a-page-scaffold'],
+      ['shell', 'build-a-page-scaffold'],
+      ['structure', 'build-a-page-structure'],
+      ['headers-and-footers', 'build-a-page-headers-and-footers'],
+      ['side-panels', 'build-a-page-side-panels'],
+      ['responsive-contract', 'build-a-page-responsive'],
     ]) {
-      expect(ids).toContain(anchor);
+      expect(anchors[anchor], anchor).toMatch(new RegExp(`^/docs/${page}(#|$)`));
+    }
+    for (const href of Object.values(anchors)) {
+      const [, target, anchor] = /^\/docs\/([^#]+)(?:#(.+))?$/.exec(href) ?? [];
+      const page = pageBySlug.get(target);
+      expect(page, href).toBeDefined();
+      if (anchor) {
+        expect(buildOutline(page?.sections ?? []).sectionIds).toContain(anchor);
+      }
     }
   });
 
-  it('shows the full theme text on the Theme your app page', () => {
-    const titles =
-      pageBySlug.get('theme-your-app')?.sections.map(s => s.title) ?? [];
+  it('shows the full theme text on the Theme your app pages', () => {
+    const titles = ['theme-your-app-use-a-theme', 'theme-your-app-author-a-theme']
+      .flatMap(slug => pageBySlug.get(slug)?.sections.map(s => s.title) ?? []);
     for (const title of [
       'Wrap your app in a theme',
       'Available Themes',
@@ -131,22 +166,21 @@ describe('route resolution', () => {
     }
   });
 
-  it('opens every integration guide at its section, from each older slug too', () => {
+  it('opens every integration guide on its own page, from each older slug too', () => {
     let guides = 0;
     for (const route of docsTreeRoutes) {
       if (!route.startsWith('make-an-integration/')) {
         continue;
       }
-      guides++;
       const slug = route.replaceAll('/', '-');
+      if (!pageBySlug.has(slug)) {
+        continue;
+      }
+      guides++;
       const rest = slug.slice('make-an-integration-'.length);
-      expect(pageBySlug.has(slug), slug).toBe(false);
-      expect(docRedirects[slug], slug).toMatch(
-        /^\/docs\/make-an-integration(#|$)/,
-      );
       // The slugs from when the guides sat under authoring and cli/integrations.
       for (const old of [`authoring-${rest}`, `cli-integrations-${rest}`]) {
-        expect(docRedirects[old], old).toBe(docRedirects[slug]);
+        expect(docRedirects[old], old).toBe(`/docs/${slug}`);
       }
     }
     expect(guides).toBeGreaterThan(40);
@@ -154,13 +188,13 @@ describe('route resolution', () => {
       expect(docRedirects[old], old).toBe('/docs/make-an-integration');
     }
     expect(docRedirects['cli-writing-docs']).toBe(
-      docRedirects['make-an-integration-building-blocks-docs'],
+      '/docs/make-an-integration-building-blocks-docs',
     );
   });
 
-  it('opens global mode on the Get started page, from its older slugs too', () => {
-    const href = docRedirects['get-started-on-your-computer'];
-    expect(href).toMatch(/^\/docs\/get-started#/);
+  it('opens global mode on its own page, from its older slugs too', () => {
+    const href = '/docs/get-started-on-your-computer';
+    expect(pageBySlug.get('get-started-on-your-computer')?.children?.length).toBeGreaterThan(0);
     for (const old of ['global', 'cli-global', 'cli-install-once']) {
       expect(docRedirects[old], old).toBe(href);
     }
@@ -169,24 +203,21 @@ describe('route resolution', () => {
         continue;
       }
       const slug = route.replaceAll('/', '-');
-      expect(docRedirects[slug], slug).toMatch(/^\/docs\/get-started#/);
+      expect(pageBySlug.has(slug), slug).toBe(true);
       const old = `global-${route.slice('get-started/on-your-computer/'.length)}`;
-      expect(docRedirects[old], old).toBe(docRedirects[slug]);
+      expect(docRedirects[old], old).toBe(`/docs/${slug}`);
     }
   });
 
-  it('shows commands that reach the CLI: npx @astryxdesign/cli, and plain astryx in the global mode sections', () => {
-    const start = pageBySlug.get('get-started')!;
-    const text = JSON.stringify(start.sections);
-    expect(text).toContain('npx @astryxdesign/cli');
-    // The global mode sections are read by someone who installed the CLI.
-    const anchors = buildOutline(start.sections).sectionIds;
-    const at = anchors.indexOf(
-      (docRedirects['get-started-on-your-computer'] ?? '').split('#')[1],
+  it('shows commands that reach the CLI: npx @astryxdesign/cli, and plain astryx in the global mode pages', () => {
+    const start = pageBySlug.get('get-started-add-to-a-project')!;
+    expect(JSON.stringify(start.sections)).toContain('npx @astryxdesign/cli');
+    // The global mode pages are read by someone who installed the CLI.
+    const global = JSON.stringify(
+      pageBySlug.get('get-started-on-your-computer-install-once')?.sections,
     );
-    expect(at).toBeGreaterThan(0);
-    const global = JSON.stringify(start.sections.slice(at));
     expect(global).toContain('npm i -g @astryxdesign/cli');
+    expect(global).not.toContain('npx @astryxdesign/cli docs');
   });
 
   it('keeps /docs/cli the CLI package page', () => {
@@ -204,7 +235,7 @@ describe('route resolution', () => {
     }
   });
 
-  it('redirects each folded slug to a section of a page, never a page of its own', () => {
+  it('redirects each old slug to a page, or a section of one, never to another redirect', () => {
     for (const [slug, href] of Object.entries(docRedirects)) {
       expect(pageBySlug.has(slug), `${slug} is a page and a redirect`).toBe(
         false,
@@ -218,9 +249,9 @@ describe('route resolution', () => {
     }
   });
 
-  it('opens a guide under a guide page at its section', () => {
+  it('opens a guide below a guide on its own page', () => {
     expect(linkifyCode('astryx docs build-a-page/side-panels')).toBe(
-      '/docs/build-a-page#side-panels',
+      '/docs/build-a-page-side-panels',
     );
     expect(linkifyCode('astryx docs build-a-page')).toBe('/docs/build-a-page');
   });

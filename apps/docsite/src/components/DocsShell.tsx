@@ -21,16 +21,19 @@ import {SharedTopNav} from './SharedTopNav';
 import {CanaryBanner} from './CanaryBanner';
 import {CURRENT_TARGET} from '../lib/docsVersions';
 import type {PackageMeta} from '../generated/packageRegistry';
-import type {DocGuide} from '../generated/docsRegistry';
+import type {DocGuide, DocLink} from '../generated/docsRegistry';
 import {
   getComponentSidebarData,
   type ComponentSidebarEntry,
   type ComponentSidebarItem,
 } from './componentSidebarData';
 
+/** What the sidebar reads of a package: its name and whether it is canary. */
+type SidebarPackage = Pick<PackageMeta, 'name' | 'displayName' | 'canaryOnly'>;
+
 interface DocsShellProps {
   children: React.ReactNode;
-  packages: PackageMeta[];
+  packages: SidebarPackage[];
   /** The twelve guides and Reference, in reading order. */
   docGuides: DocGuide[];
 }
@@ -70,6 +73,37 @@ const initialHeaderHeightScript = `(() => {
   publish();
   document.fonts.ready.then(publish);
 })();`;
+
+/** Whether a link, or any link below it, is the current page. */
+function holdsPath(link: DocLink, pathname: string): boolean {
+  return (
+    link.href === pathname ||
+    (link.children ?? []).some(child => holdsPath(child, pathname))
+  );
+}
+
+/** A guide's children in the sidebar; a landing below it nests its own. */
+function renderDocLinks(links: DocLink[], pathname: string): React.ReactNode {
+  return links.map(link =>
+    link.children && link.children.length > 0 ? (
+      <SideNavItem
+        key={link.href}
+        label={link.title}
+        href={link.href}
+        isSelected={pathname === link.href}
+        collapsible={{defaultIsCollapsed: !holdsPath(link, pathname)}}>
+        {renderDocLinks(link.children, pathname)}
+      </SideNavItem>
+    ) : (
+      <SideNavItem
+        key={link.href}
+        label={link.title}
+        href={link.href}
+        isSelected={pathname === link.href}
+      />
+    ),
+  );
+}
 
 // ── Shell ──────────────────────────────────────────────────────────────
 
@@ -111,7 +145,7 @@ export function DocsShell({children, packages, docGuides}: DocsShellProps) {
   }, [canaryCategories, utilities, q]);
 
   // Classify packages
-  const isTheme = (p: PackageMeta) => p.name.includes('theme-');
+  const isTheme = (p: SidebarPackage) => p.name.includes('theme-');
   const libraryPackages = packages.filter(p => !isTheme(p) && !p.canaryOnly);
   const canaryPackages = packages.filter(p => !isTheme(p) && p.canaryOnly);
 
@@ -190,14 +224,33 @@ export function DocsShell({children, packages, docGuides}: DocsShellProps) {
                   href="/docs"
                   isSelected={pathname === '/docs'}
                 />
-                {docGuides.map(guide => (
-                  <SideNavItem
-                    key={guide.topic}
-                    label={guide.title}
-                    href={`/docs/${guide.topic}`}
-                    isSelected={pathname === `/docs/${guide.topic}`}
-                  />
-                ))}
+                {/* Each guide nests its children, collapsed unless the page
+                    is in it. Foundations has no page of its own and stays
+                    open, as it always has. */}
+                {docGuides.map(guide => {
+                  const isActive =
+                    guide.href === pathname ||
+                    guide.children.some(child => holdsPath(child, pathname));
+                  return guide.children.length > 0 ? (
+                    <SideNavItem
+                      key={guide.topic}
+                      label={guide.title}
+                      href={guide.href ?? undefined}
+                      isSelected={guide.href === pathname}
+                      collapsible={{
+                        defaultIsCollapsed: guide.href != null && !isActive,
+                      }}>
+                      {renderDocLinks(guide.children, pathname)}
+                    </SideNavItem>
+                  ) : (
+                    <SideNavItem
+                      key={guide.topic}
+                      label={guide.title}
+                      href={guide.href ?? undefined}
+                      isSelected={guide.href === pathname}
+                    />
+                  );
+                })}
               </SideNavSection>
 
               {/* The catalog */}

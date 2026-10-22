@@ -48,7 +48,7 @@ astryx --help                       # full listing of all commands
 astryx component Button             # full docs + related block templates
 astryx docs                         # the twelve guides, by what you want to do
 astryx docs theme-your-app          # theming guide (Theme, defineTheme, light/dark)
-astryx docs foundations/all-tokens  # spacing, color, radius, typography token reference
+astryx docs tokens                  # spacing, color, radius, typography token reference
 astryx init                         # initialize Astryx in your project
 astryx theme build                  # build theme CSS for production
 astryx swizzle Button               # eject component source for customization

@@ -26,7 +26,7 @@ export const docs = {
     },
     {
       type: 'prose',
-      text: 'Every color, spacing, and radius a theme overrides is listed in {@link generic:all-tokens}.',
+      text: 'Every color, spacing, and radius a theme overrides is listed in {@link namespace:tokens}.',
     },
   ],
 };

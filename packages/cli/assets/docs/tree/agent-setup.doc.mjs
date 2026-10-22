@@ -157,7 +157,7 @@ If you don't know all three, run \`astryx init --features agents\` to generate a
           code: `npm run astryx -- component --list
 npm run astryx -- component Dialog --dense
 npm run astryx -- docs style-components --full --detail brief
-npm run astryx -- docs foundations/all-tokens --dense`,
+npm run astryx -- docs tokens --dense`,
         },
       ],
     },
@@ -175,7 +175,7 @@ npm run astryx -- docs foundations/all-tokens --dense`,
           label: 'Short output for pasting into AI conversations',
           code: `astryx docs style-components --full --detail brief
 astryx component Dialog --detail compact
-astryx docs foundations/principles --dense`,
+astryx docs get-started/principles --dense`,
         },
       ],
     },

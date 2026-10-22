@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs foundations/typography/best-practices`: do/don't rules
+ * @file `astryx docs typography/typography-best-practices`: do/don't rules
  * for using the type scale, headings, and semantic tokens.
  */
 
@@ -9,7 +9,7 @@
 
 export const docs = {
   type: 'generic',
-  name: 'best-practices',
+  name: 'typography-best-practices',
   title: 'Best Practices',
   placement: {parent: 'namespace:typography', slot: 'guides', order: 30},
   category: 'foundations',

@@ -63,13 +63,21 @@ afterEach(() => {
 });
 
 describe('discoverBuiltinTopics', () => {
-  it('finds no flat Core topic: every Core doc is a guide in the tree', () => {
-    expect(discoverBuiltinTopics()).toEqual({});
+  it('finds only the Foundations topics flat: every other Core doc is a guide in the tree', () => {
+    expect(Object.keys(discoverBuiltinTopics()).sort()).toEqual([
+      'color',
+      'elevation',
+      'icons',
+      'illustrations',
+      'motion',
+      'shape',
+      'spacing',
+    ]);
   });
 
   it("finds the CLI's own guides by name, and not their overlays or namespaces", () => {
     const guides = discoverBuiltinGuides();
-    expect(guides.color).toMatch(/assets[/\\]docs[/\\]tree[/\\]color\.doc\.mjs$/);
+    expect(guides.principles).toMatch(/assets[/\\]docs[/\\]tree[/\\]principles\.doc\.mjs$/);
     expect(guides['use-a-theme']).toBeDefined();
     // A namespace is not a guide an integration topic extends.
     expect(guides.foundations).toBeUndefined();

@@ -18,13 +18,13 @@ import {
 } from '../../_adapter.mjs';
 
 /** A guide with dense and Chinese overlays, read like a topic. */
-const GUIDE = 'foundations/principles';
+const GUIDE = 'get-started/principles';
 
 const SLOW = 30_000;
 
 describe('docs.detail.section leaf', () => {
   it('resolves a named section (case-insensitive) into a docs.detail.section envelope', async () => {
-    const res = await section('foundations/all-tokens', 'spacing');
+    const res = await section('tokens/tokens-spacing', 'spacing');
     expect(res.type).toBe('docs.detail.section');
     expect(res.data.title.toLowerCase()).toContain('spacing');
   }, SLOW);
@@ -32,7 +32,7 @@ describe('docs.detail.section leaf', () => {
   it('throws ERR_UNKNOWN_SECTION for an unknown section', async () => {
     let err;
     try {
-      await section('foundations/spacing', 'zzzznope');
+      await section('spacing', 'zzzznope');
     } catch (e) {
       err = e;
     }
@@ -52,10 +52,10 @@ describe('docs.detail.section leaf', () => {
   }, SLOW);
 
   it('does not return the first section for an empty section name', async () => {
-    await expect(section('foundations/spacing', '')).rejects.toMatchObject({
+    await expect(section('spacing', '')).rejects.toMatchObject({
       code: 'ERR_UNKNOWN_SECTION',
     });
-    await expect(section('foundations/spacing', '   ')).rejects.toMatchObject({
+    await expect(section('spacing', '   ')).rejects.toMatchObject({
       code: 'ERR_UNKNOWN_SECTION',
     });
   }, SLOW);
@@ -83,19 +83,14 @@ describe('docs.detail.section leaf', () => {
     'inlines token refs when a section is read on its own (lang %s)',
     async lang => {
       const catalog = await loadDocsCatalog();
-      const tree = await projectTree(catalog);
       let checked = 0;
-      // Every guide under Foundations: the value pages read their tables
-      // through token references.
-      const guides = [...tree.nodes.values()].filter(
-        node => node.kind === 'generic' && node.route.startsWith('foundations/'),
-      );
-      for (const node of guides) {
-        const entry = guideEntry(node, catalog);
+      // Every flat topic: the Foundations topics read their tables through
+      // token references.
+      for (const entry of catalog.entries()) {
         const {doc} = await lowerTopic(catalog, entry);
         for (const own of doc.sections) {
           if (!own.content.some(block => block.type === 'token-ref')) continue;
-          const res = await section(node.route, own.id, lang ? {lang} : {});
+          const res = await section(entry.name, own.id, lang ? {lang} : {});
           expect(res.data.content.length).toBeGreaterThan(0);
           expect(res.data.content.some(block => block.type === 'token-ref')).toBe(
             false,

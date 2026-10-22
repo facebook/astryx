@@ -5,7 +5,7 @@
 export const docs = {
   type: 'generic',
   name: 'principles',
-  placement: {parent: 'namespace:foundations', slot: 'guides', order: 10},
+  placement: {parent: 'namespace:get-started', slot: 'guides', order: 30},
   title: 'Principles',
   category: 'guide',
   description:
@@ -14,7 +14,7 @@ export const docs = {
   sections: [
     {
       title: 'Design Philosophy',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -34,7 +34,7 @@ export const docs = {
     },
     {
       title: 'Rules',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -48,7 +48,7 @@ export const docs = {
             'Page layout is frame-first: pick the shell and budget regions before writing content (see {@link namespace:build-a-page})',
             'Dense data renders as rows (Table, List/Item), edge-to-edge with dividers; Card is for widgets, galleries, and settings groups',
             'StyleX or Tailwind for custom styling; both are first-class (see {@link namespace:style-components})',
-            'Semantic tokens, not hardcoded values (see {@link generic:all-tokens})',
+            'Semantic tokens, not hardcoded values (see {@link namespace:tokens})',
             'CSS custom properties for colors, not hex values',
             'Form inputs are controlled (value + onChange)',
             'Use useLinkComponent() for navigation so consumers can plug in their framework router via LinkProvider',
@@ -58,7 +58,7 @@ export const docs = {
     },
     {
       title: 'Styling Approach',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -72,7 +72,7 @@ export const docs = {
     },
     {
       title: 'Anti-Patterns',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -95,11 +95,11 @@ export const docs = {
     },
     {
       title: 'Design Tokens',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
-          text: 'The design system provides semantic design tokens for spacing, color, radius, shadow, typography, and size. Tokens adapt to the active theme and color mode. Run {@link generic:all-tokens} for the full reference with all values.',
+          text: 'The design system provides semantic design tokens for spacing, color, radius, shadow, typography, and size. Tokens adapt to the active theme and color mode. Run {@link namespace:tokens} for the full reference with all values.',
         },
       ],
     },

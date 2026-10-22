@@ -3,9 +3,7 @@
 /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
 
 export const docs = {
-  type: 'generic',
   name: 'shape',
-  placement: {parent: 'namespace:foundations', slot: 'guides', order: 50},
   title: 'Shape',
   category: 'foundations',
   description:
@@ -33,7 +31,7 @@ export const docs = {
         },
         {
           type: 'token-ref',
-          topic: 'foundations/all-tokens',
+          topic: 'tokens',
           section: 'Radius Tokens',
         },
       ],

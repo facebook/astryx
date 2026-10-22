@@ -210,12 +210,13 @@ and references from other packages are an open question (OQ2).
 - **FR12 — Every doc has a named home.** The CLI's root namespaces MUST be
   twelve guides, each named for what a reader wants to do, then `reference`,
   in this order: `get-started`, `work-with-agents`, `build-a-page`,
-  `find-a-component`, `theme-your-app`, `style-components`, `foundations`,
-  `check-your-code`, `upgrade-and-migrate`, `translate-your-app`,
+  `find-a-component`, `theme-your-app`, `style-components`, `foundations`
+  (the generated level of its flat topics, with the `tokens` and `typography`
+  namespaces beside it), `check-your-code`, `upgrade-and-migrate`, `translate-your-app`,
   `make-an-integration`, `fix-a-problem`, `reference`. `astryx docs` lists
   them in that order, each with its summary, its one-line promise, and an
   integration's roots after them. Every Core doc MUST sit under exactly one of
-  them, so the CLI ships no flat topic, and the repository's tests MUST fail
+  them, so the CLI ships no flat topic outside Foundations, and the repository's tests MUST fail
   on a Core doc outside them or on a second list at the root. Every
   integration's flat topic MUST sit in the generated `more-topics` level (More
   topics), in the order the topic list reads. A level has no authored doc, so

@@ -272,7 +272,7 @@ describe('the docs tree, one level at a time', () => {
   }, SLOW);
 
   it('reads the dense variant whole, asked with --dense or with --lang dense', async () => {
-    for (const args of [['--dense', 'docs', 'foundations/principles'], ['--lang', 'dense', 'docs', 'foundations/principles']]) {
+    for (const args of [['--dense', 'docs', 'get-started/principles'], ['--lang', 'dense', 'docs', 'get-started/principles']]) {
       const {status, stdout} = await runCli(args);
       expect(status).toBe(0);
       expect(stdout).not.toContain('Read one section:');
@@ -386,7 +386,7 @@ describe('text width in every language', () => {
   it('keeps the additive section index within 120 columns', async () => {
     const {status, stdout} = await runCli([
       'docs',
-      'foundations/principles',
+      'get-started/principles',
       '--index',
       '--lang',
       'zh',

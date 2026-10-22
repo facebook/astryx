@@ -2,9 +2,10 @@
 
 /**
  * Unified docs-section template. Serves two kinds of slug:
- * - long-form-doc: guide/foundation topics from docsRegistry, rendered via
- *   ContentBlockRenderer (TokensDocView for live token tables, otherwise
- *   ReferenceDocView).
+ * - long-form-doc: guide/foundation topics from docsRegistry: a guide's
+ *   landing page (GuideLanding: its lines and a card per child), or a doc
+ *   rendered via ContentBlockRenderer (TokensDocView for live token tables,
+ *   otherwise ReferenceDocView).
  * - package: non-theme @astryxdesign packages (e.g. @astryxdesign/core, @astryxdesign/cli), rendered as
  *   a README stub via PackageStubPage with install steps and an optional CTA.
  * Theme packages are NOT served here — they live at /themes/<name>.
@@ -19,6 +20,7 @@ import {
 } from '../../../../generated/packageRegistry';
 import {components} from '../../../../generated/componentRegistry';
 import {ReferenceDocView} from '../../../../components/docs/ReferenceDocView';
+import {GuideLanding} from '../../../../components/docs/GuideLanding';
 import {TokensDocView} from '../../../../components/docs/TokensDocView';
 import {PackageStubPage} from '../../../../components/docs/PackageStubPage';
 import {AskYourAgent} from '../../../../components/docs/AskYourAgent';
@@ -32,8 +34,15 @@ const componentNames = Object.values(components)
   .flat()
   .map(c => c.name);
 
-/** Pages whose token sections render as live token tables. */
-const TOKEN_TOPICS = new Set(['foundations']);
+const TOKEN_TOPICS = new Set([
+  'tokens',
+  'color',
+  'elevation',
+  'motion',
+  'shape',
+  'spacing',
+  'typography',
+]);
 
 function slugToPackageName(slug: string): string {
   return `@astryxdesign/${slug}`;
@@ -120,10 +129,24 @@ export default async function DocPage({
 
   const topic = docTopics.find(d => d.topic === slug);
   if (topic) {
-    const isTokenTopic = TOKEN_TOPICS.has(topic.topic);
+    const isTokenTopic =
+      topic.category === 'foundations' && TOKEN_TOPICS.has(topic.topic);
     const sections = linkifyDocSections(topic.sections, componentNames);
     const guide = docGuides.find(each => each.topic === topic.topic);
     const footer = guide ? <AskYourAgent command={guide.command} /> : null;
+
+    if (topic.children) {
+      return (
+        <GuideLanding
+          title={topic.title}
+          description={topic.description}
+          sections={sections}
+          items={topic.children}
+          anchors={topic.anchors}
+          footer={footer}
+        />
+      );
+    }
 
     return isTokenTopic ? (
       <TokensDocView
@@ -131,7 +154,6 @@ export default async function DocPage({
         description={topic.description}
         sections={sections}
         topic={topic.topic}
-        footer={footer}
       />
     ) : (
       <ReferenceDocView

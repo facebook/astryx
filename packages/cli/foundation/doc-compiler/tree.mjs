@@ -12,8 +12,9 @@
  * @position Between discovery and the readers: `astryx docs <route>`,
  *   `astryx doctor`, and the docsite build all read this tree. The CLI's docs
  *   and each integration's have a home here: every Core doc sits under one
- *   of the twelve guides or Reference ({@link GUIDE_ORDER}), and an
- *   integration's flat topic sits in the generated More topics level.
+ *   of the twelve guides or Reference ({@link GUIDE_ORDER}); Foundations keeps
+ *   its flat topics and the tokens and typography namespaces beside it; and
+ *   an integration's flat topic sits in the generated More topics level.
  *   A namespace never scans files and never lists its children: a child names
  *   its parent, or a namespace adopts a discovery group.
  */
@@ -131,9 +132,10 @@ export const KIND_GROUPS = Object.freeze({
 
 /**
  * The CLI's root namespaces, in reading order (spec:AST-046 FR12): twelve
- * guides named for what a reader wants to do, then Reference. `astryx docs`
- * lists them in this order, and the docsite sidebar follows it. Every Core
- * doc sits under exactly one of them.
+ * guides named for what a reader wants to do, then Reference. Foundations is
+ * the generated level of its flat topics, with the tokens and typography
+ * namespaces beside it. `astryx docs` lists them in this order, and the
+ * docsite sidebar follows it. Every Core doc sits under exactly one of them.
  */
 export const GUIDE_ORDER = Object.freeze([
   'get-started',
@@ -143,6 +145,8 @@ export const GUIDE_ORDER = Object.freeze([
   'theme-your-app',
   'style-components',
   'foundations',
+  'tokens',
+  'typography',
   'check-your-code',
   'upgrade-and-migrate',
   'translate-your-app',
@@ -152,11 +156,19 @@ export const GUIDE_ORDER = Object.freeze([
 ]);
 
 /**
- * The generated level that holds flat topics (spec:AST-046 FR12). Core has
- * none: its docs all sit under the guides. An integration's flat topic keeps
- * its own name as its route; this level is only where it sits.
+ * The generated levels that hold flat topics (spec:AST-046 FR12). Core's
+ * Foundations topics (color, elevation, icons, illustrations, motion, shape,
+ * spacing) sit in Foundations, at its place among the guides; every other
+ * flat topic, such as an integration's, sits in More topics. A topic keeps its
+ * own name as its route; its level is only where it sits.
  */
 export const TOPIC_LEVELS = Object.freeze({
+  foundations: Object.freeze({
+    route: 'foundations',
+    title: 'Foundations',
+    summary:
+      'Color, elevation, icons, illustrations, motion, shape, and spacing: the visual foundations every component builds on. Each topic keeps its own name; open one by it.',
+  }),
   topics: Object.freeze({
     route: 'more-topics',
     title: 'More topics',
@@ -166,11 +178,13 @@ export const TOPIC_LEVELS = Object.freeze({
 });
 
 /**
- * The generated level a flat topic sits in: there is one.
- * @param {string | null | undefined} _category
- * @returns {'topics'}
+ * The generated level a flat topic sits in: Foundations for a Foundations
+ * topic, More topics for any other.
+ * @param {string | null | undefined} category
+ * @returns {'foundations' | 'topics'}
  */
-export const topicLevel = _category => 'topics';
+export const topicLevel = category =>
+  category === 'foundations' ? 'foundations' : 'topics';
 
 /**
  * Roots in reading order: the CLI's guides in {@link GUIDE_ORDER}, then every

@@ -51,7 +51,7 @@ function MarkdownLink({href, children}: {href: string; children: ReactNode}) {
 
 // Component-page prose (prop descriptions, dos and don'ts, theming notes)
 // cites doc topics the same way /docs prose does, e.g. "Icon name — see
-// `astryx docs foundations/icons`". Route those spans through the same linkifiers, and
+// `astryx docs icons`". Route those spans through the same linkifiers, and
 // links through the same treatment.
 const MARKDOWN_COMPONENTS: MarkdownComponents = {
   inlineCode: InlineCode,

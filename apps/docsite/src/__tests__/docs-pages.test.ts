@@ -2,6 +2,8 @@
 
 import {describe, expect, it} from 'vitest';
 import {
+  guidePages,
+  landingAnchors,
   mergeFlatTopics,
   namespaceCategory,
   namespacePage,
@@ -111,6 +113,34 @@ describe('a flat topic split into a docs-tree namespace', () => {
     expect(result?.redirects).toEqual({
       'widgets-basics': '/docs/widgets#overview',
       'widgets-advanced': '/docs/widgets#best-practices',
+    });
+  });
+
+  it('makes the guide a short landing page that links a page per child', async () => {
+    const pages = (await guidePages(splitReader(guides), 'widgets')) ?? [];
+    expect(pages.map((page: any) => page.topic)).toEqual([
+      'widgets-basics',
+      'widgets-advanced',
+      'widgets',
+    ]);
+    const landing: any = pages.at(-1);
+    expect(landing.sections).toEqual([]);
+    expect(landing.children).toEqual([
+      {title: 'Basics', href: '/docs/widgets-basics', summary: ''},
+      {title: 'Advanced', href: '/docs/widgets-advanced', summary: ''},
+    ]);
+    expect((pages[1] as any).sections).toEqual(guides[1].sections);
+  });
+
+  it("sends each anchor of the guide's old page to the child page that holds it", async () => {
+    const full = await namespacePage(splitReader(guides), 'widgets');
+    expect(
+      landingAnchors(full!, new Set(['widgets-basics', 'widgets-advanced'])),
+    ).toEqual({
+      overview: '/docs/widgets-basics',
+      sizes: '/docs/widgets-basics#sizes',
+      'best-practices': '/docs/widgets-advanced',
+      theming: '/docs/widgets-advanced#theming',
     });
   });
 
@@ -289,10 +319,10 @@ describe('CLI commands on docsite pages', () => {
   });
 
   it('shows the Authoring page a command that runs before any install', () => {
-    const page = docTopics.find(topic => topic.topic === 'make-an-integration');
-    const section = page?.sections.find(
-      each => each.title === 'Verify the packed import',
-    );
+    const section = docTopics
+      .filter(topic => topic.topic.startsWith('make-an-integration-'))
+      .flatMap(topic => topic.sections)
+      .find(each => each.title === 'Verify the packed import');
     expect(section?.content).toContainEqual(
       expect.objectContaining({
         type: 'code',

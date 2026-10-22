@@ -106,7 +106,7 @@ export function scoreCandidate(
     // A placed guide's name is its route, and the route's last segment is its
     // name too, plural included, as a flat topic's is: `codemods` is
     // make-an-integration/building-blocks/codemods, and `illustration` is
-    // foundations/illustrations.
+    // illustrations.
     const leafLower = nameLower.slice(nameLower.lastIndexOf('/') + 1);
 
     // A plural of the name is the name: `integration` is the `integrations`

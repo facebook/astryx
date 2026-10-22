@@ -604,7 +604,7 @@ describe('formatCliCommand', () => {
     const dir = makeTmpDir();
     fs.writeFileSync(path.join(dir, 'package-lock.json'), '{}');
     linkCliBin(dir);
-    expect(formatCliCommand('docs foundations/all-tokens', dir)).toBe('npx astryx docs foundations/all-tokens');
+    expect(formatCliCommand('docs tokens', dir)).toBe('npx astryx docs tokens');
   });
 
   it('rewrites to the scoped package for one-off invocations', () => {
@@ -641,8 +641,8 @@ describe('the picker: declared cliCommand, then the door, then the guess', () =>
       {name: '@acme/b', cliCommand: 'acme astryx'},
     ]);
     expect(getCliInvocation(dir)).toBe('acme astryx');
-    expect(formatCliCommand('astryx docs foundations/all-tokens', dir)).toBe(
-      'acme astryx docs foundations/all-tokens',
+    expect(formatCliCommand('astryx docs tokens', dir)).toBe(
+      'acme astryx docs tokens',
     );
     expect(guessCliInvocation(dir)).toBe('pnpm exec astryx');
   });

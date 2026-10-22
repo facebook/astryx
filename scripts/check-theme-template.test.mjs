@@ -163,7 +163,7 @@ function themingTargets() {
 /**
  * Whether `astryx docs <route>` prints something: a flat topic, or a node of
  * the docs tree (a namespace such as `tokens`, or a guide such as
- * `foundations/color`), resolved the way the command resolves it.
+ * `tokens/tokens-color`), resolved the way the command resolves it.
  * @param {string} route
  * @returns {Promise<boolean>}
  */

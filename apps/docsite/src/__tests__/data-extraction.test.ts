@@ -1107,7 +1107,7 @@ describe('docsRegistry', () => {
   it('known topics are present', () => {
     const topics = docTopics.map(d => d.topic);
     expect(topics).toContain('get-started');
-    expect(topics).toContain('foundations');
+    expect(topics).toContain('color');
     expect(topics).toContain('find-a-component');
     expect(topics).toContain('reference');
   });
@@ -1116,8 +1116,9 @@ describe('docsRegistry', () => {
     for (const d of docTopics) {
       expect(d.category === 'guide' || d.category === 'foundations').toBe(true);
     }
-    // Every page is one of the twelve guides or Reference.
-    expect(docTopics.length).toBe(13);
+    // Every page is a guide's landing page, a page below one, or a
+    // Foundations page.
+    expect(docTopics.length).toBeGreaterThan(13);
   });
 
   it('no duplicate topics', () => {

@@ -55,7 +55,7 @@ export const doc = {
       name: 'topic',
       type: 'string',
       description:
-        "Docs-tree route to read (e.g. 'foundations/principles' or 'reference/api/functions/search'), or an integration's topic. Omit to list the guides and topics.",
+        "Docs-tree route to read (e.g. 'get-started/principles' or 'reference/api/functions/search'), or an integration's topic. Omit to list the guides and topics.",
     },
     {
       name: 'section',
@@ -151,10 +151,10 @@ export const doc = {
   ],
   examples: [
     {label: 'List topics', code: 'const r = await docs();'},
-    {label: 'A whole guide', code: "await docs('foundations/principles');"},
+    {label: 'A whole guide', code: "await docs('get-started/principles');"},
     {
       label: "A guide's sections",
-      code: "await docs('foundations/principles', undefined, {index: true});",
+      code: "await docs('get-started/principles', undefined, {index: true});",
     },
     {label: 'A docs-tree namespace', code: "await docs('reference/api');"},
     {

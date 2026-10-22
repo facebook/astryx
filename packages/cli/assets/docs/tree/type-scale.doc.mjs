@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs foundations/typography/type-scale`: line height, semantic type scale,
+ * @file `astryx docs typography/type-scale`: line height, semantic type scale,
  * display text, headings and text components, and custom type scales.
  */
 
@@ -19,7 +19,7 @@ export const docs = {
     'line height',
     'leading',
     'base',
-    'ratio'
+    'ratio',
   ],
 
   sections: [
@@ -45,7 +45,7 @@ export const docs = {
         },
         {
           type: 'token-ref',
-          topic: 'foundations/all-tokens',
+          topic: 'tokens',
           section: 'Type Scale Tokens',
         },
       ],

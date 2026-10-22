@@ -3,17 +3,19 @@
 
 /**
  * @file generate-token-docs.mjs
- * @description Generates the all-tokens guide (tree/all-tokens.doc.mjs,
- *   `astryx docs foundations/all-tokens`): one section per token category,
- *   plus a hand-written usage section, from the sources of truth:
+ * @description Generates the tokens namespace (tree/tokens.doc.mjs), one child
+ *   guide per token category (tree/tokens-<key>.doc.mjs), and a hand-written
+ *   usage guide (tree/tokens-usage.doc.mjs), from the sources of truth:
  *   packages/core/src/theme/tokens.stylex.ts, plus the domain tokens in
  *   packages/core/src/theme/domainTokens/dataTokens.ts (data visualization) and
  *   packages/core/src/theme/syntax/tokens.ts (code syntax).
  *
- * Each token is written once, in its category's section, so every value has
- * one home. A Foundations page shows its table with a token reference
- * (`{type: 'token-ref', topic: 'foundations/all-tokens', section: 'Color Tokens'}`),
- * which reads that section here.
+ * The namespace carries the topic's search keywords; a guide adds none of
+ * its own, so search indexes each guide by its title, description, and text,
+ * as it indexed the topic's sections. Each token is written once, in its
+ * category's guide. A token reference
+ * (`{type: 'token-ref', topic: 'tokens', section: 'Color Tokens'}`) resolves
+ * through the tokens namespace to the guide that holds the table.
  *
  * Run: node scripts/generate-token-docs.mjs
  * CI:  `node scripts/generate-token-docs.mjs --check` fails on drift, and on a
@@ -261,7 +263,7 @@ const groups = [
 ];
 
 // ---------------------------------------------------------------------------
-// 2. Build one section per category
+// 2. Build per-category child docs and collect sections for overview
 // ---------------------------------------------------------------------------
 
 const totalTokens = groups.reduce(
@@ -269,36 +271,109 @@ const totalTokens = groups.reduce(
   0,
 );
 
-/** @type {object[]} */
-const sections = [];
-let categories = 0;
+/** @type {Array<{slug: string, output: string, path: string, tokenCount: number}>} */
+const childFiles = [];
+
+let order = 10;
 for (const group of groups) {
   const pairs = extractDefaults(group.exportName, group.file);
   if (pairs.length === 0) continue;
-  categories++;
+
   const rows = pairs.map(([name, value]) => group.formatRow(name, value));
+  const slug = `tokens-${keyToSlug(group.key)}`;
+
   /** @type {import('@astryxdesign/cli/authoring').ReferenceContentBlock[]} */
   const content = [
     {type: 'prose', text: group.description},
     {type: 'table', headers: group.headers, rows},
   ];
+
   const section = {title: group.title, content};
   if (group.previewType) section.previewType = group.previewType;
-  sections.push(section);
+
+  const childDoc = {
+    type: 'generic',
+    name: slug,
+    title: group.title,
+    placement: {parent: 'namespace:tokens', slot: 'guides', order},
+    category: 'foundations',
+    description: group.description,
+    sections: [section],
+  };
+
+  const childOutput = `\
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+// AUTO-GENERATED — do not edit manually.
+// Source: packages/core/src/theme/tokens.stylex.ts,
+//   dataTokens.stylex.ts, and syntax/tokens.ts
+// Run: node scripts/generate-token-docs.mjs
+
+/** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
+
+export const docs = ${JSON.stringify(childDoc, null, 2)};
+`;
+
+  childFiles.push({
+    slug,
+    output: childOutput,
+    path: resolve(TREE_DIR, `${slug}.doc.mjs`),
+    tokenCount: pairs.length,
+  });
+
+  order += 10;
 }
 
 // ---------------------------------------------------------------------------
-// 3. The usage section (hand-written content, generated file)
+// 3. Build the namespace doc
 // ---------------------------------------------------------------------------
 
-sections.push({
+const namespaceDoc = {
+  type: 'namespace',
+  name: 'tokens',
+  title: 'All Tokens',
+  summary:
+    'Complete reference for color, data visualization, syntax, spacing, size, border, focus, radius, shadow, motion, and typography tokens.',
+  keywords: ['design tokens', 'css variables', 'custom properties'],
+  slots: {
+    guides: {title: 'Token Categories', accepts: {kinds: ['generic']}},
+  },
+};
+
+const namespaceOutput = `\
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+// AUTO-GENERATED — do not edit manually.
+// Run: node scripts/generate-token-docs.mjs
+// Total: ${totalTokens} tokens across ${groups.length} categories.
+
+/** @type {import('@astryxdesign/cli/authoring').NamespaceDoc} */
+export const docs = ${JSON.stringify(namespaceDoc, null, 2)};
+`;
+
+const namespacePath = resolve(TREE_DIR, 'tokens.doc.mjs');
+
+// ---------------------------------------------------------------------------
+// 4. Build a usage child (hand-written content, generated file)
+// ---------------------------------------------------------------------------
+
+const usageSlug = 'tokens-usage';
+const usageDoc = {
+  type: 'generic',
+  name: usageSlug,
   title: 'Usage in StyleX',
-  content: [
+  placement: {parent: 'namespace:tokens', slot: 'guides', order},
+  category: 'foundations',
+  description: 'How to import and use token variables in StyleX styles.',
+  sections: [
     {
-      type: 'code',
-      lang: 'tsx',
-      label: 'Using token imports',
-      code: `import * as stylex from '@stylexjs/stylex';
+      title: 'Usage in StyleX',
+      content: [
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Using token imports',
+          code: `import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars, sizeVars, radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {dataVars} from '@astryxdesign/core/theme/dataTokens.stylex';
 
@@ -315,50 +390,28 @@ const styles = stylex.create({
     height: sizeVars['--size-element-md'],
   },
 });`,
-    },
-    {
-      type: 'prose',
-      text: 'Use `dataVars` for StyleX, DOM styles, and SVG presentation attributes. Canvas and other APIs that require concrete mode-resolved values use `resolveThemeToken()` or `useTheme().token()` instead. Raw CSS may use the stable custom-property names only when compiled dataVars output is guaranteed or the declaration carries an explicit fallback. See {@link namespace:style-components} for xstyle, className, and compound component patterns, and {@link generic:author-a-theme} for overriding tokens with defineTheme.',
+        },
+        {
+          type: 'prose',
+          text: 'Use `dataVars` for StyleX, DOM styles, and SVG presentation attributes. Canvas and other APIs that require concrete mode-resolved values use `resolveThemeToken()` or `useTheme().token()` instead. Raw CSS may use the stable custom-property names only when compiled dataVars output is guaranteed or the declaration carries an explicit fallback. See {@link namespace:styling} for xstyle, className, and compound component patterns, and {@link generic:author-a-theme} for overriding tokens with defineTheme.',
+        },
+      ],
     },
   ],
-});
-
-// ---------------------------------------------------------------------------
-// 4. The all-tokens guide
-// ---------------------------------------------------------------------------
-
-const DOC_NAME = 'all-tokens';
-const allTokensDoc = {
-  type: 'generic',
-  name: DOC_NAME,
-  title: 'All tokens',
-  placement: {parent: 'namespace:foundations', slot: 'guides', order: 100},
-  category: 'foundations',
-  description:
-    'Every token in one table per category: color, data visualization, syntax, spacing, size, border, focus, radius, shadow, motion, and typography.',
-  keywords: [
-    'design tokens',
-    'css variables',
-    'custom properties',
-    'token table',
-    'all tokens',
-  ],
-  sections,
 };
 
-const docOutput = `\
+const usageOutput = `\
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 // AUTO-GENERATED — do not edit manually.
-// Source: packages/core/src/theme/tokens.stylex.ts,
-//   dataTokens.stylex.ts, and syntax/tokens.ts
 // Run: node scripts/generate-token-docs.mjs
-// Total: ${totalTokens} tokens across ${categories} categories.
 
 /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
 
-export const docs = ${JSON.stringify(allTokensDoc, null, 2)};
+export const docs = ${JSON.stringify(usageDoc, null, 2)};
 `;
+
+const usagePath = resolve(TREE_DIR, `${usageSlug}.doc.mjs`);
 
 // ---------------------------------------------------------------------------
 // 5. Write output (or check for drift)
@@ -369,19 +422,28 @@ const isCheck = process.argv.includes('--check');
 /** @type {Array<{path: string, output: string, label: string}>} */
 const allFiles = [
   {
-    path: resolve(TREE_DIR, `${DOC_NAME}.doc.mjs`),
-    output: docOutput,
-    label: `tree/${DOC_NAME}.doc.mjs (${totalTokens} tokens)`,
+    path: namespacePath,
+    output: namespaceOutput,
+    label: 'tree/tokens.doc.mjs (namespace)',
+  },
+  ...childFiles.map(f => ({
+    path: f.path,
+    output: f.output,
+    label: `tree/${f.slug}.doc.mjs (${f.tokenCount} tokens)`,
+  })),
+  {
+    path: usagePath,
+    output: usageOutput,
+    label: `tree/${usageSlug}.doc.mjs (usage)`,
   },
 ];
 
-// A generated tokens doc this script no longer writes (the tokens namespace
-// and its per-category guides, which all-tokens replaced, or a renamed one),
-// or a translation overlay whose doc is gone: a reader would still find it, so
-// check mode fails on it and a write removes it.
+// A generated tokens guide no category writes any more (a renamed or removed
+// category), or a translation overlay whose guide is gone: a reader would
+// still find it, so check mode fails on it and a write removes it.
 const written = new Set(allFiles.map(f => f.path));
 const treeFiles = readdirSync(TREE_DIR).filter(file =>
-  /^(?:all-)?tokens(?:-[\w-]+)?\.doc(?:\.(?:dense|zh))?\.mjs$/.test(file),
+  /^tokens(?:-[\w-]+)?\.doc(?:\.(?:dense|zh))?\.mjs$/.test(file),
 );
 const orphanGuides = treeFiles
   .filter(file => /\.doc\.mjs$/.test(file))

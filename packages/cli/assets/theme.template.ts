@@ -141,8 +141,8 @@ export const myTheme = defineTheme({
    * measure it. `useTheme()` and `resolveThemeTokens()` return the resolved
    * values, and the rendered DOM is the final word.
    *
-   * Reference: `astryx docs foundations/color` for what each semantic role means,
-   * `astryx docs foundations/color` for every colour token and its light/dark
+   * Reference: `astryx docs color` for what each semantic role means,
+   * `astryx docs tokens/tokens-color` for every colour token and its light/dark
    * default.
    */
   // color: {accent: '#0064E0', neutralStyle: 'cool', contrast: 'standard'},
@@ -157,7 +157,7 @@ export const myTheme = defineTheme({
    *
    * See §2 above — naming a family here does not load it.
    *
-   * Reference: `astryx docs foundations/typography`.
+   * Reference: `astryx docs typography`.
    */
   typography: {
     scale: {base: 16, ratio: 1.2},
@@ -174,7 +174,7 @@ export const myTheme = defineTheme({
    * (0 = square and brutalist, 2 = very soft). --radius-none and --radius-full
    * are fixed and never scaled.
    *
-   * Reference: `astryx docs foundations/shape`.
+   * Reference: `astryx docs shape`.
    */
   radius: {base: 4, multiplier: 1},
 
@@ -186,7 +186,7 @@ export const myTheme = defineTheme({
    *   Cinematic {fast: 200, medium: 500, slow: 1200}
    * `easing` overrides --ease-standard.
    *
-   * Reference: `astryx docs foundations/motion`.
+   * Reference: `astryx docs motion`.
    */
   motion: {fast: 175, medium: 410, slow: 975, ratio: 0.75},
 
@@ -195,8 +195,8 @@ export const myTheme = defineTheme({
   // A string applies to both colour modes; a [light, dark] tuple compiles to
   // CSS light-dark(). List only what you want to change.
   //
-  // `astryx docs foundations/color` PRINTS THE WHOLE TABLE — every colour token
-  // with its light and dark default (`astryx docs foundations/all-tokens` lists every category). Read it before hand-writing colours: most of what you
+  // `astryx docs tokens/tokens-color` PRINTS THE WHOLE TABLE — every colour token
+  // with its light and dark default (`astryx docs tokens` lists every category). Read it before hand-writing colours: most of what you
   // want already has a semantic name, and the defaults tell you what you are
   // moving away from.
   //
@@ -313,7 +313,7 @@ export const myTheme = defineTheme({
   /**
    * Swap the artwork behind semantic icon names — every component that asks
    * for `check`, `close`, `chevron-down` gets yours.
-   * Reference: `astryx docs foundations/icons` lists the names.
+   * Reference: `astryx docs icons` lists the names.
    */
   // icons: {check: <MyCheck />, close: <MyClose />},
 

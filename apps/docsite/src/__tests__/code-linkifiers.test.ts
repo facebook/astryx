@@ -8,37 +8,24 @@
 
 import {describe, it, expect} from 'vitest';
 import {linkifyCode} from '../components/codeLinkifiers';
-import {
-  docRedirects,
-  docTopics,
-  docsTreeRoutes,
-} from '../generated/docsRegistry';
+import {docTopics, docsTreeRoutes} from '../generated/docsRegistry';
 import {components} from '../generated/componentRegistry';
 
 describe('doc topic linkifier', () => {
   it.each([
-    [
-      'astryx docs foundations/all-tokens',
-      docRedirects['foundations-all-tokens'],
-    ],
+    ['astryx docs tokens', '/docs/tokens'],
     ['astryx docs style-components', '/docs/style-components'],
-    ['npx astryx docs foundations/icons', docRedirects['foundations-icons']],
-    [
-      'npx @astryxdesign/cli docs foundations/icons',
-      docRedirects['foundations-icons'],
-    ],
+    ['npx astryx docs icons', '/docs/icons'],
+    ['npx @astryxdesign/cli docs icons', '/docs/icons'],
     [
       'npx @astryxdesign/cli@0.7.2 docs get-started/on-your-computer',
-      docRedirects['get-started-on-your-computer'],
+      '/docs/get-started-on-your-computer',
     ],
     ['  astryx docs theme-your-app  ', '/docs/theme-your-app'],
     // The docs index, for a bare command.
     ['astryx docs', '/docs'],
     // A section argument and CLI-only flags still belong to the topic page.
-    [
-      'astryx docs foundations/all-tokens spacing',
-      docRedirects['foundations-all-tokens'],
-    ],
+    ['astryx docs tokens spacing', '/docs/tokens'],
     ['astryx docs style-components --dense', '/docs/style-components'],
     ['astryx docs style-components --zh', '/docs/style-components'],
   ])('links %s', (code, href) => {
@@ -61,8 +48,8 @@ describe('doc topic linkifier', () => {
     // Ordinary backticked prose and identifiers.
     ['xstyle'],
     ['--color-text-primary'],
-    ['See astryx docs foundations/all-tokens for the full reference'],
-    ['other-cli docs foundations/all-tokens'],
+    ['See astryx docs tokens for the full reference'],
+    ['other-cli docs tokens'],
     [''],
   ])('leaves %s as plain code', code => {
     expect(linkifyCode(code)).toBeNull();

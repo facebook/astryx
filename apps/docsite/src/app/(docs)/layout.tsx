@@ -14,7 +14,13 @@ export default async function DocsLayout({
   const year = await getCopyrightYear();
 
   return (
-    <DocsShell packages={packages} docGuides={docGuides}>
+    <DocsShell
+      packages={packages.map(({name, displayName, canaryOnly}) => ({
+        name,
+        displayName,
+        canaryOnly,
+      }))}
+      docGuides={docGuides}>
       {children}
       <SiteFooter year={year} />
     </DocsShell>

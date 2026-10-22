@@ -98,7 +98,7 @@ export {myCommand} from './my-command/my-command.mjs';
 The CLI handler just parses args, calls the API function, and formats the result. No business logic here:
 
 ```javascript
-// reference/commands/my-command.mjs
+// cli/commands/my-command.mjs
 import {jsonOut, jsonError} from '../../lib/json.mjs';
 import {myCommand} from '../../api/my-command/my-command.mjs';
 

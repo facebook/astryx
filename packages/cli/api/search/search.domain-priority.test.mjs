@@ -78,7 +78,7 @@ describe('search domain priority — the rule', () => {
   it('gives a doc no priority for a heading match or a one-word keyword', () => {
     const topic = {
       domain: 'doc',
-      name: 'foundations/typography/font-setup',
+      name: 'typography/font-setup',
       keywords: ['size'],
       titles: ['Font Setup', 'Font Sizes'],
     };
@@ -147,10 +147,10 @@ describe('search domain priority — the rule', () => {
   });
 
   it('gives a doc priority when the query names it', () => {
-    const topic = {domain: 'doc', name: 'foundations/typography/font-setup'};
+    const topic = {domain: 'doc', name: 'typography/font-setup'};
     // The whole query spells its last route segment.
     expect(priority('font setup', topic)).toBe(2);
-    expect(priority('foundations/typography/font-setup', topic)).toBe(2);
+    expect(priority('typography/font-setup', topic)).toBe(2);
     // A word of a longer query is a flat topic's name, or its plural.
     expect(
       priority('product illustration', {domain: 'doc', name: 'illustrations'}),
@@ -255,7 +255,7 @@ describe('search domain priority — real docs and components', () => {
     async () => {
       const results = (await search('font size', {cwd})).data.results;
       expect(results[0]).toMatchObject({domain: 'doc'});
-      expect(results[0].name).toMatch(/^foundations\/typography(?:\/|$)/);
+      expect(results[0].name).toMatch(/^typography(?:\/|$)/);
       // The component the phrase points to stays near the top.
       expect(
         results
@@ -314,10 +314,10 @@ describe('search domain priority — real docs and components', () => {
     'still finds a guide first by its name',
     async () => {
       for (const [q, name] of [
-        ['motion', 'foundations/motion'],
-        ['icons', 'foundations/icons'],
-        ['all tokens', 'foundations/all-tokens'],
-        ['illustration', 'foundations/illustrations'],
+        ['motion', 'motion'],
+        ['icons', 'icons'],
+        ['all tokens', 'tokens'],
+        ['illustration', 'illustrations'],
         ['use a theme', 'theme-your-app/use-a-theme'],
         ['author a theme', 'theme-your-app/author-a-theme'],
         ['upgrade and migrate', 'upgrade-and-migrate'],

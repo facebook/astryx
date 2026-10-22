@@ -70,7 +70,7 @@ export function buildHelp() {
           command: 'template --list --type page',
           purpose: 'every page template',
         },
-        {command: 'docs foundations/all-tokens', purpose: 'the design tokens'},
+        {command: 'docs tokens', purpose: 'the design tokens'},
         {
           command: 'search <query>',
           purpose: 'a neutral lookup of any component, doc, or template',

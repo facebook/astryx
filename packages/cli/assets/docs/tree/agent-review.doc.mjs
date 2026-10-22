@@ -183,7 +183,7 @@ export const docs = {
             'Look up a possible replacement with `astryx component <Name> --dense`. Do not invent a component or prop that the installed version does not provide.',
             'Run the installed `astryx component --list` and inspect app-owned wrappers before rebuilding a pattern. Prefer the component the app or one of its installed integrations already uses for the job.',
             'Inspect every `stylex.create` declaration, inline style, `className`, and `stylex.props` use. Look for a component prop or token first.',
-            "When replacing a literal spacing value, read `astryx docs foundations/spacing --full` for the matching step or token and the target component doc for the prop's accepted scale. Do not guess a pixel-to-step mapping.",
+            "When replacing a literal spacing value, read `astryx docs spacing --full` for the matching step or token and the target component doc for the prop's accepted scale. Do not guess a pixel-to-step mapping.",
             'Choose the root that matches the surface. Use `Layout` for a page, `Center` for centered content, and `AppShell` only when the surface owns global application chrome.',
             'Render realistic empty, loading, error, long-content, and interactive states. Check narrow and wide widths plus each supported color mode.',
             'Verify the target roles and permissions, supported locales and RTL behavior, and mobile needs. Follow the real task from entry to completion instead of judging only the static page.',
@@ -241,7 +241,7 @@ Before evaluating:
 7. List the real data states, roles and permissions, supported locales and RTL behavior, and mobile or narrow-width needs.
 8. Inspect every source file in scope and its public imports.
 9. Run \`astryx component <Name> --dense\` for each Astryx component whose replacement, prop, or composition you question.
-10. Read \`astryx docs foundations/spacing --full\` and the target component's docs before mapping a literal spacing value to a prop or token.
+10. Read \`astryx docs spacing --full\` and the target component's docs before mapping a literal spacing value to a prop or token.
 11. Render every supplied state at narrow and wide widths and in each supported color mode.
 12. Read the build, type-check, test, and accessibility-check results.
 

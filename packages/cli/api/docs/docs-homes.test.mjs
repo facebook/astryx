@@ -4,9 +4,10 @@
  * @file Every Core doc has a named home in the docs tree (spec:AST-046 FR12).
  *
  * The root of the docs is twelve guides, each named for what a reader wants
- * to do, then Reference. Every Core doc sits under exactly one of them: a new
- * doc placed nowhere, a flat Core topic, a catch-all level, or a second list
- * at the root fails here. Integration authoring lives under
+ * to do, then Reference. Foundations is the generated level of its flat
+ * topics, with the tokens and typography namespaces beside it. Every Core doc
+ * sits under exactly one root: a new doc placed nowhere, any other flat Core
+ * topic, a catch-all level, or a second list at the root fails here. Integration authoring lives under
  * make-an-integration, and every route a doc left names where it went.
  */
 
@@ -17,20 +18,37 @@ import {GUIDE_ORDER} from '../../foundation/doc-compiler/tree.mjs';
 const CLI = '@astryxdesign/cli';
 const SLOW = 60_000;
 
+/** Core's only flat topics: the Foundations topics, as on 0.7. */
+const FOUNDATIONS_TOPICS = [
+  'color',
+  'elevation',
+  'icons',
+  'illustrations',
+  'motion',
+  'shape',
+  'spacing',
+];
+/** Roots that keep their 0.7 summaries rather than a one-line promise. */
+const KEPT_ROOTS = new Set(['foundations', 'tokens', 'typography']);
+
 describe('every Core doc has a named home', () => {
   it(
     'lists the twelve guides and Reference at the root, in order, and nothing else',
     async () => {
       const list = await docs();
-      // No flat Core topic: the topic list, the second list at the root, is
-      // empty for Core.
-      expect(list.data.filter(topic => topic.package === CLI)).toEqual([]);
+      // Core's only flat topics are the Foundations topics.
+      expect(
+        list.data
+          .filter(topic => topic.package === CLI)
+          .map(topic => topic.topic),
+      ).toEqual(FOUNDATIONS_TOPICS);
       const roots = list.meta?.namespaces ?? [];
       expect(roots.map(entry => entry.topic)).toEqual([...GUIDE_ORDER]);
-      expect(GUIDE_ORDER).toHaveLength(13);
+      expect(GUIDE_ORDER).toHaveLength(15);
       for (const root of roots) {
         expect(root.package).toBe(CLI);
         // Each guide's summary is its one-line promise.
+        if (KEPT_ROOTS.has(root.topic)) continue;
         expect(root.description, root.topic).toMatch(/^[A-Z].{10,100}\.$/);
       }
       for (const gone of ['guides', 'unorganized', 'more-topics', 'cli']) {
@@ -55,13 +73,16 @@ describe('every Core doc has a named home', () => {
           breadcrumb: [],
           links: {up: 'astryx docs'},
         });
+        // A Foundations topic keeps its own name as its route.
+        const inRoot = (/** @type {string} */ route) =>
+          root === 'foundations'
+            ? FOUNDATIONS_TOPICS.includes(route)
+            : route.startsWith(`${root}/`);
         /** @param {any[]} slots */
         const walk = slots => {
           for (const slot of slots ?? []) {
             for (const child of slot.children) {
-              expect(child.route.startsWith(`${root}/`), child.route).toBe(
-                true,
-              );
+              expect(inRoot(child.route), child.route).toBe(true);
               expect(homes.has(child.route), child.route).toBe(false);
               homes.set(child.route, root);
               walk(child.slots);
@@ -80,6 +101,8 @@ describe('every Core doc has a named home', () => {
       // A child's name never repeats its parent's.
       for (const route of homes.keys()) {
         const parts = route.split('/');
+        // Foundations, tokens, and typography keep their 0.7 names.
+        if (parts.length < 2 || KEPT_ROOTS.has(parts[0])) continue;
         const [parent, child] = parts.slice(-2);
         expect(child.startsWith(`${parent}-`), route).toBe(false);
       }
@@ -131,13 +154,10 @@ describe('every Core doc has a named home', () => {
         ['getting-started', 'get-started/add-to-a-project'],
         ['theme', 'theme-your-app'],
         ['use-a-theme', 'theme-your-app/use-a-theme'],
-        ['principles', 'foundations/principles'],
+        ['principles', 'get-started/principles'],
         ['is-my-code-good', 'check-your-code/agent-review'],
         ['layout/scaffold', 'build-a-page/scaffold'],
         ['styling-libraries/tailwind', 'style-components/tailwind'],
-        ['tokens', 'foundations/all-tokens'],
-        ['tokens/tokens-color', 'foundations/color'],
-        ['tokens/tokens-data', 'foundations/all-tokens'],
         ['global', 'get-started/on-your-computer'],
         ['global/problems', 'fix-a-problem/global-mode-messages'],
         ['cli/commands/upgrade', 'reference/commands/upgrade'],

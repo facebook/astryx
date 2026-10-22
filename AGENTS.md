@@ -219,8 +219,8 @@ astryx() { node packages/cli/clients/cli/bin/astryx.mjs "$@"; }
 BOOTSTRAP (run every branch, <500ms):
 astryx help # discover all commands and options
 astryx docs # list available doc topics
-astryx docs foundations/principles --dense # design rules, anti-patterns, xstyle, tokens
-astryx docs foundations/all-tokens --dense # spacing, color, radius, typography, shadow
+astryx docs get-started/principles --dense # design rules, anti-patterns, xstyle, tokens
+astryx docs tokens --dense # spacing, color, radius, typography, shadow
 astryx docs theme-your-app --dense # theme provider, light/dark, overrides
 astryx component --list # all components grouped by category
 astryx template --list # available page templates

@@ -501,7 +501,7 @@ describe('integration docs in the docs tree', () => {
             content: [
               {
                 type: 'prose',
-                text: 'See {@link generic:integrations}, and {@link @astryxdesign/cli:generic:all-tokens} for the tokens.',
+                text: 'See {@link generic:integrations}, and {@link @astryxdesign/cli:namespace:tokens} for the tokens.',
               },
             ],
           },
@@ -513,7 +513,7 @@ describe('integration docs in the docs tree', () => {
     // `generic:integrations` is the extension's own guide, never a CLI doc;
     // a provider-qualified link reaches the CLI's guide.
     expect(data.content[0].text).toBe(
-      'See `astryx docs acme/integrations`, and `astryx docs foundations/all-tokens` for the tokens.',
+      'See `astryx docs acme/integrations`, and `astryx docs tokens` for the tokens.',
     );
     // The CLI's own sections of the guide still resolve against the CLI.
     const full = await docs('theme-your-app/use-a-theme', undefined, {cwd: tmpDir});

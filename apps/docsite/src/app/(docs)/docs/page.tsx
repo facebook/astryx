@@ -31,21 +31,25 @@ export default function DocsHomePage() {
   return (
     <DocPageLayout
       title="Docs"
-      description="Pick what you want to do. Each guide is one page, and each ends with the line your coding agent runs for it.">
+      description="Pick what you want to do. Each guide opens a short page that links to its parts, and ends with the line your coding agent runs for it.">
       <Grid columns={{minWidth: 280, repeat: 'fill'}} gap={4}>
         {guides.map(guide => (
           <Card key={guide.topic}>
             <VStack gap={2}>
               <Heading level={2}>
-                <Link href={`/docs/${guide.topic}`} isStandalone>
-                  {guide.title}
-                </Link>
+                {guide.href ? (
+                  <Link href={guide.href} isStandalone>
+                    {guide.title}
+                  </Link>
+                ) : (
+                  guide.title
+                )}
               </Heading>
               <Text type="body" color="secondary">
                 {guide.promise}
               </Text>
               <VStack gap={1}>
-                {guide.children.map(child => (
+                {guide.children.slice(0, 3).map(child => (
                   <Link key={child.href} href={child.href} type="supporting">
                     {child.title}
                   </Link>
@@ -57,7 +61,7 @@ export default function DocsHomePage() {
       </Grid>
       {reference ? (
         <Text type="body">
-          <Link href={`/docs/${reference.topic}`} isStandalone>
+          <Link href={reference.href ?? `/docs/${reference.topic}`} isStandalone>
             {reference.title}
           </Link>
           {`: ${reference.promise}`}

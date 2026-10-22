@@ -3,9 +3,7 @@
 /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
 
 export const docs = {
-  type: 'generic',
   name: 'spacing',
-  placement: {parent: 'namespace:foundations', slot: 'guides', order: 30},
   title: 'Spacing',
   category: 'foundations',
   description:
@@ -34,7 +32,7 @@ export const docs = {
         },
         {
           type: 'token-ref',
-          topic: 'foundations/all-tokens',
+          topic: 'tokens',
           section: 'Spacing Tokens',
         },
       ],

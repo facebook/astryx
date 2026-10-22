@@ -10,7 +10,7 @@ export const docs = {
   type: 'generic',
   name: 'global-mode',
   placement: {parent: 'namespace:reference', slot: 'guides', order: 20},
-  title: 'Global mode reference',
+  title: 'Global mode',
   category: 'guide',
   keywords: [
     'reference',

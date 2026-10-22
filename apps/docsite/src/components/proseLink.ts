@@ -49,6 +49,6 @@ export const proseLinkStyles = stylex.create({
     },
   },
   // Chip labels only: nudges the underline clear of descenders in commands
-  // like `astryx docs foundations/typography`, which sit lower inside a padded chip.
+  // like `astryx docs typography`, which sit lower inside a padded chip.
   chipOffset: {textUnderlineOffset: '0.2em'},
 });

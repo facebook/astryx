@@ -2,9 +2,7 @@
 
 /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
 export const docs = {
-  type: 'generic',
   name: 'illustrations',
-  placement: {parent: 'namespace:foundations', slot: 'guides', order: 90},
   title: 'Illustrations',
   category: 'foundations',
   description:

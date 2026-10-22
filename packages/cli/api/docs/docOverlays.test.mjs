@@ -9,7 +9,7 @@
  *
  * The overlays used to be applied BY ARRAY POSITION, so an overlay whose
  * sections were ordered differently from the base grafted every title onto the
- * wrong body. `docs foundations/all-tokens --dense` printed the entire colour table under a
+ * wrong body. `docs tokens --dense` printed the entire colour table under a
  * heading that said "## Spacing", above prose reading "gap props use
  * space0-space12" — teaching any agent that spacing tokens are named
  * `--color-*`. CLAUDE.md tells every agent to run that exact command at
@@ -119,11 +119,11 @@ describe('reference doc overlays (#2182)', () => {
   }
 });
 
-describe('the reported defect: docs foundations/all-tokens --dense (#2182)', () => {
+describe('the reported defect: docs tokens --dense (#2182)', () => {
   it('does not print the colour table under the Spacing heading', async () => {
-    // The spacing table lives in the all-tokens guide; the spacing page shows
-    // it through a token reference to that guide. Both, read dense.
-    for (const topic of ['foundations/all-tokens', 'foundations/spacing']) {
+    // The spacing table lives in its own guide; the spacing topic shows it
+    // through a token reference to the tokens namespace. Both, read dense.
+    for (const topic of ['tokens/tokens-spacing', 'spacing']) {
       const result = await docs(topic, null, {dense: true});
       const spacing = result.data.sections.find(s =>
         JSON.stringify(s).includes('--spacing-'),
@@ -140,27 +140,30 @@ describe('the reported defect: docs foundations/all-tokens --dense (#2182)', () 
   });
 
   it('keeps every base section reachable, even without an overlay entry', async () => {
-    // The all-tokens overlay compresses 5 of 15 category tables. The other 10
-    // must still render (in English), not vanish or absorb a neighbour's
-    // title.
-    const full = await docs('foundations/all-tokens');
-    const dense = await docs('foundations/all-tokens', null, {dense: true});
-    const titles = read => read.data.sections.map(s => s.title);
+    // The tokens overlays compress 5 of 15 category tables. Read through the
+    // namespace, the other 10 must still render (in English), not vanish or
+    // absorb a neighbour's title.
+    const full = await docs('tokens', null, {depth: 'all', detail: 'full'});
+    const dense = await docs('tokens', null, {depth: 'all', detail: 'full', dense: true});
+    const titles = read =>
+      read.data.slots.flatMap(slot =>
+        slot.children.flatMap(child => (child.sections ?? []).map(s => s.title)),
+      );
     expect(titles(dense).length).toBe(titles(full).length);
     expect(titles(dense)).toContain('Color');
     expect(titles(dense)).toContain('Font Size Tokens');
   });
 
   it('does not lose a section from a dense read', async () => {
-    const full = await docs('foundations/principles');
-    const dense = await docs('foundations/principles', null, {dense: true});
+    const full = await docs('get-started/principles');
+    const dense = await docs('get-started/principles', null, {dense: true});
     const titles = dense.data.sections.map(s => s.title);
     // The dense overlay keeps every base section.
     expect(titles.length).toBe(full.data.sections.length);
   });
 
   it('does not emit a duplicate heading in a dense read', async () => {
-    const dense = await docs('foundations/principles', null, {dense: true});
+    const dense = await docs('get-started/principles', null, {dense: true});
     const titles = dense.data.sections.map(s => s.title.toLowerCase());
     const counts = new Map();
     for (const t of titles) counts.set(t, (counts.get(t) ?? 0) + 1);
@@ -169,7 +172,7 @@ describe('the reported defect: docs foundations/all-tokens --dense (#2182)', () 
   });
 
   it('does not leak English headings into a --zh read', async () => {
-    const zh = await docs('foundations/principles', null, {zh: true});
+    const zh = await docs('get-started/principles', null, {zh: true});
     const titles = zh.data.sections.map(s => s.title);
     // Every section the overlay translates must appear once, in Chinese only.
     expect(titles).not.toContain('Rules');

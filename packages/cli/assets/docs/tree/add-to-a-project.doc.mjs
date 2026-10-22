@@ -252,7 +252,7 @@ pnpm dev`,
 astryx component Button   # props, usage, theming for Button
 astryx docs               # list all doc topics
 astryx template --list    # available page templates
-astryx docs foundations/all-tokens        # spacing, color, radius reference`,
+astryx docs tokens        # spacing, color, radius reference`,
         },
       ],
     },

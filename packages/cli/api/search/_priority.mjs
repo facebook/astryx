@@ -31,7 +31,7 @@ import {scoreCandidate} from './_candidate-score.mjs';
  * A doc has priority when the reader asked for that doc:
  * - 2: the whole query is the topic's name, its last route segment, or its
  *   own title, as words and whatever the plural (`font setup` is
- *   foundations/typography/font-setup, `side panel` is "Side panels");
+ *   typography/font-setup, `side panel` is "Side panels");
  * - 1: a word of the query is the topic's name (`illustration` in a longer
  *   question is the illustrations guide);
  * - 1: a query of two or more words is one of the topic's own declared

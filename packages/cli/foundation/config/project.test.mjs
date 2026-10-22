@@ -524,7 +524,7 @@ describe('Project discovery', () => {
       package: '@acme/widgets',
     });
     // The CLI's own guides are still there.
-    expect(catalog.guide('color').package).toBe('@astryxdesign/cli');
+    expect(catalog.guide('use-a-theme').package).toBe('@astryxdesign/cli');
     expect(await project.issues()).toEqual([]);
   });
 

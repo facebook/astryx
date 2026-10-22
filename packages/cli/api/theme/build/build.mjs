@@ -3183,7 +3183,7 @@ async function themeBuildInternal(
   /** @type {string[]} */
   const fontNotices = [];
   for (const family of unloadedFonts) {
-    const msg = `Font "${family}" is named by this theme but not loaded; add a <link> or @font-face in your app (recipe: astryx docs foundations/typography)`;
+    const msg = `Font "${family}" is named by this theme but not loaded; add a <link> or @font-face in your app (recipe: astryx docs typography)`;
     noticeMessages.push(msg);
     fontNotices.push(msg);
   }
@@ -3328,7 +3328,7 @@ export function printCompactTrailer(trailers, {hint = false} = {}) {
       )
       .join(', ');
     logger.log(
-      `[note] Fonts named but not loaded: ${named}. Load them in your app (recipe: ${formatCliCommand('docs foundations/typography')}).`,
+      `[note] Fonts named but not loaded: ${named}. Load them in your app (recipe: ${formatCliCommand('docs typography')}).`,
     );
   }
   if (hint) {
@@ -3708,7 +3708,7 @@ Or load the same stylesheet natively:
   ];
   const notices = unloadedFonts.map(
     family =>
-      `Font "${family}" is named by this theme family but not loaded; add a <link> or @font-face in your app (recipe: astryx docs foundations/typography)`,
+      `Font "${family}" is named by this theme family but not loaded; add a <link> or @font-face in your app (recipe: astryx docs typography)`,
   );
   for (const notice of notices) logger.log(`  note: ${notice}`);
   return {

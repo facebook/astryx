@@ -225,7 +225,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Core has no chart component. Draw the series with your chart library and color it with the data visualization tokens in {@link generic:all-tokens}. For a KPI with a trend, put the value in Heading, the change in Text or Badge, and the target in ProgressBar. `astryx build "analytics dashboard"` returns a page template that already lays these out.',
+          text: 'Core has no chart component. Draw the series with your chart library and color it with the data visualization tokens in {@link namespace:tokens}. For a KPI with a trend, put the value in Heading, the change in Text or Badge, and the target in ProgressBar. `astryx build "analytics dashboard"` returns a page template that already lays these out.',
         },
       ],
     },

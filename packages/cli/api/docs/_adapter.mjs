@@ -1279,7 +1279,7 @@ export function referenceTargets(catalog, lang) {
 
 /**
  * A docs-tree route as the target of a token reference: a guide, lowered for
- * `lang`, so `{type: 'token-ref', topic: 'foundations/all-tokens', section:
+ * `lang`, so `{type: 'token-ref', topic: 'tokens/tokens-color', section:
  * 'Color Tokens'}` finds that table; or a namespace, every guide placed below
  * it read in tree order as one topic. Null for any other route.
  * @param {DocsCatalog} catalog
@@ -1291,8 +1291,8 @@ async function namespaceReferenceTarget(catalog, route, lang) {
   const tree = await projectTree(catalog);
   const node = tree.get(route) ?? tree.getFolded(route);
   if (node?.kind === 'generic' && node.ref?.topicFile) {
-    // A guide the tree places, by its route: the token tables are one guide,
-    // `foundations/all-tokens`, that each Foundations page reads from.
+    // A guide the tree places, by its route: each token table is a guide
+    // under `tokens`, which the Foundations topics read from.
     return lowerTopic(catalog, guideEntry(node, catalog), lang);
   }
   if (!node || node.kind !== 'namespace' || node.generated) return null;
@@ -1608,14 +1608,7 @@ const MOVED_ROUTES = [
   ['use-a-theme', 'theme-your-app/use-a-theme'],
   ['author-a-theme', 'theme-your-app/author-a-theme'],
   ['styling-overview', 'style-components/css-setup'],
-  ['principles', 'foundations/principles'],
-  ['color', 'foundations/color'],
-  ['spacing', 'foundations/spacing'],
-  ['shape', 'foundations/shape'],
-  ['elevation', 'foundations/elevation'],
-  ['motion', 'foundations/motion'],
-  ['icons', 'foundations/icons'],
-  ['illustrations', 'foundations/illustrations'],
+  ['principles', 'get-started/principles'],
   ['is-my-code-good', 'check-your-code/agent-review'],
   ['use-integrations', 'find-a-component/use-integrations'],
   ['browser-support', 'reference/browser-support'],
@@ -1628,20 +1621,6 @@ const MOVED_ROUTES = [
   ['styling/styling-advanced', 'style-components/styling-advanced'],
   ['styling/tokens-and-setup', 'style-components/tokens-and-setup'],
   ['styling', 'style-components'],
-  [
-    'typography/typography-best-practices',
-    'foundations/typography/best-practices',
-  ],
-  ['typography', 'foundations/typography'],
-  ['tokens/tokens-color', 'foundations/color'],
-  ['tokens/tokens-spacing', 'foundations/spacing'],
-  ['tokens/tokens-radius', 'foundations/shape'],
-  ['tokens/tokens-shadow', 'foundations/elevation'],
-  ['tokens/tokens-duration', 'foundations/motion'],
-  ['tokens/tokens-ease', 'foundations/motion'],
-  ['tokens/tokens-type-scale', 'foundations/typography/type-scale'],
-  ['tokens', 'foundations/all-tokens'],
-  ['tokens-usage', 'foundations/all-tokens'],
   ['internationalization', 'translate-your-app'],
   ['migration', 'upgrade-and-migrate/from-tailwind-shadcn-radix'],
   ['global/computer-agent-guide', 'work-with-agents/computer-agent-guide'],

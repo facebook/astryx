@@ -29,7 +29,7 @@ export const docs = {
   blocks: [
     {
       type: 'prose',
-      text: 'Three ways in: a project ({@link generic:add-to-a-project}), your whole computer ({@link namespace:on-your-computer}), or a coding agent ({@link namespace:work-with-agents}). Most people start with a project.',
+      text: 'Three ways in: a project ({@link generic:add-to-a-project}), your whole computer ({@link namespace:on-your-computer}), or a coding agent ({@link namespace:work-with-agents}). Most people start with a project. The rules every component follows: {@link generic:principles}.',
     },
     {
       type: 'prose',

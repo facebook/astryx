@@ -19,15 +19,14 @@ import {docs as docsApi} from '../../../packages/cli/api/docs/docs.mjs';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUTPUT = resolve(__dirname, '../src/generated/foundationDocs.json');
 
-/** Each preview key and the Foundations route it reads. */
-const TOPICS = {
-  color: 'foundations/color',
-  spacing: 'foundations/spacing',
-  typography: 'foundations/typography',
-  elevation: 'foundations/elevation',
-  shape: 'foundations/shape',
-  motion: 'foundations/motion',
-};
+const TOPICS = [
+  'color',
+  'spacing',
+  'typography',
+  'elevation',
+  'shape',
+  'motion',
+];
 
 /**
  * A topic split into a docs-tree namespace, read whole: its title and summary,
@@ -58,19 +57,19 @@ async function namespaceTopic(topic) {
 
 async function main() {
   const result = {};
-  for (const [topic, route] of Object.entries(TOPICS)) {
-    const res = await docsApi(route);
+  for (const topic of TOPICS) {
+    const res = await docsApi(topic);
     if (res.type === 'docs.detail') {
       result[topic] = res.data;
     } else if (res.type === 'docs.node' && res.data.kind === 'namespace') {
-      result[topic] = {...(await namespaceTopic(route)), name: topic};
+      result[topic] = await namespaceTopic(topic);
     } else {
-      throw new Error(`astryx docs ${route} returned ${res.type}, not a topic.`);
+      throw new Error(`astryx docs ${topic} returned ${res.type}, not a topic.`);
     }
   }
   writeFileSync(OUTPUT, JSON.stringify(result, null, 2));
   const kb = (Buffer.byteLength(JSON.stringify(result)) / 1024).toFixed(1);
-  console.log(`✓ Generated ${OUTPUT} (${Object.keys(TOPICS).length} topics, ${kb} KB)`);
+  console.log(`✓ Generated ${OUTPUT} (${TOPICS.length} topics, ${kb} KB)`);
 }
 
 main().catch(err => {

@@ -3,37 +3,44 @@
 /**
  * @file docs-pages.mjs
  *
- * How the CLI's docs become docsite pages. The CLI splits a long topic into a
- * docs-tree namespace of short guides, so an agent can read one guide at a
- * time. A human reader keeps one full page per topic, at the same URL and in
- * the same sidebar spot, whatever the split.
+ * How the CLI's docs become docsite pages. Each guide is a short landing page
+ * (its promise, its few must-know lines, and a card per child), and each doc
+ * below it has a page of its own with its own outline, so no page pastes a
+ * whole guide. Foundations keeps its layout: one page per topic, and the
+ * tokens and typography namespaces each one full page.
  *
  * @input A docs reader with the CLI docs API's shape
  *   (`docs(topic, section, options)` from `@astryxdesign/cli/api`) and the
  *   flat topics the site already built.
- * @output Doc pages ({topic, title, description, category, sections}) and
- *   redirects from each guide's own slug to its section on the full page.
+ * @output Doc pages ({topic, title, description, category, sections}),
+ *   landing pages with their children, the anchors a landing page sends on
+ *   to a child page, and redirects.
  * @position Used by generate-data.mjs; tested on its own with a fake reader.
  */
 
 /**
- * Root namespaces that have no page of their own at their slug. Their pages
- * are listed in GUIDE_NAMESPACE_PAGES; a guide below them that no such page
- * holds keeps a page of its own. Every root is a guide page today, so none is
- * listed; `/docs/cli` stays the @astryxdesign/cli package page because no root
- * is named `cli`.
+ * Roots that keep one full page, the way Foundations shows them: every guide
+ * below each, compiled in tree order. Every other root is a landing page.
  */
-export const GUIDE_PAGE_NAMESPACES = new Set();
+export const FULL_PAGE_ROOTS = new Set(['tokens', 'typography']);
 
 /**
- * The pages a root namespace in GUIDE_PAGE_NAMESPACES shows besides one page
- * per guide: each is one full page of the namespace at `route` (minus the
- * routes in `except`, which another page holds), at `slug`, so every guide
- * slug below it redirects to its section there. `aliases` are older slugs
- * that redirect to the page.
- * @type {Map<string, Array<{route: string, slug: string, title: string, except?: string[], aliases?: string[]}>>}
+ * The generated Foundations level. It has no page of its own: its topics are
+ * flat pages, grouped with the FULL_PAGE_ROOTS under Foundations in the
+ * sidebar, in the order Foundations always listed them.
  */
-export const GUIDE_NAMESPACE_PAGES = new Map();
+export const FOUNDATIONS_ROOT = 'foundations';
+
+/**
+ * The order of the Foundations group: All Tokens first, then by title.
+ * @param {{topic: string, title: string}} a
+ * @param {{topic: string, title: string}} b
+ */
+export function foundationsOrder(a, b) {
+  if (a.topic === 'tokens') return -1;
+  if (b.topic === 'tokens') return 1;
+  return a.title.localeCompare(b.title);
+}
 
 /**
  * Older slugs of a root namespace's page that MOVED_PAGES cannot spell, which
@@ -102,50 +109,13 @@ export const MOVED_PAGES = [
   ['use-a-theme', 'theme-your-app/use-a-theme'],
   ['author-a-theme', 'theme-your-app/author-a-theme'],
   ['styling-overview', 'style-components/css-setup'],
-  ['principles', 'foundations/principles'],
-  ['color', 'foundations/color'],
-  ['spacing', 'foundations/spacing'],
-  ['shape', 'foundations/shape'],
-  ['elevation', 'foundations/elevation'],
-  ['motion', 'foundations/motion'],
-  ['icons', 'foundations/icons'],
-  ['illustrations', 'foundations/illustrations'],
+  ['principles', 'get-started/principles'],
   ['is-my-code-good', 'check-your-code/agent-review'],
   ['use-integrations', 'find-a-component/use-integrations'],
   ['browser-support', 'reference/browser-support'],
   ['layout', 'build-a-page'],
   ['styling-libraries', 'style-components'],
   ['styling', 'style-components'],
-  [
-    'typography/typography-best-practices',
-    'foundations/typography/best-practices',
-  ],
-  ['typography', 'foundations/typography'],
-  ['tokens/tokens-color', 'foundations/color'],
-  ['tokens/tokens-spacing', 'foundations/spacing'],
-  ['tokens/tokens-radius', 'foundations/shape'],
-  ['tokens/tokens-shadow', 'foundations/elevation'],
-  ['tokens/tokens-duration', 'foundations/motion'],
-  ['tokens/tokens-ease', 'foundations/motion'],
-  ['tokens/tokens-type-scale', 'foundations/typography/type-scale'],
-  ...[
-    'border',
-    'data',
-    'focus',
-    'font-weight',
-    'size',
-    'syntax',
-    'text-size',
-    'typography',
-    'usage',
-  ].map(
-    (/** @type {string} */ name) =>
-      /** @type {[string, string]} */ ([
-        `tokens/tokens-${name}`,
-        'foundations/all-tokens',
-      ]),
-  ),
-  ['tokens', 'foundations/all-tokens'],
   ['internationalization', 'translate-your-app'],
   ['migration', 'upgrade-and-migrate/from-tailwind-shadcn-radix'],
   ['global/computer-agent-guide', 'work-with-agents/computer-agent-guide'],
@@ -211,7 +181,7 @@ export const GUIDE_AGENT_COMMANDS = {
   'find-a-component': 'astryx search "<what it should do>"',
   'theme-your-app': 'astryx theme add <theme>',
   'style-components': 'astryx docs style-components/css-setup',
-  foundations: 'astryx docs foundations/all-tokens',
+  foundations: 'astryx docs tokens',
   'check-your-code': 'astryx doctor',
   'upgrade-and-migrate': 'astryx upgrade --from <old version> --apply',
   'translate-your-app': 'astryx docs translate-your-app/i18n-quick-start',
@@ -351,7 +321,7 @@ export function namespaceCategory(own, guideCategories) {
  *   the page's slug and title when they are not the route's, routes below it
  *   that another page holds, older slugs that redirect to it, and the route
  *   whose sections are marked `globalMode`
- * @returns {Promise<{page: object, redirects: Record<string, string>} | null>}
+ * @returns {Promise<{page: {topic: string, title: string, description: string, category: string, sections: any[]}, redirects: Record<string, string>, starts: Array<[string, number]>} | null>}
  */
 export async function namespacePage(readDocs, route, options = {}) {
   const {
@@ -427,7 +397,105 @@ export async function namespacePage(readDocs, route, options = {}) {
       sections,
     },
     redirects,
+    starts,
   };
+}
+
+/**
+ * A guide's pages: a landing page for the guide and for each namespace below
+ * it (its promise, its own must-know lines, and its children, each with one
+ * line), and a page of its own for each doc below it. A namespace with
+ * neither children that have pages nor lines of its own (one that adopts
+ * typed docs, read only in `astryx docs`) has no page.
+ * @param {(topic?: string, section?: string, options?: object) => Promise<any>} readDocs
+ * @param {string} route
+ * @param {{globalRoute?: string}} [options] the route whose sections are
+ *   marked `globalMode`
+ * @returns {Promise<Array<object> | null>} every page, the guide's landing last
+ */
+export async function guidePages(readDocs, route, options = {}) {
+  const {globalRoute = 'get-started/on-your-computer'} = options;
+  const read = await readDocs(route, undefined, {depth: 'all', detail: 'full'});
+  if (read?.type !== 'docs.node' || read.data.kind !== 'namespace') return null;
+  const pages = [];
+  const marked = (/** @type {string} */ at, /** @type {any[]} */ list) =>
+    at === globalRoute || at.startsWith(`${globalRoute}/`)
+      ? list.map(section => ({...section, globalMode: true}))
+      : list;
+  /** @param {any} node @returns {Promise<boolean>} whether it has a page */
+  const landing = async node => {
+    const children = [];
+    for (const slot of node.slots ?? []) {
+      for (const child of slot.children) {
+        if (!child.route.startsWith(`${node.route}/`)) continue;
+        const href = `/docs/${routeSlug(child.route)}`;
+        if (child.kind === 'generic') {
+          const doc = (await readDocs(child.route))?.data ?? {};
+          pages.push({
+            topic: routeSlug(child.route),
+            title: doc.title || child.title || child.route,
+            description: doc.description || '',
+            category: doc.category || 'guide',
+            sections: marked(child.route, doc.sections || []),
+          });
+          children.push({
+            title: doc.title || child.title || child.route,
+            href,
+            summary: doc.description || child.summary || '',
+          });
+        } else if (child.kind === 'namespace' && (await landing(child))) {
+          children.push({
+            title: child.title || child.route,
+            href,
+            summary: child.summary || '',
+          });
+        }
+      }
+    }
+    const content = node.content ?? [];
+    if (children.length === 0 && content.length === 0) return false;
+    pages.push({
+      topic: routeSlug(node.route),
+      title: node.title || node.route,
+      description: node.summary || '',
+      category: node.category || 'guide',
+      sections:
+        content.length > 0
+          ? marked(node.route, [{title: 'Overview', content}])
+          : [],
+      children,
+    });
+    return true;
+  };
+  await landing(read.data);
+  return pages;
+}
+
+/**
+ * Where each anchor of a guide's old single page now opens: the anchor a
+ * child's text started at opens that child's page, and every anchor inside a
+ * child's text opens the same section on the child's page. The guide's own
+ * opening section stays on its landing page.
+ * @param {{page: {sections: any[]}, starts: Array<[string, number]>}} full
+ *   the guide as one page (namespacePage)
+ * @param {Set<string>} pages every page slug
+ * @returns {Record<string, string>}
+ */
+export function landingAnchors(full, pages) {
+  const {sections} = full.page;
+  const anchors = sectionAnchors(sections);
+  /** @type {Record<string, string>} */
+  const out = {};
+  full.starts.forEach(([slug, start], i) => {
+    if (!pages.has(slug)) return;
+    const end = full.starts[i + 1]?.[1] ?? sections.length;
+    const own = sectionAnchors(sections.slice(start, end));
+    for (let at = start; at < end; at++) {
+      out[anchors[at]] =
+        at === start ? `/docs/${slug}` : `/docs/${slug}#${own[at - start]}`;
+    }
+  });
+  return out;
 }
 
 /**

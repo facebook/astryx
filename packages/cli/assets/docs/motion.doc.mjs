@@ -3,9 +3,7 @@
 /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
 
 export const docs = {
-  type: 'generic',
   name: 'motion',
-  placement: {parent: 'namespace:foundations', slot: 'guides', order: 70},
   title: 'Motion',
   category: 'foundations',
   description:
@@ -41,7 +39,7 @@ export const docs = {
         },
         {
           type: 'token-ref',
-          topic: 'foundations/all-tokens',
+          topic: 'tokens',
           section: 'Duration Tokens',
         },
       ],
@@ -56,7 +54,7 @@ export const docs = {
         },
         {
           type: 'token-ref',
-          topic: 'foundations/all-tokens',
+          topic: 'tokens',
           section: 'Easing Tokens',
         },
       ],

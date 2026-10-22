@@ -22,6 +22,7 @@ const SLOW = 60_000;
 
 /**
  * Every guide the CLI's docs tree places, as the topic entry a read opens.
+ * The flat Foundations topics are the catalog's own entries.
  * @param {any} catalog
  */
 async function guideEntries(catalog) {
@@ -47,7 +48,7 @@ describe('every shipped topic compiles to plain JSON', () => {
     async () => {
       const catalog = await loadDocsCatalog();
       let compiled = 0;
-      const entries = await guideEntries(catalog);
+      const entries = [...catalog.entries(), ...(await guideEntries(catalog))];
       for (const entry of entries) {
         for (const lang of [null, ...overlayLanguages(entry)]) {
           const lowered = await lowerTopic(catalog, entry, lang);
@@ -96,7 +97,7 @@ describe('reads that share a catalog', () => {
     'never let one read change another',
     async () => {
       const catalog = await loadDocsCatalog();
-      const tokens = await guide(catalog, 'foundations/color');
+      const tokens = catalog.resolve('color');
       const first = detailView(await compileTopic(catalog, tokens));
       for (const section of first.sections) {
         section.title = 'EDITED';
@@ -108,10 +109,7 @@ describe('reads that share a catalog', () => {
       const again = detailView(await compileTopic(catalog, tokens));
       const index = indexView(await lowerTopic(catalog, tokens));
       const spacing = detailView(
-        await compileTopic(
-          catalog,
-          await guide(catalog, 'foundations/spacing'),
-        ),
+        await compileTopic(catalog, catalog.resolve('spacing')),
       );
       for (const read of [again, index, spacing]) {
         expect(JSON.stringify(read)).not.toContain('EDITED');
