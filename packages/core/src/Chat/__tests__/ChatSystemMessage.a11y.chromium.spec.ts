@@ -458,7 +458,8 @@ async function capture(
     forcedColors: false,
     coarsePointer: options.coarsePointer ?? false,
     touchPoints: options.touchPoints ?? false,
-    role: 'status',
+    // No live role of its own: the chat log delivers it (spec:AST-086 FR4).
+    role: null,
     variant: auditCase.variant,
     text: auditCase.text,
     separatorCount: auditCase.variant === 'divider' ? 1 : 0,
@@ -488,7 +489,7 @@ async function capture(
   check(actual.selectorCount === 1, 'expected exactly one audit subject');
   check(actual.visible, 'audit subject has no visible geometry');
   check(actual.text === expected.text, 'visible content drifted');
-  check(actual.role === expected.role, 'status role drifted');
+  check(actual.role === expected.role, 'root role drifted');
   check(actual.variant === expected.variant, 'variant reflection drifted');
   check(
     actual.separatorCount === expected.separatorCount,
