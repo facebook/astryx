@@ -492,6 +492,30 @@ export function unknownTokensIn(text) {
   return found;
 }
 
+/**
+ * Each `{@command`, `{@pm` or `{@pm-only` opening (escaped with more `@`s
+ * too) that no whole token starts at: one with no closing brace, or with a
+ * quote it never closes. It prints as written, so doctor names it.
+ * @param {string} text
+ * @returns {string[]} the opening and the rest of its line
+ */
+export function unclosedTokensIn(text) {
+  const source = String(text);
+  const starts = new Set(
+    [...source.matchAll(TOKEN)].map(
+      match => /** @type {number} */ (match.index),
+    ),
+  );
+  const found = [];
+  for (const match of source.matchAll(/\{@@*(?:command|pm-only|pm)\b/g)) {
+    const at = /** @type {number} */ (match.index);
+    if (starts.has(at)) continue;
+    const end = source.indexOf('\n', at);
+    found.push(source.slice(at, end < 0 ? undefined : end).slice(0, 80));
+  }
+  return found;
+}
+
 /** Package-manager binaries a plain-text command may start with. */
 const PM_BINARIES = new Set(['npm', 'npx', 'pnpm', 'yarn', 'bun', 'bunx']);
 

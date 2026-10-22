@@ -10,6 +10,7 @@ import {
   renderPmStep,
   tokenForCommand,
   unknownTokensIn,
+  unclosedTokensIn,
 } from './doc-syntax.mjs';
 
 /** @param {string} body */
@@ -137,6 +138,19 @@ describe('a token whose body holds braces or quotes', () => {
       "Run `npm pkg set 'exports={}' --json` first. (only with npm: edits package.json)",
     );
     expect(commandTokensIn(text).map(each => each.name)).toEqual(['pm-only']);
+  });
+});
+
+describe('a token that never closes', () => {
+  it('is found, with the rest of its line', () => {
+    expect(
+      unclosedTokensIn(
+        'Run {@pm install @acme/widgets --dev and go.\nNext {@command doctor}.',
+      ),
+    ).toEqual(['{@pm install @acme/widgets --dev and go.']);
+    expect(
+      unclosedTokensIn('Run {@pm-only npm "never closes pkg set x}.'),
+    ).toEqual(['{@pm-only npm "never closes pkg set x}.']);
   });
 });
 

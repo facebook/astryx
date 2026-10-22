@@ -27,6 +27,7 @@ import {loadTopicModule} from './docs-discovery.mjs';
 import {
   commandTokensIn,
   tokenForCommand,
+  unclosedTokensIn,
   unknownTokensIn,
 } from '../doc-compiler/doc-syntax.mjs';
 
@@ -380,6 +381,14 @@ export function docCommandsIn(text, lang) {
   // A sample in another language has tokens of its own, such as TSDoc's
   // `{@inheritDoc}`: only prose and shell blocks are read for doc tokens.
   const readsTokens = lang == null || SHELL_LANGS.has(lang.toLowerCase());
+  for (const opening of readsTokens ? unclosedTokensIn(source) : []) {
+    found.push({
+      at: source.indexOf(opening),
+      written: opening,
+      code: 'doc_token',
+      fix: 'This token never closes, so it prints as written: end it with `}`, and close any quote inside it',
+    });
+  }
   for (const token of readsTokens ? unknownTokensIn(source) : []) {
     found.push({
       at: source.indexOf(token),
