@@ -378,6 +378,52 @@ describe('ContextMenu', () => {
     );
     expect(screen.queryByRole('button', {name: 'Create label'})).toBeNull();
   });
+  it('keeps a level with a header a sub-menu in the BottomSheet while its filter matches nothing, so it opens again after Back', async () => {
+    const user = userEvent.setup();
+    function FilteredLabels() {
+      const [query, setQuery] = useState('');
+      const labels = ['Bug', 'Feature'].filter(label =>
+        label.toLowerCase().includes(query.toLowerCase()),
+      );
+      return (
+        <ContextMenu
+          presentation="bottom-sheet"
+          label="Row actions"
+          items={[
+            {
+              label: 'Labels',
+              header: (
+                <input
+                  aria-label="Filter labels"
+                  value={query}
+                  onChange={event => setQuery(event.target.value)}
+                />
+              ),
+              items: labels.map(label => ({label, onClick: () => {}})),
+            },
+          ]}>
+          <div>Right-click me</div>
+        </ContextMenu>
+      );
+    }
+    render(<FilteredLabels />);
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    await user.click(await screen.findByRole('button', {name: 'Labels'}));
+    await user.type(
+      await screen.findByRole('textbox', {name: 'Filter labels'}),
+      'zz',
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('button', {name: 'Bug'})).toBeNull(),
+    );
+
+    await user.click(screen.getByRole('button', {name: /back/i}));
+    await user.click(await screen.findByRole('button', {name: 'Labels'}));
+    expect(
+      await screen.findByRole('textbox', {name: 'Filter labels'}),
+    ).toHaveValue('zz');
+  });
+
   it('keeps only the top content padding in a menu BottomSheet', () => {
     const source = readFileSync(
       'packages/core/src/DropdownMenu/MenuBottomSheet.tsx',
