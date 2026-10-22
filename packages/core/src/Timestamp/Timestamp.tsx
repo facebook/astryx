@@ -297,8 +297,8 @@ export function Timestamp({
   // formats never read the clock, so they render identically on the server,
   // in a static prerender, and on the client. A clock-dependent format reads
   // it on the client only: server renders and the hydration pass show the
-  // full date and time, and the client switches to the relative phrase right
-  // after hydration.
+  // full date and time in UTC, and the client switches to the relative phrase
+  // right after hydration.
   const needsClock = !isAbsoluteFormat(format);
   const canReadClock = useSyncExternalStore(
     subscribeToNothing,
@@ -325,16 +325,16 @@ export function Timestamp({
 
   // Determine effective format. Until the clock is read, a clock-dependent
   // format renders as the full date and time.
+  const isClockPending = needsClock && now === null;
   const diffSeconds =
     now === null ? 0 : Math.round((now.getTime() - date.getTime()) / 1000);
-  const effectiveFormat: TimestampFormat =
-    needsClock && now === null
-      ? 'date_time'
-      : format === 'auto'
-        ? Math.abs(diffSeconds) <= autoThreshold
-          ? 'relative'
-          : 'date_time'
-        : format;
+  const effectiveFormat: TimestampFormat = isClockPending
+    ? 'date_time'
+    : format === 'auto'
+      ? Math.abs(diffSeconds) <= autoThreshold
+        ? 'relative'
+        : 'date_time'
+      : format;
 
   // Format the display text. No time zone is passed: the visible text always
   // reads in the viewer's own zone, and only the tooltip names others.
@@ -345,7 +345,17 @@ export function Timestamp({
       : effectiveFormat === 'relative_short'
         ? formatRelativeTime(date, now ?? date, locale, 'narrow')
         : isAbsoluteFormat(effectiveFormat)
-          ? formatInstant(date, effectiveFormat, locale, {isTimezoneShown})
+          ? formatInstant(
+              date,
+              effectiveFormat,
+              locale,
+              // The pre-hydration placeholder is written in UTC, labelled, so
+              // the server and the hydrating client produce the same text in
+              // every time zone.
+              isClockPending
+                ? {timeZone: 'UTC', isTimezoneShown: true}
+                : {isTimezoneShown},
+            )
           : '';
 
   // Full absolute text for the tooltip (visible — keeps the compact timezone

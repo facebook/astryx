@@ -1515,7 +1515,7 @@ describe('Timestamp server rendering', () => {
   );
 
   it.each(['relative', 'relative_short', 'auto'] as const)(
-    'renders the %s format as the full date and time on the server without reading the clock',
+    'renders the %s format as the full date and time in UTC on the server without reading the clock',
     format => {
       const value = '2026-03-25T10:00:00Z';
       let html = '';
@@ -1526,10 +1526,66 @@ describe('Timestamp server rendering', () => {
       ).toBe(0);
       const host = document.createElement('div');
       host.innerHTML = html;
-      render(<Timestamp value={value} format="date_time" data-testid="abs" />);
-      expect(host.textContent).toBe(screen.getByTestId('abs').textContent);
+      expect(host.textContent).toBe(
+        formatInstant(new Date(value), 'date_time', 'en-US', {
+          timeZone: 'UTC',
+          isTimezoneShown: true,
+        }),
+      );
     },
   );
+
+  describe('across time zones', () => {
+    const originalTZ = process.env.TZ;
+
+    afterEach(() => {
+      if (originalTZ === undefined) {
+        delete process.env.TZ;
+      } else {
+        process.env.TZ = originalTZ;
+      }
+    });
+
+    it('writes the same server markup whatever the server time zone', () => {
+      const element = (
+        <Timestamp value="2026-03-25T10:00:00Z" format="relative" />
+      );
+      process.env.TZ = 'UTC';
+      const utc = renderToString(element);
+      process.env.TZ = 'Asia/Tokyo';
+      expect(renderToString(element)).toBe(utc);
+    });
+
+    it('hydrates server markup from another time zone without a mismatch', () => {
+      const value = Date.now() / 1000 - 7200;
+      const element = (
+        <Timestamp value={value} format="relative" hasTooltip={false} />
+      );
+      process.env.TZ = 'UTC';
+      const host = document.createElement('div');
+      document.body.appendChild(host);
+      host.innerHTML = renderToString(element);
+
+      process.env.TZ = 'America/Los_Angeles';
+      const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+      let root: Root | undefined;
+      try {
+        act(() => {
+          root = hydrateRoot(host, element, {
+            onRecoverableError: error => {
+              throw error;
+            },
+          });
+        });
+        expect(host.textContent).toBe('2 hours ago');
+        expect(errors).not.toHaveBeenCalled();
+      } finally {
+        errors.mockRestore();
+        act(() => root?.unmount());
+        host.remove();
+      }
+    });
+  });
 
   it('hydrates the server markup without a mismatch, then shows the relative phrase', () => {
     const value = Date.now() / 1000 - 7200;
