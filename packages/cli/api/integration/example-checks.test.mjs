@@ -198,6 +198,7 @@ describe('showcase_not_standalone', () => {
       ].join('\n'),
       'templates/live.tsx': [
         "import type {Headers} from 'next/headers';",
+        "export {type IncomingMessage} from 'node:http';",
         "// import fs from 'node:fs';",
         '/* const key = process.env.SECRET; */',
         'export default function Live() {',
@@ -238,7 +239,11 @@ describe('template_asset_not_packed', () => {
         "const outside = new URL('../assets/cat.png', import.meta.url);",
         "const inside = new URL('./cat.png', import.meta.url);",
         "const missing = new URL('./dog.png', import.meta.url);",
-        'export default () => null;',
+        "// const old = new URL('./old.png', import.meta.url);",
+        "const sample = `new URL('./sample.png', import.meta.url)`;",
+        'export default () => (',
+        "  <p>Load it with new URL('./text.png', import.meta.url).</p>",
+        ');',
         '',
       ].join('\n'),
     });

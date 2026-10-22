@@ -1073,17 +1073,18 @@ function isPackedBy(rel, files) {
 }
 
 /**
- * What in a showcase's own module a browser cannot run, read from the parsed
- * module so strings, JSX text, comments and type-only imports never count:
- * an import or `require()` of a server-only module or an uninstalled Node
- * builtin, a read of `process.env` other than `process.env.NODE_ENV` (which
- * bundlers replace), and a `'use server'` directive. A module that does not
- * parse reports nothing; the template check owns that.
+ * A template module, parsed, so strings, JSX text, comments and type-only
+ * imports and exports never count. `server` is what a browser cannot run: an
+ * import, re-export or `require()` of a server-only module or an uninstalled
+ * Node builtin, a read of `process.env` other than `process.env.NODE_ENV`
+ * (which bundlers replace), and a `'use server'` directive. `assets` are the
+ * relative paths it loads with `new URL('./x', import.meta.url)`. A module
+ * that does not parse reports nothing; the template check owns that.
  * @param {string} source
  * @param {Set<string>} builtins
- * @returns {string[]}
+ * @returns {{server: string[], assets: string[]}}
  */
-function serverUses(source, builtins) {
+function readModule(source, builtins) {
   /** @type {any} */
   let ast;
   try {
@@ -1093,8 +1094,10 @@ function serverUses(source, builtins) {
       errorRecovery: true,
     });
   } catch {
-    return [];
+    return {server: [], assets: []};
   }
+  /** @type {string[]} */
+  const assets = [];
   /** @type {string[]} */
   const found = [];
   /** @param {unknown} spec */
@@ -1130,7 +1133,16 @@ function serverUses(source, builtins) {
         return;
       case 'ExportNamedDeclaration':
       case 'ExportAllDeclaration':
-        if (node.source && node.exportKind !== 'type') {
+        if (
+          node.source &&
+          node.exportKind !== 'type' &&
+          !(
+            node.specifiers?.length > 0 &&
+            node.specifiers.every(
+              (/** @type {any} */ s) => s.exportKind === 'type',
+            )
+          )
+        ) {
           checkSpec(node.source.value);
         }
         break;
@@ -1146,6 +1158,24 @@ function serverUses(source, builtins) {
       case 'ImportExpression':
         checkSpec(node.source?.value);
         break;
+      case 'NewExpression': {
+        const [first, second] = node.arguments ?? [];
+        if (
+          node.callee.type === 'Identifier' &&
+          node.callee.name === 'URL' &&
+          first?.type === 'StringLiteral' &&
+          /^\.{1,2}\//u.test(first.value) &&
+          second?.type === 'MemberExpression' &&
+          second.object?.type === 'MetaProperty' &&
+          second.object.meta?.name === 'import' &&
+          second.object.property?.name === 'meta' &&
+          !second.computed &&
+          second.property?.name === 'url'
+        ) {
+          assets.push(first.value);
+        }
+        break;
+      }
       case 'MemberExpression': {
         const object = node.object;
         if (
@@ -1190,7 +1220,7 @@ function serverUses(source, builtins) {
     }
   };
   visit(ast.program);
-  return found;
+  return {server: found, assets};
 }
 
 /**
@@ -1289,8 +1319,9 @@ export async function componentExamplesCheck(integration) {
     } catch {
       continue;
     }
+    const parsed = readModule(source, builtins);
     if (template.type === 'block' && template.isShowcase) {
-      const blocked = serverUses(source, builtins);
+      const blocked = parsed.server;
       if (blocked.length > 0) {
         notes.push({
           code: 'showcase_not_standalone',
@@ -1298,10 +1329,8 @@ export async function componentExamplesCheck(integration) {
         });
       }
     }
-    for (const match of source.matchAll(
-      /new\s+URL\(\s*['"](\.{1,2}\/[^'"]+)['"]\s*,\s*import\.meta\.url\s*\)/gu,
-    )) {
-      const asset = path.resolve(path.dirname(template.filePath), match[1]);
+    for (const loaded of new Set(parsed.assets)) {
+      const asset = path.resolve(path.dirname(template.filePath), loaded);
       const assetRel = rel(asset);
       const exists = fs.existsSync(asset);
       if (exists && isPackedBy(assetRel, packedFiles)) continue;
