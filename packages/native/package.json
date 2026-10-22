@@ -72,7 +72,7 @@
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "peerDependencies": {
-    "@astryxdesign/core": "0.7.3"
+    "@astryxdesign/core": "0.7.4"
   },
   "devDependencies": {
     "@astryxdesign/core": "workspace:*"
