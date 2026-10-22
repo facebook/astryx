@@ -339,6 +339,41 @@ describe('--built edge cases', () => {
     expect(usage.message).toContain('over 5 MB');
   });
 
+  it('fails a page with no Astryx that links only a missing favicon', () => {
+    write({
+      'out/index.html':
+        '<link rel="icon" href="/favicon.ico"><link rel="manifest" href="/site.webmanifest"><p>x</p>',
+    });
+    expect(check('out/index.html').usage.status).toBe('fail');
+  });
+
+  it('survives a .js file with a huge array literal', () => {
+    write({
+      'src/data.js': `export const rows = [${'0,'.repeat(200_000)}];\nexport const A = () => <p>x</p>;\n`,
+    });
+    const scan = scanBuilt(path.join(dir, 'src'), []);
+    expect(scan.jsxFiles).toBe(1);
+  });
+
+  it('counts a .js file the parser cannot read as not inspected', () => {
+    write({
+      'src/page.js':
+        'export default function Page() {\n  return <div>{</div>;\n}\n@@@\n',
+    });
+    const {purity} = check('src');
+    expect(purity.status).toBe('info');
+    expect(purity.status).not.toBe('pass');
+  });
+
+  it('keeps JSX after a "/*" string, such as a splat route', () => {
+    write({
+      'src/App.tsx':
+        'export const App = () => (\n  <Route path="/*" element={<div>Home</div>} />\n);\n',
+    });
+    const scan = scanBuilt(path.join(dir, 'src'), []);
+    expect(scan.findings.map(f => f.line)).toContain(2);
+  });
+
   it('survives a file with more findings than a call can spread', () => {
     write({
       'src/Rows.tsx': `export const Rows = () => (\n<>\n${'<p/>\n'.repeat(200_000)}</>);\n`,

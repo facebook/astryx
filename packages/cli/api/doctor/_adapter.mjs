@@ -517,7 +517,14 @@ export function readBuiltPath(target) {
         }
         if (seen.has(file)) continue;
         if (!fs.existsSync(file)) {
-          missing++;
+          // Only a missing stylesheet could have held Astryx styles; a
+          // missing favicon or manifest changes nothing.
+          if (
+            /\.css$/iu.test(href) ||
+            /\brel\s*=\s*["']?stylesheet/iu.test(match[0])
+          ) {
+            missing++;
+          }
           continue;
         }
         seen.add(file);

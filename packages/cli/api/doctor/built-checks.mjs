@@ -52,22 +52,32 @@ const JSX_EXT = new Set(['.tsx', '.jsx']);
 const HAS_JSX = /<(?:[A-Za-z]|>)/;
 
 /**
- * Whether a `.js` or `.mjs` source file holds JSX, read from its parse.
+ * Whether a `.js` or `.mjs` source file holds JSX, read from its parse, or
+ * null when it does not parse (Flow, decorators and the like the parser
+ * cannot read), so the file counts as not inspected.
  * @param {string} text
+ * @returns {boolean | null}
  */
 function hasJsx(text) {
   if (!HAS_JSX.test(text)) return false;
   /** @type {any} */
-  let ast;
-  try {
-    ast = parseModule(text, {
-      sourceType: 'unambiguous',
-      plugins: ['jsx'],
-      errorRecovery: true,
-    });
-  } catch {
-    return false;
+  let ast = null;
+  for (const plugins of /** @type {any[][]} */ ([
+    ['jsx'],
+    ['jsx', 'flow', ['decorators', {decoratorsBeforeExport: true}]],
+  ])) {
+    try {
+      ast = parseModule(text, {
+        sourceType: 'unambiguous',
+        plugins,
+        errorRecovery: true,
+      });
+      break;
+    } catch {
+      // try the next set of syntax plugins
+    }
   }
+  if (!ast) return null;
   /** @type {any[]} */
   const stack = [ast.program];
   while (stack.length > 0) {
@@ -77,8 +87,9 @@ function hasJsx(text) {
     for (const key of Object.keys(node)) {
       if (key === 'loc' || key.endsWith('Comments')) continue;
       const value = node[key];
-      if (Array.isArray(value)) stack.push(...value);
-      else if (value && typeof value === 'object') stack.push(value);
+      if (Array.isArray(value)) {
+        for (const child of value) stack.push(child);
+      } else if (value && typeof value === 'object') stack.push(value);
     }
   }
   return false;
@@ -182,7 +193,8 @@ const ICON_PACKAGES = [
  * @property {string[]} stylesheets built files with an Astryx stylesheet
  * @property {BuiltFinding[]} findings
  * @property {boolean} truncated whether the file limit cut the read short
- * @property {number} unread source files over the size limit, or unreadable
+ * @property {number} unread source files over the size limit, unreadable, or
+ *   not parsed
  * @property {number} missingLinks local files a built page links that are not
  *   there
  */
@@ -235,16 +247,36 @@ let lineCache = {text: null, starts: [0]};
 
 /**
  * Text with comments blanked out, keeping every offset, so a commented-out
- * tag or import is not read.
+ * tag or import is not read. A `//` or `/*` inside a string is not a
+ * comment.
  * @param {string} text
  */
 function withoutComments(text) {
-  return text
-    .replace(/\/\*[\s\S]*?\*\//g, match => match.replace(/[^\n]/g, ' '))
-    .replace(
-      /(^|[^:"'`\\])\/\/[^\n]*/g,
-      (match, lead) => lead + ' '.repeat(match.length - lead.length),
-    );
+  const out = text.split('');
+  /** @type {string | null} the quote of the string being read */
+  let quote = null;
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    if (quote) {
+      if (char === '\\') i++;
+      else if (char === quote || (char === '\n' && quote !== '`')) quote = null;
+      continue;
+    }
+    if (char === '"' || char === "'" || char === '`') {
+      quote = char;
+      continue;
+    }
+    if (char !== '/') continue;
+    const next = text[i + 1];
+    if (next !== '/' && next !== '*') continue;
+    const end =
+      next === '/'
+        ? (text.indexOf('\n', i) + 1 || text.length + 1) - 1
+        : (text.indexOf('*/', i + 2) + 1 || text.length - 1) + 1;
+    for (let j = i; j < end; j++) if (out[j] !== '\n') out[j] = ' ';
+    i = end - 1;
+  }
+  return out.join('');
 }
 
 /**
@@ -451,7 +483,12 @@ export function scanBuilt(target, packages) {
       const uses = text.match(new RegExp(`<${name}(?=[\\s/>.])`, 'g'));
       scan.componentUses += uses?.length ?? 0;
     }
-    if (JSX_EXT.has(ext) || (/\.[cm]?js$/u.test(ext) && hasJsx(text))) {
+    const jsx = /\.[cm]?js$/u.test(ext) ? hasJsx(text) : false;
+    if (jsx === null) {
+      scan.unread++;
+      continue;
+    }
+    if (JSX_EXT.has(ext) || jsx) {
       scan.jsxFiles++;
       for (const finding of jsxFindings(text, rel, iconNames)) {
         scan.findings.push(finding);
@@ -530,7 +567,7 @@ export function checkBuilt(target, {cwd, packages}) {
             id: 'built-astryx-usage',
             label: 'Built output uses Astryx',
             status: 'warn',
-            message: `Read ${read} and found no Astryx in them, but ${[scan.truncated ? `the rest past the first ${BUILT_FILE_LIMIT} files` : null, scan.unread > 0 ? `${plural(scan.unread, 'source file')} over ${BUILT_FILE_MAX_MB} MB or unreadable` : null, scan.missingLinks > 0 ? `${plural(scan.missingLinks, 'file')} the page links but that are not there` : null].filter(Boolean).join(' and ')} went unread, so this does not show whether the output uses Astryx.`,
+            message: `Read ${read} and found no Astryx in them, but ${[scan.truncated ? `the rest past the first ${BUILT_FILE_LIMIT} files` : null, scan.unread > 0 ? `${plural(scan.unread, 'source file')} over ${BUILT_FILE_MAX_MB} MB, unreadable or unparsed` : null, scan.missingLinks > 0 ? `${plural(scan.missingLinks, 'file')} the page links but that are not there` : null].filter(Boolean).join(' and ')} went unread, so this does not show whether the output uses Astryx.`,
             fix: `Run \`${formatCliCommand('doctor --built <folder>', cwd)}\` on the folder that holds the page itself, or on its build output.`,
           }
         : {
@@ -558,7 +595,7 @@ export function checkBuilt(target, {cwd, packages}) {
       id: 'built-astryx-purity',
       label: 'Source uses Astryx well',
       status: 'info',
-      message: `Not fully inspected: ${plural(scan.jsxFiles, 'source file')} with JSX had no finding, but ${[scan.truncated ? `only the first ${BUILT_FILE_LIMIT} files were read` : null, scan.unread > 0 ? `${plural(scan.unread, 'source file')} over ${BUILT_FILE_MAX_MB} MB or unreadable went unread` : null].filter(Boolean).join(' and ')}.`,
+      message: `Not fully inspected: ${plural(scan.jsxFiles, 'source file')} with JSX had no finding, but ${[scan.truncated ? `only the first ${BUILT_FILE_LIMIT} files were read` : null, scan.unread > 0 ? `${plural(scan.unread, 'source file')} over ${BUILT_FILE_MAX_MB} MB, unreadable or unparsed went unread` : null].filter(Boolean).join(' and ')}.`,
       fix: `Run \`${formatCliCommand('doctor --built <folder>', cwd)}\` on the folder that holds the page's own source.`,
     };
   } else if (scan.findings.length === 0) {
