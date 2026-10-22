@@ -9,8 +9,9 @@
  * @position Next-release upgrade validation for spec:AST-066 FR19
  *
  * Raw `var(--color-data-*)` uses are not checked: prebuilt
- * `@astryxdesign/core/astryx.css` defines all 56 defaults, and source builds
- * read data colors through `dataVars` (spec:AST-066 FR4).
+ * `@astryxdesign/core/astryx.css` and the `@astryxdesign/build` PostCSS
+ * integration define all 56 defaults, and other source builds read data
+ * colors through `dataVars` (spec:AST-066 FR3/FR4).
  */
 
 import * as path from 'node:path';
@@ -36,7 +37,7 @@ export default function validateDataTokenOwnership(file) {
     ROOT_DATA_DECLARATION.test(file.source)
   ) {
     throw new Error(
-      'This generated theme CSS still emits canonical data defaults at :root. Rebuild it with `astryx theme build`; defaults come from @astryxdesign/core/astryx.css in prebuilt mode or from dataVars imports in a source build.',
+      'This generated theme CSS still emits canonical data defaults at :root. Rebuild it with `astryx theme build`; defaults come from @astryxdesign/core/astryx.css in prebuilt mode, and in a source build from the @astryxdesign/build PostCSS integration or dataVars imports.',
     );
   }
   return undefined;
