@@ -4,7 +4,8 @@
  * @file An integration's own block answers a query that names it, though no
  * learned table lists it: its authored display name is a title search reads,
  * so "rich text editor" finds the rich text package's block first and build
- * offers it.
+ * offers it, while a variant label that does not name the block (Lab's "Inside
+ * a card") captures nothing.
  */
 
 import fs from 'node:fs';
@@ -33,12 +34,13 @@ describe('an integration block found by its display name', () => {
         dependencies: {
           '@astryxdesign/core': '*',
           '@astryxdesign/richtext': '*',
+          '@astryxdesign/lab': '*',
         },
       }),
     );
     const scope = path.join(dir, 'node_modules', '@astryxdesign');
     fs.mkdirSync(scope, {recursive: true});
-    for (const name of ['core', 'richtext'])
+    for (const name of ['core', 'richtext', 'lab'])
       fs.symlinkSync(path.join(packages, name), path.join(scope, name), 'dir');
   });
   afterAll(() => fs.rmSync(dir, {recursive: true, force: true}));
@@ -51,6 +53,36 @@ describe('an integration block found by its display name', () => {
       expect(results[0], JSON.stringify(results.slice(0, 3))).toMatchObject({
         name: 'RichTextEditorShowcase',
       });
+    },
+    SLOW,
+  );
+
+  it(
+    'a whole display name names the block outright',
+    async () => {
+      const {results} = (
+        await search('rich text editor', {cwd: dir, type: 'template'})
+      ).data;
+      expect(results[0]).toMatchObject({
+        name: 'RichTextEditorShowcase',
+        reason: 'exact name',
+      });
+    },
+    SLOW,
+  );
+
+  it(
+    "a variant label that does not name the block's subject is no title",
+    async () => {
+      const {results} = (
+        await search('table inside a card', {cwd: dir, type: 'template'})
+      ).data;
+      expect(results[0], JSON.stringify(results.slice(0, 3))).toMatchObject({
+        name: 'TableInCard',
+      });
+      const kit = (await build('a settings form inside a card', {cwd: dir}))
+        .data;
+      expect(kit.blocks[0]?.name).not.toBe('CommentsInCard');
     },
     SLOW,
   );
