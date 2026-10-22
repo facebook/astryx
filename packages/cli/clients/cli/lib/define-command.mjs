@@ -63,10 +63,10 @@ export function reportsResultVia(cmd) {
 /**
  * Mark a hand-registered command as reporting its result.
  *
- * For the handful of commands that cannot come from a CommandDoc — the root
- * program, `manifest` (it introspects the live program, so it cannot be
- * declared by one), `postinstall`, and the stub left behind when a command
- * module fails to load. They call {@link recordCommandResult} themselves; this
+ * For what does not come from a CommandDoc: the root program, and the stub
+ * left behind when a command module fails to load. Every command, `manifest`
+ * and the hidden `postinstall` hook included, registers through
+ * {@link defineCommand}. These call {@link recordCommandResult} themselves; this
  * says so, and the coverage test pins the set of commands allowed to, so the
  * mark cannot become a quiet way around the contract.
  *
@@ -105,10 +105,12 @@ export function commandDocsOf(cmd) {
  *   fn?: import('@astryxdesign/cli/authoring').FunctionDoc,
  *   action?: (...args: any[]) => import('../../../foundation/debug/command-result.mjs').CommandResult
  *     | Promise<import('../../../foundation/debug/command-result.mjs').CommandResult>,
- * }} [impl]
+ *   hidden?: boolean,
+ * }} [impl] `hidden` keeps the command out of help and the manifest (a
+ *   package-script hook, not a command for people or agents).
  * @returns {import('commander').Command} the created command.
  */
-export function defineCommand(parent, doc, {fn, action} = {}) {
+export function defineCommand(parent, doc, {fn, action, hidden} = {}) {
   // The command token is the last path segment ("theme build" -> "build"),
   // since subcommands are added to their group command, not the program.
   const token = doc.name.split(' ').pop() ?? doc.name;
@@ -119,7 +121,10 @@ export function defineCommand(parent, doc, {fn, action} = {}) {
     })
     .join(' ');
 
-  const cmd = parent.command(argSpec ? `${token} ${argSpec}` : token);
+  const cmd = parent.command(
+    argSpec ? `${token} ${argSpec}` : token,
+    hidden ? {hidden: true} : {},
+  );
   Object.defineProperty(cmd, COMMAND_DOCS, {value: {doc, fn}, configurable: true});
   if (doc.summary) cmd.description(doc.summary);
   if (doc.deprecated) {

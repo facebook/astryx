@@ -32,6 +32,7 @@ import {
   GUIDE_NAMESPACE_PAGES,
   GUIDE_PAGE_NAMESPACES,
   ROOT_PAGE_ALIASES,
+  movedGuideRedirects,
   mergeFlatTopics,
   namespacePage,
   routeSlug,
@@ -1769,7 +1770,11 @@ async function docsTreePages() {
     });
     if (!full) continue;
     pages.push(full.page);
-    Object.assign(redirects, full.redirects);
+    Object.assign(
+      redirects,
+      full.redirects,
+      movedGuideRedirects(root, full.redirects),
+    );
   }
   while (pending.length > 0) {
     const route = pending.shift();
@@ -1890,7 +1895,7 @@ async function generateDocsRegistry() {
   // slug (a former flat topic keeps its URL), and each guide under it
   // redirects to its section there. Guides under GUIDE_PAGE_NAMESPACES keep a
   // flat page whose slug is the route with "/" as "-", so
-  // `cli/integrations/quick-start` is /docs/cli-integrations-quick-start.
+  // `cli/component-lookups` is /docs/cli-component-lookups.
   const tree = await docsTreePages();
   for (const page of tree.pages) {
     if (docTopics.some(topic => topic.topic === page.topic)) {

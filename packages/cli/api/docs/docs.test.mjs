@@ -93,7 +93,7 @@ describe('docs() dispatcher routing', () => {
 
   it("lists the docs tree's namespaces in meta, so every data entry reads as a topic", async () => {
     const res = await docs();
-    expect(res.meta.namespaces.map(entry => entry.topic)).toEqual(['cli', 'global', 'internationalization', 'layout', 'migration', 'styling', 'styling-libraries', 'tokens', 'typography', 'unorganized']);
+    expect(res.meta.namespaces.map(entry => entry.topic)).toEqual(['authoring', 'cli', 'foundations', 'global', 'guides', 'internationalization', 'layout', 'migration', 'styling', 'styling-libraries', 'tokens', 'typography']);
     for (const entry of res.data) {
       expect((await docs(entry.topic)).type).toBe('docs.detail');
     }
@@ -158,8 +158,8 @@ describe('docs() dispatcher routing', () => {
   }, SLOW);
 
   it('a guide the tree places reads like a topic: the whole doc, its index, a section', async () => {
-    // cli/integrations is a namespace of short guides; each guide reads like a topic.
-    const integrations = await docs('cli/integrations');
+    // authoring is a namespace of short guides; each guide reads like a topic.
+    const integrations = await docs('authoring');
     expect(integrations.type).toBe('docs.node');
     const guide = placedGuide(integrations.data);
     expect((await docs(guide)).type).toBe('docs.detail');
@@ -178,7 +178,7 @@ describe('docs() dispatcher routing', () => {
     expect(leaf.links.up).toBe('astryx docs cli/api/functions');
     expect(leaf.links.previous).toMatch(/^astryx docs cli\/api\/functions\/[a-z-]+$/);
     expect(leaf.links.next).toMatch(/^astryx docs cli\/api\/functions\/[a-z-]+$/);
-    const integrations = (await docs('cli/integrations')).data;
+    const integrations = (await docs('authoring')).data;
     const guide = placedGuide(integrations);
     const siblings = integrations.slots
       .find(slot => slot.children.some(child => child.route === guide))
@@ -187,7 +187,7 @@ describe('docs() dispatcher routing', () => {
     const index = await docs(guide, undefined, {index: true});
     // A guide moves across its namespace's slot, as any tree node does.
     expect(index.data.links).toEqual({
-      up: 'astryx docs cli/integrations',
+      up: 'astryx docs authoring',
       ...(at > 0 ? {previous: `astryx docs ${siblings[at - 1]}`} : {}),
       ...(at < siblings.length - 1
         ? {next: `astryx docs ${siblings[at + 1]}`}
@@ -204,16 +204,22 @@ describe('docs() dispatcher routing', () => {
     expect(end.links.previous).toBe(
       `astryx docs ${guide} ${index.data.sections.at(-2).id}`,
     );
-    // A flat topic's home is the Unorganized level, and it moves across it.
+    // A flat topic's home is the level for its category, and it moves across it.
     const flat = (await docs('principles')).data.links;
-    expect(flat.up).toBe('astryx docs unorganized');
+    expect(flat.up).toBe('astryx docs guides');
     expect(flat.previous).toMatch(/^astryx docs [a-z-]+$/);
     expect(flat.next).toMatch(/^astryx docs [a-z-]+$/);
-    const home = (await docs('unorganized')).data;
-    expect(home).toMatchObject({id: null, kind: 'namespace', links: {up: 'astryx docs'}});
-    expect(home.slots[0].children.map(child => child.route)).toEqual(
-      (await docs()).data.map(entry => entry.topic),
-    );
+    const guides = (await docs('guides')).data;
+    expect(guides).toMatchObject({id: null, kind: 'namespace', links: {up: 'astryx docs'}});
+    const foundations = (await docs('foundations')).data;
+    expect(foundations).toMatchObject({id: null, kind: 'namespace', links: {up: 'astryx docs'}});
+    // Between them the two levels hold every flat topic, each in list order.
+    const topics = (await docs()).data.map(entry => entry.topic);
+    const held = [guides, foundations].map(level => level.slots[0].children.map(child => child.route));
+    for (const routes of held) {
+      expect(routes).toEqual(topics.filter(topic => routes.includes(topic)));
+    }
+    expect(held.flat().sort()).toEqual([...topics].sort());
   }, SLOW);
 
   it('names a node by its doc identity; a generated level has id null', async () => {
@@ -240,10 +246,9 @@ describe('docs() dispatcher routing', () => {
   }, SLOW);
 
   it("the guide's old flat name is gone, and its error names the new route", async () => {
-    await expect(docs('cli-integrations')).rejects.toMatchObject({
-      code: 'ERR_UNKNOWN_TOPIC',
-      suggestions: [expect.objectContaining({name: 'cli/integrations'})],
-    });
+    const error = await docs('cli-integrations').catch(e => e);
+    expect(error.code).toBe('ERR_UNKNOWN_TOPIC');
+    expect(error.suggestions[0]).toMatchObject({name: 'authoring'});
     expect((await docs()).data.map(entry => entry.topic)).not.toContain(
       'cli-integrations',
     );
@@ -253,11 +258,16 @@ describe('docs() dispatcher routing', () => {
     const err = await docs('cli', 'zzzz-nope').catch(e => e);
     expect(err).toBeInstanceOf(AstryxError);
     expect(err.code).toBe('ERR_UNKNOWN_SECTION');
-    // It names every guide below the namespace, at any depth.
     const names = err.suggestions.map(s => s.name);
     expect(names).toContain('cli/component-lookups');
-    expect(names).toContain('cli/integrations/quick-start');
     expect(names.every(name => name.startsWith('cli/'))).toBe(true);
+    // It names every guide below the namespace, at any depth.
+    const deep = await docs('authoring', 'zzzz-nope').catch(e => e);
+    expect(deep.code).toBe('ERR_UNKNOWN_SECTION');
+    const below = deep.suggestions.map(s => s.name);
+    expect(below).toContain('authoring/quick-start');
+    expect(below).toContain('authoring/building-blocks/components/add-a-component');
+    expect(below.every(name => name.startsWith('authoring/'))).toBe(true);
   }, SLOW);
 
   it('an unknown route suggests the children of the deepest namespace it reaches', async () => {

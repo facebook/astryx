@@ -41,7 +41,8 @@ const NAMESPACED_KINDS = new Set(['command', 'function', 'schema', 'enum']);
 /**
  * Every namespace a CLI doc may declare, and what reads it. The docs tree
  * adopts `cli/commands` (under `cli/commands`) and `cli/api` (under
- * `cli/api/<kind>s`); `astryx docs authoring` reads `authoring` from its list.
+ * `cli/api/<kind>s`); the field reference (`astryx docs authoring/field-reference`)
+ * reads `authoring` from its list.
  * @type {Record<string, {reader: 'tree' | 'authoring'}>}
  */
 export const CLI_DOC_NAMESPACES = {
@@ -492,13 +493,13 @@ export async function auditCliSelfDocs({
       else {
         misfiled.push({
           source,
-          message: `${source} has namespace "authoring", but \`${formatCliCommand('docs authoring')}\` does not list it`,
+          message: `${source} has namespace "authoring", but \`${formatCliCommand('docs authoring/field-reference')}\` does not list it`,
         });
       }
     } else if (inAuthoring) {
       misfiled.push({
         source,
-        message: `${source} is read in \`${formatCliCommand('docs authoring')}\`, but its namespace is "${namespace}"`,
+        message: `${source} is read in \`${formatCliCommand('docs authoring/field-reference')}\`, but its namespace is "${namespace}"`,
       });
     } else {
       treeDocs.push(doc);

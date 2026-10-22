@@ -49,14 +49,15 @@ export const docs = {
     {
       name: 'isDisabled',
       type: 'boolean',
-      description: 'Disable the input and calendar.',
+      description:
+        'Disable the input and calendar. The field stays focusable and exposes `aria-disabled`; typing and opening are blocked.',
       default: 'false',
     },
     {
       name: 'disabledMessage',
       type: 'string',
       description:
-        'Explains why the input is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the field focusable via aria-disabled (activation stays blocked). Use this instead of wrapping a disabled DateInput in Tooltip. Disabled controls swallow the hover events an external Tooltip needs.',
+        'Explains why the input is disabled. With isDisabled, shows a tooltip on hover/keyboard focus (activation stays blocked). Use this instead of wrapping a disabled DateInput in Tooltip.',
     },
     {
       name: 'value',
@@ -275,7 +276,7 @@ export const docs = {
       {
         guidance: false,
         description:
-          'Wrap a disabled DateInput in Tooltip to explain why it is disabled; disabled triggers swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+          'Wrap a disabled DateInput in Tooltip to explain why it is disabled. Use the disabledMessage prop instead, which ties the reason to the field.',
       },
     ],
     anatomy: [
@@ -368,7 +369,7 @@ export const docsZh = {
       {
         guidance: false,
         description:
-          'Wrap a disabled DateInput in Tooltip to explain why it is disabled; disabled triggers swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+          'Wrap a disabled DateInput in Tooltip to explain why it is disabled. Use the disabledMessage prop instead, which ties the reason to the field.',
       },
     ],
   },
@@ -400,14 +401,14 @@ export const docsZh = {
     {
       name: 'isDisabled',
       type: 'boolean',
-      description: '禁用输入框和日历。',
+      description: '禁用输入框和日历。输入框仍可聚焦并暴露 `aria-disabled`，但不能输入或打开日历。',
       default: 'false',
     },
     {
       name: 'disabledMessage',
       type: 'string',
       description:
-        '说明输入框为何被禁用。与 isDisabled 一起使用时，在悬停/键盘聚焦时显示提示，并通过 aria-disabled 保持输入框可聚焦（仍阻止输入和激活）。请使用此属性，而不是用 Tooltip 包裹已禁用的 DateInput。',
+        '说明输入框为何被禁用。与 isDisabled 一起使用时，在悬停/键盘聚焦时显示提示（仍阻止输入和激活）。请使用此属性，而不是用 Tooltip 包裹已禁用的 DateInput。',
     },
     {
       name: 'value',
@@ -621,7 +622,7 @@ export const docsDense = {
       {
         guidance: false,
         description:
-          'Wrap a disabled DateInput in Tooltip to explain why it is disabled; disabled triggers swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+          'Wrap a disabled DateInput in Tooltip to explain why it is disabled. Use the disabledMessage prop instead, which ties the reason to the field.',
       },
     ],
   },
@@ -633,7 +634,7 @@ export const docsDense = {
     isRequired: 'mark field required',
     isDisabled: 'disable input+calendar',
     disabledMessage:
-      'reason shown in a tooltip on hover/focus when disabled; keeps field focusable via aria-disabled',
+      "reason shown in a tooltip on hover/focus when disabled; describes the field's focusable controls",
     value: 'selected date YYYY-MM-DD',
     onChange: 'callback on date change',
     changeAction: 'async action after onChange; drives optimistic UI',

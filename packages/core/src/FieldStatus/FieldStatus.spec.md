@@ -38,7 +38,8 @@ detached presentations; consumer usage remains documented in
 
 - Released default preserved: `yes`
 - Compatibility class: additive documentation only; runtime, DOM, styling, and
-  public API remain unchanged
+  public API remain unchanged, except that delivery inside a mounted live
+  container follows `spec:AST-086` FR4
 - Controlled/uncontrolled behavior: not applicable
 - Migration decision: direct `FieldStatus variant="tooltip"` support is rejected.
   `tooltip` remains a field-family sentinel that MUST be handled before rendering
@@ -127,7 +128,7 @@ intentional decision.
 - **AR1 — Programmatic announcement channel.** Errors MUST update the persistent
   assertive region; warnings and successes MUST update the persistent polite
   region, including on first mount and when message or type changes, without
-  moving focus.
+  moving focus. Inside a mounted live container, `spec:AST-086` FR4 applies.
 - **AR5 — Assistive-technology output.** Claims about whether, when, or how the
   message is spoken or presented in braille MUST be verified through the real-AT
   evidence process in `spec:AST-009`; DOM and accessibility-tree checks prove

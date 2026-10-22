@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/templates/template-grading-rubric`:
+ * @file `astryx docs authoring/templates/template-grading-rubric`:
  * complete scoring rules for page and block template quality.
  */
 

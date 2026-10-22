@@ -52,6 +52,7 @@ import {
   cliDocSection,
 } from '../../foundation/discovery/cli-self-docs.mjs';
 import {
+  AUTHORING_REFERENCE_ROUTE,
   loadAuthoringSelfDocs,
   schemaFieldTable,
   selfDocSection,
@@ -385,7 +386,7 @@ export function projectTree(catalog, {fresh = false} = {}) {
 let cliTreeInputs;
 
 /**
- * Every flat topic in the catalog, as the tree's Unorganized level reads it.
+ * Every flat topic in the catalog, as the tree's topic levels read it.
  * @param {DocsCatalog} catalog
  * @returns {Promise<import('../../foundation/doc-compiler/tree.mjs').TreeTopicInput[]>}
  */
@@ -394,12 +395,13 @@ async function flatTopicInputs(catalog) {
   const topics = [];
   for (const entry of catalog.entries()) {
     const aliases = catalog.aliasesOf(entry);
-    let {title, description} = entry;
-    if (title == null || description == null) {
+    let {title, description, category} = entry;
+    if (title == null || description == null || category === undefined) {
       try {
         const file = await loadTopicFile(entry.path, null);
         title ??= file.doc?.title;
         description ??= file.doc?.description;
+        category ??= file.doc?.category;
       } catch {
         // A topic that does not load is reported where it is read.
       }
@@ -410,6 +412,7 @@ async function flatTopicInputs(catalog) {
       name: entry.name,
       title: title ?? entry.name,
       summary: description ?? '',
+      category: category ?? null,
       source: `${entry.package}:${entry.name}`,
       ...(aliases.length > 0 ? {aliases} : {}),
     });
@@ -419,7 +422,7 @@ async function flatTopicInputs(catalog) {
 
 /**
  * The CLI's tree, each configured integration's namespaces and guides, and
- * every flat topic in the generated Unorganized level.
+ * every flat topic in the generated level for its category.
  * @param {DocsCatalog} catalog
  * @param {boolean} fresh
  * @returns {Promise<DocsTree>}
@@ -509,23 +512,22 @@ function identitiesOf(tree) {
 }
 
 /**
- * The CLI's authoring docs, by kind and name. `astryx docs authoring` reads
- * each as one section keyed by its name, so a link to one opens that section.
- * Loaded once per process, like the CLI's tree files.
+ * The CLI's authoring docs, by kind and name. The field reference under
+ * `astryx docs authoring` reads each as one section keyed by its name, so a
+ * link to one opens that section. Loaded once per process, like the CLI's
+ * tree files.
  * @type {Promise<Map<string, any>> | undefined}
  */
 let authoringDocs;
 
 /**
- * The CLI authoring doc a link names, while `astryx docs authoring` is the
- * CLI's own topic.
- * @param {DocsCatalog} catalog
+ * The CLI authoring doc a link names. The `authoring` namespace is the CLI's
+ * own, so no integration can take its route.
  * @param {string} kind
  * @param {string} name
  * @returns {Promise<any | null>}
  */
-async function authoringDoc(catalog, kind, name) {
-  if (catalog.resolve('authoring')?.package !== CLI_PROVIDER_ID) return null;
+async function authoringDoc(kind, name) {
   authoringDocs ??= loadAuthoringSelfDocs().then(
     ({loaded}) =>
       new Map(loaded.map(({doc}) => [`${doc.type}\u0000${doc.name}`, doc])),
@@ -611,14 +613,14 @@ function docFinderOver(catalog, tree, fromProvider, summaries = true) {
     }
     const authored =
       provider === CLI_PROVIDER_ID
-        ? await authoringDoc(catalog, parsed.kind, parsed.name)
+        ? await authoringDoc(parsed.kind, parsed.name)
         : null;
     if (authored) {
       return {
         link: {
           target,
           id: createDocId(provider, authored.type, authored.name),
-          route: 'authoring',
+          route: AUTHORING_REFERENCE_ROUTE,
           title: authored.displayName ?? authored.name,
           summary: authored.description ?? '',
           command: `astryx docs authoring ${authored.name}`,
@@ -1428,7 +1430,7 @@ export function placeLinks(tree, node) {
 
 /**
  * The moves a topic read offers: from its place in the tree, where a guide
- * sits in its namespace and a flat topic in the Unorganized level.
+ * sits in its namespace and a flat topic in its topic level.
  * @param {DocsCatalog} catalog
  * @param {import('../../foundation/discovery/docs-discovery.mjs').DocsTopicEntry} entry
  * @returns {Promise<import('./docs.type.mjs').DocsLinks>}
@@ -1526,7 +1528,7 @@ function treeArgument(catalog, tree, node) {
 /**
  * The doc that took a flat topic's route in the docs tree, when it is not
  * that topic (spec:AST-046 FR11): the CLI keeps its routes, such as `cli`
- * and `unorganized`, and a namespace keeps its route over a topic of the same
+ * and `guides`, and a namespace keeps its route over a topic of the same
  * name. Null when the topic owns its route, or the tree has no node there.
  * @param {DocsTree} tree
  * @param {import('../../foundation/discovery/docs-discovery.mjs').DocsTopicEntry} entry
@@ -1538,6 +1540,35 @@ export function routeOwner(tree, entry) {
   return node.ref?.flatTopic === entry.name && node.provider === entry.package
     ? null
     : node;
+}
+
+/**
+ * Routes that moved, old prefix first: the integration guides moved from
+ * `cli/integrations` (and, before that, the `cli-integrations` topic) into
+ * `authoring`, the one home for integration authors.
+ * Only the not-found error reads this, to name where a doc went; an old route
+ * opens nothing.
+ */
+const MOVED_ROUTES = [
+  ['cli/integrations', 'authoring'],
+  ['cli-integrations', 'authoring'],
+];
+
+/**
+ * The node an old route moved to, or null.
+ * @param {unknown} topic
+ * @param {DocsTree} tree
+ * @returns {TreeNode | null}
+ */
+function movedRoute(topic, tree) {
+  if (typeof topic !== 'string') return null;
+  const wanted = topic.toLowerCase();
+  for (const [from, to] of MOVED_ROUTES) {
+    if (wanted !== from && !wanted.startsWith(`${from}/`)) continue;
+    const node = tree.getFolded(`${to}${wanted.slice(from.length)}`);
+    if (node) return node;
+  }
+  return null;
 }
 
 /**
@@ -1572,8 +1603,7 @@ export async function unknownTopicError(topic, catalog) {
   }
   if (suggestions.length === 0 && typeof topic === 'string') {
     // The docs whose own name it is (`doctor` is cli/commands/doctor), or whose
-    // route it spells with hyphens (`cli-integrations`, the guide's name before
-    // it moved to cli/integrations).
+    // route it spells with hyphens (`cli-host-entry` is cli/host-entry).
     const wanted = topic.toLowerCase();
     suggestions = [...tree.nodes.values()]
       .filter(
@@ -1591,6 +1621,19 @@ export async function unknownTopicError(topic, catalog) {
         .map(root => ({name: root.route, reason: 'docs namespace'})),
       ...catalog.names().map(name => ({name, reason: 'available topic'})),
     ];
+  }
+  // A route that moved names where it went, ahead of the usual suggestions
+  // (spec:AST-046 FR9, FR6).
+  const moved = movedRoute(topic, tree);
+  if (moved) {
+    return new AstryxError(
+      `Unknown topic "${String(topic)}". It moved to "${moved.route}"${notLoaded(catalog)}`,
+      [
+        {name: moved.route, reason: moved.summary},
+        ...suggestions.filter(entry => entry.name !== moved.route),
+      ],
+      ERROR_CODES.ERR_UNKNOWN_TOPIC,
+    );
   }
   return new AstryxError(
     `Unknown topic "${String(topic)}"${notLoaded(catalog)}`,

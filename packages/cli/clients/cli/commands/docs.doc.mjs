@@ -58,10 +58,10 @@ export const doc = {
     {label: 'Every CLI doc, one line each', cli: 'astryx docs cli --depth all'},
     {
       label: 'The integration guides as one read',
-      cli: 'astryx docs cli/integrations --depth all --detail full',
+      cli: 'astryx docs authoring --depth all --detail full',
     },
     {label: 'One API function', cli: 'astryx docs cli/api/functions/search'},
-    {label: 'A whole guide', cli: 'astryx docs cli/integrations/quick-start --full'},
+    {label: 'A whole guide', cli: 'astryx docs authoring/quick-start --full'},
   ],
   outsideProject: 'same',
   exitCodes: [

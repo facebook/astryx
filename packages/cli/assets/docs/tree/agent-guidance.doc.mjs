@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/building-blocks/configuration/agent-guidance`: add short lines of
+ * @file `astryx docs authoring/building-blocks/configuration/agent-guidance`: add short lines of
  * guidance that apps put in front of their AI agents, within the limits.
  */
 
