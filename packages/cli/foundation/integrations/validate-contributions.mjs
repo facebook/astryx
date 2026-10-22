@@ -1032,7 +1032,10 @@ export async function blockComponentsCheck(integration) {
  * " - " between a group and a variant. Single words (`Settings`) and
  * `"<Group> - <Variant>"` (`Table - Index/Detail`) are fine.
  */
-const PATH_CATEGORY = /^(?!.* - )[^\s/]+(?:\/[^/]+)+$/u;
+// A category written as a path: lowercase first segment and no spaces
+// (`components/X`, `blocks/forms`), not a name with a slash in it (`UI/UX`,
+// `A/B Testing`).
+const PATH_CATEGORY = /^[a-z0-9][\w.-]*(?:\/[\w.-]+)+$/u;
 
 /** Imports a browser cannot load, which a showcase must not make. */
 const SERVER_ONLY_IMPORTS =
@@ -1552,6 +1555,17 @@ export async function componentExamplesCheck(integration) {
       const asset = path.resolve(path.dirname(template.filePath), loaded);
       const assetRel = rel(asset);
       const exists = fs.existsSync(asset);
+      // npm packs nothing outside the package root, whatever `files` says.
+      const fromBase = path.relative(base, asset);
+      if (fromBase.startsWith('..') || path.isAbsolute(fromBase)) {
+        notes.push({
+          code: 'template_asset_not_packed',
+          message: `${rel(template.filePath)}: loads ${assetRel}, which is outside the package, so npm never packs it and the template breaks once installed. Fix: move it inside the package (beside the template is simplest), point \`new URL()\` at the new place, and confirm with \`npm pack --dry-run\`.`,
+        });
+        continue;
+      }
+      // A folder URL is packed when npm packs anything inside it.
+      const isFolder = exists && fs.statSync(asset).isDirectory();
       if (exists) {
         // With no `files` field npm packs everything but what an ignore file
         // drops, in the package root or any folder down to the asset, so
@@ -1567,6 +1581,12 @@ export async function componentExamplesCheck(integration) {
         packed ??= npmPackedPaths(base);
         if ('paths' in packed) {
           if (packed.paths.has(assetRel)) continue;
+          if (
+            isFolder &&
+            [...packed.paths].some(each => each.startsWith(`${assetRel}/`))
+          ) {
+            continue;
+          }
         } else if (
           !Array.isArray(packedFiles) ||
           !outsideFiles(assetRel, packedFiles)

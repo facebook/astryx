@@ -280,6 +280,8 @@ describe('template_category', () => {
       'templates/none.tsx': 'export default () => null;\n',
       // Core's own forms: one word, and a variant with a slash.
       'templates/word.doc.mjs': blockDoc('word', ", category: 'Settings'"),
+      'templates/uiux.doc.mjs': blockDoc('uiux', ", category: 'UI/UX'"),
+      'templates/ab.doc.mjs': blockDoc('ab', ", category: 'A/B Testing'"),
       'templates/word.tsx': 'export default () => null;\n',
       'templates/slash.doc.mjs': blockDoc(
         'slash',
@@ -540,6 +542,50 @@ describe('template_asset_not_packed', () => {
 });
 
 describe('what npm packs decides', () => {
+  it('reports an asset outside the package root, which npm never packs', async () => {
+    write({
+      'package.json': JSON.stringify({name: '@acme/kit', version: '1.0.0'}),
+      '../shared/logo.png': 'png',
+      'templates/card.doc.mjs': blockDoc(
+        'card',
+        ", exampleFor: 'AcmeCard', isShowcase: true",
+      ),
+      'templates/card.tsx': [
+        "const logo = new URL('../../shared/logo.png', import.meta.url);",
+        'export default () => null;',
+        '',
+      ].join('\n'),
+    });
+    try {
+      const [note] = await notesOf(['template_asset_not_packed']);
+      expect(note.message).toContain('which is outside the package');
+      expect(note.message).not.toContain('to `files`');
+    } finally {
+      fs.rmSync(path.join(dir, '..', 'shared'), {recursive: true, force: true});
+    }
+  });
+
+  it('accepts a folder URL when npm packs the files inside it', async () => {
+    write({
+      'package.json': JSON.stringify({
+        name: '@acme/kit',
+        version: '1.0.0',
+        files: ['templates', 'components'],
+      }),
+      'templates/img/hero.png': 'png',
+      'templates/card.doc.mjs': blockDoc(
+        'card',
+        ", exampleFor: 'AcmeCard', isShowcase: true",
+      ),
+      'templates/card.tsx': [
+        "const images = new URL('./img/', import.meta.url);",
+        'export default () => null;',
+        '',
+      ].join('\n'),
+    });
+    expect(await notesOf(['template_asset_not_packed'])).toEqual([]);
+  });
+
   it('names a nested ignore file that drops an asset', async () => {
     write({
       'package.json': JSON.stringify({name: '@acme/kit', version: '1.0.0'}),
