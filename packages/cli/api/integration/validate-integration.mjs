@@ -754,7 +754,7 @@ async function docTargetNotes(integration) {
     } else if (each.kind == null) {
       notes.push({
         code: DOC_TARGET_NOT_FOUND,
-        message: `"${each.topic}" ${each.relationship} "${each.target}", which is no topic and no guide in the docs tree, so it changes nothing. Fix: name a topic as \`${formatCliCommand('docs')}\` lists it, or a guide's route as \`${formatCliCommand('docs authoring --depth all')}\` or \`${formatCliCommand('docs cli --depth all')}\` lists it.`,
+        message: `"${each.topic}" ${each.relationship} "${each.target}", which is neither a topic nor a guide of the CLI's docs or this package's own: it changes nothing unless an app also installs a package that provides it. Fix: if it should name one of those, name a topic as \`${formatCliCommand('docs')}\` lists it, or a guide's route as \`${formatCliCommand('docs authoring --depth all')}\` or \`${formatCliCommand('docs cli --depth all')}\` lists it.`,
       });
     }
     for (const {section, field, key} of each.unplaced) {

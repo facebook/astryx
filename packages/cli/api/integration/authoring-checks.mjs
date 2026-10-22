@@ -42,6 +42,7 @@ import {
   BUILTIN_DOCS_PACKAGE,
   discoverBuiltinTopics,
   discoverIntegrationDocs,
+  isGuideRoute,
 } from '../../foundation/discovery/docs-discovery.mjs';
 import {
   applyTemplateReplacements,
@@ -491,11 +492,14 @@ export async function integrationDocConflicts(pkg, options = {}) {
       });
     }
 
-    // An extension never owns its own name. A replacement does, so it may only
-    // reuse a Core name when that is the Core topic it explicitly replaces.
+    // An extension never owns its own name, and neither does a doc that
+    // replaces a guide by its route: readers open the route. A topic
+    // replacement does, so it may only reuse a Core name when that is the
+    // Core topic it explicitly replaces.
     if (
       sameNameCore != null &&
       record.extendsTopic == null &&
+      !isGuideRoute(record.replaces) &&
       replacedCore !== sameNameCore
     ) {
       findings.push({

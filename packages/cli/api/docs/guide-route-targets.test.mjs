@@ -826,3 +826,42 @@ describe('fourth review follow-ups', () => {
     SLOW,
   );
 });
+
+describe('fifth review follow-ups', () => {
+  it(
+    'does not call a route replacement named like a CLI topic an accidental conflict',
+    async () => {
+      scaffold({
+        'getting-started.doc.mjs': topic('getting-started', {replaces: GUIDE}),
+      });
+      const result = await integrationDocConflicts(KIT, {cwd: tmpDir});
+      expect(result.data.issues).toEqual([]);
+      expect(
+        result.data.findings.filter(each => each.relationship === 'accidental'),
+      ).toEqual([]);
+      const listed = await docs(undefined, undefined, {cwd: tmpDir});
+      expect(
+        listed.data.find(each => each.topic === 'getting-started')?.package,
+      ).toBe(CLI);
+    },
+    SLOW,
+  );
+
+  it(
+    'names what a topic replaced twice took over the same way in every read',
+    async () => {
+      scaffold({
+        'a.doc.mjs': topic('acme-a', {replaces: 'getting-started'}),
+        'b.doc.mjs': topic('acme-b', {replaces: 'getting-started'}),
+      });
+      const listed = await docs(undefined, undefined, {cwd: tmpDir});
+      const item = listed.data.find(each => each.topic === 'acme-b');
+      const index = await docs('acme-b', undefined, {cwd: tmpDir, index: true});
+      const read = await docs('acme-b', undefined, {cwd: tmpDir});
+      expect(index.data.replaces).toBe(item?.replaces);
+      expect(read.data.replaces).toBe(item?.replaces);
+      expect(read.data.replacedPackage).toBe(item?.replacedPackage);
+    },
+    SLOW,
+  );
+});
