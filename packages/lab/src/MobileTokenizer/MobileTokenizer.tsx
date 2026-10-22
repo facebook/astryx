@@ -134,6 +134,12 @@ const styles = stylex.create({
   triggerPlaceholder: {
     color: colorVars['--color-text-secondary'],
   },
+  triggerPlaceholderDisabled: {
+    color: {
+      default: colorVars['--color-text-secondary'],
+      '@media (forced-colors: active)': 'GrayText',
+    },
+  },
   sheetBody: {
     display: 'flex',
     flexDirection: 'column',
@@ -433,7 +439,11 @@ export function MobileTokenizer<T extends SearchableItem>({
             />
           ))
         ) : (
-          <span {...stylex.props(styles.triggerPlaceholder)}>
+          <span
+            {...stylex.props(
+              styles.triggerPlaceholder,
+              isDisabled && styles.triggerPlaceholderDisabled,
+            )}>
             {placeholder ?? ''}
           </span>
         )}

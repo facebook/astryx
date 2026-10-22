@@ -401,6 +401,36 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
     }
   });
 
+  it('paints the placeholder of a disabled empty trigger GrayText in forced colors (AST-085 FR6)', () => {
+    const placeholderClasses = stylex
+      .props(
+        stylex.create({
+          placeholder: {
+            color: {
+              default: colorVars['--color-text-secondary'],
+              '@media (forced-colors: active)': 'GrayText',
+            },
+          },
+        }).placeholder,
+      )
+      .className!.split(' ')
+      .filter(name => !name.includes('__'));
+    render(
+      <MobileTokenizer
+        label="Tags"
+        searchSource={source}
+        value={[]}
+        onChange={() => {}}
+        placeholder="Add tags"
+        isDisabled
+      />,
+    );
+    const placeholder = screen.getByText('Add tags');
+    for (const name of placeholderClasses) {
+      expect(placeholder).toHaveClass(name);
+    }
+  });
+
   it('paints a disabled trigger and its tokens GrayText in forced colors (AST-085 FR6)', () => {
     // The same declarations as the component's styles compile to the same
     // atomic classes; without them the tokens keep their CanvasText label.

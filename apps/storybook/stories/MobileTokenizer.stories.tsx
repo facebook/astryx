@@ -60,11 +60,19 @@ export const TouchFlow: Story = {
 
 export const Disabled: Story = {
   render: () => (
-    <div style={{width: 350}}>
+    <div style={{width: 350, display: 'grid', gap: 16}}>
       <MobileTokenizer
         label="Tags"
         searchSource={source}
         value={[tags[0], tags[1]]}
+        onChange={() => {}}
+        placeholder="Add tags"
+        isDisabled
+      />
+      <MobileTokenizer
+        label="Empty tags"
+        searchSource={source}
+        value={[]}
         onChange={() => {}}
         placeholder="Add tags"
         isDisabled
