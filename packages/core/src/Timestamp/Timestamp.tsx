@@ -17,7 +17,14 @@
  * - /packages/cli/assets/templates/blocks/components/Timestamp/ (showcase blocks)
  */
 
-import {lazy, Suspense, useEffect, useRef, useState} from 'react';
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Text} from '../Text';
 import type {TextType, TextSize, TextColor, TextWeight} from '../theme/types';
@@ -215,6 +222,13 @@ function getLiveInterval(diffSeconds: number): number {
   return 300_000; // every 5 minutes
 }
 
+// Whether this render may read the current time. Server renders (including
+// static prerenders) and the hydration pass read `false`, so the markup never
+// depends on when it was rendered; client renders read `true`.
+const subscribeToNothing = () => () => {};
+const canReadClockOnClient = () => true;
+const canReadClockOnServer = () => false;
+
 /** Whether a format is non-relative (i.e. shows a fixed date/time). */
 function isAbsoluteFormat(
   format: TimestampFormat,
@@ -279,7 +293,27 @@ export function Timestamp({
   const locale = useLocale();
   const timeRef = useRef<HTMLTimeElement>(null);
   const mergedTimeRef = useMergedRefs(ref, timeRef);
-  const [now, setNow] = useState(() => new Date());
+  // Only relative and auto formats depend on the current time. Absolute
+  // formats never read the clock, so they render identically on the server,
+  // in a static prerender, and on the client. A clock-dependent format reads
+  // it on the client only: server renders and the hydration pass show the
+  // full date and time, and the client switches to the relative phrase right
+  // after hydration.
+  const needsClock = !isAbsoluteFormat(format);
+  const canReadClock = useSyncExternalStore(
+    subscribeToNothing,
+    canReadClockOnClient,
+    canReadClockOnServer,
+  );
+  const [now, setNow] = useState<Date | null>(() =>
+    needsClock && canReadClock ? new Date() : null,
+  );
+  useEffect(() => {
+    if (needsClock && now === null) {
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- the clock is read only after hydration, so server and client markup match
+      setNow(new Date());
+    }
+  }, [needsClock, now]);
 
   const date = parseValue(value);
   // An unparseable value (a malformed date string, or a NaN timestamp from
@@ -289,23 +323,27 @@ export function Timestamp({
   const isValidDate = !Number.isNaN(date.getTime());
   const isoString = isValidDate ? date.toISOString() : '';
 
-  // Determine effective format
-  const diffSeconds = Math.round((now.getTime() - date.getTime()) / 1000);
+  // Determine effective format. Until the clock is read, a clock-dependent
+  // format renders as the full date and time.
+  const diffSeconds =
+    now === null ? 0 : Math.round((now.getTime() - date.getTime()) / 1000);
   const effectiveFormat: TimestampFormat =
-    format === 'auto'
-      ? Math.abs(diffSeconds) <= autoThreshold
-        ? 'relative'
-        : 'date_time'
-      : format;
+    needsClock && now === null
+      ? 'date_time'
+      : format === 'auto'
+        ? Math.abs(diffSeconds) <= autoThreshold
+          ? 'relative'
+          : 'date_time'
+        : format;
 
   // Format the display text. No time zone is passed: the visible text always
   // reads in the viewer's own zone, and only the tooltip names others.
   const displayText = !isValidDate
     ? ''
     : effectiveFormat === 'relative'
-      ? formatRelativeTime(date, now, locale, 'long')
+      ? formatRelativeTime(date, now ?? date, locale, 'long')
       : effectiveFormat === 'relative_short'
-        ? formatRelativeTime(date, now, locale, 'narrow')
+        ? formatRelativeTime(date, now ?? date, locale, 'narrow')
         : isAbsoluteFormat(effectiveFormat)
           ? formatInstant(date, effectiveFormat, locale, {isTimezoneShown})
           : '';

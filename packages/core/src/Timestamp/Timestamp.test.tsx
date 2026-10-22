@@ -11,6 +11,8 @@ import {
 } from 'vitest';
 import {render, screen, act, waitFor, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {hydrateRoot, type Root} from 'react-dom/client';
+import {renderToString} from 'react-dom/server';
 import {Timestamp} from './Timestamp';
 import {formatInstant} from './formatInstant';
 import {formatTooltipLines} from './tooltipEntries';
@@ -1464,5 +1466,93 @@ describe('Timestamp pass-through props', () => {
       ariaLabel: expect.not.stringMatching(/^Caller label$/),
       dataSource: 'cms',
     });
+  });
+});
+
+/**
+ * Counts `new Date()` calls with no argument (reads of the current time) made
+ * while `run` executes.
+ */
+function countClockReads(run: () => void): number {
+  const ActiveDate = globalThis.Date;
+  let reads = 0;
+  class CountingDate extends ActiveDate {
+    constructor(...args: [] | [string | number | Date]) {
+      if (args.length === 0) {
+        reads += 1;
+      }
+      super(...(args as [string | number | Date]));
+    }
+  }
+  globalThis.Date = CountingDate as DateConstructor;
+  try {
+    run();
+  } finally {
+    globalThis.Date = ActiveDate;
+  }
+  return reads;
+}
+
+describe('Timestamp server rendering', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-03-25T12:00:00Z'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it.each(['date', 'date_time', 'time', 'unix_seconds'] as const)(
+    'never reads the current time for the absolute %s format',
+    format => {
+      const element = (
+        <Timestamp value="2026-03-25T10:00:00Z" format={format} />
+      );
+      expect(countClockReads(() => renderToString(element))).toBe(0);
+      expect(countClockReads(() => render(element))).toBe(0);
+    },
+  );
+
+  it.each(['relative', 'relative_short', 'auto'] as const)(
+    'renders the %s format as the full date and time on the server without reading the clock',
+    format => {
+      const value = '2026-03-25T10:00:00Z';
+      let html = '';
+      expect(
+        countClockReads(() => {
+          html = renderToString(<Timestamp value={value} format={format} />);
+        }),
+      ).toBe(0);
+      const host = document.createElement('div');
+      host.innerHTML = html;
+      render(<Timestamp value={value} format="date_time" data-testid="abs" />);
+      expect(host.textContent).toBe(screen.getByTestId('abs').textContent);
+    },
+  );
+
+  it('hydrates the server markup without a mismatch, then shows the relative phrase', () => {
+    const value = Date.now() / 1000 - 7200;
+    const element = (
+      <Timestamp value={value} format="relative" hasTooltip={false} />
+    );
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    host.innerHTML = renderToString(element);
+    expect(host.textContent).not.toBe('2 hours ago');
+
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+    let root: Root | undefined;
+    try {
+      act(() => {
+        root = hydrateRoot(host, element);
+      });
+      expect(host.textContent).toBe('2 hours ago');
+      expect(errors).not.toHaveBeenCalled();
+    } finally {
+      errors.mockRestore();
+      act(() => root?.unmount());
+      host.remove();
+    }
   });
 });
