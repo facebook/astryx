@@ -15,6 +15,13 @@
  * Astryx's shipped default operators use the i18nKey variant; consumers
  * writing custom operators typically use the label variant.
  *
+ * Two translators serve the i18nKey variant. A key in PowerSearch's own
+ * namespace (`@astryx.powersearch.*`, every shipped default) resolves through
+ * the component translator, exactly like PowerSearch's other fixed strings,
+ * so the whole component reads one configuration. Any other key — a caller
+ * naming another Astryx namespace, or its own catalog — resolves through the
+ * whole-catalog translator, which keeps the shipped fallback the caller had.
+ *
  * SYNC: When modified, update:
  * - /packages/core/src/PowerSearch/types.ts (PowerSearchOperator type)
  * - /packages/core/src/PowerSearch/index.ts (re-export)
@@ -23,12 +30,18 @@
 import type {TranslatorFn} from '../i18n';
 import type {PowerSearchOperator} from './types';
 
+/** The namespace of PowerSearch's own strings, shipped defaults included. */
+const OWN_NAMESPACE = '@astryx.powersearch.';
+
 export function resolveOperatorLabel(
   operator: PowerSearchOperator,
   t: TranslatorFn,
+  tCaller: TranslatorFn = t,
 ): string {
   if ('label' in operator && operator.label !== undefined) {
     return operator.label;
   }
-  return t(operator.i18nKey);
+  return operator.i18nKey.startsWith(OWN_NAMESPACE)
+    ? t(operator.i18nKey)
+    : tCaller(operator.i18nKey);
 }

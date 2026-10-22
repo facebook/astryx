@@ -59,6 +59,7 @@ import {resolveOperatorLabel} from './resolveOperatorLabel';
 import {themeProps} from '../utils/themeProps';
 import {truncateCharacters} from '../utils/characters';
 import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import {useCatalogTranslator} from '../i18n/useCatalogTranslator';
 import powersearchMessages from '../i18n/generated-locales/en/powersearch.generated';
 import {useLocale} from '../i18n/useLocale';
 import type {Locale} from '../i18n/types';
@@ -587,6 +588,9 @@ export function PowerSearch({
   const config = useInternalConfig(configProp);
   const searchSource = usePowerSearchSource(config, maxSearchResults);
   const t = useComponentTranslator(powersearchMessages);
+  // A caller's own operator `i18nKey` reads the whole catalog; shipped
+  // defaults (`@astryx.powersearch.*`) read the slice like every fixed string.
+  const tCaller = useCatalogTranslator();
   const locale = useLocale();
   const label = labelFromProps ?? t('@astryx.powersearch.label');
   const placeholder =
@@ -648,7 +652,9 @@ export function PowerSearch({
     return filters.map((filter, index) => {
       const field = config.getField(filter.field);
       const operator = config.getOperator(filter.field, filter.operator);
-      const resolvedOp = operator ? resolveOperatorLabel(operator, t) : '';
+      const resolvedOp = operator
+        ? resolveOperatorLabel(operator, t, tCaller)
+        : '';
       const operatorLabel = resolvedOp ? `: ${resolvedOp}` : '';
       const valueStr = operator
         ? formatFilterValue(
@@ -677,7 +683,7 @@ export function PowerSearch({
         },
       };
     });
-  }, [filters, config, maxTokenLength, timezoneID, t, locale]);
+  }, [filters, config, maxTokenLength, timezoneID, t, tCaller, locale]);
 
   // Handle tokenizer onChange (field selected from typeahead)
   const handleTokenizerChange = useCallback(
@@ -867,7 +873,9 @@ export function PowerSearch({
 
       // Default token rendering
       const fieldLabel = field?.label ?? '';
-      const operatorLabel = operator ? resolveOperatorLabel(operator, t) : '';
+      const operatorLabel = operator
+        ? resolveOperatorLabel(operator, t, tCaller)
+        : '';
       const tokenLabel = `${fieldLabel}: ${operatorLabel}`.trim();
       const adjustedMaxLength = Math.max(
         maxTokenLength - fieldLabel.length - operatorLabel.length,
@@ -935,6 +943,7 @@ export function PowerSearch({
       handleTokenClick,
       componentOverrides,
       t,
+      tCaller,
     ],
   );
 

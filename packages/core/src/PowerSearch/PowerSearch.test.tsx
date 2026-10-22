@@ -21,6 +21,13 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {PowerSearch} from './PowerSearch';
+import {
+  InternationalizationContext,
+  translateWithCatalog,
+  type InternationalizationContextValue,
+} from '../i18n/InternationalizationContext';
+import {getResolve} from '../i18n/resolve';
+import frFR from '../i18n/generated-locales/fr-FR.generated';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import type {PowerSearchConfig, PowerSearchFilter} from './types';
 import {TestIcon} from '../__tests__/TestIcon';
@@ -163,6 +170,123 @@ describe('PowerSearch', () => {
     });
 
     expect(screen.getByRole('combobox')).toHaveFocus();
+  });
+
+  it('resolves a caller-supplied operator i18nKey from any shipped namespace along the search, token and editor paths', async () => {
+    // `operator.i18nKey` is public and unrestricted; this one names a key
+    // outside PowerSearch's own namespace. No provider is mounted, so the
+    // whole shipped catalog is the only source — the fallback a caller had
+    // before components read their own slices.
+    const user = userEvent.setup();
+    const callerKeyConfig: PowerSearchConfig = {
+      name: 'TestSearch',
+      fields: [
+        {
+          key: 'status',
+          label: 'Status',
+          defaultOperator: 'apply',
+          operators: [
+            {
+              key: 'apply',
+              i18nKey: '@astryx.table.filter.apply',
+              value: {
+                type: 'enum',
+                values: [{value: 'open', label: 'Open'}],
+              },
+            },
+          ],
+        },
+      ],
+    };
+    render(<PowerSearchWrapper config={callerKeyConfig} />);
+    const input = screen.getByRole('combobox', {name: 'Search'});
+    await user.type(input, 'status open');
+    // Search suggestions.
+    await user.click(
+      await screen.findByRole('option', {
+        name: 'Status Apply Open',
+        hidden: true,
+      }),
+    );
+    // The token.
+    const token = screen.getByText('Status: Apply');
+    expect(token).toBeInTheDocument();
+    // The edit popover's operator list.
+    await user.click(token);
+    expect(
+      await screen.findByRole('option', {name: 'Apply', hidden: true}),
+    ).toBeInTheDocument();
+  });
+
+  it('under a raw context value, shipped operators read the same source as every other PowerSearch string; a caller key reads the context', async () => {
+    // A value rendered straight into the public context configures nothing a
+    // component reads (that path retires; InternationalizationProvider is the
+    // way to configure Astryx). So PowerSearch's own strings — the search box
+    // and the shipped `is` operator alike — stay English from the slice, one
+    // configuration for the whole component; a key the caller supplies from
+    // another namespace still follows the context's `translate`, as it did.
+    const user = userEvent.setup();
+    const runtimeMessages = {'fr-FR': frFR};
+    const value: InternationalizationContextValue = {
+      locale: 'fr-FR',
+      direction: 'ltr',
+      // The public value's `messages` is the authoring shape; the resolver
+      // takes the runtime one. Only `translate` is read by this test.
+      messages: Object.fromEntries(
+        Object.entries(runtimeMessages).map(([locale, catalog]) => [
+          locale,
+          Object.fromEntries(
+            Object.entries(catalog).map(([key, defaultMessage]) => [
+              key,
+              {defaultMessage},
+            ]),
+          ),
+        ]),
+      ),
+      translate: translateWithCatalog(getResolve('fr-FR', runtimeMessages)),
+    };
+    const mixedConfig: PowerSearchConfig = {
+      name: 'TestSearch',
+      fields: [
+        {
+          key: 'status',
+          label: 'Status',
+          defaultOperator: 'is',
+          operators: [
+            {
+              key: 'is',
+              i18nKey: '@astryx.powersearch.operator.is',
+              value: {type: 'enum', values: [{value: 'open', label: 'Open'}]},
+            },
+            {
+              key: 'apply',
+              i18nKey: '@astryx.table.filter.apply',
+              value: {type: 'enum', values: [{value: 'open', label: 'Open'}]},
+            },
+          ],
+        },
+      ],
+    };
+    render(
+      <InternationalizationContext value={value}>
+        <PowerSearchWrapper config={mixedConfig} />
+      </InternationalizationContext>,
+    );
+    // The search box: PowerSearch's own string, English from the slice.
+    const input = screen.getByRole('combobox', {name: 'Search'});
+    await user.type(input, 'status open');
+    // Shipped default operator: PowerSearch's own namespace, also English.
+    expect(
+      await screen.findByRole('option', {name: 'Status is Open', hidden: true}),
+    ).toBeInTheDocument();
+    // Caller-supplied key from another namespace: the context's translate.
+    expect(
+      await screen.findByRole('option', {
+        name: 'Status Appliquer Open',
+        hidden: true,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('option', {name: /Status est Open/})).toBeNull();
   });
 
   it('clears all added filters when the clear button is clicked', async () => {
