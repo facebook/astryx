@@ -1429,6 +1429,17 @@ jobs:
             --project chromium \
             --output table-min-width-output
 
+      # A MultiSelector create row with caller content is an option named by
+      # that content, and its only-result announcement goes through the polite
+      # region once per query; only a real engine computes the name and shows
+      # the region's updates across keystrokes.
+      - name: Run MultiSelector create row content contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/MultiSelector/CreateRowContent.a11y.chromium.spec.ts \
+            --project chromium \
+            --output multiselector-create-row-content-output
+
       # A CodeBlock diff row's tint has to follow a long line to the end of its
       # scroll width; jsdom has no layout, so only a real engine shows whether
       # the paint stops at the viewport edge when the reader scrolls.
