@@ -52,7 +52,8 @@
  *   still pair (`source_without_component_doc`); `doc_name_mismatch` and
  *   `unknown_block_component` (see `docNames` and `blockComponents`); and
  *   since 0.7.3 each public-import finding; they become warnings in the next
- *   minor release
+ *   minor release; and `runner_command`, an Astryx command a topic writes
+ *   with a package runner
  */
 
 /**

@@ -856,6 +856,36 @@ describe('Project loads each integration in isolation', () => {
   });
 });
 
+describe('Project finds configured integrations a workspace hoists', () => {
+  // npm, Yarn and Bun workspaces install a member's dependencies at the
+  // workspace root, so the member's own node_modules does not hold them.
+  it('loads an integration named in a member config from the workspace root', async () => {
+    scaffold();
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: 'root', private: true, workspaces: ['apps/*']}),
+    );
+    fs.rmSync(path.join(tmpDir, 'astryx.config.mjs'));
+    const member = path.join(tmpDir, 'apps', 'web');
+    fs.mkdirSync(member, {recursive: true});
+    fs.writeFileSync(path.join(member, 'package.json'), JSON.stringify({name: 'web'}));
+    fs.writeFileSync(
+      path.join(member, 'astryx.config.mjs'),
+      `export default ${JSON.stringify({integrations: ['@acme/widgets']})};\n`,
+    );
+
+    const project = await Project.load(member);
+
+    const widgets = (await project.components()).filter(
+      component => component.package === '@acme/widgets',
+    );
+    expect(widgets.map(component => component.name)).toEqual(['Widget']);
+    expect(await project.issues()).not.toContainEqual(
+      expect.objectContaining({package: '@acme/widgets', code: 'integration_error'}),
+    );
+  });
+});
+
 describe('Project.issuesUrl routing', () => {
   it('routes core to config.issuesUrl, falling back to the default', async () => {
     scaffold({issuesUrl: 'https://example.com/core'});

@@ -1317,8 +1317,12 @@ describe('a configured integration that cannot load fails the gate', () => {
     'astryx.config.mjs': "export default { integrations: ['@acme/widgets'] };\n",
   };
 
-  /** Run doctor on a project under the working directory. */
-  async function report(files) {
+  /**
+   * Run doctor on a project under the working directory, in its folder `at`.
+   * @param {Record<string, string>} files
+   * @param {string} [at]
+   */
+  async function report(files, at = '.') {
     const dir = fs.mkdtempSync(path.join(process.cwd(), '.astryx-doctor-gate-'));
     tmpDirs.push(dir);
     for (const [rel, content] of Object.entries(files)) {
@@ -1326,7 +1330,7 @@ describe('a configured integration that cannot load fails the gate', () => {
       fs.mkdirSync(path.dirname(abs), {recursive: true});
       fs.writeFileSync(abs, content);
     }
-    const {checks, summary} = (await doctor({cwd: dir})).data;
+    const {checks, summary} = (await doctor({cwd: path.join(dir, at)})).data;
     return {by: Object.fromEntries(checks.map(c => [c.id, c])), summary};
   }
 
@@ -1350,6 +1354,27 @@ describe('a configured integration that cannot load fails the gate', () => {
       expect(check.message).toMatch(reason);
       expect(check.fix).toContain(' doctor integration validate <package>`');
       expect(summary.fail).toBe(1);
+    },
+    SLOW,
+  );
+
+  it(
+    'passes in a workspace member whose configured integration is hoisted to the root',
+    async () => {
+      const {by} = await report(
+        {
+          'package.json': JSON.stringify({name: 'root', private: true, workspaces: ['apps/*']}),
+          ...CORE_STUB,
+          ...widgets(),
+          'apps/web/package.json': '{"name":"web"}',
+          'apps/web/astryx.config.mjs': "export default { integrations: ['@acme/widgets'] };\n",
+        },
+        'apps/web',
+      );
+      expect(by['configured-integrations'].status).toBe('pass');
+      expect(by['configured-integrations'].message).toBe(
+        '1 integration named in astryx.config loaded: @acme/widgets.',
+      );
     },
     SLOW,
   );
