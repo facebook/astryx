@@ -470,7 +470,7 @@ export function resolveBuiltPath(cwd, target) {
  * null when it cannot be read or is over 5 MB. Installs and version control
  * are skipped; at most BUILT_FILE_LIMIT files are listed.
  * @param {string} target an existing absolute path
- * @returns {{files: {rel: string, built: boolean, read: () => string | null}[], truncated: boolean}}
+ * @returns {{files: {rel: string, built: boolean, read: () => string | null}[], truncated: boolean, missing?: number}}
  */
 export function readBuiltPath(target) {
   /** @param {string} file */
@@ -491,6 +491,7 @@ export function readBuiltPath(target) {
     const files = [
       {rel: path.basename(target), built: inBuild, read: reader(target)},
     ];
+    let missing = 0;
     // A built page carries its styles and scripts in files it links: read
     // the local ones beside it, as built output.
     if (/\.html?$/iu.test(target)) {
@@ -501,10 +502,24 @@ export function readBuiltPath(target) {
       )) {
         const href = match[1];
         if (/^(?:[a-z][\w+.-]*:|\/\/)/iu.test(href)) continue;
-        const file = href.startsWith('/')
-          ? path.join(path.dirname(target), href)
-          : path.resolve(path.dirname(target), href);
-        if (seen.has(file) || !fs.existsSync(file)) continue;
+        // A root-relative link names a file from the build root: the page's
+        // folder or the nearest folder above it that holds the file.
+        let file = path.resolve(path.dirname(target), href.replace(/^\//u, ''));
+        if (href.startsWith('/')) {
+          for (let dir = path.dirname(target); ; dir = path.dirname(dir)) {
+            const candidate = path.join(dir, href);
+            if (fs.existsSync(candidate)) {
+              file = candidate;
+              break;
+            }
+            if (path.dirname(dir) === dir) break;
+          }
+        }
+        if (seen.has(file)) continue;
+        if (!fs.existsSync(file)) {
+          missing++;
+          continue;
+        }
         seen.add(file);
         files.push({
           rel: path
@@ -516,7 +531,7 @@ export function readBuiltPath(target) {
         });
       }
     }
-    return {files, truncated: false};
+    return {files, truncated: false, missing};
   }
   /** @type {{rel: string, built: boolean, read: () => string | null}[]} */
   const files = [];

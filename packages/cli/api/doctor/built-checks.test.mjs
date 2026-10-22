@@ -297,8 +297,47 @@ describe('--built edge cases', () => {
     }
     const {usage} = check('.');
     expect(usage.status).toBe('warn');
-    expect(usage.message).toContain('the rest went unread');
+    expect(usage.message).toContain('went unread');
   }, 60_000);
+
+  it('finds a root-relative asset from the build root for a page in a subfolder', () => {
+    write({
+      'dist/about/index.html':
+        '<!doctype html><link rel="stylesheet" href="/assets/app.css"><div id="root"></div>',
+      'dist/assets/app.css': '@layer astryx-theme{.x{color:red}}',
+    });
+    expect(check('dist/about/index.html').usage.status).toBe('pass');
+  });
+
+  it('warns, not fails, when a page links a file that is not there', () => {
+    write({
+      'out/index.html': '<link rel="stylesheet" href="./missing.css"><p>x</p>',
+    });
+    const {usage} = check('out/index.html');
+    expect(usage.status).toBe('warn');
+    expect(usage.message).toContain('not there');
+  });
+
+  it('inspects JSX in a .js file wherever it opens', () => {
+    write({
+      'src/page.js':
+        'export const a = x || <div>A</div>;\nexport const b = [<span key="b">B</span>];\n',
+    });
+    const scan = scanBuilt(path.join(dir, 'src'), []);
+    expect(scan.jsxFiles).toBe(1);
+    expect(scan.findings).toHaveLength(2);
+  });
+
+  it('fails an empty folder as nothing checked, and warns when the only source is too big to read', () => {
+    fs.mkdirSync(path.join(dir, 'empty'));
+    expect(check('empty').usage.message).toContain('nothing was checked');
+    write({
+      'big/Page.tsx': `import {Text} from '@astryxdesign/core/Text';\n${'// x\n'.repeat(1_100_000)}`,
+    });
+    const {usage} = check('big');
+    expect(usage.status).toBe('warn');
+    expect(usage.message).toContain('over 5 MB');
+  });
 
   it('survives a file with more findings than a call can spread', () => {
     write({

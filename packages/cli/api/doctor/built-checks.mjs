@@ -30,6 +30,7 @@ import {
   resolveBuiltPath,
 } from './_adapter.mjs';
 import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
+import {parse as parseModule} from '@babel/parser';
 
 /** Source files, read for imports and JSX. */
 const SOURCE_EXT = new Set(['.tsx', '.jsx', '.ts', '.js', '.mjs', '.cjs']);
@@ -47,12 +48,41 @@ function extensionOf(rel) {
 /** Files that hold JSX by their extension. */
 const JSX_EXT = new Set(['.tsx', '.jsx']);
 
+/** A cheap test before parsing: a tag or fragment opens somewhere. */
+const HAS_JSX = /<(?:[A-Za-z]|>)/;
+
 /**
- * JSX written in a `.js` or `.mjs` source file: an element opened where an
- * expression starts (after `return`, `(`, `=`, `?`, `:`, `,`, `&&` or `=>`),
- * a fragment (`<>`) included.
+ * Whether a `.js` or `.mjs` source file holds JSX, read from its parse.
+ * @param {string} text
  */
-const HAS_JSX = /(?:\breturn|[(=?:,]|&&|=>)\s*<(?:[A-Za-z][\w.]*[\s/>]|>)/;
+function hasJsx(text) {
+  if (!HAS_JSX.test(text)) return false;
+  /** @type {any} */
+  let ast;
+  try {
+    ast = parseModule(text, {
+      sourceType: 'unambiguous',
+      plugins: ['jsx'],
+      errorRecovery: true,
+    });
+  } catch {
+    return false;
+  }
+  /** @type {any[]} */
+  const stack = [ast.program];
+  while (stack.length > 0) {
+    const node = stack.pop();
+    if (!node || typeof node.type !== 'string') continue;
+    if (node.type === 'JSXElement' || node.type === 'JSXFragment') return true;
+    for (const key of Object.keys(node)) {
+      if (key === 'loc' || key.endsWith('Comments')) continue;
+      const value = node[key];
+      if (Array.isArray(value)) stack.push(...value);
+      else if (value && typeof value === 'object') stack.push(value);
+    }
+  }
+  return false;
+}
 
 /** Built files, read for an Astryx stylesheet. */
 const BUILT_EXT = new Set(['.css', '.html', '.htm', '.js', '.mjs']);
@@ -153,6 +183,8 @@ const ICON_PACKAGES = [
  * @property {BuiltFinding[]} findings
  * @property {boolean} truncated whether the file limit cut the read short
  * @property {number} unread source files over the size limit, or unreadable
+ * @property {number} missingLinks local files a built page links that are not
+ *   there
  */
 
 /**
@@ -341,7 +373,7 @@ function jsxFindings(text, rel, iconNames) {
  * @returns {BuiltScan}
  */
 export function scanBuilt(target, packages) {
-  const {files, truncated} = readBuiltPath(target);
+  const {files, truncated, missing = 0} = readBuiltPath(target);
   /** @type {BuiltScan} */
   const scan = {
     sourceFiles: 0,
@@ -355,6 +387,7 @@ export function scanBuilt(target, packages) {
     findings: [],
     truncated,
     unread: 0,
+    missingLinks: missing,
   };
   const imported = new Set();
   for (const {rel, built, read} of files) {
@@ -418,7 +451,7 @@ export function scanBuilt(target, packages) {
       const uses = text.match(new RegExp(`<${name}(?=[\\s/>.])`, 'g'));
       scan.componentUses += uses?.length ?? 0;
     }
-    if (JSX_EXT.has(ext) || HAS_JSX.test(text)) {
+    if (JSX_EXT.has(ext) || (/\.[cm]?js$/u.test(ext) && hasJsx(text))) {
       scan.jsxFiles++;
       for (const finding of jsxFindings(text, rel, iconNames)) {
         scan.findings.push(finding);
@@ -481,21 +514,32 @@ export function checkBuilt(target, {cwd, packages}) {
         status: 'pass',
         message: `Read ${read}: ${evidence.join('; ')}.`,
       }
-    : scan.truncated
+    : scan.sourceFiles === 0 &&
+        scan.builtFiles === 0 &&
+        scan.unread === 0 &&
+        !scan.truncated
       ? {
           id: 'built-astryx-usage',
           label: 'Built output uses Astryx',
-          status: 'warn',
-          message: `Read only ${read} and found no Astryx in them; the rest went unread, so this does not show whether the output uses Astryx.`,
-          fix: `Run \`${formatCliCommand('doctor --built <folder>', cwd)}\` on the folder that holds the page itself, or on its build output.`,
-        }
-      : {
-          id: 'built-astryx-usage',
-          label: 'Built output uses Astryx',
           status: 'fail',
-          message: `Read ${read}: no import from an Astryx package, no Astryx component, and no Astryx styles, so this output does not use Astryx.`,
-          fix: `Rebuild the page from an Astryx template: run \`${formatCliCommand('build "<what the page is>"', cwd)}\`, scaffold the template it names, and fill it with Astryx components. Do not deliver this output.`,
-        };
+          message: `${target} holds no source or built files, so nothing was checked.`,
+          fix: 'Pass the project folder, the build output folder, or the built HTML file.',
+        }
+      : scan.truncated || scan.unread > 0 || scan.missingLinks > 0
+        ? {
+            id: 'built-astryx-usage',
+            label: 'Built output uses Astryx',
+            status: 'warn',
+            message: `Read ${read} and found no Astryx in them, but ${[scan.truncated ? `the rest past the first ${BUILT_FILE_LIMIT} files` : null, scan.unread > 0 ? `${plural(scan.unread, 'source file')} over ${BUILT_FILE_MAX_MB} MB or unreadable` : null, scan.missingLinks > 0 ? `${plural(scan.missingLinks, 'file')} the page links but that are not there` : null].filter(Boolean).join(' and ')} went unread, so this does not show whether the output uses Astryx.`,
+            fix: `Run \`${formatCliCommand('doctor --built <folder>', cwd)}\` on the folder that holds the page itself, or on its build output.`,
+          }
+        : {
+            id: 'built-astryx-usage',
+            label: 'Built output uses Astryx',
+            status: 'fail',
+            message: `Read ${read}: no import from an Astryx package, no Astryx component, and no Astryx styles, so this output does not use Astryx.`,
+            fix: `Rebuild the page from an Astryx template: run \`${formatCliCommand('build "<what the page is>"', cwd)}\`, scaffold the template it names, and fill it with Astryx components. Do not deliver this output.`,
+          };
   /** @type {import('./doctor.type.mjs').DoctorCheck} */
   let purity;
   if (scan.jsxFiles === 0) {
