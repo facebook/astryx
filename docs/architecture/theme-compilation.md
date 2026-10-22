@@ -35,6 +35,8 @@ deciding_specs:
     spec:AST-006/DEC-4,
     spec:AST-012/DEC-3,
     spec:AST-012/DEC-4,
+    spec:AST-087/DEC-2,
+    spec:AST-087/DEC-9,
   ]
 ---
 
@@ -46,7 +48,7 @@ deciding_specs:
 {
   "scope": "global",
   "triggers": {
-    "theming": ["INV2", "INV3", "INV4", "INV6", "INV9", "INV10"]
+    "theming": ["INV2", "INV3", "INV4", "INV6", "INV9", "INV10", "INV15"]
   }
 }
 ```
@@ -81,6 +83,10 @@ The current web compiler works like this:
 6. A built theme preserves local-token ownership, effective width points,
    generative-axis metadata, and normalized ordered rules, and is marked so the
    provider does not compile or inject it again.
+7. A built theme carries its function icon entries, `componentIcons` functions,
+   and `iconVariants` list in its JavaScript, so built resolution returns the
+   same nodes as the runtime theme. A function the build cannot carry fails the
+   build.
 
 For top-level declarations in base component target rules, the compiler preserves
 generic CSS properties as written. When a guaranteed property needs to reach
@@ -162,6 +168,12 @@ Platform-specific details stay inside that compiler.
   diagnostics schema. A CLI paired with an older core retains that core's existing
   compilation behavior; it does not pretend to detect drops the older core cannot
   report.
+- **INV15 — Built icon resolution matches runtime.** A built theme resolves every
+  icon request and slot request to the same node as its runtime theme, and its
+  public icon and slot exports are the same node-valued and static views. Build
+  tooling that generates or subsets icon artwork enumerates a theme's requests as
+  every key with each of the four sizes and either no variant or one listed
+  variant; it never enumerates an unlisted variant.
 
 This record does not own:
 
@@ -255,7 +267,8 @@ This record does not own:
 AST-006 decisions 2 and 4, as amended on 2026-09-12, establish
 prefix-independent local-token names and atomic shared validation for enrolled themes.
 AST-012 decisions 3 and 4 establish ordered adaptation blocks and source/built metadata
-parity. The system owner separately selected one definition with platform-specific
+parity. AST-087 decisions 2 and 9 establish function icon entries and the finite,
+theme-level variant list that built resolution and icon-artwork tooling use. The system owner separately selected one definition with platform-specific
 outputs and the guaranteed, best-effort, public-semantic, and private implementation
 tiers.
 
@@ -273,6 +286,7 @@ tiers.
 | INV12            | `themeAdaptations.test.ts` and CLI adaptation build fixtures                                                    | Rule blocks merge/reorder/drop, surfaces lose precedence, or runtime/static CSS diverges                                |
 | INV13, INV14     | Declaration scanner, generator, Theme mounting, CLI receipt tests, and the existing theme-family Chromium guard | One unsafe declaration corrupts neighbors, valid CSS changes, legacy token generation crashes, or reporting changes CSS |
 | Built themes     | Theme and CLI build tests                                                                                       | Runtime recompiles a built theme, or built output omits canonical rules                                                 |
+| INV15            | CLI build fixtures with function entries, slot functions, and a variant list, compared with runtime resolution  | Built and runtime icons differ, a function is dropped silently, or tooling enumerates an unlisted variant               |
 
 ## Known conformance and verification gaps
 

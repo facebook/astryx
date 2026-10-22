@@ -36,6 +36,7 @@ deciding_specs:
     spec:AST-012/DEC-3,
     spec:AST-012/DEC-5,
     spec:AST-017/DEC-1,
+    spec:AST-087/DEC-9,
   ]
 ---
 
@@ -212,8 +213,10 @@ but acceptance alone is best effort, not a compatibility promise.
   be theme-extensible only when it is visual and an unavailable custom value has
   one safe, deterministic baseline that does not depend on the active theme.
   `Heading.type` qualifies because required `Heading.level` provides that
-  baseline. `Icon.size` does not: no missing custom size can be inferred without
-  silently changing geometry, alignment, or composition. Behavioral, structural,
+  baseline. `Icon.variant` qualifies because an unlisted variant renders the
+  request without a variant, which is the same for every theme. `Icon.size` does
+  not: no missing custom size can be inferred without silently changing
+  geometry, alignment, or composition. Behavioral, structural,
   placement, directional, and state-machine axes remain closed regardless. A
   theme may redefine an existing value on a closed axis, but it may not add one.
 - **INV15 — Conditional styling does not create conditional API.** Adaptation
@@ -412,6 +415,8 @@ how themes become output, or the design rationale for a component's appearance.
   writes to the closed ordered rule model. `spec:AST-012/DEC-5` makes component
   validation shared with root themes and reserves effective-root presence for
   values whose validity depends on theme enrollment.
+- `spec:AST-087/DEC-9` makes `Icon.variant` a theme-extensible axis whose names
+  each theme lists once and whose fallback is the request without a variant.
 - `spec:AST-017/DEC-1` owns published compatibility classification and migration:
   compatibility-path removal is breaking. This record owns the exact deprecated
   theming cohort and its approved 0.7.0 removal window.
