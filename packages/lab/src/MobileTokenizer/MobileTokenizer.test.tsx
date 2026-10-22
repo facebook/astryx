@@ -103,8 +103,10 @@ beforeEach(() => {
   window.scrollTo = vi.fn();
   vi.stubGlobal(
     'requestAnimationFrame',
+    // Next microtask, not synchronously: a real frame never runs before
+    // requestAnimationFrame returns, and callers may rely on its id.
     vi.fn((cb: FrameRequestCallback) => {
-      cb(0);
+      queueMicrotask(() => cb(0));
       return 1;
     }),
   );

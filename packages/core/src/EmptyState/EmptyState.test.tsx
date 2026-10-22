@@ -128,8 +128,10 @@ describe('EmptyState', () => {
     const root = screen.getByTestId('empty-state');
     expect(root).not.toHaveAttribute('role');
     expect(root).not.toHaveAttribute('aria-live');
-    expect(screen.queryByRole('status')).toBeNull();
-    expect(screen.queryByRole('alert')).toBeNull();
+    // The shared live region on the page body is not part of EmptyState.
+    expect(
+      root.querySelector('[role="status"], [role="alert"], [aria-live]'),
+    ).toBeNull();
     expect(root).toHaveTextContent('No resultsTry again.');
   });
 

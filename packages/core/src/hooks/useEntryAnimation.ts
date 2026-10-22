@@ -3,7 +3,7 @@
 'use client';
 /**
  * @file useEntryAnimation.ts
- * @input Uses React, StyleX, theme tokens, useIsHydrating
+ * @input Uses StyleX, theme tokens, useIsInsertedAfterLoad
  * @output Exports useEntryAnimation hook for mount-only entry animations
  * @position Hook utility; consumed by FieldStatus and available to consumers
  *
@@ -14,22 +14,10 @@
  * (spec:AST-013 FR13).
  */
 
-import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {durationVars, easeVars, spacingVars} from '../theme/tokens.stylex';
-import {useIsHydrating} from './useIsHydrating';
-
-// Track whether the initial page paint has completed, so elements a
-// client-only root renders on page load do not animate; only dynamically
-// inserted ones should. Server-rendered elements are covered by
-// useIsHydrating instead: hydration can run after this flag turns true.
-let initialPaintComplete = false;
-if (typeof window !== 'undefined') {
-  requestAnimationFrame(() => {
-    initialPaintComplete = true;
-  });
-}
+import {useIsInsertedAfterLoad} from './useIsInsertedAfterLoad';
 
 const slideDown = stylex.keyframes({
   from: {
@@ -115,9 +103,5 @@ export type EntryAnimationPreset =
 export function useEntryAnimation(
   preset: EntryAnimationPreset = 'slideDown',
 ): StyleXStyles | null {
-  const isHydrating = useIsHydrating();
-  // Captured once: a hydrated element must not start animating when React
-  // re-renders it with the client snapshot after hydration.
-  const [animate] = useState(() => !isHydrating && initialPaintComplete);
-  return animate ? styles[preset] : null;
+  return useIsInsertedAfterLoad() ? styles[preset] : null;
 }

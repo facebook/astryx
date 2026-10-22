@@ -47,7 +47,7 @@ import {useEffect, useRef, type RefObject} from 'react';
 import {useAnnounce} from './useAnnounce';
 
 /** The rendered text an assistive technology would read from `element`. */
-function renderedText(element: HTMLElement): string {
+export function renderedText(element: HTMLElement): string {
   // Clone so removing the hidden parts cannot disturb what is on screen. The
   // clone is never attached to the document.
   const copy = element.cloneNode(true) as HTMLElement;

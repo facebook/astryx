@@ -618,10 +618,14 @@ describe('ListInput', () => {
     expect(animate).not.toHaveBeenCalled();
     expect(screen.queryByDisplayValue('Ada')).not.toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Add guest'})).toHaveFocus();
+    // Removing the last guest makes the empty state appear, and an empty state
+    // that appears announces its message (spec:AST-086 FR2). It speaks after
+    // the removal, in the same frame, so it is what the region holds.
     await waitFor(() => {
       expect(
         Array.from(document.querySelectorAll('[aria-live="polite"]')).some(
-          node => node.textContent === 'Removed guest 1.',
+          node =>
+            node.textContent === 'No guests yet Add a guest to get started.',
         ),
       ).toBe(true);
     });
