@@ -25,9 +25,21 @@ export const doc = {
     'It never fails a check because the folder has no project.',
   fn: 'doctor',
   subcommands: ['integration'],
+  options: [
+    {
+      flag: '--built <path>',
+      param: 'options.built',
+      description:
+        'Also check a finished build before you deliver it: a project folder, a build output folder, or one built HTML file. Fails when it does not use Astryx at all, and warns with each raw element, icon or custom style in its source.',
+    },
+  ],
   examples: [
     {label: 'Run project diagnostics', cli: 'astryx doctor'},
     {label: 'Machine-readable project report', cli: 'astryx doctor --json'},
+    {
+      label: 'Before you deliver a build: check that it uses Astryx',
+      cli: 'astryx doctor --built dist',
+    },
     {
       label: 'Validate an integration',
       cli: 'astryx doctor integration validate @acme/widgets',

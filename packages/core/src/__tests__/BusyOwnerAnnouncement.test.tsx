@@ -19,7 +19,7 @@ import {
   it,
   vi,
 } from 'vitest';
-import {act, fireEvent, render, screen} from '@testing-library/react';
+import {act, fireEvent, render, screen, within} from '@testing-library/react';
 import {TextInput} from '../TextInput';
 import {TextArea} from '../TextArea';
 import {Selector} from '../Selector';
@@ -27,8 +27,11 @@ import {MultiSelector} from '../MultiSelector';
 import {ComplexSelector} from '../ComplexSelector';
 import {DateInput} from '../DateInput';
 import {DateRangeInput} from '../DateRangeInput';
+import {DateTimeInput} from '../DateTimeInput';
+import {TimeInput} from '../TimeInput';
 import {BaseTypeahead, Typeahead} from '../Typeahead';
 import type {SearchableItem, SearchSource} from '../Typeahead';
+import type {ISOTimeString} from '../utils';
 import {Tokenizer} from '../Tokenizer';
 
 const announce = vi.fn();
@@ -104,6 +107,30 @@ const OWNERS: ReadonlyArray<
         ),
       ] as const,
   ),
+  ...(['popover', 'native', 'bottom-sheet'] as const).flatMap(presentation => [
+    [
+      `DateTimeInput (${presentation})`,
+      (isLoading: boolean) => (
+        <DateTimeInput
+          label="When"
+          presentation={presentation}
+          onChange={() => {}}
+          isLoading={isLoading}
+        />
+      ),
+    ] as const,
+    [
+      `TimeInput (${presentation})`,
+      (isLoading: boolean) => (
+        <TimeInput
+          label="Time"
+          presentation={presentation}
+          onChange={() => {}}
+          isLoading={isLoading}
+        />
+      ),
+    ] as const,
+  ]),
   [
     'DateRangeInput',
     isLoading => (
@@ -364,6 +391,80 @@ describe.each(SEARCH_OWNERS)(
       ).toHaveTextContent('Loading');
       expect(busyAnnouncements()).toEqual([]);
       vi.restoreAllMocks();
+    });
+  },
+);
+
+/**
+ * Bottom-sheet fields whose sheet stays open while a changeAction is pending:
+ * the sheet is a modal dialog, so the busy start must be announced inside it.
+ */
+const SHEET_OWNERS: ReadonlyArray<
+  readonly [
+    string,
+    (changeAction: () => Promise<void>) => ReactElement,
+    () => void,
+  ]
+> = [
+  [
+    'TimeInput',
+    changeAction => (
+      <TimeInput
+        label="Time"
+        presentation="bottom-sheet"
+        value={'09:00' as ISOTimeString}
+        onChange={() => {}}
+        changeAction={changeAction}
+      />
+    ),
+    () => {
+      fireEvent.click(screen.getByRole('button', {name: /Time/}));
+    },
+  ],
+];
+
+describe.each(SHEET_OWNERS)(
+  '%s busy start from inside its open sheet (spec:AST-086 Platform support)',
+  (_name, renderOwner, openSheet) => {
+    beforeEach(() => {
+      HTMLDialogElement.prototype.showModal = vi.fn(function (
+        this: HTMLDialogElement,
+      ) {
+        this.setAttribute('open', '');
+      });
+      HTMLDialogElement.prototype.close = vi.fn(function (
+        this: HTMLDialogElement,
+      ) {
+        this.removeAttribute('open');
+      });
+      const matches = Element.prototype.matches;
+      vi.spyOn(Element.prototype, 'matches').mockImplementation(function (
+        this: Element,
+        selector: string,
+      ) {
+        return selector === ':modal'
+          ? this instanceof HTMLDialogElement && this.open
+          : matches.call(this, selector);
+      });
+    });
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('announces the busy start in a region inside the open sheet, not behind it', async () => {
+      render(renderOwner(async () => new Promise<void>(() => {})));
+      openSheet();
+      const sheet = document.querySelector('dialog[open]');
+      expect(sheet).not.toBeNull();
+      act(() => {
+        fireEvent.click(within(sheet as HTMLElement).getAllByRole('option')[1]);
+      });
+      await nextFrame();
+      await nextFrame();
+      expect(
+        sheet!.querySelector('[data-astryx-modal-busy-region]'),
+      ).toHaveTextContent('Loading');
+      expect(busyAnnouncements()).toEqual([]);
     });
   },
 );
