@@ -725,6 +725,19 @@ describe('derived component imports', () => {
     expect(await codes()).toContain('component_import_missing_name');
   });
 
+  it('warns when a written import does not export the component, even while the package augments a module', async () => {
+    write('index.js', 'export const Other = 1;\n');
+    write(
+      'types/augment.d.ts',
+      "declare module '@acme/widgets' {\n  interface AcmeTone {}\n}\nexport {};\n",
+    );
+    pkg(p => {
+      p.exports['.'] = './index.js';
+    });
+    write('components/AcmeWidget.doc.mjs', DOC('@acme/widgets'));
+    expect(await codes()).toContain('component_import_missing_name');
+  });
+
   it('lists a derived import whose target is not built as not checked', async () => {
     write('components/AcmeWidget.doc.mjs', NO_IMPORT);
     pkg(p => {
@@ -1386,6 +1399,44 @@ describe('declaration files follow TypeScript', () => {
     expect(await codes()).toEqual(['template_import_missing_name']);
   });
 
+  it.each([
+    [
+      'a `declare module` example in a JSDoc comment',
+      "/**\n * @example\n * declare module './widget.js' {\n *   interface AcmeWidgetSize {}\n * }\n */\nexport type AcmeTone = 'a';\n",
+    ],
+    [
+      'a wildcard `declare module`',
+      "declare module '*.doc.mjs' {\n  const doc: unknown;\n  export default doc;\n}\n",
+    ],
+    [
+      'a `declare global` block',
+      'declare global {\n  interface AcmeGlobal {}\n}\nexport {};\n',
+    ],
+    [
+      "an augmentation of another package's module",
+      "declare module '@astryxdesign/core' {\n  interface AcmeTone {}\n}\nexport {};\n",
+    ],
+  ])('still reports a missing name beside %s', async (_label, text) => {
+    write('dist/augment.d.ts', text);
+    write('dist/widget.d.ts', LISTED);
+    write('templates/account-card.tsx', template('AcmeWidget, AcmeWidgetSize'));
+    expect(await codes()).toEqual(['template_import_missing_name']);
+  });
+
+  it("lists a name as not checked when a file augments the package's own name", async () => {
+    write(
+      'types/augment.d.ts',
+      "declare module '@acme/widgets/widget' {\n  interface AcmeWidgetSize {}\n}\nexport {};\n",
+    );
+    write('dist/widget.d.ts', LISTED);
+    write('templates/account-card.tsx', template('AcmeWidget, AcmeWidgetSize'));
+    const result = await validateIntegration(undefined, {cwd: dir});
+    expect(await codes()).toEqual([]);
+    expect(
+      result.data.publicImports?.unchecked.map(u => u.reason).join('\n'),
+    ).toContain('"types/augment.d.ts"');
+  });
+
   it('lists a name as not checked whenever any file in the package augments a module, even one nothing loads', async () => {
     write('dist/augment.d.ts', AUGMENT);
     write('dist/widget.d.ts', LISTED);
@@ -1415,10 +1466,7 @@ describe('declaration files follow TypeScript', () => {
   });
 
   it('lists a name as not checked when the augmentation is reached through another declaration file', async () => {
-    write(
-      'dist/augment.d.ts',
-      "import './widget.js';\ndeclare global {\n  interface AcmeGlobal {}\n}\nexport {};\n",
-    );
+    write('dist/augment.d.ts', AUGMENT);
     write(
       'dist/types.d.ts',
       "import './augment.js';\nexport type AcmeTone = 'a';\n",

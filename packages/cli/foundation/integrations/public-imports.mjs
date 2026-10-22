@@ -22,9 +22,10 @@
  * An `exports` target may point at build output that does not exist yet, so
  * only the declared subpath is judged here, never the target file. A name is
  * judged only when a declared target exists on disk and its export list can be
- * read completely, and no TypeScript file in the package has a `declare
- * module` or `declare global` block (which can add names to any module);
- * anything less is left to `integration verify`.
+ * read completely, and (for a name other than a doc's component) no
+ * TypeScript file in the package has a `declare module` block for one of its
+ * own modules (which can add names to it); anything less is left to
+ * `integration verify`.
  */
 
 import * as fs from 'node:fs';
@@ -715,16 +716,45 @@ function missingNames(
   return wanted.filter(name => !seen.has(name));
 }
 
-const AUGMENTATION_RE = /\bdeclare\s+(?:module\s+['"`]|global\b)/u;
+const AUGMENTATION_HINT_RE = /\bdeclare\s+module\b/u;
 const TYPESCRIPT_FILE_RE = /\.(?:d\.[cm]?ts|[cm]?ts|tsx)$/u;
 const AUGMENTATION_WALK_LIMIT = 5000;
 
 /**
+ * Whether a TypeScript file has a real `declare module '<spec>'` block for a
+ * module of this package: a relative spec, or the package's own name or a
+ * subpath of it. Comments, `declare global`, wildcard specs (`'*.css'`) and
+ * other packages' names do not count.
+ * @param {Context} ctx
+ * @param {string} text
+ */
+function augmentsOwnModule(ctx, text) {
+  if (!AUGMENTATION_HINT_RE.test(text)) return false;
+  let body;
+  try {
+    body = parseModuleText(text).program.body;
+  } catch {
+    return false;
+  }
+  return body.some(node => {
+    const d = node.type === 'ExportNamedDeclaration' ? node.declaration : node;
+    if (d?.type !== 'TSModuleDeclaration' || d.id?.type !== 'StringLiteral')
+      return false;
+    const spec = String(d.id.value);
+    if (spec.includes('*')) return false;
+    if (spec.startsWith('./') || spec.startsWith('../')) return true;
+    return (
+      ctx.name != null && (spec === ctx.name || spec.startsWith(`${ctx.name}/`))
+    );
+  });
+}
+
+/**
  * The first TypeScript file in the package (outside `node_modules` and dot
- * folders) with a `declare module '…'` or `declare global` block, read once
- * per check. Such a block can add names to any module, so while one exists
- * no name is judged missing: what TypeScript merges is not modelled. A
- * package too large to walk counts as augmented.
+ * folders) with a `declare module '…'` block for a module of the package,
+ * read once per check. Such a block can add names to that module, so while
+ * one exists no name is judged missing: what TypeScript merges is not
+ * modelled. A package too large to walk counts as augmented.
  * @param {Context} ctx
  * @returns {string | null} the reason names were not checked, or null
  */
@@ -747,7 +777,7 @@ function augmentationReason(ctx) {
     entries.sort((x, y) => x.name.localeCompare(y.name));
     for (const entry of entries) {
       if (++seen > AUGMENTATION_WALK_LIMIT) {
-        reason = `the package has more than ${AUGMENTATION_WALK_LIMIT} files to search for a \`declare module\` or \`declare global\` block, which can add names to any module, so the names it imports were not checked`;
+        reason = `the package has more than ${AUGMENTATION_WALK_LIMIT} files to search for a \`declare module\` block, which can add names to its modules, so the names it imports were not checked`;
         break walk;
       }
       const full = path.join(current, entry.name);
@@ -763,8 +793,8 @@ function augmentationReason(ctx) {
       } catch {
         continue;
       }
-      if (AUGMENTATION_RE.test(text)) {
-        reason = `"${rel(root, full)}" has a \`declare module\` or \`declare global\` block, which can add names to any module in the package, so the names it imports were not checked`;
+      if (augmentsOwnModule(ctx, text)) {
+        reason = `"${rel(root, full)}" has a \`declare module\` block for a module of the package, which can add names to it, so the names it imports were not checked`;
         break walk;
       }
     }
@@ -1297,17 +1327,17 @@ async function componentIssues(ctx, integration) {
           names: judged.map(r => ({imported: r.name, typeOnly: false})),
           namespace: false,
         };
-        const found =
+        // A component is a run-time export, which no augmentation adds, so
+        // a missing one is reported whatever the package declares.
+        const missing =
           judged.length === 0
             ? []
             : missingNames(statement, files, ctx.exportNames, allPresent, true);
-        const augmented = found?.length ? augmentationReason(ctx) : null;
-        const missing = augmented ? null : found;
         if (missing == null) {
           ctx.unchecked.push({
             file: shownDoc,
             specifier,
-            reason: augmented ?? uncheckedReason(files, allPresent),
+            reason: uncheckedReason(files, allPresent),
           });
         }
         for (const name of missing ?? []) {
