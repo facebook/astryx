@@ -344,12 +344,12 @@ export interface DateTimeInputProps extends Omit<
   /**
    * Explains why the input is disabled. When set together with
    * `isDisabled`, the input shows a tooltip with this text on hover and
-   * keyboard focus, and the date and time fields are described by it, so the
-   * reason is discoverable by keyboard and assistive technology. Typing and
-   * calendar activation stay blocked.
+   * keyboard focus, and the date and time fields stay focusable (via
+   * `aria-disabled`) so the reason is discoverable by keyboard and assistive
+   * technology. Typing and calendar activation stay blocked.
    *
-   * Use this instead of wrapping a disabled input in `Tooltip`, so the
-   * reason is tied to the field.
+   * Use this instead of wrapping a disabled input in `Tooltip` — disabled
+   * controls don't emit the pointer events an external tooltip needs.
    *
    * @example
    * ```
@@ -716,11 +716,12 @@ function PointerDateTimeField({
   const isEffectivelyDisabled =
     isDisabled || isLoading || (!usesNativePicker && isPendingChange);
 
-  // A disabled or busy field never renders native `disabled` (spec:AST-085
-  // FR1): its inputs and buttons stay focusable via aria-disabled. Typing is
-  // blocked with readOnly and the value mutation guards; opening is blocked by
-  // the isEffectivelyDisabled guards. The disabled-reason tooltip's listeners
-  // attach to the outer row. Only the persistent isDisabled state (not the
+  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
+  // tooltip listeners attach to the outer row container (which already exists)
+  // and both the date and time inputs stay perceivable via aria-disabled
+  // instead of the disabled attribute. Typing is blocked with readOnly and the
+  // value mutation guards; calendar activation is blocked by the
+  // isEffectivelyDisabled guards. Only the persistent isDisabled state (not the
   // transient busy state) surfaces a reason.
   const showsDisabledMessage = isDisabled && !!disabledMessage;
   const disabledMessageTooltip = useTooltip({
@@ -1043,8 +1044,8 @@ function PointerDateTimeField({
 
   const handleDateInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      // The input is never natively disabled (spec:AST-085 FR1), so guard
-      // value mutation explicitly (readOnly also blocks typing).
+      // The input is never natively disabled (AST-085 FR1), so
+      // guard value mutation explicitly (readOnly also blocks typing).
       if (isEffectivelyDisabled) {
         return;
       }
@@ -1349,8 +1350,8 @@ function PointerDateTimeField({
   // --- Time handlers ---
   const handleTimeInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      // The input is never natively disabled (spec:AST-085 FR1), so guard
-      // value mutation explicitly (readOnly also blocks typing).
+      // The input is never natively disabled (AST-085 FR1), so
+      // guard value mutation explicitly (readOnly also blocks typing).
       if (isEffectivelyDisabled) {
         return;
       }
