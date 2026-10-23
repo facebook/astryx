@@ -36,7 +36,7 @@ feedback, and announcements.
 
 - How a source finds local matches, caches earlier queries, merges, dedupes, or
   orders results. The source owns all of it (DEC-1).
-- `bootstrap()`. It answers with one list, as before.
+- `bootstrap()`. It answers with one list.
 - When a source sends its remote request. A source that shows local results
   first and wants the remote request delayed delays it itself.
 - Components that call `search(query)` without a context: `CommandPalette`,
@@ -86,9 +86,9 @@ context)` receives an optional context whose `update(items)` replaces the
 - **FR8 — A failed remote answer keeps what was shown.** When a source's promise
   rejects after an `update` for the current query, the last updated list stays,
   the query settles, and its count is announced. When it rejects with no
-  `update`, the results clear, as for a single-answer source.
-- **FR9 — Single-answer sources and callers are unchanged.** A source that never
-  calls `update` behaves exactly as before. A caller that does not pass a
+  `update`, the results clear.
+- **FR9 — A single answer is still a complete answer.** A source that never
+  calls `update` is shown one list per query, when the query settles. A caller that does not pass a
   context calls `search(query)` and shows only the settled list, which FR1
   makes complete.
 
