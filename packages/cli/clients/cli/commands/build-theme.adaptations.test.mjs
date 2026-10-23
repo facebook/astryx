@@ -95,6 +95,37 @@ describe('theme build adaptations', () => {
     );
   });
 
+  it('emits source-derived status aliases in built CSS', async () => {
+    const project = path.join(tmpDir, 'project');
+    const themesDir = path.join(project, 'themes');
+    const themeFile = writeTheme(
+      themesDir,
+      'status-aliases',
+      `{
+        name: 'status-aliases',
+        tokens: {
+          '--color-accent': '#225bff',
+          '--color-on-accent': '#ffffff',
+          '--color-text-blue': '#203a6c',
+        },
+      }`,
+    );
+
+    const result = await build(project, themeFile);
+    expect(result.code, result.stderr).toBe(0);
+
+    const css = fs.readFileSync(
+      path.join(themesDir, 'status-aliases.css'),
+      'utf8',
+    );
+    expect(css).toContain('--color-info: var(--color-accent);');
+    expect(css).toContain('--color-on-info: var(--color-on-accent);');
+    expect(css).toContain(
+      '--color-status-foreground-info: var(--color-text-blue);',
+    );
+    expect(css).toContain('--color-on-info-muted: var(--color-text-blue);');
+  });
+
   it.each([
     ['defined', writeTheme],
     ['plain', writePlainTheme],

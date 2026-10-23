@@ -141,17 +141,19 @@ export default function Home() {
             <div className="flex gap-3">
               <div className="flex items-center gap-2 rounded-md bg-success/10 px-3 py-2">
                 <div className="h-2 w-2 rounded-full bg-success" />
-                <span className="text-sm font-medium text-success">
+                <span className="text-sm font-medium text-status-success">
                   Success
                 </span>
               </div>
               <div className="flex items-center gap-2 rounded-md bg-error/10 px-3 py-2">
                 <div className="h-2 w-2 rounded-full bg-error" />
-                <span className="text-sm font-medium text-error">Error</span>
+                <span className="text-sm font-medium text-status-error">
+                  Error
+                </span>
               </div>
               <div className="flex items-center gap-2 rounded-md bg-warning/10 px-3 py-2">
                 <div className="h-2 w-2 rounded-full bg-warning" />
-                <span className="text-sm font-medium text-warning">
+                <span className="text-sm font-medium text-status-warning">
                   Warning
                 </span>
               </div>

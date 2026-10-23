@@ -22,8 +22,12 @@ applies_to:
 verified_by:
   [
     packages/core/src/theme/generateThemeRules.test.ts,
+    packages/core/src/theme/defineTheme.test.ts,
     packages/core/src/theme/themeAdaptations.test.ts,
+    packages/core/src/theme/onMediaTokens.test.ts,
+    packages/core/src/theme/Theme.test.tsx,
     packages/core/src/theme/derivedVarRegistry.test.ts,
+    packages/cli/clients/cli/commands/build-theme.adaptations.test.mjs,
     packages/cli/api/theme/build/build.test.mjs,
     packages/cli/api/theme/build/build.public-component-vars.test.mjs,
     packages/cli/api/theme/build/build.adaptation-core-compat.test.mjs,
@@ -46,7 +50,7 @@ deciding_specs:
 {
   "scope": "global",
   "triggers": {
-    "theming": ["INV2", "INV3", "INV4", "INV6", "INV9", "INV10"]
+    "theming": ["INV2", "INV3", "INV4", "INV6", "INV9", "INV10", "INV15"]
   }
 }
 ```
@@ -162,6 +166,14 @@ Platform-specific details stay inside that compiler.
   diagnostics schema. A CLI paired with an older core retains that core's existing
   compilation behavior; it does not pretend to detect drops the older core cannot
   report.
+- **INV15 — Generated compatibility roles preserve declaration locality and the
+  CSS cascade.** When the web compiler derives a status role from another public
+  token, the alias is emitted inside the theme scope where its source is effective,
+  including reachable adaptation and media combinations. A nested theme derives
+  from its nearest provider rather than retaining its parent's alias. Authored
+  destination roles, source order, `!important`, `inherit`, concrete values, and
+  cycles retain their normal CSS meaning. Runtime and static output use the same
+  derivation.
 
 This record does not own:
 
@@ -261,18 +273,19 @@ tiers.
 
 ## Verification
 
-| Invariant        | Evidence                                                                                                        | Failure signal                                                                                                          |
-| ---------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| INV1, INV2, INV3 | Compiler imports and runtime/build comparison fixtures                                                          | Runtime and build use different theme-to-CSS logic or produce different web rules                                       |
-| INV4             | `generateThemeRules.test.ts` and source/distribution cascade tests                                              | Scope or layer order differs by output path                                                                             |
-| INV5             | Existing per-property fixtures (partial; gap below)                                                             | A guaranteed property compiles but does not produce its promised observable effect                                      |
-| INV6, INV7       | Existing registry and CLI public-variable tests (partial)                                                       | Private variables become authorable, or a reviewed public semantic variable fails build/runtime                         |
-| INV8             | Component target metadata and compatibility review                                                              | Successful generic emission is treated as a guaranteed public behavior                                                  |
-| INV9, INV10      | Platform compiler tests when another compiler ships                                                             | CSS details enter shared authoring, or shared theme intent silently disappears                                          |
-| INV11            | `defineTheme.test.ts` and `build.test.mjs` local-token fixtures                                                 | Runtime/static output rewrites a local name, disagrees, or leaves partial output after failure                          |
-| INV12            | `themeAdaptations.test.ts` and CLI adaptation build fixtures                                                    | Rule blocks merge/reorder/drop, surfaces lose precedence, or runtime/static CSS diverges                                |
-| INV13, INV14     | Declaration scanner, generator, Theme mounting, CLI receipt tests, and the existing theme-family Chromium guard | One unsafe declaration corrupts neighbors, valid CSS changes, legacy token generation crashes, or reporting changes CSS |
-| Built themes     | Theme and CLI build tests                                                                                       | Runtime recompiles a built theme, or built output omits canonical rules                                                 |
+| Invariant        | Evidence                                                                                                        | Failure signal                                                                                                                    |
+| ---------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| INV1, INV2, INV3 | Compiler imports and runtime/build comparison fixtures                                                          | Runtime and build use different theme-to-CSS logic or produce different web rules                                                 |
+| INV4             | `generateThemeRules.test.ts` and source/distribution cascade tests                                              | Scope or layer order differs by output path                                                                                       |
+| INV5             | Existing per-property fixtures (partial; gap below)                                                             | A guaranteed property compiles but does not produce its promised observable effect                                                |
+| INV6, INV7       | Existing registry and CLI public-variable tests (partial)                                                       | Private variables become authorable, or a reviewed public semantic variable fails build/runtime                                   |
+| INV8             | Component target metadata and compatibility review                                                              | Successful generic emission is treated as a guaranteed public behavior                                                            |
+| INV9, INV10      | Platform compiler tests when another compiler ships                                                             | CSS details enter shared authoring, or shared theme intent silently disappears                                                    |
+| INV11            | `defineTheme.test.ts` and `build.test.mjs` local-token fixtures                                                 | Runtime/static output rewrites a local name, disagrees, or leaves partial output after failure                                    |
+| INV12            | `themeAdaptations.test.ts` and CLI adaptation build fixtures                                                    | Rule blocks merge/reorder/drop, surfaces lose precedence, or runtime/static CSS diverges                                          |
+| INV13, INV14     | Declaration scanner, generator, Theme mounting, CLI receipt tests, and the existing theme-family Chromium guard | One unsafe declaration corrupts neighbors, valid CSS changes, legacy token generation crashes, or reporting changes CSS           |
+| INV15            | Root, adaptation, media, nested-theme, and CLI-built status-alias fixtures                                      | A generated role escapes its source scope, overrides an authored role, changes cascade meaning, cycles, or differs by output path |
+| Built themes     | Theme and CLI build tests                                                                                       | Runtime recompiles a built theme, or built output omits canonical rules                                                           |
 
 ## Known conformance and verification gaps
 
