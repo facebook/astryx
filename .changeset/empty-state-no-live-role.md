@@ -7,7 +7,7 @@
 - An EmptyState that renders with the page announces nothing.
 - One that appears later, for example after a search or a load returns nothing, announces its title and description once through the shared polite live region.
 - Inside a live container such as `ChatMessageList`'s log, the container announces it, not EmptyState (`spec:AST-086` FR4).
-- A mounted EmptyState whose title or description changes is not re-announced.
+- When the title or description of a shown EmptyState changes, the new text is announced once.
 - A `role` you pass now reaches the root instead of being replaced.
 
 Tests that found EmptyState with `getByRole('status')` need another selector.
