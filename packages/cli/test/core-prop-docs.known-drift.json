@@ -1,6 +1,5 @@
 [
   "src/AppShell/AppShell.doc.mjs AppShell.children required_mismatch",
-  "src/Badge/Badge.doc.mjs Badge.label required_mismatch",
   "src/Center/Center.doc.mjs Center.children required_mismatch",
   "src/CommandPalette/CommandPaletteInput.doc.mjs CommandPaletteInput.onChange not_in_doc",
   "src/ComplexSelector/ComplexSelector.doc.mjs ComplexSelector.description not_in_doc",
