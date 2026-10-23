@@ -3,6 +3,7 @@
 'use client';
 
 import {useEffect, useState, type ComponentType} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {Card} from '@astryxdesign/core/Card';
 import {Section} from '@astryxdesign/core/Section';
 import {Center} from '@astryxdesign/core/Center';
@@ -11,7 +12,11 @@ import {CodeExampleBlock} from '../CodeExampleBlock';
 import {TabList, Tab} from '@astryxdesign/core/TabList';
 import {Spinner} from '@astryxdesign/core/Spinner';
 import {Button} from '@astryxdesign/core/Button';
-import {HStack, VStack} from '@astryxdesign/core/Layout';
+import {
+  HStack,
+  overlayPaddingReset,
+  VStack,
+} from '@astryxdesign/core/Layout';
 import type {ExampleEntry} from '../../generated/exampleRegistry';
 import {ComponentPreviewTheme} from './ComponentPreviewTheme';
 import {buildPlaygroundHref} from '../playgroundLink';
@@ -23,6 +28,17 @@ import {
   shadcnRegistryOrigin,
 } from '../../generated/shadcnRegistry';
 import {shadcnInstallCommand} from '../../lib/shadcnRegistry.mjs';
+
+const styles = stylex.create({
+  previewContent: {
+    boxSizing: 'border-box',
+    display: 'flex',
+    justifyContent: 'safe center',
+    minWidth: 'fit-content',
+    width: '100%',
+    padding: 'var(--spacing-4)',
+  },
+});
 
 function LivePreview({
   entry,
@@ -72,10 +88,13 @@ function LivePreview({
         minHeight: 200,
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center',
+        // Center examples that fit, but keep the leading edge reachable when
+        // an example is wider than the preview frame.
+        justifyContent: 'safe center',
       }}
       {...previewNavigationProps}>
-      <div style={{minWidth: 'fit-content', padding: 'var(--spacing-4)'}}>
+      {/* Stop the Card's inherited padding variables at the preview boundary. */}
+      <div {...stylex.props(styles.previewContent, overlayPaddingReset.reset)}>
         <Component />
       </div>
     </div>
