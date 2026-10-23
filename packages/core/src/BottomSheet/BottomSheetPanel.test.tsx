@@ -343,10 +343,11 @@ describe('BottomSheetPanel', () => {
    *
    * `--ease-standard` is a decelerate curve: on it the sheet was half gone in
    * 59ms of a 410ms transition and 90% gone in 163ms, so the close was over
-   * before it could be seen. The closing state therefore carries its own
-   * accelerating curve, and only the closing state does.
+   * before it could be seen. The closing state therefore reads the
+   * accelerating `--ease-exit` curve (its default is pinned in
+   * theme/tokens.test.ts), and only the closing state does.
    */
-  it('closes on an accelerating curve of its own, not the entrance timing', () => {
+  it('closes on the exit curve, not the entrance timing', () => {
     const declarationsFor = (element: HTMLElement) => {
       const classes = new Set(element.className.split(/\s+/));
       const out: string[] = [];
@@ -381,11 +382,11 @@ describe('BottomSheetPanel', () => {
     const closingRules = declarationsFor(
       closing.querySelector('.astryx-bottom-sheet') as HTMLElement,
     );
-    // An accelerating curve: no vertical rise at the start (y1 = 0), so the
-    // travel lands inside the duration instead of ahead of it.
+    // The theme's exit curve, not a curve restated locally.
     expect(closingRules).toContain(
-      'transition-timing-function: cubic-bezier(.3,0,.6,.6)',
+      'transition-timing-function: var(--ease-exit)',
     );
+    expect(closingRules).not.toContain('cubic-bezier(.3,0,.6,.6)');
 
     const {container: resting} = render(
       <BottomSheetPanel
@@ -403,7 +404,7 @@ describe('BottomSheetPanel', () => {
     expect(restingRules).toContain(
       'transition-timing-function: var(--ease-standard)',
     );
-    expect(restingRules).not.toContain('cubic-bezier(.3,0,.6,.6)');
+    expect(restingRules).not.toContain('--ease-exit');
   });
 
   describe('container padding', () => {

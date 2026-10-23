@@ -177,17 +177,17 @@ const styles = stylex.create({
    * 90% off in 163ms -- the travel is over before the eye has followed it, and
    * the rest of the duration moves pixels already below the fold.
    *
-   * An exit accelerates instead: away from rest, gathering speed, quickest as
-   * it leaves the screen. The curve is deliberately gentle rather than a hard
-   * `ease-in` -- it is moving within ~50ms, so the close reads as one
-   * departure rather than a hesitation and a snap. The duration is the
-   * entrance's own band, so only the curve differs between the two
+   * An exit accelerates instead (`--ease-exit`): away from rest, gathering
+   * speed, quickest as it leaves the screen. The curve is deliberately gentle
+   * rather than a hard `ease-in` -- it is moving within ~50ms, so the close
+   * reads as one departure rather than a hesitation and a snap. The duration
+   * is the entrance's own band, so only the curve differs between the two
    * directions; a shorter band leaves too little visible travel once a theme
    * scales the motion scale down (neutral's medium is 300ms against 410ms).
    */
   sheetClosing: {
     transform: 'translateY(100%)',
-    transitionTimingFunction: 'cubic-bezier(0.3, 0, 0.6, 0.6)',
+    transitionTimingFunction: easeVars['--ease-exit'],
   },
   sheetFading: {
     opacity: 0,
