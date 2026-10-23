@@ -14,7 +14,7 @@
 
 import {useState, type ReactNode} from 'react';
 import {describe, it, expect, vi, afterEach, beforeEach} from 'vitest';
-import {act, fireEvent, render, screen} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {ToastViewport} from './ToastViewport';
 import {useToast} from './useToast';
 import {Dialog} from '../Dialog';
@@ -262,5 +262,102 @@ describe('ToastViewport modal hosting', () => {
     const viewport = getViewport();
     expect(viewport.closest('[aria-label="Preview"]')).toBeNull();
     expect(container.contains(viewport)).toBe(true);
+  });
+});
+
+describe('ToastViewport announcement owner', () => {
+  /**
+   * The card shows the words but carries no live role, and no live element
+   * inside it says them (spec:AST-086 FR1, FR7). A persistent region a
+   * control inside the card owns for its own state is not the toast's.
+   */
+  function expectCardSilent(words: string) {
+    const card = document.querySelector<HTMLElement>('[data-toast-id]')!;
+    expect(card).toHaveTextContent(words);
+    expect(card.closest('[role="status"], [role="alert"], [aria-live]')).toBe(
+      null,
+    );
+    for (const live of card.querySelectorAll(
+      '[role="status"], [role="alert"], [aria-live]',
+    )) {
+      expect(live.textContent).not.toContain(words);
+    }
+  }
+
+  it('announces a toast shown over a Dialog from inside that Dialog', async () => {
+    render(
+      <ToastViewport>
+        <DialogFixture label="Edit">
+          <ToastButton label="Save in dialog" />
+        </DialogFixture>
+      </ToastViewport>,
+    );
+    fireEvent.click(screen.getByRole('button', {name: 'Toggle Edit'}));
+    const viewport = getViewport();
+    expect(getDialog('Edit').contains(viewport)).toBe(true);
+
+    fireEvent.click(screen.getByRole('button', {name: 'Save in dialog'}));
+
+    // The page's shared channel is inert behind a native modal, so the
+    // announcement lands in the viewport's own region, inside the Dialog.
+    const polite = viewport.parentElement!.querySelector(
+      ':scope > [aria-live="polite"]',
+    );
+    expect(getDialog('Edit').contains(polite)).toBe(true);
+    await waitFor(() => expect(polite).toHaveTextContent('Saved'));
+    expectCardSilent('Saved');
+  });
+
+  it('announces from its own region when rendered in place inside a Dialog', async () => {
+    render(
+      <DialogFixture label="Edit">
+        <ToastViewport isTopLayer={false}>
+          <ToastButton label="Save in dialog" />
+        </ToastViewport>
+      </DialogFixture>,
+    );
+    fireEvent.click(screen.getByRole('button', {name: 'Toggle Edit'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Save in dialog'}));
+
+    const dialog = getDialog('Edit');
+    const viewport =
+      dialog.querySelector<HTMLElement>('[data-toast-id]')!.parentElement!;
+    await waitFor(() =>
+      expect(
+        viewport.parentElement!.querySelector(':scope > [aria-live="polite"]'),
+      ).toHaveTextContent('Saved'),
+    );
+    expectCardSilent('Saved');
+  });
+
+  it('announces an error toast assertively from the viewport', async () => {
+    function ErrorButton() {
+      const toast = useToast();
+      return (
+        <button
+          type="button"
+          onClick={() => toast({body: 'Upload failed', type: 'error'})}>
+          Fail
+        </button>
+      );
+    }
+    render(
+      <ToastViewport>
+        <ErrorButton />
+      </ToastViewport>,
+    );
+    fireEvent.click(screen.getByRole('button', {name: 'Fail'}));
+    const viewport = getViewport();
+    await waitFor(() =>
+      expect(
+        viewport.parentElement!.querySelector(
+          ':scope > [aria-live="assertive"]',
+        ),
+      ).toHaveTextContent('Upload failed'),
+    );
+    expect(
+      viewport.parentElement!.querySelector(':scope > [aria-live="polite"]'),
+    ).toHaveTextContent('');
+    expectCardSilent('Upload failed');
   });
 });

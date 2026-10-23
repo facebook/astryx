@@ -287,9 +287,6 @@ export function ToastSurface({
   return (
     <div
       ref={rootRef}
-      role={isError ? 'alert' : 'status'}
-      aria-live={isError ? 'assertive' : 'polite'}
-      aria-atomic="true"
       onMouseEnter={pauseTimer}
       onMouseLeave={resumeTimer}
       onFocusCapture={pauseTimer}
