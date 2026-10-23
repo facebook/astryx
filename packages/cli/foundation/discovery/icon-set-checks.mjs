@@ -583,14 +583,16 @@ export function suggestedIcons(set, doc) {
   for (const icon of icons) {
     if (icon.other.includes(nameId)) add(icon.id, nameId);
   }
-  // 3. Ids that start with the name (`video` → `video-camera`,
-  //    `trendUp` → `trending-up`), never a negated form.
+  // 3. Ids that start with the name as written (`video` → `video-camera`),
+  //    never a negated form. A plural is not the same start: `users` is not
+  //    `user-plus`, and `apps` is not `app-window`.
+  const nameRaw = nameId.split('-');
   ranked(
     icons.filter(
       icon =>
-        icon.words.length > nameWords.length &&
-        nameWords.every((word, index) => icon.words[index] === word) &&
-        !negated(icon.raw.slice(nameWords.length)),
+        icon.raw.length > nameRaw.length &&
+        nameRaw.every((word, index) => icon.raw[index] === word) &&
+        !negated(icon.raw.slice(nameRaw.length)),
     ),
   ).forEach(icon => add(icon.id, nameId));
   // 4. An icon whose whole id is one of the definition's words.
@@ -604,15 +606,17 @@ export function suggestedIcons(set, doc) {
       if (icon.other.includes(id)) add(icon.id, doc.words[index]);
     }
   }
-  // 6. Last, two-word ids that start with a one-word word (`columns` →
-  //    `columns-3`), best fit first, never a negated form.
+  // 6. Last, two-word ids that start with a one-word word exactly
+  //    (`columns` → `columns-3`), best fit first, never a negated form. The
+  //    word is matched as written: a plural here often names another thing
+  //    (`squares-2x2` is a grid, not the square of `stop`).
   for (const word of doc.words) {
     if (!/^[a-z]{3,}$/u.test(word)) continue;
     ranked(
       icons.filter(
         icon =>
           icon.words.length === 2 &&
-          icon.words[0] === stem(word) &&
+          icon.raw[0] === word &&
           !negated(icon.raw.slice(1)),
       ),
     ).forEach(icon => add(icon.id, word));
@@ -621,13 +625,13 @@ export function suggestedIcons(set, doc) {
 }
 
 /**
- * A word with a plural or verb ending taken off, so `trending` meets
- * `trend` and `languages` meets `language`. Short words are kept.
+ * A word in its singular form, so a plural meets its singular and nothing
+ * else: `languages` meets `language`, `arrows` meets `arrow`. Only a
+ * trailing plural `s` comes off (not `ss`, and not from a short word); a
+ * verb ending never does, so `drafting` never meets `draft`.
  * @param {string} word
  */
 function stem(word) {
-  if (word.length > 5 && word.endsWith('ing')) return word.slice(0, -3);
-  if (word.length > 4 && word.endsWith('ed')) return word.slice(0, -2);
   if (word.length > 3 && word.endsWith('s') && !word.endsWith('ss')) {
     return word.slice(0, -1);
   }

@@ -10,7 +10,11 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
-import {iconSetCoverage, iconSetIssues} from './icon-set-checks.mjs';
+import {
+  iconSetCoverage,
+  iconSetIssues,
+  suggestedIcons,
+} from './icon-set-checks.mjs';
 import {moduleExportOrigin} from './module-exports.mjs';
 import {generatedTypesText} from './icon-set-writer.mjs';
 import {integrationCheck} from '../../api/integration/check/check.mjs';
@@ -930,5 +934,44 @@ describe('the codes and severities FR15 lists', () => {
       listed[code] = severity;
     }
     expect(listed).toEqual(raised);
+  });
+});
+
+describe('suggestions join a plural only to its singular', () => {
+  /**
+   * @param {string[]} ids
+   * @param {{name: string, words?: string[]}} doc
+   */
+  const suggest = (ids, {name, words = []}) =>
+    suggestedIcons(
+      {data: {icons: ids.map(id => ({id, words: id.split('-')})), map: {}}},
+      {name, words},
+    ).map(each => each.icon);
+
+  it('never offers a grid of squares for stop, whose word is square', () => {
+    expect(suggest(['squares-2x2'], {name: 'stop', words: ['square']})).toEqual(
+      [],
+    );
+    expect(
+      suggest(['squares-2x2', 'square'], {name: 'stop', words: ['square']}),
+    ).toEqual(['square']);
+  });
+
+  it('meets a plural and its singular of the same word, either way', () => {
+    expect(suggest(['squares'], {name: 'square'})).toEqual(['squares']);
+    expect(suggest(['square'], {name: 'squares'})).toEqual(['square']);
+    expect(suggest(['arrows'], {name: 'arrow'})).toEqual(['arrows']);
+    expect(suggest(['arrow'], {name: 'arrows'})).toEqual(['arrow']);
+  });
+
+  it('never bridges a verb ending or a plural to a longer id', () => {
+    // `drafting` is not `draft`; `users` does not start `user-plus`.
+    expect(
+      suggest(['drafting-compass'], {name: 'compose', words: ['draft']}),
+    ).toEqual([]);
+    expect(suggest(['user-plus', 'user-cog'], {name: 'users'})).toEqual([]);
+    expect(suggest(['tool-case'], {name: 'wrench', words: ['tools']})).toEqual(
+      [],
+    );
   });
 });

@@ -253,14 +253,18 @@ icon, and the CLI verifies it, writes the files, and checks the set.
     name is an icon's whole `id`, and lists those entries for review. For an
     unmapped definition it returns, never writes, up to three suggestions,
     in this order: an icon whose `id` is the definition's name spelled with
-    or without hyphens or as a plural (`light-bulb` for `lightbulb`); an
-    icon whose library gives it the definition's name as another name;
-    icons whose `id` starts with the definition's name, most of its words
-    first; an icon whose `id` is one of its words; an icon whose library
-    gives it one of its words as another name; then two-word ids that start
-    with a one-word word. Never an icon `map` already uses, one whose `id`
-    is another definition's name, a negated form (`lock-open`, `bell-off`),
-    or the opposite direction (`ellipsis-vertical` for `moreHorizontal`).
+    or without hyphens or with a plural `s` (`light-bulb` for `lightbulb`,
+    `languages` for `language`); an icon whose library gives it the
+    definition's name as another name; icons whose `id` starts with the
+    definition's name as written, most of its words first; an icon whose
+    `id` is one of its words; an icon whose library gives it one of its
+    words as another name; then two-word ids whose first word is a one-word
+    word exactly. A plural joins only its own singular, never a longer id
+    (`users` is not `user-plus`), and no other ending is taken off
+    (`drafting` is not `draft`). Never an icon `map` already uses, one whose
+    `id` is another definition's name, a negated form (`lock-open`,
+    `bell-off`), or the opposite direction (`ellipsis-vertical` for
+    `moreHorizontal`).
     Ids keep a dimension as one word (`Squares2X2Icon` is `squares-2x2`)
     and split a one-letter word from a digit (`CalendarX2` is
     `calendar-x-2`); a shared library prefix is left out of ids and names;

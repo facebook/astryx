@@ -13,7 +13,7 @@ export const doc = {
   summary:
     'Register which icon of the set being authored draws an icon definition.',
   description:
-    "Run inside an icon-set package. Sets `map[definition] = icon` in the set's data file, or removes the entry. The definition must be Astryx's or one the set declares, and the icon an id in the file. The file is written in one fixed shape, `map` keys sorted. `integration check` suggests these commands for definitions the set has a fitting icon for. Experimental: it may change or be removed in a patch release.",
+    "Run inside an icon-set package. Sets `map[definition] = icon` in the set's data file, or removes the entry. The definition must be Astryx's or one the set declares, named by its name or kebab id. The icon must be in the set, named by its id, its export name in any case, or another name its library exports it as (`trash-2` or `Trash2`), never by one word of its id; the entry records its id. The file is written in one fixed shape, `map` keys sorted. `integration check` suggests these commands for definitions the set has a fitting icon for. Experimental: it may change or be removed in a patch release.",
   importPath: '@astryxdesign/cli/api',
   signature:
     'iconMap(definition: string | undefined, icon?: string, options?: IconMapOptions): Promise<IconMapResponse | IconMapManyResponse>',

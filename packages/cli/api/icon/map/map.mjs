@@ -31,7 +31,7 @@ import {passed, refuseIgnoredPairs} from '../_options.mjs';
  * release.
  * @experimental
  * @param {string | undefined} definition omitted with `pairs`
- * @param {string | undefined} icon an icon id in the set; omit with `remove`
+ * @param {string | undefined} icon an icon in the set: its id, its export name in any case, or another name its library exports it as; omit with `remove`
  * @param {import('../icon.type.mjs').IconMapOptions} [options]
  * @returns {Promise<import('../icon.type.mjs').IconMapResponse | import('../icon.type.mjs').IconMapManyResponse>}
  */
