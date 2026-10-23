@@ -9,6 +9,7 @@
  * @position Core implementation; used by Typeahead and Tokenizer
  *
  * Pure combobox engine: input, search, keyboard navigation, dropdown.
+ * Pending debounced queries use the latest committed search source.
  * No wrapper div, no border styling, no token rendering.
  * Consumers provide their own wrapper and pass anchorRef for dropdown positioning.
  *
@@ -587,6 +588,7 @@ const BaseTypeaheadImpl = function BaseTypeahead<T extends SearchableItem>({
       return;
     }
     loadingRef.current = next;
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- synchronize canceled SearchSource request ownership with the combobox busy state
     setIsLoading(next);
     onLoadingChangeRef.current?.(next);
   }, []);
@@ -688,12 +690,18 @@ const BaseTypeaheadImpl = function BaseTypeahead<T extends SearchableItem>({
     [popover, releaseSearch],
   );
 
+  // Synchronize SearchSource request ownership after a committed replacement.
+  // Started work belongs to the old source, but the input's debounce timer
+  // still owns the pending query and must keep its original deadline.
   useIsomorphicLayoutEffect(() => {
     if (searchLeaseRef.current.source !== searchSource) {
-      releaseSearch(true);
+      searchGenRef.current++;
+      releaseSearch(false);
+      setLoading(false);
+      setHasSearched(false);
       searchLeaseRef.current = {generation: null, source: searchSource};
     }
-  }, [releaseSearch, searchSource]);
+  }, [releaseSearch, searchSource, setLoading]);
 
   useIsomorphicLayoutEffect(() => {
     if (
@@ -724,11 +732,12 @@ const BaseTypeaheadImpl = function BaseTypeahead<T extends SearchableItem>({
       // in-flight response for an older query fails the gen check below
       // instead of overwriting the newer results.
       const gen = ++searchGenRef.current;
-      searchLeaseRef.current = {generation: gen, source: searchSource};
+      const source = searchLeaseRef.current.source;
+      searchLeaseRef.current = {generation: gen, source};
       setLoading(true);
       setHasSearched(true);
       try {
-        const searchResults = await searchSource.search(searchQuery);
+        const searchResults = await source.search(searchQuery);
         if (searchGenRef.current !== gen) {
           return;
         }
@@ -767,7 +776,6 @@ const BaseTypeaheadImpl = function BaseTypeahead<T extends SearchableItem>({
     },
     [
       releaseSearch,
-      searchSource,
       maxMenuItems,
       showLayer,
       announce,
@@ -809,10 +817,11 @@ const BaseTypeaheadImpl = function BaseTypeahead<T extends SearchableItem>({
   const performBootstrap = useCallback(async () => {
     releaseSearch(false);
     const gen = ++searchGenRef.current;
-    searchLeaseRef.current = {generation: gen, source: searchSource};
+    const source = searchLeaseRef.current.source;
+    searchLeaseRef.current = {generation: gen, source};
     let bootstrapResult: T[] | Promise<T[]>;
     try {
-      bootstrapResult = searchSource.bootstrap();
+      bootstrapResult = source.bootstrap();
     } catch {
       if (searchGenRef.current === gen) {
         setResults([]);
@@ -839,7 +848,7 @@ const BaseTypeaheadImpl = function BaseTypeahead<T extends SearchableItem>({
         setLoading(false);
       }
     }
-  }, [releaseSearch, searchSource, applyBootstrapResults, setLoading]);
+  }, [releaseSearch, applyBootstrapResults, setLoading]);
 
   // Handle query change
   const handleQueryChange = useCallback(

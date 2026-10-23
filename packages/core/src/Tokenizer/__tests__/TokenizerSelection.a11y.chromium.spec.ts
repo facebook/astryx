@@ -4,8 +4,8 @@
  * @file TokenizerSelection.a11y.chromium.spec.ts
  * @input Uses @playwright/test, the a11y-spec static Storybook server, and
  *   checked-in Tokenizer/BaseTypeahead/Typeahead stories
- * @output Real-Chromium evidence for component:Tokenizer FR13-FR15 and direct
- *   disabled-transition compatibility
+ * @output Real-Chromium evidence for component:Tokenizer FR13-FR15, inline-source
+ *   typed searches, and direct disabled-transition compatibility
  * @position Browser lane for focus, native popover, pointer, keyboard, and
  *   stale-result behavior that jsdom cannot prove
  *
@@ -180,6 +180,23 @@ test('dismissal rejects a settled stale result instead of reopening the popup', 
   await expect(page.locator('[data-search-settled]')).toHaveText('true');
   await expect(input).toHaveAttribute('aria-expanded', 'false');
   await expect(page.getByRole('option')).toHaveCount(0);
+});
+
+test('typed Tokenizer selection survives an inline source replacement and still closes', async ({
+  page,
+}) => {
+  await mountStory(page, `${TOKENIZER_STORY_BASE}--inline-source-tokenizer`);
+  const input = tokenizerInput(page);
+
+  await input.fill('Alice');
+  const alice = await expectOnlyOption(page, 'Alice Johnson');
+  await expectActive(input, alice);
+  await input.press('Enter');
+
+  await expect(page.locator('[data-selected-ids]')).toHaveText('1');
+  await expect(input).toHaveValue('');
+  await expect(input).toHaveAttribute('aria-expanded', 'false');
+  await expect(input).not.toHaveAttribute('aria-activedescendant');
 });
 
 test('direct BaseTypeahead still closes after a typed selection', async ({
