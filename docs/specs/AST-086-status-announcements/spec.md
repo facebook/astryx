@@ -115,9 +115,9 @@ announcement channel.
   text present at page load or rendered on the server, announces once per later
   appearance or text change, and re-arms when the element is hidden. It is not
   exported; making it public needs `spec:AST-002` admission. A server-renderable
-  component that adopts it stays server-renderable: the helper has a server
-  version that does nothing, chosen when the component renders on the server,
-  and the adopter still passes the server-safe component boundary check.
+  component that adopts it stays server-renderable: rendered on the server, the
+  helper announces nothing and adds no live role, and the adopter still passes
+  the server-safe component boundary check. Any equivalent mechanism is valid.
 - **FR13 — Announcement effects stay inside the helper.** The helper is the only
   place announcement Effects live. Adopting components add no Effect, observer,
   timer, or listener of their own to detect page load, read rendered text, or
