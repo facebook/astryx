@@ -179,7 +179,8 @@ const LABEL: Record<Story, string | null> = {
   'styling-parts': null,
 };
 
-test.describe.configure({mode: 'serial', retries: 0});
+// Default mode, so a failing case does not skip the rest of the matrix.
+test.describe.configure({retries: 0});
 let server: StaticServer;
 let checkoutSha: string;
 let storybookSha: string;
@@ -219,7 +220,8 @@ function fieldControl(page: Page, item: AuditCase): Locator {
 }
 
 test.beforeAll(async () => {
-  fs.rmSync(OUTPUT, {recursive: true, force: true});
+  // Never wipe: Playwright restarts the worker after a failing case and
+  // reruns this hook, which would delete frames already banked.
   fs.mkdirSync(OUTPUT, {recursive: true});
   checkoutSha = execFileSync('git', ['rev-parse', 'HEAD'], {
     encoding: 'utf8',
@@ -278,7 +280,9 @@ for (const item of cases) {
     }
     await settle(page);
 
-    const toggle = wrapper.getByRole('button', {name: 'Open calendar'});
+    // The calendar toggle is the field's first button; its name follows the
+    // open state.
+    const toggle = wrapper.locator('button').first();
     if (item.state === 'hover') {
       await wrapper.hover();
     } else if (item.state === 'focus-toggle') {
