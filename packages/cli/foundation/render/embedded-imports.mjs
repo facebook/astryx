@@ -17,7 +17,29 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {parse} from '@babel/parser';
 import {PAGE_EXTENSIONS} from './embedded-files.mjs';
+import postcss from 'postcss';
 import {isAssetPath} from './assets.mjs';
+
+/**
+ * What a stylesheet's `@import` rules load, read with postcss so comments
+ * are ignored.
+ * @param {string} css
+ * @returns {string[]}
+ */
+function cssImports(css) {
+  /** @type {string[]} */
+  const out = [];
+  try {
+    postcss.parse(css).walkAtRules(/^import$/i, rule => {
+      const m = /^\s*(?:url\(\s*(['"]?)([\s\S]*?)\1\s*\)|(['"])([\s\S]*?)\3)/.exec(rule.params);
+      const url = m ? (m[2] ?? m[4]) : '';
+      if (url) out.push(url);
+    });
+  } catch {
+    // Not valid CSS: it imports nothing a restore needs.
+  }
+  return out;
+}
 
 /** Extensions an extensionless import may stand for, in resolution order. */
 const RESOLVE_EXTENSIONS = ['.tsx', '.ts', '.jsx', '.js', '.mjs', '.json'];
@@ -229,10 +251,10 @@ export function reachableFiles(files, {aliases = []} = {}) {
       ? scanModule(source, current)
       : {
           // A stylesheet's own `@import`s count as imports.
-          // A stylesheet's own relative `@import`s count as imports; a package
-          // one (`@scope/pkg/x.css`) or a remote one is not the page's file.
-          imports: [...source.matchAll(/@import\s+(?:url\(\s*)?(['"]?)([^'")\s]+)\1/gi)]
-            .map(m => m[2])
+          // A stylesheet's own relative `@import`s count as imports (read
+          // with postcss, so a commented-out one does not); a package one
+          // (`@scope/pkg/x.css`) or a remote one is not the page's file.
+          imports: cssImports(source)
             .filter(ref => !/^([a-z]+:)?\/\//i.test(ref) && !/^[@~]/.test(ref))
             // A bare name (`theme.css`) is the sheet beside it when the file
             // carries one, else a package's.

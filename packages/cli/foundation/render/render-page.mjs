@@ -128,7 +128,9 @@ function importParams(params) {
  * cut.
  * @param {string} file the stylesheet's own path
  * @param {string} css its text
- * @param {{warnings: RenderWarning[], carried: Set<string>, seen?: Set<string>}} ctx
+ * @param {{warnings: RenderWarning[], carried: Set<string>, included: Set<string>, packageSheets: string[], seen?: Set<string>}} ctx
+ *   `included`: stylesheet files already in the page (Core's, say), never
+ *   inlined twice; `packageSheets`: package stylesheets this pulled in
  * @returns {string}
  */
 function expandImports(file, css, ctx) {
@@ -183,12 +185,14 @@ function expandImports(file, css, ctx) {
       rule.remove();
       return;
     }
-    if (seen.has(target)) {
+    if (seen.has(target) || ctx.included.has(target)) {
       rule.remove();
       return;
     }
     seen.add(target);
-    if (!fromPackage) ctx.carried.add(target);
+    ctx.included.add(target);
+    if (fromPackage) ctx.packageSheets.push(url.replace(/^~/, ''));
+    else ctx.carried.add(target);
     const from = target;
     let inner = expandImports(from, fs.readFileSync(from, 'utf8'), {...ctx, seen});
     // Keep the imported sheet's relative url()s pointing at the same files.
@@ -454,14 +458,30 @@ export async function renderPage(entry, options = {}) {
   try {
     // A stylesheet's url()s are relative to the stylesheet, not the page: a
     // theme's font, or an image beside an imported stylesheet.
+    const included = new Set(sheetFiles);
+    /** @type {string[]} */
+    const packageSheets = [];
+    /** A stylesheet's rules cut to the page, with its own imports inlined. @param {string} file @param {string} text */
+    const sheet = (file, text) => {
+      try {
+        const own = expandImports(file, text, {warnings, carried: carriedCss, included, packageSheets});
+        return inlineAssets(cutCss(own, used), 'css', {...ctx, dir: path.dirname(file)});
+      } catch (e) {
+        if (e instanceof RenderAssetError) throw e;
+        const reason = /** @type {any} */ (e)?.reason ?? (e instanceof Error ? e.message : String(e));
+        throw new RenderError(
+          'ERR_RENDER_COMPILE',
+          `${path.relative(dir, file).split(path.sep).join('/')} is not valid CSS: ${reason}`,
+        );
+      }
+    };
     sheetText.forEach((text, i) => {
-      const own = expandImports(sheetFiles[i], text, {warnings, carried: carriedCss});
-      css += inlineAssets(cutCss(own, used), 'css', {...ctx, dir: path.dirname(sheetFiles[i])});
+      css += sheet(sheetFiles[i], text);
     });
     for (const {file, css: text} of /** @type {{file: string, css: string}[]} */ (message.importedCss ?? [])) {
-      const own = expandImports(file, text, {warnings, carried: carriedCss});
-      css += inlineAssets(cutCss(own, used), 'css', {...ctx, dir: path.dirname(file)});
+      css += sheet(file, text);
     }
+    for (const spec of packageSheets) if (!sheets.includes(spec)) sheets.push(spec);
     if (message.css) css += inlineAssets(message.css, 'css', ctx);
   } catch (e) {
     const err = /** @type {any} */ (e);

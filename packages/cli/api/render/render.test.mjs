@@ -609,6 +609,47 @@ describe('render(): every write stays inside the current folder', () => {
     expect(error.message).toContain('CSS Modules');
   }, 90_000);
 
+  it('refuses any stylesheet imported as a value, inlines Core once, ignores commented imports, and names a broken stylesheet', async () => {
+    put('more/x.module.scss', '.a { color: red; }\n');
+    put('more/scssmod.tsx', "import styles from './x.module.scss';\nexport default function Page() { return <p className={styles.a}>Hi</p>; }\n");
+    /** @type {any} */
+    let error;
+    try {
+      await render('more/scssmod.tsx', {cwd: dir});
+    } catch (e) {
+      error = e;
+    }
+    expect(error?.code).toBe('ERR_RENDER_FAILED');
+    expect(error.message).toContain('x.module.scss');
+    // A globals.css that imports Core: Core's rules once, listed once.
+    put('more/plain.tsx', "export default function Page() { return <p className=\"astryx-text\">Hi</p>; }\n");
+    put('more/globals.css', "@import '@astryxdesign/core/astryx.css';\n");
+    put('more/withcore.tsx', "import './globals.css';\nexport default function Page() { return <p className=\"astryx-text\">Hi</p>; }\n");
+    const plain = /** @type {any} */ (await render('more/plain.tsx', {cwd: dir}));
+    const withCore = /** @type {any} */ (await render('more/withcore.tsx', {cwd: dir}));
+    // Within a few bytes (the emptied import line), not a second copy of Core.
+    expect(Math.abs(withCore.data.cssBytes - plain.data.cssBytes)).toBeLessThan(16);
+    expect(withCore.data.stylesheets.filter((/** @type {string} */ x) => x.endsWith('astryx.css'))).toHaveLength(1);
+    // A commented-out import does not make a full restore partial.
+    put('more/commented.css', "/* @import './gone.css'; */\n.c { color: red; }\n");
+    put('more/commented.tsx', "import './commented.css';\nexport default function Page() { return <p className=\"c\">Hi</p>; }\n");
+    await render('more/commented.tsx', {cwd: dir});
+    const back = /** @type {any} */ (await render('more/commented.html', {cwd: dir, reverse: true, out: 'more-back/page.tsx'}));
+    expect(back.data.exact).toBe(true);
+    // A stylesheet that is not CSS: a documented code, naming the file.
+    put('more/broken.css', '.b { color: red;\n');
+    put('more/broken.tsx', "import './broken.css';\nexport default function Page() { return <p className=\"b\">Hi</p>; }\n");
+    /** @type {any} */
+    let broken;
+    try {
+      await render('more/broken.tsx', {cwd: dir});
+    } catch (e) {
+      broken = e;
+    }
+    expect(broken?.code).toBe('ERR_RENDER_COMPILE');
+    expect(broken.message).toContain('broken.css');
+  }, 90_000);
+
   it('refuses a carried "image" whose bytes are not one', async () => {
     const {sourceBlock} = await import('../../foundation/render/source-block.mjs');
     put('fake-img.html', `<body><p class="astryx-text">x</p>${sourceBlock('page.tsx', [{path: 'page.tsx', bytes: Buffer.from('export default () => null;\n')}, {path: 'hook.png', bytes: Buffer.from('process.exit(1)\n')}])}</body>`);

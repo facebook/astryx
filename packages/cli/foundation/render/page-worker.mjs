@@ -150,10 +150,11 @@ function pagePlugin(filename) {
           const file = path.resolve(dir, bare);
           if (fs.existsSync(file) && !localFiles.includes(file)) localFiles.push(file);
         }
-        if (/\.module\.css$/i.test(bare)) {
-          // CSS Modules give class names at build time; a render has none.
+        if (/\.(css|scss|sass|less)$/i.test(bare) && (/\.module\.[a-z]+$/i.test(bare) || p.node.specifiers.length > 0)) {
+          // CSS Modules (any stylesheet imported as a value) give class names
+          // at build time; a render has none.
           const err = new Error(
-            `${path.basename(filename)} imports ${bare}, a CSS Modules stylesheet, which a render does not support: use StyleX or a plain stylesheet.`,
+            `${path.basename(filename)} imports ${bare} as a value (CSS Modules), which a render does not support: use StyleX or a plain stylesheet imported for its side effect.`,
           );
           /** @type {any} */ (err).renderCode = 'ERR_RENDER_FAILED';
           throw err;

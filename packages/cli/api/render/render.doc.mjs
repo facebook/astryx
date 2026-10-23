@@ -89,7 +89,7 @@ export const doc = {
     {code: 'ERR_FILE_NOT_FOUND', when: 'the file, or a local file the page imports, does not exist'},
     {code: 'ERR_FILE_EXISTS', when: 'rendering would replace an existing file a render did not write, reversing would replace an existing file and `overwrite` is not set, or an existing file the project protects (generated, vendored or ignored) would be replaced, which `overwrite` never does'},
     {code: 'ERR_WRITE_FAILED', when: 'a file cannot be written, such as when `out` names a folder; with `reverse`, every file is written or none is'},
-    {code: 'ERR_RENDER_COMPILE', when: 'the page does not compile'},
+    {code: 'ERR_RENDER_COMPILE', when: 'the page does not compile, or a stylesheet it imports is not valid CSS (the message names the file)'},
     {code: 'ERR_RENDER_NO_DEFAULT_EXPORT', when: 'the page has no default export'},
     {code: 'ERR_RENDER_MISSING_DEPENDENCY', when: 'the page imports a package that is not installed; the suggestion is its install line'},
     {code: 'ERR_RENDER_BROWSER_API', when: 'the page reads a browser-only API, such as window or document, while rendering'},

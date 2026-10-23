@@ -295,7 +295,7 @@ export const doc = {
       value: 'ERR_RENDER_COMPILE',
       stability: 'experimental',
       description:
-        'The page given to render does not compile. Nothing was written. Raised only by the experimental render command.',
+        'The page given to render does not compile. A stylesheet the page imports that is not valid CSS is reported this way too, naming the file. Nothing was written. Raised only by the experimental render command.',
     },
     {
       value: 'ERR_RENDER_NO_DEFAULT_EXPORT',
