@@ -755,6 +755,8 @@ export const Regions: Story = {
         canvasElement,
         `[data-region-surface="${key}"] [data-region="Above"]`,
       );
+      // elementFromPoint only sees the viewport: bring the probe into view.
+      above.scrollIntoView({block: 'center'});
       const rect = above.getBoundingClientRect();
       const hit = document.elementFromPoint(
         rect.left + rect.width / 2,

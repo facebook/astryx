@@ -578,6 +578,23 @@ describe('OverlayRegion', () => {
       }
     });
 
+    it('is not placed in the children of an Overlay nested in fill content', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        renderInFill(
+          <Overlay content={<span>inner content</span>}>
+            <OverlayRegion position={{x: 0.3, y: 0.3, width: 0.2}}>
+              <span>nested child</span>
+            </OverlayRegion>
+          </Overlay>,
+        );
+        expect(placementOf(regionOf('nested child')).left).toBe('');
+        expect(warn).toHaveBeenCalledTimes(1);
+      } finally {
+        warn.mockRestore();
+      }
+    });
+
     it('does not warn inside a fill overlay', () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       try {
