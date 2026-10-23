@@ -11,6 +11,7 @@ import {afterAll, afterEach, beforeAll, describe, expect, it, vi} from 'vitest';
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {BaseTypeahead} from './BaseTypeahead';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import {__resetDevWarnings} from '../utils/devWarning';
 import type {SearchContext, SearchSource, SearchableItem} from './types';
 
 const popoverOpenState = new WeakMap<HTMLElement, boolean>();
@@ -56,6 +57,7 @@ afterAll(() => {
 
 afterEach(() => {
   __resetLiveRegionsForTest();
+  __resetDevWarnings();
   vi.restoreAllMocks();
 });
 
@@ -337,5 +339,84 @@ describe('BaseTypeahead incremental results (spec:AST-092)', () => {
       'Ben Shah',
     ]);
     expect(warn).not.toHaveBeenCalled();
+  });
+  it('applies append-only to displayed order, groups included (FR2)', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const people = {
+      id: 'g1',
+      label: 'Ben Ortiz',
+      auxiliaryData: {group: 'People'},
+    };
+    const teams = {
+      id: 'g2',
+      label: 'Bento team',
+      auxiliaryData: {group: 'Teams'},
+    };
+    const lateUngrouped = {id: 'g3', label: 'Ben (alias)'};
+    const {source, latest} = createPendingSource({ben: [people]});
+    const input = renderTypeahead(source);
+
+    await type(input, 'ben');
+    // A new group after the shown rows is an append.
+    await act(async () => {
+      latest().context?.update([people, teams]);
+    });
+    expect(warn).not.toHaveBeenCalled();
+
+    // An ungrouped row displays above every group, so it breaks the rule.
+    await settle(latest(), [people, teams, lateUngrouped]);
+    expect(optionLabels()).toEqual(['Ben (alias)', 'Ben Ortiz', 'Bento team']);
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('BaseTypeahead:'),
+    );
+  });
+
+  it('holds the height of a popup above the field when rows are appended (FR6)', async () => {
+    const {source, latest} = createPendingSource({ben: [benOrtiz, benitaRuiz]});
+    const input = renderTypeahead(source);
+    await type(input, 'ben');
+
+    const listbox = screen.getByRole('listbox', {hidden: true});
+    vi.spyOn(listbox, 'getBoundingClientRect').mockReturnValue(
+      DOMRect.fromRect({x: 0, y: 20, width: 240, height: 80}),
+    );
+    vi.spyOn(input, 'getBoundingClientRect').mockReturnValue(
+      DOMRect.fromRect({x: 0, y: 104, width: 240, height: 32}),
+    );
+    await settle(latest(), [benOrtiz, benitaRuiz, benShah, bennettCole]);
+    expect(listbox.getAttribute('style') ?? '').toContain('80px');
+  });
+
+  it('does not hold the height of a popup below the field (FR6)', async () => {
+    const {source, latest} = createPendingSource({ben: [benOrtiz, benitaRuiz]});
+    const input = renderTypeahead(source);
+    await type(input, 'ben');
+
+    const listbox = screen.getByRole('listbox', {hidden: true});
+    vi.spyOn(listbox, 'getBoundingClientRect').mockReturnValue(
+      DOMRect.fromRect({x: 0, y: 140, width: 240, height: 80}),
+    );
+    vi.spyOn(input, 'getBoundingClientRect').mockReturnValue(
+      DOMRect.fromRect({x: 0, y: 104, width: 240, height: 32}),
+    );
+    await settle(latest(), [benOrtiz, benitaRuiz, benShah, bennettCole]);
+    expect(listbox.getAttribute('style') ?? '').not.toContain('80px');
+  });
+
+  it('announces nothing for a rejection after the popup closed and cancelled (FR9)', async () => {
+    const {source, latest} = createPendingSource({ben: [benOrtiz, benitaRuiz]});
+    const input = renderTypeahead(source);
+    await type(input, 'ben');
+    fireEvent.keyDown(input, {key: 'Escape'});
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+
+    await act(async () => {
+      latest().reject(new Error('aborted'));
+    });
+    await act(async () => {
+      await new Promise(resolve => requestAnimationFrame(resolve));
+    });
+    expect(input).not.toHaveAttribute('aria-busy');
+    expect(liveRegion()?.textContent ?? '').not.toContain('results');
   });
 });

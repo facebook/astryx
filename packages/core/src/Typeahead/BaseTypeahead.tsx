@@ -303,6 +303,11 @@ const styles = stylex.create({
     overflowY: 'auto',
     padding: spacingVars['--spacing-1'],
   },
+  // A popup above the field holds the height it had when a later list for
+  // the same query arrived (spec:AST-092 FR6).
+  dropdownHeld: (height: number) => ({
+    maxHeight: `${height}px`,
+  }),
   // The menu prefers the input's width and renders an explicit menuWidth at
   // its size, both clamped to the layer runtime's viewport cap rather than to
   // the room beside the input (spec:AST-059 FR2, FR7).
@@ -412,9 +417,15 @@ const itemSizeStyles = stylex.create({
 // Helpers
 // =============================================================================
 
+/** Rows in the order the popup displays them: ungrouped first, then groups. */
+function displayOrder<T extends SearchableItem>(list: T[]): T[] {
+  return groupItems(list, {ungroupedFirst: true}).flatMap(group => group.items);
+}
+
 /**
  * Whether `next` starts with `shown`, item by item and in order, by `id`: the
- * append-only rule a later list for the same query follows (spec:AST-092 FR2).
+ * append-only rule a later list for the same query follows, applied to
+ * displayed order (spec:AST-092 FR2).
  */
 function startsWithRows<T extends SearchableItem>(
   next: ReadonlyArray<T>,
@@ -531,6 +542,9 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<T[]>([]);
+  // Highlight indexes count rows in displayed order (ungrouped first, then
+  // groups), which is how the popup renders them.
+  const displayedResults = useMemo(() => displayOrder(results), [results]);
 
   // `action` is declared on `SearchableItem` for the grid-adopting hosts;
   // this panel has not adopted it, so it renders the item without the
@@ -551,6 +565,28 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // (spec:AST-092 FR6). Synced after commit: a list arrives from an event or
   // an awaited continuation, never during render.
   const resultsRef = useRef<T[]>(results);
+  // The popup's listbox, measured when a later list arrives so a popup that
+  // sits above the field keeps its height and the appended rows scroll
+  // instead of pushing the shown rows up (spec:AST-092 FR6).
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [heldHeight, setHeldHeight] = useState<number | null>(null);
+  // The search generation the popup's close cancelled, so that search's
+  // rejection settles silently (spec:AST-092 FR9).
+  const closedGenRef = useRef(-1);
+  const holdHeightAboveField = useCallback(() => {
+    const dropdown = dropdownRef.current;
+    const anchor = anchorRef?.current ?? fallbackAnchorRef.current;
+    if (dropdown == null || anchor == null) {
+      return;
+    }
+    const box = dropdown.getBoundingClientRect();
+    if (
+      box.height > 0 &&
+      box.bottom <= anchor.getBoundingClientRect().top + 1
+    ) {
+      setHeldHeight(current => current ?? box.height);
+    }
+  }, [anchorRef]);
   const highlightedIndexRef = useRef(highlightedIndex);
   useIsomorphicLayoutEffect(() => {
     resultsRef.current = results;
@@ -694,6 +730,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   const handleLayerHide = useCallback(() => {
     onOpenChange?.(false);
     setHighlightedIndex(-1);
+    closedGenRef.current = searchGenRef.current;
     searchSource.cancel?.();
   }, [onOpenChange, searchSource]);
 
@@ -757,7 +794,10 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
 
       const showList = (list: T[], isFinal: boolean): T[] => {
         const fetched = list.slice(0, maxMenuItems);
-        if (shownRows != null && !startsWithRows(fetched, shownRows)) {
+        if (
+          shownRows != null &&
+          !startsWithRows(displayOrder(fetched), displayOrder(shownRows))
+        ) {
           warnOnce(
             'base-typeahead:append-only',
             'BaseTypeahead',
@@ -780,13 +820,18 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         if (shownRows != null) {
           previousHighlightId =
             resultsRef.current === shownState
-              ? shownState[highlightedIndexRef.current]?.id
-              : shownRows[0]?.id;
+              ? displayOrder(shownState)[highlightedIndexRef.current]?.id
+              : displayOrder(shownRows)[0]?.id;
+          holdHeightAboveField();
+        } else {
+          setHeldHeight(null);
         }
         const keptIndex =
           previousHighlightId == null
             ? -1
-            : shown.findIndex(item => item.id === previousHighlightId);
+            : displayOrder(shown).findIndex(
+                item => item.id === previousHighlightId,
+              );
         resultsGenRef.current = gen;
         setResults(shown);
         setHighlightedIndex(
@@ -837,7 +882,11 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           return;
         }
         isSettled = true;
-        if (shownRows != null) {
+        if (closedGenRef.current === gen) {
+          // The popup closed and cancelled this search, so its rejection is
+          // not a failed answer: keep the rows, announce nothing
+          // (spec:AST-092 FR9).
+        } else if (shownRows != null) {
           // A failed server answer keeps the last non-empty list the source
           // showed for this query, which settles it.
           announceCount(showList(shownRows, true).length);
@@ -859,6 +908,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       __queryEntries,
       setLoading,
       t,
+      holdHeightAboveField,
     ],
   );
 
@@ -1177,7 +1227,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         case 'Enter':
           e.preventDefault();
           if (highlightedIndex >= 0 && highlightedIndex < results.length) {
-            handleSelect(results[highlightedIndex]);
+            handleSelect(displayedResults[highlightedIndex]);
           }
           break;
         case 'Escape':
@@ -1213,6 +1263,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     [
       popover,
       results,
+      displayedResults,
       highlightedIndex,
       handleSelect,
       hasEntriesOnFocus,
@@ -1229,13 +1280,13 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // back to its row so DOM ids stay unique.
   const optionIds = useMemo(() => {
     const seen = new Set<string>();
-    return results.map((item, index) => {
+    return displayedResults.map((item, index) => {
       const byItem = `${listboxId}-option-${encodeURIComponent(item.id)}`;
       const id = seen.has(byItem) ? `${byItem}-${index}` : byItem;
       seen.add(byItem);
       return id;
     });
-  }, [results, listboxId]);
+  }, [displayedResults, listboxId]);
   const getItemId = useCallback(
     (index: number) => optionIds[index] ?? `${listboxId}-option-${index}`,
     [optionIds, listboxId],
@@ -1347,12 +1398,16 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       )}
       {popover.render(
         <div
+          ref={dropdownRef}
           id={listboxId}
           role="listbox"
           aria-label={t('@astryx.typeahead.searchResults')}
           {...mergeProps(
             themeProps('typeahead-dropdown'),
-            stylex.props(styles.dropdown),
+            stylex.props(
+              styles.dropdown,
+              heldHeight != null && styles.dropdownHeld(heldHeight),
+            ),
           )}>
           {results.length === 0 && hasSearched ? (
             <div
