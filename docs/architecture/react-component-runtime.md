@@ -128,10 +128,12 @@ those contracts.
   hook-result identity remains owned by `architecture:public-component-api` and
   the hook's current contract. Ordinary local objects and callbacks have no shared
   identity promise.
-- **INV10 — Own-content announcements live in one module.** Announcing a
-  component's own rendered content (`spec:AST-086` FR11) is done by one shared
-  internal module, which is not exported; making it public needs `spec:AST-002`
-  admission. Adopting components hold no Effect, observer, timer, or
+- **INV10 — Own-content announcements live in one module.** In
+  `@astryxdesign/core`, announcing a component's own rendered content
+  (`spec:AST-086` FR11) is done by one shared internal module, which is not
+  exported; making it public needs `spec:AST-002` admission. Packages outside
+  core cannot import it and keep one well-behaved Effect per adopter. Core
+  adopting components hold no Effect, observer, timer, or
   listener of their own to detect page load, read rendered text, or write that
   announcement. The module follows INV3 and INV5.
 

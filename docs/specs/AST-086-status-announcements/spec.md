@@ -194,8 +194,8 @@ announcement channel.
 - ChatSystemMessage: forces `role="status"` inside the `role="log"` list. Under
   FR4 the log delivers it; dividers and dates are ordinary log content.
 - ChatTypingIndicator (lab): announces its label from its own Effect. Inside a
-  live log it follows FR4; otherwise it is an own-content adopter under FR11 and
-  `architecture:react-component-runtime` INV10 and moves onto the shared module.
+  live log it follows FR4; otherwise it follows FR11 through FR13. It keeps its
+  own Effect because the core module is not published to lab (INV10).
 - Comments (lab): its error banners and progress label mount live roles
   together with their text. Inside a live log they follow FR4; otherwise FR2.
 - Selector and MultiSelector render their empty-panel message as
@@ -208,8 +208,6 @@ announcement channel.
   from its transition handler, because only the caller knows whether a Banner
   is a new outcome or persistent content. FR11 and FR12 cover components that
   announce their own content.
-- The INV10 shared test lands with the conformance work that moves the
-  ChatComposer status bar and ChatTypingIndicator onto the shared module.
 - `useAnnounce`: messages written in the same frame are joined instead of the
   last one replacing the others (FR9).
 - `spec:AST-037` FR9 (Timer adds no unsolicited live region) already conforms.
