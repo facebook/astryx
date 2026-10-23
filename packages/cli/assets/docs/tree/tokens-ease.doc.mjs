@@ -36,6 +36,10 @@ export const docs = {
             [
               "--ease-standard",
               "cubic-bezier(0.24, 1, 0.4, 1)"
+            ],
+            [
+              "--ease-exit",
+              "cubic-bezier(0.3, 0, 0.6, 0.6)"
             ]
           ]
         }
