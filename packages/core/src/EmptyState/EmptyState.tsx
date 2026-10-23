@@ -4,7 +4,7 @@
 
 /**
  * @file EmptyState.tsx
- * @input Uses React, HTMLAttributes, AnnounceOnInsert
+ * @input Uses React, HTMLAttributes, AnnounceRenderedText
  * @output Exports EmptyState component, EmptyStateProps type
  * @position Core implementation; consumed by index.ts
  *
@@ -25,7 +25,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
-import {AnnounceOnInsert} from '../hooks/useIsInsertedAfterLoad';
+import {AnnounceRenderedText} from '../hooks/AnnounceRenderedText';
 import {isRenderable, mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 
@@ -126,8 +126,9 @@ export interface EmptyStateProps extends BaseProps<HTMLDivElement> {
  * An empty state placeholder for content areas with no data.
  * Displays an icon or illustration, title, optional description, and action buttons.
  *
- * Not a live region; announces its title and description once only when it
- * appears after the page loaded (`spec:AST-086` FR2).
+ * Not a live region. Its title and description are announced once when they
+ * appear or change after the page loaded, never when the page first renders
+ * with them (`spec:AST-086` FR2).
  * Styles use Astryx theme tokens via StyleX. Wrap your app in <Theme> to apply a theme.
  *
  * @example
@@ -173,7 +174,7 @@ export function EmptyState({
         style,
       )}>
       {isRenderable(icon) && <div aria-hidden="true">{icon}</div>}
-      <AnnounceOnInsert {...stylex.props(styles.textGroup)}>
+      <AnnounceRenderedText {...stylex.props(styles.textGroup)}>
         {createElement(
           HeadingTag,
           mergeProps(
@@ -198,7 +199,7 @@ export function EmptyState({
             {description}
           </div>
         )}
-      </AnnounceOnInsert>
+      </AnnounceRenderedText>
       {isRenderable(actions) && (
         <div
           {...stylex.props(styles.actions, isCompact && styles.actionsCompact)}>

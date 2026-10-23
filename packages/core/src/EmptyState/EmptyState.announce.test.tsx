@@ -151,4 +151,24 @@ describe('EmptyState announcement (spec:AST-086 FR2)', () => {
     expect(polite.spoken).toEqual([]);
     await act(async () => root.unmount());
   });
+
+  it('announces once when the message of one present at load changes later', async () => {
+    const {EmptyState, paint} = await importEmptyState();
+    let setTitle!: (title: string) => void;
+    function Search() {
+      const [title, set] = useState('No saved searches');
+      setTitle = set;
+      return <EmptyState title={title} />;
+    }
+    const polite = recordPolite();
+    const root = mount();
+    await act(async () => root.render(<Search />));
+    paint();
+    await act(async () => setTitle('No results'));
+    await act(nextFrame);
+    await act(nextFrame);
+    polite.stop();
+    expect(polite.spoken).toEqual(['No results']);
+    await act(async () => root.unmount());
+  });
 });

@@ -43,8 +43,41 @@
  * admission. Import it by path from inside the package.
  */
 
-import {useEffect, useRef, type RefObject} from 'react';
+import {useEffect, useRef, useState, type RefObject} from 'react';
 import {useAnnounce} from './useAnnounce';
+import {useIsHydrating} from './useIsHydrating';
+
+// Whether the page's first paint has happened. Server-rendered owners are
+// covered by useIsHydrating instead: hydration can run after this turns true.
+let initialPaintComplete = false;
+if (typeof window !== 'undefined') {
+  requestAnimationFrame(() => {
+    initialPaintComplete = true;
+  });
+}
+
+const LIVE_CONTAINER =
+  '[role="log"], [role="status"], [role="alert"], [aria-live="polite"], [aria-live="assertive"]';
+
+/** Each child element's rendered text as its own block, joined by spaces. */
+function blockText(element: HTMLElement): string {
+  return Array.from(element.children)
+    .filter(child => child.getAttribute('aria-hidden') !== 'true')
+    .map(child => renderedText(child as HTMLElement))
+    .filter(part => part !== '')
+    .join(' ');
+}
+
+export interface AnnounceRenderedTextOptions {
+  /**
+   * Text present when the owner first rendered with the page (before its
+   * first paint, or while hydrating) is not announced; text that appears or
+   * changes later is, once (`spec:AST-086` FR11). Content inside a mounted
+   * live container is left to that container (FR4). Each child element is
+   * read as its own block.
+   */
+  skipFirstRender?: boolean;
+}
 
 /** The rendered text an assistive technology would read from `element`. */
 export function renderedText(element: HTMLElement): string {
@@ -81,9 +114,16 @@ export function useAnnounceRenderedText(
   ref: RefObject<HTMLElement | null>,
   isShown: boolean,
   occasion: string,
+  {skipFirstRender = false}: AnnounceRenderedTextOptions = {},
 ): void {
   const announce = useAnnounce();
   const spokenRef = useRef<string | null>(null);
+  const isHydrating = useIsHydrating();
+  // Captured once: a hydrated owner never counts as inserted later.
+  const [renderedWithPage] = useState(
+    () => isHydrating || !initialPaintComplete,
+  );
+  const isFirstRunRef = useRef(true);
 
   // Deliberately no dependency array. The text lives in the DOM, so there is
   // no React value to depend on that changes when it does — a caller can
@@ -95,11 +135,16 @@ export function useAnnounceRenderedText(
       spokenRef.current = null;
       return;
     }
+    const isFirstRun = isFirstRunRef.current;
+    isFirstRunRef.current = false;
     const element = ref.current;
     if (!element) {
       return;
     }
-    const text = renderedText(element);
+    if (skipFirstRender && element.parentElement?.closest(LIVE_CONTAINER)) {
+      return;
+    }
+    const text = skipFirstRender ? blockText(element) : renderedText(element);
     if (text === '') {
       // Nothing readable on screen either, so there is no announcement that
       // would match what the sighted user is seeing.
@@ -110,6 +155,10 @@ export function useAnnounceRenderedText(
       return;
     }
     spokenRef.current = spoken;
+    if (skipFirstRender && isFirstRun && renderedWithPage) {
+      // Part of the page the person arrived at: remember it, say nothing.
+      return;
+    }
     announce(text);
   });
 }
