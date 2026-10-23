@@ -43,7 +43,7 @@ import {
 import {olderCliNotes} from '../../foundation/discovery/doc-stability.mjs';
 import {templateIconNotes} from '../../foundation/discovery/template-icon-notes.mjs';
 import {integrationDocConsistency} from '../../foundation/discovery/doc-consistency.mjs';
-import {integrationRunnerCommands} from './_adapter.mjs';
+import {integrationRunnerCommands, projectUsesIconSets} from './_adapter.mjs';
 import {
   THEME_SLUG_RE,
   unreadThemeFolders,
@@ -295,15 +295,23 @@ async function findUnreachableContributionIssues(
  * Shared core for the local and installed entry points.
  * @param {string} packageDir
  * @param {{name: string, version?: string}} identity
- * @param {{scanUnreachable?: boolean, own?: boolean, cwd?: string}} [options]
+ * @param {{scanUnreachable?: boolean, own?: boolean, cwd?: string, iconSets?: boolean}} [options]
  *   `own`: the package is the one being authored in the current folder;
- *   `cwd`: the folder whose package manager an install command names
+ *   `cwd`: the folder whose package manager an install command names;
+ *   `iconSets`: read the experimental `experimental.iconSets` root (default
+ *   true). Off, the root is not resolved or checked and `iconSets` is not
+ *   filled, as in a CLI without icon sets.
  * @returns {Promise<ValidateResult>}
  */
 async function validateAtPackageDir(
   packageDir,
   identity,
-  {scanUnreachable = false, own = false, cwd = packageDir} = {},
+  {
+    scanUnreachable = false,
+    own = false,
+    cwd = packageDir,
+    iconSets = true,
+  } = {},
 ) {
   /** @type {Issue[]} */
   const issues = [];
@@ -416,10 +424,9 @@ async function validateAtPackageDir(
     codemods: resolveRoot(manifest.codemods, 'codemods'),
     docs: resolveRoot(manifest.docs, 'docs'),
     themes: resolveRoot(manifest.themes, 'themes'),
-    iconSets: resolveRoot(
-      manifest.experimental?.iconSets,
-      'experimental.iconSets',
-    ),
+    iconSets: iconSets
+      ? resolveRoot(manifest.experimental?.iconSets, 'experimental.iconSets')
+      : undefined,
     issuesUrl: manifest.issuesUrl,
     agentDocs: manifest.agentDocs,
     cliCommand: manifest.cliCommand,
@@ -678,9 +685,16 @@ function packageJsonFieldIssues(pkg, pkgJsonPath) {
  * at or above `cwd`, resolved the way the project loads it.
  * @param {string} spec package name
  * @param {string} [cwd]
+ * @param {{iconSets?: boolean}} [options] `iconSets`: check the package's
+ *   experimental icon sets; by default only when the project at `cwd` sets
+ *   `experimental.iconSet`
  * @returns {Promise<ValidateResult>}
  */
-export async function validateInstalledIntegration(spec, cwd = process.cwd()) {
+export async function validateInstalledIntegration(
+  spec,
+  cwd = process.cwd(),
+  {iconSets} = {},
+) {
   // The resolver throws (path-safety guard) on a spec with path segments,
   // `..`, or an absolute path. Every other malformed input to this command
   // degrades into a diagnostic — so catch it here and return an issue instead
@@ -723,7 +737,7 @@ export async function validateInstalledIntegration(spec, cwd = process.cwd()) {
   return validateAtPackageDir(
     packageDir,
     {name: pkg.name ?? spec, version: pkg.version},
-    {cwd},
+    {cwd, iconSets: iconSets ?? (await projectUsesIconSets(cwd))},
   );
 }
 

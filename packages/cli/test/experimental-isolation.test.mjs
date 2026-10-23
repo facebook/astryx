@@ -116,6 +116,54 @@ const NUDGE_CALLERS = {
   'api/upgrade/_adapter.mjs': 1,
   'api/upgrade/run/run.mjs': 1,
 };
+/**
+ * Every source file that reads an integration's icon-set root (`.iconSets`)
+ * or runs icon-set discovery or checks, and why a project without
+ * `experimental.iconSet` never sees what it reads (spec:AST-084 FR0, FR17).
+ * A new reader fails the test below until it is listed with its gate.
+ */
+const ICON_SET_READERS = {
+  // Readers that hold the gate.
+  'foundation/config/project.mjs':
+    'iconSets() reads no set without the opt-in; integration issues strip the root without it',
+  'api/integration/validate-integration.mjs':
+    'an installed package is checked only with the opt-in; the package being authored always',
+  'api/upgrade/run/run.mjs':
+    'passes the opt-in to the nudge, which strips the root without it',
+  'api/discover/_adapter.mjs':
+    'reads sets only with the opt-in, and strips the root before collecting identities',
+  // Readers behind a gated reader.
+  'api/doctor/doctor.mjs': 'project.iconSets()',
+  'api/template/_adapter.mjs': 'project.iconSets()',
+  'foundation/doc-compiler/inputs.mjs': 'project.iconSets()',
+  'foundation/discovery/icon-set-discovery.mjs':
+    'discovery itself: called by the gated readers',
+  'foundation/discovery/icon-set-checks.mjs':
+    'the checks: called by validate-integration',
+  'foundation/discovery/integration-doc-files.mjs':
+    'the loaded root validate-integration resolved, so only with its gate',
+  'foundation/integrations/contribution-inventory.mjs':
+    'the package being authored (verify, pack-check, writers), or the root a gated caller passes',
+  'foundation/integrations/validate-contributions.mjs':
+    'the root of the integration a gated caller passes',
+  'foundation/integrations/integrations.mjs':
+    'resolves the root on the loaded integration; every reader of it is listed here',
+  'foundation/integrations/manifest-writer.mjs':
+    'writes the root of the package being authored',
+  // The experimental commands and the authoring output.
+  'api/icon/_adapter.mjs': 'astryx experimental icon',
+  'api/icon/_authoring.mjs': 'astryx experimental icon new-set and friends',
+  'foundation/discovery/icon-set-writer.mjs':
+    'astryx experimental icon writers',
+  'clients/cli/commands/experimental/icon.mjs': 'astryx experimental icon',
+  'clients/cli/commands/integration.mjs':
+    'integration verify, for the package being authored',
+  'clients/cli/commands/doctor.mjs':
+    "prints validate's iconSets, which validate fills only with its gate",
+};
+/** A read of an icon-set root, or a run of icon-set discovery or checks. */
+const ICON_SET_READ =
+  /\.iconSets\b|\b(?:discoverIntegrationIconSets|discoverIconSetDirectory|iconSetIssues|iconSetCoverage)\(/u;
 /** Where test projects go: inside the checkout whose CLI answers. */
 const PROJECTS_ROOT = REGENERATING ? GOLDEN_REPO : REPO_ROOT;
 
@@ -860,6 +908,59 @@ describe('with icon sets installed but no experimental.iconSet, stable output is
     for (const {name} of NUDGE_COMMANDS) {
       expect(text).toContain(`\`${name}\``);
     }
+  });
+
+  // `doctor integration validate <installed package>` checks the package's
+  // icon sets only with the opt-in: here it reports what the CLI without
+  // icon sets reports for the package with the manifest key removed.
+  it('doctor integration validate of the installed package: text, JSON, and exit code', async () => {
+    const cwd = installed('validate');
+    const json = astryx(
+      ['doctor', 'integration', 'validate', '@acme/glyphs', '--json'],
+      cwd,
+    );
+    const text = astryx(
+      ['doctor', 'integration', 'validate', '@acme/glyphs'],
+      cwd,
+    );
+    if (!REGENERATING) {
+      expect(JSON.parse(json.stdout).data).not.toHaveProperty('iconSets');
+      expect(json.stdout).not.toMatch(/icon/iu);
+    }
+    // One exit code for both; the text golden holds it.
+    expect(json.status).toBe(text.status);
+    await expect(json.stdout).toMatchFileSnapshot(
+      path.join(GOLDEN, 'validate-installed-set.json'),
+    );
+    await expect(
+      `exit ${text.status}\n${text.stdout}${text.stderr}`,
+    ).toMatchFileSnapshot(path.join(GOLDEN, 'validate-installed-set.txt'));
+  });
+
+  it('every reader of an icon-set root is listed with its gate', () => {
+    /** @type {string[]} */
+    const readers = [];
+    /** @param {string} dir */
+    const walk = dir => {
+      for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+        const file = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          if (!['node_modules', 'test', '__tests__'].includes(entry.name)) {
+            walk(file);
+          }
+        } else if (
+          entry.name.endsWith('.mjs') &&
+          !/\.(?:test|doc|type)\.mjs$/u.test(entry.name) &&
+          ICON_SET_READ.test(fs.readFileSync(file, 'utf8'))
+        ) {
+          readers.push(path.relative(CLI_ROOT, file).split(path.sep).join('/'));
+        }
+      }
+    };
+    for (const dir of ['api', 'clients', 'foundation']) {
+      walk(path.join(CLI_ROOT, dir));
+    }
+    expect(readers.sort()).toEqual(Object.keys(ICON_SET_READERS).sort());
   });
 
   it('doctor reports nothing about an invalid installed set', async () => {

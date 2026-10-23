@@ -90,14 +90,16 @@ icon, and the CLI verifies it, writes the files, and checks the set.
   Without `experimental.iconSet`, help (apart from the `experimental` group
   line), the manifest (apart from that group), the `astryx docs cli` listing
   (apart from the `experimental` namespace and the experimental command and
-  function references), `astryx template`, `astryx discover`, and Doctor
+  function references), `astryx template`, `astryx discover`, and Doctor,
+  its `doctor integration` subcommands for an installed package included,
   give the output they give without this feature, whatever sets are
   installed, and so do `integration check` and `verify` for a package that
   declares no `experimental.iconSets`, with two differences, both because a
   CLI without this feature does not know the manifest key `experimental`.
   With a package that declares `experimental.iconSets` installed, that CLI
-  warns about the key in Doctor's `integration-issues` check, and in text
-  mode every command that prints the integration-issue nudge (`component`,
+  warns about the key in Doctor's `integration-issues` check and in
+  `doctor integration validate <package>`, and in text mode every command
+  that prints the integration-issue nudge (`component`,
   `discover`, `search`, `template`, `theme list`, `theme add`, `theme remove`,
   `theme use`, `theme eject`, and `upgrade`) prints "Warning: <package> has 1
   integration issue(s)" to stderr; this CLI does neither. Discover refuses
@@ -307,7 +309,10 @@ message}`) names each template or namespace doc that sets `stability`, and
   a kind: `--type icon-set`, catalog entries with `iconCount` and
   `definitions`, and `discover <package>/<set>`; a withdrawn set is not
   listed. Without the opt-in, Doctor has no such check and reports no icon-set
-  issue, and discover treats `icon-set` as an unknown kind and `iconCount` and
+  issue, `doctor integration` checks an installed package's icon sets only
+  with it (the package being authored, read by `doctor integration validate`
+  with no package, `integration check`, and `verify`, is always checked), and
+  discover treats `icon-set` as an unknown kind and `iconCount` and
   `definitions` as unknown fields before it validates a catalog, so a
   malformed icon-set item never fails a source (`spec:AST-051/FR7`).
 
@@ -346,17 +351,17 @@ message}`) names each template or namespace doc that sets `stability`, and
 
 ## Verification
 
-| Contract  | Verification                                                                   | Representative states                                                                                                                                                                                                  | Mutation or failure expectation                                                     |
-| --------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| FR0, FR11 | experimental-isolation tests against the output of the CLI without the feature | help; search with no set and with a set opted in; template printed and copied; discover and Doctor with a set and no opt-in; stderr of every command that prints the integration-issue nudge, with a set and no opt-in | any stable output changes, or a stable command gains an icon-set subcommand or kind |
-| FR1–FR5   | descriptor, data-file, and definition parser and discovery tests               | valid set; invalid data; definitions Astryx and the set both have                                                                                                                                                      | an invalid set answers, or a definition file is not read                            |
-| FR6–FR8   | `experimental icon` text and JSON tests                                        | definition, name, and meaning matches; `<set>/<id>`; `--list`; two sets of one name                                                                                                                                    | ranking or tie order changes, or a bare ambiguous name answers                      |
-| FR9–FR10  | template mapping tests                                                         | mapped by match and by definition; kept with a suggestion; no opt-in                                                                                                                                                   | a name is guessed, or a project without the opt-in gets a rewrite                   |
-| FR12–FR14 | writer and command tests                                                       | wrap and refresh; adapter; generated types and theme map                                                                                                                                                               | a write is left half done, or the theme map drifts from `map`                       |
-| FR15      | `integration check` tests, with and without `--strict`                         | every code; unmapped optional definitions                                                                                                                                                                              | an export the module lacks passes, or the optional list fails a check               |
-| FR16      | validate tests; a scratch project on published CLI 0.7.3                       | `stability` on a template and namespace doc; template `icons`; peer range from 0.7.4                                                                                                                                   | a note fails a check, or a dropped descriptor goes unnoted                          |
-| FR17      | Doctor and discover tests                                                      | opted in; installed set and no opt-in; invalid set and no opt-in                                                                                                                                                       | a project without the opt-in sees an icon-set check, issue, or kind                 |
-| FR18      | docs tree, help, and search tests                                              | marked command; stable and experimental namespace with `packages: 'all'`                                                                                                                                               | a stable namespace adopts another package's doc, or a marked doc reaches search     |
+| Contract  | Verification                                                                   | Representative states                                                                                                                                                                                                                                            | Mutation or failure expectation                                                     |
+| --------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| FR0, FR11 | experimental-isolation tests against the output of the CLI without the feature | help; search with no set and with a set opted in; template printed and copied; discover, Doctor, and `doctor integration validate <package>` with a set and no opt-in; stderr of every command that prints the integration-issue nudge, with a set and no opt-in | any stable output changes, or a stable command gains an icon-set subcommand or kind |
+| FR1–FR5   | descriptor, data-file, and definition parser and discovery tests               | valid set; invalid data; definitions Astryx and the set both have                                                                                                                                                                                                | an invalid set answers, or a definition file is not read                            |
+| FR6–FR8   | `experimental icon` text and JSON tests                                        | definition, name, and meaning matches; `<set>/<id>`; `--list`; two sets of one name                                                                                                                                                                              | ranking or tie order changes, or a bare ambiguous name answers                      |
+| FR9–FR10  | template mapping tests                                                         | mapped by match and by definition; kept with a suggestion; no opt-in                                                                                                                                                                                             | a name is guessed, or a project without the opt-in gets a rewrite                   |
+| FR12–FR14 | writer and command tests                                                       | wrap and refresh; adapter; generated types and theme map                                                                                                                                                                                                         | a write is left half done, or the theme map drifts from `map`                       |
+| FR15      | `integration check` tests, with and without `--strict`                         | every code; unmapped optional definitions                                                                                                                                                                                                                        | an export the module lacks passes, or the optional list fails a check               |
+| FR16      | validate tests; a scratch project on published CLI 0.7.3                       | `stability` on a template and namespace doc; template `icons`; peer range from 0.7.4                                                                                                                                                                             | a note fails a check, or a dropped descriptor goes unnoted                          |
+| FR17      | Doctor and discover tests                                                      | opted in; installed set and no opt-in; invalid set and no opt-in                                                                                                                                                                                                 | a project without the opt-in sees an icon-set check, issue, or kind                 |
+| FR18      | docs tree, help, and search tests                                              | marked command; stable and experimental namespace with `packages: 'all'`                                                                                                                                                                                         | a stable namespace adopts another package's doc, or a marked doc reaches search     |
 
 ## Decision log
 

@@ -237,9 +237,11 @@ export async function describeInstalled(project, scanned) {
       );
     // Components come from the scan above; loading every component doc again
     // here would only slow the list down.
+    // Icon sets are read below, only with the opt-in.
     const {identities} = await collectIdentities({
       ...integration,
       components: undefined,
+      iconSets: undefined,
     });
     // Icon sets are listed the way every icon surface sees them: a set that
     // is invalid or whose module does not resolve answers nothing (FR9).
