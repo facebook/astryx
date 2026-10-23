@@ -37,15 +37,18 @@ const unescapeIdent = s =>
     .replace(/\\(.)/g, '$1');
 
 /**
- * The classes a selector needs, ignoring any inside `:not(...)`.
+ * The classes a selector needs, ignoring any inside `:not()`, `:is()`,
+ * `:where()` or `:has()`.
  * @param {string} selector
  * @returns {string[]}
  */
 export function requiredClasses(selector) {
   let s = selector;
-  // Drop :not(...) groups (they can nest one level in practice).
-  for (let i = 0; i < 3 && s.includes(':not('); i++) {
-    s = s.replace(/:not\((?:[^()]|\([^()]*\))*\)/g, '');
+  // Drop :not(), :is(), :where() and :has() groups (they can nest one level
+  // in practice): what is inside need not all appear, so a rule is never cut
+  // for classes in them.
+  for (let i = 0; i < 3 && /:(not|is|where|has)\(/.test(s); i++) {
+    s = s.replace(/:(?:not|is|where|has)\((?:[^()]|\([^()]*\))*\)/g, '');
   }
   return [...s.matchAll(/\.((?:\\.|[A-Za-z0-9_-])+)/g)].map(m => unescapeIdent(m[1]));
 }

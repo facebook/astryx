@@ -444,6 +444,22 @@ describe('render(): every write stays inside the current folder', () => {
     expect(fs.readFileSync(path.join(dir, 'sheet-url/page.html'), 'utf8')).toContain('url("data:image/png;base64,');
   }, 60_000);
 
+  it('carries images the page names by path, in markup and in a stylesheet, and gives them back', async () => {
+    put('by-path/logo.png', PNG);
+    put('by-path/styles/bg.png', PNG);
+    put('by-path/styles/page.css', '.hero { background: url("./bg.png"); }\n');
+    put('by-path/page.tsx', "import './styles/page.css';\nexport default function Page() { return <div className=\"hero\"><img src=\"./logo.png\" alt=\"\" /></div>; }\n");
+    const r = /** @type {any} */ (await render('by-path/page.tsx', {cwd: dir}));
+    expect(r.data.files).toEqual(expect.arrayContaining(['page.tsx', 'styles/page.css', 'logo.png', 'styles/bg.png']));
+    const back = /** @type {any} */ (await render('by-path/page.html', {cwd: dir, reverse: true, out: 'by-path-back/page.tsx'}));
+    expect(back.data.exact).toBe(true);
+    expect(back.data.files).toEqual(
+      expect.arrayContaining(['by-path-back/page.tsx', 'by-path-back/logo.png', 'by-path-back/styles/bg.png']),
+    );
+    const again = /** @type {any} */ (await render('by-path-back/page.tsx', {cwd: dir}));
+    expect(again.data.warnings.map((/** @type {any} */ w) => w.code)).not.toContain('missing-asset');
+  }, 60_000);
+
   it('rebuilds a quoted attribute as JSX that compiles', async () => {
     put(
       'quoted.html',

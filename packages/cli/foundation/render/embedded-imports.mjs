@@ -17,6 +17,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {parse} from '@babel/parser';
 import {PAGE_EXTENSIONS} from './embedded-files.mjs';
+import {isAssetPath} from './assets.mjs';
 
 /** Extensions an extensionless import may stand for, in resolution order. */
 const RESOLVE_EXTENSIONS = ['.tsx', '.ts', '.jsx', '.js', '.mjs', '.json'];
@@ -28,6 +29,35 @@ const RESOLVE_EXTENSIONS = ['.tsx', '.ts', '.jsx', '.js', '.mjs', '.json'];
  * @returns {string[]}
  */
 export function importSpecifiers(source, file) {
+  return scanModule(source, file).imports;
+}
+
+/**
+ * Relative asset paths in a piece of text: a `./`/`../` path to an image or
+ * font, bare or inside `url(...)`.
+ * @param {string} text
+ * @returns {string[]}
+ */
+export function assetRefsIn(text) {
+  /** @type {string[]} */
+  const out = [];
+  for (const m of text.matchAll(/(?:^|url\(\s*['"]?)(\.\.?\/[^'")\s]+)/g)) {
+    const ref = m[1].split(/[?#]/)[0];
+    if (isAssetPath(ref)) out.push(ref);
+  }
+  return out;
+}
+
+/**
+ * One module's imports, and the relative asset paths its strings name
+ * (`<img src="./logo.png">`, `url(./bg.png)` in a style).
+ * @param {string} source
+ * @param {string} file
+ * @returns {{imports: string[], assets: string[]}}
+ */
+function scanModule(source, file) {
+  /** @type {string[]} */
+  const assets = [];
   /** @type {any} */
   let ast;
   try {
@@ -38,13 +68,15 @@ export function importSpecifiers(source, file) {
       plugins: /\.(tsx?|mts|cts)$/.test(file) ? ['jsx', 'typescript'] : ['jsx'],
     });
   } catch {
-    return [];
+    return {imports: [], assets: []};
   }
   /** @type {string[]} */
   const out = [];
   /** @param {any} node */
   const visit = node => {
     if (!node || typeof node.type !== 'string') return;
+    if (node.type === 'StringLiteral') assets.push(...assetRefsIn(node.value));
+    else if (node.type === 'TemplateElement') assets.push(...assetRefsIn(node.value?.cooked ?? ''));
     if (
       (node.type === 'ImportDeclaration' ||
         node.type === 'ExportNamedDeclaration' ||
@@ -73,7 +105,7 @@ export function importSpecifiers(source, file) {
     }
   };
   visit(ast.program);
-  return out;
+  return {imports: out, assets};
 }
 
 /**
@@ -186,11 +218,24 @@ export function reachableFiles(files, {aliases = []} = {}) {
   while (queue.length > 0) {
     const current = /** @type {string} */ (queue.shift());
     const ext = path.posix.extname(current).toLowerCase();
-    if (!PAGE_EXTENSIONS.includes(ext)) continue;
+    const isModule = PAGE_EXTENSIONS.includes(ext);
+    if (!isModule && ext !== '.css') continue;
     const entry = byPath.get(current);
     if (!entry) continue;
     const source = Buffer.from(entry.base64, 'base64').toString('utf8');
-    for (const spec of importSpecifiers(source, current)) {
+    // Images and fonts a module or stylesheet names by a relative path are
+    // part of the page too.
+    const scanned = isModule ? scanModule(source, current) : {imports: [], assets: assetRefsIn(source)};
+    for (const ref of scanned.assets) {
+      const joined = path.posix.normalize(path.posix.join(path.posix.dirname(current), ref));
+      if (joined.startsWith('..')) continue;
+      if (!byPath.has(joined)) {
+        missing.add(joined);
+        continue;
+      }
+      reach(joined).r.relative = true;
+    }
+    for (const spec of scanned.imports) {
       const bare = spec.split('?')[0];
       if (bare.startsWith('./') || bare.startsWith('../')) {
         const joined = path.posix.normalize(path.posix.join(path.posix.dirname(current), bare));

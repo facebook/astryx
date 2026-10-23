@@ -14,6 +14,17 @@ import {readSourceBlock, sourceBlock} from './source-block.mjs';
 import {isAstryxMarkup, parseHtml} from './html-reader.mjs';
 import {renderPage} from './render-page.mjs';
 
+describe('requiredClasses with grouped selectors', () => {
+  it('keeps a rule whose :is() or :where() alternatives are not all used', async () => {
+    const {cutCss} = await import('./css-cut.mjs');
+    const css = '.a:is(.b, .c) { color: red; } :where(.x, .y) .z { color: blue; } .gone { color: green; }';
+    const out = cutCss(css, new Set(['a', 'b', 'z']));
+    expect(out).toContain('color: red');
+    expect(out).toContain('color: blue');
+    expect(out).not.toContain('color: green');
+  });
+});
+
 describe('cutCss', () => {
   const css = `/* @layer comment, not, order; */
 @layer reset, base;

@@ -152,7 +152,7 @@ function runWorker(entry, root, timeoutMs) {
  * link (`href`) loads nothing, so it is left alone.
  * @param {string} text markup or CSS
  * @param {'html' | 'css'} kind
- * @param {{dir: string, root: string, warnings: RenderWarning[], counted: Set<string>}} ctx
+ * @param {{dir: string, root: string, warnings: RenderWarning[], counted: Set<string>, localAssets: Set<string>}} ctx
  */
 function inlineAssets(text, kind, ctx) {
   /** @param {string} ref */
@@ -188,6 +188,8 @@ function inlineAssets(text, kind, ctx) {
       return null;
     }
     ctx.counted.add(`file:${found}`);
+    // A relative path names a file that is part of the page: carry it.
+    if (!clean.startsWith('/')) ctx.localAssets.add(found);
     return assetDataUri(found);
   };
   /** @param {string} value */
@@ -288,7 +290,7 @@ export async function renderPage(entry, options = {}) {
     });
   }
 
-  const ctx = {dir, root, warnings, counted: new Set()};
+  const ctx = {dir, root, warnings, counted: new Set(), localAssets: /** @type {Set<string>} */ (new Set())};
   try {
     markup = inlineAssets(markup, 'html', ctx);
     // React adds `<link rel="preload">` hints for images it renders; in one
@@ -376,6 +378,14 @@ export async function renderPage(entry, options = {}) {
 
   const files = /** @type {string[]} */ (message.files ?? [entry]);
   if (!files.includes(entry)) files.unshift(entry);
+  // Images and fonts the page or a stylesheet names by a relative path
+  // (`<img src="./logo.png">`, `url(./bg.png)`) are carried too, so the page
+  // comes back with them; a package's own files are not.
+  for (const asset of ctx.localAssets) {
+    const rel = path.relative(root, asset);
+    if (rel.startsWith('..') || path.isAbsolute(rel) || rel.split(path.sep).includes('node_modules')) continue;
+    if (!files.includes(asset)) files.push(asset);
+  }
   // Paths are kept relative to the folder that holds every file: the page's
   // folder, or an ancestor when the page imports from above it.
   let base = dir;
