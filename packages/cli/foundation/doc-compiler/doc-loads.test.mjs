@@ -393,8 +393,11 @@ const LOADER_MODULES = {
     'discoverIntegrationDocs',
     'GRAPH_BLOCK_TYPES',
     'GRAPH_ONLY_FIELDS',
+    'isGuideRoute',
     'mergeTopic',
+    'mergeTopicReport',
     'problemsInTopic',
+    'withoutPosition',
     'withSourceTitle',
   ],
 };

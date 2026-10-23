@@ -37,7 +37,10 @@ import {assertWithin} from '../../foundation/fs/path-safety.mjs';
 import {normalizeProviderId} from '../../foundation/identity/provider-identity.mjs';
 import {integrationDocTypes} from '../docs/_adapter.mjs';
 import {integrationDocConsistency} from '../../foundation/discovery/doc-consistency.mjs';
-import {integrationDocCommands} from './_adapter.mjs';
+import {
+  integrationDocCommands,
+  integrationDocTargets,
+} from './_adapter.mjs';
 import {
   THEME_SLUG_RE,
   unreadThemeFolders,
@@ -77,6 +80,15 @@ import {runChoice} from '../../foundation/release/run-context.mjs';
 
 /** The running CLI is outside the package's `@astryxdesign/cli` peer range. */
 const CLI_PEER_VERSION = 'cli_peer_version';
+
+/** A doc replaces or extends a name that holds no topic and no guide. */
+const DOC_TARGET_NOT_FOUND = 'doc_target_not_found';
+
+/** An extension section's `before` or `after` names no section of the base. */
+const DOC_SECTION_UNPLACED = 'doc_section_unplaced';
+
+/** Two docs of one package replace one guide; only the last one is read. */
+const DUPLICATE_GUIDE_REPLACEMENT = 'duplicate_guide_replacement';
 
 export {validateLoadedIntegration, isListedIssue};
 
@@ -711,6 +723,58 @@ async function docCommandNotes(integration) {
 }
 
 /**
+ * The notes for docs that replace or extend a topic or a guide the docs tree
+ * places, or place an extension's section with `before` or `after`: a name
+ * that holds neither (such as a namespace) applies nothing, and a key that
+ * names no section adds the section at the end. Each is listed, failing nothing, until
+ * the next minor release (architecture:cli-surface INV35).
+ * @param {any} integration a loaded integration
+ * @returns {Promise<Array<{code: string, message: string}>>}
+ */
+async function docTargetNotes(integration) {
+  /** @type {Array<{code: string, message: string}>} */
+  const notes = [];
+  const targets = await integrationDocTargets(integration);
+  /** @type {Map<string, string[]>} lowercased route → the docs replacing it */
+  const replacers = new Map();
+  for (const each of targets) {
+    if (each.kind !== 'guide' || each.relationship !== 'replaces') continue;
+    // An old route and the new one name one guide.
+    const key = each.guide ?? each.target.toLowerCase();
+    replacers.set(key, [...(replacers.get(key) ?? []), each.topic]);
+  }
+  for (const [route, topics] of replacers) {
+    if (topics.length < 2) continue;
+    notes.push({
+      code: DUPLICATE_GUIDE_REPLACEMENT,
+      message: `"${topics.join('", "')}" all replace the guide "${route}", and only the last, "${topics.at(-1)}", is read. Fix: keep one replacement, or make the others extend it.`,
+    });
+  }
+  for (const each of targets) {
+    if (each.kind === 'namespace') {
+      const shown = each.guidesBelow.slice(0, 8);
+      const more = each.guidesBelow.length - shown.length;
+      notes.push({
+        code: DOC_TARGET_NOT_FOUND,
+        message: `"${each.topic}" ${each.relationship} "${each.target}", which is a namespace of the docs tree: it holds no sections to ${each.relationship === 'replaces' ? 'replace' : 'extend'}, so this changes nothing. Fix: name the route of a guide below it${shown.length > 0 ? `: ${shown.join(', ')}${more > 0 ? `, and ${more} more` : ''}` : ''}.`,
+      });
+    } else if (each.kind == null) {
+      notes.push({
+        code: DOC_TARGET_NOT_FOUND,
+        message: `"${each.topic}" ${each.relationship} "${each.target}", which is neither a topic nor a guide of the CLI's docs or this package's own: it changes nothing unless an app also installs a package that provides it. Fix: if it should name one of those, name a topic as \`${formatCliCommand('docs')}\` lists it, or a guide's route as \`${formatCliCommand('docs authoring --depth all')}\` or \`${formatCliCommand('docs cli --depth all')}\` lists it.`,
+      });
+    }
+    for (const {section, field, key} of each.unplaced) {
+      notes.push({
+        code: DOC_SECTION_UNPLACED,
+        message: `Section "${section}" of "${each.topic}" goes ${field} "${key}", which is no section of "${each.guide ?? each.target}", so it is added at the end. Fix: use a key \`${formatCliCommand(`docs ${each.guide ?? each.target} --index`)}\` lists.`,
+      });
+    }
+  }
+  return notes;
+}
+
+/**
  * Unified entry: validate the LOCAL integration (no `pkg`) or an INSTALLED one
  * (`pkg` given) and return the `integration.validate` envelope. The no-manifest
  * local case is guidance, not an error — it comes back with `validated: false`,
@@ -778,6 +842,7 @@ export async function validateIntegration(pkg, options = {}) {
   // their fixes, the same way.
   if (integration?.docs) {
     notes.push(...(await docCommandNotes(integration)));
+    notes.push(...(await docTargetNotes(integration)));
   }
   return {
     type: 'integration.validate',
