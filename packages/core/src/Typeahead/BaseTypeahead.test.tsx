@@ -326,7 +326,9 @@ describe('BaseTypeahead', () => {
     expect(input).toHaveAttribute('aria-expanded', 'false');
 
     fireEvent.change(input, {target: {value: '😀a'}});
-    await waitFor(() => expect(search).toHaveBeenCalledExactlyOnceWith('😀a'));
+    await waitFor(() =>
+      expect(search).toHaveBeenCalledExactlyOnceWith('😀a', expect.anything()),
+    );
   });
 
   it('exposes a completed empty search as a disabled listbox option', async () => {

@@ -21,6 +21,7 @@ import React, {
   useCallback,
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -57,7 +58,7 @@ import {
 } from '../utils';
 import {warnOnce} from '../utils/devWarning';
 import type {BaseProps} from '../BaseProps';
-import type {SearchableItem, SearchSource} from './types';
+import type {SearchContext, SearchableItem, SearchSource} from './types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
@@ -410,6 +411,20 @@ const itemSizeStyles = stylex.create({
 // =============================================================================
 
 /**
+ * Whether `next` starts with `shown`, item by item and in order, by `id`: the
+ * append-only rule a later list for the same query follows (spec:AST-092 FR2).
+ */
+function startsWithRows<T extends SearchableItem>(
+  next: readonly T[],
+  shown: readonly T[],
+): boolean {
+  return (
+    next.length >= shown.length &&
+    shown.every((item, index) => next[index].id === item.id)
+  );
+}
+
+/**
  * A query that has been typed but is still shorter than the caller's
  * threshold. An empty query is not "below the minimum" — it is the
  * untouched state, and `hasEntriesOnFocus` owns what happens there.
@@ -529,6 +544,16 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     }
   }, [results]);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  // The committed rows and highlight, read when a later list for the same
+  // query arrives so the highlighted item keeps its highlight
+  // (spec:AST-092 FR6). Synced after commit: a list arrives from an event or
+  // an awaited continuation, never during render.
+  const resultsRef = useRef<T[]>(results);
+  const highlightedIndexRef = useRef(highlightedIndex);
+  useIsomorphicLayoutEffect(() => {
+    resultsRef.current = results;
+    highlightedIndexRef.current = highlightedIndex;
+  }, [results, highlightedIndex]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
@@ -707,7 +732,12 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     };
   }, [popover, anchorRef]);
 
-  // Perform search
+  // Perform search. A source may show lists for the query before it settles
+  // through `context.update`, and the value it returns is the final list
+  // (spec:AST-092). The first list shown for a query may replace the rows;
+  // every later one keeps the shown rows first, so nothing moves under the
+  // pointer or the highlight. Merging is the source's work: a later list that
+  // breaks that rule is shown as given, with a development warning.
   const performSearch = useCallback(
     async (searchQuery: string) => {
       searchSource.cancel?.();
@@ -717,35 +747,102 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       const gen = ++searchGenRef.current;
       setLoading(true);
       setHasSearched(true);
+      let isSettled = false;
+      // The capped source rows last shown for this query, and the array handed
+      // to React for them. Null until the query's first non-empty list.
+      let shownRows: T[] | null = null;
+      let shownState: T[] | null = null;
+
+      const showList = (list: T[], isFinal: boolean): T[] => {
+        const fetched = list.slice(0, maxMenuItems);
+        if (shownRows != null && !startsWithRows(fetched, shownRows)) {
+          warnOnce(
+            'base-typeahead:append-only',
+            'BaseTypeahead',
+            'A later list for the same query moved, removed, or inserted ' +
+              'above rows already shown. After the first list for a query, ' +
+              'a search source keeps the shown rows first and in order and ' +
+              'adds new rows after them (spec:AST-092 FR2).',
+          );
+        }
+        // Entries derived from the typed text (Tokenizer's create row) wait
+        // for the query to settle: before then a pending server result may
+        // still show the value they would offer to create.
+        const shown = isFinal
+          ? [...fetched, ...(__queryEntries?.(searchQuery, fetched) ?? [])]
+          : fetched;
+        // The highlighted item stays highlighted across later lists. Until
+        // React commits the previous list, the person cannot have moved the
+        // highlight off its first row.
+        let previousHighlightId: string | undefined;
+        if (shownRows != null) {
+          previousHighlightId =
+            resultsRef.current === shownState
+              ? shownState[highlightedIndexRef.current]?.id
+              : shownRows[0]?.id;
+        }
+        const keptIndex =
+          previousHighlightId == null
+            ? -1
+            : shown.findIndex(item => item.id === previousHighlightId);
+        resultsGenRef.current = gen;
+        setResults(shown);
+        setHighlightedIndex(
+          keptIndex >= 0 ? keptIndex : shown.length > 0 ? 0 : -1,
+        );
+        if (fetched.length > 0) {
+          shownRows = fetched;
+          shownState = shown;
+        }
+        return shown;
+      };
+
+      const announceCount = (count: number) => {
+        // Announce the outcome only for an active query (not the initial
+        // focus-open), so screen-reader users hear result counts / no-results.
+        // An empty result is announced from the rendered row instead, so the
+        // region speaks whatever the caller put there.
+        if (searchQuery.length > 0 && count > 0) {
+          announce(t('@astryx.typeahead.resultCount', {count}));
+        }
+      };
+
+      const context: SearchContext<T> = {
+        update(items) {
+          // An empty list leaves the shown rows in place; a list for a query
+          // that is no longer current, or after it settled, is dropped.
+          if (isSettled || searchGenRef.current !== gen || items.length === 0) {
+            return;
+          }
+          showList(items, false);
+          showLayer();
+        },
+      };
+
       try {
-        const searchResults = await searchSource.search(searchQuery);
+        const searchResults = await searchSource.search(searchQuery, context);
         if (searchGenRef.current !== gen) {
           return;
         }
-        resultsGenRef.current = gen;
-        const fetched = searchResults.slice(0, maxMenuItems);
-        const shown = [
-          ...fetched,
-          ...(__queryEntries?.(searchQuery, fetched) ?? []),
-        ];
-        setResults(shown);
-        setHighlightedIndex(shown.length > 0 ? 0 : -1);
+        isSettled = true;
+        const shown = showList(searchResults, true);
         if (searchResults.length > 0 || searchQuery.length > 0) {
           showLayer();
         }
-        // Announce the outcome only for an active query (not the initial
-        // focus-open), so screen-reader users hear result counts / no-results.
-        if (searchQuery.length > 0 && shown.length > 0) {
-          announce(t('@astryx.typeahead.resultCount', {count: shown.length}));
-        }
-        // An empty result is announced from the rendered row instead, so the
-        // region speaks whatever the caller put there.
+        announceCount(shown.length);
       } catch {
         if (searchGenRef.current !== gen) {
           return;
         }
-        setResults([]);
-        setHighlightedIndex(-1);
+        isSettled = true;
+        if (shownRows != null) {
+          // A failed server answer keeps the last non-empty list the source
+          // showed for this query, which settles it.
+          announceCount(showList(shownRows, true).length);
+        } else {
+          setResults([]);
+          setHighlightedIndex(-1);
+        }
       } finally {
         if (searchGenRef.current === gen) {
           setLoading(false);
@@ -1124,10 +1221,22 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     ],
   );
 
-  // Generate item ID for accessibility
+  // Option ids follow the item, not the row, so the active descendant keeps
+  // naming the same option while rows are added after it and a screen reader
+  // does not re-read it (spec:AST-092 FR7). A repeated id in one list falls
+  // back to its row so DOM ids stay unique.
+  const optionIds = useMemo(() => {
+    const seen = new Set<string>();
+    return results.map((item, index) => {
+      const byItem = `${listboxId}-option-${encodeURIComponent(item.id)}`;
+      const id = seen.has(byItem) ? `${byItem}-${index}` : byItem;
+      seen.add(byItem);
+      return id;
+    });
+  }, [results, listboxId]);
   const getItemId = useCallback(
-    (index: number) => `${listboxId}-option-${index}`,
-    [listboxId],
+    (index: number) => optionIds[index] ?? `${listboxId}-option-${index}`,
+    [optionIds, listboxId],
   );
 
   // Keep the highlighted option visible during keyboard navigation; hover
