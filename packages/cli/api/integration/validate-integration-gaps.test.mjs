@@ -127,7 +127,28 @@ async function issuesOf(dir) {
  * @returns {Promise<Array<{code: string, message: string}>>}
  */
 async function listedOf(dir) {
-  return (await validateIntegration(undefined, {cwd: dir})).data.notes ?? [];
+  return (
+    (await validateIntegration(undefined, {cwd: dir})).data.notes ?? []
+  ).filter(note => !EXAMPLE_CODES.has(note.code));
+}
+
+/**
+ * The example notes, which nearly every fixture here draws (a component with
+ * no example template); authoring-checks.test.mjs covers them.
+ */
+const EXAMPLE_CODES = new Set([
+  'component_without_example',
+  'template_category',
+  'showcase_not_standalone',
+  'template_asset_not_packed',
+]);
+
+/**
+ * Notes without the example notes.
+ * @param {Array<{code: string, message: string, next?: boolean}> | undefined} notes
+ */
+function others(notes) {
+  return (notes ?? []).filter(note => !EXAMPLE_CODES.has(note.code));
 }
 
 /**
@@ -239,7 +260,7 @@ describe('a name that differs from its file name', () => {
       });
 
       const {data} = await validateIntegration(undefined, {cwd: dir});
-      expect(data.notes ?? []).toEqual([]);
+      expect(others(data.notes)).toEqual([]);
       expect(data.docNames).toEqual({
         status: 'checked',
         findings: [],
@@ -657,7 +678,7 @@ describe('block component names', () => {
     });
 
     const {data} = await validateIntegration(undefined, {cwd: dir});
-    expect((data.notes ?? []).map(note => note.message)).toEqual([
+    expect(others(data.notes).map(note => note.message)).toEqual([
       expect.stringContaining('names "AcmeGizmo" in componentsUsed'),
     ]);
     expect(data.blockComponents?.unchecked).toEqual([]);
@@ -682,7 +703,7 @@ describe('block component names', () => {
       });
 
       const {data} = await validateIntegration(undefined, {cwd: dir});
-      expect((data.notes ?? []).map(note => note.message)).toEqual([
+      expect(others(data.notes).map(note => note.message)).toEqual([
         expect.stringContaining('names "AcmeGizmo" in componentsUsed'),
       ]);
       expect(data.blockComponents?.unchecked).toEqual([]);
@@ -838,7 +859,7 @@ describe('block component names', () => {
     });
 
     const {data} = await validateIntegration(undefined, {cwd: dir});
-    expect((data.notes ?? []).map(note => note.message)).toEqual([
+    expect(others(data.notes).map(note => note.message)).toEqual([
       expect.stringContaining('names "AcmeGizmo" in componentsUsed'),
     ]);
   });
@@ -857,7 +878,7 @@ describe('block component names', () => {
     });
 
     const {data} = await validateIntegration(undefined, {cwd: dir});
-    expect(data.notes ?? []).toEqual([]);
+    expect(others(data.notes)).toEqual([]);
     expect(data.blockComponents?.unchecked).toEqual([
       {
         file: 'templates/account-card.doc.mjs',
@@ -882,7 +903,7 @@ describe('block component names', () => {
     });
 
     const {data} = await validateIntegration(undefined, {cwd: dir});
-    expect((data.notes ?? []).map(note => note.message)).toEqual([
+    expect(others(data.notes).map(note => note.message)).toEqual([
       expect.stringContaining('names "AcmeGizmo" in componentsUsed'),
     ]);
     expect(data.blockComponents?.unchecked).toEqual([]);
@@ -897,7 +918,7 @@ describe('block component names', () => {
     });
 
     const {data} = await validateIntegration(undefined, {cwd: dir});
-    expect(data.notes ?? []).toEqual([]);
+    expect(others(data.notes)).toEqual([]);
     expect(data.blockComponents?.unchecked).toEqual([
       {
         file: 'templates/account-card.doc.mjs',
@@ -917,7 +938,7 @@ describe('block component names', () => {
     });
 
     const {data} = await validateIntegration(undefined, {cwd: dir});
-    expect((data.notes ?? []).map(note => note.message)).toEqual([
+    expect(others(data.notes).map(note => note.message)).toEqual([
       expect.stringContaining('names "AcmeGizmo" in componentsUsed'),
     ]);
     expect(data.blockComponents?.unchecked).toEqual([]);
@@ -960,7 +981,7 @@ describe('block component names', () => {
       );
 
       const {data} = await validateIntegration(undefined, {cwd: outside});
-      expect(data.notes ?? []).toEqual([]);
+      expect(others(data.notes)).toEqual([]);
       const reason =
         'Core is not installed, so its component names cannot be checked.';
       expect(data.blockComponents).toEqual({
@@ -1366,7 +1387,7 @@ describe('package.json', () => {
       ).toEqual([['invalid_component', 'error']]);
     }
     const validate = result.data.checks[0].response.data;
-    expect('notes' in validate ? validate.notes : undefined).toEqual([
+    expect('notes' in validate ? others(validate.notes) : undefined).toEqual([
       {
         code: 'invalid_package_json',
         next: true,
@@ -1891,8 +1912,8 @@ describe('layout findings 0.7.2 did not fail on', () => {
         const validate = /** @type {any} */ (
           result.data.checks[0].response.data
         );
-        expect(validate.notes.length).toBeGreaterThan(0);
-        for (const note of validate.notes) {
+        expect(others(validate.notes).length).toBeGreaterThan(0);
+        for (const note of others(validate.notes)) {
           // Listed now, a warning from the next minor release: `next`.
           expect(Object.keys(note).sort()).toEqual(['code', 'message', 'next']);
           expect(note.next).toBe(true);
@@ -1953,8 +1974,8 @@ describe('name findings listed until the next minor release', () => {
       const {data} = await validateIntegration(undefined, {cwd: dir});
       expect(data.issues).toEqual([]);
       expect(/** @type {any} */ (data)[report].findings).toEqual([]);
-      expect(data.notes?.map(note => note.code)).toEqual([code]);
-      expect(data.notes?.[0].message).toContain('Fix: ');
+      expect(others(data.notes).map(note => note.code)).toEqual([code]);
+      expect(others(data.notes)[0].message).toContain('Fix: ');
 
       const result = await integrationCheck({cwd: dir, strict: true});
       expect(result.data.failures).toEqual([]);

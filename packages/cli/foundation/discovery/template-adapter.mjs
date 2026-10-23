@@ -700,6 +700,9 @@ async function discoverBlocks() {
       componentsUsed: doc?.componentsUsed ?? [],
       ...(doc?.icons ? {icons: doc.icons} : {}),
       isShowcase: doc?.isShowcase ?? false,
+      ...(typeof doc?.exampleFor === 'string'
+        ? {exampleFor: doc.exampleFor}
+        : {}),
       filePath: tsxPath,
       docPath,
       category: relPath,
@@ -743,6 +746,9 @@ async function discoverExternalBlocks(cwd = process.cwd()) {
         componentsUsed: doc?.componentsUsed ?? [],
         ...(doc?.icons ? {icons: doc.icons} : {}),
         isShowcase: doc?.isShowcase ?? false,
+        ...(typeof doc?.exampleFor === 'string'
+          ? {exampleFor: doc.exampleFor}
+          : {}),
         filePath: tsxPath,
         docPath,
         category: relPath,
@@ -1432,6 +1438,11 @@ export async function findShowcase(componentName, cwd, options) {
     filePath: b.filePath,
     docPath: b.docPath,
   });
+
+  // Priority 0: the showcase that names the component (`exampleFor`), the
+  // way packages declare it; a category no longer has to carry the name.
+  const named = showcases.find(b => (b.exampleFor ?? '').toLowerCase() === lc);
+  if (named) return toResult(named);
 
   // Priority 1: own directory (components/Badge/ for "Badge")
   const dirMatch = showcases.find(b => {

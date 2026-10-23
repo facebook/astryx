@@ -285,6 +285,16 @@ function printIntegrationValidation(data, seen) {
     ...blockComponentsBlocks(data.blockComponents),
     ...iconSetCoverageBlocks(data.iconSets),
     ...olderCliNoteBlocks(data.olderCliNotes),
+    ...(data.exampleAssets && data.exampleAssets.unchecked.length > 0
+      ? [
+          text(
+            `[info] Template assets not checked: ${data.exampleAssets.unchecked.length}:`,
+          ),
+          records(data.exampleAssets.unchecked, {
+            fields: ['file', 'asset', 'reason'],
+          }),
+        ]
+      : []),
     ...(data.publicImports && data.publicImports.unchecked.length > 0
       ? [
           text(

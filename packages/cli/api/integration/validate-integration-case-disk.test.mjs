@@ -70,7 +70,12 @@ describe('a doc whose name differs from its source only in case, on a case-insen
 
     const {data} = await validateIntegration(undefined, {cwd: tmpDir});
     expect(data.issues).toEqual([]);
-    expect(data.notes).toEqual([
+    // The component has no example template; that note is tested elsewhere.
+    expect(
+      (data.notes ?? []).filter(
+        note => note.code !== 'component_without_example',
+      ),
+    ).toEqual([
       {
         code: 'source_without_component_doc',
         next: true,
@@ -101,7 +106,12 @@ describe('a doc whose name differs from its source only in case, on a case-insen
 
     const {data} = await validateIntegration(undefined, {cwd: tmpDir});
     expect(data.issues).toEqual([]);
-    expect(data.notes).toEqual([
+    // The component has no example template; that note is tested elsewhere.
+    expect(
+      (data.notes ?? []).filter(
+        note => note.code !== 'component_without_example',
+      ),
+    ).toEqual([
       {
         code: 'source_without_component_doc',
         next: true,
