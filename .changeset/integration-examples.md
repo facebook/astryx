@@ -2,7 +2,7 @@
 '@astryxdesign/cli': patch
 ---
 
-[feat] `doctor integration validate`, and so `integration check`, lists what a package's examples need to work everywhere they are shown, as notes for the next minor release (`integration check --strict --next` fails on them now):
+[feat] `doctor integration validate`, and so `integration check`, lists what a package's examples need to work everywhere they are shown, as notes for the next minor release (`integration check --strict --next` fails on them now): (#7891)
 
 - `component_without_example`: a published component that no block template shows with `exampleFor: '<Name>'` and `isShowcase: true` (or `alsoShowcaseFor`). A block named like a showcase that sets neither does not count. Hidden docs, family members, docs with `isHiddenFromOverview` and `Utility` components are exempt. The note carries a template doc to paste.
 - `template_category`: a template `category` written as a path, such as `components/X`, with a `"<Group> - <Variant>"` one to write.

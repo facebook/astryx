@@ -2,7 +2,7 @@
 '@astryxdesign/cli': patch
 ---
 
-[fix] Discover results name their source package and tolerate typos.
+[fix] Discover results name their source package and tolerate typos. (#7147)
 
 @josephfarina
 
