@@ -1844,8 +1844,11 @@ function movedRoute(topic, tree) {
 
 /**
  * The error for a docs argument that names nothing. For a route, it suggests
- * the children of the deepest namespace the route reaches; otherwise, every
- * topic and every top-level namespace.
+ * every child of the deepest namespace the route reaches, closest first.
+ * Otherwise it suggests the docs the argument names in another spelling, or
+ * failing that the topics and top-level namespaces, closest first and cut
+ * where the matches get weaker (every one of them when none shares a word
+ * with the argument).
  * @param {unknown} topic
  * @param {DocsCatalog} catalog
  * @returns {Promise<AstryxError>}
@@ -1854,6 +1857,8 @@ export async function unknownTopicError(topic, catalog) {
   const tree = await projectTree(catalog);
   /** @type {Array<{name: string, reason: string}>} */
   let suggestions = [];
+  // Route children stay whole (spec:AST-046); only the other lists are cut.
+  let routeChildren = false;
   if (typeof topic === 'string' && topic.includes('/')) {
     const parts = topic.split('/');
     for (
@@ -1863,6 +1868,7 @@ export async function unknownTopicError(topic, catalog) {
     ) {
       const near = tree.get(parts.slice(0, depth).join('/'));
       if (near) {
+        routeChildren = true;
         suggestions = near.slots.flatMap(slot =>
           slot.children.map(route => ({
             name: route,
@@ -1894,7 +1900,9 @@ export async function unknownTopicError(topic, catalog) {
     ];
   }
   if (typeof topic === 'string') {
-    suggestions = orderRouteSuggestions(topic, suggestions, {closest: true});
+    suggestions = orderRouteSuggestions(topic, suggestions, {
+      closest: !routeChildren,
+    });
   }
   // A route that moved names where it went, ahead of the usual suggestions
   // (spec:AST-046 FR9, FR6).

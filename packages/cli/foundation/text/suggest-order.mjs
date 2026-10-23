@@ -5,13 +5,15 @@
  *
  * A failed `component`, `template` or `docs` lookup already knows which
  * entries to suggest; this module decides their order, so the entry the
- * caller most likely meant comes first. It never makes a list longer.
+ * caller most likely meant comes first. Asked for the closest entries only,
+ * it also cuts a list where the matches get weaker. It never makes a list
+ * longer.
  *
  * Names are compared as words: `DropdownMenuItem`, `dropdown-menu-item` and
  * `Dropdown Menu Items` all read as `dropdown menu item`.
  *
  * @input  the name the caller typed and the candidate entries
- * @output the entries, reordered
+ * @output the entries, reordered, and cut when asked
  * @position lib: shared by the component, template and docs lookup errors
  */
 
