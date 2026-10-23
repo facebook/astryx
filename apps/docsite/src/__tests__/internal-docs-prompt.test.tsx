@@ -392,6 +392,9 @@ describe('InternalDocsPrompt', () => {
     await loadPrompt();
     await mount();
     expect(prompt()?.textContent).toContain("You're viewing Canary docs");
+    expect(
+      prompt()?.querySelector('.astryx-banner')?.getAttribute('data-status'),
+    ).toBe('warning');
     expect(prompt()?.textContent).toContain(
       'These docs may include unreleased components and props. View production docs for the latest stable release.',
     );
@@ -408,6 +411,9 @@ describe('InternalDocsPrompt', () => {
     ).toBeNull();
     await act(async () => vi.advanceTimersByTime(5000));
     expect(prompt()).not.toBeNull();
+    expect(
+      prompt()?.querySelector('.astryx-banner')?.getAttribute('data-status'),
+    ).toBe('warning');
     expect(prompt()?.outerHTML).not.toMatch(
       /Meta internal|Meta-specific components/,
     );
@@ -434,6 +440,7 @@ describe('InternalDocsPrompt', () => {
         'These docs may include unreleased components and props. View production docs for the latest stable release.',
       );
       expect(html).toContain('View production');
+      expect(html).toContain('data-status="warning"');
       expect(html).not.toMatch(/Meta internal|Meta-specific components/);
     },
   );
@@ -447,6 +454,9 @@ describe('InternalDocsPrompt', () => {
     );
     showPrompt();
     expect(prompt()?.textContent).toContain('Working on Meta internal tools?');
+    expect(
+      prompt()?.querySelector('.astryx-banner')?.getAttribute('data-status'),
+    ).toBe('info');
     expect(prompt()?.textContent).not.toContain("You're viewing Canary docs");
     expect(prompt()?.textContent).toContain(
       'These docs may include unreleased components and props. View production docs for the latest stable release.',

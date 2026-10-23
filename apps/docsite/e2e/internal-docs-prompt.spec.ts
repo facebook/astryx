@@ -118,6 +118,14 @@ for (const {name, origin} of deployments) {
             'https://astryx.atmeta.com/docs/getting-started?source=test',
           );
           await expect(notice).toContainText("You're viewing Canary docs");
+          await expect(notice.locator('[data-status="warning"]')).toHaveCount(
+            2,
+          );
+          await page.screenshot({
+            path: testInfo.outputPath(
+              `docs-banner-canary-default-${name}-${width}-${colorScheme}.png`,
+            ),
+          });
           await expect(notice).toContainText(
             'These docs may include unreleased components and props. View production docs for the latest stable release.',
           );
@@ -277,6 +285,7 @@ for (const width of [1440, 390]) {
       }),
     ).toHaveCount(0);
     if (isCanary) {
+      await expect(notice.locator('[data-status="warning"]')).toHaveCount(2);
       await expect(notice).not.toContainText(
         /Meta internal|Meta-specific components/,
       );

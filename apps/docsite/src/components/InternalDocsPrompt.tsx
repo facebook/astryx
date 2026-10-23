@@ -92,7 +92,7 @@ function DocsInfoBanner({
       role="region"
       aria-label="Documentation notice"
       container="section"
-      status="info"
+      status={internalHref ? 'info' : 'warning'}
       isDismissable
       dismissLabel="Dismiss documentation notice for this page view"
       title={
