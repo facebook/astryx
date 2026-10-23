@@ -564,7 +564,7 @@ describe('render(): every write stays inside the current folder', () => {
     expect(await codeOf(() => render('report.test.html', {cwd, reverse: true, out: 'test/page.mjs'}))).toBe('ERR_INVALID_ARGUMENT');
     expect(await codeOf(() => render('report.test.html', {cwd, reverse: true, out: 'page.cy.mjs'}))).toBe('ERR_INVALID_ARGUMENT');
     put('runner/spec.html', `<body><p class="astryx-text">x</p>${sourceBlock('report.cy.ts', [{path: 'report.cy.ts', bytes: Buffer.from('export default () => null;\n')}])}</body>`);
-    expect(await codeOf(() => render('spec.html', {cwd, reverse: true}))).toBe('ERR_RENDER_SOURCE_DAMAGED');
+    expect(await codeOf(() => render('spec.html', {cwd, reverse: true}))).toBe('ERR_INVALID_ARGUMENT');
     // Ordinary names that only contain such words still come back.
     put('runner/results.html', `<body><p class="astryx-text">x</p>${sourceBlock('stories/test-results.tsx', [{path: 'stories/test-results.tsx', bytes: Buffer.from("import d from '../mock-data';\nexport default () => d;\n")}, {path: 'mock-data.ts', bytes: Buffer.from('export default 1;\n')}])}</body>`);
     // Where a file lands counts, not only its name in the file.
@@ -604,6 +604,23 @@ describe('render(): every write stays inside the current folder', () => {
     expect(codes).toContain('page-script');
     expect(codes).toContain('remote-asset');
   }, 60_000);
+
+  it('judges the page by where it lands, on both paths', async () => {
+    const {sourceBlock} = await import('../../foundation/render/source-block.mjs');
+    fs.mkdirSync(path.join(dir, 'land/.git'), {recursive: true});
+    // A page saved as test.tsx comes back under another name with --out.
+    put('land/named.html', `<body><p class="astryx-text">x</p>${sourceBlock('test.tsx', [{path: 'test.tsx', bytes: Buffer.from('export default () => null;\n')}])}</body>`);
+    const cwd = path.join(dir, 'land');
+    expect(await codeOf(() => render('named.html', {cwd, reverse: true}))).toBe('ERR_INVALID_ARGUMENT');
+    const back = /** @type {any} */ (await render('named.html', {cwd, reverse: true, out: 'demo/page.tsx'}));
+    expect(back.data.output).toBe('demo/page.tsx');
+    // A page rebuilt from markup inside __tests__/ is refused too.
+    put('land/src/__tests__/stripped.html', '<body><div class="astryx-stack"><p class="astryx-text">Hi</p></div></body>');
+    expect(
+      await codeOf(() => render('stripped.html', {cwd: path.join(cwd, 'src/__tests__'), reverse: true})),
+    ).toBe('ERR_INVALID_ARGUMENT');
+    expect(fs.readdirSync(path.join(cwd, 'src/__tests__'))).toEqual(['stripped.html']);
+  });
 
   it('refuses --title with --reverse', async () => {
     expect(await codeOf(() => render('page.html', {cwd: dir, reverse: true, title: 'x'}))).toBe('ERR_INVALID_ARGUMENT');
@@ -759,7 +776,7 @@ describe('render --reverse: a received file may carry only what a render embeds'
 
   it('refuses a page entry that is not a page module, and an --out that names a configuration file', async () => {
     await crafted('crafted-entry.html', [{path: 'vite.config.ts', text: 'export default {};\n'}]);
-    expect(await codeOf(() => render('crafted-entry.html', {cwd: dir, reverse: true}))).toBe('ERR_RENDER_SOURCE_DAMAGED');
+    expect(await codeOf(() => render('crafted-entry.html', {cwd: dir, reverse: true}))).toBe('ERR_INVALID_ARGUMENT');
     await crafted('crafted-good.html', [{path: 'page.tsx', text: 'export default () => null;\n'}]);
     expect(await codeOf(() => render('crafted-good.html', {cwd: dir, reverse: true, out: 'vite.config.ts'}))).toBe(
       'ERR_INVALID_ARGUMENT',

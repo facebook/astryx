@@ -280,6 +280,41 @@ export async function renderToFile({cwd, input, output, title}) {
 }
 
 /**
+ * Refuse files a test, story or benchmark runner would run where they land,
+ * judged from the repository root (every folder above the file up to it),
+ * else the topmost folder with a package.json, else the current folder.
+ * @param {string[]} files absolute
+ * @param {string} cwd
+ * @param {string} input
+ */
+function refuseRunnable(files, cwd, input) {
+  /** @param {string} marker */
+  const nearest = marker => {
+    for (let d = cwd; ; d = path.dirname(d)) {
+      if (fs.existsSync(path.join(d, marker))) return d;
+      if (path.dirname(d) === d) return null;
+    }
+  };
+  let topPackage = null;
+  for (let d = cwd; ; d = path.dirname(d)) {
+    if (fs.existsSync(path.join(d, 'package.json'))) topPackage = d;
+    if (path.dirname(d) === d) break;
+  }
+  const projectRoot = nearest('.git') ?? topPackage ?? cwd;
+  const runnable = files
+    .map(file => path.relative(projectRoot, file).split(path.sep))
+    .filter(segments => runnerPicksUp(segments))
+    .map(segments => segments.join('/'));
+  if (runnable.length > 0) {
+    throw new AstryxError(
+      `${shown(cwd, input)} would write ${runnable.join(', ')} (from the project root), where a test, story or benchmark runner would run it; nothing was written. Restore it somewhere else with --out.`,
+      [],
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
+  }
+}
+
+/**
  * The new folder a restore without --out writes into: beside the HTML file,
  * named after it (`report.html` gives `report-restored/`, then
  * `report-restored-2/` when that exists).
@@ -315,10 +350,11 @@ export function reverseToFile({cwd, input, output, overwrite}) {
   /** A page is never written as a configuration, test, spec or story file. @param {string} file */
   const refuseConfigTarget = file => {
     const rel = path.relative(cwd, file).split(path.sep).join('/');
-    const problem = embeddedPathProblem(
-      rel.startsWith('..') || path.isAbsolute(rel) ? path.basename(file) : rel,
-      {page: true},
-    );
+    const where = rel.startsWith('..') || path.isAbsolute(rel) ? path.basename(file) : rel;
+    // Where the page lands must be a page module, and a name no tool takes
+    // as its own (configuration, a runner's file): the same rules as any
+    // file a restore writes.
+    const problem = embeddedPathProblem(where, {page: true}) ?? embeddedPathProblem(where);
     if (problem) {
       throw new AstryxError(
         `${shown(cwd, file)} is not a page module file name a reverse writes (${problem.reason}); nothing was written.`,
@@ -440,37 +476,7 @@ export function reverseToFile({cwd, input, output, overwrite}) {
       );
     }
     writes.forEach((w, i) => confined(w.file, cwd, i === 0 ? 'The page' : 'The embedded file'));
-    // Where each file lands, not only its name in the file, must be one no
-    // test, story or benchmark runner picks up.
-    // Runners search from the project root: judged from the repository root
-    // (every folder above the file up to it), else the topmost package.
-    /** @param {string} marker */
-    const nearest = marker => {
-      for (let d = cwd; ; d = path.dirname(d)) {
-        if (fs.existsSync(path.join(d, marker))) return d;
-        if (path.dirname(d) === d) return null;
-      }
-    };
-    // The repository root holds every runner that could reach the file
-    // (a nested package's and the repository's own); without one, the
-    // topmost folder with a package.json.
-    let topPackage = null;
-    for (let d = cwd; ; d = path.dirname(d)) {
-      if (fs.existsSync(path.join(d, 'package.json'))) topPackage = d;
-      if (path.dirname(d) === d) break;
-    }
-    const projectRoot = nearest('.git') ?? topPackage ?? cwd;
-    const runnable = writes
-      .map(w => path.relative(projectRoot, w.file).split(path.sep))
-      .filter(segments => runnerPicksUp(segments))
-      .map(segments => segments.join('/'));
-    if (runnable.length > 0) {
-      throw new AstryxError(
-        `${shown(cwd, input)} would write ${runnable.join(', ')} (from the project root), where a test, story or benchmark runner would run it; nothing was written. Restore it somewhere else with --out.`,
-        [],
-        ERROR_CODES.ERR_INVALID_ARGUMENT,
-      );
-    }
+    refuseRunnable(writes.map(w => w.file), cwd, input);
     refuseExisting(writes.map(w => w.file));
     refuseProtected(writes.map(w => w.file), cwd);
     writeAll(writes, cwd);
@@ -500,6 +506,7 @@ export function reverseToFile({cwd, input, output, overwrite}) {
   const target = output ?? path.join(restoreFolder(input), 'page.tsx');
   refuseConfigTarget(target);
   confined(target, cwd, 'The page');
+  refuseRunnable([target], cwd, input);
   refuseExisting([target]);
   // Components resolve from where the page will live, then from the HTML
   // file's folder, then from the current folder.

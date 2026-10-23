@@ -87,16 +87,18 @@ export function embeddedPathProblem(p, options = {}) {
   }
   const base = segments[segments.length - 1];
   const ext = extOf(p);
-  // A file a test, story or benchmark runner picks up by its name or folder
-  // runs without anyone importing it: never one, page included.
-  if (runnerPicksUp(segments)) {
-    return {code: 'ERR_RENDER_SOURCE_DAMAGED', reason: `a test, spec, story or benchmark file (${p})`};
-  }
+  // The page is judged by where it lands (its name in the file is only a
+  // default), so only its kind counts here.
   if (options.page) {
-    if (!PAGE_EXTENSIONS.includes(ext) || CONFIG_MODULE.test(base)) {
+    if (!PAGE_EXTENSIONS.includes(ext)) {
       return {code: 'ERR_RENDER_SOURCE_DAMAGED', reason: `a page that is not a page module (${p})`};
     }
     return null;
+  }
+  // A file a test, story or benchmark runner picks up by its name or folder
+  // runs without anyone importing it.
+  if (runnerPicksUp(segments)) {
+    return {code: 'ERR_RENDER_SOURCE_DAMAGED', reason: `a test, spec, story or benchmark file (${p})`};
   }
   if (((ext === '.json' || ext === '.jsonc') && CONFIG_JSON.test(base)) || CONFIG_MODULE.test(base)) {
     return {code: 'ERR_RENDER_SOURCE_DAMAGED', reason: `a project or tool configuration file (${p})`};

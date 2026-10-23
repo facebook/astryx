@@ -69,7 +69,9 @@ export async function render(file, options = {}) {
         ERROR_CODES.ERR_INVALID_ARGUMENT,
       );
     }
-    const outProblem = output ? embeddedPathProblem(path.basename(output), {page: true}) : null;
+    const outProblem = output
+      ? (embeddedPathProblem(path.basename(output), {page: true}) ?? embeddedPathProblem(path.basename(output)))
+      : null;
     if (output && outProblem) {
       throw new AstryxError(
         `--out for --reverse must name a page module, not ${outProblem.reason}`,
