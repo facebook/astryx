@@ -10,9 +10,12 @@
  *
  * All drawings of an icon live in one SVG; CSS shows the one whose weight
  * range contains the current font weight. The weight comes from the text
- * around the icon (read through the probe font in weightProbe.ts), so an
- * icon inside bold text draws its bold drawing with no prop. `weight` pins
- * it, and an ancestor can set `--astryx-icon-weight` to pin a subtree.
+ * around the icon, read by a 1ch-wide probe container (see weightProbe.ts
+ * and weighted.stylex.ts), so an icon inside bold text draws its bold
+ * drawing with no prop. `weight` pins it, and an ancestor can set
+ * `--astryx-icon-weight` to pin a subtree.
+ *
+ * DOM: a fixed-size box > the probe container (1ch wide, overflowing) > svg.
  *
  * Sprite mode: render `WeightedIconSprite` once with the icons a page uses,
  * then pass `sprite` to each icon. Each instance is then a `<use>`
@@ -25,7 +28,7 @@ import {colorVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {mergeProps, themeProps} from '@astryxdesign/core/utils';
 import {iconVars} from './tokens.stylex';
 import {opticalSize} from './variations.stylex';
-import {weightRanges} from './weighted.stylex';
+import {weightProbeStyles, weightRanges} from './weighted.stylex';
 import {registerWeightProbe} from './weightProbe';
 import type {
   IconWeight,
@@ -69,16 +72,22 @@ export interface WeightedIconSpriteProps {
 }
 
 const styles = stylex.create({
+  // The fixed-size box. The probe must be the first font so `1ch` reflects
+  // the font weight; icons draw no text, so this changes nothing visible.
   root: {
     display: 'inline-flex',
     flexShrink: 0,
     width: iconVars['--icon-size'],
     height: iconVars['--icon-size'],
-    fill: 'currentColor',
-    // The probe must be the first font so `1ex` reflects the font weight.
-    // Icons draw no text, so this changes nothing visible.
     fontFamily: 'AstryxWeightProbe',
     fontSynthesis: 'none',
+  },
+  svg: {
+    display: 'block',
+    flexShrink: 0,
+    width: iconVars['--icon-size'],
+    height: iconVars['--icon-size'],
+    fill: 'currentColor',
   },
   sprite: {
     position: 'absolute',
@@ -175,23 +184,28 @@ export function WeightedSVGIcon({
     weight != null ? {'--astryx-icon-weight': String(weight)} : undefined;
 
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox={icon.viewBox ?? '0 0 24 24'}
-      {...a11yProps}
+    <span
       {...mergeProps(
         themeProps('weighted-svg-icon', {size, color}),
         stylex.props(styles.root, colorStyles[color], opticalSize[size]),
-      )}
-      style={{...pinnedStyle, ...(style as CSSProperties)}}
-      {...props}>
-      {sprite ? (
-        <use href={`#${weightedIconSymbolId(icon)}`} />
-      ) : (
-        icon.layers.map(layer => (
-          <Layer key={`${layer.from}-${layer.to}`} layer={layer} />
-        ))
-      )}
-    </svg>
+      )}>
+      <span {...stylex.props(weightProbeStyles.probe)}>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox={icon.viewBox ?? '0 0 24 24'}
+          {...a11yProps}
+          {...stylex.props(styles.svg, weightProbeStyles.svg)}
+          style={{...pinnedStyle, ...(style as CSSProperties)}}
+          {...props}>
+          {sprite ? (
+            <use href={`#${weightedIconSymbolId(icon)}`} />
+          ) : (
+            icon.layers.map(layer => (
+              <Layer key={`${layer.from}-${layer.to}`} layer={layer} />
+            ))
+          )}
+        </svg>
+      </span>
+    </span>
   );
 }
