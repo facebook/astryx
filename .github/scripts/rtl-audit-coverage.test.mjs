@@ -13,14 +13,18 @@ import {
   AUDITED_STORY_PREFIXES,
   buildAuditedComponentRoster,
   buildComponentCoverage,
+  buildD1Target,
   buildStoryComponentRoutes,
   classifyDirectionalDecorationPair,
   classifyLogicalGroupedCorners,
   classifyLogicalInlinePair,
   collectDirectionalDecorations,
   filterStoryRoutesByPackages,
+  orderD1StoryCandidates,
   storyIdsForComponentFilters,
   unresolvedComponentFilters,
+  validateStoryRtlAuditParameters,
+  withD1CompletionIdentity,
 } from '../../apps/storybook/rtl-audit/rtl-audit-coverage.mjs';
 
 const {
@@ -113,6 +117,133 @@ describe('classifyDirectionalDecorationPair', () => {
         decoration('›', 'auto-bidi', MIRROR),
       ),
     ).toMatchObject({verdict: 'fail'});
+  });
+});
+
+describe('D1 story applicability', () => {
+  const defaultStory = {
+    id: 'lab-svgicon--default',
+    importPath: './stories/SVGIcon.stories.tsx',
+    sourceOrder: 10,
+  };
+  const registryFixture = {
+    id: 'lab-svgicon--default-registry-icons',
+    importPath: './stories/SVGIconRegistry.stories.tsx',
+    sourceOrder: 10,
+  };
+
+  it.each([
+    [registryFixture, defaultStory],
+    [defaultStory, registryFixture],
+  ])(
+    'selects the same representative when Storybook order changes',
+    (...stories) => {
+      expect(orderD1StoryCandidates(stories).map(story => story.id)).toEqual([
+        defaultStory.id,
+        registryFixture.id,
+      ]);
+    },
+  );
+
+  it('preserves source export order for stories in one file', () => {
+    const later = {
+      id: 'core-example--later',
+      importPath: './stories/Example.stories.tsx',
+      sourceOrder: 200,
+    };
+    const earlier = {...later, id: 'core-example--earlier', sourceOrder: 100};
+    expect(orderD1StoryCandidates([later, earlier])).toEqual([earlier, later]);
+  });
+
+  it('keeps completion identity stable when metadata selects another candidate', () => {
+    const excludedFirst = {
+      ...registryFixture,
+      importPath: './stories/ASVGIconRegistry.stories.tsx',
+    };
+    const target = buildD1Target('lab/SVGIcon', [defaultStory, excludedFirst]);
+    const completed = withD1CompletionIdentity(
+      {
+        component: 'lab/SVGIcon',
+        storyId: defaultStory.id,
+        verdict: 'N-A',
+        skippedStories: [
+          {storyId: excludedFirst.id, reason: 'Reference fixture.'},
+        ],
+      },
+      target.id,
+    );
+
+    expect(target).toMatchObject({
+      comp: 'lab/SVGIcon',
+      id: excludedFirst.id,
+    });
+    expect(completed).toMatchObject({
+      component: 'lab/SVGIcon',
+      storyId: excludedFirst.id,
+      selectedStoryId: defaultStory.id,
+    });
+    expect(`${target.comp}::${target.id}`).toBe(
+      `${completed.component}::${completed.storyId}`,
+    );
+  });
+
+  it('keeps all-excluded completion identity non-null and deterministic', () => {
+    const target = buildD1Target('lab/SVGIcon', [
+      registryFixture,
+      defaultStory,
+    ]);
+    const completed = withD1CompletionIdentity(
+      {
+        component: 'lab/SVGIcon',
+        storyId: null,
+        verdict: 'N-A',
+        skippedStories: [
+          {storyId: defaultStory.id, reason: 'First fixture.'},
+          {storyId: registryFixture.id, reason: 'Second fixture.'},
+        ],
+      },
+      target.id,
+    );
+
+    expect(completed.storyId).toBe(defaultStory.id);
+    expect(completed).not.toHaveProperty('selectedStoryId');
+    expect(`${target.comp}::${target.id}`).toBe(
+      `${completed.component}::${completed.storyId}`,
+    );
+  });
+
+  it('requires a reason for a story-level D1 exclusion', () => {
+    expect(
+      validateStoryRtlAuditParameters(
+        {
+          D1: {
+            applicable: false,
+            reason: '  Reference glyphs preserve caller-supplied geometry.  ',
+          },
+        },
+        registryFixture.id,
+      ),
+    ).toEqual({
+      D1: {
+        applicable: false,
+        reason: 'Reference glyphs preserve caller-supplied geometry.',
+      },
+    });
+    expect(() =>
+      validateStoryRtlAuditParameters(
+        {D1: {applicable: false, reason: '  '}},
+        registryFixture.id,
+      ),
+    ).toThrow('needs a non-empty reason');
+  });
+
+  it('rejects mistyped dimensions instead of silently ignoring them', () => {
+    expect(() =>
+      validateStoryRtlAuditParameters(
+        {D7: {applicable: false, reason: 'Typo.'}},
+        registryFixture.id,
+      ),
+    ).toThrow('unknown dimension D7');
   });
 });
 
