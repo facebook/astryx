@@ -171,7 +171,11 @@ for (const kind of dirsIn(DOCTYPES)) {
   // return union from, so a kind missing there is silently unnarrowable for
   // consumers (`type === 'schema'` reads as a no-overlap comparison). Checking
   // the JSDoc catches it at the source rather than in the emitted artifact.
-  const docType = `${kind[0].toUpperCase()}${kind.slice(1)}Doc`;
+  // A kebab kind names its type in PascalCase: `icon-set` is IconSetDoc.
+  const docType = `${kind
+    .split('-')
+    .map(part => `${part[0].toUpperCase()}${part.slice(1)}`)
+    .join('')}Doc`;
   if (!aggregateParserReturns.includes(docType)) {
     errors.push(
       `doc-type "${kind}" is missing from the @returns union of authoring/doctypes/parse.mjs (expected ${docType})`,

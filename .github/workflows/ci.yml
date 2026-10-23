@@ -728,6 +728,119 @@ jobs:
         if: matrix.shard == 1 && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         run: node .github/scripts/theme-family-cascade.js
 
+  # Native Swift: the Swift packages of the experimental, canary-only
+  # @astryxdesign/native (AST-082) build and test only on macOS. They are
+  # coverage inside the shared surface (AST-030 FR11), so `test` joins
+  # test-native-swift. A Linux job first decides whether the change touches
+  # Swift under packages/native; only then does test-native-swift take a macOS
+  # runner, and otherwise it passes on Linux without work.
+  native-swift-scope:
+    needs: [check-scope]
+    if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+    outputs:
+      applies: ${{ steps.scope.outputs.applies }}
+    steps:
+      - name: Require successful scope classification
+        if: needs.check-scope.result != 'success'
+        run: |
+          echo "Change scope could not be classified; refusing to skip required work."
+          exit 1
+
+      - uses: actions/checkout@v7
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+
+      # The helper comes from the base, since an older head lacks it. Exit 1
+      # means out of scope; 0 in scope; 2 unknown, so the Swift work runs.
+      - name: Decide whether native Swift changed
+        id: scope
+        env:
+          DOCSITE_ONLY: ${{ needs.check-scope.outputs.docsite_only }}
+          TOOLING_ONLY: ${{ needs.check-scope.outputs.tooling_only }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+        run: |
+          if [ "$DOCSITE_ONLY" = true ] || [ "$TOOLING_ONLY" = true ]; then
+            echo 'Specialized lane; no native Swift work.'
+            echo 'applies=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          scope=2
+          helper="$(mktemp)"
+          if [ -n "$BASE_SHA" ] \
+            && git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA" \
+            && git show "$BASE_SHA:.github/scripts/pr-scope-touches.sh" > "$helper"; then
+            scope=0
+            bash "$helper" "$BASE_SHA" '^packages/native/.*(\.swift|/Package\.swift)$' || scope=$?
+          fi
+          if [ "$scope" = 1 ]; then
+            echo 'No native Swift change; nothing to build.'
+            echo 'applies=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'applies=true' >> "$GITHUB_OUTPUT"
+          fi
+
+  test-native-swift:
+    needs: [check-scope, native-swift-scope]
+    if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
+    runs-on: ${{ needs.native-swift-scope.outputs.applies == 'true' && 'macos-15' || 'ubuntu-slim' }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Require a decided Swift scope
+        if: needs.native-swift-scope.result != 'success'
+        run: |
+          echo "Native Swift scope could not be decided; refusing to skip required work."
+          exit 1
+
+      - name: Skip Swift work outside its scope
+        if: needs.native-swift-scope.outputs.applies != 'true'
+        run: echo "No native Swift change in this scope."
+
+      - uses: actions/checkout@v7
+        if: needs.native-swift-scope.outputs.applies == 'true'
+
+      # One package per directory that holds a Package.swift, such as apple/
+      # (generated contracts) and each versioned swift-ios-<n>/. A package that
+      # supports macOS builds and tests there; every package builds for the iOS
+      # Simulator, and an iOS-only package runs its tests there. A package
+      # without a test target only builds.
+      - name: Build and test each native Swift package
+        if: needs.native-swift-scope.outputs.applies == 'true'
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          packages=$(find packages/native -name Package.swift -not -path '*/.build/*' -not -path '*/node_modules/*' -exec dirname {} \; | sort)
+          if [ -z "$packages" ]; then
+            echo 'No Swift package found under packages/native.'
+            exit 1
+          fi
+          for package in $packages; do
+            echo "::group::$package"
+            (
+              cd "$package"
+              swift package dump-package > "$RUNNER_TEMP/package.json"
+              read -r macos tests < <(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(any(p["platformName"]=="macos" for p in d.get("platforms",[])) or not d.get("platforms"), any(t["type"]=="test" for t in d["targets"]))' "$RUNNER_TEMP/package.json")
+              # Xcode names the whole-package scheme <name>-Package when a
+              # package has several products, and after its product otherwise.
+              xcodebuild -list -json > "$RUNNER_TEMP/schemes.json"
+              scheme=$(python3 -c 'import json,sys; s=json.load(open(sys.argv[1]))["workspace"]["schemes"]; print(next((x for x in s if x.endswith("-Package")), s[0]))' "$RUNNER_TEMP/schemes.json")
+              if [ "$macos" = True ] && [ "$tests" = True ]; then
+                swift test
+              elif [ "$macos" = True ]; then
+                swift build
+              fi
+              if [ "$macos" != True ] && [ "$tests" = True ]; then
+                xcodebuild test -scheme "$scheme" -destination 'platform=iOS Simulator,name=iPhone 16' -quiet
+              else
+                xcodebuild build -scheme "$scheme" -destination 'generic/platform=iOS Simulator' -quiet
+              fi
+            )
+            echo '::endgroup::'
+          done
+
   # Public registry contract. Generation proves schema, dependency, route-lock,
   # alias, and release-gating invariants; the final step drives every canonical
   # item through the exact pinned ShadCN client and compiles every written source.
@@ -804,7 +917,15 @@ jobs:
   # public registry contract always report or explicitly skip, so this join
   # projects their combined result without creating another surface lane.
   test:
-    needs: [check-scope, test-ui, test-node, test-build, registry-contract]
+    needs:
+      [
+        check-scope,
+        test-ui,
+        test-node,
+        test-build,
+        registry-contract,
+        test-native-swift,
+      ]
     if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
     runs-on: ubuntu-slim
     permissions:
@@ -822,6 +943,7 @@ jobs:
           TEST_NODE_RESULT: ${{ needs.test-node.result }}
           TEST_BUILD_RESULT: ${{ needs.test-build.result }}
           REGISTRY_CONTRACT_RESULT: ${{ needs.registry-contract.result }}
+          TEST_NATIVE_SWIFT_RESULT: ${{ needs.test-native-swift.result }}
         run: node .github/scripts/ci-test-join.mjs
 
   # Build storybook + typecheck + analyze components (parallel with test and
@@ -1459,6 +1581,16 @@ jobs:
             --project chromium \
             --output menu-header-footer-output
 
+      # A menu inside a shadow root must act on the row under a released
+      # pointer; at the document level a real engine resolves that point to
+      # the shadow host, which jsdom cannot show.
+      - name: Run menu press shadow-root contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/hooks/__tests__/MenuPressShadowRoot.a11y.chromium.spec.ts \
+            --project chromium \
+            --output menu-press-shadow-root-output
+
       # A sub-menu with a header or footer is a modal dialog beside the root's
       # menu, outside every role="menu" element. Its Tab order, a header radio
       # group the browser moves focus in after the pointer leaves, the
@@ -2019,6 +2151,55 @@ jobs:
         with:
           name: slider-contract-evidence-${{ needs.build-storybook.outputs.short_hash }}
           path: slider-contract/
+          retention-days: 30
+          if-no-files-found: warn
+
+      # The progressbar contract's role and name, value and range, indeterminate
+      # state, and value text are accessibility-tree facts that jsdom cannot
+      # observe. Run the contract's own fixture proof and the ProgressBar and
+      # CircularProgress bindings whenever either component, the binding
+      # stories, or the contract changes. Its own --output directory; the JSON
+      # report is the head-bound record, uploaded next.
+      - name: Run Progressbar accessibility contract
+        id: progressbar-contract
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PLAYWRIGHT_JSON_OUTPUT_FILE: progressbar-contract/report.json
+        run: |
+          should_run=false
+          # The helper comes from the base, since an older PR head lacks it.
+          # Exit 1 means out of scope; 0 in scope; 2 unknown, so run.
+          scope=2
+          helper="$(mktemp)"
+          if git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA" \
+            && git show "$BASE_SHA:.github/scripts/pr-scope-touches.sh" > "$helper"; then
+            scope=0
+            bash "$helper" "$BASE_SHA" \
+              '^(internal/a11y-spec/src/patterns/progressbar\.|packages/core/src/ProgressBar/|packages/lab/src/CircularProgress/|apps/storybook/stories/ProgressbarA11y)' || scope=$?
+          fi
+          if [ "$scope" != 1 ]; then
+            should_run=true
+          fi
+          echo "should_run=${should_run}" >> "$GITHUB_OUTPUT"
+          if [ "$should_run" != true ]; then
+            echo "ProgressBar, CircularProgress and the progressbar contract are not in PR scope; skipping progressbar evidence."
+            exit 0
+          fi
+          pnpm exec playwright test \
+            internal/a11y-spec/src/patterns/progressbar.chromium.spec.ts \
+            packages/core/src/ProgressBar/__tests__/ProgressBar.a11y.chromium.spec.ts \
+            packages/lab/src/CircularProgress/__tests__/CircularProgress.a11y.chromium.spec.ts \
+            --project chromium \
+            --reporter list,json \
+            --output progressbar-contract-output
+
+      - name: Upload Progressbar accessibility contract evidence
+        if: ${{ !cancelled() && steps.progressbar-contract.outputs.should_run == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: progressbar-contract-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: progressbar-contract/
           retention-days: 30
           if-no-files-found: warn
 
@@ -2894,6 +3075,71 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+      # DropdownMenuItem owns one interactive pointer-menu row. Its label, icon,
+      # description, and end content follow logical document direction; the row
+      # uses logical inline padding and start-aligned text. Parent DropdownMenu
+      # owns directional placement and keyboard navigation.
+      - name: Run DropdownMenuItem audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuItem:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output dropdown-menu-item-a11y-report.json \
+            --components DropdownMenuItem \
+            --ready-selector '[role="menu"]' \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/DropdownMenu/__tests__/DropdownMenuItemAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload DropdownMenuItem audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuItem:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: dropdown-menu-item-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            dropdown-menu-item-a11y-report.json
+            dropdown-menu-item-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
+      # DropdownMenuRadioGroup owns controlled value propagation, the named
+      # role=group wrapper, close policy, and the tokenized gap between radio
+      # rows. Parent DropdownMenu owns keyboard navigation; each radio item owns
+      # menuitemradio semantics and indicator paint.
+      - name: Run DropdownMenuRadioGroup audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuRadioGroup:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output dropdown-menu-radio-group-a11y-report.json \
+            --components DropdownMenuRadioGroup \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/DropdownMenu/__tests__/DropdownMenuRadioGroupAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload DropdownMenuRadioGroup audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuRadioGroup:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: dropdown-menu-radio-group-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            dropdown-menu-radio-group-a11y-report.json
+            dropdown-menu-radio-group-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
       # ContextMenu owns pointer and touch presentations across cursor anchoring,
       # selectable rows, sections, inline triggers, RTL, and narrow viewports.
       # Its audit lane binds the rendered matrix to the exact pull-request head.
@@ -3015,12 +3261,15 @@ jobs:
       # DateInput's open-state audit story uses a play function to open the
       # popover. Restricting this focused pass to that story lets the selector
       # wait bind axe to the Calendar dialog without making every DateInput story
-      # require an open overlay.
+      # require an open overlay. The receipt spec then captures rest, focus,
+      # busy, disabled, status, and open states across the popover, native, and
+      # bottom-sheet surfaces, themes, direction, pointers, and viewport.
       - name: Run DateInput audit browser evidence
-        if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DateInput:')
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DateInput:') }}
         env:
           ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
+          status=0
           node .github/scripts/accessibility-audit.js \
             --storybook-dir apps/storybook/dist \
             --output date-input-a11y-report.json \
@@ -3028,14 +3277,20 @@ jobs:
             --stories core-dateinput--open-calendar-audit \
             --ready-selector '[role="dialog"]' \
             --baseline .github/a11y-baseline.json \
-            --fail-on-new
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/DateInput/__tests__/DateInputAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
 
       - name: Upload DateInput audit evidence
         if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DateInput:')
         uses: actions/upload-artifact@v7
         with:
           name: date-input-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
-          path: date-input-a11y-report.json
+          path: |
+            date-input-a11y-report.json
+            date-input-audit-evidence/
           retention-days: 30
           if-no-files-found: error
 

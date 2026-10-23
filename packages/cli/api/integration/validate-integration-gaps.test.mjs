@@ -127,7 +127,28 @@ async function issuesOf(dir) {
  * @returns {Promise<Array<{code: string, message: string}>>}
  */
 async function listedOf(dir) {
-  return (await validateIntegration(undefined, {cwd: dir})).data.notes ?? [];
+  return (
+    (await validateIntegration(undefined, {cwd: dir})).data.notes ?? []
+  ).filter(note => !EXAMPLE_CODES.has(note.code));
+}
+
+/**
+ * The example notes, which nearly every fixture here draws (a component with
+ * no example template); authoring-checks.test.mjs covers them.
+ */
+const EXAMPLE_CODES = new Set([
+  'component_without_example',
+  'template_category',
+  'showcase_not_standalone',
+  'template_asset_not_packed',
+]);
+
+/**
+ * Notes without the example notes.
+ * @param {Array<{code: string, message: string, next?: boolean}> | undefined} notes
+ */
+function others(notes) {
+  return (notes ?? []).filter(note => !EXAMPLE_CODES.has(note.code));
 }
 
 /**
@@ -185,7 +206,7 @@ describe('a name that differs from its file name', () => {
     expect(await issuesOf(dir)).toEqual([]);
     const issues = await allOf(dir);
     expect(issues.map(issue => issue.code)).toEqual(['doc_name_mismatch']);
-    expect(Object.keys(issues[0]).sort()).toEqual(['code', 'message']);
+    expect(Object.keys(issues[0]).sort()).toEqual(['code', 'message', 'next']);
     expect(issues[0].message).toBe(
       'Component doc "AcmeWidget.doc.mjs" sets name: \'AcmeWidgets\', but components/AcmeWidget.tsx, the module its import names, does not export AcmeWidgets, so Astryx lists the component as "AcmeWidget" (its file name), and `astryx component AcmeWidget` prints `import {AcmeWidgets}`. Fix: set name: \'AcmeWidget\' in AcmeWidget.doc.mjs.',
     );
@@ -239,7 +260,7 @@ describe('a name that differs from its file name', () => {
       });
 
       const {data} = await validateIntegration(undefined, {cwd: dir});
-      expect(data.notes ?? []).toEqual([]);
+      expect(others(data.notes)).toEqual([]);
       expect(data.docNames).toEqual({
         status: 'checked',
         findings: [],
@@ -580,6 +601,9 @@ describe('block component names', () => {
       ),
       'templates/account-card.tsx':
         "import {Helper} from 'some-lib';\nexport default function A() {\n  return <Helper />;\n}\n",
+      // The package root the doc's derived import names exports the component.
+      'index.tsx':
+        "export function Panel() { return null; }\nexport {AcmeWidget} from './components/AcmeWidget';\n",
     });
 
     expect(await allOf(dir)).toEqual([]);
@@ -654,7 +678,7 @@ describe('block component names', () => {
     });
 
     const {data} = await validateIntegration(undefined, {cwd: dir});
-    expect((data.notes ?? []).map(note => note.message)).toEqual([
+    expect(others(data.notes).map(note => note.message)).toEqual([
       expect.stringContaining('names "AcmeGizmo" in componentsUsed'),
     ]);
     expect(data.blockComponents?.unchecked).toEqual([]);
@@ -679,7 +703,7 @@ describe('block component names', () => {
       });
 
       const {data} = await validateIntegration(undefined, {cwd: dir});
-      expect((data.notes ?? []).map(note => note.message)).toEqual([
+      expect(others(data.notes).map(note => note.message)).toEqual([
         expect.stringContaining('names "AcmeGizmo" in componentsUsed'),
       ]);
       expect(data.blockComponents?.unchecked).toEqual([]);
@@ -835,7 +859,7 @@ describe('block component names', () => {
     });
 
     const {data} = await validateIntegration(undefined, {cwd: dir});
-    expect((data.notes ?? []).map(note => note.message)).toEqual([
+    expect(others(data.notes).map(note => note.message)).toEqual([
       expect.stringContaining('names "AcmeGizmo" in componentsUsed'),
     ]);
   });
@@ -854,7 +878,7 @@ describe('block component names', () => {
     });
 
     const {data} = await validateIntegration(undefined, {cwd: dir});
-    expect(data.notes ?? []).toEqual([]);
+    expect(others(data.notes)).toEqual([]);
     expect(data.blockComponents?.unchecked).toEqual([
       {
         file: 'templates/account-card.doc.mjs',
@@ -879,7 +903,7 @@ describe('block component names', () => {
     });
 
     const {data} = await validateIntegration(undefined, {cwd: dir});
-    expect((data.notes ?? []).map(note => note.message)).toEqual([
+    expect(others(data.notes).map(note => note.message)).toEqual([
       expect.stringContaining('names "AcmeGizmo" in componentsUsed'),
     ]);
     expect(data.blockComponents?.unchecked).toEqual([]);
@@ -894,7 +918,7 @@ describe('block component names', () => {
     });
 
     const {data} = await validateIntegration(undefined, {cwd: dir});
-    expect(data.notes ?? []).toEqual([]);
+    expect(others(data.notes)).toEqual([]);
     expect(data.blockComponents?.unchecked).toEqual([
       {
         file: 'templates/account-card.doc.mjs',
@@ -914,7 +938,7 @@ describe('block component names', () => {
     });
 
     const {data} = await validateIntegration(undefined, {cwd: dir});
-    expect((data.notes ?? []).map(note => note.message)).toEqual([
+    expect(others(data.notes).map(note => note.message)).toEqual([
       expect.stringContaining('names "AcmeGizmo" in componentsUsed'),
     ]);
     expect(data.blockComponents?.unchecked).toEqual([]);
@@ -957,7 +981,7 @@ describe('block component names', () => {
       );
 
       const {data} = await validateIntegration(undefined, {cwd: outside});
-      expect(data.notes ?? []).toEqual([]);
+      expect(others(data.notes)).toEqual([]);
       const reason =
         'Core is not installed, so its component names cannot be checked.';
       expect(data.blockComponents).toEqual({
@@ -1363,9 +1387,10 @@ describe('package.json', () => {
       ).toEqual([['invalid_component', 'error']]);
     }
     const validate = result.data.checks[0].response.data;
-    expect('notes' in validate ? validate.notes : undefined).toEqual([
+    expect('notes' in validate ? others(validate.notes) : undefined).toEqual([
       {
         code: 'invalid_package_json',
+        next: true,
         message:
           'package.json has no "name", so npm cannot pack or publish the package, and a project that installs it has no name to select it by. Fix: add "name": "@your-scope/your-package" to package.json.',
       },
@@ -1887,9 +1912,11 @@ describe('layout findings 0.7.2 did not fail on', () => {
         const validate = /** @type {any} */ (
           result.data.checks[0].response.data
         );
-        expect(validate.notes.length).toBeGreaterThan(0);
-        for (const note of validate.notes) {
-          expect(Object.keys(note).sort()).toEqual(['code', 'message']);
+        expect(others(validate.notes).length).toBeGreaterThan(0);
+        for (const note of others(validate.notes)) {
+          // Listed now, a warning from the next minor release: `next`.
+          expect(Object.keys(note).sort()).toEqual(['code', 'message', 'next']);
+          expect(note.next).toBe(true);
           expect(note.message).toContain('Fix: ');
         }
       } finally {
@@ -1914,7 +1941,7 @@ describe('layout findings 0.7.2 did not fail on', () => {
     );
     expect(run.status, run.stderr).toBe(0);
     expect(run.stdout).toContain(
-      'note (duplicate_component_doc): Component "AcmeWidget" has 2 docs:',
+      'note (duplicate_component_doc): [next minor] Component "AcmeWidget" has 2 docs:',
     );
     expect(run.stdout).toContain('Summary: 0 errors, 0 warnings');
   });
@@ -1947,8 +1974,8 @@ describe('name findings listed until the next minor release', () => {
       const {data} = await validateIntegration(undefined, {cwd: dir});
       expect(data.issues).toEqual([]);
       expect(/** @type {any} */ (data)[report].findings).toEqual([]);
-      expect(data.notes?.map(note => note.code)).toEqual([code]);
-      expect(data.notes?.[0].message).toContain('Fix: ');
+      expect(others(data.notes).map(note => note.code)).toEqual([code]);
+      expect(others(data.notes)[0].message).toContain('Fix: ');
 
       const result = await integrationCheck({cwd: dir, strict: true});
       expect(result.data.failures).toEqual([]);
@@ -1965,7 +1992,7 @@ describe('name findings listed until the next minor release', () => {
     );
     expect(run.status, run.stderr).toBe(0);
     expect(run.stdout).toContain(
-      'note (unknown_block_component): Template "account-card" names "AcmeGizmo" in componentsUsed',
+      'note (unknown_block_component): [next minor] Template "account-card" names "AcmeGizmo" in componentsUsed',
     );
     expect(run.stdout).toContain('Summary: 0 errors, 0 warnings');
   });

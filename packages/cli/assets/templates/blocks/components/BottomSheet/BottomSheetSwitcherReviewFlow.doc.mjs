@@ -7,7 +7,7 @@ export const doc = {
   name: 'Bottom Sheet Switcher — Review flow',
   displayName: 'Bottom Sheet Switcher — Review flow',
   description:
-    'A two-step form flow that lets a person review settings, confirm them, or move back without replacing the shared dialog.',
+    'A two-step form flow that lets a person review settings, confirm them, or move back, each step in its own native dialog under one scrim.',
   isReady: true,
   isShowcase: false,
   aspectRatio: 3 / 4,

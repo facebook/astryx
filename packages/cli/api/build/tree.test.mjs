@@ -60,55 +60,55 @@ const PINNED = [
     'analytics dashboard with a KPI row and a sortable table',
     [
       'TableSortableTable',
-      'TableRichCellTable',
-      'TableBulkActionsTable',
       'TableGridDividersTable',
-      'TableRowExpansionTable',
+      'TableShowcase',
+      'TableGroupedRowsTable',
+      'TableStripedTable',
     ],
   ],
   [
     'settings page with notification toggles and a save bar',
     [
-      'ToggleButtonColor',
-      'ToggleButtonGroup',
-      'ToggleButtonGroupShowcase',
-      'ToggleButtonGroupVertical',
-      'ToggleButtonIconSwap',
+      'SwitchShowcase',
+      'SwitchSettingsPanel',
+      'ToggleButtonShowcase',
+      'ToggleButtonStates',
+      'SwitchWithDescription',
     ],
   ],
   [
     'empty state for a question bank with an import button',
     [
-      'EmptyStateActions',
-      'EmptyStateCompact',
       'EmptyStateContainer',
       'EmptyStateShowcase',
-      'BannerWithActionButton',
+      'EmptyStateCompact',
+      'EmptyStateActions',
+      'CommandPaletteEmptyShowcase',
     ],
   ],
   [
     'login form with single sign-on buttons',
     [
-      'DialogFormDialog',
+      'ButtonWithIcon',
       'CardWithInnerLayout',
-      'ButtonGroupBasic',
-      'ToggleButtonGroup',
-      'BannerWithActionButton',
+      'ButtonVariants',
+      'FormLayoutShowcase',
+      'FormLayoutMixedControls',
     ],
   ],
   [
     'calendar for booking appointments',
     [
-      'CalendarRangeWithValue',
       'CalendarSingle',
-      'CalendarTwoMonths',
-      'CalendarConstraints',
       'CalendarShowcase',
+      'CalendarConstraints',
+      'CalendarRangeWithValue',
+      'CalendarTwoMonths',
     ],
   ],
   [
     'kanban board for sprint tasks with a filter bar',
-    ['ToolbarTableFilter', 'PowerSearchFullFeatured'],
+    ['ToolbarTableFilter', 'PowerSearchShowcase'],
   ],
 ];
 
@@ -125,16 +125,15 @@ afterAll(() => {
 });
 
 describe('build tree', () => {
-  it('keeps the blocks a request names in build’s slots', async () => {
-    const phrase = 'calendar for booking appointments';
+  it('keeps a block the request names by its exact name in build’s slot', async () => {
+    const phrase = 'calendar for booking appointments with CalendarTwoMonths';
     const answer = await build(phrase, {cwd: REPO});
     const own = await withListingCache(() => buildKit(phrase, {cwd: REPO}));
     if (answer?.type !== 'build.kit' || own.type !== 'build.kit')
       throw new Error('expected a kit');
-    own.data.blocks.forEach((b, k) => {
-      if (b.name.startsWith('Calendar'))
-        expect(answer.data.blocks[k].name).toBe(b.name);
-    });
+    const k = own.data.blocks.findIndex(b => b.name === 'CalendarTwoMonths');
+    expect(k).toBeGreaterThanOrEqual(0);
+    expect(answer.data.blocks[k].name).toBe('CalendarTwoMonths');
   });
 
   it('runs with the network and subprocesses blocked', async () => {
@@ -166,8 +165,9 @@ describe('build tree', () => {
       expect(answer.data.start?.alternatives).toEqual(
         own.data.start?.alternatives,
       );
-      // Every block is build's own entry or one search returned, with its real
-      // score and reason; never more blocks than build's own.
+      // Every block is build's own entry, one search returned, or the picker's
+      // own, each with its real score and reason; never more blocks than
+      // build's own.
       expect(answer.data.blocks.length).toBe(own.data.blocks.length);
       for (const b of answer.data.blocks) {
         expect(b.score).toBeGreaterThan(0);

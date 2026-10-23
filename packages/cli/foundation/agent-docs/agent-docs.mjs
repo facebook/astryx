@@ -33,10 +33,15 @@ import {spawnSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import {findCoreDir, CLI_ROOT} from '../fs/paths.mjs';
+import {findCoreDir, findInstalledPackage, CLI_ROOT} from '../fs/paths.mjs';
 import {assertWithin, PathSafetyError} from '../fs/path-safety.mjs';
 import {createFileProtectionResolver} from '../fs/file-protection.mjs';
-import {getCliInvocation} from '../env/package-manager.mjs';
+import {
+  docPackageManager,
+  getCliInvocation,
+} from '../env/package-manager.mjs';
+import {renderCommandTokens} from '../doc-compiler/doc-syntax.mjs';
+import {isValidSemver, semverGte} from '../env/semver.mjs';
 import {discoverComponents} from '../discovery/component-discovery.mjs';
 import {Project} from '../config/project.mjs';
 import {cliRootNamespaceNames} from '../doc-compiler/tree.mjs';
@@ -58,6 +63,9 @@ import {
   discoverAgentDocs,
   isAstryxInitialized,
   isAstryxPromptInReach,
+  SELF_CHECK_CSS,
+  WORKFLOW_STEPS,
+  WORKFLOW_TITLE,
 } from './agent-doc-state.mjs';
 
 // The agent-doc locations, markers, and the setup-state predicates
@@ -680,6 +688,45 @@ export function detectStylingSystem(targetDir) {
   }
 }
 
+/** The first release whose `doctor` takes `--built`. */
+const BUILT_CHECK_SINCE = '0.7.4';
+
+/**
+ * Whether a project on this Core release can run `astryx doctor --built`. A
+ * prerelease of the first release is below it: its canaries predate the
+ * option.
+ * @param {string | null | undefined} version
+ */
+function hasBuiltCheck(version) {
+  if (typeof version !== 'string' || !isValidSemver(version)) return false;
+  const [release, prerelease] = version.split('-', 2);
+  if (prerelease !== undefined && release === BUILT_CHECK_SINCE) return false;
+  return semverGte(release, BUILT_CHECK_SINCE);
+}
+
+/**
+ * Whether the project at `dir` can run `astryx doctor --built`: the CLI it
+ * installs, which answers it whatever the running copy is, has the option.
+ * Read from the installed CLI (the folder's own, or its workspace's), never
+ * from declared ranges or the running copy, so a block written before
+ * install, or by a newer copy, never names an option the project's CLI
+ * rejects; the next `init` or `upgrade --apply` after install adds it.
+ * @param {string} dir
+ * @returns {boolean}
+ */
+export function projectHasBuiltCheck(dir) {
+  const installed = findInstalledPackage(dir, '@astryxdesign/cli');
+  if (!installed) return false;
+  try {
+    const {version} = JSON.parse(
+      fs.readFileSync(path.join(installed, 'package.json'), 'utf8'),
+    );
+    return hasBuiltCheck(version);
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Generate the agent cheat sheet from live CLI metadata.
  *
@@ -704,7 +751,7 @@ export function detectStylingSystem(targetDir) {
  * `getting-started` is the one it should reach for first.
  *
  * @param {string | null} version the Core version
- * @param {{coreDir?: string|null, invocation?: string, stylingSystem?: 'stylex'|'tailwind'|'css', zh?: boolean, lang?: string, topics?: string[], agentDocs?: Array<{package: string, append: readonly string[]}>}} [options]
+ * @param {{coreDir?: string|null, invocation?: string, stylingSystem?: 'stylex'|'tailwind'|'css', zh?: boolean, lang?: string, topics?: string[], agentDocs?: Array<{package: string, append: readonly string[]}>, builtCheck?: boolean}} [options]
  * @returns {string}
  */
 export function generateCompressedIndex(
@@ -715,6 +762,7 @@ export function generateCompressedIndex(
     stylingSystem = 'css',
     topics,
     agentDocs = [],
+    builtCheck = false,
   } = {},
 ) {
   const run = invocation;
@@ -762,11 +810,15 @@ export function generateCompressedIndex(
   // Workflow — `build` is the front door, and every page starts from the
   // template it names. build/template/component are covered here, so they are
   // intentionally omitted from the command reference below.
-  lines.push('WORKFLOW — start every page from a template, never from scratch:');
-  lines.push('1. `astryx build "<idea>"` — names the template to scaffold from and the parts it lacks.');
-  lines.push('2. `astryx template <name> <path>` — scaffold it; keep its frame, gap and padding; replace the content.');
-  lines.push('3. `astryx template <Block>` for parts it lacks; `astryx component <Name>` to read props before using one.');
+  lines.push(WORKFLOW_TITLE, ...WORKFLOW_STEPS);
   lines.push('Changing an existing page? Keep it: skip step 2 and add blocks/components inside its sections.');
+  // Only for a project whose recorded releases have `doctor --built`
+  // (projectHasBuiltCheck): a newer copy may write this block in a project
+  // whose install then brings an older CLI, which rejects the option. The computer-level
+  // skill names only entry points every release keeps (AST-081 FR8).
+  if (builtCheck) {
+    lines.push("Before you deliver a build, run `astryx doctor --built <dir>`; don't deliver it if it fails.");
+  }
   lines.push('');
 
   // Rules — the top error-preventers.
@@ -793,7 +845,7 @@ export function generateCompressedIndex(
       'replace any className=, style={{…}}, raw <div>/<span>, imported .css/@apply, or hardcoded #hex/px with the component or the xstyle prop + a token',
     tailwind:
       'replace any style={{…}}, raw <div>/<span>, imported .css/@apply, or hardcoded/arbitrary value (bg-[#fff], p-[13px]) with the component or a token-backed utility',
-    css: 'replace any raw <div>/<span>, imported .css/@apply, or hardcoded #hex/px with the component or a token',
+    css: SELF_CHECK_CSS,
   };
   lines.push(
     `- SELF-CHECK: re-read the file; ${selfCheckFix[stylingSystem] ?? selfCheckFix.css}.`,
@@ -896,8 +948,13 @@ export async function renderAgentDocsBlock(
         .map(input => input.doc.name),
     ),
   ];
+  // Doc tokens in an integration's lines render here, for the project's
+  // package manager; the block's header names the runner for bare commands.
+  const tokenOptions = {stem: 'astryx', pm: docPackageManager(targetDir)};
   const agentDocs = project.loadedIntegrations.flatMap(integration => {
-    const append = integration.agentDocs?.append ?? [];
+    const append = (integration.agentDocs?.append ?? []).map(line =>
+      renderCommandTokens(line, tokenOptions),
+    );
     if (append.length === 0) return [];
     return [
       {
@@ -911,6 +968,7 @@ export async function renderAgentDocsBlock(
 
   return generateCompressedIndex(version, {
     coreDir,
+    builtCheck: projectHasBuiltCheck(targetDir),
     invocation: getCliInvocation(targetDir),
     stylingSystem: detectStylingSystem(targetDir),
     topics,
@@ -999,6 +1057,7 @@ export function injectAgentsMd(targetDir, version) {
   const agentsPath = path.join(targetDir, AGENTS_MD);
   const compressedIndex = generateCompressedIndex(version, {
     coreDir: findCoreDir(targetDir),
+    builtCheck: projectHasBuiltCheck(targetDir),
     stylingSystem: detectStylingSystem(targetDir),
   });
   injectXdsBlock(agentsPath, compressedIndex, {
@@ -1019,6 +1078,7 @@ export function injectClaudeMd(targetDir, version) {
   const claudePath = path.join(targetDir, CLAUDE_MD);
   const compressedIndex = generateCompressedIndex(version, {
     coreDir: findCoreDir(targetDir),
+    builtCheck: projectHasBuiltCheck(targetDir),
     stylingSystem: detectStylingSystem(targetDir),
   });
   return injectXdsBlock(claudePath, compressedIndex);
@@ -1743,6 +1803,7 @@ export function installAgentDocs(
     renderedBlock ??
     generateCompressedIndex(version, {
       coreDir,
+      builtCheck: projectHasBuiltCheck(targetDir),
       zh,
       lang,
       invocation,

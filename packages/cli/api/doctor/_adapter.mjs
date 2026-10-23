@@ -10,8 +10,10 @@ import {
   stateLockHolder,
 } from '../../foundation/release/global-state.mjs';
 import {
-  addCliCommand,
   alignCliAndCore,
+  cliInstallAdvice,
+  installFolder,
+  projectAddCommand,
   globalBehind,
   globalUpgradeCommand,
   lastNoticeSkip,
@@ -19,16 +21,21 @@ import {
 } from '../../foundation/release/notices.mjs';
 import {
   coreVersionOf,
+  installPlaceOf,
   isGlobalCopy,
-  projectRootOf,
 } from '../../foundation/release/choose.mjs';
 import {readReleaseFacts} from '../../foundation/release/project.mjs';
-import {detectPackageManager} from '../../foundation/env/package-manager.mjs';
 import {astryxCommandsOnSearchPath} from '../../foundation/env/search-path.mjs';
-import {readDeclaredDependencies} from '../../foundation/integrations/autolink.mjs';
 import {
+  readDeclaredDependencies,
+  scanAutolinkCandidates,
+} from '../../foundation/integrations/autolink.mjs';
+import {
+  computerSkillFile,
   displayHomePath,
   inspectComputerAgentText,
+  skillCommandOf,
+  skillInstallStepOf,
 } from '../../foundation/agent-docs/computer-agent-text.mjs';
 import {computerAgentTextSettings} from '../../foundation/env/user-settings.mjs';
 import * as fs from 'node:fs';
@@ -291,12 +298,29 @@ function declaredPackageNames(cwd) {
 }
 
 /**
- * The computer-level agent text's setting and its state on disk.
- * @returns {{settings: import('../../foundation/env/user-settings.mjs').ComputerAgentTextSettings, entries: Array<{path: string, state: import('../../foundation/agent-docs/computer-agent-text.mjs').ComputerAgentTextState, link?: true}>}}
+ * The computer-level agent text's setting, its state on disk, and the command
+ * the skill file tells agents to run and the install step it records for when
+ * that command is not found (each null when there is no file, or it names
+ * none).
+ * @returns {{settings: import('../../foundation/env/user-settings.mjs').ComputerAgentTextSettings, entries: Array<{path: string, state: import('../../foundation/agent-docs/computer-agent-text.mjs').ComputerAgentTextState, link?: true}>, command: string | null, install: string | null}}
  */
 export function computerAgentTextState() {
   const settings = computerAgentTextSettings();
-  return {settings, entries: inspectComputerAgentText({links: settings.links})};
+  let command = null;
+  let install = null;
+  try {
+    const text = fs.readFileSync(computerSkillFile(), 'utf8');
+    command = skillCommandOf(text);
+    install = skillInstallStepOf(text);
+  } catch {
+    // No skill file, or one that cannot be read: no command to check.
+  }
+  return {
+    settings,
+    entries: inspectComputerAgentText({links: settings.links}),
+    command,
+    install,
+  };
 }
 
 export {displayHomePath};
@@ -309,7 +333,7 @@ export {displayHomePath};
  * command that upgrades it.
  * @param {string} cwd
  * @param {{project: boolean}} options
- * @returns {{answeredBy: {cli: string, core: string | null, copy: string}, latest: string | null, globalBehind: ReturnType<typeof globalBehind> | null, projectLag: ReturnType<typeof projectLag> | null, lastNoticeSkip: ReturnType<typeof lastNoticeSkip>, lastCheckFailure: ReturnType<typeof lastCheckFailure>, stateLock: ReturnType<typeof stateLockHolder>, searchPathCommands: Array<import('../../foundation/env/search-path.mjs').SearchPathCommand & {upgrade: string | null}>}}
+ * @returns {{answeredBy: {cli: string, core: string | null, copy: string}, latest: string | null, globalBehind: ReturnType<typeof globalBehind> | null, projectLag: ReturnType<typeof projectLag> | null, lastNoticeSkip: ReturnType<typeof lastNoticeSkip>, lastCheckFailure: ReturnType<typeof lastCheckFailure>, stateLock: ReturnType<typeof stateLockHolder>, searchPathCommands: Array<import('../../foundation/env/search-path.mjs').SearchPathCommand & {upgrade: string | null, runner: boolean}>}}
  */
 export function releaseFacts(cwd, {project}) {
   const answered = answeredBy(cwd);
@@ -336,6 +360,9 @@ export function releaseFacts(cwd, {project}) {
     searchPathCommands: astryxCommandsOnSearchPath().map(row => ({
       ...row,
       upgrade: row.cliRoot ? globalUpgradeCommand(row.cliRoot) : null,
+      // A package runner's temporary install, which it puts first on the
+      // search path only for the run it starts.
+      runner: row.cliRoot ? installPlaceOf(row.cliRoot).runner : false,
     })),
   };
 }
@@ -348,11 +375,12 @@ export function outsideProject(/** @type {string} */ cwd) {
 /**
  * The commands that bring a project's own CLI and Core to one release, with
  * the project's package manager: Core up to the CLI, then its codemods, when
- * the CLI is newer; else the CLI to the Core's release.
+ * the CLI is newer; else the CLI to the Core's release. Null when no
+ * command fits (see `alignCliAndCore`).
  * @param {string} cwd
  * @param {string} cli
  * @param {string} core
- * @returns {string}
+ * @returns {string | null}
  */
 export function alignCommand(cwd, cli, core) {
   return alignCliAndCore({cwd, cli, core});
@@ -380,30 +408,202 @@ export function projectHasOwnCli(cwd) {
 
 /**
  * The command that adds the CLI at `version` with the project's package
- * manager.
+ * manager, and the Core it matches: from a folder whose package.json declares
+ * no Astryx package, in the Astryx project above at that project's Core; null
+ * when there is none (see `cliInstallAdvice`).
  * @param {string} cwd
  * @param {string} version
- * @returns {string}
+ * @returns {{command: string, core: string} | null}
  */
 export function addCliCommandFor(cwd, version) {
-  return addCliCommand(projectRootOf(readReleaseFacts(cwd)) ?? cwd, version);
+  const advice = cliInstallAdvice({cwd, core: version});
+  return advice?.command ? {command: advice.command, core: advice.core} : null;
 }
 
 /**
- * The command that adds a package with the folder's package manager, read
- * from its lockfiles and `packageManager` field.
+ * The command that adds a package to the project of `cwd`; null in a folder
+ * that belongs to no project or whose package.json is not the project's (see
+ * `projectAddCommand`).
  * @param {string} cwd
- * @returns {(name: string) => string}
+ * @returns {((name: string) => string) | null}
  */
 export function installCommandFor(cwd) {
-  const pm = detectPackageManager(cwd);
-  const verb =
-    pm === 'pnpm'
-      ? 'pnpm add'
-      : pm === 'yarn'
-        ? 'yarn add'
-        : pm === 'bun'
-          ? 'bun add'
-          : 'npm install';
-  return name => `${verb} ${name}`;
+  return projectAddCommand(cwd);
+}
+
+/**
+ * Whether `cwd` is inside a project whose package.json is not the project's,
+ * so advice points at the project's folder (see `installFolder`).
+ * @param {string} cwd
+ * @returns {boolean}
+ */
+export function insideProjectElsewhere(cwd) {
+  return installFolder(cwd)?.moved === true;
+}
+
+/** Folders `doctor --built` never reads: installs and version control. */
+const BUILT_SKIPPED_DIRS = new Set(['node_modules', '.git', '.hg', '.sl']);
+
+/** Folders that hold build output: read for stylesheets, never as source. */
+const BUILD_OUTPUT_DIRS = new Set(['.next', 'dist', 'build', 'out', '.output']);
+
+/** `doctor --built` reads at most this many files, of at most this size. */
+export const BUILT_FILE_LIMIT = 20000;
+export const BUILT_FILE_MAX_MB = 5;
+const BUILT_FILE_MAX_BYTES = BUILT_FILE_MAX_MB * 1024 * 1024;
+
+/**
+ * The absolute path `doctor --built` checks, or null when it does not exist.
+ * @param {string} cwd
+ * @param {string} target
+ * @returns {string | null}
+ */
+export function resolveBuiltPath(cwd, target) {
+  const resolved = path.resolve(cwd, target);
+  return fs.existsSync(resolved) ? resolved : null;
+}
+
+/**
+ * The files under a `doctor --built` path, in a stable order: each with its
+ * path relative to the folder (a file's own name when the path is one file),
+ * whether it sits in build output, and a reader that returns its text, or
+ * null when it cannot be read or is over 5 MB. Installs and version control
+ * are skipped; at most BUILT_FILE_LIMIT files are listed.
+ * @param {string} target an existing absolute path
+ * @returns {{files: {rel: string, built: boolean, read: () => string | null}[], truncated: boolean, missing?: number}}
+ */
+export function readBuiltPath(target) {
+  /** @param {string} file */
+  const reader = file => () => {
+    try {
+      if (fs.statSync(file).size > BUILT_FILE_MAX_BYTES) return null;
+      return fs.readFileSync(file, 'utf8');
+    } catch {
+      return null;
+    }
+  };
+  if (!fs.statSync(target).isDirectory()) {
+    const inBuild = path
+      .dirname(target)
+      .split(path.sep)
+      .some(part => BUILD_OUTPUT_DIRS.has(part));
+    /** @type {{rel: string, built: boolean, read: () => string | null}[]} */
+    const files = [
+      {rel: path.basename(target), built: inBuild, read: reader(target)},
+    ];
+    let missing = 0;
+    // A built page carries its styles and scripts in files it links: read
+    // the local ones beside it, as built output.
+    if (/\.html?$/iu.test(target)) {
+      // A link inside an HTML comment is not one the page loads.
+      const page = (reader(target)() ?? '').replace(/<!--[\s\S]*?-->/g, ' ');
+      const seen = new Set([path.resolve(target)]);
+      for (const match of page.matchAll(
+        /<(?:link|script)\b[^>]*?\b(?:href|src)\s*=\s*(?:"([^"#?]+)|'([^'#?]+)|([^\s"'#?>]+))/giu,
+      )) {
+        const href = match[1] ?? match[2] ?? match[3];
+        if (/^(?:[a-z][\w+.-]*:|\/\/)/iu.test(href)) continue;
+        // A root-relative link names a file from the build root: the page's
+        // folder or the nearest folder above it that holds the file.
+        let file = path.resolve(path.dirname(target), href.replace(/^\//u, ''));
+        if (href.startsWith('/')) {
+          for (let dir = path.dirname(target); ; dir = path.dirname(dir)) {
+            const candidate = path.join(dir, href);
+            if (fs.existsSync(candidate)) {
+              file = candidate;
+              break;
+            }
+            if (path.dirname(dir) === dir) break;
+          }
+        }
+        if (seen.has(file)) continue;
+        if (!fs.existsSync(file)) {
+          // Only a missing stylesheet could have held Astryx styles; a
+          // missing favicon or manifest changes nothing.
+          if (
+            /\.css$/iu.test(href) ||
+            /\brel\s*=\s*["']?stylesheet/iu.test(match[0])
+          ) {
+            missing++;
+          }
+          continue;
+        }
+        seen.add(file);
+        files.push({
+          rel: path
+            .relative(path.dirname(target), file)
+            .split(path.sep)
+            .join('/'),
+          built: true,
+          read: reader(file),
+        });
+      }
+    }
+    return {files, truncated: false, missing};
+  }
+  /** @type {{rel: string, built: boolean, read: () => string | null}[]} */
+  const files = [];
+  // A path that is itself build output (`--built dist`) is read as built.
+  /** @type {{dir: string, built: boolean}[]} */
+  const stack = [
+    {dir: target, built: BUILD_OUTPUT_DIRS.has(path.basename(target))},
+  ];
+  while (stack.length > 0) {
+    const {dir, built} = /** @type {{dir: string, built: boolean}} */ (
+      stack.pop()
+    );
+    let entries;
+    try {
+      entries = fs.readdirSync(dir, {withFileTypes: true});
+    } catch {
+      continue;
+    }
+    entries.sort((a, b) => a.name.localeCompare(b.name));
+    for (const entry of entries) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (BUILT_SKIPPED_DIRS.has(entry.name)) continue;
+        stack.push({
+          dir: full,
+          built: built || BUILD_OUTPUT_DIRS.has(entry.name),
+        });
+      } else if (entry.isFile()) {
+        if (files.length >= BUILT_FILE_LIMIT) return {files, truncated: true};
+        files.push({
+          rel: path.relative(target, full).split(path.sep).join('/'),
+          built,
+          read: reader(full),
+        });
+      }
+    }
+  }
+  return {files, truncated: false};
+}
+
+/**
+ * The integration packages whose components count as Astryx for a `--built`
+ * path, read without running anything: each dependency the nearest
+ * package.json above the path declares whose installed copy, resolved the way
+ * the CLI autolinks integrations (a workspace root's hoisted copy included),
+ * holds an integration manifest. Every `@astryxdesign/*` package counts
+ * beside them.
+ * @param {string} target the path as given
+ * @param {string} cwd
+ * @returns {string[]}
+ */
+export function builtIntegrationPackages(target, cwd) {
+  let dir = path.resolve(cwd, target);
+  try {
+    if (!fs.statSync(dir).isDirectory()) dir = path.dirname(dir);
+  } catch {
+    dir = path.resolve(cwd);
+  }
+  for (let at = dir; ; at = path.dirname(at)) {
+    if (fs.existsSync(path.join(at, 'package.json'))) {
+      return [
+        ...new Set(scanAutolinkCandidates(at).map(candidate => candidate.spec)),
+      ];
+    }
+    if (path.dirname(at) === at) return [];
+  }
 }

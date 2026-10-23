@@ -35,6 +35,7 @@ import {
 import {useDevWarning} from '../hooks/useDevWarning';
 import {mergeRefs} from '../utils/mergeRefs';
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {Field, inputWrapperStyles, type FieldStatusVariant} from '../Field';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
@@ -547,6 +548,9 @@ export function ComplexSelector<Value>({
   const [isPending, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || isPending;
+  // The busy Spinner is decorative; this control announces its busy start
+  // (spec:AST-086 FR8).
+  useBusyAnnouncement(isBusy, t('@astryx.spinner.loading'), triggerRef);
 
   const handlePopoverShow = useCallback(() => {
     onOpenChange?.(true);
@@ -790,7 +794,7 @@ export function ComplexSelector<Value>({
           {...stylex.props(styles.trigger)}>
           <span {...stylex.props(styles.triggerText)}>{triggerContent}</span>
         </button>
-        {isBusy && <Spinner size="sm" />}
+        {isBusy && <Spinner size="sm" aria-hidden="true" />}
         <Icon
           icon="chevronDown"
           size="sm"

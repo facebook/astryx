@@ -175,6 +175,7 @@ describe('Node-tooling CI routing', () => {
       'test-node',
       'test-build',
       'registry-contract',
+      'test-native-swift',
     ]);
     expect(ci.jobs.build.needs).toEqual([
       'build-storybook',
@@ -193,6 +194,7 @@ describe('Node-tooling CI routing', () => {
       TEST_NODE_RESULT: '${{ needs.test-node.result }}',
       TEST_BUILD_RESULT: '${{ needs.test-build.result }}',
       REGISTRY_CONTRACT_RESULT: '${{ needs.registry-contract.result }}',
+      TEST_NATIVE_SWIFT_RESULT: '${{ needs.test-native-swift.result }}',
     });
     const buildJoin = step(
       ci.jobs.build,

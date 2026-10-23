@@ -17,6 +17,7 @@ const broad = {
   TEST_NODE_RESULT: 'success',
   TEST_BUILD_RESULT: 'success',
   REGISTRY_CONTRACT_RESULT: 'success',
+  TEST_NATIVE_SWIFT_RESULT: 'success',
 };
 
 function run(overrides = {}) {
@@ -43,6 +44,8 @@ describe('pull-request test join', () => {
       ['TEST_NODE_RESULT', 'cancelled'],
       ['TEST_BUILD_RESULT', 'skipped'],
       ['REGISTRY_CONTRACT_RESULT', 'failure'],
+      ['TEST_NATIVE_SWIFT_RESULT', 'failure'],
+      ['TEST_NATIVE_SWIFT_RESULT', 'skipped'],
     ]) {
       expect(run({[name]: value}), name).toMatchObject({status: 1});
     }
