@@ -2771,6 +2771,37 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+      # DateInput owns the popover, native, and bottom-sheet field surfaces.
+      # Its audit lane keeps rest, focus, busy, disabled, status, and open
+      # states bound to exact-head themes, direction, pointers, and viewport.
+      - name: Run DateInput audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DateInput:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output date-input-a11y-report.json \
+            --components DateInput \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/DateInput/__tests__/DateInputAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload DateInput audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DateInput:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: date-input-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            date-input-a11y-report.json
+            date-input-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
       # Component-owned metadata fixtures retain exact-head browser receipts on
       # audit PRs, including failed pre-fix cases for before/after comparison.
       - name: Run ChatMessageMetadata audit browser evidence
