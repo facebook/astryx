@@ -221,9 +221,13 @@ export async function searchComponents(needle, coreDir, components) {
       .split(/[^a-z0-9]+/)
       .filter(Boolean);
     const byLower = new Map(allNames.map(n => [n.toLowerCase(), n]));
+    const longest = Math.max(0, ...allNames.map(n => n.length));
     for (let i = 0; i < words.length; i++) {
-      for (let j = words.length; j > i; j--) {
-        const run = words.slice(i, j).join('');
+      let run = '';
+      for (let j = i + 1; j <= words.length; j++) {
+        // Grow the run one word at a time; stop once no name is that long.
+        run += words[j - 1];
+        if (run.length > longest) break;
         if (run.length < 4 || run === term) continue;
         const comp = byLower.get(run);
         if (!comp) continue;

@@ -1893,14 +1893,24 @@ export async function unknownTopicError(topic, catalog) {
       s.toLowerCase().replace(/[^a-z0-9]/g, '').replace(/s$/, '');
     const wanted = key(topic);
     if (wanted.length >= 3) {
-      suggestions = [...tree.nodes.values()]
-        .filter(
-          node =>
-            !node.ref?.flatTopic &&
-            (key(node.name) === wanted ||
-              key(node.route.split('/').at(-1) ?? '') === wanted),
-        )
-        .map(node => ({name: node.route, reason: node.summary}));
+      // Flat topics first, as the browse list names them, then tree docs.
+      const topics = catalog
+        .names()
+        .filter(name => key(name) === wanted)
+        .map(name => ({name, reason: 'available topic'}));
+      const flat = new Set(topics.map(t => t.name));
+      suggestions = [
+        ...topics,
+        ...[...tree.nodes.values()]
+          .filter(
+            node =>
+              !node.ref?.flatTopic &&
+              !flat.has(node.route) &&
+              (key(node.name) === wanted ||
+                key(node.route.split('/').at(-1) ?? '') === wanted),
+          )
+          .map(node => ({name: node.route, reason: node.summary})),
+      ];
       spelled = suggestions.length > 0;
     }
   }

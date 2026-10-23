@@ -68,6 +68,21 @@ describe('registerDocs', () => {
     expect(errorOutput).toContain('cli/commands/theme-build');
     expect(errorOutput).not.toContain('docs namespace');
   });
+
+  it('keeps a flat topic first when a spelling match names it', async () => {
+    const program = createProgram();
+    vi.spyOn(process, 'exit').mockImplementation(code => {
+      throw new Error(`exit ${code}`);
+    });
+
+    await expect(
+      program.parseAsync(['node', 'astryx', 'docs', 'Theme_']),
+    ).rejects.toThrow('exit 1');
+
+    const lines = console.error.mock.calls.map(c => String(c[0]));
+    const listed = lines.filter(l => /^\s+\S/.test(l)).map(l => l.trim().split(/\s+/)[0]);
+    expect(listed[0]).toBe('theme');
+  });
 });
 
 describe('hyphenated doc filenames', () => {
