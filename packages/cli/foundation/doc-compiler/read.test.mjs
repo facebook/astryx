@@ -16,6 +16,7 @@ import {Project} from '../config/project.mjs';
 import {CLI_ROOT} from '../fs/paths.mjs';
 import {loadComponentDoc, loadDocs} from '../discovery/component-loader.mjs';
 import {compileDocFile, readDocView} from './read.mjs';
+import {importDocModule, importNativeModule} from './import.mjs';
 import {collectDocInputs} from './inputs.mjs';
 
 const REPO_ROOT = path.resolve(CLI_ROOT, '..', '..');
@@ -343,6 +344,21 @@ describe('an edited doc file, read again in the same process', () => {
     expect((await loadComponentDoc(file)).displayName).toBe('First');
     fs.writeFileSync(file, doc('Second, longer'));
     expect((await loadComponentDoc(file)).displayName).toBe('Second, longer');
+  });
+
+  it('gives each importer its own read of an edited TypeScript doc, as a new process would', async () => {
+    const file = write('Pair.doc.ts', doc('First'));
+    const nativeBefore = await importNativeModule(file);
+    expect(await importDocModule(file)).not.toBe(nativeBefore);
+    fs.writeFileSync(file, doc('Second, longer'));
+    // The unchecked reader (a plain import) first, then the checked one (jiti).
+    expect((await loadDocs(file)).displayName).toBe('Second, longer');
+    expect((await loadComponentDoc(file)).displayName).toBe('Second, longer');
+    const nativeAfter = await importNativeModule(file);
+    const docAfter = await importDocModule(file);
+    expect(docAfter).not.toBe(nativeAfter);
+    expect(await importNativeModule(file)).toBe(nativeAfter);
+    expect(await importDocModule(file)).toBe(docAfter);
   });
 
   it('lowers an edited file again for a whole-project compile', async () => {

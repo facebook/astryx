@@ -77,6 +77,7 @@ import {
   discoverIntegrationTemplatesForOne,
 } from '../../foundation/discovery/template-adapter.mjs';
 import {findCoreDir} from '../../foundation/fs/paths.mjs';
+import {reusedWhileUnchanged} from '../../foundation/fs/read-record.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {orderRouteSuggestions} from '../../foundation/text/suggest-order.mjs';
@@ -393,8 +394,8 @@ export function projectTree(catalog, {fresh = false} = {}) {
   return tree;
 }
 
-/** @type {ReturnType<typeof loadTreeInputs> | undefined} */
-let cliTreeInputs;
+/** The CLI's own tree files, loaded again after one of them changes. */
+const cliTreeInputs = reusedWhileUnchanged(() => loadTreeInputs());
 
 /**
  * Every flat topic in the catalog, as the tree's topic levels read it.
@@ -441,8 +442,7 @@ async function flatTopicInputs(catalog) {
  */
 async function buildProjectTree(catalog, fresh) {
   const added = catalog.treeInputs;
-  if (fresh || !cliTreeInputs) cliTreeInputs = loadTreeInputs();
-  const cli = await cliTreeInputs;
+  const cli = await cliTreeInputs({fresh});
   const result = buildDocsTree({
     namespaces: [...cli.namespaces, ...added.flatMap(each => each.namespaces)],
     docs: [...cli.docs, ...added.flatMap(each => each.guides)],
@@ -573,11 +573,15 @@ function identitiesOf(tree) {
 /**
  * The CLI's authoring docs, by kind and name. The field reference under
  * `astryx docs authoring` reads each as one section keyed by its name, so a
- * link to one opens that section. Loaded once per process, like the CLI's
- * tree files.
- * @type {Promise<Map<string, any>> | undefined}
+ * link to one opens that section. Loaded again after one of them changes,
+ * like the CLI's tree files.
  */
-let authoringDocs;
+const authoringDocs = reusedWhileUnchanged(() =>
+  loadAuthoringSelfDocs().then(
+    ({loaded}) =>
+      new Map(loaded.map(({doc}) => [`${doc.type}\u0000${doc.name}`, doc])),
+  ),
+);
 
 /**
  * The CLI authoring doc a link names. The `authoring` namespace is the CLI's
@@ -587,11 +591,7 @@ let authoringDocs;
  * @returns {Promise<any | null>}
  */
 async function authoringDoc(kind, name) {
-  authoringDocs ??= loadAuthoringSelfDocs().then(
-    ({loaded}) =>
-      new Map(loaded.map(({doc}) => [`${doc.type}\u0000${doc.name}`, doc])),
-  );
-  return (await authoringDocs).get(`${kind}\u0000${name}`) ?? null;
+  return (await authoringDocs()).get(`${kind}\u0000${name}`) ?? null;
 }
 
 /**
