@@ -39,12 +39,16 @@
  * "healthy" — the two are otherwise byte-identical.
  * @typedef {object} ValidateIntegrationResponse
  * @property {'integration.validate'} type
- * @property {{validated: boolean, name: string | null, version: string | null, issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[], notes?: Array<{code: string, message: string, next?: boolean}>, docTypes?: DocTypesReport, docNames?: DocNamesReport, blockComponents?: BlockComponentsReport, publicImports?: PublicImportsReport}} data
+ * @property {{validated: boolean, name: string | null, version: string | null, issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[], notes?: Array<{code: string, message: string, next?: boolean}>, docTypes?: DocTypesReport, docNames?: DocNamesReport, blockComponents?: BlockComponentsReport, exampleAssets?: {status: 'checked', findings: [], unchecked: Array<{file: string, asset: string, reason: string}>}, publicImports?: PublicImportsReport}} data
  *   `notes`: information beside the issues. A note fails nothing by default;
  *   one with `next: true` counts as a warning under `integration check
  *   --next`, fails `integration check --strict --next`, and fails `--strict`
  *   from the next minor release. Notes include `invalid_cli_command`, a
  *   `cliCommand` that was ignored as malformed;
+ *   `component_without_example`, `template_category`,
+ *   `showcase_not_standalone` and `template_asset_not_packed`, what a
+ *   package's examples need (next minor; a block's `alsoShowcaseFor` names
+ *   count as shown);
  *   `cli_peer_version`, the running CLI outside the package's
  *   `@astryxdesign/cli` peer range; and
  *   the package layout findings added after the last minor release, each with

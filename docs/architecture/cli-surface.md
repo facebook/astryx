@@ -231,8 +231,8 @@ validate` MUST warn on a PascalCase `.tsx` at the top of the components root
   raise a conflict with a package's own name. Each `doctor integration`
   subcommand MUST keep its exit codes, and its JSON MAY change only by
   additions. Because builds fail on its findings, it MUST NOT report a finding
-  the package's code does not contradict, other than the doc faults of DEC-8
-  and the doc-syntax findings of DEC-12:
+  the package's code does not contradict, other than the doc faults of DEC-8,
+  the doc-syntax findings of DEC-12 and the example findings of DEC-13:
   a check that cannot judge an item lists it as not checked instead (DEC-7).
   A finding that would newly fail a build MUST first ship as a note marked
   `next` in `validate`'s `data.notes`, which fails nothing by default:
@@ -775,7 +775,8 @@ false finding fails a package for a fault it does not have, and its only way
 out, dropping `--strict`, also drops the check for every real fault. A check
 that cannot tell whether the code contradicts a doc lists the item as not
 checked, which `--strict` does not fail. The exceptions are the doc-quality
-findings of DEC-8 and the doc-syntax findings of DEC-12.
+findings of DEC-8, the doc-syntax findings of DEC-12 and the example findings
+of DEC-13.
 Rejected: reporting a doubtful item as a warning (`--strict` fails it).
 
 ### DEC-8 — The strict check fails on copied passages, fluff and stray pointers in docs
@@ -785,7 +786,8 @@ Rejected: reporting a doubtful item as a warning (`--strict` fails it).
 People and agents read integration docs on a budget. A fact written in two
 topics goes stale in one of them at the next edit, and padding costs every
 reader. So these doc-quality findings fail `--strict` by owner decision, as
-an exception to DEC-7; DEC-12's doc-syntax findings are the other. A copied passage (a run of identical words, after
+an exception to DEC-7, beside DEC-12's doc-syntax findings and DEC-13's
+example findings. A copied passage (a run of identical words, after
 the filters for function-word runs and for boilerplate that three or more
 topics share) and a listed padding phrase (outside code and quotes) are exact
 matches. The density floor is a threshold, not a contradiction, and a section
@@ -867,6 +869,31 @@ DEC-8.
 Rejected: failing `--strict` on them in a patch (packages already running the
 check would break on an update), and leaving them unchecked (docs drift back
 to one package manager).
+
+### DEC-13 — A package's examples are checked, listed now and failing in the next minor
+
+**Decider:** `josephfarina`, `2026-10-21`
+
+Template lists, docs pages and catalog cards show a package through its
+examples, each block alone and from the packed package, so a package must ship
+what they need, as Core does. `validate` lists, as `next` notes with the fix
+to paste: a published component no block template shows with `exampleFor` and
+`isShowcase: true` or names in `alsoShowcaseFor` (`component_without_example`; hidden docs, family members,
+`isHiddenFromOverview` docs and `Utility` components are exempt), a template
+category written as a path such as `components/X` (`template_category`; INV34
+still lets a package author any category, and this note only names a
+`"<Group> - <Variant>"` one), a showcase that imports server-only code or
+reads `process.env` past `NODE_ENV` (`showcase_not_standalone`; live data
+through the app is fine), and an asset loaded with `new URL(…,
+import.meta.url)` that is missing or that `npm pack --dry-run` leaves out
+(`template_asset_not_packed`; when npm cannot answer, one no `files` entry
+can reach is still reported and any other is listed as not checked, INV35). Each fails `--strict --next` now and `--strict`
+from the next minor release (DEC-11). The CLI finds a component's showcase by
+`exampleFor` first, then by folder and `componentsUsed`.
+
+Rejected: failing them in a patch (packages already running the check would
+break on an update), and per-package special cases (a package that needs one
+is a package the checks should cover).
 
 ## Verification
 
