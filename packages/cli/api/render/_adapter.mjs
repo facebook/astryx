@@ -9,6 +9,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {createRequire} from 'node:module';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {
@@ -47,6 +48,22 @@ function readInput(file, cwd) {
       [],
       ERROR_CODES.ERR_FILE_NOT_FOUND,
     );
+  }
+}
+
+/**
+ * Whether @astryxdesign/core resolves from a folder (or the nearest existing
+ * folder above it).
+ * @param {string} dir
+ */
+function resolvesCore(dir) {
+  let d = dir;
+  while (!fs.existsSync(d) && path.dirname(d) !== d) d = path.dirname(d);
+  try {
+    createRequire(path.join(d, 'noop.js')).resolve('@astryxdesign/core');
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -211,7 +228,11 @@ export function reverseToFile({cwd, input, output, overwrite}) {
   const target = output ?? path.join(path.dirname(input), `${path.basename(input).replace(/\.[^.]+$/, '')}.tsx`);
   confined(target, cwd, 'The page');
   refuseExisting(target);
-  const rebuilt = rebuildPage(html, cwd);
+  // Components resolve from where the page will live, then from the HTML
+  // file's folder, then from the current folder.
+  const from =
+    [path.dirname(target), path.dirname(input), cwd].find(d => resolvesCore(d)) ?? cwd;
+  const rebuilt = rebuildPage(html, from);
   writeOutput(target, rebuilt.source, cwd);
   return {
     input: shown(cwd, input),
