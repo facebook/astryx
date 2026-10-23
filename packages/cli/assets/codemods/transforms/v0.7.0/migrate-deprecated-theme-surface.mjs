@@ -23,6 +23,10 @@ import path from 'node:path';
 import postcss from 'postcss';
 import selectorParser from 'postcss-selector-parser';
 import {readThemeDescriptorValue} from '../../../../foundation/discovery/theme-discovery.mjs';
+import {
+  importedComponents,
+  resolveImportedComponent,
+} from '../../transform-prop.mjs';
 import {migrateAstryxThemeSelectors} from '../v0.6.0/migrate-astryx-theme-selectors-to-data-attrs.mjs';
 import {
   V06_THEME_SELECTOR_DYNAMIC_AXES,
@@ -396,15 +400,19 @@ function localNamesExportedAs(root, j, exportName) {
 }
 
 /**
- * Local names that refer to Astryx's `defineTheme`, its theme types, or an
- * Astryx namespace import, plus the binding a theme descriptor declares.
+ * Astryx's `defineTheme` imports (resolved at each call site, so a shadowing
+ * parameter or local never counts), its theme types, an Astryx namespace
+ * import, and the binding a theme descriptor declares.
  * @param {any} root @param {any} j @param {string} filePath
  */
 function astryxThemeBindings(root, j, filePath) {
   /** @type {Set<string> | undefined} */
   let describedLocals;
   const bindings = {
-    defineTheme: new Set(),
+    defineTheme: importedComponents(root, j, {
+      matchesImport: source => ASTRYX_MODULE.test(source),
+      components: new Map([['defineTheme', new Set()]]),
+    }),
     themeTypes: new Set(),
     namespaces: new Set(),
     /**
@@ -432,7 +440,6 @@ function astryxThemeBindings(root, j, filePath) {
         bindings.namespaces.add(local);
       } else if (specifier.type === 'ImportSpecifier') {
         const imported = specifier.imported?.name ?? specifier.imported?.value;
-        if (imported === 'defineTheme') bindings.defineTheme.add(local);
         if (THEME_TYPE_NAMES.has(imported)) bindings.themeTypes.add(local);
       }
     }
@@ -544,12 +551,7 @@ function isThemeRoot(objectPath, bindings) {
   if (
     node?.type === 'CallExpression' &&
     node.arguments?.[0] === child.node &&
-    namesBinding(
-      node.callee,
-      bindings.defineTheme,
-      bindings.namespaces,
-      new Set(['defineTheme']),
-    )
+    resolveImportedComponent(node.callee, parent, bindings.defineTheme)
   ) {
     return true;
   }

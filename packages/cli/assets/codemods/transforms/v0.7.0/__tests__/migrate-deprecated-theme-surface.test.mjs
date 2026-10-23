@@ -221,6 +221,33 @@ export default defineTheme({components: {checkbox: {base: {color: 'red'}}}});`;
 
   it.each([
     [
+      'named defineTheme',
+      `import {defineTheme} from '@astryxdesign/core';
+function unrelated(defineTheme) {
+  return defineTheme({name: 'fake', components: {checkbox: {root: {}}}});
+}`,
+    ],
+    [
+      'aliased defineTheme',
+      `import {defineTheme as makeTheme} from '@astryxdesign/core';
+function unrelated() {
+  const makeTheme = otherLibrary.createTheme;
+  return makeTheme({name: 'fake', components: {checkbox: {root: {}}}});
+}`,
+    ],
+    [
+      'namespace defineTheme',
+      `import * as Astryx from '@astryxdesign/core';
+function unrelated(Astryx) {
+  return Astryx.defineTheme({name: 'fake', components: {checkbox: {root: {}}}});
+}`,
+    ],
+  ])('does not treat a shadowed %s as an Astryx call', (_name, input) => {
+    expect(apply(input)).toBe(input);
+  });
+
+  it.each([
+    [
       'an aliased defineTheme import',
       `import {defineTheme as makeTheme} from '@astryxdesign/core';
 export default makeTheme({name: 'brand', components: {navicon: {base: {}}}});`,
