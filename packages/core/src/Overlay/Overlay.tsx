@@ -4,7 +4,7 @@
 
 /**
  * @file Overlay.tsx
- * @input Uses React, useOverlay
+ * @input Uses React, useOverlay, OverlayPositionContext
  * @output Exports Overlay component
  * @position Overlay system component; thin wrapper over useOverlay
  *
@@ -21,6 +21,7 @@ import {mergeProps} from '../utils';
 import {useOverlay} from './useOverlay';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {overlayScope, overlayContainerStyles} from './overlay.markers.stylex';
+import {OverlayPositionContext} from './OverlayScrim';
 import {themeProps} from '../utils/themeProps';
 import type {BaseProps} from '../BaseProps';
 import type {
@@ -123,7 +124,9 @@ export function Overlay({
       )}
       onClick={overlay.containerProps.onClick}
       onMouseUp={overlay.containerProps.onMouseUp}>
-      {children}
+      {/* Base content is not overlay content: a region here is not placed,
+          even when this Overlay sits inside another Overlay's content. */}
+      <OverlayPositionContext value={null}>{children}</OverlayPositionContext>
       {overlay.element}
     </div>
   );

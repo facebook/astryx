@@ -14,6 +14,7 @@ verified_by:
   [
     packages/core/src/Overlay/Overlay.test.tsx,
     apps/storybook/stories/Overlay.stories.tsx,
+    .github/scripts/story-play-guard.js,
   ]
 modules: []
 families: []
@@ -46,7 +47,7 @@ own `position` values, and alignment remain described by its source, tests, and
 | Behavior                | Inside a fill Overlay, a preset region sits at that spot (corners follow the writing direction) and open placement sits at fractions of the media measured from its top-left corner, never mirrored. A sized open region stays inside the media. Regions scale with the media.                                            |
 | End-user impact         | Several captions, tags, badges, or hotspots over one image or video each stay on their spot of the media at every size, in either text direction.                                                                                                                                                                         |
 | Builder impact          | None by default. A builder places content with `OverlayRegion` instead of hand-written absolute positioning; moving a region stays the builder's code.                                                                                                                                                                    |
-| Compatibility/readiness | Additive: a new component and export; an Overlay without a region renders and stacks exactly as before. This record is current authority; `OverlayRegion`, its consumer docs, region tests, and region stories have not shipped yet.                                                                                      |
+| Compatibility/readiness | Additive: a new component and export; an Overlay without a region renders and stacks exactly as before. Implemented: `OverlayRegion`, its consumer docs, region tests, and region stories ship with this record's verification map.                                                                                       |
 | Review checks           | Reject open placement that mirrors in right-to-left, corner presets that do not, JavaScript measurement or observers, drag or resize behavior inside Overlay, a role or focus stop on the region, a theme target on it, or a region placed inside a strip.                                                                |
 | Governing rules         | FR1–FR11 below; `design:bidirectionality/DR3`, `DR5`, `DR6`; `architecture:component-theming-surface/INV4`; `spec:AST-017/FR5`; `spec:AST-027/FR2`.                                                                                                                                                                       |
 

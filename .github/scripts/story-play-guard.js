@@ -39,6 +39,30 @@ const port = Number(getArg('port') || 6010);
 // whole cost of promoting its play function into required CI.
 const TARGETS = [
   {
+    component: 'Overlay',
+    story: 'core-overlay--regions',
+    guards:
+      'every OverlayRegion lands on its spot: presets inside the content inset with logical corners that flip in RTL, open placement by its top-left corner in physical fractions (sized, edge-clamped, content-sized; 480px, 240px, live resize, RTL), a positioned wrapper re-bases a region, a region in a strip is not placed, and regions paint above a later in-flow control inside an isolated container',
+  },
+  {
+    component: 'Overlay',
+    story: 'core-overlay--regions',
+    viewport: {width: 390, height: 844},
+    guards: 'the same region geometry holds on a 390px phone viewport',
+  },
+  {
+    component: 'Overlay',
+    story: 'core-overlay--region-combinations',
+    guards:
+      'every Overlay position × OverlayRegion position pair: placed in a fill Overlay, not placed in a top or bottom strip, corners flip in RTL and open placement does not',
+  },
+  {
+    component: 'Overlay',
+    story: 'core-overlay--movable-region',
+    guards:
+      'the documented move pattern: ArrowRight moves a focused region one step right in both directions, and a single click on the media centers it there',
+  },
+  {
     component: 'Item',
     story: 'core-item--align-first-line',
     guards:
