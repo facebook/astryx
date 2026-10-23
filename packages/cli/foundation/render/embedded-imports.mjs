@@ -133,12 +133,15 @@ export function receivingAliases(dir) {
  *   first; every path appears once (callers refuse duplicates first)
  * @param {{aliases?: [string, string][]}} [options] the receiving project's
  *   path aliases, absolute (see receivingAliases)
- * @returns {Map<string, Reach>} reached tree paths
+ * @returns {{reached: Map<string, Reach>, missing: string[]}} the reached
+ *   tree paths, and the relative imports the file does not carry
  */
 export function reachableFiles(files, {aliases = []} = {}) {
   const byPath = new Map(files.map(f => [f.path, f]));
   /** @type {Map<string, Reach>} */
   const reached = new Map();
+  /** @type {Set<string>} */
+  const missing = new Set();
   /** @param {string} candidate tree path, `/`-separated */
   const resolveIn = candidate => {
     if (byPath.has(candidate)) return candidate;
@@ -192,7 +195,10 @@ export function reachableFiles(files, {aliases = []} = {}) {
       if (bare.startsWith('./') || bare.startsWith('../')) {
         const joined = path.posix.normalize(path.posix.join(path.posix.dirname(current), bare));
         const target = joined.startsWith('..') ? null : resolveIn(joined);
-        if (!target) continue;
+        if (!target) {
+          missing.add(joined);
+          continue;
+        }
         const {r, fresh} = reach(target);
         r.relative = true;
         if (fresh) queue.push(target);
@@ -224,5 +230,5 @@ export function reachableFiles(files, {aliases = []} = {}) {
       }
     }
   }
-  return reached;
+  return {reached, missing: [...missing].sort()};
 }

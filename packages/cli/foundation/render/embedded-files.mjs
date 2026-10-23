@@ -25,25 +25,28 @@ const CONFIG_JSON =
 /** Tool configuration modules: `vite.config.ts`, `astryx.config.mjs`, `next.config.js`, `.eslintrc.js`, ... */
 const CONFIG_MODULE = /(^|\.)config\.[cm]?[jt]sx?$|^[a-z0-9-]+rc\.[cm]?[jt]s$/i;
 
-/** Words in a file or folder name that test, story and benchmark runners match. */
-const RUNNER_WORDS = new Set([
-  'test', 'tests', 'spec', 'specs', 'story', 'stories', 'bench', 'benchmark', 'benchmarks',
-  'e2e', 'cypress', 'playwright', 'fixture', 'fixtures', 'snapshot', 'snapshots', 'mock', 'mocks',
-]);
+/** Script extensions `node --test` picks up by name alone. */
+const NODE_TEST_EXTENSIONS = /\.(c|m)?js$/i;
 
 /**
- * Whether a runner would pick the file up by name: any word of its name
- * (split at `.`, `-` and `_`, extension left out) or of any folder is one of
- * RUNNER_WORDS (`report.test.mjs`, `report-test.mjs`, `test_report.mjs`,
- * `test.mjs`, `test/helper.mjs`), or a folder is `__name__`.
+ * Whether a test, story or benchmark runner picks the file up by its name or
+ * folder, by the patterns their defaults use: `*.test.*`, `*.spec.*`,
+ * `*.stories.*`, `*.story.*`, `*.cy.*`, `*.bench.*` (Vitest, Jest,
+ * Playwright, Storybook, Cypress); anything under `__tests__/`; and for
+ * `node --test`, `*-test.js`, `*_test.js`, `test-*.js`, `test.js` and
+ * `test/**.js`.
  * @param {string[]} segments
  */
 function runnerPicksUp(segments) {
-  return segments.some((seg, i) => {
-    if (/^__\w+__$/.test(seg)) return true;
-    const name = i === segments.length - 1 ? seg.replace(/\.[^.]+$/, '') : seg;
-    return name.toLowerCase().split(/[._-]+/).some(word => RUNNER_WORDS.has(word));
-  });
+  const base = segments[segments.length - 1];
+  const stem = base.replace(/\.[^.]+$/, '');
+  if (/\.(test|spec|stories|story|cy|bench)$/i.test(stem)) return true;
+  if (segments.slice(0, -1).some(seg => seg === '__tests__')) return true;
+  if (NODE_TEST_EXTENSIONS.test(base)) {
+    if (/(^|[-_])test$/i.test(stem) || /^test([-_]|$)/i.test(stem)) return true;
+    if (segments.slice(0, -1).some(seg => seg.toLowerCase() === 'test')) return true;
+  }
+  return false;
 }
 
 /** @param {string} p */

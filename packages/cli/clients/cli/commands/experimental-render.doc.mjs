@@ -24,7 +24,7 @@ export const doc = {
       flag: '--out <file>',
       param: 'options.out',
       description:
-        "Where to write: an .html file, or with --reverse a page module (default: beside the input, named after it: page.tsx gives page.html, page.html gives page.tsx)",
+        "Where to write: an .html file, or with --reverse a page module (default: page.tsx gives page.html beside it; with --reverse, page.html comes back into a new folder page-restored/)",
     },
     {
       flag: '--reverse',

@@ -95,7 +95,7 @@ export async function render(file, options = {}) {
   }
   if (overwrite) {
     throw new AstryxError(
-      '--overwrite applies only to --reverse; render always replaces its HTML file',
+      '--overwrite applies only to --reverse; rendering replaces an existing HTML file only when a render wrote it',
       [],
       ERROR_CODES.ERR_INVALID_ARGUMENT,
     );

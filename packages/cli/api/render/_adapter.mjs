@@ -323,15 +323,6 @@ export function reverseToFile({cwd, input, output, overwrite}) {
   }
   if (block.found) {
     const {source} = block;
-    // The entry name comes from the file, so only its base name is used.
-    // The default name comes from the file you were given, never from inside
-    // it: `page.html` comes back as `page.tsx` (with the page's extension).
-    const requested =
-      output ??
-      path.join(
-        path.dirname(input),
-        `${path.basename(input).replace(/\.[^.]+$/, '')}${path.posix.extname(source.files[0].path)}`,
-      );
     // A file someone sends is untrusted: it may carry only what a render
     // embeds (the page, and the stylesheets, JSON and images it imports).
     source.files.forEach((f, i) => {
@@ -344,6 +335,17 @@ export function reverseToFile({cwd, input, output, overwrite}) {
         );
       }
     });
+    // Without --out, the page and the files it imports come back into a new
+    // folder beside the HTML file, named after it (`report.html` gives
+    // `report-restored/`), with the layout they were rendered in. Nothing in
+    // the received file decides where in your project anything goes.
+    let requested = output;
+    if (!requested) {
+      const stem = path.basename(input).replace(/\.[^.]+$/, '');
+      let folder = path.join(path.dirname(input), `${stem}-restored`);
+      for (let n = 2; fs.existsSync(folder); n++) folder = path.join(path.dirname(input), `${stem}-restored-${n}`);
+      requested = path.join(folder, ...source.files[0].path.split('/'));
+    }
     refuseConfigTarget(requested);
     const seen = new Set();
     for (const f of source.files) {
@@ -359,7 +361,7 @@ export function reverseToFile({cwd, input, output, overwrite}) {
     }
     // Only files the page reaches through its own imports are written: a
     // file the page never imports is not part of it, whatever its name.
-    const reached = reachableFiles(source.files, {aliases: receivingAliases(path.dirname(requested))});
+    const {reached, missing} = reachableFiles(source.files, {aliases: receivingAliases(path.dirname(requested))});
     const stray = source.files.filter(f => !reached.has(f.path)).map(f => f.path);
     if (stray.length > 0) {
       throw new AstryxError(
@@ -439,7 +441,10 @@ export function reverseToFile({cwd, input, output, overwrite}) {
       mode: 'embedded',
       output: shown(cwd, target),
       files: writes.map(w => shown(cwd, w.file)),
-      exact: true,
+      // The page is byte for byte the one rendered; an import it makes that
+      // the file does not carry (a file a render never embeds) is named.
+      exact: missing.length === 0,
+      ...(missing.length > 0 ? {missing} : {}),
     };
   }
   if (!isAstryxMarkup(html)) {

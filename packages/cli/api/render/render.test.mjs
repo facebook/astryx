@@ -529,10 +529,19 @@ describe('render(): every write stays inside the current folder', () => {
     const {sourceBlock} = await import('../../foundation/render/source-block.mjs');
     put('runner/report.test.html', `<body><p class="astryx-text">x</p>${sourceBlock('page.mjs', [{path: 'page.mjs', bytes: Buffer.from('export default () => null;\n')}])}</body>`);
     const cwd = path.join(dir, 'runner');
-    expect(await codeOf(() => render('report.test.html', {cwd, reverse: true}))).toBe('ERR_INVALID_ARGUMENT');
+    // The page's name never comes from the received file's name.
+    const back = /** @type {any} */ (await render('report.test.html', {cwd, reverse: true}));
+    expect(back.data.output).toBe('report.test-restored/page.mjs');
     expect(await codeOf(() => render('report.test.html', {cwd, reverse: true, out: 'test/page.mjs'}))).toBe('ERR_INVALID_ARGUMENT');
-    expect(fs.readdirSync(cwd)).toEqual(['report.test.html']);
+    expect(await codeOf(() => render('report.test.html', {cwd, reverse: true, out: 'page.cy.mjs'}))).toBe('ERR_INVALID_ARGUMENT');
+    put('runner/spec.html', `<body><p class="astryx-text">x</p>${sourceBlock('report.cy.ts', [{path: 'report.cy.ts', bytes: Buffer.from('export default () => null;\n')}])}</body>`);
+    expect(await codeOf(() => render('spec.html', {cwd, reverse: true}))).toBe('ERR_RENDER_SOURCE_DAMAGED');
+    // Ordinary names that only contain such words still come back.
+    put('runner/results.html', `<body><p class="astryx-text">x</p>${sourceBlock('stories/test-results.tsx', [{path: 'stories/test-results.tsx', bytes: Buffer.from("import d from '../mock-data';\nexport default () => d;\n")}, {path: 'mock-data.ts', bytes: Buffer.from('export default 1;\n')}])}</body>`);
+    const ok = /** @type {any} */ (await render('results.html', {cwd, reverse: true}));
+    expect(ok.data.files).toEqual(['results-restored/stories/test-results.tsx', 'results-restored/mock-data.ts']);
   });
+
 
   it('keeps a received title out of the rebuilt code', async () => {
     put('evil-title.html', '<html><head><title>x\rprocess.exit(7)\u2028//</title></head><body><div class="astryx-stack"><p class="astryx-text">Hi</p></div></body></html>');
@@ -555,10 +564,10 @@ describe('render(): every write stays inside the current folder', () => {
       expect(fs.existsSync(path.join(dir, 'rooted', name))).toBe(false);
       expect(fs.existsSync(path.join(dir, 'rooted/page.tsx'))).toBe(false);
     }
-    // The default name comes from the file given, never from inside it.
+    // Without --out, everything comes back into a new folder named after the file given.
     put('rooted/shared.html', `<body><p class="astryx-text">x</p>${sourceBlock('instrumentation.ts', [{path: 'instrumentation.ts', bytes: Buffer.from('export function register() {}\n')}])}</body>`);
     const back = /** @type {any} */ (await render('shared.html', {cwd: path.join(dir, 'rooted'), reverse: true}));
-    expect(back.data.output).toBe('shared.ts');
+    expect(back.data.output).toBe('shared-restored/instrumentation.ts');
   });
 
   it('replaces an existing output only when a render wrote it, and never an ignored one', async () => {
@@ -721,6 +730,10 @@ describe('render --reverse: a received file may carry only what a render embeds'
     expect(r.data.files).toEqual(['page.tsx']);
     expect(r.data.warnings.map((/** @type {any} */ w) => w.code)).toContain('not-embedded');
     expect(fs.readFileSync(path.join(dir, 'cfg/page.html'), 'utf8')).toContain('v1.2.3');
+    // Given back, the page says what it imports that the file did not carry.
+    const back = /** @type {any} */ (await render('cfg/page.html', {cwd: dir, reverse: true}));
+    expect(back.data.exact).toBe(false);
+    expect(back.data.missing).toEqual(['package.json']);
   }, 60_000);
 });
 

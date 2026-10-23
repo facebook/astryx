@@ -89,6 +89,7 @@ export function registerExperimentalRender(group, program) {
           exact: d.exact,
           output: d.output,
           files: d.files.join(', '),
+          ...(d.missing?.length ? {missing: d.missing.join(', ')} : {}),
           ...(d.mode === 'rebuilt'
             ? {
                 components: (d.components ?? []).join(', ') || 'none',
