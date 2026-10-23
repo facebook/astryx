@@ -254,6 +254,15 @@ describe('docs() dispatcher routing', () => {
     );
   }, SLOW);
 
+  it('an unknown route suggests only the guides it names, not every sibling', async () => {
+    const error = await docs('tokens/usage').catch(e => e);
+    expect(error.code).toBe('ERR_UNKNOWN_TOPIC');
+    expect(error.suggestions.map(s => s.name)).toEqual(['tokens/tokens-usage']);
+    // A route that names none of them keeps the whole list.
+    const none = await docs('cli/zzzz-nope').catch(e => e);
+    expect(none.suggestions.length).toBeGreaterThan(1);
+  }, SLOW);
+
   it('a section no guide of a namespace has -> ERR_UNKNOWN_SECTION, naming its guides', async () => {
     const err = await docs('cli', 'zzzz-nope').catch(e => e);
     expect(err).toBeInstanceOf(AstryxError);

@@ -79,15 +79,15 @@ function affinityOf(typed, name) {
 }
 
 /**
- * The same items, closest to the typed name first; each item is as close as
- * its closest name. Equal matches keep their original order.
+ * The items scored against the typed name, closest first; equal matches keep
+ * their original order.
  * @template T
  * @param {string} typedName
  * @param {T[]} items
  * @param {(item: T) => Array<string | undefined>} namesOf
- * @returns {T[]}
+ * @returns {Array<{item: T, best: number}>}
  */
-export function orderByAffinity(typedName, items, namesOf) {
+function scoreByAffinity(typedName, items, namesOf) {
   const typed = nameWords(typedName);
   const scored = items.map((item, index) => {
     let best = 0;
@@ -97,30 +97,60 @@ export function orderByAffinity(typedName, items, namesOf) {
     return {item, index, best};
   });
   scored.sort((a, b) => b.best - a.best || a.index - b.index);
-  return scored.map(s => s.item);
+  return scored;
+}
+
+/**
+ * The same items, closest to the typed name first; each item is as close as
+ * its closest name. Equal matches keep their original order.
+ *
+ * With `closest`, the list also stops where the matches get weaker: when the
+ * best item carries some typed word, an item that carries fewer of the typed
+ * words than it does is left out (an item with every typed word is always
+ * kept). When no item carries a typed word, nothing is left out. The list
+ * only ever gets shorter.
+ * @template T
+ * @param {string} typedName
+ * @param {T[]} items
+ * @param {(item: T) => Array<string | undefined>} namesOf
+ * @param {{closest?: boolean}} [options]
+ * @returns {T[]}
+ */
+export function orderByAffinity(typedName, items, namesOf, options = {}) {
+  const scored = scoreByAffinity(typedName, items, namesOf);
+  const top = scored[0]?.best ?? 0;
+  if (!options.closest || top <= 0) return scored.map(s => s.item);
+  // Tiers: 1 some typed word, 2 every typed word, 4 the same words.
+  const need = Math.min(Math.floor(top / 10), 2);
+  return scored.filter(s => Math.floor(s.best / 10) >= need).map(s => s.item);
 }
 
 /**
  * Docs route suggestions, closest to the typed route first. When every
  * suggestion sits under one namespace the typed route also starts with, that
  * shared part is left out of the comparison: it says nothing about which page
- * was meant. Equal matches keep their order.
+ * was meant. Equal matches keep their order. `closest` stops the list where
+ * the matches get weaker, as in {@link orderByAffinity}.
  * @template {{name: string}} T
  * @param {string} topic - the typed route
  * @param {T[]} suggestions
+ * @param {{closest?: boolean}} [options]
  * @returns {T[]}
  */
-export function orderRouteSuggestions(topic, suggestions) {
+export function orderRouteSuggestions(topic, suggestions, options = {}) {
   let shared = suggestions.length > 0 ? suggestions[0].name : '';
   for (const {name} of suggestions) {
     while (shared && !name.startsWith(shared)) shared = shared.slice(0, -1);
   }
   const namespace = shared.slice(0, shared.lastIndexOf('/') + 1);
   return namespace && topic.startsWith(namespace)
-    ? orderByAffinity(topic.slice(namespace.length), suggestions, s => [
-        s.name.slice(namespace.length),
-      ])
-    : orderByAffinity(topic, suggestions, s => [s.name]);
+    ? orderByAffinity(
+        topic.slice(namespace.length),
+        suggestions,
+        s => [s.name.slice(namespace.length)],
+        options,
+      )
+    : orderByAffinity(topic, suggestions, s => [s.name], options);
 }
 
 /** Library names a synonym may start with (`MUI TextField`). */

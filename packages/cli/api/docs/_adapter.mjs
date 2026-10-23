@@ -1894,7 +1894,7 @@ export async function unknownTopicError(topic, catalog) {
     ];
   }
   if (typeof topic === 'string') {
-    suggestions = orderRouteSuggestions(topic, suggestions);
+    suggestions = orderRouteSuggestions(topic, suggestions, {closest: true});
   }
   // A route that moved names where it went, ahead of the usual suggestions
   // (spec:AST-046 FR9, FR6).
