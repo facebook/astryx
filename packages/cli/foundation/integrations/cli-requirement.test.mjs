@@ -338,6 +338,7 @@ describe('every feature check names its CLI floor', () => {
     replacesCliProblem: TEMPLATE_REPLACES_CLI,
     keywordsCliProblem: KEYWORDS_CLI,
     sectionIdsCliProblem: '0.6.4',
+    sectionPositionCliProblem: '0.7.4',
     themesCliProblem: '0.6.4',
     // The release doc tokens ship in.
     docTokensCliProblem: '0.7.4',

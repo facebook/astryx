@@ -7,6 +7,7 @@
 
 import {
   guideEntry,
+  sectionPackageOf,
   loadDocsCatalog,
   lowerTopic,
   projectTree,
@@ -104,9 +105,17 @@ export async function gatherDocs(cwd) {
     // A tree hit names where it lives: its ancestors' titles, then its own.
     const path = [...tree.ancestors(node).map(a => a.title), node.title];
     if (node.kind === 'generic') {
+      // A guide an integration replaced or extended names the package that
+      // wrote it, and each section the package that wrote that section, as
+      // reads do (INV28).
+      const entry = guideEntry(node);
       let doc = null;
+      /** @type {((key: string) => string) | undefined} */
+      let sectionPackage;
       try {
-        doc = (await lowerTopic(catalog, guideEntry(node))).doc;
+        const lowered = await lowerTopic(catalog, entry);
+        doc = lowered.doc;
+        sectionPackage = sectionPackageOf(entry, lowered);
       } catch {
         // As above: the owning commands report it.
       }
@@ -118,7 +127,8 @@ export async function gatherDocs(cwd) {
           node.summary,
           path.join(' › '),
           node.parent == null ? undefined : `astryx docs ${node.parent}`,
-          node.provider,
+          entry.package,
+          sectionPackage,
         ),
       );
       continue;

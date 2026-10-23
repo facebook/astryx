@@ -39,6 +39,7 @@ import {
   replacesCliProblem,
   sectionIdsCliProblem,
   docTokensCliProblem,
+  sectionPositionCliProblem,
   themesCliProblem,
 } from '../../foundation/integrations/cli-requirement.mjs';
 import {
@@ -347,13 +348,27 @@ function writesDocTokens(files) {
  * @returns {Promise<boolean>}
  */
 async function setsSectionIds(files) {
+  return setsSectionField(files, ['id']);
+}
+
+/**
+ * Whether any of these doc files has a section that sets one of `fields`.
+ * @param {string[]} files
+ * @param {string[]} fields
+ * @returns {Promise<boolean>}
+ */
+async function setsSectionField(files, fields) {
   for (const file of files) {
     if (typeof file !== 'string') continue;
     const doc = /** @type {any} */ (
       await loadTopicModule(file).catch(() => null)
     );
     const sections = Array.isArray(doc?.sections) ? doc.sections : [];
-    if (sections.some((/** @type {any} */ section) => section?.id != null)) {
+    if (
+      sections.some((/** @type {any} */ section) =>
+        fields.some(field => section?.[field] != null),
+      )
+    ) {
       return true;
     }
   }
@@ -1402,8 +1417,24 @@ export async function integrationPackCheck(options = {}) {
         issues.push(error('section_ids_need_cli', idProblem));
       }
     }
+    // `before` and `after` need a newer CLI than any field above. Added in a
+    // patch release, it warns and never fails the check (INV35).
+    if (
+      await setsSectionField(
+        [
+          ...records.map(record => record.path),
+          ...guides.map(guide => /** @type {any} */ (guide.ref).topicFile),
+        ],
+        ['before', 'after'],
+      )
+    ) {
+      const positionProblem = sectionPositionCliProblem(pkg);
+      if (positionProblem != null) {
+        issues.push(warning('section_position_needs_cli', positionProblem));
+      }
+    }
     // A doc token shows as written on a CLI before the one that renders
-    // them, so the declared CLI range must start there.
+    // them. Added in a patch release, it warns and never fails (INV35).
     if (
       problem == null &&
       writesDocTokens([
@@ -1413,7 +1444,7 @@ export async function integrationPackCheck(options = {}) {
     ) {
       const tokenProblem = docTokensCliProblem(pkg);
       if (tokenProblem != null) {
-        issues.push(error('doc_tokens_need_cli', tokenProblem));
+        issues.push(warning('doc_tokens_need_cli', tokenProblem));
       }
     }
   }

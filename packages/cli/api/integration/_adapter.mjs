@@ -16,6 +16,7 @@ import {
   integrationSourceForDoc,
 } from '../../foundation/discovery/component-discovery.mjs';
 import {discoverIntegrationDocs} from '../../foundation/discovery/docs-discovery.mjs';
+import {packageDocTargets} from '../docs/_adapter.mjs';
 import {comparePropDocs} from '../../foundation/discovery/prop-drift.mjs';
 import {findCopiedPassages} from '../../foundation/discovery/copied-passages.mjs';
 import {findFluff} from '../../foundation/discovery/doc-fluff.mjs';
@@ -112,6 +113,30 @@ export async function integrationStrayPointers(discovered, integration) {
     }
   }
   return findStrayPointers({...discovered, components});
+}
+
+/**
+ * What each doc in one integration's docs replaces or extends, read against
+ * the CLI's docs and the package's own (see `packageDocTargets`); empty when
+ * the docs do not load, which other checks report.
+ * @param {any} integration a loaded integration
+ * @returns {Promise<import('../docs/_adapter.mjs').DocTarget[]>}
+ */
+export async function integrationDocTargets(integration) {
+  let discovered;
+  try {
+    discovered = await discoverIntegrationDocs(integration);
+  } catch {
+    return [];
+  }
+  // A doc that does not load is an issue already; its targets are not read.
+  if (discovered.errors.length > 0) return [];
+  try {
+    return await packageDocTargets(integration, discovered);
+  } catch {
+    // A package whose docs cannot form a tree is reported by the docs check.
+    return [];
+  }
 }
 
 /**

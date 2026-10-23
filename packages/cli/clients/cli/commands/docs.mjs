@@ -432,6 +432,29 @@ function linkLines(links) {
 }
 
 /**
+ * A section title naming the package that wrote it, once: a title an author
+ * already ended with that package keeps its own.
+ * @param {string} title
+ * @param {string} pkg
+ * @returns {string}
+ */
+function titledWithPackage(title, pkg) {
+  const label = `(${pkg})`;
+  return title.endsWith(label) ? title : `${title} ${label}`;
+}
+
+/**
+ * What a topic or guide took the place of, and whose it was, as the line
+ * read right after its `package:` line (INV28); nothing for any other read.
+ * @param {{replaces?: string, replacedPackage?: string}} data
+ * @returns {ReturnType<typeof text>[]}
+ */
+function replacedLine(data) {
+  if (data.replaces == null || data.replacedPackage == null) return [];
+  return [text(`replaces ${data.replacedPackage}'s ${data.replaces}`)];
+}
+
+/**
  * A topic's section index: what the topic is, one line per section with the
  * key to read it by, and how to read further.
  * @param {import('../../../api/docs/docs.type.mjs').DocsIndex} index
@@ -445,6 +468,7 @@ function emitIndex(index, owner, run) {
       index.description ? wrapText(index.description) : undefined,
     ),
     record({package: owner}),
+    ...replacedLine(index),
     // Summaries wrap rather than being cut: the summary is how a reader picks
     // the one section to open. A section another package wrote says which one.
     records(
@@ -452,7 +476,7 @@ function emitIndex(index, owner, run) {
         const shown = {...s, summary: prefixCliCommands(s.summary ?? '', run)};
         return s.package === owner
           ? shown
-          : {...shown, title: `${s.title} (${s.package})`};
+          : {...shown, title: titledWithPackage(s.title, s.package)};
       }),
       {
         fields: ['id', 'title', 'summary'],
@@ -717,6 +741,7 @@ export function registerDocs(program) {
           const owner = result.package;
           emit(
             record({package: owner}),
+            ...replacedLine(result.data),
             code(
               formatReferenceFull(
                 {
@@ -725,7 +750,7 @@ export function registerDocs(program) {
                   sections: result.data.sections.map(s =>
                     s.package === owner
                       ? s
-                      : {...s, title: `${s.title} (${s.package})`},
+                      : {...s, title: titledWithPackage(s.title, s.package)},
                   ),
                 },
                 detail,

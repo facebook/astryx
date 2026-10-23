@@ -19,7 +19,11 @@
 
 import * as path from 'node:path';
 import {Project} from '../../foundation/config/project.mjs';
-import {DocsCatalog} from '../../foundation/discovery/docs-discovery.mjs';
+import {
+  DocsCatalog,
+  isGuideRoute,
+  mergeTopicReport,
+} from '../../foundation/discovery/docs-discovery.mjs';
 import {checkDocTypes} from '../../foundation/discovery/doc-types.mjs';
 import {integrationDocFiles} from '../../foundation/discovery/integration-doc-files.mjs';
 import {
@@ -441,14 +445,61 @@ async function buildProjectTree(catalog, fresh) {
     docs: [...cli.docs, ...added.flatMap(each => each.guides)],
     topics: await flatTopicInputs(catalog),
   });
+  // A guide the tree places that an integration replaces or extends by its
+  // route, or by the route it had before it moved: reads apply what it does,
+  // and a replacement lists under its own title and summary.
+  // Each doc applies in configured order to the guide its route names, so a
+  // doc naming a guide's old route and one naming its new route stack as if
+  // both named the same one.
+  for (const record of catalog.guideTargeters) {
+    const node = placedGuideAt(
+      result,
+      /** @type {string} */ (record.replaces ?? record.extendsTopic),
+    );
+    if (!node) continue;
+    /** @type {import('../../foundation/discovery/docs-discovery.mjs').GuideOverlay} */
+    const overlay = node.guideOverlay ?? {replacement: null, extensions: []};
+    if (record.replaces != null) {
+      node.guideOverlay = {
+        replacement: record,
+        // Extensions were authored against the content that just went away.
+        extensions: [],
+        ...(overlay.replacement
+          ? {replacedPackage: overlay.replacement.package}
+          : {}),
+      };
+    } else {
+      node.guideOverlay = {
+        ...overlay,
+        extensions: [
+          ...overlay.extensions,
+          {
+            package: record.package,
+            path: record.path,
+            ...(record.providerId ? {providerId: record.providerId} : {}),
+          },
+        ],
+      };
+    }
+  }
+  for (const node of result.nodes.values()) {
+    const replacement = node.guideOverlay?.replacement;
+    if (replacement) {
+      node.title = replacement.title ?? node.title;
+      node.summary = replacement.description ?? node.summary;
+    }
+  }
   // A summary is a doc's text too: each link in it reads as the command that
   // opens its doc, wherever the tree's summaries print (spec:AST-047 FR9).
   for (const node of result.nodes.values()) {
     if (typeof node.summary === 'string' && node.summary.includes('{@')) {
+      const replacement = node.guideOverlay?.replacement;
       node.summary = await linkSummary(
         catalog,
         result,
-        node.providerId,
+        replacement
+          ? (replacement.providerId ?? replacement.package)
+          : node.providerId,
         node.summary,
       );
     }
@@ -1110,7 +1161,16 @@ export async function docsLinkProblems(
     }
   }
   for (const node of tree.nodes.values()) {
-    if (owner != null && node.provider !== owner) continue;
+    // A package owns a guide it placed, and a guide it replaces or extends by
+    // its route.
+    if (
+      owner != null &&
+      node.provider !== owner &&
+      node.guideOverlay?.replacement?.package !== owner &&
+      !node.guideOverlay?.extensions.some(each => each.package === owner)
+    ) {
+      continue;
+    }
     if (node.kind === 'generic' && node.ref?.topicFile) {
       try {
         note(node.route, await topicLinkProblems(catalog, guideEntry(node)));
@@ -1242,6 +1302,168 @@ export async function packageDocsProblems(integration, discovered) {
 }
 
 /**
+ * The guide the docs tree places at a route, compared without case, or at the
+ * route it moved to; null when the route holds no placed guide.
+ * @param {DocsTree} tree
+ * @param {string} route
+ * @returns {TreeNode | null}
+ */
+function placedGuideAt(tree, route) {
+  const node =
+    tree.get(route) ?? tree.getFolded(route) ?? movedRoute(route, tree);
+  return node?.kind === 'generic' && node.ref?.topicFile ? node : null;
+}
+
+/**
+ * The routes of every guide the tree places below a namespace, nearest first,
+ * in reading order.
+ * @param {DocsTree} tree
+ * @param {TreeNode} namespace
+ * @returns {string[]}
+ */
+function placedGuidesBelow(tree, namespace) {
+  /** @type {string[]} */
+  const routes = [];
+  /** @type {TreeNode[]} */
+  let level = [namespace];
+  while (level.length > 0) {
+    /** @type {TreeNode[]} */
+    const next = [];
+    for (const parent of level) {
+      for (const slot of parent.slots) {
+        for (const route of slot.children) {
+          const child = tree.get(route);
+          if (!child || child.parent !== parent.route) continue;
+          if (child.kind === 'generic' && child.ref?.topicFile) {
+            routes.push(child.route);
+          }
+          if (child.slots.length > 0) next.push(child);
+        }
+      }
+    }
+    level = next;
+  }
+  return routes;
+}
+
+/**
+ * What one doc that replaces or extends another does, as a package's own
+ * check sees it.
+ * @typedef {object} DocTarget
+ * @property {string} topic the doc's own name
+ * @property {'replaces' | 'extends'} relationship
+ * @property {string} target the topic name or route it names
+ * @property {'topic' | 'guide' | 'namespace' | null} kind what the target
+ *   is: a flat topic, a guide the docs tree places, a namespace (which neither
+ *   takes), or null when it names nothing
+ * @property {string | null} guide for a guide, the route it is placed at now,
+ *   which an old route resolves to
+ * @property {string[]} guidesBelow for a namespace, the routes of the guides
+ *   placed below it, any of which the doc could name instead
+ * @property {string | null} owner the package whose topic or guide it is
+ * @property {Array<{section: string, field: 'before' | 'after', key: string}>} unplaced
+ *   each section whose `before` or `after` names no section of the target, so
+ *   it is added at the end instead
+ */
+
+/**
+ * Each doc in one integration's docs that replaces or extends a topic, or a
+ * guide the docs tree places by its route, read against the CLI's docs and the
+ * package's own: what it names and whether that exists, and each section an
+ * extension places with `before` or `after` that finds no section there.
+ * @param {any} integration
+ * @param {{records: import('../../foundation/discovery/docs-discovery.mjs').DocsTopicRecord[], namespaces: import('../../foundation/doc-compiler/tree.mjs').TreeNamespaceInput[], guides: import('../../foundation/doc-compiler/tree.mjs').TreeDocInput[]}} discovered
+ * @returns {Promise<DocTarget[]>}
+ */
+export async function packageDocTargets(integration, discovered) {
+  const catalog = packageCatalog(integration, discovered);
+  const tree = await projectTree(catalog);
+  /** @type {DocTarget[]} */
+  const targets = [];
+  for (const record of discovered.records) {
+    const relationship = record.replaces != null ? 'replaces' : 'extends';
+    const target =
+      relationship === 'replaces' ? record.replaces : record.extendsTopic;
+    if (target == null) continue;
+    /** @type {DocTarget['kind']} */
+    let kind = null;
+    /** @type {string | null} */
+    let owner = null;
+    /** @type {string | null} */
+    let basePath = null;
+    /** @type {ReadonlyArray<{path: string}>} every extension of the target, in configured order */
+    let extensions = [];
+    /** @type {string[]} */
+    let guidesBelow = [];
+    /** @type {string | null} */
+    let guide = null;
+    if (isGuideRoute(target)) {
+      const node = placedGuideAt(tree, target);
+      if (node) {
+        kind = 'guide';
+        guide = node.route;
+        owner = node.provider;
+        basePath = node.guideOverlay?.replacement?.path ?? node.ref.topicFile;
+        extensions = node.guideOverlay?.extensions ?? [];
+      }
+    } else {
+      // A replacement already holds the topic's place in the catalog, and
+      // names the package it took it from.
+      const entry = catalog.resolve(target);
+      if (entry?.path === record.path) {
+        kind = 'topic';
+        owner = entry.replacedPackage ?? null;
+      } else if (entry) {
+        kind = 'topic';
+        owner = entry.package;
+        basePath = entry.path;
+        extensions = entry.extensions;
+      }
+    }
+    if (kind == null) {
+      // A namespace holds no sections to take over or merge onto; the guides
+      // below it do.
+      const node =
+        tree.get(target) ?? tree.getFolded(target) ?? movedRoute(target, tree);
+      if (node?.kind === 'namespace') {
+        kind = 'namespace';
+        owner = node.provider;
+        guidesBelow = placedGuidesBelow(tree, node);
+      }
+    }
+    /** @type {DocTarget['unplaced']} */
+    let unplaced = [];
+    if (relationship === 'extends' && basePath != null) {
+      // Merge every extension in configured order, as a read does, so a key
+      // an earlier extension adds counts as a section of the target.
+      let doc = (await loadTopicFile(basePath, null)).doc;
+      for (const extension of extensions) {
+        if (doc == null) break;
+        const file = (await loadTopicFile(extension.path, null)).doc;
+        if (file == null) continue;
+        const merged = mergeTopicReport(doc, file);
+        if (extension.path === record.path) {
+          unplaced = merged.unplaced;
+          break;
+        }
+        doc = merged.doc;
+      }
+    }
+    targets.push({
+      topic: record.name,
+      relationship,
+      target,
+      kind,
+      owner,
+      guide,
+      guidesBelow,
+      unplaced,
+    });
+  }
+  return targets;
+}
+
+/**
  * How a token reference finds its target: the topic it names in `catalog`,
  * lowered for the same language.
  * @param {DocsCatalog} catalog
@@ -1342,19 +1564,40 @@ export async function compileTopic(catalog, entry, lang = null) {
 /**
  * A guide the docs tree places, as a topic entry the topic readers open by its
  * route. It is never a flat topic: `astryx docs <route>` is its only name.
+ * What integrations do to it by its route applies: a replacement is read in
+ * its place and names its own package, and each extension's sections merge
+ * onto it, each naming the package that wrote it (INV28).
  * @param {import('../../foundation/doc-compiler/tree.mjs').TreeNode} node
  * @returns {import('../../foundation/discovery/docs-discovery.mjs').DocsTopicEntry}
  */
 export function guideEntry(node) {
-  return {
+  const base = {
     name: node.route,
     route: node.route,
     package: node.provider,
     providerId: node.providerId,
     path: node.ref.topicFile,
     extensions: [],
-    tree: true,
+    tree: /** @type {const} */ (true),
     parent: node.parent ?? undefined,
+  };
+  const overlay = node.guideOverlay;
+  if (!overlay) return base;
+  const replacement = overlay.replacement;
+  return {
+    ...base,
+    ...(replacement
+      ? {
+          package: replacement.package,
+          providerId: replacement.providerId ?? replacement.package,
+          path: replacement.path,
+          replaces: node.route,
+          // The package whose guide it took over: an earlier replacement's,
+          // when the guide was already replaced.
+          replacedPackage: overlay.replacedPackage ?? node.provider,
+        }
+      : {}),
+    extensions: [...overlay.extensions],
   };
 }
 
