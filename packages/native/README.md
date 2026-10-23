@@ -21,6 +21,7 @@ rests on evidence.
 | Icons          | `NATIVE_ICON_DEFAULTS`            | Astryx's built-in icon names mapped to SF Symbols on Apple platforms and Material Symbols on Android.                                                                                                                                        |
 | Wire           | `AstryxNode`, `AstryxAction`      | Each component as JSON a TypeScript core sends a native host (arm C), and the action a host sends back when a view calls a callback. Swift decodes `<Name>Node` and turns it into `<Name>Props` with `viewProps(send:)`.                     |
 | Logic core     | `@astryxdesign/native/logic`      | `createLogicCore` holds a screen's state, builds its node tree, and reduces actions; `connectBridge` carries it to a native host as JSON. ECMAScript built-ins only, so it runs in Hermes. Shaped after EJ Campbell's astryx-swift spike.    |
+| Logic host     | `AstryxLogicHost` (Swift)         | Runs a logic core bundle in JavaScriptCore, decodes each tree into `AstryxNode`, and sends views' actions back. A Hermes host speaks the same bridge.                                                                                        |
 
 Contracts cover Button, Card, Divider, Heading, HStack, ProgressBar, Selector,
 Switch, Text, TextInput, and VStack. React Native and Android bindings are not built yet; see
@@ -90,9 +91,9 @@ const action: AstryxAction = {
 ```
 
 ```swift
-let node = try JSONDecoder().decode(AstryxNode.self, from: snapshot)
-if case .switch(let wifi) = node {
-  let props = wifi.viewProps { action in core.dispatch(action.json) }
+let host = AstryxLogicHost(bundle: bundleSource) // calls the bundle's global astryxStart(host)
+if case .switch(let wifi) = host.root {
+  let props = wifi.viewProps(send: host.send)
 }
 ```
 
