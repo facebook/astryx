@@ -294,12 +294,12 @@ export const doc = {
     {
       value: 'ERR_RENDER_COMPILE',
       description:
-        'The page given to `astryx experimental render` does not compile. Nothing was written.',
+        'The page given to render does not compile. Nothing was written.',
     },
     {
       value: 'ERR_RENDER_NO_DEFAULT_EXPORT',
       description:
-        'The page given to `astryx experimental render` has no default export to render. Nothing was written.',
+        'The page given to render has no default export to render. Nothing was written.',
     },
     {
       value: 'ERR_RENDER_MISSING_DEPENDENCY',
@@ -314,7 +314,7 @@ export const doc = {
     {
       value: 'ERR_RENDER_ASSET_TOO_LARGE',
       description:
-        'A local file the page uses is too large to inline into one HTML file. Nothing was written.',
+        'A local file the page uses is too large to inline into one file. Nothing was written.',
     },
     {
       value: 'ERR_RENDER_TIMEOUT',
@@ -329,7 +329,7 @@ export const doc = {
     {
       value: 'ERR_RENDER_NOT_ASTRYX',
       description:
-        '`render --reverse` was given HTML with no embedded source and no Astryx markup. Nothing was written.',
+        '`render --reverse` was given a file with no embedded source and no Astryx markup. Nothing was written.',
     },
     {
       value: 'ERR_RENDER_SOURCE_DAMAGED',

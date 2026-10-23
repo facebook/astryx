@@ -65,11 +65,14 @@ export default function Page() {
 }
 `;
 
-beforeAll(() => {
+beforeAll(async () => {
   dir = fs.mkdtempSync(path.join(CLI_DIR, '.astryx-render-test-'));
   put('dot.png', PNG);
   put('page.tsx', PAGE);
-});
+  put('plain.html', '<!doctype html><html><body><h1>Hello</h1><p class="lead">Hi</p></body></html>');
+  // Every test can read the rendered page, whatever runs first.
+  await render('page.tsx', {cwd: dir});
+}, 60_000);
 
 afterAll(() => {
   fs.rmSync(dir, {recursive: true, force: true});
@@ -144,11 +147,12 @@ describe('render(): page to one HTML file', () => {
   });
 
   it('refuses to replace a page without --overwrite', async () => {
+    await render('page.html', {cwd: dir, reverse: true, out: 'twice/page.tsx', overwrite: true});
     expect(
-      await codeOf(() => render('page.html', {cwd: dir, reverse: true, out: 'back/page.tsx'})),
+      await codeOf(() => render('page.html', {cwd: dir, reverse: true, out: 'twice/page.tsx'})),
     ).toBe('ERR_FILE_EXISTS');
     const again = /** @type {any} */ (
-      await render('page.html', {cwd: dir, reverse: true, out: 'back/page.tsx', overwrite: true})
+      await render('page.html', {cwd: dir, reverse: true, out: 'twice/page.tsx', overwrite: true})
     );
     expect(again.data.mode).toBe('embedded');
   });
@@ -363,7 +367,15 @@ describe('render --reverse: a received file may carry only what a render embeds'
   it('refuses a page entry that is not a page module, and an --out that names a configuration file', async () => {
     await crafted('crafted-entry.html', [{path: 'vite.config.ts', text: 'export default {};\n'}]);
     expect(await codeOf(() => render('crafted-entry.html', {cwd: dir, reverse: true}))).toBe('ERR_RENDER_SOURCE_DAMAGED');
-    expect(await codeOf(() => render('page.html', {cwd: dir, reverse: true, out: 'vite.config.ts'}))).toBe('ERR_INVALID_ARGUMENT');
+    await crafted('crafted-good.html', [{path: 'page.tsx', text: 'export default () => null;\n'}]);
+    expect(await codeOf(() => render('crafted-good.html', {cwd: dir, reverse: true, out: 'vite.config.ts'}))).toBe(
+      'ERR_INVALID_ARGUMENT',
+    );
+    // Refused before the input is read: a missing input gives the same answer.
+    expect(await codeOf(() => render('missing.html', {cwd: dir, reverse: true, out: 'vite.config.ts'}))).toBe(
+      'ERR_INVALID_ARGUMENT',
+    );
+    expect(fs.existsSync(path.join(dir, 'vite.config.ts'))).toBe(false);
   });
 
   it('names every existing file in ERR_FILE_EXISTS and writes none of them', async () => {

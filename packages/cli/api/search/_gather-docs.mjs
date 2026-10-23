@@ -64,6 +64,9 @@ export async function gatherDocs(cwd) {
       // integration issues; search just cannot index it.
     }
     const doc = lowered?.doc ?? null;
+    // Experimental docs (spec:AST-017 FR27) are never search results: they are
+    // read on their own routes, so search answers as it would without them.
+    if (isExperimentalDoc(doc)) continue;
     // A flat topic lives in its topic level; its hits say so, and name
     // the package each section came from.
     const home = tree?.get(entry.name);
@@ -102,6 +105,7 @@ export async function gatherDocs(cwd) {
   for (const node of tree.nodes.values()) {
     // A flat topic is indexed above, as a topic.
     if (node.ref?.flatTopic) continue;
+    if (isExperimentalNode(tree, node)) continue;
     // A tree hit names where it lives: its ancestors' titles, then its own.
     const path = [...tree.ancestors(node).map(a => a.title), node.title];
     if (node.kind === 'generic') {
@@ -173,6 +177,26 @@ export async function gatherDocs(cwd) {
     });
   }
   return candidates;
+}
+
+/**
+ * Is this doc an experimental surface's (spec:AST-017 FR21)?
+ * @param {any} doc
+ */
+function isExperimentalDoc(doc) {
+  return doc?.stability === 'experimental';
+}
+
+/**
+ * Does this tree node document an experimental surface: a typed doc marked
+ * experimental, or anything under an experimental namespace?
+ * @param {any} tree
+ * @param {any} node
+ */
+function isExperimentalNode(tree, node) {
+  return [...tree.ancestors(node), node].some((/** @type {any} */ each) =>
+    isExperimentalDoc(each.ref?.selfDoc),
+  );
 }
 
 /**

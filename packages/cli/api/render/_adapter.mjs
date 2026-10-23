@@ -24,7 +24,7 @@ import {rebuildPage} from '../../foundation/render/rebuild.mjs';
 import {cliVersion} from '../../foundation/integrations/cli-peer-version.mjs';
 import {assertWithin, PathSafetyError} from '../../foundation/fs/path-safety.mjs';
 
-export {PAGE_EXTENSIONS};
+export {PAGE_EXTENSIONS, embeddedPathProblem};
 
 /** @param {string} cwd @param {string} file */
 const shown = (cwd, file) => {

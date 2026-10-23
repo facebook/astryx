@@ -16,7 +16,7 @@
 import * as path from 'node:path';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
-import {PAGE_EXTENSIONS, renderToFile, reverseToFile} from './_adapter.mjs';
+import {PAGE_EXTENSIONS, embeddedPathProblem, renderToFile, reverseToFile} from './_adapter.mjs';
 
 /**
  * Render a page module to one self-contained HTML file, or turn a rendered
@@ -65,6 +65,14 @@ export async function render(file, options = {}) {
     if (output && !PAGE_EXTENSIONS.includes(path.extname(output).toLowerCase())) {
       throw new AstryxError(
         `--out for --reverse must be a page module (${PAGE_EXTENSIONS.join(', ')})`,
+        [],
+        ERROR_CODES.ERR_INVALID_ARGUMENT,
+      );
+    }
+    const outProblem = output ? embeddedPathProblem(path.basename(output), {page: true}) : null;
+    if (output && outProblem) {
+      throw new AstryxError(
+        `--out for --reverse must name a page module, not ${outProblem.reason}`,
         [],
         ERROR_CODES.ERR_INVALID_ARGUMENT,
       );
