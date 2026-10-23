@@ -345,6 +345,68 @@ describe('render(): every write stays inside the current folder', () => {
     ).toBe('ERR_RENDER_SOURCE_DAMAGED');
   }, 60_000);
 
+  it('never writes through a symbolic link or over a protected file, even with --overwrite', async () => {
+    const {sourceBlock} = await import('../../foundation/render/source-block.mjs');
+    const page = {path: 'page.tsx', bytes: Buffer.from("import './styles.css';\nexport default () => null;\n")};
+    const css = {path: 'styles.css', bytes: Buffer.from('.a{}\n')};
+    put('prot/page.html', `<body><p class="astryx-text">x</p>${sourceBlock('page.tsx', [page, css])}</body>`);
+    const cwd = path.join(dir, 'prot');
+    // A symbolic link inside the folder, onto a file the refusal never named.
+    put('prot/real.css', 'original\n');
+    fs.mkdirSync(path.join(cwd, 'out'), {recursive: true});
+    fs.symlinkSync(path.join(cwd, 'real.css'), path.join(cwd, 'out/styles.css'));
+    expect(await codeOf(() => render('page.html', {cwd, reverse: true, out: 'out/page.tsx', overwrite: true}))).toBe(
+      'ERR_PATH_TRAVERSAL',
+    );
+    expect(fs.readFileSync(path.join(cwd, 'real.css'), 'utf8')).toBe('original\n');
+    // A generated file and an ignored file are never replaced.
+    put('prot/gen/page.tsx', '// @generated\nexport default () => null;\n');
+    expect(await codeOf(() => render('page.html', {cwd, reverse: true, out: 'gen/page.tsx', overwrite: true}))).toBe(
+      'ERR_FILE_EXISTS',
+    );
+    expect(fs.readFileSync(path.join(cwd, 'gen/page.tsx'), 'utf8')).toContain('@generated');
+    put('prot/.gitignore', 'ignored/\n');
+    put('prot/ignored/page.tsx', 'mine\n');
+    expect(await codeOf(() => render('page.html', {cwd, reverse: true, out: 'ignored/page.tsx', overwrite: true}))).toBe(
+      'ERR_FILE_EXISTS',
+    );
+    expect(fs.readFileSync(path.join(cwd, 'ignored/page.tsx'), 'utf8')).toBe('mine\n');
+  });
+
+  it('refuses a configuration file a received page imports from above it', async () => {
+    const {sourceBlock} = await import('../../foundation/render/source-block.mjs');
+    for (const name of ['babel.config.json', 'jest.config.json', 'project.json']) {
+      const page = {path: 'src/app/page.tsx', bytes: Buffer.from(`import c from '../../${name}';\nexport default () => null;\n`)};
+      put('cfg-above.html', `<body><p class="astryx-text">x</p>${sourceBlock('src/app/page.tsx', [page, {path: name, bytes: Buffer.from('{}')}])}</body>`);
+      expect(await codeOf(() => render('cfg-above.html', {cwd: dir, reverse: true, out: 'cfg-above/src/app/page.tsx'}))).toBe(
+        'ERR_RENDER_SOURCE_DAMAGED',
+      );
+      expect(fs.existsSync(path.join(dir, 'cfg-above', name))).toBe(false);
+    }
+  });
+
+  it('restores a short alias import to the file it names', async () => {
+    const {sourceBlock} = await import('../../foundation/render/source-block.mjs');
+    put('short-alias/tsconfig.json', '{"compilerOptions": {"baseUrl": ".", "paths": {"@/*": ["./src/*"]}}}\n');
+    const page = {path: 'page.tsx', bytes: Buffer.from("import {t} from '@/t';\nexport default () => t;\n")};
+    put('short-alias/page.html', `<body><p class="astryx-text">x</p>${sourceBlock('page.tsx', [page, {path: 't.ts', bytes: Buffer.from("export const t = 'x';\n")}])}</body>`);
+    const back = /** @type {any} */ (await render('page.html', {cwd: path.join(dir, 'short-alias'), reverse: true, out: 'page.tsx'}));
+    expect(back.data.files).toEqual(['page.tsx', 'src/t.ts']);
+  });
+
+  it('rebuilds a quoted attribute as JSX that compiles', async () => {
+    put(
+      'quoted.html',
+      '<body><div class="astryx-stack"><img src="data:image/png;base64,iVBORw0KGgo=" alt="say &quot;hi&quot; {now}"><a class="astryx-link" href="/x?a=&quot;b&quot;">Go</a></div></body>',
+    );
+    const back = /** @type {any} */ (await render('quoted.html', {cwd: dir, reverse: true, out: 'quoted/page.tsx'}));
+    expect(back.data.mode).toBe('rebuilt');
+    const source = fs.readFileSync(path.join(dir, 'quoted/page.tsx'), 'utf8');
+    expect(source).toContain('alt={"say \\"hi\\" {now}"}');
+    const again = /** @type {any} */ (await render('quoted/page.tsx', {cwd: dir}));
+    expect(again.type).toBe('render.page');
+  }, 60_000);
+
   it('refuses a received file that lists one path twice', async () => {
     const {sourceBlock} = await import('../../foundation/render/source-block.mjs');
     const page = {path: 'page.tsx', bytes: Buffer.from('export default () => null;\n')};

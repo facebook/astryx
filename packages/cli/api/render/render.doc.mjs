@@ -87,7 +87,7 @@ export const doc = {
       when: 'the file or `out` has the wrong kind of extension, `out` is the input itself, `title` is given with `reverse`, or `overwrite` without it',
     },
     {code: 'ERR_FILE_NOT_FOUND', when: 'the file, or a local file the page imports, does not exist'},
-    {code: 'ERR_FILE_EXISTS', when: 'reversing would replace an existing file and `overwrite` is not set'},
+    {code: 'ERR_FILE_EXISTS', when: 'reversing would replace an existing file and `overwrite` is not set, or an existing file the project protects (generated, vendored or ignored) would be replaced, which `overwrite` never does'},
     {code: 'ERR_WRITE_FAILED', when: 'a file cannot be written, such as when `out` names a folder'},
     {code: 'ERR_RENDER_COMPILE', when: 'the page does not compile'},
     {code: 'ERR_RENDER_NO_DEFAULT_EXPORT', when: 'the page has no default export'},
@@ -101,7 +101,7 @@ export const doc = {
       when: 'reversing a file with no embedded source and no Astryx markup; the suggestion is `astryx build "<what the page is>"`',
     },
     {code: 'ERR_RENDER_SOURCE_DAMAGED', when: 'reversing a file whose embedded source is damaged, lists a path twice, carries a file the page does not reach through its imports, or carries a file a render never embeds (a dotfile or dot-folder, `node_modules`, a package manifest, lockfile or tool configuration, or any kind but a page module, stylesheet, JSON or image)'},
-    {code: 'ERR_PATH_TRAVERSAL', when: 'a file would be written outside the current folder (symlinks followed): `out`, or with `reverse` the page or an embedded file'},
+    {code: 'ERR_PATH_TRAVERSAL', when: 'a file would be written outside the current folder (symlinks followed), or through a symbolic link: `out`, or with `reverse` the page or an embedded file'},
   ],
   examples: [
     {label: 'Render a page', code: "const {data} = await render('src/app/page.tsx', {out: 'page.html'});"},

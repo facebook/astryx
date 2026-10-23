@@ -152,12 +152,12 @@ export function reachableFiles(files, {aliases = []} = {}) {
    * @param {string} rest
    */
   const bySuffix = rest => {
-    /** @type {string[]} */
+    /** @type {{path: string, tail: string}[]} */
     const hits = [];
     for (const p of byPath.keys()) {
       for (const tail of [rest, ...RESOLVE_EXTENSIONS.map(e => rest + e), ...RESOLVE_EXTENSIONS.map(e => `${rest}/index${e}`)]) {
         if (p === tail || p.endsWith(`/${tail}`)) {
-          hits.push(p);
+          hits.push({path: p, tail});
           break;
         }
       }
@@ -199,14 +199,15 @@ export function reachableFiles(files, {aliases = []} = {}) {
         continue;
       }
       for (const [key, aliasTarget] of aliases) {
-        const hit = key.endsWith('/') ? bare.startsWith(key) : bare === key;
-        if (!hit) continue;
+        const named = key.endsWith('/') ? bare.startsWith(key) : bare === key;
+        if (!named) continue;
         const rest = key.endsWith('/') ? bare.slice(key.length) : '';
-        const target = rest ? bySuffix(rest) : null;
-        if (!target) break;
+        const hit = rest ? bySuffix(rest) : null;
+        if (!hit) break;
+        const target = hit.path;
         // The alias names the module without its extension or index file;
         // the file keeps both: `@/c/Header` -> `<alias target>/c/Header.tsx`.
-        const abs = aliasTarget + target.slice(target.lastIndexOf(rest));
+        const abs = aliasTarget + hit.tail;
         const {r, fresh} = reach(target);
         r.aliased.add(abs);
         if (fresh) queue.push(target);

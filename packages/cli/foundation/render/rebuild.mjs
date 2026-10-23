@@ -76,8 +76,12 @@ function standIn(prop, type, el, text) {
 /** @param {string} s */
 const jsxText = s => s.replace(/[{}<>]/g, c => `{'${c}'}`);
 
-/** @param {string} s */
-const jsxAttr = s => JSON.stringify(s);
+/**
+ * A JSX attribute value: a plain quoted string when it can be one, else an
+ * expression (`{"say \\"hi\\""}`), since JSX strings take no escapes.
+ * @param {string} s
+ */
+const jsxAttr = s => (/["\\\n\r{}]/.test(s) ? `{${JSON.stringify(s)}}` : `"${s}"`);
 
 /**
  * Rebuild a page module from Astryx markup.

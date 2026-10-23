@@ -19,6 +19,7 @@ import {
 } from '../../foundation/render/render-page.mjs';
 import {readSourceBlock} from '../../foundation/render/source-block.mjs';
 import {embeddedPathProblem} from '../../foundation/render/embedded-files.mjs';
+import {createFileProtectionResolver} from '../../foundation/fs/file-protection.mjs';
 import {reachableFiles, receivingAliases} from '../../foundation/render/embedded-imports.mjs';
 import {isAstryxMarkup} from '../../foundation/render/html-reader.mjs';
 import {rebuildPage} from '../../foundation/render/rebuild.mjs';
@@ -94,6 +95,63 @@ function confined(file, cwd, what) {
 }
 
 /**
+ * Refuse, before anything is written, a write that reaches through a
+ * symbolic link, and the replacement of an existing file the project
+ * protects (generated, vendored, ignored, a dependency or version-control
+ * metadata; spec:AST-040 FR2), even with --overwrite.
+ * @param {string[]} files absolute
+ * @param {string} cwd
+ * @param {{output?: boolean}} [options] `output`: the files are rendered
+ *   HTML, which may replace an ignored file (build output usually is one)
+ */
+function refuseProtected(files, cwd, {output = false} = {}) {
+  for (const file of files) {
+    let current = cwd;
+    for (const part of path.relative(cwd, file).split(path.sep)) {
+      current = path.join(current, part);
+      let stat;
+      try {
+        stat = fs.lstatSync(current);
+      } catch {
+        break;
+      }
+      if (stat.isSymbolicLink()) {
+        throw new AstryxError(
+          `${shown(cwd, file)} is reached through a symbolic link (${shown(cwd, current)}); nothing was written.`,
+          [],
+          ERROR_CODES.ERR_PATH_TRAVERSAL,
+        );
+      }
+    }
+  }
+  const existing = files.filter(file => fs.existsSync(file));
+  if (existing.length === 0) return;
+  /** @type {ReturnType<typeof createFileProtectionResolver>} */
+  let resolver;
+  try {
+    resolver = createFileProtectionResolver(cwd);
+  } catch (e) {
+    throw new AstryxError(
+      `Could not read this project's file protection (${e instanceof Error ? e.message : String(e)}), so no existing file is replaced; nothing was written.`,
+      [],
+      ERROR_CODES.ERR_FILE_EXISTS,
+    );
+  }
+  for (const file of existing) {
+    const protection = resolver
+      .classify(file)
+      .find(item => !(output && item.reason === 'ignored'));
+    if (protection) {
+      throw new AstryxError(
+        `${shown(cwd, file)} is protected (${protection.declaration}), so it is never replaced, even with --overwrite; nothing was written. Choose another --out.`,
+        [],
+        ERROR_CODES.ERR_FILE_EXISTS,
+      );
+    }
+  }
+}
+
+/**
  * Write a file, creating its folder.
  * @param {string} file absolute
  * @param {string | Buffer} content
@@ -145,6 +203,7 @@ export async function renderToFile({cwd, input, output, title}) {
   } catch (e) {
     throw asAstryxError(e);
   }
+  refuseProtected([output], cwd, {output: true});
   writeOutput(output, page.html, cwd);
   return {
     input: shown(cwd, input),
@@ -272,6 +331,7 @@ export function reverseToFile({cwd, input, output, overwrite}) {
       }
     });
     refuseExisting(writes.map(w => w.file));
+    refuseProtected(writes.map(w => w.file), cwd);
     for (const w of writes) writeOutput(w.file, w.bytes, cwd);
     return {
       input: shown(cwd, input),
@@ -302,6 +362,7 @@ export function reverseToFile({cwd, input, output, overwrite}) {
   const from =
     [path.dirname(target), path.dirname(input), cwd].find(d => resolvesCore(d)) ?? cwd;
   const rebuilt = rebuildPage(html, from);
+  refuseProtected([target], cwd);
   writeOutput(target, rebuilt.source, cwd);
   return {
     input: shown(cwd, input),
