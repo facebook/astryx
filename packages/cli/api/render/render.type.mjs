@@ -14,7 +14,7 @@
  * @property {string} [out] - The file to write. Rendering: an .html file (default: the page's name with .html). Reversing: a page module (default: the HTML file's name, with the page's own extension, beside the HTML file).
  * @property {boolean} [reverse] - Turn a rendered HTML file back into a page module.
  * @property {string} [title] - The rendered page's title (default: its first heading, else the file name). Rendering only.
- * @property {boolean} [overwrite] - Replace existing files when reversing. Rendering always replaces its HTML file.
+ * @property {boolean} [overwrite] - Replace the existing page module when reversing (never a protected file, and never a file other than the page, which always goes into a new folder). Rendering replaces an existing HTML file only when a render wrote it.
  */
 
 /**
@@ -51,7 +51,7 @@
  * @property {object} data
  * @property {string} data.input - The HTML file read.
  * @property {'embedded' | 'rebuilt'} data.mode - `embedded`: the file carried its source, written back byte for byte. `rebuilt`: rebuilt from Astryx markup (text and layout only).
- * @property {string} data.output - The page module written. When the page imported files from above its own folder and keeping them there would leave the current folder, the files keep their layout under the output's folder, and this names where the page landed.
+ * @property {string} data.output - The page module written: `out`, or by default the HTML file's name with the page's extension, beside the HTML file.
  * @property {string[]} data.files - Every file written, page first.
  * @property {boolean} data.exact - Whether the page is exactly the one that was rendered.
  * @property {string[]} [data.components] - Rebuilt only: the components the page uses.

@@ -506,13 +506,32 @@ describe('render(): every write stays inside the current folder', () => {
 
   it('refuses test, spec and story files a received page imports', async () => {
     const {sourceBlock} = await import('../../foundation/render/source-block.mjs');
-    for (const name of ['report.test.ts', 'report.spec.tsx', 'Report.stories.tsx', '__tests__/r.ts']) {
-      const page = {path: 'page.tsx', bytes: Buffer.from(`import './${name.replace(/\.tsx?$/, '')}';\nexport default () => null;\n`)};
+    for (const name of [
+      'report.test.ts',
+      'report.spec.tsx',
+      'Report.stories.tsx',
+      '__tests__/r.ts',
+      'report-test.mjs',
+      'report_test.mjs',
+      'test-report.mjs',
+      'test.mjs',
+      'test/helper.mjs',
+    ]) {
+      const page = {path: 'page.tsx', bytes: Buffer.from(`import './${name.replace(/\.(tsx?|mjs)$/, '')}';\nexport default () => null;\n`)};
       put('tests-in.html', `<body><p class="astryx-text">x</p>${sourceBlock('page.tsx', [page, {path: name, bytes: Buffer.from('export {};\n')}])}</body>`);
       expect(await codeOf(() => render('tests-in.html', {cwd: dir, reverse: true, out: 'tests-in/page.tsx'}))).toBe(
         'ERR_RENDER_SOURCE_DAMAGED',
       );
     }
+  });
+
+  it('never names the page as a file a test runner picks up', async () => {
+    const {sourceBlock} = await import('../../foundation/render/source-block.mjs');
+    put('runner/report.test.html', `<body><p class="astryx-text">x</p>${sourceBlock('page.mjs', [{path: 'page.mjs', bytes: Buffer.from('export default () => null;\n')}])}</body>`);
+    const cwd = path.join(dir, 'runner');
+    expect(await codeOf(() => render('report.test.html', {cwd, reverse: true}))).toBe('ERR_INVALID_ARGUMENT');
+    expect(await codeOf(() => render('report.test.html', {cwd, reverse: true, out: 'test/page.mjs'}))).toBe('ERR_INVALID_ARGUMENT');
+    expect(fs.readdirSync(cwd)).toEqual(['report.test.html']);
   });
 
   it('keeps a received title out of the rebuilt code', async () => {

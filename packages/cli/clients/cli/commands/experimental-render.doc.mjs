@@ -40,7 +40,7 @@ export const doc = {
     {
       flag: '--overwrite',
       param: 'options.overwrite',
-      description: 'With --reverse, replace files that already exist',
+      description: 'With --reverse, replace the page module if it already exists (never a protected file; the files it imports always go into a new folder)',
     },
   ],
   examples: [

@@ -59,7 +59,7 @@ export const doc = {
       name: 'options.overwrite',
       type: 'boolean',
       description:
-        'Replace existing files when reversing. Rendering always replaces its HTML file.',
+        'Replace the existing page module when reversing (never a protected file, and never a file other than the page, which always goes into a new folder). Rendering replaces an existing HTML file only when a render wrote it.',
       default: 'false',
     },
     {

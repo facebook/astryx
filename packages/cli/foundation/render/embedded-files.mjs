@@ -25,6 +25,27 @@ const CONFIG_JSON =
 /** Tool configuration modules: `vite.config.ts`, `astryx.config.mjs`, `next.config.js`, `.eslintrc.js`, ... */
 const CONFIG_MODULE = /(^|\.)config\.[cm]?[jt]sx?$|^[a-z0-9-]+rc\.[cm]?[jt]s$/i;
 
+/** Words in a file or folder name that test, story and benchmark runners match. */
+const RUNNER_WORDS = new Set([
+  'test', 'tests', 'spec', 'specs', 'story', 'stories', 'bench', 'benchmark', 'benchmarks',
+  'e2e', 'cypress', 'playwright', 'fixture', 'fixtures', 'snapshot', 'snapshots', 'mock', 'mocks',
+]);
+
+/**
+ * Whether a runner would pick the file up by name: any word of its name
+ * (split at `.`, `-` and `_`, extension left out) or of any folder is one of
+ * RUNNER_WORDS (`report.test.mjs`, `report-test.mjs`, `test_report.mjs`,
+ * `test.mjs`, `test/helper.mjs`), or a folder is `__name__`.
+ * @param {string[]} segments
+ */
+function runnerPicksUp(segments) {
+  return segments.some((seg, i) => {
+    if (/^__\w+__$/.test(seg)) return true;
+    const name = i === segments.length - 1 ? seg.replace(/\.[^.]+$/, '') : seg;
+    return name.toLowerCase().split(/[._-]+/).some(word => RUNNER_WORDS.has(word));
+  });
+}
+
 /** @param {string} p */
 const extOf = p => {
   const base = p.slice(p.lastIndexOf('/') + 1);
@@ -57,6 +78,11 @@ export function embeddedPathProblem(p, options = {}) {
   }
   const base = segments[segments.length - 1];
   const ext = extOf(p);
+  // A file a test, story or benchmark runner picks up by its name or folder
+  // runs without anyone importing it: never one, page included.
+  if (runnerPicksUp(segments)) {
+    return {code: 'ERR_RENDER_SOURCE_DAMAGED', reason: `a test, spec, story or benchmark file (${p})`};
+  }
   if (options.page) {
     if (!PAGE_EXTENSIONS.includes(ext) || CONFIG_MODULE.test(base)) {
       return {code: 'ERR_RENDER_SOURCE_DAMAGED', reason: `a page that is not a page module (${p})`};
@@ -65,10 +91,6 @@ export function embeddedPathProblem(p, options = {}) {
   }
   if (((ext === '.json' || ext === '.jsonc') && CONFIG_JSON.test(base)) || CONFIG_MODULE.test(base)) {
     return {code: 'ERR_RENDER_SOURCE_DAMAGED', reason: `a project or tool configuration file (${p})`};
-  }
-  // Test, spec and story files run under tools without anyone importing them.
-  if (/\.(test|spec|stories|story|bench)\.[a-z0-9]+$/i.test(base) || segments.some(seg => /^__\w+__$/.test(seg))) {
-    return {code: 'ERR_RENDER_SOURCE_DAMAGED', reason: `a test, spec or story file (${p})`};
   }
   if (PAGE_EXTENSIONS.includes(ext) || ext === '.css' || ext === '.json' || isAssetPath(p)) return null;
   return {code: 'ERR_RENDER_SOURCE_DAMAGED', reason: `a kind of file a render never embeds (${p})`};

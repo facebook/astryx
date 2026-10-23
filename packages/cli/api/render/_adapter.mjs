@@ -299,9 +299,13 @@ export function reverseToFile({cwd, input, output, overwrite}) {
       );
     }
   };
-  /** A page is never written over a configuration file such as vite.config.ts. @param {string} file */
+  /** A page is never written as a configuration, test, spec or story file. @param {string} file */
   const refuseConfigTarget = file => {
-    const problem = embeddedPathProblem(path.basename(file), {page: true});
+    const rel = path.relative(cwd, file).split(path.sep).join('/');
+    const problem = embeddedPathProblem(
+      rel.startsWith('..') || path.isAbsolute(rel) ? path.basename(file) : rel,
+      {page: true},
+    );
     if (problem) {
       throw new AstryxError(
         `${shown(cwd, file)} is not a page module file name a reverse writes (${problem.reason}); nothing was written.`,
