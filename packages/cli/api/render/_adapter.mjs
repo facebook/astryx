@@ -18,7 +18,7 @@ import {
   renderPage,
 } from '../../foundation/render/render-page.mjs';
 import {readSourceBlock} from '../../foundation/render/source-block.mjs';
-import {embeddedPathProblem} from '../../foundation/render/embedded-files.mjs';
+import {embeddedPathProblem, runnerPicksUp} from '../../foundation/render/embedded-files.mjs';
 import {createFileProtectionResolver} from '../../foundation/fs/file-protection.mjs';
 import {reachableFiles, receivingAliases} from '../../foundation/render/embedded-imports.mjs';
 import {isAstryxMarkup} from '../../foundation/render/html-reader.mjs';
@@ -440,6 +440,19 @@ export function reverseToFile({cwd, input, output, overwrite}) {
       );
     }
     writes.forEach((w, i) => confined(w.file, cwd, i === 0 ? 'The page' : 'The embedded file'));
+    // Where each file lands, not only its name in the file, must be one no
+    // test, story or benchmark runner picks up.
+    const runnable = writes
+      .map(w => path.relative(cwd, w.file).split(path.sep))
+      .filter(segments => runnerPicksUp(segments))
+      .map(segments => segments.join('/'));
+    if (runnable.length > 0) {
+      throw new AstryxError(
+        `${shown(cwd, input)} would write ${runnable.join(', ')}, which a test, story or benchmark runner would run; nothing was written. Choose another --out.`,
+        [],
+        ERROR_CODES.ERR_RENDER_SOURCE_DAMAGED,
+      );
+    }
     refuseExisting(writes.map(w => w.file));
     refuseProtected(writes.map(w => w.file), cwd);
     writeAll(writes, cwd);

@@ -373,7 +373,7 @@ export async function renderPage(entry, options = {}) {
     if (f !== entry && embeddedPathProblem(rel)) {
       warnings.push({
         code: 'not-embedded',
-        message: `${rel} is not carried in the file (a rendered page carries only the page and the stylesheets, JSON and images it imports, never project or tool configuration), so --reverse cannot give it back.`,
+        message: `${rel} is not carried in the file (a rendered page carries the page and the local modules, stylesheets, JSON files and images it imports, but never project or tool configuration, or a file a test, story or benchmark runner would run), so --reverse cannot give it back.`,
       });
       continue;
     }

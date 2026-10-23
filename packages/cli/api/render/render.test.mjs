@@ -538,6 +538,11 @@ describe('render(): every write stays inside the current folder', () => {
       'report_test.mts',
       'test.cts',
       'test/helper.ts',
+      'spec.ts',
+      'test.tsx',
+      'report.benchmark.ts',
+      'report_test.tsx',
+      'tests/helper.js',
     ]) {
       const page = {path: 'page.tsx', bytes: Buffer.from(`import './${name.replace(/\.(tsx?|[mc]?[jt]s)$/, '')}';\nexport default () => null;\n`)};
       put('tests-in.html', `<body><p class="astryx-text">x</p>${sourceBlock('page.tsx', [page, {path: name, bytes: Buffer.from('export {};\n')}])}</body>`);
@@ -560,6 +565,11 @@ describe('render(): every write stays inside the current folder', () => {
     expect(await codeOf(() => render('spec.html', {cwd, reverse: true}))).toBe('ERR_RENDER_SOURCE_DAMAGED');
     // Ordinary names that only contain such words still come back.
     put('runner/results.html', `<body><p class="astryx-text">x</p>${sourceBlock('stories/test-results.tsx', [{path: 'stories/test-results.tsx', bytes: Buffer.from("import d from '../mock-data';\nexport default () => d;\n")}, {path: 'mock-data.ts', bytes: Buffer.from('export default 1;\n')}])}</body>`);
+    // Where a file lands counts, not only its name in the file.
+    expect(await codeOf(() => render('results.html', {cwd, reverse: true, out: 'tests/stories/test-results.tsx'}))).toMatch(
+      /ERR_INVALID_ARGUMENT|ERR_RENDER_SOURCE_DAMAGED/,
+    );
+    expect(fs.existsSync(path.join(cwd, 'tests'))).toBe(false);
     const ok = /** @type {any} */ (await render('results.html', {cwd, reverse: true}));
     expect(ok.data.files).toEqual(['results-restored/stories/test-results.tsx', 'results-restored/mock-data.ts']);
   });

@@ -25,27 +25,31 @@ const CONFIG_JSON =
 /** Tool configuration modules: `vite.config.ts`, `astryx.config.mjs`, `next.config.js`, `.eslintrc.js`, ... */
 const CONFIG_MODULE = /(^|\.)config\.[cm]?[jt]sx?$|^[a-z0-9-]+rc\.[cm]?[jt]s$/i;
 
-/** Script extensions `node --test` picks up by name alone (Node 24 runs TypeScript too). */
-const NODE_TEST_EXTENSIONS = /\.(c|m)?(js|ts)$/i;
+/** Any script module. */
+const SCRIPT = /\.(c|m)?[jt]sx?$/i;
+/** Script modules `node --test` and AVA match by a `test-*` name (no JSX). */
+const PLAIN_SCRIPT = /\.(c|m)?[jt]s$/i;
 
 /**
- * Whether a test, story or benchmark runner picks the file up by its name or
- * folder, by the patterns their defaults use: `*.test.*`, `*.spec.*`,
- * `*.stories.*`, `*.story.*`, `*.cy.*`, `*.bench.*` (Vitest, Jest,
- * Playwright, Storybook, Cypress); anything under `__tests__/`; and for
- * `node --test`, `*-test`, `*_test`, `test-*`, `test` and `test/**` with a
- * .js, .mjs, .cjs, .ts, .mts or .cts extension.
- * @param {string[]} segments
+ * Whether a test, story or benchmark runner would run the file with nothing
+ * importing it, by the union of their default patterns: Jest and Vitest
+ * (`*.test.*`, `*.spec.*`, `test.*`, `spec.*`, `__tests__/`), Vitest bench
+ * (`*.bench.*`, `*.benchmark.*`), Storybook (`*.stories.*`, `*.story.*`),
+ * Cypress (`*.cy.*`), Bun (`*_test.*`, `*_spec.*`), `node --test`
+ * (`*-test.*`, `test/`) and AVA (`tests/`), and `test-*` for .js and .ts.
+ * @param {string[]} segments the path where the file lands, `/`-split
  */
-function runnerPicksUp(segments) {
+export function runnerPicksUp(segments) {
   const base = segments[segments.length - 1];
-  const stem = base.replace(/\.[^.]+$/, '');
-  if (/\.(test|spec|stories|story|cy|bench)$/i.test(stem)) return true;
-  if (segments.slice(0, -1).some(seg => seg === '__tests__')) return true;
-  if (NODE_TEST_EXTENSIONS.test(base)) {
-    if (/(^|[-_])test$/i.test(stem) || /^test([-_]|$)/i.test(stem)) return true;
-    if (segments.slice(0, -1).some(seg => seg.toLowerCase() === 'test')) return true;
-  }
+  if (!SCRIPT.test(base)) return false;
+  const stem = base.replace(/\.[^.]+$/, '').toLowerCase();
+  const folders = segments.slice(0, -1).map(seg => seg.toLowerCase());
+  if (/(^|\.)(test|spec|bench|benchmark|stories|story|cy)$/.test(stem)) return true;
+  if (/[_-]test$|_spec$/.test(stem)) return true;
+  if (folders.some(seg => seg === '__tests__' || seg === 'test' || seg === 'tests')) return true;
+  // `test-*` only for the .js and .ts families: no default runner picks up
+  // `test-results.tsx`.
+  if (PLAIN_SCRIPT.test(base) && /^test[-_]/.test(stem)) return true;
   return false;
 }
 
