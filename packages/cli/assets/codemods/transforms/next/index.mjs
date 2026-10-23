@@ -7,14 +7,4 @@
  * this file into the resolved version folder.
  */
 
-import migrateInternationalizationContext, {
-  meta as migrateInternationalizationContextMeta,
-} from './migrate-internationalization-context.mjs';
-
-export default [
-  {
-    name: 'migrate-internationalization-context',
-    transform: migrateInternationalizationContext,
-    meta: migrateInternationalizationContextMeta,
-  },
-];
+export default [];
