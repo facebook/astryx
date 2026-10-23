@@ -142,9 +142,18 @@ async function gatherIntegrationComponents(loadedIntegrations) {
         .filter(rec => !isIntegrationMember(rec))
         .map(rec => rec.docPath),
     );
+    /** @type {string[]} */
+    const docPaths = [];
     forEachIntegrationDoc(integration.components, (docPath, stem) => {
       if (!renamed.has(docPath)) hold(fileNamed, stem, docPath);
+      docPaths.push(docPath);
     });
+    // A family doc names its members, whose own docs may sit beside it.
+    /** @type {Map<string, {_family: string, _familyIndex: number}>} */
+    const places = new Map();
+    for (const docPath of docPaths)
+      for (const [n, place] of familyPlaces(await loadModuleDoc(docPath)))
+        places.set(n, place);
     for (const rec of components) {
       const loaded = await loadModuleDoc(rec.docPath);
       // A family member is indexed from its own entry: the family's keywords
@@ -169,7 +178,7 @@ async function gatherIntegrationComponents(loadedIntegrations) {
         keywords: doc && Array.isArray(doc.keywords) ? doc.keywords : [],
         description: doc ? doc.usage?.description || doc.description || '' : '',
         guidance: guidanceFrom(doc),
-        ...familyPlaces(loaded).get(rec.name),
+        ...places.get(rec.name),
         _package: rec.package ?? integration.name,
         // Exactly what `component` reports: a doc may state its own specifier
         // (one entry point exporting several components), and only when it

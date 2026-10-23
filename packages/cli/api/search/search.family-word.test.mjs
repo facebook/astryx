@@ -1,8 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file A query naming a family lists its first three members, in the family
- * doc's order, after the family's own entry: the family doc names them, so
+ * @file A query naming a family lists the first three members its family doc
+ * names, after the family's own entry: the family doc names them, so
  * this holds with no component of the family's name (Chat) and for any
  * integration's family, which no learned weights know.
  */
@@ -61,6 +61,20 @@ describe("an integration's family (cold start)", () => {
       "export default { components: './components' };\n",
     );
     const names = ['Plot', 'PlotAxis', 'PlotLegend', 'PlotLine', 'PlotTooltip'];
+    // A member with a doc of its own, which the family doc names by name.
+    fs.writeFileSync(
+      path.join(pkg, 'components', 'PlotTitle.doc.mjs'),
+      `export default {
+        type: 'component',
+        name: 'PlotTitle',
+        usage: {description: 'The title above a plot.'},
+        props: [],
+      };\n`,
+    );
+    fs.writeFileSync(
+      path.join(pkg, 'components', 'PlotTitle.tsx'),
+      'export function PlotTitle() {\n  return null;\n}\n',
+    );
     fs.writeFileSync(
       path.join(pkg, 'components', 'Plot.doc.mjs'),
       `export default {
@@ -69,13 +83,19 @@ describe("an integration's family (cold start)", () => {
         import: '@acme/plots',
         usage: {description: 'A plot of data series.'},
         props: [],
-        components: ${JSON.stringify(
-          names.map(name => ({
+        components: ${JSON.stringify([
+          ...names.slice(0, 1).map(name => ({
             name,
             usage: {description: `The ${name} part of a plot.`},
             props: [],
           })),
-        )},
+          {name: 'PlotTitle'},
+          ...names.slice(1).map(name => ({
+            name,
+            usage: {description: `The ${name} part of a plot.`},
+            props: [],
+          })),
+        ])},
       };\n`,
     );
     fs.writeFileSync(
@@ -86,16 +106,18 @@ describe("an integration's family (cold start)", () => {
   afterAll(() => fs.rmSync(dir, {recursive: true, force: true}));
 
   it(
-    '`plot` lists the first three members, in the doc order, after Plot',
+    '`plot` lists the first three members its doc names, after Plot',
     async () => {
       const {results} = (await search('plot', {cwd: dir, type: 'component'}))
         .data;
-      expect(results.map(r => r.name).slice(0, 4)).toEqual([
-        'Plot',
-        'PlotAxis',
-        'PlotLegend',
-        'PlotLine',
-      ]);
+      // The first three members the doc lists, one with a doc of its own.
+      expect(results[0]).toMatchObject({name: 'Plot'});
+      expect(
+        results
+          .slice(1, 4)
+          .map(r => r.name)
+          .sort(),
+      ).toEqual(['PlotAxis', 'PlotLegend', 'PlotTitle']);
     },
     SLOW,
   );
