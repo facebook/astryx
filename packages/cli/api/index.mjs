@@ -23,6 +23,7 @@
 export {component} from './component/component.mjs';
 export {docs} from './docs/docs.mjs';
 export {blog} from './blog/blog.mjs';
+export {render} from './render/render.mjs';
 export {discover} from './discover/discover.mjs';
 export {template} from './template/template.mjs';
 export {
@@ -86,6 +87,7 @@ export * from '../foundation/response/batch.type.mjs';
 export * from './component/component.type.mjs';
 export * from './docs/docs.type.mjs';
 export * from './blog/blog.type.mjs';
+export * from './render/render.type.mjs';
 export * from './discover/discover.type.mjs';
 export * from './template/template.type.mjs';
 export * from './theme/theme.type.mjs';

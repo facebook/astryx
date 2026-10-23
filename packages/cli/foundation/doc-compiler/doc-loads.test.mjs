@@ -102,6 +102,17 @@ const RUNNERS = {
     runs: SELF_DOCS,
     sites: ['import ../../../api/blog/blog.doc.mjs', 'import ./blog.doc.mjs'],
   },
+  'clients/cli/commands/experimental/index.mjs': {
+    runs: SELF_DOCS,
+    sites: ['import ../experimental.doc.mjs'],
+  },
+  'clients/cli/commands/experimental/render.mjs': {
+    runs: SELF_DOCS,
+    sites: [
+      'import ../../../../api/render/render.doc.mjs',
+      'import ../experimental-render.doc.mjs',
+    ],
+  },
   'clients/cli/commands/manifest.mjs': {
     runs: SELF_DOCS,
     sites: ['import ./manifest.doc.mjs'],
@@ -320,6 +331,14 @@ const RUNNERS = {
   'foundation/doc-compiler/read.mjs': {
     runs: 'authored doc files, each one handed to the compiler, with the loader its reader has always used',
     sites: ['importDocModule', 'importNativeModule ×3', 'importTemplateModule'],
+  },
+  'foundation/render/page-worker.mjs': {
+    runs: 'the page `astryx experimental render` renders, its local modules, React, and the StyleX compiler, in a worker',
+    sites: ['.import() ×3', 'createJiti ×2', 'require(@stylexjs/babel-plugin)'],
+  },
+  'foundation/render/render-page.mjs': {
+    runs: 'the render worker, so a page that never finishes can be stopped',
+    sites: ['worker_threads.Worker'],
   },
   'foundation/fs/module-loader.mjs': {
     runs: 'user modules (config, manifests, handlers, codemods): natively, through jiti, or by require for a fresh CommonJS read',

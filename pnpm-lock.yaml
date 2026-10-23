@@ -784,6 +784,9 @@ importers:
       '@babel/types':
         specifier: 7.29.8
         version: 7.29.8
+      '@stylexjs/babel-plugin':
+        specifier: 'catalog:'
+        version: 0.19.0
       ast-types:
         specifier: 0.16.3
         version: 0.16.3

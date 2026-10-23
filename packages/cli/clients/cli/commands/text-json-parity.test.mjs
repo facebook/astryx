@@ -400,6 +400,30 @@ const CASES = [
     skipFieldChecks: true,
   },
   {
+    name: 'experimental render',
+    args: ['experimental', 'render', 'page.jsx'],
+    cwd: '__TMP__',
+    // A page with no imports, in a folder that can resolve React.
+    setup: dir => {
+      fs.mkdirSync(path.join(dir, 'node_modules'), {recursive: true});
+      for (const pkg of ['react', 'react-dom']) {
+        fs.symlinkSync(
+          path.join(REPO_ROOT, 'node_modules', pkg),
+          path.join(dir, 'node_modules', pkg),
+        );
+      }
+      fs.writeFileSync(
+        path.join(dir, 'page.jsx'),
+        'export default function Page() { return <h1>Hello</h1>; }\n',
+      );
+    },
+    jsonFieldAllowlist: [
+      'input — stated in section heading "Rendered ..."',
+      'stylesheets — the CSS the size counts',
+      'warnings — listed under Warnings when present',
+    ],
+  },
+  {
     name: 'manifest',
     args: ['manifest'],
     // Manifest describes the CLI itself; exempt (AST-042 FR1).

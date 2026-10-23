@@ -61,6 +61,7 @@ export const CLI_COMMANDS = Object.freeze([
   'discover',
   'docs',
   'doctor',
+  'experimental',
   'gap-report',
   'help',
   'hook',

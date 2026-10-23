@@ -112,6 +112,17 @@ export const doc = {
       description:
         "One post's metadata plus the feed URL and the post's full plaintext body.",
     },
+    // render (experimental: may change or be removed in a patch release)
+    {
+      value: 'render.page',
+      description:
+        'Experimental. A page rendered to one self-contained HTML file: `input`, `output`, `bytes`, the local modules embedded (`files`), the package `stylesheets` cut and inlined, `classes`, `cssBytes`, `images` inlined, and `warnings` (`{code, message}`; empty when nothing looked wrong).',
+    },
+    {
+      value: 'render.reverse',
+      description:
+        'Experimental. A rendered file turned back into a page: `input`, `mode` (`embedded`: the embedded source written back byte for byte; `rebuilt`: rebuilt from Astryx markup, text and layout only), `output`, every file written (`files`), `exact`, and for a rebuilt page `components`, `elements`, `unknown` and `omitted`.',
+    },
 
     // discover (external / integration packages)
     {

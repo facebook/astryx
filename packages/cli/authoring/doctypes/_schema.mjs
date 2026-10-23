@@ -59,6 +59,7 @@ export const AuthoredDocGraphFields = {
     .optional(),
   aliases: z.array(nonEmptyString).optional(),
   audience: z.enum(['public', 'internal']).optional(),
+  stability: z.literal('experimental').optional(),
 };
 
 const _AuthoredDocGraphSchema = z.object(AuthoredDocGraphFields).strict();

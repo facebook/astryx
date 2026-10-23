@@ -289,5 +289,52 @@ export const doc = {
       description:
         'The command needs a project (an app with Astryx installed, or an integration package) and was run outside one. Nothing was written.',
     },
+
+    // Render (experimental: may change or be removed in a patch release)
+    {
+      value: 'ERR_RENDER_COMPILE',
+      description:
+        'The page given to `astryx experimental render` does not compile. Nothing was written.',
+    },
+    {
+      value: 'ERR_RENDER_NO_DEFAULT_EXPORT',
+      description:
+        'The page given to `astryx experimental render` has no default export to render. Nothing was written.',
+    },
+    {
+      value: 'ERR_RENDER_MISSING_DEPENDENCY',
+      description:
+        'The page imports a package that is not installed where the page is. Nothing was written.',
+    },
+    {
+      value: 'ERR_RENDER_BROWSER_API',
+      description:
+        'The page reads a browser-only API, such as window or document, while rendering. Nothing was written.',
+    },
+    {
+      value: 'ERR_RENDER_ASSET_TOO_LARGE',
+      description:
+        'A local file the page uses is too large to inline into one HTML file. Nothing was written.',
+    },
+    {
+      value: 'ERR_RENDER_TIMEOUT',
+      description:
+        'The page did not finish rendering in time and was stopped. Nothing was written.',
+    },
+    {
+      value: 'ERR_RENDER_FAILED',
+      description:
+        'The page threw while rendering. Nothing was written.',
+    },
+    {
+      value: 'ERR_RENDER_NOT_ASTRYX',
+      description:
+        '`render --reverse` was given HTML with no embedded source and no Astryx markup. Nothing was written.',
+    },
+    {
+      value: 'ERR_RENDER_SOURCE_DAMAGED',
+      description:
+        '`render --reverse` found a damaged embedded source. Nothing was written.',
+    },
   ],
 };

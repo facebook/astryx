@@ -45,6 +45,10 @@ export interface AuthoredDocGraphFields {
   /** Reserved: docs bundle audience; omit for public docs. Nothing reads it
    *  yet. */
   audience?: DocAudience;
+  /** Set on the doc of an experimental surface (spec:AST-017 FR21, FR27),
+   *  whose text then says it may change or be removed in a patch release. A
+   *  command's help shows it as `[experimental]`. Omit for stable surfaces. */
+  stability?: 'experimental';
 }
 
 /**
