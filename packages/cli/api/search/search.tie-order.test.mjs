@@ -22,4 +22,9 @@ describe('ties below the first result', () => {
     expect(results).toContain('ai-chat');
     expect(results).toContain('ai-chat-landing');
   });
+
+  it('reads a punctuated query word by its parts', async () => {
+    const results = (await search('three-dot menu with actions')).data.results;
+    expect(results.slice(0, 3).map(r => r.name)).toContain('MoreMenu');
+  });
 });

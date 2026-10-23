@@ -137,6 +137,7 @@ function tiesByFit(ranked, table, blockOf) {
   if (ranked.length < 3) return ranked;
   const first = nameWords(String(ranked[0].res.name ?? '')).map(fold);
   const idf = table.fields.desc.idf;
+  const rarest = Math.max(0, ...idf.values());
   /** @param {Item} it */
   const related = it => {
     // A part's name words start with the first result's whole name words:
@@ -154,7 +155,10 @@ function tiesByFit(ranked, table, blockOf) {
     const m = /^matches \d+\/\d+ terms: (.*)$/.exec(it.res.reason ?? '');
     if (!m) return 0;
     let sum = 0;
-    for (const t of m[1].split(', ')) sum += idf.get(fold(t)) ?? 0;
+    // A matched term counts by its alphanumeric parts (`three-dot`), and a
+    // part the catalog never uses is as rare as a word can be.
+    for (const t of m[1].split(', '))
+      for (const part of words(t)) sum += idf.get(fold(part)) ?? rarest;
     return sum;
   };
   const out = [ranked[0]];
