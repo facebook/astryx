@@ -168,7 +168,7 @@ astryx experimental icon add --variant solid --from @heroicons/react/24/solid --
         },
         {
           type: 'prose',
-          text: "`experimental icon add` writes the set's generated module (`generated` in the data file) and its declaration file, which re-exports each component's own types and types each adapted icon as `ComponentType<SVGProps<SVGSVGElement>>`. `experimental icon new-set` adds this line to your package's entry and its types (see add an icon set); when it cannot, the receipt names the file:",
+          text: "`experimental icon add` writes the set's generated module (`generated` in the data file) and its declaration file, which re-exports each component's own types and types each adapted icon as `ComponentType<SVGProps<SVGSVGElement>>`. Add this line to your package's entry and its types; `experimental icon new-set` names the exact line and file in its receipt (see add an icon set):",
         },
         {
           type: 'code',
