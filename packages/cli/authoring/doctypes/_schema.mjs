@@ -609,6 +609,7 @@ export const EnumDocKindSchema = z
           value: z.string().min(1, 'member value is required'),
           description: z.string(),
           deprecated: z.string().optional(),
+          stability: z.literal('experimental').optional(),
         })
         .passthrough(),
     ),

@@ -409,12 +409,16 @@ function enumSection(doc) {
       {
         type: 'table',
         headers: ['Value', 'Meaning'],
-        rows: (doc.members ?? []).map((/** @type {any} */ m) => [
-          `\`${m.value}\``,
-          m.deprecated
-            ? `${m.description} Deprecated: ${m.deprecated}`
-            : m.description,
-        ]),
+        // An experimental value is documented on its feature's experimental
+        // route, never in the stable enum's table (spec:AST-017 FR27).
+        rows: (doc.members ?? [])
+          .filter((/** @type {any} */ m) => m.stability !== 'experimental')
+          .map((/** @type {any} */ m) => [
+            `\`${m.value}\``,
+            m.deprecated
+              ? `${m.description} Deprecated: ${m.deprecated}`
+              : m.description,
+          ]),
       },
     ],
   };

@@ -293,46 +293,55 @@ export const doc = {
     // Render (experimental: may change or be removed in a patch release)
     {
       value: 'ERR_RENDER_COMPILE',
+      stability: 'experimental',
       description:
         'The page given to render does not compile. Nothing was written.',
     },
     {
       value: 'ERR_RENDER_NO_DEFAULT_EXPORT',
+      stability: 'experimental',
       description:
         'The page given to render has no default export to render. Nothing was written.',
     },
     {
       value: 'ERR_RENDER_MISSING_DEPENDENCY',
+      stability: 'experimental',
       description:
         'The page imports a package that is not installed where the page is. Nothing was written.',
     },
     {
       value: 'ERR_RENDER_BROWSER_API',
+      stability: 'experimental',
       description:
         'The page reads a browser-only API, such as window or document, while rendering. Nothing was written.',
     },
     {
       value: 'ERR_RENDER_ASSET_TOO_LARGE',
+      stability: 'experimental',
       description:
         'A local file the page uses is too large to inline into one file. Nothing was written.',
     },
     {
       value: 'ERR_RENDER_TIMEOUT',
+      stability: 'experimental',
       description:
         'The page did not finish rendering in time and was stopped. Nothing was written.',
     },
     {
       value: 'ERR_RENDER_FAILED',
+      stability: 'experimental',
       description:
         'The page threw while rendering. Nothing was written.',
     },
     {
       value: 'ERR_RENDER_NOT_ASTRYX',
+      stability: 'experimental',
       description:
         '`render --reverse` was given a file with no embedded source and no Astryx markup. Nothing was written.',
     },
     {
       value: 'ERR_RENDER_SOURCE_DAMAGED',
+      stability: 'experimental',
       description:
         '`render --reverse` found a damaged embedded source. Nothing was written.',
     },
