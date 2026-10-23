@@ -595,7 +595,7 @@ export const LongTokenEndLane: Story = {
  * it sits right after the last token, on the last row, where typed text will
  * start (top). A row with no room left for it (bottom, narrowed by the play
  * function) keeps its height at rest; focusing moves the caret to the start of
- * a new row, as wrapped text would.
+ * a new row, as wrapped text would, unless the field is read-only.
  */
 export const CaretPlacement: Story = {
   render: args => {
@@ -779,7 +779,22 @@ export const CaretPlacement: Story = {
         );
       }
       input.blur();
+      await settle();
+
+      // A disabled field with a disabledMessage stays focusable, but read-only.
+      // Nothing can be typed there, so focusing it must not start a new row.
+      input.readOnly = true;
+      input.focus();
+      await settle();
+      const readOnlyHeight = heightOf(fullRowField);
+      input.blur();
+      input.readOnly = false;
       host.style.width = '';
+      if (Math.abs(readOnlyHeight - restingHeight) > 0.5) {
+        throw new Error(
+          `With 3px left on the row, focusing a read-only field grew it from ${restingHeight.toFixed(2)} to ${readOnlyHeight.toFixed(2)}`,
+        );
+      }
     }
   },
 };

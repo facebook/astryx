@@ -351,9 +351,10 @@ const styles = stylex.create({
     zIndex: 0,
     // The input follows the last token in flow, so a focused empty input's
     // caret sits where typed text will start. Empty, it asks only for that
-    // inset, and only while focused: blurred, it claims no room at all, not
-    // even the column gap, so it never grows the field a blank row. Typing
-    // restores the full editing width, which may wrap.
+    // inset, and only while focused and editable: blurred or read-only (a
+    // disabled field with a disabledMessage stays focusable), it claims no
+    // room at all, not even the column gap, so it never grows the field a
+    // blank row. Typing restores the full editing width, which may wrap.
     minWidth: {
       default: '40px',
       ':placeholder-shown': 0,
@@ -365,13 +366,13 @@ const styles = stylex.create({
     width: 0,
     marginInlineStart: {
       default: 0,
-      ':placeholder-shown:not(:focus)': `calc(-1 * ${spacingVars['--spacing-1']})`,
+      ':placeholder-shown:is(:not(:focus), :read-only)': `calc(-1 * ${spacingVars['--spacing-1']})`,
     },
     // Restore normal text inset when input follows tokens, since the
     // wrapper padding is reduced for border concentricity.
     paddingInlineStart: {
       default: `calc(${spacingVars['--spacing-2']} - ${spacingVars['--spacing-1']} + 1px)`,
-      ':placeholder-shown:not(:focus)': 0,
+      ':placeholder-shown:is(:not(:focus), :read-only)': 0,
     },
     // wrapperWithTokens already keeps the in-flow input short of the lane.
     paddingInlineEnd: 0,

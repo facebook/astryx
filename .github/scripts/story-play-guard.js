@@ -156,14 +156,14 @@ const TARGETS = [
     component: 'Tokenizer',
     story: 'core-tokenizer--caret-placement',
     guards:
-      'a focused empty combobox puts its caret right after the last token on the last row without moving tokens, and a row too full for the caret keeps its resting height and starts a new row only on focus',
+      'a focused empty combobox puts its caret right after the last token on the last row without moving tokens, and a row too full for the caret keeps its resting height and starts a new row only on focus, never for a read-only field',
   },
   {
     component: 'Tokenizer (RTL)',
     story: 'core-tokenizer--caret-placement',
     direction: 'rtl',
     guards:
-      'the caret follows the last token at its inline end, and a too-full row stays one row at rest, under RTL as well',
+      'the caret follows the last token at its inline end, and a too-full row stays one row at rest and while read-only, under RTL as well',
   },
   // spec:AST-059 — the layer runtime's viewport inset. Each story is one
   // claim of the record; the guard is its rendered evidence, at a desktop
