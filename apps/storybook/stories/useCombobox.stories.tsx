@@ -16,6 +16,7 @@ import {useEffect, useId, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useCombobox} from '@astryxdesign/core/Selector';
 import {usePopover} from '@astryxdesign/core/Popover';
+import {isImeKeyEvent} from '@astryxdesign/core/utils';
 import {Button} from '@astryxdesign/core/Button';
 import {Dialog, DialogHeader} from '@astryxdesign/core/Dialog';
 import {Layout, LayoutContent} from '@astryxdesign/core/Layout';
@@ -250,11 +251,14 @@ function MessageFieldExample() {
         }}
         {...combobox.getFieldProps({
           // The field's own Enter sends; the hook stops it only for a pick.
+          // An Enter that commits an input-method composition is not a send:
+          // Safari reports it after compositionend with keyCode 229 and
+          // `isComposing` false, which isImeKeyEvent also catches.
           onKeyDown: event => {
             if (
               event.key === 'Enter' &&
               !event.shiftKey &&
-              !event.nativeEvent.isComposing &&
+              !isImeKeyEvent(event.nativeEvent) &&
               text.trim() !== ''
             ) {
               event.preventDefault();
