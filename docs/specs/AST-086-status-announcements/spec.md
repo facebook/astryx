@@ -60,8 +60,8 @@ announcement channel.
   carries a live role (`status`, `alert`, `log`) or `aria-live`.
 - **FR2 — Transient messages use the shared channel.** When the element that
   shows a message mounts, unmounts, or is replaced together with its text, the
-  owner announces through the shared announcement channel, except as FR4 and
-  FR10 provide. The new element
+  owner announces through the shared announcement channel, except as FR4, FR10,
+  and FR11 provide. The new element
   MUST NOT carry a live role or `aria-live`.
 - **FR3 — Live roles only on persistent containers.** A component MAY own a
   live role only on an element that stays mounted while its content changes.
@@ -105,7 +105,9 @@ announcement channel.
   announced. A message inserted after that, or whose text changes later, is
   announced once. A message brought in by a client-rendered route change is
   inserted after page load and announces once; this is the one case where a
-  message arriving with its view is announced. FR4 applies inside a mounted live
+  message arriving with its view is announced. Page load ends at the first commit
+  after the document finishes loading, whether that first render came from the
+  server or the client. FR4 applies inside a mounted live
   container, and FR6 governs repeats. FR11 covers components that announce their
   own rendered content; `component:FieldStatus` and `component:Banner` keep their
   own announcement rules.
@@ -118,8 +120,9 @@ announcement channel.
   component that adopts it stays server-renderable: rendered on the server, the
   helper announces nothing and adds no live role, and the adopter still passes
   the server-safe component boundary check. Any equivalent mechanism is valid.
-- **FR13 — Announcement effects stay inside the helper.** The helper is the only
-  place announcement Effects live. Adopting components add no Effect, observer,
+- **FR13 — Announcement effects stay inside the helper.** For components that
+  announce their own rendered content (FR11), the helper is the only place
+  announcement Effects live. Adopting components add no Effect, observer,
   timer, or listener of their own to detect page load, read rendered text, or
   write to the channel. The helper follows `architecture:react-component-runtime`
   INV3 and INV5: it is idempotent under rerender, dependency change, and
@@ -156,8 +159,8 @@ announcement channel.
   mounts with `role="status"`. Under FR8 the thumb Spinner is silent. Under FR6
   StrictMode replay does not repeat the busy announcement.
 - Spinner (standalone): mounts with `role="status"` and its name. Under FR2 and
-  FR11 it announces its label through the channel when it appears after its
-  view, and stays silent when it renders with its view. The role and name it
+  FR11 it announces its label through the channel when it appears after page
+  load, and stays silent when present at page load. The role and name it
   exposes without a live role are outside this record.
 - `family:input-fields` members and other busy controls (TextInput, TextArea,
   Selector, MultiSelector, ComplexSelector, Typeahead, Tokenizer, the date and
@@ -175,7 +178,7 @@ announcement channel.
 - EmptyState, the ChatComposer status bar, and the chat trigger menu's loading
   row: each mounts a live role together with its text. Under FR2, FR11, and
   FR12 the element carries no live role and the helper announces it when it
-  appears after its view. EmptyState stays server-renderable.
+  appears after page load. EmptyState stays server-renderable.
 - Button: its persistent loading region fits FR3, except when a Button first
   renders loading and the region mounts holding its text. Inside a live
   container it keeps its role and urgency (FR4).
@@ -189,7 +192,7 @@ announcement channel.
 - Comments (lab): its error banners and progress label mount live roles
   together with their text. Inside a live log they follow FR4; otherwise FR2.
 - Selector, MultiSelector, Typeahead, and CommandPalette already announce their
-  empty state through the helper. It never shows in the view's first commit, so
+  empty state through the helper. It never shows at page load, so
   their behavior is unchanged.
 - `component:FieldStatus` AR1 is unchanged: a field message announces on first
   mount, because it reports the field's state when the field appears.
