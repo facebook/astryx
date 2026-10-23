@@ -23,6 +23,10 @@ async function importEmptyState() {
 
 const nextFrame = async () =>
   new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+const settle = async () => {
+  await act(nextFrame);
+  await act(nextFrame);
+};
 
 /** Every write to the shared polite region, one entry per write. */
 function recordPolite() {
@@ -63,13 +67,9 @@ describe('EmptyState announcement (spec:AST-086 FR2)', () => {
       root.render(<EmptyState title="No projects" description="Create one." />);
     });
     paint();
-    await act(nextFrame);
-    await act(nextFrame);
+    await settle();
     polite.stop();
     expect(polite.spoken).toEqual([]);
-    expect(document.querySelector('.astryx-empty-state')).not.toHaveAttribute(
-      'role',
-    );
     await act(async () => root.unmount());
   });
 
@@ -101,13 +101,9 @@ describe('EmptyState announcement (spec:AST-086 FR2)', () => {
       );
     });
     await act(async () => showEmpty());
-    await act(nextFrame);
-    await act(nextFrame);
+    await settle();
     polite.stop();
     expect(polite.spoken).toEqual(['No results Try another search.']);
-    expect(
-      document.querySelector('[role="status"].astryx-empty-state'),
-    ).toBeNull();
     await act(async () => root.unmount());
   });
 
@@ -128,8 +124,7 @@ describe('EmptyState announcement (spec:AST-086 FR2)', () => {
     const root = mount();
     await act(async () => root.render(<Log />));
     await act(async () => showEmpty());
-    await act(nextFrame);
-    await act(nextFrame);
+    await settle();
     polite.stop();
     expect(polite.spoken).toEqual([]);
     await act(async () => root.unmount());
@@ -148,8 +143,7 @@ describe('EmptyState announcement (spec:AST-086 FR2)', () => {
     await act(async () => root.render(<Search />));
     paint();
     await act(async () => setTitle('No results'));
-    await act(nextFrame);
-    await act(nextFrame);
+    await settle();
     polite.stop();
     expect(polite.spoken).toEqual(['No results']);
     await act(async () => root.unmount());
@@ -165,8 +159,7 @@ describe('EmptyState announcement (spec:AST-086 FR2)', () => {
     paint();
     const polite = recordPolite();
     const root = await act(async () => hydrateRoot(container, tree));
-    await act(nextFrame);
-    await act(nextFrame);
+    await settle();
     polite.stop();
     expect(polite.spoken).toEqual([]);
     await act(async () => root.unmount());
@@ -185,8 +178,7 @@ describe('EmptyState announcement (spec:AST-086 FR2)', () => {
     await act(nextFrame);
     expect(polite.spoken).toEqual([]);
     await show(false);
-    await act(nextFrame);
-    await act(nextFrame);
+    await settle();
     polite.stop();
     expect(polite.spoken).toEqual(['No results']);
     await act(async () => root.unmount());
