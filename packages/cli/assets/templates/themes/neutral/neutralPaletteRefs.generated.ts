@@ -24,7 +24,7 @@ export const neutralPaletteRefs = {
   },
   blue: {
     light: {25: '#003978', 30: '#00458c', 45: '#0067ce', 50: '#0074e2', 80: '#a1caff', 85: '#b9d7ff'},
-    dark: {25: '#253c5a', 65: '#5aa0f8', 70: '#6eaeff', 75: '#88bcff', 80: '#a1caff'},
+    dark: {25: '#253c5a', 65: '#5aa0f8', 75: '#88bcff', 80: '#a1caff'},
   },
   red: {
     light: {25: '#76000c', 30: '#8a0011', 45: '#c0262c', 50: '#cf3738', 55: '#de4745', 65: '#fa6762', 70: '#ff7f77', 80: '#ffaea7', 85: '#ffc4be'},

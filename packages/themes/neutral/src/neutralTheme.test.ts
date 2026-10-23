@@ -74,10 +74,7 @@ describe('neutral theme palette mappings', () => {
         neutralPalettes.neutral.light[10],
         neutralPalettes.neutral.dark[95],
       ),
-      '--color-info': lightDark(
-        neutralPalettes.blue.light[50],
-        neutralPalettes.blue.dark[70],
-      ),
+      '--color-info': 'var(--astryx-theme-neutral-color-status-fill-accent)',
       '--color-info-muted': lightDark(
         neutralPalettes.blue.light[85],
         `${neutralPalettes.blue.dark[75]}3D`,
@@ -372,8 +369,8 @@ describe('neutral semantic status roles', () => {
   it('keeps the released fill roles and mappings replaceable by exact name', () => {
     expect(neutralTheme.localTokens).toMatchObject({
       '--astryx-theme-neutral-color-status-fill-accent': lightDark(
-        neutralPalettes.blue.light[50],
-        neutralPalettes.blue.dark[70],
+        '#0074e2',
+        '#6d9cfe',
       ),
       '--astryx-theme-neutral-color-status-fill-success': lightDark(
         neutralPalettes.green.light[45],
@@ -402,10 +399,7 @@ describe('neutral semantic status roles', () => {
 
   it('uses public semantic roles on plain and pale surfaces while preserving fill roles', () => {
     expect(neutralTheme.tokens).toMatchObject({
-      '--color-info': lightDark(
-        neutralPalettes.blue.light[50],
-        neutralPalettes.blue.dark[70],
-      ),
+      '--color-info': 'var(--astryx-theme-neutral-color-status-fill-accent)',
       '--color-success': lightDark(
         neutralPalettes.green.light[45],
         neutralPalettes.green.dark[65],
@@ -478,11 +472,11 @@ describe('neutral Banner tint mappings', () => {
   it('uses light overlays in light mode and dark overlays in dark mode', () => {
     expect(neutralTheme.localTokens).toMatchObject({
       '--astryx-theme-neutral-color-on-tint-neutral':
-        'light-dark(#ffffff4D, #0000004D)',
+        'light-dark(#fafafa4D, #0a0a0a4D)',
       '--astryx-theme-neutral-color-on-tint-overlay-hover':
-        'light-dark(#ffffff1A, #0000001A)',
+        'light-dark(#fafafa1A, #0a0a0a1A)',
       '--astryx-theme-neutral-color-on-tint-overlay-pressed':
-        'light-dark(#ffffff33, #00000033)',
+        'light-dark(#fafafa33, #0a0a0a33)',
     });
     expect(neutralTheme.components?.banner?.base).toMatchObject({
       '--color-neutral': 'var(--astryx-theme-neutral-color-on-tint-neutral)',

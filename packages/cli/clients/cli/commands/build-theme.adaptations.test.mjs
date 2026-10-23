@@ -95,21 +95,40 @@ describe('theme build adaptations', () => {
     );
   });
 
-  it('emits source-derived status aliases in built CSS', async () => {
+  it('emits scoped status aliases in built CSS and preserves child extension parity', async () => {
+    const {defineTheme, generateThemeCSS} =
+      await import('@astryxdesign/core/theme');
     const project = path.join(tmpDir, 'project');
     const themesDir = path.join(project, 'themes');
-    const themeFile = writeTheme(
-      themesDir,
-      'status-aliases',
-      `{
-        name: 'status-aliases',
+    const input = {
+      name: 'status-aliases',
+      tokens: {
+        '--color-accent': '#225bff',
+        '--color-on-accent': '#ffffff',
+        '--color-text-blue': '#203a6c',
+      },
+      adaptations: {
+        rules: [
+          {
+            when: {contrast: 'more'},
+            value: {
+              tokens: {'--color-status-foreground-success': '#123456'},
+            },
+          },
+          {
+            when: {pointer: 'coarse'},
+            value: {tokens: {'--color-text-green': '#abcdef'}},
+          },
+        ],
+      },
+      onDark: {
         tokens: {
-          '--color-accent': '#225bff',
-          '--color-on-accent': '#ffffff',
-          '--color-text-blue': '#203a6c',
+          '--color-accent': '#fefefe',
+          '--color-on-accent': '#101010',
         },
-      }`,
-    );
+      },
+    };
+    const themeFile = writeTheme(themesDir, input.name, JSON.stringify(input));
 
     const result = await build(project, themeFile);
     expect(result.code, result.stderr).toBe(0);
@@ -118,12 +137,33 @@ describe('theme build adaptations', () => {
       path.join(themesDir, 'status-aliases.css'),
       'utf8',
     );
-    expect(css).toContain('--color-info: var(--color-accent);');
+    const infoAlias = '--color-info: var(--color-accent);';
+    const adaptationAlias =
+      '--color-status-foreground-success: var(--color-text-green);';
+    const authoredRole = '--color-status-foreground-success: #123456;';
     expect(css).toContain('--color-on-info: var(--color-on-accent);');
     expect(css).toContain(
       '--color-status-foreground-info: var(--color-text-blue);',
     );
     expect(css).toContain('--color-on-info-muted: var(--color-text-blue);');
+    expect(css.split(infoAlias).length - 1).toBeGreaterThanOrEqual(2);
+    expect(css).toContain(adaptationAlias);
+    expect(css.split(authoredRole).length - 1).toBeGreaterThanOrEqual(2);
+    expect(css.lastIndexOf(authoredRole)).toBeGreaterThan(
+      css.lastIndexOf(adaptationAlias),
+    );
+
+    const {statusAliasesTheme: builtTheme} = await import(
+      pathToFileURL(path.join(themesDir, 'status-aliases.js')).href
+    );
+    const source = defineTheme(input);
+    const childInput = {
+      name: 'status-alias-child',
+      tokens: {'--color-text-blue': '#345678'},
+    };
+    const fromSource = defineTheme({...childInput, extends: source});
+    const fromBuilt = defineTheme({...childInput, extends: builtTheme});
+    expect(generateThemeCSS(fromBuilt)).toEqual(generateThemeCSS(fromSource));
   });
 
   it.each([

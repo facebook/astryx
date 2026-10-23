@@ -54,18 +54,18 @@ vocabulary remains owned by `architecture:theme-tokens`.
 Neutral emits theme-local status roles as compatibility contracts for Neutral
 extensions. They use named palette stops and are not portable Core tokens:
 
-| Exact name                                                 | Neutral-only meaning                         | Value                                                                     |
-| ---------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------- |
-| `--astryx-theme-neutral-color-status-fill-accent`          | Filled accent status                         | `[blue.light[50], blue.dark[70]]`                                         |
-| `--astryx-theme-neutral-color-status-fill-success`         | Filled success status                        | `[green.light[45], green.dark[65]]`                                       |
-| `--astryx-theme-neutral-color-status-fill-warning`         | Filled warning status                        | `[yellow.light[85], yellow.dark[85]]`                                     |
-| `--astryx-theme-neutral-color-status-fill-error`           | Filled error status                          | `[red.light[50], red.dark[65]]`                                           |
-| `--astryx-theme-neutral-color-status-muted-accent`         | Pale accent status surface                   | `[blue.light[85], withAlpha(blue.dark[75], '3D')]`                        |
-| `--astryx-theme-neutral-color-on-tint-neutral`             | Neutral content on a semantic tinted surface | `[withAlpha(neutral.light[100], '4D'), withAlpha(neutral.dark[0], '4D')]` |
-| `--astryx-theme-neutral-color-on-tint-overlay-hover`       | Hover overlay on a semantic tinted surface   | `[withAlpha(neutral.light[100], '1A'), withAlpha(neutral.dark[0], '1A')]` |
-| `--astryx-theme-neutral-color-on-tint-overlay-pressed`     | Pressed overlay on a semantic tinted surface | `[withAlpha(neutral.light[100], '33'), withAlpha(neutral.dark[0], '33')]` |
-| `--astryx-theme-neutral-color-destructive-overlay-hover`   | Hover overlay on a pale destructive Button   | `[withAlpha(red.light[70], '0D'), withAlpha(red.dark[65], '0D')]`         |
-| `--astryx-theme-neutral-color-destructive-overlay-pressed` | Pressed overlay on a pale destructive Button | `[withAlpha(red.light[70], '1A'), withAlpha(red.dark[65], '1A')]`         |
+| Exact name                                                 | Neutral-only meaning                         | Value                                                             |
+| ---------------------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------------- |
+| `--astryx-theme-neutral-color-status-fill-accent`          | Filled accent status                         | `['#0074e2', '#6d9cfe']`                                          |
+| `--astryx-theme-neutral-color-status-fill-success`         | Filled success status                        | `[green.light[45], green.dark[65]]`                               |
+| `--astryx-theme-neutral-color-status-fill-warning`         | Filled warning status                        | `[yellow.light[85], yellow.dark[85]]`                             |
+| `--astryx-theme-neutral-color-status-fill-error`           | Filled error status                          | `[red.light[50], red.dark[65]]`                                   |
+| `--astryx-theme-neutral-color-status-muted-accent`         | Pale accent status surface                   | `[blue.light[85], withAlpha(blue.dark[75], '3D')]`                |
+| `--astryx-theme-neutral-color-on-tint-neutral`             | Neutral content on a semantic tinted surface | `['#fafafa4D', '#0a0a0a4D']`                                      |
+| `--astryx-theme-neutral-color-on-tint-overlay-hover`       | Hover overlay on a semantic tinted surface   | `['#fafafa1A', '#0a0a0a1A']`                                      |
+| `--astryx-theme-neutral-color-on-tint-overlay-pressed`     | Pressed overlay on a semantic tinted surface | `['#fafafa33', '#0a0a0a33']`                                      |
+| `--astryx-theme-neutral-color-destructive-overlay-hover`   | Hover overlay on a pale destructive Button   | `[withAlpha(red.light[70], '0D'), withAlpha(red.dark[65], '0D')]` |
+| `--astryx-theme-neutral-color-destructive-overlay-pressed` | Pressed overlay on a pale destructive Button | `[withAlpha(red.light[70], '1A'), withAlpha(red.dark[65], '1A')]` |
 
 The exact names and meanings are public Neutral-family compatibility contracts.
 Core components consume the portable `--color-*` semantic roles instead; no
@@ -163,7 +163,7 @@ roles, and generated selected-stop contract.
 Neutral owns theme-local definitions in this colocated theme spec.
 `--astryx-theme-neutral-color-status-fill-accent` represents filled accent
 status under the stable `name: 'neutral'`. Its exact name, meaning, and
-`[blue.light[50], blue.dark[70]]` value are a public Neutral-family
+`['#0074e2', '#6d9cfe']` value are a public Neutral-family
 compatibility contract, despite not being portable across themes or consumed by
 Core.
 
@@ -224,10 +224,9 @@ rather than duplicating its hex value.
 The mapping is role-aware rather than a blind nearest-color conversion. Very
 dark foregrounds preserve their darker role, ordinary backgrounds do not become
 true black automatically, and a reviewed token may use the closer value from
-the companion ramp. The Banner-local on-tint neutral, hover, and pressed layers
-are reviewed exceptions that intentionally derive alpha from the neutral
-endpoints: light stop 100 and dark stop 0. Intentional values without an approved
-palette match remain explicit theme-local values.
+the companion ramp. Intentional values without an approved palette match remain
+explicit theme-local values, including the released filled-accent and Banner
+on-tint roles.
 
 ### DEC-5 — Generate the selected runtime references from their owned sources
 

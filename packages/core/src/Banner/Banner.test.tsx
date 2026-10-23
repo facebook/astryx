@@ -131,35 +131,41 @@ describe('Banner', () => {
     );
   });
 
-  it('scopes status text context to built-in controls, not their tooltips', () => {
-    render(
-      <Banner
-        status="warning"
-        title="Warning"
-        collapsible={{defaultIsOpen: true}}
-        isDismissable>
-        <div>Details</div>
-      </Banner>,
-    );
+  it.each([
+    ['info', 'var(--color-on-info-muted)'],
+    ['success', 'var(--color-on-success-muted)'],
+    ['warning', 'var(--color-on-warning-muted)'],
+    ['error', 'var(--color-on-error-muted)'],
+  ] as const)(
+    'routes %s built-in controls to the matching on-muted role without recoloring tooltips',
+    (status, expectedRole) => {
+      render(
+        <Banner
+          status={status}
+          title={`${status} banner`}
+          collapsible={{defaultIsOpen: true}}
+          isDismissable>
+          <div>Details</div>
+        </Banner>,
+      );
 
-    const collapse = screen.getByRole('button', {name: 'Collapse'});
-    const dismiss = screen.getByRole('button', {name: 'Dismiss Warning'});
-    const collapseTooltip = document.getElementById(
-      collapse.getAttribute('aria-describedby')!,
-    );
-    const dismissTooltip = document.getElementById(
-      dismiss.getAttribute('aria-describedby')!,
-    );
-
-    expect(collapse.className).toContain('Banner__statusControlStyles.warning');
-    expect(dismiss.className).toContain('Banner__statusControlStyles.warning');
-    expect(collapseTooltip).not.toHaveClass(
-      'Banner__statusControlStyles.warning',
-    );
-    expect(dismissTooltip).not.toHaveClass(
-      'Banner__statusControlStyles.warning',
-    );
-  });
+      for (const button of [
+        screen.getByRole('button', {name: 'Collapse'}),
+        screen.getByRole('button', {name: `Dismiss ${status} banner`}),
+      ]) {
+        expect(
+          getComputedStyle(button).getPropertyValue('--color-text-primary'),
+        ).toBe(expectedRole);
+        const tooltip = document.getElementById(
+          button.getAttribute('aria-describedby')!,
+        );
+        expect(tooltip).not.toBeNull();
+        expect(
+          getComputedStyle(tooltip!).getPropertyValue('--color-text-primary'),
+        ).not.toBe(expectedRole);
+      }
+    },
+  );
 
   it('renders dismiss button when isDismissable', () => {
     render(<Banner status="info" title="Dismissable" isDismissable />);
@@ -222,10 +228,10 @@ describe('Banner', () => {
     expect(screen.queryByRole('button', {name: /^Dismiss/})).toBeNull();
   });
 
-  it('renders endContent', () => {
+  it('leaves consumer endContent outside the built-in status control context', () => {
     render(
       <Banner
-        status="info"
+        status="success"
         title="With Action"
         endContent={
           <button type="button" data-testid="end-btn">
@@ -234,7 +240,11 @@ describe('Banner', () => {
         }
       />,
     );
-    expect(screen.getByTestId('end-btn')).toBeInTheDocument();
+    const action = screen.getByTestId('end-btn');
+    expect(action).toBeInTheDocument();
+    expect(action.className).not.toContain(
+      'Banner__statusControlStyles.success',
+    );
   });
 
   it('renders card container by default', () => {

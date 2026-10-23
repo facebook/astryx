@@ -33,10 +33,7 @@ const neutralSyntax = defineSyntaxTheme({
 });
 
 const neutralLocalTokens: Record<string, TokenValue> = {
-  '--astryx-theme-neutral-color-status-fill-accent': [
-    blue.light[50],
-    blue.dark[70],
-  ],
+  '--astryx-theme-neutral-color-status-fill-accent': ['#0074e2', '#6d9cfe'],
   '--astryx-theme-neutral-color-status-fill-success': [
     green.light[45],
     green.dark[65],
@@ -53,17 +50,14 @@ const neutralLocalTokens: Record<string, TokenValue> = {
     blue.light[85],
     withAlpha(blue.dark[75], '3D'),
   ],
-  '--astryx-theme-neutral-color-on-tint-neutral': [
-    withAlpha(neutral.light[100], '4D'),
-    withAlpha(neutral.dark[0], '4D'),
-  ],
+  '--astryx-theme-neutral-color-on-tint-neutral': ['#fafafa4D', '#0a0a0a4D'],
   '--astryx-theme-neutral-color-on-tint-overlay-hover': [
-    withAlpha(neutral.light[100], '1A'),
-    withAlpha(neutral.dark[0], '1A'),
+    '#fafafa1A',
+    '#0a0a0a1A',
   ],
   '--astryx-theme-neutral-color-on-tint-overlay-pressed': [
-    withAlpha(neutral.light[100], '33'),
-    withAlpha(neutral.dark[0], '33'),
+    '#fafafa33',
+    '#0a0a0a33',
   ],
   '--astryx-theme-neutral-color-destructive-overlay-hover': [
     withAlpha(red.light[70], '0D'),
@@ -162,7 +156,7 @@ export const neutralTheme = defineTheme({
     '--color-on-error': [neutral.light[100], neutral.dark[5]],
     '--color-on-warning': neutral.light[5],
 
-    '--color-info': [blue.light[50], blue.dark[70]],
+    '--color-info': 'var(--astryx-theme-neutral-color-status-fill-accent)',
     '--color-info-muted': [blue.light[85], withAlpha(blue.dark[75], '3D')],
     '--color-on-info': [neutral.light[100], neutral.dark[5]],
 
