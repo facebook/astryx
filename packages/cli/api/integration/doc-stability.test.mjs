@@ -101,11 +101,14 @@ describe('olderCliNotes', () => {
     expect(JSON.stringify(data.issues)).not.toContain('stability');
   });
 
-  it('never fails integration check --strict', async () => {
+  it('never fails integration check --strict, with or without --next', async () => {
     writePackage(
       {peerDependencies: {'@astryxdesign/cli': '>=0.6.4'}},
       ", stability: 'experimental'",
     );
+    // Not a `next` finding either: no minor release turns it into a warning.
+    const ahead = await integrationCheck({cwd: dir, strict: true, next: true});
+    expect(JSON.stringify(ahead.data.failures)).not.toContain('stability');
     const strict = await integrationCheck({cwd: dir, strict: true});
     expect(JSON.stringify(strict.data.failures)).not.toContain('stability');
     const validate = strict.data.checks.find(each => each.check === 'validate');
@@ -200,5 +203,14 @@ describe('template icons a template never imports', () => {
     expect(JSON.stringify(data.issues)).not.toContain('XIcon');
     const strict = await integrationCheck({cwd: dir, strict: true});
     expect(JSON.stringify(strict.data.failures)).not.toContain('XIcon');
+    // A note that is never counted: no `next`, so --next does not count it.
+    const ahead = await integrationCheck({cwd: dir, strict: true, next: true});
+    expect(JSON.stringify(ahead.data.failures)).not.toContain('XIcon');
+    const validate = ahead.data.checks.find(each => each.check === 'validate');
+    expect(
+      /** @type {any} */ (validate).response.data.notes.find(
+        (/** @type {any} */ note) => note.code === 'template_icon_not_imported',
+      ),
+    ).not.toHaveProperty('next');
   }, 60_000);
 });

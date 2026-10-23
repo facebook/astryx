@@ -200,6 +200,7 @@
     "type": "docs.node",
     "children": [
       "authoring/building-blocks/docs/add-a-topic",
+      "authoring/building-blocks/docs/doc-syntax",
       "authoring/building-blocks/docs/sections-and-placement",
       "authoring/building-blocks/docs/links",
       "authoring/building-blocks/docs/extend-or-replace",
@@ -228,6 +229,16 @@
       "check-each-doc-against-its-type",
       "check-read-size",
       "check-the-cli-peer"
+    ],
+    "mentions": []
+  },
+  "authoring/building-blocks/docs/doc-syntax": {
+    "type": "docs.detail",
+    "sections": [
+      "the-tokens",
+      "package-manager-steps",
+      "one-package-manager",
+      "what-doctor-checks"
     ],
     "mentions": []
   },

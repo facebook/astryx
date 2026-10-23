@@ -152,7 +152,7 @@
         "example-apps",
         "explore-the-cli"
       ],
-      "skeleton": "5188e6dee467ea12cc73e3bcfc47e5ed02dcc7d77ebc8327dfc5706e36e8c682",
+      "skeleton": "6564c786e0e708b5ffb9a1811db06328dc9eb1f833c9722f7a4c417c46cc6eee",
       "mentions": []
     },
     "icons": {
@@ -244,7 +244,7 @@
         "what-each-file-does",
         "further-reading"
       ],
-      "skeleton": "3bc8737677367ec17f4d8acbb551c32aee57e4cdac111e100e7e5713be617bec",
+      "skeleton": "2bb79103d25e7b1f1a0cb160776a00d871056f95a6b8a728bb5c4c487475a25f",
       "mentions": []
     },
     "theme": {
@@ -268,7 +268,7 @@
         "nesting-themes",
         "runtime-vs-built-themes"
       ],
-      "skeleton": "18d1d237c612c74a060d8a54cadec27f4b89ec4a72b8310829d5d2087421ff3b",
+      "skeleton": "eeb293ed4c43f4ff72bb3d44ae5a36e3fdae16d01717f8db75370add6dc928d4",
       "mentions": []
     },
     "use-integrations": {
@@ -278,7 +278,7 @@
         "use-what-it-adds",
         "check-for-problems"
       ],
-      "skeleton": "3a4c99da946a7f9893d60a1917cb634841dc414a2be0d6ecb78edb7b2420edb2",
+      "skeleton": "906555b962d65e80281e888eabf678729956d8c13b8bc65f6fb892e6917d66f0",
       "mentions": []
     },
     "working-with-ai": {

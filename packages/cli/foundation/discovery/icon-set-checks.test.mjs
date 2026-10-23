@@ -796,6 +796,12 @@ describe('integration check over an icon set', () => {
     const listed = /** @type {any} */ (validate).response.data.iconSets;
     expect(listed[0].unmappedDefinitions.length).toBeGreaterThan(0);
     expect(JSON.stringify(strict.data)).not.toContain('"severity":"info"');
+    // `--next` counts only notes marked `next`; the icon-set lists are not
+    // notes, so it fails no more than `--strict` does.
+    const ahead = await integrationCheck({cwd: dir, strict: true, next: true});
+    expect(
+      ahead.data.failures.filter(each => each.code !== 'doc_types_skipped'),
+    ).toEqual([]);
   }, 60_000);
 });
 

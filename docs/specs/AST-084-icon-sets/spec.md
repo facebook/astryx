@@ -203,7 +203,8 @@ icon, and the CLI verifies it, writes the files, and checks the set.
   icon keeps its import, and its library stays a needed dependency. Printed
   source keeps the report on stderr. Without the opt-in there is no `icons`
   field and no rewrite. `integration check` notes each key a template's source
-  never imports (`template_icon_not_imported`), never counted or failing.
+  never imports (`template_icon_not_imported`), never counted or failing,
+  under `--strict` or `--next`.
 - **FR11 — Search stays stable.** `astryx search` has no icon domain and no
   `--type icon`, and returns no experimental doc, with or without the opt-in.
   Icons join it only at promotion.
@@ -267,7 +268,8 @@ icon, and the CLI verifies it, writes the files, and checks the set.
   under `--strict`. Re-exports are followed through relative files and
   installed packages for these checks only, and an export fails only when the
   reader proves it absent. Neither of these is an issue, never counted and
-  never failing, even under `--strict`, in the validate result's additive
+  never failing, even under `--strict` or `--next`, in the validate result's
+  additive
   field `iconSets` (each `{set, unmappedDefinitions, suggestions,
 unchecked}`): the optional Astryx definitions a set leaves unmapped, printed
   as "Unmapped icon definitions (optional)"; and what a check cannot judge,
@@ -451,7 +453,7 @@ errors list the six kinds, and the kind and its fields are unknown under
 An author whose peer range admits an older CLI needs to know what that CLI
 drops, but the package is valid for the CLI that checks it. So validate adds
 the field `olderCliNotes`: it is never counted in a summary and never fails a
-check, with or without `--strict`.
+check, with or without `--strict` or `--next`.
 
 ## Open questions
 

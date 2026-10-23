@@ -826,6 +826,11 @@
                 "flag": "--strict",
                 "description": "<text>",
                 "type": "boolean"
+              },
+              {
+                "flag": "--next",
+                "description": "<text>",
+                "type": "boolean"
               }
             ],
             "json": true,
@@ -833,6 +838,7 @@
               "<text>"
             ],
             "examples": [
+              "<text>",
               "<text>",
               "<text>",
               "<text>",
