@@ -171,7 +171,7 @@ describe('upgrade protected-file contract', () => {
     );
   });
 
-  it('preserves protected-file facts when regeneration fails', () => {
+  it('preserves protected-file facts when regeneration fails, reported as the failure it is', () => {
     seed();
     write(
       'astryx.config.mjs',
@@ -185,7 +185,7 @@ describe('upgrade protected-file contract', () => {
       type: 'upgrade.run',
       data: {
         complete: false,
-        errorCode: 'ERR_CODEMOD_PROTECTED',
+        errorCode: 'ERR_CODEMOD_FAILED',
         protectedFiles: [
           expect.objectContaining({file: 'generated/panel.tsx'}),
         ],
@@ -197,6 +197,33 @@ describe('upgrade protected-file contract', () => {
         ],
       },
     });
+  });
+
+  it('keeps the receipt when a hook leaves a protection declaration unreadable', () => {
+    seed();
+    write(
+      'astryx.config.mjs',
+      `export default {hooks: {postCodemod: [{name: 'regenerate', buildCommand: () => ({command: process.execPath, args: ['-e', ${JSON.stringify("require('node:fs').writeFileSync('.hgignore', 'syntax: regexp\\n[bad\\n')")}]})}]}};\n`,
+    );
+
+    const applied = run([...ARGS, '--apply']);
+
+    expect(applied.status).toBe(1);
+    expect(applied.envelope).toMatchObject({
+      type: 'upgrade.run',
+      data: {
+        complete: false,
+        errorCode: 'ERR_CODEMOD_PROTECTION_SOURCE',
+        modifiedFiles: ['src/owned.tsx'],
+        protectedFiles: [
+          expect.objectContaining({file: 'generated/panel.tsx'}),
+        ],
+        errors: [expect.objectContaining({codemod: 'file-protection'})],
+      },
+    });
+    expect(fs.readFileSync(path.join(root, 'src/owned.tsx'), 'utf8')).toContain(
+      'minSize: 200',
+    );
   });
 
   it('runs declared regeneration and clears a generated-file block after reevaluation', () => {

@@ -131,14 +131,14 @@
  * @property {AgentDocsSummary} data.agentDocs
  * @property {boolean} data.sourcePathFound Whether the resolved source directory (`path`, default `./src`) exists. False means no source file was read, so a zero `filesChanged` says nothing about the project being migrated.
  * @property {RegistryCompositionSummary} [data.registryCompositions]
- * @property {boolean} [data.complete] False when protected required changes remain.
- * @property {'ERR_CODEMOD_PROTECTED'} [data.errorCode] Stable incomplete-result code when complete is false.
+ * @property {boolean} [data.complete] False when the run did not finish: a codemod or post-codemod hook failed, protected required changes remain, or the run stopped after codemods had written files. Files listed in `modifiedFiles` stay changed either way.
+ * @property {string} [data.errorCode] Stable code (error-codes.mjs) of an incomplete result, present only when `complete` is false: `ERR_CODEMOD_FAILED` when any entry in `errors` remains, a failure outranking a protected file; otherwise `ERR_CODEMOD_PROTECTED` when protected required changes remain; otherwise the code of the error that stopped the run after codemods wrote files, such as `ERR_INVALID_ARGUMENT` for an astryx.config that fails validation.
  * @property {number} [data.filesChanged] Distinct files changed across core + integration codemods (apply mode). One file that four codemods each changed counts once.
  * @property {string[]} [data.modifiedFiles] Files changed or previewed, relative to the folder the command ran in.
  * @property {ProtectedCodemodFile[]} [data.protectedFiles] Protected files that still require a codemod change after regeneration.
  * @property {Array<{file: string, location?: string, reason: string}>} [data.declinedCandidates] Candidates left unchanged because proof was insufficient. Each `file` is relative to the folder the command ran in.
  * @property {number} [data.transformsApplied] Total codemod changes. A code or config codemod counts once for each file it changed, so one file changed by four of them counts four times; a project codemod counts once, however many files it writes.
- * @property {Array<{file: string, codemod: string, error: string}>} [data.errors] Per-codemod errors, when any codemod failed. Each `file` is relative to the folder the command ran in.
+ * @property {Array<{file: string, codemod: string, error: string}>} [data.errors] Per-codemod errors, when any codemod failed, plus a post-codemod hook failure (`codemod: 'post-codemod-hook'`) or the error that stopped the run after codemods wrote files. Each `file` is relative to the folder the command ran in.
  * @property {CliBehindCore} [data.cliBehindCore] Present only when the installed Core is newer than this CLI: codemods for the releases after `cliBehindCore.cliVersion` did not run.
  */
 
