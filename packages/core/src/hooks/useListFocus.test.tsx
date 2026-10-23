@@ -11,8 +11,9 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import type {KeyboardEvent as ReactKeyboardEvent} from 'react';
+import type {KeyboardEvent as ReactKeyboardEvent, ReactNode} from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {useListFocus} from './useListFocus';
 
 const NO_DISABLED: string[] = [];
@@ -172,6 +173,32 @@ describe('useListFocus roving tabindex (hasRovingTabIndex)', () => {
     expect(screen.getByTestId('A')).toHaveAttribute('tabindex', '-1');
   });
 
+  it('moves the tab stop on programmatic focus', () => {
+    render(<RovingToolbar />);
+    const first = screen.getByTestId('A');
+    const last = screen.getByTestId('C');
+    expect(first).toHaveAttribute('tabindex', '0');
+
+    last.focus();
+
+    expect(last).toHaveFocus();
+    expect(last).toHaveAttribute('tabindex', '0');
+    expect(first).toHaveAttribute('tabindex', '-1');
+    expect(screen.getByTestId('B')).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('moves the tab stop on pointer focus without a selection handler', async () => {
+    const user = userEvent.setup();
+    render(<RovingToolbar />);
+
+    await user.click(screen.getByTestId('B'));
+
+    expect(screen.getByTestId('B')).toHaveFocus();
+    expect(screen.getByTestId('B')).toHaveAttribute('tabindex', '0');
+    expect(screen.getByTestId('A')).toHaveAttribute('tabindex', '-1');
+    expect(screen.getByTestId('C')).toHaveAttribute('tabindex', '-1');
+  });
+
   it('ArrowRight skips a disabled item', () => {
     render(<RovingToolbar disabledLabels={['B']} />);
     const toolbar = screen.getByRole('toolbar');
@@ -232,6 +259,106 @@ describe('useListFocus roving tabindex (hasRovingTabIndex)', () => {
     // No tabindex stamped — the buttons keep their intrinsic tab order.
     expect(screen.getByTestId('A')).not.toHaveAttribute('tabindex');
     expect(screen.getByTestId('B')).not.toHaveAttribute('tabindex');
+  });
+});
+
+function RovingMenu({children}: {children: ReactNode}) {
+  const {listRef, handleFocus} = useListFocus<HTMLDivElement>({
+    hasRovingTabIndex: true,
+    boundarySelector: '[role="menu"]',
+  });
+  return (
+    <div ref={listRef} role="menu" onFocus={handleFocus} tabIndex={-1}>
+      {children}
+    </div>
+  );
+}
+
+describe('useListFocus focus ownership', () => {
+  it('promotes the containing item without moving focus out of its descendant', () => {
+    render(
+      <RovingMenu>
+        <button type="button" role="menuitem">
+          First
+        </button>
+        <div role="menuitem" tabIndex={-1} data-testid="second">
+          <input aria-label="Editor" />
+        </div>
+      </RovingMenu>,
+    );
+
+    const editor = screen.getByRole('textbox', {name: 'Editor'});
+    editor.focus();
+    expect(editor).toHaveFocus();
+    expect(screen.getByTestId('second').getAttribute('tabindex')).toBe('0');
+    expect(
+      screen.getByRole('menuitem', {name: 'First'}).getAttribute('tabindex'),
+    ).toBe('-1');
+  });
+
+  it('ignores focus on non-items, the container, and disabled items', () => {
+    render(
+      <RovingMenu>
+        <button type="button" role="menuitem">
+          First
+        </button>
+        <button type="button" role="menuitem" aria-disabled="true">
+          Disabled
+        </button>
+        <input aria-label="Unmanaged" />
+      </RovingMenu>,
+    );
+    const first = screen.getByRole('menuitem', {name: 'First'});
+    const disabled = screen.getByRole('menuitem', {name: 'Disabled'});
+    const unmanaged = screen.getByRole('textbox', {name: 'Unmanaged'});
+    const menu = screen.getByRole('menu');
+
+    for (const target of [disabled, unmanaged, menu]) {
+      target.focus();
+      expect(target).toHaveFocus();
+      expect(first).toHaveAttribute('tabindex', '0');
+      expect(disabled).toHaveAttribute('tabindex', '-1');
+      expect(unmanaged).not.toHaveAttribute('tabindex');
+      expect(menu).toHaveAttribute('tabindex', '-1');
+    }
+  });
+
+  it('keeps an outer tab stop when focus enters a nested list inside another item', () => {
+    render(
+      <RovingMenu>
+        <button type="button" role="menuitem">
+          Outer first
+        </button>
+        <div role="menuitem" tabIndex={-1} data-testid="outer-second">
+          <RovingMenu>
+            <button type="button" role="menuitem">
+              Inner first
+            </button>
+            <button type="button" role="menuitem">
+              Inner second
+            </button>
+          </RovingMenu>
+        </div>
+      </RovingMenu>,
+    );
+    const innerSecond = screen.getByRole('menuitem', {name: 'Inner second'});
+
+    innerSecond.focus();
+
+    expect(innerSecond).toHaveFocus();
+    expect(innerSecond).toHaveAttribute('tabindex', '0');
+    expect(screen.getByRole('menuitem', {name: 'Inner first'})).toHaveAttribute(
+      'tabindex',
+      '-1',
+    );
+    expect(screen.getByRole('menuitem', {name: 'Outer first'})).toHaveAttribute(
+      'tabindex',
+      '0',
+    );
+    expect(screen.getByTestId('outer-second')).toHaveAttribute(
+      'tabindex',
+      '-1',
+    );
   });
 });
 

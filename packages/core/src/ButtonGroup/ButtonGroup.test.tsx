@@ -1019,7 +1019,7 @@ describe('ButtonGroup', () => {
         hidden: true,
       });
       expect(item.getAttribute('tabindex')).not.toBe('0');
-      expect(tabIndexOf('Allow once')).toBe('0');
+      expect(trigger.getAttribute('tabindex')).toBe('0');
     });
   });
 });
