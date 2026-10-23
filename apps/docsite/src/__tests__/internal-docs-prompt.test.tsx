@@ -394,6 +394,7 @@ describe('InternalDocsPrompt', () => {
     vi.stubEnv('NEXT_PUBLIC_DOCS_TARGET', 'canary');
     await loadPrompt();
     await mount();
+    expect(prompt()?.textContent).toContain("You're viewing Canary docs");
     expect(prompt()?.textContent).toContain('unreleased components and props');
     expect(prompt()?.textContent).not.toMatch(
       /Meta internal docs|Meta-specific components/,
@@ -436,7 +437,7 @@ describe('InternalDocsPrompt', () => {
     },
   );
 
-  it('adds the internal CTA to the existing canary notice after a valid probe', async () => {
+  it('switches the Canary notice to the internal banner’s Canary variant after a valid probe', async () => {
     vi.stubEnv('NEXT_PUBLIC_DOCS_TARGET', 'canary');
     await loadPrompt();
     await mount();
@@ -444,6 +445,9 @@ describe('InternalDocsPrompt', () => {
       /Meta internal docs|Meta-specific components/,
     );
     showPrompt();
+    expect(prompt()?.textContent).toContain('Meta internal docs are available');
+    expect(prompt()?.textContent).not.toContain("You're viewing Canary docs");
+    expect(prompt()?.textContent).toContain('unreleased components and props');
     expect(prompt()?.textContent).toContain(
       'Meta-specific components and guidance',
     );
@@ -491,6 +495,7 @@ describe('InternalDocsPrompt', () => {
     await mount();
     showPrompt();
     expect(prompt()?.textContent).toContain('Meta internal docs are available');
+    expect(prompt()?.textContent).not.toContain('Canary');
     expect(screen.queryByRole('link', {name: 'View production'})).toBeNull();
     expect(screen.getAllByRole('link')).toHaveLength(1);
   });

@@ -117,6 +117,7 @@ for (const {name, origin} of deployments) {
             'href',
             'https://astryx.atmeta.com/docs/getting-started?source=test',
           );
+          await expect(notice).toContainText("You're viewing Canary docs");
           await expect(notice).toContainText('unreleased components and props');
           await expect(notice).not.toContainText(
             /Meta internal docs|Meta-specific components/,
@@ -129,6 +130,13 @@ for (const {name, origin} of deployments) {
         ).toHaveAttribute('sandbox', 'allow-scripts allow-same-origin');
         probe.allowReply();
         await expect(notice).toHaveCount(1);
+        await expect(notice).toContainText('Meta internal docs are available');
+        await expect(notice).not.toContainText("You're viewing Canary docs");
+        if (isCanary) {
+          await expect(notice).toContainText('unreleased components and props');
+        } else {
+          await expect(notice).not.toContainText('Canary');
+        }
         await expect(notice).toContainText(
           'Meta-specific components and guidance',
         );

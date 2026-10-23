@@ -4,7 +4,7 @@
 
 /**
  * @input Build target, exact-origin reachability, and the current docs view
- * @output A dismissible info banner whose internal copy and CTA require reachability
+ * @output The internal-docs banner after reachability, otherwise the public Canary banner
  * @position Root-owned detection; banner content lives in the page shell
  */
 
@@ -97,21 +97,21 @@ function DocsInfoBanner({
       isDismissable
       dismissLabel="Dismiss documentation notice for this page view"
       title={
-        isCanary
-          ? "You're viewing Canary docs"
-          : 'Meta internal docs are available'
+        internalHref
+          ? 'Meta internal docs are available'
+          : "You're viewing Canary docs"
       }
       description={
         <>
+          {internalHref &&
+            'Meta internal docs include Meta-specific components and guidance.'}
+          {isCanary && internalHref && <br />}
           {isCanary && (
             <>
               Canary includes unreleased components and props; production docs
               match the stable packages.
             </>
           )}
-          {isCanary && internalHref && <br />}
-          {internalHref &&
-            'Meta internal docs include Meta-specific components and guidance.'}
         </>
       }
       endContent={
