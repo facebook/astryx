@@ -2,7 +2,7 @@
 
 /**
  * @file Overlay.test.tsx
- * @input Uses vitest, @testing-library/react, Overlay + useOverlay
+ * @input Uses vitest, @testing-library/react, Overlay + useOverlay + OverlayRegion
  * @output Characterization tests for the Overlay component and useOverlay hook
  * @position Testing; validates the overlay/scrim rendering + touch-toggle contract
  *
@@ -10,11 +10,12 @@
  * update tests to match new behavior
  */
 
-import {describe, it, expect, beforeEach, afterEach} from 'vitest';
-import {render, screen, renderHook} from '@testing-library/react';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import {render, screen, renderHook, fireEvent} from '@testing-library/react';
 import {createRef} from 'react';
 import {Overlay} from './Overlay';
 import {useOverlay} from './useOverlay';
+import {OverlayRegion, resolveOverlayRegionAxis} from './OverlayRegion';
 
 /** The scrim is the div carrying data-position (from themeProps). */
 function getScrim(container: HTMLElement): HTMLElement {
@@ -31,7 +32,7 @@ function getScrim(container: HTMLElement): HTMLElement {
  */
 function mockHoverNone(matches: boolean): () => void {
   const original = window.matchMedia;
-  window.matchMedia = ((query: string) => ({
+  window.matchMedia = (query: string) => ({
     matches: query.includes('hover: none') ? matches : false,
     media: query,
     onchange: null,
@@ -40,7 +41,7 @@ function mockHoverNone(matches: boolean): () => void {
     addEventListener: () => {},
     removeEventListener: () => {},
     dispatchEvent: () => false,
-  }));
+  });
   return () => {
     window.matchMedia = original;
   };
@@ -351,6 +352,271 @@ describe('useOverlay', () => {
       const first = result.current.renderOverlay;
       rerender({showOn: 'always'});
       expect(result.current.renderOverlay).not.toBe(first);
+    });
+  });
+});
+
+/**
+ * StyleX emits OverlayRegion's open placement as inline custom properties
+ * (`--x-left`, `--x-width`, ...) consumed by its atomic classes; jsdom does
+ * not resolve them, so placement is read from those properties. Preset and
+ * open geometry in a real browser is asserted in the Overlay region story's
+ * play function.
+ */
+function placementOf(region: HTMLElement) {
+  const read = (name: string) => region.style.getPropertyValue(`--x-${name}`);
+  return {
+    left: read('left'),
+    top: read('top'),
+    width: read('width'),
+    height: read('height'),
+  };
+}
+
+function regionOf(text: string): HTMLElement {
+  const region = screen.getByText(text).parentElement;
+  if (region === null) {
+    throw new Error(`${text} has no region`);
+  }
+  return region;
+}
+
+describe('OverlayRegion', () => {
+  describe('open axis resolution (top-left corner)', () => {
+    it('starts a sized region at its coordinate when it fits', () => {
+      expect(resolveOverlayRegionAxis(0.1, 0.8)).toEqual({
+        start: 0.1,
+        size: 0.8,
+      });
+    });
+
+    it('keeps a sized region wholly inside the surface near the far edge', () => {
+      expect(resolveOverlayRegionAxis(0.9, 0.3).start).toBeCloseTo(0.7);
+      expect(resolveOverlayRegionAxis(1, 0.25).start).toBeCloseTo(0.75);
+    });
+
+    it('starts a content-sized region at its coordinate, unshifted', () => {
+      expect(resolveOverlayRegionAxis(0.98, undefined)).toEqual({
+        start: 0.98,
+        size: null,
+      });
+    });
+
+    it('clamps coordinates and sizes into 0–1', () => {
+      expect(resolveOverlayRegionAxis(1.4, undefined).start).toBe(1);
+      expect(resolveOverlayRegionAxis(-0.2, 0.3).start).toBe(0);
+      expect(resolveOverlayRegionAxis(0.5, 2)).toEqual({start: 0, size: 1});
+    });
+
+    it('treats a non-finite coordinate as 0 and a non-finite size as omitted', () => {
+      expect(resolveOverlayRegionAxis(Number.NaN, 0.2)).toEqual({
+        start: 0,
+        size: 0.2,
+      });
+      expect(resolveOverlayRegionAxis(0.4, Number.POSITIVE_INFINITY)).toEqual({
+        start: 0.4,
+        size: null,
+      });
+    });
+  });
+
+  describe('rendering', () => {
+    it('renders inside the scrim, so it inherits reveal and media theme', () => {
+      const {container} = render(
+        <Overlay
+          scrim={false}
+          content={
+            <OverlayRegion position="top-start">
+              <span>badge</span>
+            </OverlayRegion>
+          }>
+          <div />
+        </Overlay>,
+      );
+      expect(getScrim(container)).toContainElement(screen.getByText('badge'));
+    });
+
+    it('renders inside a useOverlay host scrim', () => {
+      function Host() {
+        const overlay = useOverlay({
+          scrim: false,
+          content: (
+            <OverlayRegion position={{x: 0.3, y: 0.6}}>
+              <span>tag</span>
+            </OverlayRegion>
+          ),
+        });
+        return <div {...overlay.containerProps}>{overlay.element}</div>;
+      }
+      const {container} = render(<Host />);
+      expect(getScrim(container)).toContainElement(screen.getByText('tag'));
+    });
+
+    it('places an open sized region by its top-left corner, in fractions', () => {
+      render(
+        <OverlayRegion position={{x: 0.1, y: 0.04, width: 0.8, height: 0.16}}>
+          <span>caption</span>
+        </OverlayRegion>,
+      );
+      expect(placementOf(regionOf('caption'))).toEqual({
+        left: '10%',
+        top: '4%',
+        width: '80%',
+        height: '16%',
+      });
+    });
+
+    it('clamps an open sized region inside the surface', () => {
+      render(
+        <OverlayRegion position={{x: 0.9, y: 0.95, width: 0.4, height: 0.2}}>
+          <span>caption</span>
+        </OverlayRegion>,
+      );
+      expect(placementOf(regionOf('caption'))).toMatchObject({
+        left: '60%',
+        top: '80%',
+      });
+    });
+
+    it('fits an open content-sized region to its content from its point', () => {
+      render(
+        <OverlayRegion position={{x: 0.25, y: 0.75}}>
+          <span>pin</span>
+        </OverlayRegion>,
+      );
+      expect(placementOf(regionOf('pin'))).toEqual({
+        left: '25%',
+        top: '75%',
+        width: 'max-content',
+        height: 'auto',
+      });
+    });
+
+    it('measures open placement from the left edge in right-to-left', () => {
+      render(
+        <div dir="rtl">
+          <OverlayRegion position={{x: 0.2, y: 0.5, width: 0.2}}>
+            <span>tag</span>
+          </OverlayRegion>
+        </div>,
+      );
+      expect(placementOf(regionOf('tag')).left).toBe('20%');
+    });
+
+    it('places presets without open-placement values', () => {
+      render(
+        <>
+          <OverlayRegion position="top">
+            <span>top</span>
+          </OverlayRegion>
+          <OverlayRegion position="bottom-end">
+            <span>corner</span>
+          </OverlayRegion>
+        </>,
+      );
+      expect(placementOf(regionOf('top')).left).toBe('');
+      expect(placementOf(regionOf('corner')).left).toBe('');
+      expect(regionOf('top').className).not.toBe(regionOf('corner').className);
+    });
+
+    it('is not placed inside a top or bottom strip, and warns once', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        render(
+          <Overlay
+            position="bottom"
+            content={
+              <OverlayRegion position={{x: 0.1, y: 0.1, width: 0.5}}>
+                <span>caption</span>
+              </OverlayRegion>
+            }>
+            <div />
+          </Overlay>,
+        );
+        expect(placementOf(regionOf('caption')).left).toBe('');
+        expect(warn).toHaveBeenCalledTimes(1);
+        expect(String(warn.mock.calls[0][0])).toContain('position="fill"');
+      } finally {
+        warn.mockRestore();
+      }
+    });
+
+    it('does not warn inside a fill overlay', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        render(
+          <Overlay
+            content={
+              <OverlayRegion position="center">
+                <span>caption</span>
+              </OverlayRegion>
+            }>
+            <div />
+          </Overlay>,
+        );
+        expect(warn).not.toHaveBeenCalled();
+      } finally {
+        warn.mockRestore();
+      }
+    });
+
+    it('adds no role, name, text, or focus stop', () => {
+      render(
+        <OverlayRegion position="center">
+          <span>caption</span>
+        </OverlayRegion>,
+      );
+      const region = regionOf('caption');
+      expect(region.getAttributeNames().sort()).toEqual(['class']);
+      expect(region.textContent).toBe('caption');
+    });
+
+    it('attaches no pointer or keyboard behavior of its own', () => {
+      render(
+        <OverlayRegion position={{x: 0.5, y: 0.5}}>
+          <span>caption</span>
+        </OverlayRegion>,
+      );
+      const region = regionOf('caption');
+      const before = placementOf(region);
+      fireEvent.pointerDown(region, {clientX: 10, clientY: 10});
+      fireEvent.pointerMove(region, {clientX: 80, clientY: 80});
+      fireEvent.pointerUp(region);
+      fireEvent.keyDown(region, {key: 'ArrowRight'});
+      expect(placementOf(region)).toEqual(before);
+    });
+
+    it('is hidden and inert with closed overlay content', () => {
+      const {container} = render(
+        <Overlay
+          scrim={false}
+          isOpen={false}
+          content={
+            <OverlayRegion position="center">
+              <button type="button">Move caption</button>
+            </OverlayRegion>
+          }>
+          <div />
+        </Overlay>,
+      );
+      expect(getScrim(container)).toHaveAttribute('inert');
+    });
+
+    it('forwards ref and composes caller styling inputs', () => {
+      const ref = createRef<HTMLDivElement>();
+      render(
+        <OverlayRegion
+          ref={ref}
+          position={{x: 0.5, y: 0.5}}
+          className="caller"
+          style={{outlineWidth: 2}}>
+          <span>caption</span>
+        </OverlayRegion>,
+      );
+      expect(ref.current).toBe(regionOf('caption'));
+      expect(ref.current).toHaveClass('caller');
+      expect(ref.current?.style.outlineWidth).toBe('2px');
+      expect(ref.current ? placementOf(ref.current).left : null).toBe('50%');
     });
   });
 });

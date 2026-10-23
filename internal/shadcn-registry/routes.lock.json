@@ -816,6 +816,11 @@
       "aliases": []
     },
     {
+      "name": "component-overlay-region",
+      "path": "components/overlay-region",
+      "aliases": []
+    },
+    {
       "name": "component-pagination",
       "path": "components/pagination",
       "aliases": []

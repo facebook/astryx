@@ -5,14 +5,15 @@
 /**
  * @file OverlayScrim.tsx
  * @input Scrim props (mode, position, align, visibility)
- * @output Renders the scrim div with background, media theme, transitions
+ * @output Renders the scrim div with background, media theme, transitions;
+ *   provides OverlayPositionContext for OverlayRegion
  * @position Internal rendering primitive; used by Overlay and useOverlay
  *
  * Not exported directly — consumers use Overlay (component) or
  * useOverlay (hook), both of which render this internally.
  */
 
-import type {ReactNode} from 'react';
+import {createContext, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -33,6 +34,15 @@ export type OverlayScrimMode = 'dark' | 'light' | false;
 export type OverlayPosition = 'fill' | 'bottom' | 'top';
 export type OverlayAlign = 'start' | 'center' | 'end';
 export type OverlayShowOn = 'hover' | 'always' | 'focus' | 'hover-or-focus';
+
+/**
+ * The scrim's `position`, read by OverlayRegion: regions are placed only in a
+ * fill scrim. `null` outside any Overlay.
+ */
+export const OverlayPositionContext = createContext<OverlayPosition | null>(
+  null,
+);
+OverlayPositionContext.displayName = 'OverlayPositionContext';
 
 export interface OverlayScrimProps {
   scrim: OverlayScrimMode;
@@ -289,7 +299,9 @@ export function OverlayScrim({
         ),
       )}
       inert={isControlled && !isOpen ? true : undefined}>
-      {content}
+      <OverlayPositionContext value={position}>
+        {content}
+      </OverlayPositionContext>
     </div>
   );
 }
