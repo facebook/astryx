@@ -33,7 +33,8 @@ import {
   findLocalIconSet,
   generatedModulePath,
   generatedModuleText,
-  generatedNamesOf,
+  generatedOrigins,
+  sameIconModule,
   generatedTypesPath,
   THEME_MAP_NAME,
   entryWiringNote,
@@ -659,6 +660,20 @@ async function refreshIconSet(
       adapter: Boolean(set.data.adapter),
       exclude: excluded,
     });
+    // A refresh changes only the icons the refreshed module supplies: those
+    // the generated module re-exports or adapts from it. Every other icon
+    // (your own `./` artwork, another library's) is kept as it is, with its
+    // map entries and variants.
+    const generatedBefore = generatedModulePath(set, packageDir);
+    const origins = generatedOrigins(packageDir, generatedBefore);
+    /** @param {{export: string, module?: string}} icon */
+    const suppliedHere = icon => {
+      if ((icon.module ?? set.data.module) !== set.data.module) return false;
+      const origin = origins.get(icon.export);
+      return origin != null && sameIconModule(origin.module, source.module);
+    };
+    const supplied = set.data.icons.filter(suppliedHere);
+    const others = set.data.icons.filter(icon => !suppliedHere(icon));
     // An existing icon is the same icon when the library still exports it:
     // its identity is the library export its generated module re-exports
     // (`HiSquares2X2Icon`), then its public export, then its id. Ids and
@@ -666,47 +681,58 @@ async function refreshIconSet(
     // (`squares-2-x2` is now `squares-2x2`); an icon matched this way keeps
     // its public export byte for byte, every field it had (its variants, the
     // words the author added, its module), and its map entries.
-    const generatedBefore = generatedModulePath(set, packageDir);
-    const byId = new Map(set.data.icons.map(icon => [icon.id, icon]));
-    const byExport = new Map(set.data.icons.map(icon => [icon.export, icon]));
+    const byId = new Map(supplied.map(icon => [icon.id, icon]));
+    const byExport = new Map(supplied.map(icon => [icon.export, icon]));
+    const bySource = new Map(
+      supplied.map(icon => [origins.get(icon.export)?.source, icon]),
+    );
     /** @param {{export: string, name: string, id: string}} icon */
-    const priorOf = icon => {
-      for (const name of generatedNamesOf(
-        packageDir,
-        generatedBefore,
-        source.module,
-        icon.export,
-      )) {
-        const found = byExport.get(name);
-        if (found) return found;
-      }
-      return byExport.get(icon.name) ?? byId.get(icon.id) ?? null;
-    };
+    const priorOf = icon =>
+      bySource.get(icon.export) ??
+      byExport.get(icon.name) ??
+      byId.get(icon.id) ??
+      null;
+    const otherIds = new Set(others.map(icon => icon.id));
+    const otherExports = new Set(others.map(icon => icon.export));
+    /** @type {string[]} library icons left out: an icon of yours has the id or name */
+    const shadowed = [];
     /** @type {Map<string, string>} old id → new id */
     const renames = new Map();
     /** @type {Map<string, string>} the library export → the set's export */
     const publicName = new Map();
-    const icons = found.map(icon => {
+    const fromLibrary = found.flatMap(icon => {
       const prior = priorOf(icon);
-      if (prior && prior.id !== icon.id) renames.set(prior.id, icon.id);
       const name = prior?.export ?? icon.name;
+      if (!prior && (otherIds.has(icon.id) || otherExports.has(name))) {
+        shadowed.push(icon.id);
+        return [];
+      }
+      if (prior && prior.id !== icon.id) renames.set(prior.id, icon.id);
       publicName.set(icon.export, name);
       // The words its old id gave are the old rule's, not the author's.
       const oldIdWords =
         prior && prior.id !== icon.id ? new Set(idWords(prior.id)) : new Set();
-      return {
-        ...(prior ?? {}),
-        id: icon.id,
-        export: name,
-        words: [
-          ...new Set([
-            ...idWords(icon.id),
-            ...icon.aliases,
-            ...(prior?.words ?? []).filter(word => !oldIdWords.has(word)),
-          ]),
-        ],
-      };
+      return [
+        {
+          ...(prior ?? {}),
+          id: icon.id,
+          export: name,
+          words: [
+            ...new Set([
+              ...idWords(icon.id),
+              ...icon.aliases,
+              ...(prior?.words ?? []).filter(word => !oldIdWords.has(word)),
+            ]),
+          ],
+        },
+      ];
     });
+    const icons = [...fromLibrary, ...others];
+    // The icons this module supplied that it no longer exports: they leave
+    // the set and its generated module, and the receipt names them.
+    const gone = supplied.filter(
+      icon => !fromLibrary.some(each => each.export === icon.export),
+    );
     const ids = new Set(icons.map(icon => icon.id));
     /** @type {Record<string, string>} */
     const kept = {};
@@ -804,17 +830,17 @@ async function refreshIconSet(
         packageDir,
         generated,
         next,
-        found.map(icon => ({
-          name: publicName.get(icon.export) ?? icon.name,
-          from: source.module,
-          source: icon.export,
-          adapt: icon.adapt,
-        })),
+        found
+          .map(icon => ({
+            name: publicName.get(icon.export) ?? icon.name,
+            from: source.module,
+            source: icon.export,
+            adapt: icon.adapt,
+          }))
+          .filter(icon => publicName.has(icon.source)),
         // The icons the library no longer exports leave the module too; a
         // renamed icon keeps its export.
-        set.data.icons
-          .filter(icon => !icons.some(each => each.export === icon.export))
-          .map(icon => icon.export),
+        gone.map(icon => icon.export),
       );
       files.push(...written.files);
       try {
@@ -882,16 +908,16 @@ async function refreshIconSet(
         : []),
       // An icon the library no longer exports leaves the set and its
       // generated module: named here, so the removal is never silent.
-      ...(() => {
-        const gone = set.data.icons
-          .filter(icon => !icons.some(each => each.export === icon.export))
-          .map(icon => icon.id);
-        return gone.length > 0
-          ? [
-              `${gone.length} icons the library no longer exports were removed from the set: ${gone.join(', ')}.`,
-            ]
-          : [];
-      })(),
+      ...(gone.length > 0
+        ? [
+            `${gone.length} icons the library no longer exports were removed from the set: ${gone.map(icon => icon.id).join(', ')}.`,
+          ]
+        : []),
+      ...(shadowed.length > 0
+        ? [
+            `Left out ${shadowed.length} library icons whose id or name an icon of yours from another module already has: ${shadowed.join(', ')}.`,
+          ]
+        : []),
       astryxIconDefinitions().definitions.every(({doc}) => map[doc.name])
         ? 'Every Astryx icon definition is mapped.'
         : 'Run `astryx integration check` to see the icon definitions still to map.',

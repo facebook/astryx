@@ -280,22 +280,27 @@ icon, and the CLI verifies it, writes the files, and checks the set.
     `typecheck` script running `integration check --strict` when it has
     none. `--variants` and `--default-variant` declare `variants` and
     `default`; `--display-name` and `--description` fill the descriptor. Run
-    again, it refreshes the icons and keeps `map` entries whose icon exists.
-    An existing icon is known by the library export its generated module
-    re-exports, then by its own export, then by its `id`; one matched this
-    way keeps its export unchanged, its `map` entries, and every other
-    field, and an `id` the current rule spells differently is reported
-    under `renamed` (`add --variant <name> --all` meets an icon the same
-    way). A refresh copies the library's license notices the set lacks, and
-    the run that first records `source` takes the library's license for the
-    descriptor, which later runs keep. The package's own `license` is never
-    written.
+    again, it refreshes the icons that module supplies (those the generated
+    module re-exports or adapts from it) and keeps `map` entries whose icon
+    exists; every other icon (the author's `./` artwork, another library's)
+    is kept with its `map` entries and variants, a library icon whose `id`
+    or export one of those has is left out and named, and each icon the
+    module no longer exports is removed and named. An existing icon is known
+    by the library export its generated module re-exports, then by its own
+    export, then by its `id`; one matched this way keeps its export unchanged,
+    its `map` entries, and every other field, and an `id` the current rule
+    spells differently is reported under `renamed`
+    (`add --variant <name> --all` meets an icon the same way). A refresh
+    copies the library's license notices the set lacks, and the run that
+    first records `source` takes the library's license for the descriptor,
+    which later runs keep. The package's own `license` is never written.
   - `experimental icon add <Export> --from <module>` verifies the export,
     lists the definitions that fit it, and with `--definition` or
     `--new-definition` adds it and maps it; `--variant <name>` adds it as
     that declared variant of an existing icon. With `--variant <name> --all`
-    and no export, it adds that variant for every icon whose `id` an export
-    of the module has, in one write. For a `./`
+    and no export, it adds that variant for every icon from that module's
+    package whose `id` an export of the module has, in one write; an icon
+    from another module is left alone and not listed as missing. For a `./`
     file outside package.json `files`, it names the `files` array that
     publishes it.
   - `experimental icon map <definition> <icon>` writes one `map` entry,

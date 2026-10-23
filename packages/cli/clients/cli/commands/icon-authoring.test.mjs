@@ -2666,3 +2666,154 @@ describe('a refresh after the library drops an icon', () => {
     );
   });
 });
+
+describe('a refresh changes only the icons the refreshed module supplies', () => {
+  beforeEach(() => {
+    // A second library, and your own artwork.
+    const other = path.join(pkg, 'node_modules', '@acme', 'other-library');
+    fs.mkdirSync(other, {recursive: true});
+    fs.writeFileSync(
+      path.join(other, 'package.json'),
+      JSON.stringify({
+        name: '@acme/other-library',
+        version: '1.0.0',
+        type: 'module',
+        exports: {'.': './index.js'},
+      }),
+    );
+    fs.writeFileSync(
+      path.join(other, 'index.js'),
+      'export const Rocket = props => null;\n',
+    );
+    fs.mkdirSync(path.join(pkg, 'art'), {recursive: true});
+    fs.writeFileSync(
+      path.join(pkg, 'art', 'spark.js'),
+      'export const Spark = props => null;\n',
+    );
+    fs.writeFileSync(
+      path.join(pkg, 'art', 'spark.d.ts'),
+      'export declare const Spark: (props: object) => null;\n',
+    );
+  });
+
+  it('keeps your ./ artwork and another library’s icon, with their map entries and module lines, and still removes a library icon that went away', async () => {
+    const args = [
+      'experimental',
+      'icon',
+      'new-set',
+      'outline',
+      '--from',
+      '@acme/glyph-library',
+    ];
+    expect((await json(args)).code).toBe(0);
+    for (const add of [
+      ['Spark', '--from', './art/spark.js', '--definition', 'sparkles'],
+      ['Rocket', '--from', '@acme/other-library', '--definition', 'rocket'],
+    ]) {
+      const added = await json(['experimental', 'icon', 'add', ...add]);
+      expect(added.code, JSON.stringify(added.body)).toBe(0);
+    }
+    await json(['experimental', 'icon', 'map', 'close', 'cross']);
+    const generatedFile = path.join(
+      pkg,
+      'icon-sets',
+      'outline',
+      'outline.generated.js',
+    );
+    const before = fs.readFileSync(generatedFile, 'utf-8');
+    const sparkLine = before
+      .split('\n')
+      .find(line => line.includes('SparkIcon') && line.includes('art/spark'));
+    const rocketLine = before
+      .split('\n')
+      .find(
+        line => line.includes('RocketIcon') && line.includes('other-library'),
+      );
+    expect(sparkLine).toBeTruthy();
+    expect(rocketLine).toBeTruthy();
+    // The library drops Cross.
+    const index = path.join(
+      pkg,
+      'node_modules',
+      '@acme',
+      'glyph-library',
+      'index.js',
+    );
+    fs.writeFileSync(
+      index,
+      fs
+        .readFileSync(index, 'utf-8')
+        .replace("export {Cross} from './icons/cross.js';\n", ''),
+    );
+
+    const refreshed = await json(args);
+    expect(refreshed.code).toBe(0);
+    const data = dataOf('outline');
+    const ids = data.icons.map((/** @type {{id: string}} */ each) => each.id);
+    expect(ids).toEqual(expect.arrayContaining(['bin', 'spark', 'rocket']));
+    expect(ids).not.toContain('cross');
+    expect(data.map).toMatchObject({sparkles: 'spark', rocket: 'rocket'});
+    expect(data.map).not.toHaveProperty('close');
+    const after = fs.readFileSync(generatedFile, 'utf-8');
+    expect(after).toContain(/** @type {string} */ (sparkLine));
+    expect(after).toContain(/** @type {string} */ (rocketLine));
+    const notes = refreshed.body.data.notes.join('\n');
+    expect(notes).toContain(
+      '1 icons the library no longer exports were removed from the set: cross.',
+    );
+    expect(notes).toContain('close -> "cross"');
+    expect(notes).not.toMatch(/spark|rocket/u);
+  });
+
+  it('add --variant --all leaves icons from other modules alone and never lists them as missing', async () => {
+    const lib = path.join(pkg, 'node_modules', '@acme', 'glyph-library');
+    fs.writeFileSync(
+      path.join(lib, 'package.json'),
+      JSON.stringify({
+        ...JSON.parse(fs.readFileSync(path.join(lib, 'package.json'), 'utf-8')),
+        exports: {'.': './index.js', './solid': './solid.js'},
+      }),
+    );
+    // The solid module also exports a Spark: it is not your Spark.
+    fs.writeFileSync(
+      path.join(lib, 'solid.js'),
+      'export const Bin = props => null;\nexport const Spark = props => null;\n',
+    );
+    await json([
+      'experimental',
+      'icon',
+      'new-set',
+      'outline',
+      '--from',
+      '@acme/glyph-library',
+      '--variants',
+      'outline,solid',
+    ]);
+    await json([
+      'experimental',
+      'icon',
+      'add',
+      'Spark',
+      '--from',
+      './art/spark.js',
+      '--definition',
+      'sparkles',
+    ]);
+    const added = await json([
+      'experimental',
+      'icon',
+      'add',
+      '--variant',
+      'solid',
+      '--from',
+      '@acme/glyph-library/solid',
+      '--all',
+    ]);
+    expect(added.code, JSON.stringify(added.body)).toBe(0);
+    expect(added.body.data.missing).toEqual(['cross']);
+    const spark = dataOf('outline').icons.find(
+      (/** @type {{id: string}} */ each) => each.id === 'spark',
+    );
+    expect(spark.variants).toBeUndefined();
+  });
+});

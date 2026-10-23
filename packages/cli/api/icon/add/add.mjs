@@ -38,7 +38,8 @@ import {
   exportValueKind,
   generatedModulePath,
   generatedNamesOf,
-  generatedSources,
+  generatedOrigins,
+  iconModulePackage,
   iconNaming,
   localSourceNote,
   definitionNameOf,
@@ -530,10 +531,14 @@ async function addVariantForAll({cwd, from, selector, variant}) {
   // (`HiSquares2X2Icon` in the solid module).
   const byLibraryExport = new Map(found.map(each => [each.export, each]));
   const byName = new Map(found.map(each => [each.name, each]));
-  const sources = generatedSources(
+  const origins = generatedOrigins(
     packageDir,
     generatedModulePath(set, packageDir),
   );
+  // Only icons from the same package as the variant module can have a
+  // variant there: an icon from your own `./` file, or from another library,
+  // is left as it is and never listed as missing.
+  const variantPackage = iconModulePackage(source.module);
   const generated = generatedModulePath(set, packageDir);
   /** @type {import('../../../foundation/discovery/icon-set-writer.mjs').GeneratedIcon[]} */
   const toWrite = [];
@@ -544,7 +549,12 @@ async function addVariantForAll({cwd, from, selector, variant}) {
   /** @type {string[]} */
   const missing = [];
   const icons = set.data.icons.map(icon => {
-    const librarySource = sources.get(icon.export);
+    const origin = origins.get(icon.export);
+    if (origin && iconModulePackage(origin.module) !== variantPackage) {
+      return icon;
+    }
+    const librarySource =
+      origin && origin.source !== 'default' ? origin.source : undefined;
     const match =
       (librarySource ? byLibraryExport.get(librarySource) : undefined) ??
       byName.get(icon.export) ??

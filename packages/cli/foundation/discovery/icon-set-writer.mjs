@@ -1294,41 +1294,95 @@ export function generatedNamesOf(packageDir, generated, from, source) {
 }
 
 /**
- * The library export each of the set's exports re-exports, read from its
- * generated module: `export {HiTrashIcon as TrashIcon} from '…'` gives
- * `TrashIcon` → `HiTrashIcon`, `export {TrashIcon} from '…'` gives
- * `TrashIcon` → `TrashIcon`, and an adapted icon's import gives the same.
- * An existing icon is known by this name first: ids and the set's export
- * names are derived from it, and a newer rule may spell them differently.
+ * Where each of the set's exports comes from, read from its generated
+ * module: the module it re-exports or adapts (a package specifier, or a
+ * `./` path from the package root) and the export it reads there
+ * (`default` for a default export). `export {HiTrashIcon as TrashIcon} from
+ * '@acme/hero'` gives `TrashIcon` → `{module: '@acme/hero', source:
+ * 'HiTrashIcon'}`. An existing icon is known by this first: ids and the
+ * set's export names are derived from it, and a newer rule may spell them
+ * differently; and a refresh changes only the icons its module supplies.
  * @param {string} packageDir
  * @param {string} generated
- * @returns {Map<string, string>}
+ * @returns {Map<string, {module: string, source: string}>}
  */
-export function generatedSources(packageDir, generated) {
-  /** @type {Map<string, string>} */
-  const sources = new Map();
+export function generatedOrigins(packageDir, generated) {
+  /** @type {Map<string, {module: string, source: string}>} */
+  const origins = new Map();
   const file = path.join(packageDir, generated);
-  if (!fs.existsSync(file)) return sources;
+  if (!fs.existsSync(file)) return origins;
   let statements;
   try {
     statements = generatedStatements(fs.readFileSync(file, 'utf-8'), generated);
   } catch {
-    return sources;
+    return origins;
   }
+  /** @param {string} specifier as the generated module writes it */
+  const fromRoot = specifier => {
+    if (!specifier.startsWith('.')) return specifier;
+    const rel = path
+      .relative(packageDir, path.resolve(path.dirname(file), specifier))
+      .split(path.sep)
+      .join('/');
+    return `./${rel}`;
+  };
   for (const statement of statements) {
-    const reexport = /^export \{(\w+)(?: as (\w+))?\} from '[^']+';$/u.exec(
+    const reexport = /^export \{(\w+)(?: as (\w+))?\} from '([^']+)';$/u.exec(
       statement,
     );
-    if (reexport && reexport[1] !== 'default') {
-      sources.set(reexport[2] ?? reexport[1], reexport[1]);
+    if (reexport) {
+      origins.set(reexport[2] ?? reexport[1], {
+        module: fromRoot(reexport[3]),
+        source: reexport[1],
+      });
       continue;
     }
-    const adapted = /^import \{(\w+) as (\w+)Source\} from '[^']+';$/u.exec(
+    const adapted = /^import \{(\w+) as (\w+)Source\} from '([^']+)';$/u.exec(
       statement,
     );
-    if (adapted) sources.set(adapted[2], adapted[1]);
+    if (adapted) {
+      origins.set(adapted[2], {
+        module: fromRoot(adapted[3]),
+        source: adapted[1],
+      });
+      continue;
+    }
+    const adaptedDefault = /^import (\w+)Source from '([^']+)';$/u.exec(
+      statement,
+    );
+    if (adaptedDefault) {
+      origins.set(adaptedDefault[1], {
+        module: fromRoot(adaptedDefault[2]),
+        source: 'default',
+      });
+    }
   }
-  return sources;
+  return origins;
+}
+
+/**
+ * Whether two module specifiers name the same module: the same package
+ * specifier, or the same `./` path from the package root.
+ * @param {string} a
+ * @param {string} b
+ */
+export function sameIconModule(a, b) {
+  const norm = (/** @type {string} */ value) =>
+    value.startsWith('.')
+      ? `./${path.posix.normalize(value).replace(/^\.\//u, '')}`
+      : value;
+  return norm(a) === norm(b);
+}
+
+/**
+ * The package a module specifier belongs to (`@acme/hero` for
+ * `@acme/hero/24/solid`), or `.` for a `./` path in the package itself.
+ * @param {string} specifier
+ */
+export function iconModulePackage(specifier) {
+  if (specifier.startsWith('.')) return '.';
+  const parts = specifier.split('/');
+  return specifier.startsWith('@') ? parts.slice(0, 2).join('/') : parts[0];
 }
 
 /**
