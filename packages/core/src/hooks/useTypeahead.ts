@@ -4,7 +4,7 @@
 
 /**
  * @file useTypeahead.ts
- * @input Uses React useCallback/useRef
+ * @input Uses React useCallback/useEffect/useRef
  * @output Exports useTypeahead hook for first-character (type-to-focus) search
  * @position Core hook; adds APG typeahead to menus, listboxes, and other
  *   collections. Composes with useListFocus/useGridFocus (or any collection)
@@ -14,7 +14,7 @@
  * - /packages/core/src/hooks/index.ts
  */
 
-import {useCallback, useRef} from 'react';
+import {useCallback, useEffect, useRef} from 'react';
 
 export interface UseTypeaheadOptions {
   /**
@@ -74,9 +74,20 @@ function isPrintableCharacter(e: React.KeyboardEvent | KeyboardEvent): boolean {
     // which sets ctrlKey on Windows and Linux.
     !e.ctrlKey &&
     !e.metaKey &&
+    // A key that is part of an input method's composition is the IME's, not
+    // a jump. React's synthetic event surfaces `isComposing` too.
+    !isComposingKey(e) &&
     // A lone space is used for activation in menus, not typeahead-from-empty.
     e.key !== ' '
   );
+}
+
+function isComposingKey(e: React.KeyboardEvent | KeyboardEvent): boolean {
+  if ((e as {isComposing?: boolean}).isComposing === true) {
+    return true;
+  }
+  const native = (e as {nativeEvent?: {isComposing?: boolean}}).nativeEvent;
+  return native?.isComposing === true;
 }
 
 /**
@@ -124,6 +135,11 @@ export function useTypeahead(options: UseTypeaheadOptions): UseTypeaheadReturn {
     }
   }, []);
 
+  // A collection that unmounts, or that an `<Activity>` boundary hides,
+  // mid-typing leaves no reset timer running and comes back with an empty
+  // buffer, as the reset would have left it.
+  useEffect(() => reset, [reset]);
+
   const scheduleReset = useCallback(() => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -144,6 +160,7 @@ export function useTypeahead(options: UseTypeaheadOptions): UseTypeaheadReturn {
         e.key === ' ' &&
         !e.ctrlKey &&
         !e.metaKey &&
+        !isComposingKey(e) &&
         bufferRef.current.length > 0;
       if (!isPrintableCharacter(e) && !isSpaceMidType) {
         return false;

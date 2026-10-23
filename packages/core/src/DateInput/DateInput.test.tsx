@@ -9,6 +9,7 @@
  * SYNC: When DateInput.tsx changes, update tests to match new behavior
  */
 
+import {useState} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {
   render,
@@ -16,6 +17,7 @@ import {
   fireEvent,
   waitFor,
   within,
+  act,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {getButton, queryButton} from '../__tests__/fastRoleQueries';
@@ -26,6 +28,7 @@ import {InputGroupText} from '../InputGroup/InputGroupText';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 import {InternationalizationProvider} from '../i18n';
+import type {ISODateString} from '../utils';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -81,9 +84,14 @@ describe('DateInput', () => {
     expect(screen.getByRole('combobox')).not.toHaveAttribute('aria-required');
   });
 
-  it('sets disabled attribute when isDisabled is true', () => {
+  it('keeps a disabled input focusable without native disabled (AST-085 FR1)', () => {
     render(<DateInput label="Date" isDisabled onChange={() => {}} />);
-    expect(screen.getByRole('combobox')).toBeDisabled();
+    const input = screen.getByRole('combobox');
+    expect(input).not.toHaveAttribute('disabled');
+    expect(input).toHaveAttribute('aria-disabled', 'true');
+    expect(input).toHaveAttribute('readonly');
+    input.focus();
+    expect(input).toHaveFocus();
   });
 
   it('is not disabled by default', () => {
@@ -112,10 +120,16 @@ describe('DateInput', () => {
     expect(button).not.toBeDisabled();
   });
 
-  it('calendar button is disabled when isDisabled is true', () => {
+  it('calendar button is focusable-disabled when isDisabled is true', () => {
     render(<DateInput label="Date" isDisabled onChange={() => {}} />);
     const button = getButton('Open calendar');
-    expect(button).toBeDisabled();
+    expect(button).not.toHaveAttribute('disabled');
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    fireEvent.click(button);
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
   });
 
   it('does not call onChange while typing invalid input', async () => {
@@ -222,6 +236,34 @@ describe('DateInput', () => {
     expect(onChange).toHaveBeenCalledWith('2026-03-15');
   });
 
+  it('runs changeAction after onChange for a typed date', async () => {
+    const calls: string[] = [];
+    let resolveAction: () => void = () => {};
+    const changeAction = vi.fn(
+      async () =>
+        new Promise<void>(resolve => {
+          calls.push('changeAction');
+          resolveAction = resolve;
+        }),
+    );
+    const onChange = vi.fn(() => calls.push('onChange'));
+    render(
+      <DateInput
+        label="Date"
+        onChange={onChange}
+        changeAction={changeAction}
+      />,
+    );
+
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: '03/15/2026'}});
+
+    expect(calls).toEqual(['onChange', 'changeAction']);
+    expect(changeAction).toHaveBeenCalledExactlyOnceWith('2026-03-15');
+    expect(input).toHaveAttribute('aria-busy', 'true');
+    await act(async () => resolveAction());
+  });
+
   // --- P0: Text input respects min/max/dateConstraints ---
 
   it('does not call onChange when typed date is before min', () => {
@@ -318,10 +360,15 @@ describe('DateInput', () => {
 
   // --- P1: Input disabled during isBusy (isLoading) ---
 
-  it('disables input and button when isLoading is true', () => {
+  it('blocks input and button without native disabled when isLoading is true', () => {
     render(<DateInput label="Date" isLoading onChange={() => {}} />);
-    expect(screen.getByRole('combobox')).toBeDisabled();
-    expect(getButton('Open calendar')).toBeDisabled();
+    expect(screen.getByRole('combobox')).not.toHaveAttribute('disabled');
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    expect(getButton('Open calendar')).not.toHaveAttribute('disabled');
+    expect(getButton('Open calendar')).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('shows spinner when isLoading is true', () => {
@@ -495,7 +542,8 @@ describe('DateInput', () => {
     render(<DateInput label="Date" isDisabled onChange={() => {}} />);
 
     const input = screen.getByRole('combobox');
-    expect(input).toBeDisabled();
+    expect(input).toHaveAttribute('aria-disabled', 'true');
+    expect(input).not.toHaveAttribute('disabled');
   });
 
   // --- P1: aria-busy on input ---
@@ -564,6 +612,42 @@ describe('DateInput', () => {
   // Full popover interaction is tested in the browser via Storybook.
 
   describe('hasClear', () => {
+    it('shows no selected calendar days after clearing', async () => {
+      const user = userEvent.setup();
+
+      function ControlledDateInput() {
+        const [value, setValue] = useState<ISODateString | undefined>(
+          '2026-01-01',
+        );
+        return (
+          <DateInput
+            label="Date"
+            value={value}
+            onChange={setValue}
+            min="2026-01-01"
+            max="2026-01-31"
+            presentation="popover"
+            hasClear
+          />
+        );
+      }
+
+      render(<ControlledDateInput />);
+      await user.click(getButton('Open calendar'));
+      await user.click(getButton(/January 15, 2026/));
+      expect(
+        screen.getAllByRole('gridcell', {selected: true, hidden: true}),
+      ).toHaveLength(1);
+
+      await user.click(getButton('Clear Date'));
+      expect(screen.getByRole('combobox')).toHaveValue('');
+      await user.click(getButton('Open calendar'));
+
+      expect(
+        screen.queryAllByRole('gridcell', {selected: true, hidden: true}),
+      ).toHaveLength(0);
+    });
+
     it('shows clear button when hasClear is true and value exists', () => {
       render(
         <DateInput
@@ -751,7 +835,10 @@ describe('DateInput', () => {
       expect(input).toHaveAttribute('aria-disabled', 'true');
       expect(input.getAttribute('aria-describedby')).toContain(tooltip.id);
       expect(tooltip).toHaveTextContent('Scheduling is locked');
-      expect(getButton('Open calendar')).toBeDisabled();
+      expect(getButton('Open calendar')).toHaveAttribute(
+        'aria-disabled',
+        'true',
+      );
     });
   });
 
@@ -808,6 +895,10 @@ describe('DateInput', () => {
       );
 
       const tooltip = screen.getByRole('tooltip', h);
+      // The calendar button keeps its enabled tab stop (spec:AST-085 FR1),
+      // so the input is the second stop.
+      await user.tab();
+      expect(getButton('Open calendar')).toHaveFocus();
       await user.tab();
       expect(screen.getByRole('combobox')).toHaveFocus();
       await waitFor(() => {
@@ -839,6 +930,50 @@ describe('DateInput', () => {
       expect(input).not.toBeDisabled();
       expect(input).toHaveAttribute('aria-disabled', 'true');
       expect(input).toHaveAttribute('readonly');
+    });
+
+    it('does not call a caller onClick while disabled (AST-085 FR2)', () => {
+      const onClick = vi.fn();
+      render(<DateInput label="Date" isDisabled onClick={onClick} />);
+      fireEvent.click(screen.getByRole('combobox'));
+      expect(onClick).not.toHaveBeenCalled();
+    });
+
+    it('links the reason tooltip from the calendar button too (AST-085 FR5)', () => {
+      render(
+        <DateInput
+          label="Date"
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(
+        getButton('Open calendar').getAttribute('aria-describedby'),
+      ).toContain(tooltip.id);
+    });
+
+    it('drops a draft instead of committing it when the field becomes disabled (AST-085 FR2)', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      const {rerender} = render(
+        <DateInput label="Date" value="2026-03-10" onChange={onChange} />,
+      );
+      const input = screen.getByRole('combobox');
+      await user.click(input);
+      await user.clear(input);
+      rerender(
+        <DateInput
+          label="Date"
+          value="2026-03-10"
+          onChange={onChange}
+          isDisabled
+        />,
+      );
+      expect(input).toHaveFocus();
+      await user.keyboard('{Enter}');
+      await user.tab();
+      expect(onChange).not.toHaveBeenCalled();
     });
 
     it('links the reason tooltip from the input via aria-describedby', () => {
@@ -874,11 +1009,18 @@ describe('DateInput', () => {
       expect(onChange).not.toHaveBeenCalled();
     });
 
-    it('remains natively disabled when disabled without a reason', () => {
-      render(<DateInput label="Date" isDisabled />);
+    it('blocks value changes and opening when disabled without a reason (AST-085 FR1, FR2)', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(<DateInput label="Date" onChange={onChange} isDisabled />);
       const input = screen.getByRole('combobox');
-      expect(input).toBeDisabled();
-      expect(input).not.toHaveAttribute('aria-disabled');
+      expect(input).not.toHaveAttribute('disabled');
+      await user.click(input);
+      await user.type(input, '2026-03-15');
+      await user.keyboard('{ArrowDown}');
+      expect(input).toHaveValue('');
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+      expect(onChange).not.toHaveBeenCalled();
     });
   });
 
@@ -1110,7 +1252,7 @@ describe('DateInput clear icon theme target', () => {
     return icon as HTMLElement;
   };
 
-  it('renders the astryx-input-clear-icon target (plus the legacy alias) on the clear glyph', () => {
+  it('renders only the astryx-input-clear-icon target on the clear glyph', () => {
     render(
       <DateInput
         label="Date"
@@ -1122,11 +1264,10 @@ describe('DateInput clear icon theme target', () => {
     // The canonical target lands on the icon element itself (not the button),
     // so a theme can restyle just this glyph (color, size, hover) via
     // `defineTheme` — a button-level target could not reach the icon's own
-    // color/size. The original per-component name remains as a compatibility
-    // alias.
+    // color/size.
     const icon = getClearIcon();
     expect(icon).toHaveClass('astryx-input-clear-icon');
-    expect(icon).toHaveClass('astryx-date-input-clear-icon');
+    expect(icon).not.toHaveClass('astryx-date-input-clear-icon');
     expect(icon).toHaveClass('astryx-icon');
   });
 
@@ -1146,13 +1287,12 @@ describe('DateInput clear icon theme target', () => {
     expect(onChange).toHaveBeenCalledWith(undefined);
   });
 
-  it('routes the clear glyph through the shared clear button, keeping the legacy target', () => {
-    // The clear affordance now composes the shared InputClearButton (a ghost
-    // Button with a secondary/sm glyph), so the icon carries the canonical
-    // `astryx-input-clear-icon` target plus the supported compatibility alias
-    // `astryx-date-input-clear-icon`. Aside from those target classes
-    // it matches the shared button's own `close`/`sm`/`secondary` glyph
-    // exactly, so the default look is defined in one place.
+  it('routes the clear glyph through the shared clear button', () => {
+    // The clear affordance composes the shared InputClearButton (a ghost Button
+    // with a secondary/sm glyph), so the icon carries the canonical
+    // `astryx-input-clear-icon` target. Aside from that target class it matches
+    // the shared button's own `close`/`sm`/`secondary` glyph exactly, so the
+    // default look is defined in one place.
     render(
       <DateInput
         label="Date"
@@ -1163,7 +1303,7 @@ describe('DateInput clear icon theme target', () => {
     );
     const icon = getClearIcon();
     expect(icon).toHaveClass('astryx-input-clear-icon');
-    expect(icon).toHaveClass('astryx-date-input-clear-icon');
+    expect(icon).not.toHaveClass('astryx-date-input-clear-icon');
 
     const {container: refContainer} = render(
       <Icon icon="close" size="sm" color="secondary" />,
@@ -1173,26 +1313,22 @@ describe('DateInput clear icon theme target', () => {
     const styleClasses = (el: HTMLElement) =>
       el.className
         .split(' ')
-        .filter(
-          c =>
-            c !== 'astryx-input-clear-icon' &&
-            c !== 'astryx-date-input-clear-icon',
-        )
+        .filter(c => c !== 'astryx-input-clear-icon')
         .sort();
 
     expect(styleClasses(icon)).toEqual(styleClasses(refIcon));
   });
 
-  it('exposes date-input-clear-icon so a theme reaches the icon color, size, and hover', () => {
+  it('uses input-clear-icon so a theme reaches the icon color, size, and hover', () => {
     // jsdom cannot resolve the @layer cascade, so the DOM-class assertion above
     // (target lands on the icon element) plus this generation assertion (the
     // theme emits same-element icon rules in @layer astryx-theme) together
     // prove the seam: a same-element theme rule wins over the icon's own
     // base-layer color/size.
     const theme = defineTheme({
-      name: 'date-input-clear-icon-test',
+      name: 'date-input-shared-clear-icon-test',
       components: {
-        'date-input-clear-icon': {
+        'input-clear-icon': {
           base: {
             width: '12px',
             height: '12px',
@@ -1204,10 +1340,10 @@ describe('DateInput clear icon theme target', () => {
       },
     });
     const css = generateThemeTestCSS(theme);
-    expect(css).toContain('.astryx-date-input-clear-icon {');
+    expect(css).toContain('.astryx-input-clear-icon {');
     expect(css).toContain('width: 12px');
     expect(css).toContain('height: 12px');
-    expect(css).toContain('.astryx-date-input-clear-icon:hover');
+    expect(css).toContain('.astryx-input-clear-icon:hover');
     expect(css).toContain('color: var(--color-icon-primary)');
   });
 });

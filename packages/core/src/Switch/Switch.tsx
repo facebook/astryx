@@ -4,7 +4,7 @@
 
 /**
  * @file Switch.tsx
- * @input Uses React, useId, ChangeEvent, FieldLabel, FieldStatus, IconType, InputStatus, useTooltip
+ * @input Uses React, useId, ChangeEvent, FieldLabel, FieldStatus, IconType, InputStatus, useTooltip, i18n (useTranslator)
  * @output Exports Switch component, SwitchProps, SwitchLabelPosition, SwitchLabelSpacing
  * @position Core implementation; consumed by index.ts, tested by Switch.test.tsx
  *
@@ -20,6 +20,8 @@ import {
   useId,
   useOptimistic,
   useTransition,
+  useEffect,
+  useRef,
   type ChangeEvent,
   type FocusEvent,
   type ReactNode,
@@ -42,14 +44,17 @@ import type {InputStatus} from '../Field/types';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
 import {mergeProps, mergeRefs, rtlStyles} from '../utils';
-import {switchScope} from './switch.markers.stylex';
+import {switchFocusScope, switchScope} from './switch.markers.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
-import {VisuallyHidden} from '../VisuallyHidden';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
+import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 const wrapperSizeStyles = stylex.create({
   sm: {
     width: 32,
@@ -130,6 +135,11 @@ const thumbOnSizeStyles = stylex.create({
 // hover tint already is: pressing the input, the track or the label all
 // activate the row.
 const pressedImage = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
+// The touch press's paint, declared by the shared overlay styles on the
+// element the controller writes to (`pressedAlpha`) at the press's strength,
+// 1 while on and 1 → 0 over the release, and inherited resolved by the layer
+// that paints it. See interactionOverlay.stylex.ts.
+const pressedOverlayImage = 'var(--_press-paint-image)';
 
 const labelWrapperSizeStyles = stylex.create({
   sm: {
@@ -222,7 +232,28 @@ const styles = stylex.create({
       default: null,
       [stylex.when.ancestor(':active', switchScope)]: {
         default: null,
-        '@media (forced-colors: none)': pressedImage,
+        '@media (forced-colors: none)': {
+          default: pressedImage,
+          // Under a coarse pointer the touch press model writes `data-astryx-press`
+          // on the row instead; see interactionOverlay.stylex.ts.
+          '@media (pointer: coarse)': 'none',
+        },
+      },
+      // Nested in the same media as the arm above so it outranks the drop: an
+      // ancestor-scoped attribute selector gets no priority of its own.
+      [stylex.when.ancestor('[data-astryx-press="on"]', switchScope)]: {
+        default: null,
+        '@media (forced-colors: none)': {
+          default: null,
+          '@media (pointer: coarse)': pressedOverlayImage,
+        },
+      },
+      [stylex.when.ancestor('[data-astryx-press="fading"]', switchScope)]: {
+        default: null,
+        '@media (forced-colors: none)': {
+          default: null,
+          '@media (pointer: coarse)': pressedOverlayImage,
+        },
       },
     },
   },
@@ -235,12 +266,12 @@ const styles = stylex.create({
   trackFocus: {
     outline: {
       default: 'none',
-      [stylex.when.ancestor(':has(:focus-visible)', switchScope)]:
+      [stylex.when.ancestor(':has(:focus-visible)', switchFocusScope)]:
         `${focusVars['--focus-outline-width']} ${focusVars['--focus-outline-style']} ${focusVars['--focus-outline-color']}`,
     },
     outlineOffset: {
       default: null,
-      [stylex.when.ancestor(':has(:focus-visible)', switchScope)]:
+      [stylex.when.ancestor(':has(:focus-visible)', switchFocusScope)]:
         focusVars['--focus-outline-offset'],
     },
   },
@@ -303,7 +334,26 @@ const styles = stylex.create({
       default: null,
       [stylex.when.ancestor(':active', switchScope)]: {
         default: null,
-        '@media (forced-colors: none)': pressedImage,
+        '@media (forced-colors: none)': {
+          default: pressedImage,
+          '@media (pointer: coarse)': 'none',
+        },
+      },
+      // Nested in the same media as the arm above so it outranks the drop: an
+      // ancestor-scoped attribute selector gets no priority of its own.
+      [stylex.when.ancestor('[data-astryx-press="on"]', switchScope)]: {
+        default: null,
+        '@media (forced-colors: none)': {
+          default: null,
+          '@media (pointer: coarse)': pressedOverlayImage,
+        },
+      },
+      [stylex.when.ancestor('[data-astryx-press="fading"]', switchScope)]: {
+        default: null,
+        '@media (forced-colors: none)': {
+          default: null,
+          '@media (pointer: coarse)': pressedOverlayImage,
+        },
       },
     },
   },
@@ -517,9 +567,15 @@ export function Switch({
   className,
   style,
   ref,
+  'aria-describedby': ariaDescribedByProp,
+  'aria-labelledby': ariaLabelledByProp,
   ...rest
 }: SwitchProps) {
+  const t = useTranslator();
   const id = useId();
+  // The row is the pressable: the input, the track and the label all sit
+  // inside it, and the pressed arms above read the row's scope marker.
+  const pressable = usePressFeedback();
   const descriptionID = useId();
   const statusMessageID = useId();
   // Announce the effective required state (form default included) while the
@@ -530,6 +586,23 @@ export function Switch({
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
+
+  const announce = useAnnounce();
+  // One announcement per busy start (spec:AST-086 FR6). The ref outlives
+  // StrictMode's effect replay and rerenders, so only a new busy start (busy
+  // again after settling) speaks again.
+  const announcedBusyRef = useRef(false);
+  useEffect(() => {
+    if (!isBusy) {
+      announcedBusyRef.current = false;
+      return;
+    }
+    if (announcedBusyRef.current) {
+      return;
+    }
+    announcedBusyRef.current = true;
+    announce(t('@astryx.switch.loading'));
+  }, [announce, isBusy, t]);
 
   const isOn = optimisticValue === true;
 
@@ -550,7 +623,12 @@ export function Switch({
   // Only include descriptionID when the element actually renders.
   // FieldLabel renders the description (with descriptionID) even when the
   // label is visually hidden — it's sr-only, so keep it linked.
+  // A consumer's own `aria-describedby` describes the control, so it comes
+  // first here rather than landing on the field wrapper via `...rest`.
   const describedByParts: string[] = [];
+  if (ariaDescribedByProp) {
+    describedByParts.push(ariaDescribedByProp);
+  }
   if (description) {
     describedByParts.push(descriptionID);
   }
@@ -570,17 +648,13 @@ export function Switch({
         id={id}
         type="checkbox"
         role="switch"
-        // Withhold the name while disabled: with a disabledMessage the
-        // input stays focusable (not natively disabled), and a disabled
-        // control must not submit.
+        // Withhold the name while disabled: the input stays focusable (not
+        // natively disabled), and a disabled control must not submit.
         name={isDisabled ? undefined : htmlName}
         checked={isOn}
-        // With a disabledMessage the switch keeps focusability via aria-disabled
-        // so the reason is focus-discoverable; toggling is still blocked by the
-        // isDisabled guard in onChange below.
-        disabled={isDisabled && !showsDisabledMessage}
-        aria-disabled={showsDisabledMessage ? 'true' : undefined}
-        form={showsDisabledMessage ? '' : undefined}
+        // Focusable but detached from the form while disabled (spec:AST-085).
+        aria-disabled={isDisabled ? 'true' : undefined}
+        form={isDisabled ? '' : undefined}
         required={isRequired}
         aria-required={isEffectivelyRequired ? 'true' : undefined}
         onChange={e => {
@@ -598,6 +672,10 @@ export function Switch({
         }}
         onFocus={onFocus}
         onBlur={onBlur}
+        // A caller's `aria-labelledby` names the control (a visible title
+        // elsewhere in the row, for example), so it reaches the input rather
+        // than the field wrapper via `...rest`.
+        aria-labelledby={ariaLabelledByProp}
         aria-describedby={ariaDescribedBy}
         aria-invalid={status?.type === 'error' ? true : undefined}
         aria-busy={isBusy || undefined}
@@ -622,7 +700,7 @@ export function Switch({
             styles.track,
             trackSizeStyles[size],
             isOn ? styles.trackOn : styles.trackOff,
-            !isDisabled && styles.trackFocus,
+            styles.trackFocus,
             isDisabled && styles.trackDisabled,
             isDisabled && !isOn && styles.trackDisabledOff,
           ),
@@ -642,7 +720,6 @@ export function Switch({
           {isBusy && <Spinner size="sm" />}
         </div>
       </div>
-      {isBusy && <VisuallyHidden role="status">Loading</VisuallyHidden>}
     </div>
   );
 
@@ -677,7 +754,9 @@ export function Switch({
         className,
         style,
       )}
-      {...rest}>
+      {...rest}
+      // Native `disabled` suppressed clicks on the switch (spec:AST-085 FR2).
+      onClick={isDisabled ? undefined : rest.onClick}>
       <div
         ref={el => {
           // Interaction (hover/focus) listeners for the disabled-message
@@ -688,11 +767,16 @@ export function Switch({
           // unconditionally is safe.
           disabledMessageTooltip.interactionRef(el);
         }}
+        {...(isDisabled ? undefined : pressable)}
         {...stylex.props(
           styles.container,
           isLabelHidden && styles.containerLabelHidden,
           labelSpacing === 'spread' && styles.containerSpread,
           !isDisabled && switchScope,
+          switchFocusScope,
+          // The touch press's strength and release live on the row the
+          // controller writes to; the track and thumb inherit and paint it.
+          !isDisabled && interactionOverlayStyles.pressedAlpha,
         )}>
         {' '}
         {labelPosition === 'start' ? (

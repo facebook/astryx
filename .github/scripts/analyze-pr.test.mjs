@@ -212,3 +212,70 @@ describe('analyze-pr shallow-clone recovery', () => {
     }
   });
 });
+
+describe('analyze-pr component ownership', () => {
+  it('resolves a folder whose doc names the components it is built from', () => {
+    const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-analyze-owner-'));
+    const write = (file, content) => {
+      fs.mkdirSync(path.dirname(path.join(repo, file)), {recursive: true});
+      fs.writeFileSync(path.join(repo, file), content);
+    };
+    try {
+      write('package.json', '{}');
+      write(
+        'packages/core/src/index.ts',
+        [
+          "export {Label} from './Label';",
+          "export {Tokenizer} from './Tokenizer';",
+          "export {Chat, ChatComposer} from './Chat';",
+          '',
+        ].join('\n'),
+      );
+      write('packages/core/src/Label/index.ts', "export {Label} from './Label';\n");
+      write('packages/core/src/Label/Label.tsx', 'export function Label() {}\n');
+      write('packages/core/src/Label/Label.doc.mjs', "export const docs = {\n  name: 'Label',\n};\n");
+      write('packages/core/src/Tokenizer/index.ts', "export {Tokenizer} from './Tokenizer';\n");
+      write('packages/core/src/Tokenizer/Tokenizer.tsx', 'export function Tokenizer() {}\n');
+      // Anatomy names the Label the Tokenizer renders; Label is implemented
+      // in its own folder, so it must not make this folder a family.
+      write(
+        'packages/core/src/Tokenizer/Tokenizer.doc.mjs',
+        "export const docs = {\n  name: 'Tokenizer',\n  anatomy: [{name: 'Label'}],\n};\n",
+      );
+      // A real family: two public components implemented in one folder.
+      write(
+        'packages/core/src/Chat/index.ts',
+        "export {Chat} from './Chat';\nexport {ChatComposer} from './ChatComposer';\n",
+      );
+      write('packages/core/src/Chat/Chat.tsx', 'export function Chat() {}\n');
+      write('packages/core/src/Chat/ChatComposer.tsx', 'export function ChatComposer() {}\n');
+      write('packages/core/src/Chat/Chat.doc.mjs', "export const docs = {\n  name: 'Chat',\n};\n");
+      write(
+        'packages/core/src/Chat/ChatComposer.doc.mjs',
+        "export const docs = {\n  name: 'ChatComposer',\n};\n",
+      );
+      git(repo, ['init', '-q', '-b', 'main']);
+      git(repo, ['config', 'user.email', 'test@test.co']);
+      git(repo, ['config', 'user.name', 'Test']);
+      git(repo, ['add', '-A']);
+      git(repo, ['commit', '-qm', 'base']);
+      git(repo, ['checkout', '-q', '-b', 'feature']);
+      fs.appendFileSync(path.join(repo, 'packages/core/src/Tokenizer/Tokenizer.tsx'), 'export const changed = true;\n');
+      fs.appendFileSync(path.join(repo, 'packages/core/src/Chat/ChatComposer.tsx'), 'export const changed = true;\n');
+      git(repo, ['commit', '-qam', 'touch Tokenizer and Chat']);
+
+      execFileSync(
+        process.execPath,
+        [SCRIPT, '--base', 'main', '--head', 'HEAD', '--output', 'analysis.json'],
+        {cwd: repo, encoding: 'utf8'},
+      );
+      const analysis = JSON.parse(fs.readFileSync(path.join(repo, 'analysis.json'), 'utf8'));
+
+      expect(analysis.modifiedComponentOwners).toEqual(['core/Tokenizer']);
+      expect(analysis.unresolvedComponentSources).toEqual(['core/Chat']);
+      expect(analysis.forceFullComponentAudits).toBe(true);
+    } finally {
+      fs.rmSync(repo, {recursive: true, force: true});
+    }
+  });
+});

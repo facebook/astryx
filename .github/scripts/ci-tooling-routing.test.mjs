@@ -128,7 +128,8 @@ describe('Node-tooling CI routing', () => {
     ]);
     for (const [name, command] of familyCommands) {
       const ownerStep = step(ci.jobs['test-node'], name);
-      expect(ownerStep.if).toBe(BROAD_ONLY);
+      // One leg of the sharded Node lane owns the theme-family contract.
+      expect(ownerStep.if).toBe(`matrix.shard == 1 && ${BROAD_ONLY}`);
       expect(ownerStep.run).toBe(command);
       expect(step(ci.jobs['test-build'], name)).toBeUndefined();
     }
@@ -138,19 +139,24 @@ describe('Node-tooling CI routing', () => {
     expect(
       step(ci.jobs['docsite-test'], 'Skip docsite work for Node tooling').if,
     ).toContain(TOOLING_TRUE);
+    expect(ci.jobs['docsite-data'].if).toContain(TOOLING_FALSE);
     for (const name of [
       'Build core package',
       'Build canary component packages',
       'Generate and test docsite data',
     ]) {
-      expect(step(ci.jobs['docsite-test'], name).if).toContain(TOOLING_FALSE);
+      expect(step(ci.jobs['docsite-data'], name).if).toContain(TOOLING_FALSE);
     }
 
     expect(ci.jobs['build-sandbox'].if).toContain(TOOLING_FALSE);
-    for (const candidate of ci.jobs['build-storybook'].steps) {
+    for (const candidate of [
+      ...ci.jobs['build-storybook'].steps,
+      ...ci.jobs.typecheck.steps,
+    ]) {
       if (
         candidate.name === 'Require successful scope classification' ||
-        candidate.name === 'Skip heavy work for a specialized lane'
+        candidate.name === 'Skip heavy work for a specialized lane' ||
+        candidate.name === 'Skip typechecks for a specialized lane'
       ) {
         continue;
       }
@@ -169,8 +175,13 @@ describe('Node-tooling CI routing', () => {
       'test-node',
       'test-build',
       'registry-contract',
+      'test-native-swift',
     ]);
-    expect(ci.jobs.build.needs).toEqual(['build-storybook', 'build-sandbox']);
+    expect(ci.jobs.build.needs).toEqual([
+      'build-storybook',
+      'build-sandbox',
+      'typecheck',
+    ]);
     const testJoin = step(ci.jobs.test, 'Require expected test-owner outcomes');
     expect(testJoin.run).toBe('node .github/scripts/ci-test-join.mjs');
     expect(ci.jobs.test.permissions).toEqual({contents: 'read'});
@@ -183,6 +194,7 @@ describe('Node-tooling CI routing', () => {
       TEST_NODE_RESULT: '${{ needs.test-node.result }}',
       TEST_BUILD_RESULT: '${{ needs.test-build.result }}',
       REGISTRY_CONTRACT_RESULT: '${{ needs.registry-contract.result }}',
+      TEST_NATIVE_SWIFT_RESULT: '${{ needs.test-native-swift.result }}',
     });
     const buildJoin = step(
       ci.jobs.build,
@@ -190,6 +202,9 @@ describe('Node-tooling CI routing', () => {
     ).run;
     expect(buildJoin).toContain('needs.build-storybook.result');
     expect(buildJoin).toContain('needs.build-sandbox.result');
+    expect(buildJoin).toContain(
+      '[ "${{ needs.typecheck.result }}" = "success" ] || exit 1',
+    );
   });
 
   it('keeps removed preview publication out of the tooling lane', () => {

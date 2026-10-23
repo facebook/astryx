@@ -95,6 +95,7 @@ export * from './AlertDialog';
 export * from './Dialog';
 export * from './ContextMenu';
 export * from './DropdownMenu';
+export * from './Drawer';
 export * from './MoreMenu';
 export * from './InteractiveRoleContext';
 export * from './SizeContext';
@@ -123,7 +124,7 @@ export type {
 
 // Layer provider
 export {LayerProvider} from './Layer';
-export type {LayerProviderProps, LayerToastConfig} from './Layer';
+export type {LayerProviderProps, LayerInset, LayerToastConfig} from './Layer';
 
 // Toast
 export {Toast, useToast} from './Toast';

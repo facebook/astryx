@@ -9,7 +9,8 @@
  * @position Thin wrapper over Button; adds controlled toggle pattern
  *
  * ToggleButton wraps Button with `isPressed` and adds:
- * - `onPressedChange` from internal `onClick`; `pressedChangeAction` via Button
+ * - `onPressedChange` from internal `onClick`, after any caller `onClick`;
+ *   `pressedChangeAction` via Button
  * - `pressedIcon` for outline-to-filled icon swap
  * - Font weight shift on press with width reservation to prevent layout shift
  * - Group integration via ToggleButtonGroupContext
@@ -29,6 +30,7 @@ import type {Elevation} from '../utils/types';
 import {useToggleButtonGroup} from './ToggleButtonGroup';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {mergeProps} from '../utils/mergeProps';
 
 // =============================================================================
 // Styles
@@ -255,8 +257,9 @@ export function ToggleButton({
   tooltip,
   value,
   xstyle,
-  className: _className,
+  className,
   style,
+  onClick: onClickProp,
   ...props
 }: ToggleButtonProps): ReactNode {
   const group = useToggleButtonGroup();
@@ -286,9 +289,18 @@ export function ToggleButton({
     if (isDisabled) {
       return;
     }
+    // A caller onClick (a trigger wrapper often supplies one) runs first and
+    // never replaces the toggle's own request (family:buttons FR5, FR11).
+    const wasPrevented = event.defaultPrevented;
+    onClickProp?.(event);
     if (group && value != null) {
       group.toggle(value);
       event.preventDefault();
+      return;
+    }
+    // A standalone toggle is cancelled only by the caller's own
+    // preventDefault(); Button then skips pressedChangeAction too.
+    if (!wasPrevented && event.defaultPrevented) {
       return;
     }
 
@@ -343,10 +355,13 @@ export function ToggleButton({
       aria-pressed={isPressed}
       icon={resolvedIcon}
       tooltip={tooltip}
-      {...themeProps('toggle-button', {
-        isPressed: isPressed ? 'true' : 'false',
-        elevation,
-      })}
+      {...mergeProps(
+        themeProps('toggle-button', {
+          isPressed: isPressed ? 'true' : 'false',
+          elevation,
+        }),
+        className,
+      )}
       xstyle={[isPressed ? pressedStyles.background : undefined, xstyle]}
       style={style}
       onClick={handleClick}

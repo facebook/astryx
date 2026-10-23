@@ -42,7 +42,6 @@ import {useState} from 'react';
 import type {ISODateString} from '../utils';
 import {InputGroup} from '../InputGroup';
 import {InternationalizationProvider} from '../i18n';
-import {stableClassName} from '../naming';
 import {DateInput} from './DateInput';
 import {
   toMonthIndex,
@@ -555,9 +554,30 @@ describe('DateInput — field parity', () => {
         onChange={() => {}}
       />,
     );
-    expect(field()).toBeDisabled();
+    // Focusable, never natively disabled (AST-085 FR1), and still inert.
+    expect(field()).not.toHaveAttribute('disabled');
+    expect(field()).toHaveAttribute('aria-disabled', 'true');
+    field().focus();
+    expect(field()).toHaveFocus();
     fireEvent.click(field());
+    fireEvent.keyDown(field(), {key: 'Enter'});
+    expect(field()).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByRole('grid')).not.toBeInTheDocument();
+  });
+
+  it('does not call a caller onClick while disabled (AST-085 FR2)', () => {
+    const onClick = vi.fn();
+    render(
+      <DateInput
+        nativePicker="never"
+        label="Ship date"
+        isDisabled
+        onClick={onClick}
+        onChange={() => {}}
+      />,
+    );
+    fireEvent.click(field());
+    expect(onClick).not.toHaveBeenCalled();
   });
 
   it('stays focusable and explains itself when disabled with a reason', () => {
@@ -644,6 +664,51 @@ describe('DateInput — field parity', () => {
     });
     expect(changeAction).toHaveBeenCalledWith('2026-03-25');
     resolve();
+  });
+
+  it('announces a busy start from a pick inside the open sheet, not behind it (spec:AST-086 FR8, Platform support)', async () => {
+    // The stubbed showModal() opens the dialog but jsdom cannot match
+    // `:modal`; stand in for the sheet the browser presents modally.
+    const matches = Element.prototype.matches;
+    const modalSpy = vi
+      .spyOn(Element.prototype, 'matches')
+      .mockImplementation(function (this: Element, selector: string) {
+        return selector === ':modal'
+          ? this instanceof HTMLDialogElement && this.open
+          : matches.call(this, selector);
+      });
+    const changeAction = vi.fn(async () => new Promise<void>(() => {}));
+    withLayout(() => {
+      render(
+        <DateInput
+          nativePicker="never"
+          label="Ship date"
+          value="2026-03-10"
+          min="2026-03-01"
+          max="2026-03-31"
+          onChange={() => {}}
+          changeAction={changeAction}
+        />,
+      );
+      fireEvent.click(field());
+      fireEvent.click(
+        within(pane('March 2026')).getByRole('button', {
+          name: /March 25, 2026/,
+        }),
+      );
+    });
+    const sheet = document.querySelector('dialog[open]');
+    expect(sheet).not.toBeNull();
+    await waitFor(() => {
+      expect(
+        sheet!.querySelector('[data-astryx-modal-busy-region]'),
+      ).toHaveTextContent('Loading');
+    });
+    expect(
+      document.querySelector('[data-astryx-live-region="polite"]')
+        ?.textContent ?? '',
+    ).toBe('');
+    modalSpy.mockRestore();
   });
 
   it('drops the Field wrapper inside an InputGroup', () => {
@@ -1119,6 +1184,28 @@ describe('DateInput — calendar surface', () => {
     last.focus();
     fireEvent.keyDown(last, {key: 'ArrowRight'});
     expect(document.activeElement).toHaveAttribute('data-date', '2026-04-01');
+    // The real April 1, not its dimmed spill copy at the foot of the March
+    // pane (which is disabled and selects nothing).
+    expect(pane('April 2026')).toContainElement(
+      document.activeElement as HTMLElement,
+    );
+    expect(document.activeElement).not.toHaveAttribute('aria-disabled');
+  });
+
+  it('follows the reading direction under RTL: ArrowLeft moves to the next day', () => {
+    renderAndOpen(
+      <InternationalizationProvider locale="en-US" dir="rtl">
+        <Controlled initial="2026-03-10" />
+      </InternationalizationProvider>,
+    );
+    const day = within(pane('March 2026')).getByRole('button', {
+      name: /March 10, 2026/,
+    });
+    day.focus();
+    fireEvent.keyDown(day, {key: 'ArrowLeft'});
+    expect(document.activeElement).toHaveAttribute('data-date', '2026-03-11');
+    fireEvent.keyDown(document.activeElement!, {key: 'ArrowRight'});
+    expect(document.activeElement).toHaveAttribute('data-date', '2026-03-10');
   });
 
   it('moves a week at a time with the vertical arrows', () => {

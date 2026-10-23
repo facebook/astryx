@@ -15,7 +15,7 @@ verified_by:
     packages/core/src/Layer/useLayer.test.tsx,
     packages/core/src/utils/sharedResizeObserver.test.ts,
   ]
-deciding_specs: []
+deciding_specs: [spec:AST-086/DEC-2]
 ---
 
 # React component runtime architecture
@@ -26,7 +26,16 @@ deciding_specs: []
 {
   "scope": "global",
   "triggers": {
-    "react-runtime": ["INV1", "INV2", "INV3", "INV4", "INV5", "INV6", "INV8"]
+    "react-runtime": [
+      "INV1",
+      "INV2",
+      "INV3",
+      "INV4",
+      "INV5",
+      "INV6",
+      "INV8",
+      "INV10"
+    ]
   }
 }
 ```
@@ -70,9 +79,11 @@ those contracts.
   minimal rendering key or own the node through a ref.
 - **INV2 — Discrete intent stays discrete.** Work caused by one user or imperative
   action MUST NOT be deferred to an Effect when the originating handler can perform
-  it. Using the same state for rendered output does not make an Effect-owned copy of
-  the action valid. Deferral MUST NOT delay, repeat, or couple the action to
-  unrelated rendering.
+  it, including calling a consumer callback such as `onChange`, `onOpenChange`, or
+  `onSave`: the callback fires from the handler that caused the change, never from
+  an Effect reacting to the resulting state. Using the same state for rendered
+  output does not make an Effect-owned copy of the action valid. Deferral MUST NOT
+  delay, repeat, or couple the action to unrelated rendering.
 - **INV3 — Effects synchronize external systems.** A new or changed Effect MUST
   name the external system it synchronizes. When setup acquires, installs, or
   starts a resource, cleanup MUST release that resource. Synchronization that
@@ -117,6 +128,14 @@ those contracts.
   hook-result identity remains owned by `architecture:public-component-api` and
   the hook's current contract. Ordinary local objects and callbacks have no shared
   identity promise.
+- **INV10 — Own-content announcements live in one module.** In
+  `@astryxdesign/core`, announcing a component's own rendered content
+  (`spec:AST-086` FR11) is done by one shared internal module, which is not
+  exported; making it public needs `spec:AST-002` admission. Packages outside
+  core cannot import it and keep one well-behaved Effect per adopter. Core
+  adopting components hold no Effect, observer, timer, or
+  listener of their own to detect page load, read rendered text, or write that
+  announcement. The module follows INV3 and INV5.
 
 ## Authoring guidance
 
@@ -234,8 +253,11 @@ contracts.
 
 ## Deciding specs
 
-None. Component, family, API, accessibility, layer, interaction, and style records
-remain authoritative for the user-facing outcomes delegated above.
+- `spec:AST-086/DEC-2` — own-content announcements behave the same in every
+  component that announces its own rendered content (INV10).
+
+Component, family, API, accessibility, layer, interaction, and style records
+remain authoritative for the other user-facing outcomes delegated above.
 
 ## Verification
 
@@ -254,3 +276,4 @@ component suite is not blanket conformance with every invariant.
 | INV7             | Real-browser geometry plus N-consumer observer-instance/subscription mutations                                 | Geometry is invalid, observer instances grow with repeated consumers, one unsubscribe silences peers, or cleanup removes another subscriber |
 | INV8             | Owner-observable behavior across documented composition replacement; optional focused internal mechanism tests | Behavior disappears or changes owner when a documented subpart is replaced                                                                  |
 | INV9             | Provider/external-store identity and render-count tests                                                        | Unchanged semantic payload changes identity, or snapshot identity creates a render loop                                                     |
+| INV10            | Shared test over every adopter of the announcement module                                                      | An adopter holding its own Effect, observer, timer, or listener for its own-content announcement                                            |

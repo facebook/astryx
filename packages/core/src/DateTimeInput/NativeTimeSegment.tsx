@@ -25,6 +25,10 @@
 
 import {useCallback, useEffect, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {
+  FieldInputBaseProps,
+  FieldPartStyleProps,
+} from '../Field/fieldParts';
 import {hasEditableDateSegments} from '../DateInput/nativeDateSegments';
 import type {InputStatusType} from '../Field';
 import {useMediaQuery} from '../hooks/useMediaQuery';
@@ -42,6 +46,7 @@ import {
   parseISOTime,
   type ISOTimeString,
 } from '../utils';
+import {chainEventHandlers} from '../utils/chainEventHandlers';
 import {nativePickerSegmentStyles as styles} from './nativePickerSegmentStyles';
 
 const FRACTIONAL_SECONDS = /\.\d+$/;
@@ -75,11 +80,21 @@ export type NativeTimeSegmentProps = {
   max?: ISOTimeString;
   hourFormat: '12h' | '24h';
   isEffectivelyDisabled: boolean;
-  hasDisabledMessage: boolean;
+  /** While disabled, stay focusable: aria-disabled and readOnly, not `disabled`. */
+  isFocusableDisabled: boolean;
   isEffectivelyRequired: boolean;
   isBusy: boolean;
   statusType?: InputStatusType;
   ariaDescribedBy?: string;
+  /**
+   * The caller's base props (data-*, aria-*, DOM handlers, …) for the native
+   * input, the field's semantic control (family:input-fields FR10). Focus and
+   * blur handlers run after the segment's own.
+   */
+  controlProps?: Omit<
+    FieldInputBaseProps<HTMLInputElement>,
+    keyof FieldPartStyleProps | 'onChange' | 'defaultValue'
+  >;
 };
 
 /** The shared native time control rendered inside Astryx field chrome. */
@@ -98,12 +113,18 @@ export function NativeTimeSegment({
   max,
   hourFormat,
   isEffectivelyDisabled,
-  hasDisabledMessage,
+  isFocusableDisabled,
   isEffectivelyRequired,
   isBusy,
   statusType,
   ariaDescribedBy,
+  controlProps,
 }: NativeTimeSegmentProps) {
+  const {
+    onFocus: onFocusProp,
+    onBlur: onBlurProp,
+    ...inputProps
+  } = controlProps ?? {};
   const t = useTranslator();
   const isTouchPointer = useMediaQuery('(pointer: coarse)');
   const internalInputRef = useRef<HTMLInputElement | null>(null);
@@ -265,7 +286,7 @@ export function NativeTimeSegment({
       <button
         type="button"
         onClick={openPicker}
-        disabled={isEffectivelyDisabled}
+        aria-disabled={isEffectivelyDisabled || undefined}
         aria-label={openPickerLabel}
         tabIndex={-1}
         {...stylex.props(
@@ -277,21 +298,30 @@ export function NativeTimeSegment({
       </button>
       <span {...stylex.props(styles.slot)}>
         <input
+          {...inputProps}
           ref={mergedInputRef}
           id={id}
           type="time"
           // UNCONTROLLED on purpose; see initialValueRef and the sync effect.
           defaultValue={initialValueRef.current ?? ''}
           onChange={handleChange}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
+          onFocus={chainEventHandlers(handleFocus, onFocusProp)}
+          onBlur={chainEventHandlers(handleBlur, onBlurProp)}
           min={min}
           max={max}
           step={60}
-          disabled={isEffectivelyDisabled && !hasDisabledMessage}
-          aria-disabled={hasDisabledMessage ? 'true' : undefined}
-          readOnly={hasDisabledMessage || undefined}
-          aria-label={ariaLabelledBy ? undefined : inputLabel}
+          disabled={isEffectivelyDisabled && !isFocusableDisabled}
+          aria-disabled={
+            isEffectivelyDisabled && isFocusableDisabled ? 'true' : undefined
+          }
+          readOnly={(isEffectivelyDisabled && isFocusableDisabled) || undefined}
+          // The segment's own label applies only when nothing else names it;
+          // otherwise a caller aria-label from the spread above stays.
+          aria-label={
+            !ariaLabelledBy && inputLabel
+              ? inputLabel
+              : inputProps['aria-label']
+          }
           aria-labelledby={ariaLabelledBy}
           aria-describedby={ariaDescribedBy}
           autoFocus={hasAutoFocus}

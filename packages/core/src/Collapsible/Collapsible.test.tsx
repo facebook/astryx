@@ -409,6 +409,66 @@ describe('Collapsible', () => {
       const item = screen.getByTestId('item');
       expect(item).not.toHaveAttribute('data-density');
     });
+
+    it('reflects the visual axes and states on their owning theme targets', () => {
+      render(
+        <>
+          <CollapsibleGroup
+            type="single"
+            hasDividers
+            density="compact"
+            chevronPosition="start"
+            defaultValue="open">
+            <Collapsible trigger="Open" value="open" data-testid="open-item">
+              Open body
+            </Collapsible>
+            <Collapsible
+              trigger="Disabled"
+              value="disabled"
+              isDisabled
+              data-testid="disabled-item">
+              Disabled body
+            </Collapsible>
+          </CollapsibleGroup>
+          <Collapsible
+            trigger="Standalone"
+            defaultIsOpen={false}
+            data-testid="standalone-item">
+            Standalone body
+          </Collapsible>
+        </>,
+      );
+
+      const openRoot = screen.getByTestId('open-item');
+      const openTrigger = within(openRoot).getByRole('button');
+      const openContent = contentFor(openTrigger);
+      expect(openRoot).toHaveAttribute('data-density', 'compact');
+      expect(openRoot).toHaveAttribute('data-divided', 'divided');
+      expect(openTrigger).toHaveAttribute('data-density', 'compact');
+      expect(openTrigger).toHaveAttribute('data-chevron-position', 'start');
+      expect(openTrigger).toHaveAttribute('data-open', 'open');
+      expect(openTrigger).not.toHaveAttribute('data-disabled');
+      expect(openContent).toHaveAttribute('data-density', 'compact');
+      expect(openContent).toHaveAttribute('data-open', 'open');
+
+      const disabledRoot = screen.getByTestId('disabled-item');
+      const disabledTrigger = within(disabledRoot).getByRole('button');
+      expect(disabledTrigger).toHaveAttribute('data-disabled', 'disabled');
+      expect(disabledTrigger).not.toHaveAttribute('data-open');
+      expect(contentFor(disabledTrigger)).not.toHaveAttribute('data-open');
+
+      const standaloneRoot = screen.getByTestId('standalone-item');
+      const standaloneTrigger = within(standaloneRoot).getByRole('button');
+      const standaloneContent = contentFor(standaloneTrigger);
+      expect(standaloneRoot).not.toHaveAttribute('data-density');
+      expect(standaloneRoot).not.toHaveAttribute('data-divided');
+      expect(standaloneTrigger).toHaveAttribute('data-chevron-position', 'end');
+      expect(standaloneTrigger).not.toHaveAttribute('data-density');
+      expect(standaloneTrigger).not.toHaveAttribute('data-open');
+      expect(standaloneTrigger).not.toHaveAttribute('data-disabled');
+      expect(standaloneContent).not.toHaveAttribute('data-density');
+      expect(standaloneContent).not.toHaveAttribute('data-open');
+    });
   });
 
   describe('chevron position', () => {

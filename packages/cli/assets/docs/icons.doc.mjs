@@ -42,6 +42,7 @@ export const docs = {
             ['menu', 'Hamburger menu, navigation toggle'],
             ['moreHorizontal', 'Overflow menu, additional actions'],
             ['search', 'Search inputs, find'],
+            ['upload', 'Upload files or content'],
             ['arrowUp', 'Sort ascending, move up'],
             ['arrowDown', 'Sort descending, move down'],
             ['arrowsUpDown', 'Sortable column indicator'],
@@ -73,7 +74,7 @@ export const docs = {
 import { HeartIcon } from 'lucide-react';
 
 <Icon icon={PhotoIcon} size="lg" />
-<Icon icon={HeartIcon} color="negative" />`,
+<Icon icon={HeartIcon} color="error" />`,
         },
       ],
     },
@@ -128,26 +129,7 @@ export const brandTheme = defineTheme({
         },
         {
           type: 'prose',
-          text: 'Ship the fallback in `defaultIcons` under the same key so the glyph still renders with no theme, or pass one to `getExtendedIcon(key, fallback)` when the icon lives outside core.',
-        },
-      ],
-    },
-    {
-      title: 'Adding New Icons',
-  category: 'foundations',
-      content: [
-        {
-          type: 'prose',
-          text: 'To add a new semantic icon name to the design system, only for a glyph the whole system shares; a component-owned one takes a namespaced key instead:',
-        },
-        {
-          type: 'list',
-          style: 'ordered',
-          items: [
-            'Add the name to IconName type in `packages/core/src/Icon/globalIconRegistry.tsx`',
-            'Add the default SVG to `packages/core/src/Icon/defaultIcons.tsx`',
-            'Add a row to the Available Names table in `packages/cli/assets/docs/icons.doc.mjs`',
-          ],
+          text: 'Outside core, pass a fallback to `getExtendedIcon(key, fallback)` so the glyph renders with no theme.',
         },
       ],
     },

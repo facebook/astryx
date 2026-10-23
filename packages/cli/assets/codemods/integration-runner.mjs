@@ -67,7 +67,6 @@ export function runIntegrationCodemods(
   /** In-memory pipeline state keeps ordered dry-runs equivalent to apply. */
   const virtualContents = new Map(providedContents ?? []);
 
-  let totalFilesChanged = 0;
   let totalTransformsApplied = 0;
   /** @type {string[]} */
   const changedFiles = [];
@@ -115,7 +114,6 @@ export function runIntegrationCodemods(
       protection,
       contents: virtualContents,
     });
-    totalFilesChanged += r.filesChanged;
     totalTransformsApplied += r.filesChanged;
     changedFiles.push(...r.changedFiles);
     writtenFiles.push(...r.writtenFiles);
@@ -145,7 +143,6 @@ export function runIntegrationCodemods(
         protection,
         contents: virtualContents,
       });
-      totalFilesChanged += r.filesChanged;
       totalTransformsApplied += r.filesChanged;
       changedFiles.push(...r.changedFiles);
       writtenFiles.push(...r.writtenFiles);
@@ -153,6 +150,9 @@ export function runIntegrationCodemods(
       errors.push(...r.errors);
     }
   }
+
+  // A file several codemods changed is one file; transforms count each change.
+  const totalFilesChanged = new Set(changedFiles).size;
 
   return {
     totalFilesChanged,

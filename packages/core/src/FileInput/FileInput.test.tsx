@@ -16,11 +16,14 @@ import {
   fireEvent,
   createEvent,
   waitFor,
+  act,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {FileInput} from './FileInput';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {InternationalizationProvider} from '../i18n';
+import {Theme} from '../theme/Theme';
+import {defineTheme} from '../theme/defineTheme';
 
 // The `=1` branch names the file; the `other` branch must not. Both come from
 // this test, so neither can pass against a hardcoded English string.
@@ -122,16 +125,36 @@ describe('FileInput', () => {
   it.each([
     {mode: 'input' as const, size: 'sm'},
     {mode: 'dropzone' as const, size: 'md'},
-  ])('exposes the upload icon as a $mode theme target', ({mode, size}) => {
-    render(
-      <FileInput label="Upload" mode={mode} value={null} onChange={() => {}} />,
-    );
+  ])(
+    'uses the shared upload icon registry and preserves the $mode theme target',
+    ({mode, size}) => {
+      const theme = {
+        ...defineTheme({
+          name: `file-input-semantic-icon-${mode}`,
+          icons: {upload: <svg data-testid={`themed-upload-${mode}`} />},
+        }),
+        __built: true as const,
+      };
 
-    const icon = document.querySelector('.astryx-file-input-icon');
-    expect(icon).toHaveClass('astryx-icon');
-    expect(icon).toHaveAttribute('data-mode', mode);
-    expect(icon).toHaveAttribute('data-size', size);
-  });
+      render(
+        <Theme theme={theme}>
+          <FileInput
+            label="Upload"
+            mode={mode}
+            value={null}
+            onChange={() => {}}
+          />
+        </Theme>,
+      );
+
+      const icon = screen
+        .getByTestId(`themed-upload-${mode}`)
+        .closest('.astryx-file-input-icon');
+      expect(icon).toHaveClass('astryx-icon');
+      expect(icon).toHaveAttribute('data-mode', mode);
+      expect(icon).toHaveAttribute('data-size', size);
+    },
+  );
 
   it('displays selected file name', () => {
     const file = createFile('report.pdf', 1024, 'application/pdf');
@@ -220,12 +243,35 @@ describe('FileInput', () => {
     expect(trigger).not.toHaveAttribute('aria-required');
   });
 
-  it('sets disabled attribute when isDisabled is true', () => {
+  it('keeps a disabled input focusable and out of form submission', async () => {
+    const user = userEvent.setup();
     render(
-      <FileInput label="Upload" isDisabled value={null} onChange={() => {}} />,
+      <form>
+        <FileInput
+          label="Upload"
+          isRequired
+          isDisabled
+          value={null}
+          onChange={() => {}}
+        />
+      </form>,
     );
-    const input = document.querySelector('input[type="file"]')!;
-    expect(input).toBeDisabled();
+    const input =
+      document.querySelector<HTMLInputElement>('input[type="file"]')!;
+    const trigger = screen.getByRole('button', {name: 'Upload'});
+    expect(input).not.toHaveAttribute('disabled');
+    expect(trigger).not.toHaveAttribute('disabled');
+    expect(trigger).toHaveAttribute('aria-disabled', 'true');
+    const openPicker = vi.spyOn(input, 'click');
+    await user.tab();
+    expect(trigger).toHaveFocus();
+    await user.keyboard('{Enter}');
+    expect(openPicker).not.toHaveBeenCalled();
+    expect(input.form).toBeNull();
+    expect(trigger.closest('form')!.checkValidity()).toBe(true);
+    // A label click activates the hidden input directly; it is canceled so
+    // the picker never opens (fireEvent returns false when prevented).
+    expect(fireEvent.click(input)).toBe(false);
   });
 
   it('sets aria-invalid when status type is error', () => {
@@ -604,6 +650,68 @@ describe('FileInput', () => {
       expect(handleChange).toHaveBeenCalledWith(null);
     });
 
+    it('calls onChange and changeAction with null when clear is clicked', async () => {
+      const user = userEvent.setup();
+      const order: string[] = [];
+      const handleChange = vi.fn(() => {
+        order.push('onChange');
+      });
+      const changeAction = vi.fn(async () => {
+        order.push('changeAction');
+      });
+      const file = createFile('test.txt', 100);
+      render(
+        <FileInput
+          label="Upload"
+          value={file}
+          onChange={handleChange}
+          changeAction={changeAction}
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Clear Upload'}));
+      expect(handleChange).toHaveBeenCalledWith(null);
+      expect(changeAction).toHaveBeenCalledWith(null);
+      expect(order).toEqual(['onChange', 'changeAction']);
+    });
+
+    it('presents optimistic cleared state and busy indicator while clear changeAction is pending', async () => {
+      const user = userEvent.setup();
+      let resolveAction: () => void = () => {};
+      const changeAction = vi.fn(
+        async () =>
+          new Promise<void>(resolve => {
+            resolveAction = resolve;
+          }),
+      );
+      const file = createFile('test.txt', 100);
+      render(
+        <FileInput
+          label="Upload"
+          value={file}
+          onChange={() => {}}
+          changeAction={changeAction}
+        />,
+      );
+      const trigger = screen.getByRole('button', {
+        name: 'Upload, test.txt',
+      });
+      expect(trigger).not.toHaveAttribute('aria-busy');
+      expect(
+        screen.getByRole('button', {name: 'Clear Upload'}),
+      ).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', {name: 'Clear Upload'}));
+
+      expect(trigger).toHaveAttribute('aria-busy', 'true');
+      expect(
+        screen.queryByRole('button', {name: 'Clear Upload'}),
+      ).not.toBeInTheDocument();
+
+      await act(async () => {
+        resolveAction();
+      });
+    });
+
     it('does not show clear button during loading', () => {
       const file = createFile('test.txt', 100);
       render(
@@ -612,6 +720,66 @@ describe('FileInput', () => {
       expect(
         screen.queryByRole('button', {name: 'Clear Upload'}),
       ).not.toBeInTheDocument();
+    });
+  });
+
+  describe('changeAction and optimistic updates', () => {
+    it('calls changeAction with selected file in a transition', async () => {
+      const order: string[] = [];
+      const handleChange = vi.fn(() => {
+        order.push('onChange');
+      });
+      const changeAction = vi.fn(async () => {
+        order.push('changeAction');
+      });
+      render(
+        <FileInput
+          label="Upload"
+          value={null}
+          onChange={handleChange}
+          changeAction={changeAction}
+        />,
+      );
+      const input = fileInputEl();
+      const file = createFile('resume.pdf', 200, 'application/pdf');
+      await act(async () => {
+        fireEvent.change(input, {target: {files: [file]}});
+      });
+
+      expect(handleChange).toHaveBeenCalledWith(file);
+      expect(changeAction).toHaveBeenCalledWith(file);
+      expect(order).toEqual(['onChange', 'changeAction']);
+    });
+
+    it('presents optimistic file name and aria-busy while changeAction is pending', async () => {
+      let resolveAction: () => void = () => {};
+      const changeAction = vi.fn(
+        async () =>
+          new Promise<void>(resolve => {
+            resolveAction = resolve;
+          }),
+      );
+      render(
+        <FileInput
+          label="Upload"
+          value={null}
+          onChange={() => {}}
+          changeAction={changeAction}
+        />,
+      );
+      const trigger = screen.getByRole('button', {name: 'Upload'});
+      expect(trigger).not.toHaveAttribute('aria-busy');
+
+      const input = fileInputEl();
+      const file = createFile('report.pdf', 300, 'application/pdf');
+      fireEvent.change(input, {target: {files: [file]}});
+
+      expect(trigger).toHaveAttribute('aria-busy', 'true');
+      expect(screen.getByText('report.pdf')).toBeInTheDocument();
+
+      await act(async () => {
+        resolveAction();
+      });
     });
   });
 
@@ -950,7 +1118,7 @@ describe('FileInput', () => {
       expect(clickSpy).not.toHaveBeenCalled();
     });
 
-    it('keeps the trigger non-focusable when disabled without a reason', () => {
+    it('keeps the trigger focusable when disabled without a reason', () => {
       render(
         <FileInput
           label="Resume"
@@ -960,8 +1128,8 @@ describe('FileInput', () => {
         />,
       );
       const trigger = screen.getByRole('button');
-      expect(trigger).toHaveAttribute('tabindex', '-1');
-      expect(trigger).not.toHaveAttribute('aria-disabled');
+      expect(trigger).toHaveAttribute('tabindex', '0');
+      expect(trigger).toHaveAttribute('aria-disabled', 'true');
     });
   });
 });

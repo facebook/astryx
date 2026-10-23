@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-09-25
+approved_at: 2026-10-03
 owners: [cixzhang]
 review_triggers: [api, theming, behavior, layout, accessibility]
 verified_by:
@@ -24,7 +24,13 @@ verified_by:
     packages/core/src/theme/themingTargets.test.ts,
     scripts/check-knowledge.mjs,
   ]
-modules: [module:Markdown/remark, module:Markdown/softBreaks]
+modules:
+  [
+    module:Markdown/headingLinks,
+    module:Markdown/remark,
+    module:Markdown/softBreaks,
+    module:Markdown/sourceLines,
+  ]
 families: [family:navigation-destinations]
 design_specs: []
 architecture:
@@ -42,6 +48,11 @@ system_specs:
     spec:AST-036/DEC-2,
     spec:AST-036/DEC-3,
     spec:AST-036/DEC-4,
+    spec:AST-061/DEC-5,
+    spec:AST-061/DEC-6,
+    spec:AST-061/DEC-9,
+    spec:AST-064/DEC-6,
+    spec:AST-036/DEC-12,
   ]
 ---
 
@@ -54,18 +65,37 @@ constrained renderer seams. Callers may opt into the canonical plugin protocol f
 bounded source syntax, immutable document transformation, typed extension
 rendering, and native typed document-start frontmatter. They may separately opt into dollar-delimited math by supplying one typed
 renderer for both inline and display expressions. The parser accepts matching
-explicit options. Existing parsing, rendering, styling, and streaming behavior
-remain unchanged when plugins and math are absent.
+explicit options. Plugins and math change nothing when absent; the default Code
+block path renders `diff` and `diff-<language>` fences as CodeBlock's diff layer
+(FR29) and wraps every fence's long lines (`spec:AST-061` FR5, DEC-9), and every
+other parsing, rendering, styling, and streaming behavior is the released one.
 
 ## Compatibility and migration
 
-- Released default preserved: `yes`
-- Compatibility class: additive, opt-in public API; existing parser nodes, DOM,
-  styling, targets, dollar-delimited text, `components`, and `inlinePlugins` remain
-  unchanged unless the caller supplies `plugins`, supplies `components.math`, or
-  passes the matching explicit parser option.
+- Released default preserved: `yes`, except the default Code block path for `diff` fences (FR29, below) and its long-line wrap (below)
+- Compatibility class: additive, opt-in public API, with two visible
+  default-path rendering changes (the FR29 diff layer and the fenced-code wrap,
+  below); existing parser nodes, DOM, styling, targets,
+  dollar-delimited text, `components`, and `inlinePlugins` remain unchanged unless
+  the caller supplies `plugins`, supplies `components.math`, or passes the matching
+  explicit parser option.
 - Controlled/uncontrolled behavior: not applicable
 - Migration decision: none
+- Default-path rendering change for diff fences (FR29), a visible default change
+  and not a breaking one: a `diff` fence that rendered as plain text renders as CodeBlock's diff
+  layer over plaintext with a `diff` label, and a `diff-<language>` fence —
+  which rendered as plain text with a `diff` label and viewport name, its
+  leading word being all Markdown read — as the layer over that language with
+  a `<language> diff` label; the header, copy, disclosure, and viewport name
+  stay, and a supplied `code` renderer's contract is unchanged. The way back to
+  plain text is a `text` fence or a custom `code` renderer. Every other fence
+  is unchanged apart from the wrap below.
+- Default-path wrap change (`spec:AST-061` FR5, DEC-9), visual and not breaking:
+  the default Code block wraps long lines instead of scrolling them sideways, so
+  a fence whose lines no longer overflow also no longer takes the conditional
+  scroll-region tab stop. Text, line numbers, syntax colours, copy output, and a
+  supplied `code` renderer's contract are unchanged. The way back to sideways
+  scrolling is a custom `code` renderer.
 - Default-path layout change (FR26–FR28): a default table's columns may become
   wider than the released fixed buckets, never narrower; header labels wrap
   instead of truncating; a table that squashed its columns may now scroll.
@@ -138,8 +168,33 @@ phases. Frontmatter is document metadata: it has no renderer, uses a bounded
 first-party key/value grammar rather than Remark compatibility, and exposes typed
 metadata through the helper that created it. `spec:AST-036`
 owns the shared protocol and limited Remark compatibility profile,
-`module:Markdown/remark` owns that profile's adapter, and this component owns
-aggregate application and fallback.
+`module:Markdown/remark` owns that profile's adapter,
+`module:Markdown/headingLinks` owns its opt-in identity projection and permalink
+composition, and this component owns aggregate application and fallback.
+
+`decodeMarkdownCharacterReferences(text)` is the character reference decoder
+`Markdown` renders with, exported from the server-safe
+`@astryxdesign/core/Markdown/parser` subpath and from
+`@astryxdesign/core/Markdown` so the RichText surfaces decode references
+exactly as `Markdown` does. It decodes valid named and numeric references in
+plain text and leaves everything else as written; the named reference table
+stays private. `spec:AST-061/DEC-5` owns its contract.
+
+`module:Markdown/sourceLines` owns the opt-in source-line stamps on rendered
+blocks and the optional `sourceLines` prop that `components` block renderers
+receive while its plugin is installed; without it no renderer receives the prop.
+
+`getMarkdownPluginCapabilities(plugin)`, exported from the server-safe
+`@astryxdesign/core/Markdown/plugins` subpath, reports only whether an entry
+declares syntax and whether it declares a transform; the entry stays opaque.
+`MarkdownPluginNodeRenderer`, exported from the client-only
+`@astryxdesign/core/Markdown/plugin-renderer` subpath, renders one parsed
+extension node with the given plugins with exactly the DOM, accessibility,
+theme targets, fallback, and failure reporting that `Markdown` presents for
+that same node — its plugin's renderer inside Markdown's error boundary and
+suspense fallback — and adds no element or theme target of its own.
+`spec:AST-064/DEC-6` owns both, so the RichText surfaces adopt plugins
+without reading their definitions or copying their rendering.
 
 ### Acceptance and implementation state
 
@@ -180,8 +235,8 @@ unions. Enabled calls return the explicit `InlineNodeWithMath` and
 | FR13 | Plugin-enabled parsing follows built-in lexical shields and ordered syntax claims, then uses one stable, strictly typed, MDAST-aligned canonical tree for transforms, rendering, and Outline. `MarkdownAstNodeMap` and `visitMarkdownNodes` narrow callbacks by node kind. Released parser functions preserve their existing result shape through a compatibility projection. Every returned root is finite, acyclic, representable, validated, and frozen before later plugins or rendering observe it.                                                |
 | FR14 | Plugin failures preserve the last valid document and readable authored source. Core retains heading, navigation, image, list, table, and document semantics and exposes no raw-markup parser channel, registry, package discovery, mutable shared AST, or unrestricted DOM hook. URL-like plugin data remains untrusted; Astryx-owned sinks follow `family:navigation-destinations`.                                                                                                                                                                    |
 | FR15 | Incremental parse identity contains every parse-affecting Markdown option and only ordered syntax-bearing plugin name, protocol version, and `parseKey`. Transform or renderer changes reuse settled parse output, rerun transformation, and do not remount unaffected extension output.                                                                                                                                                                                                                                                                |
-| FR16 | Plugin-enabled Markdown and Markdown-derived Outline use the same parse options, ordered transforms, extension text projection, slugger, and collision allocator so every visible heading, Outline label, heading ID, and target agree. A limited Remark adapter may run only synchronous transform plugins whose input and output round-trip through the documented supported MDAST subset.                                                                                                                                                            |
-| FR17 | An extension node declares `content` as `'none'`, `'phrasing'`, `'flow'`, or an explicit `{allow, min?, max?}` allowlist that narrows the category its `display` implies. Markdown parses every container's inner source span under the same grammar and shields, validates children at each transform boundary, renders children through the same built-in renderers and `components` seams, counts nesting toward the built-in depth bound, leaves FR16 heading traversal unchanged, and renders children in place when a container renderer fails.   |
+| FR16 | Plugin-enabled Markdown and Markdown-derived Outline use the same parse options, ordered transforms, extension text projection, and installed heading projection so every Outline target agrees with rendered identity. A first-party module may compose a different heading projection only under its own current module contract; Markdown owns only this shared invocation seam. A limited Remark adapter may run only synchronous transform plugins whose input and output round-trip through the documented supported MDAST subset.                |
+| FR17 | An extension node declares `content` as `'none'`, `'phrasing'`, `'flow'`, or an explicit `{allow, min?, max?}` allowlist that narrows the category its `display` implies. Markdown parses every container's inner source span under the same grammar and shields, validates children at each transform boundary, renders children through the same built-in renderers and `components` seams, counts nesting toward the built-in depth bound, uses the FR16 projection, and renders children in place when a container renderer fails.                  |
 | FR18 | A transform may read and remove another plugin's extension nodes, including a subtree containing them, and may insert or remove headings; it may not create, edit, internally reorder, or duplicate another plugin's nodes, change a source heading's depth, or forge or duplicate heading identity. `dependsOn` is validated at preparation; an unmet or misordered dependency skips only that plugin's transform. Every rejection names the rule and owning plugin.                                                                                   |
 | FR19 | `onPluginDiagnostic` is available on the component and parser options and receives one source-free event — plugin, phase, stable code, severity — per failure, advisory, or silent degradation, in development and production, rate-limited with a suppression code. Admission, duplicate-name, and protocol-version failures behave identically through the component and every parser entrypoint: the call succeeds with the last valid configuration and never throws into the caller.                                                               |
 | FR20 | `parseMarkdownAst()` and `parseInlineAst()` return the canonical tree and accept the same options and plugin list as the component; `@astryxdesign/core/Markdown/parser` exposes parsing, canonical AST types, and plugin admission with no client boundary. `createMarkdownPlugin()` infers the extension-node union, so no callsite needs explicit type arguments, and a declaration that yields no usable extension type is a type error rather than a silent `never`.                                                                               |
@@ -193,6 +248,7 @@ unions. Enabled calls return the explicit `InlineNodeWithMath` and
 | FR26 | On the default table path each column has a content-derived width floor: the larger of its own longest unbreakable token and a readable minimum derived from that column's content, bounded so a table of short columns still fits its container. The floor applies to the cell's text, not to its padded box, so it means the same amount of content at every density. A header label contributes its own readable minimum to that comparison. A table whose floors exceed the container grows and scrolls rather than dividing the container equally. |
 | FR27 | Default table header cells never truncate: no ellipsis and no width clamp. A header reads in full, on one line up to a bounded width and wrapping past it. Inline code inside a default table cell keeps its token whole rather than breaking mid-token; a supplied `inlineCode` renderer owns its own wrapping.                                                                                                                                                                                                                                        |
 | FR28 | Markdown's Table block owns spacing, sizing, and alignment. The nested Table's own Scroll region remains the sole owner of the table's horizontal overflow, its accessible name, and its conditional keyboard focusability; Markdown adds no second scroll container, name, or tab stop of its own.                                                                                                                                                                                                                                                     |
+| FR29 | On the default Code block path the fence's full first word selects CodeBlock's diff layer (`component:CodeBlock` FR9): `diff` renders the layer over plaintext, `diff-<language>` the layer over `<language>` (the language read by the same leading-word rule as any other fence); every other fence takes no diff layer. A supplied `code` renderer's contract is unchanged: it keeps receiving the leading word characters as `language` — `diff` for both `diff` and `diff-<language>` fences — and nothing new.                                    |
 
 FR23 includes CommonMark-compatible lazy paragraph continuation inside blockquotes
 and ordered, unordered, or task-list items. Omitting a repeated quote marker or
@@ -212,7 +268,8 @@ text. Outside a table cell, inline code retains its authored backslashes.
 - **AV1 — Parsed content.** The number and ordering of block parts may vary with
   the Markdown source without changing their ownership.
 - **AV2 — Lists.** Ordered, unordered, and task lists share the List anatomy and
-  current `markdown-list` target.
+  current `markdown-list` target. Each level's marker style is fixed by its
+  depth, as `spec:AST-061/DEC-6` defines, not a variation.
 - **AV3 — Custom renderers.** Supported custom block renderers may replace their
   default part and own its styling without receiving a Markdown block target.
 - **AV4 — Nested primitives.** Astryx primitives used inside default blocks may
@@ -232,7 +289,7 @@ text. Outside a table cell, inline code retains its authored backslashes.
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | Default block content  | Every parsed block uses its corresponding current Markdown target.                                                                                      | Block count, order, density, content width, and alignment.                                      |
 | Custom block renderers | The replaced Heading, Paragraph, Code block, Blockquote, Divider, or Image lacks the corresponding Markdown target.                                     | Replacement structure and styling.                                                              |
-| Ordered/unordered list | List carries `markdown-list`.                                                                                                                           | Marker kind, start value, item count, and nested content.                                       |
+| Ordered/unordered list | List carries `markdown-list`; each level's marker style follows its depth (`spec:AST-061/DEC-6`).                                                       | Start value, item count, and nested content.                                                    |
 | Task list              | Each task-marked item carries its own checked state; mixed task/plain items stay in one compatible list and preserve document order and nesting.        | Checked values, item content, and adjacent plain items.                                         |
 | Safe block image       | Default Image carries `markdown-image`, or a custom image renderer replaces it.                                                                         | Source and alternative text.                                                                    |
 | Unsafe block image URL | Markdown renders its fallback Image part with `markdown-image`; no custom image renderer receives the rejected URL.                                     | Alternative text shown by the fallback.                                                         |
@@ -261,6 +318,11 @@ text. Outside a table cell, inline code retains its authored backslashes.
   It withholds an unfinished block during streaming, removes a completed block
   before later transforms render the document, and makes typed metadata available
   to those later transforms and to callers of that helper.
+- A semantic-fence proposal renders before `components.code`. `components.code`
+  renders every fence no proposal claims, and a claimed fence whose plugin
+  renderer is absent, returns nothing, throws, or suspends falls back to
+  `components.code` when supplied and to the default Code block otherwise
+  (`spec:AST-036` FR17).
 - Text matching, semantic fences, and source decorations use transform helpers. Core
   may compile those helpers into indexed internal plans without exposing additional
   public phases.
@@ -354,6 +416,9 @@ and this change preserves the existing spelling exactly.
 - `spec:AST-005/DEC-2` keeps embedded-resource policy separate. Markdown may
   reject a broader set of image/resource URLs without narrowing the shared
   navigation contract.
+- `module:Markdown/headingLinks` owns its opt-in public factory, heading projection,
+  built-in sibling renderer, i18n, styles, accessibility behavior, and evidence.
+  Markdown supplies only the generic plugin and built-in-heading composition seams.
 - `spec:AST-036` owns the opaque syntax/transform/renderer protocol, immutable AST
   validation, limited Remark compatibility, performance, and resource boundaries.
   This record owns aggregate Markdown behavior in FR12–FR22;
@@ -369,27 +434,31 @@ and this change preserves the existing spelling exactly.
   actually scrolls. FR28 projects those claims onto Markdown's table block: it
   requires Markdown to add no competing scroll container, name, or tab stop,
   and it neither restates nor narrows what Table and the shared behavior own.
+- `spec:AST-064` owns how the RichText surfaces adopt Markdown plugins. Its
+  DEC-6 limits what this component exposes for them to the capability report
+  and the single-node renderer above.
 - Nested Astryx primitives retain ownership of their own anatomy and targets;
   Markdown owns the outer block targets listed here.
 
 ## Verification map
 
-| Contract               | Verification                                                                      | Representative states                                                                                                                                | Failure signal                                                                                                                                                                                             |
-| ---------------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1–FR5                | `Markdown.test.tsx`, theme-target tests, and `scripts/check-knowledge.mjs`        | Default block/inline output and all current targets                                                                                                  | Existing DOM, target, spacing, or renderer behavior changes.                                                                                                                                               |
-| FR6–FR10               | `parser.test.ts` and `Markdown.test.tsx`                                          | Opt-out, inline/display math, escapes, currency, code, links, plugins                                                                                | A delimiter is claimed without opt-in, TeX is formatted as Markdown, or opaque contexts leak.                                                                                                              |
-| FR11                   | `incremental.test.ts` and `Markdown.test.tsx`                                     | Every-character top-level/list/task-list/blockquote splits, CRLF, source ranges                                                                      | Streaming diverges from a full parse, shows partial syntax, mistakes a nested closer for an opener, or crosses a closed container.                                                                         |
-| FR12–FR16              | plugin, transform, adapter, performance, and Outline parser tests                 | omitted/empty lists, immutable transforms, invalid outputs, live updates, one compatible Remark plugin, duplicate headings                           | Empty behavior forks, input mutates, invalid structure escapes, transforms reparse, adapter loses content, budgets fail, or heading targets diverge.                                                       |
-| FR17–FR18              | container parse/validation, ownership, and dependency tests                       | leaf/container declarations, nested containers, foreign read/remove/mint/edit, unmet/misordered dependencies                                         | Plugin-built parsed children, invalid content, lost fallback children, foreign mint/edit, or generic ownership codes.                                                                                      |
-| FR19                   | diagnostic-channel tests in development and production                            | every phase, advisory reports, rate suppression, no handler, malformed list, duplicate Core, version skew                                            | A silent production failure, document content in a diagnostic, or one entrypoint throwing where another recovers.                                                                                          |
-| FR20–FR22              | canonical/server imports, inference, streaming, preparation, theming tests        | server imports, no explicit type args, chunk boundaries, recreated lists, themed/unthemed extensions                                                 | Client references, explicit-type workarounds, oscillation, per-render re-preparation, or unreachable opted-in output.                                                                                      |
-| FR23                   | parser, incremental, renderer, nesting, and public option tests                   | mixed lists; escaped prose/code table cells, nested inline code, full/streaming parity; autolink omitted/enabled                                     | A mixed list splits or loses state, an escaped table pipe changes cells or exposes its backslash, or autolink changes other syntax.                                                                        |
-| FR24                   | `plugins/frontmatter.test.tsx`, Storybook, and server rendering                   | complete, malformed, non-leading, LF/CRLF, unfinished streaming, full plugin stack                                                                   | Metadata syntax renders after completion, unfinished syntax leaks while streaming, typing is lost, or later plugins stop composing.                                                                        |
-| FR25                   | `parser.public.test.ts`, plugin SSR tests, and package export checks              | server/RSC parsing with plugins, synchronous SSR, suspending renderer streaming boundary                                                             | A server import gains `use client`, plugin execution needs serialization, SSR loses fallback, or direct RSC rendering is misrepresented as supported.                                                      |
-| FR26–FR28              | `Markdown.test.tsx` and a real-browser layer over checked-in narrow-width stories | short, prose, and token-heavy tables; header-only rows and empty cells; long headers over short bodies; reading columns from phone to document width | A column collapses below its content floor, cell padding eats the floor, a header truncates, an inline-code token breaks mid-token, or a second scroll viewport, name, or tab stop appears around a table. |
-| Public syntax/types    | `Markdown.public.test.ts`, core typecheck, and `Markdown.doc.mjs`                 | Legacy exhaustive switches, math opt-ins, inferred extension-node unions                                                                             | A released union widens, an enabled union loses nodes, or docs drift from declarations.                                                                                                                    |
-| Navigation contract    | `parser.test.ts`, `Markdown.test.tsx`, and `Markdown.renderBoundary.test.tsx`     | Parsed and rendered links, including transformed built-in links; accepted ordinary schemes; rejected destinations; links versus images               | A blocked destination reaches navigation or a custom link renderer, or resource policy narrows accepted navigation.                                                                                        |
-| Security/accessibility | `parser.test.ts`, `Markdown.test.tsx`, and renderer guidance                      | Inert expression strings and renderer-owned semantics                                                                                                | Astryx executes math as HTML or silently claims renderer-owned accessibility.                                                                                                                              |
+| Contract               | Verification                                                                                                                                                                                                  | Representative states                                                                                                                                | Failure signal                                                                                                                                                                                             |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR5                | `Markdown.test.tsx`, theme-target tests, and `scripts/check-knowledge.mjs`                                                                                                                                    | Default block/inline output and all current targets                                                                                                  | Existing DOM, target, spacing, or renderer behavior changes.                                                                                                                                               |
+| FR6–FR10               | `parser.test.ts` and `Markdown.test.tsx`                                                                                                                                                                      | Opt-out, inline/display math, escapes, currency, code, links, plugins                                                                                | A delimiter is claimed without opt-in, TeX is formatted as Markdown, or opaque contexts leak.                                                                                                              |
+| FR11                   | `incremental.test.ts` and `Markdown.test.tsx`                                                                                                                                                                 | Every-character top-level/list/task-list/blockquote splits, CRLF, source ranges                                                                      | Streaming diverges from a full parse, shows partial syntax, mistakes a nested closer for an opener, or crosses a closed container.                                                                         |
+| FR12–FR16              | plugin, transform, adapter, performance, and Outline parser tests                                                                                                                                             | omitted/empty lists, immutable transforms, invalid outputs, live updates, one compatible Remark plugin, duplicate headings                           | Empty behavior forks, input mutates, invalid structure escapes, transforms reparse, adapter loses content, budgets fail, or heading targets diverge.                                                       |
+| FR17–FR18              | container parse/validation, ownership, and dependency tests                                                                                                                                                   | leaf/container declarations, nested containers, foreign read/remove/mint/edit, unmet/misordered dependencies                                         | Plugin-built parsed children, invalid content, lost fallback children, foreign mint/edit, or generic ownership codes.                                                                                      |
+| FR19                   | diagnostic-channel tests in development and production                                                                                                                                                        | every phase, advisory reports, rate suppression, no handler, malformed list, duplicate Core, version skew                                            | A silent production failure, document content in a diagnostic, or one entrypoint throwing where another recovers.                                                                                          |
+| FR20–FR22              | canonical/server imports, inference, streaming, preparation, theming tests                                                                                                                                    | server imports, no explicit type args, chunk boundaries, recreated lists, themed/unthemed extensions                                                 | Client references, explicit-type workarounds, oscillation, per-render re-preparation, or unreachable opted-in output.                                                                                      |
+| FR23                   | parser, incremental, renderer, nesting, and public option tests                                                                                                                                               | mixed lists; escaped prose/code table cells, nested inline code, full/streaming parity; autolink omitted/enabled                                     | A mixed list splits or loses state, an escaped table pipe changes cells or exposes its backslash, or autolink changes other syntax.                                                                        |
+| FR24                   | `plugins/frontmatter.test.tsx`, Storybook, and server rendering                                                                                                                                               | complete, malformed, non-leading, LF/CRLF, unfinished streaming, full plugin stack                                                                   | Metadata syntax renders after completion, unfinished syntax leaks while streaming, typing is lost, or later plugins stop composing.                                                                        |
+| FR25                   | `parser.public.test.ts`, plugin SSR tests, and package export checks                                                                                                                                          | server/RSC parsing with plugins, synchronous SSR, suspending renderer streaming boundary                                                             | A server import gains `use client`, plugin execution needs serialization, SSR loses fallback, or direct RSC rendering is misrepresented as supported.                                                      |
+| FR26–FR28              | `Markdown.test.tsx` and a real-browser layer over checked-in narrow-width stories                                                                                                                             | short, prose, and token-heavy tables; header-only rows and empty cells; long headers over short bodies; reading columns from phone to document width | A column collapses below its content floor, cell padding eats the floor, a header truncates, an inline-code token breaks mid-token, or a second scroll viewport, name, or tab stop appears around a table. |
+| FR29                   | `Markdown.test.tsx` (a `diff` fence → plaintext + layer, a `diff-tsx` fence → tsx + layer, a plain fence unchanged, a custom `code` renderer receives `language="diff"` for both diff fences and nothing new) | default path and custom renderer, `diff` and `diff-<language>` fences                                                                                | a fence word other than `diff`/`diff-<language>` reaching the layer, or a custom renderer receiving a new prop or a different `language`                                                                   |
+| Public syntax/types    | `Markdown.public.test.ts`, core typecheck, and `Markdown.doc.mjs`                                                                                                                                             | Legacy exhaustive switches, math opt-ins, inferred extension-node unions                                                                             | A released union widens, an enabled union loses nodes, or docs drift from declarations.                                                                                                                    |
+| Navigation contract    | `parser.test.ts`, `Markdown.test.tsx`, and `Markdown.renderBoundary.test.tsx`                                                                                                                                 | Parsed and rendered links, including transformed built-in links; accepted ordinary schemes; rejected destinations; links versus images               | A blocked destination reaches navigation or a custom link renderer, or resource policy narrows accepted navigation.                                                                                        |
+| Security/accessibility | `parser.test.ts`, `Markdown.test.tsx`, and renderer guidance                                                                                                                                                  | Inert expression strings and renderer-owned semantics                                                                                                | Astryx executes math as HTML or silently claims renderer-owned accessibility.                                                                                                                              |
 
 Focused tests continue to pin all nine current target names and default block
 placement. Math intentionally adds no target and no default anatomy.
@@ -443,7 +512,7 @@ This projects `spec:AST-036/DEC-1` through `DEC-4` into the component owner. It 
 **Reference:** `component:Markdown/DEC-3`
 **Decider:** `cixzhang`, `2026-09-16`
 
-Markdown parses every extension container's inner span itself and validates children against the plugin's declared content shape, so a callout holds real Markdown while heading identity, protected contexts, navigation policy, and Outline scope stay Core-owned. Containers change what a document can express, not which headings have identity: the released top-level traversal shared by heading IDs and Outline is untouched. A failed container renderer shows its children rather than literal source. Ownership rejections name the rule and owner; removal of another plugin's nodes is permitted and only minting, editing, internal reordering, duplication, and identity forgery are not.
+Markdown parses every extension container's inner span itself and validates children against the plugin's declared content shape, so a callout holds real Markdown while heading identity, protected contexts, navigation policy, and Outline scope stay Core-owned. Containers change what a document can express, not which projection owns heading identity: the released top-level traversal remains the default, and any opt-in widening belongs to a separate current module contract. A failed container renderer shows its children rather than literal source. Ownership rejections name the rule and owner; removal of another plugin's nodes is permitted and only minting, editing, internal reordering, duplication, and identity forgery are not.
 
 Markdown also owns the protocol's observability and entry surface: `onPluginDiagnostic` makes every failure visible in production without carrying document content, admission failures degrade instead of throwing at any entrypoint, canonical parse entrypoints and a server-safe parser entry exist beside the released projection, extension types are inferred, and extension output may opt into one theme target without becoming default anatomy.
 

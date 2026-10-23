@@ -35,7 +35,7 @@ jobs:
       - name: Stage landing and deep-link recovery page
         run: |
           mkdir pages-dist
-          cp .github/pages/index.html pages-dist/index.html
+          cp -R .github/pages/. pages-dist/
           cp .github/pages/index.html pages-dist/404.html
 
       - uses: actions/configure-pages@v6

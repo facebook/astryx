@@ -10,7 +10,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {renderHook} from '@testing-library/react';
+import {Activity, type ReactNode} from 'react';
+import {render, renderHook} from '@testing-library/react';
 import {useTypeahead} from './useTypeahead';
 
 const LABELS = ['Apple', 'Apricot', 'Banana', 'Cherry'] as const;
@@ -84,6 +85,46 @@ describe('useTypeahead', () => {
     vi.advanceTimersByTime(800);
     api.onKeyDown(key('b')); // fresh buffer → Banana
     expect(onMatch).toHaveBeenLastCalledWith(2);
+  });
+
+  it('clears the pending buffer reset when the component unmounts', () => {
+    const {result, unmount} = renderHook(() =>
+      useTypeahead({getItemLabels: () => LABELS, onMatch: vi.fn()}),
+    );
+    result.current.onKeyDown(key('a'));
+    expect(vi.getTimerCount()).toBe(1);
+    unmount();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('empties the buffer when an Activity boundary hides the collection', () => {
+    const latest: {api: ReturnType<typeof useTypeahead> | null} = {api: null};
+    function Probe(): ReactNode {
+      latest.api = useTypeahead({
+        getItemLabels: () => LABELS,
+        onMatch: vi.fn(),
+      });
+      return null;
+    }
+    const {rerender} = render(
+      <Activity mode="visible">
+        <Probe />
+      </Activity>,
+    );
+    latest.api?.onKeyDown(key('a'));
+    rerender(
+      <Activity mode="hidden">
+        <Probe />
+      </Activity>,
+    );
+    expect(vi.getTimerCount()).toBe(0);
+    rerender(
+      <Activity mode="visible">
+        <Probe />
+      </Activity>,
+    );
+    // The typed prefix went with the hide, so a bare Space is not typeahead.
+    expect(latest.api?.onKeyDown(key(' '))).toBe(false);
   });
 
   it('skips disabled items', () => {
@@ -255,5 +296,56 @@ describe('useTypeahead', () => {
     );
     expect(handled).toBe(true);
     expect(onMatch).toHaveBeenCalledWith(0);
+  });
+
+  it('ignores a key that is part of an input method composition', () => {
+    const {onMatch, api} = setup();
+    const handled = api.onKeyDown(
+      new KeyboardEvent('keydown', {key: 'b', isComposing: true}),
+    );
+    expect(handled).toBe(false);
+    expect(onMatch).not.toHaveBeenCalled();
+  });
+
+  it('ignores a composing Space even mid-buffer', () => {
+    const {onMatch, api} = setup();
+    api.onKeyDown(key('a'));
+    const handled = api.onKeyDown(
+      new KeyboardEvent('keydown', {key: ' ', isComposing: true}),
+    );
+    expect(handled).toBe(false);
+    expect(onMatch).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores Control and Command chords on a letter', () => {
+    const {onMatch, api} = setup();
+    expect(
+      api.onKeyDown(new KeyboardEvent('keydown', {key: 'b', ctrlKey: true})),
+    ).toBe(false);
+    expect(
+      api.onKeyDown(new KeyboardEvent('keydown', {key: 'b', metaKey: true})),
+    ).toBe(false);
+    expect(onMatch).not.toHaveBeenCalled();
+  });
+
+  it('leaves the highlight where it was when nothing matches', () => {
+    const {onMatch, api} = setup({current: 1});
+    const handled = api.onKeyDown(key('z'));
+    // The key is still consumed — it is typing, not a shortcut for the host.
+    expect(handled).toBe(true);
+    expect(onMatch).not.toHaveBeenCalled();
+  });
+
+  it('reads a React synthetic event’s isComposing through nativeEvent', () => {
+    const {onMatch, api} = setup();
+    const synthetic = {
+      key: 'b',
+      ctrlKey: false,
+      metaKey: false,
+      altKey: false,
+      nativeEvent: {isComposing: true},
+    } as unknown as React.KeyboardEvent;
+    expect(api.onKeyDown(synthetic)).toBe(false);
+    expect(onMatch).not.toHaveBeenCalled();
   });
 });

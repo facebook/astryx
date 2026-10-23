@@ -61,6 +61,7 @@ import {useTopNavRenderMode} from './TopNavRenderContext';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
@@ -228,18 +229,22 @@ const styles = stylex.create({
   drawerChevronExpanded: {
     transform: 'rotate(180deg)',
   },
+  // Clips only while collapsed or animating; see TopNavMenu drawerStyles.items.
   drawerItems: {
     display: 'grid',
     gridTemplateRows: '0fr',
-    transitionProperty: 'grid-template-rows',
-    transitionDuration: durationVars['--duration-medium'],
+    overflow: 'hidden',
+    transitionProperty: 'grid-template-rows, overflow',
+    transitionBehavior: 'allow-discrete',
+    transitionDuration: `${durationVars['--duration-medium']}, 0s`,
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   drawerItemsExpanded: {
     gridTemplateRows: '1fr',
+    overflow: 'visible',
+    transitionDelay: `0s, ${durationVars['--duration-medium']}`,
   },
   drawerItemsInner: {
-    overflow: 'hidden',
     minHeight: 0,
   },
 
@@ -553,6 +558,7 @@ function DrawerMegaMenu({
 }: Pick<TopNavMegaMenuProps, 'label' | 'items' | 'featured'> &
   BaseProps<HTMLButtonElement>) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const pressable = usePressFeedback();
   const menuId = `mega-menu-${label.toLowerCase().replace(/\s+/g, '-')}`;
 
   return (
@@ -566,6 +572,7 @@ function DrawerMegaMenu({
         )}
         aria-expanded={isExpanded}
         aria-controls={`${menuId}-items`}
+        {...pressable}
         {...mergeProps(
           themeProps('top-nav-mega-menu', {mode: 'drawer'}),
           focusOutlineProps.focusVisible(
@@ -592,6 +599,8 @@ function DrawerMegaMenu({
       {/* Animated expand/collapse container */}
       <div
         id={`${menuId}-items`}
+        aria-hidden={!isExpanded}
+        inert={!isExpanded ? true : undefined}
         {...stylex.props(
           styles.drawerItems,
           isExpanded && styles.drawerItemsExpanded,

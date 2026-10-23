@@ -168,33 +168,39 @@ describe('spec-only workflow contract', () => {
 
   it('sets up dependencies before spec validation and skips heavy spec-only work', () => {
     const ci = read('.github/workflows/ci.yml');
-    const jobStart = ci.indexOf('  docsite-test:');
-    const jobEnd = ci.indexOf('\n  check-components:', jobStart);
-    const docsiteJob = ci.slice(jobStart, jobEnd);
+    const block = (start, end) => {
+      const from = ci.indexOf(`  ${start}:`);
+      expect(from, start).toBeGreaterThanOrEqual(0);
+      return ci.slice(from, ci.indexOf(`\n  ${end}:`, from));
+    };
+    // docsite-test validates spec records itself; the heavy generation lives
+    // in docsite-data, which the spec-only lane never starts.
+    const docsiteJob = block('docsite-test', 'docsite-data');
+    const dataJob = block('docsite-data', 'docsite-browser');
 
     const checkout = docsiteJob.indexOf('- uses: actions/checkout@v7');
     const setup = docsiteJob.indexOf('- uses: ./.github/actions/setup');
     const validate = docsiteJob.indexOf('- name: Validate spec records');
-    const build = docsiteJob.indexOf('- name: Build core package');
-    const generate = docsiteJob.indexOf(
-      '- name: Generate and test docsite data',
-    );
 
     expect(checkout).toBeGreaterThanOrEqual(0);
     expect(setup).toBeGreaterThan(checkout);
     expect(validate).toBeGreaterThan(setup);
-    expect(build).toBeGreaterThan(validate);
-    expect(generate).toBeGreaterThan(build);
     expect(docsiteJob.slice(setup, validate)).toContain(
-      "if: needs.check-scope.outputs.tooling_only != 'true'",
+      "if: needs.check-scope.outputs.spec_only == 'true'",
     );
-    expect(docsiteJob.slice(setup, validate)).not.toContain(
-      "needs.check-scope.outputs.spec_only != 'true'",
-    );
-    expect(docsiteJob.slice(build, generate)).toContain(
+    expect(docsiteJob).not.toContain('- name: Build core package');
+    expect(docsiteJob).not.toContain('- name: Generate and test docsite data');
+
+    const header = dataJob.slice(0, dataJob.indexOf('steps:'));
+    expect(header).toContain("needs.check-scope.outputs.spec_only != 'true'");
+    const build = dataJob.indexOf('- name: Build core package');
+    const generate = dataJob.indexOf('- name: Generate and test docsite data');
+    expect(build).toBeGreaterThanOrEqual(0);
+    expect(generate).toBeGreaterThan(build);
+    expect(dataJob.slice(build, generate)).toContain(
       "if: needs.check-scope.outputs.spec_only != 'true'",
     );
-    expect(docsiteJob.slice(generate)).toContain(
+    expect(dataJob.slice(generate)).toContain(
       "if: needs.check-scope.outputs.spec_only != 'true'",
     );
   });
@@ -218,7 +224,7 @@ describe('spec-only workflow contract', () => {
   it('fails closed when file APIs are truncated or scope classification fails', () => {
     const ci = read('.github/workflows/ci.yml');
     expect(ci).toContain(
-      "if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() }}",
+      "if: ${{ github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.release_bump != 'true' && always() && !cancelled() }}",
     );
     expect(ci).toContain("if: needs.check-scope.result != 'success'");
 
@@ -232,9 +238,7 @@ describe('spec-only workflow contract', () => {
   it('keeps the schema approval roster within the ENGOWNERS set', () => {
     const {parseOwnerFile} = require('./knowledge-frontmatter.cjs');
     const latestSchema = JSON.parse(read('docs/schemas/knowledge/v4.json'));
-    const engineeringOwners = parseOwnerFile(
-      read('.github/ENGOWNERS'),
-    );
+    const engineeringOwners = parseOwnerFile(read('.github/ENGOWNERS'));
 
     for (const owner of latestSchema.approvalOwners) {
       expect(engineeringOwners).toContain(owner);
@@ -333,6 +337,19 @@ describe('spec-only workflow contract', () => {
     for (const prefix of triggerPrefixes) {
       expect(prefix.trimEnd(), prefix).toBe(prefix);
     }
+  });
+
+  it('accepts relayed owner decisions only from the configured review app', () => {
+    const workflow = read('.github/workflows/spec-owner-gate.yml');
+    const reconciler = read('.github/scripts/spec-owner-reconcile.cjs');
+
+    expect(workflow).toContain(
+      'repository_dispatch:\n    types: [spec-owner-decision]',
+    );
+    expect(workflow).toContain(
+      'SPEC_DECISION_APP: ${{ vars.SPEC_DECISION_APP }}',
+    );
+    expect(reconciler).toContain('appLogin: env.SPEC_DECISION_APP');
   });
 
   it('offers a backfill dispatch that publishes status without landing', () => {

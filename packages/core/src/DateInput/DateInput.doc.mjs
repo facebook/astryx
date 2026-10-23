@@ -49,14 +49,15 @@ export const docs = {
     {
       name: 'isDisabled',
       type: 'boolean',
-      description: 'Disable the input and calendar.',
+      description:
+        'Disable the input and calendar. The field stays focusable and exposes `aria-disabled`; typing and opening are blocked.',
       default: 'false',
     },
     {
       name: 'disabledMessage',
       type: 'string',
       description:
-        'Explains why the input is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the field focusable via aria-disabled (activation stays blocked). Use this instead of wrapping a disabled DateInput in Tooltip. Disabled controls swallow the hover events an external Tooltip needs.',
+        'Explains why the input is disabled. With isDisabled, shows a tooltip on hover/keyboard focus (activation stays blocked). Use this instead of wrapping a disabled DateInput in Tooltip.',
     },
     {
       name: 'value',
@@ -78,7 +79,7 @@ export const docs = {
       name: 'isLoading',
       type: 'boolean',
       description:
-        'Whether the input is in a loading state. Disables interaction and shows a spinner.',
+        'Whether the input is in a loading state. The field stays focusable and exposes `aria-busy` with a spinner; typing, picking, and clearing are blocked until loading ends.',
       default: 'false',
     },
     {
@@ -93,7 +94,7 @@ export const docs = {
     },
     {
       name: 'dateConstraints',
-      type: 'Array<(date: Date) => boolean>',
+      type: 'ReadonlyArray<(date: Date) => boolean>',
       description:
         'Array of custom constraint functions that disable specific dates.',
     },
@@ -146,7 +147,7 @@ export const docs = {
       name: 'weekStartsOn',
       type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'",
       description:
-        'First day of week in the calendar popover. A number (0 = Sunday to 6 = Saturday) or a three-letter day name.',
+        'First day of week in Astryx calendar surfaces. A number (0 = Sunday to 6 = Saturday) or a three-letter day name; native pickers remain browser/OS-owned.',
       default: '0',
     },
     {
@@ -177,10 +178,40 @@ export const docs = {
         'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
     },
     {
-      name: 'xstyle',
+      name: 'containerXstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
+        'StyleX styles for the Field box around the label, control, and status. containerClassName and containerStyle take a class name and inline styles for the same box. No effect (development warning) where no Field box renders: inside InputGroup (style the group) and in a horizontal-labels FormLayout.',
+    },
+    {
+      name: 'containerClassName',
+      type: 'string',
+      description:
+        'Class name for the Field box. Same targeting as containerXstyle.',
+    },
+    {
+      name: 'containerStyle',
+      type: 'CSSProperties',
+      description:
+        'Inline styles for the Field box. Same targeting as containerXstyle.',
+    },
+    {
+      name: 'controlXstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for the visual control box: the bordered element that holds the text, icons, and end controls, never the native input. controlClassName and controlStyle take a class name and inline styles for the same box. Replaces root xstyle, className, and style, which this component does not accept.',
+    },
+    {
+      name: 'controlClassName',
+      type: 'string',
+      description:
+        'Class name for the visual control box. Same targeting as controlXstyle.',
+    },
+    {
+      name: 'controlStyle',
+      type: 'CSSProperties',
+      description:
+        'Inline styles for the visual control box. Same targeting as controlXstyle.',
     },
   ],
   theming: {
@@ -191,16 +222,17 @@ export const docs = {
         states: ['disabled'],
       },
       {className: 'astryx-date-input-toggle-icon', states: ['state']},
-      {
-        className: 'astryx-date-input-clear-icon',
-        deprecatedFor: 'input-clear-icon',
-      },
     ],
   },
   usage: {
     description:
       'DateInput lets the user type or pick a date from a calendar popover. Use it for scheduling, deadlines, booking dates, or any form field that needs a specific calendar date.',
     bestPractices: [
+      {
+        guidance: true,
+        description:
+          "Base props such as ref, id, data-*, aria-*, and DOM event handlers go to the date input, the element that is focused and announced. A DOM handler runs after DateInput's own handler for the same event and still receives events it handled (including ones it called preventDefault on), so it cannot cancel built-in behavior.",
+      },
       {
         guidance: true,
         description:
@@ -220,6 +252,11 @@ export const docs = {
         guidance: true,
         description:
           'Show a loading state with changeAction when the date triggers a server-side save.',
+      },
+      {
+        guidance: true,
+        description:
+          'On a fine pointer the field follows the WAI-ARIA combobox pattern with a dialog popup, as in the APG date picker combobox: ArrowDown or Alt+ArrowDown opens the calendar, and Escape closes it and returns focus to the field.',
       },
       {
         guidance: true,
@@ -244,7 +281,7 @@ export const docs = {
       {
         guidance: false,
         description:
-          'Wrap a disabled DateInput in Tooltip to explain why it is disabled; disabled triggers swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+          'Wrap a disabled DateInput in Tooltip to explain why it is disabled. Use the disabledMessage prop instead, which ties the reason to the field.',
       },
     ],
     anatomy: [
@@ -269,7 +306,7 @@ export const docs = {
         name: 'Calendar popover',
         required: false,
         description:
-          'A month grid that appears when the icon is clicked or the input is focused.',
+          'A month grid that appears when the icon or the input is clicked, or when ArrowDown is pressed in the input.',
       },
       {
         name: 'Clear button',
@@ -297,6 +334,11 @@ export const docsZh = {
       {
         guidance: true,
         description:
+          "Base props such as ref, id, data-*, aria-*, and DOM event handlers go to the date input, the element that is focused and announced. A DOM handler runs after DateInput's own handler for the same event and still receives events it handled (including ones it called preventDefault on), so it cannot cancel built-in behavior.",
+      },
+      {
+        guidance: true,
+        description:
           'Provide clear labels and descriptions so users understand what date is expected.',
       },
       {
@@ -313,6 +355,11 @@ export const docsZh = {
         guidance: true,
         description:
           'Show a loading state with changeAction when the date triggers a server-side save.',
+      },
+      {
+        guidance: true,
+        description:
+          'On a fine pointer the field follows the WAI-ARIA combobox pattern with a dialog popup, as in the APG date picker combobox: ArrowDown or Alt+ArrowDown opens the calendar, and Escape closes it and returns focus to the field.',
       },
       {
         guidance: false,
@@ -332,7 +379,7 @@ export const docsZh = {
       {
         guidance: false,
         description:
-          'Wrap a disabled DateInput in Tooltip to explain why it is disabled; disabled triggers swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+          'Wrap a disabled DateInput in Tooltip to explain why it is disabled. Use the disabledMessage prop instead, which ties the reason to the field.',
       },
     ],
   },
@@ -364,14 +411,15 @@ export const docsZh = {
     {
       name: 'isDisabled',
       type: 'boolean',
-      description: '禁用输入框和日历。',
+      description:
+        '禁用输入框和日历。输入框仍可聚焦并暴露 `aria-disabled`，但不能输入或打开日历。',
       default: 'false',
     },
     {
       name: 'disabledMessage',
       type: 'string',
       description:
-        '说明输入框为何被禁用。与 isDisabled 一起使用时，在悬停/键盘聚焦时显示提示，并通过 aria-disabled 保持输入框可聚焦（仍阻止输入和激活）。请使用此属性，而不是用 Tooltip 包裹已禁用的 DateInput。',
+        '说明输入框为何被禁用。与 isDisabled 一起使用时，在悬停/键盘聚焦时显示提示（仍阻止输入和激活）。请使用此属性，而不是用 Tooltip 包裹已禁用的 DateInput。',
     },
     {
       name: 'value',
@@ -392,7 +440,8 @@ export const docsZh = {
     {
       name: 'isLoading',
       type: 'boolean',
-      description: '输入框是否处于加载状态。禁用交互并显示加载指示器。',
+      description:
+        '输入框是否处于加载状态。字段仍可聚焦，并通过 `aria-busy` 和加载指示器表示忙碌；加载结束前不能输入、选择或清除日期。',
       default: 'false',
     },
     {
@@ -407,7 +456,7 @@ export const docsZh = {
     },
     {
       name: 'dateConstraints',
-      type: 'Array<(date: Date) => boolean>',
+      type: 'ReadonlyArray<(date: Date) => boolean>',
       description: '自定义约束函数数组，用于禁用特定日期。',
     },
     {
@@ -440,6 +489,12 @@ export const docsZh = {
       description: '通过标签末尾的信息图标显示的提示文本。',
     },
     {
+      name: 'hasClear',
+      type: 'boolean',
+      description: '有日期值时显示清除按钮。点击后清除日期。',
+      default: 'false',
+    },
+    {
       name: 'numberOfMonths',
       type: '1 | 2',
       description: '日历弹出层中同时显示的月份数量。',
@@ -449,7 +504,7 @@ export const docsZh = {
       name: 'weekStartsOn',
       type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'",
       description:
-        '日历弹出层中每周的起始日。可为数字（0=周日……6=周六）或三字母星期缩写。',
+        'Astryx 日历表面中每周的起始日。可为数字（0=周日……6=周六）或三字母星期缩写；原生选择器仍由浏览器或操作系统控制。',
       default: '0',
     },
     {
@@ -474,10 +529,42 @@ export const docsZh = {
       default: "'touch'",
     },
     {
-      name: 'xstyle',
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        '字段宽度（数字按像素处理，字符串按原样使用，例如 “100%”）。统一调整标签、控件和状态消息的宽度。',
+    },
+    {
+      name: 'containerXstyle',
       type: 'StyleXStyles',
       description:
-        '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
+        '作用于包含标签、控件和状态的 Field 容器的 StyleX 样式；containerClassName 与 containerStyle 以类名和内联样式作用于同一容器。没有 Field 容器时（InputGroup 内或 horizontal-labels FormLayout 中）不生效，并在开发环境发出警告。',
+    },
+    {
+      name: 'containerClassName',
+      type: 'string',
+      description: 'Field 容器的类名，作用目标同 containerXstyle。',
+    },
+    {
+      name: 'containerStyle',
+      type: 'CSSProperties',
+      description: 'Field 容器的内联样式，作用目标同 containerXstyle。',
+    },
+    {
+      name: 'controlXstyle',
+      type: 'StyleXStyles',
+      description:
+        '作用于可见控件框（带边框、包含文本、图标和末端控件的元素，而非原生 input）的 StyleX 样式；controlClassName 与 controlStyle 以类名和内联样式作用于同一元素。本组件不接受根级 xstyle、className 和 style。',
+    },
+    {
+      name: 'controlClassName',
+      type: 'string',
+      description: '可见控件框的类名，作用目标同 controlXstyle。',
+    },
+    {
+      name: 'controlStyle',
+      type: 'CSSProperties',
+      description: '可见控件框的内联样式，作用目标同 controlXstyle。',
     },
   ],
   theming: {
@@ -488,10 +575,6 @@ export const docsZh = {
         states: ['disabled'],
       },
       {className: 'astryx-date-input-toggle-icon', states: ['state']},
-      {
-        className: 'astryx-date-input-clear-icon',
-        deprecatedFor: 'input-clear-icon',
-      },
     ],
   },
 };
@@ -503,6 +586,11 @@ export const docsDense = {
     description:
       'DateInput lets the user type or pick a date from a calendar popover. Use for scheduling, deadlines, booking dates, or any form field needing a calendar date.',
     bestPractices: [
+      {
+        guidance: true,
+        description:
+          "Base props such as ref, id, data-*, aria-*, and DOM event handlers go to the date input, the element that is focused and announced. A DOM handler runs after DateInput's own handler for the same event and still receives events it handled (including ones it called preventDefault on), so it cannot cancel built-in behavior.",
+      },
       {
         guidance: true,
         description:
@@ -522,6 +610,11 @@ export const docsDense = {
         guidance: true,
         description:
           'Show a loading state with changeAction when the date triggers a server-side save.',
+      },
+      {
+        guidance: true,
+        description:
+          'On a fine pointer the field follows the WAI-ARIA combobox pattern with a dialog popup, as in the APG date picker combobox: ArrowDown or Alt+ArrowDown opens the calendar, and Escape closes it and returns focus to the field.',
       },
       {
         guidance: true,
@@ -546,7 +639,7 @@ export const docsDense = {
       {
         guidance: false,
         description:
-          'Wrap a disabled DateInput in Tooltip to explain why it is disabled; disabled triggers swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+          'Wrap a disabled DateInput in Tooltip to explain why it is disabled. Use the disabledMessage prop instead, which ties the reason to the field.',
       },
     ],
   },
@@ -558,11 +651,12 @@ export const docsDense = {
     isRequired: 'mark field required',
     isDisabled: 'disable input+calendar',
     disabledMessage:
-      'reason shown in a tooltip on hover/focus when disabled; keeps field focusable via aria-disabled',
+      "reason shown in a tooltip on hover/focus when disabled; describes the field's focusable controls",
     value: 'selected date YYYY-MM-DD',
     onChange: 'callback on date change',
     changeAction: 'async action after onChange; drives optimistic UI',
-    isLoading: 'loading state; disables interaction, shows spinner',
+    isLoading:
+      'loading state; stays focusable w/ aria-busy + spinner; blocks typing, picking, clearing',
     min: 'min selectable date (YYYY-MM-DD)',
     max: 'max selectable date (YYYY-MM-DD)',
     dateConstraints: 'custom constraint fns to disable specific dates',
@@ -582,6 +676,17 @@ export const docsDense = {
       "which surface draws the picker: 'adaptive-native' (default) = Astryx popover on fine, browser/OS on coarse w/ Astryx fallbacks; 'native' = browser/OS always, no fallback; 'adaptive-bottom-sheet' = popover fine / Astryx sheet coarse; 'popover'/'bottom-sheet' force Astryx. every value opens a picker (no text-only value; that is TimeInput's). use non-native for weekStartsOn/numberOfMonths/dateConstraints.",
     nativePicker:
       "deprecated, use presentation: 'touch'='adaptive-native', 'always'='native', 'never'='adaptive-bottom-sheet'. still works as released; presentation wins if both set.",
-    xstyle: 'StyleX styles for layout; must be stylex.create() value',
+    containerXstyle:
+      'Field box (label+control+status); also containerClassName/containerStyle. no effect in InputGroup or horizontal-labels FormLayout',
+    containerClassName:
+      'class name for the Field box; same target as containerXstyle',
+    containerStyle:
+      'inline styles for the Field box; same target as containerXstyle',
+    controlXstyle:
+      'visual control box (border/bg/icons), never the native input; also controlClassName/controlStyle. no root xstyle/className/style',
+    controlClassName:
+      'class name for the visual control box; same target as controlXstyle',
+    controlStyle:
+      'inline styles for the visual control box; same target as controlXstyle',
   },
 };

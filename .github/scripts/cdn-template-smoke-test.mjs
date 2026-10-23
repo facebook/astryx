@@ -29,9 +29,13 @@ import * as http from 'node:http';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {pageAssetUrls, primeCdnAssets} from './lib/cdn-asset-priming.mjs';
 import {resolvePublishedCdnVersion} from './lib/cdn-version.mjs';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const ROOT = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../..',
+);
 const CLI = path.join(ROOT, 'packages/cli/clients/cli/bin/astryx.mjs');
 const PAGE = 'cdn.template.html';
 const ATTEMPTS = 2;
@@ -50,11 +54,15 @@ fs.writeFileSync(
   path.join(tmpDir, 'package.json'),
   JSON.stringify({name: 'cdn-smoke', private: true}),
 );
-const scaffold = spawnSync(process.execPath, [CLI, '--json', 'template', '--cdn'], {
-  cwd: tmpDir,
-  encoding: 'utf8',
-  timeout: 60_000,
-});
+const scaffold = spawnSync(
+  process.execPath,
+  [CLI, '--json', 'template', '--cdn'],
+  {
+    cwd: tmpDir,
+    encoding: 'utf8',
+    timeout: 60_000,
+  },
+);
 if (scaffold.status !== 0 || !fs.existsSync(pagePath)) {
   fail(`astryx template --cdn (exit ${scaffold.status})`, scaffold.stderr);
   process.exit(1);
@@ -63,10 +71,11 @@ const pinned = JSON.parse(scaffold.stdout).data.version;
 console.log(`scaffolded ${PAGE} pinned to ${pinned}`);
 
 // ── 2. Point the page at a version that is actually on the CDN ───────────────
-// The pin is the version in this checkout, which is unpublished for the whole
-// life of a release PR (`changeset version` bumps package.json before npm has
-// the tarball). Gating every PR on that would make the release PR unmergeable,
-// so on an unpublished pin we re-point the page at npm's stable `latest`
+// The pin is the owner-declared version in this checkout. It can remain
+// unpublished throughout next-plan and release-branch PRs; branch consolidation
+// writes changelogs without bumping package.json. Gating every PR on that exact
+// version being on the CDN would block the whole release train on a build that
+// cannot exist yet, so on an unpublished pin we re-point the page at npm's stable `latest`
 // dist-tag and still assert the recipe. Registry `versions` keys are not a
 // version-ordered API: the final key can be a canary that esm.sh has not built.
 const metadata = await fetch('https://registry.npmjs.org/@astryxdesign/core')
@@ -78,14 +87,58 @@ if (rendered == null) {
   process.exit(1);
 }
 if (rendered !== pinned) {
-  console.log(`  note  ${pinned} is not published yet — rendering against ${rendered}`);
+  console.log(
+    `  note  ${pinned} is not published yet — rendering against ${rendered}`,
+  );
   fs.writeFileSync(
     pagePath,
     fs.readFileSync(pagePath, 'utf8').replaceAll(`@${pinned}`, `@${rendered}`),
   );
 }
 
-// ── 3. Serve it, so the page loads the way a deployed one would ──────────────
+// ── 3. Prime the CDN, so the browser's requests hit a built asset ───────────
+// Both CDNs build a package on the first request that reaches them for it, and a
+// request that arrives mid-build is answered with an error document that is then
+// cached. A page pinned to a version published minutes ago therefore loads its
+// CSS as `text/plain`, which Chromium rejects as an opaque response
+// (net::ERR_BLOCKED_BY_ORB) and `networkidle` never settles on. Asking for the
+// same URLs over plain HTTP starts and finishes the build first, and turns the
+// remaining case into a line that names the asset instead of a navigation
+// timeout at the end of a 17-minute run.
+const PRIME_DEADLINE_MS = 120_000;
+const assets = pageAssetUrls(fs.readFileSync(pagePath, 'utf8'));
+const {cold} = await primeCdnAssets(assets, {deadlineMs: PRIME_DEADLINE_MS});
+if (cold.length > 0) {
+  fail(
+    `${cold.length} page asset(s) did not serve within ${PRIME_DEADLINE_MS / 1000}s`,
+    [
+      '        Every URL below is one the starter page requests, so the page cannot render',
+      '        without it. The text after :: is what the last request observed, and it',
+      '        takes one of three shapes.',
+      '',
+      '        HTTP <status> with a sentence after it: the CDN answered and its own words',
+      '        name what it could not find — jsDelivr separates the file from the release',
+      '        version from the package, and esm.sh words a missing release its own way.',
+      '        A release published minutes ago can still be building at that edge, so weigh',
+      '        the sentence against the version this run resolved before reading it as a',
+      '        URL a change broke.',
+      '',
+      '        HTTP <status> with nothing after it: it answered, and the error document did',
+      '        not read, so the number is all there is to report.',
+      '',
+      '        An error name, with the transport reason in parentheses when there is one',
+      '        (TypeError (ECONNREFUSED), or a bare TimeoutError when the request hung):',
+      '        nobody answered at all, so the asset may be fine and the DNS, the route or',
+      '        the CDN itself is the problem.',
+      '',
+      ...cold.map(({url, reason}) => `        ${url} :: ${reason}`),
+    ].join('\n'),
+  );
+  fs.rmSync(tmpDir, {recursive: true, force: true});
+  process.exit(1);
+}
+
+// ── 4. Serve it, so the page loads the way a deployed one would ─────────────
 const server = http.createServer((req, res) => {
   const body = fs.readFileSync(pagePath);
   res.writeHead(200, {'content-type': 'text/html; charset=utf-8'});
@@ -129,7 +182,7 @@ async function render() {
   }
 }
 
-// ── 4. Render, retrying once so a blip at a CDN is not a red build ───────────
+// ── 5. Render, retrying once so a blip at a CDN is not a red build ───────────
 let result;
 for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
   result = await render();
@@ -143,7 +196,7 @@ for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
 }
 server.close();
 
-// ── 5. Report ────────────────────────────────────────────────────────────────
+// ── 6. Report ────────────────────────────────────────────────────────────────
 console.log(`\n${PAGE} @ ${rendered}`);
 for (const [label, entries] of [
   ['console error', result.consoleErrors],
@@ -153,7 +206,10 @@ for (const [label, entries] of [
   if (entries.length === 0) {
     console.log(`  ok    no ${label}s`);
   } else {
-    fail(`${entries.length} ${label}(s)`, entries.map(e => `        ${e}`).join('\n'));
+    fail(
+      `${entries.length} ${label}(s)`,
+      entries.map(e => `        ${e}`).join('\n'),
+    );
   }
 }
 if (result.button) {

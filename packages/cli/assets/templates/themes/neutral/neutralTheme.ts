@@ -95,6 +95,18 @@ export const neutralTheme = defineTheme({
     },
   },
 
+  // Touch + narrow (Mobile Type, Pin): floor base to the 16px floor and
+  // re-derive the ratio so Display 1 keeps its desktop size:
+  // ratio' = 1.2 * (14/16)^(1/6) ~= 1.1736. Body 14 -> 16px, display-1 stays 42px.
+  adaptations: {
+    rules: [
+      {
+        when: {pointer: 'coarse', width: {below: 'lg'}},
+        value: {typography: {scale: {base: 16, ratio: 1.1736}}},
+      },
+    ],
+  },
+
   // Motion: snappier than default to match shadcn/Tailwind conventions.
   // Produces: fast-min=95ms, fast=125ms, fast-max=165ms,
   //           medium-min=225ms, medium=300ms, medium-max=400ms.

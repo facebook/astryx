@@ -15,12 +15,18 @@
  * ShadCN-copied compositions → post-codemod hooks → render + refresh agent docs
  * from final post-upgrade state. Integration DISCOVERY errors skip that
  * integration; execution errors abort before the agent-doc write.
+ *
+ * Core codemods ship inside the CLI, so a CLI older than the installed Core
+ * has none for the releases after its own version. Every result past the
+ * up-to-date exit then carries `cliBehindCore`, and no human line says the
+ * upgrade finished; the warning names the same upgrade on the matching CLI.
  */
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
   detectInstalledTargetVersion,
+  detectCliBehindCore,
   prepareAgentDocsRefresh,
   applyAgentDocsRefresh,
   inspectAgentDocs,
@@ -42,9 +48,11 @@ import {
   statusUpToDate,
   statusNoCodemods,
   statusConfigFixable,
+  logCliBehindCore,
 } from '../status/status.mjs';
 import {semverGte} from '../../../foundation/env/semver.mjs';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
+import {isOutsideProject} from '../../../foundation/env/project-scope.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {AstryxError} from '../../error.mjs';
 import {logger} from '../../logger.mjs';
@@ -107,10 +115,11 @@ function loadFileProtection(cwd) {
  * on failure. Progress is emitted through the shared `logger` (silent by default).
  *
  * @param {import('../_adapter.mjs').UpgradeOptions} [options]
- * @param {{cwd?: string}} [ctx]
+ * @param {{cwd?: string, origin?: string}} [ctx] `origin` is the folder the
+ *   command ran in, when `cwd` is the project root above it
  * @returns {Promise<import('../upgrade.type.mjs').UpgradeStatusResponse | import('../upgrade.type.mjs').UpgradeRunResponse>}
  */
-export async function run(options = {}, {cwd = process.cwd()} = {}) {
+export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
   // Resolve the source dir against the API's cwd (not process.cwd()) so a
   // programmatic caller in another directory scans the right tree. Confine it to
   // cwd: --apply rewrites files in place, so a `..`-escaping or out-of-tree
@@ -137,10 +146,25 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
   }
   const apply = options.apply ?? false;
 
+  // One fact about the resolved source directory, captured before anything
+  // runs. `--path` defaults to `./src`, so a project laid out as `app/` (or a
+  // typo) skips every code codemod; without this the receipt is byte-identical
+  // to a clean, fully migrated project.
+  const sourcePathFound = fs.existsSync(path_);
+
   const currentVersion = /** @type {string} */ (options.from);
+  // Named first, so a run that stops on the Core lookup below still says which
+  // folder it searched (spec:AST-040 FR12).
+  if (origin != null) {
+    logger.log(`Project root: ${path.relative(origin, cwd) || '.'}`);
+    logger.log(`Source folder: ${path.relative(origin, path_) || '.'}`);
+  }
   const installed = detectInstalledTargetVersion(cwd);
   if (!installed) {
-    const msg = `Could not find installed @astryxdesign/core (or legacy @xds/core). Install the target version first, then rerun \`${getCliInvocation()} upgrade --from <old-version>\`.`;
+    // Outside a project there is no version to install (spec AST-081 FR3).
+    const msg = isOutsideProject(cwd)
+      ? 'Could not find installed @astryxdesign/core (or legacy @xds/core). This folder is outside a project; upgrade migrates the code of an app project that installs @astryxdesign/core.'
+      : `Could not find installed @astryxdesign/core (or legacy @xds/core). Install the target version first, then rerun \`${getCliInvocation()} upgrade --from <old-version>\`.`;
     logger.error(msg);
     logger.log('Aborted\n');
     throw new AstryxError(msg, undefined, ERROR_CODES.ERR_VERSION_DETECT);
@@ -153,6 +177,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
       {apply, path: path_},
       {
         cwd,
+        origin,
         expectedVersion:
           installed.packageName === '@astryxdesign/core'
             ? targetVersion
@@ -175,6 +200,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
     const registryResult = await reconcileCompositions();
     const agentDocsPlan = await prepareAgentDocsRefresh({
       cwd,
+      origin,
       installedVersion: targetVersion,
       apply,
     });
@@ -188,6 +214,17 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
       ...(registryResult ? {registryCompositions: registryResult.summary} : {}),
     });
   }
+
+  // Past the up-to-date exit, codemods are needed through targetVersion. A
+  // CLI older than that has none for the releases after its own version.
+  const cliBehindCore = detectCliBehindCore({
+    from: currentVersion,
+    to: targetVersion,
+    packageName: installed.packageName,
+    options,
+    cwd,
+    sourcePath: path_,
+  });
 
   const versionManifests = await getCoreVersionManifests(
     currentVersion,
@@ -237,6 +274,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
     skipCodemods,
     root: cwd,
     protection,
+    coversTarget: !cliBehindCore,
   });
   const coreResult =
     codemodResult && 'totalFilesChanged' in codemodResult
@@ -247,6 +285,8 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
   let integrations;
   /** @type {import('../../../authoring/config/type').PostCodemodHook[]} */
   let postCodemodHooks;
+  /** @type {boolean} */
+  let iconSets;
   try {
     const projectContext = await loadProjectContext(
       cwd,
@@ -254,6 +294,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
     );
     postCodemodHooks = projectContext.postCodemodHooks;
     integrations = projectContext.integrations;
+    iconSets = projectContext.iconSets;
   } catch (err) {
     const configErr = /** @type {Error} */ (err);
     const allProtected = coreResult?.protectedFiles ?? [];
@@ -265,6 +306,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
       for (const item of protectedFiles) {
         logger.error(`  ${item.file} — ${item.declarations.join('; ')}`);
       }
+      if (cliBehindCore) logCliBehindCore(cliBehindCore, targetVersion);
       logger.log('Upgrade incomplete: protected changes remain\n');
       return {
         type: 'upgrade.run',
@@ -282,6 +324,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
             refreshed: false,
             action: 'none',
           },
+          sourcePathFound,
           filesChanged: coreResult?.totalFilesChanged ?? 0,
           transformsApplied: coreResult?.totalTransformsApplied ?? 0,
           modifiedFiles: uniqueFiles(coreResult?.changedFiles).map(file =>
@@ -292,6 +335,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
           complete: false,
           errorCode: 'ERR_CODEMOD_PROTECTED',
           errors: coreResult?.errors ?? [],
+          ...(cliBehindCore ? {cliBehindCore} : {}),
         },
       };
     }
@@ -309,6 +353,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
         to: targetVersion,
         configError: configErr.message,
         configCodemods: coreConfigCodemodNames,
+        cliBehindCore,
         agentDocs:
           /** @type {import('../upgrade.type.mjs').AgentDocsSummary} */ ({
             status: inspection.status,
@@ -338,7 +383,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
 
   // Non-blocking nudge for integration validation issues (suppressed for
   // programmatic/--json callers, i.e. the silent logger).
-  await warnIntegrationIssues(integrations);
+  await warnIntegrationIssues(integrations, {iconSets});
 
   const integrationVersionGroups = await selectIntegrationCodemodsFor(
     integrations,
@@ -363,6 +408,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
     // No codemods in range — safe to render agent docs from current state.
     const agentDocsPlan = await prepareAgentDocsRefresh({
       cwd,
+      origin,
       installedVersion: targetVersion,
       apply,
     });
@@ -374,6 +420,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
       to: targetVersion,
       agentDocs,
       ...(registryResult ? {registryCompositions: registryResult.summary} : {}),
+      cliBehindCore,
     });
   }
 
@@ -407,6 +454,12 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
       refreshed: false,
       action: 'none',
     }),
+    // A missing source directory is the one way this command can migrate
+    // nothing and still look complete: every codemod is skipped, filesChanged
+    // stays 0, and errors stays empty. The receipt carries the fact so a
+    // machine consumer can tell "nothing needed changing" from "nothing was
+    // ever read" — the human text says so via the runner's own error line.
+    sourcePathFound,
   };
 
   let integrationResult = null;
@@ -437,9 +490,11 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
 
   const registryResult = await reconcileCompositions();
 
-  const mergedFilesChanged =
-    (coreResult?.totalFilesChanged ?? 0) +
-    (integrationResult?.totalFilesChanged ?? 0);
+  // A file a core codemod AND an integration codemod both changed is one file.
+  const mergedFilesChanged = new Set([
+    ...(coreResult?.changedFiles ?? []),
+    ...(integrationResult?.changedFiles ?? []),
+  ]).size;
   const mergedTransformsApplied =
     (coreResult?.totalTransformsApplied ?? 0) +
     (integrationResult?.totalTransformsApplied ?? 0);
@@ -605,6 +660,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
   }
   receipt.errors = finalErrors;
   if (registryResult) receipt.registryCompositions = registryResult.summary;
+  if (cliBehindCore) receipt.cliBehindCore = cliBehindCore;
 
   if (protectedFiles.length > 0) {
     logger.error(
@@ -628,6 +684,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
   if (protectedFiles.length === 0) {
     const agentDocsPlan = await prepareAgentDocsRefresh({
       cwd,
+      origin,
       installedVersion: targetVersion,
       apply,
       fresh: true,
@@ -640,12 +697,21 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
   }
 
   const registryOk = receipt.registryCompositions?.ok ?? true;
+  if (cliBehindCore) logCliBehindCore(cliBehindCore, targetVersion);
+  const done = cliBehindCore
+    ? 'Upgrade incomplete'
+    : apply
+      ? 'Upgrade complete'
+      : 'Dry run complete';
   logger.log(
     protectedFiles.length > 0
       ? 'Upgrade incomplete: protected changes remain\n'
-      : registryOk
-        ? (apply ? 'Upgrade complete' : 'Dry run complete') + '\n'
-        : 'Upgrade finished with unresolved registry items\n',
+      : !registryOk
+        ? 'Upgrade finished with unresolved registry items\n'
+        : sourcePathFound
+          ? done + '\n'
+          : `${done}, but ${path.relative(cwd, path_) || '.'} does not exist, so no source files were scanned. ` +
+            `Pass --path <your source directory> if your code does not live in ./src.\n`,
   );
   return {
     type: 'upgrade.run',

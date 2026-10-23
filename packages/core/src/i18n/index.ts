@@ -39,6 +39,8 @@ export type {
   Locale,
   Catalog,
   MessageEntry,
+  RuntimeCatalog,
   MessagesByLocale,
+  ProviderMessagesByLocale,
   Overrides,
 } from './types';

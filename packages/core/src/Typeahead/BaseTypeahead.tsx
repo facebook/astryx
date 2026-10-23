@@ -5,7 +5,7 @@
 /**
  * @file BaseTypeahead.tsx
  * @input Uses React, StyleX, usePopover, TypeaheadItem
- * @output Exports BaseTypeahead combobox engine component
+ * @output Exports BaseTypeahead; focus bootstraps a replaced search source
  * @position Core implementation; used by Typeahead and Tokenizer
  *
  * Pure combobox engine: input, search, keyboard navigation, dropdown.
@@ -30,9 +30,11 @@ import React, {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useBusyIndicatorLane} from './busyIndicatorLane';
+import {useTrailingKeyDown} from './trailingKeyDown';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useAnnounceRenderedText} from '../hooks/useAnnounceRenderedText';
 import {useHighlightedOptionScroll} from '../hooks/useHighlightedOptionScroll';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {isImeKeyEvent} from '../utils/ime';
@@ -55,12 +57,16 @@ import {
   groupItems,
   mergeProps,
 } from '../utils';
+import {warnOnce} from '../utils/devWarning';
 import type {BaseProps} from '../BaseProps';
 import type {SearchableItem, SearchSource} from './types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
+import {layerViewportInset} from '../Layer/layerViewportInset.stylex';
+import {clampInlineSize} from '../Layer/clampInlineSize';
 // =============================================================================
 // Types
 // =============================================================================
@@ -124,10 +130,20 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
   minQueryLength?: number;
 
   /**
-   * Text shown when no results found.
+   * Content shown when the query matched nothing (`spec:AST-056` FR1).
+   * Takes a `ReactNode`, so a dead end can carry a link or a create row.
+   *
+   * The message is announced in a polite live region as the text it renders,
+   * read from the DOM, so an element is announced as written and anything
+   * marked `aria-hidden` is left out of both. Content that renders no text
+   * announces nothing, matching the screen.
+   *
+   * `null` means "not given", exactly as `undefined` does, so it falls
+   * through to the default. Pass an empty string to render nothing.
+   *
    * @default 'No results found'
    */
-  emptySearchResultsText?: string;
+  emptySearchText?: ReactNode;
 
   /**
    * Whether the input is disabled.
@@ -260,10 +276,6 @@ type InternalBaseTypeaheadProps<T extends SearchableItem> =
 // Styles
 // =============================================================================
 
-const TYPEAHEAD_VIEWPORT_GUTTER = spacingVars['--spacing-4'];
-const TYPEAHEAD_POSITION_AREA_MAX_INLINE_SIZE = `calc(100% - max(${TYPEAHEAD_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)))`;
-const TYPEAHEAD_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK = `calc(100% - ${TYPEAHEAD_VIEWPORT_GUTTER})`;
-
 const styles = stylex.create({
   input: {
     display: 'block',
@@ -299,16 +311,19 @@ const styles = stylex.create({
     overflowY: 'auto',
     padding: spacingVars['--spacing-1'],
   },
+  // The menu prefers the input's width and renders an explicit menuWidth at
+  // its size, both clamped to the layer runtime's viewport cap rather than to
+  // the room beside the input (spec:AST-059 FR2, FR7).
   popover: {
     boxSizing: 'border-box',
-    minWidth: 'anchor-size(width)',
-    maxInlineSize: stylex.firstThatWorks(
-      TYPEAHEAD_POSITION_AREA_MAX_INLINE_SIZE,
-      TYPEAHEAD_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK,
+    minWidth: stylex.firstThatWorks(
+      `min(anchor-size(width), ${layerViewportInset.maxInlineSize})`,
+      `min(anchor-size(width), ${layerViewportInset.maxInlineSizeFallback})`,
+      'anchor-size(width)',
     ),
   },
-  popoverCustomWidth: (width: number) => ({
-    width: `${width}px`,
+  popoverCustomWidth: (width: string) => ({
+    width,
   }),
   groupHeading: {
     paddingInline: spacingVars['--spacing-2'],
@@ -455,7 +470,7 @@ const BaseTypeaheadImpl = function BaseTypeahead<T extends SearchableItem>({
   maxMenuItems = 10,
   menuWidth,
   minQueryLength = 1,
-  emptySearchResultsText: emptySearchResultsTextFromProps,
+  emptySearchText: emptySearchTextFromProps,
   isDisabled = false,
   isFocusableDisabled = false,
   hasAutoFocus = false,
@@ -478,6 +493,7 @@ const BaseTypeaheadImpl = function BaseTypeahead<T extends SearchableItem>({
   onPointerDown: onPointerDownProp,
   onFocus: onFocusProp,
   onBlur: onBlurProp,
+  onClick: onClickProp,
   id: nativeInputId,
   'aria-describedby': nativeAriaDescribedBy,
   'aria-labelledby': nativeAriaLabelledBy,
@@ -488,9 +504,15 @@ const BaseTypeaheadImpl = function BaseTypeahead<T extends SearchableItem>({
   const t = useTranslator();
   const placeholder =
     placeholderFromProps ?? t('@astryx.typeahead.searchPlaceholder');
-  const emptySearchResultsText =
-    emptySearchResultsTextFromProps ??
-    t('@astryx.typeahead.emptySearchResults');
+  const emptySearchText =
+    emptySearchTextFromProps ?? t('@astryx.typeahead.emptySearchResults');
+  // The empty-state row carries the message visually, and the live region has
+  // to speak the same words. `emptySearchText` takes a ReactNode, so they are
+  // read off the rendered row after it renders rather than guessed from the
+  // prop — announcing a default over a caller's element tells the
+  // screen-reader user something the sighted user is not reading
+  // (`spec:AST-056` AR1).
+  const emptyStateRef = useRef<HTMLDivElement>(null);
   const generatedId = useId();
   // Keep the released input-specific aliases authoritative when a caller uses
   // them, but do not let an omitted alias erase the equivalent native BaseProp.
@@ -511,6 +533,20 @@ const BaseTypeaheadImpl = function BaseTypeahead<T extends SearchableItem>({
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<T[]>([]);
   const [highlightedIndexState, setHighlightedIndex] = useState(-1);
+
+  // `action` is declared on `SearchableItem` for the grid-adopting hosts;
+  // this panel has not adopted it, so it renders the item without the
+  // control and says so (spec:AST-058 FR9).
+  useEffect(() => {
+    if (results.some(item => item.action != null)) {
+      warnOnce(
+        'base-typeahead:item-action',
+        'BaseTypeahead',
+        'A result carries `action`, which the typeahead panel does not render ' +
+          'yet; the item is shown without it.',
+      );
+    }
+  }, [results]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const projectResults = tokenizerBehavior?.projectResults;
@@ -558,6 +594,16 @@ const BaseTypeaheadImpl = function BaseTypeahead<T extends SearchableItem>({
     }
   }, [highlightedIndex, highlightedIndexState, isTokenizer, menuItems]);
 
+  // Only the WORDS move here, not the timing. An empty query still reports
+  // nothing — a focus-opened menu that bootstrapped to nothing is not a
+  // search that failed — and a search still in flight reports nothing, which
+  // matters because the row is in the DOM before the spinner clears.
+  useAnnounceRenderedText(
+    emptyStateRef,
+    menuItems.length === 0 && hasSearched && query.length > 0 && !isLoading,
+    query,
+  );
+
   // Report the busy state to a wrapper that has taken the indicator over.
   //
   // Through a ref, and at the call site rather than from an effect: an effect
@@ -578,6 +624,14 @@ const BaseTypeaheadImpl = function BaseTypeahead<T extends SearchableItem>({
   // A wrapper that owns the inline-end lane subscribes through context; see
   // busyIndicatorLane.tsx for why this is not a prop.
   const busyLane = useBusyIndicatorLane();
+  // Without a wrapper that took the indicator over, this input announces each
+  // search's busy start (spec:AST-086 FR8); its Spinner stays named but is not
+  // a live region (family:input-fields FR7).
+  useBusyAnnouncement(
+    isLoading && busyLane == null,
+    t('@astryx.typeahead.loading'),
+    inputRef,
+  );
   const onLoadingChangeRef = useRef(busyLane?.onBusyChange);
   useIsomorphicLayoutEffect(() => {
     onLoadingChangeRef.current = busyLane?.onBusyChange;
@@ -599,6 +653,23 @@ const BaseTypeaheadImpl = function BaseTypeahead<T extends SearchableItem>({
   // close it (the click is seen as "outside" the newly-opened popover).
   const pointerActiveRef = useRef(false);
 
+  // Whether the input was ALREADY the active element the moment the current
+  // click gesture began, captured at pointerdown -- before the browser's own
+  // focus-on-pointerdown behavior can move focus onto it. pointerdown always
+  // fires before focus in a mouse/touch-driven click (pointerdown -> focus ->
+  // pointerup -> click), so this reflects the pre-click focus state exactly,
+  // with no dependency on event-loop timing between focus and click (a
+  // microtask-based flag cleared between the two was tried and measured
+  // clearing before the click arrived for an async bootstrap source,
+  // double-firing it). A click that itself just caused the input to gain
+  // focus reads false here and is left to handleFocus, which already opens
+  // it; a click on an input that was already focused -- closing the
+  // dropdown (selecting a result, committing a token elsewhere in a
+  // composing component) often re-focuses the same input programmatically,
+  // which dispatches no focus event at all -- reads true and reopens it in
+  // handleClick.
+  const wasAlreadyFocusedRef = useRef(false);
+
   // Debounce ref
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -606,13 +677,17 @@ const BaseTypeaheadImpl = function BaseTypeahead<T extends SearchableItem>({
   // sources, and identify retained cohorts.
   const searchGenRef = useRef(0);
   const resultsGenRef = useRef(0);
+  // The generation at which the current searchSource took over. Results
+  // populated before it (resultsGenRef below this) came from a replaced
+  // source: they can never be re-shown, so focus bootstraps the new source.
+  const sourceGenRef = useRef(0);
 
   const searchLeaseRef = useRef<{
     generation: number | null;
     source: SearchSource<T>;
   }>({generation: null, source: searchSource});
 
-  /* eslint-disable @eslint-react/set-state-in-effect -- authoritative committed state must synchronously invalidate Base-owned pending work before paint */
+  /* eslint-disable @eslint-react/set-state-in-effect -- synchronize SearchSource requests, debounce timers, and the native popover with committed control state */
   const releaseSearch = useCallback(
     (shouldInvalidate: boolean) => {
       if (shouldInvalidate) {
@@ -632,6 +707,17 @@ const BaseTypeaheadImpl = function BaseTypeahead<T extends SearchableItem>({
     },
     [setLoading],
   );
+
+  // The previous source is remembered in state, not a ref, so a render React
+  // discards cannot consume the comparison without its state updates.
+  const [sourceOfState, setSourceOfState] = useState(searchSource);
+  if (sourceOfState !== searchSource) {
+    setSourceOfState(searchSource);
+    if (isLoading) {
+      setIsLoading(false);
+      setHasSearched(false);
+    }
+  }
 
   // Layer for dropdown
   const handleLayerShow = useCallback(() => {
@@ -695,7 +781,7 @@ const BaseTypeaheadImpl = function BaseTypeahead<T extends SearchableItem>({
   // still owns the pending query and must keep its original deadline.
   useIsomorphicLayoutEffect(() => {
     if (searchLeaseRef.current.source !== searchSource) {
-      searchGenRef.current++;
+      sourceGenRef.current = ++searchGenRef.current;
       releaseSearch(false);
       setLoading(false);
       setHasSearched(false);
@@ -755,13 +841,11 @@ const BaseTypeaheadImpl = function BaseTypeahead<T extends SearchableItem>({
         }
         // Announce the outcome only for an active query (not the initial
         // focus-open), so screen-reader users hear result counts / no-results.
-        if (searchQuery.length > 0) {
-          announce(
-            shown.length === 0
-              ? emptySearchResultsText
-              : t('@astryx.typeahead.resultCount', {count: shown.length}),
-          );
+        if (searchQuery.length > 0 && shown.length > 0) {
+          announce(t('@astryx.typeahead.resultCount', {count: shown.length}));
         }
+        // An empty result is announced from the rendered row instead, so the
+        // region speaks whatever the caller put there.
       } catch {
         if (searchGenRef.current !== gen) {
           return;
@@ -779,7 +863,6 @@ const BaseTypeaheadImpl = function BaseTypeahead<T extends SearchableItem>({
       maxMenuItems,
       showLayer,
       announce,
-      emptySearchResultsText,
       __queryEntries,
       setLoading,
       t,
@@ -962,19 +1045,24 @@ const BaseTypeaheadImpl = function BaseTypeahead<T extends SearchableItem>({
     ],
   );
 
-  // Handle focus
-  const handleFocus = useCallback(() => {
+  // Shared by focus and click: bootstrap a replaced source rather than
+  // re-showing its stale cached results. A selection-invalidated cohort
+  // stays closed until the person explicitly reopens it.
+  const openIfEligible = useCallback(() => {
     if (isDisabled || isTokenizerAtMax) {
       return;
     }
-    if (hasEntriesOnFocus && menuItems.length === 0 && query.length === 0) {
+    const hasResultsFromCurrentSource =
+      menuItems.length > 0 && resultsGenRef.current >= sourceGenRef.current;
+    if (
+      hasEntriesOnFocus &&
+      !hasResultsFromCurrentSource &&
+      query.length === 0
+    ) {
       void performBootstrap();
     } else if (
       menuItems.length > 0 &&
       (query.length > 0 || hasEntriesOnFocus) &&
-      // Only re-show cached results if they haven't been invalidated by
-      // a selection. Refs are always current, so this check isn't affected
-      // by React's closure staleness the way results.length is.
       resultsGenRef.current === searchGenRef.current
     ) {
       showLayer();
@@ -987,6 +1075,46 @@ const BaseTypeaheadImpl = function BaseTypeahead<T extends SearchableItem>({
     performBootstrap,
     query.length,
     showLayer,
+  ]);
+
+  // Handle focus
+  const handleFocus = useCallback(() => {
+    openIfEligible();
+  }, [openIfEligible]);
+
+  // Handle click — a click that focuses a previously-unfocused input is
+  // already covered by handleFocus. A click on an input that was ALREADY
+  // focused (the common case right after selecting a result or committing a
+  // token elsewhere re-focuses this input programmatically, closing the
+  // dropdown) dispatches no focus event at all, so without this the
+  // dropdown never reopens until the user clicks away and back (#6845). See
+  // wasAlreadyFocusedRef above for how the two cases are told apart.
+  const handleClick = useCallback(() => {
+    if (
+      isDisabled ||
+      isTokenizerAtMax ||
+      !wasAlreadyFocusedRef.current ||
+      popover.isOpen
+    ) {
+      return;
+    }
+    if (
+      hasEntriesOnFocus &&
+      query.length === 0 &&
+      resultsGenRef.current !== searchGenRef.current
+    ) {
+      void performBootstrap();
+      return;
+    }
+    openIfEligible();
+  }, [
+    popover.isOpen,
+    hasEntriesOnFocus,
+    query.length,
+    performBootstrap,
+    openIfEligible,
+    isDisabled,
+    isTokenizerAtMax,
   ]);
 
   // Handle blur — close the dropdown when focus leaves the input for an
@@ -1019,6 +1147,7 @@ const BaseTypeaheadImpl = function BaseTypeahead<T extends SearchableItem>({
   );
 
   // Keyboard navigation
+  const trailingKeyDown = useTrailingKeyDown();
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       externalOnKeyDown?.(e);
@@ -1153,14 +1282,27 @@ const BaseTypeaheadImpl = function BaseTypeahead<T extends SearchableItem>({
   const selectedKey =
     value == null ? null : getKey(value.id, () => results.indexOf(value));
 
+  // Own SearchSource requests and debounce timers for the mounted engine.
+  // StrictMode reconnects this effect immediately; its replay is not a terminal
+  // dismissal of autofocus work. Defer release until that reconnect can claim
+  // the lifetime, while a real unmount still invalidates work before it paints.
+  const searchLifetimeRef = useRef(0);
   useEffect(() => {
-    const generation = searchGenRef;
+    const lifetimeRef = searchLifetimeRef;
+    const generationRef = searchGenRef;
+    const lifetime = ++lifetimeRef.current;
     return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-      generation.current++;
-      releaseSearch(false);
+      queueMicrotask(() => {
+        if (lifetimeRef.current !== lifetime) {
+          return;
+        }
+        if (searchTimeoutRef.current) {
+          clearTimeout(searchTimeoutRef.current);
+          searchTimeoutRef.current = null;
+        }
+        generationRef.current++;
+        releaseSearch(false);
+      });
     };
   }, [releaseSearch]);
 
@@ -1190,6 +1332,11 @@ const BaseTypeaheadImpl = function BaseTypeahead<T extends SearchableItem>({
         value={query}
         onChange={handleInputChange}
         onPointerDown={composeEventHandlers(() => {
+          // Captured before the browser's own default action moves focus
+          // onto the input as part of this same pointerdown — see
+          // wasAlreadyFocusedRef above.
+          wasAlreadyFocusedRef.current =
+            document.activeElement === inputRef.current;
           pointerActiveRef.current = true;
           document.addEventListener(
             'click',
@@ -1200,8 +1347,16 @@ const BaseTypeaheadImpl = function BaseTypeahead<T extends SearchableItem>({
           );
         }, onPointerDownProp)}
         onFocus={composeEventHandlers(handleFocus, onFocusProp)}
+        onClick={composeEventHandlers(handleClick, onClickProp)}
         onBlur={composeEventHandlers(handleBlur, onBlurProp)}
-        onKeyDown={handleKeyDown}
+        onKeyDown={
+          trailingKeyDown
+            ? event => {
+                handleKeyDown(event);
+                trailingKeyDown(event);
+              }
+            : handleKeyDown
+        }
         placeholder={placeholder}
         // When a disabled-reason tooltip is shown the input keeps focusability
         // via aria-disabled + readOnly instead of the native disabled
@@ -1225,7 +1380,11 @@ const BaseTypeaheadImpl = function BaseTypeahead<T extends SearchableItem>({
       />
       {isLoading && busyLane == null && (
         <span {...stylex.props(styles.loadingStatus)}>
-          <Spinner size="sm" aria-label={t('@astryx.typeahead.loading')} />
+          <Spinner
+            size="sm"
+            aria-label={t('@astryx.typeahead.loading')}
+            role="img"
+          />
         </span>
       )}
       {popover.render(
@@ -1239,13 +1398,14 @@ const BaseTypeaheadImpl = function BaseTypeahead<T extends SearchableItem>({
           )}>
           {menuItems.length === 0 && hasSearched ? (
             <div
+              ref={emptyStateRef}
               role="option"
               aria-disabled="true"
               {...mergeProps(
                 themeProps('typeahead-empty-state'),
                 stylex.props(styles.emptyState),
               )}>
-              {emptySearchResultsText}
+              {emptySearchText}
             </div>
           ) : (
             (() => {
@@ -1316,7 +1476,13 @@ const BaseTypeaheadImpl = function BaseTypeahead<T extends SearchableItem>({
           offset: spacingVars['--spacing-1'],
           xstyle: [
             styles.popover,
-            menuWidth != null && styles.popoverCustomWidth(menuWidth),
+            menuWidth != null &&
+              styles.popoverCustomWidth(
+                clampInlineSize(
+                  menuWidth,
+                  layerViewportInset.maxInlineSizeFallback,
+                ),
+              ),
           ],
         },
       )}

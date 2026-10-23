@@ -1216,7 +1216,7 @@ export function TransferList<T extends string = string>({
             startIcon={<Icon icon="search" size="sm" color="secondary" />}
             hasClear
             width="100%"
-            xstyle={styles.search}
+            controlXstyle={styles.search}
             onChange={handleSearch}
           />
         </div>

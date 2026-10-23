@@ -191,10 +191,10 @@ describe('StatusDot', () => {
 });
 
 describe('StatusDot theme target names', () => {
-  it('renders the deprecated class beside the current one', () => {
+  it('renders only the canonical target class', () => {
     render(<StatusDot variant="success" label="Online" />);
     const dot = screen.getByRole('img', {name: 'Online'});
     expect(dot).toHaveClass('astryx-status-dot');
-    expect(dot).toHaveClass('astryx-statusdot');
+    expect(dot).not.toHaveClass('astryx-statusdot');
   });
 });

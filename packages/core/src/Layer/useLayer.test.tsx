@@ -24,6 +24,7 @@ import {
   useLayer,
   useLayerInternal,
   getPositionTryFallbacks,
+  getSelfAlignment,
 } from './useLayer';
 import {typeScaleVars} from '../theme/tokens.stylex';
 import type {
@@ -189,41 +190,63 @@ describe('useLayer identity', () => {
   });
 });
 
-describe('getPositionTryFallbacks (issue #3671)', () => {
+describe('getPositionTryFallbacks (issue #3671, spec:AST-059 FR4)', () => {
   const FLIPS = 'flip-block, flip-inline, flip-block flip-inline';
+  const slides = (p: LayerPlacement, a: LayerAlignment) =>
+    `--astryx-layer-slide-${p}-${a}-same, --astryx-layer-slide-${p}-${a}-opposite`;
 
-  it('appends inline span fallbacks for centered above/below layers so inline overflow can resolve (flip-inline is a no-op on center)', () => {
+  it('appends inline span fallbacks for centered above/below layers so inline overflow can resolve (flip-inline is a no-op on center), then the named slides', () => {
     expect(getPositionTryFallbacks('above', 'center')).toBe(
-      `${FLIPS}, top span-left, top span-right, bottom span-left, bottom span-right`,
+      `${FLIPS}, top span-left, top span-right, bottom span-left, bottom span-right, ${slides('above', 'center')}`,
     );
     expect(getPositionTryFallbacks('below', 'center')).toBe(
-      `${FLIPS}, bottom span-left, bottom span-right, top span-left, top span-right`,
+      `${FLIPS}, bottom span-left, bottom span-right, top span-left, top span-right, ${slides('below', 'center')}`,
     );
   });
 
-  it('appends block span fallbacks for centered start/end layers so block overflow can resolve (flip-block is a no-op on center)', () => {
+  it('appends block span fallbacks for centered start/end layers so block overflow can resolve (flip-block is a no-op on center), then the named slides', () => {
     expect(getPositionTryFallbacks('start', 'center')).toBe(
-      `${FLIPS}, left span-top, left span-bottom, right span-top, right span-bottom`,
+      `${FLIPS}, left span-top, left span-bottom, right span-top, right span-bottom, ${slides('start', 'center')}`,
     );
     expect(getPositionTryFallbacks('end', 'center')).toBe(
-      `${FLIPS}, right span-top, right span-bottom, left span-top, left span-bottom`,
+      `${FLIPS}, right span-top, right span-bottom, left span-top, left span-bottom, ${slides('end', 'center')}`,
     );
   });
 
-  it('keeps flip-only fallbacks for non-centered alignments (flips already resolve overflow there)', () => {
-    const nonCentered: [LayerPlacement, LayerAlignment][] = [
-      ['above', 'start'],
-      ['above', 'end'],
-      ['below', 'start'],
-      ['below', 'end'],
-      ['start', 'start'],
-      ['start', 'end'],
-      ['end', 'start'],
-      ['end', 'end'],
-    ];
-    for (const [placement, alignment] of nonCentered) {
-      expect(getPositionTryFallbacks(placement, alignment)).toBe(FLIPS);
+  it('gives aligned layers the flips, then the named slide on the same side and on the opposite side', () => {
+    for (const placement of ['above', 'below', 'start', 'end'] as const) {
+      for (const alignment of ['start', 'end'] as const) {
+        expect(getPositionTryFallbacks(placement, alignment)).toBe(
+          `${FLIPS}, ${slides(placement, alignment)}`,
+        );
+      }
     }
+  });
+
+  it('installs the slide rules once in the document head, with the gutter on both alignment-axis edges and the clearance facing the anchor on the landing side', async () => {
+    const user = userEvent.setup();
+    const {container} = render(
+      <ContextLayerHarness placement="below" alignment="start" />,
+    );
+    await user.click(container.querySelector('button')!);
+    const popover = container.querySelector('[popover]');
+    // One sheet in the document head: never inside the layer, where a
+    // role-bearing layer's text would name it to assistive technology, and
+    // never beside it, where it would change a parent's last child.
+    expect(popover?.querySelector('style')).toBeNull();
+    expect(container.querySelector('style')).toBeNull();
+    const css =
+      document.getElementById('astryx-layer-slide-rules')?.textContent ?? '';
+    expect(css).toContain(
+      '@position-try --astryx-layer-slide-below-start-same{position-area:self-block-end span-all;margin-block-start:var(--_astryx-layer-clearance, 0px);',
+    );
+    expect(css).toContain(
+      '@position-try --astryx-layer-slide-below-start-opposite{position-area:self-block-start span-all;margin-block-end:var(--_astryx-layer-clearance, 0px);',
+    );
+    expect(css).toMatch(
+      /margin-inline-start:[^;]*;margin-inline-start:[^;]*env\(safe-area-inset-left/,
+    );
+    expect(css).toContain('inset-inline-start:0;inset-inline-end:0;');
   });
 
   it('defaults to above/center when called without arguments (matches renderContext defaults)', () => {
@@ -231,7 +254,7 @@ describe('getPositionTryFallbacks (issue #3671)', () => {
       getPositionTryFallbacks('above', 'center'),
     );
     expect(getPositionTryFallbacks(undefined, undefined)).toBe(
-      `${FLIPS}, top span-left, top span-right, bottom span-left, bottom span-right`,
+      getPositionTryFallbacks('above', 'center'),
     );
   });
 
@@ -239,17 +262,14 @@ describe('getPositionTryFallbacks (issue #3671)', () => {
     const placements: LayerPlacement[] = ['above', 'below', 'start', 'end'];
     const alignments: LayerAlignment[] = ['start', 'center', 'end'];
     const spanPattern: Record<LayerPlacement, RegExp> = {
-      above: /^(top|bottom) span-(left|right)$/,
-      below: /^(top|bottom) span-(left|right)$/,
-      start: /^(left|right) span-(top|bottom)$/,
-      end: /^(left|right) span-(top|bottom)$/,
+      above: /^(top|bottom) span-(left|right)$|^--astryx-layer-slide-above-/,
+      below: /^(top|bottom) span-(left|right)$|^--astryx-layer-slide-below-/,
+      start: /^(left|right) span-(top|bottom)$|^--astryx-layer-slide-start-/,
+      end: /^(left|right) span-(top|bottom)$|^--astryx-layer-slide-end-/,
     };
-
     for (const placement of placements) {
       for (const alignment of alignments) {
-        const list = getPositionTryFallbacks(placement, alignment);
-        const items = list.split(', ');
-
+        const items = getPositionTryFallbacks(placement, alignment).split(', ');
         expect(items.slice(0, 3)).toEqual([
           'flip-block',
           'flip-inline',
@@ -259,7 +279,7 @@ describe('getPositionTryFallbacks (issue #3671)', () => {
         for (const item of items.slice(3)) {
           expect(item).toMatch(spanPattern[placement]);
         }
-        expect(items.length).toBe(alignment === 'center' ? 7 : 3);
+        expect(items.length).toBe(alignment === 'center' ? 9 : 5);
       }
     }
   });
@@ -274,11 +294,13 @@ describe('getPositionTryFallbacks (issue #3671)', () => {
     expect(layerEl.style.positionTryFallbacks).toContain('top span-left');
 
     rerender(<ContextLayerHarness placement="above" alignment="start" />);
-    expect(layerEl.style.positionTryFallbacks).toBe(FLIPS);
+    expect(layerEl.style.positionTryFallbacks).toBe(
+      getPositionTryFallbacks('above', 'start'),
+    );
 
     rerender(<ContextLayerHarness placement="start" alignment="center" />);
     expect(layerEl.style.positionTryFallbacks).toBe(
-      `${FLIPS}, left span-top, left span-bottom, right span-top, right span-bottom`,
+      getPositionTryFallbacks('start', 'center'),
     );
   });
 
@@ -301,8 +323,147 @@ describe('getPositionTryFallbacks (issue #3671)', () => {
     const layerEl = container.querySelector('[popover]') as HTMLElement;
     expect(layerEl).not.toBeNull();
     expect(layerEl.style.positionTryFallbacks).toBe(
-      `${FLIPS}, top span-left, top span-right, bottom span-left, bottom span-right`,
+      getPositionTryFallbacks('above', 'center'),
     );
+  });
+});
+
+describe('viewport inset (spec:AST-059)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('caps every anchor-mode layer on the placement axis and keeps the far-edge gutter of its alignment axis (FR1, FR3)', async () => {
+    const user = userEvent.setup();
+    const cases: [LayerPlacement, LayerAlignment, string[], string[]][] = [
+      [
+        'below',
+        'start',
+        ['farBelow', 'gutterInlineEnd'],
+        ['gutterInlineStart', 'farAbove'],
+      ],
+      ['below', 'end', ['farBelow', 'gutterInlineStart'], ['gutterInlineEnd']],
+      [
+        'above',
+        'center',
+        ['farAbove', 'gutterInlineStart', 'gutterInlineEnd'],
+        ['farBelow'],
+      ],
+      [
+        'end',
+        'start',
+        ['farEnd', 'gutterBlockEnd'],
+        ['gutterBlockStart', 'farStart'],
+      ],
+      ['start', 'end', ['farStart', 'gutterBlockStart'], ['gutterBlockEnd']],
+      ['end', 'center', ['farEnd', 'gutterBlockStart', 'gutterBlockEnd'], []],
+    ];
+    for (const [placement, alignment, present, absent] of cases) {
+      const {container, unmount} = render(
+        <ContextLayerHarness placement={placement} alignment={alignment} />,
+      );
+      await user.click(container.querySelector('button')!);
+      const layerEl = container.querySelector('[popover]') as HTMLElement;
+      expect(layerEl.className).toContain('useLayer__styles.viewportFit');
+      for (const key of present) {
+        expect(layerEl.className).toContain(`useLayer__styles.${key}`);
+      }
+      for (const key of absent) {
+        expect(layerEl.className).not.toContain(`useLayer__styles.${key}`);
+      }
+      // The gutter never caps the layer box's inline size: an auto-width
+      // layer shrinks to the room beside its trigger on its own, and a cap on
+      // the box keeps the browser from choosing a flip.
+      expect(layerEl.className).not.toMatch(/useLayer__styles\.maxInline/);
+      unmount();
+    }
+  });
+
+  it('leaves custom and fixed positioning without the viewport fit (INV3)', () => {
+    function CustomHarness() {
+      const layer = useLayer({mode: 'context'});
+      return (
+        <>
+          <button type="button" ref={layer.ref} onClick={layer.show}>
+            Trigger
+          </button>
+          {layer.render(<span>Custom</span>, {positioning: 'custom'})}
+        </>
+      );
+    }
+    const {container} = render(<CustomHarness />);
+    fireEvent.click(container.querySelector('button')!);
+    const layerEl = container.querySelector('[popover]') as HTMLElement;
+    expect(layerEl.className).not.toContain('useLayer__styles.viewportFit');
+    expect(layerEl.className).not.toMatch(/useLayer__styles\.gutter/);
+  });
+
+  it('pins an aligned layer unsafe toward its anchor only while the anchor is out of view (FR4, FR5)', () => {
+    expect(getSelfAlignment('below', 'start', true)).toEqual({});
+    expect(getSelfAlignment('below', 'start', false)).toEqual({
+      justifySelf: 'unsafe self-start',
+    });
+    expect(getSelfAlignment('above', 'end', false)).toEqual({
+      justifySelf: 'unsafe self-end',
+    });
+    expect(getSelfAlignment('end', 'start', false)).toEqual({
+      alignSelf: 'unsafe self-start',
+    });
+    expect(getSelfAlignment('start', 'end', false)).toEqual({
+      alignSelf: 'unsafe self-end',
+    });
+    // Centered layers slide through their span fallbacks and never pin.
+    expect(getSelfAlignment('below', 'center', false)).toEqual({});
+  });
+
+  it('withdraws the slide when the observed anchor leaves the viewport and restores it when it returns (FR5)', async () => {
+    let notify!: IntersectionObserverCallback;
+    const observed: Element[] = [];
+    const disconnect = vi.fn();
+    class Observer {
+      constructor(callback: IntersectionObserverCallback) {
+        notify = callback;
+      }
+      observe(target: Element) {
+        observed.push(target);
+      }
+      unobserve() {}
+      disconnect = disconnect;
+      takeRecords() {
+        return [];
+      }
+    }
+    vi.stubGlobal('IntersectionObserver', Observer);
+
+    const user = userEvent.setup();
+    const {container} = render(
+      <ContextLayerHarness placement="below" alignment="start" />,
+    );
+    const trigger = container.querySelector('button')!;
+    await user.click(trigger);
+    const layerEl = container.querySelector('[popover]') as HTMLElement;
+    expect(observed).toEqual([trigger]);
+    expect(layerEl.style.justifySelf).toBe('');
+
+    act(() => {
+      notify(
+        [{isIntersecting: false} as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      );
+    });
+    expect(layerEl.style.justifySelf).toBe('unsafe self-start');
+    // The fallback list stays; only the overflow shift is withdrawn.
+    expect(layerEl.style.positionTryFallbacks).toBe(
+      getPositionTryFallbacks('below', 'start'),
+    );
+
+    act(() => {
+      notify(
+        [{isIntersecting: true} as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      );
+    });
+    expect(layerEl.style.justifySelf).toBe('');
   });
 });
 
@@ -569,6 +730,175 @@ describe('useLayer', () => {
 
       act(() => api.hide());
       expect(hideSpy).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('show() while another popover is mid show/hide', () => {
+    /**
+     * Mirror the Popover API's re-entrancy rule: hiding a popover hands focus
+     * back to the element that had it, synchronously and while the document
+     * still counts that popover as hiding, and `showPopover()` throws while
+     * any popover in the document is being shown or hidden.
+     */
+    function installReentrantPopoverApi(
+      duringHide?: (popover: HTMLElement) => void,
+    ) {
+      let operationsInFlight = 0;
+      const previouslyFocused = new WeakMap<HTMLElement, Element | null>();
+      const showSpy = vi.fn(function (this: HTMLElement) {
+        if (operationsInFlight > 0) {
+          throw new DOMException(
+            "Failed to execute 'showPopover' on 'HTMLElement': Invalid to show a popover during another show operation",
+            'InvalidStateError',
+          );
+        }
+        operationsInFlight += 1;
+        try {
+          previouslyFocused.set(this, this.ownerDocument.activeElement);
+          this.dataset.open = 'true';
+        } finally {
+          operationsInFlight -= 1;
+        }
+      });
+      const hideSpy = vi.fn(function (this: HTMLElement) {
+        operationsInFlight += 1;
+        try {
+          delete this.dataset.open;
+          const target = previouslyFocused.get(this);
+          previouslyFocused.delete(this);
+          if (
+            target instanceof HTMLElement &&
+            this.contains(document.activeElement)
+          ) {
+            target.focus();
+          }
+          duringHide?.(this);
+        } finally {
+          operationsInFlight -= 1;
+        }
+      });
+      HTMLElement.prototype.showPopover = showSpy;
+      HTMLElement.prototype.hidePopover = hideSpy;
+      return {showSpy, hideSpy};
+    }
+
+    /**
+     * A trigger that opens a dismissible layer and also carries a focus-driven
+     * layer (a tooltip), the shape every tooltip-bearing popover trigger has.
+     */
+    function FocusReturnHarness({onTooltipShow}: {onTooltipShow: () => void}) {
+      const popover = useLayer({mode: 'context'});
+      const tooltip = useLayer({mode: 'context', onShow: onTooltipShow});
+      return (
+        <>
+          <button
+            type="button"
+            ref={el => {
+              popover.ref(el);
+              tooltip.ref(el);
+            }}
+            onFocus={tooltip.show}
+            onBlur={tooltip.hide}
+            onClick={popover.show}>
+            Trigger
+          </button>
+          {popover.render(
+            <button
+              type="button"
+              onKeyDown={e => {
+                if (e.key === 'Escape') {
+                  popover.hide();
+                }
+              }}>
+              Inside
+            </button>,
+            {role: 'dialog'},
+          )}
+          {tooltip.render(<span>Tip</span>, {role: 'tooltip'})}
+        </>
+      );
+    }
+
+    it('defers the show a returning focus requests until the hide has returned', async () => {
+      const {showSpy} = installReentrantPopoverApi();
+      const errors: unknown[] = [];
+      const onError = (event: ErrorEvent) => {
+        errors.push(event.error);
+        event.preventDefault();
+      };
+      window.addEventListener('error', onError);
+      const onTooltipShow = vi.fn();
+      const {getByRole} = render(
+        <FocusReturnHarness onTooltipShow={onTooltipShow} />,
+      );
+      const trigger = getByRole('button', {name: 'Trigger'});
+      const inside = getByRole('button', {name: 'Inside', hidden: true});
+
+      // Keyboard-open the popover: the tooltip shows on focus, the popover on
+      // the press, and focus moves inside — the tooltip closes behind it.
+      act(() => trigger.focus());
+      fireEvent.click(trigger);
+      act(() => inside.focus());
+      expect(onTooltipShow).toHaveBeenCalledTimes(1);
+      expect(getByRole('dialog', {hidden: true})).toHaveAttribute(
+        'data-open',
+        'true',
+      );
+      expect(getByRole('tooltip', {hidden: true})).not.toHaveAttribute(
+        'data-open',
+      );
+
+      // Escape hides the popover; the browser returns focus to the trigger
+      // inside that hide, and the tooltip asks to show.
+      fireEvent.keyDown(inside, {key: 'Escape'});
+      window.removeEventListener('error', onError);
+
+      expect(errors).toEqual([]);
+      expect(document.activeElement).toBe(trigger);
+      expect(getByRole('dialog', {hidden: true})).not.toHaveAttribute(
+        'data-open',
+      );
+      // Nothing reached the browser while the hide was running; the deferred
+      // show runs exactly once, after the press has unwound.
+      expect(onTooltipShow).toHaveBeenCalledTimes(1);
+      await act(async () => {});
+      expect(showSpy.mock.results.every(r => r.type === 'return')).toBe(true);
+      expect(getByRole('tooltip', {hidden: true})).toHaveAttribute(
+        'data-open',
+        'true',
+      );
+      expect(onTooltipShow).toHaveBeenCalledTimes(2);
+    });
+
+    it('drops a deferred show that hide() cancels before it replays', async () => {
+      const api: {popover?: FixedLayerReturn; tooltip?: FixedLayerReturn} = {};
+      // While the popover hides, the tooltip asks to show and then changes
+      // its mind before the hide returns.
+      const {showSpy} = installReentrantPopoverApi(() => {
+        api.tooltip?.show();
+        api.tooltip?.hide();
+      });
+      function Harness() {
+        api.popover = useLayer({mode: 'fixed'});
+        api.tooltip = useLayer({mode: 'fixed'});
+        return (
+          <>
+            {api.popover.render(<span>Popover</span>, {x: 0, y: 0})}
+            {api.tooltip.render(<span>Tip</span>, {x: 0, y: 0})}
+          </>
+        );
+      }
+      const {getByText} = render(<Harness />);
+
+      act(() => api.popover?.show());
+      act(() => api.popover?.hide());
+      await act(async () => {});
+
+      // Only the popover's own show reached the browser.
+      expect(showSpy).toHaveBeenCalledTimes(1);
+      expect(getByText('Tip').closest('[popover]')).not.toHaveAttribute(
+        'data-open',
+      );
     });
   });
 
@@ -907,24 +1237,33 @@ describe('useLayer context positioning', () => {
 
     const NONE = {blockStart: '', blockEnd: '', inlineStart: '', inlineEnd: ''};
 
-    it('is flush by default', async () => {
+    // The clearance rides the anchor-facing edge of the placement axis; the
+    // far edge carries the static viewport gutter (spec:AST-059 FR1), which is
+    // a class, not a dynamic variable, so it does not appear here.
+    it('is flush against the anchor by default', async () => {
       expect(
         await openAndGetOffsets(<OffsetHarness placement="below" />),
       ).toEqual(NONE);
     });
 
-    // Both edges of the axis, so the gap survives a position-try-fallbacks
-    // flip to the opposite side (#4803).
-    it('clears both block edges for a block placement', async () => {
+    // The flip tactic swaps the two block margins with the area, so the gap
+    // survives a position-try-fallbacks flip to the opposite side (#4803).
+    it('clears the anchor-facing block edge for a block placement', async () => {
       expect(
         await openAndGetOffsets(<OffsetHarness placement="above" offset={8} />),
-      ).toEqual({...NONE, blockStart: '8px', blockEnd: '8px'});
+      ).toEqual({...NONE, blockEnd: '8px'});
     });
 
-    it('clears both inline edges for an inline placement', async () => {
+    it('clears the opposite block edge when placed below', async () => {
+      expect(
+        await openAndGetOffsets(<OffsetHarness placement="below" offset={8} />),
+      ).toEqual({...NONE, blockStart: '8px'});
+    });
+
+    it('clears the anchor-facing inline edge for an inline placement', async () => {
       expect(
         await openAndGetOffsets(<OffsetHarness placement="end" offset={8} />),
-      ).toEqual({...NONE, inlineStart: '8px', inlineEnd: '8px'});
+      ).toEqual({...NONE, inlineStart: '8px'});
     });
 
     it('takes a CSS length string', async () => {
@@ -932,11 +1271,18 @@ describe('useLayer context positioning', () => {
         await openAndGetOffsets(
           <OffsetHarness placement="below" offset="var(--spacing-1)" />,
         ),
-      ).toEqual({
-        ...NONE,
-        blockStart: 'var(--spacing-1)',
-        blockEnd: 'var(--spacing-1)',
-      });
+      ).toEqual({...NONE, blockStart: 'var(--spacing-1)'});
+    });
+
+    it('puts the viewport gutter on the far edge of the placement axis (FR1, FR6)', async () => {
+      const user = userEvent.setup();
+      const {container, getByRole} = render(
+        <OffsetHarness placement="below" offset={8} />,
+      );
+      await user.click(getByRole('button', {name: 'trigger'}));
+      const el = container.querySelector('[popover]') as HTMLElement;
+      expect(el.className).toContain('useLayer__styles.placementBelow');
+      expect(el.className).not.toContain('useLayer__styles.placementAbove');
     });
 
     it('is ignored under custom positioning, which owns its own insets', async () => {

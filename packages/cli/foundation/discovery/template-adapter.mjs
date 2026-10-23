@@ -15,7 +15,8 @@
  * needs it: `Project` assembles templates from it. While this sat in api/, that
  * made a cycle across the layer boundary — Project reached up for discovery and
  * this module imported Project back. Nothing here depends on api/; every import
- * is node:*, jiti, foundation/*, or authoring/*.
+ * is node:*, jiti, foundation/*, or authoring/*, plus a lazily required
+ * @babel/parser for extractComponents' local-declaration scan.
  *
  * @position packages/cli/foundation/discovery — shared template discovery/IO;
  *   consumed by Project and by the api/template leaves.
@@ -102,6 +103,7 @@ export function effectiveTemplateDiscovery(templates) {
  * @property {string} name
  * @property {string} [displayName]
  * @property {string} description
+ * @property {string[]} [keywords]
  * @property {string} [category]
  * @property {boolean} [isReady]
  * @property {boolean} [scaffold]
@@ -110,6 +112,8 @@ export function effectiveTemplateDiscovery(templates) {
  * @property {string[]} [alsoExampleFor]
  * @property {string[]} [alsoShowcaseFor]
  * @property {string[]} [componentsUsed]
+ * @property {Record<string, string>} [icons] the icon definition each
+ *   imported icon draws, by its imported name
  * @property {boolean} [isShowcase]
  * @property {string} filePath
  * @property {string} docPath
@@ -320,9 +324,23 @@ function toPosixPath(p) {
  * @returns {string} Source with demo asset references replaced.
  */
 export function stripTemplateAssetRefs(source) {
+  return replaceDemoMedia(source).source;
+}
+
+/**
+ * {@link stripTemplateAssetRefs}, plus how many references it replaced: one per
+ * replaced reference, however many fixture paths its URL carries (a reference
+ * is replaced whole, query included), and none for a prose mention or a
+ * third-party URL left as written. That count is what a receipt discloses.
+ *
+ * @param {string} source - Template source code.
+ * @returns {{source: string, demoMediaReplaced: number}}
+ */
+export function replaceDemoMedia(source) {
   const needle = `/${FIXTURE_SEGMENT}`;
   let output = '';
   let copied = 0;
+  let demoMediaReplaced = 0;
   /** @type {Array<[number, number]> | undefined} */
   let comments;
   let at = source.indexOf(needle);
@@ -343,10 +361,11 @@ export function stripTemplateAssetRefs(source) {
     if (edit) {
       output += source.slice(copied, start) + edit.text;
       copied = edit.end;
+      demoMediaReplaced += 1;
     }
     at = source.indexOf(needle, end);
   }
-  return output + source.slice(copied);
+  return {source: output + source.slice(copied), demoMediaReplaced};
 }
 
 /** @param {string | undefined} char */
@@ -496,6 +515,19 @@ function expressionUse(source, open, close) {
   return null;
 }
 
+/** @type {typeof import('@babel/parser') | undefined} */
+let babelParser;
+
+/**
+ * The template source parser, loaded on first use so listing templates
+ * never pays for it.
+ * @returns {typeof import('@babel/parser')}
+ */
+function templateSourceParser() {
+  babelParser ??= require('@babel/parser');
+  return /** @type {typeof import('@babel/parser')} */ (babelParser);
+}
+
 /**
  * The [start, end) range of every comment in `source`, or none when it does
  * not parse as TSX.
@@ -504,8 +536,7 @@ function expressionUse(source, open, close) {
  */
 function commentRanges(source) {
   try {
-    const {parse} = require('@babel/parser');
-    const {comments} = parse(source, {
+    const {comments} = templateSourceParser().parse(source, {
       sourceType: 'module',
       plugins: ['jsx', 'typescript'],
     });
@@ -633,8 +664,10 @@ async function discoverPages() {
       name: doc?.name || dir.name,
       description: doc?.description || '',
       category: doc?.category || '',
+      keywords: doc?.keywords ?? [],
       isReady: doc?.isReady ?? true,
       scaffold: doc?.scaffold ?? false,
+      ...(doc?.icons ? {icons: doc.icons} : {}),
       filePath: path.join(dirPath, 'page.tsx'),
       docPath,
     });
@@ -661,10 +694,15 @@ async function discoverBlocks() {
       dirName: basename,
       name: doc?.name || basename,
       description: doc?.description || '',
+      keywords: doc?.keywords ?? [],
       isReady: doc?.isReady ?? true,
       aspectRatio: doc?.aspectRatio ?? 1,
       componentsUsed: doc?.componentsUsed ?? [],
+      ...(doc?.icons ? {icons: doc.icons} : {}),
       isShowcase: doc?.isShowcase ?? false,
+      ...(typeof doc?.exampleFor === 'string'
+        ? {exampleFor: doc.exampleFor}
+        : {}),
       filePath: tsxPath,
       docPath,
       category: relPath,
@@ -702,10 +740,15 @@ async function discoverExternalBlocks(cwd = process.cwd()) {
         dirName: basename,
         name: doc?.name || basename,
         description: doc?.description || '',
+        keywords: doc?.keywords ?? [],
         isReady: doc?.isReady ?? true,
         aspectRatio: doc?.aspectRatio ?? 1,
         componentsUsed: doc?.componentsUsed ?? [],
+        ...(doc?.icons ? {icons: doc.icons} : {}),
         isShowcase: doc?.isShowcase ?? false,
+        ...(typeof doc?.exampleFor === 'string'
+          ? {exampleFor: doc.exampleFor}
+          : {}),
         filePath: tsxPath,
         docPath,
         category: relPath,
@@ -1161,6 +1204,23 @@ function reportSamePackageReplacements(pkg, autolinked, templates, errors) {
 }
 
 /**
+ * The fix for a template doc with no same-stem `.tsx`: rename a same-stem
+ * source written in another extension, or add the `.tsx`.
+ * @param {string} docPath
+ * @param {string} sourcePath the `.tsx` it needs
+ */
+function missingTemplateSourceFix(docPath, sourcePath) {
+  const source = path.basename(sourcePath);
+  const stem = source.slice(0, -'.tsx'.length);
+  const other = ['.jsx', '.js', '.ts', '.mjs']
+    .map(extension => `${stem}${extension}`)
+    .find(file => fs.existsSync(path.join(path.dirname(sourcePath), file)));
+  return other
+    ? `Found ${other}, but a template source must be a .tsx file. Fix: rename ${other} to ${source}.`
+    : `Fix: add ${source} beside ${path.basename(docPath)}, with the template as its default export.`;
+}
+
+/**
  * Discover the templates contributed by a SINGLE integration. Same per-template
  * rules as {@link discoverIntegrationTemplates} (same-stem source required,
  * page|block type required); broken templates are recorded in `errors` rather
@@ -1193,7 +1253,7 @@ export async function discoverIntegrationTemplatesForOne(integration) {
       errors.push({
         package: pkgLabel,
         template: id,
-        message: `Template "${id}" is missing its same-stem source file ${path.basename(sourcePath)}.`,
+        message: `Template "${id}" is missing its same-stem source file ${path.basename(sourcePath)}. ${missingTemplateSourceFix(docPath, sourcePath)}`,
       });
       // A replacement this unusable template declares still counts, so its
       // target fails closed instead of going to a sibling.
@@ -1248,7 +1308,8 @@ export async function discoverIntegrationTemplatesForOne(integration) {
         template: id,
         message: `Template "${id}" is missing a "type" of "page" or "block". Stamp the default export with type: 'page' or type: 'block'.`,
       });
-      const declared = doc?.replaces ?? (await declaredReplacement(docPath, id));
+      const declared =
+        doc?.replaces ?? (await declaredReplacement(docPath, id));
       if (declared != null) {
         errors.push({
           code: 'invalid_template_replacement',
@@ -1269,6 +1330,7 @@ export async function discoverIntegrationTemplatesForOne(integration) {
       name: doc?.name || id,
       displayName: doc?.displayName,
       description: doc?.description || '',
+      keywords: doc?.keywords ?? [],
       category: doc?.category || '',
       isReady: doc?.isReady ?? true,
       scaffold: doc?.scaffold ?? false,
@@ -1284,6 +1346,7 @@ export async function discoverIntegrationTemplatesForOne(integration) {
       // so read it off the envelope shape here.
       componentsUsed:
         /** @type {{componentsUsed?: string[]}} */ (doc).componentsUsed ?? [],
+      ...(doc?.icons ? {icons: doc.icons} : {}),
       filePath: sourcePath,
       docPath,
       package: pkgLabel,
@@ -1376,6 +1439,11 @@ export async function findShowcase(componentName, cwd, options) {
     docPath: b.docPath,
   });
 
+  // Priority 0: the showcase that names the component (`exampleFor`), the
+  // way packages declare it; a category no longer has to carry the name.
+  const named = showcases.find(b => (b.exampleFor ?? '').toLowerCase() === lc);
+  if (named) return toResult(named);
+
   // Priority 1: own directory (components/Badge/ for "Badge")
   const dirMatch = showcases.find(b => {
     const catDir = path.basename(b.category ?? '').toLowerCase();
@@ -1404,6 +1472,51 @@ const UBIQUITOUS = new Set([
 ]);
 
 /**
+ * Names bound by top-level `function`, `class`, `const`, `let` or `var`
+ * declarations (exported or not). Returns an empty set when the source does
+ * not parse, so a parse failure never drops a real component.
+ *
+ * @param {string} src
+ * @returns {Set<string>}
+ */
+function topLevelBindingNames(src) {
+  /** @type {Set<string>} */
+  const names = new Set();
+  let program;
+  try {
+    program = templateSourceParser().parse(src, {
+      sourceType: 'module',
+      plugins: ['jsx', 'typescript'],
+      errorRecovery: true,
+    }).program;
+  } catch {
+    return names;
+  }
+  for (const statement of program.body) {
+    const node =
+      statement.type === 'ExportNamedDeclaration' ||
+      statement.type === 'ExportDefaultDeclaration'
+        ? statement.declaration
+        : statement;
+    if (node == null) continue;
+    if (
+      (node.type === 'FunctionDeclaration' ||
+        node.type === 'ClassDeclaration') &&
+      node.id
+    ) {
+      names.add(node.id.name);
+    } else if (node.type === 'VariableDeclaration') {
+      for (const declarator of node.declarations) {
+        if (declarator.id.type === 'Identifier') {
+          names.add(declarator.id.name);
+        }
+      }
+    }
+  }
+  return names;
+}
+
+/**
  * @param {string} pagePath
  * @returns {string[]}
  */
@@ -1429,14 +1542,24 @@ export function extractComponents(pagePath) {
   while ((m = tagRegex.exec(src)) !== null) {
     matches.push(m[2]);
   }
+
+  // Exclude names bound by a top-level declaration in the same file: those are
+  // page-local helpers (e.g. `function TimelineSection()`), not components a
+  // builder can import. Read real bindings from the syntax tree so comments,
+  // strings and type annotations cannot add or hide a name.
+  const localDeclNames = topLevelBindingNames(src);
+
   return [
     ...new Set(
       matches
+        .filter(n => !localDeclNames.has(n))
         .filter(n => !['Theme', 'ThemeProvider'].includes(n))
         .filter(n => !UBIQUITOUS.has(n))
         .map(n =>
           n.replace(
-            /(Item|Section|Header|Content|Footer|Panel|Heading|CollapseButton|Column|Sortable|Selection|Group|Source)$/,
+            // Strip only when a stem remains, so a bare `<Section>` keeps its
+            // own name instead of emptying out.
+            /(?<=.)(Item|Section|Header|Content|Footer|Panel|Heading|CollapseButton|Column|Sortable|Selection|Group|Source)$/,
             '',
           ),
         )

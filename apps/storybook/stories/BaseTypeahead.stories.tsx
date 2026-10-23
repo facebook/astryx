@@ -199,7 +199,7 @@ export const EmptyResults: Story = {
     <Demo
       source={emptySource}
       debounceMs={0}
-      emptySearchResultsText="No matching frameworks"
+      emptySearchText="No matching frameworks"
     />
   ),
   play: async ({canvasElement}) => {

@@ -25,6 +25,7 @@ import {
   discoverCliSelfDocSources,
 } from './cli-self-docs.mjs';
 import {routeSegment} from './docs-section-key.mjs';
+import {formatCliCommand} from '../env/package-manager.mjs';
 
 const SLOW = 60_000;
 
@@ -145,8 +146,8 @@ describe('auditCliSelfDocs', () => {
     });
     const result = await audit(root, ['y/y.doc.mjs', 'z/z.doc.mjs']);
     expect(result.misfiled.map(entry => entry.message)).toEqual([
-      'authoring/x/x.doc.mjs has namespace "authoring", but `astryx docs authoring` does not list it',
-      'authoring/y/y.doc.mjs is read in `astryx docs authoring`, but its namespace is "cli/api"',
+      `authoring/x/x.doc.mjs has namespace "authoring", but \`${formatCliCommand('docs authoring/field-reference')}\` does not list it`,
+      `authoring/y/y.doc.mjs is read in \`${formatCliCommand('docs authoring/field-reference')}\`, but its namespace is "cli/api"`,
     ]);
     expect(result.authoring).toBe(1);
     expect(result.tree).toBe(0);
@@ -313,6 +314,26 @@ describe('cliDocSection', () => {
         text: 'It runs `grpSub()` from `@astryxdesign/cli/api`. Read it with {@link function:grpSub}.',
       },
     ]);
+  });
+
+  it('marks required parameters and adds a Default column when a parameter has a default', () => {
+    const beta = fn('beta', {
+      params: [
+        {name: 'slug', type: 'string', description: 'The slug.', required: true},
+        {name: 'options.limit', type: 'number', description: 'How many.', default: '20'},
+      ],
+    });
+    const table = cliDocSection(beta, indexOf([beta])).content.find(
+      (/** @type {any} */ block) => block.type === 'table',
+    );
+    expect(table).toEqual({
+      type: 'table',
+      headers: ['Parameter', 'Type', 'Default', 'Description'],
+      rows: [
+        ['`slug` (required)', '`string`', '', 'The slug.'],
+        ['`options.limit`', '`number`', '20', 'How many.'],
+      ],
+    });
   });
 
   it('renders an API function, an enum, and a schema', () => {

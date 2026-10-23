@@ -13,6 +13,8 @@
  */
 
 import {describe, expect, it} from 'vitest';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import {
   buildDocsTree,
   KIND_GROUPS,
@@ -152,23 +154,30 @@ describe('buildDocsTree', () => {
       source: `${provider}/${name}.doc.mjs`,
     });
     const cliNs = {...ns('cli'), provider: CLI, providerId: CLI, source: `${CLI}/tree/cli.doc.mjs`};
-    // An integration's topics named `CLI` and `UNORGANIZED` claim the CLI's
-    // namespace and the generated level; both are withdrawn.
+    // An integration's topics named `CLI` and `GUIDES` claim the CLI's
+    // namespace and a generated level; both are withdrawn.
     const tree = buildDocsTree({
       namespaces: [cliNs],
       docs: [],
-      topics: [topic('theme', CLI), topic('CLI'), topic('UNORGANIZED')],
+      topics: [topic('theme', CLI), topic('CLI'), topic('GUIDES')],
     });
     expect(tree.get('cli')?.provider).toBe(CLI);
-    expect(tree.get('unorganized')?.provider).toBe(CLI);
+    expect(tree.get('guides')?.provider).toBe(CLI);
     expect(routes(tree)).not.toContain('CLI');
-    expect(routes(tree)).not.toContain('UNORGANIZED');
+    expect(routes(tree)).not.toContain('GUIDES');
     expect(problems(tree)).toEqual(
       expect.arrayContaining([
         ['duplicate_route', expect.stringContaining('both have the route "CLI"')],
-        ['duplicate_route', expect.stringContaining('takes the route "UNORGANIZED", which the CLI\'s own docs keep')],
+        ['duplicate_route', expect.stringContaining('takes the route "GUIDES", which the CLI\'s own docs keep')],
       ]),
     );
+    // It names both docs as their authors know them, never by artifact id,
+    // and says what to change.
+    const taken = problems(tree).find(([, message]) => message.includes('route "CLI"'))?.[1];
+    expect(taken).toBe(
+      `The topic "CLI" from ${P} and Astryx's own namespace "cli" both have the route "CLI", so \`astryx docs CLI\` cannot open both. Fix: rename "CLI" (its \`name\` and its file), such as \`name: 'kit-cli'\`.`,
+    );
+    expect(taken).not.toContain('astryx:artifact');
     expect(tree.getFolded('THEME')?.provider).toBe(CLI);
     // A CLI topic whose own name has capitals keeps its route against a
     // lowercase namespace, although namespaces go into the tree first.
@@ -277,6 +286,40 @@ describe('buildDocsTree', () => {
     expect(routes(tree)).toEqual(['commands', 'commands/theme-add']);
     expect(tree.get('commands')?.slots[0].children).toEqual([
       'commands/theme-add',
+    ]);
+  });
+
+  it('adopts from every package only on an experimental CLI namespace', () => {
+    const CLI = '@astryxdesign/cli';
+    /** @param {object} extra */
+    const shared = extra => ({
+      ...ns('words', {
+        slots: {all: {title: 'All', accepts: {kinds: ['generic']}}},
+        adopts: [
+          {
+            source: {group: 'words', kinds: ['generic'], packages: 'all'},
+            into: 'all',
+          },
+        ],
+        ...extra,
+      }),
+      provider: CLI,
+      providerId: CLI,
+      source: `${CLI}/tree/words.doc.mjs`,
+    });
+    const docs = [
+      guide('mine', {group: 'words', provider: CLI, providerId: CLI}),
+      guide('theirs', {group: 'words'}),
+    ];
+    const stable = buildDocsTree({namespaces: [shared({})], docs});
+    expect(stable.get('words')?.slots[0].children).toEqual(['words/mine']);
+    const experimental = buildDocsTree({
+      namespaces: [shared({stability: 'experimental'})],
+      docs,
+    });
+    expect(experimental.get('words')?.slots[0].children).toEqual([
+      'words/mine',
+      'words/theirs',
     ]);
   });
 
@@ -493,13 +536,40 @@ describe("the CLI's own docs tree", () => {
     async () => {
       const tree = await loadDocsTree({fresh: true});
       expect(tree.diagnostics).toEqual([]);
-      expect(tree.roots().map(node => node.route)).toEqual(['cli']);
+      expect(tree.roots().map(node => node.route)).toEqual(['authoring', 'cli', 'global', 'internationalization', 'layout', 'migration', 'styling', 'styling-libraries', 'tokens', 'typography']);
+      // Every slot child is a node one level below the namespace that places
+      // it, and every node but the root is placed. Read from the tree, so a
+      // restructure of the guides does not need this test edited.
+      const nodes = [...tree.nodes.values()];
+      const placed = new Set();
+      const misplaced = [];
+      for (const node of nodes) {
+        for (const slot of node.slots ?? []) {
+          for (const child of slot.children) {
+            placed.add(child);
+            const rest = child.slice(node.route.length + 1);
+            if (
+              tree.get(child) == null ||
+              !child.startsWith(`${node.route}/`) ||
+              rest.includes('/')
+            ) {
+              misplaced.push(`${node.route} › ${slot.name} › ${child}`);
+            }
+          }
+        }
+      }
+      expect(misplaced).toEqual([]);
+      const roots = new Set(tree.roots().map(node => node.route));
       expect(
-        tree.get('cli')?.slots.map(slot => [slot.name, slot.children]),
-      ).toEqual([
-        ['guides', ['cli/integrations', 'cli/writing-docs']],
-        ['reference', ['cli/commands', 'cli/api']],
-      ]);
+        nodes
+          .map(node => node.route)
+          .filter(route => !roots.has(route) && !placed.has(route)),
+      ).toEqual([]);
+      // The reference groups the CLI generates from its own typed docs.
+      expect(
+        tree.get('cli')?.slots.find(slot => slot.name === 'reference')
+          ?.children,
+      ).toEqual(['cli/commands', 'cli/api']);
       expect(tree.get('cli/api')?.slots[0].children).toEqual([
         'cli/api/functions',
         'cli/api/schemas',
@@ -560,15 +630,38 @@ describe("the CLI's own docs tree", () => {
     async () => {
       const inputs = await loadTreeInputs({selfDocs: false});
       expect(inputs.diagnostics).toEqual([]);
-      expect(inputs.namespaces.map(n => n.doc.name).sort()).toEqual([
-        'api',
-        'cli',
-        'commands',
-      ]);
-      expect(inputs.docs.map(d => [d.name, d.placement?.parent])).toEqual([
-        ['integrations', 'namespace:cli'],
-        ['writing-docs', 'namespace:cli'],
-      ]);
+      // Every doc file in the tree directory is read, as a namespace or a
+      // guide, and named after its file.
+      const records = [
+        ...inputs.namespaces.map(n => ({name: n.doc.name, source: n.source})),
+        ...inputs.docs.map(d => ({name: d.name, source: d.source})),
+      ];
+      const files = fs
+        .readdirSync(new URL('../../assets/docs/tree/', import.meta.url))
+        .filter(file => file.endsWith('.doc.mjs'))
+        .sort();
+      expect(
+        records.map(record => path.basename(String(record.source))).sort(),
+      ).toEqual(files);
+      expect(
+        records.filter(
+          record =>
+            path.basename(String(record.source)) !== `${record.name}.doc.mjs`,
+        ),
+      ).toEqual([]);
+      expect(new Set(inputs.docs.map(d => d.kind))).toEqual(
+        new Set(['generic']),
+      );
+      // Every guide's parent is a namespace from the same directory.
+      const namespaces = new Set(
+        inputs.namespaces.map(n => `namespace:${n.doc.name}`),
+      );
+      expect(
+        inputs.docs
+          .filter(d => d.placement?.parent != null)
+          .filter(d => !namespaces.has(d.placement.parent))
+          .map(d => d.name),
+      ).toEqual([]);
     },
     SLOW,
   );

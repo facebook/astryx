@@ -55,6 +55,14 @@ beforeEach(() => {
 // accessibility tree. Use hidden: true to find it.
 const h = {hidden: true} as const;
 
+/** A busy control's Spinner is decorative and silent (spec:AST-086 FR8). */
+function expectSilentBusySpinner() {
+  const spinner = document.querySelector('.astryx-spinner');
+  expect(spinner).not.toBeNull();
+  expect(spinner).toHaveAttribute('aria-hidden', 'true');
+  expect(screen.queryByRole('status', {name: 'Loading'})).toBeNull();
+}
+
 describe('TextArea', () => {
   it('renders with label', () => {
     render(<TextArea label="Description" value="" onChange={() => {}} />);
@@ -348,7 +356,7 @@ describe('TextArea', () => {
       );
       // Matches the other inputs: spinner (role="status") and the status icon
       // render side by side in the end slot, not mutually exclusively.
-      expect(screen.getByRole('status')).toBeInTheDocument();
+      expectSilentBusySpinner();
       // Status icon svg is also present alongside the spinner.
       expect(container.querySelectorAll('svg').length).toBeGreaterThan(0);
     });
@@ -1146,7 +1154,7 @@ describe('TextArea disabled theme state', () => {
     const {container} = render(
       <TextArea label="Description" value="" onChange={() => {}} isDisabled />,
     );
-    const root = container.querySelector('.astryx-textarea');
+    const root = container.querySelector('.astryx-text-area');
     expect(root).toHaveAttribute('data-disabled', 'disabled');
   });
 
@@ -1154,7 +1162,7 @@ describe('TextArea disabled theme state', () => {
     const {container} = render(
       <TextArea label="Description" value="" onChange={() => {}} />,
     );
-    const root = container.querySelector('.astryx-textarea');
+    const root = container.querySelector('.astryx-text-area');
     expect(root).not.toHaveAttribute('data-disabled');
   });
 });
@@ -1164,7 +1172,7 @@ describe('TextArea readonly theme state', () => {
     const {container} = render(
       <TextArea label="Notes" value="" onChange={() => {}} isReadOnly />,
     );
-    const root = container.querySelector('.astryx-textarea');
+    const root = container.querySelector('.astryx-text-area');
     expect(root).toHaveAttribute('data-readonly', 'readonly');
   });
 
@@ -1172,18 +1180,19 @@ describe('TextArea readonly theme state', () => {
     const {container} = render(
       <TextArea label="Notes" value="" onChange={() => {}} />,
     );
-    const root = container.querySelector('.astryx-textarea');
+    const root = container.querySelector('.astryx-text-area');
     expect(root).not.toHaveAttribute('data-readonly');
   });
 });
 
 describe('TextArea theme target names', () => {
-  it('renders the deprecated class beside the current one', () => {
+  it('renders only the canonical target class', () => {
     const {container} = render(
       <TextArea label="Notes" value="" onChange={() => {}} />,
     );
     const root = container.querySelector('.astryx-text-area');
     expect(root).not.toBeNull();
-    expect(root).toHaveClass('astryx-textarea');
+    expect(root).toHaveClass('astryx-text-area');
+    expect(root).not.toHaveClass('astryx-textarea');
   });
 });

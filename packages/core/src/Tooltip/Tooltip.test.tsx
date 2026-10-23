@@ -25,6 +25,7 @@ import {
   fireEvent,
   waitFor,
 } from '@testing-library/react';
+import {useRef} from 'react';
 import {Tooltip} from './Tooltip';
 import {useTooltip} from './useTooltip';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
@@ -84,17 +85,15 @@ describe('Tooltip', () => {
     expect(screen.getByRole('button', {name: 'Trigger'})).toBeInTheDocument();
   });
 
-  it('gives the tooltip layer role="tooltip" linked from the trigger', () => {
+  it('renders the content prop inside the tooltip layer', () => {
     render(
       <Tooltip content="Tooltip text">
         <button type="button">Trigger</button>
       </Tooltip>,
     );
-    const layer = screen.getByRole('tooltip', {hidden: true});
-    expect(layer).toHaveTextContent('Tooltip text');
-    // ARIA tooltip pattern: trigger references the layer via aria-describedby.
-    const trigger = screen.getByRole('button', {name: 'Trigger'});
-    expect(trigger.getAttribute('aria-describedby')).toBe(layer.id);
+    expect(screen.getByRole('tooltip', {hidden: true})).toHaveTextContent(
+      'Tooltip text',
+    );
   });
 
   it('calls onOpenChange(true) when shown via hover', async () => {
@@ -180,6 +179,37 @@ describe('Tooltip', () => {
       await waitFor(() => {
         expect(onOpenChange).toHaveBeenCalledWith(false);
       });
+    });
+  });
+
+  describe('icon-only trigger', () => {
+    // A rendered icon is an SVGElement, and ShowPopoverOptions.source is
+    // declared as an HTMLElement. Handing the icon to showPopover throws
+    // during dictionary conversion, before the popover opens, so the hint
+    // never appeared. (#7226)
+    it('opens an icon trigger without passing an SVGElement as the source', async () => {
+      const showSpy = vi.mocked(HTMLElement.prototype.showPopover);
+      showSpy.mockClear();
+
+      render(
+        <Tooltip content="Shared memory" isDefaultOpen>
+          <svg data-testid="icon" aria-hidden="true" />
+        </Tooltip>,
+      );
+
+      await waitFor(() => {
+        expect(showSpy).toHaveBeenCalled();
+      });
+
+      const [options] = showSpy.mock.calls[0];
+      // Compared as a boolean on purpose: a plain `toBeUndefined` failure makes
+      // the diff printer walk the SVGElement, which it cannot inspect.
+      expect(options?.source === undefined).toBe(true);
+
+      // The icon is still the trigger the ARIA tooltip pattern is wired to.
+      expect(screen.getByTestId('icon').getAttribute('aria-describedby')).toBe(
+        screen.getByRole('tooltip', {hidden: true}).id,
+      );
     });
   });
 
@@ -571,5 +601,51 @@ describe('Tooltip', () => {
         expect(onOpenChange).toHaveBeenCalledWith(true);
       });
     });
+  });
+});
+
+describe('Tooltip sibling mode (anchorRef)', () => {
+  // SideNavItem's collapsed rail tooltip renders the Tooltip inside the very
+  // element anchorRef points at. React attaches an ancestor's ref after its
+  // descendants' layout effects, so on mount the tooltip's effect used to see
+  // a null anchor and never retried (#7692).
+  it('attaches to an anchor it is rendered inside of', async () => {
+    const onOpenChange = vi.fn();
+    function AnchorInside() {
+      const anchorRef = useRef<HTMLDivElement>(null);
+      return (
+        <div ref={anchorRef}>
+          <button type="button">Inner</button>
+          <Tooltip
+            content="Sibling tooltip"
+            anchorRef={anchorRef}
+            delay={0}
+            onOpenChange={onOpenChange}
+          />
+        </div>
+      );
+    }
+
+    const {unmount} = render(<AnchorInside />);
+    const anchor = screen.getByRole('button', {name: 'Inner'})
+      .parentElement as HTMLElement;
+
+    // The anchor is described by the tooltip once the commit has attached refs.
+    await waitFor(() => {
+      expect(anchor.getAttribute('aria-describedby')).not.toBe('');
+    });
+    const layer = screen.getByRole('tooltip', {hidden: true});
+    expect(anchor.getAttribute('aria-describedby')).toBe(layer.id);
+
+    // Hovering the anchor opens the tooltip: the interaction listeners were
+    // attached to the late anchor too.
+    fireEvent.mouseEnter(anchor);
+    await waitFor(() => {
+      expect(onOpenChange).toHaveBeenCalledWith(true);
+    });
+
+    // Unmounting detaches: the aria-describedby the tooltip added is removed.
+    unmount();
+    expect(anchor.getAttribute('aria-describedby')).toBe(null);
   });
 });

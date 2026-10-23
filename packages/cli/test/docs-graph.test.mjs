@@ -32,6 +32,8 @@ import {
   loadCliSelfDocs,
 } from '../foundation/discovery/cli-self-docs.mjs';
 import {routeSegment} from '../foundation/discovery/docs-section-key.mjs';
+import {EXPERIMENTAL_AUTHORING_ROUTE} from '../foundation/discovery/authoring-self-docs.mjs';
+import {generateCompressedIndex} from '../foundation/agent-docs/agent-docs.mjs';
 import {program, JSON_SUPPORTED} from '../clients/cli/index.mjs';
 import {buildManifest} from '../clients/cli/lib/manifest.mjs';
 import {runCli} from '../test-utils/run-cli.mjs';
@@ -51,10 +53,36 @@ function open(command) {
     throw new Error(`not a docs command: ${command}`);
   }
   const rest = words.slice(2);
-  const [topic, section] = rest.filter(w => !w.startsWith('--'));
+  /** @type {string[]} */
+  const positional = [];
+  /** @type {Record<string, string>} */
+  const valued = {};
+  for (let i = 0; i < rest.length; i++) {
+    const word = rest[i];
+    if (word === '--depth' || word === '--detail' || word === '--lang') {
+      valued[word.slice(2)] = rest[++i];
+    } else if (!word.startsWith('--')) {
+      positional.push(word);
+    }
+  }
+  const [topic, section] = positional;
+  const depth =
+    valued.depth == null
+      ? undefined
+      : valued.depth === 'all'
+        ? 'all'
+        : Number(valued.depth);
   return docs(topic, section, {
     index: rest.includes('--index'),
     full: rest.includes('--full'),
+    ...(depth == null
+      ? {}
+      : {
+          depth,
+          ...(valued.detail
+            ? {detail: /** @type {any} */ (valued.detail)}
+            : {}),
+        }),
   });
 }
 
@@ -159,12 +187,20 @@ function shownCommands(text) {
   const clean = s => s.replace(/\s{2,}.*$/, '').replace(/\s+#.*$/, '').trim();
   /** @type {Set<string>} */
   const out = new Set();
+  // A chain such as `astryx a && astryx b` is two commands; each is checked
+  // on its own, so a flag of the second is never read as the first's.
+  /** @param {string} s */
+  const add = s => {
+    for (const part of clean(s).split(/\s*(?:&&|\|\||;)\s*|\s+\|\s+/)) {
+      if (new RegExp('^' + RUN + '$').test(part.trim())) out.add(part.trim());
+    }
+  };
   for (const m of text.matchAll(new RegExp('`(' + RUN + ')`', 'g'))) {
-    out.add(clean(m[1]));
+    add(m[1]);
   }
   for (const line of text.split('\n')) {
     const m = new RegExp('^\\s*(?:\\$\\s+|[A-Z][A-Za-z ]*:\\s+)?(' + RUN + ')$').exec(line);
-    if (m) out.add(clean(m[1]));
+    if (m) add(m[1]);
   }
   return [...out];
 }
@@ -189,15 +225,29 @@ function cliSurface() {
   };
   /** @type {Map<string, Map<string, boolean>>} */
   const commands = new Map();
+  /** @type {Set<string>} groups that take a subcommand and no argument */
+  const groups = new Set();
   /** @param {any[]} list */
   const add = list => {
     for (const command of list ?? []) {
       commands.set(command.name, flagsOf(command.options));
+      if (command.subcommands?.length && !command.arguments?.length) {
+        groups.add(command.name);
+      }
       add(command.subcommands);
     }
   };
   add(manifest.commands);
-  return {commands, global: flagsOf(manifest.globalOptions)};
+  // Hidden commands (a package-script hook) are documented but left out of
+  // the manifest; they are still real commands.
+  for (const command of program.commands) {
+    if (!(/** @type {any} */ (command)._hidden)) continue;
+    commands.set(
+      command.name(),
+      flagsOf(command.options.map(option => ({flag: option.flags}))),
+    );
+  }
+  return {commands, groups, global: flagsOf(manifest.globalOptions)};
 }
 
 /**
@@ -208,7 +258,7 @@ function cliSurface() {
  * @param {ReturnType<typeof cliSurface>} surface
  * @returns {string | null}
  */
-function problemWith(shown, {commands, global}) {
+function problemWith(shown, {commands, groups, global}) {
   const words = shown.split(/\s+/);
   const rest = words.slice(words.indexOf('astryx') + 1).filter(Boolean);
   /** @param {Map<string, boolean>} flags @param {string} token */
@@ -228,7 +278,7 @@ function problemWith(shown, {commands, global}) {
     i++;
   }
   // `help` is Commander's own command; a placeholder names no command.
-  if (i >= rest.length || rest[i] === 'help' || /^[<[]/.test(rest[i])) return null;
+  if (i >= rest.length || rest[i] === 'help' || /^(?:[<[]|\.\.\.|…)/.test(rest[i])) return null;
   let name = null;
   for (let n = rest.length - i; n > 0; n--) {
     const candidate = rest.slice(i, i + n).join(' ');
@@ -239,6 +289,11 @@ function problemWith(shown, {commands, global}) {
     }
   }
   if (name == null) return `unknown command "${rest[i]}"`;
+  // A group takes a subcommand, so a word after it names one it lacks:
+  // `astryx integration bogus` names a subcommand `integration` lacks.
+  if (groups.has(name) && i < rest.length && /^[a-z]/.test(rest[i])) {
+    return `\`astryx ${name}\` has no subcommand ${rest[i]}`;
+  }
   const flags = new Map([...global, ...(commands.get(name) ?? [])]);
   for (; i < rest.length; i++) {
     const token = rest[i];
@@ -260,13 +315,21 @@ const WRONG_ON_PURPOSE = new Map([
   ['astryx theme bogus', 'the ERR_UNKNOWN_SUBCOMMAND example'],
 ]);
 
+/**
+ * Commands a doc shows that the CLI does not accept yet, each waiting on a
+ * decision. An entry fails once the command works or no doc shows it, so it
+ * cannot outlive the decision.
+ */
+const AWAITING_DECISION = new Map([
+]);
+
 /** The CLI's own reads whose hint lines show commands. */
 const HINT_READS = [
   ['docs'],
   ['docs', 'cli'],
   ['docs', 'cli/api/functions/search'],
   ['docs', 'theme'],
-  ['docs', 'cli/integrations', 'codemods'],
+  ['docs', 'authoring', 'codemods'],
   ['search', 'token-ref', '--type', 'doc'],
   ['--help'],
   ['docs', '--help'],
@@ -280,6 +343,15 @@ function docsCommandsIn(text) {
     const args = (m[1] ?? '').trim();
     if (/[<>…]|\.\.\.|\|/.test(args)) continue;
     out.push(args ? `${TOP} ${args}` : TOP);
+  }
+  // A code block line or a chain opens too, for the CLI's own tree. Other
+  // routes there are an integration's topics, shown as examples.
+  for (const shown of shownCommands(text)) {
+    const m = /^(?:npx |pnpm exec |pnpm dlx |yarn |bunx )?astryx docs (cli(?:\/\S*)?(?: .*)?)$/.exec(shown);
+    if (!m) continue;
+    const args = m[1].replace(/\s--(?:detail|lang)\s+\S+/g, '').trim();
+    if (/[<>…[\]]|\.\.\.|\|/.test(args)) continue;
+    out.push(`${TOP} ${args}`);
   }
   return out;
 }
@@ -332,21 +404,34 @@ describe('the docs graph', () => {
     /** @type {string[]} */
     const unreached = [];
     // Command, API, schema, enum, and authoring docs: a tree leaf, or a section
-    // of `astryx docs authoring`.
+    // of the field reference, which `astryx docs authoring <name>` reads.
     const {loaded, failed} = await loadCliSelfDocs(discoverCliSelfDocSources(CLI), CLI);
     expect(failed).toEqual([]);
-    const authoring = reads.get(`${TOP} authoring --index`)?.data.sections ?? [];
+    // An experimental schema is a section of its own experimental route
+    // instead (spec:AST-084 FR0); that route is a tree node, and one read
+    // returns all its sections.
+    const sectionsOf = (/** @type {string} */ route) =>
+      (reads.get(`${TOP} ${route} --index`) ?? reads.get(`${TOP} ${route}`))
+        ?.data.sections ?? [];
+    expect(sectionsOf('authoring/field-reference').length).toBeGreaterThan(10);
     for (const {source, doc} of loaded) {
       const leaf = [...tree.nodes.values()].find(
         node => node.kind === doc.type && node.name === doc.name,
       );
-      const section = authoring.find(
+      const route =
+        doc.stability === 'experimental'
+          ? EXPERIMENTAL_AUTHORING_ROUTE
+          : 'authoring/field-reference';
+      const section = sectionsOf(route).find(
         (/** @type {any} */ s) => s.id === routeSegment(doc.name) || s.title === doc.displayName,
       );
       const ok = leaf
         ? reached(`${TOP} ${leaf.route}`)
         : section
-          ? reached(`${TOP} authoring ${section.id}`)
+          ? reached(`${TOP} authoring ${section.id}`) ||
+            reached(`${TOP} ${route} ${section.id}`) ||
+            // The walk opens the reference whole, with every section.
+            reached(`${TOP} ${route}`)
           : false;
       if (!ok) unreached.push(source);
     }
@@ -500,15 +585,44 @@ describe('the docs graph', () => {
     for (const each of shownCommands(block)) {
       if (!shown.has(each)) shown.set(each, 'the agent prompt in AGENTS.md');
     }
+    // The block `astryx init` writes into an app's AGENTS.md. Its key-commands
+    // lines are bare subcommands, each followed by its description.
+    const appBlock = generateCompressedIndex('0.0.0', {invocation: 'npx astryx'});
+    for (const each of shownCommands(appBlock)) {
+      if (!shown.has(each)) shown.set(each, 'the agent block astryx init writes');
+    }
+    // The compact block lists key commands after a prose lead-in, indented by
+    // two spaces. build/template/component are intentionally omitted because
+    // they are covered in the WORKFLOW section above the command list.
+    const keySection = (appBlock.split('Key ones beyond the workflow:')[1] ?? '').split(/\n\s*\n/)[0];
+    const bare = [...keySection.matchAll(/^ {2}(\S.*?)(?: {3,}|$)/gm)].map(m => `astryx ${m[1]}`);
+    expect(bare.length).toBeGreaterThan(3);
+    for (const each of bare) {
+      if (!shown.has(each)) shown.set(each, 'the agent block astryx init writes');
+    }
+    // The examples `astryx manifest --json` gives agents for each command.
+    /** @param {any[]} list @returns {string[]} */
+    const examplesOf = list =>
+      (list ?? []).flatMap(c => [...(c.examples ?? []), ...examplesOf(c.subcommands)]);
+    const examples = examplesOf(buildManifest(program, {jsonSupported: JSON_SUPPORTED}).commands);
+    expect(examples.length).toBeGreaterThan(10);
+    for (const each of examples) {
+      if (!shown.has(each)) shown.set(each, 'the manifest examples');
+    }
     /** @type {string[]} */
     const wrong = [];
     for (const [command, where] of shown) {
-      if (WRONG_ON_PURPOSE.has(command.replace(/^(?:npx |pnpm exec |yarn |bunx )/, ''))) continue;
+      const bare = command.replace(/^(?:npx |pnpm exec |yarn |bunx )/, '');
+      if (WRONG_ON_PURPOSE.has(bare)) continue;
       const problem = problemWith(command, surface);
+      if (AWAITING_DECISION.has(bare)) {
+        if (!problem) wrong.push(`${where} shows \`${command}\`, which now works: drop it from AWAITING_DECISION`);
+        continue;
+      }
       if (problem) wrong.push(`${where} shows \`${command}\`: ${problem}`);
     }
     expect(wrong).toEqual([]);
-    const stale = [...WRONG_ON_PURPOSE.keys()].filter(
+    const stale = [...WRONG_ON_PURPOSE.keys(), ...AWAITING_DECISION.keys()].filter(
       command => ![...shown.keys()].some(each => each.endsWith(command)),
     );
     expect(stale).toEqual([]);
@@ -518,7 +632,7 @@ describe('the docs graph', () => {
   it("opens every search hit's command and parent", async () => {
     /** @type {string[]} */
     const broken = [];
-    for (const query of ['assertResponse', 'token-ref', 'codemod protected files', 'agent docs', 'ERR_UNKNOWN_SECTION', 'theme', 'unorganized', 'Astryx CLI']) {
+    for (const query of ['assertResponse', 'token-ref', 'codemod protected files', 'agent docs', 'ERR_UNKNOWN_SECTION', 'theme', 'foundations', 'Astryx CLI']) {
       const {data} = await search(query, {type: 'doc', limit: 20});
       for (const hit of data.results) {
         if (!hit.parent) broken.push(`"${query}": ${hit.name} has no parent`);

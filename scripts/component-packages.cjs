@@ -49,8 +49,8 @@ const COMPONENT_PACKAGES = Object.freeze([
     name: 'richtext',
     src: 'packages/richtext/src',
     layout: 'flat',
-    storyPrefixes: ['lab-'],
-    storyNamespaces: ['Lab'],
+    storyPrefixes: ['richtext-'],
+    storyNamespaces: ['RichText'],
   },
   {
     name: 'vega',

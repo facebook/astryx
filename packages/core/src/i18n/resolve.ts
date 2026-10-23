@@ -20,11 +20,9 @@
  */
 
 import IntlMessageFormat from 'intl-messageformat';
-import type {Catalog, Locale, MessagesByLocale, Overrides} from './types';
-import enSource from '../../locales/en.json' with {type: 'json'};
+import type {Locale, Overrides, ProviderMessagesByLocale} from './types';
+import enCatalog from './generated-locales/en.generated';
 import {warnOnce, __resetDevWarnings} from '../utils/devWarning';
-
-const EN_CATALOG = enSource as Catalog;
 
 /**
  * Cache of parsed ICU MessageFormat objects keyed by `${locale}::${message}`.
@@ -75,7 +73,7 @@ export function resolveLocaleChain(locale: Locale): Locale[] {
 
 function getLookup(
   locale: Locale,
-  messages: MessagesByLocale,
+  messages: ProviderMessagesByLocale,
   overrides?: Overrides,
 ): Record<string, string> {
   const lookup: Record<string, string> = {};
@@ -95,8 +93,10 @@ function getLookup(
   for (const tag of chain) {
     if (messages[tag]) {
       for (const [key, value] of Object.entries(messages[tag])) {
-        if (lookup[key] === undefined && value?.defaultMessage !== null) {
-          lookup[key] = value?.defaultMessage;
+        const message =
+          typeof value === 'string' ? value : value?.defaultMessage;
+        if (lookup[key] === undefined && message != null) {
+          lookup[key] = message;
         }
       }
     }
@@ -107,13 +107,13 @@ function getLookup(
 
 export function getResolve(
   locale: Locale,
-  messages: MessagesByLocale,
+  messages: ProviderMessagesByLocale,
   overrides?: Overrides,
 ) {
   const lookup = getLookup(locale, messages, overrides);
 
   return (key: string, values: Record<string, unknown> | undefined) => {
-    const result = lookup[key] ?? EN_CATALOG[key]?.defaultMessage;
+    const result = lookup[key] ?? enCatalog[key];
     if (result === undefined) {
       // Fires ONLY when a key is missing from every source including the
       // shipped `en` catalog — a real bug (typo, stale catalog, deleted key).

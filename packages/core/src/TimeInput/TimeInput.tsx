@@ -61,10 +61,16 @@ import {
   mergeProps,
   getInputARIA,
 } from '../utils';
-import type {BaseProps} from '../BaseProps';
+import {chainEventHandlers} from '../utils/chainEventHandlers';
+import {joinAriaIDs} from '../utils/inputAria';
+import {
+  useFieldInputStyling,
+  type FieldInputBaseProps,
+} from '../Field/fieldParts';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useMediaQuery} from '../hooks/useMediaQuery';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
@@ -88,6 +94,18 @@ import {useDevWarning} from '../hooks/useDevWarning';
 const TOUCH_POINTER_QUERY = '(pointer: coarse)';
 
 const styles = stylex.create({
+  // The shared disabled style drops the focus ring; restore it while a
+  // control inside the field holds focus (spec:AST-085 FR6). Defaults repeat it.
+  disabledFocusRing: {
+    borderColor: {
+      default: colorVars['--color-border-emphasized'],
+      ':focus-within': colorVars['--color-accent'],
+    },
+    boxShadow: {
+      default: 'none',
+      ':focus-within': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
+    },
+  },
   icon: {
     display: 'flex',
     alignItems: 'center',
@@ -160,10 +178,10 @@ export type {
 } from '../Field';
 
 export interface TimeInputProps extends Omit<
-  BaseProps,
+  FieldInputBaseProps<HTMLInputElement>,
   'onChange' | 'defaultValue'
 > {
-  /** Ref forwarded to the root element */
+  /** Ref forwarded to the time input (the field's semantic control) */
   ref?: React.Ref<HTMLInputElement>;
   /**
    * Label text for the input (required for accessibility).
@@ -202,12 +220,12 @@ export interface TimeInputProps extends Omit<
   /**
    * Explains why the input is disabled. When set together with
    * `isDisabled`, the input shows a tooltip with this text on hover and
-   * keyboard focus, and the field stays focusable (via `aria-disabled`)
-   * so the reason is discoverable by keyboard and assistive technology.
-   * Typing and arrow-key adjustment stay blocked.
+   * keyboard focus, and the input is described by it, so the reason is
+   * discoverable by keyboard and assistive technology. Typing and arrow-key
+   * adjustment stay blocked.
    *
-   * Use this instead of wrapping a disabled input in `Tooltip` — disabled
-   * controls don't emit the pointer events an external tooltip needs.
+   * Use this instead of wrapping a disabled input in `Tooltip`, so the
+   * reason is tied to the field.
    *
    * @example
    * ```
@@ -281,7 +299,8 @@ export interface TimeInputProps extends Omit<
   hourFormat?: TimeInputHourFormat;
 
   /**
-   * Increment in minutes when using arrow keys.
+   * Increment in minutes when using arrow keys. Steps are whole minutes: a
+   * fractional value leaves the time unchanged.
    * @default 1
    */
   increment?: number;
@@ -355,7 +374,7 @@ export interface TimeInputProps extends Omit<
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
    * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
-   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   * stay aligned, unlike setting width via `containerXstyle` or `controlXstyle`.
    */
   width?: SizeValue;
   /**
@@ -403,12 +422,30 @@ function TimeField({
   statusVariant = 'attached',
   labelTooltip,
   width,
-  xstyle,
-  className,
-  style,
+  containerXstyle,
+  containerClassName,
+  containerStyle,
+  controlXstyle,
+  controlClassName,
+  controlStyle,
   ref,
   nativeMode = 'off',
+  ...restProps
 }: TimeInputProps & {nativeMode?: 'off' | 'adaptive' | 'forced' | 'legacy'}) {
+  const {rest, container} = useFieldInputStyling('TimeInput', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
+  const {
+    id: idProp,
+    'aria-describedby': ariaDescribedByProp,
+    'aria-labelledby': ariaLabelledByProp,
+    onFocus: onFocusProp,
+    onBlur: onBlurProp,
+    onKeyDown: onKeyDownProp,
+    ...controlProps
+  } = rest;
   const t = useTranslator();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder =
@@ -425,7 +462,9 @@ function TimeField({
       !hasSeconds &&
       increment === 1);
 
-  const id = useId();
+  const generatedID = useId();
+  const id = idProp ?? generatedID;
+  const fieldLabelID = useId();
   const inputLabelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -437,6 +476,9 @@ function TimeField({
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
+  // The busy Spinner is decorative; this control announces its busy start
+  // (spec:AST-086 FR8).
+  useBusyAnnouncement(isBusy, t('@astryx.spinner.loading'), containerRef);
 
   // In grouped mode the status message renders as a visually-hidden node that
   // exists only for aria-describedby. Announce it through the persistent
@@ -453,10 +495,10 @@ function TimeField({
     }
   }, [announce, inputGroup, status?.message, status?.type]);
 
-  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
-  // tooltip listeners attach to the input container (which already exists) and
-  // the input stays perceivable via aria-disabled instead of the disabled
-  // attribute. Typing is blocked with readOnly and value mutation guards.
+  // A disabled field never renders native `disabled` (spec:AST-085 FR1): the
+  // input stays focusable via aria-disabled, and readOnly plus the value
+  // mutation guards block typing. The disabled-reason tooltip's listeners
+  // attach to the input container.
   const showsDisabledMessage = isDisabled && !!disabledMessage;
   const disabledMessageTooltip = useTooltip({
     placement: 'above',
@@ -483,9 +525,16 @@ function TimeField({
       // tooltip's content instead so the status is still announced.
       statusTooltipDescribedBy,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
+      ariaDescribedByProp,
     ],
     inputGroup,
   );
+  // A caller aria-labelledby names the control together with the field's own
+  // label (the Field label standalone, the group and input labels in a group).
+  const controlLabelledBy =
+    ariaLabelledByProp != null
+      ? joinAriaIDs(ariaLabelledBy ?? fieldLabelID, ariaLabelledByProp)
+      : ariaLabelledBy;
 
   // Pending input while user is typing (null = show formatted value)
   const [pendingInput, setPendingInput] = useState<string | null>(null);
@@ -544,8 +593,8 @@ function TimeField({
   // Handle input text change - update immediately if valid
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      // With a disabledMessage the input drops `disabled` for focusability, so
-      // guard value mutation explicitly (readOnly also blocks typing).
+      // The input is never natively disabled (spec:AST-085 FR1), so guard
+      // value mutation explicitly (readOnly also blocks typing).
       if (isDisabled) {
         return;
       }
@@ -580,6 +629,11 @@ function TimeField({
       if (pendingInput === null) {
         return;
       }
+      // Disabled: keep the value, drop the draft (spec:AST-085 FR2).
+      if (isDisabled) {
+        setPendingInput(null);
+        return;
+      }
 
       if (!pendingInput.trim()) {
         // Empty input clears the value
@@ -600,10 +654,17 @@ function TimeField({
       // Clear pending input - display will revert to formatted value
       setPendingInput(null);
     },
-    [pendingInput, value, fireChange, hasSeconds, min, max],
+    [pendingInput, isDisabled, value, fireChange, hasSeconds, min, max],
   );
 
   // Handle keyboard navigation on input
+  // Enter in a focused disabled field would submit a surrounding form (FR2).
+  const preventDisabledEnter = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (isDisabled && e.key === 'Enter') {
+      e.preventDefault();
+    }
+  };
+
   const handleInputKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
       // ArrowUp/ArrowDown step the time and preventDefault; an IME candidate
@@ -613,8 +674,7 @@ function TimeField({
       if (isImeKeyEvent(e.nativeEvent)) {
         return;
       }
-      // Arrow-key adjustment mutates the value; block it while showing a
-      // disabled reason (the input keeps focusability via aria-disabled).
+      // Arrow-key adjustment mutates the value; block it while disabled.
       if (isDisabled) {
         return;
       }
@@ -711,14 +771,15 @@ function TimeField({
           inputWrapperStyles.base,
           sizeStyles[size],
           isDisabled && inputWrapperStyles.disabled,
+          isDisabled && styles.disabledFocusRing,
           status && inputStatusBorderStyles[status.type],
           status && !isDisabled && inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
           inputGroup && groupStyles.inGroup,
-          xstyle,
+          controlXstyle,
         ),
-        className,
-        style,
+        controlClassName,
+        controlStyle,
       )}>
       {inputGroup && <VisuallyHidden id={inputLabelID}>{label}</VisuallyHidden>}
       {inputGroup && description && (
@@ -739,17 +800,24 @@ function TimeField({
           onChange={fireChange}
           placeholder={placeholder}
           openPickerLabel={t('@astryx.timeInput.openPicker', {label})}
-          ariaLabelledBy={ariaLabelledBy}
+          ariaLabelledBy={controlLabelledBy}
           hasAutoFocus={hasAutoFocus}
           min={min}
           max={max}
           hourFormat={hourFormat}
           isEffectivelyDisabled={isDisabled}
-          hasDisabledMessage={showsDisabledMessage}
+          isFocusableDisabled
           isEffectivelyRequired={isEffectivelyRequired}
           isBusy={isBusy}
           statusType={status?.type}
           ariaDescribedBy={ariaDescribedBy}
+          controlProps={{
+            ...controlProps,
+            onFocus: onFocusProp,
+            onBlur: onBlurProp,
+            onKeyDown: chainEventHandlers(preventDisabledEnter, onKeyDownProp),
+            onClick: isDisabled ? undefined : controlProps.onClick,
+          }}
         />
       ) : (
         <>
@@ -757,21 +825,25 @@ function TimeField({
             <Icon icon="clock" size="sm" color="secondary" />
           </div>
           <input
+            {...controlProps}
             ref={mergedInputRef}
             id={id}
             type="text"
             value={displayValue}
             onChange={handleInputChange}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-            onKeyDown={handleInputKeyDown}
+            onFocus={chainEventHandlers(handleFocus, onFocusProp)}
+            onBlur={chainEventHandlers(handleBlur, onBlurProp)}
+            onKeyDown={chainEventHandlers(
+              preventDisabledEnter,
+              handleInputKeyDown,
+              onKeyDownProp,
+            )}
             placeholder={displayPlaceholder}
-            // With a disabledMessage the input keeps focusability via
-            // aria-disabled so the reason is focus-discoverable; typing and
-            // arrow-key adjustment are blocked with readOnly and the guards.
-            disabled={isDisabled && !showsDisabledMessage}
-            aria-disabled={showsDisabledMessage ? 'true' : undefined}
-            readOnly={showsDisabledMessage || undefined}
+            aria-disabled={isDisabled ? 'true' : undefined}
+            readOnly={isDisabled || undefined}
+            // The browser still dispatches a click on an aria-disabled input,
+            // so a caller's onClick is skipped too (spec:AST-085 FR2).
+            onClick={isDisabled ? undefined : controlProps.onClick}
             autoFocus={hasAutoFocus}
             data-autofocus={hasAutoFocus || undefined}
             aria-describedby={ariaDescribedBy}
@@ -780,7 +852,7 @@ function TimeField({
               status?.type === 'error' || !isInputValid ? 'true' : undefined
             }
             aria-busy={isBusy || undefined}
-            aria-labelledby={ariaLabelledBy}
+            aria-labelledby={controlLabelledBy}
             {...stylex.props(
               styles.input,
               isDisabled && styles.inputDisabled,
@@ -797,7 +869,7 @@ function TimeField({
           </VisuallyHidden>
         </>
       )}
-      {isBusy && <Spinner size="sm" />}
+      {isBusy && <Spinner size="sm" aria-hidden="true" />}
       {hasClear && optimisticValue && !isDisabled && (
         <InputClearButton
           label={t('@astryx.timeInput.clearLabel', {label})}
@@ -820,10 +892,12 @@ function TimeField({
 
   return (
     <Field
+      {...container}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}
       inputID={id}
+      labelID={ariaLabelledByProp != null ? fieldLabelID : undefined}
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
       isRequired={isRequired}
@@ -853,6 +927,11 @@ TimeField.displayName = 'TimeField';
  * A time input whose `presentation` prop chooses the selection surface
  * (`spec:AST-043`); the deprecated `nativePicker` maps to the same surfaces
  * (FR3).
+ *
+ * Base props (`ref`, `id`, `data-*`, `aria-*`, DOM event handlers) go to the time input.
+ * A DOM handler runs after the component's own handler for the same event
+ * and still receives events the component handled, even ones it called
+ * `preventDefault` on, so it cannot cancel built-in behavior.
  */
 export function TimeInput(props: TimeInputProps) {
   const isTouch = useMediaQuery(TOUCH_POINTER_QUERY);

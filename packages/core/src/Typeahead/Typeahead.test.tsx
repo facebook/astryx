@@ -17,12 +17,22 @@ import {
   beforeAll,
   afterAll,
   beforeEach,
+  afterEach,
 } from 'vitest';
 import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {Profiler, useState, type ProfilerOnRenderCallback} from 'react';
-import {Tokenizer} from '../Tokenizer';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import {
+  createRef,
+  Profiler,
+  startTransition,
+  StrictMode,
+  Suspense,
+  useState,
+  type ProfilerOnRenderCallback,
+} from 'react';
 import {Typeahead} from './Typeahead';
+import {Tokenizer} from '../Tokenizer';
 import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {BaseTypeahead} from './BaseTypeahead';
@@ -32,6 +42,7 @@ import {
 } from './busyIndicatorLane';
 import type {SearchSource, SearchableItem} from './types';
 import {InternationalizationProvider} from '../i18n';
+import {InputGroup} from '../InputGroup';
 
 // Store original matches to restore later
 const originalMatches = HTMLElement.prototype.matches;
@@ -70,6 +81,10 @@ afterAll(() => {
   (HTMLElement.prototype as any).matches = originalMatches;
 });
 
+afterEach(() => {
+  __resetLiveRegionsForTest();
+});
+
 // Test data
 const fruits: SearchableItem[] = [
   {id: '1', label: 'Apple'},
@@ -106,6 +121,17 @@ function InlineSourceFixture({
     );
   }
   return <BaseTypeahead {...props} value={null} onChange={() => {}} />;
+}
+
+/**
+ * The search Spinner: named but not live (family:input-fields FR7,
+ * spec:AST-086 FR8), so it is found as an image named "Loading".
+ */
+function queryBusySpinner(): Element | null {
+  return screen.queryByRole('img', {name: 'Loading'});
+}
+function getBusySpinner(): Element {
+  return screen.getByRole('img', {name: 'Loading'});
 }
 
 describe('BaseTypeahead', () => {
@@ -262,7 +288,7 @@ describe('BaseTypeahead', () => {
         value={null}
         onChange={() => {}}
         debounceMs={0}
-        emptySearchResultsText="No results found"
+        emptySearchText="No results found"
       />,
     );
     const input = screen.getByRole('combobox');
@@ -283,7 +309,7 @@ describe('BaseTypeahead', () => {
         value={null}
         onChange={() => {}}
         debounceMs={0}
-        emptySearchResultsText="No results found"
+        emptySearchText="No results found"
       />,
     );
     const input = screen.getByRole('combobox');
@@ -761,17 +787,93 @@ describe('Typeahead', () => {
     expect(onChange).toHaveBeenCalledWith(null);
   });
 
-  it('renders with data-testid', () => {
-    render(
+  it('forwards DOM props and ref to the combobox input while preserving edit and blur behavior', async () => {
+    const ref = createRef<HTMLInputElement>();
+    const onClick = vi.fn();
+    const onBlur = vi.fn();
+    const onChange = vi.fn();
+    const {container} = render(
       <Typeahead
+        ref={ref}
+        id="fruit-field"
+        data-tracking="fruit-picker"
+        data-testid="fruit-input"
+        containerClassName="custom-typeahead"
+        containerStyle={{marginTop: 7}}
         label="Fruit"
         searchSource={fruitSource}
-        value={null}
-        onChange={() => {}}
-        data-testid="my-typeahead"
+        value={fruits[0]}
+        onChange={onChange}
+        onClick={onClick}
+        onBlur={onBlur}
+        debounceMs={0}
       />,
     );
-    expect(screen.getByTestId('my-typeahead')).toBeInTheDocument();
+    const surface = container.querySelector<HTMLElement>('.astryx-typeahead')!;
+    const input = screen.getByRole('combobox');
+
+    expect(ref.current).toBe(input);
+    expect(screen.getByTestId('fruit-input')).toBe(input);
+    expect(input).toHaveAttribute('id', 'fruit-field');
+    expect(input).toHaveAttribute('data-tracking', 'fruit-picker');
+    expect(input).toHaveAccessibleName('Fruit');
+    const fieldRoot = container.querySelector('.custom-typeahead');
+    expect(fieldRoot).toHaveClass('astryx-field');
+    expect(fieldRoot).toHaveStyle({marginTop: '7px'});
+
+    fireEvent.click(surface);
+    await waitFor(() => expect(input).toHaveFocus());
+    expect(input).toHaveValue('Apple');
+    fireEvent.click(input);
+    expect(onClick).toHaveBeenCalledOnce();
+
+    fireEvent.blur(input);
+    expect(onBlur).toHaveBeenCalledOnce();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('forwards DOM props and ref to the input inside InputGroup, with control* on the surface', async () => {
+    const ref = createRef<HTMLInputElement>();
+    const onClick = vi.fn();
+    const onBlur = vi.fn();
+    const onChange = vi.fn();
+    const {container} = render(
+      <InputGroup label="Produce">
+        <Typeahead
+          ref={ref}
+          id="fruit-field"
+          data-tracking="fruit-picker"
+          controlClassName="custom-typeahead"
+          controlStyle={{marginTop: 7}}
+          label="Fruit"
+          searchSource={fruitSource}
+          value={fruits[0]}
+          onChange={onChange}
+          onClick={onClick}
+          onBlur={onBlur}
+          debounceMs={0}
+        />
+      </InputGroup>,
+    );
+    const surface = container.querySelector<HTMLElement>('.astryx-typeahead')!;
+    const input = screen.getByRole('combobox');
+
+    expect(ref.current).toBe(input);
+    expect(input).toHaveAttribute('id', 'fruit-field');
+    expect(input).toHaveAttribute('data-tracking', 'fruit-picker');
+    expect(surface).toHaveClass('custom-typeahead');
+    expect(surface).toHaveStyle({marginTop: '7px'});
+    expect(input).toHaveAccessibleName('Produce Fruit');
+
+    fireEvent.click(surface);
+    await waitFor(() => expect(input).toHaveFocus());
+    expect(input).toHaveValue('Apple');
+    fireEvent.click(input);
+    expect(onClick).toHaveBeenCalledOnce();
+
+    fireEvent.blur(input);
+    expect(onBlur).toHaveBeenCalledOnce();
+    expect(onChange).not.toHaveBeenCalled();
   });
 });
 
@@ -862,14 +964,12 @@ describe('BaseTypeahead hasEntriesOnFocus', () => {
 
     fireEvent.change(input, {target: {value: 'a'}});
     await waitFor(() => {
-      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+      expect(getBusySpinner()).toBeInTheDocument();
     });
 
     fireEvent.change(input, {target: {value: ''}});
     await waitFor(() => {
-      expect(
-        screen.queryByRole('status', {name: 'Loading'}),
-      ).not.toBeInTheDocument();
+      expect(queryBusySpinner()).not.toBeInTheDocument();
     });
 
     await act(async () => {
@@ -899,16 +999,246 @@ describe('BaseTypeahead hasEntriesOnFocus', () => {
 
     fireEvent.focus(input);
     await waitFor(() => {
-      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+      expect(getBusySpinner()).toBeInTheDocument();
     });
 
     await act(async () => {
       settle([]);
       await Promise.resolve();
     });
-    expect(
-      screen.queryByRole('status', {name: 'Loading'}),
-    ).not.toBeInTheDocument();
+    expect(queryBusySpinner()).not.toBeInTheDocument();
+  });
+
+  it('clears the loading state when the search source is replaced during an in-flight load', async () => {
+    let settle: (items: SearchableItem[]) => void = () => {};
+    const bootstrap = vi.fn(
+      async () =>
+        new Promise<SearchableItem[]>(resolve => {
+          settle = resolve;
+        }),
+    );
+    const initialSource: SearchSource = {search: () => [], bootstrap};
+    const replacementSource: SearchSource = {
+      search: () => [],
+      bootstrap: () => [],
+    };
+
+    const {rerender} = render(
+      <BaseTypeahead
+        searchSource={initialSource}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.focus(input);
+    await waitFor(() => {
+      expect(getBusySpinner()).toBeInTheDocument();
+    });
+
+    rerender(
+      <BaseTypeahead
+        searchSource={replacementSource}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+      />,
+    );
+
+    await waitFor(() => {
+      expect(queryBusySpinner()).not.toBeInTheDocument();
+    });
+
+    await act(async () => {
+      settle([]);
+      await Promise.resolve();
+    });
+    expect(queryBusySpinner()).not.toBeInTheDocument();
+  });
+
+  it('keeps the loading state under StrictMode for a pending autofocus bootstrap', async () => {
+    let settle: (items: SearchableItem[]) => void = () => {};
+    const bootstrap = vi.fn(
+      async () =>
+        new Promise<SearchableItem[]>(resolve => {
+          settle = resolve;
+        }),
+    );
+    render(
+      <StrictMode>
+        <Typeahead
+          label="Test"
+          searchSource={{search: () => [], bootstrap}}
+          value={null}
+          onChange={() => {}}
+          hasAutoFocus
+          hasEntriesOnFocus
+        />
+      </StrictMode>,
+    );
+
+    expect(getBusySpinner()).toBeInTheDocument();
+
+    await act(async () => {
+      settle([]);
+      await Promise.resolve();
+    });
+    expect(queryBusySpinner()).not.toBeInTheDocument();
+  });
+
+  it.each(['Typeahead', 'Tokenizer'] as const)(
+    '%s preserves pending autofocus work during StrictMode replay and releases it on real unmount',
+    async component => {
+      let settle: (items: SearchableItem[]) => void = () => {};
+      const cancel = vi.fn();
+      const source: SearchSource = {
+        search: () => [],
+        bootstrap: async () =>
+          new Promise<SearchableItem[]>(resolve => {
+            settle = resolve;
+          }),
+        cancel,
+      };
+      const subject =
+        component === 'Tokenizer' ? (
+          <Tokenizer
+            label="Fruit"
+            searchSource={source}
+            value={[]}
+            onChange={() => {}}
+            hasAutoFocus
+            hasEntriesOnFocus
+          />
+        ) : (
+          <Typeahead
+            label="Fruit"
+            searchSource={source}
+            value={null}
+            onChange={() => {}}
+            hasAutoFocus
+            hasEntriesOnFocus
+          />
+        );
+      const {unmount} = render(<StrictMode>{subject}</StrictMode>);
+      const input = screen.getByRole('combobox');
+      expect(input).toHaveAttribute('aria-busy', 'true');
+      await act(async () => {
+        await Promise.resolve();
+      });
+      expect(cancel).not.toHaveBeenCalled();
+      await act(async () => {
+        settle([fruits[0]]);
+      });
+      expect(input).not.toHaveAttribute('aria-busy');
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+      await act(async () => {
+        unmount();
+        await Promise.resolve();
+      });
+      expect(cancel).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  let settlePendingTransitionA: (items: SearchableItem[]) => void = () => {};
+  const stableTransitionSourceA: SearchSource = {
+    search: vi.fn(
+      async () =>
+        new Promise<SearchableItem[]>(resolve => {
+          settlePendingTransitionA = resolve;
+        }),
+    ),
+    bootstrap: () => [],
+  };
+  const stableTransitionSourceB: SearchSource = {
+    search: vi.fn(async () => []),
+    bootstrap: () => [],
+  };
+
+  it('clears loading and aria-busy when source is replaced in a transition that suspends and retries', async () => {
+    let isSuspended = false;
+    let resolveSuspension: () => void = () => {};
+    let pendingSuspension: Promise<void> | null = null;
+
+    function SuspendingSibling({shouldSuspend}: {shouldSuspend: boolean}) {
+      if (shouldSuspend && isSuspended && pendingSuspension) {
+        // eslint-disable-next-line @typescript-eslint/only-throw-error
+        throw pendingSuspension;
+      }
+      return null;
+    }
+
+    let updateState!: (source: SearchSource, shouldSuspend: boolean) => void;
+
+    function TransitionContainer() {
+      const [source, setSource] = useState<SearchSource>(
+        stableTransitionSourceA,
+      );
+      const [shouldSuspend, setShouldSuspend] = useState(false);
+      updateState = (newSource, suspend) => {
+        setSource(newSource);
+        setShouldSuspend(suspend);
+      };
+
+      return (
+        <Suspense fallback={<div>Suspended...</div>}>
+          <Typeahead
+            label="Test"
+            searchSource={source}
+            value={null}
+            onChange={() => {}}
+            debounceMs={0}
+          />
+          <SuspendingSibling shouldSuspend={shouldSuspend} />
+        </Suspense>
+      );
+    }
+
+    render(<TransitionContainer />);
+    const input = screen.getByRole('combobox');
+
+    // Trigger a load so aria-busy="true" is set on the combobox
+    fireEvent.change(input, {target: {value: 'query'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-busy', 'true');
+    });
+    expect(getBusySpinner()).toBeInTheDocument();
+
+    // Create the pending promise for suspension
+    isSuspended = true;
+    pendingSuspension = new Promise<void>(resolve => {
+      resolveSuspension = () => {
+        isSuspended = false;
+        resolve();
+      };
+    });
+
+    // Inside startTransition, switch from source A to source B while sibling suspends
+    act(() => {
+      startTransition(() => {
+        updateState(stableTransitionSourceB, true);
+      });
+    });
+
+    // The render suspended, so the previous committed state remains
+    expect(input).toHaveAttribute('aria-busy', 'true');
+
+    // Resolve the pending promise and let the transition commit
+    await act(async () => {
+      resolveSuspension();
+      await pendingSuspension;
+    });
+
+    // Settle the abandoned load
+    await act(async () => {
+      settlePendingTransitionA([]);
+      await Promise.resolve();
+    });
+
+    // The combobox must not keep aria-busy and the spinner must be gone
+    expect(input).not.toHaveAttribute('aria-busy');
+    expect(queryBusySpinner()).not.toBeInTheDocument();
   });
 
   it('shows bootstrap results on mouse click', async () => {
@@ -979,6 +1309,75 @@ describe('BaseTypeahead hasEntriesOnFocus', () => {
     await waitFor(() => {
       expect(input).toHaveAttribute('aria-expanded', 'true');
     });
+  });
+
+  it('reopens on click when the input was already focused and the dropdown closed without a blur (#6845)', async () => {
+    const user = userEvent.setup();
+    render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    // A real click focuses the input (justFocusedRef suppresses the click
+    // handler's own open logic here, since handleFocus already opened it).
+    await user.click(input);
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    // Escape closes the dropdown via popover.hide() alone — same as
+    // selecting a result (which also re-focuses the input internally) or a
+    // composing field re-focusing this input after committing something
+    // elsewhere, the input is never actually blurred.
+    await user.keyboard('{Escape}');
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+    });
+    expect(input).toHaveFocus();
+
+    // Clicking the still-focused input must reopen it — before the fix,
+    // this click dispatched no focus event (the input never lost focus) and
+    // nothing else reopened the dropdown.
+    await user.click(input);
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+  });
+
+  it('does not double-fire an async bootstrap source on a single first click (#6848 review)', async () => {
+    // A microtask-based "did a focus event just run" flag, tried first,
+    // cleared before the click event arrived for an async source — the
+    // click path then ran openIfEligible a second time while the first
+    // bootstrap call was still in flight. The fix reads document.activeElement
+    // at pointerdown instead, which has no event-loop timing dependency.
+    const user = userEvent.setup();
+    const bootstrap = vi.fn(async (): Promise<SearchableItem[]> => {
+      await Promise.resolve();
+      return fruits.slice(0, 3);
+    });
+    render(
+      <BaseTypeahead
+        searchSource={{search: () => [], bootstrap}}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    await user.click(input);
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    expect(bootstrap).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -1120,7 +1519,7 @@ describe('BaseTypeahead minQueryLength', () => {
 
     fireEvent.change(input, {target: {value: 'App'}});
     await waitFor(() => {
-      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+      expect(getBusySpinner()).toBeInTheDocument();
     });
     expect(input).toHaveAttribute('aria-busy', 'true');
 
@@ -1130,9 +1529,7 @@ describe('BaseTypeahead minQueryLength', () => {
       await Promise.resolve();
     });
 
-    expect(
-      screen.queryByRole('status', {name: 'Loading'}),
-    ).not.toBeInTheDocument();
+    expect(queryBusySpinner()).not.toBeInTheDocument();
     expect(input).not.toHaveAttribute('aria-busy');
     expect(input).toHaveAttribute('aria-expanded', 'false');
   });
@@ -1201,10 +1598,67 @@ describe('BaseTypeahead hasSearched reset', () => {
     // "No results found" should disappear since hasSearched is reset
     expect(screen.queryByText('No results found')).not.toBeInTheDocument();
   });
+
+  it('resets hasSearched and does not announce "No results found" when search source is replaced during a pending search', async () => {
+    let settle: (items: SearchableItem[]) => void = () => {};
+    const initialSource: SearchSource = {
+      search: vi.fn(
+        async () =>
+          new Promise<SearchableItem[]>(resolve => {
+            settle = resolve;
+          }),
+      ),
+      bootstrap: () => [],
+    };
+    const replacementSource: SearchSource = {
+      search: vi.fn(async () => []),
+      bootstrap: () => [],
+    };
+
+    const {rerender} = render(
+      <BaseTypeahead
+        searchSource={initialSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    // Type a query that starts an asynchronous search
+    fireEvent.change(input, {target: {value: 'abc'}});
+    expect(initialSource.search).toHaveBeenCalledWith('abc');
+
+    // Replace the search source while the search is still pending
+    rerender(
+      <BaseTypeahead
+        searchSource={replacementSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+      />,
+    );
+
+    // Settle the abandoned search
+    await act(async () => {
+      settle([]);
+      await Promise.resolve();
+    });
+
+    await act(
+      async () =>
+        new Promise<void>(resolve => requestAnimationFrame(() => resolve())),
+    );
+    expect(
+      document.querySelector('[data-astryx-live-region="polite"]')
+        ?.textContent ?? '',
+    ).not.toContain('No results found');
+    expect(screen.queryByText('No results found')).not.toBeInTheDocument();
+  });
 });
 
 describe('BaseTypeahead popover after selection', () => {
-  it('keeps direct single-select BaseTypeahead closed after selection', async () => {
+  it('does not show an empty popover after selecting an item with hasEntriesOnFocus', async () => {
     const onChange = vi.fn();
     render(
       <BaseTypeahead
@@ -1255,6 +1709,95 @@ describe('Typeahead edit mode', () => {
 
     // onChange should NOT have been called (value is preserved for restore)
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('empties the input when cleared while editing the selected value (#7038)', async () => {
+    const onChangeQuery = vi.fn();
+    function Controlled() {
+      const [value, setValue] = useState<SearchableItem | null>(fruits[0]);
+      return (
+        <Typeahead
+          label="Fruit"
+          searchSource={fruitSource}
+          value={value}
+          onChange={setValue}
+          onChangeQuery={onChangeQuery}
+          hasClear
+        />
+      );
+    }
+    render(<Controlled />);
+    const input = screen.getByRole<HTMLInputElement>('combobox');
+
+    // Enter edit mode: the token gives way to the label as editable text
+    fireEvent.click(screen.getByText(fruits[0].label).closest('div')!);
+    await waitFor(() => expect(input.value).toBe(fruits[0].label));
+
+    fireEvent.click(screen.getByRole('button', {name: 'Clear selection'}));
+
+    // The value and the visible text agree: nothing selected, nothing typed
+    await waitFor(() => expect(input.value).toBe(''));
+    expect(onChangeQuery).toHaveBeenLastCalledWith('');
+    expect(input).toHaveFocus();
+  });
+
+  // Escape and blur restore the token but leave the edit-mode label in the
+  // base's query, so a clear from the restored token faces the same stale text.
+  it.each([
+    [
+      'Escape',
+      (input: HTMLElement) => fireEvent.keyDown(input, {key: 'Escape'}),
+    ],
+    ['blur', (input: HTMLElement) => fireEvent.blur(input)],
+  ])(
+    'empties the input when cleared after %s restored the token (#7038)',
+    async (_name, leaveEditMode) => {
+      const onChangeQuery = vi.fn();
+      function Controlled() {
+        const [value, setValue] = useState<SearchableItem | null>(fruits[0]);
+        return (
+          <Typeahead
+            label="Fruit"
+            searchSource={fruitSource}
+            value={value}
+            onChange={setValue}
+            onChangeQuery={onChangeQuery}
+            hasClear
+          />
+        );
+      }
+      render(<Controlled />);
+      const input = screen.getByRole<HTMLInputElement>('combobox');
+
+      fireEvent.click(screen.getByText(fruits[0].label).closest('div')!);
+      await waitFor(() => expect(input.value).toBe(fruits[0].label));
+
+      leaveEditMode(input);
+      await screen.findByRole('button', {name: 'Clear selection'});
+
+      fireEvent.click(screen.getByRole('button', {name: 'Clear selection'}));
+
+      await waitFor(() => expect(input.value).toBe(''));
+      expect(onChangeQuery).toHaveBeenLastCalledWith('');
+    },
+  );
+
+  it('does not report a query change when cleared outside edit mode', () => {
+    const onChangeQuery = vi.fn();
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={vi.fn()}
+        onChangeQuery={onChangeQuery}
+        hasClear
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', {name: 'Clear selection'}));
+
+    expect(onChangeQuery).not.toHaveBeenCalled();
   });
 
   it('restores token on blur without action', async () => {
@@ -1716,12 +2259,12 @@ describe('busy indicator ownership', () => {
     };
   };
 
-  it('renders its own named status for a direct caller', async () => {
+  it('renders its own indicator for a direct caller', async () => {
     // BaseTypeaheadProps is re-exported from the package entry point, so the
     // base has direct callers this repo cannot see. They painted no indicator
-    // of their own — the base did it for them — so it keeps doing it, and the
-    // status stays a named one rather than a bare aria-busy that only reaches
-    // assistive tech.
+    // of their own — the base did it for them — so it keeps doing it. The
+    // Spinner is decorative and the base announces the search's busy start
+    // through the shared channel (spec:AST-086 FR8).
     const {source, settle} = pendingSource();
     render(
       <BaseTypeahead
@@ -1735,22 +2278,18 @@ describe('busy indicator ownership', () => {
 
     fireEvent.change(input, {target: {value: 'App'}});
     await waitFor(() => {
-      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+      expect(getBusySpinner()).toBeInTheDocument();
     });
     // A Spinner, not the static clock glyph this used to render: `clock`
     // means *time* everywhere else in core, and nothing about it moved while
     // a search was out.
-    expect(
-      screen.getByRole('status', {name: 'Loading'}).querySelector('svg'),
-    ).toBeInTheDocument();
+    expect(getBusySpinner().querySelector('svg')).toBeInTheDocument();
 
     await act(async () => {
       settle();
       await Promise.resolve();
     });
-    expect(
-      screen.queryByRole('status', {name: 'Loading'}),
-    ).not.toBeInTheDocument();
+    expect(queryBusySpinner()).not.toBeInTheDocument();
   });
 
   it('hands the indicator over to a field that takes it, and renders none itself', async () => {
@@ -1781,9 +2320,7 @@ describe('busy indicator ownership', () => {
     });
     // Scoped by name: the announcer for result counts is a role="status"
     // live region too, and it is not the indicator.
-    expect(
-      screen.queryByRole('status', {name: 'Loading'}),
-    ).not.toBeInTheDocument();
+    expect(queryBusySpinner()).not.toBeInTheDocument();
     expect(onLoadingChange).toHaveBeenLastCalledWith(true);
 
     await act(async () => {
@@ -2063,6 +2600,190 @@ describe('the value is bounded by the content lane', () => {
     // keeps the pair from being over-constrained and dropping the end inset.
     expect(style.width).toBe('fit-content');
     expect(style.marginInlineEnd).toBe('auto');
+  });
+});
+
+// `emptySearchResultsText` was renamed to `emptySearchText` and widened from
+// `string` to `ReactNode` (`spec:AST-056` FR1). The overlap ended in a minor
+// release (`CLN-0001`–`CLN-0004`, `spec:AST-017` FR31): the old name is no
+// longer part of the type and is no longer read.
+describe('emptySearchText rename', () => {
+  function searchForNothing() {
+    fireEvent.change(screen.getByRole('combobox'), {
+      target: {value: 'zzzzz'},
+    });
+  }
+
+  describe('Typeahead', () => {
+    it('renders an element, which the old string type could not express', async () => {
+      render(
+        <Typeahead
+          label="Fruit"
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+          emptySearchText={
+            <span>
+              Nothing ripe. <a href="/add">Add a fruit</a>
+            </span>
+          }
+        />,
+      );
+      searchForNothing();
+
+      await waitFor(() => {
+        expect(screen.getByText('Add a fruit')).toBeInTheDocument();
+      });
+    });
+
+    it('no longer reads the removed emptySearchResultsText (CLN-0002)', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      // The unknown prop reaches the root element, which React reports.
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      render(
+        <Typeahead
+          label="Fruit"
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+          // @ts-expect-error -- removed in the minor release (CLN-0002)
+          emptySearchResultsText="Nothing ripe"
+        />,
+      );
+      searchForNothing();
+
+      await waitFor(() => {
+        expect(screen.getByText('No results found')).toBeInTheDocument();
+      });
+      expect(screen.queryByText('Nothing ripe')).not.toBeInTheDocument();
+      expect(warn).not.toHaveBeenCalledWith(
+        expect.stringContaining('is deprecated'),
+      );
+      warn.mockRestore();
+      error.mockRestore();
+    });
+  });
+
+  describe('BaseTypeahead', () => {
+    it('announces the text of an element, not the catalog default', async () => {
+      render(
+        <BaseTypeahead
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+          emptySearchText={
+            <span>
+              Nothing ripe. <a href="/add">Add a fruit</a>
+            </span>
+          }
+        />,
+      );
+      searchForNothing();
+
+      // Widening to ReactNode without this would hand the live region an
+      // object: the AR1 defect, spread to a fourth component.
+      await waitFor(() => {
+        expect(
+          document.querySelector('[data-astryx-live-region="polite"]'),
+        ).toHaveTextContent('Nothing ripe. Add a fruit');
+      });
+    });
+
+    it('no longer announces the removed emptySearchResultsText (CLN-0003)', async () => {
+      // The unknown prop reaches the root element, which React reports.
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      render(
+        <BaseTypeahead
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+          // @ts-expect-error -- removed in the minor release (CLN-0003)
+          emptySearchResultsText="Nothing ripe"
+        />,
+      );
+      searchForNothing();
+
+      await waitFor(() => {
+        expect(
+          document.querySelector('[data-astryx-live-region="polite"]'),
+        ).toHaveTextContent('No results found');
+      });
+      expect(
+        document.querySelector('[data-astryx-live-region="polite"]')
+          ?.textContent,
+      ).not.toContain('Nothing ripe');
+      error.mockRestore();
+    });
+  });
+});
+
+describe('Typeahead consumer key handler order', () => {
+  it('runs onKeyDown on the input after built-in key handling, so it cannot cancel navigation', async () => {
+    let currentTarget: EventTarget | null = null;
+    const onKeyDown = vi.fn((event: React.KeyboardEvent) => {
+      currentTarget = event.currentTarget;
+      event.preventDefault();
+    });
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+        hasEntriesOnFocus
+        onKeyDown={onKeyDown}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    fireEvent.focus(input);
+    await waitFor(() => {
+      expect(
+        screen.getAllByRole('option', {hidden: true}).length,
+      ).toBeGreaterThan(0);
+    });
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    expect(onKeyDown).toHaveBeenCalledOnce();
+    expect(currentTarget).toBe(screen.getByRole('combobox'));
+    expect(input).toHaveAttribute('aria-activedescendant');
+  });
+});
+
+describe('Typeahead consumer key handler target', () => {
+  it('still runs onKeyDown for keys on the clear button', () => {
+    const onKeyDown = vi.fn();
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+        onKeyDown={onKeyDown}
+      />,
+    );
+    fireEvent.keyDown(screen.getByRole('button', {name: /clear/i}), {
+      key: 'Enter',
+    });
+    expect(onKeyDown).toHaveBeenCalledOnce();
+  });
+
+  it('runs onKeyDown once for a key on the input', () => {
+    const onKeyDown = vi.fn();
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        onKeyDown={onKeyDown}
+      />,
+    );
+    fireEvent.keyDown(screen.getByRole('combobox'), {key: 'a'});
+    expect(onKeyDown).toHaveBeenCalledOnce();
   });
 });
 

@@ -217,8 +217,14 @@ describe('Toast responsive layout', () => {
     expect(style.boxSizing).toBe('border-box');
     expect(style.width).not.toBe('100%');
     expect(style.paddingInlineEnd).not.toBe('0px');
-    expect(style.insetInlineStart).toBe('0');
-    expect(style.insetInlineEnd).toBe('0');
+    // The viewport sits at the app-declared inset (spec:AST-059 FR6), 0px
+    // unless LayerProvider declares a bar on that edge.
+    expect(style.insetInlineStart).toBe(
+      'var(--astryx-layer-inset-inline-start,0px)',
+    );
+    expect(style.insetInlineEnd).toBe(
+      'var(--astryx-layer-inset-inline-end,0px)',
+    );
   });
 
   it('preserves custom start and end insets in LTR and RTL without forcing full width', () => {
@@ -286,7 +292,9 @@ describe('ToastViewport placement', () => {
   it('defaults to bottomEnd with an end-aligned full-inline viewport', () => {
     const {viewport} = renderPlacement();
 
-    expect(getComputedStyle(viewport).bottom).toBe('0px');
+    expect(getComputedStyle(viewport).bottom).toBe(
+      'var(--astryx-layer-inset-block-end,0px)',
+    );
     expect(getComputedStyle(viewport).alignItems).toBe('flex-end');
     expect(getComputedStyle(viewport).width).not.toBe('100%');
   });
@@ -310,7 +318,9 @@ describe('ToastViewport placement', () => {
 
   it('maps explicit top and bottom placements to their configured edge', () => {
     const top = renderPlacement({position: 'topEnd'});
-    expect(getComputedStyle(top.viewport).top).toBe('0px');
+    expect(getComputedStyle(top.viewport).top).toBe(
+      'var(--astryx-layer-inset-block-start,0px)',
+    );
     expect(getComputedStyle(top.viewport).alignItems).toBe('flex-end');
     expect(getComputedStyle(top.viewport).flexDirection).toBe('column-reverse');
     top.unmount();
@@ -320,7 +330,9 @@ describe('ToastViewport placement', () => {
       triggerLabel: 'Bottom trigger',
       body: 'Bottom start',
     });
-    expect(getComputedStyle(bottom.viewport).bottom).toBe('0px');
+    expect(getComputedStyle(bottom.viewport).bottom).toBe(
+      'var(--astryx-layer-inset-block-end,0px)',
+    );
     expect(getComputedStyle(bottom.viewport).alignItems).toBe('flex-start');
     bottom.unmount();
   });
