@@ -564,11 +564,14 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     }
   }, [results]);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  // The committed rows and highlight, read when a later list for the same
-  // query arrives so the highlighted item keeps its highlight
-  // (spec:AST-092 FR6). Synced after commit: a list arrives from an event or
-  // an awaited continuation, never during render.
-  const resultsRef = useRef<T[]>(results);
+  // Bumped whenever the rows are replaced rather than appended to, so the
+  // highlighted-row scroll runs for a new list but not when a later list for
+  // the same query appends rows below (spec:AST-092 FR6).
+  const [listKey, setListKey] = useState(0);
+  const replaceResults = useCallback((next: T[]) => {
+    setResults(next);
+    setListKey(key => key + 1);
+  }, []);
   // The popup's listbox, measured when a later list arrives so the appended
   // rows scroll instead of moving the shown rows or flipping the popup to
   // the other side of the field (spec:AST-092 FR6).
@@ -577,6 +580,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // The search generation the popup's close cancelled, so that search's
   // rejection settles silently (spec:AST-092 FR9).
   const closedGenRef = useRef(-1);
+  const isMountedRef = useRef(false);
   const holdPopupInPlace = useCallback(() => {
     const dropdown = dropdownRef.current;
     const anchor = anchorRef?.current ?? fallbackAnchorRef.current;
@@ -609,11 +613,6 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         current ?? Math.min(DROPDOWN_MAX_HEIGHT, Math.max(box.height, room)),
     );
   }, [anchorRef]);
-  const highlightedIndexRef = useRef(highlightedIndex);
-  useIsomorphicLayoutEffect(() => {
-    resultsRef.current = results;
-    highlightedIndexRef.current = highlightedIndex;
-  }, [results, highlightedIndex]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
@@ -836,30 +835,32 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         const shown = isFinal
           ? [...fetched, ...(__queryEntries?.(searchQuery, fetched) ?? [])]
           : fetched;
-        // The highlighted item stays highlighted across later lists. Until
-        // React commits the previous list, the person cannot have moved the
-        // highlight off its first row.
-        let previousHighlightId: string | undefined;
-        if (shownRows != null) {
-          previousHighlightId =
-            resultsRef.current === shownState
-              ? displayOrder(shownState)[highlightedIndexRef.current]?.id
-              : displayOrder(shownRows)[0]?.id;
-          holdPopupInPlace();
-        } else {
-          setHeldHeight(null);
-        }
-        const keptIndex =
-          previousHighlightId == null
-            ? -1
-            : displayOrder(shown).findIndex(
-                item => item.id === previousHighlightId,
-              );
         resultsGenRef.current = gen;
-        setResults(shown);
-        setHighlightedIndex(
-          keptIndex >= 0 ? keptIndex : shown.length > 0 ? 0 : -1,
-        );
+        const firstRow = shown.length > 0 ? 0 : -1;
+        const previous = shownState;
+        if (previous == null) {
+          setHeldHeight(null);
+          replaceResults(shown);
+          setHighlightedIndex(firstRow);
+        } else {
+          holdPopupInPlace();
+          if (startsWithRows(displayOrder(shown), displayOrder(previous))) {
+            setResults(shown);
+          } else {
+            replaceResults(shown);
+          }
+          // Within one query only this function sets the rows, so the index
+          // the updater receives points into `previous`: the highlighted item
+          // keeps its highlight wherever it now sits (spec:AST-092 FR6).
+          const previousOrder = displayOrder(previous);
+          const nextOrder = displayOrder(shown);
+          setHighlightedIndex(index => {
+            const id = previousOrder[index]?.id;
+            const kept =
+              id == null ? -1 : nextOrder.findIndex(item => item.id === id);
+            return kept >= 0 ? kept : firstRow;
+          });
+        }
         if (fetched.length > 0) {
           shownRows = fetched;
           shownState = shown;
@@ -872,7 +873,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         // focus-open), so screen-reader users hear result counts / no-results.
         // An empty result is announced from the rendered row instead, so the
         // region speaks whatever the caller put there.
-        if (searchQuery.length > 0 && count > 0) {
+        if (isMountedRef.current && searchQuery.length > 0 && count > 0) {
           announce(t('@astryx.typeahead.resultCount', {count}));
         }
       };
@@ -912,7 +913,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           if (shownRows != null) {
             showList(shownRows, true);
           } else {
-            setResults([]);
+            replaceResults([]);
             setHighlightedIndex(-1);
             setHasSearched(false);
           }
@@ -921,7 +922,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           // showed for this query, which settles it.
           announceCount(showList(shownRows, true).length);
         } else {
-          setResults([]);
+          replaceResults([]);
           setHighlightedIndex(-1);
         }
       } finally {
@@ -939,6 +940,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       setLoading,
       t,
       holdPopupInPlace,
+      replaceResults,
     ],
   );
 
@@ -958,13 +960,13 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         return;
       }
       setHeldHeight(null);
-      setResults(shown);
+      replaceResults(shown);
       setHighlightedIndex(nextHighlightedIndex);
       if (bootstrapResults.length > 0) {
         showLayer();
       }
     },
-    [highlightedIndex, maxMenuItems, results.length, showLayer],
+    [highlightedIndex, maxMenuItems, results.length, showLayer, replaceResults],
   );
 
   // Perform bootstrap
@@ -975,7 +977,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       bootstrapResult = searchSource.bootstrap();
     } catch {
       if (searchGenRef.current === gen) {
-        setResults([]);
+        replaceResults([]);
         setLoading(false);
       }
       return;
@@ -992,14 +994,14 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       applyBootstrapResults(await bootstrapResult, gen);
     } catch {
       if (searchGenRef.current === gen) {
-        setResults([]);
+        replaceResults([]);
       }
     } finally {
       if (searchGenRef.current === gen) {
         setLoading(false);
       }
     }
-  }, [searchSource, applyBootstrapResults, setLoading]);
+  }, [searchSource, applyBootstrapResults, setLoading, replaceResults]);
 
   // Handle query change
   const handleQueryChange = useCallback(
@@ -1025,7 +1027,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         // the text itself. `hasSearched` stays false either way, so the menu
         // never reports "no results" for a query nobody looked for.
         const derived = __queryEntries?.(newQuery, []) ?? [];
-        setResults(derived);
+        replaceResults(derived);
         setHeldHeight(null);
         setHighlightedIndex(derived.length > 0 ? 0 : -1);
         setHasSearched(false);
@@ -1059,6 +1061,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       }
     },
     [
+      replaceResults,
       onChangeQuery,
       hasEntriesOnFocus,
       minQueryLength,
@@ -1094,7 +1097,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       searchSource.cancel?.();
       onChange(item);
       setQuery('');
-      setResults([]);
+      replaceResults([]);
       setHeldHeight(null);
       setHasSearched(false);
       // Same reason as in handleQueryChange: the invalidated search will not
@@ -1104,7 +1107,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       popover.hide();
       inputRef.current?.focus();
     },
-    [onChange, popover, searchSource, setLoading],
+    [onChange, popover, searchSource, setLoading, replaceResults],
   );
 
   // Shared by handleFocus and handleClick: bootstrap entries if none are
@@ -1327,20 +1330,33 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
 
   // Keep the highlighted option visible during keyboard navigation; hover
   // highlights never scroll (#6077). Both sides live in useHighlightedOptionScroll.
+  // The scroll follows the highlighted option's id and the list it belongs
+  // to, so rows a later list appends below do not scroll a list the person
+  // has scrolled (spec:AST-092 FR6, FR7).
+  const highlightedOptionId = optionIds[highlightedIndex];
+  const getHighlightedOptionId = useCallback(
+    (index: number) => highlightedOptionId ?? `${listboxId}-option-${index}`,
+    [highlightedOptionId, listboxId],
+  );
   const highlightOnHover = useHighlightedOptionScroll({
     isOpen: popover.isOpen,
     highlightedIndex,
     setHighlightedIndex,
-    getOptionId: getItemId,
-    itemCount: results.length,
+    getOptionId: getHighlightedOptionId,
+    itemCount: listKey,
   });
 
   const selectedKey =
     value == null ? null : getKey(value.id, () => results.indexOf(value));
 
-  // Unmount: clear the pending debounce and cancel in-flight work.
+  // Unmount: clear the pending debounce and cancel in-flight work, and stop
+  // announcing for a field that is gone (spec:AST-092 FR4). A flag rather than
+  // a generation bump, so StrictMode's simulated unmount keeps a search or
+  // bootstrap started during mount.
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
+      isMountedRef.current = false;
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }

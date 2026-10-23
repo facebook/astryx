@@ -9,6 +9,7 @@
 
 import {afterAll, afterEach, beforeAll, describe, expect, it, vi} from 'vitest';
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {StrictMode} from 'react';
 import {BaseTypeahead} from './BaseTypeahead';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {__resetDevWarnings} from '../utils/devWarning';
@@ -456,5 +457,118 @@ describe('BaseTypeahead incremental results (spec:AST-092)', () => {
 
     await type(input, '');
     expect(listbox.getAttribute('style') ?? '').not.toContain('80px');
+  });
+
+  it('does not scroll the list when a later list appends rows (FR6)', async () => {
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scrollIntoView,
+    });
+    try {
+      const {source, latest} = createPendingSource({
+        ben: [benOrtiz, benitaRuiz],
+      });
+      const input = renderTypeahead(source);
+      await type(input, 'ben');
+      fireEvent.keyDown(input, {key: 'ArrowDown'});
+      expect(scrollIntoView).toHaveBeenCalled();
+
+      scrollIntoView.mockClear();
+      await settle(latest(), [benOrtiz, benitaRuiz, benShah, bennettCole]);
+      expect(scrollIntoView).not.toHaveBeenCalled();
+    } finally {
+      delete (HTMLElement.prototype as unknown as {scrollIntoView?: unknown})
+        .scrollIntoView;
+    }
+  });
+
+  it('drops lists and rejections that arrive after unmount (FR4)', async () => {
+    const {source, latest} = createPendingSource({
+      ben: [benOrtiz, benitaRuiz],
+    });
+    const {unmount} = render(
+      <BaseTypeahead
+        aria-label="Assign to"
+        searchSource={source}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+      />,
+    );
+    await type(screen.getByRole('combobox'), 'ben');
+    const search = latest();
+    unmount();
+    await act(async () => {
+      search.context?.update([benOrtiz]);
+      search.reject(new Error('aborted'));
+    });
+    await act(async () => {
+      await new Promise(resolve => requestAnimationFrame(resolve));
+    });
+    expect(liveRegion()?.textContent ?? '').not.toContain('results');
+  });
+
+  it('drops a slow bootstrap once the person types, and stays busy for the query (slow bootstrap)', async () => {
+    let finishBootstrap: (items: SearchableItem[]) => void = () => {};
+    const {source, latest} = createPendingSource({
+      ben: [benOrtiz, benitaRuiz],
+    });
+    source.bootstrap = () =>
+      new Promise<SearchableItem[]>(resolve => {
+        finishBootstrap = resolve;
+      });
+    render(
+      <BaseTypeahead
+        aria-label="Assign to"
+        searchSource={source}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+        hasEntriesOnFocus
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    fireEvent.focus(input);
+    expect(input).toHaveAttribute('aria-busy', 'true');
+
+    await type(input, 'ben');
+    expect(optionLabels()).toEqual(['Ben Ortiz', 'Benita Ruiz']);
+
+    // The bootstrap lands late: it neither replaces nor reorders the rows.
+    await act(async () => {
+      finishBootstrap([beaLin, bennettCole]);
+    });
+    expect(optionLabels()).toEqual(['Ben Ortiz', 'Benita Ruiz']);
+    expect(input).toHaveAttribute('aria-busy', 'true');
+
+    await settle(latest(), [benOrtiz, benitaRuiz, benShah]);
+    expect(optionLabels()).toEqual(['Ben Ortiz', 'Benita Ruiz', 'Ben Shah']);
+    expect(input).not.toHaveAttribute('aria-busy');
+  });
+
+  it('behaves the same under StrictMode (pure updaters, no effect-driven state)', async () => {
+    const onChange = vi.fn();
+    const {source, latest} = createPendingSource({
+      ben: [benOrtiz, benitaRuiz],
+    });
+    render(
+      <StrictMode>
+        <BaseTypeahead
+          aria-label="Assign to"
+          searchSource={source}
+          value={null}
+          onChange={onChange}
+          debounceMs={0}
+        />
+      </StrictMode>,
+    );
+    const input = screen.getByRole('combobox');
+    await type(input, 'ben');
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    await settle(latest(), [benOrtiz, benitaRuiz, benShah]);
+    expect(optionLabels()).toEqual(['Ben Ortiz', 'Benita Ruiz', 'Ben Shah']);
+    fireEvent.keyDown(input, {key: 'Enter'});
+    expect(onChange).toHaveBeenCalledWith(benitaRuiz);
   });
 });
