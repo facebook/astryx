@@ -112,13 +112,19 @@ announcement channel.
 - **FR12 — One internal helper delivers FR11.** Components that announce their
   own rendered content use one shared internal helper. It reads the element's
   rendered text after render, leaves out `aria-hidden` content, stays silent for
-  text present in the view's first commit, announces once per later appearance or
-  text change, and re-arms when the element is hidden. It is not exported; making
-  it public needs `spec:AST-002` admission. A server-renderable component that
-  adopts it stays server-renderable: the helper has a server version that does
-  nothing, chosen when the component renders on the server, because a
-  server-rendered message is always part of its view's first render. The adopter
-  still passes the server-safe component boundary check.
+  text present at page load or rendered on the server, announces once per later
+  appearance or text change, and re-arms when the element is hidden. It is not
+  exported; making it public needs `spec:AST-002` admission. A server-renderable
+  component that adopts it stays server-renderable: the helper has a server
+  version that does nothing, chosen when the component renders on the server,
+  and the adopter still passes the server-safe component boundary check.
+- **FR13 — Announcement effects stay inside the helper.** The helper is the only
+  place announcement Effects live. Adopting components add no Effect, observer,
+  timer, or listener of their own to detect page load, read rendered text, or
+  write to the channel. The helper follows `architecture:react-component-runtime`
+  INV3 and INV5: it is idempotent under rerender, dependency change, and
+  StrictMode replay, acquires nothing while its element is hidden, and releases
+  everything it acquires on unmount.
 
 ### Platform support
 
@@ -211,6 +217,7 @@ announcement channel.
 | FR10          | Accessibility-tree check with a Dialog open                               | Info and error toast shown over an open Dialog                                                                                                                          | A toast that reaches only the body-level channel, or no exposed live container, fails                                                                                                         |
 | FR11, FR12    | Helper and component tests                                                | EmptyState present at page load, server-rendered, inserted later, text changed, hidden and shown again, brought in by a client-rendered route change, inside a chat log | Announcing at page load or from a server render, missing a later insertion or a client-rendered route change, repeating one occasion, or also using the channel inside a live container fails |
 | FR12 (server) | Server-safe component boundary check plus a server render of each adopter | EmptyState rendered on the server and hydrated                                                                                                                          | An adopter that fails the boundary check, or emits an announcement or live role from a server render, fails                                                                                   |
+| FR13          | Shared test over every adopter plus helper StrictMode and unmount tests   | EmptyState, Spinner, ChatComposer status bar, trigger-menu loading row; StrictMode; hide and show; unmount                                                              | An adopter with its own announcement Effect, observer, timer, or listener, a duplicate announcement under StrictMode, or a resource left after unmount fails                                  |
 | FR6 (AT)      | Recommended `spec:AST-009` real-AT follow-up                              | Toast, busy Switch, chat notice                                                                                                                                         | Missing, repeated, or out-of-order speech fails                                                                                                                                               |
 
 ## Decision log
