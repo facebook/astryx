@@ -108,13 +108,16 @@ announcement channel.
   message arriving with its view is announced. Page load is the content present in
   the page's first committed render (from the server or the client) before the
   document finishes loading. Anything inserted, or whose text changes, after
-  both of those points is after page load. FR4 applies inside a mounted live
+  both of those points is after page load. A message that reaches assistive
+  technology only through its announcement, such as a picker's empty-panel
+  message under `spec:AST-056` FR3, announces even when present at page load. FR4 applies inside a mounted live
   container, and FR6 governs repeats. FR11 covers components that announce their
   own rendered content; `component:FieldStatus` and `component:Banner` keep their
   own announcement rules.
 - **FR12 — One internal helper delivers FR11.** Components that announce their
   own rendered content use one shared internal helper. It reads the element's
-  rendered text after render, leaves out `aria-hidden` content, stays silent for
+  rendered text after render, or its accessible name when it renders no text,
+  leaves out `aria-hidden` content, stays silent for
   text present at page load or rendered on the server, announces once per later
   appearance or text change, and re-arms when the element is hidden. It is not
   exported; making it public needs `spec:AST-002` admission. A server-renderable
@@ -195,9 +198,9 @@ announcement channel.
 - Comments (lab): its error banners and progress label mount live roles
   together with their text. Inside a live log they follow FR4; otherwise FR2.
 - Selector, MultiSelector, Typeahead, and CommandPalette already announce their
-  empty state through the helper. An empty panel shown at page load (for example
-  with `isDefaultOpen`) stays silent under FR11; otherwise their behavior is
-  unchanged.
+  empty state through the helper. Their empty-panel message reaches assistive
+  technology only through that announcement, so it announces even at page load
+  (FR11, `spec:AST-056` FR3); their behavior is unchanged.
 - `component:FieldStatus` AR1 is unchanged: a field message announces on first
   mount, because it reports the field's state when the field appears.
 - `component:Banner` FR8 is unchanged: the caller announces an async outcome
