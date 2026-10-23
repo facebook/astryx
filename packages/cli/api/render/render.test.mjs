@@ -349,11 +349,25 @@ describe('render(): every write stays inside the current folder', () => {
     put('aliased-to/package.json', '{"name":"aliased-to","private":true}');
     fs.copyFileSync(path.join(dir, 'aliased-src/src/app/page.html'), path.join(dir, 'aliased-to/page.html'));
     const cwd = path.join(dir, 'aliased-to');
-    const back = /** @type {any} */ (await render('page.html', {cwd, reverse: true, out: 'page.tsx'}));
-    expect(back.data.files).toEqual(['page.tsx', 'src/components/Header.tsx']);
-    const again = /** @type {any} */ (await render('page.tsx', {cwd}));
+    // Into the project's existing folders: refused, without a suggestion that cannot work.
+    put('aliased-to/src/keep.txt', 'existing\n');
+    /** @type {any} */
+    let refused;
+    try {
+      await render('page.html', {cwd, reverse: true, out: 'page.tsx'});
+    } catch (e) {
+      refused = e;
+    }
+    expect(refused?.code).toBe('ERR_PATH_TRAVERSAL');
+    expect(refused.message).toContain('path alias');
+    expect(refused.suggestions ?? []).toEqual([]);
+    fs.rmSync(path.join(cwd, 'src'), {recursive: true});
+    // Into a new folder the alias points into: the page and its import come back.
+    const back = /** @type {any} */ (await render('page.html', {cwd, reverse: true, out: 'src/app/page.tsx'}));
+    expect(back.data.files).toEqual(['src/app/page.tsx', 'src/components/Header.tsx']);
+    const again = /** @type {any} */ (await render('src/app/page.tsx', {cwd}));
     expect(again.type).toBe('render.page');
-    expect(fs.readFileSync(path.join(cwd, 'page.html'), 'utf8')).toContain('Alias header');
+    expect(fs.readFileSync(path.join(cwd, 'src/app/page.html'), 'utf8')).toContain('Alias header');
     // Without the alias, the file it names is refused, naming why.
     put('no-alias/package.json', '{"name":"no-alias","private":true}');
     fs.copyFileSync(path.join(dir, 'aliased-src/src/app/page.html'), path.join(dir, 'no-alias/page.html'));
@@ -408,8 +422,8 @@ describe('render(): every write stays inside the current folder', () => {
     put('short-alias/tsconfig.json', '{"compilerOptions": {"baseUrl": ".", "paths": {"@/*": ["./src/*"]}}}\n');
     const page = {path: 'page.tsx', bytes: Buffer.from("import {t} from '@/t';\nexport default () => t;\n")};
     put('short-alias/page.html', `<body><p class="astryx-text">x</p>${sourceBlock('page.tsx', [page, {path: 't.ts', bytes: Buffer.from("export const t = 'x';\n")}])}</body>`);
-    const back = /** @type {any} */ (await render('page.html', {cwd: path.join(dir, 'short-alias'), reverse: true, out: 'page.tsx'}));
-    expect(back.data.files).toEqual(['page.tsx', 'src/t.ts']);
+    const back = /** @type {any} */ (await render('page.html', {cwd: path.join(dir, 'short-alias'), reverse: true, out: 'src/page.tsx'}));
+    expect(back.data.files).toEqual(['src/page.tsx', 'src/t.ts']);
   });
 
   it('rebuilds a quoted attribute as JSX that compiles', async () => {
@@ -446,17 +460,18 @@ describe('render(): every write stays inside the current folder', () => {
 
   it('writes all or nothing: a failure part-way leaves nothing behind', async () => {
     const {sourceBlock} = await import('../../foundation/render/source-block.mjs');
-    const page = {path: 'app/page.tsx', bytes: Buffer.from("import {C} from './components/C';\nexport default () => <C />;\n")};
-    const comp = {path: 'app/components/C.tsx', bytes: Buffer.from('export const C = () => null;\n')};
+    // The second file's name is longer than a file system allows, so its
+    // write fails after the page's has been staged.
+    const long = 'C'.repeat(300);
+    const page = {path: 'app/page.tsx', bytes: Buffer.from(`import {C} from './components/${long}';\nexport default () => <C />;\n`)};
+    const comp = {path: `app/components/${long}.tsx`, bytes: Buffer.from('export const C = () => null;\n')};
     put('atomic/page.html', `<body><p class="astryx-text">x</p>${sourceBlock('app/page.tsx', [page, comp])}</body>`);
-    // The page's own name is taken by a folder, so the last step fails.
-    fs.mkdirSync(path.join(dir, 'atomic/out/page.tsx'), {recursive: true});
-    expect(
-      await codeOf(() => render('page.html', {cwd: path.join(dir, 'atomic'), reverse: true, out: 'out/page.tsx', overwrite: true})),
-    ).toBe('ERR_WRITE_FAILED');
-    expect(fs.readdirSync(path.join(dir, 'atomic/out'))).toEqual(['page.tsx']);
-    expect(fs.readdirSync(path.join(dir, 'atomic/out/page.tsx'))).toEqual([]);
+    expect(await codeOf(() => render('page.html', {cwd: path.join(dir, 'atomic'), reverse: true, out: 'out/page.tsx'}))).toBe(
+      'ERR_WRITE_FAILED',
+    );
+    expect(fs.readdirSync(path.join(dir, 'atomic'))).toEqual(['page.html']);
   });
+
 
 
   it('restores an exact alias import to the file it names', async () => {
@@ -464,8 +479,40 @@ describe('render(): every write stays inside the current folder', () => {
     put('exact-alias/tsconfig.json', '{"compilerOptions": {"baseUrl": ".", "paths": {"@theme": ["./src/theme.ts"]}}}\n');
     const page = {path: 'page.tsx', bytes: Buffer.from("import {t} from '@theme';\nexport default () => t;\n")};
     put('exact-alias/page.html', `<body><p class="astryx-text">x</p>${sourceBlock('page.tsx', [page, {path: 'theme.ts', bytes: Buffer.from("export const t = 'x';\n")}])}</body>`);
-    const back = /** @type {any} */ (await render('page.html', {cwd: path.join(dir, 'exact-alias'), reverse: true, out: 'page.tsx'}));
-    expect(back.data.files).toEqual(['page.tsx', 'src/theme.ts']);
+    const back = /** @type {any} */ (await render('page.html', {cwd: path.join(dir, 'exact-alias'), reverse: true, out: 'src/page.tsx'}));
+    expect(back.data.files).toEqual(['src/page.tsx', 'src/theme.ts']);
+  });
+
+  it('keeps every neighbour inside the one folder the restore creates', async () => {
+    const {sourceBlock} = await import('../../foundation/render/source-block.mjs');
+    put('depth/app/layout.tsx', 'existing\n');
+    const page = {path: 'restored/report.tsx', bytes: Buffer.from("import r from '../app/report-export/route';\nexport default () => null;\n")};
+    put('depth/page.html', `<body><p class="astryx-text">x</p>${sourceBlock('restored/report.tsx', [page, {path: 'app/report-export/route.ts', bytes: Buffer.from('export {};\n')}])}</body>`);
+    /** @type {any} */
+    let refused;
+    try {
+      await render('page.html', {cwd: path.join(dir, 'depth'), reverse: true, out: 'restored/report.tsx'});
+    } catch (e) {
+      refused = e;
+    }
+    expect(refused?.code).toBe('ERR_PATH_TRAVERSAL');
+    expect(fs.existsSync(path.join(dir, 'depth/app/report-export'))).toBe(false);
+    expect(fs.existsSync(path.join(dir, 'depth/restored'))).toBe(false);
+    // The suggested folder works.
+    const suggestion = refused.suggestions[0].name.replace('--out ', '');
+    const back = /** @type {any} */ (await render('page.html', {cwd: path.join(dir, 'depth'), reverse: true, out: suggestion}));
+    expect(back.data.mode).toBe('embedded');
+  });
+
+  it('refuses test, spec and story files a received page imports', async () => {
+    const {sourceBlock} = await import('../../foundation/render/source-block.mjs');
+    for (const name of ['report.test.ts', 'report.spec.tsx', 'Report.stories.tsx', '__tests__/r.ts']) {
+      const page = {path: 'page.tsx', bytes: Buffer.from(`import './${name.replace(/\.tsx?$/, '')}';\nexport default () => null;\n`)};
+      put('tests-in.html', `<body><p class="astryx-text">x</p>${sourceBlock('page.tsx', [page, {path: name, bytes: Buffer.from('export {};\n')}])}</body>`);
+      expect(await codeOf(() => render('tests-in.html', {cwd: dir, reverse: true, out: 'tests-in/page.tsx'}))).toBe(
+        'ERR_RENDER_SOURCE_DAMAGED',
+      );
+    }
   });
 
   it('keeps a received title out of the rebuilt code', async () => {

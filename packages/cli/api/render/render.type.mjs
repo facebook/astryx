@@ -11,7 +11,7 @@
  * @experimental May change or be removed in a patch release.
  * @typedef {object} RenderOptions
  * @property {string} [cwd] - Folder relative paths resolve from (default: process.cwd()).
- * @property {string} [out] - The file to write. Rendering: an .html file (default: the page's name with .html). Reversing: a page module (default: the page's original name, or the HTML file's name with .tsx).
+ * @property {string} [out] - The file to write. Rendering: an .html file (default: the page's name with .html). Reversing: a page module (default: the HTML file's name, with the page's own extension, beside the HTML file).
  * @property {boolean} [reverse] - Turn a rendered HTML file back into a page module.
  * @property {string} [title] - The rendered page's title (default: its first heading, else the file name). Rendering only.
  * @property {boolean} [overwrite] - Replace existing files when reversing. Rendering always replaces its HTML file.

@@ -66,6 +66,10 @@ export function embeddedPathProblem(p, options = {}) {
   if (((ext === '.json' || ext === '.jsonc') && CONFIG_JSON.test(base)) || CONFIG_MODULE.test(base)) {
     return {code: 'ERR_RENDER_SOURCE_DAMAGED', reason: `a project or tool configuration file (${p})`};
   }
+  // Test, spec and story files run under tools without anyone importing them.
+  if (/\.(test|spec|stories|story|bench)\.[a-z0-9]+$/i.test(base) || segments.some(seg => /^__\w+__$/.test(seg))) {
+    return {code: 'ERR_RENDER_SOURCE_DAMAGED', reason: `a test, spec or story file (${p})`};
+  }
   if (PAGE_EXTENSIONS.includes(ext) || ext === '.css' || ext === '.json' || isAssetPath(p)) return null;
   return {code: 'ERR_RENDER_SOURCE_DAMAGED', reason: `a kind of file a render never embeds (${p})`};
 }

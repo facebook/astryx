@@ -378,31 +378,51 @@ export function reverseToFile({cwd, input, output, overwrite}) {
     const placeFrom = p => path.resolve(anchor, path.posix.relative(entryDir, p));
     // A file beside the page or elsewhere goes only into a folder this
     // restore creates: never into a folder that already exists.
-    const within = (/** @type {string} */ file) => !fs.existsSync(path.dirname(file));
+    // The one folder every file but the page must land in: the topmost
+    // folder on the page's path that this restore creates. When the page's
+    // folder already exists there is none, so a page with neighbours comes
+    // back only into a new folder.
+    /** @type {string | null} */
+    let home = null;
+    for (let d = anchor; !fs.existsSync(d) && path.dirname(d) !== d; d = path.dirname(d)) home = d;
+    const within = (/** @type {string} */ file) => {
+      if (!home) return false;
+      const rel = path.relative(home, file);
+      return rel !== '' && !rel.startsWith('..') && !path.isAbsolute(rel);
+    };
     const target = path.join(anchor, path.basename(requested));
     /** @type {{file: string, bytes: Buffer}[]} */
     const writes = [];
     const placed = new Set();
     /** @type {string[]} */
     const outside = [];
+    /** @type {string[]} */
+    const aliasedOutside = [];
     source.files.forEach((f, i) => {
       const reach = /** @type {import('../../foundation/render/embedded-imports.mjs').Reach} */ (reached.get(f.path));
-      const spots = [
-        ...(i === 0 ? [target] : reach.relative ? [placeFrom(f.path)] : []),
-        ...reach.aliased,
-      ];
-      for (const file of spots) {
+      const relative = i === 0 ? [target] : reach.relative ? [placeFrom(f.path)] : [];
+      for (const [file, aliased] of [...relative.map(x => /** @type {[string, boolean]} */ ([x, false])), ...[...reach.aliased].map(x => /** @type {[string, boolean]} */ ([x, true]))]) {
         if (placed.has(file)) continue;
         placed.add(file);
-        if (i > 0 && !within(file)) outside.push(file);
+        if (i > 0 && !within(file)) (aliased ? aliasedOutside : outside).push(file);
         writes.push({file, bytes: Buffer.from(f.base64, 'base64')});
       }
     });
+    if (aliasedOutside.length > 0) {
+      throw new AstryxError(
+        `${shown(cwd, input)} imports ${aliasedOutside.map(file => shown(cwd, file)).join(', ')} through a path alias that points outside the folder the restore creates; nothing was written. A received page never adds files to your existing folders: change those imports to relative ones before rendering, or restore it in a project whose alias points somewhere new.`,
+        [],
+        ERROR_CODES.ERR_PATH_TRAVERSAL,
+      );
+    }
     if (outside.length > 0) {
       const top = entryDir === '.' ? '' : `${entryDir}/`;
+      let fresh = 'restored';
+      for (let n = 2; fs.existsSync(path.join(cwd, fresh)); n++) fresh = `restored-${n}`;
+      const suggestion = `--out ${fresh}/${top}${path.basename(requested)}`;
       throw new AstryxError(
-        `${shown(cwd, input)} would add ${outside.map(file => shown(cwd, file)).join(', ')} to a folder that already exists; nothing was written. A received page writes the files it imports only into folders the restore creates: restore it into a new folder, such as --out restored/${top}${path.basename(requested)}.`,
-        [{name: `--out restored/${top}${path.basename(requested)}`, reason: 'restore the page and the files it imports into a new folder, keeping their layout'}],
+        `${shown(cwd, input)} would add ${outside.map(file => shown(cwd, file)).join(', ')} outside the folder the restore creates; nothing was written. A received page writes the files it imports only inside one new folder: restore it into one, such as ${suggestion}.`,
+        [{name: suggestion, reason: 'restore the page and the files it imports into a new folder, keeping their layout'}],
         ERROR_CODES.ERR_PATH_TRAVERSAL,
       );
     }

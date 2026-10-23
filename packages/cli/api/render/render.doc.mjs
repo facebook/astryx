@@ -41,7 +41,7 @@ export const doc = {
       name: 'options.out',
       type: 'string',
       description:
-        "The file to write. Rendering: an .html file (default: the page's name with .html). Reversing: a page module (default: the page's original name beside the HTML file, or the HTML file's name with .tsx).",
+        "The file to write. Rendering: an .html file (default: the page's name with .html). Reversing: a page module (default: the HTML file's name, with the page's own extension, beside the HTML file).",
     },
     {
       name: 'options.reverse',
