@@ -104,7 +104,9 @@ announcement channel.
   message present when the page first loads, or rendered on the server, is not
   announced. A message inserted after that, or whose text changes later, is
   announced once. A message brought in by a client-rendered route change is
-  inserted after page load and announces once. Page load is the content present in
+  inserted after page load and announces once. A message rendered on the server but
+  inserted by client navigation is after page load. Page load is the content
+  present in
   the page's first committed render (from the server or the client) before the
   document finishes loading. Anything inserted, or whose text changes, after
   both of those points is after page load. A message that reaches assistive
@@ -113,25 +115,23 @@ announcement channel.
   container, and FR6 governs repeats. FR11 covers components that announce their
   own rendered content; `component:FieldStatus` and `component:Banner` keep their
   own announcement rules.
-- **FR12 — One internal helper delivers FR11.** Components that announce their
-  own rendered content use one shared internal helper. It reads the element's
-  rendered text after render, or its accessible name when it renders no text,
-  leaves out `aria-hidden` content, stays silent for
-  text present at page load or rendered on the server (except as FR11 provides
-  for announcement-only messages), announces once per later
-  appearance or text change, and re-arms when the element is hidden. It is not
-  exported; making it public needs `spec:AST-002` admission. A server-renderable
-  component that adopts it stays server-renderable: rendered on the server, the
-  helper announces nothing and adds no live role, and the adopter still passes
-  the server-safe component boundary check. Any equivalent mechanism is valid.
-- **FR13 — Announcement effects stay inside the helper.** Effects that announce a
-  component's own rendered content (FR11) live only in the helper. Busy
-  announcements under FR8 keep their own owner. Adopting components add no Effect, observer,
-  timer, or listener of their own to detect page load, read rendered text, or
-  write to the channel. The helper follows `architecture:react-component-runtime`
-  INV3 and INV5: it is idempotent under rerender, dependency change, and
-  StrictMode replay, acquires nothing while its element is hidden, and releases
-  everything it acquires on unmount.
+- **FR12 — Own-content announcements behave the same everywhere.** Every
+  component that announces its own rendered content announces the element's
+  rendered text, or its accessible name when it renders no text, leaving out
+  `aria-hidden` content. It stays silent for text present at page load or
+  rendered on the server (except as FR11 provides for announcement-only
+  messages), announces once per later appearance or text change, and re-arms when
+  the element is hidden. Rendered on the server it announces nothing and adds no
+  live role, and a server-renderable adopter stays server-renderable and passes
+  the server-safe component boundary check. Any mechanism that satisfies this is
+  valid; `architecture:react-component-runtime` INV10 places it.
+- **FR13 — Own-content announcements are well behaved.** Announcing a
+  component's own rendered content (FR11) happens once per occasion under
+  rerender, dependency change, and StrictMode replay, does no work while the
+  element is hidden, and leaves nothing behind after unmount. Action
+  announcements, such as a result count from a query handler or FR8 busy
+  starts, keep their own owner. `architecture:react-component-runtime` INV10
+  owns where this work lives.
 
 ### Platform support
 
@@ -180,11 +180,11 @@ announcement channel.
   log. Under FR4 and FR8 it is silent, and ChatMessageList announces its loading
   through the channel.
 - EmptyState: its root mounts a live role together with its text. Under FR2,
-  FR11, and FR12 it carries no live role and the helper announces it when it
-  appears after page load. EmptyState stays server-renderable.
+  FR11, and FR12 it carries no live role and announces when it appears
+  after page load. EmptyState stays server-renderable.
 - The ChatComposer status bar and the chat trigger menu's loading row carry no
-  live role and announce through the channel from their own Effects. Under FR13
-  they move onto the helper.
+  live role and announce through the channel from their own Effects. Under
+  `architecture:react-component-runtime` INV10 they move onto the shared module.
 - Button: its persistent loading region fits FR3, except when a Button first
   renders loading and the region mounts holding its text. Inside a live
   container it keeps its role and urgency (FR4).
@@ -199,17 +199,16 @@ announcement channel.
   together with their text. Inside a live log they follow FR4; otherwise FR2.
 - Selector and MultiSelector render their empty-panel message as
   `role="presentation"`, so it reaches assistive technology only through the
-  helper's announcement and announces even at page load (FR11, `spec:AST-056`
-  FR3). Typeahead and CommandPalette announce their empty state through the helper
-  after page load and are otherwise unchanged.
+  announcement and announces even at page load (FR11, `spec:AST-056`
+  FR3). Typeahead and CommandPalette announce their empty state after page load and are otherwise unchanged.
 - `component:FieldStatus` AR1 is unchanged: a field message announces on first
   mount, because it reports the field's state when the field appears.
 - `component:Banner` FR8 is unchanged: the caller announces an async outcome
   from its transition handler, because only the caller knows whether a Banner
   is a new outcome or persistent content. FR11 and FR12 cover components that
   announce their own content.
-- The FR13 shared test lands with the conformance work that moves the two chat
-  adopters onto the helper.
+- The INV10 shared test lands with the conformance work that moves the two chat
+  adopters onto the shared module.
 - `useAnnounce`: messages written in the same frame are joined instead of the
   last one replacing the others (FR9).
 - `spec:AST-037` FR9 (Timer adds no unsolicited live region) already conforms.
@@ -230,7 +229,7 @@ announcement channel.
 | FR10          | Accessibility-tree check with a Dialog open                               | Info and error toast shown over an open Dialog                                                                                                                                                                  | A toast that reaches only the body-level channel, or no exposed live container, fails                                                                                                                                                                                          |
 | FR11, FR12    | Helper and component tests                                                | EmptyState present at page load, server-rendered, inserted later, text changed, hidden and shown again, brought in by a client-rendered route change, inside a chat log, empty Selector panel open at page load | Announcing at page load or from a server render (other than an announcement-only message), missing a later insertion, a client-rendered route change, or an empty Selector panel at page load, repeating one occasion, or also using the channel inside a live container fails |
 | FR12 (server) | Server-safe component boundary check plus a server render of each adopter | EmptyState rendered on the server and hydrated                                                                                                                                                                  | An adopter that fails the boundary check, or emits an announcement or live role from a server render, fails                                                                                                                                                                    |
-| FR13          | Shared test over every adopter plus helper StrictMode and unmount tests   | EmptyState, Spinner, ChatComposer status bar, trigger-menu loading row; StrictMode; hide and show; unmount                                                                                                      | An adopter with its own announcement Effect, observer, timer, or listener, a duplicate announcement under StrictMode, or a resource left after unmount fails                                                                                                                   |
+| FR13          | Helper StrictMode, hide/show, and unmount tests on each adopter           | EmptyState, Spinner, ChatComposer status bar, trigger-menu loading row                                                                                                                                          | A duplicate announcement under StrictMode, work while hidden, or a resource left after unmount fails                                                                                                                                                                           |
 | FR6 (AT)      | Recommended `spec:AST-009` real-AT follow-up                              | Toast, busy Switch, chat notice                                                                                                                                                                                 | Missing, repeated, or out-of-order speech fails                                                                                                                                                                                                                                |
 
 ## Decision log
@@ -260,7 +259,7 @@ A message that is on the page when it loads is read with the page. Announcing it
 interrupts people with something they are about to read. A message that appears
 later is news and is announced once. Page load is the boundary because it is the
 one every app shares without extra code.
-One internal helper gives every self-announcing component the same behavior.
+Every self-announcing component behaves the same way (FR12).
 
 Rejected: announcing on every mount — page loads would speak every empty state
 and spinner on screen.
