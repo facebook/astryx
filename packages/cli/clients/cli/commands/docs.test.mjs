@@ -53,36 +53,6 @@ describe('registerDocs', () => {
     const errorOutput = console.error.mock.calls.map(c => c[0]).join('\n');
     expect(errorOutput).toContain('Unknown topic');
   });
-
-  it('suggests the doc a topic names in another spelling', async () => {
-    const program = createProgram();
-    vi.spyOn(process, 'exit').mockImplementation(code => {
-      throw new Error(`exit ${code}`);
-    });
-
-    await expect(
-      program.parseAsync(['node', 'astryx', 'docs', 'Theme_Builds']),
-    ).rejects.toThrow('exit 1');
-
-    const errorOutput = console.error.mock.calls.map(c => c[0]).join('\n');
-    expect(errorOutput).toContain('cli/commands/theme-build');
-    expect(errorOutput).not.toContain('docs namespace');
-  });
-
-  it('keeps a flat topic first when a spelling match names it', async () => {
-    const program = createProgram();
-    vi.spyOn(process, 'exit').mockImplementation(code => {
-      throw new Error(`exit ${code}`);
-    });
-
-    await expect(
-      program.parseAsync(['node', 'astryx', 'docs', 'Theme_']),
-    ).rejects.toThrow('exit 1');
-
-    const lines = console.error.mock.calls.map(c => String(c[0]));
-    const listed = lines.filter(l => /^\s+\S/.test(l)).map(l => l.trim().split(/\s+/)[0]);
-    expect(listed[0]).toBe('theme');
-  });
 });
 
 describe('hyphenated doc filenames', () => {

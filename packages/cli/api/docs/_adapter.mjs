@@ -1885,35 +1885,6 @@ export async function unknownTopicError(topic, catalog) {
       )
       .map(node => ({name: node.route, reason: node.summary}));
   }
-  let spelled = false;
-  if (suggestions.length === 0 && typeof topic === 'string' && !topic.includes('/')) {
-    // The same name spelled another way: case, separators and a plural
-    // aside (`theme-build` is themeBuild(), `hooks` is the hook command).
-    const key = (/** @type {string} */ s) =>
-      s.toLowerCase().replace(/[^a-z0-9]/g, '').replace(/s$/, '');
-    const wanted = key(topic);
-    if (wanted.length >= 3) {
-      // Flat topics first, as the browse list names them, then tree docs.
-      const topics = catalog
-        .names()
-        .filter(name => key(name) === wanted)
-        .map(name => ({name, reason: 'available topic'}));
-      const flat = new Set(topics.map(t => t.name));
-      suggestions = [
-        ...topics,
-        ...[...tree.nodes.values()]
-          .filter(
-            node =>
-              !node.ref?.flatTopic &&
-              !flat.has(node.route) &&
-              (key(node.name) === wanted ||
-                key(node.route.split('/').at(-1) ?? '') === wanted),
-          )
-          .map(node => ({name: node.route, reason: node.summary})),
-      ];
-      spelled = suggestions.length > 0;
-    }
-  }
   if (suggestions.length === 0) {
     suggestions = [
       ...tree
@@ -1924,8 +1895,6 @@ export async function unknownTopicError(topic, catalog) {
   }
   if (typeof topic === 'string') {
     suggestions = orderRouteSuggestions(topic, suggestions);
-    // A spelling match lists at most five docs (spec:AST-083 FR7).
-    if (spelled) suggestions = suggestions.slice(0, 5);
   }
   // A route that moved names where it went, ahead of the usual suggestions
   // (spec:AST-046 FR9, FR6).
