@@ -47,7 +47,9 @@ Private design sources stay private and are never named or linked here.
 
 New design specs start as `draft`. Initial promotion to `current`, later changes,
 and normative asset updates require exact-head approval from any current member
-of `.github/ENGOWNERS` or `.github/DESIGNOWNERS`. A mixed PR still needs an
+of `.github/ENGOWNERS` or `.github/DESIGNOWNERS`. An approval carries to a later
+head only through a rebase or the commit that records it, as
+`.github/REVIEW_GATE.md` lists. A mixed PR still needs an
 ENGOWNER for non-design current records. The design record names its content
 owners separately from this repository gate.
 

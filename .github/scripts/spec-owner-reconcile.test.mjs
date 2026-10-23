@@ -100,6 +100,10 @@ function createHarness({
   changedFiles,
   headContent = 'kind: architecture\nauthority: current\n',
   baseContent = '',
+  contentByRef = {},
+  compareFiles = {},
+  mergeBases = {},
+  compareResults = {},
 } = {}) {
   const files = changedFiles ?? [changedFile];
   const state = {
@@ -218,10 +222,30 @@ function createHarness({
         getContent: async ({ref}) => ({
           data: {
             content: Buffer.from(
-              ref === state.pr.head.sha ? headContent : baseContent,
+              contentByRef[ref] ??
+                (ref === state.pr.head.sha ? headContent : baseContent),
             ).toString('base64'),
           },
         }),
+        compareCommitsWithBasehead: async ({basehead}) => {
+          state.calls.push(`compare:${basehead}`);
+          if (compareResults[basehead]) return {data: compareResults[basehead]};
+          const right = basehead.split('...')[1];
+          const compared =
+            compareFiles[right] ?? (right === state.pr.head.sha ? files : null);
+          if (!compared) {
+            const error = new Error('No common ancestor');
+            error.status = 404;
+            throw error;
+          }
+          return {
+            data: {
+              files: compared,
+              status: 'ahead',
+              merge_base_commit: {sha: mergeBases[right] ?? 'merge-base'},
+            },
+          };
+        },
       },
     },
     graphql: async query => {
@@ -243,13 +267,13 @@ function createHarness({
   return {github, core, state};
 }
 
-async function run(harness, runContext) {
+async function run(harness, runContext, {env: extraEnv = {}} = {}) {
   await reconcileSpecOwnerGate({
     github: harness.github,
     context: runContext,
     core: harness.core,
     workspace,
-    env,
+    env: {...env, ...extraEnv},
   });
 }
 
@@ -1690,5 +1714,558 @@ describe('relayed owner decisions', () => {
     });
 
     expect(harness.state.pullGets).toBe(0);
+  });
+});
+
+describe('an approval carries across heads with no material change', () => {
+  const approvedHead = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+  const recordPath = 'docs/specs/AST-900-carry/spec.md';
+
+  function record({
+    authority = 'draft',
+    approvedBy = 'null',
+    approvedAt = 'null',
+    phase = 'proposed',
+    decided = '<pending>',
+    body = 'Buttons keep their label while busy.',
+  } = {}) {
+    return [
+      '---',
+      'kind: system-spec',
+      'id: spec:AST-900',
+      `authority: ${authority}`,
+      `approved_by: ${approvedBy}`,
+      `approved_at: ${approvedAt}`,
+      `phase: ${phase}`,
+      '---',
+      '',
+      '# Busy buttons',
+      '',
+      body,
+      '',
+      '### DEC-1 — Busy buttons keep their label',
+      '',
+      `**Decider:** \`cixzhang\`, \`${decided}\``,
+      '',
+    ].join('\n');
+  }
+
+  const approvedRecord = record();
+  const recordedApproval = record({
+    authority: 'current',
+    approvedBy: 'cixzhang',
+    approvedAt: '2026-08-30',
+    phase: 'accepted',
+    decided: '2026-08-30',
+  });
+  const approveEarlierHead = {
+    user: {login: 'cixzhang'},
+    body: `/approve-spec ${approvedHead}`,
+    created_at: '2026-08-30T09:00:00Z',
+  };
+
+  function carryHarness({
+    headRecord = recordedApproval,
+    headBlob = 'blob-recorded',
+    approvedBlob = 'blob-approved',
+    comments = [approveEarlierHead],
+    reviews = [],
+    extraHeadFiles = [],
+    mergeBases = {},
+    compareResults = {},
+    timeline = [],
+  } = {}) {
+    return createHarness({
+      comments,
+      reviews,
+      timeline,
+      mergeBases,
+      compareResults,
+      changedFiles: [
+        {filename: recordPath, status: 'added', sha: headBlob},
+        ...extraHeadFiles,
+      ],
+      headContent: headRecord,
+      contentByRef: {[approvedHead]: approvedRecord},
+      compareFiles: {
+        [approvedHead]: [
+          {filename: recordPath, status: 'added', sha: approvedBlob},
+        ],
+      },
+    });
+  }
+
+  const synchronize = () =>
+    context({runId: 100n, action: 'synchronize', actor: 'cixzhang'});
+
+  it('keeps the approval when the new head only records it', async () => {
+    const harness = carryHarness();
+
+    await run(harness, synchronize());
+
+    expect(latestGateStatus(harness.state)).toMatchObject({
+      state: 'success',
+      description: expect.stringContaining(
+        `carried from ${approvedHead.slice(0, 7)}`,
+      ),
+    });
+    expect(harness.state.calls).toContain(
+      `compare:2222222222222222222222222222222222222222...${approvedHead}`,
+    );
+  });
+
+  it('keeps the approval across a rebase that changes no record bytes', async () => {
+    // Identical blobs at both heads: the approved record was already current.
+    const harness = carryHarness({
+      headBlob: 'same-blob',
+      approvedBlob: 'same-blob',
+    });
+
+    await run(harness, synchronize());
+
+    expect(latestGateStatus(harness.state)).toMatchObject({
+      state: 'success',
+      description: expect.stringContaining('no material change'),
+    });
+  });
+
+  it('needs a new approval when the record text changed', async () => {
+    const harness = carryHarness({
+      headRecord: record({
+        authority: 'current',
+        approvedBy: 'cixzhang',
+        approvedAt: '2026-08-30',
+        phase: 'accepted',
+        decided: '2026-08-30',
+        body: 'Buttons keep their label and width while busy.',
+      }),
+    });
+
+    await run(harness, synchronize());
+
+    expect(latestGateStatus(harness.state)).toMatchObject({
+      state: 'pending',
+      description: expect.stringContaining('engineering owner'),
+    });
+  });
+
+  it('needs a new approval when approved_by names someone other than the approver', async () => {
+    const harness = carryHarness({
+      headRecord: record({
+        authority: 'current',
+        approvedBy: 'czarandy',
+        approvedAt: '2026-08-30',
+        phase: 'accepted',
+        decided: '2026-08-30',
+      }),
+    });
+
+    await run(harness, synchronize());
+
+    expect(latestGateStatus(harness.state).state).toBe('pending');
+  });
+
+  it('needs a new approval when approved_at is not the approval day', async () => {
+    const harness = carryHarness({
+      headRecord: record({
+        authority: 'current',
+        approvedBy: 'cixzhang',
+        approvedAt: '2026-08-20',
+        phase: 'accepted',
+        decided: '2026-08-30',
+      }),
+    });
+
+    await run(harness, synchronize());
+
+    expect(latestGateStatus(harness.state).state).toBe('pending');
+  });
+
+  it('needs a new approval when the head changes another file', async () => {
+    const harness = carryHarness({
+      extraHeadFiles: [
+        {
+          filename: 'docs/specs/AST-901-other/spec.md',
+          status: 'added',
+          sha: 'blob-other',
+        },
+      ],
+    });
+
+    await run(harness, synchronize());
+
+    expect(latestGateStatus(harness.state).state).toBe('pending');
+  });
+
+  it('lets a later revoke of the approved head win', async () => {
+    const harness = carryHarness({
+      comments: [
+        approveEarlierHead,
+        {
+          user: {login: 'cixzhang'},
+          body: `/revoke-spec ${approvedHead}`,
+          created_at: '2026-08-30T09:30:00Z',
+        },
+      ],
+    });
+
+    await run(harness, synchronize());
+
+    expect(latestGateStatus(harness.state).state).toBe('pending');
+  });
+
+  it('lets a later request for changes on any head win', async () => {
+    const harness = carryHarness({
+      reviews: [
+        {
+          user: {login: 'czarandy'},
+          state: 'CHANGES_REQUESTED',
+          commit_id: '3333333333333333333333333333333333333333',
+          submitted_at: '2026-08-30T09:30:00Z',
+        },
+      ],
+    });
+
+    await run(harness, synchronize());
+
+    expect(latestGateStatus(harness.state).state).toBe('pending');
+  });
+
+  it('lets a revoke of the current head win over a carried approval', async () => {
+    const harness = carryHarness({
+      comments: [
+        approveEarlierHead,
+        {
+          user: {login: 'cixzhang'},
+          body: `/revoke-spec ${head}`,
+          created_at: '2026-08-30T09:30:00Z',
+        },
+      ],
+    });
+
+    await run(harness, synchronize());
+
+    expect(latestGateStatus(harness.state).state).toBe('pending');
+    expect(harness.state.calls.some(call => call.startsWith('compare:'))).toBe(
+      false,
+    );
+  });
+
+  it('never carries an approval command from someone outside the owners', async () => {
+    const harness = carryHarness({
+      comments: [{...approveEarlierHead, user: {login: 'contributor'}}],
+    });
+
+    await run(harness, synchronize());
+
+    expect(latestGateStatus(harness.state).state).toBe('pending');
+  });
+
+  it('needs a new approval when the approved head cannot be compared', async () => {
+    const harness = carryHarness();
+    harness.github.rest.repos.compareCommitsWithBasehead = async () => {
+      const error = new Error('Not Found');
+      error.status = 404;
+      throw error;
+    };
+
+    await run(harness, synchronize());
+
+    expect(latestGateStatus(harness.state).state).toBe('pending');
+  });
+
+  it('needs a new approval when the base branch changed the record between merge bases', async () => {
+    // The rebase kept this pull request's bytes for a record the base branch
+    // edited in between, so merging would revert that edit.
+    const harness = carryHarness({
+      headBlob: 'same-blob',
+      approvedBlob: 'same-blob',
+      mergeBases: {[approvedHead]: 'old-base', [head]: 'new-base'},
+      compareResults: {
+        'old-base...new-base': {
+          status: 'ahead',
+          files: [{filename: recordPath, status: 'modified', sha: 'main-edit'}],
+        },
+      },
+    });
+
+    await run(harness, synchronize());
+
+    expect(latestGateStatus(harness.state).state).toBe('pending');
+    expect(harness.state.calls).toContain('compare:old-base...new-base');
+  });
+
+  it('keeps the approval when the base branch moved only other paths', async () => {
+    const harness = carryHarness({
+      headBlob: 'same-blob',
+      approvedBlob: 'same-blob',
+      mergeBases: {[approvedHead]: 'old-base', [head]: 'new-base'},
+      compareResults: {
+        'old-base...new-base': {
+          status: 'ahead',
+          files: [{filename: 'README.md', status: 'modified', sha: 'x'}],
+        },
+      },
+    });
+
+    await run(harness, synchronize());
+
+    expect(latestGateStatus(harness.state)).toMatchObject({
+      state: 'success',
+      description: expect.stringContaining('no material change'),
+    });
+  });
+
+  it('needs a new approval when the merge bases diverged', async () => {
+    const harness = carryHarness({
+      headBlob: 'same-blob',
+      approvedBlob: 'same-blob',
+      mergeBases: {[approvedHead]: 'old-base', [head]: 'new-base'},
+      compareResults: {
+        'old-base...new-base': {status: 'diverged', files: []},
+      },
+    });
+
+    await run(harness, synchronize());
+
+    expect(latestGateStatus(harness.state).state).toBe('pending');
+  });
+
+  it('carries nothing while relayed owner decisions are enabled', async () => {
+    const harness = carryHarness();
+
+    await run(harness, synchronize(), {
+      env: {SPEC_DECISION_APP: 'decision-app[bot]'},
+    });
+
+    expect(latestGateStatus(harness.state).state).toBe('pending');
+  });
+
+  it('does not tell an owner a carried approval of an earlier head changed nothing', async () => {
+    const harness = carryHarness();
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        eventName: 'issue_comment',
+        action: 'created',
+        comment: approveEarlierHead,
+      }),
+    );
+
+    expect(latestGateStatus(harness.state)).toMatchObject({
+      state: 'success',
+      description: expect.stringContaining('carried from'),
+    });
+    expect(harness.state.calls).not.toContain('create-comment');
+  });
+
+  it('still answers an earlier-head approval that does not carry', async () => {
+    const harness = carryHarness({
+      headRecord: record({
+        authority: 'current',
+        approvedBy: 'cixzhang',
+        approvedAt: '2026-08-30',
+        phase: 'accepted',
+        decided: '2026-08-30',
+        body: 'Buttons keep their label and width while busy.',
+      }),
+    });
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        eventName: 'issue_comment',
+        action: 'created',
+        comment: approveEarlierHead,
+      }),
+    );
+
+    expect(latestGateStatus(harness.state).state).toBe('pending');
+    expect(harness.state.calls).toContain('create-comment');
+  });
+
+  const dismissedCurrentApproval = {
+    id: 71,
+    user: {login: 'cixzhang'},
+    state: 'DISMISSED',
+    commit_id: head,
+    submitted_at: '2026-08-30T09:10:00Z',
+    updated_at: '2026-08-30T09:20:00Z',
+  };
+
+  it('lets an owner dismissal of their current-head approval stop the carry', async () => {
+    const harness = carryHarness({
+      reviews: [dismissedCurrentApproval],
+      timeline: [
+        {
+          event: 'review_dismissed',
+          created_at: '2026-08-30T09:20:00Z',
+          dismissed_review: {review_id: 71, state: 'approved'},
+        },
+      ],
+    });
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        eventName: 'pull_request_review',
+        action: 'dismissed',
+        review: dismissedCurrentApproval,
+      }),
+    );
+
+    expect(latestGateStatus(harness.state).state).toBe('pending');
+    expect(harness.state.pr.auto_merge ?? null).toBe(null);
+  });
+
+  it('still carries when the dismissed owner review was a request for changes', async () => {
+    const harness = carryHarness({
+      reviews: [
+        {
+          ...dismissedCurrentApproval,
+          commit_id: '3333333333333333333333333333333333333333',
+        },
+      ],
+      timeline: [
+        {
+          event: 'review_dismissed',
+          created_at: '2026-08-30T09:20:00Z',
+          dismissed_review: {review_id: 71, state: 'changes_requested'},
+        },
+      ],
+    });
+
+    await run(harness, synchronize());
+
+    expect(latestGateStatus(harness.state)).toMatchObject({
+      state: 'success',
+      description: expect.stringContaining('carried from'),
+    });
+  });
+
+  it('does not claim a revoke without a full SHA stops the carry', async () => {
+    const shortRevoke = {
+      user: {login: 'cixzhang'},
+      body: `/revoke-spec ${approvedHead.slice(0, 7)}`,
+      created_at: '2026-08-30T09:30:00Z',
+    };
+    const harness = carryHarness({
+      comments: [approveEarlierHead, shortRevoke],
+    });
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        eventName: 'issue_comment',
+        action: 'created',
+        comment: shortRevoke,
+      }),
+    );
+
+    expect(latestGateStatus(harness.state).state).toBe('success');
+    const reply = harness.state.comments.at(-1).body;
+    expect(reply).toContain('did not stop an earlier approval from carrying');
+    expect(reply).not.toContain('still stops');
+  });
+
+  it('tells a full-SHA revoke of an earlier head that it stops the carry', async () => {
+    const fullRevoke = {
+      user: {login: 'cixzhang'},
+      body: `/revoke-spec ${approvedHead}`,
+      created_at: '2026-08-30T09:30:00Z',
+    };
+    const harness = carryHarness({
+      comments: [approveEarlierHead, fullRevoke],
+    });
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        eventName: 'issue_comment',
+        action: 'created',
+        comment: fullRevoke,
+      }),
+    );
+
+    expect(latestGateStatus(harness.state).state).toBe('pending');
+    expect(harness.state.comments.at(-1).body).toContain('still stops');
+  });
+
+  it('does not claim a revoke from outside the carried group stops the carry', async () => {
+    const designRevoke = {
+      user: {login: 'cvkxx'},
+      body: `/revoke-spec ${approvedHead}`,
+      created_at: '2026-08-30T09:30:00Z',
+    };
+    const harness = carryHarness({
+      comments: [approveEarlierHead, designRevoke],
+    });
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        eventName: 'issue_comment',
+        action: 'created',
+        comment: designRevoke,
+      }),
+    );
+
+    expect(latestGateStatus(harness.state).state).toBe('success');
+    const reply = harness.state.comments.at(-1).body;
+    expect(reply).toContain('did not stop an earlier approval from carrying');
+    expect(reply).not.toContain('still stops');
+  });
+
+  it('carries when the record credits the second of two owners who approved the head', async () => {
+    const harness = carryHarness({
+      headRecord: record({
+        authority: 'current',
+        approvedBy: 'czarandy',
+        approvedAt: '2026-08-30',
+        phase: 'accepted',
+      }),
+      comments: [
+        {
+          user: {login: 'czarandy'},
+          body: `/approve-spec ${approvedHead}`,
+          created_at: '2026-08-30T08:00:00Z',
+        },
+        approveEarlierHead,
+      ],
+    });
+
+    await run(harness, synchronize());
+
+    expect(latestGateStatus(harness.state)).toMatchObject({
+      state: 'success',
+      description: expect.stringContaining('carried from'),
+    });
+  });
+
+  it('does not promise a carry in the reply while relays are enabled', async () => {
+    const harness = carryHarness();
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        eventName: 'issue_comment',
+        action: 'created',
+        comment: approveEarlierHead,
+      }),
+      {env: {SPEC_DECISION_APP: 'decision-app[bot]'}},
+    );
+
+    expect(latestGateStatus(harness.state).state).toBe('pending');
+    const reply = harness.state.comments.at(-1).body;
+    expect(reply).toContain('Every new commit needs the command again.');
+    expect(reply).not.toContain('stays in force');
   });
 });

@@ -9,7 +9,8 @@
 # requirement. Pure spec-record PRs
 # skip heavy CI only when every changed path is recognized; draft-only records
 # can auto-merge after validation, while current records also need approval on
-# the exact current head.
+# the exact current head, or on an earlier head when the only changes since are
+# a rebase or the recorded approval itself.
 name: Spec owner gate
 
 on:
