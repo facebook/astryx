@@ -13,23 +13,25 @@ async function applyTransform(source) {
   return result ?? source;
 }
 
+const IMPORT = "import {Switch} from '@astryxdesign/core';\n";
+
 describe('rename-switch-label-spacing-default-to-hug', () => {
   it('renames Switch labelSpacing="default" to labelSpacing="hug"', async () => {
-    const input = `<Switch label="Notify" value={on} labelSpacing="default" />`;
+    const input = `${IMPORT}<Switch label="Notify" value={on} labelSpacing="default" />`;
     const output = await applyTransform(input);
     expect(output).toContain("'hug'");
     expect(output).not.toContain('default');
   });
 
   it("renames expression-container labelSpacing={'default'}", async () => {
-    const input = `<Switch label="Notify" value={on} labelSpacing={'default'} />`;
+    const input = `${IMPORT}<Switch label="Notify" value={on} labelSpacing={'default'} />`;
     const output = await applyTransform(input);
     expect(output).toContain("'hug'");
     expect(output).not.toContain("'default'");
   });
 
   it('renames default inside a ternary labelSpacing expression', async () => {
-    const input = `<Switch label="Notify" value={on} labelSpacing={isRow ? 'spread' : 'default'} />`;
+    const input = `${IMPORT}<Switch label="Notify" value={on} labelSpacing={isRow ? 'spread' : 'default'} />`;
     const output = await applyTransform(input);
     expect(output).toContain("'hug'");
     expect(output).toContain("'spread'");
@@ -80,6 +82,18 @@ const ROWS = [{labelSpacing: 'default' as const, label: 'Adjacent'}];`;
     const input = `const cfg = {labelSpacing: 'default'};`;
     const output = await applyTransform(input);
     expect(output).toBe(input);
+  });
+
+  it('does not touch a Switch from another package', async () => {
+    const input = `import {Switch} from '@headlessui/react';
+<Switch checked={on} labelSpacing="default" />;
+const cfg = {labelSpacing: 'default'};`;
+    expect(await applyTransform(input)).toBe(input);
+  });
+
+  it('does not touch an unimported Switch', async () => {
+    const input = `<Switch label="Notify" value={on} labelSpacing="default" />`;
+    expect(await applyTransform(input)).toBe(input);
   });
 
   it('renames Storybook argTypes options in files importing Switch', async () => {

@@ -11,7 +11,8 @@
  * `default` value keeps working as a deprecated alias, so this codemod is a
  * cleanup, not a build fix.
  *
- * Transforms (scoped to Switch):
+ * Transforms (scoped to Switch imported from Astryx; a Switch from another
+ * package is never touched):
  * - <Switch labelSpacing="default" />            → <Switch labelSpacing="hug" />
  * - <Switch labelSpacing={'default'} />          → <Switch labelSpacing={'hug'} />
  * - <Switch labelSpacing={cond ? 'default' : x}> → <Switch labelSpacing={cond ? 'hug' : x}>
@@ -20,10 +21,16 @@
  * - Object properties: { labelSpacing: 'default' } / { labelSpacing: 'default' as const }
  *     → { labelSpacing: 'hug' } (files importing Switch)
  *
+ * JSX edits require the element to resolve to an Astryx import that is not
+ * shadowed. Object and argTypes edits require a file that imports Switch from
+ * Astryx.
+ *
  * The transform deliberately does NOT touch bare `'default'` strings that are
  * not a `labelSpacing` value (an extremely common string otherwise), so it is
  * safe to run across an entire codebase.
  */
+
+import {transformProp} from '../../transform-prop.mjs';
 
 export const meta = {
   title: 'Rename Switch labelSpacing "default" to "hug"',
@@ -43,6 +50,62 @@ const TARGET_PROP = 'labelSpacing';
 
 /** Components whose `labelSpacing` prop accepts a SwitchLabelSpacing value. */
 const TARGET_COMPONENTS = new Set(['Switch']);
+
+/** Packages, and their per-component subpaths, that export the targets. */
+const PACKAGES = ['@astryxdesign/core', '@xds/core'];
+
+/** @param {string} source */
+function isAstryxSource(source) {
+  return PACKAGES.some(
+    pkg =>
+      source === pkg ||
+      (source.startsWith(`${pkg}/`) &&
+        TARGET_COMPONENTS.has(
+          canonicalComponentName(source.slice(pkg.length + 1)),
+        )),
+  );
+}
+
+/** @param {string} name */
+function canonicalComponentName(name) {
+  return name.startsWith('XDS') ? name.slice(3) : name;
+}
+
+/**
+ * True when the file imports a target component from Astryx by name, or as
+ * the default export of its subpath.
+ * @param {any} root @param {any} j
+ */
+function importsAstryxTarget(root, j) {
+  return (
+    root
+      .find(j.ImportDeclaration)
+      .filter((/** @type {any} */ path) => {
+        const source = path.node.source?.value;
+        if (
+          path.node.importKind === 'type' ||
+          typeof source !== 'string' ||
+          !isAstryxSource(source)
+        ) {
+          return false;
+        }
+        const subpath = canonicalComponentName(source.split('/').at(-1) ?? '');
+        return (path.node.specifiers ?? []).some(
+          (/** @type {any} */ specifier) =>
+            specifier.importKind !== 'type' &&
+            ((specifier.type === 'ImportSpecifier' &&
+              TARGET_COMPONENTS.has(
+                canonicalComponentName(
+                  specifier.imported?.name ?? specifier.imported?.value ?? '',
+                ),
+              )) ||
+              (specifier.type === 'ImportDefaultSpecifier' &&
+                TARGET_COMPONENTS.has(subpath))),
+        );
+      })
+      .size() > 0
+  );
+}
 
 /**
  * @param {import('../../../../authoring/codemod/type').AstryxCodemodFile} file
@@ -88,17 +151,20 @@ export default function transformer(file, api) {
     return changed;
   }
 
-  // --- 1. JSX attribute: labelSpacing="default" / labelSpacing={'default'} on Switch ---
-  root.find(j.JSXOpeningElement).forEach((/** @type {any} */ path) => {
-    const name = path.node.name;
-    const componentName = name.type === 'JSXIdentifier' ? name.name : null;
-    if (!componentName || !TARGET_COMPONENTS.has(componentName)) return;
-
-    path.node.attributes.forEach((/** @type {any} */ attr) => {
-      if (attr.type !== 'JSXAttribute') return;
-      if (!attr.name || attr.name.name !== TARGET_PROP) return;
-
-      const value = attr.value;
+  // --- 1. JSX attribute: labelSpacing="default" / labelSpacing={'default'} on
+  // a Switch that resolves to an Astryx import ---
+  transformProp(
+    root,
+    j,
+    {
+      matchesImport: isAstryxSource,
+      components: new Map(
+        [...TARGET_COMPONENTS].map(name => [name, new Set([TARGET_PROP])]),
+      ),
+      normalizeComponentName: canonicalComponentName,
+    },
+    (/** @type {any} */ propPath) => {
+      const value = propPath.node.value;
       if (!value) return;
 
       if (value.type === 'StringLiteral' || value.type === 'Literal') {
@@ -106,18 +172,13 @@ export default function transformer(file, api) {
       } else if (value.type === 'JSXExpressionContainer') {
         if (renameInExpression(value.expression)) hasChanges = true;
       }
-    });
-  });
+    },
+  );
 
-  // Object-property / argTypes transforms only run in files that use a target
-  // component — keeps unrelated `{ labelSpacing: 'default' }` strings safe.
-  const importsTarget =
-    root
-      .find(j.ImportSpecifier)
-      .filter((/** @type {any} */ p) => TARGET_COMPONENTS.has(p.node.imported?.name))
-      .size() > 0;
-
-  if (importsTarget) {
+  // Object-property / argTypes transforms only run in files that import
+  // Switch from Astryx — keeps unrelated `{ labelSpacing: 'default' }` strings
+  // safe, including files that use another library's Switch.
+  if (importsAstryxTarget(root, j)) {
     const PropertyType = j.ObjectProperty ?? j.Property;
 
     // --- 2. Object property: { labelSpacing: 'default' } / 'default' as const ---

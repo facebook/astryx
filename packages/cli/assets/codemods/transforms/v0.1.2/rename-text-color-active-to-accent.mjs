@@ -10,7 +10,8 @@
  * first-class, type-safe way to render accent-colored text and resolves the
  * gap reported in #2863.
  *
- * Transforms (scoped to Text, Heading, Link, and Timestamp):
+ * Transforms (scoped to Text, Heading, Link, and Timestamp imported from
+ * Astryx; a same-named component from another package is never touched):
  * - <Text color="active" />            → <Text color="accent" />
  * - <Heading color={'active'} />       → <Heading color={'accent'} />
  * - <Text color={cond ? 'active' : x}> → <Text color={cond ? 'accent' : x}>
@@ -19,10 +20,16 @@
  * - Object properties: { color: 'active' } / { color: 'active' as const }
  *     → { color: 'accent' } (files importing a target component)
  *
+ * JSX edits require the element to resolve to an Astryx import that is not
+ * shadowed. Object and argTypes edits require a file that imports a target
+ * component from Astryx.
+ *
  * The transform deliberately does NOT touch bare `'active'` strings that are
  * not a `color` value (e.g. status enums, ids, filter values), so it is safe
  * to run across an entire codebase.
  */
+
+import {transformProp} from '../../transform-prop.mjs';
 
 export const meta = {
   title: 'Rename Text/Heading/Link/Timestamp color "active" to "accent"',
@@ -39,6 +46,62 @@ const NEW_VALUE = 'accent';
 
 /** Components whose `color` prop accepts a TextColor value. */
 const TARGET_COMPONENTS = new Set(['Text', 'Heading', 'Link', 'Timestamp']);
+
+/** Packages, and their per-component subpaths, that export the targets. */
+const PACKAGES = ['@astryxdesign/core', '@xds/core'];
+
+/** @param {string} source */
+function isAstryxSource(source) {
+  return PACKAGES.some(
+    pkg =>
+      source === pkg ||
+      (source.startsWith(`${pkg}/`) &&
+        TARGET_COMPONENTS.has(
+          canonicalComponentName(source.slice(pkg.length + 1)),
+        )),
+  );
+}
+
+/** @param {string} name */
+function canonicalComponentName(name) {
+  return name.startsWith('XDS') ? name.slice(3) : name;
+}
+
+/**
+ * True when the file imports a target component from Astryx by name, or as
+ * the default export of its subpath.
+ * @param {any} root @param {any} j
+ */
+function importsAstryxTarget(root, j) {
+  return (
+    root
+      .find(j.ImportDeclaration)
+      .filter((/** @type {any} */ path) => {
+        const source = path.node.source?.value;
+        if (
+          path.node.importKind === 'type' ||
+          typeof source !== 'string' ||
+          !isAstryxSource(source)
+        ) {
+          return false;
+        }
+        const subpath = canonicalComponentName(source.split('/').at(-1) ?? '');
+        return (path.node.specifiers ?? []).some(
+          (/** @type {any} */ specifier) =>
+            specifier.importKind !== 'type' &&
+            ((specifier.type === 'ImportSpecifier' &&
+              TARGET_COMPONENTS.has(
+                canonicalComponentName(
+                  specifier.imported?.name ?? specifier.imported?.value ?? '',
+                ),
+              )) ||
+              (specifier.type === 'ImportDefaultSpecifier' &&
+                TARGET_COMPONENTS.has(subpath))),
+        );
+      })
+      .size() > 0
+  );
+}
 
 /**
  * @param {import('../../../../authoring/codemod/type').AstryxCodemodFile} file
@@ -84,17 +147,20 @@ export default function transformer(file, api) {
     return changed;
   }
 
-  // --- 1. JSX attribute: color="active" / color={'active'} on target components ---
-  root.find(j.JSXOpeningElement).forEach((/** @type {any} */ path) => {
-    const name = path.node.name;
-    const componentName = name.type === 'JSXIdentifier' ? name.name : null;
-    if (!componentName || !TARGET_COMPONENTS.has(componentName)) return;
-
-    path.node.attributes.forEach((/** @type {any} */ attr) => {
-      if (attr.type !== 'JSXAttribute') return;
-      if (!attr.name || attr.name.name !== 'color') return;
-
-      const value = attr.value;
+  // --- 1. JSX attribute: color="active" / color={'active'} on target
+  // components that resolve to an Astryx import ---
+  transformProp(
+    root,
+    j,
+    {
+      matchesImport: isAstryxSource,
+      components: new Map(
+        [...TARGET_COMPONENTS].map(name => [name, new Set(['color'])]),
+      ),
+      normalizeComponentName: canonicalComponentName,
+    },
+    (/** @type {any} */ propPath) => {
+      const value = propPath.node.value;
       if (!value) return;
 
       if (value.type === 'StringLiteral' || value.type === 'Literal') {
@@ -102,18 +168,13 @@ export default function transformer(file, api) {
       } else if (value.type === 'JSXExpressionContainer') {
         if (renameInExpression(value.expression)) hasChanges = true;
       }
-    });
-  });
+    },
+  );
 
-  // Object-property / argTypes transforms only run in files that use a target
-  // component — keeps unrelated `{ color: 'active' }` / `'active'` strings safe.
-  const importsTarget =
-    root
-      .find(j.ImportSpecifier)
-      .filter((/** @type {any} */ p) => TARGET_COMPONENTS.has(p.node.imported?.name))
-      .size() > 0;
-
-  if (importsTarget) {
+  // Object-property / argTypes transforms only run in files that import a
+  // target component from Astryx — keeps unrelated `{ color: 'active' }` /
+  // `'active'` strings safe, including files that use another library's Text.
+  if (importsAstryxTarget(root, j)) {
     const PropertyType = j.ObjectProperty ?? j.Property;
 
     // --- 2. Object property: { color: 'active' } / { color: 'active' as const } ---

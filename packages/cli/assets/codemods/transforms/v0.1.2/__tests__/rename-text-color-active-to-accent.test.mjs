@@ -13,44 +13,47 @@ async function applyTransform(source) {
   return result ?? source;
 }
 
+const IMPORT =
+  "import {Heading, Link, Text, Timestamp} from '@astryxdesign/core';\n";
+
 describe('rename-text-color-active-to-accent', () => {
   it('renames Text color="active" to color="accent"', async () => {
-    const input = `<Text color="active">Hi</Text>`;
+    const input = `${IMPORT}<Text color="active">Hi</Text>`;
     const output = await applyTransform(input);
     expect(output).toContain("'accent'");
     expect(output).not.toContain('active');
   });
 
   it('renames Heading color="active" to color="accent"', async () => {
-    const input = `<Heading level={2} color="active">Title</Heading>`;
+    const input = `${IMPORT}<Heading level={2} color="active">Title</Heading>`;
     const output = await applyTransform(input);
     expect(output).toContain("'accent'");
     expect(output).not.toContain('active');
   });
 
   it('renames Link color="active" to color="accent"', async () => {
-    const input = `<Link href="/x" color="active">Go</Link>`;
+    const input = `${IMPORT}<Link href="/x" color="active">Go</Link>`;
     const output = await applyTransform(input);
     expect(output).toContain("'accent'");
     expect(output).not.toContain('active');
   });
 
   it('renames Timestamp color="active" to color="accent"', async () => {
-    const input = `<Timestamp value={d} color="active" />`;
+    const input = `${IMPORT}<Timestamp value={d} color="active" />`;
     const output = await applyTransform(input);
     expect(output).toContain("'accent'");
     expect(output).not.toContain('active');
   });
 
   it("renames expression-container color={'active'}", async () => {
-    const input = `<Text color={'active'}>Hi</Text>`;
+    const input = `${IMPORT}<Text color={'active'}>Hi</Text>`;
     const output = await applyTransform(input);
     expect(output).toContain("'accent'");
     expect(output).not.toContain("'active'");
   });
 
   it('renames active inside a ternary color expression', async () => {
-    const input = `<Text color={isOn ? 'active' : 'secondary'}>Hi</Text>`;
+    const input = `${IMPORT}<Text color={isOn ? 'active' : 'secondary'}>Hi</Text>`;
     const output = await applyTransform(input);
     expect(output).toContain("'accent'");
     expect(output).toContain("'secondary'");
@@ -101,6 +104,41 @@ const COLORS = [{color: 'active' as const, description: 'Accent'}];`;
     const input = `const cfg = {color: 'active'};`;
     const output = await applyTransform(input);
     expect(output).toBe(input);
+  });
+
+  it('renames an aliased or namespaced Astryx import', async () => {
+    const aliased =
+      await applyTransform(`import {Text as AstryxText} from '@astryxdesign/core/Text';
+<AstryxText color="active">Hi</AstryxText>`);
+    expect(aliased).toContain("'accent'");
+    const namespaced =
+      await applyTransform(`import * as Astryx from '@astryxdesign/core';
+<Astryx.Heading color="active">Hi</Astryx.Heading>`);
+    expect(namespaced).toContain("'accent'");
+  });
+
+  it('does not touch Text and Link from another package', async () => {
+    const input = `import {Text} from 'react-native';
+import Link from 'next/link';
+<Text color="active">Hi</Text>;
+<Link href="/x" color="active">Go</Link>;`;
+    expect(await applyTransform(input)).toBe(input);
+  });
+
+  it('does not touch an unimported or shadowed Text', async () => {
+    const unimported = `<Text color="active">Hi</Text>`;
+    expect(await applyTransform(unimported)).toBe(unimported);
+    const shadowed = `${IMPORT}function Row({Text}) {
+  return <Text color="active">Hi</Text>;
+}`;
+    expect(await applyTransform(shadowed)).toBe(shadowed);
+  });
+
+  it('does not rename object color props when Text comes from another package', async () => {
+    const input = `import {Text} from 'react-native';
+const cfg = {color: 'active'};
+const meta = {argTypes: {color: {options: ['active']}}};`;
+    expect(await applyTransform(input)).toBe(input);
   });
 
   it('renames active in Storybook color argTypes options', async () => {
