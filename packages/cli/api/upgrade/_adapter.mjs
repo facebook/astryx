@@ -24,6 +24,7 @@ import {
   latestVersion,
 } from '../../assets/codemods/registry.mjs';
 import {runCodemods} from '../../assets/codemods/runner.mjs';
+import {codemodOutcome} from '../../assets/codemods/outcome.mjs';
 import {
   discoverIntegrationCodemods,
   selectIntegrationCodemods,
@@ -141,7 +142,13 @@ export function relativeToOrigin(result, {cwd: root, origin}) {
     };
   }
   if (data.modifiedFiles) data.modifiedFiles = data.modifiedFiles.map(rebase);
-  for (const key of ['protectedFiles', 'declinedCandidates', 'errors']) {
+  for (const key of [
+    'protectedFiles',
+    'declinedCandidates',
+    'errors',
+    'manualActions',
+    'regenerate',
+  ]) {
     if (data[key]) {
       data[key] = data[key].map(
         (/** @type {{file: string, declarations?: string[]}} */ entry) => ({
@@ -597,6 +604,54 @@ export async function getCoreVersionManifests(from, to) {
  */
 export async function ensureCodemodDeps({installDeps} = {}) {
   return ensureJscodeshift({installDeps, silent: logger.silent});
+}
+
+/**
+ * @typedef {{kind: 'manual', file: string, codemod: string, message: string, line?: number} | {kind: 'regenerate', file: string, codemod: string, message: string, commands: string[]}} CodemodOutcomeRecord
+ */
+
+/**
+ * Wrap each core code and config transform so the non-failure outcomes it
+ * throws (`assets/codemods/outcome.mjs`) are recorded instead of reaching the
+ * runner as errors. The wrapped transform leaves that file unchanged, exactly
+ * as the throw did. Project codemods keep their own contract. One wrapper per
+ * pass: the regeneration re-check takes a fresh one, so an outcome a hook
+ * resolved does not linger.
+ *
+ * @template {{version: string, transforms: Array<{name: string, transform: any, meta?: {codemodType?: string}}>}} M
+ * @param {M[]} versionManifests
+ * @param {string} root project root; recorded files are relative to it
+ * @returns {{versionManifests: M[], outcomes: CodemodOutcomeRecord[]}}
+ */
+export function withCodemodOutcomes(versionManifests, root) {
+  /** @type {CodemodOutcomeRecord[]} */
+  const outcomes = [];
+  const wrapped = versionManifests.map(manifest => ({
+    ...manifest,
+    transforms: manifest.transforms.map(entry => {
+      if (entry.meta?.codemodType === 'project') return entry;
+      const {transform, name} = entry;
+      return {
+        ...entry,
+        /** @param {{path: string, source: string}} file @param {unknown} api */
+        transform(file, api) {
+          try {
+            return transform(file, api);
+          } catch (err) {
+            const outcome = codemodOutcome(err);
+            if (!outcome) throw err;
+            outcomes.push({
+              ...outcome,
+              file: path.relative(root, file.path).split(path.sep).join('/'),
+              codemod: `core:${name}`,
+            });
+            return undefined;
+          }
+        },
+      };
+    }),
+  }));
+  return {versionManifests: /** @type {M[]} */ (wrapped), outcomes};
 }
 
 /**
