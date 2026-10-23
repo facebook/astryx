@@ -42,10 +42,12 @@ import {
 } from './docs-pages.mjs';
 import {
   DOCSITE_CLI_COMMAND,
+  DOCSITE_PACKAGE_MANAGER,
   GLOBAL_PAGE,
   GLOBAL_PAGE_CLI_COMMAND,
   getCliInvocation,
   prefixCliCommands,
+  runWithDocPackageManager,
   runWithCliDoor,
 } from './lib/cli-command.mjs';
 import {
@@ -1934,7 +1936,11 @@ async function generateDocsRegistry() {
     const stem = topic.topic === GLOBAL_PAGE ? globalStem : cliStem;
     topic.sections = withCliCommands(
       topic.sections,
-      (text, lang = null) => prefixCliCommands(text, stem, lang),
+      (text, lang = null) =>
+        // The CLI rendered the doc tokens as it compiled the doc (for npm,
+        // under runWithDocPackageManager below), so only bare commands are
+        // prefixed here.
+        prefixCliCommands(text, stem, lang),
       stem,
     );
   }
@@ -2630,7 +2636,8 @@ export const shadcnRegistryIsPreview = ${registryIsPreview};
   console.log('Done.');
 }
 
-main().catch(err => {
+// Every `{@pm}` step on the site reads as npm, whatever this checkout uses.
+runWithDocPackageManager(DOCSITE_PACKAGE_MANAGER, main).catch(err => {
   console.error(err);
   process.exit(1);
 });

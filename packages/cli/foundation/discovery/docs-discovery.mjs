@@ -617,6 +617,7 @@ export async function discoverIntegrationDocs(integration) {
         kind: 'generic',
         name: parsed.name,
         title: parsed.title,
+        // Rendered once, where the tree is built (api/docs/_adapter.mjs).
         summary: parsed.description,
         group: null,
         placement: parsed.placement,

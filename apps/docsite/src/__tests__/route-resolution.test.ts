@@ -171,7 +171,8 @@ describe('route resolution', () => {
     );
     expect(section).toBeDefined();
     const text = JSON.stringify(section);
-    expect(text).toContain('npm i -g @astryxdesign/cli');
+    // A `{@pm}` step, which the docsite renders for npm.
+    expect(text).toContain('npm install -g @astryxdesign/cli');
     // Its link to the global mode page renders as a command that opens it.
     expect(text).toContain('`npx @astryxdesign/cli docs global`');
     expect(linkifyCode('npx @astryxdesign/cli docs global')).toBe(

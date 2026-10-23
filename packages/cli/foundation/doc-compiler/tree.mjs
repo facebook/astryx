@@ -25,6 +25,7 @@ import {routeSegment} from '../discovery/docs-section-key.mjs';
 import {diagnostic, sortDiagnostics} from './diagnostics.mjs';
 import {readDocView} from './read.mjs';
 import {packageSource} from './source.mjs';
+import {renderTokens} from './links.mjs';
 import {createDocId} from '../identity/provider-identity.mjs';
 import {CLI_PROVIDER_ID} from '../identity/providers.mjs';
 
@@ -955,6 +956,11 @@ export function loadDocsTree({selfDocs = true, fresh = false} = {}) {
   if (!tree) {
     tree = loadTreeInputs({selfDocs}).then(inputs => {
       const result = buildDocsTree(inputs);
+      // Tree inputs carry authored summaries; each renders its doc tokens
+      // once, here or where the project tree is built.
+      for (const node of result.nodes.values()) {
+        node.summary = renderTokens(node.summary);
+      }
       return {
         ...result,
         diagnostics: sortDiagnostics([

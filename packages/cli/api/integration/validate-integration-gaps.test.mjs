@@ -185,7 +185,7 @@ describe('a name that differs from its file name', () => {
     expect(await issuesOf(dir)).toEqual([]);
     const issues = await allOf(dir);
     expect(issues.map(issue => issue.code)).toEqual(['doc_name_mismatch']);
-    expect(Object.keys(issues[0]).sort()).toEqual(['code', 'message']);
+    expect(Object.keys(issues[0]).sort()).toEqual(['code', 'message', 'next']);
     expect(issues[0].message).toBe(
       'Component doc "AcmeWidget.doc.mjs" sets name: \'AcmeWidgets\', but components/AcmeWidget.tsx, the module its import names, does not export AcmeWidgets, so Astryx lists the component as "AcmeWidget" (its file name), and `astryx component AcmeWidget` prints `import {AcmeWidgets}`. Fix: set name: \'AcmeWidget\' in AcmeWidget.doc.mjs.',
     );
@@ -1369,6 +1369,7 @@ describe('package.json', () => {
     expect('notes' in validate ? validate.notes : undefined).toEqual([
       {
         code: 'invalid_package_json',
+        next: true,
         message:
           'package.json has no "name", so npm cannot pack or publish the package, and a project that installs it has no name to select it by. Fix: add "name": "@your-scope/your-package" to package.json.',
       },
@@ -1892,7 +1893,9 @@ describe('layout findings 0.7.2 did not fail on', () => {
         );
         expect(validate.notes.length).toBeGreaterThan(0);
         for (const note of validate.notes) {
-          expect(Object.keys(note).sort()).toEqual(['code', 'message']);
+          // Listed now, a warning from the next minor release: `next`.
+          expect(Object.keys(note).sort()).toEqual(['code', 'message', 'next']);
+          expect(note.next).toBe(true);
           expect(note.message).toContain('Fix: ');
         }
       } finally {
@@ -1917,7 +1920,7 @@ describe('layout findings 0.7.2 did not fail on', () => {
     );
     expect(run.status, run.stderr).toBe(0);
     expect(run.stdout).toContain(
-      'note (duplicate_component_doc): Component "AcmeWidget" has 2 docs:',
+      'note (duplicate_component_doc): [next minor] Component "AcmeWidget" has 2 docs:',
     );
     expect(run.stdout).toContain('Summary: 0 errors, 0 warnings');
   });
@@ -1968,7 +1971,7 @@ describe('name findings listed until the next minor release', () => {
     );
     expect(run.status, run.stderr).toBe(0);
     expect(run.stdout).toContain(
-      'note (unknown_block_component): Template "account-card" names "AcmeGizmo" in componentsUsed',
+      'note (unknown_block_component): [next minor] Template "account-card" names "AcmeGizmo" in componentsUsed',
     );
     expect(run.stdout).toContain('Summary: 0 errors, 0 warnings');
   });

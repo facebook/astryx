@@ -20,7 +20,7 @@ import {packageDocTargets} from '../docs/_adapter.mjs';
 import {comparePropDocs} from '../../foundation/discovery/prop-drift.mjs';
 import {findCopiedPassages} from '../../foundation/discovery/copied-passages.mjs';
 import {findFluff} from '../../foundation/discovery/doc-fluff.mjs';
-import {findRunnerCommands} from '../../foundation/discovery/runner-commands.mjs';
+import {findDocCommands} from '../../foundation/discovery/runner-commands.mjs';
 import {findStrayPointers} from '../../foundation/discovery/stray-pointers.mjs';
 
 /**
@@ -140,18 +140,19 @@ export async function integrationDocTargets(integration) {
 }
 
 /**
- * Each Astryx command a package's topics write with a package runner. A
+ * The doc-syntax findings in a package's topics: commands written with a
+ * runner, for one package manager, or bare, and tokens that do not parse. A
  * package whose topics cannot be discovered has none here: the other checks
  * report topics that do not load.
  * @param {any} integration a loaded integration
  * @returns {Promise<import('../../foundation/discovery/runner-commands.mjs').RunnerCommand[]>}
  */
-export async function integrationRunnerCommands(integration) {
+export async function integrationDocCommands(integration) {
   let discovered;
   try {
     discovered = await discoverIntegrationDocs(integration);
   } catch {
     return [];
   }
-  return findRunnerCommands(discovered);
+  return findDocCommands(discovered);
 }

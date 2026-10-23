@@ -14,6 +14,10 @@
  * reads it, so build's output does not move when search's tree does.
  */
 
+import {
+  docPackageManager,
+  runWithDocPackageManager,
+} from '../../foundation/env/package-manager.mjs';
 import {withListingCache} from '../../foundation/fs/listing-cache.mjs';
 import {
   gatherCandidates,
@@ -52,6 +56,18 @@ export {componentKeywords} from './_adapter.mjs';
  */
 export async function search(query, options = {}) {
   checkSearchArgs(query, options);
+  return runWithDocPackageManager(
+    docPackageManager(options.cwd ?? process.cwd()),
+    () => searchRead(query, options),
+  );
+}
+
+/**
+ * The search itself, inside its project's package-manager scope.
+ * @param {string} query
+ * @param {any} options
+ */
+async function searchRead(query, options) {
   return withListingCache(
     async () =>
       /** @type {import('./search.type.mjs').SearchResponse} */ (
@@ -79,6 +95,18 @@ export async function search(query, options = {}) {
  */
 export async function searchCore(query, options = {}) {
   checkSearchArgs(query, options);
+  return runWithDocPackageManager(
+    docPackageManager(options.cwd ?? process.cwd()),
+    () => searchCoreRead(query, options),
+  );
+}
+
+/**
+ * The lexical search itself, inside its project's package-manager scope.
+ * @param {string} query
+ * @param {any} options
+ */
+async function searchCoreRead(query, options) {
   return withListingCache(async () =>
     linkSearchResponse(
       rankLexical(query, options, await gatherCandidates(options)),

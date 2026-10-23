@@ -118,7 +118,7 @@ const overrides = stylex.create({
       content: [
         {
           type: 'prose',
-          text: 'Astryx 0.7 emits canonical `astryx-*` target classes and reflected `data-*` attributes only. Run `astryx upgrade --from <your 0.6 version> --apply --path .` to rename removed target keys inside theme `components` maps and to migrate CSS selectors. The CSS migration renames removed target classes and replaces target-qualified bare prop/value/state classes such as `.primary`, `.sm`, `.level-2`, and `.checked` with their reflected `data-*` selectors.',
+          text: 'Astryx 0.7 emits canonical `astryx-*` target classes and reflected `data-*` attributes only. Run `{@command upgrade --from <your 0.6 version> --apply --path .}` to rename removed target keys inside theme `components` maps and to migrate CSS selectors. The CSS migration renames removed target classes and replaces target-qualified bare prop/value/state classes such as `.primary`, `.sm`, `.level-2`, and `.checked` with their reflected `data-*` selectors.',
         },
         {
           type: 'code',

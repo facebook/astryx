@@ -38,8 +38,8 @@ import {normalizeProviderId} from '../../foundation/identity/provider-identity.m
 import {integrationDocTypes} from '../docs/_adapter.mjs';
 import {integrationDocConsistency} from '../../foundation/discovery/doc-consistency.mjs';
 import {
+  integrationDocCommands,
   integrationDocTargets,
-  integrationRunnerCommands,
 } from './_adapter.mjs';
 import {
   THEME_SLUG_RE,
@@ -489,8 +489,11 @@ async function validateAtPackageDir(
   const publicImports = await publicImportIssues(packageDir, loaded);
   issues.push(...publicImports.issues);
   // Each finding is a note until the next minor makes it a warning.
+  // Listed now, a warning from the next minor release: `next`.
   if (publicImports.notes.length > 0)
-    (result.notes ??= []).push(...publicImports.notes);
+    (result.notes ??= []).push(
+      ...publicImports.notes.map(note => ({...note, next: true})),
+    );
   result.publicImports = publicImports.report;
   if (scanUnreachable) {
     issues.push(
@@ -698,20 +701,23 @@ export async function validateInstalledIntegration(spec, cwd = process.cwd()) {
 }
 
 /**
- * The runner-command notes for a package's topics: each Astryx command a topic
- * writes with a package runner, where the doc file is, and the bare command to
- * write.
+ * The doc-syntax notes for a package's topics: each command a topic writes
+ * with a runner (`runner_command`), for one package manager
+ * (`package_manager_command`), or bare (`plain_command`), and each token that
+ * does not parse (`doc_token`), with the file, line and what to write
+ * instead. The next minor release turns them into warnings: `next`.
  * @param {any} integration a loaded integration
- * @returns {Promise<Array<{code: string, message: string}>>}
+ * @returns {Promise<Array<{code: string, message: string, next: true}>>}
  */
-async function runnerCommandNotes(integration) {
+async function docCommandNotes(integration) {
   const packageDir = integration.__packageDir;
-  return (await integrationRunnerCommands(integration)).map(each => ({
-    code: 'runner_command',
+  return (await integrationDocCommands(integration)).map(each => ({
+    code: each.code,
     message:
       typeof packageDir === 'string'
         ? `${path.relative(packageDir, each.file).split(path.sep).join('/')}: ${each.message}`
         : each.message,
+    next: true,
   }));
 }
 
@@ -807,21 +813,32 @@ export async function validateIntegration(pkg, options = {}) {
   // after the last minor release, each with its fix in the message, which
   // may not fail `--strict` until the next (architecture:cli-surface INV35):
   // the layout findings and the component names judged wrong.
+  // A finding the next minor release turns into a warning is marked `next`:
+  // `integration check --strict --next` fails on it today.
   const notes = result.found
     ? [
-        ...(result.notes ?? []),
+        // A malformed cliCommand fails --strict from the next minor
+        // (spec:AST-081 FR5).
+        ...(result.notes ?? []).map(note =>
+          note.code === INVALID_CLI_COMMAND ? {...note, next: true} : note,
+        ),
         ...(result.listed ?? []).map(issue => ({
           code: issue.code,
           message: issue.message,
+          next: true,
         })),
-        ...(names ?? []).flatMap(each => each.notes),
+        ...(names ?? []).flatMap(each =>
+          each.notes.map(note => ({...note, next: true})),
+        ),
       ]
     : [];
-  // Each Astryx command a topic writes with a package runner, as a
-  // `runner_command` note with its fix, the same way.
+  // The doc-syntax findings in the package's topics, as `next` notes with
+  // their fixes, the same way.
   if (integration?.docs) {
-    notes.push(...(await runnerCommandNotes(integration)));
-    notes.push(...(await docTargetNotes(integration)));
+    notes.push(...(await docCommandNotes(integration)));
+    notes.push(
+      ...(await docTargetNotes(integration)).map(note => ({...note, next: true})),
+    );
   }
   return {
     type: 'integration.validate',

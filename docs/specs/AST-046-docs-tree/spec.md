@@ -203,7 +203,13 @@ and references from other packages are an open question (OQ2).
   sets `id`, and a theme, whose typed descriptor an older CLI rejects along
   with the package's doc topics; `integration add theme` declares the peer.
   A doc section that sets `before` or `after` needs the same range from the
-  CLI that reads those fields; `integration verify` warns without it.
+  CLI that reads those fields; `integration verify` warns without it. A topic
+  or placed guide whose text writes a doc token (`{@command …}`, `{@pm …}`,
+  `{@pm-only …}`; an escaped `{@@…}` is not one) needs the range from the
+  first CLI that renders tokens, since an older one shows them as written;
+  `integration verify` warns without it (`doc_tokens_need_cli`). Component
+  docs, template docs and `agentDocs.append` lines are not yet covered by
+  that warning.
 - **FR12 — Every doc has a named home.** Every flat topic, the CLI's and
   each integration's, MUST sit in the generated level for its category, in the
   order the topic list reads: `foundations` (Foundations) for a foundations
