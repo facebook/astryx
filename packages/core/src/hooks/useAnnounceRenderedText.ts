@@ -44,7 +44,7 @@
  */
 
 import {useEffect, useRef, useState, type RefObject} from 'react';
-import {useAnnounce} from './useAnnounce';
+import {useAnnounce, type AnnouncePoliteness} from './useAnnounce';
 import {useIsHydrating} from './useIsHydrating';
 
 // Whether the page's first paint has happened. Server-rendered owners are
@@ -77,6 +77,8 @@ export interface AnnounceRenderedTextOptions {
    * read as its own block.
    */
   skipFirstRender?: boolean;
+  /** Which shared region speaks it (`spec:AST-086` FR5). @default 'polite' */
+  politeness?: AnnouncePoliteness;
 }
 
 /** The rendered text an assistive technology would read from `element`. */
@@ -114,7 +116,7 @@ export function useAnnounceRenderedText(
   ref: RefObject<HTMLElement | null>,
   isShown: boolean,
   occasion: string,
-  {skipFirstRender = false}: AnnounceRenderedTextOptions = {},
+  {skipFirstRender = false, politeness}: AnnounceRenderedTextOptions = {},
 ): void {
   const announce = useAnnounce();
   const spokenRef = useRef<string | null>(null);
@@ -159,6 +161,6 @@ export function useAnnounceRenderedText(
       // Part of the page the person arrived at: remember it, say nothing.
       return;
     }
-    announce(text);
+    announce(text, politeness);
   });
 }
