@@ -21,6 +21,8 @@ export type PropType =
   | {kind: 'array'; of: PropType}
   | {kind: 'record'; fields: Readonly<Record<string, PropSpec>>}
   | {kind: 'fn'; args: readonly PropType[]}
+  /** Child Astryx components: the typed content slot (AST-082 FR4). */
+  | {kind: 'content'}
   | {kind: 'named'; name: string};
 
 export interface PropSpec {

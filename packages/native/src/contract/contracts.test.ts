@@ -173,5 +173,29 @@ describe('native contracts', () => {
     expect(errorsFor(null, usage('pullDown')).join('\n')).toContain(
       'menuStyle',
     );
+
+    const wire = (node: string, action: string) =>
+      "import type {AstryxAction, AstryxNode} from '@astryxdesign/native/components';\n" +
+      `export const node: AstryxNode = ${node};\n` +
+      `export const action: AstryxAction = ${action};\n`;
+    const tree =
+      "{component: 'VStack', key: 'root', props: {gap: 2, children: [" +
+      "{component: 'Switch', key: 'wifi', props: {label: 'Wi-Fi', value: true}, events: ['onChange']}," +
+      "{component: 'Selector', key: 'ship', props: {label: 'Shipping', options: [], menuStyle: 'pullDown'}}]}}";
+    const toggled =
+      "{key: 'wifi', component: 'Switch', event: 'onChange', args: [false]}";
+    expect(errorsFor('ios', wire(tree, toggled))).toEqual([]);
+    expect(errorsFor('android', wire(tree, toggled)).join('\n')).toContain(
+      'pullDown',
+    );
+    expect(
+      errorsFor(
+        'ios',
+        wire(
+          tree,
+          "{key: 'wifi', component: 'Switch', event: 'onChange', args: ['off']}",
+        ),
+      ).length,
+    ).toBeGreaterThan(0);
   });
 });

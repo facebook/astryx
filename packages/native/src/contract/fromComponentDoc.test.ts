@@ -67,7 +67,7 @@ describe('fromComponentDoc', () => {
   it('writes a closed set of numbers as a Swift enum with raw values', () => {
     const swift = generateSwift([contract])['Toggle.swift'];
     expect(swift).toContain(
-      'public enum ToggleLevel: Int, CaseIterable, Sendable {',
+      'public enum ToggleLevel: Int, CaseIterable, Codable, Sendable {',
     );
     expect(swift).toContain('  case v1 = 1');
   });

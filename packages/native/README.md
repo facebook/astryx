@@ -19,9 +19,10 @@ rests on evidence.
 | Swift binding  | `apple/`                          | A Swift package with props generated from the same contracts. iOS and macOS props sit behind `#if os(...)`.                                                                                                                                  |
 | Native theme   | `defineNativeTheme`               | Durable theme intent (`material: 'opaque' \| 'translucent'`) plus platform entries scoped by OS version, such as Liquid Glass from iOS 26. Never sets tokens.                                                                                |
 | Icons          | `NATIVE_ICON_DEFAULTS`            | Astryx's built-in icon names mapped to SF Symbols on Apple platforms and Material Symbols on Android.                                                                                                                                        |
+| Wire           | `AstryxNode`, `AstryxAction`      | Each component as JSON a TypeScript core sends a native host (arm C), and the action a host sends back when a view calls a callback. Swift decodes `<Name>Node` and turns it into `<Name>Props` with `viewProps(send:)`.                     |
 
-Contracts cover Button, Divider, Heading, ProgressBar, Selector, Switch, Text,
-and TextInput. React Native and Android bindings are not built yet; see
+Contracts cover Button, Card, Divider, Heading, HStack, ProgressBar, Selector,
+Switch, Text, TextInput, and VStack. React Native and Android bindings are not built yet; see
 [the experiment matrix](#experiment-matrix).
 
 ```ts
@@ -45,11 +46,54 @@ How core documentation becomes a contract:
   arguments. A callback with an event before a value stays on the web either
   way.
 - Free-form content becomes a typed slot only where a component declares one
-  in `slots`; `text` is a string, as for a badge's label or a heading's words.
+  in `slots`; `text` is a string, as for a badge's label or a heading's words,
+  and `content` is child Astryx components, as for a stack's or a card's
+  children. A SwiftUI view takes content as a view builder, so `<Name>Props`
+  leaves it out; `<Name>Node` carries it as child nodes.
 - A closed set of numbers, such as a heading level, is a Swift enum with raw
   values.
 - A core prop may share a platform toolkit's name only when the component
   declares in `sameMeaning` that it means the same thing there.
+
+### The wire (arm C)
+
+A TypeScript core sends a tree of nodes and receives actions. A node lists the
+callbacks the core listens to in `events`; a view gets only those callbacks.
+
+```ts
+// tsconfig: "customConditions": ["ios"]
+import type {AstryxAction, AstryxNode} from '@astryxdesign/native/components';
+
+const screen: AstryxNode = {
+  component: 'VStack',
+  key: 'root',
+  props: {
+    gap: 2,
+    children: [
+      {
+        component: 'Switch',
+        key: 'wifi',
+        props: {label: 'Wi-Fi', value: true},
+        events: ['onChange'],
+      },
+    ],
+  },
+};
+// What the host sends back when the switch is turned off:
+const action: AstryxAction = {
+  key: 'wifi',
+  component: 'Switch',
+  event: 'onChange',
+  args: [false],
+};
+```
+
+```swift
+let node = try JSONDecoder().decode(AstryxNode.self, from: snapshot)
+if case .switch(let wifi) = node {
+  let props = wifi.viewProps { action in core.dispatch(action.json) }
+}
+```
 
 ## Working on it
 
