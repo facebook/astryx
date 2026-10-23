@@ -52,6 +52,12 @@ const TARGETS = [
   },
   {
     component: 'Overlay',
+    story: 'core-overlay--region-combinations',
+    guards:
+      'every Overlay position × OverlayRegion position pair: placed in a fill Overlay, not placed in a top or bottom strip, corners flip in RTL and open placement does not',
+  },
+  {
+    component: 'Overlay',
     story: 'core-overlay--movable-region',
     guards:
       'the documented move pattern: ArrowRight moves a focused region one step right in both directions, and a single click on the media centers it there',

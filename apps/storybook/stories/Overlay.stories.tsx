@@ -923,3 +923,101 @@ export const MovableRegion: Story = {
     }
   },
 };
+
+const MATRIX_HOSTS = ['fill', 'top', 'bottom'] as const;
+const MATRIX_REGIONS: readonly {
+  key: string;
+  position: OverlayRegionPreset | OverlayRegionPlacement;
+}[] = [
+  ...(['fill', ...PRESETS] as const).map(preset => ({
+    key: preset,
+    position: preset,
+  })),
+  {key: 'open', position: {x: 0.25, y: 0.6}},
+  {key: 'open-sized', position: {x: 0.1, y: 0.06, width: 0.8, height: 0.22}},
+];
+
+function CombinationMatrix({dir}: {dir?: 'rtl'}) {
+  return (
+    <div dir={dir} data-matrix={dir ?? 'ltr'}>
+      <Heading level={3}>
+        {dir === 'rtl' ? 'Right-to-left' : 'Left-to-right'}
+      </Heading>
+      <Grid columns={10} gap={2}>
+        {MATRIX_HOSTS.flatMap(host =>
+          MATRIX_REGIONS.map(({key, position}) => (
+            <VStack key={`${host}-${key}`} gap={1}>
+              <div data-cell={`${host}/${key}`}>
+                <Overlay
+                  position={host}
+                  scrim={host === 'fill' ? false : 'dark'}
+                  style={{width: '100%'}}
+                  content={
+                    <OverlayRegion position={position}>
+                      <span data-cell-region="" {...stylex.props(styles.pin)}>
+                        R
+                      </span>
+                    </OverlayRegion>
+                  }>
+                  <Media />
+                </Overlay>
+              </div>
+              <Text type="supporting" color="secondary">
+                {host}/{key}
+              </Text>
+            </VStack>
+          )),
+        )}
+      </Grid>
+    </div>
+  );
+}
+
+/**
+ * Every combination of Overlay `position` (rows: fill, top, bottom) and
+ * OverlayRegion `position` (columns: the eight presets, open without a size,
+ * open with a size), rendered with the real components in both directions.
+ * In a fill Overlay every region is placed; in a top or bottom Overlay a
+ * region is not placed, its content flows in the strip, and a development
+ * warning fires.
+ */
+export const RegionCombinations: Story = {
+  render: () => (
+    <VStack gap={6}>
+      <CombinationMatrix />
+      <CombinationMatrix dir="rtl" />
+    </VStack>
+  ),
+  play: async ({canvasElement}) => {
+    for (const dir of ['ltr', 'rtl']) {
+      const matrix = mustFind(canvasElement, `[data-matrix="${dir}"]`);
+      for (const host of MATRIX_HOSTS) {
+        for (const {key} of MATRIX_REGIONS) {
+          const cell = mustFind(matrix, `[data-cell="${host}/${key}"]`);
+          const region = mustFind(cell, '[data-cell-region]').parentElement;
+          const placement = region ? getComputedStyle(region).position : null;
+          expect(placement, `${dir} ${host}/${key}`).toBe(
+            host === 'fill' ? 'absolute' : 'static',
+          );
+        }
+      }
+    }
+    // Corners flip with direction; open placement stays put.
+    const leftOf = (dir: string, cellKey: string) => {
+      const cell = mustFind(
+        canvasElement,
+        `[data-matrix="${dir}"] [data-cell="${cellKey}"]`,
+      );
+      const region = mustFind(cell, '[data-cell-region]');
+      const surface = mustFind(cell, '.astryx-overlay');
+      return (
+        region.getBoundingClientRect().left -
+        surface.getBoundingClientRect().left
+      );
+    };
+    expect(leftOf('rtl', 'fill/top-start')).toBeGreaterThan(
+      leftOf('ltr', 'fill/top-start') + 20,
+    );
+    near(leftOf('rtl', 'fill/open'), leftOf('ltr', 'fill/open'), 'open RTL');
+  },
+};
