@@ -249,6 +249,43 @@ describe('renderCommandTokens', () => {
     );
   });
 
+  it('renders a fence inside prose as a code block in its language', () => {
+    expect(
+      renderCommandTokens(
+        [
+          'Install it with {@pm install @acme/fence --dev}:',
+          '',
+          '```bash',
+          '{@pm install @acme/fence --dev}',
+          '{@command doctor}',
+          '{@pm-only npm "edits package.json" pkg set x=1}',
+          '```',
+          '',
+          '~~~text',
+          '{@command doctor}',
+          '~~~',
+          'Then {@command doctor}.',
+        ].join('\n'),
+        reader,
+      ),
+    ).toBe(
+      [
+        'Install it with `pnpm add -D @acme/fence`:',
+        '',
+        '```bash',
+        'pnpm add -D @acme/fence',
+        'pnpm exec astryx doctor',
+        'npm pkg set x=1  # only with npm: edits package.json',
+        '```',
+        '',
+        '~~~text',
+        'pnpm exec astryx doctor',
+        '~~~',
+        'Then `pnpm exec astryx doctor`.',
+      ].join('\n'),
+    );
+  });
+
   it('renders inside a code span and a code block without extra ticks', () => {
     expect(renderCommandTokens('Run `{@pm run build}`.', reader)).toBe(
       'Run `pnpm run build`.',

@@ -4,9 +4,9 @@
 
 export const docs = {
   name: 'theme',
-  title: 'Theme System',
+  title: 'Theming',
   category: 'guide',
-  keywords: ['theme', 'dark mode', 'defineTheme', 'provider'],
+  keywords: ['theme', 'theming', 'theme system', 'dark mode', 'defineTheme', 'provider'],
   description:
     'How to use and create themes: see Use a theme for applying themes, and Author a theme for creating and customizing them.',
 

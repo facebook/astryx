@@ -405,8 +405,9 @@ const SHELL_LANGS = new Set(['', 'bash', 'sh', 'shell', 'zsh', 'console']);
  * reader, and each `{@@…}` shown as `{@…}`. A token in prose prints as a code
  * span; in a code span or code block, as the bare command. A one-manager
  * step's reason follows it: in prose right after the command, after a code
- * span, in parentheses; in a shell block as a comment. A token that does not parse prints as written,
- * and doctor names it.
+ * span, in parentheses; in a shell block as a comment. A Markdown fence in
+ * prose is a code block in its language. A token that does not parse prints
+ * as written, and doctor names it.
  * @param {string} text
  * @param {RenderOptions} options
  * @param {string | null} [lang] the code block's language when `text` is one
@@ -449,17 +450,40 @@ export function renderCommandTokens(text, options, lang = null) {
       })
       .join('\n');
   }
+  /** @param {string} line */
+  const prose = line =>
+    line
+      .split(/(`[^`\n]*`)/)
+      .map(part => {
+        /** @type {string[]} */
+        const notes = [];
+        const isSpan =
+          part.length > 1 && part.startsWith('`') && part.endsWith('`');
+        const out = render(part, notes, !isSpan);
+        return notes.length === 0 ? out : `${out} (${notes.join('; ')})`;
+      })
+      .join('');
+  // A fence inside prose is a code block: its lines render as one, in the
+  // fence's language.
+  /** @type {{marker: string, lang: string} | null} */
+  let fence = null;
   return source
-    .split(/(`[^`\n]*`)/)
-    .map(part => {
-      /** @type {string[]} */
-      const notes = [];
-      const isSpan =
-        part.length > 1 && part.startsWith('`') && part.endsWith('`');
-      const out = render(part, notes, !isSpan);
-      return notes.length === 0 ? out : `${out} (${notes.join('; ')})`;
+    .split('\n')
+    .map(line => {
+      const marker = /^\s*(`{3,}|~{3,})\s*([\w-]*)/.exec(line);
+      if (marker) {
+        if (fence == null) {
+          fence = {marker: marker[1], lang: marker[2].toLowerCase()};
+        } else if (marker[1].startsWith(fence.marker)) {
+          fence = null;
+        }
+        return line;
+      }
+      return fence == null
+        ? prose(line)
+        : renderCommandTokens(line, options, fence.lang);
     })
-    .join('');
+    .join('\n');
 }
 
 /**
