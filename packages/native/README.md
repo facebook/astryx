@@ -34,6 +34,22 @@ const props: SelectorProps = {
 };
 ```
 
+How core documentation becomes a contract:
+
+- A callback whose arguments are values followed by the DOM event that caused
+  them, such as `(checked: boolean, e: ChangeEvent) => void`, keeps the values
+  in the core; the event stays on the web.
+- A callback that carries only an event stays on the web, unless the component
+  names it in `callbacks`, as a button's `onClick` would. Its core form takes no
+  arguments. A callback with an event before a value stays on the web either
+  way.
+- Free-form content becomes a typed slot only where a component declares one
+  in `slots`; `text` is a string, as for a badge's label or a heading's words.
+- A closed set of numbers, such as a heading level, is a Swift enum with raw
+  values.
+- A core prop may share a platform toolkit's name only when the component
+  declares in `sameMeaning` that it means the same thing there.
+
 ## Working on it
 
 ```sh

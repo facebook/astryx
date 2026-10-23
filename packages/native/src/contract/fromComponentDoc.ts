@@ -17,25 +17,62 @@ import type {
   ComponentContract,
   PropMap,
   PropSpec,
+  PropType,
   WebOnlyProp,
 } from './types.js';
 import type {NativePlatform} from '../platforms.js';
 
-/** The subset of a ComponentDoc this reader needs. */
+interface DocProp {
+  readonly name: string;
+  readonly type?: unknown;
+  readonly required?: boolean;
+  readonly description?: unknown;
+}
+
+/**
+ * The subset of a ComponentDoc this reader needs. A file that documents
+ * several components, such as Stack with HStack and VStack, lists them in
+ * `components`.
+ */
 export interface ComponentDocLike {
   readonly name: string;
-  readonly props?: ReadonlyArray<{
+  readonly props?: ReadonlyArray<DocProp>;
+  readonly components?: ReadonlyArray<{
     readonly name: string;
-    readonly type?: unknown;
-    readonly required?: boolean;
-    readonly description?: unknown;
+    readonly props?: ReadonlyArray<DocProp>;
   }>;
 }
+
+/**
+ * Typed slots (AST-082 FR4) for documented free-form content. `text` is a
+ * string in the core contract, as a badge's label or a heading's words.
+ */
+export type SlotKind = 'text';
 
 /** What the native package adds to one core component. */
 export interface NativeAdditions {
   readonly name: string;
   readonly baseTarget: BaseTarget;
+  /**
+   * Where core documents the component when it is not `<Name>/<Name>.doc.mjs`:
+   * `file` relative to core's `src` without `.doc.mjs`, and `component` when
+   * the file documents several components.
+   */
+  readonly doc?: {readonly file: string; readonly component?: string};
+  /** Documented free-form content props, given a typed slot in the core. */
+  readonly slots?: Readonly<Record<string, SlotKind>>;
+  /**
+   * Callbacks whose only documented argument is a DOM event but which name a
+   * moment every platform has, such as a button's press. Their core form
+   * takes no arguments.
+   */
+  readonly callbacks?: readonly string[];
+  /**
+   * Core props whose name a platform toolkit also uses, with the same meaning
+   * (AST-082 FR8 forbids only a different meaning), and why: a button's
+   * `onClick` is a press in Compose too.
+   */
+  readonly sameMeaning?: Readonly<Record<string, string>>;
   /**
    * Portable definitions for named types the documentation references. Fields
    * the web type has that are not portable are left out on purpose.
@@ -51,6 +88,28 @@ export interface NativeAdditions {
   readonly webOnly?: Readonly<Record<string, string>>;
 }
 
+/** The documented props of the component the additions name. */
+function documentedProps(
+  doc: ComponentDocLike,
+  additions: NativeAdditions,
+): ReadonlyArray<DocProp> {
+  const wanted = additions.doc?.component;
+  if (wanted == null) {
+    return doc.props ?? [];
+  }
+  const entry = doc.components?.find(component => component.name === wanted);
+  if (!entry) {
+    throw new Error(
+      `${additions.name}: core documentation "${doc.name}" does not document "${wanted}"`,
+    );
+  }
+  return entry.props ?? [];
+}
+
+const SLOT_TYPES: Readonly<Record<SlotKind, PropType>> = {
+  text: {kind: 'string'},
+};
+
 export function fromComponentDoc(
   doc: ComponentDocLike,
   additions: NativeAdditions,
@@ -58,8 +117,15 @@ export function fromComponentDoc(
   const core: Record<string, PropSpec> = {};
   const webOnly: WebOnlyProp[] = [];
   const types = additions.types ?? {};
+  const describe = (prop: DocProp) =>
+    typeof prop.description === 'string' ? {doc: prop.description} : {};
 
-  for (const prop of doc.props ?? []) {
+  for (const prop of documentedProps(doc, additions)) {
+    // `id` and `isHidden` are shared base props on every platform (FR7), so a
+    // documented prop of either name is the base prop, not a core prop.
+    if (prop.name === 'id' || prop.name === 'isHidden') {
+      continue;
+    }
     const declaredWebOnly = additions.webOnly?.[prop.name];
     if (declaredWebOnly) {
       webOnly.push({name: prop.name, reason: declaredWebOnly});
@@ -76,13 +142,39 @@ export function fromComponentDoc(
       webOnly.push({name: prop.name, reason: 'HTML attribute'});
       continue;
     }
-    const parsed = parseDocType(String(prop.type ?? ''));
+    const slot = additions.slots?.[prop.name];
+    const slotNameProblem =
+      slot &&
+      coreNameProblem(prop.name, prop.name in (additions.sameMeaning ?? {}));
+    if (slotNameProblem) {
+      webOnly.push({name: prop.name, reason: slotNameProblem});
+      continue;
+    }
+    if (slot) {
+      core[prop.name] = {
+        type: SLOT_TYPES[slot],
+        optional: prop.required !== true,
+        ...describe(prop),
+      };
+      continue;
+    }
+    let parsed = parseDocType(String(prop.type ?? ''));
+    if (
+      !parsed.ok &&
+      parsed.eventOnly === true &&
+      additions.callbacks?.includes(prop.name)
+    ) {
+      parsed = {ok: true, type: {kind: 'fn', args: []}};
+    }
     if (!parsed.ok) {
       webOnly.push({name: prop.name, reason: parsed.reason});
       continue;
     }
     // A portable type can still carry a name another platform owns.
-    const nameProblem = coreNameProblem(prop.name);
+    const nameProblem = coreNameProblem(
+      prop.name,
+      prop.name in (additions.sameMeaning ?? {}),
+    );
     if (nameProblem) {
       webOnly.push({name: prop.name, reason: nameProblem});
       continue;
@@ -116,7 +208,7 @@ export function fromComponentDoc(
     core[prop.name] = {
       type,
       optional: prop.required !== true,
-      ...(typeof prop.description === 'string' ? {doc: prop.description} : {}),
+      ...describe(prop),
     };
   }
 
@@ -127,5 +219,8 @@ export function fromComponentDoc(
     core,
     platforms: additions.platforms ?? {},
     webOnly,
+    sameMeaning: Object.keys(additions.sameMeaning ?? {}).filter(
+      name => name in core,
+    ),
   };
 }

@@ -25,6 +25,11 @@ const pascal = (text: string) =>
 const ident = (name: string) =>
   SWIFT_KEYWORDS.has(name) ? `\`${name}\`` : name;
 
+/** `1` → `v1`, `0.5` → `v0_5`, `-1` → `vMinus1`. */
+function numberCaseName(value: number): string {
+  return `v${String(value).replace('-', 'Minus').replace('.', '_')}`;
+}
+
 function caseName(value: string): string {
   const name = camel(value.replace(/[^A-Za-z0-9_-]/g, '-'));
   return ident(/^[0-9]/.test(name) ? `v${name}` : name || 'empty');
@@ -49,6 +54,17 @@ class SwiftWriter {
         );
         this.decls.push(
           `public enum ${name}: String, CaseIterable, Sendable {\n${cases.join('\n')}\n}`,
+        );
+        return name;
+      }
+      case 'numberEnum': {
+        const name = `${owner}${pascal(prop)}`;
+        const raw = type.values.every(Number.isInteger) ? 'Int' : 'Double';
+        const cases = type.values.map(
+          value => `  case ${numberCaseName(value)} = ${value}`,
+        );
+        this.decls.push(
+          `public enum ${name}: ${raw}, CaseIterable, Sendable {\n${cases.join('\n')}\n}`,
         );
         return name;
       }

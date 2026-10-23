@@ -16,6 +16,8 @@ export type PropType =
   | {kind: 'number'}
   | {kind: 'boolean'}
   | {kind: 'enum'; values: readonly string[]}
+  /** A closed set of numbers, such as a heading level or a spacing step. */
+  | {kind: 'numberEnum'; values: readonly number[]}
   | {kind: 'array'; of: PropType}
   | {kind: 'record'; fields: Readonly<Record<string, PropSpec>>}
   | {kind: 'fn'; args: readonly PropType[]}
@@ -49,4 +51,6 @@ export interface ComponentContract {
   readonly platforms: Readonly<Partial<Record<NativePlatform, PropMap>>>;
   /** Core-doc props that stay in the web contract. */
   readonly webOnly: readonly WebOnlyProp[];
+  /** Core props that share a toolkit name with the same meaning (FR8). */
+  readonly sameMeaning?: readonly string[];
 }

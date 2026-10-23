@@ -21,6 +21,8 @@ function tsType(type: PropType): string {
       return type.kind;
     case 'enum':
       return type.values.map(value => `'${value}'`).join(' | ');
+    case 'numberEnum':
+      return type.values.join(' | ');
     case 'array': {
       const inner = tsType(type.of);
       return `ReadonlyArray<${inner}>`;
