@@ -22,7 +22,6 @@ import renameEmptySearchResultsText, {
 import validateDataTokenOwnership, {
   meta as validateDataTokenOwnershipMeta,
 } from './validate-data-token-ownership.mjs';
-import {withDataTokenOwnershipOutcomes} from './data-token-ownership-outcome.mjs';
 
 export default [
   {
@@ -32,7 +31,7 @@ export default [
   },
   {
     name: 'validate-data-token-ownership',
-    transform: withDataTokenOwnershipOutcomes(validateDataTokenOwnership),
+    transform: validateDataTokenOwnership,
     meta: validateDataTokenOwnershipMeta,
   },
   {

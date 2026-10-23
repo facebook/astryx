@@ -114,7 +114,7 @@
  * @typedef {object} ManualAction
  * @property {string} file Path relative to the folder the command ran in.
  * @property {number} [line] 1-based source line, when the codemod knows it.
- * @property {string} codemod The codemod that reported it, such as `core:validate-data-token-ownership`.
+ * @property {string} codemod The codemod that reported it, as `<package>:<codemod name>` (`core:` for Core codemods).
  * @property {string} message What to change, and how.
  */
 
