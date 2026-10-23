@@ -20,7 +20,6 @@ import {CLI_ROOT} from '../fs/paths.mjs';
 import {cliVersion, runChoice} from '../release/run-context.mjs';
 import {isGlobalCopy} from '../release/choose.mjs';
 import {isInReleaseCache} from '../release/cache.mjs';
-import {renderCommandTokens} from '../doc-compiler/doc-syntax.mjs';
 
 /**
  * A package manager we can install with and run binaries through.
@@ -608,44 +607,23 @@ function prefixLine(line, stem, lang) {
  * span that starts with `astryx`. In a shell code fence (no language, `bash`,
  * `sh`, `shell`, `zsh`, `console`), each `astryx` that starts a command. In a
  * `text` or `markdown` fence, both. Other fences, and plain words, are left
- * alone. Doc tokens render too, in prose and in every fence: `{@command …}`
- * with `stem`, `{@pm …}` in the project's package manager, `{@pm-only …}`
- * with its reason (foundation/doc-compiler/doc-syntax.mjs), when `options.pm`
- * names the package manager; the CLI renders them as it compiles a doc, so
- * there they are already commands.
+ * alone. JSON output keeps the authored text.
  *
  * @param {string} text Markdown-style doc text, or the body of one code block.
  * @param {string} stem e.g. `pnpm exec astryx`
  * @param {string | null} [lang] the code block's language when `text` is one
  *   block's body; omit for Markdown, whose fences are followed
- * @param {{pm?: import('../doc-compiler/doc-syntax.mjs').DocPackageManager, targetDir?: string}} [options]
- *   `pm`: the package manager `{@pm}` steps render for; without it, tokens
- *   are left as they are
  * @returns {string}
  */
-export function prefixCliCommands(text, stem, lang = null, options = {}) {
-  const source = String(text);
-  // The CLI renders doc tokens when it compiles a doc (links.mjs), so text and
-  // JSON carry the same commands; a reader of raw doc files, such as the
-  // docsite, names the package manager to render them here.
-  const tokens =
-    options.pm != null && source.includes('{@') ? {stem, pm: options.pm} : null;
-  if (stem === CLI_BIN && !tokens) return source;
-  /** @param {string} line @param {string | null} fenceLang */
-  const show = (line, fenceLang) => {
-    // Bare commands first: a token renders with the stem itself, and its
-    // output is never prefixed again.
-    const prefixed =
-      stem === CLI_BIN ? line : prefixLine(line, stem, fenceLang);
-    return tokens ? renderCommandTokens(prefixed, tokens, fenceLang) : prefixed;
-  };
+export function prefixCliCommands(text, stem, lang = null) {
+  if (stem === CLI_BIN) return String(text);
   const blockLang = lang == null ? null : lang.toLowerCase();
   /** @type {{marker: string, lang: string} | null} */
   let fence = null;
-  return source
+  return String(text)
     .split('\n')
     .map(line => {
-      if (blockLang != null) return show(line, blockLang);
+      if (blockLang != null) return prefixLine(line, stem, blockLang);
       const marker = /^\s*(`{3,}|~{3,})\s*([\w-]*)/.exec(line);
       if (marker) {
         if (fence == null) {
@@ -655,7 +633,7 @@ export function prefixCliCommands(text, stem, lang = null, options = {}) {
         }
         return line;
       }
-      return show(line, fence?.lang ?? null);
+      return prefixLine(line, stem, fence?.lang ?? null);
     })
     .join('\n');
 }
