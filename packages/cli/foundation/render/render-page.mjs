@@ -23,16 +23,16 @@ import {Worker} from 'node:worker_threads';
 import {assetDataUri, isAssetPath, RenderAssetError} from './assets.mjs';
 import {classesIn, cutCss, layerOrderOf} from './css-cut.mjs';
 import {sourceBlock} from './source-block.mjs';
+import {embeddedPathProblem} from './embedded-files.mjs';
 
 /** How long one page may take to render before it is stopped. */
 export const RENDER_TIMEOUT_MS = 60_000;
 
-/** The file extensions a page module may have. */
-export const PAGE_EXTENSIONS = ['.tsx', '.jsx', '.ts', '.js', '.mjs'];
+export {PAGE_EXTENSIONS} from './embedded-files.mjs';
 
 /**
  * @typedef {object} RenderWarning
- * @property {'dropped-children' | 'remote-asset' | 'missing-asset' | 'page-output' | 'no-astryx-styles' | 'chart-size'} code - What kind of problem.
+ * @property {'dropped-children' | 'remote-asset' | 'missing-asset' | 'page-output' | 'no-astryx-styles' | 'chart-size' | 'not-embedded'} code - What kind of problem.
  * @property {string} message - What happened and what to do, in one sentence.
  */
 
@@ -356,12 +356,22 @@ export async function renderPage(entry, options = {}) {
   for (const f of files) {
     while (path.relative(base, f).startsWith('..')) base = path.dirname(base);
   }
-  // Page first, so the reader knows which file is the page.
+  // Page first, so the reader knows which file is the page. Only files a
+  // rendered page may carry are embedded (see embedded-files.mjs).
   const ordered = [entry, ...files.filter(f => f !== entry)];
-  const embedded = ordered.map(f => ({
-    path: path.relative(base, f).split(path.sep).join('/'),
-    bytes: fs.readFileSync(f),
-  }));
+  /** @type {{path: string, bytes: Buffer}[]} */
+  const embedded = [];
+  for (const f of ordered) {
+    const rel = path.relative(base, f).split(path.sep).join('/');
+    if (f !== entry && embeddedPathProblem(rel)) {
+      warnings.push({
+        code: 'not-embedded',
+        message: `${rel} is not carried in the file (a rendered page carries only the page and the stylesheets, JSON and images it imports, never project or tool configuration), so --reverse cannot give it back.`,
+      });
+      continue;
+    }
+    embedded.push({path: rel, bytes: fs.readFileSync(f)});
+  }
   const heading = /<h1\b[^>]*>([\s\S]*?)<\/h1>/i.exec(markup)?.[1]?.replace(/<[^>]*>/g, '').trim();
   const title = options.title ?? (heading ? decodeAttr(heading) : path.basename(entry).replace(/\.[^.]+$/, ''));
   const html =

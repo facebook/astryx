@@ -64,12 +64,14 @@ export function registerExperimentalRender(group, program) {
         emit(
           section(`Rendered ${d.input}`),
           record({
+            input: d.input,
             output: d.output,
             bytes: kb(d.bytes),
             cssBytes: kb(d.cssBytes),
             classes: d.classes,
             images: d.images,
             files: d.files.join(', '),
+            stylesheets: d.stylesheets.join(', ') || 'none',
           }),
           ...(d.warnings.length > 0
             ? [section('Warnings'), list(d.warnings.map(w => w.message))]
@@ -82,6 +84,7 @@ export function registerExperimentalRender(group, program) {
       emit(
         section(d.mode === 'embedded' ? `Restored ${d.output}` : `Rebuilt ${d.output}`),
         record({
+          input: d.input,
           mode: d.mode,
           exact: d.exact,
           output: d.output,

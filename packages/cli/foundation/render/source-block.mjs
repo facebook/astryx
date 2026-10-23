@@ -7,7 +7,7 @@
  * it, and its JSON holds each file base64-encoded with its SHA-256, so no text
  * in the source (`</script>` included) can end the block early.
  *
- * @position foundation/render — used by render-page.mjs and reverse.mjs
+ * @position foundation/render — used by render-page.mjs and the render subject
  */
 
 import {createHash} from 'node:crypto';

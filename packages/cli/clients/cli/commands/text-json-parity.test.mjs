@@ -29,6 +29,7 @@ import {describe, it, expect, beforeAll, afterAll} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
+import * as crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {runCli} from '../../../test-utils/run-cli.mjs';
 
@@ -417,11 +418,32 @@ const CASES = [
         'export default function Page() { return <h1>Hello</h1>; }\n',
       );
     },
-    jsonFieldAllowlist: [
-      'input — stated in section heading "Rendered ..."',
-      'stylesheets — the CSS the size counts',
-      'warnings — listed under Warnings when present',
-    ],
+    jsonFieldAllowlist: ['warnings — listed under Warnings when present'],
+  },
+  {
+    // The --reverse projection (same command, same folder as the case above).
+    name: 'experimental render',
+    args: ['experimental', 'render', '--reverse', 'carried.html', '--out', 'back.tsx', '--overwrite'],
+    cwd: '__TMP__',
+    // A rendered file that carries its page.
+    setup: dir => {
+      const source = Buffer.from('export default function Page() { return <h1>Hello</h1>; }\n');
+      const json = JSON.stringify({
+        version: 1,
+        entry: 'page.jsx',
+        files: [
+          {
+            path: 'page.jsx',
+            sha256: crypto.createHash('sha256').update(source).digest('hex'),
+            base64: source.toString('base64'),
+          },
+        ],
+      });
+      fs.writeFileSync(
+        path.join(dir, 'carried.html'),
+        `<!doctype html><html><body><h1 class="astryx-heading">Hello</h1><script type="application/x-astryx-source">${json}</script></body></html>`,
+      );
+    },
   },
   {
     name: 'manifest',

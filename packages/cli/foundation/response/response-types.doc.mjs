@@ -116,7 +116,7 @@ export const doc = {
     {
       value: 'render.page',
       description:
-        'Experimental. A page rendered to one self-contained HTML file: `input`, `output`, `bytes`, the local modules embedded (`files`), the package `stylesheets` cut and inlined, `classes`, `cssBytes`, `images` inlined, and `warnings` (`{code, message}`; empty when nothing looked wrong).',
+        'Experimental. A page rendered to one self-contained HTML file: `input`, `output`, `bytes`, the local files embedded (`files`: modules, stylesheets, images and JSON), the package `stylesheets` cut and inlined, `classes`, `cssBytes`, `images` inlined, and `warnings` (`{code, message}`; empty when nothing looked wrong).',
     },
     {
       value: 'render.reverse',

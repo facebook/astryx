@@ -16,7 +16,7 @@ export const doc = {
   summary:
     'Render a page to one self-contained HTML file, or turn a rendered file back into a page.',
   description:
-    "Renders the page module's default export on the server with the project's own React and Astryx components, and writes ONE static HTML file that needs nothing beside it: the page's own StyleX styles are compiled, Core's stylesheets are cut to the rules the markup uses (layer order, custom properties and keyframes kept), local images become data: URIs, and the page's source is embedded so it can be given back exactly. The file runs no script and loads nothing from the network, so it works inside a sandboxed frame with a strict content security policy, and its colors follow the viewer's light or dark scheme. Warnings name anything that may differ from what the author meant, such as a component that did not render the text it was given. With `reverse`, it writes the embedded source back byte for byte; a file with Astryx markup but no embedded source is rebuilt from its component class names and data attributes (text and layout only); any other file is refused. Experimental: it may change or be removed in a patch release.",
+    "Renders the page module's default export on the server with the project's own React and Astryx components, and writes ONE static HTML file that needs nothing beside it: the page's own StyleX styles are compiled, Core's stylesheets are cut to the rules the markup uses (layer order, custom properties and keyframes kept), local images become data: URIs, and the page's source is embedded so it can be given back exactly. The file runs no script and loads nothing from the network, so it works inside a sandboxed frame with a strict content security policy, and its colors follow the viewer's light or dark scheme. Warnings name anything that may differ from what the author meant, such as a component that did not render the text it was given. With `reverse`, it writes the embedded source back byte for byte, and only the files a render embeds: the page and the stylesheets, JSON and images it imports; a file with Astryx markup but no embedded source is rebuilt from its component class names and data attributes (text and layout only); any other file is refused. Experimental: it may change or be removed in a patch release.",
   importPath: '@astryxdesign/cli/api/experimental',
   signature:
     'render(file: string, options?: RenderOptions): Promise<RenderPageResponse | RenderReverseResponse>',
@@ -100,7 +100,7 @@ export const doc = {
       code: 'ERR_RENDER_NOT_ASTRYX',
       when: 'reversing a file with no embedded source and no Astryx markup; the suggestion is `astryx build "<what the page is>"`',
     },
-    {code: 'ERR_RENDER_SOURCE_DAMAGED', when: 'reversing a file whose embedded source is damaged'},
+    {code: 'ERR_RENDER_SOURCE_DAMAGED', when: 'reversing a file whose embedded source is damaged, or carries a file a render never embeds (a dotfile or dot-folder, `node_modules`, a package manifest, lockfile or tool configuration, or any kind but a page module, stylesheet, JSON or image)'},
     {code: 'ERR_PATH_TRAVERSAL', when: 'a file would be written outside the current folder (symlinks followed): `out`, or with `reverse` the page or an embedded file'},
   ],
   examples: [

@@ -18,7 +18,9 @@ import {
   renderPage,
 } from '../../foundation/render/render-page.mjs';
 import {readSourceBlock} from '../../foundation/render/source-block.mjs';
-import {isAstryxMarkup, rebuildPage} from '../../foundation/render/reverse.mjs';
+import {embeddedPathProblem} from '../../foundation/render/embedded-files.mjs';
+import {isAstryxMarkup} from '../../foundation/render/html-reader.mjs';
+import {rebuildPage} from '../../foundation/render/rebuild.mjs';
 import {cliVersion} from '../../foundation/integrations/cli-peer-version.mjs';
 import {assertWithin, PathSafetyError} from '../../foundation/fs/path-safety.mjs';
 
@@ -164,13 +166,26 @@ export async function renderToFile({cwd, input, output, title}) {
 export function reverseToFile({cwd, input, output, overwrite}) {
   const html = readInput(input, cwd).toString('utf8');
   const block = readSourceBlock(html);
-  /** @param {string} file */
-  const refuseExisting = file => {
-    if (!overwrite && fs.existsSync(file)) {
+  /** @param {string[]} files */
+  const refuseExisting = files => {
+    if (overwrite) return;
+    const existing = files.filter(file => fs.existsSync(file));
+    if (existing.length > 0) {
       throw new AstryxError(
-        `${shown(cwd, file)} already exists; pass --overwrite to replace it`,
+        `${existing.map(file => shown(cwd, file)).join(', ')} already exist${existing.length === 1 ? 's' : ''}; nothing was written. Pass --overwrite to replace ${existing.length === 1 ? 'it' : 'them'}.`,
         [],
         ERROR_CODES.ERR_FILE_EXISTS,
+      );
+    }
+  };
+  /** A page is never written over a configuration file such as vite.config.ts. @param {string} file */
+  const refuseConfigTarget = file => {
+    const problem = embeddedPathProblem(path.basename(file), {page: true});
+    if (problem) {
+      throw new AstryxError(
+        `${shown(cwd, file)} is not a page module file name a reverse writes (${problem.reason}); nothing was written.`,
+        [],
+        ERROR_CODES.ERR_INVALID_ARGUMENT,
       );
     }
   };
@@ -185,15 +200,19 @@ export function reverseToFile({cwd, input, output, overwrite}) {
     const {source} = block;
     // The entry name comes from the file, so only its base name is used.
     const requested = output ?? path.join(path.dirname(input), path.basename(source.entry));
-    for (const f of source.files) {
-      if (path.isAbsolute(f.path) || f.path.split('/').includes('..') || f.path.includes('\\')) {
+    // A file someone sends is untrusted: it may carry only what a render
+    // embeds (the page, and the stylesheets, JSON and images it imports).
+    source.files.forEach((f, i) => {
+      const problem = embeddedPathProblem(f.path, {page: i === 0});
+      if (problem) {
         throw new AstryxError(
-          `${shown(cwd, input)} names an embedded file outside its own tree (${f.path}); nothing was written.`,
+          `${shown(cwd, input)} carries ${problem.reason}, which a render never embeds; nothing was written.`,
           [],
-          ERROR_CODES.ERR_PATH_TRAVERSAL,
+          ERROR_CODES[problem.code],
         );
       }
-    }
+    });
+    refuseConfigTarget(requested);
     // The tree's root sits as far above the page as the page sat above it,
     // so every relative import still resolves. When that would leave the
     // current folder, the tree goes under the requested page's folder.
@@ -212,7 +231,7 @@ export function reverseToFile({cwd, input, output, overwrite}) {
       confined(file, cwd, i === 0 ? 'The page' : 'The embedded file');
       writes.push({file, bytes: Buffer.from(f.base64, 'base64')});
     });
-    for (const w of writes) refuseExisting(w.file);
+    refuseExisting(writes.map(w => w.file));
     for (const w of writes) writeOutput(w.file, w.bytes, cwd);
     return {
       input: shown(cwd, input),
@@ -224,7 +243,7 @@ export function reverseToFile({cwd, input, output, overwrite}) {
   }
   if (!isAstryxMarkup(html)) {
     throw new AstryxError(
-      `${shown(cwd, input)} is not an Astryx page: it has no embedded source and no Astryx components to rebuild from.`,
+      `${shown(cwd, input)} is not an Astryx page: it has no embedded source and no Astryx components to rebuild from. To start an Astryx page like it, run astryx build "<what the page is>".`,
       [
         {
           name: 'astryx build "<what the page is>"',
@@ -235,8 +254,9 @@ export function reverseToFile({cwd, input, output, overwrite}) {
     );
   }
   const target = output ?? path.join(path.dirname(input), `${path.basename(input).replace(/\.[^.]+$/, '')}.tsx`);
+  refuseConfigTarget(target);
   confined(target, cwd, 'The page');
-  refuseExisting(target);
+  refuseExisting([target]);
   // Components resolve from where the page will live, then from the HTML
   // file's folder, then from the current folder.
   const from =

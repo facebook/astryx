@@ -86,7 +86,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Files are written only inside the folder you run the command from, and an existing file is never replaced unless you pass `--overwrite`. Add `--json` for the result as data: what was written, how big it is, and every warning.',
+          text: 'It writes only what a render embeds, the page and the stylesheets, JSON and images it imports, and only inside the folder you run the command from; a received file that carries anything else (a dotfile, `package.json`, a tool configuration, a path that leaves the folder) is refused with nothing written. An existing file is never replaced unless you pass `--overwrite`, and the refusal names every one. Add `--json` for the result as data: what was written, how big it is, and every warning.',
         },
       ],
     },

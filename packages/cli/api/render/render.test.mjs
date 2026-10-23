@@ -328,7 +328,83 @@ describe('render(): every write stays inside the current folder', () => {
   });
 });
 
+describe('render --reverse: a received file may carry only what a render embeds', () => {
+  /** @param {string} name @param {{path: string, text: string}[]} files */
+  const crafted = async (name, files) => {
+    const {sourceBlock} = await import('../../foundation/render/source-block.mjs');
+    put(
+      name,
+      `<body><p class="astryx-text">x</p>${sourceBlock(files[0].path, files.map(f => ({path: f.path, bytes: Buffer.from(f.text)})))}</body>`,
+    );
+  };
+  it.each([
+    ['a git hook', '.git/hooks/pre-commit', 'ERR_RENDER_SOURCE_DAMAGED'],
+    ['a dotfile', '.env', 'ERR_RENDER_SOURCE_DAMAGED'],
+    ['a tool configuration module', 'vite.config.ts', 'ERR_RENDER_SOURCE_DAMAGED'],
+    ['an rc module', '.eslintrc.js', 'ERR_RENDER_SOURCE_DAMAGED'],
+    ['the Astryx configuration', 'astryx.config.mjs', 'ERR_RENDER_SOURCE_DAMAGED'],
+    ['the package manifest', 'package.json', 'ERR_RENDER_SOURCE_DAMAGED'],
+    ['a TypeScript configuration', 'tsconfig.json', 'ERR_RENDER_SOURCE_DAMAGED'],
+    ['a package inside node_modules', 'node_modules/react/index.js', 'ERR_RENDER_SOURCE_DAMAGED'],
+    ['a shell script', 'scripts/install.sh', 'ERR_RENDER_SOURCE_DAMAGED'],
+    ['a climbing path', '../escape.css', 'ERR_PATH_TRAVERSAL'],
+    ['an absolute path', '/tmp/escape.css', 'ERR_PATH_TRAVERSAL'],
+  ])('refuses %s, writing nothing', async (_, bad, code) => {
+    const name = `crafted-${bad.replace(/[^a-z0-9]/gi, '_')}.html`;
+    await crafted(name, [
+      {path: 'page.tsx', text: 'export default () => null;\n'},
+      {path: bad, text: 'echo pwned\n'},
+    ]);
+    const out = `crafted-out-${bad.replace(/[^a-z0-9]/gi, '_')}`;
+    expect(await codeOf(() => render(name, {cwd: dir, reverse: true, out: `${out}/page.tsx`}))).toBe(code);
+    expect(fs.existsSync(path.join(dir, out))).toBe(false);
+  });
+
+  it('refuses a page entry that is not a page module, and an --out that names a configuration file', async () => {
+    await crafted('crafted-entry.html', [{path: 'vite.config.ts', text: 'export default {};\n'}]);
+    expect(await codeOf(() => render('crafted-entry.html', {cwd: dir, reverse: true}))).toBe('ERR_RENDER_SOURCE_DAMAGED');
+    expect(await codeOf(() => render('page.html', {cwd: dir, reverse: true, out: 'vite.config.ts'}))).toBe('ERR_INVALID_ARGUMENT');
+  });
+
+  it('names every existing file in ERR_FILE_EXISTS and writes none of them', async () => {
+    await crafted('crafted-exists.html', [
+      {path: 'page.tsx', text: 'export default () => null;\n'},
+      {path: 'styles.css', text: '.a{}\n'},
+    ]);
+    put('exists/page.tsx', 'original page\n');
+    put('exists/styles.css', 'original css\n');
+    /** @type {any} */
+    let error;
+    try {
+      await render('crafted-exists.html', {cwd: dir, reverse: true, out: 'exists/page.tsx'});
+    } catch (e) {
+      error = e;
+    }
+    expect(error.code).toBe('ERR_FILE_EXISTS');
+    expect(error.message).toContain('exists/page.tsx');
+    expect(error.message).toContain('exists/styles.css');
+    expect(fs.readFileSync(path.join(dir, 'exists/page.tsx'), 'utf8')).toBe('original page\n');
+  });
+
+  it('never embeds a configuration file the page imports, and says so', async () => {
+    put('cfg/package.json', JSON.stringify({name: 'cfg', version: '1.2.3'}));
+    put('cfg/page.tsx', "import pkg from './package.json';\nexport default function Page() { return <p>v{pkg.version}</p>; }\n");
+    const r = /** @type {any} */ (await render('cfg/page.tsx', {cwd: dir}));
+    expect(r.data.files).toEqual(['page.tsx']);
+    expect(r.data.warnings.map((/** @type {any} */ w) => w.code)).toContain('not-embedded');
+    expect(fs.readFileSync(path.join(dir, 'cfg/page.html'), 'utf8')).toContain('v1.2.3');
+  }, 60_000);
+});
+
 describe('astryx experimental render (CLI)', () => {
+  it('fails with exit 1 and a readable message without --json', async () => {
+    const r = await runCli(['experimental', 'render', '--reverse', 'plain.html'], dir);
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('is not an Astryx page');
+    expect(r.stderr).toContain('astryx build');
+  });
+
+
   it('answers --json with the render.page envelope and --title', async () => {
     const r = await runCli(['--json', 'experimental', 'render', 'page.tsx', '--out', 'cli.html', '--title', 'From the CLI'], dir);
     expect(r.status).toBe(0);

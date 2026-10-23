@@ -11,7 +11,7 @@ import * as path from 'node:path';
 import {describe, expect, it} from 'vitest';
 import {classesIn, cutCss, layerOrderOf, requiredClasses} from './css-cut.mjs';
 import {readSourceBlock, sourceBlock} from './source-block.mjs';
-import {isAstryxMarkup, parseHtml} from './reverse.mjs';
+import {isAstryxMarkup, parseHtml} from './html-reader.mjs';
 import {renderPage} from './render-page.mjs';
 
 describe('cutCss', () => {
