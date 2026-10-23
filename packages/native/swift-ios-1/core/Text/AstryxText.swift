@@ -1,0 +1,116 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+// Adapted from github.com/ejc3/astryx-swift (MIT).
+
+import SwiftUI
+
+/// Core's `Text` semantic types this package draws so far.
+public enum AstryxTextType: String, CaseIterable, Sendable {
+  case body
+  case large
+  case label
+  case supporting
+
+  var token: String { "text-\(rawValue)" }
+}
+
+/// Core's `Text` colors this package draws so far.
+public enum AstryxTextColor: String, CaseIterable, Sendable {
+  case primary
+  case secondary
+  case disabled
+  case accent
+
+  var token: String { "color-text-\(rawValue)" }
+}
+
+/// Core's `Text` weights.
+public enum AstryxTextWeight: String, CaseIterable, Sendable {
+  case normal
+  case medium
+  case semibold
+  case bold
+
+  var token: String { "font-weight-\(rawValue)" }
+}
+
+/// Core's `Text` sizes this package draws so far, used to override the size
+/// a semantic type sets.
+public enum AstryxTextSize: String, CaseIterable, Sendable {
+  case xs
+  case sm
+  case base
+  case lg
+  case xl
+
+  var token: String { "font-size-\(rawValue)" }
+}
+
+/// A run of text in a semantic type, painted with the theme's type tokens.
+public struct AstryxText: View {
+  let content: String
+  let type: AstryxTextType
+  let color: AstryxTextColor
+  let size: AstryxTextSize?
+  let weight: AstryxTextWeight?
+  @Environment(\.astryx) private var astryx
+
+  public init(
+    _ content: String,
+    type: AstryxTextType = .body,
+    color: AstryxTextColor = .primary,
+    size: AstryxTextSize? = nil,
+    weight: AstryxTextWeight? = nil
+  ) {
+    self.content = content
+    self.type = type
+    self.color = color
+    self.size = size
+    self.weight = weight
+  }
+
+  public var body: some View {
+    let sizeToken = size?.token ?? "\(type.token)-size"
+    let weightToken = weight?.token ?? "\(type.token)-weight"
+    Text(content)
+      .font(astryx.font(size: sizeToken, 14, weight: weightToken))
+      .foregroundStyle(astryx.color(color.token))
+  }
+}
+
+/// A heading at levels 1 through 6, painted with the theme's heading tokens
+/// and exposed to VoiceOver as a heading.
+public struct AstryxHeading: View {
+  let content: String
+  let level: Int
+  @Environment(\.astryx) private var astryx
+
+  public init(_ content: String, level: Int = 2) {
+    self.content = content
+    self.level = min(max(level, 1), 6)
+  }
+
+  public var body: some View {
+    Text(content)
+      .font(
+        astryx.font(
+          size: "text-heading-\(level)-size",
+          20,
+          weight: "text-heading-\(level)-weight"
+        )
+      )
+      .foregroundStyle(astryx.color("color-text-primary"))
+      .accessibilityAddTraits(.isHeader)
+      .accessibilityHeading(headingLevel)
+  }
+
+  private var headingLevel: AccessibilityHeadingLevel {
+    switch level {
+    case 1: .h1
+    case 2: .h2
+    case 3: .h3
+    case 4: .h4
+    case 5: .h5
+    default: .h6
+    }
+  }
+}

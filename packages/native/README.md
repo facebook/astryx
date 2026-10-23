@@ -17,6 +17,7 @@ rests on evidence.
 | Contracts      | `src/contract/`                   | Reads a core component's documentation and splits its props into a portable **core contract** and a **web-only** part, with a reason for each web-only prop. Checks prop names against Swift and Kotlin keywords and platform toolkit names. |
 | Platform types | `@astryxdesign/native/components` | TypeScript props per platform, chosen by type-resolution condition: `ios`, `android`, `macos`, `windows`, or `shared` for the core contract only.                                                                                            |
 | Swift binding  | `apple/`                          | A Swift package with props generated from the same contracts. iOS and macOS props sit behind `#if os(...)`.                                                                                                                                  |
+| SwiftUI on iOS | `swift-ios-1/`                    | Components (`core/`) and page templates (`templates/`) drawn in SwiftUI with core's tokens. See [its README](swift-ios-1/README.md).                                                                                                         |
 | Native theme   | `defineNativeTheme`               | Durable theme intent (`material: 'opaque' \| 'translucent'`) plus platform entries scoped by OS version, such as Liquid Glass from iOS 26. Never sets tokens.                                                                                |
 | Icons          | `NATIVE_ICON_DEFAULTS`            | Astryx's built-in icon names mapped to SF Symbols on Apple platforms and Material Symbols on Android.                                                                                                                                        |
 | Wire           | `AstryxNode`, `AstryxAction`      | Each component as JSON a TypeScript core sends a native host (arm C), and the action a host sends back when a view calls a callback. Swift decodes `<Name>Node` and turns it into `<Name>Props` with `viewProps(send:)`.                     |
@@ -24,8 +25,10 @@ rests on evidence.
 | Logic host     | `AstryxLogicHost` (Swift)         | Runs a logic core bundle in JavaScriptCore, decodes each tree into `AstryxNode`, and sends views' actions back. A Hermes host speaks the same bridge.                                                                                        |
 
 Contracts cover Badge, Button, Card, Divider, Heading, HStack, ProgressBar,
-Selector, Switch, Text, TextInput, and VStack. React Native and Android
-bindings are not built yet; see [the experiment matrix](#experiment-matrix).
+Selector, Switch, Text, TextInput, and VStack. `swift-ios-1/` draws Text,
+Heading, Button, TextInput, Card, Banner, and the `login` template in SwiftUI.
+React Native and Android bindings are not built yet; see
+[the experiment matrix](#experiment-matrix).
 
 ```ts
 // tsconfig.json for an iOS app: "customConditions": ["ios"]
@@ -129,6 +132,7 @@ pnpm -F @astryxdesign/native typecheck        # source and tests
 pnpm -F @astryxdesign/native build            # dist/, including platform types
 pnpm -F @astryxdesign/native typecheck:types  # every platform's types, after build
 pnpm -F @astryxdesign/native generate:apple   # regenerate apple/Sources/.../Generated
+pnpm -F @astryxdesign/native generate:swift-ios # regenerate swift-ios-1's default theme
 pnpm vitest run --project node packages/native
 ```
 
