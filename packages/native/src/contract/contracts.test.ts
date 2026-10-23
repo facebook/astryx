@@ -51,6 +51,33 @@ describe('native contracts', () => {
     expect(selector!.core).not.toHaveProperty('controlXstyle');
   });
 
+  it('keeps value callbacks, typed text slots, and number sets in the core', async () => {
+    const {contracts} = await buildContracts(loadCoreDoc);
+    const byName = new Map(
+      contracts.map(contract => [contract.name, contract]),
+    );
+    expect(byName.get('Switch')!.core.onChange?.type).toEqual({
+      kind: 'fn',
+      args: [{kind: 'boolean'}],
+    });
+    expect(byName.get('TextInput')!.core.onChange?.type).toEqual({
+      kind: 'fn',
+      args: [{kind: 'string'}],
+    });
+    expect(byName.get('Button')!.core.onClick?.type).toEqual({
+      kind: 'fn',
+      args: [],
+    });
+    expect(byName.get('Heading')!.core.children?.type).toEqual({
+      kind: 'string',
+    });
+    expect(byName.get('Heading')!.core.level?.type).toEqual({
+      kind: 'numberEnum',
+      values: [1, 2, 3, 4, 5, 6],
+    });
+    expect(byName.get('Text')!.core).not.toHaveProperty('id');
+  });
+
   it('reports naming and portability errors', () => {
     const bad: ComponentContract = {
       name: 'Bad',

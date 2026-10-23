@@ -20,8 +20,9 @@ rests on evidence.
 | Native theme   | `defineNativeTheme`               | Durable theme intent (`material: 'opaque' \| 'translucent'`) plus platform entries scoped by OS version, such as Liquid Glass from iOS 26. Never sets tokens.                                                                                |
 | Icons          | `NATIVE_ICON_DEFAULTS`            | Astryx's built-in icon names mapped to SF Symbols on Apple platforms and Material Symbols on Android.                                                                                                                                        |
 
-Only `Selector` has native additions so far. React Native and Android bindings
-are not built yet; see [the experiment matrix](#experiment-matrix).
+Contracts cover Button, Divider, Heading, ProgressBar, Selector, Switch, Text,
+and TextInput. React Native and Android bindings are not built yet; see
+[the experiment matrix](#experiment-matrix).
 
 ```ts
 // tsconfig.json for an iOS app: "customConditions": ["ios"]
@@ -40,7 +41,7 @@ How core documentation becomes a contract:
   them, such as `(checked: boolean, e: ChangeEvent) => void`, keeps the values
   in the core; the event stays on the web.
 - A callback that carries only an event stays on the web, unless the component
-  names it in `callbacks`, as a button's `onClick` would. Its core form takes no
+  names it in `callbacks`, as Button does for `onClick`. Its core form takes no
   arguments. A callback with an event before a value stays on the web either
   way.
 - Free-form content becomes a typed slot only where a component declares one
