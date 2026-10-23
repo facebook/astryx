@@ -44,17 +44,8 @@
  */
 
 import {useEffect, useRef, useState, type RefObject} from 'react';
-import {useAnnounce, type AnnouncePoliteness} from './useAnnounce';
+import {useAnnounce} from './useAnnounce';
 import {useIsHydrating} from './useIsHydrating';
-
-// Whether the page's first paint has happened. Server-rendered owners are
-// covered by useIsHydrating instead: hydration can run after this turns true.
-let initialPaintComplete = false;
-if (typeof window !== 'undefined') {
-  requestAnimationFrame(() => {
-    initialPaintComplete = true;
-  });
-}
 
 const LIVE_CONTAINER =
   '[role="log"], [role="status"], [role="alert"], [aria-live="polite"], [aria-live="assertive"]';
@@ -77,8 +68,6 @@ export interface AnnounceRenderedTextOptions {
    * read as its own block.
    */
   skipFirstRender?: boolean;
-  /** Which shared region speaks it (`spec:AST-086` FR5). @default 'polite' */
-  politeness?: AnnouncePoliteness;
 }
 
 /** The rendered text an assistive technology would read from `element`. */
@@ -116,14 +105,15 @@ export function useAnnounceRenderedText(
   ref: RefObject<HTMLElement | null>,
   isShown: boolean,
   occasion: string,
-  {skipFirstRender = false, politeness}: AnnounceRenderedTextOptions = {},
+  {skipFirstRender = false}: AnnounceRenderedTextOptions = {},
 ): void {
   const announce = useAnnounce();
   const spokenRef = useRef<string | null>(null);
   const isHydrating = useIsHydrating();
-  // Captured once: a hydrated owner never counts as inserted later.
+  // Captured once: an owner rendered before the document finished loading, or
+  // hydrated from server HTML, is part of the page the person arrived at.
   const [renderedWithPage] = useState(
-    () => isHydrating || !initialPaintComplete,
+    () => isHydrating || document.readyState !== 'complete',
   );
   const isFirstRunRef = useRef(true);
 
@@ -133,13 +123,13 @@ export function useAnnounceRenderedText(
   // one element's text per render is cheap, and the dedupe below makes every
   // render after the first a no-op.
   useEffect(() => {
-    if (!isShown) {
-      spokenRef.current = null;
-      return;
-    }
     const isFirstRun = isFirstRunRef.current;
     isFirstRunRef.current = false;
     const element = ref.current;
+    if (!isShown || element?.closest('[hidden], [aria-hidden="true"]')) {
+      spokenRef.current = null;
+      return;
+    }
     if (!element) {
       return;
     }
@@ -161,6 +151,6 @@ export function useAnnounceRenderedText(
       // Part of the page the person arrived at: remember it, say nothing.
       return;
     }
-    announce(text, politeness);
+    announce(text);
   });
 }

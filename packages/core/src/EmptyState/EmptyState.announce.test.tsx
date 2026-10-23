@@ -12,20 +12,13 @@ import {afterEach, describe, expect, it, vi} from 'vitest';
 import {createRoot, hydrateRoot} from 'react-dom/client';
 import {renderToString} from 'react-dom/server';
 
-// Each test imports a fresh EmptyState with the first-paint frame held back, so
-// a render before `paint()` is "with the page" and one after it is inserted.
+// The document is "loading" until `paint()`; a render before it is part of the
+// page load, one after it is inserted later (spec:AST-086 FR11).
 async function importEmptyState() {
-  const frames: FrameRequestCallback[] = [];
-  vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) =>
-    frames.push(callback),
-  );
-  vi.resetModules();
+  let readyState: DocumentReadyState = 'loading';
+  vi.spyOn(document, 'readyState', 'get').mockImplementation(() => readyState);
   const {EmptyState} = await import('./EmptyState');
-  vi.unstubAllGlobals();
-  const paint = () => {
-    frames.splice(0).forEach(callback => callback(performance.now()));
-  };
-  return {EmptyState, paint};
+  return {EmptyState, paint: () => (readyState = 'complete')};
 }
 
 const nextFrame = async () =>
@@ -40,7 +33,9 @@ function recordPolite() {
         (target as Element).getAttribute?.('data-astryx-live-region') ===
         'polite';
       for (const node of isPolite ? addedNodes : []) {
-        if (node.textContent?.trim()) {spoken.push(node.textContent.trim());}
+        if (node.textContent?.trim()) {
+          spoken.push(node.textContent.trim());
+        }
       }
     }
   });
@@ -55,7 +50,7 @@ function mount() {
 }
 
 afterEach(() => {
-  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
   document.body.replaceChildren();
 });
 
@@ -174,6 +169,26 @@ describe('EmptyState announcement (spec:AST-086 FR2)', () => {
     await act(nextFrame);
     polite.stop();
     expect(polite.spoken).toEqual([]);
+    await act(async () => root.unmount());
+  });
+
+  it('stays silent while hidden and announces once when shown (FR12)', async () => {
+    const {EmptyState, paint} = await importEmptyState();
+    paint();
+    const polite = recordPolite();
+    const root = mount();
+    const show = async (hidden: boolean) =>
+      act(async () =>
+        root.render(<EmptyState title="No results" hidden={hidden} />),
+      );
+    await show(true);
+    await act(nextFrame);
+    expect(polite.spoken).toEqual([]);
+    await show(false);
+    await act(nextFrame);
+    await act(nextFrame);
+    polite.stop();
+    expect(polite.spoken).toEqual(['No results']);
     await act(async () => root.unmount());
   });
 });
