@@ -305,7 +305,9 @@ export const ERROR_CODES = Object.freeze({
   /**
    * `render --reverse` refused the received file: its embedded source is
    * damaged (not valid, or a file does not match its checksum), lists a path
-   * twice, carries a file the page does not import, or carries a file a
+   * twice, carries a module, stylesheet or JSON file the page does not
+   * import or an image, font or media file whose bytes are not one, or
+   * carries a file a
    * render never embeds (a dotfile, node_modules, a manifest, lockfile or
    * tool configuration, a file a test, story or benchmark runner would run,
    * or any kind but a page module, stylesheet, JSON file or image). Nothing

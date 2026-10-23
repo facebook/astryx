@@ -20,7 +20,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {createRequire} from 'node:module';
 import {Worker} from 'node:worker_threads';
-import {assetDataUri, isAssetPath, RenderAssetError} from './assets.mjs';
+import {assetDataUri, isAssetBytes, isAssetPath, RenderAssetError} from './assets.mjs';
 import {classesIn, cutCss, layerOrderOf} from './css-cut.mjs';
 import {sourceBlock} from './source-block.mjs';
 import {embeddedPathProblem} from './embedded-files.mjs';
@@ -384,7 +384,17 @@ export async function renderPage(entry, options = {}) {
   for (const asset of ctx.localAssets) {
     const rel = path.relative(root, asset);
     if (rel.startsWith('..') || path.isAbsolute(rel) || rel.split(path.sep).includes('node_modules')) continue;
-    if (!files.includes(asset)) files.push(asset);
+    if (files.includes(asset)) continue;
+    // Carried only when its bytes are a known image, font or media format,
+    // the same test --reverse applies, so the file always comes back.
+    if (!isAssetBytes(fs.readFileSync(asset))) {
+      warnings.push({
+        code: 'not-embedded',
+        message: `${path.relative(dir, asset).split(path.sep).join('/')} is shown inline but not carried in the file: its bytes are not a known image, font or media format, so --reverse cannot give it back.`,
+      });
+      continue;
+    }
+    files.push(asset);
   }
   // Paths are kept relative to the folder that holds every file: the page's
   // folder, or an ancestor when the page imports from above it.

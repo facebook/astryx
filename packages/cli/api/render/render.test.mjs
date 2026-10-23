@@ -493,6 +493,26 @@ describe('render(): every write stays inside the current folder', () => {
     expect(again.data.warnings.map((/** @type {any} */ w) => w.code)).not.toContain('missing-asset');
   }, 60_000);
 
+  it('round-trips an image or font whose bytes and extension disagree', async () => {
+    put('mismatch/photo.png', Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 16, 74, 70, 73, 70, 0, 1]));
+    put('mismatch/fonts/face.otf', Buffer.from([0, 1, 0, 0, 0, 10, 0, 128, 0, 3]));
+    put('mismatch/styles.css', "@font-face { font-family: Face; src: url(fonts/face.otf); }\n.t { font-family: Face; }\n");
+    put('mismatch/page.tsx', "import './styles.css';\nexport default function Page() { return <p className=\"t\"><img src=\"photo.png\" alt=\"\" />Hi</p>; }\n");
+    const r = /** @type {any} */ (await render('mismatch/page.tsx', {cwd: dir}));
+    expect(r.data.files).toEqual(expect.arrayContaining(['photo.png', 'fonts/face.otf']));
+    const back = /** @type {any} */ (await render('mismatch/page.html', {cwd: dir, reverse: true, out: 'mismatch-back/page.tsx'}));
+    expect(back.data.exact).toBe(true);
+    expect(back.data.files).toEqual(expect.arrayContaining(['mismatch-back/photo.png', 'mismatch-back/fonts/face.otf']));
+  }, 60_000);
+
+  it('leaves out a path-named "image" whose bytes are not one, and says so', async () => {
+    put('notimg/fake.png', 'console.log(1)\n');
+    put('notimg/page.tsx', 'export default function Page() { return <img src="fake.png" alt="" />; }\n');
+    const r = /** @type {any} */ (await render('notimg/page.tsx', {cwd: dir}));
+    expect(r.data.files).toEqual(['page.tsx']);
+    expect(r.data.warnings.map((/** @type {any} */ w) => w.code)).toContain('not-embedded');
+  }, 60_000);
+
   it('refuses a carried "image" whose bytes are not one', async () => {
     const {sourceBlock} = await import('../../foundation/render/source-block.mjs');
     put('fake-img.html', `<body><p class="astryx-text">x</p>${sourceBlock('page.tsx', [{path: 'page.tsx', bytes: Buffer.from('export default () => null;\n')}, {path: 'hook.png', bytes: Buffer.from('process.exit(1)\n')}])}</body>`);

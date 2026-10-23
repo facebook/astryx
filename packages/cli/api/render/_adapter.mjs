@@ -403,21 +403,23 @@ export function reverseToFile({cwd, input, output, overwrite}) {
       }
       seen.add(key);
     }
-    // Only files the page reaches through its own imports are written: a
-    // file the page never imports is not part of it, whatever its name.
+    // Modules, stylesheets and JSON are written only when the page reaches
+    // them through its own imports: one it never imports is not part of it,
+    // whatever its name.
     const {reached, missing} = reachableFiles(source.files, {aliases: receivingAliases(path.dirname(requested))});
     // A carried image, font or media file needs no import to be part of the
     // page (it may be named in markup, a stylesheet, JSON or a computed
     // path): the render's own list is the authority, so it is kept when its
-    // bytes really are that kind of file, and goes where the layout puts it.
+    // bytes are a known image, font or media format (any, whatever the
+    // extension), and goes where the layout puts it.
     for (const f of source.files) {
       if (reached.has(f.path) || !isAssetPath(f.path)) continue;
-      if (isAssetBytes(f.path, Buffer.from(f.base64, 'base64'))) reached.set(f.path, {relative: true, aliased: new Set()});
+      if (isAssetBytes(Buffer.from(f.base64, 'base64'))) reached.set(f.path, {relative: true, aliased: new Set()});
     }
     const stray = source.files.filter(f => !reached.has(f.path)).map(f => f.path);
     if (stray.length > 0) {
       throw new AstryxError(
-        `${shown(cwd, input)} carries ${stray.length === 1 ? 'a file' : 'files'} the page does not import (${stray.join(', ')}), which a render never embeds; nothing was written. A file reached through a path alias needs the same alias in this project's tsconfig.json or jsconfig.json.`,
+        `${shown(cwd, input)} carries ${stray.length === 1 ? 'a file' : 'files'} the page does not import, or that is not the image, font or media file its name says (${stray.join(', ')}), which a render never embeds; nothing was written. A file reached through a path alias needs the same alias in this project's tsconfig.json or jsconfig.json.`,
         [],
         ERROR_CODES.ERR_RENDER_SOURCE_DAMAGED,
       );

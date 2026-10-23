@@ -81,53 +81,22 @@ export function assetDataUri(file) {
 }
 
 /**
- * Whether bytes really are the image, font or media file their extension
- * says: their leading bytes match that format (an SVG is XML with an <svg>
- * element). A received file's carried assets are written only when they are.
- * @param {string} file name, for its extension
+ * Whether bytes are a known image, font or media format, whatever the file's
+ * extension says (a JPEG saved as `.png` is still an inert image): their
+ * leading bytes match one (an SVG is XML with an <svg> element). A carried
+ * asset is carried, and written back, only when they do.
  * @param {Buffer} bytes
  */
-export function isAssetBytes(file, bytes) {
-  const ext = path.extname(file).slice(1).toLowerCase();
+export function isAssetBytes(bytes) {
   const at = (/** @type {number} */ i, /** @type {string} */ text) =>
     bytes.subarray(i, i + text.length).toString('latin1') === text;
-  switch (ext) {
-    case 'png':
-      return at(0, '\x89PNG\r\n\x1a\n');
-    case 'jpg':
-    case 'jpeg':
-      return bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
-    case 'gif':
-      return at(0, 'GIF87a') || at(0, 'GIF89a');
-    case 'webp':
-      return at(0, 'RIFF') && at(8, 'WEBP');
-    case 'avif':
-      return at(4, 'ftyp') && (at(8, 'avif') || at(8, 'avis'));
-    case 'bmp':
-      return at(0, 'BM');
-    case 'ico':
-      return bytes[0] === 0 && bytes[1] === 0 && bytes[2] === 1 && bytes[3] === 0;
-    case 'svg': {
-      const head = bytes.subarray(0, 4096).toString('utf8').replace(/^\uFEFF/, '').trimStart();
-      return head.startsWith('<') && /<svg[\s>]/i.test(head);
-    }
-    case 'woff':
-      return at(0, 'wOFF');
-    case 'woff2':
-      return at(0, 'wOF2');
-    case 'ttf':
-      return at(0, '\x00\x01\x00\x00') || at(0, 'true');
-    case 'otf':
-      return at(0, 'OTTO');
-    case 'mp4':
-      return at(4, 'ftyp');
-    case 'webm':
-      return bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3;
-    case 'mp3':
-      return at(0, 'ID3') || (bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0);
-    case 'wav':
-      return at(0, 'RIFF') && at(8, 'WAVE');
-    default:
-      return false;
-  }
+  const b = (/** @type {number[]} */ ...xs) => xs.every((x, i) => bytes[i] === x);
+  if (at(0, '\x89PNG\r\n\x1a\n') || b(0xff, 0xd8, 0xff) || at(0, 'GIF87a') || at(0, 'GIF89a')) return true;
+  if (at(0, 'RIFF') && (at(8, 'WEBP') || at(8, 'WAVE'))) return true;
+  if (at(4, 'ftyp')) return true; // AVIF, MP4
+  if (at(0, 'BM') || b(0, 0, 1, 0)) return true; // BMP, ICO
+  if (at(0, 'wOFF') || at(0, 'wOF2') || at(0, 'OTTO') || at(0, 'true') || b(0, 1, 0, 0)) return true;
+  if (b(0x1a, 0x45, 0xdf, 0xa3) || at(0, 'ID3') || (bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0)) return true;
+  const head = bytes.subarray(0, 4096).toString('utf8').replace(/^\uFEFF/, '').trimStart();
+  return head.startsWith('<') && /<svg[\s>]/i.test(head);
 }
