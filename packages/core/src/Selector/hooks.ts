@@ -537,9 +537,16 @@ export function useCombobox<T extends ComboboxOption = SelectorOptionData>({
 
   const onFieldKeyDown = useCallback(
     (e: React.KeyboardEvent): void => {
-      // A chord is the field's own command, and an input method composing
-      // text owns every key, Escape included, until it commits or cancels.
-      if (isDisabled || isImeKeyEvent(e.nativeEvent) || hasModifier(e)) {
+      // A chord is the field's own command, such as Shift+Enter, except
+      // Escape: whatever modifier is held, it hides a shown list first, so an
+      // enclosing layer never closes on the same press. An input method
+      // composing text owns every key, Escape included, until it commits or
+      // cancels.
+      if (
+        isDisabled ||
+        isImeKeyEvent(e.nativeEvent) ||
+        (hasModifier(e) && e.key !== 'Escape')
+      ) {
         return;
       }
       const enabledIndices = getEnabledIndices();

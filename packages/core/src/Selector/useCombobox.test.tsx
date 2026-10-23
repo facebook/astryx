@@ -354,6 +354,29 @@ describe('useCombobox field props — keys (FR4)', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it.each(['shiftKey', 'ctrlKey', 'altKey', 'metaKey'] as const)(
+    'Escape held with %s still hides the list first and leaves the enclosing layer open',
+    modifier => {
+      const onDismiss = vi.fn();
+      render(
+        <Layer onDismiss={onDismiss}>
+          <Picker field="input" />
+        </Layer>,
+      );
+      const box = fieldFor('input');
+      box.focus();
+      expect(fireEvent.keyDown(box, {key: 'Escape', [modifier]: true})).toBe(
+        false,
+      );
+      expect(screen.queryByRole('listbox')).toBeNull();
+      expect(onDismiss).not.toHaveBeenCalled();
+
+      // With the list hidden, the same chord belongs to the layer again.
+      fireEvent.keyDown(box, {key: 'Escape', [modifier]: true});
+      expect(onDismiss).toHaveBeenCalledTimes(1);
+    },
+  );
+
   it('ArrowDown shows a hidden list in a single-line field', async () => {
     const user = userEvent.setup();
     render(<Picker field="input" isInitiallyOpen={false} />);
