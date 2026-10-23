@@ -45,6 +45,17 @@ describe('a family word keeps its members ahead of passing doc sections', () => 
   });
 });
 
+describe('a synonym of a family name names no family', () => {
+  it.each(['message', 'messages'])(
+    '`%s` lists no member above the entries that declare it',
+    async query => {
+      const {results} = (await search(query)).data;
+      const top = results.slice(0, 5);
+      expect(top.some(r => /^member of /.test(r.reason))).toBe(false);
+    },
+  );
+});
+
 describe("an integration's family (cold start)", () => {
   /** @type {string} */
   let dir;

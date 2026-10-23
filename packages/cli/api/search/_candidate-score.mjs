@@ -112,7 +112,7 @@ const FAMILY_MEMBERS = 3;
  * @param {string[]} [candidate.guidance] - Usage guidance (features, best practices) — scored a tier below description.
  * @param {string} [candidate._family] - The family whose doc lists the entry as a member.
  * @param {number} [candidate._familyIndex] - The entry's place among that family's members.
- * @param {{fuzzy?: boolean, joins?: boolean, part?: boolean}} [opts] - `fuzzy`: allow edit-distance (typo) matches. Default true; multi-word queries pass false. `joins`: read a spaced query joined into a name or keyword (default true); off when the query names an entry outright. `part`: the term is one word of a longer query, so a name's head word after single letters (Stack in VStack) does not count as a keyword hit for it.
+ * @param {{fuzzy?: boolean, joins?: boolean, part?: boolean, synonym?: boolean}} [opts] - `fuzzy`: allow edit-distance (typo) matches. Default true; multi-word queries pass false. `joins`: read a spaced query joined into a name or keyword (default true); off when the query names an entry outright. `part`: the term is one word of a longer query, so a name's head word after single letters (Stack in VStack) does not count as a keyword hit for it. `synonym`: the term stands in for a word of the query, so it names no family.
  * @returns {{score: number, reason: string, alias?: 'partial' | 'keyword'} | null}
  *   `alias` marks a hit that read the query's words joined.
  */
@@ -130,7 +130,7 @@ export function scoreCandidate(
     _family,
     _familyIndex,
   },
-  {fuzzy = true, joins = true, part = false} = {},
+  {fuzzy = true, joins = true, part = false, synonym = false} = {},
 ) {
   let best = 0;
   let reason = '';
@@ -227,6 +227,7 @@ export function scoreCandidate(
   // names the family: a word of a longer query lifts no member.
   if (
     !part &&
+    !synonym &&
     _family &&
     (_familyIndex ?? Infinity) < FAMILY_MEMBERS &&
     (term === _family.toLowerCase() ||
