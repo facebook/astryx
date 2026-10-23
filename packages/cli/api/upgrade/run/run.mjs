@@ -111,12 +111,13 @@ function loadFileProtection(cwd) {
 
 /**
  * The receipt of a run that stopped after codemods ran. Whatever the codemods
- * already wrote stays on disk, so the receipt still names it: a caller that
- * reads only the error would report nothing changed while the files it lists
- * remain modified (spec:AST-040 FR7).
+ * already wrote stays on disk, so the error the run throws carries this
+ * receipt (`failWithReceipt`): a caller that reads only the error would
+ * report nothing changed while the files it lists remain modified
+ * (spec:AST-040 FR7).
  *
  * @param {{from: string, to: string, codemods: number, integrations: string[], sourcePathFound: boolean, cwd: string, changedFiles: string[], transformsApplied: number, protectedRows: Array<{file: string, codemod: string, reason: string, declaration: string, generated: boolean, command?: string}>, errors: Array<{file: string, codemod: string, error: string}>, errorCode: string, cliBehindCore?: import('../upgrade.type.mjs').CliBehindCore | null, registryCompositions?: import('../upgrade.type.mjs').RegistryCompositionSummary}} facts
- * @returns {import('../upgrade.type.mjs').UpgradeRunResponse}
+ * @returns {import('../upgrade.type.mjs').UpgradeRunResponse['data']}
  */
 function stoppedReceipt({
   from,
@@ -136,49 +137,50 @@ function stoppedReceipt({
   const modifiedFiles = uniqueFiles(changedFiles).map(file =>
     path.relative(cwd, file).split(path.sep).join('/'),
   );
-  return {
-    type: 'upgrade.run',
-    data: /** @type {import('../upgrade.type.mjs').UpgradeRunResponse['data']} */ ({
-      from,
-      to,
-      codemods,
-      integrations,
-      agentDocsRefreshed: false,
-      agentDocs: {
-        status: 'current',
-        installedVersion: to,
-        fromVersions: [],
-        files: [],
-        refreshed: false,
-        action: 'none',
-      },
-      sourcePathFound,
-      filesChanged: modifiedFiles.length,
-      transformsApplied,
-      modifiedFiles,
-      protectedFiles: summarizeProtectedFiles(protectedRows),
-      declinedCandidates: [],
-      complete: false,
-      errorCode,
-      errors,
-      ...(registryCompositions ? {registryCompositions} : {}),
-      ...(cliBehindCore ? {cliBehindCore} : {}),
-    }),
-  };
+  return /** @type {import('../upgrade.type.mjs').UpgradeRunResponse['data']} */ ({
+    from,
+    to,
+    codemods,
+    integrations,
+    agentDocsRefreshed: false,
+    agentDocs: {
+      status: 'current',
+      installedVersion: to,
+      fromVersions: [],
+      files: [],
+      refreshed: false,
+      action: 'none',
+    },
+    sourcePathFound,
+    filesChanged: modifiedFiles.length,
+    transformsApplied,
+    modifiedFiles,
+    protectedFiles: summarizeProtectedFiles(protectedRows),
+    declinedCandidates: [],
+    complete: false,
+    errorCode,
+    errors,
+    ...(registryCompositions ? {registryCompositions} : {}),
+    ...(cliBehindCore ? {cliBehindCore} : {}),
+  });
 }
 
 /**
- * The stable code of an incomplete run: a failed codemod or hook outranks a
- * protected file, because regenerating the protected file does not finish a
- * run in which something failed.
- * @param {unknown[]} errors
- * @param {unknown[]} protectedFiles
- * @returns {'ERR_CODEMOD_FAILED' | 'ERR_CODEMOD_PROTECTED' | undefined}
+ * The error a run throws once codemods have run: the same message and stable
+ * code as always, plus the run's receipt on `receipt`, so the JSON error
+ * envelope and a programmatic caller can still see what was written.
+ * @param {string} message
+ * @param {string} code
+ * @param {import('../upgrade.type.mjs').UpgradeRunResponse['data']} receipt
+ * @returns {AstryxError & {receipt: import('../upgrade.type.mjs').UpgradeRunResponse['data']}}
  */
-function incompleteCode(errors, protectedFiles) {
-  if (errors.length > 0) return 'ERR_CODEMOD_FAILED';
-  if (protectedFiles.length > 0) return 'ERR_CODEMOD_PROTECTED';
-  return undefined;
+function failWithReceipt(message, code, receipt) {
+  const err =
+    /** @type {AstryxError & {receipt: import('../upgrade.type.mjs').UpgradeRunResponse['data']}} */ (
+      new AstryxError(message, undefined, code)
+    );
+  err.receipt = receipt;
+  return err;
 }
 
 /**
@@ -405,9 +407,7 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
           protectedFiles,
           declinedCandidates: [],
           complete: false,
-          errorCode:
-            incompleteCode(coreResult?.errors ?? [], protectedFiles) ??
-            'ERR_CODEMOD_PROTECTED',
+          errorCode: 'ERR_CODEMOD_PROTECTED',
           errors: coreResult?.errors ?? [],
           ...(cliBehindCore ? {cliBehindCore} : {}),
         },
@@ -443,9 +443,9 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
     logger.error(configErr.message);
     logger.log('Aborted\n');
     if ((coreResult?.writtenFiles.length ?? 0) > 0) {
-      // Core codemods already wrote: report what they changed with the error.
+      // Core codemods already wrote: the error carries what they changed.
       if (cliBehindCore) logCliBehindCore(cliBehindCore, targetVersion);
-      return stoppedReceipt({
+      const stopped = stoppedReceipt({
         from: currentVersion,
         to: targetVersion,
         codemods: totalTransforms,
@@ -462,6 +462,11 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
         errorCode: ERROR_CODES.ERR_INVALID_ARGUMENT,
         cliBehindCore,
       });
+      throw failWithReceipt(
+        configErr.message,
+        ERROR_CODES.ERR_INVALID_ARGUMENT,
+        stopped,
+      );
     }
     throw new AstryxError(
       configErr.message,
@@ -654,14 +659,39 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
       const hookErr = /** @type {Error} */ (err);
       const msg = `Post-codemod hook failed: ${hookErr.message}`;
       logger.error(msg);
+      if (initialProtected.length === 0) {
+        logger.log('Upgrade failed\n');
+        throw failWithReceipt(
+          msg,
+          ERROR_CODES.ERR_CODEMOD_FAILED,
+          stoppedReceipt({
+            from: currentVersion,
+            to: targetVersion,
+            codemods: totalTransforms,
+            integrations: receipt.integrations,
+            sourcePathFound,
+            cwd,
+            changedFiles: mergedChangedFiles,
+            transformsApplied: mergedTransformsApplied,
+            protectedRows: [],
+            errors: [
+              ...mergedErrors,
+              {file: '.', codemod: 'post-codemod-hook', error: msg},
+            ],
+            errorCode: ERROR_CODES.ERR_CODEMOD_FAILED,
+            cliBehindCore,
+            ...(registryResult
+              ? {registryCompositions: registryResult.summary}
+              : {}),
+          }),
+        );
+      }
       hookFailure = msg;
       finalErrors = [
         ...mergedErrors,
         {file: '.', codemod: 'post-codemod-hook', error: msg},
       ];
-      if (initialProtected.length > 0) {
-        logger.log('Regeneration failed; protected changes remain\n');
-      }
+      logger.log('Regeneration failed; protected changes remain\n');
     }
     if (apply) {
       for (const [file, before] of protectedBeforeHooks) {
@@ -685,9 +715,9 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
       refreshedProtection = loadFileProtection(cwd);
     } catch (err) {
       if (!(err instanceof AstryxError)) throw err;
-      // The hooks ran after the codemods wrote; keep their receipt.
+      // The hooks ran after the codemods wrote; the error carries their receipt.
       if (cliBehindCore) logCliBehindCore(cliBehindCore, targetVersion);
-      return stoppedReceipt({
+      const stopped = stoppedReceipt({
         from: currentVersion,
         to: targetVersion,
         codemods: totalTransforms,
@@ -707,6 +737,7 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
           ? {registryCompositions: registryResult.summary}
           : {}),
       });
+      throw failWithReceipt(err.message, err.code, stopped);
     }
     const coreCheck = await runCoreCodemods(versionManifests, {
       apply: false,
@@ -774,9 +805,13 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
   ]).map(file => path.relative(cwd, file).split(path.sep).join('/'));
   receipt.protectedFiles = protectedFiles;
   receipt.declinedCandidates = [];
-  const errorCode = incompleteCode(finalErrors, protectedFiles);
-  receipt.complete = errorCode === undefined;
-  if (errorCode) receipt.errorCode = errorCode;
+  receipt.complete = protectedFiles.length === 0 && finalErrors.length === 0;
+  if (protectedFiles.length > 0) {
+    receipt.errorCode = 'ERR_CODEMOD_PROTECTED';
+  } else if (finalErrors.length > 0) {
+    // Only on the receipt the thrown error carries (below).
+    receipt.errorCode = 'ERR_CODEMOD_FAILED';
+  }
   receipt.errors = finalErrors;
   if (registryResult) receipt.registryCompositions = registryResult.summary;
   if (cliBehindCore) receipt.cliBehindCore = cliBehindCore;
@@ -794,19 +829,17 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
   }
 
   if (finalErrors.length > 0 && protectedFiles.length === 0) {
-    // The receipt still names every file the codemods wrote before the
-    // failure; the caller keeps or reverts them knowingly.
-    logger.error(
-      `${ERROR_CODES.ERR_CODEMOD_FAILED}: upgrade completed with ${finalErrors.length} error${finalErrors.length === 1 ? '' : 's'}; files already changed stay changed.`,
-    );
-    if (cliBehindCore) logCliBehindCore(cliBehindCore, targetVersion);
+    const msg = `Upgrade completed with ${finalErrors.length} codemod error${finalErrors.length === 1 ? '' : 's'}.`;
     logger.log('Upgrade failed\n');
-    return {
-      type: 'upgrade.run',
-      data: /** @type {import('../upgrade.type.mjs').UpgradeRunResponse['data']} */ (
+    // The error carries the receipt: every file the codemods wrote before the
+    // failure stays changed, and the caller keeps or reverts them knowingly.
+    throw failWithReceipt(
+      msg,
+      ERROR_CODES.ERR_CODEMOD_FAILED,
+      /** @type {import('../upgrade.type.mjs').UpgradeRunResponse['data']} */ (
         /** @type {unknown} */ (receipt)
       ),
-    };
+    );
   }
 
   // Only refresh managed docs after all required codemod changes are complete.

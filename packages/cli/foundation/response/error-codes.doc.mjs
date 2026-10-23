@@ -151,7 +151,7 @@ export const doc = {
     {
       value: 'ERR_CODEMOD_FAILED',
       description:
-        'A codemod or post-codemod hook failed during an upgrade run; `upgrade` reports it as the `errorCode` of its `upgrade.run` result, which still lists the files it changed.',
+        'A codemod or post-codemod hook failed during an upgrade run; the error carries a `receipt` that lists the files the run already changed.',
     },
     {
       value: 'ERR_CODEMOD_PROTECTED',

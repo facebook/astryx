@@ -128,13 +128,13 @@ export const doc = {
     {
       type: 'upgrade.run',
       description:
-        'The terminal run receipt: from, to, codemods (count), integrations, agentDocs, agentDocsRefreshed, registryCompositions (when receipts are found), sourcePathFound (false when the resolved `path` does not exist, so nothing was scanned), filesChanged, transformsApplied, modifiedFiles, protectedFiles, declinedCandidates, errors, and complete. Every run that gets as far as its codemods returns this receipt, including one that fails: complete is false and errorCode names why. errorCode is ERR_CODEMOD_FAILED when a codemod or post-codemod hook failed (each failure is in errors), otherwise ERR_CODEMOD_PROTECTED when a protected file still requires a change, otherwise the code of the error that stopped the run after codemods had written files (an astryx.config that fails validation is ERR_INVALID_ARGUMENT). Files in modifiedFiles stay changed; the CLI exits nonzero while preserving the structured receipt. When the installed Core is newer than the CLI, it also carries cliBehindCore ({cliVersion, command}): codemods for the releases after cliVersion did not run, and command runs the same upgrade with the matching CLI.',
+        'The terminal run receipt: from, to, codemods (count), integrations, agentDocs, agentDocsRefreshed, registryCompositions (when receipts are found), sourcePathFound (false when the resolved `path` does not exist, so nothing was scanned), filesChanged, transformsApplied, modifiedFiles, protectedFiles, declinedCandidates, errors, and complete. When a protected file still requires a change, complete is false and errorCode is ERR_CODEMOD_PROTECTED; the CLI exits nonzero while preserving the structured receipt. A run that fails after its codemods ran throws instead (see throws), and the thrown AstryxError carries the same receipt on `receipt`, with complete false and errorCode set to its code. When the installed Core is newer than the CLI, it also carries cliBehindCore ({cliVersion, command}): codemods for the releases after cliVersion did not run, and command runs the same upgrade with the matching CLI.',
     },
   ],
   throws: [
     {
       code: 'ERR_INVALID_ARGUMENT',
-      when: '`from` is missing (and neither `list` nor `registry` is set); `list` and `registry` are both set; `list` is combined with `from`, `force`, `apply`, `path` (non-default), `codemod`, `skipCodemod`, `integration` or `installDeps`; `registry` is combined with `from`, `force`, `codemod`, `skipCodemod`, `integration` or `installDeps`; an `integration` specifier is invalid or not installed; or astryx.config fails to load or validate, no pending config codemod repairs it, and no codemod has written a file yet (otherwise an upgrade.run receipt with complete: false and this errorCode is returned)',
+      when: '`from` is missing (and neither `list` nor `registry` is set); `list` and `registry` are both set; `list` is combined with `from`, `force`, `apply`, `path` (non-default), `codemod`, `skipCodemod`, `integration` or `installDeps`; `registry` is combined with `from`, `force`, `codemod`, `skipCodemod`, `integration` or `installDeps`; an `integration` specifier is invalid or not installed; or astryx.config fails to load or validate and no pending config codemod repairs it (when core codemods already wrote files, the error carries their receipt on `receipt`)',
     },
     {code: 'ERR_INVALID_VERSION', when: '`from` is not a valid semver string'},
     {
@@ -154,8 +154,12 @@ export const doc = {
       when: 'the version range has codemods but none remain selected: `codemod` names no codemod in the range, or `skipCodemod` excludes all of them',
     },
     {
+      code: 'ERR_CODEMOD_FAILED',
+      when: "one or more codemods failed, or a post-codemod hook failed, and no protected file still needs a change (otherwise an upgrade.run receipt with complete: false is returned). The error carries the run's receipt on `receipt`: the files already changed, each failure in errors, complete: false",
+    },
+    {
       code: 'ERR_CODEMOD_PROTECTION_SOURCE',
-      when: 'a working-tree protection declaration cannot be read or parsed before writes begin',
+      when: 'a working-tree protection declaration cannot be read or parsed before writes begin, or after post-codemod hooks rewrite it (the error then carries the receipt on `receipt`)',
     },
   ],
   examples: [

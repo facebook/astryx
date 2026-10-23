@@ -173,9 +173,11 @@ describe('astryx upgrade exit codes', () => {
     );
     const {status, envelope} = await upgradeJson(['--from', '0.5.0']);
     expect(status).toBe(1);
+    expect(envelope.code).toBe('ERR_CODEMOD_FAILED');
+    expect(envelope.error).toMatch(/Post-codemod hook failed/);
+    // Additive: the receipt names what the run had already changed.
     expect(envelope).toMatchObject({
-      type: 'upgrade.run',
-      data: {
+      receipt: {
         complete: false,
         errorCode: 'ERR_CODEMOD_FAILED',
         modifiedFiles: ['src/panel.tsx'],
@@ -199,8 +201,8 @@ describe('astryx upgrade exit codes', () => {
     const {status, envelope} = await upgradeJson(['--from', '0.5.0', '--apply']);
     expect(status).toBe(1);
     expect(envelope).toMatchObject({
-      type: 'upgrade.run',
-      data: {
+      code: 'ERR_INVALID_ARGUMENT',
+      receipt: {
         complete: false,
         errorCode: 'ERR_INVALID_ARGUMENT',
         modifiedFiles: ['src/panel.tsx'],

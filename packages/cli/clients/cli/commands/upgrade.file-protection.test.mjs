@@ -171,7 +171,7 @@ describe('upgrade protected-file contract', () => {
     );
   });
 
-  it('preserves protected-file facts when regeneration fails, reported as the failure it is', () => {
+  it('preserves protected-file facts when regeneration fails', () => {
     seed();
     write(
       'astryx.config.mjs',
@@ -185,7 +185,7 @@ describe('upgrade protected-file contract', () => {
       type: 'upgrade.run',
       data: {
         complete: false,
-        errorCode: 'ERR_CODEMOD_FAILED',
+        errorCode: 'ERR_CODEMOD_PROTECTED',
         protectedFiles: [
           expect.objectContaining({file: 'generated/panel.tsx'}),
         ],
@@ -199,7 +199,7 @@ describe('upgrade protected-file contract', () => {
     });
   });
 
-  it('keeps the receipt when a hook leaves a protection declaration unreadable', () => {
+  it('keeps the error and adds the receipt when a hook leaves a protection declaration unreadable', () => {
     seed();
     write(
       'astryx.config.mjs',
@@ -209,9 +209,11 @@ describe('upgrade protected-file contract', () => {
     const applied = run([...ARGS, '--apply']);
 
     expect(applied.status).toBe(1);
+    expect(applied.envelope).not.toHaveProperty('type');
     expect(applied.envelope).toMatchObject({
-      type: 'upgrade.run',
-      data: {
+      code: 'ERR_CODEMOD_PROTECTION_SOURCE',
+      error: expect.stringContaining('.hgignore'),
+      receipt: {
         complete: false,
         errorCode: 'ERR_CODEMOD_PROTECTION_SOURCE',
         modifiedFiles: ['src/owned.tsx'],
