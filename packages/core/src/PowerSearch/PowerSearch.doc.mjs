@@ -202,6 +202,25 @@ export const docs = {
       description:
         'StyleX styles for layout customization. Must be a stylex.create() value.',
     },
+    {
+      name: 'experimental',
+      type: "{presentation?: 'popover' | 'bottom-sheet' | 'adaptive'}",
+      stability: 'experimental',
+      description:
+        "Experimental options: anything in this object may change or be removed in a patch release, and omitting it keeps the stable behavior. presentation (default 'popover') chooses how the field presents filter editing. popover is the tokenizer field with its typeahead and the editor popover. bottom-sheet makes the whole field one trigger showing display-only filter tokens: it opens a Filters sheet listing the filters as rows with Add filter, Done, and Clear all, an Add filter sheet with the fields (or the content search with inline suggestions), and a value step that stages field → operator → value and confirms from its footer; list values edit through the Tokenizer's own sheet. adaptive uses the bottom sheet on compact touch screens and the popover otherwise, resolved the same way Selector resolves it. In the sheet presentation menuWidth and tokenOverflowBehavior have no surface to act on and warn in development.",
+    },
+  ],
+  examples: [
+    {
+      label: 'Touch sheet on compact screens (experimental)',
+      code: `const [filters, setFilters] = useState([]);
+<PowerSearch
+  config={config}
+  filters={filters}
+  onChange={next => setFilters(next)}
+  experimental={{presentation: 'adaptive'}}
+/>`,
+    },
   ],
   // `config` and `filters` are custom values the docsite preview cannot
   // generate automatically. Keep this small, but include an initial token so
@@ -439,6 +458,13 @@ export const docsZh = {
       type: 'StyleXStyles',
       description: '用于布局自定义的 StyleX 样式。必须是 stylex.create() 值。',
     },
+    {
+      name: 'experimental',
+      type: "{presentation?: 'popover' | 'bottom-sheet' | 'adaptive'}",
+      stability: 'experimental',
+      description:
+        "实验性选项：此对象中的任何内容都可能在补丁版本中更改或移除；省略它即保持稳定行为。presentation（默认 'popover'）决定字段如何呈现筛选编辑：popover 为带有预输入和编辑弹出层的标记字段；bottom-sheet 将整个字段变为一个显示只读筛选标记的触发按钮——点按后打开列出筛选项的「筛选」面板（含添加筛选、完成、全部清除）、列出字段（或带内联建议的内容搜索）的「添加筛选」面板，以及按字段 → 运算符 → 值暂存并在底部确认的取值步骤；列表值通过 Tokenizer 自身的面板编辑。adaptive 在紧凑触摸屏上使用底部面板，其他情况使用 popover，解析方式与 Selector 相同。在底部面板呈现中，menuWidth 和 tokenOverflowBehavior 没有作用对象，并会在开发环境中发出警告。",
+    },
   ],
   usage: {
     description:
@@ -532,5 +558,7 @@ export const docsDense = {
     size: 'Search input+token size.',
     xstyle:
       'StyleX styles for layout customization. Must be stylex.create() value.',
+    experimental:
+      "Experimental; may change in a patch. presentation: 'popover' (default, tokenizer field + editor popover) | 'bottom-sheet' (one trigger with display-only tokens + Filters / Add filter / value sheets; list values via Tokenizer's sheet) | 'adaptive' (sheet on compact touch, else popover).",
   },
 };
