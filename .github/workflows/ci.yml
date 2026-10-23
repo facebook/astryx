@@ -730,16 +730,18 @@ jobs:
 
   # Native Swift: the Swift packages of the experimental, canary-only
   # @astryxdesign/native (AST-082) build and test only on macOS. They are
-  # coverage inside the shared surface (AST-030 FR11), so `test` joins this
-  # job. It does the macOS work only when a pull request changes Swift under
-  # packages/native or this workflow; a merge group always runs it.
-  test-native-swift:
+  # coverage inside the shared surface (AST-030 FR11), so `test` joins
+  # test-native-swift. A Linux job first decides whether the change touches
+  # Swift under packages/native; only then does test-native-swift take a macOS
+  # runner, and otherwise it passes on Linux without work.
+  native-swift-scope:
     needs: [check-scope]
     if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
-    runs-on: macos-15
-    timeout-minutes: 30
+    runs-on: ubuntu-slim
     permissions:
       contents: read
+    outputs:
+      applies: ${{ steps.scope.outputs.applies }}
     steps:
       - name: Require successful scope classification
         if: needs.check-scope.result != 'success'
@@ -748,30 +750,57 @@ jobs:
           exit 1
 
       - uses: actions/checkout@v7
-        if: needs.check-scope.outputs.docsite_only != 'true'
-        with:
-          fetch-depth: 0
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
 
+      # The helper comes from the base, since an older head lacks it. Exit 1
+      # means out of scope; 0 in scope; 2 unknown, so the Swift work runs.
       - name: Decide whether native Swift changed
-        id: swift-scope
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        id: scope
         env:
-          EVENT_NAME: ${{ github.event_name }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          DOCSITE_ONLY: ${{ needs.check-scope.outputs.docsite_only }}
+          TOOLING_ONLY: ${{ needs.check-scope.outputs.tooling_only }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
         run: |
-          set -euo pipefail
-          if [ "$EVENT_NAME" != pull_request ]; then
-            echo 'changed=true' >> "$GITHUB_OUTPUT"
+          if [ "$DOCSITE_ONLY" = true ] || [ "$TOOLING_ONLY" = true ]; then
+            echo 'Specialized lane; no native Swift work.'
+            echo 'applies=false' >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          changed=$(git diff --name-only "$(git merge-base "$BASE_SHA" HEAD)" HEAD \
-            | grep -E '^packages/native/.*(\.swift|Package\.swift)$|^\.github/workflows/ci\.yml$' || true)
-          if [ -n "$changed" ]; then
-            echo 'changed=true' >> "$GITHUB_OUTPUT"
-          else
-            echo 'No native Swift change; nothing to build.'
-            echo 'changed=false' >> "$GITHUB_OUTPUT"
+          scope=2
+          helper="$(mktemp)"
+          if [ -n "$BASE_SHA" ] \
+            && git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA" \
+            && git show "$BASE_SHA:.github/scripts/pr-scope-touches.sh" > "$helper"; then
+            scope=0
+            bash "$helper" "$BASE_SHA" '^packages/native/.*(\.swift|/Package\.swift)$' || scope=$?
           fi
+          if [ "$scope" = 1 ]; then
+            echo 'No native Swift change; nothing to build.'
+            echo 'applies=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'applies=true' >> "$GITHUB_OUTPUT"
+          fi
+
+  test-native-swift:
+    needs: [check-scope, native-swift-scope]
+    if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
+    runs-on: ${{ needs.native-swift-scope.outputs.applies == 'true' && 'macos-15' || 'ubuntu-slim' }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Require a decided Swift scope
+        if: needs.native-swift-scope.result != 'success'
+        run: |
+          echo "Native Swift scope could not be decided; refusing to skip required work."
+          exit 1
+
+      - name: Skip Swift work outside its scope
+        if: needs.native-swift-scope.outputs.applies != 'true'
+        run: echo "No native Swift change in this scope."
+
+      - uses: actions/checkout@v7
+        if: needs.native-swift-scope.outputs.applies == 'true'
 
       # One package per directory that holds a Package.swift, such as apple/
       # (generated contracts) and each versioned swift-ios-<n>/. A package that
@@ -779,7 +808,7 @@ jobs:
       # Simulator, and an iOS-only package runs its tests there. A package
       # without a test target only builds.
       - name: Build and test each native Swift package
-        if: steps.swift-scope.outputs.changed == 'true'
+        if: needs.native-swift-scope.outputs.applies == 'true'
         run: |
           set -euo pipefail
           xcodebuild -version
