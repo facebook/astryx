@@ -16,4 +16,10 @@ describe('ties below the first result', () => {
     expect(results[0]).toMatchObject({name: 'ProgressBar'});
     expect(results[1]?.name).toMatch(/^ProgressBar./);
   });
+
+  it('keeps which results are shown', async () => {
+    const results = (await search('chat')).data.results.map(r => r.name);
+    expect(results).toContain('ai-chat');
+    expect(results).toContain('ai-chat-landing');
+  });
 });

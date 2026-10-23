@@ -9,14 +9,16 @@
  * and a synonym name match can score under 55, so inside a band a weaker match
  * can lead a stronger one when the weights favor it. Inside such a
  * run the learned order places the matches, with these exceptions: matches
- * that scored the same keep their lexical order, as one block; an entry the
- * query names leads; in a query of one or two words, the matches on every
- * word keep their lexical order; and an integration's matches that scored the
- * same keep theirs.
+ * that scored the same move as one block; an entry the query names leads; in a
+ * query of one or two words, the matches on every word keep their lexical
+ * order; and an integration's matches that scored the same keep theirs.
+ * Below the first result, inside the results shown, a block of one domain is
+ * ordered by fit (tiesByFit): a part of the first result, then rarer matched
+ * words, then the lexical order.
  */
 
 import {entryOf} from './_entries.mjs';
-import {fold, words} from './_query-words.mjs';
+import {fold, nameWords, words} from './_query-words.mjs';
 import {searchedComponentsOf} from './_result.mjs';
 
 /** @typedef {import('./_entries.mjs').EntryTable} EntryTable */
@@ -104,10 +106,12 @@ export function orderMatches(table, order, lexical, query, limit) {
     ranked = keepLexical(ranked, it => (it.res.score ?? 0) >= FULL_COVERAGE);
   }
   ranked = integrationTies(ranked);
-  ranked = tiesByFit(ranked, table, blockOf);
+  // Ties are ordered by fit only among the results shown, so which results
+  // are shown stays as before.
+  const shown = tiesByFit(ranked.slice(0, limit), table, blockOf);
   const response = {
     ...lexical,
-    data: {...lexical.data, results: ranked.slice(0, limit).map(it => it.res)},
+    data: {...lexical.data, results: shown.map(it => it.res)},
   };
   const searched = searchedComponentsOf.get(lexical);
   if (searched) searchedComponentsOf.set(response, searched);
@@ -131,13 +135,17 @@ export function orderMatches(table, order, lexical, query, limit) {
  */
 function tiesByFit(ranked, table, blockOf) {
   if (ranked.length < 3) return ranked;
-  const first = String(ranked[0].res.name ?? '').toLowerCase();
+  const first = nameWords(String(ranked[0].res.name ?? '')).map(fold);
   const idf = table.fields.desc.idf;
   /** @param {Item} it */
   const related = it => {
-    const name = String(it.res.name ?? '').toLowerCase();
+    // A part's name words start with the first result's whole name words:
+    // TableRow is a part of Table, Table is no part of Tab.
+    const name = nameWords(String(it.res.name ?? '')).map(fold);
     return (
-      (first.length >= 3 && name !== first && name.startsWith(first)) ||
+      (first.length > 0 &&
+        name.length > first.length &&
+        first.every((w, n) => name[n] === w)) ||
       /^member of /.test(it.res.reason ?? '')
     );
   };
