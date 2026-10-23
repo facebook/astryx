@@ -20,6 +20,7 @@ rests on evidence.
 | Native theme   | `defineNativeTheme`               | Durable theme intent (`material: 'opaque' \| 'translucent'`) plus platform entries scoped by OS version, such as Liquid Glass from iOS 26. Never sets tokens.                                                                                |
 | Icons          | `NATIVE_ICON_DEFAULTS`            | Astryx's built-in icon names mapped to SF Symbols on Apple platforms and Material Symbols on Android.                                                                                                                                        |
 | Wire           | `AstryxNode`, `AstryxAction`      | Each component as JSON a TypeScript core sends a native host (arm C), and the action a host sends back when a view calls a callback. Swift decodes `<Name>Node` and turns it into `<Name>Props` with `viewProps(send:)`.                     |
+| Logic core     | `@astryxdesign/native/logic`      | `createLogicCore` holds a screen's state, builds its node tree, and reduces actions; `connectBridge` carries it to a native host as JSON. ECMAScript built-ins only, so it runs in Hermes. Shaped after EJ Campbell's astryx-swift spike.    |
 
 Contracts cover Button, Card, Divider, Heading, HStack, ProgressBar, Selector,
 Switch, Text, TextInput, and VStack. React Native and Android bindings are not built yet; see
@@ -93,6 +94,31 @@ let node = try JSONDecoder().decode(AstryxNode.self, from: snapshot)
 if case .switch(let wifi) = node {
   let props = wifi.viewProps { action in core.dispatch(action.json) }
 }
+```
+
+```ts
+import {connectBridge, createLogicCore} from '@astryxdesign/native/logic';
+
+const core = createLogicCore<{wifi: boolean}, AstryxNode, AstryxAction>({
+  initial: {wifi: true},
+  view: state => ({
+    component: 'Switch',
+    key: 'wifi',
+    props: {label: 'Wi-Fi', value: state.wifi},
+    events: ['onChange'],
+  }),
+  reduce: (state, action) =>
+    action.component === 'Switch' && action.event === 'onChange'
+      ? {wifi: action.args[0]}
+      : state,
+});
+// In the app's JavaScript engine: the host reads snapshots and dispatches actions.
+const bridge = connectBridge(core, {
+  connected() {},
+  changed(json) {
+    /* to Swift */
+  },
+});
 ```
 
 ## Working on it
