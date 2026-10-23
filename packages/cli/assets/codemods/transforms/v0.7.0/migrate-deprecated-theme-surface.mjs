@@ -5,15 +5,16 @@
  *
  * Static keys directly inside a theme's `components` object move to their
  * canonical target. A theme is a `defineTheme()` call imported from Astryx, an
- * object typed as an Astryx theme (annotation, `as`, or `satisfies`), or, in a
- * theme source that a same-stem theme descriptor (`<stem>.doc.mjs`) declares,
- * a direct theme object with a static `name` whose component entries are style
- * objects. Shape alone is not proof: a look-alike object anywhere else, such
- * as another library's theme, is left unchanged. CSS selectors move the same target classes, keep the owner scope of
- * the per-component clear-icon aliases, and replace target-qualified bare
- * prop/state classes with reflected `data-*` selectors using the final 0.6
- * runtime contract. A known bare class that cannot be classified for its target
- * gets a TODO. Dynamic theme keys, unqualified classes, declarations, comments,
+ * object typed as an Astryx theme (annotation, `as`, or `satisfies`), or the
+ * direct theme object a same-stem theme descriptor (`<stem>.doc.mjs`) declares:
+ * the top-level binding exported as `<stem>`, with a static `name` and
+ * component entries that are style objects. Shape alone is not proof: a
+ * look-alike object anywhere else, including another object in the same theme
+ * source, is left unchanged. CSS selectors move the same target classes, keep
+ * the owner scope of the per-component clear-icon aliases, and replace
+ * target-qualified bare prop/state classes with reflected `data-*` selectors
+ * using the final 0.6 runtime contract. A known bare class that cannot be
+ * classified for its target gets a TODO. Dynamic theme keys, unqualified classes, declarations, comments,
  * and strings containing CSS are left for manual review.
  */
 
@@ -342,45 +343,83 @@ const TS_WRAPPERS = new Set([
 ]);
 
 /**
- * True when a same-stem theme descriptor beside this file declares it an
- * Astryx theme source (`brandTheme.ts` beside `brandTheme.doc.mjs`). The
+ * The export name a same-stem theme descriptor beside this file declares
+ * (`brandTheme` for `brandTheme.ts` beside `brandTheme.doc.mjs`), or null. The
  * descriptor is read statically, never executed; an unreadable or non-theme
  * descriptor is not proof.
  * @param {string} filePath
+ * @returns {string | null}
  */
-function isDescribedThemeSource(filePath) {
-  const extension = path.extname(filePath);
-  const docPath = path.join(
-    path.dirname(filePath),
-    `${path.basename(filePath, extension)}.doc.mjs`,
-  );
-  if (!fs.existsSync(docPath)) return false;
+function describedThemeExportName(filePath) {
+  const stem = path.basename(filePath, path.extname(filePath));
+  const docPath = path.join(path.dirname(filePath), `${stem}.doc.mjs`);
+  if (!fs.existsSync(docPath)) return null;
   try {
-    return (
-      readThemeDescriptorValue(docPath, `Theme descriptor ${docPath}`).type ===
-      'theme'
-    );
+    return readThemeDescriptorValue(docPath, `Theme descriptor ${docPath}`)
+      .type === 'theme'
+      ? stem
+      : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
 /**
+ * Top-level local names this module exports under `exportName`: an exported
+ * declaration of that name, or a source-less `export {local as exportName}`.
+ * @param {any} root @param {any} j @param {string} exportName
+ */
+function localNamesExportedAs(root, j, exportName) {
+  /** @type {Set<string>} */
+  const locals = new Set();
+  root
+    .find(j.ExportNamedDeclaration)
+    .forEach((/** @type {any} */ exportPath) => {
+      const node = exportPath.node;
+      if (node.exportKind === 'type' || node.source) return;
+      for (const declarator of node.declaration?.declarations ?? []) {
+        if (declarator.id?.name === exportName) locals.add(exportName);
+      }
+      for (const specifier of node.specifiers ?? []) {
+        const exported = specifier.exported?.name ?? specifier.exported?.value;
+        const local = specifier.local?.name ?? specifier.local?.value;
+        if (
+          specifier.exportKind !== 'type' &&
+          exported === exportName &&
+          typeof local === 'string'
+        ) {
+          locals.add(local);
+        }
+      }
+    });
+  return locals;
+}
+
+/**
  * Local names that refer to Astryx's `defineTheme`, its theme types, or an
- * Astryx namespace import, plus whether the file is a described theme source.
+ * Astryx namespace import, plus the binding a theme descriptor declares.
  * @param {any} root @param {any} j @param {string} filePath
  */
 function astryxThemeBindings(root, j, filePath) {
-  /** @type {boolean | undefined} */
-  let describedThemeSource;
+  /** @type {Set<string> | undefined} */
+  let describedLocals;
   const bindings = {
     defineTheme: new Set(),
     themeTypes: new Set(),
     namespaces: new Set(),
-    /** Read lazily: only a direct theme-shaped object needs the descriptor. */
-    isDescribedThemeSource() {
-      describedThemeSource ??= isDescribedThemeSource(filePath);
-      return describedThemeSource;
+    /**
+     * Top-level locals exported under the descriptor's name. Read lazily:
+     * only a direct theme-shaped object needs the descriptor.
+     * @returns {Set<string>}
+     */
+    describedThemeLocals() {
+      if (describedLocals == null) {
+        const exportName = describedThemeExportName(filePath);
+        describedLocals = exportName
+          ? localNamesExportedAs(root, j, exportName)
+          : new Set();
+      }
+      return describedLocals;
     },
   };
   root.find(j.ImportDeclaration).forEach((/** @type {any} */ importPath) => {
@@ -462,9 +501,35 @@ function isDirectThemeObject(node) {
 }
 
 /**
+ * True when this object literal initializes the top-level binding that the
+ * file's theme descriptor declares, directly or through TypeScript wrappers.
+ * @param {any} objectPath @param {ReturnType<typeof astryxThemeBindings>} bindings
+ */
+function isDescribedThemeBinding(objectPath, bindings) {
+  let parent = objectPath.parent;
+  while (parent != null && TS_WRAPPERS.has(parent.node.type)) {
+    parent = parent.parent;
+  }
+  const declarator = parent?.node;
+  if (
+    declarator?.type !== 'VariableDeclarator' ||
+    declarator.id?.type !== 'Identifier'
+  ) {
+    return false;
+  }
+  const declaration = parent.parent;
+  const container = declaration?.parent?.node;
+  const topLevel =
+    container?.type === 'Program' ||
+    (container?.type === 'ExportNamedDeclaration' &&
+      declaration.parent.parent?.node.type === 'Program');
+  return topLevel && bindings.describedThemeLocals().has(declarator.id.name);
+}
+
+/**
  * True when this object literal is an Astryx theme: the argument of an
- * imported `defineTheme()`, typed as an Astryx theme, or a direct theme object
- * in a described theme source.
+ * imported `defineTheme()`, typed as an Astryx theme, or the direct theme
+ * object a theme descriptor declares.
  * @param {any} objectPath @param {ReturnType<typeof astryxThemeBindings>} bindings
  */
 function isThemeRoot(objectPath, bindings) {
@@ -495,7 +560,8 @@ function isThemeRoot(objectPath, bindings) {
     return true;
   }
   return (
-    isDirectThemeObject(objectPath.node) && bindings.isDescribedThemeSource()
+    isDirectThemeObject(objectPath.node) &&
+    isDescribedThemeBinding(objectPath, bindings)
   );
 }
 

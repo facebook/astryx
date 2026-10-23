@@ -162,6 +162,47 @@ export const editorTheme = {name: 'editor', components: {textarea: {root: {}}}};
     expect(output).not.toMatch(/navicon\s*:/);
   });
 
+  it('renames only the declared theme binding in a described theme source', () => {
+    const dir = folder({'brandTheme.doc.mjs': THEME_DOC});
+    const output = apply(
+      `export const brandTheme = {name: 'brand', components: {navicon: {base: {}}}};
+export const otherLibraryTheme = {
+  name: 'other',
+  components: {checkbox: {root: {}}, textarea: {root: {}}},
+};`,
+      path.join(dir, 'brandTheme.ts'),
+    );
+    expect(output).toContain("'nav-icon':");
+    expect(output).toContain(
+      'components: {checkbox: {root: {}}, textarea: {root: {}}}',
+    );
+    expect(output).not.toContain('checkbox-indicator');
+    expect(output).not.toContain('text-area');
+  });
+
+  it('follows a local binding exported under the descriptor name', () => {
+    const dir = folder({'brandTheme.doc.mjs': THEME_DOC});
+    const output = apply(
+      `const theme = {name: 'brand', components: {navicon: {base: {}}}} as const;
+export {theme as brandTheme};`,
+      path.join(dir, 'brandTheme.ts'),
+    );
+    expect(output).toContain("'nav-icon':");
+  });
+
+  it('does not treat an unexported or nested same-named object as the declared theme', () => {
+    const dir = folder({'brandTheme.doc.mjs': THEME_DOC});
+    for (const input of [
+      `const brandTheme = {name: 'brand', components: {navicon: {base: {}}}};`,
+      `export function make() {
+  const brandTheme = {name: 'brand', components: {navicon: {base: {}}}};
+  return brandTheme;
+}`,
+    ]) {
+      expect(apply(input, path.join(dir, 'brandTheme.ts'))).toBe(input);
+    }
+  });
+
   it('does not treat a descriptor for another stem or kind as theme proof', () => {
     const input = `export const brandTheme = {name: 'brand', components: {navicon: {base: {}}}};`;
     const otherStem = folder({'otherTheme.doc.mjs': THEME_DOC});
