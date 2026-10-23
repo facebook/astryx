@@ -105,9 +105,10 @@ announcement channel.
   announced. A message inserted after that, or whose text changes later, is
   announced once. A message brought in by a client-rendered route change is
   inserted after page load and announces once; this is the one case where a
-  message arriving with its view is announced. Page load ends at the first commit
-  after the document finishes loading, whether that first render came from the
-  server or the client. FR4 applies inside a mounted live
+  message arriving with its view is announced. Page load is the content present in
+  the page's first committed render (from the server or the client) before the
+  document finishes loading. Anything inserted, or whose text changes, after
+  both of those points is after page load. FR4 applies inside a mounted live
   container, and FR6 governs repeats. FR11 covers components that announce their
   own rendered content; `component:FieldStatus` and `component:Banner` keep their
   own announcement rules.
@@ -120,9 +121,9 @@ announcement channel.
   component that adopts it stays server-renderable: rendered on the server, the
   helper announces nothing and adds no live role, and the adopter still passes
   the server-safe component boundary check. Any equivalent mechanism is valid.
-- **FR13 — Announcement effects stay inside the helper.** For components that
-  announce their own rendered content (FR11), the helper is the only place
-  announcement Effects live. Adopting components add no Effect, observer,
+- **FR13 — Announcement effects stay inside the helper.** Effects that announce a
+  component's own rendered content (FR11) live only in the helper. Busy
+  announcements under FR8 keep their own owner. Adopting components add no Effect, observer,
   timer, or listener of their own to detect page load, read rendered text, or
   write to the channel. The helper follows `architecture:react-component-runtime`
   INV3 and INV5: it is idempotent under rerender, dependency change, and
@@ -175,10 +176,12 @@ announcement channel.
 - ChatMessageList: its top loading Spinner is a `role="status"` child of the
   log. Under FR4 and FR8 it is silent, and ChatMessageList announces its loading
   through the channel.
-- EmptyState, the ChatComposer status bar, and the chat trigger menu's loading
-  row: each mounts a live role together with its text. Under FR2, FR11, and
-  FR12 the element carries no live role and the helper announces it when it
+- EmptyState: its root mounts a live role together with its text. Under FR2,
+  FR11, and FR12 it carries no live role and the helper announces it when it
   appears after page load. EmptyState stays server-renderable.
+- The ChatComposer status bar and the chat trigger menu's loading row carry no
+  live role and announce through the channel from their own Effects. Under FR13
+  they move onto the helper.
 - Button: its persistent loading region fits FR3, except when a Button first
   renders loading and the region mounts holding its text. Inside a live
   container it keeps its role and urgency (FR4).
@@ -192,17 +195,17 @@ announcement channel.
 - Comments (lab): its error banners and progress label mount live roles
   together with their text. Inside a live log they follow FR4; otherwise FR2.
 - Selector, MultiSelector, Typeahead, and CommandPalette already announce their
-  empty state through the helper. It never shows at page load, so
-  their behavior is unchanged.
+  empty state through the helper. An empty panel shown at page load (for example
+  with `isDefaultOpen`) stays silent under FR11; otherwise their behavior is
+  unchanged.
 - `component:FieldStatus` AR1 is unchanged: a field message announces on first
   mount, because it reports the field's state when the field appears.
 - `component:Banner` FR8 is unchanged: the caller announces an async outcome
   from its transition handler, because only the caller knows whether a Banner
   is a new outcome or persistent content. FR11 and FR12 cover components that
   announce their own content.
-- The chat trigger menu's loading announcement and the ChatComposer status bar
-  each own an announcement Effect today. Under FR13 they move onto the helper;
-  the FR13 shared test lands with that conformance work.
+- The FR13 shared test lands with the conformance work that moves the two chat
+  adopters onto the helper.
 - `useAnnounce`: messages written in the same frame are joined instead of the
   last one replacing the others (FR9).
 - `spec:AST-037` FR9 (Timer adds no unsolicited live region) already conforms.
