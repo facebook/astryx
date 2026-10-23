@@ -3,7 +3,7 @@
 /**
  * @file TokenizerSelectionA11y.stories.tsx
  * @input Uses controlled Tokenizer, BaseTypeahead, and Typeahead fixtures with deterministic SearchSource values
- * @output Real-browser fixtures for Tokenizer selection and direct disabled-transition compatibility
+ * @output Real-browser fixtures for Tokenizer selection, inline-source typing, and direct disabled-transition compatibility
  * @position Reproduction surfaces for TokenizerSelection.a11y.chromium.spec.ts
  *
  * SYNC: The Chromium spec navigates to these story ids by export name.
@@ -114,6 +114,7 @@ function DelayedSearchFixture() {
 function DirectBaseTypeaheadFixture() {
   const [value, setValue] = useState<SearchableItem | null>(null);
   const [isDisabled, setIsDisabled] = useState(false);
+  const [, setQuery] = useState('');
   const anchorRef = useRef<HTMLDivElement>(null);
 
   return (
@@ -126,10 +127,10 @@ function DirectBaseTypeaheadFixture() {
           inputId="direct-base-typeahead"
           ariaLabelledBy="direct-base-typeahead-label"
           anchorRef={anchorRef}
-          searchSource={frameworkSource}
+          searchSource={{...frameworkSource}}
+          onChangeQuery={setQuery}
           value={value}
           onChange={setValue}
-          debounceMs={0}
           isDisabled={isDisabled}
           isFocusableDisabled={isDisabled}
         />
@@ -145,15 +146,16 @@ function DirectBaseTypeaheadFixture() {
 function DirectTypeaheadFixture() {
   const [value, setValue] = useState<SearchableItem | null>(null);
   const [isDisabled, setIsDisabled] = useState(false);
+  const [, setQuery] = useState('');
 
   return (
     <div>
       <Typeahead
         label="Framework"
-        searchSource={frameworkSource}
+        searchSource={{...frameworkSource}}
+        onChangeQuery={setQuery}
         value={value}
         onChange={setValue}
-        debounceMs={0}
         isDisabled={isDisabled}
         disabledMessage="Framework selection is unavailable"
       />
@@ -161,6 +163,24 @@ function DirectTypeaheadFixture() {
         Disable public Typeahead
       </button>
       <output data-selected-id>{value?.id ?? ''}</output>
+    </div>
+  );
+}
+
+function InlineSourceTokenizerFixture() {
+  const [value, setValue] = useState<SearchableItem[]>([]);
+  const [, setQuery] = useState('');
+
+  return (
+    <div>
+      <Tokenizer
+        label="Team members"
+        searchSource={{...source}}
+        onChangeQuery={setQuery}
+        value={value}
+        onChange={setValue}
+      />
+      <output data-selected-ids>{value.map(item => item.id).join(',')}</output>
     </div>
   );
 }
@@ -210,4 +230,8 @@ export const DirectBaseTypeahead: StoryObj = {
 
 export const DirectTypeahead: StoryObj = {
   render: () => <DirectTypeaheadFixture />,
+};
+
+export const InlineSourceTokenizer: StoryObj = {
+  render: () => <InlineSourceTokenizerFixture />,
 };

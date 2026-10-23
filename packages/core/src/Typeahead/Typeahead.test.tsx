@@ -20,7 +20,8 @@ import {
 } from 'vitest';
 import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {Profiler, type ProfilerOnRenderCallback} from 'react';
+import {Profiler, useState, type ProfilerOnRenderCallback} from 'react';
+import {Tokenizer} from '../Tokenizer';
 import {Typeahead} from './Typeahead';
 import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
@@ -83,6 +84,29 @@ const fruitSource: SearchSource = {
     fruits.filter(f => f.label.toLowerCase().includes(query.toLowerCase())),
   bootstrap: () => fruits.slice(0, 3),
 };
+
+function InlineSourceFixture({
+  kind,
+  search,
+}: {
+  kind: 'BaseTypeahead' | 'Typeahead' | 'Tokenizer';
+  search: SearchSource['search'];
+}) {
+  const [, setQuery] = useState('');
+  const source: SearchSource = {search, bootstrap: () => []};
+  const props = {searchSource: source, onChangeQuery: setQuery};
+  if (kind === 'Tokenizer') {
+    return (
+      <Tokenizer {...props} label="Fruit" value={[]} onChange={() => {}} />
+    );
+  }
+  if (kind === 'Typeahead') {
+    return (
+      <Typeahead {...props} label="Fruit" value={null} onChange={() => {}} />
+    );
+  }
+  return <BaseTypeahead {...props} value={null} onChange={() => {}} />;
+}
 
 describe('BaseTypeahead', () => {
   it('renders input with combobox role', () => {
@@ -2103,7 +2127,7 @@ describe('BaseTypeahead source transitions', () => {
     await waitFor(() => expect(cancel).toHaveBeenCalledTimes(1));
   });
 
-  it('clears a replaced source debounce without canceling unstarted work', async () => {
+  it('searches a pending query with the replaced source at the original deadline', async () => {
     vi.useFakeTimers();
     try {
       const oldSearch = vi.fn(() => fruits);
@@ -2113,7 +2137,7 @@ describe('BaseTypeahead source transitions', () => {
         bootstrap: () => [],
         cancel: oldCancel,
       };
-      const newSearch = vi.fn(() => []);
+      const newSearch = vi.fn(() => [fruits[0]]);
       const newSource: SearchSource = {
         search: newSearch,
         bootstrap: () => [],
@@ -2127,8 +2151,10 @@ describe('BaseTypeahead source transitions', () => {
           debounceMs={50}
         />,
       );
-      fireEvent.change(screen.getByRole('combobox'), {
-        target: {value: 'apple'},
+      const input = screen.getByRole('combobox');
+      fireEvent.change(input, {target: {value: 'apple'}});
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(25);
       });
 
       rerender(
@@ -2139,23 +2165,49 @@ describe('BaseTypeahead source transitions', () => {
           debounceMs={50}
         />,
       );
+      expect(newSearch).not.toHaveBeenCalled();
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(50);
+        await vi.advanceTimersByTimeAsync(25);
       });
 
-      expect({
-        newSearchCalls: newSearch.mock.calls.length,
-        oldCancelCalls: oldCancel.mock.calls.length,
-        oldSearchCalls: oldSearch.mock.calls.length,
-      }).toEqual({
-        newSearchCalls: 0,
-        oldCancelCalls: 0,
-        oldSearchCalls: 0,
-      });
+      expect(newSearch).toHaveBeenCalledExactlyOnceWith('apple');
+      expect(oldSearch).not.toHaveBeenCalled();
+      expect(oldCancel).not.toHaveBeenCalled();
+      expect(input).toHaveValue('apple');
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+      expect(screen.getByText('Apple')).toBeInTheDocument();
     } finally {
       vi.useRealTimers();
     }
   });
+
+  it.each(['BaseTypeahead', 'Typeahead', 'Tokenizer'] as const)(
+    '%s searches the latest text when onChangeQuery recreates an inline source',
+    async kind => {
+      vi.useFakeTimers();
+      try {
+        const search = vi.fn(() => [fruits[0]]);
+        render(<InlineSourceFixture kind={kind} search={search} />);
+        const input = screen.getByRole('combobox');
+        fireEvent.change(input, {target: {value: 'app'}});
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(75);
+        });
+        fireEvent.change(input, {target: {value: 'apple'}});
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(150);
+        });
+
+        expect(search).toHaveBeenCalledExactlyOnceWith('apple');
+        expect(input).toHaveValue('apple');
+        expect(input).toHaveAttribute('aria-expanded', 'true');
+        expect(input).not.toHaveAttribute('aria-busy');
+        expect(screen.getByText('Apple')).toBeInTheDocument();
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
 
   it('clears busy and rejects late results when replacing an in-flight source', async () => {
     let resolveOld: (items: SearchableItem[]) => void = () => {};
