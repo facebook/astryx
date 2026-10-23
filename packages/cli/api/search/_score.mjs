@@ -47,7 +47,8 @@ export function bestForToken(tok, candidate, opts = {}) {
   const syns = SYNONYM_INDEX.get(tok);
   if (syns) {
     for (const s of syns) {
-      const h = scoreCandidate(s, candidate, opts);
+      // A synonym of a family's name names no family: its members stay put.
+      const h = scoreCandidate(s, candidate, {...opts, synonym: true});
       if (h) {
         const score = Math.round(h.score * 0.85);
         if (!best || score > best.score)
