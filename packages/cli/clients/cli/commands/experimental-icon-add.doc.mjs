@@ -62,12 +62,6 @@ export const doc = {
         'With --variant and --from, and no export: add that variant for every icon whose id the module exports, in one run',
     },
     {
-      flag: '--remove',
-      param: 'options.remove',
-      description:
-        'Take an icon out of the set (by --id, or by its export): its variants, map entries, and generated exports too',
-    },
-    {
       flag: '--id <id>',
       param: 'options.id',
       description: "The icon's id, instead of the one its name gives",
@@ -90,10 +84,6 @@ export const doc = {
     {
       label: 'Add the solid variant of every icon',
       cli: 'astryx experimental icon add --variant solid --from @heroicons/react/24/solid --all',
-    },
-    {
-      label: 'Remove an icon',
-      cli: 'astryx experimental icon add --id double --remove',
     },
     {
       label: 'Add your own definition',

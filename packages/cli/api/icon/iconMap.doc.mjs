@@ -23,7 +23,7 @@ export const doc = {
       name: 'definition',
       type: 'string | undefined',
       description: 'The icon definition. Omit with `options.pairs`.',
-      required: true,
+      required: false,
     },
     {
       name: 'icon',
@@ -73,6 +73,10 @@ export const doc = {
     {
       code: 'ERR_INVALID_ARGUMENT',
       when: 'the package ships several sets and none is named',
+    },
+    {
+      code: 'ERR_INVALID_OPTION',
+      when: '`pairs` is given with a definition, an icon, or `remove`, or `remove` with an icon',
     },
     {
       code: 'ERR_PROJECT_REQUIRED',

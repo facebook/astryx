@@ -206,7 +206,7 @@ describe('experimental icon new-set --from', () => {
     expect(res.stdout).toContain('experimental icon map delete bin');
   });
 
-  it('--variants and --default declare the variants; the library license notice is copied', async () => {
+  it('--variants and --default-variant declare the variants; the library license notice is copied', async () => {
     const lib = path.join(pkg, 'node_modules', '@acme', 'glyph-library');
     fs.writeFileSync(path.join(lib, 'LICENSE'), 'MIT License\n');
     const pkgJson = JSON.parse(
@@ -225,7 +225,7 @@ describe('experimental icon new-set --from', () => {
       '@acme/glyph-library',
       '--variants',
       'outline,solid',
-      '--default',
+      '--default-variant',
       'outline',
     ]);
     expect(code).toBe(0);
@@ -255,7 +255,7 @@ describe('experimental icon new-set --from', () => {
     expect(check).not.toContain('icon_license_notice_missing');
   });
 
-  it('refuses a --default that is not a variant, and --default without --variants', async () => {
+  it('refuses a --default-variant that is not a variant, and --default-variant without --variants', async () => {
     const bad = await json([
       'experimental',
       'icon',
@@ -263,7 +263,7 @@ describe('experimental icon new-set --from', () => {
       'glyphs',
       '--variants',
       'outline,solid',
-      '--default',
+      '--default-variant',
       'mini',
     ]);
     expect(bad.code).toBe(1);
@@ -273,7 +273,7 @@ describe('experimental icon new-set --from', () => {
       'icon',
       'new-set',
       'glyphs',
-      '--default',
+      '--default-variant',
       'outline',
     ]);
     expect(lone.code).toBe(1);
@@ -1282,7 +1282,10 @@ describe('experimental icon add --variant --all', () => {
       '--all',
     ]);
     expect(named.code).toBe(1);
-    expect(named.body.error).toContain('takes no export name');
+    expect(named.body.error).toBe(
+      '--all and an export name cannot be used together',
+    );
+    expect(named.body.code).toBe('ERR_INVALID_OPTION');
   });
 });
 
@@ -1636,7 +1639,7 @@ describe('blind run 3 fixes', () => {
 });
 
 describe('blind run 4 fixes', () => {
-  it('names a ./ file icon as written, and --remove takes an icon out with its map entry and exports', async () => {
+  it('names a ./ file icon as written', async () => {
     await json(['experimental', 'icon', 'new-set', 'outline']);
     fs.mkdirSync(path.join(pkg, 'src', 'icons'), {recursive: true});
     fs.writeFileSync(
@@ -1658,35 +1661,6 @@ describe('blind run 4 fixes', () => {
       id: 'check-double',
       export: 'CheckDoubleIcon',
     });
-    const removed = await json([
-      'experimental',
-      'icon',
-      'add',
-      '--id',
-      'check-double',
-      '--remove',
-    ]);
-    expect(removed.code).toBe(0);
-    expect(removed.body.type).toBe('icon.remove');
-    expect(removed.body.data).toMatchObject({
-      id: 'check-double',
-      exports: ['CheckDoubleIcon'],
-      unmapped: ['checkDouble'],
-    });
-    const data = dataOf('outline');
-    expect(data.icons).toEqual([]);
-    expect(data.map).toEqual({});
-    const generated = fs.readFileSync(
-      path.join(pkg, 'icon-sets', 'outline', 'outline.generated.js'),
-      'utf-8',
-    );
-    expect(generated).not.toContain('CheckDouble');
-    const check = JSON.stringify(
-      JSON.parse(
-        (await runCli(['integration', 'check', '--json'], pkg)).stdout,
-      ),
-    );
-    expect(check).not.toContain('icon_generated_types_mismatch');
   });
 
   it('--definitions lists every definition, marking built-ins', async () => {

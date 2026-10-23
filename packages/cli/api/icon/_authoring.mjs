@@ -92,7 +92,7 @@ function quoteJs(value) {
  * discoverable; `integration check` then names every built-in icon
  * definition it still has to map.
  * @param {string} name  icon set name (kebab-case)
- * @param {{cwd?: string, dryRun?: boolean, from?: string, exclude?: string[] | string, variants?: string[] | string, default?: string, displayName?: string, description?: string}} options
+ * @param {{cwd?: string, dryRun?: boolean, from?: string, exclude?: string[] | string, variants?: string[] | string, defaultVariant?: string, displayName?: string, description?: string}} options
  * @returns {Promise<{type: 'integration.add', data: import('./icon.type.mjs').IconNewData}>}
  */
 export async function addIconSet(name, options) {
@@ -109,7 +109,7 @@ export async function addIconSet(name, options) {
     throw new AstryxError(
       '--exclude names library exports to leave out, so it needs --from.',
       undefined,
-      ERROR_CODES.ERR_INVALID_ARGUMENT,
+      ERROR_CODES.ERR_INVALID_OPTION,
     );
   }
   if (!KEBAB_NAME_RE.test(name)) {
@@ -543,9 +543,10 @@ function mappedNotes(map) {
 const VARIANT_NAME_RE = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/u;
 
 /**
- * The variants and default variant `--variants` and `--default` declare, or
+ * The variants and default variant `--variants` and `--default-variant`
+ * declare, or
  * null when neither is given. The default is the first variant unless named.
- * @param {{variants?: string[] | string, default?: string}} options
+ * @param {{variants?: string[] | string, defaultVariant?: string}} options
  * @returns {{variants: string[], default: string} | null}
  */
 function variantOptions(options) {
@@ -556,18 +557,18 @@ function variantOptions(options) {
   const variants = [
     ...new Set((given ?? []).map(each => each.trim()).filter(Boolean)),
   ];
-  const chosen = options.default?.trim();
+  const chosen = options.defaultVariant?.trim();
   if (variants.length === 0) {
     if (chosen) {
       throw new AstryxError(
-        "--default names one of the set's variants, so it needs --variants.",
+        "--default-variant names one of the set's variants, so it needs --variants.",
         [
           {
             name: `--variants ${chosen},<other>`,
             reason: 'declare the variants',
           },
         ],
-        ERROR_CODES.ERR_INVALID_ARGUMENT,
+        ERROR_CODES.ERR_INVALID_OPTION,
       );
     }
     return null;
@@ -583,9 +584,9 @@ function variantOptions(options) {
   }
   if (chosen && !variants.includes(chosen)) {
     throw new AstryxError(
-      `--default "${chosen}" is not one of --variants (${variants.join(', ')}).`,
+      `--default-variant "${chosen}" is not one of --variants (${variants.join(', ')}).`,
       variants.map(each => ({
-        name: `--default ${each}`,
+        name: `--default-variant ${each}`,
         reason: 'a declared variant',
       })),
       ERROR_CODES.ERR_INVALID_ARGUMENT,

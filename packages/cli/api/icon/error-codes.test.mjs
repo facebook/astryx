@@ -133,8 +133,11 @@ const CASES = {
     ERR_MISSING_ARGUMENT: () => icon('', {cwd: app()}),
     ERR_INVALID_ARGUMENT: () => icon('close', {cwd: app(), limit: 0}),
     ERR_NOT_FOUND: () => icon('glyphs/nope', {cwd: app()}),
+    ERR_INVALID_OPTION: () => icon('close', {cwd: app(), list: true}),
   },
   iconAdd: {
+    ERR_INVALID_OPTION: () =>
+      iconAdd('XIcon', {cwd: pkg(), from: './icons/x.js', all: true}),
     ERR_PROJECT_REQUIRED: () =>
       iconAdd('XIcon', {cwd: outside(), from: './x.js'}),
     ERR_INVALID_ARGUMENT: () =>
@@ -171,6 +174,8 @@ const CASES = {
   },
   iconMap: {
     ERR_PROJECT_REQUIRED: () => iconMap('close', 'x', {cwd: outside()}),
+    ERR_INVALID_OPTION: () =>
+      iconMap('close', undefined, {cwd: pkg(), pairs: 'close=x'}),
     ERR_MISSING_ARGUMENT: () => iconMap('', 'x', {cwd: pkg()}),
     ERR_INVALID_ARGUMENT: () =>
       iconMap('close', 'x', {cwd: withSecondSet(pkg())}),
@@ -221,6 +226,8 @@ const CASES = {
   iconNewSet: {
     ERR_PROJECT_REQUIRED: () => iconNewSet('outline', {cwd: outside()}),
     ERR_INVALID_ARGUMENT: () => iconNewSet('Outline', {cwd: bare()}),
+    ERR_INVALID_OPTION: () =>
+      iconNewSet('outline', {cwd: bare(), exclude: 'Meta'}),
     ERR_FILE_EXISTS: async () => {
       const dir = bare();
       await iconNewSet('outline', {cwd: dir});

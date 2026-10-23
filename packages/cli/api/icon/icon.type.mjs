@@ -190,21 +190,6 @@
  * @property {string} [variant] - Add the export as this declared variant of an existing icon.
  * @property {string} [id] - The icon's id, instead of the one its name gives.
  * @property {boolean} [all] - With `variant` and `from`, and no export name: add that variant for every icon whose id an export of `from` has.
- * @property {boolean} [remove] - Take the icon (by `id`, or by the set's export name) out of the set, with its variants, `map` entries, and generated exports.
- */
-
-/**
- * `astryx --json experimental icon add --id <id> --remove`.
- * @experimental May change or be removed in a patch release.
- * @typedef {object} IconRemoveResponse
- * @property {'icon.remove'} type
- * @property {object} data
- * @property {string} data.set
- * @property {string} data.package
- * @property {string} data.id - The icon removed.
- * @property {string[]} data.exports - The set's exports removed: the icon's and its variants'.
- * @property {string[]} data.unmapped - The definitions whose `map` entry named it.
- * @property {string[]} data.files - Files written, relative to the package.
  */
 
 /**
@@ -308,7 +293,7 @@
  * @property {string} [from] - A module whose every icon component the set wraps: a package, a package subpath, or a ./ path in the package.
  * @property {string[] | string} [exclude] - With `from`: export names that are not icons; a string is split on commas.
  * @property {string[] | string} [variants] - The variants the set supplies, such as `outline,solid`; a string is split on commas.
- * @property {string} [default] - With `variants`: the variant each icon's own export draws; the first variant when absent.
+ * @property {string} [defaultVariant] - With `variants`: the variant each icon's own export draws; the first variant when absent.
  * @property {string} [displayName] - The descriptor's display name; the set name in title case when absent.
  * @property {string} [description] - The descriptor's one-line description; `<Display name> icons.` when absent.
  */

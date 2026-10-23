@@ -11,7 +11,7 @@ export const doc = {
   stability: 'experimental',
   summary: 'Start an icon set in your integration package',
   description:
-    "Run inside an integration package. Writes the set's folder with its descriptor, its data file, and its generated module, and declares the manifest's `experimental.iconSets` root on first use. With --from it wraps every icon component of a library, records the library and its version as the set's source, copies its license notice, and maps each Astryx icon definition whose name is an icon's id; definitions an icon only shares a word with are listed as suggestions, never written. Run it again to refresh. --variants and --default declare the set's variants. Experimental: it may change or be removed in a patch release.",
+    "Run inside an integration package. Writes the set's folder with its descriptor, its data file, and its generated module, and declares the manifest's `experimental.iconSets` root on first use. With --from it wraps every icon component of a library, records the library and its version as the set's source, copies its license notice, and maps each Astryx icon definition whose name is an icon's id; definitions an icon only shares a word with are listed as suggestions, never written. Run it again to refresh. --variants and --default-variant declare the set's variants. Experimental: it may change or be removed in a patch release.",
   fn: 'iconNewSet',
   args: [
     {
@@ -46,8 +46,8 @@ export const doc = {
         'Comma-separated variants the set supplies, such as outline,solid',
     },
     {
-      flag: '--default <variant>',
-      param: 'options.default',
+      flag: '--default-variant <variant>',
+      param: 'options.defaultVariant',
       description:
         "With --variants: the variant each icon's own export draws (the first variant when omitted)",
     },
@@ -74,7 +74,7 @@ export const doc = {
     },
     {
       label: 'Wrap a library with two variants',
-      cli: 'astryx experimental icon new-set heroicons --from @heroicons/react/24/outline --variants outline,solid --default outline',
+      cli: 'astryx experimental icon new-set heroicons --from @heroicons/react/24/outline --variants outline,solid --default-variant outline',
     },
     {
       label: 'Preview the files',

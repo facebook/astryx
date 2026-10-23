@@ -106,7 +106,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: '`experimental icon map <definition> <icon>` points a definition at an icon the set already has (a definition is named in camelCase, `eyeSlash`, or by the kebab id the definitions list shows, `eye-slash`; an icon by its id, its export name in any case, or another name its library exports it as, such as `trash-2`, never by one word of its id), `experimental icon map --pairs close=x-mark,search=magnifying-glass` writes many entries at once (checked together, all or none; an entry the map already has is replaced, and the receipt shows what it was), and `--remove` drops an entry. `experimental icon new-definition <name> --description ... --words ... --icon <id>` adds your own definition for an icon you already have, and `experimental icon add --id <id> --remove` takes an icon out again, with its variants, `map` entries, and generated exports. `experimental icon --definitions` lists every Astryx definition, built in or not, with its words (`--json` for a script).',
+          text: '`experimental icon map <definition> <icon>` points a definition at an icon the set already has (a definition is named in camelCase, `eyeSlash`, or by the kebab id the definitions list shows, `eye-slash`; an icon by its id, its export name in any case, or another name its library exports it as, such as `trash-2`, never by one word of its id), `experimental icon map --pairs close=x-mark,search=magnifying-glass` writes many entries at once (checked together, all or none; an entry the map already has is replaced, and the receipt shows what it was), and `--remove` drops an entry. `experimental icon new-definition <name> --description ... --words ... --icon <id>` adds your own definition for an icon you already have. `experimental icon --definitions` lists every Astryx definition, built in or not, with its words (`--json` for a script).',
         },
       ],
     },
@@ -134,12 +134,12 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: `astryx experimental icon new-set heroicons --from @heroicons/react/24/outline --variants outline,solid --default outline --description 'Heroicons, outline and solid.'
+          code: `astryx experimental icon new-set heroicons --from @heroicons/react/24/outline --variants outline,solid --default-variant outline --description 'Heroicons, outline and solid.'
 astryx experimental icon add --variant solid --from @heroicons/react/24/solid --all`,
         },
         {
           type: 'prose',
-          text: "A library that redraws its artwork for small sizes (Heroicons' 20px mini and 16px micro) ships each of those as its own set in its own package (their export names match the 24px ones), not as variants: a variant's size comes from CSS. `--variants` lists the variants; `--default` names the one each icon's own export draws (the first variant when omitted). `--all` adds the variant for every icon whose id an export of `--from` has (`TrashIcon` in the solid module becomes `TrashSolidIcon`, the solid variant of `trash`), and the receipt lists the icons the module has no export for. Running it again changes nothing.",
+          text: "A library that redraws its artwork for small sizes (Heroicons' 20px mini and 16px micro) ships each of those as its own set in its own package (their export names match the 24px ones), not as variants: a variant's size comes from CSS. `--variants` lists the variants; `--default-variant` names the one each icon's own export draws (the first variant when omitted). `--all` adds the variant for every icon whose id an export of `--from` has (`TrashIcon` in the solid module becomes `TrashSolidIcon`, the solid variant of `trash`), and the receipt lists the icons the module has no export for. Running it again changes nothing.",
         },
         {
           type: 'prose',
@@ -397,7 +397,7 @@ astryx experimental icon use outline         # make it the project's icon set`,
             ],
             [
               'JSON types',
-              '`icon.search`, `icon.detail`, `icon.list`, `icon.setIcons`, `icon.definitions`, `icon.use`, `icon.map`, `icon.mapMany`, `icon.add`, `icon.addVariants`, `icon.remove`, `icon.definitionMatches`, `icon.newSet`, and `icon.newDefinition`, from the matching `astryx experimental icon` command.',
+              '`icon.search`, `icon.detail`, `icon.list`, `icon.setIcons`, `icon.definitions`, `icon.use`, `icon.map`, `icon.mapMany`, `icon.add`, `icon.addVariants`, `icon.definitionMatches`, `icon.newSet`, and `icon.newDefinition`, from the matching `astryx experimental icon` command.',
             ],
           ],
         },

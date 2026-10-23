@@ -23,6 +23,7 @@ import {iconDetail} from './detail/detail.mjs';
 import {iconList} from './list/list.mjs';
 import {iconSetIcons} from './search/search.mjs';
 import {astryxIconDefinitions} from './_adapter.mjs';
+import {passed, refuseIgnoredPairs} from './_options.mjs';
 
 /** The default `limit` for `icon.search`. */
 export const DEFAULT_ICON_LIMIT = 10;
@@ -45,10 +46,40 @@ export async function icon(query, options = {}) {
     cwd = process.cwd(),
     list = false,
     set,
-    limit = DEFAULT_ICON_LIMIT,
+    limit: givenLimit,
     allIcons = false,
     definitions = false,
   } = options;
+  const given = typeof query === 'string' ? query.trim() : '';
+  // Every listing takes nothing the others take, and a query or one icon
+  // takes no listing (spec:AST-042 FR5).
+  refuseIgnoredPairs(
+    {
+      'a query': given !== '',
+      '--list': passed(list),
+      '--definitions': passed(definitions),
+      '--all-icons': passed(allIcons),
+      '--set': passed(set),
+      '--limit': passed(givenLimit),
+      'a <set>/<id> query': REFERENCE_RE.test(given),
+    },
+    [
+      ['--list', 'a query'],
+      ['--list', '--definitions'],
+      ['--list', '--all-icons'],
+      ['--list', '--set'],
+      ['--list', '--limit'],
+      ['--definitions', 'a query'],
+      ['--definitions', '--all-icons'],
+      ['--definitions', '--set'],
+      ['--definitions', '--limit'],
+      ['--all-icons', 'a query'],
+      ['--all-icons', '--limit'],
+      ['a <set>/<id> query', '--set'],
+      ['a <set>/<id> query', '--limit'],
+    ],
+  );
+  const limit = givenLimit ?? DEFAULT_ICON_LIMIT;
   if (query != null && typeof query !== 'string') {
     throw new AstryxError(
       `Invalid icon query: ${String(query)}`,
@@ -57,29 +88,8 @@ export async function icon(query, options = {}) {
     );
   }
   const term = (query ?? '').trim();
-  if (list) {
-    if (term) {
-      throw new AstryxError(
-        '--list takes no query',
-        [
-          {
-            name: 'astryx experimental icon --list',
-            reason: 'list the installed sets',
-          },
-        ],
-        ERROR_CODES.ERR_INVALID_ARGUMENT,
-      );
-    }
-    return iconList({cwd});
-  }
+  if (list) return iconList({cwd});
   if (definitions) {
-    if (term || set != null || allIcons || list) {
-      throw new AstryxError(
-        '--definitions lists every Astryx icon definition and takes nothing else',
-        undefined,
-        ERROR_CODES.ERR_INVALID_ARGUMENT,
-      );
-    }
     return {
       type: /** @type {const} */ ('icon.definitions'),
       data: {
@@ -93,9 +103,9 @@ export async function icon(query, options = {}) {
     };
   }
   if (allIcons) {
-    if (term || set == null) {
+    if (set == null) {
       throw new AstryxError(
-        '--all-icons lists every icon of one set: pass --set and no words',
+        '--all-icons lists every icon of one set: pass --set',
         [
           {
             name: 'astryx experimental icon --set <name> --all-icons',

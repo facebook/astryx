@@ -222,14 +222,6 @@ const COMMANDS = [
       }),
   ],
   [
-    'add --id --remove',
-    async dir => {
-      await iconNewSet('glyphs', {cwd: dir, from: FROM});
-      await iconMap('delete', 'bin', {cwd: dir});
-    },
-    dir => iconAdd(undefined, {cwd: dir, id: 'bin', remove: true}),
-  ],
-  [
     'map',
     dir => iconNewSet('glyphs', {cwd: dir, from: FROM}),
     dir => iconMap('delete', 'bin', {cwd: dir}),

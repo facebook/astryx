@@ -229,6 +229,16 @@ icon, and the CLI verifies it, writes the files, and checks the set.
 ### Authoring
 
 - **FR13 — The CLI writes the set, one verified icon at a time.** Every
+  icon command refuses, with `ERR_INVALID_OPTION` and before it writes a
+  file, two options it would not both honor: a listing (`--list`,
+  `--definitions`, `--all-icons`) with a query, another listing, or an
+  option it ignores; a `<set>/<id>` query with `--set` or `--limit`;
+  `add --all` with an export name, `--definition`, `--new-definition`,
+  `--description`, `--words`, `--default`, or `--id`; `add --definition`
+  with `--new-definition`; `add --description` or `--words` without
+  `--new-definition`; `map --pairs` with a definition, an icon, or
+  `--remove`, and `map --remove` with an icon; and `new-set --exclude`
+  without `--from` or `--default-variant` without `--variants`. Every
   command reads modules statically, and its writes are all or nothing: when
   it fails, every file is as it was and the error has a stable code
   (`ERR_WRITE_FAILED` for a write that fails). It writes only the set's own
@@ -268,7 +278,7 @@ icon, and the CLI verifies it, writes the files, and checks the set.
     is built from, never the built file), the `react` and optional
     `@types/react` and `@astryxdesign/cli` peers it does not declare, and a
     `typecheck` script running `integration check --strict` when it has
-    none. `--variants` and `--default` declare `variants` and `default`;
+    none. `--variants` and `--default-variant` declare `variants` and `default`;
     `--display-name` and `--description` fill the descriptor. Run again, it
     refreshes the icons and keeps `map` entries whose icon exists; it copies
     the library's license notices the set lacks, and the run that first
@@ -279,8 +289,7 @@ icon, and the CLI verifies it, writes the files, and checks the set.
     `--new-definition` adds it and maps it; `--variant <name>` adds it as
     that declared variant of an existing icon. With `--variant <name> --all`
     and no export, it adds that variant for every icon whose `id` an export
-    of the module has, in one write; `--id <id> --remove` takes an icon out
-    with its variants, `map` entries, and generated exports. For a `./`
+    of the module has, in one write. For a `./`
     file outside package.json `files`, it names the `files` array that
     publishes it.
   - `experimental icon map <definition> <icon>` writes one `map` entry,

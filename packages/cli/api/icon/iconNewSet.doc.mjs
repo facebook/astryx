@@ -53,7 +53,7 @@ export const doc = {
         "The variants the set supplies, lower-kebab names such as outline and solid; a string is split on commas. Written to the data file's variants.",
     },
     {
-      name: 'options.default',
+      name: 'options.defaultVariant',
       type: 'string',
       description:
         "With variants: the variant each icon's own export draws, written to the data file's default; the first variant when absent.",
@@ -81,7 +81,11 @@ export const doc = {
   throws: [
     {
       code: 'ERR_INVALID_ARGUMENT',
-      when: 'the name is not lowercase kebab-case, package.json has no name, or variants or default are invalid',
+      when: 'the name is not lowercase kebab-case, package.json has no name, or a variant name or the default variant is invalid',
+    },
+    {
+      code: 'ERR_INVALID_OPTION',
+      when: '`exclude` is given without `from`, or `defaultVariant` without `variants`',
     },
     {
       code: 'ERR_FILE_EXISTS',

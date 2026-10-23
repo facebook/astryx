@@ -23,6 +23,7 @@ import {
   iconIdIn,
   iconsWithWord,
 } from '../_adapter.mjs';
+import {passed, refuseIgnoredPairs} from '../_options.mjs';
 
 /**
  * Set `map[definition] = icon` in the set's data file, or remove the entry.
@@ -37,10 +38,24 @@ import {
 export async function iconMap(definition, icon, options = {}) {
   const {cwd = process.cwd(), set: selector, remove = false, pairs} = options;
   refuseOutsideProject(cwd, 'experimental icon map', 'the icon-set package');
+  // `--pairs` names every entry itself, and `--remove` names no icon
+  // (spec:AST-042 FR5).
+  refuseIgnoredPairs(
+    {
+      'a definition': passed(definition),
+      'an icon': passed(icon),
+      '--remove': passed(remove),
+      '--pairs': passed(pairs),
+    },
+    [
+      ['--pairs', 'a definition'],
+      ['--pairs', 'an icon'],
+      ['--pairs', '--remove'],
+      ['--remove', 'an icon'],
+    ],
+  );
   if (pairs != null) {
-    return authoring(() =>
-      mapMany(definition, icon, {cwd, selector, remove, pairs}),
-    );
+    return authoring(() => mapMany({cwd, selector, pairs}));
   }
   return authoring(async () => {
     if (typeof definition !== 'string' || definition.trim() === '') {
@@ -132,19 +147,10 @@ export async function iconMap(definition, icon, options = {}) {
 
 /**
  * `--pairs`: write many `map` entries in one checked write, all or none.
- * @param {string | undefined} definition must be absent
- * @param {string | undefined} icon must be absent
- * @param {{cwd: string, selector: string | undefined, remove: boolean, pairs: string | string[]}} options
+ * @param {{cwd: string, selector: string | undefined, pairs: string | string[]}} options
  * @returns {Promise<import('../icon.type.mjs').IconMapManyResponse>}
  */
-async function mapMany(definition, icon, {cwd, selector, remove, pairs}) {
-  if (definition != null || icon != null || remove) {
-    throw new AstryxError(
-      '--pairs takes every entry itself: pass no definition, icon, or --remove with it.',
-      undefined,
-      ERROR_CODES.ERR_INVALID_ARGUMENT,
-    );
-  }
+async function mapMany({cwd, selector, pairs}) {
   const items = (Array.isArray(pairs) ? pairs : [pairs])
     .flatMap(each => String(each).split(/[\s,]+/u))
     .filter(Boolean);

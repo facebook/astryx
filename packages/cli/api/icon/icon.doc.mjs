@@ -98,7 +98,11 @@ export const doc = {
     },
     {
       code: 'ERR_INVALID_ARGUMENT',
-      when: 'a query is given with `list`, `limit` is not a positive integer, or a set name two packages share is not qualified with its package',
+      when: '`limit` is not a positive integer, or a set name two packages share is not qualified with its package',
+    },
+    {
+      code: 'ERR_INVALID_OPTION',
+      when: 'two options are given that the call cannot both honor: `list`, `definitions`, or `allIcons` with any other listing, a query, `set` (not `allIcons`), or `limit`; or a `<set>/<id>` query with `set` or `limit`',
     },
     {
       code: 'ERR_NOT_FOUND',

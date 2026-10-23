@@ -170,12 +170,6 @@ export const doc = {
         'Every icon of one set (--set with --all-icons): the set, its package, how many icons, and each icon {id, export, words, definitions}, by id.',
     },
     {
-      value: 'icon.remove',
-      stability: 'experimental',
-      description:
-        'One icon taken out of the set (add --remove): the set, its package, the icon id, the exports removed, the definitions it no longer draws, and the files written.',
-    },
-    {
       value: 'icon.addVariants',
       stability: 'experimental',
       description:

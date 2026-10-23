@@ -403,27 +403,9 @@ export function registerExperimentalIcon(group, program) {
             variant: /** @type {string | undefined} */ (options.variant),
             id: /** @type {string | undefined} */ (options.id),
             all: options.all === true,
-            remove: options.remove === true,
           }),
         result => {
           const cli = getCliInvocation();
-          if (result.type === 'icon.remove') {
-            const {data} = result;
-            emit(
-              text(
-                `[ok] Removed "${data.id}" (${data.exports.join(', ')}) from ${data.set}.`,
-              ),
-              ...(data.unmapped.length > 0
-                ? [
-                    text(
-                      `It no longer draws: ${data.unmapped.join(', ')}. Map them again with ${formatCliCommand('astryx experimental icon map <definition> <icon>')}.`,
-                    ),
-                  ]
-                : []),
-              list(data.files),
-            );
-            return;
-          }
           if (result.type === 'icon.addVariants') {
             const {data} = result;
             emit(
@@ -560,7 +542,7 @@ export function registerExperimentalIcon(group, program) {
     fn: iconNewSetFn,
     action: (
       /** @type {string} */ name,
-      /** @type {{dryRun?: boolean, from?: string, exclude?: string, variants?: string, default?: string, displayName?: string, description?: string}} */ options,
+      /** @type {{dryRun?: boolean, from?: string, exclude?: string, variants?: string, defaultVariant?: string, displayName?: string, description?: string}} */ options,
     ) =>
       run(
         () =>
@@ -570,7 +552,7 @@ export function registerExperimentalIcon(group, program) {
             from: options.from,
             exclude: options.exclude,
             variants: options.variants,
-            default: options.default,
+            defaultVariant: options.defaultVariant,
             displayName: options.displayName,
             description: options.description,
           }),

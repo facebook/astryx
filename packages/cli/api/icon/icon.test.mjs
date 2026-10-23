@@ -331,9 +331,18 @@ describe('icon.list', () => {
     expect(set.coverage.own).toEqual([]);
   });
 
+  it('refuses --set and --limit with one icon, which they would not change', async () => {
+    for (const options of [{set: 'glyphs'}, {limit: 2}]) {
+      await expect(
+        icon('glyphs/trash', {cwd, ...options}),
+      ).rejects.toMatchObject({code: 'ERR_INVALID_OPTION'});
+    }
+  });
+
   it('refuses a query with --list and no query without it', async () => {
     await expect(icon('x', {cwd, list: true})).rejects.toMatchObject({
-      code: 'ERR_INVALID_ARGUMENT',
+      code: 'ERR_INVALID_OPTION',
+      message: '--list and a query cannot be used together',
     });
     await expect(icon('', {cwd})).rejects.toMatchObject({
       code: 'ERR_MISSING_ARGUMENT',
