@@ -108,8 +108,9 @@ announcement channel.
   rendered text after render, leaves out `aria-hidden` content, stays silent for
   text present in the view's first commit, announces once per later appearance or
   text change, and re-arms when the element is hidden. It is not exported; making
-  it public needs `spec:AST-002` admission. A component that adopts it is a client
-  component.
+  it public needs `spec:AST-002` admission. A server-renderable component that
+  adopts it stays server-renderable: rendered on the server, the helper does
+  nothing, because that message is part of its view's first render.
 
 ### Platform support
 
@@ -160,7 +161,7 @@ announcement channel.
 - EmptyState, the ChatComposer status bar, and the chat trigger menu's loading
   row: each mounts a live role together with its text. Under FR2, FR11, and
   FR12 the element carries no live role and the helper announces it when it
-  appears after its view. EmptyState becomes a client component.
+  appears after its view. EmptyState stays server-renderable.
 - Button: its persistent loading region fits FR3, except when a Button first
   renders loading and the region mounts holding its text. Inside a live
   container it keeps its role and urgency (FR4).
