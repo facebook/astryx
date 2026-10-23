@@ -16,7 +16,7 @@
  */
 
 import {entryOf} from './_entries.mjs';
-import {words} from './_query-words.mjs';
+import {fold, words} from './_query-words.mjs';
 import {searchedComponentsOf} from './_result.mjs';
 
 /** @typedef {import('./_entries.mjs').EntryTable} EntryTable */
@@ -104,6 +104,7 @@ export function orderMatches(table, order, lexical, query, limit) {
     ranked = keepLexical(ranked, it => (it.res.score ?? 0) >= FULL_COVERAGE);
   }
   ranked = integrationTies(ranked);
+  ranked = tiesByFit(ranked, table, blockOf);
   const response = {
     ...lexical,
     data: {...lexical.data, results: ranked.slice(0, limit).map(it => it.res)},
@@ -116,6 +117,58 @@ export function orderMatches(table, order, lexical, query, limit) {
 /**
  * @typedef {{res: any, i: number, band: number, learned: number}} Item
  */
+
+/**
+ * Below the first result, matches the lexical ranker scored the same keep
+ * their block but are no longer in name order inside it: a part or sibling of
+ * the first result leads (TableRow after Table), then the match whose matched
+ * words are rarer in the catalog, so a match on a common word alone sits
+ * below one on the query's telling words. Nothing crosses a block.
+ * @param {Item[]} ranked
+ * @param {EntryTable} table
+ * @param {(item: Item) => string} blockOf
+ * @returns {Item[]}
+ */
+function tiesByFit(ranked, table, blockOf) {
+  if (ranked.length < 3) return ranked;
+  const first = String(ranked[0].res.name ?? '').toLowerCase();
+  const idf = table.fields.desc.idf;
+  /** @param {Item} it */
+  const related = it => {
+    const name = String(it.res.name ?? '').toLowerCase();
+    return (
+      (first.length >= 3 && name !== first && name.startsWith(first)) ||
+      /^member of /.test(it.res.reason ?? '')
+    );
+  };
+  /** @param {Item} it */
+  const rarity = it => {
+    const m = /^matches \d+\/\d+ terms: (.*)$/.exec(it.res.reason ?? '');
+    if (!m) return 0;
+    let sum = 0;
+    for (const t of m[1].split(', ')) sum += idf.get(fold(t)) ?? 0;
+    return sum;
+  };
+  const out = [ranked[0]];
+  for (let i = 1; i < ranked.length;) {
+    let j = i;
+    const at = (/** @type {Item} */ it) => `${blockOf(it)}:${it.res.domain}`;
+    while (j < ranked.length && at(ranked[j]) === at(ranked[i])) j++;
+    const run = ranked.slice(i, j);
+    if (run.length > 1) {
+      const keyed = run.map((it, n) => ({
+        it,
+        n,
+        r: related(it),
+        f: rarity(it),
+      }));
+      keyed.sort((a, b) => Number(b.r) - Number(a.r) || b.f - a.f || a.n - b.n);
+      out.push(...keyed.map(k => k.it));
+    } else out.push(...run);
+    i = j;
+  }
+  return out;
+}
 
 /**
  * The matches `pick` selects keep the places they hold, filled in lexical
