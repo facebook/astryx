@@ -342,10 +342,16 @@ function isSheetOpen(): boolean {
   return trigger().getAttribute('aria-expanded') === 'true';
 }
 
+/**
+ * The switcher gives every step its own dialog. Outgoing dialogs stay open but
+ * inert until their exit transition completes, so return only the active one.
+ */
 function sheet(): HTMLElement {
-  const dialog = document.querySelector<HTMLElement>('dialog[open]');
+  const dialog = document.querySelector<HTMLElement>(
+    'dialog[open]:not([inert])',
+  );
   if (!dialog) {
-    throw new Error('no open sheet');
+    throw new Error('no active sheet');
   }
   return dialog;
 }
