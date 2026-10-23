@@ -90,6 +90,48 @@ const decodeAttr = s =>
     .replace(/&amp;/g, '&');
 
 /**
+ * Inline a stylesheet's own `@import`s, resolved from its folder, so a
+ * stylesheet pulled in that way is part of the file (and carried when it is
+ * the project's own). Relative url()s in an imported sheet are rewritten to
+ * stay right from the importing one. A remote `@import` is dropped with a
+ * warning: a sandboxed page cannot load it. Cycles are cut.
+ * @param {string} file the stylesheet's own path
+ * @param {string} css its text
+ * @param {{warnings: RenderWarning[], carried: Set<string>, seen?: Set<string>}} ctx
+ * @returns {string}
+ */
+function expandImports(file, css, ctx) {
+  const seen = ctx.seen ?? new Set([file]);
+  return css.replace(/@import\s+(?:url\(\s*)?(['"]?)([^'")\s;]+)\1\s*\)?[^;]*;/gi, (whole, _q, ref) => {
+    if (/^(https?:)?\/\//i.test(ref)) {
+      ctx.warnings.push({
+        code: 'remote-asset',
+        message: `${path.basename(file)} imports ${ref}, which a sandboxed page cannot load, so it is left out; save it beside the stylesheet and import it instead.`,
+      });
+      return '';
+    }
+    const target = path.resolve(path.dirname(file), ref);
+    if (seen.has(target)) return '';
+    if (!fs.existsSync(target)) {
+      ctx.warnings.push({
+        code: 'missing-asset',
+        message: `${path.basename(file)} imports ${ref}, which was not found, so its styles are missing.`,
+      });
+      return '';
+    }
+    seen.add(target);
+    ctx.carried.add(target);
+    const inner = expandImports(target, fs.readFileSync(target, 'utf8'), {...ctx, seen});
+    // Keep the imported sheet's relative url()s pointing at the same files.
+    return inner.replace(/url\(\s*(['"]?)([^'")]+)\1\s*\)/g, (u, q, r) => {
+      if (/^(data:|blob:|#|\/|[a-z]+:)/i.test(r)) return u;
+      const rebased = path.relative(path.dirname(file), path.resolve(path.dirname(target), r)).split(path.sep).join('/');
+      return `url(${q}${rebased.startsWith('.') ? rebased : `./${rebased}`}${q})`;
+    });
+  });
+}
+
+/**
  * Run the page in a worker, stopping it after `timeoutMs`.
  * @param {string} entry
  * @param {string} root
@@ -214,7 +256,12 @@ function inlineAssets(text, kind, ctx) {
         });
       return ` srcset="${parts.join(', ').replace(/"/g, '&quot;')}"`;
     })
-    .replace(/\sstyle="([^"]*)"/g, (whole, style) => ` style="${urls(style)}"`);
+    .replace(/\sstyle="([^"]*)"/g, (whole, style) => {
+      // The attribute holds escaped text: rewrite the CSS it means, then
+      // escape it again, so a data: URI's quotes cannot end the attribute.
+      const css = urls(decodeAttr(style));
+      return ` style="${css.replace(/&/g, '&amp;').replace(/"/g, '&quot;')}"`;
+    });
 }
 
 /** The light and dark switch every rendered page carries. */
@@ -291,6 +338,8 @@ export async function renderPage(entry, options = {}) {
   }
 
   const ctx = {dir, root, warnings, counted: new Set(), localAssets: /** @type {Set<string>} */ (new Set())};
+  /** Stylesheets pulled in by another's `@import`. @type {Set<string>} */
+  const carriedCss = new Set();
   try {
     markup = inlineAssets(markup, 'html', ctx);
     // React adds `<link rel="preload">` hints for images it renders; in one
@@ -324,9 +373,11 @@ export async function renderPage(entry, options = {}) {
     // A stylesheet's url()s are relative to the stylesheet, not the page: a
     // theme's font, or an image beside an imported stylesheet.
     sheetText.forEach((text, i) => {
-      css += inlineAssets(cutCss(text, used), 'css', {...ctx, dir: path.dirname(sheetFiles[i])});
+      const own = expandImports(sheetFiles[i], text, {warnings, carried: carriedCss});
+      css += inlineAssets(cutCss(own, used), 'css', {...ctx, dir: path.dirname(sheetFiles[i])});
     });
-    for (const {file, css: own} of /** @type {{file: string, css: string}[]} */ (message.importedCss ?? [])) {
+    for (const {file, css: text} of /** @type {{file: string, css: string}[]} */ (message.importedCss ?? [])) {
+      const own = expandImports(file, text, {warnings, carried: carriedCss});
       css += inlineAssets(cutCss(own, used), 'css', {...ctx, dir: path.dirname(file)});
     }
     if (message.css) css += inlineAssets(message.css, 'css', ctx);
@@ -381,6 +432,11 @@ export async function renderPage(entry, options = {}) {
   // Images and fonts the page or a stylesheet names by a relative path
   // (`<img src="./logo.png">`, `url(./bg.png)`) are carried too, so the page
   // comes back with them; a package's own files are not.
+  for (const sheet of carriedCss) {
+    const rel = path.relative(root, sheet);
+    if (rel.startsWith('..') || path.isAbsolute(rel) || rel.split(path.sep).includes('node_modules')) continue;
+    if (!files.includes(sheet)) files.push(sheet);
+  }
   for (const asset of ctx.localAssets) {
     const rel = path.relative(root, asset);
     if (rel.startsWith('..') || path.isAbsolute(rel) || rel.split(path.sep).includes('node_modules')) continue;

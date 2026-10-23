@@ -225,7 +225,16 @@ export function reachableFiles(files, {aliases = []} = {}) {
     const source = Buffer.from(entry.base64, 'base64').toString('utf8');
     // Images and fonts a module or stylesheet names by a relative path are
     // part of the page too.
-    const scanned = isModule ? scanModule(source, current) : {imports: [], assets: assetRefsIn(source)};
+    const scanned = isModule
+      ? scanModule(source, current)
+      : {
+          // A stylesheet's own `@import`s count as imports.
+          imports: [...source.matchAll(/@import\s+(?:url\(\s*)?(['"]?)([^'")\s;]+)\1/gi)]
+            .map(m => m[2])
+            .filter(ref => !/^([a-z]+:)?\/\//i.test(ref))
+            .map(ref => (ref.startsWith('.') ? ref : `./${ref}`)),
+          assets: assetRefsIn(source),
+        };
     for (const ref of scanned.assets) {
       const joined = path.posix.normalize(path.posix.join(path.posix.dirname(current), ref));
       if (joined.startsWith('..')) continue;

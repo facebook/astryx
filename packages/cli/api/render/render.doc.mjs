@@ -84,7 +84,7 @@ export const doc = {
     {code: 'ERR_MISSING_ARGUMENT', when: 'no file is given'},
     {
       code: 'ERR_INVALID_ARGUMENT',
-      when: 'the file or `out` has the wrong kind of extension, `out` is the input itself, `title` is given with `reverse`, or `overwrite` without it',
+      when: 'the file or `out` has the wrong kind of extension, `out` is the input itself, `title` is given with `reverse`, or `overwrite` without it; with `reverse`, the page would land under a configuration name (`vite.config.ts`) or where a test, story or benchmark runner would run it (judged from the repository root)',
     },
     {code: 'ERR_FILE_NOT_FOUND', when: 'the file, or a local file the page imports, does not exist'},
     {code: 'ERR_FILE_EXISTS', when: 'rendering would replace an existing file a render did not write, reversing would replace an existing file and `overwrite` is not set, or an existing file the project protects (generated, vendored or ignored) would be replaced, which `overwrite` never does'},

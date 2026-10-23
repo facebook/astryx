@@ -513,6 +513,66 @@ describe('render(): every write stays inside the current folder', () => {
     expect(r.data.warnings.map((/** @type {any} */ w) => w.code)).toContain('not-embedded');
   }, 60_000);
 
+  it('inlines style-attribute images in every url() form and keeps the element whole', async () => {
+    put('styleattr/a.png', PNG);
+    put('styleattr/b.png', PNG);
+    put(
+      'styleattr/page.tsx',
+      [
+        'export default function Page() {',
+        '  return (',
+        '    <div>',
+        `      <div id="q" style={{backgroundImage: 'url("./a.png")'}}>Q</div>`,
+        `      <div id="u" style={{backgroundImage: 'url(b.png)'}}>U</div>`,
+        `      <div id="r" style={{backgroundImage: "url('https://example.com/x.png')"}}>R</div>`,
+        '    </div>',
+        '  );',
+        '}',
+        '',
+      ].join('\n'),
+    );
+    const r = /** @type {any} */ (await render('styleattr/page.tsx', {cwd: dir}));
+    const html = fs.readFileSync(path.join(dir, 'styleattr/page.html'), 'utf8');
+    const {parseHtml} = await import('../../foundation/render/html-reader.mjs');
+    /** @param {any} n @param {string} id @returns {any} */
+    const byId = (n, id) => {
+      if (n.attrs?.id === id) return n;
+      for (const c of n.children ?? []) {
+        const f = byId(c, id);
+        if (f) return f;
+      }
+      return null;
+    };
+    const doc = parseHtml(html);
+    expect(byId(doc, 'q').attrs.style).toContain('url("data:image/png;base64,');
+    expect(byId(doc, 'u').attrs.style).toContain('url("data:image/png;base64,');
+    expect(byId(doc, 'q').children[0].text).toBe('Q');
+    expect(r.data.warnings.map((/** @type {any} */ w) => w.code)).toContain('remote-asset');
+    expect(r.data.files).toEqual(expect.arrayContaining(['a.png', 'b.png']));
+  }, 60_000);
+
+  it('carries a stylesheet pulled in by @import and gives it back, and says when one is missing', async () => {
+    put('imp/styles/main.css', "@import './parts/base.css';\n@import url('https://example.com/f.css');\n.m { color: red; }\n");
+    put('imp/styles/parts/base.css', '.b { color: blue; background: url(./dot.png); }\n');
+    put('imp/styles/parts/dot.png', PNG);
+    put('imp/page.tsx', "import './styles/main.css';\nexport default function Page() { return <p className=\"m b\">Hi</p>; }\n");
+    const r = /** @type {any} */ (await render('imp/page.tsx', {cwd: dir}));
+    expect(r.data.files).toEqual(expect.arrayContaining(['styles/main.css', 'styles/parts/base.css', 'styles/parts/dot.png']));
+    const html = fs.readFileSync(path.join(dir, 'imp/page.html'), 'utf8');
+    expect(html).toContain('color: blue');
+    expect(html).not.toContain('@import');
+    expect(r.data.warnings.map((/** @type {any} */ w) => w.code)).toContain('remote-asset');
+    const back = /** @type {any} */ (await render('imp/page.html', {cwd: dir, reverse: true, out: 'imp-back/page.tsx'}));
+    expect(back.data.exact).toBe(true);
+    expect(back.data.files).toEqual(expect.arrayContaining(['imp-back/styles/parts/base.css']));
+    // A file whose @import target it does not carry says so.
+    const {sourceBlock} = await import('../../foundation/render/source-block.mjs');
+    put('imp-missing.html', `<body><p class="astryx-text">x</p>${sourceBlock('page.tsx', [{path: 'page.tsx', bytes: Buffer.from("import './a.css';\nexport default () => null;\n")}, {path: 'a.css', bytes: Buffer.from("@import './gone.css';\n")}])}</body>`);
+    const partial = /** @type {any} */ (await render('imp-missing.html', {cwd: dir, reverse: true, out: 'imp-missing/page.tsx'}));
+    expect(partial.data.exact).toBe(false);
+    expect(partial.data.missing).toEqual(['gone.css']);
+  }, 60_000);
+
   it('refuses a carried "image" whose bytes are not one', async () => {
     const {sourceBlock} = await import('../../foundation/render/source-block.mjs');
     put('fake-img.html', `<body><p class="astryx-text">x</p>${sourceBlock('page.tsx', [{path: 'page.tsx', bytes: Buffer.from('export default () => null;\n')}, {path: 'hook.png', bytes: Buffer.from('process.exit(1)\n')}])}</body>`);
