@@ -81,7 +81,7 @@ function createPendingSource(local: Record<string, SearchableItem[]> = {}) {
   const searches: PendingSearch[] = [];
   const source: SearchSource<SearchableItem> = {
     bootstrap: () => [],
-    search(query, context) {
+    async search(query, context) {
       const localMatches = local[query];
       if (localMatches) {
         context?.update(localMatches);

@@ -5,7 +5,9 @@
 /**
  * @file BaseTypeahead.tsx
  * @input Uses React, StyleX, usePopover, TypeaheadItem
- * @output Exports BaseTypeahead; focus bootstraps a replaced search source
+ * @output Exports BaseTypeahead; focus bootstraps a replaced search source;
+ *   a source shows partial lists for a query through context.update, and
+ *   later lists only append (spec:AST-092)
  * @position Core implementation; used by Typeahead and Tokenizer
  *
  * Pure combobox engine: input, search, keyboard navigation, dropdown.
@@ -415,8 +417,8 @@ const itemSizeStyles = stylex.create({
  * append-only rule a later list for the same query follows (spec:AST-092 FR2).
  */
 function startsWithRows<T extends SearchableItem>(
-  next: readonly T[],
-  shown: readonly T[],
+  next: ReadonlyArray<T>,
+  shown: ReadonlyArray<T>,
 ): boolean {
   return (
     next.length >= shown.length &&
