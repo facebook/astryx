@@ -50,8 +50,8 @@ feedback, and announcements.
 ## Requirements
 
 - **FR1 — Every list is the source's complete answer.** `search(query,
-context)` receives an optional context whose `update(items)` replaces the
-  results shown for that query. Each list a source gives, through `update` or
+context)` receives an optional `SearchContext` whose `update(items)` replaces
+  the results shown for that query. Each list a source gives, through `update` or
   as its return value, is complete, ordered, and free of duplicate `id`s for
   that query at that moment. The typeahead shows each list as given, capped at
   its result cap. It never merges, reorders, or dedupes lists.
@@ -72,8 +72,9 @@ context)` receives an optional context whose `update(items)` replaces the
 - **FR5 — The highlight follows the item.** The first list shown for a new query
   highlights its first row. When a later list for the same query arrives, the
   highlighted item stays highlighted wherever it now sits; when that item is no
-  longer in the list, the first row is highlighted. Enter selects the
-  highlighted item.
+  longer in the list, the first row is highlighted. When a later list moves the
+  highlighted item, the list scrolls only as far as needed to keep it visible.
+  Enter selects the highlighted item.
 - **FR6 — An option keeps its identity while its item stays.** While an item
   remains in the lists of one query, its option element and its id stay the
   same. The active descendant keeps referencing the same option, so assistive
@@ -118,15 +119,15 @@ context)` receives an optional context whose `update(items)` replaces the
 
 ## Verification
 
-| Contract | Verification                                         | Representative states                                                       | Mutation or failure expectation                                                                     |
-| -------- | ---------------------------------------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| FR1, FR2 | BaseTypeahead source-contract tests                  | synchronous update then promise, several updates, cap smaller than list     | rows that merge lists, reorder a list, exceed the cap, or change after settle fail                  |
-| FR3      | stale-query tests with a deferred source             | newer query, selection, clear, source replacement, unmount                  | a list for a superseded query appearing fails                                                       |
-| FR4      | pending-state tests                                  | first partial list, empty partial list, settled empty list                  | busy ending early, an empty row while pending, or rows cleared by an empty update fail              |
-| FR5, FR6 | keyboard tests plus real-browser accessibility tree  | highlight on first row, highlight moved by arrows, highlighted item removed | highlight moving to a different item, or the active descendant id changing for the same item, fails |
-| FR7      | announcement-channel tests                           | partial then settled, settled only                                          | a second count announcement for one query, or none at settle, fails                                 |
-| FR8      | rejection tests                                      | reject after update, reject without update                                  | shown rows cleared after an update, or a missing announcement, fails                                |
-| FR9      | existing Typeahead, Tokenizer, CommandPalette suites | single-answer sources, context-free callers                                 | any behavior change for a source that never calls `update` fails                                    |
+| Contract | Verification                                         | Representative states                                                                                               | Mutation or failure expectation                                                                                                                   |
+| -------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1, FR2 | BaseTypeahead source-contract tests                  | synchronous update then promise, several updates, cap smaller than list                                             | rows that merge lists, reorder a list, exceed the cap, or change after settle fail                                                                |
+| FR3      | stale-query tests with a deferred source             | newer query, selection, clear, source replacement, unmount                                                          | a list for a superseded query appearing fails                                                                                                     |
+| FR4      | pending-state tests                                  | first partial list, empty partial list, settled empty list                                                          | busy ending early, an empty row while pending, or rows cleared by an empty update fail                                                            |
+| FR5, FR6 | keyboard tests plus real-browser accessibility tree  | highlight on first row, highlight moved by arrows, highlighted item removed, rows added above it in a scrolled list | highlight moving to a different item, the highlighted row leaving the visible list, or the active descendant id changing for the same item, fails |
+| FR7      | announcement-channel tests                           | partial then settled, settled only                                                                                  | a second count announcement for one query, or none at settle, fails                                                                               |
+| FR8      | rejection tests                                      | reject after update, reject without update                                                                          | shown rows cleared after an update, or a missing announcement, fails                                                                              |
+| FR9      | existing Typeahead, Tokenizer, CommandPalette suites | single-answer sources, context-free callers                                                                         | any behavior change for a source that never calls `update` fails                                                                                  |
 
 ## Decision log
 
