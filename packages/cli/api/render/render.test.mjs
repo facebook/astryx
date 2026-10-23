@@ -573,6 +573,42 @@ describe('render(): every write stays inside the current folder', () => {
     expect(partial.data.missing).toEqual(['gone.css']);
   }, 60_000);
 
+  it('handles every kind of stylesheet import', async () => {
+    const themeFonts = fs.readFileSync(path.join(CLI_DIR, '../themes/butter/fonts.css'), 'utf8');
+    put('kinds/fonts.css', themeFonts);
+    put('kinds/legacy.css', '.legacy-btn { padding: 3px; }\n');
+    put('kinds/main.css', "@import './fonts.css';\n@import './legacy.css' layer(reset);\n@import './print.css' print;\n@import '@astryxdesign/core/astryx.css';\n.k { color: red; }\n");
+    put('kinds/print.css', '.p { color: black; }\n');
+    put('kinds/page.tsx', "import './main.css';\nexport default function Page() { return <p className=\"k legacy-btn p\">Hi</p>; }\n");
+    const r = /** @type {any} */ (await render('kinds/page.tsx', {cwd: dir}));
+    const html = fs.readFileSync(path.join(dir, 'kinds/page.html'), 'utf8');
+    expect(html).toMatch(/@layer reset\s*\{[^}]*\.legacy-btn/);
+    expect(html).toMatch(/@media print\s*\{[^}]*\.p/);
+    expect(html).not.toContain('@import');
+    const codes = r.data.warnings.map((/** @type {any} */ w) => w.code);
+    expect(codes).toContain('remote-asset');
+    expect(r.data.warnings.some((/** @type {any} */ w) => w.message.includes('astryx.css'))).toBe(false);
+    expect(r.data.files).not.toContain(expect.stringContaining('node_modules'));
+    // The package import is neither carried nor missing when given back.
+    const back = /** @type {any} */ (await render('kinds/page.html', {cwd: dir, reverse: true, out: 'kinds-back/page.tsx'}));
+    expect(back.data.exact).toBe(true);
+    // Sass is named, CSS Modules refused with a clear message.
+    put('kinds/sass.tsx', "import './x.scss';\nexport default function Page() { return <p>Hi</p>; }\n");
+    const sass = /** @type {any} */ (await render('kinds/sass.tsx', {cwd: dir}));
+    expect(sass.data.warnings.some((/** @type {any} */ w) => w.message.includes('x.scss'))).toBe(true);
+    put('kinds/x.module.css', '.a { color: red; }\n');
+    put('kinds/mod.tsx', "import styles from './x.module.css';\nexport default function Page() { return <p className={styles.a}>Hi</p>; }\n");
+    /** @type {any} */
+    let error;
+    try {
+      await render('kinds/mod.tsx', {cwd: dir});
+    } catch (e) {
+      error = e;
+    }
+    expect(error?.code).toBe('ERR_RENDER_FAILED');
+    expect(error.message).toContain('CSS Modules');
+  }, 90_000);
+
   it('refuses a carried "image" whose bytes are not one', async () => {
     const {sourceBlock} = await import('../../foundation/render/source-block.mjs');
     put('fake-img.html', `<body><p class="astryx-text">x</p>${sourceBlock('page.tsx', [{path: 'page.tsx', bytes: Buffer.from('export default () => null;\n')}, {path: 'hook.png', bytes: Buffer.from('process.exit(1)\n')}])}</body>`);

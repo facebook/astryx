@@ -20,6 +20,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {createRequire} from 'node:module';
 import {Worker} from 'node:worker_threads';
+import postcss from 'postcss';
 import {assetDataUri, isAssetBytes, isAssetPath, RenderAssetError} from './assets.mjs';
 import {classesIn, cutCss, layerOrderOf} from './css-cut.mjs';
 import {sourceBlock} from './source-block.mjs';
@@ -90,45 +91,126 @@ const decodeAttr = s =>
     .replace(/&amp;/g, '&');
 
 /**
- * Inline a stylesheet's own `@import`s, resolved from its folder, so a
- * stylesheet pulled in that way is part of the file (and carried when it is
- * the project's own). Relative url()s in an imported sheet are rewritten to
- * stay right from the importing one. A remote `@import` is dropped with a
- * warning: a sandboxed page cannot load it. Cycles are cut.
+ * An `@import` rule's parts: what it loads, and the layer, supports() and
+ * media conditions that scope it.
+ * @param {string} params
+ * @returns {{url: string, layer: string | null, supports: string | null, media: string} | null}
+ */
+function importParams(params) {
+  const m = /^\s*(?:url\(\s*(['"]?)([\s\S]*?)\1\s*\)|(['"])([\s\S]*?)\3)\s*([\s\S]*)$/.exec(params);
+  if (!m) return null;
+  let rest = m[5];
+  /** @type {string | null} */
+  let layer = null;
+  const lay = /^layer(?:\(\s*([^)]*?)\s*\))?(?=\s|$)\s*/i.exec(rest);
+  if (lay) {
+    layer = lay[1] ?? '';
+    rest = rest.slice(lay[0].length);
+  }
+  /** @type {string | null} */
+  let supports = null;
+  const sup = /^supports\(((?:[^()]|\((?:[^()]|\([^()]*\))*\))*)\)\s*/i.exec(rest);
+  if (sup) {
+    supports = sup[1];
+    rest = rest.slice(sup[0].length);
+  }
+  return {url: m[2] ?? m[4] ?? '', layer, supports, media: rest.trim()};
+}
+
+/**
+ * Inline a stylesheet's own `@import`s, so a stylesheet pulled in that way is
+ * part of the file: a relative one from the importing sheet's folder
+ * (carried when it is the project's own), a package one (`@scope/pkg/x.css`)
+ * by Node resolution from the importing sheet. Each keeps its `layer()`,
+ * `supports()` and media conditions, and relative url()s in it are rewritten
+ * to stay right. A remote import is dropped with a warning (a sandboxed page
+ * cannot load it), a Sass or Less one is named in a warning, and cycles are
+ * cut.
  * @param {string} file the stylesheet's own path
  * @param {string} css its text
  * @param {{warnings: RenderWarning[], carried: Set<string>, seen?: Set<string>}} ctx
  * @returns {string}
  */
 function expandImports(file, css, ctx) {
+  if (!/@import/i.test(css)) return css;
   const seen = ctx.seen ?? new Set([file]);
-  return css.replace(/@import\s+(?:url\(\s*)?(['"]?)([^'")\s;]+)\1\s*\)?[^;]*;/gi, (whole, _q, ref) => {
-    if (/^(https?:)?\/\//i.test(ref)) {
+  /** @type {import('postcss').Root} */
+  let root;
+  try {
+    root = postcss.parse(css, {from: file});
+  } catch {
+    return css;
+  }
+  root.walkAtRules(/^import$/i, rule => {
+    const parsed = importParams(rule.params);
+    if (!parsed || !parsed.url) return;
+    const {url} = parsed;
+    if (/^([a-z]+:)?\/\//i.test(url)) {
       ctx.warnings.push({
         code: 'remote-asset',
-        message: `${path.basename(file)} imports ${ref}, which a sandboxed page cannot load, so it is left out; save it beside the stylesheet and import it instead.`,
+        message: `${path.basename(file)} imports ${url}, which a sandboxed page cannot load, so it is left out; save it beside the stylesheet and import it instead.`,
       });
-      return '';
+      rule.remove();
+      return;
     }
-    const target = path.resolve(path.dirname(file), ref);
-    if (seen.has(target)) return '';
-    if (!fs.existsSync(target)) {
+    if (/\.(scss|sass|less)$/i.test(url)) {
       ctx.warnings.push({
         code: 'missing-asset',
-        message: `${path.basename(file)} imports ${ref}, which was not found, so its styles are missing.`,
+        message: `${path.basename(file)} imports ${url}, a Sass or Less stylesheet, which a render does not compile, so its styles are missing.`,
       });
-      return '';
+      rule.remove();
+      return;
+    }
+    const relative = path.resolve(path.dirname(file), url);
+    /** @type {string | null} */
+    let target;
+    let fromPackage = false;
+    if (/^\.{1,2}\//.test(url) || fs.existsSync(relative)) {
+      target = fs.existsSync(relative) ? relative : null;
+    } else {
+      try {
+        target = createRequire(file).resolve(url.replace(/^~/, ''));
+        fromPackage = true;
+      } catch {
+        target = null;
+      }
+    }
+    if (!target) {
+      ctx.warnings.push({
+        code: 'missing-asset',
+        message: `${path.basename(file)} imports ${url}, which was not found, so its styles are missing.`,
+      });
+      rule.remove();
+      return;
+    }
+    if (seen.has(target)) {
+      rule.remove();
+      return;
     }
     seen.add(target);
-    ctx.carried.add(target);
-    const inner = expandImports(target, fs.readFileSync(target, 'utf8'), {...ctx, seen});
+    if (!fromPackage) ctx.carried.add(target);
+    const from = target;
+    let inner = expandImports(from, fs.readFileSync(from, 'utf8'), {...ctx, seen});
     // Keep the imported sheet's relative url()s pointing at the same files.
-    return inner.replace(/url\(\s*(['"]?)([^'")]+)\1\s*\)/g, (u, q, r) => {
+    inner = inner.replace(/url\(\s*(['"]?)([^'")]+)\1\s*\)/g, (u, q, r) => {
       if (/^(data:|blob:|#|\/|[a-z]+:)/i.test(r)) return u;
-      const rebased = path.relative(path.dirname(file), path.resolve(path.dirname(target), r)).split(path.sep).join('/');
+      const rebased = path
+        .relative(path.dirname(file), path.resolve(path.dirname(from), r))
+        .split(path.sep)
+        .join('/');
       return `url(${q}${rebased.startsWith('.') ? rebased : `./${rebased}`}${q})`;
     });
+    // The import's conditions still scope what it brings in.
+    if (parsed.supports) inner = `@supports (${parsed.supports.replace(/^\((.*)\)$/s, '$1')}){${inner}}`;
+    if (parsed.media) inner = `@media ${parsed.media}{${inner}}`;
+    if (parsed.layer !== null) inner = `@layer${parsed.layer ? ` ${parsed.layer}` : ''}{${inner}}`;
+    try {
+      rule.replaceWith(postcss.parse(inner, {from}).nodes);
+    } catch {
+      rule.remove();
+    }
   });
+  return root.toString();
 }
 
 /**
@@ -419,6 +501,12 @@ export async function renderPage(entry, options = {}) {
       });
       break;
     }
+  }
+  for (const sheet of /** @type {string[]} */ (message.skippedCss ?? [])) {
+    warnings.push({
+      code: 'missing-asset',
+      message: `The page imports ${sheet}, a Sass or Less stylesheet, which a render does not compile, so its styles are missing.`,
+    });
   }
   for (const log of /** @type {{level: string, text: string}[]} */ (message.logs ?? []).slice(0, 5)) {
     warnings.push({

@@ -229,9 +229,14 @@ export function reachableFiles(files, {aliases = []} = {}) {
       ? scanModule(source, current)
       : {
           // A stylesheet's own `@import`s count as imports.
-          imports: [...source.matchAll(/@import\s+(?:url\(\s*)?(['"]?)([^'")\s;]+)\1/gi)]
+          // A stylesheet's own relative `@import`s count as imports; a package
+          // one (`@scope/pkg/x.css`) or a remote one is not the page's file.
+          imports: [...source.matchAll(/@import\s+(?:url\(\s*)?(['"]?)([^'")\s]+)\1/gi)]
             .map(m => m[2])
-            .filter(ref => !/^([a-z]+:)?\/\//i.test(ref))
+            .filter(ref => !/^([a-z]+:)?\/\//i.test(ref) && !/^[@~]/.test(ref))
+            // A bare name (`theme.css`) is the sheet beside it when the file
+            // carries one, else a package's.
+            .filter(ref => ref.startsWith('.') || byPath.has(path.posix.normalize(path.posix.join(path.posix.dirname(current), ref))))
             .map(ref => (ref.startsWith('.') ? ref : `./${ref}`)),
           assets: assetRefsIn(source),
         };

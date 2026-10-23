@@ -55,6 +55,8 @@ const localFiles = [];
 /** Package stylesheets the page imports, by specifier and importing file. */
 /** @type {{spec: string, from: string}[]} */
 const packageCss = [];
+/** Sass and Less stylesheets the page imports, which a render cannot compile. @type {string[]} */
+const skippedCss = [];
 /** Local files inlined from asset imports. */
 /** @type {Set<string>} */
 const assetsInlined = new Set();
@@ -148,7 +150,21 @@ function pagePlugin(filename) {
           const file = path.resolve(dir, bare);
           if (fs.existsSync(file) && !localFiles.includes(file)) localFiles.push(file);
         }
-        if (/\.(css|scss|sass|less)$/i.test(bare)) {
+        if (/\.module\.css$/i.test(bare)) {
+          // CSS Modules give class names at build time; a render has none.
+          const err = new Error(
+            `${path.basename(filename)} imports ${bare}, a CSS Modules stylesheet, which a render does not support: use StyleX or a plain stylesheet.`,
+          );
+          /** @type {any} */ (err).renderCode = 'ERR_RENDER_FAILED';
+          throw err;
+        }
+        if (/\.(scss|sass|less)$/i.test(bare)) {
+          // Sass and Less need their compiler: say so rather than drop them.
+          skippedCss.push(bare);
+          p.remove();
+          return;
+        }
+        if (/\.css$/i.test(bare)) {
           if (bare.startsWith('.') || path.isAbsolute(bare)) {
             const file = path.resolve(dir, bare);
             if (/\.css$/i.test(bare) && fs.existsSync(file)) {
@@ -374,6 +390,7 @@ function fail(code, message, detail) {
 /** @param {unknown} e */
 function classify(e) {
   const err = /** @type {any} */ (e);
+  if (err?.renderCode) return fail(err.renderCode, String(err.message).replace(/^\/[^:\n]*: /, ''));
   // Babel prefixes errors raised while compiling with the file's path.
   const message = String(err?.message ?? err).replace(/^\/[^:\n]*: /, '');
   if (/suspended while responding to synchronous input|A component suspended/.test(message)) {
@@ -468,6 +485,7 @@ try {
     importedCss,
     packages: [...packages],
     packageCss,
+    skippedCss,
     assets: [...assetsInlined],
     files: localFiles,
     texts,
