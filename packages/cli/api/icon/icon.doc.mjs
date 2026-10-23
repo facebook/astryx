@@ -106,7 +106,7 @@ export const doc = {
     },
     {
       code: 'ERR_NOT_FOUND',
-      when: 'the set named by `<set>/<id>` or `options.set` is not installed, or the set has no such icon; suggestions name the closest',
+      when: 'the set named by `<set>/<id>` or `options.set` (with words or `allIcons`) is not installed or is withdrawn (the message says which, and why), or the set has no such icon; suggestions name the closest',
     },
   ],
   examples: [

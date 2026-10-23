@@ -2152,3 +2152,146 @@ describe('map names an icon only by its id, export name, or another library name
     }
   });
 });
+
+describe('a refresh after the id rule changes', () => {
+  it('carries a renamed icon’s map entries, variants, and words, matched by its export, and reports the rename', async () => {
+    const lib = path.join(pkg, 'node_modules', '@acme', 'glyph-library');
+    fs.writeFileSync(
+      path.join(lib, 'icons', 'squares.js'),
+      'export const Squares2X2Icon = props => null;\n',
+    );
+    fs.appendFileSync(
+      path.join(lib, 'index.js'),
+      "export {Squares2X2Icon} from './icons/squares.js';\n",
+    );
+    const args = [
+      'experimental',
+      'icon',
+      'new-set',
+      'outline',
+      '--from',
+      '@acme/glyph-library',
+      '--variants',
+      'outline,solid',
+    ];
+    expect((await json(args)).code).toBe(0);
+    // Rewrite the data file as the old id rule wrote it: `squares-2-x2`,
+    // with that rule's words, a word the author added, a variant, and a map
+    // entry.
+    const dataFile = path.join(
+      pkg,
+      'icon-sets',
+      'outline',
+      'outline.icons.json',
+    );
+    const data = dataOf('outline');
+    const icon = data.icons.find(
+      (/** @type {{export: string}} */ each) =>
+        each.export === 'Squares2X2Icon',
+    );
+    Object.assign(icon, {
+      id: 'squares-2-x2',
+      words: ['squares', 'x2', 'tiles'],
+      variants: [{variant: 'solid', export: 'Squares2X2SolidIcon'}],
+    });
+    data.map = {...data.map, moreHorizontal: 'squares-2-x2'};
+    fs.writeFileSync(dataFile, `${JSON.stringify(data, null, 2)}\n`);
+
+    const refreshed = await json(args);
+    expect(refreshed.code).toBe(0);
+    expect(refreshed.body.data.renamed).toEqual([
+      {from: 'squares-2-x2', to: 'squares-2x2'},
+    ]);
+    const notes = refreshed.body.data.notes.join(' ');
+    expect(notes).toContain('squares-2-x2 -> squares-2x2');
+    expect(notes).not.toContain('no longer exports');
+    const after = dataOf('outline');
+    expect(after.map.moreHorizontal).toBe('squares-2x2');
+    const renamed = after.icons.find(
+      (/** @type {{export: string}} */ each) =>
+        each.export === 'Squares2X2Icon',
+    );
+    expect(renamed).toMatchObject({
+      id: 'squares-2x2',
+      variants: [{variant: 'solid', export: 'Squares2X2SolidIcon'}],
+    });
+    expect(renamed.words).toContain('tiles');
+    expect(renamed.words).not.toContain('x2');
+    expect(
+      after.icons.some(
+        (/** @type {{id: string}} */ each) => each.id === 'squares-2-x2',
+      ),
+    ).toBe(false);
+    // The export stays in the generated module.
+    expect(
+      fs.readFileSync(
+        path.join(pkg, 'icon-sets', 'outline', 'outline.generated.js'),
+        'utf-8',
+      ),
+    ).toContain('Squares2X2Icon');
+  });
+});
+
+describe('add --variant --all after the id rule changes', () => {
+  it('meets an icon whose id an older rule wrote by its export name', async () => {
+    const lib = path.join(pkg, 'node_modules', '@acme', 'glyph-library');
+    fs.writeFileSync(
+      path.join(lib, 'package.json'),
+      JSON.stringify({
+        ...JSON.parse(fs.readFileSync(path.join(lib, 'package.json'), 'utf-8')),
+        exports: {'.': './index.js', './solid': './solid.js'},
+      }),
+    );
+    fs.writeFileSync(
+      path.join(lib, 'icons', 'squares.js'),
+      'export const Squares2X2Icon = props => null;\n',
+    );
+    fs.appendFileSync(
+      path.join(lib, 'index.js'),
+      "export {Squares2X2Icon} from './icons/squares.js';\n",
+    );
+    fs.writeFileSync(
+      path.join(lib, 'solid.js'),
+      'export const Squares2X2Icon = props => null;\n',
+    );
+    await json([
+      'experimental',
+      'icon',
+      'new-set',
+      'outline',
+      '--from',
+      '@acme/glyph-library',
+      '--variants',
+      'outline,solid',
+    ]);
+    const dataFile = path.join(
+      pkg,
+      'icon-sets',
+      'outline',
+      'outline.icons.json',
+    );
+    const data = dataOf('outline');
+    data.icons.find(
+      (/** @type {{export: string}} */ each) =>
+        each.export === 'Squares2X2Icon',
+    ).id = 'squares-2-x2';
+    fs.writeFileSync(dataFile, `${JSON.stringify(data, null, 2)}\n`);
+    const added = await json([
+      'experimental',
+      'icon',
+      'add',
+      '--variant',
+      'solid',
+      '--from',
+      '@acme/glyph-library/solid',
+      '--all',
+    ]);
+    expect(added.code).toBe(0);
+    expect(added.body.data.missing).not.toContain('squares-2-x2');
+    expect(
+      dataOf('outline').icons.find(
+        (/** @type {{id: string}} */ each) => each.id === 'squares-2-x2',
+      ).variants,
+    ).toEqual([{variant: 'solid', export: 'Squares2X2SolidIcon'}]);
+  });
+});

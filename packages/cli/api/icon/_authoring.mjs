@@ -658,9 +658,21 @@ async function refreshIconSet(
       adapter: Boolean(set.data.adapter),
       exclude: excluded,
     });
-    const previous = new Map(set.data.icons.map(icon => [icon.id, icon]));
+    // An icon is the same icon when the library still exports it under the
+    // same name: the export is the stable key, the id is derived from it and
+    // its rule may change between releases (`squares-2-x2` is now
+    // `squares-2x2`). A renamed icon keeps every field it had (its variants,
+    // the words the author added, its module) and its map entries.
+    const byId = new Map(set.data.icons.map(icon => [icon.id, icon]));
+    const byExport = new Map(set.data.icons.map(icon => [icon.export, icon]));
+    /** @type {Map<string, string>} old id → new id */
+    const renames = new Map();
     const icons = found.map(icon => {
-      const prior = previous.get(icon.id);
+      const prior = byId.get(icon.id) ?? byExport.get(icon.name);
+      if (prior && prior.id !== icon.id) renames.set(prior.id, icon.id);
+      // The words its old id gave are the old rule's, not the author's.
+      const oldIdWords =
+        prior && prior.id !== icon.id ? new Set(idWords(prior.id)) : new Set();
       return {
         ...(prior ?? {}),
         id: icon.id,
@@ -669,7 +681,7 @@ async function refreshIconSet(
           ...new Set([
             ...idWords(icon.id),
             ...icon.aliases,
-            ...(prior?.words ?? []),
+            ...(prior?.words ?? []).filter(word => !oldIdWords.has(word)),
           ]),
         ],
       };
@@ -680,7 +692,8 @@ async function refreshIconSet(
     /** @type {string[]} */
     const lost = [];
     for (const [definition, id] of Object.entries(set.data.map ?? {})) {
-      if (ids.has(id)) kept[definition] = id;
+      const now = renames.get(id) ?? id;
+      if (ids.has(now)) kept[definition] = now;
       else lost.push(`${definition} -> "${id}"`);
     }
     const generated = generatedModulePath(set, packageDir);
@@ -758,9 +771,10 @@ async function refreshIconSet(
           source: icon.export,
           adapt: icon.adapt,
         })),
-        // The icons the library no longer has leave the module too.
+        // The icons the library no longer exports leave the module too; a
+        // renamed icon keeps its export.
         set.data.icons
-          .filter(icon => !ids.has(icon.id))
+          .filter(icon => !icons.some(each => each.export === icon.export))
           .map(icon => icon.export),
       );
       files.push(...written.files);
@@ -810,7 +824,15 @@ async function refreshIconSet(
       icon,
     }));
     result.data.suggestions = suggestions;
+    if (renames.size > 0) {
+      result.data.renamed = [...renames].map(([from, to]) => ({from, to}));
+    }
     result.data.notes = [
+      ...(renames.size > 0
+        ? [
+            `${renames.size} icons have a new id under this release's id rule, and keep their map entries, variants, and words: ${[...renames].map(([from, to]) => `${from} -> ${to}`).join(', ')}.`,
+          ]
+        : []),
       ...mappedNotes(byName),
       ...suggestionNotes(suggestions),
       ...(lost.length > 0

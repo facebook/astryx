@@ -12,7 +12,7 @@
 import {AstryxError} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {loadIconSets} from '../_adapter.mjs';
-import {closest, rankIcons, setsNamed, withdrawnReason} from '../_records.mjs';
+import {rankIcons, setsNamed, unusableSet} from '../_records.mjs';
 
 /** The lowest score of a whole-word or word-start match. */
 const WORD_SCORE = 60;
@@ -24,21 +24,17 @@ const WORD_SCORE = 60;
  * @returns {Promise<import('../icon.type.mjs').IconSetIconsResponse>}
  */
 export async function iconSetIcons({cwd, set}) {
-  const {sets} = await loadIconSets(cwd);
+  const {sets, withdrawn} = await loadIconSets(cwd);
   const named = setsNamed(sets, set);
-  if (named.length !== 1) {
+  if (named.length === 0) throw unusableSet(sets, withdrawn, set);
+  if (named.length > 1) {
     throw new AstryxError(
-      named.length === 0
-        ? `No installed icon set named "${set}"`
-        : `"${set}" names ${named.length} sets; name one as <package>/<set>`,
-      closest(
-        set,
-        sets.flatMap(each => [each.name, `${each.package}/${each.name}`]),
-        'installed icon set',
-      ),
-      named.length === 0
-        ? ERROR_CODES.ERR_NOT_FOUND
-        : ERROR_CODES.ERR_INVALID_ARGUMENT,
+      `"${set}" names ${named.length} sets; name one as <package>/<set>`,
+      named.map(each => ({
+        name: `${each.package}/${each.name}`,
+        reason: 'name the package',
+      })),
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
     );
   }
   const [only] = named;
@@ -76,18 +72,7 @@ export async function iconSearch(query, {cwd, set, limit}) {
   let searched = sets;
   if (set != null) {
     searched = setsNamed(sets, set);
-    if (searched.length === 0) {
-      throw new AstryxError(
-        withdrawnReason(withdrawn, set) ??
-          `No installed icon set named "${set}"`,
-        closest(
-          set,
-          sets.flatMap(each => [each.name, `${each.package}/${each.name}`]),
-          'installed icon set',
-        ),
-        ERROR_CODES.ERR_NOT_FOUND,
-      );
-    }
+    if (searched.length === 0) throw unusableSet(sets, withdrawn, set);
   }
   const ranked = rankIcons(searched, query);
   // A partial match (`pin` inside `shopping`) answers only when nothing

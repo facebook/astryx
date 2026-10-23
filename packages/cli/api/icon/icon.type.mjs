@@ -324,6 +324,7 @@
  * @property {string} [from]
  * @property {number} [icons] - With `from`: how many icons it wrote.
  * @property {boolean} [refreshed] - With `from` on an existing set: the set was refreshed, not created.
+ * @property {Array<{from: string, to: string}>} [renamed] - On a refresh: the icons whose id this release's id rule changes, matched by the export the library still has; each keeps its `map` entries, variants, and words.
  * @property {Array<{definition: string, icon: string}>} [mapped] - With `from`: the `map` entries an icon with the definition's exact name gives (on a refresh, every such entry, kept or new); check each.
  * @property {Array<{definition: string, icon: string, word: string}>} [suggestions] - With `from`: icons an unmapped Astryx definition might map to, because the icon's id is one of the definition's words. Never written.
  * @property {string[]} [notes] - What the author does next, including each change the package needs that the CLI never makes itself (its entry, peers, scripts), as text to copy.

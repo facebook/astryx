@@ -523,6 +523,9 @@ async function addVariantForAll({cwd, from, selector, variant}) {
   const source = resolveIconSource(from, where);
   const found = libraryIcons(source.file, {adapter: Boolean(set.data.adapter)});
   const byId = new Map(found.map(each => [each.id, each]));
+  // The export name is the stable key: an icon whose id an older id rule
+  // wrote (`squares-2-x2`) still meets its variant (`Squares2X2Icon`).
+  const byName = new Map(found.map(each => [each.name, each]));
   const generated = generatedModulePath(set, packageDir);
   /** @type {import('../../../foundation/discovery/icon-set-writer.mjs').GeneratedIcon[]} */
   const toWrite = [];
@@ -533,7 +536,7 @@ async function addVariantForAll({cwd, from, selector, variant}) {
   /** @type {string[]} */
   const missing = [];
   const icons = set.data.icons.map(icon => {
-    const match = byId.get(icon.id);
+    const match = byId.get(icon.id) ?? byName.get(icon.export);
     if (!match) {
       missing.push(icon.id);
       return icon;

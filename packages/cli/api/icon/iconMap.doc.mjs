@@ -68,7 +68,7 @@ export const doc = {
   throws: [
     {
       code: 'ERR_NOT_FOUND',
-      when: 'the definition is unknown, or the set has no such icon',
+      when: 'the definition is unknown, the set has no such icon, or `set` names no set in the package or one that is withdrawn (with why)',
     },
     {
       code: 'ERR_INVALID_ARGUMENT',

@@ -280,7 +280,10 @@ icon, and the CLI verifies it, writes the files, and checks the set.
     `typecheck` script running `integration check --strict` when it has
     none. `--variants` and `--default-variant` declare `variants` and `default`;
     `--display-name` and `--description` fill the descriptor. Run again, it
-    refreshes the icons and keeps `map` entries whose icon exists; it copies
+    refreshes the icons and keeps `map` entries whose icon exists, matching
+    an icon by the export the library still has, so an icon a newer id rule
+    renames keeps its `map` entries, variants, and words and is reported
+    under `renamed`; it copies
     the library's license notices the set lacks, and the run that first
     records `source` takes the library's license for the descriptor, which
     later runs keep. The package's own `license` is never written.
@@ -379,9 +382,11 @@ message}`) names each template or namespace doc that sets `stability`, and
   or one that was withdrawn, saying which and why, and warns when two packages
   ship that name or another set is withdrawn. The template `icons` report and
   `experimental icon --list` carry the same status and reason, and
-  `experimental icon` with `--set` or `<set>/<id>`, `experimental icon use`,
-  and `discover <package>/<set>` name a withdrawn set as withdrawn, with its
-  reason, rather than as not installed. `astryx discover` reads `icon-set` as
+  `experimental icon` with `--set` (with words or `--all-icons`) or
+  `<set>/<id>`, `experimental icon use`, and `discover <package>/<set>` name a
+  withdrawn set as withdrawn, with its reason, rather than as not installed,
+  each with `ERR_NOT_FOUND`; `add`, `map`, and `new-definition` name a
+  withdrawn set in the package being authored the same way. `astryx discover` reads `icon-set` as
   a kind: `--type icon-set`, catalog entries with `iconCount` and
   `definitions`, and `discover <package>/<set>`; a withdrawn set is not
   listed. Without the opt-in, Doctor has no such check and reports no icon-set

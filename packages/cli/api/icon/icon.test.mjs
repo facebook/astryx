@@ -11,10 +11,14 @@ import * as path from 'node:path';
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import {icon} from './icon.mjs';
 import {iconUse} from './use/use.mjs';
+import {iconMap} from './map/map.mjs';
+import {iconAdd} from './add/add.mjs';
+import {iconNewDefinition} from './new-definition/new-definition.mjs';
 import {ICON_NAMES} from '../../authoring/doctypes/icon-set/icon-names.mjs';
 import {rankIcons, scoreIcon} from './_records.mjs';
 import {
   glyphsData,
+  writeIconPackage,
   writeIconSetProject,
 } from '../../test-utils/icon-set-fixture.mjs';
 
@@ -378,6 +382,102 @@ describe('a withdrawn set, named', () => {
     // A name no installed set has, valid or withdrawn, still says so.
     await expect(icon('close', {cwd: dir, set: 'nope'})).rejects.toMatchObject({
       message: expect.stringMatching(/No installed icon set named "nope"/),
+    });
+  });
+});
+
+describe('every entry point that names a set reports it the same way (FR17)', () => {
+  /** @type {string} */
+  let app;
+  /** @type {string} */
+  let authored;
+  beforeEach(() => {
+    app = writeIconSetProject(path.join(tmp, 'entry-app'), {
+      packages: [{}, {name: '@acme/lines', data: '{nope'}],
+    });
+    // A package being authored with one valid set and one withdrawn one.
+    authored = path.join(tmp, 'entry-pkg', 'glyphs');
+    writeIconPackage(authored);
+    const broken = path.join(authored, 'icon-sets', 'lines');
+    fs.mkdirSync(broken, {recursive: true});
+    fs.copyFileSync(
+      path.join(authored, 'icon-sets', 'glyphs', 'glyphs.doc.mjs'),
+      path.join(broken, 'lines.doc.mjs'),
+    );
+    fs.writeFileSync(
+      path.join(broken, 'lines.doc.mjs'),
+      fs
+        .readFileSync(path.join(broken, 'lines.doc.mjs'), 'utf8')
+        .replace('"name": "glyphs"', '"name": "lines"'),
+    );
+    fs.writeFileSync(path.join(broken, 'lines.icons.json'), '{nope');
+  });
+
+  /** @type {Array<[string, 'installed' | 'authored', (cwd: string, set: string) => Promise<unknown>]>} */
+  const ENTRY_POINTS = [
+    [
+      'a query with --set',
+      'installed',
+      (dir, set) => icon('close', {cwd: dir, set}),
+    ],
+    [
+      '--set with --all-icons',
+      'installed',
+      (dir, set) => icon(undefined, {cwd: dir, set, allIcons: true}),
+    ],
+    ['<set>/<id>', 'installed', (dir, set) => icon(`${set}/x`, {cwd: dir})],
+    ['use', 'installed', (dir, set) => iconUse(set, {cwd: dir})],
+    [
+      'map --set',
+      'authored',
+      (dir, set) => iconMap('close', 'x', {cwd: dir, set}),
+    ],
+    [
+      'add --set',
+      'authored',
+      (dir, set) =>
+        iconAdd('XIcon', {
+          cwd: dir,
+          set,
+          from: './icons/x.js',
+          definition: 'close',
+        }),
+    ],
+    [
+      'new-definition --set',
+      'authored',
+      (dir, set) =>
+        iconNewDefinition('binIt', {
+          cwd: dir,
+          set,
+          description: 'Put something in the bin.',
+          words: ['bin'],
+        }),
+    ],
+  ];
+
+  it.each(ENTRY_POINTS)('%s: a missing set', async (_label, kind, run) => {
+    await expect(
+      run(kind === 'installed' ? app : authored, 'nope'),
+    ).rejects.toMatchObject({
+      code: 'ERR_NOT_FOUND',
+      message:
+        kind === 'installed'
+          ? 'No installed icon set named "nope"'
+          : 'No icon set named "nope" in this package',
+    });
+  });
+
+  it.each(ENTRY_POINTS)('%s: a withdrawn set', async (_label, kind, run) => {
+    await expect(
+      run(kind === 'installed' ? app : authored, 'lines'),
+    ).rejects.toMatchObject({
+      code: 'ERR_NOT_FOUND',
+      message: expect.stringMatching(
+        kind === 'installed'
+          ? /^Icon set "lines" is installed but withdrawn: .*not valid JSON/u
+          : /^Icon set "lines" is in this package but withdrawn: .*not valid JSON/u,
+      ),
     });
   });
 });

@@ -199,12 +199,17 @@ export async function findLocalIconSet(cwd, selector) {
     ? found.errors.find(error => error.name === selector)
     : null;
   if (broken) {
-    throw new IconSetAuthoringError(broken.message, 'ERR_INVALID_ARGUMENT');
+    // The same report every icon entry point gives a withdrawn set
+    // (AST-084 FR17): withdrawn, with why, never "not there".
+    throw new IconSetAuthoringError(
+      `Icon set "${selector}" is in this package but withdrawn: ${broken.message}`,
+      'ERR_NOT_FOUND',
+    );
   }
   const names = found.sets.map(set => set.name);
   if (named.length === 0 && selector) {
     throw new IconSetAuthoringError(
-      `This package has no icon set "${selector}".`,
+      `No icon set named "${selector}" in this package`,
       'ERR_NOT_FOUND',
       names.map(name => ({name, reason: 'an icon set in this package'})),
     );

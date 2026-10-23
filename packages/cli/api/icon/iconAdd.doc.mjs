@@ -115,7 +115,7 @@ export const doc = {
   throws: [
     {
       code: 'ERR_NOT_FOUND',
-      when: 'the module does not export the name, or the definition is unknown',
+      when: 'the module does not export the name, the definition is unknown, or `set` names no set in the package or one that is withdrawn (with why)',
     },
     {
       code: 'ERR_INVALID_ARGUMENT',
