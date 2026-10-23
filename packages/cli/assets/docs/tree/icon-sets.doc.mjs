@@ -280,7 +280,7 @@ export const brand = defineTheme({name: 'brand', icons: themeIcons});`,
       content: [
         {
           type: 'prose',
-          text: "`astryx integration check` reads the set without running your icons. An unmapped built-in definition is an error that names the definition's description and words and the `experimental icon map <definition> <icon id>` command that fixes it, so you or your agent can pick the icon. It names a search of your set (`experimental icon <word> --set <set>`) only when that search finds icons, and suggests up to three icons: ids that are or start with the definition's name or one of its words, and icons whose words hold one of its words (a library's other name for an icon). It never matches part of a word, and never writes a suggestion. Its icon-set codes:",
+          text: "`astryx integration check` reads the set without running your icons. An unmapped built-in definition is an error that names the definition's description and words and the `experimental icon map <definition> <icon id>` command that fixes it, so you or your agent can pick the icon. It names a search of your set (`experimental icon <word> --set <set>`) only when that search finds icons, and suggests one icon: the first of the suggestions `experimental icon new-set` gives for that definition. It never matches part of a word, and never writes a suggestion. Its icon-set codes:",
         },
         {
           type: 'list',
