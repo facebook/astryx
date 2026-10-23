@@ -4,7 +4,7 @@
 
 /**
  * @file useAnnounce.ts
- * @input Uses React useCallback; DOM APIs and cancellable animation frames for a singleton live-region pair
+ * @input Uses React useCallback; DOM APIs and one cancellable animation frame per region for a singleton live-region pair
  * @output Exports useAnnounce hook and AnnouncePoliteness type
  * @position Core a11y hook; provides imperative screen-reader announcements
  *   via persistently-mounted polite/assertive live regions; regions are
@@ -72,16 +72,25 @@ function cancelScheduledClear(politeness: AnnouncePoliteness): void {
   }
 }
 
-const pendingFrames: Record<AnnouncePoliteness, Set<number>> = {
-  polite: new Set(),
-  assertive: new Set(),
+// Messages announced before the region exposes them (written in the same
+// frame) wait here and are exposed together, in order, so none is dropped
+// (spec:AST-086 FR9). One frame per region writes them.
+const pendingFrames: Record<AnnouncePoliteness, number | null> = {
+  polite: null,
+  assertive: null,
+};
+const pendingMessages: Record<AnnouncePoliteness, string[]> = {
+  polite: [],
+  assertive: [],
 };
 
 function cancelPendingFrames(politeness: AnnouncePoliteness): void {
-  for (const frame of pendingFrames[politeness]) {
+  const frame = pendingFrames[politeness];
+  if (frame != null) {
     cancelAnimationFrame(frame);
+    pendingFrames[politeness] = null;
   }
-  pendingFrames[politeness].clear();
+  pendingMessages[politeness] = [];
 }
 
 function scheduleClear(
@@ -143,16 +152,19 @@ function announceMessage(
     return;
   }
   const target = politeness === 'assertive' ? r.assertive : r.polite;
-  // Clearing first guarantees the mutation is observed even when the new
-  // message equals the current text — some AT deduplicate identical content.
-  target.textContent = '';
-  // A microtask/rAF-free re-set in the next frame is more reliable across AT
-  // than an immediate re-set, which can be coalesced with the clear.
-  const frame = requestAnimationFrame(() => {
-    pendingFrames[politeness].delete(frame);
-    target.textContent = message;
-  });
-  pendingFrames[politeness].add(frame);
+  pendingMessages[politeness].push(message);
+  if (pendingFrames[politeness] == null) {
+    // Clearing first guarantees the mutation is observed even when the new
+    // message equals the current text — some AT deduplicate identical content.
+    target.textContent = '';
+    // A re-set in the next frame is more reliable across AT than an immediate
+    // re-set, which can be coalesced with the clear.
+    pendingFrames[politeness] = requestAnimationFrame(() => {
+      pendingFrames[politeness] = null;
+      target.textContent = pendingMessages[politeness].join(' ');
+      pendingMessages[politeness] = [];
+    });
+  }
   // Auto-clear so the last message does not linger in the accessibility tree
   // indefinitely. Scheduled per announce, so a newer announcement always
   // resets the countdown (the delay comfortably outlasts the rAF re-set).
@@ -182,7 +194,8 @@ function clearRegion(politeness: AnnouncePoliteness): void {
  * The polite and assertive regions are created once on first use and kept
  * mounted, so announcements are reliable even for messages that appear
  * immediately (unlike a live region rendered together with its content).
- * Each message is automatically cleared a couple of seconds after being
+ * Messages announced in the same frame are joined, in order, into one
+ * announcement. Each message is automatically cleared a couple of seconds after being
  * announced, so users browsing the DOM later do not encounter stale status
  * text; announcing again before the clear simply resets the countdown.
  *
@@ -201,8 +214,9 @@ export function useAnnounce(): AnnounceFn {
   return useCallback(
     (message: string, politeness: AnnouncePoliteness = 'polite') => {
       if (!message) {
-        // An empty message clears any lingering status from the region rather
-        // than announcing nothing — useful when the triggering context ends.
+        // An empty message clears any lingering status from the region,
+        // including messages joined but not yet exposed — useful when the
+        // triggering context ends.
         clearRegion(politeness);
         return;
       }
