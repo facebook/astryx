@@ -4,19 +4,25 @@
 
 /**
  * @file PowerSearch.tsx
- * @input PowerSearchConfig, filters, onChange
+ * @input PowerSearchConfig, filters, onChange; Tokenizer, Field parts, Token,
+ *   useAdaptivePresentation, and PowerSearchBottomSheet (lazy)
  * @output Structured filter bar with token-based filter management
  * @position Main component; forwards DOM ref and exposes tokenizer control via
- *   handleRef
+ *   handleRef. The experimental `presentation` option swaps the tokenizer
+ *   field and editor popover for one trigger that opens PowerSearchBottomSheet.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/PowerSearch/index.ts
+ * - /packages/core/src/PowerSearch/PowerSearchBottomSheet.tsx (sheet presentation)
  * - /packages/cli/assets/templates/blocks/components/PowerSearch/ (showcase blocks)
  */
 
 import React, {
+  lazy,
+  Suspense,
   useCallback,
   useEffect,
+  useId,
   useImperativeHandle,
   useMemo,
   useRef,
@@ -34,30 +40,39 @@ import {TypeaheadItem} from '../Typeahead/TypeaheadItem';
 import {Token} from '../Token';
 import {Avatar} from '../Avatar';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
-import {Icon} from '../Icon';
+import {Icon, renderIconSlot} from '../Icon';
 import type {IconType} from '../Icon';
 import type {IconName} from '../Icon/globalIconRegistry';
-import type {InputStatus, FieldStatusVariant} from '../Field';
+import {Field, type InputStatus, type FieldStatusVariant} from '../Field';
+import {
+  inputStatusBorderStyles,
+  inputStatusFocusWithinStyles,
+  inputStatusHoverShadowStyles,
+  inputWrapperStyles,
+} from '../Field/inputStyles.stylex';
 import {usePopover} from '../Popover/usePopover';
+import {useTooltip} from '../Tooltip';
 import {layerViewportInset} from '../Layer/layerViewportInset.stylex';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useAdaptivePresentation} from '../hooks/useAdaptivePresentation';
+import {useDevWarning} from '../hooks/useDevWarning';
+import {useIsHydrating} from '../hooks/useIsHydrating';
 import {
   spacingVars,
   colorVars,
+  sizeVars,
   typeScaleVars,
+  typographyVars,
   fontWeightVars,
 } from '../theme/tokens.stylex';
 import {useSize} from '../SizeContext/SizeContext';
+import {isRenderable} from '../utils';
 import {useInternalConfig} from './useInternalConfig';
 import {usePowerSearchSource} from './usePowerSearchSource';
-import {
-  formatFilterValue,
-  formatDateAbsoluteCompact,
-} from './formatFilterValue';
+import {formatFilterValue} from './formatFilterValue';
 import {PowerSearchEditPopover} from './PowerSearchEditPopover';
 import {resolveOperatorLabel} from './resolveOperatorLabel';
 import {themeProps} from '../utils/themeProps';
-import {truncateCharacters} from '../utils/characters';
 import {useTranslator} from '../i18n';
 import {useLocale} from '../i18n/useLocale';
 import type {Locale} from '../i18n/types';
@@ -71,9 +86,10 @@ import type {
   PowerSearchHandle,
   FilterValue,
   OperatorValue,
-  EnumItem,
   PowerSearchComponents,
 } from './types';
+import type {PowerSearchBottomSheetProps} from './PowerSearchBottomSheet';
+import {formatTokenValueText} from './formatTokenValue';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
@@ -138,14 +154,113 @@ const resultCountStyles = stylex.create({
   },
 });
 
-function truncateString(value: string, limit: number): string {
-  // Same semantics as before — strings within limit + 3 pass through, longer
-  // ones cut to limit + '...' — but counted in characters, not code units.
-  return truncateCharacters(value, limit + 3, '...');
-}
+// The sheet presentation's trigger field: the same control box as the
+// tokenizer field, with display-only tokens and one button as its only tab
+// stop (`component:PowerSearch` FR11).
+const sheetTriggerSizeStyles = stylex.create({
+  sm: {minHeight: sizeVars['--size-element-sm']},
+  md: {minHeight: sizeVars['--size-element-md']},
+  lg: {minHeight: sizeVars['--size-element-lg']},
+});
 
-function getEnumLabel(values: ReadonlyArray<EnumItem>, value: string): string {
-  return values.find(v => v.value === value)?.label ?? value;
+const sheetTriggerStyles = stylex.create({
+  wrapper: {
+    position: 'relative',
+    flexWrap: 'nowrap',
+    gap: spacingVars['--spacing-1'],
+    height: 'auto',
+    cursor: {
+      default: 'pointer',
+      ':is([aria-disabled="true"])': 'default',
+    },
+  },
+  wrapperWithTokens: {
+    paddingBlock: `calc(${spacingVars['--spacing-1']} - 1px)`,
+    paddingInline: `calc(${spacingVars['--spacing-1']} - 1px)`,
+  },
+  contentSection: {
+    position: 'relative',
+    minWidth: 0,
+    flexGrow: 1,
+    display: 'flex',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    columnGap: spacingVars['--spacing-1'],
+    rowGap: `calc(${spacingVars['--spacing-1']} - 1px)`,
+  },
+  startIconWithTokens: {
+    marginInlineStart: `calc(${spacingVars['--spacing-2']} - ${spacingVars['--spacing-1']} + 1px)`,
+  },
+  // The only tab stop in the field. It stays visually borderless while the
+  // wrapper delegates taps on tokens and empty space to it.
+  trigger: {
+    appearance: 'none',
+    flex: '1 1 40px',
+    minWidth: '40px',
+    alignSelf: 'stretch',
+    display: 'flex',
+    alignItems: 'center',
+    paddingBlock: 0,
+    paddingInline: spacingVars['--spacing-1'],
+    margin: 0,
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
+    color: colorVars['--color-text-secondary'],
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-body-size'],
+    lineHeight: typeScaleVars['--text-body-leading'],
+    textAlign: 'start',
+    whiteSpace: 'nowrap',
+    cursor: {
+      default: 'pointer',
+      ':is([aria-disabled="true"])': 'default',
+    },
+    outline: 'none',
+  },
+  // Once a token is present the empty trigger covers the token lane instead
+  // of reserving 40px or wrapping onto an otherwise blank row.
+  triggerWithTokens: {
+    position: 'absolute',
+    inset: 0,
+    minWidth: 0,
+    padding: 0,
+  },
+  endSection: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-2'],
+    flexShrink: 0,
+    paddingInlineEnd: spacingVars['--spacing-1'],
+  },
+});
+
+// The sheet flow (BottomSheetSwitcher, three sheets, the sheet editors) only
+// renders for the bottom-sheet presentation. Loading it on demand keeps it out
+// of pages whose PowerSearch stays a tokenizer field (`component:PowerSearch`
+// PR5).
+const LazyPowerSearchBottomSheet = lazy(async () =>
+  import('./PowerSearchBottomSheet').then(module => ({
+    default: module.PowerSearchBottomSheet,
+  })),
+);
+
+/**
+ * Hosts the lazily loaded sheet flow. Renders nothing on the server or in the
+ * render that hydrates server HTML: a lazy component that has not loaded yet
+ * would leave server markup incomplete and abort hydration. The closed flow
+ * has no visible markup, so it first renders right after hydration.
+ */
+function PowerSearchSheetHost(props: PowerSearchBottomSheetProps) {
+  const isHydrating = useIsHydrating();
+  if (isHydrating) {
+    return null;
+  }
+  return (
+    <Suspense fallback={null}>
+      <LazyPowerSearchBottomSheet {...props} />
+    </Suspense>
+  );
 }
 
 function PowerSearchTokenValue({
@@ -159,196 +274,16 @@ function PowerSearchTokenValue({
   maxLength: number;
   locale: Locale;
 }) {
-  switch (filterValue.type) {
-    case 'empty':
-      return null;
-
-    case 'string':
-      return (
-        <span {...stylex.props(tokenValueStyles.value)}>
-          {truncateString(filterValue.value, maxLength)}
-        </span>
-      );
-
-    case 'integer':
-    case 'float':
-      return (
-        <span {...stylex.props(tokenValueStyles.value)}>
-          {filterValue.value}
-        </span>
-      );
-
-    case 'enum':
-      if (operatorValue.type === 'enum') {
-        return (
-          <span {...stylex.props(tokenValueStyles.value)}>
-            {truncateString(
-              getEnumLabel(operatorValue.values, filterValue.value),
-              maxLength,
-            )}
-          </span>
-        );
-      }
-      return (
-        <span {...stylex.props(tokenValueStyles.value)}>
-          {truncateString(filterValue.value, maxLength)}
-        </span>
-      );
-
-    case 'string_list': {
-      const items = filterValue.value;
-      if (items.length === 0) {
-        return null;
-      }
-      if (items.length === 1) {
-        return (
-          <span {...stylex.props(tokenValueStyles.value)}>
-            {truncateString(items[0], maxLength)}
-          </span>
-        );
-      }
-      const totalLength = items.reduce((sum, s) => sum + s.length, 0);
-      if (totalLength > maxLength) {
-        return (
-          <span {...stylex.props(tokenValueStyles.value)}>
-            {items.length} items
-          </span>
-        );
-      }
-      return (
-        <span {...stylex.props(tokenValueStyles.value)}>
-          {items.join(', ')}
-        </span>
-      );
-    }
-
-    case 'enum_list': {
-      const items = filterValue.value;
-      if (items.length === 0) {
-        return null;
-      }
-      if (operatorValue.type === 'enum_list') {
-        const labels = items.map(v => getEnumLabel(operatorValue.values, v));
-        if (labels.length === 1) {
-          return (
-            <span {...stylex.props(tokenValueStyles.value)}>
-              {truncateString(labels[0], maxLength)}
-            </span>
-          );
-        }
-        const totalLength = labels.reduce((sum, s) => sum + s.length, 0);
-        if (totalLength > maxLength) {
-          return (
-            <span {...stylex.props(tokenValueStyles.value)}>
-              {labels.length} items
-            </span>
-          );
-        }
-        return (
-          <span {...stylex.props(tokenValueStyles.value)}>
-            {labels.join(', ')}
-          </span>
-        );
-      }
-      if (items.length === 1) {
-        return (
-          <span {...stylex.props(tokenValueStyles.value)}>
-            {truncateString(items[0], maxLength)}
-          </span>
-        );
-      }
-      return (
-        <span {...stylex.props(tokenValueStyles.value)}>
-          {items.length} items
-        </span>
-      );
-    }
-
-    case 'entity_list': {
-      const entities = filterValue.value;
-      if (entities.length === 0) {
-        return null;
-      }
-      if (entities.length === 1) {
-        return (
-          <span {...stylex.props(tokenValueStyles.value)}>
-            {truncateString(entities[0].label, maxLength)}
-          </span>
-        );
-      }
-      const totalLength = entities.reduce((sum, e) => sum + e.label.length, 0);
-      if (totalLength > maxLength) {
-        return (
-          <span {...stylex.props(tokenValueStyles.value)}>
-            {entities.length} items
-          </span>
-        );
-      }
-      return (
-        <span {...stylex.props(tokenValueStyles.value)}>
-          {entities.map(e => e.label).join(', ')}
-        </span>
-      );
-    }
-
-    case 'time':
-      return (
-        <span {...stylex.props(tokenValueStyles.value)}>
-          {filterValue.value}
-        </span>
-      );
-
-    case 'date_absolute': {
-      const formatted = formatDateAbsoluteCompact(
-        filterValue.unixSeconds,
-        locale,
-      );
-      return (
-        <span {...stylex.props(tokenValueStyles.value)}>
-          {truncateString(formatted, maxLength)}
-        </span>
-      );
-    }
-
-    case 'date_relative':
-      return (
-        <span {...stylex.props(tokenValueStyles.value)}>
-          {truncateString(filterValue.value, maxLength)}
-        </span>
-      );
-
-    case 'date_range':
-      return <span {...stylex.props(tokenValueStyles.value)}>date range</span>;
-
-    case 'custom':
-      if (operatorValue.type === 'custom') {
-        return (
-          <span {...stylex.props(tokenValueStyles.value)}>
-            {truncateString(
-              operatorValue.getString(filterValue.value),
-              maxLength,
-            )}
-          </span>
-        );
-      }
-      return (
-        <span {...stylex.props(tokenValueStyles.value)}>
-          {filterValue.value}
-        </span>
-      );
-
-    case 'nested': {
-      const count = filterValue.value.length;
-      return (
-        <span {...stylex.props(tokenValueStyles.value)}>
-          {count === 1 ? '1 filter' : `${count} filters`}
-        </span>
-      );
-    }
-
-    default:
-      return null;
+  const text = formatTokenValueText(
+    operatorValue,
+    filterValue,
+    maxLength,
+    locale,
+  );
+  if (text == null) {
+    return null;
   }
+  return <span {...stylex.props(tokenValueStyles.value)}>{text}</span>;
 }
 
 // =============================================================================
@@ -459,6 +394,35 @@ export interface PowerSearchProps extends Omit<
    * Keys are operator value types (e.g. 'string', 'enum', 'date_absolute').
    */
   components?: PowerSearchComponents;
+
+  /**
+   * Experimental options, outside the stable compatibility promise: anything
+   * in this object may change or be removed in a patch release. Omit it for
+   * the stable behavior.
+   * @experimental
+   */
+  experimental?: {
+    /**
+     * How the field presents filter editing.
+     * - `'popover'`: the tokenizer field with its typeahead and the editor
+     *   popover — the stable behavior.
+     * - `'bottom-sheet'`: the whole field is one trigger showing display-only
+     *   filter tokens; it opens a Filters sheet listing the filters as rows
+     *   with Add filter, Done, and Clear all, an Add filter sheet with the
+     *   fields (or the content search with inline suggestions), and a value
+     *   step that stages field → operator → value and confirms from its
+     *   footer. Suited to compact touch screens, where the editor popover
+     *   competes with the software keyboard.
+     * - `'adaptive'`: the bottom sheet on compact coarse-pointer screens,
+     *   otherwise the popover — the same resolution Selector uses.
+     *
+     * In the sheet presentation `menuWidth` and `tokenOverflowBehavior` have
+     * no surface to act on and warn in development.
+     * @experimental
+     * @default 'popover'
+     */
+    presentation?: 'popover' | 'bottom-sheet' | 'adaptive';
+  };
 }
 
 // =============================================================================
@@ -581,6 +545,7 @@ export function PowerSearch({
   className,
   style,
   components: componentOverrides,
+  experimental,
 }: PowerSearchProps) {
   const size = useSize(sizeProp, 'md');
   const config = useInternalConfig(configProp);
@@ -593,6 +558,114 @@ export function PowerSearch({
   const popoverSaveButtonLabel =
     popoverSaveButtonLabelFromProps ?? t('@astryx.powersearch.editor.apply');
   const tokenizerRef = useRef<TokenizerHandle>(null);
+
+  // Experimental presentation (`component:PowerSearch` DEC-3). `adaptive`
+  // resolves through the policy the selection controls share; an open flow
+  // keeps its presentation until it closes, so a resolution change mid-task
+  // cannot pull the surface out from under the person (FR10).
+  const presentation = experimental?.presentation ?? 'popover';
+  const resolvedPresentation = useAdaptivePresentation(presentation);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  // Latched for the flow's lifetime: the flow stays presented after it closes
+  // until the sheets have run their exit and handed focus back to the trigger.
+  // Without the latch, `adaptive` resolving to `popover` mid-session (a phone
+  // turned to landscape) would unmount the sheets and the trigger they return
+  // focus to in the same render, dropping focus to the page body (FR10).
+  const [isSheetPresented, setIsSheetPresented] = useState(false);
+  const isSheetPresentation =
+    isSheetOpen || isSheetPresented || resolvedPresentation === 'bottom-sheet';
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  // When the latch releases into the popover presentation, the trigger that
+  // just took focus is replaced by the tokenizer field; focus follows it once
+  // the input has mounted. A ref, not state: the hand-off is a one-shot side
+  // effect of that commit, not something to render.
+  const isInlineFocusPendingRef = useRef(false);
+  // Whether focus is anywhere inside the closed field — the trigger, the
+  // tokenizer's input, a token or its remove button, the clear button, or an
+  // interactive `endContent`. When `adaptive` flips while it is (a phone
+  // rotated, a mouse attached), the focused control may be replaced by the
+  // other presentation's; focus then moves to that presentation's primary
+  // control, unless the focused element survived the switch, so it never
+  // lands on the page body (FR10). A removed element fires no blur, so the
+  // flag is what the Effect below reads after the swap.
+  const hasFieldFocusRef = useRef(false);
+  const lastPresentationRef = useRef(isSheetPresentation);
+  const rootElementRef = useRef<HTMLDivElement>(null);
+  // Synchronizes the document's focus with the presentation swap: when the
+  // control that held focus is gone, the other presentation's primary control
+  // takes it. Nothing is acquired, so there is no cleanup.
+  useEffect(() => {
+    const swapped = lastPresentationRef.current !== isSheetPresentation;
+    lastPresentationRef.current = isSheetPresentation;
+    const focusSurvived =
+      rootElementRef.current?.contains(document.activeElement) ?? false;
+    const needsPrimaryControl =
+      swapped && hasFieldFocusRef.current && !focusSurvived;
+    if (!isSheetPresentation) {
+      if (isInlineFocusPendingRef.current || needsPrimaryControl) {
+        isInlineFocusPendingRef.current = false;
+        tokenizerRef.current?.focus();
+      }
+    } else if (needsPrimaryControl) {
+      triggerRef.current?.focus();
+    }
+  }, [isSheetPresentation]);
+  const handleFieldFocus = useCallback(
+    (event: React.FocusEvent) => {
+      hasFieldFocusRef.current = true;
+      onFocus?.(event);
+    },
+    [onFocus],
+  );
+  const handleFieldBlur = useCallback(
+    (event: React.FocusEvent) => {
+      hasFieldFocusRef.current = false;
+      onBlur?.(event);
+    },
+    [onBlur],
+  );
+  // While the flow is open, the sheet announces its own content from inside
+  // its dialog; this component announces only with the flow closed, and
+  // `useAnnounce` routes those messages by where the field is — into a Dialog
+  // or modal Drawer that holds it, or the shared channel when no modal does
+  // (`spec:AST-086` FR14).
+  // What to speak once the flow has fully closed and focus is back on the
+  // trigger (AR6): that Clear all removed every filter, and a result count
+  // that changed during the exit. The closing dialog stays modal through its
+  // exit, so neither its region nor the page-body channel is heard before.
+  // Both together are one catalog message, so a locale orders and punctuates
+  // the pair.
+  const afterCloseRef = useRef<{
+    isCleared: boolean;
+    resultCount: string | null;
+  }>({isCleared: false, resultCount: null});
+  const handleFiltersCleared = useCallback(() => {
+    afterCloseRef.current.isCleared = true;
+  }, []);
+  const triggerId = useId();
+  const triggerLabelId = useId();
+  const triggerContentId = useId();
+  const statusMessageId = useId();
+  // A field that becomes disabled cannot keep its flow open, and must not
+  // reopen it when re-enabled (`spec:AST-085` FR2, FR11). Adjusted in the
+  // render that sees the change, not an effect, so no frame shows both.
+  const [wasDisabled, setWasDisabled] = useState(isDisabled);
+  if (isDisabled !== wasDisabled) {
+    setWasDisabled(isDisabled);
+    if (isDisabled && isSheetOpen) {
+      setIsSheetOpen(false);
+    }
+  }
+  useDevWarning(
+    'PowerSearch',
+    '`menuWidth` has no surface in the bottom-sheet presentation: the sheet flow has no typeahead popover to size. Scope it to the popover presentation or leave it out.',
+    isSheetPresentation && menuWidth != null,
+  );
+  useDevWarning(
+    'PowerSearch',
+    '`tokenOverflowBehavior` has no surface in the bottom-sheet presentation: the trigger wraps its display-only tokens. Scope it to the popover presentation or leave it out.',
+    isSheetPresentation && tokenOverflowBehavior != null,
+  );
 
   const [popoverState, setPopoverStateRaw] = useState<PopoverState>({
     type: 'idle',
@@ -613,6 +686,28 @@ export function PowerSearch({
     role: 'none',
   });
 
+  // The editor popover is portaled, so focus inside it is neither inside the
+  // field's root nor reported by the field's focus events. When `adaptive`
+  // flips to the sheet while the popover is open (a phone rotated), the
+  // popover and its focused control unmount with the tokenizer field and
+  // focus would fall to the body; the trigger — the other presentation's
+  // primary control — takes it instead (FR10). The editing itself ends with
+  // the popover: its state returns to idle (through the raw setter, since the
+  // tokenizer input is gone) and its layer is hidden, so a later switch back
+  // neither reopens a stale editor nor leaves an open, empty layer for the
+  // next Escape to close. The ref holds the popover's state from the render
+  // before the swap: this Effect runs on the swap and reads it before the
+  // mirror below overwrites it for the next render.
+  const wasPopoverOpenRef = useRef(false);
+  useEffect(() => {
+    if (isSheetPresentation && wasPopoverOpenRef.current) {
+      setPopoverStateRaw({type: 'idle'});
+      popover.hide();
+      triggerRef.current?.focus();
+    }
+    wasPopoverOpenRef.current = popoverState.type !== 'idle';
+  }, [isSheetPresentation, popover, popoverState]);
+
   // Wrapper that manages layer visibility and tokenizer focus alongside state
   const setPopoverState = useCallback(
     (state: PopoverState) => {
@@ -632,13 +727,22 @@ export function PowerSearch({
     [popover],
   );
 
-  // Expose imperative handle
+  // Expose imperative handle; in the sheet presentation the trigger is the
+  // field's focusable control.
   useImperativeHandle(handleRef, () => ({
     focusTypeahead() {
-      tokenizerRef.current?.focus();
+      if (isSheetPresentation) {
+        triggerRef.current?.focus();
+      } else {
+        tokenizerRef.current?.focus();
+      }
     },
     blurTypeahead() {
-      tokenizerRef.current?.blur();
+      if (isSheetPresentation) {
+        triggerRef.current?.blur();
+      } else {
+        tokenizerRef.current?.blur();
+      }
     },
   }));
 
@@ -825,10 +929,12 @@ export function PowerSearch({
     setPopoverState({type: 'idle'});
   }, [setPopoverState]);
 
-  // Custom token renderer
-  // Custom token renderer
-  const renderToken = useCallback(
-    (item: PowerSearchItem, onRemove: () => void) => {
+  // Token renderer for both presentations. Given `onRemove`, the token is
+  // the tokenizer field's: click edits, × removes. Without it (the sheet
+  // presentation's trigger) the token is display-only; the field as a whole
+  // opens the flow.
+  const renderFilterToken = useCallback(
+    (item: PowerSearchItem, onRemove: (() => void) | undefined) => {
       const auxData = item.auxiliaryData;
       const filterIndex = auxData?.filterIndex ?? -1;
       const filter = filterIndex >= 0 ? filters[filterIndex] : undefined;
@@ -838,7 +944,8 @@ export function PowerSearch({
         ? config.getOperator(auxData.fieldKey, auxData.operatorKey)
         : undefined;
 
-      const canInteract = !isReadOnly && !isDisabled && !filter?.isReadOnly;
+      const canInteract =
+        onRemove != null && !isReadOnly && !isDisabled && !filter?.isReadOnly;
       const handleClick = canInteract
         ? () => handleTokenClick(filterIndex)
         : undefined;
@@ -935,6 +1042,12 @@ export function PowerSearch({
       componentOverrides,
       t,
     ],
+  );
+
+  const renderToken = useCallback(
+    (item: PowerSearchItem, onRemove: () => void) =>
+      renderFilterToken(item, onRemove),
+    [renderFilterToken],
   );
 
   // Custom typeahead item renderer — adds field icon and description
@@ -1054,22 +1167,37 @@ export function PowerSearch({
     return resultCount;
   }, [resultCount, t]);
 
-  // Announce result-count changes to screen readers through a polite live
-  // region, mirroring the way Typeahead announces its dropdown result count.
-  // The count is otherwise only shown visually and stays silent to assistive
-  // tech. Skip the first run so the count already present on mount isn't
-  // announced unprompted — only user-driven changes are spoken.
+  // This Effect synchronizes a polite live region with the result count,
+  // mirroring the way Typeahead announces its dropdown result count: the count
+  // is otherwise only shown visually and stays silent to assistive tech. The
+  // region is the one `spec:AST-086` FR14 names for where the owner is: the
+  // modal that holds the field (a Dialog, a modal Drawer), else the shared
+  // channel. While a sheet of the flow is open the sheet itself announces the
+  // count from inside its dialog (AR6), and this Effect stays quiet. Only a change after mount is spoken — the count present on mount
+  // is not announced unprompted — and the guard compares against the last
+  // announced text rather than a mounted flag, so StrictMode's effect replay
+  // announces nothing either (`component:PowerSearch` FR19). A change that
+  // lands while the flow is closing — Clear all's, whose commit also sets the
+  // step to null and detaches the sheet body — waits for the trigger focus
+  // with the other after-close messages, since the dialog is still modal
+  // through its exit (AR6). The announcement acquires no resource, so there
+  // is no cleanup.
   const announce = useAnnounce();
-  const hasMountedRef = useRef(false);
+  const announcedResultCountRef = useRef(resultCountText);
+  const isSheetExiting = isSheetPresented && !isSheetOpen;
   useEffect(() => {
-    if (!hasMountedRef.current) {
-      hasMountedRef.current = true;
+    if (resultCountText === announcedResultCountRef.current) {
       return;
     }
+    announcedResultCountRef.current = resultCountText;
     if (resultCountText != null) {
-      announce(resultCountText);
+      if (isSheetExiting) {
+        afterCloseRef.current.resultCount = resultCountText;
+      } else if (!isSheetOpen) {
+        announce(resultCountText);
+      }
     }
-  }, [resultCountText, announce]);
+  }, [resultCountText, announce, isSheetExiting, isSheetOpen]);
 
   // Build combined endContent from resultCount + endContent props
   const combinedEndContent = useMemo((): React.ReactNode => {
@@ -1089,14 +1217,244 @@ export function PowerSearch({
     return resultCountNode || endContent || undefined;
   }, [resultCountText, endContent]);
 
+  // ------------------------------------------------------- sheet trigger --
+
+  // Disabled-reason tooltip for the sheet trigger. Disabled controls swallow
+  // pointer events, so the listeners attach to the field's control box; the
+  // trigger stays perceivable through aria-disabled (`spec:AST-085` FR1).
+  const showsDisabledMessage = isDisabled && !!disabledMessage;
+  const disabledMessageTooltip = useTooltip({
+    placement: 'above',
+    focusTrigger: 'always',
+    isEnabled: isSheetPresentation && showsDisabledMessage,
+  });
+  const rootRef = useMergedRefs(
+    ref,
+    rootElementRef,
+    popover.triggerRef as React.Ref<HTMLDivElement>,
+  );
+
+  const openSheet = useCallback(() => {
+    if (isDisabled) {
+      return;
+    }
+    // The flow restores focus to the element that was active when it opened;
+    // make sure that is the trigger even for a tap on a token.
+    triggerRef.current?.focus({preventScroll: true});
+    setIsSheetPresented(true);
+    setIsSheetOpen(true);
+  }, [isDisabled]);
+
+  // The field's end lane — the result count and `endContent` — sits outside
+  // the trigger button: a caller's action button there keeps its own tab stop
+  // and taps (FR11; `spec:AST-055` FR3 forbids nesting it in a component
+  // button), so a tap on it must not open the flow.
+  const endLaneRef = useRef<HTMLDivElement>(null);
+  const handleTriggerWrapperClick = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      // Tokens are display-only; a tap on them or the empty space around them
+      // opens the flow. The trigger button handles its own click, and the end
+      // lane handles its own.
+      if (
+        event.target instanceof Node &&
+        (triggerRef.current?.contains(event.target) ||
+          endLaneRef.current?.contains(event.target))
+      ) {
+        return;
+      }
+      openSheet();
+    },
+    [openSheet],
+  );
+
+  const handleTriggerFocusWithin = useCallback(
+    (event: React.FocusEvent<HTMLDivElement>) => {
+      // The flow focuses the trigger only after its exit completes; that focus
+      // is the signal that the retained sheets can leave. If the resolution
+      // moved to the popover meanwhile, the tokenizer input takes over the
+      // focus once it mounts.
+      if (!isSheetOpen && isSheetPresented) {
+        setIsSheetPresented(false);
+        if (resolvedPresentation === 'popover') {
+          isInlineFocusPendingRef.current = true;
+        }
+        // The dialogs have closed: the page-body channel is exposed again.
+        // One announcement — two in one tick would replace each other in the
+        // single polite region.
+        const {isCleared, resultCount} = afterCloseRef.current;
+        afterCloseRef.current = {isCleared: false, resultCount: null};
+        if (isCleared && resultCount != null) {
+          announce(
+            t('@astryx.powersearch.sheet.filtersClearedWithCount', {
+              resultCount,
+            }),
+          );
+        } else if (isCleared) {
+          announce(t('@astryx.powersearch.sheet.filtersCleared'));
+        } else if (resultCount != null) {
+          announce(resultCount);
+        }
+      }
+      if (
+        !(event.relatedTarget instanceof Node) ||
+        !event.currentTarget.contains(event.relatedTarget)
+      ) {
+        handleFieldFocus(event);
+      }
+    },
+    [
+      announce,
+      handleFieldFocus,
+      isSheetOpen,
+      isSheetPresented,
+      resolvedPresentation,
+      t,
+    ],
+  );
+  const handleTriggerBlurWithin = useCallback(
+    (event: React.FocusEvent<HTMLDivElement>) => {
+      if (
+        !(event.relatedTarget instanceof Node) ||
+        !event.currentTarget.contains(event.relatedTarget)
+      ) {
+        handleFieldBlur(event);
+      }
+    },
+    [handleFieldBlur],
+  );
+
+  if (isSheetPresentation) {
+    const triggerDescribedBy =
+      [
+        status?.message ? statusMessageId : null,
+        showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
+      ]
+        .filter(Boolean)
+        .join(' ') || undefined;
+
+    return (
+      <div ref={rootRef} {...themeProps('power-search')}>
+        <Field
+          label={label}
+          isLabelHidden={isLabelHidden}
+          inputID={triggerId}
+          labelID={triggerLabelId}
+          isDisabled={isDisabled}
+          status={
+            status
+              ? {
+                  type: status.type,
+                  message: status.message,
+                  messageID: status.message ? statusMessageId : undefined,
+                }
+              : undefined
+          }
+          statusVariant={statusVariant}
+          xstyle={xstyle}
+          className={className}
+          style={style}>
+          <div
+            ref={disabledMessageTooltip.ref}
+            onClick={handleTriggerWrapperClick}
+            onFocus={handleTriggerFocusWithin}
+            onBlur={handleTriggerBlurWithin}
+            aria-disabled={isDisabled ? true : undefined}
+            {...stylex.props(
+              inputWrapperStyles.base,
+              sheetTriggerStyles.wrapper,
+              filters.length > 0 && sheetTriggerStyles.wrapperWithTokens,
+              sheetTriggerSizeStyles[size],
+              isDisabled && inputWrapperStyles.disabled,
+              status && inputStatusBorderStyles[status.type],
+              status &&
+                !isDisabled &&
+                inputStatusHoverShadowStyles[status.type],
+              status && inputStatusFocusWithinStyles[status.type],
+            )}>
+            {/* The trigger's name is the label plus everything visible here:
+                the placeholder, or the tokens, so speech input can say what
+                it sees and assistive technology hears the selected filters
+                (FR11, WCAG 2.5.3). */}
+            <div
+              id={triggerContentId}
+              {...stylex.props(sheetTriggerStyles.contentSection)}>
+              {startIcon && (
+                <span
+                  {...stylex.props(
+                    filters.length > 0 &&
+                      sheetTriggerStyles.startIconWithTokens,
+                  )}>
+                  {renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
+                </span>
+              )}
+              {tokenizerValue.map(item => (
+                <React.Fragment key={item.id}>
+                  {renderFilterToken(item, undefined)}
+                </React.Fragment>
+              ))}
+              <button
+                type="button"
+                id={triggerId}
+                ref={triggerRef}
+                // The field's primary control: `data-testid` lands here, as it
+                // lands on the combobox input in the popover presentation.
+                data-testid={testId}
+                autoFocus={hasAutoFocus}
+                onClick={openSheet}
+                aria-disabled={isDisabled ? true : undefined}
+                aria-haspopup="dialog"
+                aria-expanded={isSheetOpen}
+                aria-labelledby={`${triggerLabelId} ${triggerContentId}`}
+                aria-describedby={triggerDescribedBy}
+                {...stylex.props(
+                  sheetTriggerStyles.trigger,
+                  filters.length > 0 && sheetTriggerStyles.triggerWithTokens,
+                )}>
+                {filters.length === 0 ? placeholder : null}
+              </button>
+            </div>
+            {(endContent || isRenderable(resultCountText)) && (
+              <div
+                ref={endLaneRef}
+                {...stylex.props(sheetTriggerStyles.endSection)}>
+                {isRenderable(resultCountText) && (
+                  <span {...stylex.props(resultCountStyles.text)}>
+                    {resultCountText}
+                  </span>
+                )}
+                {endContent}
+              </div>
+            )}
+          </div>
+          {showsDisabledMessage &&
+            disabledMessageTooltip.renderTooltip(disabledMessage)}
+        </Field>
+        <PowerSearchSheetHost
+          isOpen={isSheetOpen}
+          onOpenChange={setIsSheetOpen}
+          resultCountText={resultCountText}
+          onFiltersCleared={handleFiltersCleared}
+          config={config}
+          configProp={configProp}
+          filters={filters}
+          onChange={onChange}
+          searchSource={searchSource}
+          placeholder={placeholder}
+          isReadOnly={isReadOnly}
+          isDisabled={isDisabled}
+          hasClear={hasClear}
+          maxOperatorMenuItems={maxOperatorMenuItems}
+          maxSearchResults={maxSearchResults}
+          saveButtonLabel={popoverSaveButtonLabelFromProps}
+          components={componentOverrides}
+        />
+      </div>
+    );
+  }
+
   return (
     <>
-      <div
-        ref={useMergedRefs(
-          ref,
-          popover.triggerRef as React.Ref<HTMLDivElement>,
-        )}
-        {...themeProps('power-search')}>
+      <div ref={rootRef} {...themeProps('power-search')}>
         <Tokenizer
           handleRef={tokenizerRef}
           label={label}
@@ -1121,8 +1479,8 @@ export function PowerSearch({
           debounceMs={0}
           status={status}
           statusVariant={statusVariant}
-          onFocus={onFocus}
-          onBlur={onBlur}
+          onFocus={handleFieldFocus}
+          onBlur={handleFieldBlur}
           containerXstyle={xstyle}
           containerClassName={className}
           containerStyle={style}

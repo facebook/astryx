@@ -28,8 +28,41 @@ function formatEnumLabel(
 }
 
 function formatNumber(value: number, locale: Locale, units?: string): string {
-  const formatted = new Intl.NumberFormat(locale).format(value);
+  const formatted = formatSharedNumber(value, locale);
   return units ? `${formatted} ${units}` : formatted;
+}
+
+/**
+ * A number in the provider locale's digits, decimal mark, and — unless the
+ * options say otherwise — grouping. The shared number helper for
+ * PowerSearch's own readings of a value — this module owns the raw `Intl`
+ * access (`architecture:internationalization/INV8`).
+ */
+export function formatSharedNumber(
+  value: number,
+  locale: Locale,
+  options?: Pick<
+    Intl.NumberFormatOptions,
+    'useGrouping' | 'maximumFractionDigits'
+  >,
+): string {
+  return new Intl.NumberFormat(locale, options).format(value);
+}
+
+/**
+ * Several labels read as one list in the provider locale — its separators
+ * and conjunction, not a literal comma (`architecture:internationalization`
+ * INV1a, INV8). `unit` style: "a, b, c" in English, with no "and", as a set
+ * of values the filter matches reads.
+ */
+export function formatSharedList(
+  items: ReadonlyArray<string>,
+  locale: Locale,
+): string {
+  return new Intl.ListFormat(locale, {
+    style: 'long',
+    type: 'unit',
+  }).format(items);
 }
 
 export function formatDateAbsolute(

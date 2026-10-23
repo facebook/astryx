@@ -5,7 +5,8 @@
 /**
  * @file PowerSearchEditPopover.tsx
  * @input InternalConfig, PartialFilter
- * @output Edit popover content with field/operator selectors and value editor
+ * @output Edit popover content with field/operator selectors and value editor;
+ *   the built-in NestedEditor the sheet presentation's value step shares
  * @position Sub-component; consumed by PowerSearch
  *
  * SYNC: When modified, update:
@@ -378,7 +379,7 @@ function NestedSubFilterRow({
 // Nested editor
 // =============================================================================
 
-interface NestedEditorProps {
+export interface NestedEditorProps {
   config: InternalConfig;
   partialFilter: PartialFilter;
   operatorOptions: {value: string; label: string}[];
@@ -386,9 +387,18 @@ interface NestedEditorProps {
   onPartialFilterChange: (filter: PartialFilter) => void;
   maxMenuItems?: number;
   isReadOnly: boolean;
+  /** Styles for the editor's tree root (the sheet makes it a query container). */
+  xstyle?: stylex.StyleXStyles;
 }
 
-function NestedEditor({
+/**
+ * The built-in editor for a `nested` value: a tree of sub-filters with Add,
+ * field/operator/value rows and removal. The popover renders it below its
+ * field selector; the sheet presentation's value step renders the same editor
+ * in its body (`component:PowerSearch` FR14), so a `nested` filter is created
+ * and edited the same way in both presentations.
+ */
+export function NestedEditor({
   config,
   partialFilter,
   operatorOptions,
@@ -396,6 +406,7 @@ function NestedEditor({
   onPartialFilterChange,
   maxMenuItems,
   isReadOnly,
+  xstyle,
 }: NestedEditorProps) {
   const t = useTranslator();
   const [subFilters, setSubFilters] = useState<EditablePartialFilter[]>(() => {
@@ -608,7 +619,7 @@ function NestedEditor({
     },
   ];
 
-  return <TreeList items={items} density="balanced" />;
+  return <TreeList items={items} density="balanced" xstyle={xstyle} />;
 }
 
 // =============================================================================

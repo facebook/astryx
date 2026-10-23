@@ -255,6 +255,106 @@
     "defaultMessage": "{count, number} {count, plural, one {result} other {results}}",
     "description": "Live result-count text next to the PowerSearch input, announced to screen readers on change. Example: `12 results`, `1 result`; keep compact."
   },
+  "@astryx.powersearch.sheet.filtersTitle": {
+    "defaultMessage": "Filters",
+    "description": "Heading and accessible name of the PowerSearch touch sheet that lists the active filters (experimental bottom-sheet presentation). Plural noun."
+  },
+  "@astryx.powersearch.sheet.addFilter": {
+    "defaultMessage": "Add filter",
+    "description": "Button label in the PowerSearch touch flow: in the Filters sheet header it opens the field list; in the value step it confirms a new filter. Imperative verb; no leading plus sign."
+  },
+  "@astryx.powersearch.sheet.noFilters": {
+    "defaultMessage": "No filters selected",
+    "description": "Empty-state text in the PowerSearch Filters sheet when no filter is active. Neutral tone."
+  },
+  "@astryx.powersearch.sheet.clearAll": {
+    "defaultMessage": "Clear all",
+    "description": "Button label in the PowerSearch Filters sheet footer that removes every active filter and closes the sheet. Imperative verb + determiner."
+  },
+  "@astryx.powersearch.sheet.done": {
+    "defaultMessage": "Done",
+    "description": "Primary button label in the PowerSearch Filters sheet footer that closes the sheet. Short; marks the end of the filtering task."
+  },
+  "@astryx.powersearch.sheet.back": {
+    "defaultMessage": "Back",
+    "description": "Icon-only button label in the PowerSearch Add filter sheet that returns to the Filters sheet or closes the flow. Imperative navigation action."
+  },
+  "@astryx.powersearch.sheet.search": {
+    "defaultMessage": "Search",
+    "description": "Screen-reader-only label of the content-search box at the top of the PowerSearch Add filter sheet; its suggestions list inline below it. Noun or verb as reads best."
+  },
+  "@astryx.powersearch.sheet.searchResults": {
+    "defaultMessage": "Search results",
+    "description": "Screen-reader-only name of the inline suggestion list under the PowerSearch Add filter sheet's content search. Plural noun."
+  },
+  "@astryx.powersearch.sheet.searchFields": {
+    "defaultMessage": "Search filters",
+    "description": "Screen-reader-only label of the field-list filter box in the PowerSearch Add filter sheet, shown once the config has eight or more fields. Imperative verb + plural noun."
+  },
+  "@astryx.powersearch.sheet.searchFieldsPlaceholder": {
+    "defaultMessage": "Search filters…",
+    "description": "Placeholder inside the field-list filter box in the PowerSearch Add filter sheet. Imperative verb; trailing `…` is one character."
+  },
+  "@astryx.powersearch.sheet.noMatchingFields": {
+    "defaultMessage": "No filters match your search",
+    "description": "Empty-state text in the PowerSearch Add filter sheet when the field-list filter matches no field. Neutral tone."
+  },
+  "@astryx.powersearch.sheet.noResults": {
+    "defaultMessage": "No results found",
+    "description": "Empty-state text in the PowerSearch Add filter sheet when the content search has no suggestion for the typed query. Neutral tone (not error-y)."
+  },
+  "@astryx.powersearch.sheet.editFilter": {
+    "defaultMessage": "Edit filter",
+    "description": "Fallback title of the PowerSearch value step while editing, when the field being edited is no longer in the config. Imperative verb."
+  },
+  "@astryx.powersearch.sheet.filterUnavailable": {
+    "defaultMessage": "This filter is no longer available",
+    "description": "Message in the PowerSearch value step when a config update removed the field or operator being edited; Cancel remains as the way out."
+  },
+  "@astryx.powersearch.sheet.remove": {
+    "defaultMessage": "Remove",
+    "description": "Button label in the PowerSearch value step footer that deletes the filter being edited. Imperative verb; pairs with Cancel and Apply."
+  },
+  "@astryx.powersearch.sheet.relativeDaysAgo": {
+    "defaultMessage": "{count, number} {count, plural, one {day} other {days}} ago",
+    "description": "A relative-date choice row in the PowerSearch touch sheet, in the past (for example \"3 days ago\"). The popover editor lists the same choices."
+  },
+  "@astryx.powersearch.sheet.relativeDaysFromNow": {
+    "defaultMessage": "{count, number} {count, plural, one {day} other {days}} from now",
+    "description": "A relative-date choice row in the PowerSearch touch sheet, in the future (for example \"3 days from now\"). The popover editor lists the same choices."
+  },
+  "@astryx.powersearch.sheet.relativeWeeksAgo": {
+    "defaultMessage": "{count, number} {count, plural, one {week} other {weeks}} ago",
+    "description": "A relative-date choice row in the PowerSearch touch sheet, in the past (for example \"3 weeks ago\"). The popover editor lists the same choices."
+  },
+  "@astryx.powersearch.sheet.relativeWeeksFromNow": {
+    "defaultMessage": "{count, number} {count, plural, one {week} other {weeks}} from now",
+    "description": "A relative-date choice row in the PowerSearch touch sheet, in the future (for example \"3 weeks from now\"). The popover editor lists the same choices."
+  },
+  "@astryx.powersearch.sheet.relativeMonthsAgo": {
+    "defaultMessage": "{count, number} {count, plural, one {month} other {months}} ago",
+    "description": "A relative-date choice row in the PowerSearch touch sheet, in the past (for example \"3 months ago\"). The popover editor lists the same choices."
+  },
+  "@astryx.powersearch.sheet.relativeMonthsFromNow": {
+    "defaultMessage": "{count, number} {count, plural, one {month} other {months}} from now",
+    "description": "A relative-date choice row in the PowerSearch touch sheet, in the future (for example \"3 months from now\"). The popover editor lists the same choices."
+  },
+  "@astryx.powersearch.sheet.fieldOperator": {
+    "defaultMessage": "{field} {operator}",
+    "description": "A field label joined with an operator label in the PowerSearch touch sheet: the value step's title, an operator radio's name, and the first part of a Filters row (for example \"Status is\"). Translators may reorder the two parts."
+  },
+  "@astryx.powersearch.sheet.labelValue": {
+    "defaultMessage": "{label} {value}",
+    "description": "A Filters row's \"field operator\" text joined with its value, as the removal announcement reads it (for example \"Status is Open\"). Translators may reorder the two parts."
+  },
+  "@astryx.powersearch.sheet.filtersCleared": {
+    "defaultMessage": "All filters removed",
+    "description": "Polite screen-reader announcement after Clear all in the PowerSearch touch sheet removes every active filter. Live-region text, never shown on screen; past participle."
+  },
+  "@astryx.powersearch.sheet.filtersClearedWithCount": {
+    "defaultMessage": "All filters removed. {resultCount}",
+    "description": "Polite screen-reader announcement after Clear all in the PowerSearch touch sheet when the result count changed with it; resultCount is the field's already formatted result count (for example \"240 results\"). Live-region text, never shown on screen."
+  },
   "@astryx.alertDialog.cancel": {
     "defaultMessage": "Cancel",
     "description": "Button label on the secondary/dismiss button of an AlertDialog (modal confirmation). Imperative verb; consumers usually override with task-specific text."

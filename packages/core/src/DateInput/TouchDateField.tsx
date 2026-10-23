@@ -59,7 +59,7 @@ import {
   useTransition,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {BottomSheet} from '../BottomSheet';
+import {BottomSheet} from '../BottomSheet/BottomSheet';
 import {Button} from '../Button';
 import {useCalendarConstraints} from '../Calendar';
 import type {DateInputProps} from './DateInput';
