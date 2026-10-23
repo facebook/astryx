@@ -61,24 +61,41 @@ const IGNORED_DIRS = new Set([
 ]);
 export {IGNORED_DIRS};
 
+/** Yarn's install and cache folders, a hard boundary under `.yarn`. */
+const YARN_STORE_DIRS = new Set(['__virtual__', 'cache', 'sdks', 'unplugged']);
+
+/**
+ * The number of path segments a hard boundary starting at `parts[index]`
+ * spans: 1 for a name in {@link IGNORED_DIRS}, 2 for `.yarn` followed by one
+ * of its store folders, 0 when none starts there.
+ * @param {string[]} parts
+ * @param {number} index
+ */
+function boundaryLength(parts, index) {
+  if (IGNORED_DIRS.has(parts[index])) return 1;
+  if (parts[index] === '.yarn' && YARN_STORE_DIRS.has(parts[index + 1])) {
+    return 2;
+  }
+  return 0;
+}
+
 /** @param {string} root @param {string} fullPath @param {string} name */
 export function isIgnoredDirectory(root, fullPath, name) {
   if (IGNORED_DIRS.has(name)) return true;
   const parts = path.relative(root, fullPath).split(path.sep);
-  return (
-    parts[0] === '.yarn' &&
-    ['__virtual__', 'cache', 'sdks', 'unplugged'].includes(parts[1])
-  );
+  return boundaryLength(parts, 0) === 2;
 }
 
 /**
  * Whether a symbolic link to a directory leads into a tree the scan never
  * descends. The link is checked like a directory by {@link isIgnoredDirectory},
- * and so is every folder on its resolved target's path below the part that
- * path shares with the scan root's real path: a symlinked `node_modules`, or a
- * link into a dependency, package-store or version-control tree such as
- * `.yarn/cache`, is not walked. The shared part is not checked, so a project
- * that itself sits below such a folder is still scanned.
+ * and its resolved target's absolute path is searched for the same hard
+ * boundaries, wherever the target lives: a symlinked `node_modules`, or a link
+ * into a dependency, package-store or version-control tree such as another
+ * project's `.yarn/cache`, is not walked. A boundary that lies wholly in the
+ * part of the path the target shares with the scan root's real path does not
+ * count, so a project that itself sits below a `node_modules` folder is still
+ * scanned.
  * @param {string} root scan root
  * @param {string} fullPath the link's path
  * @param {string} name the link's name
@@ -103,9 +120,9 @@ export function isIgnoredLinkedDirectory(root, fullPath, name, realTarget) {
   ) {
     shared++;
   }
-  for (let end = shared + 1; end <= targetParts.length; end++) {
-    const folder = targetParts.slice(0, end).join(path.sep);
-    if (isIgnoredDirectory(realRoot, folder, targetParts[end - 1])) return true;
+  for (let index = 0; index < targetParts.length; index++) {
+    const length = boundaryLength(targetParts, index);
+    if (length > 0 && index + length > shared) return true;
   }
   return false;
 }
