@@ -54,6 +54,7 @@ type AuditCase = {
   theme: Theme;
   state: State;
   pointer: Pointer;
+  forcedColors: boolean;
   viewport: {width: number; height: number};
 };
 
@@ -76,6 +77,7 @@ function addPair(
       theme: options.theme ?? 'neutral',
       state: options.state ?? 'rest',
       pointer: options.pointer ?? 'fine',
+      forcedColors: options.forcedColors ?? false,
       viewport: options.viewport ?? WIDE,
     });
   }
@@ -95,6 +97,7 @@ addPair('states-touch-press', {
   pointer: 'coarse',
   state: 'touch-press',
 });
+addPair('states-forced-colors', {forcedColors: true});
 addPair('combined-rest', {story: 'combined-and-long'});
 addPair('combined-custom-theme', {
   story: 'combined-and-long',
@@ -116,6 +119,17 @@ addPair('palette-keyboard-selected-highlight-custom-theme', {
   story: 'palette',
   state: 'keyboard-selected-highlight',
   theme: 'butter',
+});
+
+addPair('palette-keyboard-highlight-forced-colors', {
+  story: 'palette',
+  state: 'keyboard-highlight',
+  forcedColors: true,
+});
+addPair('palette-keyboard-selected-highlight-forced-colors', {
+  story: 'palette',
+  state: 'keyboard-selected-highlight',
+  forcedColors: true,
 });
 
 /** Option each pointer state acts on, by its accessible text. */
@@ -224,6 +238,7 @@ for (const item of cases) {
       colorScheme: item.mode,
       reducedMotion: 'reduce',
       hasTouch: item.pointer === 'coarse',
+      forcedColors: item.forcedColors ? 'active' : 'none',
     });
     const page = await context.newPage();
     const pageErrors: string[] = [];
@@ -311,6 +326,7 @@ for (const item of cases) {
       viewport: {width: innerWidth, height: innerHeight},
       reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
       coarsePointer: matchMedia('(pointer: coarse)').matches,
+      forcedColors: matchMedia('(forced-colors: active)').matches,
       horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1,
       fonts: document.fonts.status,
     }));
@@ -424,6 +440,7 @@ for (const item of cases) {
         state: item.state,
         target,
         pointer: item.pointer,
+        forcedColors: item.forcedColors,
         viewport: item.viewport,
         optionCount: expectedCount,
         disabledCount: expectedDisabled,
@@ -456,6 +473,7 @@ for (const item of cases) {
         observed.viewport.height === item.viewport.height &&
         observed.reducedMotion &&
         observed.coarsePointer === (item.pointer === 'coarse') &&
+        observed.forcedColors === item.forcedColors &&
         !observed.horizontalOverflow &&
         observed.fonts === 'loaded' &&
         semanticsPass &&
