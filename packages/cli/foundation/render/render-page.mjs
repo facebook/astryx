@@ -32,7 +32,7 @@ export {PAGE_EXTENSIONS} from './embedded-files.mjs';
 
 /**
  * @typedef {object} RenderWarning
- * @property {'dropped-children' | 'remote-asset' | 'missing-asset' | 'page-output' | 'no-astryx-styles' | 'chart-size' | 'not-embedded'} code - What kind of problem.
+ * @property {'dropped-children' | 'remote-asset' | 'missing-asset' | 'page-output' | 'page-script' | 'no-astryx-styles' | 'chart-size' | 'not-embedded'} code - What kind of problem.
  * @property {string} message - What happened and what to do, in one sentence.
  */
 
@@ -291,6 +291,25 @@ export async function renderPage(entry, options = {}) {
   const ctx = {dir, root, warnings, counted: new Set()};
   try {
     markup = inlineAssets(markup, 'html', ctx);
+    // React adds `<link rel="preload">` hints for images it renders; in one
+    // static file they only fetch from the network, so they go.
+    markup = markup.replace(/<link rel="preload"[^>]*\/?>/g, '');
+    // What the page itself renders that would run or load something: the
+    // file promises neither, so say so.
+    if (/<script\b/i.test(markup)) {
+      warnings.push({
+        code: 'page-script',
+        message:
+          'The page renders a <script> element. A sandboxed viewer blocks it, and anywhere else it runs when the file is opened; remove it from the page.',
+      });
+    }
+    for (const m of markup.matchAll(/<(link|iframe|object|embed)\b[^>]*?\s(?:href|src|data)="([^"]*)"/gi)) {
+      if (/^(data:|#)/i.test(m[2])) continue;
+      warnings.push({
+        code: 'remote-asset',
+        message: `The page renders a <${m[1].toLowerCase()}> that loads ${m[2]}, which a sandboxed page cannot reach and which loads from the network anywhere else; remove it from the page.`,
+      });
+    }
   } catch (e) {
     const err = /** @type {any} */ (e);
     if (err instanceof RenderAssetError) throw new RenderError(err.code, err.message, err.detail);

@@ -582,9 +582,28 @@ describe('render(): every write stays inside the current folder', () => {
     put('rooted-runner/package.json', '{"name":"rr","private":true}');
     put('rooted-runner/test/fixtures/page.html', `<body><p class="astryx-text">x</p>${sourceBlock('page.mjs', [{path: 'page.mjs', bytes: Buffer.from("import './helper.mjs';\nexport default () => null;\n")}, {path: 'helper.mjs', bytes: Buffer.from('export {};\n')}])}</body>`);
     const cwd = path.join(dir, 'rooted-runner/test/fixtures');
-    expect(await codeOf(() => render('page.html', {cwd, reverse: true}))).toBe('ERR_RENDER_SOURCE_DAMAGED');
+    expect(await codeOf(() => render('page.html', {cwd, reverse: true}))).toBe('ERR_INVALID_ARGUMENT');
     expect(fs.readdirSync(cwd)).toEqual(['page.html']);
   });
+
+  it('judges a nested package under a test folder from the repository root', async () => {
+    const {sourceBlock} = await import('../../foundation/render/source-block.mjs');
+    fs.mkdirSync(path.join(dir, 'repo-root/.git'), {recursive: true});
+    put('repo-root/package.json', '{"name":"repo","private":true}');
+    put('repo-root/test/fixtures/app/package.json', '{"name":"app","private":true}');
+    put('repo-root/test/fixtures/app/page.html', `<body><p class="astryx-text">x</p>${sourceBlock('page.mjs', [{path: 'page.mjs', bytes: Buffer.from('export default () => null;\n')}])}</body>`);
+    const cwd = path.join(dir, 'repo-root/test/fixtures/app');
+    expect(await codeOf(() => render('page.html', {cwd, reverse: true}))).toBe('ERR_INVALID_ARGUMENT');
+    expect(fs.readdirSync(cwd).sort()).toEqual(['package.json', 'page.html']);
+  });
+
+  it('warns about a <script> or a loading <link> the page renders', async () => {
+    put('scripted/page.tsx', 'export default function Page() { return <main><link rel="stylesheet" href="https://example.com/x.css" /><script dangerouslySetInnerHTML={{__html: "1"}} /><p>Hi</p></main>; }\n');
+    const r = /** @type {any} */ (await render('scripted/page.tsx', {cwd: dir}));
+    const codes = r.data.warnings.map((/** @type {any} */ w) => w.code);
+    expect(codes).toContain('page-script');
+    expect(codes).toContain('remote-asset');
+  }, 60_000);
 
   it('refuses --title with --reverse', async () => {
     expect(await codeOf(() => render('page.html', {cwd: dir, reverse: true, title: 'x'}))).toBe('ERR_INVALID_ARGUMENT');

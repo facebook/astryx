@@ -442,9 +442,8 @@ export function reverseToFile({cwd, input, output, overwrite}) {
     writes.forEach((w, i) => confined(w.file, cwd, i === 0 ? 'The page' : 'The embedded file'));
     // Where each file lands, not only its name in the file, must be one no
     // test, story or benchmark runner picks up.
-    // Runners search from the project root: the nearest folder at or above
-    // the current one with a package.json, else the repository root, else
-    // the current folder.
+    // Runners search from the project root: judged from the repository root
+    // (every folder above the file up to it), else the topmost package.
     /** @param {string} marker */
     const nearest = marker => {
       for (let d = cwd; ; d = path.dirname(d)) {
@@ -452,16 +451,24 @@ export function reverseToFile({cwd, input, output, overwrite}) {
         if (path.dirname(d) === d) return null;
       }
     };
-    const projectRoot = nearest('package.json') ?? nearest('.git') ?? cwd;
+    // The repository root holds every runner that could reach the file
+    // (a nested package's and the repository's own); without one, the
+    // topmost folder with a package.json.
+    let topPackage = null;
+    for (let d = cwd; ; d = path.dirname(d)) {
+      if (fs.existsSync(path.join(d, 'package.json'))) topPackage = d;
+      if (path.dirname(d) === d) break;
+    }
+    const projectRoot = nearest('.git') ?? topPackage ?? cwd;
     const runnable = writes
       .map(w => path.relative(projectRoot, w.file).split(path.sep))
       .filter(segments => runnerPicksUp(segments))
       .map(segments => segments.join('/'));
     if (runnable.length > 0) {
       throw new AstryxError(
-        `${shown(cwd, input)} would write ${runnable.join(', ')}, which a test, story or benchmark runner would run; nothing was written. Choose another --out.`,
+        `${shown(cwd, input)} would write ${runnable.join(', ')} (from the project root), where a test, story or benchmark runner would run it; nothing was written. Restore it somewhere else with --out.`,
         [],
-        ERROR_CODES.ERR_RENDER_SOURCE_DAMAGED,
+        ERROR_CODES.ERR_INVALID_ARGUMENT,
       );
     }
     refuseExisting(writes.map(w => w.file));
