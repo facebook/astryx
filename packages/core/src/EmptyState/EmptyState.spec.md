@@ -26,7 +26,8 @@ architecture:
     architecture:component-test-sufficiency,
   ]
 contributing: []
-system_specs: [spec:AST-020/FR1, spec:AST-029/FR3, spec:AST-086/FR2]
+system_specs:
+  [spec:AST-020/FR1, spec:AST-029/FR3, spec:AST-086/FR2, spec:AST-086/FR11]
 ---
 
 # EmptyState component contract
@@ -137,7 +138,7 @@ intentional decision. A `current` contract contains no unresolved rows.
   role or `aria-live` to the root and does not move focus. Rendered with the
   page (before the first paint, or while hydrating), it announces nothing. When
   it appears, or its message changes, later, it announces its title and
-  description once through the shared polite channel (`spec:AST-086` FR2).
+  description once through the shared polite channel (`spec:AST-086` FR2, FR11).
   Action controls keep their own names, roles, and behavior.
 
 ## Design relationships
