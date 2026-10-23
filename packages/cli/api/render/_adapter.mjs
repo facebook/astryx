@@ -19,6 +19,7 @@ import {
 } from '../../foundation/render/render-page.mjs';
 import {readSourceBlock} from '../../foundation/render/source-block.mjs';
 import {embeddedPathProblem} from '../../foundation/render/embedded-files.mjs';
+import {reachableFiles, receivingAliases} from '../../foundation/render/embedded-imports.mjs';
 import {isAstryxMarkup} from '../../foundation/render/html-reader.mjs';
 import {rebuildPage} from '../../foundation/render/rebuild.mjs';
 import {cliVersion} from '../../foundation/integrations/cli-peer-version.mjs';
@@ -224,6 +225,17 @@ export function reverseToFile({cwd, input, output, overwrite}) {
     const fits = !rel.startsWith('..') && !path.isAbsolute(rel);
     if (!fits) root = path.dirname(requested);
     const target = fits ? requested : path.join(root, ...entryRel.slice(0, -1), path.basename(requested));
+    // Only files the page reaches through its own imports are written: a
+    // file the page never imports is not part of it, whatever its name.
+    const reached = reachableFiles(source.files, {root, aliases: receivingAliases(path.dirname(target))});
+    const stray = source.files.filter(f => !reached.has(f.path)).map(f => f.path);
+    if (stray.length > 0) {
+      throw new AstryxError(
+        `${shown(cwd, input)} carries ${stray.length === 1 ? 'a file' : 'files'} the page does not import (${stray.join(', ')}), which a render never embeds; nothing was written. A file reached through a path alias needs the same alias in this project's tsconfig.json or jsconfig.json.`,
+        [],
+        ERROR_CODES.ERR_RENDER_SOURCE_DAMAGED,
+      );
+    }
     /** @type {{file: string, bytes: Buffer}[]} */
     const writes = [];
     source.files.forEach((f, i) => {

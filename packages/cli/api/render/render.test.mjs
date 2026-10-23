@@ -364,6 +364,48 @@ describe('render --reverse: a received file may carry only what a render embeds'
     expect(fs.existsSync(path.join(dir, out))).toBe(false);
   });
 
+  it.each([
+    ['a framework hook file', 'instrumentation.ts'],
+    ['a middleware module', 'src/middleware.ts'],
+    ['a JSON tool configuration', 'babel.config.json'],
+    ['a module in a tools folder', 'tools/plugin.js'],
+    ['a stylesheet the page never imports', 'theme.css'],
+  ])('refuses %s the page does not import, writing nothing', async (_, extra) => {
+    const name = `stray-${extra.replace(/[^a-z0-9]/gi, '_')}.html`;
+    await crafted(name, [
+      {path: 'page.tsx', text: "import {Header} from './Header';\nexport default () => <Header />;\n"},
+      {path: 'Header.tsx', text: 'export const Header = () => <h1>Hi</h1>;\n'},
+      {path: extra, text: 'export default {};\n'},
+    ]);
+    const out = `stray-out-${extra.replace(/[^a-z0-9]/gi, '_')}`;
+    /** @type {any} */
+    let error;
+    try {
+      await render(name, {cwd: dir, reverse: true, out: `${out}/page.tsx`});
+    } catch (e) {
+      error = e;
+    }
+    expect(error?.code).toBe('ERR_RENDER_SOURCE_DAMAGED');
+    expect(error.message).toContain(extra);
+    expect(fs.existsSync(path.join(dir, out))).toBe(false);
+  });
+
+  it('writes every file the page reaches: re-exports, import(), require() and a folder index', async () => {
+    await crafted('reach.html', [
+      {
+        path: 'page.tsx',
+        text: "export {a} from './a';\nconst b = import('./b');\nconst c = require('./c.json');\nimport './parts';\nexport default () => null;\n",
+      },
+      {path: 'a.ts', text: "import './a.css';\nexport const a = 1;\n"},
+      {path: 'a.css', text: '.a{}\n'},
+      {path: 'b.tsx', text: 'export default 2;\n'},
+      {path: 'c.json', text: '{}\n'},
+      {path: 'parts/index.ts', text: 'export {};\n'},
+    ]);
+    const r = /** @type {any} */ (await render('reach.html', {cwd: dir, reverse: true, out: 'reach/page.tsx'}));
+    expect(r.data.files.length).toBe(6);
+  });
+
   it('refuses a page entry that is not a page module, and an --out that names a configuration file', async () => {
     await crafted('crafted-entry.html', [{path: 'vite.config.ts', text: 'export default {};\n'}]);
     expect(await codeOf(() => render('crafted-entry.html', {cwd: dir, reverse: true}))).toBe('ERR_RENDER_SOURCE_DAMAGED');
@@ -380,7 +422,7 @@ describe('render --reverse: a received file may carry only what a render embeds'
 
   it('names every existing file in ERR_FILE_EXISTS and writes none of them', async () => {
     await crafted('crafted-exists.html', [
-      {path: 'page.tsx', text: 'export default () => null;\n'},
+      {path: 'page.tsx', text: "import './styles.css';\nexport default () => null;\n"},
       {path: 'styles.css', text: '.a{}\n'},
     ]);
     put('exists/page.tsx', 'original page\n');
@@ -409,6 +451,14 @@ describe('render --reverse: a received file may carry only what a render embeds'
 });
 
 describe('astryx experimental render (CLI)', () => {
+  it('refuses an unknown experimental subcommand with exit 1', async () => {
+    const r = await runCli(['--json', 'experimental', 'nope'], dir);
+    expect(r.status).toBe(1);
+    const out = JSON.parse(r.stdout);
+    expect(out.code).toBe('ERR_UNKNOWN_SUBCOMMAND');
+    expect(out.suggestions.map((/** @type {any} */ s) => s.name)).toContain('render');
+  });
+
   it('fails with exit 1 and a readable message without --json', async () => {
     const r = await runCli(['experimental', 'render', '--reverse', 'plain.html'], dir);
     expect(r.status).toBe(1);
