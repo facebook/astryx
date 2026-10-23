@@ -285,7 +285,8 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
   let integrations;
   /** @type {import('../../../authoring/config/type').PostCodemodHook[]} */
   let postCodemodHooks;
-  let iconSets = false;
+  /** @type {boolean} */
+  let iconSets;
   try {
     const projectContext = await loadProjectContext(
       cwd,
