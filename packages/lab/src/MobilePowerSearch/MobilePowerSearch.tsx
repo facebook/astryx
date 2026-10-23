@@ -28,6 +28,11 @@
  *   and tokens wrap inside the trigger;
  * - strings are literals (no new i18n keys; existing Core keys are reused
  *   only for the result count and the add announcement);
+ * - announcements made while a sheet is open go to a persistent polite
+ *   region inside each sheet, created empty and kept mounted (spec AST-086
+ *   FR3), because the shared page-body channel is not exposed while a
+ *   native modal dialog is open (its Platform support section); the closed
+ *   field still uses the shared channel;
  * - no theming contract: no `power-search` theme target or selectors;
  * - `components[type].Token` overrides receive Core's PowerSearchTokenProps,
  *   which carry no `timezoneID`; the built-in token renders Core `Token`
@@ -98,6 +103,7 @@ import {Text} from '@astryxdesign/core/Text';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {Token} from '@astryxdesign/core/Token';
 import {useTooltip} from '@astryxdesign/core/Tooltip';
+import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
 import {
   useAnnounce,
   useDevWarning,
@@ -426,6 +432,9 @@ function resolveDraftFilterIndex(
 const SEARCHABLE_FIELD_COUNT = 8;
 const DEFAULT_MAX_SEARCH_RESULTS = 10;
 const MAX_BROWSE_MENU_ITEMS = 1000;
+// How long a message stays in the sheets' live region; the shared channel
+// clears on the same schedule.
+const SHEET_ANNOUNCEMENT_CLEAR_MS = 2000;
 
 // =============================================================================
 // Token
@@ -538,7 +547,70 @@ export function MobilePowerSearch({
   const config = useMobilePowerSearchConfig(configProp);
   const t = useTranslator();
   const locale = useLocale();
-  const announce = useAnnounce();
+  const announceOnPage = useAnnounce();
+  // While a sheet is open the page-body live region is not exposed (the
+  // sheets are native modal dialogs), so a message then goes to the polite
+  // region rendered inside the sheets; `step` is read through a ref because
+  // the add path changes the step in the same tick it announces.
+  const [sheetAnnouncement, setSheetAnnouncement] = useState('');
+  const sheetAnnouncementFrameRef = useRef<number | null>(null);
+  const pendingSheetMessagesRef = useRef<string[]>([]);
+  const sheetAnnouncementClearRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
+  const stepRef = useRef<SheetStep | null>(null);
+  const announce = useCallback(
+    (message: string) => {
+      if (stepRef.current == null) {
+        announceOnPage(message);
+        return;
+      }
+      // Clear, then write on the next frame so the same words announce again
+      // (FR6: a new occasion), and clear shortly after so stale text does not
+      // linger in a sheet that opens later (FR3). Messages that arrive while
+      // the frame is pending are joined in order into that one write, the way
+      // the shared channel joins them (FR9), so an add and the result count
+      // it changes in the same commit are both heard.
+      pendingSheetMessagesRef.current.push(message);
+      if (sheetAnnouncementFrameRef.current != null) {
+        return;
+      }
+      if (sheetAnnouncementClearRef.current != null) {
+        clearTimeout(sheetAnnouncementClearRef.current);
+        sheetAnnouncementClearRef.current = null;
+      }
+      setSheetAnnouncement('');
+      sheetAnnouncementFrameRef.current = requestAnimationFrame(() => {
+        sheetAnnouncementFrameRef.current = null;
+        const joined = pendingSheetMessagesRef.current.join(' ');
+        pendingSheetMessagesRef.current = [];
+        setSheetAnnouncement(joined);
+        sheetAnnouncementClearRef.current = setTimeout(() => {
+          sheetAnnouncementClearRef.current = null;
+          setSheetAnnouncement('');
+        }, SHEET_ANNOUNCEMENT_CLEAR_MS);
+      });
+    },
+    [announceOnPage],
+  );
+  // Owns the sheet announcer's frame and clear timer: released on teardown,
+  // with the refs and the pending queue reset, so an Effect teardown that is
+  // not an unmount (an <Activity> hide) leaves no cancelled id behind that
+  // would block later in-sheet announcements.
+  useEffect(
+    () => () => {
+      if (sheetAnnouncementFrameRef.current != null) {
+        cancelAnimationFrame(sheetAnnouncementFrameRef.current);
+        sheetAnnouncementFrameRef.current = null;
+      }
+      if (sheetAnnouncementClearRef.current != null) {
+        clearTimeout(sheetAnnouncementClearRef.current);
+        sheetAnnouncementClearRef.current = null;
+      }
+      pendingSheetMessagesRef.current = [];
+    },
+    [],
+  );
 
   const triggerLabel = labelFromProps ?? 'Manage filters';
   const fieldPlaceholder = placeholderFromProps ?? 'Filters…';
@@ -556,6 +628,8 @@ export function MobilePowerSearch({
   );
 
   const triggerId = useId();
+  const triggerLabelId = useId();
+  const triggerContentId = useId();
   const statusMessageId = useId();
   const contentResultsId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -571,6 +645,7 @@ export function MobilePowerSearch({
   const pendingMutationFocusRef = useRef(false);
 
   const [step, setStep] = useState<SheetStep | null>(null);
+  stepRef.current = step;
   // The draft outlives a step change on purpose: the switcher keeps the
   // outgoing sheet mounted while the incoming one enters, and clearing the
   // draft with the step would blank that sheet mid-transition.
@@ -1079,12 +1154,20 @@ export function MobilePowerSearch({
     return resultCount;
   }, [resultCount, t]);
 
-  const hasMountedRef = useRef(false);
+  // This Effect synchronizes a polite live region with the result count: the
+  // shared page-body one while the field is closed, the sheets' own while a
+  // sheet is open. A count present on mount is not announced unprompted, and
+  // the guard compares against the last announced text rather than a mounted
+  // flag, so StrictMode's effect replay announces nothing either (FR6). It
+  // needs no cleanup of its own: on the open-sheet path `announce` starts a
+  // frame and a clear timer, which the sheet announcer's teardown Effect and
+  // the next write release.
+  const announcedResultCountRef = useRef(resultCountText);
   useEffect(() => {
-    if (!hasMountedRef.current) {
-      hasMountedRef.current = true;
+    if (resultCountText === announcedResultCountRef.current) {
       return;
     }
+    announcedResultCountRef.current = resultCountText;
     if (resultCountText != null) {
       announce(resultCountText);
     }
@@ -1218,11 +1301,28 @@ export function MobilePowerSearch({
   const isDraftRenderable =
     draft != null && draftField != null && draftOperator != null;
 
+  // One persistent polite region per sheet, created empty and kept mounted
+  // while its text changes (FR3), because the shared page-body channel is
+  // not exposed while a native modal dialog is open; only the active sheet's
+  // dialog is exposed, so a message is heard once. A polite status region
+  // needs no name to announce, so it carries none rather than one assembled
+  // from the label and a literal.
+  const sheetStatus = (
+    <VisuallyHidden
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      data-testid="mobile-power-search-sheet-status">
+      {sheetAnnouncement}
+    </VisuallyHidden>
+  );
+
   return (
     <>
       <Field
         ref={ref}
         label={triggerLabel}
+        labelID={triggerLabelId}
         isLabelHidden={isLabelHidden}
         inputID={triggerId}
         isDisabled={isDisabled}
@@ -1256,7 +1356,11 @@ export function MobilePowerSearch({
             status && !isDisabled && inputStatusHoverShadowStyles[status.type],
             status && inputStatusFocusWithinStyles[status.type],
           )}>
-          <div {...stylex.props(styles.contentSection)}>
+          {/* The trigger's name is the label plus everything visible here:
+              the placeholder, or the tokens, so speech input can say what it
+              sees and assistive technology hears the selected filters
+              (WCAG 2.5.3). */}
+          <div id={triggerContentId} {...stylex.props(styles.contentSection)}>
             {startIcon && (
               <span
                 {...stylex.props(
@@ -1276,6 +1380,7 @@ export function MobilePowerSearch({
               aria-disabled={isDisabled ? true : undefined}
               aria-haspopup="dialog"
               aria-expanded={step != null}
+              aria-labelledby={`${triggerLabelId} ${triggerContentId}`}
               aria-describedby={triggerDescribedBy}
               {...stylex.props(
                 styles.trigger,
@@ -1304,6 +1409,7 @@ export function MobilePowerSearch({
         onActiveSheetChange={handleActiveSheetChange}>
         <BottomSheet sheetId="manage" label="Filters" height="tall" padding={0}>
           <div {...stylex.props(styles.sheet)}>
+            {sheetStatus}
             <div {...stylex.props(styles.header)}>
               <div {...stylex.props(styles.headerRow)}>
                 <div {...stylex.props(styles.headerText)}>
@@ -1395,6 +1501,7 @@ export function MobilePowerSearch({
           height="tall"
           padding={0}>
           <div {...stylex.props(styles.sheet)}>
+            {sheetStatus}
             <div {...stylex.props(styles.header)}>
               <div {...stylex.props(styles.headerRow)}>
                 <Button
@@ -1576,6 +1683,7 @@ export function MobilePowerSearch({
           padding={0}
           purpose="form">
           <div {...stylex.props(styles.sheet)}>
+            {sheetStatus}
             <div {...stylex.props(styles.header)}>
               <div {...stylex.props(styles.headerRow)}>
                 <div {...stylex.props(styles.headerText)}>
