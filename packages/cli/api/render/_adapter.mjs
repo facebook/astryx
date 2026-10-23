@@ -19,6 +19,7 @@ import {
 } from '../../foundation/render/render-page.mjs';
 import {readSourceBlock} from '../../foundation/render/source-block.mjs';
 import {embeddedPathProblem, runnerPicksUp} from '../../foundation/render/embedded-files.mjs';
+import {isAssetBytes, isAssetPath} from '../../foundation/render/assets.mjs';
 import {createFileProtectionResolver} from '../../foundation/fs/file-protection.mjs';
 import {reachableFiles, receivingAliases} from '../../foundation/render/embedded-imports.mjs';
 import {isAstryxMarkup} from '../../foundation/render/html-reader.mjs';
@@ -405,6 +406,14 @@ export function reverseToFile({cwd, input, output, overwrite}) {
     // Only files the page reaches through its own imports are written: a
     // file the page never imports is not part of it, whatever its name.
     const {reached, missing} = reachableFiles(source.files, {aliases: receivingAliases(path.dirname(requested))});
+    // A carried image, font or media file needs no import to be part of the
+    // page (it may be named in markup, a stylesheet, JSON or a computed
+    // path): the render's own list is the authority, so it is kept when its
+    // bytes really are that kind of file, and goes where the layout puts it.
+    for (const f of source.files) {
+      if (reached.has(f.path) || !isAssetPath(f.path)) continue;
+      if (isAssetBytes(f.path, Buffer.from(f.base64, 'base64'))) reached.set(f.path, {relative: true, aliased: new Set()});
+    }
     const stray = source.files.filter(f => !reached.has(f.path)).map(f => f.path);
     if (stray.length > 0) {
       throw new AstryxError(

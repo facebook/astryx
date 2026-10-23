@@ -460,6 +460,47 @@ describe('render(): every write stays inside the current folder', () => {
     expect(again.data.warnings.map((/** @type {any} */ w) => w.code)).not.toContain('missing-asset');
   }, 60_000);
 
+  it('gives back images named any way the render carried them', async () => {
+    put('spell/logo.png', PNG);
+    put('spell/images/bg.png', PNG);
+    put('spell/pic.png', PNG);
+    put('spell/tpl.png', PNG);
+    put('spell/card.png', PNG);
+    put('spell/styles.css', '.hero { background: url(images/bg.png); }\n');
+    put('spell/data.json', '{"img": "pic.png"}\n');
+    put('spell/components/Card.tsx', 'export function Card() { return <img src="card.png" alt="" />; }\n');
+    put(
+      'spell/page.tsx',
+      [
+        "import './styles.css';",
+        "import data from './data.json';",
+        "import {Card} from './components/Card';",
+        "const name = 'tpl';",
+        'export default function Page() {',
+        '  return <div className="hero"><img src="logo.png" alt="" /><img src={data.img} alt="" /><img src={`./${name}.png`} alt="" /><Card /></div>;',
+        '}',
+        '',
+      ].join('\n'),
+    );
+    const r = /** @type {any} */ (await render('spell/page.tsx', {cwd: dir}));
+    expect(r.data.files).toEqual(expect.arrayContaining(['logo.png', 'images/bg.png', 'pic.png', 'tpl.png', 'card.png']));
+    const back = /** @type {any} */ (await render('spell/page.html', {cwd: dir, reverse: true, out: 'spell-back/page.tsx'}));
+    expect(back.data.exact).toBe(true);
+    for (const f of ['logo.png', 'images/bg.png', 'pic.png', 'tpl.png', 'card.png']) {
+      expect(fs.existsSync(path.join(dir, 'spell-back', f))).toBe(true);
+    }
+    const again = /** @type {any} */ (await render('spell-back/page.tsx', {cwd: dir}));
+    expect(again.data.warnings.map((/** @type {any} */ w) => w.code)).not.toContain('missing-asset');
+  }, 60_000);
+
+  it('refuses a carried "image" whose bytes are not one', async () => {
+    const {sourceBlock} = await import('../../foundation/render/source-block.mjs');
+    put('fake-img.html', `<body><p class="astryx-text">x</p>${sourceBlock('page.tsx', [{path: 'page.tsx', bytes: Buffer.from('export default () => null;\n')}, {path: 'hook.png', bytes: Buffer.from('process.exit(1)\n')}])}</body>`);
+    expect(await codeOf(() => render('fake-img.html', {cwd: dir, reverse: true, out: 'fake-img/page.tsx'}))).toBe(
+      'ERR_RENDER_SOURCE_DAMAGED',
+    );
+  });
+
   it('rebuilds a quoted attribute as JSX that compiles', async () => {
     put(
       'quoted.html',
