@@ -55,12 +55,40 @@ describe('Kbd', () => {
     expect(screen.getByText('\u2318')).toBeInTheDocument(); // \u2318
   });
 
-  it('maps modifier keys to symbols', () => {
+  it('spells modifier keys out on non-Mac platforms', () => {
+    // jsdom is a non-Mac environment: those keyboards print the names.
+    render(<Kbd keys="ctrl+alt+shift+k" />);
+    expect(screen.getByText('Ctrl')).toBeInTheDocument();
+    expect(screen.getByText('Alt')).toBeInTheDocument();
+    expect(screen.getByText('Shift')).toBeInTheDocument();
+    expect(screen.getByText('K')).toBeInTheDocument();
+    expect(screen.queryByText('\u2303')).not.toBeInTheDocument();
+    expect(screen.queryByText('\u2325')).not.toBeInTheDocument();
+    expect(screen.queryByText('\u21E7')).not.toBeInTheDocument();
+  });
+
+  it('maps modifier keys to symbols on Mac platforms', () => {
+    Object.defineProperty(navigator, 'platform', {
+      value: 'MacIntel',
+      configurable: true,
+    });
     render(<Kbd keys="ctrl+alt+shift+k" />);
     expect(screen.getByText('\u2303')).toBeInTheDocument(); // \u2303
     expect(screen.getByText('\u2325')).toBeInTheDocument(); // \u2325
     expect(screen.getByText('\u21E7')).toBeInTheDocument(); // \u21E7
     expect(screen.getByText('K')).toBeInTheDocument();
+  });
+
+  it('names alt "Option" in the accessible name on Mac, and "Alt" elsewhere', () => {
+    const {unmount} = render(<Kbd keys="alt+k" />);
+    expect(screen.getByRole('img')).toHaveAttribute('aria-label', 'Alt + K');
+    unmount();
+    Object.defineProperty(navigator, 'platform', {
+      value: 'MacIntel',
+      configurable: true,
+    });
+    render(<Kbd keys="alt+k" />);
+    expect(screen.getByRole('img')).toHaveAttribute('aria-label', 'Option + K');
   });
 
   it('maps special keys', () => {
@@ -172,7 +200,7 @@ describe('Kbd', () => {
 
   it('renders "plus" as a literal + key', () => {
     render(<Kbd keys="shift+plus" />);
-    expect(screen.getByText('⇧')).toBeInTheDocument();
+    expect(screen.getByText('Shift')).toBeInTheDocument();
     expect(screen.getByText('+')).toBeInTheDocument();
   });
 

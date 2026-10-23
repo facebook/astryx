@@ -57,14 +57,11 @@ const styles = stylex.create({
 });
 
 /**
- * Map of modifier key names to display symbols.
- * Note: `mod` is not in this map — it resolves dynamically via platform
- * detection inside the component.
+ * Map of key names to display symbols.
+ * Note: `mod` and the modifiers in `MODIFIER_DISPLAY` are not in this map —
+ * they resolve dynamically via platform detection inside the component.
  */
 const KEY_DISPLAY = new Map<string, string>([
-  ['ctrl', '\u2303'], // ⌃
-  ['alt', '\u2325'], // ⌥
-  ['shift', '\u21E7'], // ⇧
   ['enter', '\u21B5'], // ↵
   ['backspace', '\u232B'], // ⌫
   ['escape', 'Esc'],
@@ -74,6 +71,17 @@ const KEY_DISPLAY = new Map<string, string>([
   ['left', '\u2190'],
   ['right', '\u2192'],
   ['plus', '+'],
+]);
+
+/**
+ * Modifiers whose printed name differs by platform: Apple keyboards and
+ * menus use glyphs, while Windows and Linux keyboards and menus spell the
+ * key's name. The ⌃, ⌥ and ⇧ glyphs are not printed on those keyboards.
+ */
+const MODIFIER_DISPLAY = new Map<string, {mac: string; other: string}>([
+  ['ctrl', {mac: '\u2303', other: 'Ctrl'}], // ⌃
+  ['alt', {mac: '\u2325', other: 'Alt'}], // ⌥
+  ['shift', {mac: '\u21E7', other: 'Shift'}], // ⇧
 ]);
 
 const KBD_KEY_ALIASES = new Map<string, string>([
@@ -89,6 +97,10 @@ const KBD_KEY_ALIASES = new Map<string, string>([
 function getKeyDisplay(key: string, isMac: boolean): string {
   if (key === 'mod') {
     return isMac ? '\u2318' : 'Ctrl';
+  }
+  const modifier = MODIFIER_DISPLAY.get(key);
+  if (modifier != null) {
+    return isMac ? modifier.mac : modifier.other;
   }
   return KEY_DISPLAY.get(key) ?? key.toUpperCase();
 }
@@ -117,6 +129,9 @@ function getKeyLabel(key: string, isMac: boolean): string {
   if (key === 'mod') {
     return isMac ? 'Command' : 'Control';
   }
+  if (key === 'alt' && isMac) {
+    return 'Option';
+  }
   return KEY_LABEL.get(key) ?? key.toUpperCase();
 }
 
@@ -133,7 +148,8 @@ export interface KbdProps extends BaseProps<HTMLSpanElement> {
   /**
    * Keyboard shortcut string. Use "+" to separate keys.
    * Special keys: mod (Cmd on Mac), ctrl, alt, shift, enter, backspace, escape,
-   * tab, up, down, left, and right.
+   * tab, up, down, left, and right. On Mac, ctrl, alt and shift render as
+   * ⌃ ⌥ ⇧; elsewhere as Ctrl, Alt and Shift.
    * Aliases: "esc" for "escape" and "return" for "enter".
    * Use "plus" to render a literal "+" key (e.g. "shift+plus").
    *
