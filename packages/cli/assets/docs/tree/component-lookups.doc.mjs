@@ -10,8 +10,9 @@ export const docs = {
   type: 'generic',
   name: 'component-lookups',
   placement: {parent: 'namespace:cli', slot: 'guides', order: 5},
-  title: 'Looking up components',
+  title: 'Component lookups',
   category: 'guide',
+  keywords: ['look up', 'looking up components', 'lookup', 'batch'],
   description:
     'Look up one or several exact component identities, choose a focused projection, and handle complete batch receipts.',
   sections: [
