@@ -420,8 +420,10 @@ describe('template_asset_not_packed', () => {
 
     const notes = await notesOf(['template_asset_not_packed']);
     expect(notes).toHaveLength(1);
-    expect(notes[0].message).toContain('npm leaves out of the package');
-    expect(notes[0].message).toContain('drop any `!` entry');
+    expect(notes[0].message).toContain(
+      'the `files` entry "!templates/*.png" leaves out of the package',
+    );
+    expect(notes[0].message).toContain('drop or narrow "!templates/*.png"');
   });
 
   it.each([
@@ -609,6 +611,35 @@ describe('what npm packs decides', () => {
         'remove or narrow the line `*.png` in templates/img/.npmignore',
       );
       expect(notes[0].message).not.toContain('to `files`');
+    }
+  });
+
+  it('names the ! entry of files that leaves an asset out, not an unrelated ignore file', async () => {
+    write({
+      'package.json': JSON.stringify({
+        name: '@acme/kit',
+        version: '1.0.0',
+        files: ['components', 'templates', '!templates/img'],
+      }),
+      'templates/.npmignore': '*.log\n',
+      'templates/img/hero.png': 'png',
+      'templates/card.doc.mjs': blockDoc(
+        'card',
+        ", exampleFor: 'AcmeCard', isShowcase: true",
+      ),
+      'templates/card.tsx': [
+        "const hero = new URL('./img/hero.png', import.meta.url);",
+        'export default () => null;',
+        '',
+      ].join('\n'),
+    });
+    const notes = await notesOf(['template_asset_not_packed']);
+    expect(notes).toHaveLength(npmPacks('templates/img/hero.png') ? 0 : 1);
+    if (notes.length > 0) {
+      expect(notes[0].message).toContain(
+        'the `files` entry "!templates/img" leaves out of the package',
+      );
+      expect(notes[0].message).not.toContain('.npmignore');
     }
   });
 

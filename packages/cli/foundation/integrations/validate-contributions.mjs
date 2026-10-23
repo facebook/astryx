@@ -1279,6 +1279,35 @@ export function outsideFiles(rel, files) {
 }
 
 /**
+ * The `!` entry of a `files` field that leaves out `rel` or a folder above
+ * it, as written; null when none does.
+ * @param {string} rel package-relative path
+ * @param {unknown} files the `files` field
+ * @returns {string | null}
+ */
+export function negatedFilesEntry(rel, files) {
+  if (!Array.isArray(files)) return null;
+  const parts = rel.split('/');
+  const paths = parts.map((_, i) => parts.slice(0, i + 1).join('/'));
+  for (const entry of files) {
+    if (typeof entry !== 'string' || !entry.startsWith('!')) continue;
+    const trimmed = entry
+      .slice(1)
+      .replace(/^\.?\//u, '')
+      .replace(/\/+$/u, '')
+      .replace(/\/\*$/u, '/**');
+    const hit = expandBraces(trimmed).some(spelling => {
+      const pattern = new RegExp(`^${globSource(spelling)}$`, 'iu');
+      return spelling.includes('/') || /^!\.?\//u.test(entry)
+        ? paths.some(at => pattern.test(at))
+        : parts.some(name => pattern.test(name));
+    });
+    if (hit) return entry;
+  }
+  return null;
+}
+
+/**
  * The path a `new URL()` argument spells out: a string, or a template
  * literal with no expressions. Anything computed is not read.
  * @param {any} node
@@ -1297,8 +1326,7 @@ function literalPath(node) {
  * imports and exports never count. `server` is what a browser cannot run: an
  * import, re-export or `require()` of a server-only module or an uninstalled
  * Node builtin, a read of `process.env` other than `process.env.NODE_ENV`
- * (which bundlers replace), and a `'use server'` directive. `assets` are the
- * relative paths it loads with `new URL('./x', import.meta.url)`. A module
+ * (which bundlers replace). `assets` are the relative paths it loads with `new URL('./x', import.meta.url)`. A module
  * that does not parse reports nothing; the template check owns that.
  * @param {string} source
  * @param {Set<string>} builtins
@@ -1329,11 +1357,6 @@ function readModule(source, builtins) {
       found.push(`imports '${spec}'`);
     }
   };
-  for (const directive of ast.program.directives ?? []) {
-    if (directive.value?.value === 'use server') {
-      found.push("is a 'use server' module");
-    }
-  }
   /** @param {any} node */
   const visit = node => {
     if (!node || typeof node.type !== 'string') return;
@@ -1609,10 +1632,14 @@ export async function componentExamplesCheck(integration) {
         path.posix.dirname(assetRel) === '.'
           ? assetRel
           : path.posix.dirname(assetRel);
+      const negated = negatedFilesEntry(assetRel, packedFiles);
       notes.push({
         code: 'template_asset_not_packed',
-        message: exists
-          ? Array.isArray(packedFiles) &&
+        message: !exists
+          ? `${rel(template.filePath)}: loads ${assetRel}, which does not exist. Fix: add the file, or point \`new URL()\` at one that does.`
+          : negated != null && !outsideFiles(assetRel, packedFiles)
+            ? `${rel(template.filePath)}: loads ${assetRel}, which the \`files\` entry "${negated}" leaves out of the package, so the template breaks once installed. Fix: drop or narrow "${negated}" so it no longer matches ${assetRel}, and confirm with \`npm pack --dry-run\`.`
+            : Array.isArray(packedFiles) &&
             (outsideFiles(assetRel, packedFiles) ||
               !ignoreFilesFor(base, assetRel).some(file => file.includes('/')))
             ? `${rel(template.filePath)}: loads ${assetRel}, which npm leaves out of the package by its \`files\` field, so the template breaks once installed. Fix: add "${folder}" to \`files\`, drop any \`!\` entry that excludes it, and confirm with \`npm pack --dry-run\`.`
@@ -1621,8 +1648,7 @@ export async function componentExamplesCheck(integration) {
                 rel(template.filePath),
                 assetRel,
                 Array.isArray(packedFiles),
-              )
-          : `${rel(template.filePath)}: loads ${assetRel}, which does not exist. Fix: add the file, or point \`new URL()\` at one that does.`,
+              ),
       });
     }
   }
