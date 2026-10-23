@@ -356,26 +356,33 @@ function matchPeople(people: SearchableItem[], query: string) {
   );
 }
 
-let pendingDirectoryRequest: ReturnType<typeof setTimeout> | null = null;
+let pendingDirectoryRequest: {
+  timer: ReturnType<typeof setTimeout>;
+  reject: (reason: Error) => void;
+} | null = null;
 const incrementalPeopleSource: SearchSource = {
   bootstrap: () => localPeople,
   cancel() {
+    // Settle the cancelled search so the field stops being busy.
     if (pendingDirectoryRequest != null) {
-      clearTimeout(pendingDirectoryRequest);
+      clearTimeout(pendingDirectoryRequest.timer);
+      pendingDirectoryRequest.reject(new Error('cancelled'));
       pendingDirectoryRequest = null;
     }
   },
   async search(query, context) {
     const local = matchPeople(localPeople, query);
     context?.update(local);
-    return new Promise(resolve => {
-      pendingDirectoryRequest = setTimeout(() => {
+    return await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        pendingDirectoryRequest = null;
         const shown = new Set(local.map(person => person.id));
         const added = matchPeople(directoryPeople, query).filter(
           person => !shown.has(person.id),
         );
         resolve([...local, ...added]);
       }, 800);
+      pendingDirectoryRequest = {timer, reject};
     });
   },
 };

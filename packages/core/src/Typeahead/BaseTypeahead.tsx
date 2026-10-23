@@ -753,6 +753,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     onOpenChange?.(false);
     setHighlightedIndex(-1);
     closedGenRef.current = searchGenRef.current;
+    setHeldHeight(null);
     searchSource.cancel?.();
   }, [onOpenChange, searchSource]);
 
@@ -956,6 +957,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       ) {
         return;
       }
+      setHeldHeight(null);
       setResults(shown);
       setHighlightedIndex(nextHighlightedIndex);
       if (bootstrapResults.length > 0) {
@@ -1024,6 +1026,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         // never reports "no results" for a query nobody looked for.
         const derived = __queryEntries?.(newQuery, []) ?? [];
         setResults(derived);
+        setHeldHeight(null);
         setHighlightedIndex(derived.length > 0 ? 0 : -1);
         setHasSearched(false);
         // Bumping the generation abandons any in-flight search, which means
@@ -1092,6 +1095,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       onChange(item);
       setQuery('');
       setResults([]);
+      setHeldHeight(null);
       setHasSearched(false);
       // Same reason as in handleQueryChange: the invalidated search will not
       // clear this itself. Selecting a stale result while the next search is

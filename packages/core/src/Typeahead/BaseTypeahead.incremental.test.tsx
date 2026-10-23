@@ -437,4 +437,24 @@ describe('BaseTypeahead incremental results (spec:AST-092)', () => {
     expect(optionLabels()).toEqual([]);
     expect(input).not.toHaveAttribute('aria-busy');
   });
+
+  it('releases the held popup height when the query ends (FR6)', async () => {
+    const {source, latest} = createPendingSource({
+      ben: [benOrtiz, benitaRuiz],
+    });
+    const input = renderTypeahead(source);
+    await type(input, 'ben');
+    const listbox = screen.getByRole('listbox', {hidden: true});
+    vi.spyOn(listbox, 'getBoundingClientRect').mockReturnValue(
+      DOMRect.fromRect({x: 0, y: 20, width: 240, height: 80}),
+    );
+    vi.spyOn(input, 'getBoundingClientRect').mockReturnValue(
+      DOMRect.fromRect({x: 0, y: 104, width: 240, height: 32}),
+    );
+    await settle(latest(), [benOrtiz, benitaRuiz, benShah, bennettCole]);
+    expect(listbox.getAttribute('style') ?? '').toContain('80px');
+
+    await type(input, '');
+    expect(listbox.getAttribute('style') ?? '').not.toContain('80px');
+  });
 });
