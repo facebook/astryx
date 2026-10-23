@@ -490,6 +490,14 @@ const OPPOSITES = {
   out: 'in',
 };
 
+/**
+ * A second id word that only sizes, shapes, or numbers the first: a number
+ * or dimension (`2`, `3x3`), or one of a few style words. The icon then
+ * still draws what its first word names.
+ */
+const QUALIFIER_RE =
+  /^(?:\d+(?:x\d+)?|circle|square|small|big|large|alt|horizontal|vertical)$/u;
+
 /** How many icons one definition is suggested at most. */
 export const SUGGESTIONS_PER_DEFINITION = 3;
 
@@ -499,7 +507,8 @@ export const SUGGESTIONS_PER_DEFINITION = 3;
  * gives the name as another name, ids that start with the name (`video` →
  * `video-camera`, never `close` → `panel-left-close`), an id that is one of
  * its words (`delete` → `trash`), another name that is one of its words, and
- * two-word ids that start with a one-word word. An icon `map` already names
+ * two-word ids that are a one-word word sized, shaped, or numbered
+ * (`grid-2x2`). An icon `map` already names
  * for another definition, or whose id is another definition's name, is left
  * out: it has a meaning of its own. Never a negated form or the opposite
  * direction, and never a guess from parts of words.
@@ -606,17 +615,20 @@ export function suggestedIcons(set, doc) {
       if (icon.other.includes(id)) add(icon.id, doc.words[index]);
     }
   }
-  // 6. Last, two-word ids that start with a one-word word exactly
-  //    (`columns` → `columns-3`), best fit first, never a negated form. The
-  //    word is matched as written: a plural here often names another thing
-  //    (`squares-2x2` is a grid, not the square of `stop`).
+  // 6. Last, two-word ids that are a one-word word with only a size, shape,
+  //    or number after it (`columns` → `columns-3`, `plus` → `plus-circle`,
+  //    `grid` → `grid-2x2`), best fit first. Any other second word names
+  //    another thing (`card-sim`, `fast-forward`, `hand-coins`), so it is
+  //    never suggested from a word alone.
   for (const word of doc.words) {
     if (!/^[a-z]{3,}$/u.test(word)) continue;
     ranked(
       icons.filter(
         icon =>
-          icon.words.length === 2 &&
+          icon.raw.length === 2 &&
           icon.raw[0] === word &&
+          icon.raw[1] !== word &&
+          QUALIFIER_RE.test(icon.raw[1]) &&
           !negated(icon.raw.slice(1)),
       ),
     ).forEach(icon => add(icon.id, word));

@@ -27,6 +27,7 @@ import {
 } from '../../test-utils/icon-set-fixture.mjs';
 import {ICON_NAMES} from '../../authoring/doctypes/icon-set/icon-names.mjs';
 import {rankIcons} from './icon-ranking.mjs';
+import {astryxIconDefinitions} from './icon-definition-discovery.mjs';
 import {discoverIconSetDirectory} from './icon-set-discovery.mjs';
 
 /** The fixture package's one set, as discovery reads it. */
@@ -973,5 +974,45 @@ describe('suggestions join a plural only to its singular', () => {
     expect(suggest(['tool-case'], {name: 'wrench', words: ['tools']})).toEqual(
       [],
     );
+  });
+});
+
+describe('suggestions from a definition word never bridge to another meaning', () => {
+  const definitions = new Map(
+    astryxIconDefinitions().definitions.map(({doc}) => [doc.name, doc]),
+  );
+  /** @param {string} name @param {string[]} ids */
+  const suggest = (name, ids) =>
+    suggestedIcons(
+      {data: {icons: ids.map(id => ({id, words: id.split('-')})), map: {}}},
+      /** @type {any} */ (definitions.get(name)),
+    ).map(each => each.icon);
+
+  it.each([
+    ['creditCard', 'card-sim'],
+    ['bolt', 'fast-forward'],
+    ['archive', 'store'],
+    ['mobile', 'device-tablet'],
+    ['raiseHand', 'stop-circle'],
+    ['star', 'bookmark-square'],
+    ['database', 'table-cells'],
+    ['redo', 'forward'],
+    ['activity', 'monitor'],
+    ['stop', 'square-square'],
+    ['moreHorizontal', 'ellipsis-vertical'],
+  ])('%s never suggests %s', (name, id) => {
+    expect(suggest(name, [id])).toEqual([]);
+  });
+
+  it('still suggests a word with only a size, shape, or number after it', () => {
+    expect(suggest('gridView', ['grid-2x2'])).toEqual(['grid-2x2']);
+    expect(suggest('viewColumns', ['columns-3'])).toEqual(['columns-3']);
+    expect(suggest('add', ['plus-circle'])).toEqual(['plus-circle']);
+  });
+
+  it('finds the glyph a library names in two words through the definition’s words', () => {
+    expect(suggest('raiseHand', ['hand-raised'])).toEqual(['hand-raised']);
+    expect(suggest('location', ['map-pin'])).toEqual(['map-pin']);
+    expect(suggest('textCase', ['case-sensitive'])).toEqual(['case-sensitive']);
   });
 });
