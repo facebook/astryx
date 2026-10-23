@@ -4,8 +4,10 @@ import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
+import {renderComputerAgentText} from './computer-agent-text.mjs';
 import {
   generateCompressedIndex,
+  projectHasBuiltCheck,
   detectStylingSystem,
   getXdsVersion,
   installAgentDocs,
@@ -94,6 +96,65 @@ describe('generateCompressedIndex', () => {
     expect(result).toContain('<!-- ASTRYX:START -->');
     expect(result).toContain('<!-- ASTRYX:END -->');
   });
+
+  it('tells agents to check a build with doctor --built; the computer-level skill does not', () => {
+    const line =
+      "Before you deliver a build, run `astryx doctor --built <dir>`; don't deliver it if it fails.";
+    expect(generateCompressedIndex('0.7.4', {builtCheck: true})).toContain(line);
+    expect(generateCompressedIndex('0.7.4')).not.toContain('doctor --built');
+    expect(renderComputerAgentText({command: 'astryx'})).not.toContain(
+      'doctor --built',
+    );
+  });
+
+  describe('projectHasBuiltCheck reads the CLI the project installs', () => {
+    /**
+     * @param {string | null} cliVersion the installed CLI, or none
+     * @param {{workspace?: boolean}} [options] install it at a workspace root
+     */
+    const project = (cliVersion, {workspace = false} = {}) => {
+      const root = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-built-check-'));
+      const app = workspace ? path.join(root, 'apps', 'web') : root;
+      fs.mkdirSync(app, {recursive: true});
+      if (workspace) {
+        fs.writeFileSync(
+          path.join(root, 'package.json'),
+          JSON.stringify({name: 'repo', private: true, workspaces: ['apps/*'], devDependencies: {'@astryxdesign/cli': cliVersion ?? '0.7.3'}}),
+        );
+      }
+      fs.writeFileSync(
+        path.join(app, 'package.json'),
+        JSON.stringify({name: 'web', dependencies: {'@astryxdesign/core': '0.7.4'}}),
+      );
+      if (cliVersion) {
+        const cliDir = path.join(root, 'node_modules', '@astryxdesign', 'cli');
+        fs.mkdirSync(cliDir, {recursive: true});
+        fs.writeFileSync(
+          path.join(cliDir, 'package.json'),
+          JSON.stringify({name: '@astryxdesign/cli', version: cliVersion}),
+        );
+      }
+      return {root, app};
+    };
+    it.each([
+      ['an installed CLI 0.7.4', '0.7.4', {}, true],
+      ['an installed CLI 0.8.0', '0.8.0', {}, true],
+      ['an installed CLI 0.7.3', '0.7.3', {}, false],
+      ['an installed 0.7.4 canary', '0.7.4-canary.b25f95e', {}, false],
+      ['no installed CLI (before install, or Core only)', null, {}, false],
+      ['a workspace root that installs CLI 0.7.3', '0.7.3', {workspace: true}, false],
+      ['a workspace root that installs CLI 0.7.4', '0.7.4', {workspace: true}, true],
+    ])('%s', (_label, cliVersion, options, expected) => {
+      const {root, app} = project(cliVersion, options);
+      try {
+        expect(projectHasBuiltCheck(app)).toBe(expected);
+      } finally {
+        fs.rmSync(root, {recursive: true, force: true});
+      }
+    });
+  });
+
+
 
   it('includes theme nudge rule', () => {
     const result = generateCompressedIndex('1.0.0');
