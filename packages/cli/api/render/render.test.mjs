@@ -146,16 +146,24 @@ describe('render(): page to one HTML file', () => {
     );
   });
 
-  it('refuses to replace a page without --overwrite', async () => {
-    await render('page.html', {cwd: dir, reverse: true, out: 'twice/page.tsx', overwrite: true});
-    expect(
-      await codeOf(() => render('page.html', {cwd: dir, reverse: true, out: 'twice/page.tsx'})),
-    ).toBe('ERR_FILE_EXISTS');
+  it('refuses to replace a page without --overwrite, and never adds neighbours to a folder that exists', async () => {
+    const {sourceBlock} = await import('../../foundation/render/source-block.mjs');
+    put('alone-page.html', `<body><p class="astryx-text">x</p>${sourceBlock('page.tsx', [{path: 'page.tsx', bytes: Buffer.from('export default () => null;\n')}])}</body>`);
+    await render('alone-page.html', {cwd: dir, reverse: true, out: 'twice/page.tsx'});
+    expect(await codeOf(() => render('alone-page.html', {cwd: dir, reverse: true, out: 'twice/page.tsx'}))).toBe(
+      'ERR_FILE_EXISTS',
+    );
     const again = /** @type {any} */ (
-      await render('page.html', {cwd: dir, reverse: true, out: 'twice/page.tsx', overwrite: true})
+      await render('alone-page.html', {cwd: dir, reverse: true, out: 'twice/page.tsx', overwrite: true})
     );
     expect(again.data.mode).toBe('embedded');
+    // A page with a neighbour (its image) comes back only into a new folder.
+    await render('page.html', {cwd: dir, reverse: true, out: 'twice-img/page.tsx'});
+    expect(
+      await codeOf(() => render('page.html', {cwd: dir, reverse: true, out: 'twice-img/page.tsx', overwrite: true})),
+    ).toBe('ERR_PATH_TRAVERSAL');
   });
+
 
   it('rebuilds a page from Astryx markup when there is no embedded source', async () => {
     put('stripped.html', html.replace(/<script type="application\/x-astryx-source">[\s\S]*?<\/script>/, ''));
@@ -369,14 +377,15 @@ describe('render(): every write stays inside the current folder', () => {
     );
     expect(fs.readFileSync(path.join(cwd, 'real.css'), 'utf8')).toBe('original\n');
     // A generated file and an ignored file are never replaced.
+    put('prot/alone.html', `<body><p class="astryx-text">x</p>${sourceBlock('page.tsx', [{path: 'page.tsx', bytes: Buffer.from('export default () => null;\n')}])}</body>`);
     put('prot/gen/page.tsx', '// @generated\nexport default () => null;\n');
-    expect(await codeOf(() => render('page.html', {cwd, reverse: true, out: 'gen/page.tsx', overwrite: true}))).toBe(
+    expect(await codeOf(() => render('alone.html', {cwd, reverse: true, out: 'gen/page.tsx', overwrite: true}))).toBe(
       'ERR_FILE_EXISTS',
     );
     expect(fs.readFileSync(path.join(cwd, 'gen/page.tsx'), 'utf8')).toContain('@generated');
     put('prot/.gitignore', 'ignored/\n');
     put('prot/ignored/page.tsx', 'mine\n');
-    expect(await codeOf(() => render('page.html', {cwd, reverse: true, out: 'ignored/page.tsx', overwrite: true}))).toBe(
+    expect(await codeOf(() => render('alone.html', {cwd, reverse: true, out: 'ignored/page.tsx', overwrite: true}))).toBe(
       'ERR_FILE_EXISTS',
     );
     expect(fs.readFileSync(path.join(cwd, 'ignored/page.tsx'), 'utf8')).toBe('mine\n');
@@ -440,12 +449,15 @@ describe('render(): every write stays inside the current folder', () => {
     const page = {path: 'app/page.tsx', bytes: Buffer.from("import {C} from './components/C';\nexport default () => <C />;\n")};
     const comp = {path: 'app/components/C.tsx', bytes: Buffer.from('export const C = () => null;\n')};
     put('atomic/page.html', `<body><p class="astryx-text">x</p>${sourceBlock('app/page.tsx', [page, comp])}</body>`);
-    put('atomic/out/components', 'a file where a folder must go\n');
-    expect(await codeOf(() => render('page.html', {cwd: path.join(dir, 'atomic'), reverse: true, out: 'out/page.tsx'}))).toBe(
-      'ERR_WRITE_FAILED',
-    );
-    expect(fs.readdirSync(path.join(dir, 'atomic/out'))).toEqual(['components']);
+    // The page's own name is taken by a folder, so the last step fails.
+    fs.mkdirSync(path.join(dir, 'atomic/out/page.tsx'), {recursive: true});
+    expect(
+      await codeOf(() => render('page.html', {cwd: path.join(dir, 'atomic'), reverse: true, out: 'out/page.tsx', overwrite: true})),
+    ).toBe('ERR_WRITE_FAILED');
+    expect(fs.readdirSync(path.join(dir, 'atomic/out'))).toEqual(['page.tsx']);
+    expect(fs.readdirSync(path.join(dir, 'atomic/out/page.tsx'))).toEqual([]);
   });
+
 
   it('restores an exact alias import to the file it names', async () => {
     const {sourceBlock} = await import('../../foundation/render/source-block.mjs');
@@ -456,23 +468,46 @@ describe('render(): every write stays inside the current folder', () => {
     expect(back.data.files).toEqual(['page.tsx', 'src/theme.ts']);
   });
 
-  it('names every protected file in one refusal', async () => {
-    const {sourceBlock} = await import('../../foundation/render/source-block.mjs');
-    const page = {path: 'page.tsx', bytes: Buffer.from("import './styles.css';\nexport default () => null;\n")};
-    put('two-prot/page.html', `<body><p class="astryx-text">x</p>${sourceBlock('page.tsx', [page, {path: 'styles.css', bytes: Buffer.from('.a{}')}])}</body>`);
-    put('two-prot/out/page.tsx', '// @generated\n');
-    put('two-prot/out/styles.css', '/* @generated */\n');
-    /** @type {any} */
-    let error;
-    try {
-      await render('page.html', {cwd: path.join(dir, 'two-prot'), reverse: true, out: 'out/page.tsx', overwrite: true});
-    } catch (e) {
-      error = e;
-    }
-    expect(error?.code).toBe('ERR_FILE_EXISTS');
-    expect(error.message).toContain('out/page.tsx');
-    expect(error.message).toContain('out/styles.css');
+  it('keeps a received title out of the rebuilt code', async () => {
+    put('evil-title.html', '<html><head><title>x\rprocess.exit(7)\u2028//</title></head><body><div class="astryx-stack"><p class="astryx-text">Hi</p></div></body></html>');
+    await render('evil-title.html', {cwd: dir, reverse: true, out: 'evil-title/page.tsx'});
+    const first = fs.readFileSync(path.join(dir, 'evil-title/page.tsx'), 'utf8').split(/\r\n|\r|\n|\u2028|\u2029/)[0];
+    expect(first).toContain('process.exit(7)');
+    expect(first.startsWith('//')).toBe(true);
   });
+
+  it('never adds a neighbour to an existing folder, a project root included', async () => {
+    const {sourceBlock} = await import('../../foundation/render/source-block.mjs');
+    put('rooted/package.json', '{"name":"rooted","private":true}');
+    for (const name of ['instrumentation.ts', 'middleware.ts', 'nodemon.json']) {
+      const spec = `./${name.replace(/\.ts$/, '')}`;
+      const page = {path: 'page.tsx', bytes: Buffer.from(`import x from '${spec}';\nexport default () => null;\n`)};
+      put('rooted/page.html', `<body><p class="astryx-text">x</p>${sourceBlock('page.tsx', [page, {path: name, bytes: Buffer.from('{}')}])}</body>`);
+      expect(
+        await codeOf(() => render('page.html', {cwd: path.join(dir, 'rooted'), reverse: true, out: 'page.tsx', overwrite: true})),
+      ).toMatch(/ERR_PATH_TRAVERSAL|ERR_RENDER_SOURCE_DAMAGED/);
+      expect(fs.existsSync(path.join(dir, 'rooted', name))).toBe(false);
+      expect(fs.existsSync(path.join(dir, 'rooted/page.tsx'))).toBe(false);
+    }
+    // The default name comes from the file given, never from inside it.
+    put('rooted/shared.html', `<body><p class="astryx-text">x</p>${sourceBlock('instrumentation.ts', [{path: 'instrumentation.ts', bytes: Buffer.from('export function register() {}\n')}])}</body>`);
+    const back = /** @type {any} */ (await render('shared.html', {cwd: path.join(dir, 'rooted'), reverse: true}));
+    expect(back.data.output).toBe('shared.ts');
+  });
+
+  it('replaces an existing output only when a render wrote it, and never an ignored one', async () => {
+    put('fwd/page.tsx', PAGE);
+    fs.copyFileSync(path.join(dir, 'dot.png'), path.join(dir, 'fwd/dot.png'));
+    put('fwd/mine.html', '<p>hand-written</p>\n');
+    const cwd = path.join(dir, 'fwd');
+    expect(await codeOf(() => render('page.tsx', {cwd, out: 'mine.html'}))).toBe('ERR_FILE_EXISTS');
+    expect(fs.readFileSync(path.join(cwd, 'mine.html'), 'utf8')).toBe('<p>hand-written</p>\n');
+    await render('page.tsx', {cwd});
+    const again = /** @type {any} */ (await render('page.tsx', {cwd}));
+    expect(again.type).toBe('render.page');
+    put('fwd/.gitignore', 'page.html\n');
+    expect(await codeOf(() => render('page.tsx', {cwd}))).toBe('ERR_FILE_EXISTS');
+  }, 60_000);
 
   it('refuses a received file that lists one path twice', async () => {
     const {sourceBlock} = await import('../../foundation/render/source-block.mjs');
@@ -595,24 +630,22 @@ describe('render --reverse: a received file may carry only what a render embeds'
     expect(fs.existsSync(path.join(dir, 'vite.config.ts'))).toBe(false);
   });
 
-  it('names every existing file in ERR_FILE_EXISTS and writes none of them', async () => {
+  it('refuses neighbours into a folder that already exists, naming them, and writes nothing', async () => {
     await crafted('crafted-exists.html', [
       {path: 'page.tsx', text: "import './styles.css';\nexport default () => null;\n"},
       {path: 'styles.css', text: '.a{}\n'},
     ]);
-    put('exists/page.tsx', 'original page\n');
-    put('exists/styles.css', 'original css\n');
+    put('exists/keep.txt', 'existing\n');
     /** @type {any} */
     let error;
     try {
-      await render('crafted-exists.html', {cwd: dir, reverse: true, out: 'exists/page.tsx'});
+      await render('crafted-exists.html', {cwd: dir, reverse: true, out: 'exists/page.tsx', overwrite: true});
     } catch (e) {
       error = e;
     }
-    expect(error.code).toBe('ERR_FILE_EXISTS');
-    expect(error.message).toContain('exists/page.tsx');
+    expect(error.code).toBe('ERR_PATH_TRAVERSAL');
     expect(error.message).toContain('exists/styles.css');
-    expect(fs.readFileSync(path.join(dir, 'exists/page.tsx'), 'utf8')).toBe('original page\n');
+    expect(fs.readdirSync(path.join(dir, 'exists'))).toEqual(['keep.txt']);
   });
 
   it('never embeds a configuration file the page imports, and says so', async () => {

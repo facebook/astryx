@@ -101,10 +101,8 @@ function confined(file, cwd, what) {
  * metadata; spec:AST-040 FR2), even with --overwrite.
  * @param {string[]} files absolute
  * @param {string} cwd
- * @param {{output?: boolean}} [options] `output`: the files are rendered
- *   HTML, which may replace an ignored file (build output usually is one)
  */
-function refuseProtected(files, cwd, {output = false} = {}) {
+function refuseProtected(files, cwd) {
   for (const file of files) {
     let current = cwd;
     for (const part of path.relative(cwd, file).split(path.sep)) {
@@ -138,9 +136,7 @@ function refuseProtected(files, cwd, {output = false} = {}) {
     );
   }
   const blocked = existing.flatMap(file => {
-    const protection = resolver
-      .classify(file)
-      .find(item => !(output && item.reason === 'ignored'));
+    const protection = resolver.classify(file)[0];
     return protection ? [`${shown(cwd, file)} (${protection.declaration})`] : [];
   });
   if (blocked.length > 0) {
@@ -256,7 +252,19 @@ export async function renderToFile({cwd, input, output, title}) {
   } catch (e) {
     throw asAstryxError(e);
   }
-  refuseProtected([output], cwd, {output: true});
+  refuseProtected([output], cwd);
+  // An existing file is replaced only when a render wrote it.
+  if (
+    fs.existsSync(output) &&
+    fs.statSync(output).isFile() &&
+    !/<meta name="generator" content="Astryx[ "]/.test(fs.readFileSync(output, 'utf8').slice(0, 4096))
+  ) {
+    throw new AstryxError(
+      `${shown(cwd, output)} already exists and was not written by a render, so it is not replaced; nothing was written. Choose another --out.`,
+      [],
+      ERROR_CODES.ERR_FILE_EXISTS,
+    );
+  }
   writeOutput(output, page.html, cwd);
   return {
     input: shown(cwd, input),
@@ -312,7 +320,14 @@ export function reverseToFile({cwd, input, output, overwrite}) {
   if (block.found) {
     const {source} = block;
     // The entry name comes from the file, so only its base name is used.
-    const requested = output ?? path.join(path.dirname(input), path.basename(source.entry));
+    // The default name comes from the file you were given, never from inside
+    // it: `page.html` comes back as `page.tsx` (with the page's extension).
+    const requested =
+      output ??
+      path.join(
+        path.dirname(input),
+        `${path.basename(input).replace(/\.[^.]+$/, '')}${path.posix.extname(source.files[0].path)}`,
+      );
     // A file someone sends is untrusted: it may carry only what a render
     // embeds (the page, and the stylesheets, JSON and images it imports).
     source.files.forEach((f, i) => {
@@ -353,21 +368,17 @@ export function reverseToFile({cwd, input, output, overwrite}) {
     // finds it from the page's new folder, so every relative import still
     // resolves wherever the page lands; a file reached through an alias goes
     // where this project's alias points. Every file but the page must land
-    // inside the page's own folder, or inside a folder this restore creates:
-    // a received file never adds a file beside existing project files
-    // elsewhere (a server hook at the project root, a middleware module).
+    // in a folder this restore creates: a received file never adds a file to
+    // a folder that already exists (a server hook at the project root, a
+    // middleware module), so a page with neighbours comes back into a new
+    // folder.
     const entryDir = path.posix.dirname(source.files[0].path);
     const anchor = path.dirname(requested);
     /** @param {string} p */
     const placeFrom = p => path.resolve(anchor, path.posix.relative(entryDir, p));
-    // The folder everything must land in: the page's folder when it exists,
-    // else the topmost folder on its way that this restore creates.
-    let home = anchor;
-    while (!fs.existsSync(path.dirname(home)) && path.dirname(home) !== home) home = path.dirname(home);
-    const within = (/** @type {string} */ file) => {
-      const rel = path.relative(home, file);
-      return rel !== '' && !rel.startsWith('..') && !path.isAbsolute(rel);
-    };
+    // A file beside the page or elsewhere goes only into a folder this
+    // restore creates: never into a folder that already exists.
+    const within = (/** @type {string} */ file) => !fs.existsSync(path.dirname(file));
     const target = path.join(anchor, path.basename(requested));
     /** @type {{file: string, bytes: Buffer}[]} */
     const writes = [];
@@ -390,7 +401,7 @@ export function reverseToFile({cwd, input, output, overwrite}) {
     if (outside.length > 0) {
       const top = entryDir === '.' ? '' : `${entryDir}/`;
       throw new AstryxError(
-        `${shown(cwd, input)} would add ${outside.map(file => shown(cwd, file)).join(', ')} outside the page's own folder (${shown(cwd, home) || '.'}); nothing was written. A received page only writes inside its folder, or inside a new folder: restore it into one, such as --out restored/${top}${path.basename(requested)}.`,
+        `${shown(cwd, input)} would add ${outside.map(file => shown(cwd, file)).join(', ')} to a folder that already exists; nothing was written. A received page writes the files it imports only into folders the restore creates: restore it into a new folder, such as --out restored/${top}${path.basename(requested)}.`,
         [{name: `--out restored/${top}${path.basename(requested)}`, reason: 'restore the page and the files it imports into a new folder, keeping their layout'}],
         ERROR_CODES.ERR_PATH_TRAVERSAL,
       );

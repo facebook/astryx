@@ -84,6 +84,19 @@ const jsxText = s => s.replace(/[{}<>]/g, c => `{'${c}'}`);
 const jsxAttr = s => (/["\\\n\r{}]/.test(s) ? `{${JSON.stringify(s)}}` : `"${s}"`);
 
 /**
+ * Text safe inside a `//` comment: every control character and line or
+ * paragraph separator becomes a space, so nothing after it can become code.
+ * @param {string} s
+ */
+const oneLine = s =>
+  [...s]
+    .map(c => {
+      const n = /** @type {number} */ (c.codePointAt(0));
+      return n < 32 || (n >= 127 && n <= 159) || n === 0x2028 || n === 0x2029 ? ' ' : c;
+    })
+    .join('');
+
+/**
  * Rebuild a page module from Astryx markup.
  * @param {string} html
  * @param {string} fromDir where to find the installed packages
@@ -231,7 +244,7 @@ export function rebuildPage(html, fromDir) {
     .map(([mod, names]) => `import {${[...names].sort().join(', ')}} from '${mod}';`);
   const title = decode(textOf(find(doc, 'title') ?? {text: ''})).trim();
   const source = [
-    `// Rebuilt by astryx experimental render --reverse from rendered markup${title ? `: ${title.replace(/\n/g, ' ')}` : ''}.`,
+    `// Rebuilt by astryx experimental render --reverse from rendered markup${title ? `: ${oneLine(title)}` : ''}.`,
     '// Text and layout come from the markup; styling, state and behavior do not,',
     '// so review it before use.',
     '',
