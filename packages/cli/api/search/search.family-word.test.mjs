@@ -34,6 +34,17 @@ describe('a family word lists its first members', () => {
   });
 });
 
+describe('a family word keeps its members ahead of passing doc sections', () => {
+  it('`selector` lists SelectorOption before any doc section', async () => {
+    const {results} = (await search('selector')).data;
+    const member = results.findIndex(r => r.name === 'SelectorOption');
+    const section = results.findIndex(r => r.domain === 'doc');
+    expect(member).toBeGreaterThan(-1);
+    expect(member).toBeLessThan(5);
+    if (section !== -1) expect(section).toBeGreaterThan(member);
+  });
+});
+
 describe("an integration's family (cold start)", () => {
   /** @type {string} */
   let dir;
