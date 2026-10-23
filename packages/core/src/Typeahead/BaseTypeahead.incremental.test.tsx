@@ -514,7 +514,7 @@ describe('BaseTypeahead incremental results (spec:AST-092)', () => {
     const {source, latest} = createPendingSource({
       ben: [benOrtiz, benitaRuiz],
     });
-    source.bootstrap = () =>
+    source.bootstrap = async () =>
       new Promise<SearchableItem[]>(resolve => {
         finishBootstrap = resolve;
       });

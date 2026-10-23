@@ -421,9 +421,22 @@ const itemSizeStyles = stylex.create({
 /** The result popup's maximum height in CSS pixels (`styles.dropdown`). */
 const DROPDOWN_MAX_HEIGHT = 300;
 
-/** Rows in the order the popup displays them: ungrouped first, then groups. */
-function displayOrder<T extends SearchableItem>(list: T[]): T[] {
-  return groupItems(list, {ungroupedFirst: true}).flatMap(group => group.items);
+/**
+ * Rows in the order the popup displays them: ungrouped source rows, then each
+ * group, then the trailing entries derived from the typed text (Tokenizer's
+ * create row), which always follow the rows (spec:AST-092 FR1).
+ */
+function displayOrder<T extends SearchableItem>(
+  list: T[],
+  queryEntryCount = 0,
+): T[] {
+  const end = list.length - queryEntryCount;
+  return [
+    ...groupItems(list.slice(0, end), {ungroupedFirst: true}).flatMap(
+      group => group.items,
+    ),
+    ...list.slice(end),
+  ];
 }
 
 /**
@@ -546,9 +559,6 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<T[]>([]);
-  // Highlight indexes count rows in displayed order (ungrouped first, then
-  // groups), which is how the popup renders them.
-  const displayedResults = useMemo(() => displayOrder(results), [results]);
 
   // `action` is declared on `SearchableItem` for the grid-adopting hosts;
   // this panel has not adopted it, so it renders the item without the
@@ -568,10 +578,20 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // highlighted-row scroll runs for a new list but not when a later list for
   // the same query appends rows below (spec:AST-092 FR6).
   const [listKey, setListKey] = useState(0);
-  const replaceResults = useCallback((next: T[]) => {
+  // How many trailing rows are entries derived from the typed text rather
+  // than source results; they display after every group.
+  const [queryEntryCount, setQueryEntryCount] = useState(0);
+  const replaceResults = useCallback((next: T[], entryCount = 0) => {
     setResults(next);
+    setQueryEntryCount(entryCount);
     setListKey(key => key + 1);
   }, []);
+  // Highlight indexes count rows in displayed order (ungrouped first, then
+  // groups), which is how the popup renders them.
+  const displayedResults = useMemo(
+    () => displayOrder(results, queryEntryCount),
+    [results, queryEntryCount],
+  );
   // The popup's listbox, measured when a later list arrives so the appended
   // rows scroll instead of moving the shown rows or flipping the popup to
   // the other side of the field (spec:AST-092 FR6).
@@ -813,6 +833,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       // to React for them. Null until the query's first non-empty list.
       let shownRows: T[] | null = null;
       let shownState: T[] | null = null;
+      let shownEntryCount = 0;
 
       const showList = (list: T[], isFinal: boolean): T[] => {
         const fetched = list.slice(0, maxMenuItems);
@@ -832,28 +853,31 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         // Entries derived from the typed text (Tokenizer's create row) wait
         // for the query to settle: before then a pending server result may
         // still show the value they would offer to create.
-        const shown = isFinal
-          ? [...fetched, ...(__queryEntries?.(searchQuery, fetched) ?? [])]
-          : fetched;
+        const entries = isFinal
+          ? (__queryEntries?.(searchQuery, fetched) ?? [])
+          : [];
+        const shown = [...fetched, ...entries];
         resultsGenRef.current = gen;
         const firstRow = shown.length > 0 ? 0 : -1;
         const previous = shownState;
+        const previousEntryCount = shownEntryCount;
         if (previous == null) {
           setHeldHeight(null);
-          replaceResults(shown);
+          replaceResults(shown, entries.length);
           setHighlightedIndex(firstRow);
         } else {
           holdPopupInPlace();
-          if (startsWithRows(displayOrder(shown), displayOrder(previous))) {
+          const previousOrder = displayOrder(previous, previousEntryCount);
+          const nextOrder = displayOrder(shown, entries.length);
+          if (startsWithRows(nextOrder, previousOrder)) {
             setResults(shown);
+            setQueryEntryCount(entries.length);
           } else {
-            replaceResults(shown);
+            replaceResults(shown, entries.length);
           }
           // Within one query only this function sets the rows, so the index
           // the updater receives points into `previous`: the highlighted item
           // keeps its highlight wherever it now sits (spec:AST-092 FR6).
-          const previousOrder = displayOrder(previous);
-          const nextOrder = displayOrder(shown);
           setHighlightedIndex(index => {
             const id = previousOrder[index]?.id;
             const kept =
@@ -864,6 +888,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         if (fetched.length > 0) {
           shownRows = fetched;
           shownState = shown;
+          shownEntryCount = entries.length;
         }
         return shown;
       };
@@ -1027,7 +1052,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         // the text itself. `hasSearched` stays false either way, so the menu
         // never reports "no results" for a query nobody looked for.
         const derived = __queryEntries?.(newQuery, []) ?? [];
-        replaceResults(derived);
+        replaceResults(derived, derived.length);
         setHeldHeight(null);
         setHighlightedIndex(derived.length > 0 ? 0 : -1);
         setHasSearched(false);
@@ -1508,7 +1533,10 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
                 );
               };
 
-              return groupItems(results, {ungroupedFirst: true}).map(group => {
+              const sourceEnd = results.length - queryEntryCount;
+              const grouped = groupItems(results.slice(0, sourceEnd), {
+                ungroupedFirst: true,
+              }).map(group => {
                 const options = group.items.map(renderOption);
                 if (group.heading == null) {
                   return options;
@@ -1527,6 +1555,12 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
                   </div>
                 );
               });
+              // Entries derived from the typed text follow every group
+              // (spec:AST-092 FR1).
+              return [
+                ...grouped,
+                ...results.slice(sourceEnd).map(renderOption),
+              ];
             })()
           )}
         </div>,
