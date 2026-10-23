@@ -138,7 +138,11 @@ function pagePlugin(filename) {
     visitor: {
       ImportDeclaration(/** @type {any} */ p) {
         const spec = /** @type {string} */ (p.node.source.value);
-        const bare = spec.split('?')[0];
+        const raw = spec.split('?')[0];
+        // A stylesheet, image or JSON file imported through a project alias
+        // (`@/styles/site.css`) resolves the way modules do.
+        const bare =
+          isAliased(raw) && (/\.(css|scss|sass|less|json)$/i.test(raw) || isAssetPath(raw)) ? resolveAlias(raw) : raw;
         if (!bare.startsWith('.') && !path.isAbsolute(bare) && !isAliased(bare)) {
           packages.add(
             bare.startsWith('@')
@@ -168,7 +172,9 @@ function pagePlugin(filename) {
         if (/\.css$/i.test(bare)) {
           if (bare.startsWith('.') || path.isAbsolute(bare)) {
             const file = path.resolve(dir, bare);
-            if (/\.css$/i.test(bare) && fs.existsSync(file)) {
+            // A stylesheet two modules import is inlined once, where it was
+            // first imported, as bundlers do.
+            if (/\.css$/i.test(bare) && fs.existsSync(file) && !importedCss.some(c => c.file === file)) {
               importedCss.push({file, css: fs.readFileSync(file, 'utf8')});
               if (!localFiles.includes(file)) localFiles.push(file);
             }
@@ -326,6 +332,16 @@ const ALIASES = projectAliases();
 /** @param {string} spec whether a specifier goes through a project alias */
 const isAliased = spec =>
   Object.keys(ALIASES).some(key => (key.endsWith('/') ? spec.startsWith(key) : spec === key));
+
+/** @param {string} spec a specifier through a project alias, as an absolute path */
+const resolveAlias = spec => {
+  for (const [key, target] of Object.entries(ALIASES)) {
+    if (key.endsWith('/') ? spec.startsWith(key) : spec === key) {
+      return key.endsWith('/') ? target + spec.slice(key.length) : target;
+    }
+  }
+  return spec;
+};
 
 const plain = createJiti(entry, {fsCache: false, jsx: {runtime: 'automatic'}});
 

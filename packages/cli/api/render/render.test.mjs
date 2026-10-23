@@ -650,6 +650,43 @@ describe('render(): every write stays inside the current folder', () => {
     expect(broken.message).toContain('broken.css');
   }, 90_000);
 
+  it('resolves aliased stylesheets and images, inlines a shared sheet once in first-import order, and names a broken @import', async () => {
+    put('al/tsconfig.json', '{"compilerOptions": {"baseUrl": ".", "paths": {"@/*": ["./src/*"]}}}\n');
+    put('al/package.json', '{"name":"al","private":true}');
+    put('al/src/styles/site.css', '.site { color: red; }\n');
+    put('al/src/assets/logo.png', PNG);
+    put('al/src/page.tsx', "import '@/styles/site.css';\nimport logo from '@/assets/logo.png';\nexport default function Page() { return <p className=\"site\"><img src={logo} alt=\"\" />Hi</p>; }\n");
+    const r = /** @type {any} */ (await render('al/src/page.tsx', {cwd: dir}));
+    const html = fs.readFileSync(path.join(dir, 'al/src/page.html'), 'utf8');
+    expect(html).toContain('color: red');
+    expect(html).toContain('data:image/png;base64,');
+    expect(r.data.warnings.map((/** @type {any} */ w) => w.code)).not.toContain('missing-asset');
+    // One sheet shared by two modules, a third sheet between them.
+    put('order/shared.css', '.o { color: red; }\n');
+    put('order/middle.css', '.o { color: blue; }\n');
+    put('order/A.tsx', "import './shared.css';\nexport const A = () => null;\n");
+    put('order/B.tsx', "import './middle.css';\nimport './shared.css';\nexport const B = () => null;\n");
+    put('order/page.tsx', "import {A} from './A';\nimport {B} from './B';\nexport default function Page() { return <p className=\"o\"><A /><B />Hi</p>; }\n");
+    await render('order/page.tsx', {cwd: dir});
+    const orderHtml = fs.readFileSync(path.join(dir, 'order/page.html'), 'utf8');
+    expect(orderHtml.match(/color: red/g)).toHaveLength(1);
+    expect(orderHtml.indexOf('color: red')).toBeLessThan(orderHtml.indexOf('color: blue'));
+    // A broken @import target: the same documented code, naming both files.
+    put('bad-imp/inner.css', '.x { color: red;\n');
+    put('bad-imp/outer.css', "@import './inner.css';\n.y { color: blue; }\n");
+    put('bad-imp/page.tsx', "import './outer.css';\nexport default function Page() { return <p className=\"x y\">Hi</p>; }\n");
+    /** @type {any} */
+    let error;
+    try {
+      await render('bad-imp/page.tsx', {cwd: dir});
+    } catch (e) {
+      error = e;
+    }
+    expect(error?.code).toBe('ERR_RENDER_COMPILE');
+    expect(error.message).toContain('inner.css');
+    expect(error.message).toContain('outer.css');
+  }, 90_000);
+
   it('refuses a carried "image" whose bytes are not one', async () => {
     const {sourceBlock} = await import('../../foundation/render/source-block.mjs');
     put('fake-img.html', `<body><p class="astryx-text">x</p>${sourceBlock('page.tsx', [{path: 'page.tsx', bytes: Buffer.from('export default () => null;\n')}, {path: 'hook.png', bytes: Buffer.from('process.exit(1)\n')}])}</body>`);

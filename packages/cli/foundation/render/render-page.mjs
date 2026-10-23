@@ -210,8 +210,12 @@ function expandImports(file, css, ctx) {
     if (parsed.layer !== null) inner = `@layer${parsed.layer ? ` ${parsed.layer}` : ''}{${inner}}`;
     try {
       rule.replaceWith(postcss.parse(inner, {from}).nodes);
-    } catch {
-      rule.remove();
+    } catch (e) {
+      const reason = /** @type {any} */ (e)?.reason ?? (e instanceof Error ? e.message : String(e));
+      throw new RenderError(
+        'ERR_RENDER_COMPILE',
+        `${path.basename(from)}, imported by ${path.basename(file)}, is not valid CSS: ${reason}`,
+      );
     }
   });
   return root.toString();
@@ -467,7 +471,7 @@ export async function renderPage(entry, options = {}) {
         const own = expandImports(file, text, {warnings, carried: carriedCss, included, packageSheets});
         return inlineAssets(cutCss(own, used), 'css', {...ctx, dir: path.dirname(file)});
       } catch (e) {
-        if (e instanceof RenderAssetError) throw e;
+        if (e instanceof RenderAssetError || e instanceof RenderError) throw e;
         const reason = /** @type {any} */ (e)?.reason ?? (e instanceof Error ? e.message : String(e));
         throw new RenderError(
           'ERR_RENDER_COMPILE',
