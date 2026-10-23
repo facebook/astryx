@@ -3,8 +3,9 @@ import Foundation
 
 #if os(iOS) || os(macOS)
 /// One Astryx component in a tree a TypeScript core sends, by its `component` name.
-/// A name this binding does not know decodes as `unsupported`, so an older app
-/// keeps drawing the rest of a newer core's tree.
+/// A node this binding cannot read decodes as `unsupported`: an unknown component,
+/// or a known one with a value its enums lack or a required prop missing. An older
+/// app then keeps drawing the rest of a newer core's tree.
 public enum AstryxNode: Decodable, Equatable, Sendable {
   case button(ButtonNode)
   case card(CardNode)
@@ -41,20 +42,24 @@ public enum AstryxNode: Decodable, Equatable, Sendable {
   public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: Keys.self)
     let component = try container.decode(String.self, forKey: .component)
-    switch component {
-    case "Button": self = .button(try ButtonNode(from: decoder))
-    case "Card": self = .card(try CardNode(from: decoder))
-    case "Divider": self = .divider(try DividerNode(from: decoder))
-    case "Heading": self = .heading(try HeadingNode(from: decoder))
-    case "HStack": self = .hStack(try HStackNode(from: decoder))
-    case "ProgressBar": self = .progressBar(try ProgressBarNode(from: decoder))
-    case "Selector": self = .selector(try SelectorNode(from: decoder))
-    case "Switch": self = .`switch`(try SwitchNode(from: decoder))
-    case "Text": self = .text(try TextNode(from: decoder))
-    case "TextInput": self = .textInput(try TextInputNode(from: decoder))
-    case "VStack": self = .vStack(try VStackNode(from: decoder))
-    default:
-      self = .unsupported(component: component, key: try container.decode(String.self, forKey: .key))
+    let key = try container.decode(String.self, forKey: .key)
+    do {
+      switch component {
+      case "Button": self = .button(try ButtonNode(from: decoder))
+      case "Card": self = .card(try CardNode(from: decoder))
+      case "Divider": self = .divider(try DividerNode(from: decoder))
+      case "Heading": self = .heading(try HeadingNode(from: decoder))
+      case "HStack": self = .hStack(try HStackNode(from: decoder))
+      case "ProgressBar": self = .progressBar(try ProgressBarNode(from: decoder))
+      case "Selector": self = .selector(try SelectorNode(from: decoder))
+      case "Switch": self = .`switch`(try SwitchNode(from: decoder))
+      case "Text": self = .text(try TextNode(from: decoder))
+      case "TextInput": self = .textInput(try TextInputNode(from: decoder))
+      case "VStack": self = .vStack(try VStackNode(from: decoder))
+      default: self = .unsupported(component: component, key: key)
+      }
+    } catch {
+      self = .unsupported(component: component, key: key)
     }
   }
 }

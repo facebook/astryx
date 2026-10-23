@@ -149,12 +149,13 @@ public struct HStackProps {
   public var paddingBlock: HStackPaddingBlock?
   public var paddingBlockStart: HStackPaddingBlockStart?
   public var paddingBlockEnd: HStackPaddingBlockEnd?
+  public var isScrollable: Bool?
   public var hAlign: HStackHAlign?
   public var vAlign: HStackVAlign?
   public var justify: HStackJustify?
   public var align: HStackAlign?
   public var wrap: HStackWrap?
-  public init(gap: HStackGap? = nil, padding: HStackPadding? = nil, paddingInline: HStackPaddingInline? = nil, paddingInlineStart: HStackPaddingInlineStart? = nil, paddingInlineEnd: HStackPaddingInlineEnd? = nil, paddingBlock: HStackPaddingBlock? = nil, paddingBlockStart: HStackPaddingBlockStart? = nil, paddingBlockEnd: HStackPaddingBlockEnd? = nil, hAlign: HStackHAlign? = nil, vAlign: HStackVAlign? = nil, justify: HStackJustify? = nil, align: HStackAlign? = nil, wrap: HStackWrap? = nil, base: AstryxBaseProps = AstryxBaseProps()) {
+  public init(gap: HStackGap? = nil, padding: HStackPadding? = nil, paddingInline: HStackPaddingInline? = nil, paddingInlineStart: HStackPaddingInlineStart? = nil, paddingInlineEnd: HStackPaddingInlineEnd? = nil, paddingBlock: HStackPaddingBlock? = nil, paddingBlockStart: HStackPaddingBlockStart? = nil, paddingBlockEnd: HStackPaddingBlockEnd? = nil, isScrollable: Bool? = nil, hAlign: HStackHAlign? = nil, vAlign: HStackVAlign? = nil, justify: HStackJustify? = nil, align: HStackAlign? = nil, wrap: HStackWrap? = nil, base: AstryxBaseProps = AstryxBaseProps()) {
     self.gap = gap
     self.padding = padding
     self.paddingInline = paddingInline
@@ -163,6 +164,7 @@ public struct HStackProps {
     self.paddingBlock = paddingBlock
     self.paddingBlockStart = paddingBlockStart
     self.paddingBlockEnd = paddingBlockEnd
+    self.isScrollable = isScrollable
     self.hAlign = hAlign
     self.vAlign = vAlign
     self.justify = justify
@@ -181,6 +183,7 @@ public struct HStackNode: Decodable, Equatable, Sendable {
     public var paddingBlock: HStackPaddingBlock?
     public var paddingBlockStart: HStackPaddingBlockStart?
     public var paddingBlockEnd: HStackPaddingBlockEnd?
+    public var isScrollable: Bool?
     public var hAlign: HStackHAlign?
     public var vAlign: HStackVAlign?
     public var justify: HStackJustify?
@@ -207,6 +210,7 @@ public struct HStackNode: Decodable, Equatable, Sendable {
       paddingBlock: props.paddingBlock,
       paddingBlockStart: props.paddingBlockStart,
       paddingBlockEnd: props.paddingBlockEnd,
+      isScrollable: props.isScrollable,
       hAlign: props.hAlign,
       vAlign: props.vAlign,
       justify: props.justify,
@@ -230,12 +234,13 @@ public struct HStackProps {
   public var paddingBlock: HStackPaddingBlock?
   public var paddingBlockStart: HStackPaddingBlockStart?
   public var paddingBlockEnd: HStackPaddingBlockEnd?
+  public var isScrollable: Bool?
   public var hAlign: HStackHAlign?
   public var vAlign: HStackVAlign?
   public var justify: HStackJustify?
   public var align: HStackAlign?
   public var wrap: HStackWrap?
-  public init(gap: HStackGap? = nil, padding: HStackPadding? = nil, paddingInline: HStackPaddingInline? = nil, paddingInlineStart: HStackPaddingInlineStart? = nil, paddingInlineEnd: HStackPaddingInlineEnd? = nil, paddingBlock: HStackPaddingBlock? = nil, paddingBlockStart: HStackPaddingBlockStart? = nil, paddingBlockEnd: HStackPaddingBlockEnd? = nil, hAlign: HStackHAlign? = nil, vAlign: HStackVAlign? = nil, justify: HStackJustify? = nil, align: HStackAlign? = nil, wrap: HStackWrap? = nil, base: AstryxBaseProps = AstryxBaseProps()) {
+  public init(gap: HStackGap? = nil, padding: HStackPadding? = nil, paddingInline: HStackPaddingInline? = nil, paddingInlineStart: HStackPaddingInlineStart? = nil, paddingInlineEnd: HStackPaddingInlineEnd? = nil, paddingBlock: HStackPaddingBlock? = nil, paddingBlockStart: HStackPaddingBlockStart? = nil, paddingBlockEnd: HStackPaddingBlockEnd? = nil, isScrollable: Bool? = nil, hAlign: HStackHAlign? = nil, vAlign: HStackVAlign? = nil, justify: HStackJustify? = nil, align: HStackAlign? = nil, wrap: HStackWrap? = nil, base: AstryxBaseProps = AstryxBaseProps()) {
     self.gap = gap
     self.padding = padding
     self.paddingInline = paddingInline
@@ -244,6 +249,7 @@ public struct HStackProps {
     self.paddingBlock = paddingBlock
     self.paddingBlockStart = paddingBlockStart
     self.paddingBlockEnd = paddingBlockEnd
+    self.isScrollable = isScrollable
     self.hAlign = hAlign
     self.vAlign = vAlign
     self.justify = justify
@@ -262,6 +268,7 @@ public struct HStackNode: Decodable, Equatable, Sendable {
     public var paddingBlock: HStackPaddingBlock?
     public var paddingBlockStart: HStackPaddingBlockStart?
     public var paddingBlockEnd: HStackPaddingBlockEnd?
+    public var isScrollable: Bool?
     public var hAlign: HStackHAlign?
     public var vAlign: HStackVAlign?
     public var justify: HStackJustify?
@@ -288,6 +295,7 @@ public struct HStackNode: Decodable, Equatable, Sendable {
       paddingBlock: props.paddingBlock,
       paddingBlockStart: props.paddingBlockStart,
       paddingBlockEnd: props.paddingBlockEnd,
+      isScrollable: props.isScrollable,
       hAlign: props.hAlign,
       vAlign: props.vAlign,
       justify: props.justify,

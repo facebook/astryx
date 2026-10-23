@@ -149,12 +149,13 @@ public struct VStackProps {
   public var paddingBlock: VStackPaddingBlock?
   public var paddingBlockStart: VStackPaddingBlockStart?
   public var paddingBlockEnd: VStackPaddingBlockEnd?
+  public var isScrollable: Bool?
   public var hAlign: VStackHAlign?
   public var vAlign: VStackVAlign?
   public var justify: VStackJustify?
   public var align: VStackAlign?
   public var wrap: VStackWrap?
-  public init(gap: VStackGap? = nil, padding: VStackPadding? = nil, paddingInline: VStackPaddingInline? = nil, paddingInlineStart: VStackPaddingInlineStart? = nil, paddingInlineEnd: VStackPaddingInlineEnd? = nil, paddingBlock: VStackPaddingBlock? = nil, paddingBlockStart: VStackPaddingBlockStart? = nil, paddingBlockEnd: VStackPaddingBlockEnd? = nil, hAlign: VStackHAlign? = nil, vAlign: VStackVAlign? = nil, justify: VStackJustify? = nil, align: VStackAlign? = nil, wrap: VStackWrap? = nil, base: AstryxBaseProps = AstryxBaseProps()) {
+  public init(gap: VStackGap? = nil, padding: VStackPadding? = nil, paddingInline: VStackPaddingInline? = nil, paddingInlineStart: VStackPaddingInlineStart? = nil, paddingInlineEnd: VStackPaddingInlineEnd? = nil, paddingBlock: VStackPaddingBlock? = nil, paddingBlockStart: VStackPaddingBlockStart? = nil, paddingBlockEnd: VStackPaddingBlockEnd? = nil, isScrollable: Bool? = nil, hAlign: VStackHAlign? = nil, vAlign: VStackVAlign? = nil, justify: VStackJustify? = nil, align: VStackAlign? = nil, wrap: VStackWrap? = nil, base: AstryxBaseProps = AstryxBaseProps()) {
     self.gap = gap
     self.padding = padding
     self.paddingInline = paddingInline
@@ -163,6 +164,7 @@ public struct VStackProps {
     self.paddingBlock = paddingBlock
     self.paddingBlockStart = paddingBlockStart
     self.paddingBlockEnd = paddingBlockEnd
+    self.isScrollable = isScrollable
     self.hAlign = hAlign
     self.vAlign = vAlign
     self.justify = justify
@@ -181,6 +183,7 @@ public struct VStackNode: Decodable, Equatable, Sendable {
     public var paddingBlock: VStackPaddingBlock?
     public var paddingBlockStart: VStackPaddingBlockStart?
     public var paddingBlockEnd: VStackPaddingBlockEnd?
+    public var isScrollable: Bool?
     public var hAlign: VStackHAlign?
     public var vAlign: VStackVAlign?
     public var justify: VStackJustify?
@@ -207,6 +210,7 @@ public struct VStackNode: Decodable, Equatable, Sendable {
       paddingBlock: props.paddingBlock,
       paddingBlockStart: props.paddingBlockStart,
       paddingBlockEnd: props.paddingBlockEnd,
+      isScrollable: props.isScrollable,
       hAlign: props.hAlign,
       vAlign: props.vAlign,
       justify: props.justify,
@@ -230,12 +234,13 @@ public struct VStackProps {
   public var paddingBlock: VStackPaddingBlock?
   public var paddingBlockStart: VStackPaddingBlockStart?
   public var paddingBlockEnd: VStackPaddingBlockEnd?
+  public var isScrollable: Bool?
   public var hAlign: VStackHAlign?
   public var vAlign: VStackVAlign?
   public var justify: VStackJustify?
   public var align: VStackAlign?
   public var wrap: VStackWrap?
-  public init(gap: VStackGap? = nil, padding: VStackPadding? = nil, paddingInline: VStackPaddingInline? = nil, paddingInlineStart: VStackPaddingInlineStart? = nil, paddingInlineEnd: VStackPaddingInlineEnd? = nil, paddingBlock: VStackPaddingBlock? = nil, paddingBlockStart: VStackPaddingBlockStart? = nil, paddingBlockEnd: VStackPaddingBlockEnd? = nil, hAlign: VStackHAlign? = nil, vAlign: VStackVAlign? = nil, justify: VStackJustify? = nil, align: VStackAlign? = nil, wrap: VStackWrap? = nil, base: AstryxBaseProps = AstryxBaseProps()) {
+  public init(gap: VStackGap? = nil, padding: VStackPadding? = nil, paddingInline: VStackPaddingInline? = nil, paddingInlineStart: VStackPaddingInlineStart? = nil, paddingInlineEnd: VStackPaddingInlineEnd? = nil, paddingBlock: VStackPaddingBlock? = nil, paddingBlockStart: VStackPaddingBlockStart? = nil, paddingBlockEnd: VStackPaddingBlockEnd? = nil, isScrollable: Bool? = nil, hAlign: VStackHAlign? = nil, vAlign: VStackVAlign? = nil, justify: VStackJustify? = nil, align: VStackAlign? = nil, wrap: VStackWrap? = nil, base: AstryxBaseProps = AstryxBaseProps()) {
     self.gap = gap
     self.padding = padding
     self.paddingInline = paddingInline
@@ -244,6 +249,7 @@ public struct VStackProps {
     self.paddingBlock = paddingBlock
     self.paddingBlockStart = paddingBlockStart
     self.paddingBlockEnd = paddingBlockEnd
+    self.isScrollable = isScrollable
     self.hAlign = hAlign
     self.vAlign = vAlign
     self.justify = justify
@@ -262,6 +268,7 @@ public struct VStackNode: Decodable, Equatable, Sendable {
     public var paddingBlock: VStackPaddingBlock?
     public var paddingBlockStart: VStackPaddingBlockStart?
     public var paddingBlockEnd: VStackPaddingBlockEnd?
+    public var isScrollable: Bool?
     public var hAlign: VStackHAlign?
     public var vAlign: VStackVAlign?
     public var justify: VStackJustify?
@@ -288,6 +295,7 @@ public struct VStackNode: Decodable, Equatable, Sendable {
       paddingBlock: props.paddingBlock,
       paddingBlockStart: props.paddingBlockStart,
       paddingBlockEnd: props.paddingBlockEnd,
+      isScrollable: props.isScrollable,
       hAlign: props.hAlign,
       vAlign: props.vAlign,
       justify: props.justify,

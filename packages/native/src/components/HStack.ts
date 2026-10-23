@@ -9,7 +9,7 @@
  */
 
 import type {NativeAdditions} from '../contract/fromComponentDoc.js';
-import {STACK_SLOTS, STACK_WEB_ONLY} from './stackShared.js';
+import {STACK_SLOTS} from './stackShared.js';
 
 export const hStack: NativeAdditions = {
   name: 'HStack',
@@ -17,5 +17,4 @@ export const hStack: NativeAdditions = {
   doc: {file: 'Stack', component: 'HStack'},
   slots: STACK_SLOTS,
   sameMeaning: {children: "the component's content, as on the web"},
-  webOnly: STACK_WEB_ONLY,
 };
