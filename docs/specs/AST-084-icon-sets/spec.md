@@ -87,10 +87,11 @@ icon, and the CLI verifies it, writes the files, and checks the set.
     stable needs the owner's approval and a `[feat]` Changeset
     (`spec:AST-017/FR23`).
 
-  Without `experimental.iconSet`, help (apart from the `experimental` group
-  line), the manifest (apart from that group), the `astryx docs cli` listing
-  (apart from the `experimental` namespace and the experimental command and
-  function references), `astryx template`, `astryx discover`, and Doctor,
+  Without `experimental.iconSet`, help (apart from the marked `experimental`
+  group line), `astryx manifest` (apart from that group: its command, and its
+  `responseTypes` and `jsonSupported` entries), the `astryx docs cli`
+  listings (apart from the marked `experimental` namespace and the
+  experimental command and function references), `astryx template`, `astryx discover`, and Doctor,
   its `doctor integration` subcommands for an installed package included,
   give the output they give without this feature, whatever sets are
   installed, and so do `integration check` and `verify` for a package that

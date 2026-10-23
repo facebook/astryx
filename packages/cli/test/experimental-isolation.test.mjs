@@ -20,7 +20,10 @@
  * While main lacks the icon-set feature (before the feature lands), the
  * goldens are main's own output: regenerate them from a checkout of main
  * with `GOLDEN_CLI_BIN=<main>/packages/cli/clients/cli/bin/astryx.mjs
- * GOLDEN_CLI_ROOT=<main>/packages/cli vitest run -u` on this file. That runs
+ * GOLDEN_CLI_ROOT=<main>/packages/cli vitest run
+ * packages/cli/test/experimental-isolation.test.mjs --update`, run from this
+ * checkout. Name the file before `--update`: vitest 4 reads `-u <file>` as
+ * the value of `-u` and updates every suite. That runs
  * main's CLI in test projects created inside main's checkout, so main's CLI
  * and Core answer: a project inside this checkout would hand the run over to
  * this checkout's CLI, and the goldens would record this branch's own output.
@@ -30,7 +33,8 @@
  * stripped.
  *
  * Once the feature is on main, a branch with an intended change to stable
- * output runs `vitest run -u` on this file in the branch itself, then reviews
+ * output runs `vitest run packages/cli/test/experimental-isolation.test.mjs
+ * --update` in the branch itself, then reviews
  * the diff of `__golden__/no-icon-set/`: a diff that names an icon set, an
  * icon definition, or `experimental` is the leak this test exists to catch.
  */
@@ -48,7 +52,8 @@ import {writeIconSetProject} from '../test-utils/icon-set-fixture.mjs';
 const REPO_ROOT = path.resolve(CLI_ROOT, '..', '..');
 // Goldens come from the CLI without the feature: point these at a checkout of
 // main to rewrite them (`GOLDEN_CLI_BIN=<main>/packages/cli/clients/cli/bin/
-// astryx.mjs GOLDEN_CLI_ROOT=<main>/packages/cli vitest run -u` on this file).
+// astryx.mjs GOLDEN_CLI_ROOT=<main>/packages/cli vitest run
+// packages/cli/test/experimental-isolation.test.mjs --update`).
 const CLI_BIN =
   process.env.GOLDEN_CLI_BIN ??
   path.join(CLI_ROOT, 'clients', 'cli', 'bin', 'astryx.mjs');
@@ -960,7 +965,9 @@ export default {
 // Only while main lacks the feature: main's CLI refuses
 // `experimental.iconSet`, so regenerating from main skips these, which
 // compare with the goldens the project without icon sets wrote. Once the
-// feature is on main, `vitest run -u` in a branch runs them too.
+// feature is on main, `vitest run
+// packages/cli/test/experimental-isolation.test.mjs --update` in a branch
+// runs them too.
 describe.skipIf(REGENERATING)(
   'with an icon set installed and configured, search is unchanged',
   () => {
