@@ -296,6 +296,7 @@ describe('a flat topic that extends a placed guide by its route', () => {
       expect(validated.data.notes).toContainEqual({
         code: 'doc_section_unplaced',
         message: expect.stringContaining('"no-such-section"'),
+        next: true,
       });
       const docsCheck = await integrationDocConflicts(KIT, {cwd: tmpDir});
       expect(docsCheck.data.issues).toEqual([]);
@@ -361,6 +362,7 @@ describe('a route that holds no guide', () => {
       expect(validated.data.notes).toContainEqual({
         code: 'doc_target_not_found',
         message: expect.stringContaining('"authoring/no-such-guide"'),
+        next: true,
       });
       const docsCheck = await integrationDocConflicts(KIT, {cwd: tmpDir});
       expect(docsCheck.data.issues).toEqual([]);
@@ -604,6 +606,7 @@ describe('review follow-ups', () => {
       expect(validated.data.notes).toContainEqual({
         code: 'duplicate_guide_replacement',
         message: expect.stringContaining('"acme-b", is read'),
+        next: true,
       });
       const check = await integrationCheck({cwd: kitDir(), strict: true});
       expect(check.data.failed).toBe(false);
@@ -756,6 +759,7 @@ describe('third review follow-ups', () => {
       expect(validated.data.notes).toContainEqual({
         code: 'duplicate_guide_replacement',
         message: expect.stringContaining('"acme-b", is read'),
+        next: true,
       });
     },
     SLOW,
