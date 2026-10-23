@@ -7,8 +7,9 @@
  * @input Uses React, useAnnounceRenderedText
  * @output Exports AnnounceRenderedText (internal; not re-exported from
  *   hooks/index.ts, so it ships no public API without `spec:AST-002`)
- * @position Internal wrapper that lets a presentational component announce
- *   its own content; rendered by EmptyState around its message
+ * @position Internal client island that lets a presentational, server-safe
+ *   component announce its own content; rendered by EmptyState around its
+ *   message. On the server it only renders its `div`: effects never run there.
  */
 
 import {useRef, type HTMLAttributes} from 'react';
