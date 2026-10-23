@@ -160,6 +160,13 @@ export const doc = {
     {
       type: 'prose',
       text:
+        'upgrade does not scan installed dependencies or version-control folders at all, including through a symbolic link: ' +
+        'a symlinked `node_modules`, or a link whose target is inside one, is skipped. ' +
+        'Other symbolically linked folders are scanned so a change they need is reported, but nothing is written through them.',
+    },
+    {
+      type: 'prose',
+      text:
         'Rules work as they do in Git: a later rule wins, so `linguist-generated=false` or a `!` line in an ignore file ' +
         'returns a file to normal handling. A folder name such as `dist` or `generated` protects nothing by itself. ' +
         'If a protection file cannot be read or parsed, upgrade stops with ERR_CODEMOD_PROTECTION_SOURCE before it writes anything.',

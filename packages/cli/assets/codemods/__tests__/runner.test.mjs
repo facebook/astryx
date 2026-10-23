@@ -4,6 +4,7 @@ import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {runCodemods} from '../runner.mjs';
+import {findSourceFiles as findIntegrationSourceFiles} from '../run-codemod.mjs';
 
 let tmpDir;
 let originalCwd;
@@ -488,6 +489,88 @@ describe('findSourceFiles — scan boundaries (symlink + declared protection)', 
         reason: 'symlink',
       }),
     ]);
+  });
+
+  // A tree a symlinked dependency folder points at: a package store outside
+  // the project, holding a file the transform would change.
+  function seedStore() {
+    const store = path.join(tmpDir, 'store', 'node_modules', 'pkg');
+    fs.mkdirSync(store, {recursive: true});
+    fs.writeFileSync(path.join(store, 'index.ts'), 'const foo = 1;\n');
+    fs.mkdirSync(path.join(tmpDir, 'src'), {recursive: true});
+    fs.writeFileSync(path.join(tmpDir, 'src', 'real.ts'), 'const foo = 2;\n');
+    return store;
+  }
+
+  it('does not descend a symlinked node_modules', async () => {
+    const store = seedStore();
+    fs.symlinkSync(
+      path.dirname(store),
+      path.join(tmpDir, 'src', 'node_modules'),
+    );
+
+    const r = await runCodemods(manifests, {
+      apply: true,
+      path: './src',
+      root: tmpDir,
+      silent: true,
+    });
+
+    expect(r.writtenFiles.map(f => path.basename(f))).toEqual(['real.ts']);
+    expect(r.protectedFiles).toEqual([]);
+    expect(
+      findIntegrationSourceFiles(path.join(tmpDir, 'src')).map(f =>
+        path.relative(tmpDir, f),
+      ),
+    ).toEqual([path.join('src', 'real.ts')]);
+  });
+
+  it('does not descend a link whose target is inside a dependency tree', async () => {
+    const store = seedStore();
+    fs.symlinkSync(store, path.join(tmpDir, 'src', 'pkg'));
+
+    const r = await runCodemods(manifests, {
+      apply: true,
+      path: './src',
+      root: tmpDir,
+      silent: true,
+    });
+
+    expect(r.writtenFiles.map(f => path.basename(f))).toEqual(['real.ts']);
+    expect(r.protectedFiles).toEqual([]);
+    expect(
+      findIntegrationSourceFiles(path.join(tmpDir, 'src')).map(f =>
+        path.relative(tmpDir, f),
+      ),
+    ).toEqual([path.join('src', 'real.ts')]);
+  });
+
+  it('still descends ordinary symlinked directories in a project below a node_modules folder', async () => {
+    const project = path.join(tmpDir, 'node_modules', 'consumer');
+    const shared = path.join(project, 'shared');
+    fs.mkdirSync(path.join(project, 'src'), {recursive: true});
+    fs.mkdirSync(shared, {recursive: true});
+    fs.writeFileSync(path.join(shared, 'nested.ts'), 'const foo = 1;\n');
+    fs.symlinkSync(shared, path.join(project, 'src', 'linked'));
+
+    const r = await runCodemods(manifests, {
+      apply: true,
+      path: path.join(project, 'src'),
+      root: project,
+      silent: true,
+    });
+
+    expect(r.protectedFiles).toEqual([
+      expect.objectContaining({
+        file: 'src/linked/nested.ts',
+        reason: 'symlink',
+      }),
+    ]);
+    expect(
+      findIntegrationSourceFiles(path.join(project, 'src')).map(f =>
+        path.relative(project, f),
+      ),
+    ).toEqual([path.join('src', 'linked', 'nested.ts')]);
   });
 
   it('does not infer protection from generated-looking directory names', async () => {

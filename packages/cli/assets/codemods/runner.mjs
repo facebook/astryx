@@ -72,6 +72,42 @@ export function isIgnoredDirectory(root, fullPath, name) {
 }
 
 /**
+ * Whether a symbolic link to a directory leads into a tree the scan never
+ * descends. A link is followed like a directory, so its own name and position
+ * are checked as {@link isIgnoredDirectory} checks a directory. Its target is
+ * checked too: a link whose real path is inside an installed dependency or
+ * version-control metadata (such as a symlinked `node_modules`, or a link into
+ * a package store) is dependency content, not project source. Path segments
+ * the target shares with the scan root's real path are not considered, so a
+ * project that itself sits below such a folder is still scanned.
+ * @param {string} root scan root
+ * @param {string} fullPath the link's path
+ * @param {string} name the link's name
+ * @param {string} realTarget the link's resolved real path
+ * @returns {boolean}
+ */
+export function isIgnoredLinkedDirectory(root, fullPath, name, realTarget) {
+  if (isIgnoredDirectory(root, fullPath, name)) return true;
+  let realRoot = root;
+  try {
+    realRoot = fs.realpathSync(root);
+  } catch {
+    // An unreadable root has no descendants to compare against.
+  }
+  const rootParts = realRoot.split(path.sep);
+  const targetParts = realTarget.split(path.sep);
+  let shared = 0;
+  while (
+    shared < rootParts.length &&
+    shared < targetParts.length &&
+    rootParts[shared] === targetParts[shared]
+  ) {
+    shared++;
+  }
+  return targetParts.slice(shared).some(part => IGNORED_DIRS.has(part));
+}
+
+/**
  * Recursively find all source files in a directory.
  * @param {string} dir
  * @returns {string[]}
@@ -112,13 +148,22 @@ function findSourceFiles(dir) {
     for (const entry of entries) {
       const fullPath = path.join(currentDir, entry.name);
       // Symlinked files and descendants remain read-only candidates so a
-      // required change can be reported. Real-path ancestors prevent cycles.
+      // required change can be reported. Real-path ancestors prevent cycles,
+      // and a link into a dependency or VCS tree is not descended.
       if (entry.isSymbolicLink()) {
         try {
           const target = fs.statSync(fullPath);
           if (target.isFile() && extensions.has(path.extname(entry.name))) {
             results.push(fullPath);
-          } else if (target.isDirectory()) {
+          } else if (
+            target.isDirectory() &&
+            !isIgnoredLinkedDirectory(
+              dir,
+              fullPath,
+              entry.name,
+              fs.realpathSync(fullPath),
+            )
+          ) {
             walk(fullPath, nextAncestors);
           }
         } catch {

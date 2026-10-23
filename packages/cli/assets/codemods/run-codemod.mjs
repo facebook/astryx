@@ -35,6 +35,7 @@ import {
   fixDirectiveCorruption,
   validateOutput,
   isIgnoredDirectory,
+  isIgnoredLinkedDirectory,
 } from './runner.mjs';
 import {createFileProtectionResolver} from '../../foundation/fs/file-protection.mjs';
 
@@ -111,12 +112,23 @@ export function findSourceFiles(dir) {
     for (const entry of entries) {
       const fullPath = path.join(currentDir, entry.name);
       // Symlinked files and descendants remain read-only candidates so a
-      // required change can be reported. Real-path ancestors prevent cycles.
+      // required change can be reported. Real-path ancestors prevent cycles,
+      // and a link into a dependency or VCS tree is not descended.
       if (entry.isSymbolicLink()) {
         try {
           const target = fs.statSync(fullPath);
           if (target.isFile()) results.push(fullPath);
-          else if (target.isDirectory()) walk(fullPath, nextAncestors);
+          else if (
+            target.isDirectory() &&
+            !isIgnoredLinkedDirectory(
+              dir,
+              fullPath,
+              entry.name,
+              fs.realpathSync(fullPath),
+            )
+          ) {
+            walk(fullPath, nextAncestors);
+          }
         } catch {
           // Broken links have no source bytes to evaluate.
         }
