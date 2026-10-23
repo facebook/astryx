@@ -6,11 +6,13 @@
  *
  * @input An operation run inside `recordReads(seen, fn)`.
  * @output `seen` gets every file whose content the operation read through fs
- *   and every folder it listed or probed, each with its state when first
- *   read; `unchangedSince(seen)` says whether all are still in that state.
+ *   or imported as a doc module (`recordContentRead`), and every folder it
+ *   listed or probed, each with its state when first read;
+ *   `unchangedSince(seen)` says whether all are still in that state.
  * @position Used by search's adapter to reuse a gathered catalog only while
- *   it is exact. Outside `recordReads` nothing is recorded and every fs call
- *   behaves as before.
+ *   it is exact, and by the doc importers and reader (../doc-compiler) to
+ *   read an edited doc file again. Outside `recordReads` nothing is recorded
+ *   and every fs call behaves as before.
  */
 
 import {AsyncLocalStorage} from 'node:async_hooks';
@@ -92,18 +94,22 @@ function installRecorder() {
 }
 
 /**
- * One path's state: its change time and size, or that it is absent.
+ * One path's state: its size and modification time, plus its change time and
+ * inode, which change on a rewrite even when npm stamps the same size and
+ * modification time; or that it is absent.
  * @param {string} file
  * @returns {string}
  */
-function stateOf(file) {
+export function fileStamp(file) {
   try {
-    const stat = statSyncRaw(file);
-    return `${stat.mtimeMs}\0${stat.size}`;
+    const {size, mtimeMs, ctimeMs, ino} = statSyncRaw(file);
+    return `${size}:${mtimeMs}:${ctimeMs}:${ino}`;
   } catch {
     return '-';
   }
 }
+
+const stateOf = fileStamp;
 
 /**
  * Whether every recorded path is still in the state it had when it was read.
@@ -115,6 +121,19 @@ export function unchangedSince(recorded) {
     if (stateOf(file) !== state) return false;
   }
   return true;
+}
+
+/**
+ * Count `file` as read by the running operation, as a content read through fs
+ * would be, for a read that does not go through fs: a module import. Outside
+ * `recordReads` it does nothing.
+ * @param {string} file
+ */
+export function recordContentRead(file) {
+  const seen = reads.getStore();
+  if (!seen) return;
+  const resolved = path.resolve(file);
+  if (!seen.has(resolved)) seen.set(resolved, stateOf(resolved));
 }
 
 /**

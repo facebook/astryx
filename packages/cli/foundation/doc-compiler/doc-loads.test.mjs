@@ -338,12 +338,12 @@ const RUNNERS = {
     sites: ['require(@babel/parser)', 'require(jscodeshift)'],
   },
   'foundation/doc-compiler/import.mjs': {
-    runs: 'authored doc files, for the doc reader and discovery',
+    runs: 'authored doc files, for the doc reader and discovery, and again after an edit',
     sites: [
-      '.import()',
-      'createJiti',
-      'import(<computed>) ×2',
-      'importUserModule',
+      '.import() ×2',
+      'createJiti ×2',
+      'import(<computed>) ×4',
+      'importUserModule ×2',
     ],
   },
   'foundation/doc-compiler/read.mjs': {
