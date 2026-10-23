@@ -373,6 +373,27 @@ test('Escape hides the list before it closes the dialog around the field', async
   await expect(dialog).toHaveCount(0);
 });
 
+test('Shift+Escape also hides the list before it closes the dialog around the field', async ({
+  page,
+}) => {
+  await openStory(page, STORY.dialog);
+  const dialog = page.getByRole('dialog', {name: 'Share'});
+  const field = page.getByRole('combobox', {name: 'Add people'});
+  await field.click();
+  await page.keyboard.type('al');
+  await expect(page.getByRole('listbox')).toBeVisible();
+
+  await page.keyboard.press('Shift+Escape');
+  await expect(page.getByRole('listbox')).toHaveCount(0);
+  // Give a close request time to land if the press had reached the dialog.
+  await page.waitForTimeout(300);
+  await expect(dialog).toBeVisible();
+  expect(await hasFocus(field)).toBe(true);
+
+  await page.keyboard.press('Shift+Escape');
+  await expect(dialog).toHaveCount(0);
+});
+
 test('with no matches in the dialog, the first Escape hides the empty message and the dialog stays', async ({
   page,
 }) => {
