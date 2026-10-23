@@ -1635,9 +1635,12 @@ export async function integrationPackCheck(options = {}) {
     }
 
     // Validate the extracted tree as an installed integration
+    // The packed tree is the package being authored: its icon sets are
+    // checked whatever the scratch folder's config says.
     const packedResult = await validateInstalledIntegration(
       pkgName,
       scratchBase,
+      {iconSets: true},
     );
 
     for (const issue of packedResult.issues) {

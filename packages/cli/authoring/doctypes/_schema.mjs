@@ -39,6 +39,7 @@ export const AuthoredDocKindSchema = z.enum([
   'command',
   'enum',
   'namespace',
+  'icon-definition',
 ]);
 
 /**
@@ -487,6 +488,7 @@ const SchemaFieldSchema =
           default: z.string().optional(),
           example: z.string().optional(),
           deprecated: z.string().optional(),
+          stability: z.literal('experimental').optional(),
           fields: z.array(SchemaFieldSchema).optional(),
         })
         .passthrough(),
@@ -659,6 +661,7 @@ export const NamespaceDocKindSchema = z
               .object({
                 group: nonEmptyString,
                 kinds: z.array(AuthoredDocKindSchema).min(1).optional(),
+                packages: z.literal('all').optional(),
               })
               .strict(),
             into: nonEmptyString,

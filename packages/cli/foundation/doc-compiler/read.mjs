@@ -61,7 +61,7 @@ const LOADERS = Object.freeze({
 
 /**
  * @typedef {object} ReadOptions
- * @property {'components' | 'hooks' | 'templates' | 'themes' | 'self-docs' | 'tree'} root
+ * @property {'components' | 'hooks' | 'templates' | 'themes' | 'icon-definitions' | 'self-docs' | 'tree'} root
  * @property {string | null} [lang] overlay language; null reads the authored
  *   text
  * @property {string} [label] how a parse error names the file (default: its
@@ -74,7 +74,7 @@ const LOADERS = Object.freeze({
  * @property {readonly string[]} [exports] which exports name the doc, in
  *   precedence order, for a reader that has always read a narrower set than its
  *   root's default ({@link DOC_EXPORTS})
- * @property {() => unknown} [readStatic] for themes: the descriptor value, read
+ * @property {() => unknown} [readStatic] for themes and icon definitions: the descriptor value, read
  *   without executing the file
  * @property {'authored' | 'parsed'} [value] which value the view carries: the
  *   authored export (default) or its parser's result, for a reader that has
@@ -250,10 +250,10 @@ async function missingDocProblem(file, options, exported) {
  */
 async function loadAuthored(file, options, lang) {
   const name = path.basename(file);
-  if (options.root === 'themes') {
+  if (options.root === 'themes' || options.root === 'icon-definitions') {
     if (!options.readStatic) {
       throw new Error(
-        'A theme descriptor is read statically; pass readStatic.',
+        'A theme descriptor or an icon definition is read statically; pass readStatic.',
       );
     }
     try {

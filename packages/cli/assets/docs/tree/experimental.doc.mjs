@@ -25,7 +25,7 @@ export const docs = {
   blocks: [
     {
       type: 'prose',
-      text: 'Everything here is experimental: its commands (under `astryx experimental`), configuration (under `experimental` in astryx.config), output, and docs may change or be removed in any patch release, with no deprecation period. Nothing here changes what the rest of Astryx does unless you use it. A feature leaves this section when it becomes stable.',
+      text: 'Everything here is experimental: its commands (under `astryx experimental`), configuration (under `experimental` in astryx.config and in an integration manifest), output, and docs may change or be removed in any patch release, with no deprecation period. Nothing here changes what the rest of Astryx does unless you use it. A feature leaves this section when it becomes stable.',
     },
   ],
 };

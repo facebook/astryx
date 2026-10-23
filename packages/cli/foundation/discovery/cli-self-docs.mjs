@@ -425,6 +425,41 @@ function enumSection(doc) {
 }
 
 /**
+ * What `astryx docs <route>` prints for one icon definition: its description,
+ * its words, whether it is built in, and the command
+ * that finds the icon each installed set draws for it.
+ * @param {any} doc
+ */
+function iconDefinitionSection(doc) {
+  /** @type {string[][]} */
+  const rows = [
+    [
+      'Words',
+      doc.words.map((/** @type {string} */ w) => `\`${w}\``).join(', '),
+    ],
+  ];
+  if (doc.builtIn) {
+    rows.push([
+      'Built in',
+      'Yes: every icon set maps it, and Core renders it.',
+    ]);
+  }
+  const content = [
+    {type: 'prose', text: doc.description},
+    {type: 'table', headers: ['Field', 'Value'], rows},
+    {
+      type: 'prose',
+      text: `An icon set registers the icon that draws this definition in its data file: \`"map": {"${doc.name}": "<icon id>"}\`. Find it in each installed set: \`astryx experimental icon ${doc.name}\`.`,
+    },
+    {
+      type: 'prose',
+      text: 'Icon definitions are experimental: they may change or be removed in a patch release.',
+    },
+  ];
+  return {id: routeSegment(doc.name), title: doc.name, content};
+}
+
+/**
  * What `astryx docs <route>` prints for one CLI typed doc: its title and the
  * blocks of its content, with cross-links to the routes the tree gave.
  * @param {any} doc
@@ -433,6 +468,7 @@ function enumSection(doc) {
  */
 export function cliDocSection(doc, index) {
   if (doc.type === 'command') return commandSection(doc, index);
+  if (doc.type === 'icon-definition') return iconDefinitionSection(doc);
   if (doc.type === 'function') return functionSection(doc, index);
   if (doc.type === 'enum') return enumSection(doc);
   if (doc.type === 'namespace')

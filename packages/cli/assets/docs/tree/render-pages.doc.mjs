@@ -34,7 +34,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'The `astryx experimental render` command, its options, its output file and its JSON can change, or go away, in any patch release without a deprecation period. Nothing else in the CLI changes because it exists.',
+          text: 'This command is experimental, as everything under `astryx docs cli/experimental` is: its options, its output file and its JSON may still change. Nothing else in the CLI changes because it exists.',
         },
       ],
     },

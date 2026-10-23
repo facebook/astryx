@@ -76,6 +76,14 @@ export const doc = {
       description: 'Unstable features; may change without a breaking bump.',
       fields: [
         {
+          name: 'experimental.iconSet',
+          type: 'string',
+          stability: 'experimental',
+          description:
+            "Experimental: may change or be removed in a patch release. The project's icon set, by set name or as `<package>/<set>`. It is the opt-in: copied templates use its icons, and `astryx discover` and `astryx doctor` report icon sets, only when it is set. `astryx experimental icon` ranks its icons first; without it, the only installed set is the project's there. `astryx search` never returns icons.",
+          example: "'@acme/outline-icons/outline'",
+        },
+        {
           name: 'experimental.xle.components',
           type: 'Record<string, XleComponent>',
           description:

@@ -14,7 +14,12 @@ export type AuthoredDocKind =
   | 'schema'
   | 'command'
   | 'enum'
-  | 'namespace';
+  | 'namespace'
+  /**
+   * An icon definition (spec:AST-084 FR4).
+   * @experimental May change or be removed in a patch release.
+   */
+  | 'icon-definition';
 
 /** Visibility of an authored doc in a compiled audience-specific bundle. */
 export type DocAudience = 'public' | 'internal';

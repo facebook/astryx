@@ -10,5 +10,13 @@ export const doc = {
     'Add screen-reader-only context to terse visual data, like spelling out what a trend arrow means.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['VisuallyHidden', 'Card', 'HStack', 'VStack', 'Text', 'Icon'],
+  componentsUsed: [
+    'VisuallyHidden',
+    'Card',
+    'HStack',
+    'VStack',
+    'Text',
+    'Icon',
+  ],
+  icons: {ArrowDownIcon: 'arrowDown', ArrowUpIcon: 'arrowUp'},
 };

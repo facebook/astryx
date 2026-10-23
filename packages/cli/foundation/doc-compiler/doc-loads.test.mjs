@@ -102,6 +102,23 @@ const RUNNERS = {
     runs: SELF_DOCS,
     sites: ['import ../../../api/blog/blog.doc.mjs', 'import ./blog.doc.mjs'],
   },
+  'clients/cli/commands/experimental/icon.mjs': {
+    runs: SELF_DOCS,
+    sites: [
+      'import ../../../../api/icon/icon.doc.mjs',
+      'import ../../../../api/icon/iconAdd.doc.mjs',
+      'import ../../../../api/icon/iconMap.doc.mjs',
+      'import ../../../../api/icon/iconNewDefinition.doc.mjs',
+      'import ../../../../api/icon/iconNewSet.doc.mjs',
+      'import ../../../../api/icon/iconUse.doc.mjs',
+      'import ../experimental-icon-add.doc.mjs',
+      'import ../experimental-icon-map.doc.mjs',
+      'import ../experimental-icon-new-definition.doc.mjs',
+      'import ../experimental-icon-new-set.doc.mjs',
+      'import ../experimental-icon-use.doc.mjs',
+      'import ../experimental-icon.doc.mjs',
+    ],
+  },
   'clients/cli/commands/experimental/index.mjs': {
     runs: SELF_DOCS,
     sites: ['import ../experimental.doc.mjs'],
@@ -286,6 +303,14 @@ const RUNNERS = {
   'foundation/discovery/doc-consistency.mjs': {
     runs: "a package's component docs and topics, to read the props, overlays, sections, and replaces/extends they declare",
     sites: ['importDocModule ×2'],
+  },
+  'foundation/discovery/doc-stability.mjs': {
+    runs: "an integration's template docs, to see which set `stability`",
+    sites: ['loadTopicModule'],
+  },
+  'foundation/discovery/template-icon-notes.mjs': {
+    runs: "an integration's template docs, to read the icons each declares",
+    sites: ['loadTopicModule'],
   },
   'foundation/discovery/doc-fluff.mjs': {
     runs: "the CLI's own guides, to measure the median share of content words a topic's density is compared with",

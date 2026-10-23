@@ -12,6 +12,7 @@ import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
 import {cliError} from '../../lib/cli-error.mjs';
 import {defineCommand} from '../../lib/define-command.mjs';
 import {doc as experimentalGroup} from '../experimental.doc.mjs';
+import {registerExperimentalIcon} from './icon.mjs';
 import {registerExperimentalRender} from './render.mjs';
 
 /** @param {import('commander').Command} program */
@@ -39,5 +40,6 @@ export function registerExperimental(program) {
       return NO_RESULT_SET;
     },
   });
+  registerExperimentalIcon(experimental, program);
   registerExperimentalRender(experimental, program);
 }

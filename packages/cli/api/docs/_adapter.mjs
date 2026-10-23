@@ -39,6 +39,7 @@ import {
 } from '../../foundation/doc-compiler/read.mjs';
 import {
   buildDocsTree,
+  isExperimentalTreeNode,
   loadTreeInputs,
 } from '../../foundation/doc-compiler/tree.mjs';
 import {sortDiagnostics} from '../../foundation/doc-compiler/diagnostics.mjs';
@@ -58,6 +59,8 @@ import {
 } from '../../foundation/discovery/cli-self-docs.mjs';
 import {
   AUTHORING_REFERENCE_ROUTE,
+  EXPERIMENTAL_AUTHORING_ROUTE,
+  isExperimentalSelfDoc,
   loadAuthoringSelfDocs,
   schemaFieldTable,
   selfDocSection,
@@ -672,14 +675,20 @@ function docFinderOver(catalog, tree, fromProvider, summaries = true) {
         ? await authoringDoc(parsed.kind, parsed.name)
         : null;
     if (authored) {
+      // An experimental schema is a section of its experimental route, not
+      // of the field reference (spec:AST-084 FR0).
+      const experimental = isExperimentalSelfDoc(authored);
+      const route = experimental
+        ? EXPERIMENTAL_AUTHORING_ROUTE
+        : AUTHORING_REFERENCE_ROUTE;
       return {
         link: {
           target,
           id: createDocId(provider, authored.type, authored.name),
-          route: AUTHORING_REFERENCE_ROUTE,
+          route,
           title: authored.displayName ?? authored.name,
           summary: renderTokens(authored.description ?? ''),
-          command: `astryx docs authoring ${authored.name}`,
+          command: `astryx docs ${experimental ? route : 'authoring'} ${authored.name}`,
         },
         kind: parsed.kind,
         typed: {doc: authored, providerId: CLI_PROVIDER_ID, tree: false},
@@ -1668,9 +1677,20 @@ export function placeLinks(tree, node) {
     up: node.parent == null ? 'astryx docs' : `astryx docs ${node.parent}`,
   };
   const parent = node.parent == null ? undefined : tree.get(node.parent);
-  const siblings =
+  // A stable node moves only to stable neighbors, so its links read as they
+  // do without experimental features (spec:AST-017 FR27, spec:AST-084 FR0),
+  // and an experimental node only to experimental ones, so each next read
+  // still names this one as its previous.
+  const experimental = isExperimentalTreeNode(tree, node);
+  const siblings = (
     parent?.slots.find(slot => slot.children.includes(node.route))?.children ??
-    [];
+    []
+  ).filter(route => {
+    const sibling = tree.get(route);
+    return (
+      sibling == null || isExperimentalTreeNode(tree, sibling) === experimental
+    );
+  });
   const at = siblings.indexOf(node.route);
   if (at > 0) links.previous = `astryx docs ${siblings[at - 1]}`;
   if (at !== -1 && at < siblings.length - 1) {
