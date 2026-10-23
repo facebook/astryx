@@ -93,7 +93,7 @@ for (const {name, origin} of deployments) {
           throw new Error('The documentation response is required');
         }
         expect(await documentResponse.text()).not.toMatch(
-          /Meta internal docs|Meta-specific components/,
+          /Meta internal|Meta-specific components/,
         );
         const heading = page.getByRole('heading', {
           name: 'Getting Started',
@@ -103,7 +103,7 @@ for (const {name, origin} of deployments) {
         await page.evaluate(() => document.fonts.ready);
         const notice = page.getByRole('region', {name: noticeName});
         const internal = notice.getByRole('link', {
-          name: 'Meta internal docs (opens in a new tab)',
+          name: 'Meta internal docs',
           exact: true,
         });
         const production = notice.getByRole('link', {
@@ -118,9 +118,11 @@ for (const {name, origin} of deployments) {
             'https://astryx.atmeta.com/docs/getting-started?source=test',
           );
           await expect(notice).toContainText("You're viewing Canary docs");
-          await expect(notice).toContainText('unreleased components and props');
+          await expect(notice).toContainText(
+            'These docs may include unreleased components and props. View production docs for the latest stable release.',
+          );
           await expect(notice).not.toContainText(
-            /Meta internal docs|Meta-specific components/,
+            /Meta internal|Meta-specific components/,
           );
         }
         await expect(
@@ -130,10 +132,12 @@ for (const {name, origin} of deployments) {
         ).toHaveAttribute('sandbox', 'allow-scripts allow-same-origin');
         probe.allowReply();
         await expect(notice).toHaveCount(1);
-        await expect(notice).toContainText('Meta internal docs are available');
+        await expect(notice).toContainText('Working on Meta internal tools?');
         await expect(notice).not.toContainText("You're viewing Canary docs");
         if (isCanary) {
-          await expect(notice).toContainText('unreleased components and props');
+          await expect(notice).toContainText(
+            'These docs may include unreleased components and props. View production docs for the latest stable release.',
+          );
         } else {
           await expect(notice).not.toContainText('Canary');
         }
@@ -145,8 +149,8 @@ for (const {name, origin} of deployments) {
           'href',
           `${internalOrigin}/docs/getting-started?source=test`,
         );
-        await expect(internal).toHaveAttribute('target', '_blank');
-        await expect(internal).toHaveAttribute('rel', /noopener/);
+        expect(await internal.getAttribute('target')).toBeNull();
+        await expect(internal).not.toContainText('opens in');
         await expect(production).toHaveCount(isCanary ? 1 : 0);
         await expect(notice.getByRole('link')).toHaveCount(isCanary ? 2 : 1);
         await expect(page.locator('[data-status="warning"]')).toHaveCount(0);
@@ -229,6 +233,20 @@ for (const {name, origin} of deployments) {
         await expect(heading).toBeVisible();
         await expect(internal).toBeVisible();
         expect(probe.requests()).toBe(2);
+        await page.route(`${internalOrigin}/**`, route =>
+          route.fulfill({
+            contentType: 'text/html',
+            body: '<h1>Internal destination fixture</h1>',
+          }),
+        );
+        await internal.click();
+        await expect(page).toHaveURL(
+          `${internalOrigin}/docs/getting-started?source=after-dismiss`,
+        );
+        await expect(
+          page.getByRole('heading', {name: 'Internal destination fixture'}),
+        ).toBeVisible();
+        expect(page.context().pages()).toHaveLength(1);
       });
     }
   }
@@ -254,16 +272,16 @@ for (const width of [1440, 390]) {
     await expect(notice).toHaveCount(isCanary ? 1 : 0);
     await expect(
       page.getByRole('link', {
-        name: 'Meta internal docs (opens in a new tab)',
+        name: 'Meta internal docs',
         exact: true,
       }),
     ).toHaveCount(0);
     if (isCanary) {
       await expect(notice).not.toContainText(
-        /Meta internal docs|Meta-specific components/,
+        /Meta internal|Meta-specific components/,
       );
       expect(await notice.evaluate(element => element.outerHTML)).not.toMatch(
-        /Meta internal docs|Meta-specific components/,
+        /Meta internal|Meta-specific components/,
       );
       await expect(
         notice.getByRole('link', {name: 'View production', exact: true}),

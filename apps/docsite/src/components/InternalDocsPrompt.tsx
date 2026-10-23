@@ -12,7 +12,6 @@ import {createContext, Suspense, useContext, type ReactNode} from 'react';
 import {usePathname, useSearchParams} from 'next/navigation';
 import {Banner} from '@astryxdesign/core/Banner';
 import {Button} from '@astryxdesign/core/Button';
-import {Icon} from '@astryxdesign/core/Icon';
 import {CURRENT_TARGET, urlForTarget} from '../lib/docsVersions';
 import {
   INTERNAL_DOCS_ORIGIN,
@@ -98,7 +97,7 @@ function DocsInfoBanner({
       dismissLabel="Dismiss documentation notice for this page view"
       title={
         internalHref
-          ? 'Meta internal docs are available'
+          ? 'Working on Meta internal tools?'
           : "You're viewing Canary docs"
       }
       description={
@@ -108,8 +107,8 @@ function DocsInfoBanner({
           {isCanary && internalHref && <br />}
           {isCanary && (
             <>
-              Canary includes unreleased components and props; production docs
-              match the stable packages.
+              These docs may include unreleased components and props. View
+              production docs for the latest stable release.
             </>
           )}
         </>
@@ -119,12 +118,8 @@ function DocsInfoBanner({
           {internalHref && (
             <Button
               label="Meta internal docs"
-              aria-label="Meta internal docs (opens in a new tab)"
-              endContent={<Icon icon="externalLink" size="xsm" />}
               variant="secondary"
               href={internalHref}
-              target="_blank"
-              rel="noopener noreferrer"
             />
           )}
           {productionHref && (

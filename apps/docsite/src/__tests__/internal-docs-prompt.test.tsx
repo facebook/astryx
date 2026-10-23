@@ -174,15 +174,12 @@ describe('InternalDocsPrompt', () => {
     );
     expect(prompt()?.querySelectorAll('a')).toHaveLength(1);
     expect(prompt()?.querySelectorAll('button')).toHaveLength(1);
-    expect(link.getAttribute('aria-label')).toBe(
-      'Meta internal docs (opens in a new tab)',
-    );
+    expect(link.getAttribute('aria-label')).toBeNull();
     expect(link.getAttribute('href')).toBe(
       `${internalOrigin}/components/Button?tab=props`,
     );
-    expect(link.getAttribute('target')).toBe('_blank');
-    expect(link.getAttribute('rel')).toContain('noopener');
-    expect(link.getAttribute('rel')).toContain('noreferrer');
+    expect(link.getAttribute('target')).toBeNull();
+    expect(link.textContent).not.toContain('opens in');
     expect(document.querySelector('iframe')).toBeNull();
   });
 
@@ -395,26 +392,28 @@ describe('InternalDocsPrompt', () => {
     await loadPrompt();
     await mount();
     expect(prompt()?.textContent).toContain("You're viewing Canary docs");
-    expect(prompt()?.textContent).toContain('unreleased components and props');
+    expect(prompt()?.textContent).toContain(
+      'These docs may include unreleased components and props. View production docs for the latest stable release.',
+    );
     expect(prompt()?.textContent).not.toMatch(
-      /Meta internal docs|Meta-specific components/,
+      /Meta internal|Meta-specific components/,
     );
     expect(
       screen.getByRole('link', {name: 'View production'}).getAttribute('href'),
     ).toBe('https://astryx.atmeta.com/components/Button?tab=props');
     expect(
       screen.queryByRole('link', {
-        name: 'Meta internal docs (opens in a new tab)',
+        name: 'Meta internal docs',
       }),
     ).toBeNull();
     await act(async () => vi.advanceTimersByTime(5000));
     expect(prompt()).not.toBeNull();
     expect(prompt()?.outerHTML).not.toMatch(
-      /Meta internal docs|Meta-specific components/,
+      /Meta internal|Meta-specific components/,
     );
     expect(
       screen.queryByRole('link', {
-        name: 'Meta internal docs (opens in a new tab)',
+        name: 'Meta internal docs',
       }),
     ).toBeNull();
   });
@@ -431,9 +430,11 @@ describe('InternalDocsPrompt', () => {
           <module.DocsBanner />
         </module.InternalDocsReachabilityProvider>,
       );
-      expect(html).toContain('unreleased components and props');
+      expect(html).toContain(
+        'These docs may include unreleased components and props. View production docs for the latest stable release.',
+      );
       expect(html).toContain('View production');
-      expect(html).not.toMatch(/Meta internal docs|Meta-specific components/);
+      expect(html).not.toMatch(/Meta internal|Meta-specific components/);
     },
   );
 
@@ -442,12 +443,14 @@ describe('InternalDocsPrompt', () => {
     await loadPrompt();
     await mount();
     expect(prompt()?.textContent).not.toMatch(
-      /Meta internal docs|Meta-specific components/,
+      /Meta internal|Meta-specific components/,
     );
     showPrompt();
-    expect(prompt()?.textContent).toContain('Meta internal docs are available');
+    expect(prompt()?.textContent).toContain('Working on Meta internal tools?');
     expect(prompt()?.textContent).not.toContain("You're viewing Canary docs");
-    expect(prompt()?.textContent).toContain('unreleased components and props');
+    expect(prompt()?.textContent).toContain(
+      'These docs may include unreleased components and props. View production docs for the latest stable release.',
+    );
     expect(prompt()?.textContent).toContain(
       'Meta-specific components and guidance',
     );
@@ -457,7 +460,7 @@ describe('InternalDocsPrompt', () => {
     expect(screen.getAllByRole('link')).toHaveLength(2);
     expect(
       screen
-        .getByRole('link', {name: 'Meta internal docs (opens in a new tab)'})
+        .getByRole('link', {name: 'Meta internal docs'})
         .getAttribute('href'),
     ).toBe(`${internalOrigin}/components/Button?tab=props`);
     expect(
@@ -486,7 +489,7 @@ describe('InternalDocsPrompt', () => {
     expect(prompt()).not.toBeNull();
     expect(
       screen
-        .getByRole('link', {name: 'Meta internal docs (opens in a new tab)'})
+        .getByRole('link', {name: 'Meta internal docs'})
         .getAttribute('href'),
     ).toBe(`${internalOrigin}/components/Button?tab=examples`);
   });
@@ -494,7 +497,7 @@ describe('InternalDocsPrompt', () => {
   it('offers only internal docs on a reachable production view', async () => {
     await mount();
     showPrompt();
-    expect(prompt()?.textContent).toContain('Meta internal docs are available');
+    expect(prompt()?.textContent).toContain('Working on Meta internal tools?');
     expect(prompt()?.textContent).not.toContain('Canary');
     expect(screen.queryByRole('link', {name: 'View production'})).toBeNull();
     expect(screen.getAllByRole('link')).toHaveLength(1);
