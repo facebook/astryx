@@ -37,6 +37,7 @@ import {DateTimeInput} from '../DateTimeInput';
 import {TimeInput} from '../TimeInput';
 import {CheckboxInput} from '../CheckboxInput';
 import {FileInput} from '../FileInput';
+import {CommandPalette} from '../CommandPalette';
 import {Thumbnail} from '../Thumbnail';
 import {
   DropdownMenu,
@@ -708,5 +709,84 @@ describe('FileInput busy start from a pick or a clear (spec:AST-086 FR6, FR8)', 
     });
     await nextFrame();
     expect(busyAnnouncements()).toEqual([['Loading', 'polite']]);
+  });
+});
+
+describe('CommandPalette busy start inside its modal (spec:AST-086 FR8, FR3)', () => {
+  beforeEach(() => {
+    HTMLDialogElement.prototype.showModal = vi.fn(function (
+      this: HTMLDialogElement,
+    ) {
+      this.setAttribute('open', '');
+    });
+    HTMLDialogElement.prototype.close = vi.fn(function (
+      this: HTMLDialogElement,
+    ) {
+      this.removeAttribute('open');
+    });
+    const matches = Element.prototype.matches;
+    vi.spyOn(Element.prototype, 'matches').mockImplementation(function (
+      this: Element,
+      selector: string,
+    ) {
+      return selector === ':modal'
+        ? this instanceof HTMLDialogElement && this.open
+        : matches.call(this, selector);
+    });
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function regionOf(): Element | null {
+    return (
+      document
+        .querySelector('dialog[open]')
+        ?.querySelector('[data-astryx-modal-busy-region]') ?? null
+    );
+  }
+
+  it('announces the load on opening from a region inside its dialog, with a silent Spinner', async () => {
+    render(
+      strict(
+        <CommandPalette
+          isOpen
+          onOpenChange={() => {}}
+          searchSource={{
+            bootstrap: async () => new Promise<SearchableItem[]>(() => {}),
+            search: async () => new Promise<SearchableItem[]>(() => {}),
+          }}
+        />,
+      ),
+    );
+    await nextFrame();
+    await nextFrame();
+    const dialog = document.querySelector('dialog[open]') as HTMLElement;
+    expect(dialog.querySelector('.astryx-spinner')).toHaveAttribute(
+      'aria-hidden',
+      'true',
+    );
+    expect(regionOf()).toHaveTextContent('Loading');
+    expect(busyAnnouncements()).toEqual([]);
+  });
+
+  it('announces a search start once from inside its dialog, not on the hidden page channel', async () => {
+    render(
+      strict(
+        <CommandPalette
+          isOpen
+          onOpenChange={() => {}}
+          searchSource={pendingSource()}
+        />,
+      ),
+    );
+    await nextFrame();
+    act(() => {
+      fireEvent.change(screen.getByRole('combobox'), {target: {value: 'se'}});
+    });
+    await nextFrame();
+    await nextFrame();
+    expect(regionOf()).toHaveTextContent('Loading');
+    expect(busyAnnouncements()).toEqual([]);
   });
 });
