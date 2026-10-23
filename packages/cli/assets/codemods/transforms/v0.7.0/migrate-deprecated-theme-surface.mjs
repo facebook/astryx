@@ -5,9 +5,11 @@
  *
  * Static keys directly inside a theme's `components` object move to their
  * canonical target. A theme is a `defineTheme()` call imported from Astryx, an
- * object typed as an Astryx theme (annotation, `as`, or `satisfies`), or a
- * direct theme object with a static `name` whose component entries are style
- * objects. CSS selectors move the same target classes, keep the owner scope of
+ * object typed as an Astryx theme (annotation, `as`, or `satisfies`), or, in a
+ * theme source that a same-stem theme descriptor (`<stem>.doc.mjs`) declares,
+ * a direct theme object with a static `name` whose component entries are style
+ * objects. Shape alone is not proof: a look-alike object anywhere else, such
+ * as another library's theme, is left unchanged. CSS selectors move the same target classes, keep the owner scope of
  * the per-component clear-icon aliases, and replace target-qualified bare
  * prop/state classes with reflected `data-*` selectors using the final 0.6
  * runtime contract. A known bare class that cannot be classified for its target
@@ -15,9 +17,11 @@
  * and strings containing CSS are left for manual review.
  */
 
+import * as fs from 'node:fs';
 import path from 'node:path';
 import postcss from 'postcss';
 import selectorParser from 'postcss-selector-parser';
+import {readThemeDescriptorValue} from '../../../../foundation/discovery/theme-discovery.mjs';
 import {migrateAstryxThemeSelectors} from '../v0.6.0/migrate-astryx-theme-selectors-to-data-attrs.mjs';
 import {
   V06_THEME_SELECTOR_DYNAMIC_AXES,
@@ -338,15 +342,46 @@ const TS_WRAPPERS = new Set([
 ]);
 
 /**
- * Local names that refer to Astryx's `defineTheme`, its theme types, or an
- * Astryx namespace import.
- * @param {any} root @param {any} j
+ * True when a same-stem theme descriptor beside this file declares it an
+ * Astryx theme source (`brandTheme.ts` beside `brandTheme.doc.mjs`). The
+ * descriptor is read statically, never executed; an unreadable or non-theme
+ * descriptor is not proof.
+ * @param {string} filePath
  */
-function astryxThemeBindings(root, j) {
+function isDescribedThemeSource(filePath) {
+  const extension = path.extname(filePath);
+  const docPath = path.join(
+    path.dirname(filePath),
+    `${path.basename(filePath, extension)}.doc.mjs`,
+  );
+  if (!fs.existsSync(docPath)) return false;
+  try {
+    return (
+      readThemeDescriptorValue(docPath, `Theme descriptor ${docPath}`).type ===
+      'theme'
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Local names that refer to Astryx's `defineTheme`, its theme types, or an
+ * Astryx namespace import, plus whether the file is a described theme source.
+ * @param {any} root @param {any} j @param {string} filePath
+ */
+function astryxThemeBindings(root, j, filePath) {
+  /** @type {boolean | undefined} */
+  let describedThemeSource;
   const bindings = {
     defineTheme: new Set(),
     themeTypes: new Set(),
     namespaces: new Set(),
+    /** Read lazily: only a direct theme-shaped object needs the descriptor. */
+    isDescribedThemeSource() {
+      describedThemeSource ??= isDescribedThemeSource(filePath);
+      return describedThemeSource;
+    },
   };
   root.find(j.ImportDeclaration).forEach((/** @type {any} */ importPath) => {
     const source = importPath.node.source?.value;
@@ -428,7 +463,8 @@ function isDirectThemeObject(node) {
 
 /**
  * True when this object literal is an Astryx theme: the argument of an
- * imported `defineTheme()`, typed as an Astryx theme, or a direct theme object.
+ * imported `defineTheme()`, typed as an Astryx theme, or a direct theme object
+ * in a described theme source.
  * @param {any} objectPath @param {ReturnType<typeof astryxThemeBindings>} bindings
  */
 function isThemeRoot(objectPath, bindings) {
@@ -458,7 +494,9 @@ function isThemeRoot(objectPath, bindings) {
   ) {
     return true;
   }
-  return isDirectThemeObject(objectPath.node);
+  return (
+    isDirectThemeObject(objectPath.node) && bindings.isDescribedThemeSource()
+  );
 }
 
 /**
@@ -567,10 +605,10 @@ function addScopeTodo(property, oldKey, owner, j) {
   ];
 }
 
-/** @param {string} source @param {any} j */
-function migrateStaticThemeKeys(source, j) {
+/** @param {string} source @param {string} filePath @param {any} j */
+function migrateStaticThemeKeys(source, filePath, j) {
   const root = j(source);
-  const bindings = astryxThemeBindings(root, j);
+  const bindings = astryxThemeBindings(root, j, filePath);
   let changed = false;
 
   root.find(j.ObjectExpression).forEach((/** @type {any} */ objectPath) => {
@@ -620,5 +658,5 @@ export default function migrateDeprecatedThemeSurface(file, api) {
     const result = migrateCss(file.source, file.path);
     return result === file.source ? undefined : result;
   }
-  return migrateStaticThemeKeys(file.source, api.jscodeshift);
+  return migrateStaticThemeKeys(file.source, file.path, api.jscodeshift);
 }
