@@ -245,17 +245,24 @@ interface ComboboxOptionProps {
   onClick: () => void;
 }
 
+/** The caller's own handlers for its field, run after the hook's. */
+interface ComboboxFieldHandlers {
+  // Method syntax keeps the parameter bivariant, so a handler typed for its
+  // own element (an input, a textarea, a contenteditable element) is accepted.
+  onKeyDown?(event: React.KeyboardEvent): void;
+}
+
 interface UseComboboxResult<T extends ComboboxOption> {
   highlightedIndex: number;
   setHighlightedIndex: (index: number) => void;
   getItemId: (index: number) => string;
   onTriggerClick: () => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
-  onItemSelect: (item: T) => void;
-  onItemMouseEnter: (item: T, index: number) => void;
-  getFieldProps: (props?: {
-    onKeyDown?: (event: React.KeyboardEvent) => void;
-  }) => ComboboxFieldProps;
+  // Method syntax keeps a result built over a richer option type assignable
+  // to `ReturnType<typeof useCombobox>`, the name released callers use.
+  onItemSelect(item: T): void;
+  onItemMouseEnter(item: T, index: number): void;
+  getFieldProps: (props?: ComboboxFieldHandlers) => ComboboxFieldProps;
   getListboxProps: () => ComboboxListboxProps;
   getOptionProps: (index: number) => ComboboxOptionProps;
 }
@@ -611,10 +618,7 @@ export function useCombobox<T extends ComboboxOption = SelectorOptionData>({
   );
 
   const getFieldProps = useCallback(
-    (
-      props: {onKeyDown?: (event: React.KeyboardEvent) => void} = {},
-    ): ComboboxFieldProps => {
-      const callerKeyDown = props.onKeyDown;
+    (props: ComboboxFieldHandlers = {}): ComboboxFieldProps => {
       return {
         // A textarea admits no explicit role and no aria-expanded; it stays a
         // textbox that names its list and active option.
@@ -627,7 +631,7 @@ export function useCombobox<T extends ComboboxOption = SelectorOptionData>({
         onKeyDown: event => {
           onFieldKeyDown(event);
           if (!event.defaultPrevented) {
-            callerKeyDown?.(event);
+            props.onKeyDown?.(event);
           }
         },
       };

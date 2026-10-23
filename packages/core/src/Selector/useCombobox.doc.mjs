@@ -159,9 +159,9 @@ export const docs = {
     },
     {
       name: 'getFieldProps',
-      type: '(props?: {onKeyDown?: (event: React.KeyboardEvent) => void}) => object',
+      type: '(props?: {onKeyDown?(event: React.KeyboardEvent): void}) => object',
       description:
-        'Props for a field you render: `role="combobox"` and `aria-expanded` on an `input` or contenteditable element (a `textarea` keeps its textbox role and gets neither), `aria-autocomplete="list"`, `aria-controls` only while the listbox renders (`isOpen` with at least one option), `aria-activedescendant` only while an option is active, and the field\u2019s key handler. Pass your own `onKeyDown` here rather than beside the spread: it runs after the hook\u2019s handler unless that handler claimed the key.',
+        'Props for a field you render: `role="combobox"` and `aria-expanded` on an `input` or contenteditable element (a `textarea` keeps its textbox role and gets neither), `aria-autocomplete="list"`, `aria-controls` only while the listbox renders (`isOpen` with at least one option), `aria-activedescendant` only while an option is active, and the field\u2019s key handler. Pass your own `onKeyDown` here rather than beside the spread: it runs after the hook\u2019s handler unless that handler claimed the key, and it may be typed for its element (an input, a textarea or a contenteditable element).',
     },
     {
       name: 'getListboxProps',
@@ -310,7 +310,7 @@ export const docsDense = {
     onItemSelect: 'pick from a press, then close.',
     onItemMouseEnter: 'hover makes option active; no scroll, no focus move.',
     getFieldProps:
-      'field props: role=combobox + aria-expanded on input / contenteditable (textarea: neither), aria-autocomplete=list, aria-controls only while listbox renders (isOpen + options), aria-activedescendant only while an option is active, key handler. pass own onKeyDown here: runs after hook unless hook claimed key.',
+      'field props: role=combobox + aria-expanded on input / contenteditable (textarea: neither), aria-autocomplete=list, aria-controls only while listbox renders (isOpen + options), aria-activedescendant only while an option is active, key handler. pass own onKeyDown here (may be typed for its element: input / textarea / contenteditable): runs after hook unless hook claimed key.',
     getListboxProps:
       'listbox props (id, role, press keeps focus in field); render anywhere incl. page flow while isOpen + options; name it (aria-label / aria-labelledby).',
     getOptionProps:

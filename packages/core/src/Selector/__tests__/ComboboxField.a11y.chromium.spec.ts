@@ -301,6 +301,58 @@ test('in a textarea, a pick stops Enter, a hidden list leaves the arrows to the 
   expect(await hasFocus(field)).toBe(true);
 });
 
+test('in the message field, the Enter that commits a composition never sends, in Safari’s event order', async ({
+  page,
+}) => {
+  await openStory(page, STORY.message);
+  const field = page.getByRole('textbox', {name: 'Message'});
+  await field.click();
+  await page.keyboard.type('Hi');
+
+  // Safari fires the committing Enter after compositionend, with keyCode 229
+  // and `isComposing` false. Playwright drives no input method, so the
+  // sequence is dispatched on the field.
+  const committing = await field.evaluate(el => {
+    el.dispatchEvent(new CompositionEvent('compositionstart', {data: ''}));
+    el.dispatchEvent(new CompositionEvent('compositionend', {data: 'の'}));
+    const enter = new KeyboardEvent('keydown', {
+      key: 'Enter',
+      bubbles: true,
+      cancelable: true,
+      isComposing: false,
+    });
+    Object.defineProperty(enter, 'keyCode', {value: 229});
+    el.dispatchEvent(enter);
+    return {
+      isComposing: enter.isComposing,
+      keyCode: enter.keyCode,
+      prevented: enter.defaultPrevented,
+    };
+  });
+  expect(committing).toEqual({
+    isComposing: false,
+    keyCode: 229,
+    prevented: false,
+  });
+  await page.waitForTimeout(300);
+  await expect(page.getByText(/^Sent:/)).toHaveCount(0);
+  await expect(field).toHaveValue('Hi');
+
+  // The same dispatch without the composition's keyCode sends, so the event
+  // above did reach the field's handler.
+  const plainPrevented = await field.evaluate(el => {
+    const enter = new KeyboardEvent('keydown', {
+      key: 'Enter',
+      bubbles: true,
+      cancelable: true,
+    });
+    el.dispatchEvent(enter);
+    return enter.defaultPrevented;
+  });
+  expect(plainPrevented).toBe(true);
+  await expect(page.getByText('Sent: Hi')).toBeVisible();
+});
+
 test('Escape hides the list before it closes the dialog around the field', async ({
   page,
 }) => {
