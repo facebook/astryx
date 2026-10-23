@@ -101,8 +101,8 @@ announcement channel.
   own persistent polite and assertive containers, which move with it. FR3, FR5,
   and FR6 apply to those containers.
 - **FR11 — A message announces when it appears after the page loads.** A
-  message present when the page first loads, or rendered on the server, is not
-  announced. A message inserted after that, or whose text changes later, is
+  message present when the page first loads, including server-rendered content
+  in that first load, is not announced. A message inserted after that, or whose text changes later, is
   announced once. A message brought in by a client-rendered route change is
   inserted after page load and announces once. A message rendered on the server but
   inserted by client navigation is after page load. Page load is the content
@@ -113,8 +113,9 @@ announcement channel.
   technology only through its announcement, such as a picker's empty-panel
   message under `spec:AST-056` FR3, announces even when present at page load. FR4 applies inside a mounted live
   container, and FR6 governs repeats. FR11 covers components that announce their
-  own rendered content; `component:FieldStatus` and `component:Banner` keep their
-  own announcement rules.
+  own rendered content; `component:FieldStatus`, a grouped field's status message
+  (as in TimeInput inside an input group), and `component:Banner` keep their own
+  announcement rules.
 - **FR12 — Own-content announcements behave the same everywhere.** Every
   component that announces its own rendered content announces the element's
   rendered text, or its accessible name when it renders no text, leaving out
@@ -195,8 +196,9 @@ announcement channel.
   their role and urgency (FR4).
 - ChatSystemMessage: forces `role="status"` inside the `role="log"` list. Under
   FR4 the log delivers it; dividers and dates are ordinary log content.
-- ChatTypingIndicator (lab): mounts with `role="status"` and text. It follows
-  FR4 inside a live log, otherwise FR2.
+- ChatTypingIndicator (lab): announces its label from its own Effect. Inside a
+  live log it follows FR4; otherwise it is an own-content adopter under FR11 and
+  `architecture:react-component-runtime` INV10 and moves onto the shared module.
 - Comments (lab): its error banners and progress label mount live roles
   together with their text. Inside a live log they follow FR4; otherwise FR2.
 - Selector and MultiSelector render their empty-panel message as
@@ -210,7 +212,7 @@ announcement channel.
   is a new outcome or persistent content. FR11 and FR12 cover components that
   announce their own content.
 - The INV10 shared test lands with the conformance work that moves the
-  ChatComposer status bar onto the shared module.
+  ChatComposer status bar and ChatTypingIndicator onto the shared module.
 - `useAnnounce`: messages written in the same frame are joined instead of the
   last one replacing the others (FR9).
 - `spec:AST-037` FR9 (Timer adds no unsolicited live region) already conforms.
@@ -231,7 +233,7 @@ announcement channel.
 | FR10          | Accessibility-tree check with a Dialog open                               | Info and error toast shown over an open Dialog                                                                                                                                                                                                                         | A toast that reaches only the body-level channel, or no exposed live container, fails                                                                                                                                                                                                                                                       |
 | FR11, FR12    | Helper and component tests                                                | EmptyState present at page load, server-rendered, inserted later, text changed, hidden and shown again, brought in by a client-rendered route change, inside a chat log, empty Selector panel open at page load, server-rendered message inserted by client navigation | Announcing at page load or during a server render (other than an announcement-only message), missing a later insertion or a server-rendered message inserted by client navigation, a client-rendered route change, or an empty Selector panel at page load, repeating one occasion, or also using the channel inside a live container fails |
 | FR12 (server) | Server-safe component boundary check plus a server render of each adopter | EmptyState rendered on the server and hydrated                                                                                                                                                                                                                         | An adopter that fails the boundary check, or emits an announcement or live role from a server render, fails                                                                                                                                                                                                                                 |
-| FR13          | Helper StrictMode, hide/show, and unmount tests on each adopter           | EmptyState, Spinner, ChatComposer status bar                                                                                                                                                                                                                           | A duplicate announcement under StrictMode, work while hidden, or a resource left after unmount fails                                                                                                                                                                                                                                        |
+| FR13          | Helper StrictMode, hide/show, and unmount tests on each adopter           | EmptyState, Spinner, ChatComposer status bar, ChatTypingIndicator                                                                                                                                                                                                      | A duplicate announcement under StrictMode, work while hidden, or a resource left after unmount fails                                                                                                                                                                                                                                        |
 | FR6 (AT)      | Recommended `spec:AST-009` real-AT follow-up                              | Toast, busy Switch, chat notice                                                                                                                                                                                                                                        | Missing, repeated, or out-of-order speech fails                                                                                                                                                                                                                                                                                             |
 
 ## Decision log
