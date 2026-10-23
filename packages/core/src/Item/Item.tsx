@@ -5,7 +5,9 @@
 /**
  * @file Item.tsx
  * @input Uses React, ReactNode, StyleXStyles, theme tokens, useClickableContainer
- * @output Exports Item component, ItemProps type; publishes the shared inline inset
+ * @output Exports Item component, ItemProps type; publishes the shared inline inset.
+ *   Marked rows keep their start/label/end slots in one flex group, allowing
+ *   List to share a marker track without changing those slots' own layout.
  * @position Core layout primitive; consumed by index.ts, tested by Item.test.tsx
  *
  * The swipe actions live in ItemSwipeLayer, reached only through a dynamic
@@ -351,6 +353,22 @@ const styles = stylex.create({
     boxSizing: 'border-box',
     textAlign: 'start',
     borderRadius: radiusVars['--radius-element'],
+  },
+  // One content cell beside the marker. Its slots retain the row's flex
+  // alignment and gap, including first-line alignment and tall start content.
+  // A numbered List can then subgrid the row into marker/content columns.
+  markerContent: {
+    display: 'flex',
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'inherit',
+    alignSelf: 'stretch',
+    gap: 'inherit',
+  },
+  markerContentFirstLine: {
+    // A tall start/end slot moves the first text baseline down. The marker
+    // must follow that baseline, not the stretched group's top edge.
+    alignSelf: 'baseline',
   },
   alignStart: {
     alignItems: 'flex-start',
@@ -736,9 +754,8 @@ export function Item({
     onClick?.(e);
   };
 
-  const innerContent = (
+  const content = (
     <>
-      {marker}
       {startContent != null && (
         <span
           {...stylex.props(
@@ -898,7 +915,20 @@ export function Item({
       onClick={rootOnClick}>
       <ItemDescriptionContext
         value={hasRenderableDescription ? descriptionID : null}>
-        {innerContent}
+        {isRenderable(marker) ? (
+          <>
+            {marker}
+            <span
+              {...stylex.props(
+                styles.markerContent,
+                align === 'first-line' && styles.markerContentFirstLine,
+              )}>
+              {content}
+            </span>
+          </>
+        ) : (
+          content
+        )}
       </ItemDescriptionContext>
       {hasSwipe && (
         // The panels: out-of-flow children of this root, so the DOM is the one

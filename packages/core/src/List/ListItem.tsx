@@ -7,7 +7,8 @@
  * @input Uses React, ReactNode, StyleXStyles, theme tokens, the List row edge
  *   treatment, CheckboxInput, and the marker or task checkbox a
  *   ListMarkerScope sets (Markdown's nested lists and the task items of mixed
- *   lists)
+ *   lists). Number markers stay on one line in the List's shared column,
+ *   keeping every sibling's text and nested list on the same start line.
  * @output Exports ListItem component, ListItemProps type
  * @position Core implementation; consumed by List, index.ts, tested by List.test.tsx
  *
@@ -148,6 +149,14 @@ export interface ListItemProps extends BaseProps<HTMLLIElement> {
 // =============================================================================
 
 const styles = stylex.create({
+  numberColumns: {
+    display: {
+      default: 'flex',
+      '@supports (grid-template-columns: subgrid)': 'grid',
+    },
+    gridTemplateColumns: 'subgrid',
+    gridColumn: '1 / -1',
+  },
   withCounter: {
     counterIncrement: 'astryx-list',
   },
@@ -241,7 +250,11 @@ const markerStyles = stylex.create({
     color: colorVars['--color-text-primary'],
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
-    width: spacingVars['--spacing-4'],
+    // Short counters retain their inset; longer counters size the List's
+    // shared grid column rather than pushing this item's text alone.
+    minWidth: spacingVars['--spacing-4'],
+    width: 'auto',
+    whiteSpace: 'nowrap',
   },
   // A number outside a counter style's range (zero or below, or past 3999
   // in roman) is written in decimal, as CSS counter styles fall back.
@@ -388,6 +401,7 @@ export function ListItem({
       density={density}
       xstyle={
         [
+          listStyle === 'decimal' && styles.numberColumns,
           hasMarkers && styles.withCounter,
           hasDividers && styles.withDivider,
           hasDividers && embeddedStyles.noRadius,
