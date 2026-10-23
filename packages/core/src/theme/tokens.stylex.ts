@@ -316,9 +316,14 @@ export type DurationVarName = keyof typeof durationDefaults;
 // =============================================================================
 // Motion Tokens — Easing
 // =============================================================================
+// --ease-standard decelerates: things arriving and state changes.
+// --ease-exit accelerates: things leaving. It moves off from rest (no rise at
+// the start) and is quickest as the surface leaves, so the travel lands inside
+// the duration instead of in its first few frames.
 
 export const easeDefaults = {
   '--ease-standard': 'cubic-bezier(0.24, 1, 0.4, 1)',
+  '--ease-exit': 'cubic-bezier(0.3, 0, 0.6, 0.6)',
 } as const;
 
 export const easeVars = stylex.defineVars(easeDefaults);
