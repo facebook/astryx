@@ -115,10 +115,14 @@ describe('experimental icon new-set --from', () => {
     ]);
     expect(code).toBe(0);
     expect(body.data).toMatchObject({kind: 'icon-set', icons: 2});
-    // The package's entry gains the export line, once.
-    expect(body.data.files).toContain('index.js');
+    // The package's entry is the author's: the receipt names the exact line
+    // and the entry stays as it was (architecture:cli-surface INV16).
+    expect(body.data.files).not.toContain('index.js');
     expect(fs.readFileSync(path.join(pkg, 'index.js'), 'utf-8')).toBe(
-      "export {};\nexport * from './icon-sets/outline/outline.generated.js';\n",
+      'export {};\n',
+    );
+    expect(body.data.notes).toContain(
+      "Add `export * from './icon-sets/outline/outline.generated.js';` to index.js, so the icons import from @acme/icons.",
     );
     const data = dataOf('outline');
     expect(data.generated).toBe('./icon-sets/outline/outline.generated.js');
@@ -366,10 +370,13 @@ describe('icon add', () => {
       definition: 'delete',
       changed: true,
     });
-    // new-set already wired the generated module into the package entry.
-    expect(first.body.data.note).toBeUndefined();
+    // The entry is not wired yet: the note names the line, and the entry
+    // stays the author's.
+    expect(first.body.data.note).toBe(
+      "Add `export * from './icon-sets/outline/outline.generated.js';` to index.js, so the icons import from @acme/icons.",
+    );
     expect(fs.readFileSync(path.join(pkg, 'index.js'), 'utf-8')).toBe(
-      "export {};\nexport * from './icon-sets/outline/outline.generated.js';\n",
+      'export {};\n',
     );
     const data = dataOf('outline');
     expect(data.map).toEqual({delete: 'bin'});
@@ -1433,18 +1440,21 @@ describe('experimental icon new-set: aliases, providers, exclude, peers', () => 
           each.definition === 'close' && each.icon === 'panel-left-close',
       ),
     ).toBe(false);
-    // Peers: react and an optional CLI; react leaves dependencies.
+    // Peers: the receipt names the exact JSON to add; package.json keeps its
+    // dependencies as they were (architecture:cli-surface INV16).
     const manifest = JSON.parse(
       fs.readFileSync(path.join(pkg, 'package.json'), 'utf-8'),
     );
-    expect(manifest.peerDependencies).toMatchObject({react: '>=18'});
-    expect(manifest.peerDependencies['@astryxdesign/cli']).toMatch(/^>=/u);
-    expect(manifest.peerDependenciesMeta).toEqual({
-      '@types/react': {optional: true},
-      '@astryxdesign/cli': {optional: true},
+    expect(manifest).not.toHaveProperty('peerDependencies');
+    expect(manifest.dependencies).toEqual({
+      '@acme/glyph-library': '^2.0.0',
+      react: '^19.0.0',
     });
-    expect(manifest.dependencies).toEqual({'@acme/glyph-library': '^2.0.0'});
-    expect(manifest.devDependencies).toEqual({react: '^19.0.0'});
+    expect(first.body.data.notes).toContainEqual(
+      expect.stringMatching(
+        /^Declare the peers your set needs; add to package\.json "peerDependencies": `\{"react": ">=18", "@types\/react": ">=18", "@astryxdesign\/cli": ">=[^"]+"\}` and to "peerDependenciesMeta": `\{"@types\/react": \{"optional": true\}, "@astryxdesign\/cli": \{"optional": true\}\}`\.$/u,
+      ),
+    );
 
     // A refresh without --exclude still leaves Meta out, and says it refreshed.
     const again = await runCli(
@@ -1570,7 +1580,7 @@ describe('blind run 3 fixes', () => {
       'Declared the experimental.iconSets root ./icon-sets in astryx.integration.mjs.',
     );
     expect(created.stdout).toContain(
-      "added `export * from './icon-sets/outline/outline.generated.js';` to index.js",
+      "Add `export * from './icon-sets/outline/outline.generated.js';` to index.js, so the icons import from @acme/icons.",
     );
     const missing = await json([
       'experimental',
@@ -1692,7 +1702,7 @@ describe('blind run 4 fixes', () => {
     expect(text.stdout).toMatch(/^- close \[built-in\]: /mu);
   });
 
-  it('suggests an icon by another name its library gives it, and new-set adds the typecheck script and a description note', async () => {
+  it('suggests an icon by another name its library gives it, and new-set names the typecheck script and a description note', async () => {
     const lib = path.join(pkg, 'node_modules', '@acme', 'glyph-library');
     fs.writeFileSync(
       path.join(lib, 'icons', 'face.js'),
@@ -1720,17 +1730,16 @@ describe('blind run 4 fixes', () => {
     const manifest = JSON.parse(
       fs.readFileSync(path.join(pkg, 'package.json'), 'utf-8'),
     );
-    expect(manifest.scripts).toEqual({
-      typecheck: 'astryx integration check --strict',
-    });
-    expect(manifest.peerDependenciesMeta['@types/react']).toEqual({
-      optional: true,
-    });
+    // The script is the author's to add: the receipt names the exact line.
+    expect(manifest).not.toHaveProperty('scripts');
+    expect(body.data.notes).toContain(
+      'Run `integration check --strict` in your build; add to package.json "scripts": `"typecheck": "astryx integration check --strict"`.',
+    );
   });
 });
 
 describe('blind run 5 fixes', () => {
-  it('adds a ./ source folder to files, maps by export name, and suggests by spelling and stem', async () => {
+  it('names the ./ source folder files needs, maps by export name, and suggests by spelling and stem', async () => {
     const lib = path.join(pkg, 'node_modules', '@acme', 'glyph-library');
     fs.writeFileSync(
       path.join(lib, 'icons', 'more.js'),
@@ -1779,7 +1788,8 @@ describe('blind run 5 fixes', () => {
       definition: 'close',
       icon: 'cross',
     });
-    // A ./ file's folder joins files, so the icon ships.
+    // A ./ file's folder is named for files, so the icon ships; files stays
+    // the author's (architecture:cli-surface INV16).
     fs.mkdirSync(path.join(pkg, 'art'), {recursive: true});
     fs.writeFileSync(
       path.join(pkg, 'art', 'check-double.js'),
@@ -1796,18 +1806,21 @@ describe('blind run 5 fixes', () => {
       'checkDouble',
     ]);
     expect(added.code).toBe(0);
-    expect(added.body.data.files).toContain('package.json');
+    expect(added.body.data.files).not.toContain('package.json');
     expect(
       JSON.parse(fs.readFileSync(path.join(pkg, 'package.json'), 'utf-8'))
         .files,
-    ).toContain('art');
+    ).toEqual(['index.js', 'icon-sets', 'astryx.integration.mjs']);
+    expect(added.body.data.note).toContain(
+      './art/check-double.js is not in package.json "files", so it would not be published; set "files" to `["index.js","icon-sets","astryx.integration.mjs","art"]`.',
+    );
     const text = await runCli(['experimental', 'icon', '--definitions'], pkg);
     expect(text.stdout).toMatch(/^- activity \[optional\]: /mu);
   });
 });
 
 describe('blind run 6 fixes', () => {
-  it('never suggests the opposite direction, and publishes only a ./ file folder', async () => {
+  it('never suggests the opposite direction, and names only a ./ file folder for files', async () => {
     const lib = path.join(pkg, 'node_modules', '@acme', 'glyph-library');
     fs.writeFileSync(
       path.join(lib, 'icons', 'dots.js'),
@@ -1845,7 +1858,7 @@ describe('blind run 6 fixes', () => {
       path.join(pkg, 'src', 'icons', 'check-double.js'),
       'export const CheckDouble = props => null;\n',
     );
-    await json([
+    const added = await json([
       'experimental',
       'icon',
       'add',
@@ -1855,11 +1868,9 @@ describe('blind run 6 fixes', () => {
       '--definition',
       'checkDouble',
     ]);
-    const files = JSON.parse(
-      fs.readFileSync(path.join(pkg, 'package.json'), 'utf-8'),
-    ).files;
-    expect(files).toContain('src/icons');
-    expect(files).not.toContain('src');
+    expect(added.body.data.note).toContain(
+      'set "files" to `["index.js","icon-sets","src/icons"]`.',
+    );
   });
 });
 
@@ -1932,5 +1943,91 @@ describe('blind run 8 fixes', () => {
     expect(again.body.data.mapped).toEqual([
       {definition: 'close', icon: 'close'},
     ]);
+  });
+});
+
+describe('package wiring stays the author’s', () => {
+  /**
+   * Every issue the check reports, by code and message.
+   * @returns {Promise<Array<{code: string, message: string}>>}
+   */
+  async function checkIssues() {
+    const body = JSON.parse(
+      (await runCli(['integration', 'check', '--json'], pkg)).stdout,
+    );
+    /** @type {Array<{code: string, message: string}>} */
+    const found = [];
+    /** @param {unknown} node */
+    const walk = node => {
+      if (Array.isArray(node)) node.forEach(walk);
+      else if (node && typeof node === 'object') {
+        const each = /** @type {Record<string, unknown>} */ (node);
+        if (typeof each.code === 'string' && typeof each.message === 'string') {
+          found.push({code: each.code, message: each.message});
+        }
+        Object.values(each).forEach(walk);
+      }
+    };
+    walk(body.data);
+    return found;
+  }
+
+  it('integration check names the same entry change as the new-set receipt, once, until the author makes it', async () => {
+    const {body} = await json([
+      'experimental',
+      'icon',
+      'new-set',
+      'outline',
+      '--from',
+      '@acme/glyph-library',
+    ]);
+    const note =
+      "Add `export * from './icon-sets/outline/outline.generated.js';` to index.js, so the icons import from @acme/icons.";
+    expect(body.data.notes).toContain(note);
+    const missing = (await checkIssues()).filter(
+      each => each.code === 'icon_export_missing',
+    );
+    expect([...new Set(missing.map(each => each.message))]).toEqual([
+      `Icon set "outline": its icons are not exported from "@acme/icons" yet. ${note}`,
+    ]);
+    // The author adds the line; the finding is gone.
+    fs.appendFileSync(
+      path.join(pkg, 'index.js'),
+      "export * from './icon-sets/outline/outline.generated.js';\n",
+    );
+    expect(
+      (await checkIssues()).filter(each => each.code === 'icon_export_missing'),
+    ).toEqual([]);
+  });
+
+  it('integration check never fails a built or CommonJS entry over the wiring it cannot read', async () => {
+    fs.writeFileSync(
+      path.join(pkg, 'package.json'),
+      JSON.stringify({
+        ...JSON.parse(fs.readFileSync(path.join(pkg, 'package.json'), 'utf-8')),
+        exports: {'.': './dist/index.cjs'},
+      }),
+    );
+    fs.mkdirSync(path.join(pkg, 'dist'));
+    fs.writeFileSync(
+      path.join(pkg, 'dist', 'index.cjs'),
+      'module.exports = {};\n',
+    );
+    await json([
+      'experimental',
+      'icon',
+      'new-set',
+      'outline',
+      '--from',
+      '@acme/glyph-library',
+    ]);
+    expect(fs.readFileSync(path.join(pkg, 'dist', 'index.cjs'), 'utf-8')).toBe(
+      'module.exports = {};\n',
+    );
+    expect(
+      (await checkIssues()).filter(each =>
+        each.message.includes('are not exported from'),
+      ),
+    ).toEqual([]);
   });
 });

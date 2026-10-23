@@ -238,7 +238,7 @@
  * @property {string} [data.newDefinition] - The set's own definition the command wrote.
  * @property {string[]} data.files - Files written, relative to the package.
  * @property {boolean} data.changed - Whether anything was written.
- * @property {string} [data.note] - What the set's module still needs to export the icon.
+ * @property {string} [data.note] - What the package still needs, as text to copy: the entry line that exports the icon from the set's module, and the package.json `files` that publishes a `./` source.
  */
 
 /**
@@ -341,7 +341,7 @@
  * @property {boolean} [refreshed] - With `from` on an existing set: the set was refreshed, not created.
  * @property {Array<{definition: string, icon: string}>} [mapped] - With `from`: the `map` entries an icon with the definition's exact name gives (on a refresh, every such entry, kept or new); check each.
  * @property {Array<{definition: string, icon: string, word: string}>} [suggestions] - With `from`: icons an unmapped Astryx definition might map to, because the icon's id is one of the definition's words. Never written.
- * @property {string[]} [notes] - What the author does next.
+ * @property {string[]} [notes] - What the author does next, including each change the package needs that the CLI never makes itself (its entry, peers, scripts), as text to copy.
  */
 
 /**

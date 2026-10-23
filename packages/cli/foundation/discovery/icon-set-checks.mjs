@@ -51,6 +51,8 @@ import {
 } from './icon-set-discovery.mjs';
 import {inspectPackageExport} from './package-exports.mjs';
 import {
+  THEME_MAP_NAME,
+  entryWiringNote,
   generatedTypesPath,
   generatedTypesText,
   readGeneratedStatements,
@@ -493,12 +495,15 @@ const OPPOSITES = {
 export const SUGGESTIONS_PER_DEFINITION = 3;
 
 /**
- * The icons a definition might map to, best first, at most three: each icon
- * whose id starts with the definition's name (`video` → `video-camera`, but
- * never `close` → `panel-left-close`), then each icon whose whole id is the definition's name or
- * one of its words (`delete` → `trash`). An icon `map` already names for
- * another definition, or whose id is another definition's name, is left out:
- * it has a meaning of its own. Never a guess from parts of words.
+ * The icons a definition might map to, best first, at most three, in the
+ * order AST-084 FR13 gives: the name in another spelling, an icon the library
+ * gives the name as another name, ids that start with the name (`video` →
+ * `video-camera`, never `close` → `panel-left-close`), an id that is one of
+ * its words (`delete` → `trash`), another name that is one of its words, and
+ * two-word ids that start with a one-word word. An icon `map` already names
+ * for another definition, or whose id is another definition's name, is left
+ * out: it has a meaning of its own. Never a negated form or the opposite
+ * direction, and never a guess from parts of words.
  * @param {{data: {icons: Array<{id: string, words?: string[]}>, map?: Record<string, string>}, definitions?: Array<{doc: {name: string}}>}} set
  * @param {{name: string, words: string[]}} doc
  * @returns {Array<{icon: string, word: string}>}
@@ -632,6 +637,45 @@ function stem(word) {
 }
 
 /**
+ * The change that makes a set's generated module part of its package's
+ * entry ({@link entryWiringNote}), or null when the entry exports its theme
+ * map or any of its icons, the set has no generated module on disk, or the
+ * entry is an `exports` target not built yet (listed as not checked).
+ * @param {DiscoveredIconSet} set
+ * @param {string} packageDir
+ * @param {string} packageName
+ * @param {(specifier: string) => string | null} unbuiltTarget
+ * @returns {string | null}
+ */
+function entryNotWired(set, packageDir, packageName, unbuiltTarget) {
+  const generated = set.data.generated;
+  if (!generated || !fs.existsSync(path.join(packageDir, generated))) {
+    return null;
+  }
+  if (splitSpecifier(set.data.module).name !== packageName) return null;
+  if (unbuiltTarget(set.data.module)) return null;
+  const pkg = readJson(path.join(packageDir, 'package.json'));
+  if (!pkg) return null;
+  const note = entryWiringNote(packageDir, pkg, generated, {
+    module: set.data.module,
+    name: set.data.themeMap ?? THEME_MAP_NAME,
+  });
+  if (!note) return null;
+  const entry = resolveIconModule(set.data.module, packageDir, {
+    name: packageName,
+    dir: packageDir,
+  });
+  const someIcon =
+    entry &&
+    set.data.icons.some(
+      icon =>
+        (icon.module ?? set.data.module) === set.data.module &&
+        exportOriginVerdict(entry, icon.export)?.verdict !== 'lacks',
+    );
+  return someIcon ? null : note;
+}
+
+/**
  * The export and theme-map checks of one set.
  * @param {DiscoveredIconSet} set
  * @param {string} packageDir
@@ -736,10 +780,22 @@ function checkExports(set, packageDir, packageName, unchecked) {
       .definitions.filter(definition => definition.doc.builtIn)
       .map(definition => definition.doc.name),
   );
+  // A generated module the package's entry does not export yet: one finding
+  // with the exact change \`new-set\` names in its receipt, not one per icon.
+  const wiring = entryNotWired(set, packageDir, packageName, unbuiltTarget);
+  if (wiring) {
+    issues.push(
+      issueError(
+        ICON_EXPORT_MISSING,
+        `${label}: its icons are not exported from "${set.data.module}" yet. ${wiring}`,
+      ),
+    );
+  }
   /** @type {Map<string, {file: string, name: string} | null>} */
   const iconOrigins = new Map();
   for (const icon of set.data.icons) {
     const module = icon.module ?? set.data.module;
+    if (wiring && module === set.data.module) continue;
     iconOrigins.set(
       icon.id,
       originOf(module, icon.export, `icon "${icon.id}"`, {icon: icon.id}),
@@ -772,6 +828,7 @@ function checkExports(set, packageDir, packageName, unchecked) {
     );
     return issues;
   }
+  if (wiring) return issues;
   const mapOrigin = originOf(
     set.data.module,
     themeMap,

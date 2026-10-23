@@ -24,6 +24,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {randomUUID} from 'node:crypto';
+import {AsyncLocalStorage} from 'node:async_hooks';
 import {parse} from '@babel/parser';
 import {parseIconSetData} from '../../authoring/doctypes/icon-set/parse.mjs';
 import {ICON_NAMES} from '../../authoring/doctypes/icon-set/icon-names.mjs';
@@ -326,6 +327,87 @@ export function writeIconSetData(set, next, {extraDefinitions = []} = {}) {
 }
 
 /**
+ * The files one authoring command has changed, each with the bytes it had
+ * before (null: it did not exist), and the folders it created. Every write of
+ * an icon authoring command records here first, so a command that fails
+ * after some of its writes puts every file back (AST-084 FR13).
+ * @typedef {{files: Map<string, Buffer | null>, dirs: string[]}} WriteJournal
+ */
+
+/** @type {AsyncLocalStorage<WriteJournal>} */
+const journals = new AsyncLocalStorage();
+
+/**
+ * Record a file's bytes before the running command writes or removes it, and
+ * the folders above it that do not exist yet. Outside {@link allOrNothing}
+ * this does nothing.
+ * @param {string} file
+ */
+export function journalFile(file) {
+  const journal = journals.getStore();
+  if (!journal) return;
+  const full = path.resolve(file);
+  if (journal.files.has(full)) return;
+  journal.files.set(full, fs.existsSync(full) ? fs.readFileSync(full) : null);
+  /** @type {string | null} */
+  let missing = null;
+  for (
+    let dir = path.dirname(full);
+    !fs.existsSync(dir) && path.dirname(dir) !== dir;
+    dir = path.dirname(dir)
+  ) {
+    missing = dir;
+  }
+  if (missing && !journal.dirs.includes(missing)) journal.dirs.push(missing);
+}
+
+/**
+ * Run one authoring command so its writes are all or nothing: when it throws,
+ * every file it wrote gets its old bytes back (a file it created is removed,
+ * with the folders it created), and the error is rethrown. A file system
+ * error becomes `ERR_WRITE_FAILED`.
+ * @template T
+ * @param {() => T | Promise<T>} step
+ * @returns {Promise<T>}
+ */
+export async function allOrNothing(step) {
+  /** @type {WriteJournal} */
+  const journal = {files: new Map(), dirs: []};
+  try {
+    return await journals.run(journal, step);
+  } catch (error) {
+    for (const [file, bytes] of [...journal.files].reverse()) {
+      try {
+        if (bytes == null) fs.rmSync(file, {force: true});
+        else if (!fs.existsSync(file) || !fs.readFileSync(file).equals(bytes)) {
+          fs.writeFileSync(file, bytes);
+        }
+      } catch {
+        // Put back what can be put back; the error below names the cause.
+      }
+    }
+    for (const dir of [...journal.dirs].reverse()) {
+      try {
+        fs.rmSync(dir, {recursive: true, force: true});
+      } catch {
+        // A path that never became a folder has nothing to remove.
+      }
+    }
+    const code =
+      error && typeof error === 'object' && 'code' in error
+        ? String(error.code)
+        : '';
+    if (!(error instanceof IconSetAuthoringError) && /^E[A-Z]+$/u.test(code)) {
+      throw new IconSetAuthoringError(
+        `Could not write the icon set: ${error instanceof Error ? error.message : String(error)}. No file was changed.`,
+        'ERR_WRITE_FAILED',
+      );
+    }
+    throw error;
+  }
+}
+
+/**
  * Replace a file's text atomically.
  * @param {string} file
  * @param {string} text
@@ -335,6 +417,7 @@ function replaceText(file, text) {
     path.dirname(file),
     `.${path.basename(file)}.tmp-${randomUUID()}`,
   );
+  journalFile(file);
   try {
     fs.writeFileSync(temporary, text, 'utf-8');
     fs.renameSync(temporary, file);
@@ -801,6 +884,7 @@ export function writeDefinitionFile(set, doc) {
     );
   }
   const text = iconDefinitionSource(doc);
+  journalFile(file);
   fs.mkdirSync(path.dirname(file), {recursive: true});
   try {
     fs.writeFileSync(file, text, {encoding: 'utf-8', flag: 'wx'});
@@ -1252,6 +1336,7 @@ export function writeGeneratedIcons(
    */
   const put = (target, text, prior, rel) => {
     if (prior === text) return;
+    journalFile(target);
     fs.mkdirSync(path.dirname(target), {recursive: true});
     replaceText(target, text);
     files.push(rel.replace(/^\.\//u, ''));
@@ -1283,123 +1368,59 @@ export function writeGeneratedIcons(
 }
 
 /**
- * Whether the set's own module exports `name`, read without running it, and
- * the line its entry needs when it does not.
- * @param {DiscoveredIconSet} set
- * @param {{packageDir: string, pkg: Record<string, any>}} where
- * @param {string} generated the generated module's ./ path from the package root
- * @param {string} name
- * @returns {string | null} a note for the author, or null when nothing is needed
- */
-export function setModuleNote(set, where, generated, name) {
-  const entry = resolveIconModule(set.data.module, where.packageDir, {
-    name: where.pkg.name,
-    dir: where.packageDir,
-  });
-  if (entry && moduleExportOrigin(entry, name)) return null;
-  const target = path.join(where.packageDir, generated);
-  if (!entry) {
-    return `"${set.data.module}" does not resolve yet: point its package.json "exports" at a file that has \`export * from '${generated.replace(/\.[cm]?[jt]sx?$/u, '.js')}';\`.`;
-  }
-  let relative = path
-    .relative(path.dirname(entry), target)
-    .split(path.sep)
-    .join('/');
-  if (!relative.startsWith('.')) relative = `./${relative}`;
-  return `Add \`export * from '${relative}';\` to ${path.relative(where.packageDir, entry).split(path.sep).join('/')}, so the icons import from ${set.data.module}.`;
-}
-
-/**
- * Declare the peers an icon-set package publishes with, as the guide's
- * "Before you publish" asks: `react` (the theme map and adapter use it) and
- * `@astryxdesign/cli` as an optional peer from the release that reads the
- * set. A peer the package already declares is kept; a `dependencies` entry
- * for either moves to `devDependencies`, so it stays installed for building
- * and testing. Mutates `pkg`; returns what changed, one line each.
- * @param {Record<string, any>} pkg
- * @returns {string[]}
- */
-export function declarePeers(pkg) {
-  /** @type {Record<string, {range: string, optional: boolean}>} */
-  const wanted = {
-    react: {range: '>=18', optional: false},
-    // The generated declaration file imports React's types.
-    '@types/react': {range: '>=18', optional: true},
-    '@astryxdesign/cli': {range: `>=${cliVersion()}`, optional: true},
-  };
-  /** @type {string[]} */
-  const declared = [];
-  /** @type {string[]} */
-  const moved = [];
-  for (const [name, {range, optional}] of Object.entries(wanted)) {
-    if (pkg.peerDependencies?.[name] != null) continue;
-    pkg.peerDependencies = {...(pkg.peerDependencies ?? {}), [name]: range};
-    if (optional) {
-      pkg.peerDependenciesMeta = {
-        ...(pkg.peerDependenciesMeta ?? {}),
-        [name]: {optional: true},
-      };
-    }
-    const installed = pkg.dependencies?.[name];
-    if (installed != null) {
-      const {[name]: _moved, ...rest} = pkg.dependencies;
-      pkg.dependencies = rest;
-      if (Object.keys(rest).length === 0) delete pkg.dependencies;
-      pkg.devDependencies = {...(pkg.devDependencies ?? {}), [name]: installed};
-      moved.push(name);
-    }
-    declared.push(`${name} ${range}${optional ? ' (optional)' : ''}`);
-  }
-  // The check every integration runs in its build (the quick start's
-  // `typecheck` script), when the package has none.
-  /** @type {string[]} */
-  const scripts = [];
-  if (pkg.scripts?.typecheck == null) {
-    pkg.scripts = {
-      ...(pkg.scripts ?? {}),
-      typecheck: 'astryx integration check --strict',
-    };
-    scripts.push(
-      'added the typecheck script (`astryx integration check --strict`)',
-    );
-  }
-  return [
-    ...(declared.length > 0
-      ? [`declared the peers ${declared.join(', ')}`]
-      : []),
-    ...(moved.length > 0
-      ? [`moved ${moved.join(' and ')} from dependencies to devDependencies`]
-      : []),
-    ...scripts,
-  ];
-}
-
-/**
- * How a new set's generated module joins the package's public entry, so its
- * icons and theme map import from the package by name (FR14):
- *   - a package with no entry (no `exports`, no `main`, no `index.js`) gets
- *     `index.js` and `index.d.ts` that re-export the generated module, and
- *     package.json `exports`, `main`, and `types` naming them;
- *   - an entry file inside the package (and its declaration file, when one
- *     is named) gains the `export *` line, once;
- *   - anything else (a built entry, CommonJS) is left alone, with a note.
+ * A package entry the CLI names no line for: a built file (under `dist` or
+ * `build`) or CommonJS (`.cjs`, `.cts`, or a `.js` file that uses
+ * `require` or `module.exports` and no `export`). Its source is what the
+ * author edits.
  * @param {string} packageDir
- * @param {string} pkgText package.json's text, possibly already updated
- * @param {string} generated the generated module's ./ path from the package root
- * @param {string} [manifestName] the integration manifest's file name
- * @returns {{writes: Array<{path: string, contents: string, createOnly: boolean, expectedOriginal?: Buffer}>, packageJson: string | null, wired: string[], changes: string[], note: string | null}}
+ * @param {string} entry
  */
-export function entryWiring(
-  packageDir,
-  pkgText,
-  generated,
-  manifestName = 'astryx.integration.mjs',
-) {
-  /** @type {Record<string, any>} */
-  const pkg = JSON.parse(pkgText);
-  const changes = declarePeers(pkg);
-  const peersAdded = changes.length > 0;
+function isBuiltOrCommonJs(packageDir, entry) {
+  const parts = path.relative(packageDir, entry).split(path.sep);
+  if (parts.some(part => part === 'dist' || part === 'build')) return true;
+  if (/\.c[jt]s$/u.test(entry)) return true;
+  if (!/\.js$/u.test(entry)) return false;
+  /** @type {string} */
+  let text;
+  try {
+    text = fs.readFileSync(entry, 'utf-8');
+  } catch {
+    return false;
+  }
+  return (
+    /\bmodule\.exports\b|\bexports\.[$\w]+\s*=|\brequire\(/u.test(text) &&
+    !/^\s*export\s/mu.test(text)
+  );
+}
+
+/**
+ * The exact change that makes a set's generated module part of the
+ * package's public entry, so its icons and theme map import from the package
+ * by name (FR14), or null when the entry already exports `name`. The CLI
+ * never makes this change itself: `exports`, `main`, `types`, `files`, and the
+ * entry file are the author's (architecture:cli-surface INV16). `new-set`
+ * prints it in its receipt and `integration check` in its finding, the same
+ * words. A built or CommonJS entry is never named as the file to edit.
+ * @param {string} packageDir
+ * @param {Record<string, any>} pkg the package's package.json
+ * @param {string} generated the generated module's ./ path from the package root
+ * @param {{module?: string, name?: string}} [options] `module` the set's
+ *   module (default the package name); `name` an export the entry must have
+ *   (default the theme map)
+ * @returns {string | null}
+ */
+export function entryWiringNote(packageDir, pkg, generated, options = {}) {
+  const packageName = typeof pkg.name === 'string' ? pkg.name : '';
+  const module = options.module ?? packageName;
+  const name = options.name ?? THEME_MAP_NAME;
   const target = generated.replace(/\.[cm]?[jt]sx?$/u, '.js');
+  const entry = module
+    ? resolveIconModule(module, packageDir, {
+        name: packageName,
+        dir: packageDir,
+      })
+    : null;
+  if (entry && moduleExportOrigin(entry, name)) return null;
   /** @param {string} from a file in the package */
   const lineFor = from => {
     let relative = path
@@ -1409,54 +1430,8 @@ export function entryWiring(
     if (!relative.startsWith('.')) relative = `./${relative}`;
     return `export * from '${relative}';`;
   };
-  /** @type {Array<{path: string, contents: string, createOnly: boolean, expectedOriginal?: Buffer}>} */
-  const writes = [];
-  /** @type {string[]} */
-  const wired = [];
-  const name = typeof pkg.name === 'string' ? pkg.name : '';
-  const entry = name
-    ? resolveIconModule(name, packageDir, {name, dir: packageDir})
-    : null;
-  if (
-    entry == null &&
-    pkg.exports === undefined &&
-    pkg.main === undefined &&
-    !fs.existsSync(path.join(packageDir, 'index.js'))
-  ) {
-    for (const file of ['index.js', 'index.d.ts']) {
-      const full = path.join(packageDir, file);
-      writes.push({
-        path: full,
-        contents: `${lineFor(full)}\n`,
-        createOnly: true,
-      });
-      wired.push(file);
-    }
-    pkg.main = './index.js';
-    pkg.types = './index.d.ts';
-    pkg.exports = {'.': {types: './index.d.ts', default: './index.js'}};
-    changes.unshift(
-      'created index.js and index.d.ts, which re-export the set, and named them in exports, main, and types',
-    );
-    if (Array.isArray(pkg.files)) {
-      for (const file of ['index.js', 'index.d.ts']) {
-        if (!pkg.files.includes(file)) pkg.files.push(file);
-      }
-    } else if (pkg.files === undefined) {
-      // A new package publishes what the set needs, not every file in the
-      // folder (tests, scratch files).
-      const root = generated.replace(/^\.\//u, '').split('/')[0];
-      pkg.files = ['index.js', 'index.d.ts', root, manifestName];
-      changes.push(`set files to ${pkg.files.join(', ')}`);
-    }
-    return {
-      writes,
-      packageJson: `${JSON.stringify(pkg, null, 2)}\n`,
-      wired: [...wired, 'package.json'],
-      changes,
-      note: null,
-    };
-  }
+  const rel = (/** @type {string} */ file) =>
+    path.relative(packageDir, file).split(path.sep).join('/');
   const inside = (/** @type {string} */ file) => {
     const relative = path.relative(packageDir, file);
     return (
@@ -1465,51 +1440,99 @@ export function entryWiring(
       !relative.split(path.sep).includes('node_modules')
     );
   };
-  /** @param {string} file */
-  const append = file => {
-    const before = fs.readFileSync(file);
-    const text = before.toString('utf-8');
-    const line = lineFor(file);
-    if (text.includes(line)) return;
-    writes.push({
-      path: file,
-      contents: `${text}${text === '' || text.endsWith('\n') ? '' : '\n'}${line}\n`,
-      createOnly: false,
-      expectedOriginal: before,
-    });
-    const relative = path.relative(packageDir, file).split(path.sep).join('/');
-    wired.push(relative);
-    changes.push(`added \`${line}\` to ${relative}`);
-  };
-  if (entry && inside(entry) && /\.(?:m?js|m?tsx?|jsx)$/u.test(entry)) {
-    append(entry);
-    const rootExport =
-      pkg.exports && typeof pkg.exports === 'object' ? pkg.exports['.'] : null;
-    const typesPath =
-      (typeof pkg.types === 'string' && pkg.types) ||
-      (typeof pkg.typings === 'string' && pkg.typings) ||
-      (rootExport && typeof rootExport.types === 'string'
-        ? rootExport.types
-        : null);
-    if (typesPath) {
-      const typesFile = path.resolve(packageDir, typesPath);
-      if (inside(typesFile) && fs.existsSync(typesFile)) append(typesFile);
+  if (!entry) {
+    if (
+      pkg.exports === undefined &&
+      pkg.main === undefined &&
+      !fs.existsSync(path.join(packageDir, 'index.js'))
+    ) {
+      const line = lineFor(path.join(packageDir, 'index.js'));
+      const files = Array.isArray(pkg.files)
+        ? ` Add "index.js" and "index.d.ts" to "files".`
+        : '';
+      return `"${module}" has no entry, so its icons cannot be imported by name. Create index.js and index.d.ts, each with \`${line}\`, and add to package.json: \`"main": "./index.js", "types": "./index.d.ts", "exports": {".": {"types": "./index.d.ts", "default": "./index.js"}}\`.${files}`;
     }
-    return {
-      writes,
-      packageJson: peersAdded ? `${JSON.stringify(pkg, null, 2)}\n` : null,
-      wired,
-      changes,
-      note: null,
-    };
+    return `"${module}" does not resolve: point its package.json "exports" at a file that has \`export * from '${target}';\` (relative to that file), or build the package.`;
   }
-  return {
-    writes,
-    packageJson: peersAdded ? `${JSON.stringify(pkg, null, 2)}\n` : null,
-    wired,
-    changes,
-    note: `Add \`export * from '${generated}';\` to the module "${name}" resolves to (and to its types), so the icons and \`${THEME_MAP_NAME}\` import from it.`,
-  };
+  if (!inside(entry) || isBuiltOrCommonJs(packageDir, entry)) {
+    return `${inside(entry) ? rel(entry) : `"${module}"`} is built or CommonJS, so the CLI names no file to edit: add \`export * from '${target}';\` (relative to that file) to the source module your build compiles into it, and to its types, then build, so the icons and \`${THEME_MAP_NAME}\` import from ${module}.`;
+  }
+  const rootExport =
+    pkg.exports && typeof pkg.exports === 'object' ? pkg.exports['.'] : null;
+  const typesPath =
+    (typeof pkg.types === 'string' && pkg.types) ||
+    (typeof pkg.typings === 'string' && pkg.typings) ||
+    (rootExport &&
+    typeof rootExport === 'object' &&
+    typeof rootExport.types === 'string'
+      ? rootExport.types
+      : null);
+  const typesFile = typesPath ? path.resolve(packageDir, typesPath) : null;
+  const alsoTypes =
+    typesFile &&
+    typesFile !== entry &&
+    inside(typesFile) &&
+    fs.existsSync(typesFile) &&
+    !isBuiltOrCommonJs(packageDir, typesFile) &&
+    !fs.readFileSync(typesFile, 'utf-8').includes(lineFor(typesFile))
+      ? ` and \`${lineFor(typesFile)}\` to ${rel(typesFile)}`
+      : '';
+  return `Add \`${lineFor(entry)}\` to ${rel(entry)}${alsoTypes}, so the icons import from ${module}.`;
+}
+
+/**
+ * Whether the set's own module exports `name`, read without running it, and
+ * the line its entry needs when it does not ({@link entryWiringNote}).
+ * @param {DiscoveredIconSet} set
+ * @param {{packageDir: string, pkg: Record<string, any>}} where
+ * @param {string} generated the generated module's ./ path from the package root
+ * @param {string} name
+ * @returns {string | null} a note for the author, or null when nothing is needed
+ */
+export function setModuleNote(set, where, generated, name) {
+  return entryWiringNote(where.packageDir, where.pkg, generated, {
+    module: set.data.module,
+    name,
+  });
+}
+
+/**
+ * The peers an icon-set package publishes with, as the guide's "Before you
+ * publish" asks, that package.json does not declare yet, as the exact JSON
+ * to add, or null when it declares them all: `react` (the theme map and
+ * adapter use it), and as optional peers `@types/react` (the generated
+ * declaration file imports it) and `@astryxdesign/cli` from this release.
+ * The CLI never edits them (architecture:cli-surface INV16).
+ * @param {Record<string, any>} pkg
+ * @returns {string | null}
+ */
+export function peerNote(pkg) {
+  /** @type {Array<[string, string, boolean]>} */
+  const wanted = [
+    ['react', '>=18', false],
+    ['@types/react', '>=18', true],
+    ['@astryxdesign/cli', `>=${cliVersion()}`, true],
+  ];
+  const missing = wanted.filter(
+    ([name]) => pkg.peerDependencies?.[name] == null,
+  );
+  if (missing.length === 0) return null;
+  const peers = missing.map(([name, range]) => `"${name}": "${range}"`);
+  const optional = missing
+    .filter(([, , isOptional]) => isOptional)
+    .map(([name]) => `"${name}": {"optional": true}`);
+  return `Declare the peers your set needs; add to package.json "peerDependencies": \`{${peers.join(', ')}}\`${optional.length > 0 ? ` and to "peerDependenciesMeta": \`{${optional.join(', ')}}\`` : ''}.`;
+}
+
+/**
+ * The `typecheck` script every integration runs in its build, as the line to
+ * add, or null when package.json has one.
+ * @param {Record<string, any>} pkg
+ * @returns {string | null}
+ */
+export function typecheckNote(pkg) {
+  if (pkg.scripts?.typecheck != null) return null;
+  return 'Run `integration check --strict` in your build; add to package.json "scripts": `"typecheck": "astryx integration check --strict"`.';
 }
 
 /**
@@ -1554,24 +1577,27 @@ export function iconIdIn(set, id) {
 }
 
 /**
- * Add a ./ source's folder (`src/icons` for `./src/icons/x.js`) to package.json
- * `files` when the package lists files and none covers it, so the icon ships.
+ * The package.json `files` change a ./ source needs to ship, or null when
+ * the package lists no `files` or one covers it: its own folder (`src/icons`
+ * for `./src/icons/x.js`), as the exact array. The CLI never edits `files`
+ * (architecture:cli-surface INV16).
  * @param {string} packageDir
  * @param {string} module the source specifier
- * @returns {string | null} the folder added, or null when nothing changed
+ * @returns {string | null}
  */
-export function publishLocalSource(packageDir, module) {
+export function localSourceNote(packageDir, module) {
   if (!module.startsWith('./')) return null;
   // The file's own folder (`src/icons`), never more: other files beside
   // the package's source stay unpublished.
   const parts = module.slice(2).split('/');
   const top = parts.length > 1 ? parts.slice(0, -1).join('/') : parts[0];
   if (!top) return null;
-  const file = path.join(packageDir, 'package.json');
   /** @type {Record<string, any>} */
   let pkg;
   try {
-    pkg = JSON.parse(fs.readFileSync(file, 'utf-8'));
+    pkg = JSON.parse(
+      fs.readFileSync(path.join(packageDir, 'package.json'), 'utf-8'),
+    );
   } catch {
     return null;
   }
@@ -1589,7 +1615,5 @@ export function publishLocalSource(packageDir, module) {
   ) {
     return null;
   }
-  pkg.files = [...pkg.files, top];
-  fs.writeFileSync(file, `${JSON.stringify(pkg, null, 2)}\n`);
-  return top;
+  return `${module} is not in package.json "files", so it would not be published; set "files" to \`${JSON.stringify([...pkg.files, top])}\`.`;
 }

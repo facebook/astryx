@@ -508,3 +508,53 @@ describe('icons another installed set ships', () => {
     ]);
   });
 });
+
+describe('one key for a name imported from two modules (FR9)', () => {
+  it('maps both imports by the one key, and each keeps its variant', () => {
+    const LINES = /** @type {any} */ ({
+      name: 'lines',
+      package: '@acme/lines',
+      data: {
+        schemaVersion: 1,
+        module: '@acme/lines',
+        variants: ['outline', 'solid'],
+        default: {variant: 'outline'},
+        map: {delete: 'trash'},
+        icons: [
+          {
+            id: 'trash',
+            export: 'TrashIcon',
+            words: ['trash'],
+            variants: [
+              {
+                variant: 'solid',
+                export: 'TrashIcon',
+                module: '@acme/lines/solid',
+              },
+            ],
+          },
+        ],
+      },
+    });
+    const {source, icons} = map(
+      [
+        "import {TrashIcon} from '@acme/lines';",
+        "import {TrashIcon as TrashSolid} from '@acme/lines/solid';",
+        'export const A = () => <><TrashIcon /><TrashSolid /></>;',
+        '',
+      ].join('\n'),
+      {TrashIcon: 'delete'},
+      SELECTED,
+      [SET, LINES],
+    );
+    expect(
+      icons.mapped.map(each => [each.source.module, each.target.export]),
+    ).toEqual([
+      ['@acme/lines', 'TrashIcon'],
+      ['@acme/lines/solid', 'TrashSolidIcon'],
+    ]);
+    expect(source).toContain(
+      "import {TrashIcon, TrashSolidIcon} from '@acme/glyphs';",
+    );
+  });
+});

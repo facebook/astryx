@@ -274,9 +274,7 @@ function printIntegrationValidation(data, seen) {
       : [text('[ok] No integration issues found.')]),
     ...(data.notes ?? []).map(note =>
       // A note marked next fails --strict from the next minor release.
-      text(
-        `note (${note.code}): ${note.next ? '[next minor] ' : ''}${note.message}`,
-      ),
+      text(`note (${note.code}): ${note.next ? '[next minor] ' : ''}${note.message}`),
     ),
     text(
       `Summary: ${errors} error${errors === 1 ? '' : 's'}, ` +
@@ -870,8 +868,7 @@ export function registerDoctor(program) {
       : null;
   defineCommand(integrationCmd, doctorIntegrationValidateCommand, {
     fn: validateIntegrationFn,
-    action: async pkg =>
-      refuseBuilt() ?? runIntegrationValidation(program, pkg),
+    action: async pkg => refuseBuilt() ?? runIntegrationValidation(program, pkg),
   });
   defineCommand(integrationCmd, doctorIntegrationTemplatesCommand, {
     fn: integrationTemplateConflictsFn,
@@ -885,7 +882,6 @@ export function registerDoctor(program) {
   });
   defineCommand(integrationCmd, doctorIntegrationDocsCommand, {
     fn: integrationDocConflictsFn,
-    action: async pkg =>
-      refuseBuilt() ?? runAuthoringCheck(program, pkg, 'docs'),
+    action: async pkg => refuseBuilt() ?? runAuthoringCheck(program, pkg, 'docs'),
   });
 }

@@ -39,7 +39,7 @@ import {
   generatedModulePath,
   generatedNamesOf,
   iconNaming,
-  publishLocalSource,
+  localSourceNote,
   definitionNameOf,
   libraryIcons,
   modulePrefix,
@@ -326,14 +326,11 @@ export async function iconAdd(exportName, options) {
       JSON.stringify(next) !== JSON.stringify(set.data) ||
       created != null ||
       generatedChanged;
-    // A ./ file publishes only when package.json `files` lists it.
-    const published = publishLocalSource(packageDir, source.module);
-    if (published) files.push('package.json');
+    // A ./ file publishes only when package.json `files` lists it; the
+    // author adds it (architecture:cli-surface INV16).
     const note =
       [
-        published
-          ? `Added "${published}" to package.json files, so ${source.module} is published.`
-          : null,
+        localSourceNote(packageDir, source.module),
         setModuleNote(set, where, generated, setName),
       ]
         .filter(Boolean)

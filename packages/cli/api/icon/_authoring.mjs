@@ -35,13 +35,15 @@ import {
   generatedModuleText,
   generatedTypesPath,
   THEME_MAP_NAME,
-  entryWiring,
+  entryWiringNote,
   iconSetDataText,
+  journalFile,
   librarySource,
   libraryIcons,
   nonIconExports,
   resolveIconSource,
-  setModuleNote,
+  peerNote,
+  typecheckNote,
   writeDefinitionFile,
   writeGeneratedIcons,
   writeIconSetData,
@@ -329,23 +331,12 @@ export async function addIconSet(name, options) {
     rootPath,
     path.basename(manifestFile),
   );
-  // The set's icons import from the package by name: wire the generated
-  // module into its entry, creating one when the package has none.
-  const wiring = entryWiring(
-    packageDir,
-    pkgUpdate?.contents ?? fs.readFileSync(packageFile, 'utf-8'),
-    generated,
-    path.basename(manifestFile),
-  );
-  plans.push(...wiring.writes);
-  const pkgContents = wiring.packageJson ?? pkgUpdate?.contents ?? null;
-  if (pkgContents != null) {
+  if (pkgUpdate != null) {
     plans.push({
       path: packageFile,
-      contents: pkgContents,
+      contents: pkgUpdate.contents,
       createOnly: false,
-      expectedOriginal:
-        pkgUpdate?.expectedOriginal ?? fs.readFileSync(packageFile),
+      expectedOriginal: pkgUpdate.expectedOriginal,
     });
   }
 
@@ -360,6 +351,10 @@ export async function addIconSet(name, options) {
   };
   if (!dryRun) {
     let rollback = () => {};
+    // Every file this writes, the manifest included, is journaled first, so
+    // a failure anywhere puts each back (AST-084 FR13).
+    for (const plan of plans) journalFile(plan.path);
+    journalFile(manifestFile);
     try {
       rollback = applyWrites(plans);
       rootReceipt = await patchIntegrationRoot(
@@ -418,17 +413,6 @@ export async function addIconSet(name, options) {
   );
   {
     result.data.icons = icons.length;
-    // The line goes in the package's entry file, relative to it: the
-    // generated path is relative to the package root, which the entry need
-    // not be (exports → ./src/index.js).
-    const moduleNote = setModuleNote(
-      /** @type {import('../../foundation/discovery/icon-set-discovery.mjs').DiscoveredIconSet} */ (
-        /** @type {unknown} */ ({data: {module: pkg.name}})
-      ),
-      {packageDir, pkg},
-      generated,
-      THEME_MAP_NAME,
-    );
     if (from != null) {
       result.data.mapped = Object.entries(map).map(([definition, icon]) => ({
         definition,
@@ -438,6 +422,8 @@ export async function addIconSet(name, options) {
     }
     // `integration check --strict` type-checks the set's typed doc files.
     const typescript = resolveProjectTypeScript([packageDir]);
+    /** @type {Record<string, any>} */
+    const packageAfter = pkgUpdate ? JSON.parse(pkgUpdate.contents) : pkg;
     result.data.notes = [
       // First, so a long receipt never hides it: the strict check needs it.
       ...(typescript?.ts
@@ -447,12 +433,13 @@ export async function addIconSet(name, options) {
               ? `\`integration check --strict\` type-checks the set's doc files with this package's TypeScript, ${typescript.version}, which has no compiler API. ${TYPESCRIPT_FIX}`
               : "`integration check --strict` type-checks the set's doc files with TypeScript, which this package does not have: run `npm install -D typescript@6` (TypeScript 5.0 through 6).",
           ]),
-      // A built or CommonJS entry is left alone: the note names the line, relative
-      // to the entry when it resolves.
-      ...(wiring.note ? [moduleNote ?? wiring.note] : []),
-      ...(wiring.changes.length > 0
-        ? [`In your package it ${wiring.changes.join('; ')}.`]
-        : []),
+      // What the package needs that the CLI leaves to its author
+      // (architecture:cli-surface INV16), each as the exact change to make.
+      ...[
+        entryWiringNote(packageDir, packageAfter, generated),
+        peerNote(packageAfter),
+        typecheckNote(packageAfter),
+      ].filter(note => note != null),
       ...(options.description?.trim()
         ? []
         : [
@@ -736,7 +723,6 @@ async function refreshIconSet(
     }
     if (docAfter !== docBefore) {
       files.push(projectPath(path.relative(packageDir, docFile)));
-      if (!dryRun) fs.writeFileSync(docFile, docAfter);
     }
     if (!dryRun) {
       const written = writeGeneratedIcons(
@@ -757,6 +743,12 @@ async function refreshIconSet(
       files.push(...written.files);
       try {
         writeIconSetData(set, next);
+        // The descriptor last: the command's journal puts it back with the
+        // rest if anything after it fails (AST-084 FR13).
+        if (docAfter !== docBefore) {
+          journalFile(docFile);
+          fs.writeFileSync(docFile, docAfter);
+        }
       } catch (error) {
         written.undo();
         throw error;
