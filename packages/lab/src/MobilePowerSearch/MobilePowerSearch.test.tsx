@@ -342,8 +342,16 @@ function isSheetOpen(): boolean {
   return trigger().getAttribute('aria-expanded') === 'true';
 }
 
+/**
+ * The flow's interactive step. Each step is its own sheet dialog; through a
+ * handoff the outgoing step's dialog stays open, inert and `aria-hidden`,
+ * until a fade jsdom never fires, so the step is the first open dialog that
+ * is not hidden.
+ */
 function sheet(): HTMLElement {
-  const dialog = document.querySelector<HTMLElement>('dialog[open]');
+  const dialog = Array.from(
+    document.querySelectorAll<HTMLElement>('dialog[open]'),
+  ).find(candidate => candidate.getAttribute('aria-hidden') !== 'true');
   if (!dialog) {
     throw new Error('no open sheet');
   }

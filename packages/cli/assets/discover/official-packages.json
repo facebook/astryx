@@ -146,6 +146,10 @@
         },
         {
           "kind": "component",
+          "name": "MobilePowerSearch"
+        },
+        {
+          "kind": "component",
           "name": "MobileTokenizer"
         },
         {
