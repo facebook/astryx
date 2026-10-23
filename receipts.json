@@ -1,0 +1,443 @@
+{
+  "visualCheck": "manual frames required — intentional coarse-pointer appearance change",
+  "browser": "149.0.7827.55",
+  "receipts": [
+    {
+      "arm": "before",
+      "build": "10930261f628aa60abede65cbc58c7499a03c227",
+      "server": "loopback static Storybook",
+      "story": "core-numberinput--with-number-steppers",
+      "expected": {
+        "theme": "neutral",
+        "mode": "light",
+        "direction": "ltr",
+        "viewport": [
+          390,
+          600
+        ],
+        "dpr": 1,
+        "coarse": true,
+        "hover": false,
+        "targetCount": 1,
+        "value": "2",
+        "visibleSteppers": 2
+      },
+      "observed": {
+        "story": "core-numberinput--with-number-steppers",
+        "globals": {
+          "measureEnabled": false,
+          "backgrounds": {
+            "grid": false
+          },
+          "outline": false,
+          "viewport": {
+            "isRotated": false
+          },
+          "astryxTheme": "neutral",
+          "colorMode": "light",
+          "direction": "ltr"
+        },
+        "theme": "neutral",
+        "colorScheme": "light",
+        "direction": "ltr",
+        "viewport": [
+          390,
+          600
+        ],
+        "dpr": 1,
+        "coarse": true,
+        "hover": false,
+        "forcedColors": false,
+        "reducedMotion": false,
+        "paddingInlineEnd": "0px",
+        "fonts": "loaded",
+        "box": {
+          "x": 16,
+          "y": 44,
+          "width": 358,
+          "height": 32
+        },
+        "value": "2",
+        "visibleSteppers": 2,
+        "pageErrors": [],
+        "animation": "disabled",
+        "luminanceClass": "light"
+      },
+      "image": {
+        "file": "before-coarse-light.png",
+        "width": 358,
+        "height": 32,
+        "sha256": "2e2f18bb123f99c6af426a087bbf8850a6621470df6b7b5e4d91b12f753b38e5",
+        "nonBlank": true
+      },
+      "pass": true
+    },
+    {
+      "arm": "before",
+      "build": "10930261f628aa60abede65cbc58c7499a03c227",
+      "server": "loopback static Storybook",
+      "story": "core-numberinput--with-number-steppers",
+      "expected": {
+        "theme": "neutral",
+        "mode": "dark",
+        "direction": "ltr",
+        "viewport": [
+          390,
+          600
+        ],
+        "dpr": 1,
+        "coarse": true,
+        "hover": false,
+        "targetCount": 1,
+        "value": "2",
+        "visibleSteppers": 2
+      },
+      "observed": {
+        "story": "core-numberinput--with-number-steppers",
+        "globals": {
+          "measureEnabled": false,
+          "backgrounds": {
+            "grid": false
+          },
+          "outline": false,
+          "viewport": {
+            "isRotated": false
+          },
+          "astryxTheme": "neutral",
+          "colorMode": "dark",
+          "direction": "ltr"
+        },
+        "theme": "neutral",
+        "colorScheme": "dark",
+        "direction": "ltr",
+        "viewport": [
+          390,
+          600
+        ],
+        "dpr": 1,
+        "coarse": true,
+        "hover": false,
+        "forcedColors": false,
+        "reducedMotion": false,
+        "paddingInlineEnd": "0px",
+        "fonts": "loaded",
+        "box": {
+          "x": 16,
+          "y": 44,
+          "width": 358,
+          "height": 32
+        },
+        "value": "2",
+        "visibleSteppers": 2,
+        "pageErrors": [],
+        "animation": "disabled",
+        "luminanceClass": "dark"
+      },
+      "image": {
+        "file": "before-coarse-dark.png",
+        "width": 358,
+        "height": 32,
+        "sha256": "1284c86a0ff3656b997417fc638a0c4172702851a9926986d727ed79c8bdb92a",
+        "nonBlank": true
+      },
+      "pass": true
+    },
+    {
+      "arm": "before",
+      "build": "10930261f628aa60abede65cbc58c7499a03c227",
+      "server": "loopback static Storybook",
+      "story": "core-numberinput--with-number-steppers",
+      "expected": {
+        "theme": "neutral",
+        "mode": "light",
+        "direction": "ltr",
+        "viewport": [
+          390,
+          600
+        ],
+        "dpr": 1,
+        "coarse": false,
+        "hover": true,
+        "targetCount": 1,
+        "value": "2",
+        "visibleSteppers": 2
+      },
+      "observed": {
+        "story": "core-numberinput--with-number-steppers",
+        "globals": {
+          "measureEnabled": false,
+          "backgrounds": {
+            "grid": false
+          },
+          "outline": false,
+          "viewport": {
+            "isRotated": false
+          },
+          "astryxTheme": "neutral",
+          "colorMode": "light",
+          "direction": "ltr"
+        },
+        "theme": "neutral",
+        "colorScheme": "light",
+        "direction": "ltr",
+        "viewport": [
+          390,
+          600
+        ],
+        "dpr": 1,
+        "coarse": false,
+        "hover": true,
+        "forcedColors": false,
+        "reducedMotion": false,
+        "paddingInlineEnd": "0px",
+        "fonts": "loaded",
+        "box": {
+          "x": 16,
+          "y": 40,
+          "width": 358,
+          "height": 32
+        },
+        "value": "2",
+        "visibleSteppers": 2,
+        "pageErrors": [],
+        "animation": "disabled",
+        "luminanceClass": "light"
+      },
+      "image": {
+        "file": "before-fine-light.png",
+        "width": 358,
+        "height": 32,
+        "sha256": "0cb24e9242b6d0fc870343d733de3dc22183553a0a7a5e7be1144d251438b82b",
+        "nonBlank": true
+      },
+      "pass": true
+    },
+    {
+      "arm": "after",
+      "build": "b817cee88add25ec0036df091402ed82ec158345",
+      "server": "loopback static Storybook",
+      "story": "core-numberinput--with-number-steppers",
+      "expected": {
+        "theme": "neutral",
+        "mode": "light",
+        "direction": "ltr",
+        "viewport": [
+          390,
+          600
+        ],
+        "dpr": 1,
+        "coarse": true,
+        "hover": false,
+        "targetCount": 1,
+        "value": "2",
+        "visibleSteppers": 0
+      },
+      "observed": {
+        "story": "core-numberinput--with-number-steppers",
+        "globals": {
+          "measureEnabled": false,
+          "backgrounds": {
+            "grid": false
+          },
+          "outline": false,
+          "viewport": {
+            "isRotated": false
+          },
+          "astryxTheme": "neutral",
+          "colorMode": "light",
+          "direction": "ltr"
+        },
+        "theme": "neutral",
+        "colorScheme": "light",
+        "direction": "ltr",
+        "viewport": [
+          390,
+          600
+        ],
+        "dpr": 1,
+        "coarse": true,
+        "hover": false,
+        "forcedColors": false,
+        "reducedMotion": false,
+        "paddingInlineEnd": "8px",
+        "fonts": "loaded",
+        "box": {
+          "x": 16,
+          "y": 44,
+          "width": 358,
+          "height": 32
+        },
+        "value": "2",
+        "visibleSteppers": 0,
+        "pageErrors": [],
+        "animation": "disabled",
+        "luminanceClass": "light"
+      },
+      "image": {
+        "file": "after-coarse-light.png",
+        "width": 358,
+        "height": 32,
+        "sha256": "e5a34ce644a3d2d77d64d23f4d47c338c821f164572df6fe84166c7efe806b3b",
+        "nonBlank": true
+      },
+      "pass": true
+    },
+    {
+      "arm": "after",
+      "build": "b817cee88add25ec0036df091402ed82ec158345",
+      "server": "loopback static Storybook",
+      "story": "core-numberinput--with-number-steppers",
+      "expected": {
+        "theme": "neutral",
+        "mode": "dark",
+        "direction": "ltr",
+        "viewport": [
+          390,
+          600
+        ],
+        "dpr": 1,
+        "coarse": true,
+        "hover": false,
+        "targetCount": 1,
+        "value": "2",
+        "visibleSteppers": 0
+      },
+      "observed": {
+        "story": "core-numberinput--with-number-steppers",
+        "globals": {
+          "measureEnabled": false,
+          "backgrounds": {
+            "grid": false
+          },
+          "outline": false,
+          "viewport": {
+            "isRotated": false
+          },
+          "astryxTheme": "neutral",
+          "colorMode": "dark",
+          "direction": "ltr"
+        },
+        "theme": "neutral",
+        "colorScheme": "dark",
+        "direction": "ltr",
+        "viewport": [
+          390,
+          600
+        ],
+        "dpr": 1,
+        "coarse": true,
+        "hover": false,
+        "forcedColors": false,
+        "reducedMotion": false,
+        "paddingInlineEnd": "8px",
+        "fonts": "loaded",
+        "box": {
+          "x": 16,
+          "y": 44,
+          "width": 358,
+          "height": 32
+        },
+        "value": "2",
+        "visibleSteppers": 0,
+        "pageErrors": [],
+        "animation": "disabled",
+        "luminanceClass": "dark"
+      },
+      "image": {
+        "file": "after-coarse-dark.png",
+        "width": 358,
+        "height": 32,
+        "sha256": "10f4f0364f989058fd2ccb5f35b28b438ac43ee0f4a531028393bd506e7223b2",
+        "nonBlank": true
+      },
+      "pass": true
+    },
+    {
+      "arm": "after",
+      "build": "b817cee88add25ec0036df091402ed82ec158345",
+      "server": "loopback static Storybook",
+      "story": "core-numberinput--with-number-steppers",
+      "expected": {
+        "theme": "neutral",
+        "mode": "light",
+        "direction": "ltr",
+        "viewport": [
+          390,
+          600
+        ],
+        "dpr": 1,
+        "coarse": false,
+        "hover": true,
+        "targetCount": 1,
+        "value": "2",
+        "visibleSteppers": 2
+      },
+      "observed": {
+        "story": "core-numberinput--with-number-steppers",
+        "globals": {
+          "measureEnabled": false,
+          "backgrounds": {
+            "grid": false
+          },
+          "outline": false,
+          "viewport": {
+            "isRotated": false
+          },
+          "astryxTheme": "neutral",
+          "colorMode": "light",
+          "direction": "ltr"
+        },
+        "theme": "neutral",
+        "colorScheme": "light",
+        "direction": "ltr",
+        "viewport": [
+          390,
+          600
+        ],
+        "dpr": 1,
+        "coarse": false,
+        "hover": true,
+        "forcedColors": false,
+        "reducedMotion": false,
+        "paddingInlineEnd": "0px",
+        "fonts": "loaded",
+        "box": {
+          "x": 16,
+          "y": 40,
+          "width": 358,
+          "height": 32
+        },
+        "value": "2",
+        "visibleSteppers": 2,
+        "pageErrors": [],
+        "animation": "disabled",
+        "luminanceClass": "light"
+      },
+      "image": {
+        "file": "after-fine-light.png",
+        "width": 358,
+        "height": 32,
+        "sha256": "0cb24e9242b6d0fc870343d733de3dc22183553a0a7a5e7be1144d251438b82b",
+        "nonBlank": true
+      },
+      "pass": true
+    }
+  ],
+  "pixelDifferences": [
+    {
+      "case": "coarse-light",
+      "changedPixels": 51,
+      "totalPixels": 11456
+    },
+    {
+      "case": "coarse-dark",
+      "changedPixels": 52,
+      "totalPixels": 11456
+    },
+    {
+      "case": "fine-light",
+      "changedPixels": 0,
+      "totalPixels": 11456
+    }
+  ]
+}

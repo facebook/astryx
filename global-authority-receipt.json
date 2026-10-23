@@ -1,0 +1,463 @@
+{
+  "schemaVersion": 1,
+  "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+  "reviewHead": "b817cee88add25ec0036df091402ed82ec158345",
+  "requestedTriggers": [
+    "responsive",
+    "styling",
+    "testing",
+    "visual"
+  ],
+  "matches": [
+    {
+      "recordId": "architecture:component-style-authoring",
+      "path": "docs/architecture/component-style-authoring.md",
+      "trigger": "styling",
+      "claimId": "INV1",
+      "claim": "Component-local styles lower through StyleX.",
+      "matchReason": "Requested trigger \"styling\" matched review-applicability:v1 claim \"architecture:component-style-authoring/INV1\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "69512012c9a9ef784d87a86e316d23e61689ceb7f96018bcbe83576b0113a7bf"
+    },
+    {
+      "recordId": "architecture:component-style-authoring",
+      "path": "docs/architecture/component-style-authoring.md",
+      "trigger": "styling",
+      "claimId": "INV2",
+      "claim": "CSS owns CSS-resolvable presentation.",
+      "matchReason": "Requested trigger \"styling\" matched review-applicability:v1 claim \"architecture:component-style-authoring/INV2\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "69512012c9a9ef784d87a86e316d23e61689ceb7f96018bcbe83576b0113a7bf"
+    },
+    {
+      "recordId": "architecture:component-style-authoring",
+      "path": "docs/architecture/component-style-authoring.md",
+      "trigger": "styling",
+      "claimId": "INV3",
+      "claim": "Declarations remain valid and statically composable.",
+      "matchReason": "Requested trigger \"styling\" matched review-applicability:v1 claim \"architecture:component-style-authoring/INV3\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "69512012c9a9ef784d87a86e316d23e61689ceb7f96018bcbe83576b0113a7bf"
+    },
+    {
+      "recordId": "architecture:component-style-authoring",
+      "path": "docs/architecture/component-style-authoring.md",
+      "trigger": "styling",
+      "claimId": "INV4",
+      "claim": "Relational state is component-scoped.",
+      "matchReason": "Requested trigger \"styling\" matched review-applicability:v1 claim \"architecture:component-style-authoring/INV4\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "69512012c9a9ef784d87a86e316d23e61689ceb7f96018bcbe83576b0113a7bf"
+    },
+    {
+      "recordId": "architecture:component-style-authoring",
+      "path": "docs/architecture/component-style-authoring.md",
+      "trigger": "styling",
+      "claimId": "INV5",
+      "claim": "Every wrapper has a named responsibility.",
+      "matchReason": "Requested trigger \"styling\" matched review-applicability:v1 claim \"architecture:component-style-authoring/INV5\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "69512012c9a9ef784d87a86e316d23e61689ceb7f96018bcbe83576b0113a7bf"
+    },
+    {
+      "recordId": "architecture:component-test-sufficiency",
+      "path": "docs/architecture/component-test-sufficiency.md",
+      "trigger": "testing",
+      "claimId": "INV1",
+      "claim": "Authority and evidence are distinct.",
+      "matchReason": "Requested trigger \"testing\" matched review-applicability:v1 claim \"architecture:component-test-sufficiency/INV1\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "2312a6256ab09360e04167e14f562aa6cebc34fbd7e6eba7c68cdf773679de66"
+    },
+    {
+      "recordId": "architecture:component-test-sufficiency",
+      "path": "docs/architecture/component-test-sufficiency.md",
+      "trigger": "testing",
+      "claimId": "INV10",
+      "claim": "Gaps and hardening are distinct.",
+      "matchReason": "Requested trigger \"testing\" matched review-applicability:v1 claim \"architecture:component-test-sufficiency/INV10\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "2312a6256ab09360e04167e14f562aa6cebc34fbd7e6eba7c68cdf773679de66"
+    },
+    {
+      "recordId": "architecture:component-test-sufficiency",
+      "path": "docs/architecture/component-test-sufficiency.md",
+      "trigger": "testing",
+      "claimId": "INV11",
+      "claim": "New tests require a new proof obligation.",
+      "matchReason": "Requested trigger \"testing\" matched review-applicability:v1 claim \"architecture:component-test-sufficiency/INV11\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "2312a6256ab09360e04167e14f562aa6cebc34fbd7e6eba7c68cdf773679de66"
+    },
+    {
+      "recordId": "architecture:component-test-sufficiency",
+      "path": "docs/architecture/component-test-sufficiency.md",
+      "trigger": "testing",
+      "claimId": "INV2",
+      "claim": "Critical promises have regression evidence.",
+      "matchReason": "Requested trigger \"testing\" matched review-applicability:v1 claim \"architecture:component-test-sufficiency/INV2\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "2312a6256ab09360e04167e14f562aa6cebc34fbd7e6eba7c68cdf773679de66"
+    },
+    {
+      "recordId": "architecture:component-test-sufficiency",
+      "path": "docs/architecture/component-test-sufficiency.md",
+      "trigger": "testing",
+      "claimId": "INV3",
+      "claim": "Previously fixed behavior defects remain protected.",
+      "matchReason": "Requested trigger \"testing\" matched review-applicability:v1 claim \"architecture:component-test-sufficiency/INV3\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "2312a6256ab09360e04167e14f562aa6cebc34fbd7e6eba7c68cdf773679de66"
+    },
+    {
+      "recordId": "architecture:component-test-sufficiency",
+      "path": "docs/architecture/component-test-sufficiency.md",
+      "trigger": "testing",
+      "claimId": "INV4",
+      "claim": "Partitions follow behavior and risk.",
+      "matchReason": "Requested trigger \"testing\" matched review-applicability:v1 claim \"architecture:component-test-sufficiency/INV4\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "2312a6256ab09360e04167e14f562aa6cebc34fbd7e6eba7c68cdf773679de66"
+    },
+    {
+      "recordId": "architecture:component-test-sufficiency",
+      "path": "docs/architecture/component-test-sufficiency.md",
+      "trigger": "testing",
+      "claimId": "INV5",
+      "claim": "Assertions observe the contract.",
+      "matchReason": "Requested trigger \"testing\" matched review-applicability:v1 claim \"architecture:component-test-sufficiency/INV5\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "2312a6256ab09360e04167e14f562aa6cebc34fbd7e6eba7c68cdf773679de66"
+    },
+    {
+      "recordId": "architecture:component-test-sufficiency",
+      "path": "docs/architecture/component-test-sufficiency.md",
+      "trigger": "testing",
+      "claimId": "INV6",
+      "claim": "Evidence is mutation-sensitive.",
+      "matchReason": "Requested trigger \"testing\" matched review-applicability:v1 claim \"architecture:component-test-sufficiency/INV6\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "2312a6256ab09360e04167e14f562aa6cebc34fbd7e6eba7c68cdf773679de66"
+    },
+    {
+      "recordId": "architecture:component-test-sufficiency",
+      "path": "docs/architecture/component-test-sufficiency.md",
+      "trigger": "testing",
+      "claimId": "INV7",
+      "claim": "Coverage remains bounded and intentional.",
+      "matchReason": "Requested trigger \"testing\" matched review-applicability:v1 claim \"architecture:component-test-sufficiency/INV7\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "2312a6256ab09360e04167e14f562aa6cebc34fbd7e6eba7c68cdf773679de66"
+    },
+    {
+      "recordId": "architecture:rtl-audit-evidence",
+      "path": "docs/architecture/rtl-audit-evidence.md",
+      "trigger": "testing",
+      "claimId": "INV1",
+      "claim": "Evidence follows the claim.",
+      "matchReason": "Requested trigger \"testing\" matched review-applicability:v1 claim \"architecture:rtl-audit-evidence/INV1\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "6bcec11a1987c6799c207a906a5fb6f9412705c55eac2b31959cffb1e7eb5295"
+    },
+    {
+      "recordId": "architecture:rtl-audit-evidence",
+      "path": "docs/architecture/rtl-audit-evidence.md",
+      "trigger": "testing",
+      "claimId": "INV10",
+      "claim": "Touch-target evidence includes size and alignment.",
+      "matchReason": "Requested trigger \"testing\" matched review-applicability:v1 claim \"architecture:rtl-audit-evidence/INV10\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "6bcec11a1987c6799c207a906a5fb6f9412705c55eac2b31959cffb1e7eb5295"
+    },
+    {
+      "recordId": "architecture:rtl-audit-evidence",
+      "path": "docs/architecture/rtl-audit-evidence.md",
+      "trigger": "testing",
+      "claimId": "INV12",
+      "claim": "Fixture applicability follows semantic role.",
+      "matchReason": "Requested trigger \"testing\" matched review-applicability:v1 claim \"architecture:rtl-audit-evidence/INV12\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "6bcec11a1987c6799c207a906a5fb6f9412705c55eac2b31959cffb1e7eb5295"
+    },
+    {
+      "recordId": "architecture:rtl-audit-evidence",
+      "path": "docs/architecture/rtl-audit-evidence.md",
+      "trigger": "testing",
+      "claimId": "INV13",
+      "claim": "Story exclusions are typed, resolved, and fail closed.",
+      "matchReason": "Requested trigger \"testing\" matched review-applicability:v1 claim \"architecture:rtl-audit-evidence/INV13\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "6bcec11a1987c6799c207a906a5fb6f9412705c55eac2b31959cffb1e7eb5295"
+    },
+    {
+      "recordId": "architecture:rtl-audit-evidence",
+      "path": "docs/architecture/rtl-audit-evidence.md",
+      "trigger": "testing",
+      "claimId": "INV14",
+      "claim": "A D1 exclusion changes only D1.",
+      "matchReason": "Requested trigger \"testing\" matched review-applicability:v1 claim \"architecture:rtl-audit-evidence/INV14\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "6bcec11a1987c6799c207a906a5fb6f9412705c55eac2b31959cffb1e7eb5295"
+    },
+    {
+      "recordId": "architecture:rtl-audit-evidence",
+      "path": "docs/architecture/rtl-audit-evidence.md",
+      "trigger": "testing",
+      "claimId": "INV16",
+      "claim": "Deliberate D1 exemptions are reviewed and visible.",
+      "matchReason": "Requested trigger \"testing\" matched review-applicability:v1 claim \"architecture:rtl-audit-evidence/INV16\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "6bcec11a1987c6799c207a906a5fb6f9412705c55eac2b31959cffb1e7eb5295"
+    },
+    {
+      "recordId": "architecture:rtl-audit-evidence",
+      "path": "docs/architecture/rtl-audit-evidence.md",
+      "trigger": "testing",
+      "claimId": "INV2",
+      "claim": "RTL is graded as a relationship.",
+      "matchReason": "Requested trigger \"testing\" matched review-applicability:v1 claim \"architecture:rtl-audit-evidence/INV2\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "6bcec11a1987c6799c207a906a5fb6f9412705c55eac2b31959cffb1e7eb5295"
+    },
+    {
+      "recordId": "architecture:rtl-audit-evidence",
+      "path": "docs/architecture/rtl-audit-evidence.md",
+      "trigger": "testing",
+      "claimId": "INV3",
+      "claim": "Behavior failures have no allowlist.",
+      "matchReason": "Requested trigger \"testing\" matched review-applicability:v1 claim \"architecture:rtl-audit-evidence/INV3\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "6bcec11a1987c6799c207a906a5fb6f9412705c55eac2b31959cffb1e7eb5295"
+    },
+    {
+      "recordId": "architecture:rtl-audit-evidence",
+      "path": "docs/architecture/rtl-audit-evidence.md",
+      "trigger": "testing",
+      "claimId": "INV4",
+      "claim": "All-N/A is not measured.",
+      "matchReason": "Requested trigger \"testing\" matched review-applicability:v1 claim \"architecture:rtl-audit-evidence/INV4\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "6bcec11a1987c6799c207a906a5fb6f9412705c55eac2b31959cffb1e7eb5295"
+    },
+    {
+      "recordId": "architecture:rtl-audit-evidence",
+      "path": "docs/architecture/rtl-audit-evidence.md",
+      "trigger": "testing",
+      "claimId": "INV6",
+      "claim": "Automatic and curated coverage compose.",
+      "matchReason": "Requested trigger \"testing\" matched review-applicability:v1 claim \"architecture:rtl-audit-evidence/INV6\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "6bcec11a1987c6799c207a906a5fb6f9412705c55eac2b31959cffb1e7eb5295"
+    },
+    {
+      "recordId": "architecture:rtl-audit-evidence",
+      "path": "docs/architecture/rtl-audit-evidence.md",
+      "trigger": "testing",
+      "claimId": "INV9",
+      "claim": "Evidence mutations prove the gate.",
+      "matchReason": "Requested trigger \"testing\" matched review-applicability:v1 claim \"architecture:rtl-audit-evidence/INV9\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "6bcec11a1987c6799c207a906a5fb6f9412705c55eac2b31959cffb1e7eb5295"
+    },
+    {
+      "recordId": "design:bidirectionality",
+      "path": "docs/design/bidirectionality.md",
+      "trigger": "responsive",
+      "claimId": "DR1",
+      "claim": "Preserve meaning, not coordinates.",
+      "matchReason": "Requested trigger \"responsive\" matched review-applicability:v1 claim \"design:bidirectionality/DR1\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "b73b8b28a3f85bdf5d6a7a28ac80798a13decf1e2ead7f8ca39d98f4c75ef804"
+    },
+    {
+      "recordId": "design:bidirectionality",
+      "path": "docs/design/bidirectionality.md",
+      "trigger": "responsive",
+      "claimId": "DR10",
+      "claim": "Exceptions require semantics, not convenience.",
+      "matchReason": "Requested trigger \"responsive\" matched review-applicability:v1 claim \"design:bidirectionality/DR10\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "b73b8b28a3f85bdf5d6a7a28ac80798a13decf1e2ead7f8ca39d98f4c75ef804"
+    },
+    {
+      "recordId": "design:bidirectionality",
+      "path": "docs/design/bidirectionality.md",
+      "trigger": "responsive",
+      "claimId": "DR14",
+      "claim": "Responsive reflow preserves logical ownership.",
+      "matchReason": "Requested trigger \"responsive\" matched review-applicability:v1 claim \"design:bidirectionality/DR14\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "b73b8b28a3f85bdf5d6a7a28ac80798a13decf1e2ead7f8ca39d98f4c75ef804"
+    },
+    {
+      "recordId": "design:bidirectionality",
+      "path": "docs/design/bidirectionality.md",
+      "trigger": "responsive",
+      "claimId": "DR3",
+      "claim": "Reading-order relationships follow inline start and end.",
+      "matchReason": "Requested trigger \"responsive\" matched review-applicability:v1 claim \"design:bidirectionality/DR3\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "b73b8b28a3f85bdf5d6a7a28ac80798a13decf1e2ead7f8ca39d98f4c75ef804"
+    },
+    {
+      "recordId": "design:bidirectionality",
+      "path": "docs/design/bidirectionality.md",
+      "trigger": "styling",
+      "claimId": "DR10",
+      "claim": "Exceptions require semantics, not convenience.",
+      "matchReason": "Requested trigger \"styling\" matched review-applicability:v1 claim \"design:bidirectionality/DR10\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "b73b8b28a3f85bdf5d6a7a28ac80798a13decf1e2ead7f8ca39d98f4c75ef804"
+    },
+    {
+      "recordId": "design:bidirectionality",
+      "path": "docs/design/bidirectionality.md",
+      "trigger": "styling",
+      "claimId": "DR3",
+      "claim": "Reading-order relationships follow inline start and end.",
+      "matchReason": "Requested trigger \"styling\" matched review-applicability:v1 claim \"design:bidirectionality/DR3\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "b73b8b28a3f85bdf5d6a7a28ac80798a13decf1e2ead7f8ca39d98f4c75ef804"
+    },
+    {
+      "recordId": "design:bidirectionality",
+      "path": "docs/design/bidirectionality.md",
+      "trigger": "styling",
+      "claimId": "DR4",
+      "claim": "Directional artwork is handled exactly once.",
+      "matchReason": "Requested trigger \"styling\" matched review-applicability:v1 claim \"design:bidirectionality/DR4\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "b73b8b28a3f85bdf5d6a7a28ac80798a13decf1e2ead7f8ca39d98f4c75ef804"
+    },
+    {
+      "recordId": "design:bidirectionality",
+      "path": "docs/design/bidirectionality.md",
+      "trigger": "styling",
+      "claimId": "DR5",
+      "claim": "Direction-neutral and physical content stays stable.",
+      "matchReason": "Requested trigger \"styling\" matched review-applicability:v1 claim \"design:bidirectionality/DR5\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "b73b8b28a3f85bdf5d6a7a28ac80798a13decf1e2ead7f8ca39d98f4c75ef804"
+    },
+    {
+      "recordId": "design:bidirectionality",
+      "path": "docs/design/bidirectionality.md",
+      "trigger": "styling",
+      "claimId": "DR9",
+      "claim": "Direction changes must not flash the wrong relationship.",
+      "matchReason": "Requested trigger \"styling\" matched review-applicability:v1 claim \"design:bidirectionality/DR9\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "b73b8b28a3f85bdf5d6a7a28ac80798a13decf1e2ead7f8ca39d98f4c75ef804"
+    },
+    {
+      "recordId": "design:bidirectionality",
+      "path": "docs/design/bidirectionality.md",
+      "trigger": "visual",
+      "claimId": "DR1",
+      "claim": "Preserve meaning, not coordinates.",
+      "matchReason": "Requested trigger \"visual\" matched review-applicability:v1 claim \"design:bidirectionality/DR1\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "b73b8b28a3f85bdf5d6a7a28ac80798a13decf1e2ead7f8ca39d98f4c75ef804"
+    },
+    {
+      "recordId": "design:bidirectionality",
+      "path": "docs/design/bidirectionality.md",
+      "trigger": "visual",
+      "claimId": "DR10",
+      "claim": "Exceptions require semantics, not convenience.",
+      "matchReason": "Requested trigger \"visual\" matched review-applicability:v1 claim \"design:bidirectionality/DR10\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "b73b8b28a3f85bdf5d6a7a28ac80798a13decf1e2ead7f8ca39d98f4c75ef804"
+    },
+    {
+      "recordId": "design:bidirectionality",
+      "path": "docs/design/bidirectionality.md",
+      "trigger": "visual",
+      "claimId": "DR4",
+      "claim": "Directional artwork is handled exactly once.",
+      "matchReason": "Requested trigger \"visual\" matched review-applicability:v1 claim \"design:bidirectionality/DR4\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "b73b8b28a3f85bdf5d6a7a28ac80798a13decf1e2ead7f8ca39d98f4c75ef804"
+    },
+    {
+      "recordId": "design:bidirectionality",
+      "path": "docs/design/bidirectionality.md",
+      "trigger": "visual",
+      "claimId": "DR5",
+      "claim": "Direction-neutral and physical content stays stable.",
+      "matchReason": "Requested trigger \"visual\" matched review-applicability:v1 claim \"design:bidirectionality/DR5\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "b73b8b28a3f85bdf5d6a7a28ac80798a13decf1e2ead7f8ca39d98f4c75ef804"
+    },
+    {
+      "recordId": "spec:AST-030",
+      "path": "docs/specs/AST-030/spec.md",
+      "trigger": "testing",
+      "claimId": "FR11",
+      "claim": "Each surface owns one test and applicable build lane.",
+      "matchReason": "Requested trigger \"testing\" matched review-applicability:v1 claim \"spec:AST-030/FR11\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "785886fa71469b51293596bf68a1ce9317a83e9a78b2ecca78ec49ef64e2fa18"
+    },
+    {
+      "recordId": "spec:AST-030",
+      "path": "docs/specs/AST-030/spec.md",
+      "trigger": "testing",
+      "claimId": "FR7",
+      "claim": "Required check names remain stable.",
+      "matchReason": "Requested trigger \"testing\" matched review-applicability:v1 claim \"spec:AST-030/FR7\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "785886fa71469b51293596bf68a1ce9317a83e9a78b2ecca78ec49ef64e2fa18"
+    },
+    {
+      "recordId": "spec:AST-055",
+      "path": "docs/specs/AST-055-caller-rendered-trigger/spec.md",
+      "trigger": "styling",
+      "claimId": "DEC-2",
+      "claim": "The trigger owns a box",
+      "matchReason": "Requested trigger \"styling\" matched review-applicability:v1 claim \"spec:AST-055/DEC-2\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "e40db994f7de57d27adf6a148460a169625bc605b437570c2af957808713acc9"
+    },
+    {
+      "recordId": "spec:AST-055",
+      "path": "docs/specs/AST-055-caller-rendered-trigger/spec.md",
+      "trigger": "styling",
+      "claimId": "DEC-3",
+      "claim": "Pointer paint stays with the caller; the open state is `aria-expanded`",
+      "matchReason": "Requested trigger \"styling\" matched review-applicability:v1 claim \"spec:AST-055/DEC-3\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "e40db994f7de57d27adf6a148460a169625bc605b437570c2af957808713acc9"
+    },
+    {
+      "recordId": "spec:AST-055",
+      "path": "docs/specs/AST-055-caller-rendered-trigger/spec.md",
+      "trigger": "styling",
+      "claimId": "FR4",
+      "claim": "The caller's control MUST own a box. A component MUST NOT render it inside a wrapper with no box of its own (`display: contents`), and MUST NOT depend on such a wrapper where it paints or offsets a focus indicator on the trigger, or positions the overlay against the trigger's rect: there is no rect to anchor to and no box on which to paint. FR1 removes the need for any wrapper.",
+      "matchReason": "Requested trigger \"styling\" matched review-applicability:v1 claim \"spec:AST-055/FR4\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "e40db994f7de57d27adf6a148460a169625bc605b437570c2af957808713acc9"
+    },
+    {
+      "recordId": "spec:AST-055",
+      "path": "docs/specs/AST-055-caller-rendered-trigger/spec.md",
+      "trigger": "styling",
+      "claimId": "FR5",
+      "claim": "Hover, pressed, and every other pointer paint on the caller's control MUST remain the caller's own CSS. The component MUST NOT write paint onto an element it does not render. The component MUST publish the overlay's open state on the handed-back props as `aria-expanded`, so a caller styles the open state from the rendered attribute and no additional public API is added for it.",
+      "matchReason": "Requested trigger \"styling\" matched review-applicability:v1 claim \"spec:AST-055/FR5\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "e40db994f7de57d27adf6a148460a169625bc605b437570c2af957808713acc9"
+    },
+    {
+      "recordId": "spec:AST-055",
+      "path": "docs/specs/AST-055-caller-rendered-trigger/spec.md",
+      "trigger": "styling",
+      "claimId": "FR6",
+      "claim": "The prop's consumer documentation MUST show styling the open state from `aria-expanded` on the caller's control, and MUST state that a pressed look keyed to `:active` is not a substitute, because `:active` does not behave the same under a coarse pointer — `module:DropdownMenu/useMenuPress` FR6 drops coarse-pointer `:active` paint on menu rows for that reason.",
+      "matchReason": "Requested trigger \"styling\" matched review-applicability:v1 claim \"spec:AST-055/FR6\".",
+      "authorityCommit": "10930261f628aa60abede65cbc58c7499a03c227",
+      "recordDigest": "e40db994f7de57d27adf6a148460a169625bc605b437570c2af957808713acc9"
+    }
+  ]
+}

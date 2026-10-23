@@ -1,0 +1,70 @@
+{
+  "arm": "after",
+  "build": "b817cee88add25ec0036df091402ed82ec158345",
+  "server": "loopback static Storybook",
+  "story": "core-numberinput--with-number-steppers",
+  "expected": {
+    "theme": "neutral",
+    "mode": "dark",
+    "direction": "ltr",
+    "viewport": [
+      390,
+      600
+    ],
+    "dpr": 1,
+    "coarse": true,
+    "hover": false,
+    "targetCount": 1,
+    "value": "2",
+    "visibleSteppers": 0
+  },
+  "observed": {
+    "story": "core-numberinput--with-number-steppers",
+    "globals": {
+      "measureEnabled": false,
+      "backgrounds": {
+        "grid": false
+      },
+      "outline": false,
+      "viewport": {
+        "isRotated": false
+      },
+      "astryxTheme": "neutral",
+      "colorMode": "dark",
+      "direction": "ltr"
+    },
+    "theme": "neutral",
+    "colorScheme": "dark",
+    "direction": "ltr",
+    "viewport": [
+      390,
+      600
+    ],
+    "dpr": 1,
+    "coarse": true,
+    "hover": false,
+    "forcedColors": false,
+    "reducedMotion": false,
+    "paddingInlineEnd": "8px",
+    "fonts": "loaded",
+    "box": {
+      "x": 16,
+      "y": 44,
+      "width": 358,
+      "height": 32
+    },
+    "value": "2",
+    "visibleSteppers": 0,
+    "pageErrors": [],
+    "animation": "disabled",
+    "luminanceClass": "dark"
+  },
+  "image": {
+    "file": "after-coarse-dark.png",
+    "width": 358,
+    "height": 32,
+    "sha256": "10f4f0364f989058fd2ccb5f35b28b438ac43ee0f4a531028393bd506e7223b2",
+    "nonBlank": true
+  },
+  "pass": true
+}

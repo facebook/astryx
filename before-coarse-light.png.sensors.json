@@ -1,0 +1,70 @@
+{
+  "arm": "before",
+  "build": "10930261f628aa60abede65cbc58c7499a03c227",
+  "server": "loopback static Storybook",
+  "story": "core-numberinput--with-number-steppers",
+  "expected": {
+    "theme": "neutral",
+    "mode": "light",
+    "direction": "ltr",
+    "viewport": [
+      390,
+      600
+    ],
+    "dpr": 1,
+    "coarse": true,
+    "hover": false,
+    "targetCount": 1,
+    "value": "2",
+    "visibleSteppers": 2
+  },
+  "observed": {
+    "story": "core-numberinput--with-number-steppers",
+    "globals": {
+      "measureEnabled": false,
+      "backgrounds": {
+        "grid": false
+      },
+      "outline": false,
+      "viewport": {
+        "isRotated": false
+      },
+      "astryxTheme": "neutral",
+      "colorMode": "light",
+      "direction": "ltr"
+    },
+    "theme": "neutral",
+    "colorScheme": "light",
+    "direction": "ltr",
+    "viewport": [
+      390,
+      600
+    ],
+    "dpr": 1,
+    "coarse": true,
+    "hover": false,
+    "forcedColors": false,
+    "reducedMotion": false,
+    "paddingInlineEnd": "0px",
+    "fonts": "loaded",
+    "box": {
+      "x": 16,
+      "y": 44,
+      "width": 358,
+      "height": 32
+    },
+    "value": "2",
+    "visibleSteppers": 2,
+    "pageErrors": [],
+    "animation": "disabled",
+    "luminanceClass": "light"
+  },
+  "image": {
+    "file": "before-coarse-light.png",
+    "width": 358,
+    "height": 32,
+    "sha256": "2e2f18bb123f99c6af426a087bbf8850a6621470df6b7b5e4d91b12f753b38e5",
+    "nonBlank": true
+  },
+  "pass": true
+}

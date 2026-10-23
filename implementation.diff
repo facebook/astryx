@@ -1,0 +1,252 @@
+diff --git a/.changeset/hide-numberinput-s-compact-stepper-buttons-on-co-6epw.md b/.changeset/hide-numberinput-s-compact-stepper-buttons-on-co-6epw.md
+new file mode 100644
+index 0000000..652bde7
+--- /dev/null
++++ b/.changeset/hide-numberinput-s-compact-stepper-buttons-on-co-6epw.md
+@@ -0,0 +1,6 @@
++---
++'@astryxdesign/core': patch
++---
++
++[fix] Hide NumberInput’s compact stepper buttons on coarse pointers while preserving direct entry, keyboard stepping, and themed end padding.
++@imdreamrunner
+diff --git a/apps/storybook/stories/NumberInput.stories.tsx b/apps/storybook/stories/NumberInput.stories.tsx
+index 95ce116..b8a0aec 100644
+--- a/apps/storybook/stories/NumberInput.stories.tsx
++++ b/apps/storybook/stories/NumberInput.stories.tsx
+@@ -224,6 +224,14 @@ export const FormattedDisplay: Story = {
+ };
+ 
+ export const WithNumberSteppers: Story = {
++  parameters: {
++    docs: {
++      description: {
++        story:
++          'The compact steppers are shown on fine pointers and hidden on coarse pointers, regardless of viewport width. Direct entry and arrow-key stepping remain available.',
++      },
++    },
++  },
+   render: args => {
+     const [value, setValue] = useState<number | null>(args.value ?? 2);
+     return <NumberInput {...args} value={value} onChange={setValue} />;
+diff --git a/packages/core/src/NumberInput/NumberInput.doc.mjs b/packages/core/src/NumberInput/NumberInput.doc.mjs
+index 544d596..c45f00e 100644
+--- a/packages/core/src/NumberInput/NumberInput.doc.mjs
++++ b/packages/core/src/NumberInput/NumberInput.doc.mjs
+@@ -160,7 +160,7 @@ export const docs = {
+       name: 'hasNumberSteppers',
+       type: 'boolean',
+       description:
+-        'Shows increment and decrement buttons at the end of the input.',
++        'Shows increment and decrement buttons at the end of the input on fine pointers. Hidden on coarse pointers (such as touch screens); text entry and keyboard stepping remain available.',
+       default: 'false',
+     },
+     {
+@@ -226,12 +226,14 @@ export const docs = {
+     {
+       name: 'containerClassName',
+       type: 'string',
+-      description: 'Class name for the field container. Same targeting as `containerXstyle`.',
++      description:
++        'Class name for the field container. Same targeting as `containerXstyle`.',
+     },
+     {
+       name: 'containerStyle',
+       type: 'CSSProperties',
+-      description: 'Inline styles for the field container. Same targeting as `containerXstyle`.',
++      description:
++        'Inline styles for the field container. Same targeting as `containerXstyle`.',
+     },
+     {
+       name: 'controlXstyle',
+@@ -474,7 +476,8 @@ export const docsZh = {
+     {
+       name: 'hasNumberSteppers',
+       type: 'boolean',
+-      description: '是否在输入框末尾显示递增和递减按钮。',
++      description:
++        '在精细指针设备上于输入框末尾显示递增和递减按钮。粗指针设备（例如触摸屏）上隐藏按钮；仍可直接输入数值或使用键盘步进。',
+       default: 'false',
+     },
+     {
+@@ -720,10 +723,12 @@ export const docsDense = {
+     ],
+   },
+   propDescriptions: {
+-    containerXstyle: 'StyleX styles for the field container; no effect in InputGroup or horizontal-labels FormLayout. No root xstyle/className/style.',
++    containerXstyle:
++      'StyleX styles for the field container; no effect in InputGroup or horizontal-labels FormLayout. No root xstyle/className/style.',
+     containerClassName: 'Class name for the field container.',
+     containerStyle: 'Inline styles for the field container.',
+-    controlXstyle: 'StyleX styles for the visual control box (border, background, icons); not the native input.',
++    controlXstyle:
++      'StyleX styles for the visual control box (border, background, icons); not the native input.',
+     controlClassName: 'Class name for the visual control box.',
+     controlStyle: 'Inline styles for the visual control box.',
+     label: 'Label text (always rendered for accessibility).',
+@@ -754,7 +759,8 @@ export const docsDense = {
+       'Formats committed value at rest; raw number is shown while editing.',
+     isWheelEnabled:
+       'Allow focused wheel gestures to step value. Defaults to true.',
+-    hasNumberSteppers: 'Show increment + decrement buttons. Defaults to false.',
++    hasNumberSteppers:
++      'Show increment + decrement buttons on fine pointers; hidden on coarse pointers. Defaults to false.',
+     units: 'Units suffix (e.g. "%" or "GB").',
+     isIntegerOnly: 'Only allow integer values.',
+     hasClear:
+diff --git a/packages/core/src/NumberInput/NumberInput.tsx b/packages/core/src/NumberInput/NumberInput.tsx
+index af9cb5e..3733c40 100644
+--- a/packages/core/src/NumberInput/NumberInput.tsx
++++ b/packages/core/src/NumberInput/NumberInput.tsx
+@@ -5,7 +5,7 @@
+ /**
+  * @file NumberInput.tsx
+  * @input Uses React, useId, useState, useMemo, useCallback, Field, Icon, InputGroupContext
+- * @output Exports NumberInput component, NumberInputProps
++ * @output Exports NumberInput component, NumberInputProps; optional steppers are hidden on coarse pointers
+  * @position Core implementation; consumed by index.ts, tested by NumberInput.test.tsx
+  *
+  * SYNC: When modified, update these files to stay in sync:
+@@ -96,7 +96,10 @@ const styles = stylex.create({
+     paddingInlineEnd: padInlineEnd,
+   },
+   wrapperWithNumberSteppers: {
+-    paddingInlineEnd: 0,
++    paddingInlineEnd: {
++      default: 0,
++      '@media (pointer: coarse)': padInlineEnd,
++    },
+   },
+   input: {
+     display: 'block',
+@@ -138,7 +141,12 @@ const styles = stylex.create({
+   },
+   numberSteppers: {
+     alignSelf: 'stretch',
+-    display: 'flex',
++    // These compact buttons are a fine-pointer affordance. Touch users can
++    // enter a value directly; keyboard stepping remains available.
++    display: {
++      default: 'flex',
++      '@media (pointer: coarse)': 'none',
++    },
+     flexDirection: 'column',
+     flexShrink: 0,
+     width: spacingVars['--spacing-4'],
+@@ -381,6 +389,8 @@ interface NumberInputPropsBase extends Omit<
+   isWheelEnabled?: boolean;
+   /**
+    * Whether to show increment and decrement buttons at the end of the input.
++   * The buttons are hidden on coarse pointers (such as touch screens).
++   * Direct text entry and keyboard stepping remain available.
+    * @default false
+    */
+   hasNumberSteppers?: boolean;
+diff --git a/packages/core/src/NumberInput/__tests__/NumberInput.coarse-pointer.a11y.chromium.spec.ts b/packages/core/src/NumberInput/__tests__/NumberInput.coarse-pointer.a11y.chromium.spec.ts
+new file mode 100644
+index 0000000..061012d
+--- /dev/null
++++ b/packages/core/src/NumberInput/__tests__/NumberInput.coarse-pointer.a11y.chromium.spec.ts
+@@ -0,0 +1,102 @@
++// Copyright (c) Meta Platforms, Inc. and affiliates.
++
++/** Real-browser proof of NumberInput's coarse-pointer stepper presentation. */
++
++import {expect, test} from '@playwright/test';
++import {holdMotionStill} from '@astryxdesign/a11y-spec/chromium';
++import {
++  DEFAULT_STORYBOOK_DIR,
++  serveStorybook,
++  type StaticServer,
++} from '@astryxdesign/a11y-spec/storybook';
++
++let storybook: StaticServer;
++
++test.beforeAll(async () => {
++  storybook = await serveStorybook(
++    process.env.ASTRYX_STORYBOOK_DIR ?? DEFAULT_STORYBOOK_DIR,
++  );
++});
++
++test.afterAll(async () => storybook?.close());
++
++for (const width of [390, 1280]) {
++  for (const hasTouch of [false, true]) {
++    test(`${hasTouch ? 'coarse' : 'fine'} pointer at ${width}px preserves entry and the appropriate end padding`, async ({
++      browser,
++    }) => {
++      const context = await browser.newContext({
++        viewport: {width, height: 800},
++        hasTouch,
++      });
++      try {
++        const page = await context.newPage();
++        await page.goto(
++          `${storybook.origin}/iframe.html?id=core-numberinput--with-number-steppers&viewMode=story`,
++        );
++        await holdMotionStill(page);
++        const input = page.getByRole('spinbutton', {name: 'Quantity'});
++        const increment = page.locator(
++          'button[aria-label="Increment Quantity"]',
++        );
++        const decrement = page.locator(
++          'button[aria-label="Decrement Quantity"]',
++        );
++        const control = page.locator('.astryx-number-input');
++        await expect(input).toBeVisible();
++        expect(
++          await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
++        ).toBe(hasTouch);
++
++        // Public padding tokens still apply when the compact stepper lane is
++        // hidden. Use a non-default value to catch a hardcoded restoration.
++        await control.evaluate(element => {
++          element.style.setProperty(
++            '--astryx-number-input-padding-inline-end',
++            '20px',
++          );
++        });
++        for (const direction of ['ltr', 'rtl']) {
++          await control.evaluate((element, dir) => {
++            element.dir = dir;
++          }, direction);
++          await expect(control).toHaveCSS('direction', direction);
++          await expect(control).toHaveCSS(
++            'padding-inline-end',
++            hasTouch ? '20px' : '0px',
++          );
++          if (hasTouch) {
++            await expect(increment).toBeHidden();
++            await expect(decrement).toBeHidden();
++            await expect(
++              page.getByRole('button', {
++                name: /^(Increment|Decrement) Quantity$/,
++              }),
++            ).toHaveCount(0);
++          } else {
++            await expect(increment).toBeVisible();
++            await expect(decrement).toBeVisible();
++          }
++        }
++
++        if (!hasTouch) {
++          await increment.click();
++          await expect(input).toHaveValue('3');
++          await decrement.click();
++          await expect(input).toHaveValue('2');
++        }
++        await input.focus();
++        await input.press('ArrowUp');
++        await expect(input).toHaveValue('3');
++        await input.press('ArrowDown');
++        await expect(input).toHaveValue('2');
++        await input.fill('7');
++        await input.press('Enter');
++        await expect(input).toHaveAttribute('aria-valuenow', '7');
++        await expect(input).toHaveAttribute('inputmode', 'decimal');
++      } finally {
++        await context.close();
++      }
++    });
++  }
++}
