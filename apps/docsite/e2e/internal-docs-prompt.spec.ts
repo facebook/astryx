@@ -83,9 +83,18 @@ for (const {name, origin} of deployments) {
         await page.emulateMedia({colorScheme});
         await servePublicOrigin(page, baseURL, origin);
         const probe = await serveReachability(page, origin);
-        await page.goto(`${origin}/docs/getting-started?source=test`, {
-          waitUntil: 'domcontentloaded',
-        });
+        const documentResponse = await page.goto(
+          `${origin}/docs/getting-started?source=test`,
+          {
+            waitUntil: 'domcontentloaded',
+          },
+        );
+        if (!documentResponse) {
+          throw new Error('The documentation response is required');
+        }
+        expect(await documentResponse.text()).not.toMatch(
+          /Meta internal docs|Meta-specific components/,
+        );
         const heading = page.getByRole('heading', {
           name: 'Getting Started',
           exact: true,
@@ -109,8 +118,8 @@ for (const {name, origin} of deployments) {
             'https://astryx.atmeta.com/docs/getting-started?source=test',
           );
           await expect(notice).toContainText('unreleased components and props');
-          await expect(notice).toContainText(
-            'Meta-specific components and guidance',
+          await expect(notice).not.toContainText(
+            /Meta internal docs|Meta-specific components/,
           );
         }
         await expect(
@@ -120,6 +129,9 @@ for (const {name, origin} of deployments) {
         ).toHaveAttribute('sandbox', 'allow-scripts allow-same-origin');
         probe.allowReply();
         await expect(notice).toHaveCount(1);
+        await expect(notice).toContainText(
+          'Meta-specific components and guidance',
+        );
         await expect(internal).toBeVisible();
         await expect(internal).toHaveAttribute(
           'href',
@@ -214,31 +226,45 @@ for (const {name, origin} of deployments) {
   }
 }
 
-test(`${target}: failed reachability never offers internal docs`, async ({
-  page,
-  baseURL,
-}) => {
-  const origin = deployments[0].origin;
-  await servePublicOrigin(page, baseURL, origin);
-  await page.route(`${probeOrigin}/**`, route => route.abort());
-  await page.goto(`${origin}/docs/getting-started`);
-  await expect(
-    page.getByRole('heading', {name: 'Getting Started', exact: true}),
-  ).toBeVisible();
-  await expect(
-    page.locator('iframe[title="Astryx documentation reachability check"]'),
-  ).toHaveCount(0, {timeout: 10_000});
-  const notice = page.getByRole('region', {name: noticeName});
-  await expect(notice).toHaveCount(isCanary ? 1 : 0);
-  await expect(
-    page.getByRole('link', {
-      name: 'Meta internal docs (opens in a new tab)',
-      exact: true,
-    }),
-  ).toHaveCount(0);
-  if (isCanary) {
+for (const width of [1440, 390]) {
+  test(`${target}: failed reachability exposes no internal wording at ${width}px`, async ({
+    page,
+    baseURL,
+  }, testInfo) => {
+    await page.setViewportSize({width, height: 900});
+    const origin = deployments[0].origin;
+    await servePublicOrigin(page, baseURL, origin);
+    await page.route(`${probeOrigin}/**`, route => route.abort());
+    await page.goto(`${origin}/docs/getting-started`);
     await expect(
-      notice.getByRole('link', {name: 'View production', exact: true}),
+      page.getByRole('heading', {name: 'Getting Started', exact: true}),
     ).toBeVisible();
-  }
-});
+    await expect(
+      page.locator('iframe[title="Astryx documentation reachability check"]'),
+    ).toHaveCount(0, {timeout: 10_000});
+    const notice = page.getByRole('region', {name: noticeName});
+    await expect(notice).toHaveCount(isCanary ? 1 : 0);
+    await expect(
+      page.getByRole('link', {
+        name: 'Meta internal docs (opens in a new tab)',
+        exact: true,
+      }),
+    ).toHaveCount(0);
+    if (isCanary) {
+      await expect(notice).not.toContainText(
+        /Meta internal docs|Meta-specific components/,
+      );
+      expect(await notice.evaluate(element => element.outerHTML)).not.toMatch(
+        /Meta internal docs|Meta-specific components/,
+      );
+      await expect(
+        notice.getByRole('link', {name: 'View production', exact: true}),
+      ).toBeVisible();
+    }
+    await page.screenshot({
+      path: testInfo.outputPath(
+        `docs-banner-${target}-no-internal-access-${width}.png`,
+      ),
+    });
+  });
+}

@@ -4,6 +4,7 @@
 // @vitest-environment-options {"url":"https://astryx.atmeta.com/components/Button?tab=props"}
 
 import {StrictMode} from 'react';
+import {renderToString} from 'react-dom/server';
 import {readFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {act, cleanup, fireEvent, render, screen} from '@testing-library/react';
@@ -16,10 +17,16 @@ import type {
 const route = vi.hoisted(() => ({
   pathname: '/components/Button',
   search: 'tab=props',
+  suspendSearch: false,
 }));
 vi.mock('next/navigation', () => ({
   usePathname: () => route.pathname,
-  useSearchParams: () => new URLSearchParams(route.search),
+  useSearchParams: () => {
+    if (route.suspendSearch) {
+      throw new Promise(() => {});
+    }
+    return new URLSearchParams(route.search);
+  },
 }));
 vi.mock('@stylexjs/stylex', () => ({
   create: <T,>(styles: T) => styles,
@@ -48,6 +55,7 @@ beforeEach(async () => {
   });
   route.pathname = '/components/Button';
   route.search = 'tab=props';
+  route.suspendSearch = false;
   await loadPrompt();
 });
 
@@ -387,8 +395,8 @@ describe('InternalDocsPrompt', () => {
     await loadPrompt();
     await mount();
     expect(prompt()?.textContent).toContain('unreleased components and props');
-    expect(prompt()?.textContent).toContain(
-      'Meta-specific components and guidance',
+    expect(prompt()?.textContent).not.toMatch(
+      /Meta internal docs|Meta-specific components/,
     );
     expect(
       screen.getByRole('link', {name: 'View production'}).getAttribute('href'),
@@ -400,6 +408,9 @@ describe('InternalDocsPrompt', () => {
     ).toBeNull();
     await act(async () => vi.advanceTimersByTime(5000));
     expect(prompt()).not.toBeNull();
+    expect(prompt()?.outerHTML).not.toMatch(
+      /Meta internal docs|Meta-specific components/,
+    );
     expect(
       screen.queryByRole('link', {
         name: 'Meta internal docs (opens in a new tab)',
@@ -407,11 +418,35 @@ describe('InternalDocsPrompt', () => {
     ).toBeNull();
   });
 
+  it.each([false, true])(
+    'does not expose internal wording in Canary SSR (Suspense fallback: %s)',
+    async suspendSearch => {
+      vi.stubEnv('NEXT_PUBLIC_DOCS_TARGET', 'canary');
+      await loadPrompt();
+      const module = await import('../components/InternalDocsPrompt');
+      route.suspendSearch = suspendSearch;
+      const html = renderToString(
+        <module.InternalDocsReachabilityProvider>
+          <module.DocsBanner />
+        </module.InternalDocsReachabilityProvider>,
+      );
+      expect(html).toContain('unreleased components and props');
+      expect(html).toContain('View production');
+      expect(html).not.toMatch(/Meta internal docs|Meta-specific components/);
+    },
+  );
+
   it('adds the internal CTA to the existing canary notice after a valid probe', async () => {
     vi.stubEnv('NEXT_PUBLIC_DOCS_TARGET', 'canary');
     await loadPrompt();
     await mount();
+    expect(prompt()?.textContent).not.toMatch(
+      /Meta internal docs|Meta-specific components/,
+    );
     showPrompt();
+    expect(prompt()?.textContent).toContain(
+      'Meta-specific components and guidance',
+    );
     expect(
       screen.getAllByRole('region', {name: 'Documentation notice'}),
     ).toHaveLength(1);

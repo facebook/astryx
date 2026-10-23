@@ -4,7 +4,7 @@
 
 /**
  * @input Build target, exact-origin reachability, and the current docs view
- * @output One dismissible info banner with the available docs destinations
+ * @output A dismissible info banner whose internal copy and CTA require reachability
  * @position Root-owned detection; banner content lives in the page shell
  */
 
@@ -107,10 +107,11 @@ function DocsInfoBanner({
             <>
               Canary includes unreleased components and props; production docs
               match the stable packages.
-              <br />
             </>
           )}
-          Meta internal docs include Meta-specific components and guidance.
+          {isCanary && internalHref && <br />}
+          {internalHref &&
+            'Meta internal docs include Meta-specific components and guidance.'}
         </>
       }
       endContent={
