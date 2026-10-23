@@ -344,12 +344,24 @@ for (const item of cases) {
           outlineColor: getComputedStyle(active).outlineColor,
         };
       })(),
+      // Top-layer popovers have no offsetParent, and BottomSheet is a native
+      // <dialog> without an explicit role, so read rendered visibility and
+      // both dialog forms.
       tooltips: Array.from(document.querySelectorAll('[role="tooltip"]'))
-        .filter(node => (node as HTMLElement).offsetParent !== null)
+        .filter(node => node.checkVisibility())
         .map(node => node.textContent?.replace(/\s+/g, ' ').trim()),
-      dialogs: Array.from(document.querySelectorAll('[role="dialog"]'))
-        .filter(node => (node as HTMLElement).getClientRects().length > 0)
-        .map(node => node.getAttribute('aria-label')),
+      dialogs: Array.from(
+        new Set(document.querySelectorAll('[role="dialog"], dialog[open]')),
+      )
+        .filter(node => node.checkVisibility())
+        .map(
+          node =>
+            node.getAttribute('aria-label') ??
+            document
+              .getElementById(node.getAttribute('aria-labelledby') ?? '')
+              ?.textContent?.trim() ??
+            null,
+        ),
     }));
     const paint = await wrapper.evaluate(element => {
       const style = getComputedStyle(element);
