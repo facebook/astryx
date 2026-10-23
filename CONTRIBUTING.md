@@ -295,9 +295,7 @@ Components read user-facing strings with `useComponentTranslator(<slice>)`
 rather than hardcoding them. The slice is the component's own namespace of the
 English catalog, generated under `src/i18n/generated-locales/en/`, so an app
 that neither mounts `InternationalizationProvider`, calls `useTranslator()` nor
-imports `InternationalizationContext` (each carries the whole catalog), and does
-not render `PowerSearch` (its caller-supplied operator keys keep the whole
-catalog as their fallback, through the internal `useCatalogTranslator`), bundles
+imports `InternationalizationContext` (each carries the whole catalog) bundles
 only the strings of the components it renders:
 
 ```tsx
