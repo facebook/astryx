@@ -98,7 +98,7 @@ export const doc = {
     },
     {
       code: 'ERR_INVALID_ARGUMENT',
-      when: '`limit` is not a positive integer, or a set name two packages share is not qualified with its package',
+      when: '`limit` is not a positive integer, `allIcons` is given without `set`, or a set name two packages share is not qualified with its package',
     },
     {
       code: 'ERR_INVALID_OPTION',
