@@ -1594,8 +1594,9 @@ export function definitionNameOf(name, known) {
 /**
  * An icon id in the set, named by its id, its export name in any case
  * (`XMarkIcon`, `xmark`), or another name the library exports the same icon
- * as (`trash-2` for `trash`, recorded in its words; AST-084 FR13). Never by
- * a word alone: null when none of these names an icon.
+ * as, as an id or as the library spells it (`trash-2` or `Trash2` for
+ * `trash`, recorded in its words; AST-084 FR13). Never by a word alone:
+ * null when none of these names an icon.
  * @param {{data: {icons: Array<{id: string, export: string, words: string[]}>}}} set
  * @param {string} id
  * @returns {string | null}
@@ -1611,18 +1612,22 @@ export function iconIdIn(set, id) {
       icon.export.toLowerCase() === `${lower}icon`,
   );
   if (byExport) return byExport.id;
-  if (/[A-Z]/u.test(id)) {
-    const kebab = iconIdOf(id);
-    if (set.data.icons.some(icon => icon.id === kebab)) return kebab;
+  // A library export name (`Trash2`, `Search`) is spelled as the id it
+  // gives (`trash-2`, `search`), which is the icon's id or one of the other
+  // names its library exports it as.
+  const candidates = [id, ...(/[A-Z]/u.test(id) ? [iconIdOf(id)] : [])];
+  for (const candidate of candidates) {
+    if (set.data.icons.some(icon => icon.id === candidate)) return candidate;
+    // Another name the library exports the icon as: one of its words that
+    // is not a part of its own id. A part of an id (`glass` in
+    // `magnifying-glass`) names no icon, and neither does a name two icons
+    // share.
+    const holders = set.data.icons.filter(icon =>
+      otherNamesOf(icon).includes(candidate),
+    );
+    if (holders.length === 1) return holders[0].id;
   }
-  // Another name the library exports the icon as (`trash-2`, `unlock`):
-  // one of its words that is not a part of its own id. A part of an id
-  // (`glass` in `magnifying-glass`) names no icon, and neither does a name
-  // two icons share.
-  const holders = set.data.icons.filter(icon =>
-    otherNamesOf(icon).includes(id),
-  );
-  return holders.length === 1 ? holders[0].id : null;
+  return null;
 }
 
 /**

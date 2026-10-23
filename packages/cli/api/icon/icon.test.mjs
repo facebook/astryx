@@ -481,3 +481,26 @@ describe('every entry point that names a set reports it the same way (FR17)', ()
     });
   });
 });
+
+describe('partial matches answer only when nothing better does (FR6)', () => {
+  /** @param {string} query */
+  const ids = async query => {
+    const result = await icon(query, {cwd, set: 'glyphs'});
+    if (result.type !== 'icon.search') throw new Error(result.type);
+    return result.data.matches.map(match => [match.id, match.score]);
+  };
+
+  it('leaves out a partial match when a word starts with the query', async () => {
+    // `se` starts `search`, and is only inside `house` (home).
+    const found = await ids('se');
+    expect(found.map(([id]) => id)).toContain('search');
+    expect(found.map(([id]) => id)).not.toContain('home');
+    expect(found.every(([, score]) => Number(score) >= 60)).toBe(true);
+  });
+
+  it('answers with partial matches when nothing scores 60 or more', async () => {
+    // `ouse` starts no word; it is inside `house`.
+    const found = await ids('ouse');
+    expect(found).toEqual([['home', 40]]);
+  });
+});

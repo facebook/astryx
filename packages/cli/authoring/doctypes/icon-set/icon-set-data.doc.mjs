@@ -41,7 +41,7 @@ export const doc = {
       name: 'exclude',
       type: 'string[]',
       description:
-        'Library exports that are not icons. `experimental icon new-set --from` leaves them out every time it wraps or refreshes the set; `--exclude` adds to the list.',
+        'Library exports that are not icons. `experimental icon new-set --from` leaves them out every time it wraps or refreshes the set; `--exclude` adds to the list. A CLI whose reference does not list this key withdraws a set that sets it, naming the key; leave it out for a set those CLIs must read.',
     },
     {
       name: 'generated',

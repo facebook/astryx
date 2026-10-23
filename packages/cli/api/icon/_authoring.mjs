@@ -757,14 +757,32 @@ async function refreshIconSet(
       );
     }
     // A refresh that first records the library as the set's source does what
-    // `new-set --from` does: the descriptor takes the library's license.
-    // The author's later edits to it are kept.
+    // `new-set --from` does: the descriptor takes the library's license, but
+    // only over the value `new-set` wrote by default (the package's license,
+    // or UNLICENSED), never over one the author chose. Either way the
+    // receipt names both values.
+    /** @type {string | null} */
+    let licenseNote = null;
     if (library?.license && !set.data.source) {
       const license = library.license;
-      docAfter = docAfter.replace(
-        /^(\s*license:\s*)(['"`])(?:\\.|(?!\2).)*\2,?$/mu,
-        (_, lead) => `${lead}${quoteJs(license)},`,
-      );
+      const licenseRe = /^(\s*license:\s*)(['"`])((?:\\.|(?!\2).)*)\2,?$/mu;
+      const current = licenseRe.exec(docBefore)?.[3] ?? null;
+      const packageLicense =
+        typeof where.pkg.license === 'string' && where.pkg.license.trim() !== ''
+          ? where.pkg.license
+          : 'UNLICENSED';
+      const docRel = projectPath(path.relative(packageDir, docFile));
+      if (current === license) {
+        // Already the library's.
+      } else if (current == null || current === packageLicense) {
+        docAfter = docAfter.replace(
+          licenseRe,
+          (_, lead) => `${lead}${quoteJs(license)},`,
+        );
+        licenseNote = `The set's license in ${docRel} changed from "${current ?? '(none)'}" to "${license}", the license of ${library.package}, whose artwork it now wraps. Edit it if the artwork's license differs.`;
+      } else {
+        licenseNote = `The set's license in ${docRel} stays "${current}", which you set; ${library.package} is licensed "${license}". Change it if the artwork is the library's.`;
+      }
     }
     if (docAfter !== docBefore) {
       files.push(projectPath(path.relative(packageDir, docFile)));
@@ -849,6 +867,7 @@ async function refreshIconSet(
       result.data.renamed = [...renames].map(([from, to]) => ({from, to}));
     }
     result.data.notes = [
+      ...(licenseNote ? [licenseNote] : []),
       ...(renames.size > 0
         ? [
             `${renames.size} icons have a new id under this release's id rule, and keep their map entries, variants, and words: ${[...renames].map(([from, to]) => `${from} -> ${to}`).join(', ')}.`,
@@ -861,6 +880,18 @@ async function refreshIconSet(
             `These map entries named icons the library no longer exports and were removed: ${lost.join(', ')}.`,
           ]
         : []),
+      // An icon the library no longer exports leaves the set and its
+      // generated module: named here, so the removal is never silent.
+      ...(() => {
+        const gone = set.data.icons
+          .filter(icon => !icons.some(each => each.export === icon.export))
+          .map(icon => icon.id);
+        return gone.length > 0
+          ? [
+              `${gone.length} icons the library no longer exports were removed from the set: ${gone.join(', ')}.`,
+            ]
+          : [];
+      })(),
       astryxIconDefinitions().definitions.every(({doc}) => map[doc.name])
         ? 'Every Astryx icon definition is mapped.'
         : 'Run `astryx integration check` to see the icon definitions still to map.',

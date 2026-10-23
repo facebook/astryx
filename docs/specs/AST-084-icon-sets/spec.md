@@ -376,7 +376,11 @@ message}`) names each template or namespace doc that sets `stability`, and
   project. `experimental icon use` adds `warning` to its receipt, printed as a
   `[warn]` line, when the project declares an `@astryxdesign/cli` range (in
   any dependency field) that admits such a release; a project that declares no
-  range, or a `workspace:`, `file:`, or `link:` one, gets none.
+  range, or a `workspace:`, `file:`, or `link:` one, gets none. A CLI reads a
+  set's data file strictly: a key it does not know withdraws the set, naming
+  the key (FR17). `exclude` is read only by a CLI whose data-file reference
+  lists it, and `new-set` writes it only when `--exclude` is given; a set
+  without it is read by every CLI that has `astryx experimental icon`.
 - **FR17 — Doctor and discover read sets only with the opt-in.** In a project
   that sets `experimental.iconSet`, the project's set is one of: valid
   (`selected`), not installed (`missing`), or installed but withdrawn

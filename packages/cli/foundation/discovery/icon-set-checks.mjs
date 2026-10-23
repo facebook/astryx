@@ -397,9 +397,8 @@ function checkDefinitions(set) {
  *   Astryx's optional (not built-in) definitions the set's `map` does not
  *   name. Mapping them is optional, so they never fail a check.
  * @property {Array<{definition: string, icon: string}>} suggestions for every
- *   unmapped definition, built-in, optional, or the set's own, the icon whose
- *   whole id is the definition's name or one of its words; nothing is guessed
- *   beyond that
+ *   unmapped definition, built-in, optional, or the set's own, the best icon
+ *   {@link suggestedIcons} gives, if any
  * @property {IconSetUnchecked[]} unchecked what the checks could not judge:
  *   never counted, never failing, even under `--strict`
  */
@@ -447,9 +446,8 @@ export function iconSetCoverage(loaded, unchecked = new Map()) {
 }
 
 /**
- * The set's icon whose whole id is the definition's name (`chevronDown` is
- * `chevron-down`) or, in order, one of its words (spaces read as `-`). Null
- * when none is: a suggestion is never a guess from parts of words.
+ * The best icon {@link suggestedIcons} gives for a definition, or null when
+ * it gives none.
  * @param {DiscoveredIconSet} set
  * @param {import('../../authoring/doctypes/icon-definition/type').IconDefinitionDoc} doc
  * @returns {{map: string, icon: string} | null}

@@ -1521,6 +1521,16 @@ describe('experimental icon new-set: aliases, providers, exclude, peers', () => 
     ]);
     expect(alias.code).toBe(0);
     expect(alias.body.data.icon).toBe('trash');
+    // The same other name as the library exports it.
+    const libraryName = await json([
+      'experimental',
+      'icon',
+      'map',
+      'delete',
+      'Trash2',
+    ]);
+    expect(libraryName.code, JSON.stringify(libraryName.body)).toBe(0);
+    expect(libraryName.body.data.icon).toBe('trash');
     const pairs = await json([
       'experimental',
       'icon',
@@ -2071,6 +2081,9 @@ describe('a refresh that first records the source', () => {
       ),
     ).toBe('ISC License\n');
     expect(fs.readFileSync(doc, 'utf-8')).toContain("license: 'ISC'");
+    expect(refreshed.body.data.notes).toContain(
+      'The set\'s license in icon-sets/glyphs/glyphs.doc.mjs changed from "MIT" to "ISC", the license of @acme/glyph-library, whose artwork it now wraps. Edit it if the artwork\'s license differs.',
+    );
     // The package's own license is the author's (INV16).
     expect(fs.readFileSync(path.join(pkg, 'package.json'), 'utf-8')).toBe(
       pkgBefore,
@@ -2098,6 +2111,40 @@ describe('a refresh that first records the source', () => {
     ]);
     expect(fs.readFileSync(doc, 'utf-8')).toContain(
       "license: 'ISC AND CC-BY-4.0'",
+    );
+  });
+});
+
+describe('a first-source refresh over a license the author chose', () => {
+  it('keeps it, and the receipt names both licenses', async () => {
+    const lib = path.join(pkg, 'node_modules', '@acme', 'glyph-library');
+    fs.writeFileSync(
+      path.join(lib, 'package.json'),
+      JSON.stringify({
+        ...JSON.parse(fs.readFileSync(path.join(lib, 'package.json'), 'utf-8')),
+        license: 'ISC',
+      }),
+    );
+    await json(['experimental', 'icon', 'new-set', 'glyphs']);
+    const doc = path.join(pkg, 'icon-sets', 'glyphs', 'glyphs.doc.mjs');
+    fs.writeFileSync(
+      doc,
+      fs
+        .readFileSync(doc, 'utf-8')
+        .replace("license: 'MIT'", "license: 'CC-BY-4.0'"),
+    );
+    const refreshed = await json([
+      'experimental',
+      'icon',
+      'new-set',
+      'glyphs',
+      '--from',
+      '@acme/glyph-library',
+    ]);
+    expect(refreshed.code).toBe(0);
+    expect(fs.readFileSync(doc, 'utf-8')).toContain("license: 'CC-BY-4.0'");
+    expect(refreshed.body.data.notes).toContain(
+      'The set\'s license in icon-sets/glyphs/glyphs.doc.mjs stays "CC-BY-4.0", which you set; @acme/glyph-library is licensed "ISC". Change it if the artwork is the library\'s.',
     );
   });
 });
@@ -2165,6 +2212,7 @@ describe('map names an icon only by its id, export name, or another library name
       ['magnifyingglassicon', 'magnifying-glass'],
       ['MagnifyingGlass', 'magnifying-glass'],
       ['search', 'magnifying-glass'],
+      ['Search', 'magnifying-glass'],
     ]) {
       const ok = await json(['experimental', 'icon', 'map', 'search', given]);
       expect(ok.code, given).toBe(0);
@@ -2580,5 +2628,41 @@ describe('add --variant --all on a set an older id rule wrote from a prefixed li
         (/** @type {{id: string}} */ each) => each.id === 'squares-2-x2',
       ).variants,
     ).toEqual([{variant: 'solid', export: 'Squares2X2SolidIcon'}]);
+  });
+});
+
+describe('a refresh after the library drops an icon', () => {
+  it('names the icon it removed and the map entry that lost it', async () => {
+    const args = [
+      'experimental',
+      'icon',
+      'new-set',
+      'outline',
+      '--from',
+      '@acme/glyph-library',
+    ];
+    await json(args);
+    await json(['experimental', 'icon', 'map', 'close', 'cross']);
+    const index = path.join(
+      pkg,
+      'node_modules',
+      '@acme',
+      'glyph-library',
+      'index.js',
+    );
+    fs.writeFileSync(
+      index,
+      fs
+        .readFileSync(index, 'utf-8')
+        .replace("export {Cross} from './icons/cross.js';\n", ''),
+    );
+    const refreshed = await json(args);
+    expect(refreshed.code).toBe(0);
+    expect(refreshed.body.data.notes).toEqual(
+      expect.arrayContaining([
+        'These map entries named icons the library no longer exports and were removed: close -> "cross".',
+        '1 icons the library no longer exports were removed from the set: cross.',
+      ]),
+    );
   });
 });

@@ -11,7 +11,7 @@
 - **Sets named consistently.** Every icon command that names a set (`--set` with a query or `--all-icons`, `<set>/<id>`, `use`, and `add`, `map`, `new-definition` in the package) reports a set that is not there as missing and an invalid one as withdrawn, with why, both `ERR_NOT_FOUND`.
 - **Listing.** `experimental icon --set <set> --all-icons` lists every icon of a set (`icon.setIcons`) and `--definitions` lists every Astryx definition, built in or optional (`icon.definitions`). Search shows partial matches only when nothing better matches.
 - **Templates.** A mapped icon drops the library's sizing props (`size`, `strokeWidth`, `absoluteStrokeWidth`), reported as `dropped`, and comments on a rewritten import line are kept.
-- **Definitions.** Thirteen new icon definitions (`rotate`, `flipHorizontal`, `flipVertical`, `alignLeft`, `alignCenter`, `alignRight`, `panelLeft`, `panelRight`, `gitBranch`, `gitFork`, `scale`, `cpu`, `textCase`), declared by the templates that draw them, and more common glyph names in built-in definitions' words.
+- **Definitions.** Thirteen new icon definitions (`rotate`, `flipHorizontal`, `flipVertical`, `alignStart`, `alignCenter`, `alignEnd`, `panelLeft`, `panelRight`, `gitBranch`, `gitFork`, `scale`, `cpu`, `textCase`), declared by the templates that draw them, and more common glyph names in built-in definitions' words.
 - **Checks.** `integration check` suggests icons by the same rule and lists each optional definition with its description and words; the version-drift warning gives the refresh command.
 
 @josephfarina
