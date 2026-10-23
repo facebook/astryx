@@ -73,13 +73,12 @@ export function isIgnoredDirectory(root, fullPath, name) {
 
 /**
  * Whether a symbolic link to a directory leads into a tree the scan never
- * descends. A link is followed like a directory, so its own name and position
- * are checked as {@link isIgnoredDirectory} checks a directory. Its target is
- * checked too: a link whose real path is inside an installed dependency or
- * version-control metadata (such as a symlinked `node_modules`, or a link into
- * a package store) is dependency content, not project source. Path segments
- * the target shares with the scan root's real path are not considered, so a
- * project that itself sits below such a folder is still scanned.
+ * descends. The link is checked like a directory by {@link isIgnoredDirectory},
+ * and so is every folder on its resolved target's path below the part that
+ * path shares with the scan root's real path: a symlinked `node_modules`, or a
+ * link into a dependency, package-store or version-control tree such as
+ * `.yarn/cache`, is not walked. The shared part is not checked, so a project
+ * that itself sits below such a folder is still scanned.
  * @param {string} root scan root
  * @param {string} fullPath the link's path
  * @param {string} name the link's name
@@ -104,7 +103,11 @@ export function isIgnoredLinkedDirectory(root, fullPath, name, realTarget) {
   ) {
     shared++;
   }
-  return targetParts.slice(shared).some(part => IGNORED_DIRS.has(part));
+  for (let end = shared + 1; end <= targetParts.length; end++) {
+    const folder = targetParts.slice(0, end).join(path.sep);
+    if (isIgnoredDirectory(realRoot, folder, targetParts[end - 1])) return true;
+  }
+  return false;
 }
 
 /**

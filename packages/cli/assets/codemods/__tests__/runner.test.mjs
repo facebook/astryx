@@ -545,6 +545,28 @@ describe('findSourceFiles — scan boundaries (symlink + declared protection)', 
     ).toEqual([path.join('src', 'real.ts')]);
   });
 
+  it('does not descend a link into a Yarn cache folder', async () => {
+    const cached = path.join(tmpDir, '.yarn', 'cache', 'pkg');
+    fs.mkdirSync(cached, {recursive: true});
+    fs.writeFileSync(path.join(cached, 'index.ts'), 'const foo = 1;\n');
+    fs.mkdirSync(path.join(tmpDir, 'src'), {recursive: true});
+    fs.writeFileSync(path.join(tmpDir, 'src', 'real.ts'), 'const foo = 2;\n');
+    fs.symlinkSync(cached, path.join(tmpDir, 'src', 'pkg'));
+
+    const r = await runCodemods(manifests, {
+      apply: true,
+      path: '.',
+      root: tmpDir,
+      silent: true,
+    });
+
+    expect(r.writtenFiles.map(f => path.basename(f))).toEqual(['real.ts']);
+    expect(r.protectedFiles).toEqual([]);
+    expect(
+      findIntegrationSourceFiles(tmpDir).map(f => path.relative(tmpDir, f)),
+    ).toEqual([path.join('src', 'real.ts')]);
+  });
+
   it('still descends ordinary symlinked directories in a project below a node_modules folder', async () => {
     const project = path.join(tmpDir, 'node_modules', 'consumer');
     const shared = path.join(project, 'shared');

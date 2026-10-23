@@ -161,7 +161,7 @@ export const doc = {
       type: 'prose',
       text:
         'upgrade does not scan installed dependencies or version-control folders at all, including through a symbolic link: ' +
-        'a symlinked `node_modules`, or a link whose target is inside one, is skipped. ' +
+        'a symlinked `node_modules`, or a link whose target is inside one or inside a package store such as `.yarn/cache`, is skipped. ' +
         'Other symbolically linked folders are scanned so a change they need is reported, but nothing is written through them.',
     },
     {
