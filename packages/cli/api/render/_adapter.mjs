@@ -280,6 +280,19 @@ export async function renderToFile({cwd, input, output, title}) {
 }
 
 /**
+ * The new folder a restore without --out writes into: beside the HTML file,
+ * named after it (`report.html` gives `report-restored/`, then
+ * `report-restored-2/` when that exists).
+ * @param {string} input absolute
+ */
+function restoreFolder(input) {
+  const stem = path.basename(input).replace(/\.[^.]+$/, '');
+  let folder = path.join(path.dirname(input), `${stem}-restored`);
+  for (let n = 2; fs.existsSync(folder); n++) folder = path.join(path.dirname(input), `${stem}-restored-${n}`);
+  return folder;
+}
+
+/**
  * Turn a rendered HTML file back into a page module.
  * @param {{cwd: string, input: string, output: string | undefined, overwrite: boolean}} args absolute paths
  * @returns {import('./render.type.mjs').RenderReverseResponse['data']}
@@ -339,13 +352,7 @@ export function reverseToFile({cwd, input, output, overwrite}) {
     // folder beside the HTML file, named after it (`report.html` gives
     // `report-restored/`), with the layout they were rendered in. Nothing in
     // the received file decides where in your project anything goes.
-    let requested = output;
-    if (!requested) {
-      const stem = path.basename(input).replace(/\.[^.]+$/, '');
-      let folder = path.join(path.dirname(input), `${stem}-restored`);
-      for (let n = 2; fs.existsSync(folder); n++) folder = path.join(path.dirname(input), `${stem}-restored-${n}`);
-      requested = path.join(folder, ...source.files[0].path.split('/'));
-    }
+    const requested = output ?? path.join(restoreFolder(input), ...source.files[0].path.split('/'));
     refuseConfigTarget(requested);
     const seen = new Set();
     for (const f of source.files) {
@@ -459,7 +466,7 @@ export function reverseToFile({cwd, input, output, overwrite}) {
       ERROR_CODES.ERR_RENDER_NOT_ASTRYX,
     );
   }
-  const target = output ?? path.join(path.dirname(input), `${path.basename(input).replace(/\.[^.]+$/, '')}.tsx`);
+  const target = output ?? path.join(restoreFolder(input), 'page.tsx');
   refuseConfigTarget(target);
   confined(target, cwd, 'The page');
   refuseExisting([target]);

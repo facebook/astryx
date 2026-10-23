@@ -244,12 +244,15 @@ export async function renderPage(entry, options = {}) {
   const sheets = [];
   /** @type {string[]} */
   const sheetText = [];
+  /** Each stylesheet's own file, so its url()s resolve from its folder. @type {string[]} */
+  const sheetFiles = [];
   /** @param {string} spec */
   const addSheet = spec => {
     try {
       const file = req.resolve(spec);
       sheets.push(spec);
       sheetText.push(fs.readFileSync(file, 'utf8'));
+      sheetFiles.push(file);
       return true;
     } catch {
       return false;
@@ -264,6 +267,7 @@ export async function renderPage(entry, options = {}) {
       const file = createRequire(from).resolve(spec);
       sheets.push(spec);
       sheetText.push(fs.readFileSync(file, 'utf8'));
+      sheetFiles.push(file);
     } catch {
       warnings.push({
         code: 'missing-asset',
@@ -295,13 +299,16 @@ export async function renderPage(entry, options = {}) {
   const used = classesIn(markup);
   const layerOrder = sheetText.map(layerOrderOf).find(Boolean) ?? '';
   let css = layerOrder;
-  for (const text of sheetText) css += cutCss(text, used);
-  for (const {css: own} of /** @type {{css: string}[]} */ (message.importedCss ?? [])) {
-    css += cutCss(own, used);
-  }
-  if (message.css) css += message.css;
   try {
-    css = inlineAssets(css, 'css', ctx);
+    // A stylesheet's url()s are relative to the stylesheet, not the page: a
+    // theme's font, or an image beside an imported stylesheet.
+    sheetText.forEach((text, i) => {
+      css += inlineAssets(cutCss(text, used), 'css', {...ctx, dir: path.dirname(sheetFiles[i])});
+    });
+    for (const {file, css: own} of /** @type {{file: string, css: string}[]} */ (message.importedCss ?? [])) {
+      css += inlineAssets(cutCss(own, used), 'css', {...ctx, dir: path.dirname(file)});
+    }
+    if (message.css) css += inlineAssets(message.css, 'css', ctx);
   } catch (e) {
     const err = /** @type {any} */ (e);
     if (err instanceof RenderAssetError) throw new RenderError(err.code, err.message, err.detail);

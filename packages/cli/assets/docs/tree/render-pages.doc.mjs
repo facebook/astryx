@@ -53,7 +53,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'The result is ONE file with nothing beside it: the markup, only the CSS rules the page uses (from Core and from any stylesheet it imports, such as a theme), the page\u2019s own StyleX styles, and local images as data: URIs. It runs no script and loads nothing from the network, so it opens from disk, attaches to a message, and displays inside a sandboxed frame that blocks network and script. Colors follow the viewer\u2019s light or dark setting, and a `data-theme` of `light` or `dark` on the root element picks one.',
+          text: 'The result is ONE file with nothing beside it: the markup, only the CSS rules the page uses (from Core and from any stylesheet it imports, such as a theme), the page\u2019s own StyleX styles, and local images as data: URIs. It runs no script and loads nothing from the network, so it opens from disk, attaches to a message, and displays inside a sandboxed frame that blocks network and script. Colors follow the viewer\u2019s light or dark setting, and a `data-theme` of `light` or `dark` on the root element picks one. The file also carries the source of the page and of every local module, stylesheet, JSON file and image it imports, so whoever you share it with can read that code; keep secrets out of what the page imports.',
         },
         {
           type: 'prose',

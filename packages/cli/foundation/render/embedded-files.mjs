@@ -25,16 +25,16 @@ const CONFIG_JSON =
 /** Tool configuration modules: `vite.config.ts`, `astryx.config.mjs`, `next.config.js`, `.eslintrc.js`, ... */
 const CONFIG_MODULE = /(^|\.)config\.[cm]?[jt]sx?$|^[a-z0-9-]+rc\.[cm]?[jt]s$/i;
 
-/** Script extensions `node --test` picks up by name alone. */
-const NODE_TEST_EXTENSIONS = /\.(c|m)?js$/i;
+/** Script extensions `node --test` picks up by name alone (Node 24 runs TypeScript too). */
+const NODE_TEST_EXTENSIONS = /\.(c|m)?(js|ts)$/i;
 
 /**
  * Whether a test, story or benchmark runner picks the file up by its name or
  * folder, by the patterns their defaults use: `*.test.*`, `*.spec.*`,
  * `*.stories.*`, `*.story.*`, `*.cy.*`, `*.bench.*` (Vitest, Jest,
  * Playwright, Storybook, Cypress); anything under `__tests__/`; and for
- * `node --test`, `*-test.js`, `*_test.js`, `test-*.js`, `test.js` and
- * `test/**.js`.
+ * `node --test`, `*-test`, `*_test`, `test-*`, `test` and `test/**` with a
+ * .js, .mjs, .cjs, .ts, .mts or .cts extension.
  * @param {string[]} segments
  */
 function runnerPicksUp(segments) {

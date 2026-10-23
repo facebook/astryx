@@ -168,13 +168,13 @@ describe('render(): page to one HTML file', () => {
   it('rebuilds a page from Astryx markup when there is no embedded source', async () => {
     put('stripped.html', html.replace(/<script type="application\/x-astryx-source">[\s\S]*?<\/script>/, ''));
     const rebuilt = /** @type {any} */ (await render('stripped.html', {cwd: dir, reverse: true}));
-    expect(rebuilt.data).toMatchObject({mode: 'rebuilt', exact: false, output: 'stripped.tsx'});
+    expect(rebuilt.data).toMatchObject({mode: 'rebuilt', exact: false, output: 'stripped-restored/page.tsx'});
     expect(rebuilt.data.components).toEqual(expect.arrayContaining(['Button', 'Heading', 'List']));
-    const source = fs.readFileSync(path.join(dir, 'stripped.tsx'), 'utf8');
+    const source = fs.readFileSync(path.join(dir, 'stripped-restored/page.tsx'), 'utf8');
     expect(source).toContain("from '@astryxdesign/core/Button'");
     expect(source).toContain('Café ✓ report');
     // The rebuilt page renders.
-    const again = /** @type {any} */ (await render('stripped.tsx', {cwd: dir}));
+    const again = /** @type {any} */ (await render('stripped-restored/page.tsx', {cwd: dir}));
     expect(again.type).toBe('render.page');
   }, 60_000);
 
@@ -426,6 +426,24 @@ describe('render(): every write stays inside the current folder', () => {
     expect(back.data.files).toEqual(['src/page.tsx', 'src/t.ts']);
   });
 
+  it('writes a page rebuilt from markup into a new folder by default', async () => {
+    put('rebuilt-default/middleware.html', '<body><div class="astryx-stack"><p class="astryx-text">Hi</p></div></body>');
+    const cwd = path.join(dir, 'rebuilt-default');
+    const back = /** @type {any} */ (await render('middleware.html', {cwd, reverse: true}));
+    expect(back.data.mode).toBe('rebuilt');
+    expect(back.data.output).toBe('middleware-restored/page.tsx');
+    expect(fs.existsSync(path.join(cwd, 'middleware.tsx'))).toBe(false);
+  });
+
+  it('inlines a stylesheet\'s own url()s from the stylesheet\'s folder', async () => {
+    put('sheet-url/styles/bg.png', PNG);
+    put('sheet-url/styles/page.css', '.hero { background: url("./bg.png"); }\n');
+    put('sheet-url/page.tsx', "import './styles/page.css';\nexport default function Page() { return <div className=\"hero\">Hi</div>; }\n");
+    const r = /** @type {any} */ (await render('sheet-url/page.tsx', {cwd: dir}));
+    expect(r.data.warnings.map((/** @type {any} */ w) => w.code)).not.toContain('missing-asset');
+    expect(fs.readFileSync(path.join(dir, 'sheet-url/page.html'), 'utf8')).toContain('url("data:image/png;base64,');
+  }, 60_000);
+
   it('rebuilds a quoted attribute as JSX that compiles', async () => {
     put(
       'quoted.html',
@@ -516,8 +534,12 @@ describe('render(): every write stays inside the current folder', () => {
       'test-report.mjs',
       'test.mjs',
       'test/helper.mjs',
+      'test-report.ts',
+      'report_test.mts',
+      'test.cts',
+      'test/helper.ts',
     ]) {
-      const page = {path: 'page.tsx', bytes: Buffer.from(`import './${name.replace(/\.(tsx?|mjs)$/, '')}';\nexport default () => null;\n`)};
+      const page = {path: 'page.tsx', bytes: Buffer.from(`import './${name.replace(/\.(tsx?|[mc]?[jt]s)$/, '')}';\nexport default () => null;\n`)};
       put('tests-in.html', `<body><p class="astryx-text">x</p>${sourceBlock('page.tsx', [page, {path: name, bytes: Buffer.from('export {};\n')}])}</body>`);
       expect(await codeOf(() => render('tests-in.html', {cwd: dir, reverse: true, out: 'tests-in/page.tsx'}))).toBe(
         'ERR_RENDER_SOURCE_DAMAGED',
