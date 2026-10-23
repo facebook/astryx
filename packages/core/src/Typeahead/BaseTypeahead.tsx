@@ -299,12 +299,13 @@ const styles = stylex.create({
   },
   dropdown: {
     boxSizing: 'border-box',
+    // Matches DROPDOWN_MAX_HEIGHT, which the room-below cap uses.
     maxHeight: '300px',
     overflowY: 'auto',
     padding: spacingVars['--spacing-1'],
   },
-  // A popup above the field holds the height it had when a later list for
-  // the same query arrived (spec:AST-092 FR6).
+  // Once a later list for the same query arrives, the popup holds its height
+  // above the field, or the room below it (spec:AST-092 FR6).
   dropdownHeld: (height: number) => ({
     maxHeight: `${height}px`,
   }),
@@ -416,6 +417,9 @@ const itemSizeStyles = stylex.create({
 // =============================================================================
 // Helpers
 // =============================================================================
+
+/** The result popup's maximum height in CSS pixels (`styles.dropdown`). */
+const DROPDOWN_MAX_HEIGHT = 300;
 
 /** Rows in the order the popup displays them: ungrouped first, then groups. */
 function displayOrder<T extends SearchableItem>(list: T[]): T[] {
@@ -565,27 +569,45 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // (spec:AST-092 FR6). Synced after commit: a list arrives from an event or
   // an awaited continuation, never during render.
   const resultsRef = useRef<T[]>(results);
-  // The popup's listbox, measured when a later list arrives so a popup that
-  // sits above the field keeps its height and the appended rows scroll
-  // instead of pushing the shown rows up (spec:AST-092 FR6).
+  // The popup's listbox, measured when a later list arrives so the appended
+  // rows scroll instead of moving the shown rows or flipping the popup to
+  // the other side of the field (spec:AST-092 FR6).
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [heldHeight, setHeldHeight] = useState<number | null>(null);
   // The search generation the popup's close cancelled, so that search's
   // rejection settles silently (spec:AST-092 FR9).
   const closedGenRef = useRef(-1);
-  const holdHeightAboveField = useCallback(() => {
+  const holdPopupInPlace = useCallback(() => {
     const dropdown = dropdownRef.current;
     const anchor = anchorRef?.current ?? fallbackAnchorRef.current;
     if (dropdown == null || anchor == null) {
       return;
     }
     const box = dropdown.getBoundingClientRect();
-    if (
-      box.height > 0 &&
-      box.bottom <= anchor.getBoundingClientRect().top + 1
-    ) {
-      setHeldHeight(current => current ?? box.height);
+    if (box.height <= 0) {
+      return;
     }
+    if (box.bottom <= anchor.getBoundingClientRect().top + 1) {
+      // Above the field the popup grows upward, so any growth moves the
+      // shown rows: keep the height it has.
+      setHeldHeight(current => current ?? box.height);
+      return;
+    }
+    // Below the field, grow only within the room below, so the layer runtime
+    // never flips the popup above the field.
+    const layer = dropdown.closest<HTMLElement>('[popover]') ?? dropdown;
+    const layerBox = layer.getBoundingClientRect();
+    const gutter = parseFloat(getComputedStyle(layer).marginBlockEnd) || 0;
+    const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+    const room =
+      viewportHeight -
+      box.top -
+      Math.max(0, layerBox.bottom - box.bottom) -
+      gutter;
+    setHeldHeight(
+      current =>
+        current ?? Math.min(DROPDOWN_MAX_HEIGHT, Math.max(box.height, room)),
+    );
   }, [anchorRef]);
   const highlightedIndexRef = useRef(highlightedIndex);
   useIsomorphicLayoutEffect(() => {
@@ -822,7 +844,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
             resultsRef.current === shownState
               ? displayOrder(shownState)[highlightedIndexRef.current]?.id
               : displayOrder(shownRows)[0]?.id;
-          holdHeightAboveField();
+          holdPopupInPlace();
         } else {
           setHeldHeight(null);
         }
@@ -884,8 +906,15 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         isSettled = true;
         if (closedGenRef.current === gen) {
           // The popup closed and cancelled this search, so its rejection is
-          // not a failed answer: keep the rows, announce nothing
-          // (spec:AST-092 FR9).
+          // not a failed answer: announce nothing, and keep only this query's
+          // own rows (spec:AST-092 FR9).
+          if (shownRows != null) {
+            showList(shownRows, true);
+          } else {
+            setResults([]);
+            setHighlightedIndex(-1);
+            setHasSearched(false);
+          }
         } else if (shownRows != null) {
           // A failed server answer keeps the last non-empty list the source
           // showed for this query, which settles it.
@@ -908,7 +937,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       __queryEntries,
       setLoading,
       t,
-      holdHeightAboveField,
+      holdPopupInPlace,
     ],
   );
 

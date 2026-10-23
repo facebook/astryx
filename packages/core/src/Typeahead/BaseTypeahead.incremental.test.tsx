@@ -387,8 +387,10 @@ describe('BaseTypeahead incremental results (spec:AST-092)', () => {
     expect(listbox.getAttribute('style') ?? '').toContain('80px');
   });
 
-  it('does not hold the height of a popup below the field (FR6)', async () => {
-    const {source, latest} = createPendingSource({ben: [benOrtiz, benitaRuiz]});
+  it('grows a popup below the field only within the room below it (FR6)', async () => {
+    const {source, latest} = createPendingSource({
+      ben: [benOrtiz, benitaRuiz],
+    });
     const input = renderTypeahead(source);
     await type(input, 'ben');
 
@@ -399,8 +401,10 @@ describe('BaseTypeahead incremental results (spec:AST-092)', () => {
     vi.spyOn(input, 'getBoundingClientRect').mockReturnValue(
       DOMRect.fromRect({x: 0, y: 104, width: 240, height: 32}),
     );
+    vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(360);
     await settle(latest(), [benOrtiz, benitaRuiz, benShah, bennettCole]);
-    expect(listbox.getAttribute('style') ?? '').not.toContain('80px');
+    // 360 px of viewport, the list starting 140 px down: 220 px of room.
+    expect(listbox.getAttribute('style') ?? '').toContain('220px');
   });
 
   it('announces nothing for a rejection after the popup closed and cancelled (FR9)', async () => {
@@ -418,5 +422,19 @@ describe('BaseTypeahead incremental results (spec:AST-092)', () => {
     });
     expect(input).not.toHaveAttribute('aria-busy');
     expect(liveRegion()?.textContent ?? '').not.toContain('results');
+  });
+
+  it('keeps no rows from the previous query when a cancelled search rejects before its first list (FR9)', async () => {
+    const {source, latest} = createPendingSource({b: [beaLin], bz: []});
+    const input = renderTypeahead(source);
+    await type(input, 'b');
+    await settle(latest(), [beaLin]);
+    await type(input, 'bz');
+    fireEvent.keyDown(input, {key: 'Escape'});
+    await act(async () => {
+      latest().reject(new Error('aborted'));
+    });
+    expect(optionLabels()).toEqual([]);
+    expect(input).not.toHaveAttribute('aria-busy');
   });
 });

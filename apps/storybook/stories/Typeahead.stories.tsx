@@ -433,6 +433,54 @@ export const IncrementalResults: Story = {
 };
 
 /**
+ * The same source with the field near the bottom of the viewport, so the
+ * popup opens above it. Appended server rows scroll inside the popup; the
+ * rows already shown keep their place on screen (spec:AST-092 FR6).
+ */
+export const IncrementalResultsAboveField: Story = {
+  render: () => {
+    const [value, setValue] = useState<SearchableItem | null>(null);
+    return (
+      <div style={{paddingBlockStart: 'calc(100vh - 140px)'}}>
+        <Typeahead
+          label="Assign to"
+          placeholder="Search people"
+          searchSource={incrementalPeopleSource}
+          value={value}
+          onChange={setValue}
+          debounceMs={0}
+        />
+      </div>
+    );
+  },
+  name: 'Incremental results above the field',
+  play: async ({canvasElement}) => {
+    const canvas = within(canvasElement);
+    const input = canvas.getByRole('combobox', {name: 'Assign to'});
+    const page = within(document.body);
+
+    await userEvent.type(input, 'ben');
+    await waitFor(() => expect(page.queryAllByRole('option')).toHaveLength(2));
+    const [first] = page.getAllByRole('option');
+    const firstTop = first.getBoundingClientRect().top;
+    await expect(first.getBoundingClientRect().bottom).toBeLessThanOrEqual(
+      input.getBoundingClientRect().top,
+    );
+
+    await waitFor(() => expect(input).not.toHaveAttribute('aria-busy'), {
+      timeout: 3000,
+    });
+    await expect(page.getAllByRole('option')).toHaveLength(4);
+    // The shown rows did not move; the appended ones are reached by scrolling.
+    await expect(
+      Math.abs(
+        page.getAllByRole('option')[0].getBoundingClientRect().top - firstTop,
+      ),
+    ).toBeLessThan(1);
+  },
+};
+
+/**
  * The two cases no Typeahead story covered, which is why a bug this visible
  * survived: a value selected, and a parent that is sized by its content.
  *
