@@ -85,12 +85,19 @@ export const STABILITY_CLI = '0.7.4';
 
 /**
  * The first stable CLI release that reads a template's `icons` declaration
- * (spec:AST-084 FR9). Published 0.7.3 refuses the field and drops that
+ * (spec:AST-084 FR16). Published 0.7.3 refuses the field and drops that
  * template.
  *
  * Tied to the next patch slot, with {@link STABILITY_CLI}.
  */
 export const TEMPLATE_ICONS_CLI = '0.7.4';
+
+/**
+ * The first CLI release that reads a doc section's `before` and `after`.
+ * Earlier releases reject the fields and hide every doc topic the package
+ * ships.
+ */
+export const SECTION_POSITION_CLI = '0.7.4';
 
 const VERSION_RE =
   /^v?(\d+|[xX*])(?:\.(\d+|[xX*]))?(?:\.(\d+|[xX*]))?(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
@@ -245,6 +252,22 @@ export function sectionIdsCliProblem(pkg) {
     'has a doc section that sets `id`',
     'rejects the field, and can hide every doc topic the package ships',
     SECTION_IDS_CLI,
+  );
+}
+
+/**
+ * Why a package with a doc section that sets `before` or `after` would lose
+ * its doc topics on an older CLI, or null when its declared CLI range admits
+ * only CLIs that read the fields (spec:AST-046 FR11).
+ * @param {any} pkg package.json
+ * @returns {string | null}
+ */
+export function sectionPositionCliProblem(pkg) {
+  return cliRangeProblem(
+    pkg,
+    'has a doc section that sets `before` or `after`',
+    'rejects the fields, and can hide every doc topic the package ships',
+    SECTION_POSITION_CLI,
   );
 }
 

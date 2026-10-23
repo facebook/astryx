@@ -110,7 +110,15 @@ function childIdentity(tree, child) {
   return {
     route: child.route,
     name: child.route.slice(child.route.lastIndexOf('/') + 1),
-    package: child.provider,
+    package: child.guideOverlay?.replacement?.package ?? child.provider,
+    // A guide an integration's doc took the place of names whose it was.
+    ...(child.guideOverlay?.replacement
+      ? {
+          replaces: child.route,
+          replacedPackage:
+            child.guideOverlay.replacedPackage ?? child.provider,
+        }
+      : {}),
     kind: child.kind,
     title: child.title,
     summary: child.summary,

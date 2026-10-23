@@ -8,7 +8,13 @@
  *   owning control announces each busy start once through the shared channel
  */
 
-import {StrictMode, useEffect, useRef, type ReactElement} from 'react';
+import {
+  StrictMode,
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+} from 'react';
 import {
   afterAll,
   afterEach,
@@ -30,6 +36,14 @@ import {DateRangeInput} from '../DateRangeInput';
 import {DateTimeInput} from '../DateTimeInput';
 import {TimeInput} from '../TimeInput';
 import {CheckboxInput} from '../CheckboxInput';
+import {FileInput} from '../FileInput';
+import {Thumbnail} from '../Thumbnail';
+import {
+  DropdownMenu,
+  DropdownMenuItem,
+  DropdownMenuSubMenu,
+} from '../DropdownMenu';
+import {ChatMessageList} from '../Chat';
 import {BaseTypeahead, Typeahead} from '../Typeahead';
 import type {SearchableItem, SearchSource} from '../Typeahead';
 import type {ISOTimeString} from '../utils';
@@ -143,6 +157,27 @@ const OWNERS: ReadonlyArray<
       />
     ),
   ],
+  [
+    'Thumbnail (uploading)',
+    isLoading => (
+      <Thumbnail src="/local.jpg" alt="Upload" isLoading={isLoading} />
+    ),
+  ],
+  ...(['dropzone', 'input'] as const).map(
+    mode =>
+      [
+        `FileInput (${mode})`,
+        (isLoading: boolean) => (
+          <FileInput
+            label="Attachment"
+            mode={mode}
+            value={null}
+            onChange={() => {}}
+            isLoading={isLoading}
+          />
+        ),
+      ] as const,
+  ),
   [
     'DateRangeInput',
     isLoading => (
@@ -481,3 +516,197 @@ describe.each(SHEET_OWNERS)(
     });
   },
 );
+
+describe('DropdownMenuSubMenu loading state (spec:AST-086 FR8)', () => {
+  function Menu({isLoading}: {isLoading: boolean}) {
+    return (
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuSubMenu label="Move to" hasSpinner={isLoading}>
+          <DropdownMenuItem label="Inbox" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenu>
+    );
+  }
+
+  it('announces nothing while its menu is closed', async () => {
+    render(strict(<Menu isLoading />));
+    await nextFrame();
+    expect(busyAnnouncements()).toEqual([]);
+  });
+
+  it('announces the busy start when its menu opens while loading', async () => {
+    render(strict(<Menu isLoading />));
+    fireEvent.click(screen.getByRole('button', {name: /Actions/}));
+    await nextFrame();
+    expect(busyAnnouncements()).toEqual([['Loading', 'polite']]);
+  });
+
+  it('keeps the trigger Spinner silent and announces each busy start once', async () => {
+    const {rerender} = render(strict(<Menu isLoading={false} />));
+    fireEvent.click(screen.getByRole('button', {name: /Actions/}));
+    await nextFrame();
+    expect(busyAnnouncements()).toEqual([]);
+    rerender(strict(<Menu isLoading />));
+    await nextFrame();
+    const spinner = document.querySelector('.astryx-spinner');
+    expect(spinner).toHaveAttribute('aria-hidden', 'true');
+    expect(busyAnnouncements()).toEqual([['Loading', 'polite']]);
+    rerender(strict(<Menu isLoading={false} />));
+    rerender(strict(<Menu isLoading />));
+    await nextFrame();
+    expect(busyAnnouncements()).toEqual([
+      ['Loading', 'polite'],
+      ['Loading', 'polite'],
+    ]);
+  });
+});
+
+describe('ChatMessageList top loader (spec:AST-086 FR4, FR8)', () => {
+  it('keeps the loader inside the log silent and announces loading once through the channel', async () => {
+    let notify!: IntersectionObserverCallback;
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class {
+        constructor(callback: IntersectionObserverCallback) {
+          notify = callback;
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    render(
+      strict(
+        <ChatMessageList
+          scrollToTopAction={async () => new Promise<void>(() => {})}>
+          <div>Earlier message</div>
+        </ChatMessageList>,
+      ),
+    );
+    act(() => {
+      notify(
+        [{isIntersecting: true} as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      );
+    });
+    await nextFrame();
+    expect(document.querySelector('.astryx-spinner')).toHaveAttribute(
+      'aria-hidden',
+      'true',
+    );
+    expect(busyAnnouncements()).toEqual([['Loading', 'polite']]);
+  });
+});
+
+describe('FileInput busy start from a pick or a clear (spec:AST-086 FR6, FR8)', () => {
+  const file = new File(['x'], 'report.pdf', {type: 'application/pdf'});
+
+  it('keeps a pick under a pending changeAction to its one "selected" message', async () => {
+    const {container} = render(
+      strict(
+        <FileInput
+          label="Attachment"
+          value={null}
+          onChange={() => {}}
+          changeAction={async () => new Promise<void>(() => {})}
+        />,
+      ),
+    );
+    act(() => {
+      fireEvent.change(
+        container.querySelector('input[type="file"]') as HTMLInputElement,
+        {target: {files: [file]}},
+      );
+    });
+    await nextFrame();
+    expect(container.querySelector('.astryx-spinner')).toHaveAttribute(
+      'aria-hidden',
+      'true',
+    );
+    expect(announce).toHaveBeenCalledWith('1 file selected: report.pdf');
+    expect(busyAnnouncements()).toEqual([]);
+  });
+
+  it('keeps a pick whose onChange starts an upload (isLoading) to its one "selected" message', async () => {
+    function Uploader() {
+      const [value, setValue] = useState<File | null>(null);
+      const [isLoading, setIsLoading] = useState(false);
+      return (
+        <FileInput
+          label="Attachment"
+          value={value}
+          isLoading={isLoading}
+          onChange={next => {
+            setValue(next as File | null);
+            setIsLoading(true);
+          }}
+        />
+      );
+    }
+    const {container} = render(strict(<Uploader />));
+    act(() => {
+      fireEvent.change(
+        container.querySelector('input[type="file"]') as HTMLInputElement,
+        {target: {files: [file]}},
+      );
+    });
+    await nextFrame();
+    await nextFrame();
+    expect(announce).toHaveBeenCalledWith('1 file selected: report.pdf');
+    expect(busyAnnouncements()).toEqual([]);
+  });
+
+  it('announces nothing more when an earlier pick settles while a later one is still pending', async () => {
+    const settles: (() => void)[] = [];
+    const {container} = render(
+      strict(
+        <FileInput
+          label="Attachment"
+          value={null}
+          onChange={() => {}}
+          changeAction={async () =>
+            new Promise<void>(resolve => {
+              settles.push(resolve);
+            })
+          }
+        />,
+      ),
+    );
+    const input = container.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    act(() => {
+      fireEvent.change(input, {target: {files: [file]}});
+    });
+    await nextFrame();
+    act(() => {
+      fireEvent.change(input, {
+        target: {files: [new File(['y'], 'notes.txt', {type: 'text/plain'})]},
+      });
+    });
+    await nextFrame();
+    await act(async () => {
+      settles[0]();
+    });
+    await nextFrame();
+    await nextFrame();
+    expect(busyAnnouncements()).toEqual([]);
+  });
+
+  it('announces the busy start of a clear under a pending changeAction', async () => {
+    render(
+      strict(
+        <FileInput
+          label="Attachment"
+          value={file}
+          onChange={() => {}}
+          changeAction={async () => new Promise<void>(() => {})}
+        />,
+      ),
+    );
+    act(() => {
+      fireEvent.click(screen.getByRole('button', {name: /Clear/}));
+    });
+    await nextFrame();
+    expect(busyAnnouncements()).toEqual([['Loading', 'polite']]);
+  });
+});

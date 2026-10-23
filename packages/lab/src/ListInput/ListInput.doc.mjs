@@ -251,6 +251,71 @@ export const docs = {
   },
   examples: [
     {
+      label: 'Tag options',
+      code: `import {Selector} from '@astryxdesign/core/Selector';
+import {proportional} from '@astryxdesign/core/Table';
+import {TextInput} from '@astryxdesign/core/TextInput';
+
+type TagOption = {id: string; color: string; label: string};
+
+const columns = [
+  {
+    key: 'color',
+    header: 'Color',
+    width: proportional(1, {minWidth: 120}),
+    renderInput: ({item, label, isLabelHidden, status, statusVariant, isDisabled, updateItem}) => (
+      <Selector
+        label={label}
+        isLabelHidden={isLabelHidden}
+        options={colorOptions}
+        value={item.color}
+        onChange={color => updateItem({...item, color}, 'color')}
+        status={status}
+        statusVariant={statusVariant}
+        isDisabled={isDisabled}
+      />
+    ),
+  },
+  {
+    key: 'label',
+    header: 'Label',
+    width: proportional(2, {minWidth: 200}),
+    renderInput: ({item, label, isLabelHidden, status, statusVariant, isDisabled, updateItem}) => (
+      <TextInput
+        label={label}
+        isLabelHidden={isLabelHidden}
+        value={item.label}
+        onChange={nextLabel => updateItem({...item, label: nextLabel}, 'label')}
+        status={status}
+        statusVariant={statusVariant}
+        isDisabled={isDisabled}
+      />
+    ),
+  },
+] satisfies ListInputColumn<TagOption>[];
+
+<ListInput
+  label="Tag options"
+  itemName="tag"
+  value={tags}
+  onChange={setTags}
+  getItemKey={tag => tag.id}
+  createItem={() => ({id: crypto.randomUUID(), color: 'blue', label: ''})}
+  columns={columns}
+  isReorderable
+  status={
+    tags.length < 5
+      ? {type: 'error', message: 'Add at least five tag options.'}
+      : undefined
+  }
+  getItemStatus={tag =>
+    tag.color === 'green' && tag.label === 'Blocked'
+      ? {type: 'error', message: '"Blocked" cannot use green.'}
+      : undefined
+  }
+/>`,
+    },
+    {
       label: 'Controlled guest list',
       code: `import {proportional} from '@astryxdesign/core/Table';
 
@@ -314,6 +379,186 @@ const columns = [
       ? {type: 'error', message: 'Add at least one guest'}
       : undefined
   }
+/>`,
+    },
+    {
+      label: 'Mailing list',
+      code: `import {TextInput} from '@astryxdesign/core/TextInput';
+
+type Subscriber = {id: string; email: string};
+
+<ListInput
+  label="Mailing list"
+  itemName="subscriber"
+  value={subscribers}
+  onChange={setSubscribers}
+  getItemKey={subscriber => subscriber.id}
+  createItem={() => ({id: crypto.randomUUID(), email: ''})}
+  columns={[
+    {
+      key: 'email',
+      header: 'Email address',
+      renderInput: ({item, label, isLabelHidden, status, statusVariant, isDisabled, updateItem}) => (
+        <TextInput
+          type="email"
+          label={label}
+          isLabelHidden={isLabelHidden}
+          value={item.email}
+          onChange={email => updateItem({...item, email}, 'email')}
+          status={status}
+          statusVariant={statusVariant}
+          isDisabled={isDisabled}
+        />
+      ),
+    },
+  ] satisfies ListInputColumn<Subscriber>[]}
+  isRequired
+  maxItems={6}
+  getItemStatus={subscriber =>
+    isDuplicateAddress(subscriber)
+      ? {type: 'error', message: 'This address is already in the list.'}
+      : undefined
+  }
+/>`,
+    },
+    {
+      label: 'Budget allocation',
+      code: `import {NumberInput} from '@astryxdesign/core/NumberInput';
+import {Selector} from '@astryxdesign/core/Selector';
+import {pixel, proportional} from '@astryxdesign/core/Table';
+
+type Allocation = {id: string; team: string; percent: number | null};
+
+const columns = [
+  {
+    key: 'team',
+    header: 'Team',
+    width: proportional(2, {minWidth: 180}),
+    renderInput: ({item, label, isLabelHidden, status, statusVariant, isDisabled, updateItem}) => (
+      <Selector
+        label={label}
+        isLabelHidden={isLabelHidden}
+        options={teamOptions}
+        value={item.team}
+        placeholder="Choose a team"
+        onChange={team => updateItem({...item, team}, 'team')}
+        status={status}
+        statusVariant={statusVariant}
+        isDisabled={isDisabled}
+      />
+    ),
+  },
+  {
+    key: 'percent',
+    header: 'Allocation',
+    width: pixel(132),
+    renderInput: ({item, label, isLabelHidden, status, statusVariant, isDisabled, updateItem}) => (
+      <NumberInput
+        label={label}
+        isLabelHidden={isLabelHidden}
+        value={item.percent}
+        onChange={percent => updateItem({...item, percent}, 'percent')}
+        status={status}
+        statusVariant={statusVariant}
+        isDisabled={isDisabled}
+        min={0}
+        max={100}
+        units="%"
+        isIntegerOnly
+      />
+    ),
+  },
+] satisfies ListInputColumn<Allocation>[];
+
+<ListInput
+  label="Quarterly budget allocation"
+  itemName="allocation"
+  value={allocations}
+  onChange={setAllocations}
+  getItemKey={allocation => allocation.id}
+  createItem={() => ({id: crypto.randomUUID(), team: '', percent: null})}
+  columns={columns}
+  maxItems={4}
+  status={
+    total === 100
+      ? undefined
+      : {type: 'error', message: 'Allocations must total 100%.'}
+  }
+/>`,
+    },
+    {
+      label: 'Family member declaration',
+      code: `import {DateInput} from '@astryxdesign/core/DateInput';
+import {Selector} from '@astryxdesign/core/Selector';
+import {pixel, proportional} from '@astryxdesign/core/Table';
+import {TextInput} from '@astryxdesign/core/TextInput';
+
+const columns = [
+  {
+    key: 'fullName',
+    header: 'Full legal name',
+    width: proportional(2, {minWidth: 200}),
+    renderInput: ({item, label, isLabelHidden, status, statusVariant, isDisabled, updateItem}) => (
+      <TextInput
+        label={label}
+        isLabelHidden={isLabelHidden}
+        value={item.fullName}
+        onChange={fullName => updateItem({...item, fullName}, 'fullName')}
+        status={status}
+        statusVariant={statusVariant}
+        isDisabled={isDisabled}
+      />
+    ),
+  },
+  {
+    key: 'relationship',
+    header: 'Relationship',
+    width: proportional(1.25, {minWidth: 160}),
+    renderInput: ({item, label, isLabelHidden, status, statusVariant, isDisabled, updateItem}) => (
+      <Selector
+        label={label}
+        isLabelHidden={isLabelHidden}
+        options={relationshipOptions}
+        value={item.relationship}
+        onChange={relationship => updateItem({...item, relationship}, 'relationship')}
+        status={status}
+        statusVariant={statusVariant}
+        isDisabled={isDisabled}
+      />
+    ),
+  },
+  {
+    key: 'dateOfBirth',
+    header: 'Date of birth',
+    width: pixel(176),
+    renderInput: ({item, label, isLabelHidden, status, statusVariant, isDisabled, updateItem}) => (
+      <DateInput
+        label={label}
+        isLabelHidden={isLabelHidden}
+        value={item.dateOfBirth}
+        onChange={dateOfBirth => updateItem({...item, dateOfBirth}, 'dateOfBirth')}
+        status={status}
+        statusVariant={statusVariant}
+        isDisabled={isDisabled}
+      />
+    ),
+  },
+] satisfies ListInputColumn<FamilyMember>[];
+
+<ListInput
+  label="Family member declaration"
+  itemName="family member"
+  value={members}
+  onChange={setMembers}
+  getItemKey={member => member.id}
+  createItem={() => ({
+    id: crypto.randomUUID(),
+    fullName: '',
+    relationship: '',
+    dateOfBirth: undefined,
+  })}
+  columns={columns}
+  isRequired
 />`,
     },
   ],

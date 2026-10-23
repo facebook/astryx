@@ -5,8 +5,10 @@ import {useState} from 'react';
 import {BottomSheet, BottomSheetSwitcher} from '@astryxdesign/core/BottomSheet';
 import {Button} from '@astryxdesign/core/Button';
 import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
+import {Dialog, DialogHeader} from '@astryxdesign/core/Dialog';
 import {Divider} from '@astryxdesign/core/Divider';
 import {Heading} from '@astryxdesign/core/Heading';
+import {Layout, LayoutContent, LayoutFooter} from '@astryxdesign/core/Layout';
 import {Section} from '@astryxdesign/core/Section';
 import {HStack, VStack} from '@astryxdesign/core/Stack';
 import {Text} from '@astryxdesign/core/Text';
@@ -102,45 +104,101 @@ interface NotificationFrequencySheetProps {
   height: NotificationSheetHeight;
   onBack: () => void;
   onContinue: () => void;
+  /** Offer a Reset control that confirms through a Core Dialog above the step. */
+  hasResetDialog?: boolean;
 }
 
 function NotificationFrequencySheet({
   height,
   onBack,
   onContinue,
+  hasResetDialog = false,
 }: NotificationFrequencySheetProps) {
   const [frequency, setFrequency] = useState('daily');
+  const [isResetOpen, setIsResetOpen] = useState(false);
 
   return (
-    <BottomSheet
-      sheetId="frequency"
-      label="Notification frequency"
-      height={height}>
-      <Section padding={4}>
-        <VStack gap={4}>
-          <VStack gap={1}>
-            <Heading level={3}>How often?</Heading>
-            <Text type="supporting" color="secondary">
-              Step 2 of 3
-            </Text>
+    <>
+      <BottomSheet
+        sheetId="frequency"
+        label="Notification frequency"
+        height={height}>
+        <Section padding={4}>
+          <VStack gap={4}>
+            <VStack gap={1}>
+              <Heading level={3}>How often?</Heading>
+              <Text type="supporting" color="secondary">
+                Step 2 of 3
+              </Text>
+            </VStack>
+            <Divider />
+            <RadioList
+              label="Notification frequency"
+              isLabelHidden
+              value={frequency}
+              onChange={setFrequency}>
+              <RadioListItem label="Immediately" value="immediately" />
+              <RadioListItem label="Daily" value="daily" />
+              <RadioListItem label="Weekly" value="weekly" />
+            </RadioList>
+            <HStack gap={2} hAlign="end">
+              {hasResetDialog ? (
+                <Button
+                  label="Reset"
+                  variant="secondary"
+                  onClick={() => setIsResetOpen(true)}
+                />
+              ) : null}
+              <Button label="Back" variant="secondary" onClick={onBack} />
+              <Button label="Continue" onClick={onContinue} />
+            </HStack>
           </VStack>
-          <Divider />
-          <RadioList
-            label="Notification frequency"
-            isLabelHidden
-            value={frequency}
-            onChange={setFrequency}>
-            <RadioListItem label="Immediately" value="immediately" />
-            <RadioListItem label="Daily" value="daily" />
-            <RadioListItem label="Weekly" value="weekly" />
-          </RadioList>
-          <HStack gap={2} hAlign="end">
-            <Button label="Back" variant="secondary" onClick={onBack} />
-            <Button label="Continue" onClick={onContinue} />
-          </HStack>
-        </VStack>
-      </Section>
-    </BottomSheet>
+        </Section>
+      </BottomSheet>
+      {/* A sibling of the sheet, not sheet content: the Dialog is a Core
+          overlay opened from the step, and the sheet keeps its lone-Section
+          content geometry. */}
+      {hasResetDialog ? (
+        <Dialog
+          isOpen={isResetOpen}
+          onOpenChange={setIsResetOpen}
+          purpose="form">
+          <Layout
+            header={
+              <DialogHeader
+                title="Reset frequency?"
+                onOpenChange={setIsResetOpen}
+              />
+            }
+            content={
+              <LayoutContent>
+                <Text>
+                  Notifications go back to daily. You can choose again later.
+                </Text>
+              </LayoutContent>
+            }
+            footer={
+              <LayoutFooter>
+                <HStack gap={2} hAlign="end">
+                  <Button
+                    label="Keep"
+                    variant="secondary"
+                    onClick={() => setIsResetOpen(false)}
+                  />
+                  <Button
+                    label="Reset to daily"
+                    onClick={() => {
+                      setFrequency('daily');
+                      setIsResetOpen(false);
+                    }}
+                  />
+                </HStack>
+              </LayoutFooter>
+            }
+          />
+        </Dialog>
+      ) : null}
+    </>
   );
 }
 
@@ -202,11 +260,13 @@ function NotificationChannelsSheet({
 interface MultiStepSwitcherExampleProps {
   height: NotificationSheetHeight;
   hasScrim?: boolean;
+  hasResetDialog?: boolean;
 }
 
 function MultiStepSwitcherExample({
   height,
   hasScrim = true,
+  hasResetDialog = false,
 }: MultiStepSwitcherExampleProps) {
   const [activeSheet, setActiveSheet] = useState<string | null>(null);
 
@@ -227,6 +287,7 @@ function MultiStepSwitcherExample({
         />
         <NotificationFrequencySheet
           height={height}
+          hasResetDialog={hasResetDialog}
           onBack={() => setActiveSheet('overview')}
           onContinue={() => setActiveSheet('channels')}
         />
@@ -262,6 +323,12 @@ export const Capped: Story = {
 export const NoScrim: Story = {
   name: 'No scrim',
   render: () => <MultiStepSwitcherExample height="hug" hasScrim={false} />,
+  play: openFlow,
+};
+
+export const DialogFromStep: Story = {
+  name: 'Dialog from a step',
+  render: () => <MultiStepSwitcherExample height="hug" hasResetDialog />,
   play: openFlow,
 };
 
