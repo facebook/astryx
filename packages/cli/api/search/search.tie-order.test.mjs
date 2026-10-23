@@ -30,4 +30,10 @@ describe('ties below the first result', () => {
     const results = (await search('three-dot menu with actions')).data.results;
     expect(results.slice(0, 3).map(r => r.name)).toContain('MoreMenu');
   });
+
+  it('lets few parts lead, so a big family keeps the rest in view', async () => {
+    const results = (await search('chat')).data.results.map(r => r.name);
+    expect(results).toContain('ai-chat');
+    expect(results).toContain('ai-chat-landing');
+  });
 });

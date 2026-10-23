@@ -121,6 +121,9 @@ export function orderMatches(table, order, lexical, query, limit) {
  * @typedef {{res: any, i: number, band: number, learned: number}} Item
  */
 
+/** How many parts of the first result lead their ties, across an answer. */
+const PARTS_FIRST = 2;
+
 /**
  * Below the first result, matches the lexical ranker scored the same keep
  * their block but are no longer in name order inside it: a part or sibling of
@@ -161,18 +164,20 @@ function tiesByFit(ranked, table, blockOf) {
     return sum;
   };
   const out = [ranked[0]];
+  let parts = 0;
   for (let i = 1; i < ranked.length;) {
     let j = i;
     const at = (/** @type {Item} */ it) => `${blockOf(it)}:${it.res.domain}`;
     while (j < ranked.length && at(ranked[j]) === at(ranked[i])) j++;
     const run = ranked.slice(i, j);
     if (run.length > 1) {
-      const keyed = run.map((it, n) => ({
-        it,
-        n,
-        r: related(it),
-        f: rarity(it),
-      }));
+      const keyed = run.map((it, n) => {
+        // At most PARTS_FIRST parts lead, across the answer, so a family
+        // with many parts does not crowd out what else the query matched.
+        const r = parts < PARTS_FIRST && related(it);
+        if (r) parts++;
+        return {it, n, r, f: rarity(it)};
+      });
       keyed.sort((a, b) => Number(b.r) - Number(a.r) || b.f - a.f || a.n - b.n);
       out.push(...keyed.map(k => k.it));
     } else out.push(...run);
