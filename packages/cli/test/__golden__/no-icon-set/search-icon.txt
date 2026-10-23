@@ -1,158 +1,86 @@
 Results for "icon" (20 of 221)
-
 name:        Icon
 domain:      component
 package:     @astryxdesign/core
 import:      @astryxdesign/core/Icon
-description: Icons are small visual symbols that represent actions, objects, or concepts. They improve scannability and reinforce meaning alongside text. Supports both direct SVG components and semantic icon names that adapt to the active theme.
 command:     pnpm exec astryx component Icon
-
 name:        icons
 domain:      doc
 package:     @astryxdesign/cli
-title:       Foundations › Icons
-description: Semantic icon names available in the design system. These adapt to the active theme's icon registry.
 command:     pnpm exec astryx docs icons --index
 parent:      pnpm exec astryx docs foundations
-
 name:        IconButton
 domain:      component
 package:     @astryxdesign/core
 import:      @astryxdesign/core/IconButton
-description: A button that shows only an icon with no visible text. Use IconButton in toolbars, table rows, and compact UI where space is tight and the icon is universally understood.
 command:     pnpm exec astryx component IconButton
-
 name:        useInputContainer
 domain:      hook
 package:     @astryxdesign/core
 import:      @astryxdesign/core/hooks
-description: Makes an input container wrapper clickable, delegating focus to the inner input/textarea when the user clicks non-interactive areas (icons, padding, status indicators). Built on top of useClickableContainer, so nested interactive elements (clear buttons, calendar toggles, links) are handled safely; clicking them does NOT steal focus from the input. Automatically detects input type: text-like inputs receive .focus(), while other types (checkbox, radio, file) receive .click().
 command:     pnpm exec astryx hook useInputContainer
-
 name:        useInputStatusIcon
 domain:      hook
 package:     @astryxdesign/core
 import:      @astryxdesign/core/hooks
-description: Builds the on-field status affordance for a bordered input and its accessibility wiring, so every input in the family behaves the same for a given status. The attached variant renders a plain glyph and leaves the text to the message box; the detached variant renders nothing here, because the message box already carries its own icon; the tooltip variant renders a real focusable button whose tooltip is reachable by keyboard, pointer, touch and assistive tech. Use it when building a bordered input, not for field-level messaging.
 command:     pnpm exec astryx hook useInputStatusIcon
-
 name:        BaseTypeaheadCustomSearch
 domain:      template
 package:     @astryxdesign/core
-displayName: BaseTypeahead - Custom Search Bar
-kind:        block
-description: BaseTypeahead embedded inside a custom-styled wrapper. The wrapper provides its own border and icon chrome; anchorRef positions the dropdown relative to it. Use this pattern when Typeahead's built-in field layout does not fit your composition.
 command:     pnpm exec astryx template BaseTypeaheadCustomSearch --type block
-
 name:        BottomSheetSnapPoints
 domain:      template
 package:     @astryxdesign/core
-displayName: Bottom Sheet - Snap points
-kind:        block
-description: Drag-to-resize stops: a half-height working surface, and a peek that slides away and thins the scrim.
 command:     pnpm exec astryx template BottomSheetSnapPoints --type block
-
 name:        BreadcrumbsDeepHierarchy
 domain:      template
 package:     @astryxdesign/core
-displayName: Breadcrumbs - Deep Path
-kind:        block
-description: A 5-level breadcrumb trail for deeply nested content. Use in e-commerce, file browsers, or any UI with several levels of hierarchy.
 command:     pnpm exec astryx template BreadcrumbsDeepHierarchy --type block
-
 name:        BreadcrumbsWithIcons
 domain:      template
 package:     @astryxdesign/core
-displayName: Breadcrumbs - Icons
-kind:        block
-description: Add icons before breadcrumb labels for quick recognition. Use a home icon on the root item and contextual icons on key sections.
 command:     pnpm exec astryx template BreadcrumbsWithIcons --type block
-
 name:        ButtonFloating
 domain:      template
 package:     @astryxdesign/core
-displayName: Button - Floating
-kind:        block
-description: A floating action button raised with `elevation="med"`. Use elevation for buttons that hover above content, like a FAB.
 command:     pnpm exec astryx template ButtonFloating --type block
-
 name:        ButtonGroupShowcase
 domain:      template
 package:     @astryxdesign/core
-displayName: ButtonGroup
-kind:        block
 command:     pnpm exec astryx template ButtonGroupShowcase --type block
-
 name:        ButtonWithIcon
 domain:      template
 package:     @astryxdesign/core
-displayName: Button - Icon
-kind:        block
-description: Buttons with a leading icon that reinforces the label. Use when the icon helps the user identify the action faster, like a plus for "New" or a trash can for "Delete".
 command:     pnpm exec astryx template ButtonWithIcon --type block
-
 name:        CenterHorizontal
 domain:      template
 package:     @astryxdesign/core
-displayName: Center - Horizontal Center
-kind:        block
-description: A formatting control group centered with axis="horizontal" in the default horizontal writing mode. In other writing modes, Center currently follows the flex main axis rather than guaranteeing physical horizontal centering.
 command:     pnpm exec astryx template CenterHorizontal --type block
-
 name:        CenterInsideACard
 domain:      template
 package:     @astryxdesign/core
-displayName: Center - Vertical & Horizontal Center
-kind:        block
-description: An empty state with an icon, heading, and description centered both vertically and horizontally inside a card. This is the most common use of Center: placing content in the middle of a fixed-height area like a panel, card, or content region. The height prop defines the centering space.
 command:     pnpm exec astryx template CenterInsideACard --type block
-
 name:        ChatComposerDrawerShowcase
 domain:      template
 package:     @astryxdesign/core
-displayName: ChatComposerDrawer
-kind:        block
-description: Composer drawer with file tokens, a collapsible toggle, and header actions. Use as a starting point for any chat composer with attachments.
 command:     pnpm exec astryx template ChatComposerDrawerShowcase --type block
-
 name:        ChatComposerDrawerWithProgress
 domain:      template
 package:     @astryxdesign/core
-displayName: ChatComposerDrawer - With Progress
-kind:        block
-description: Drawer paired with a context progress bar in the header. Show context window usage when attachments consume part of the available token budget.
 command:     pnpm exec astryx template ChatComposerDrawerWithProgress --type block
-
 name:        ChatComposerFooterActions
 domain:      template
 package:     @astryxdesign/core
-displayName: ChatComposer - Footer Actions
-kind:        block
-description: Chat composer with dropdown menus for a model selector and settings in the footer, and a mic button in the send actions slot.
 command:     pnpm exec astryx template ChatComposerFooterActions --type block
-
 name:        ChatComposerFullFeatured
 domain:      template
 package:     @astryxdesign/core
-displayName: ChatComposer - Full Featured
-kind:        block
-description: Chat composer with all slots populated: collapsible attachment drawer, header actions, context progress bar, footer dropdown menus, and mic button. Shows the maximum composer configuration.
 command:     pnpm exec astryx template ChatComposerFullFeatured --type block
-
 name:        ChatMessageBubbleMetadata
 domain:      template
 package:     @astryxdesign/core
-displayName: ChatMessageBubble - Metadata
-kind:        block
-description: Bubbles with name and metadata slots aligned to bubble padding. Put name on the first bubble and metadata on the last bubble in a message.
 command:     pnpm exec astryx template ChatMessageBubbleMetadata --type block
-
 name:        ChatMessageMetadataFooter
 domain:      template
 package:     @astryxdesign/core
-displayName: ChatMessageMetadata - Footer Actions
-kind:        block
-description: Assistant message with footer actions: copy, retry, thumbs up/down, and model label. Use for AI responses that need feedback or utility controls.
 command:     pnpm exec astryx template ChatMessageMetadataFooter --type block
-
-More in packages you could add: pnpm exec astryx discover icon

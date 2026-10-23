@@ -6,9 +6,12 @@
  *   stable command answers exactly as it does without icon sets.
  *
  *   The goldens under `__golden__/no-icon-set/` were written by the CLI
- *   without the icon-set feature, so a byte that an experimental surface adds
- *   to search, a template copy, doctor's doc counts, or an integration's
- *   verify report fails here. Help, the
+ *   without the icon-set feature, so a result, field, section, count, or
+ *   `stability` that an experimental surface adds to search, the docs, a
+ *   template copy, doctor, or an integration's verify report fails here, as
+ *   does any sentence that names an experimental surface. They hold no prose
+ *   (titles, summaries, descriptions, snippets), so main's ordinary doc and
+ *   command wording edits rewrite none of them. Help, the
  *   manifest, and the `astryx docs cli` listing gain only the experimental
  *   group or namespace, the one marked entry point FR27 allows.
  *
@@ -222,19 +225,219 @@ function withoutComputerChecks(stdout) {
   const summary = {pass: 0, warn: 0, fail: 0, info: 0};
   report.data.checks = report.data.checks.map((/** @type {any} */ check) => {
     if (COMPUTER_CHECKS.has(check.id)) return {id: check.id};
-    // The Node version is the machine's, not the project's.
-    if (check.id === 'node-version') {
-      summary[/** @type {keyof typeof summary} */ (check.status)] += 1;
-      return {
-        ...check,
-        message: check.message.replace(/v\d+\.\d+\.\d+/, 'v<node>'),
-      };
-    }
     summary[/** @type {keyof typeof summary} */ (check.status)] += 1;
-    return check;
+    // A message is prose; its counts are what icon sets could change. The
+    // Node version is the machine's, not the project's.
+    return {
+      ...check,
+      message: numbersIn(
+        check.id === 'node-version'
+          ? check.message.replace(/v\d+\.\d+\.\d+/u, 'v<node>')
+          : check.message,
+      ),
+    };
   });
   report.data.summary = summary;
-  return `${JSON.stringify(report, null, 2)}\n`;
+  const shaped = skeleton(report);
+  report.data.checks.forEach(
+    (/** @type {any} */ check, /** @type {number} */ at) => {
+      if (check.message != null) shaped.data.checks[at].message = check.message;
+    },
+  );
+  return asGolden(shaped);
+}
+
+/*
+ * The goldens hold what icon sets could change, not main's prose: an edit to a
+ * stable doc's title, summary, description, or snippet, or to a command's
+ * description, rewrites no golden. Each golden keeps identities (ids, routes,
+ * names, kinds, packages, commands), structure (which fields, sections,
+ * children, and results there are, in order), counts, and the leak fields:
+ * every `stability`, and every sentence that names `experimental`, an icon
+ * set, or an icon definition.
+ */
+
+/** String fields kept as they are: identities, never prose. */
+const IDENTITY_KEYS = new Set([
+  'apiVersion',
+  'type',
+  'package',
+  'id',
+  'key',
+  'route',
+  'name',
+  'topic',
+  'kind',
+  'domain',
+  'import',
+  'command',
+  'parent',
+  'stability',
+  'slot',
+  'template',
+  'outputDir',
+  'fileName',
+  'status',
+  'code',
+  'flag',
+  'version',
+  'query',
+  'cli',
+  'core',
+  'copy',
+  'severity',
+  'file',
+  'installCommand',
+  'lang',
+]);
+/** Fields whose strings are a list of identities. */
+const IDENTITY_LIST_KEYS = new Set([
+  'components',
+  'missingPackages',
+  'jsonSupported',
+  'choices',
+  'iconSets',
+]);
+/** Numbers derived from prose (a match in a title scores higher). */
+const PROSE_NUMBER_KEYS = new Set(['score']);
+/** What a prose string becomes. */
+const TEXT = '<text>';
+
+/**
+ * A JSON value with its prose replaced by {@link TEXT}: every string outside
+ * {@link IDENTITY_KEYS} and {@link IDENTITY_LIST_KEYS}, and every number in
+ * {@link PROSE_NUMBER_KEYS}. Keys, arrays, and their order stay.
+ * @param {any} value
+ * @param {string} [key]
+ * @returns {any}
+ */
+function skeleton(value, key) {
+  if (typeof value === 'string') {
+    return key != null && IDENTITY_KEYS.has(key) ? value : TEXT;
+  }
+  if (typeof value === 'number') {
+    return key != null && PROSE_NUMBER_KEYS.has(key) ? TEXT : value;
+  }
+  if (Array.isArray(value)) {
+    return value.map(each =>
+      typeof each === 'string' && key != null && IDENTITY_LIST_KEYS.has(key)
+        ? each
+        : skeleton(each, typeof each === 'string' ? undefined : key),
+    );
+  }
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([field, each]) => [
+        field,
+        skeleton(each, field),
+      ]),
+    );
+  }
+  return value;
+}
+
+/**
+ * Every sentence in a value that names an experimental surface, sorted.
+ * @param {any} value
+ * @returns {string[]}
+ */
+function leakMentions(value) {
+  /** @type {Set<string>} */
+  const found = new Set();
+  /** @param {any} each */
+  const visit = each => {
+    if (typeof each === 'string') {
+      for (const sentence of each.split(/(?<=[.!?])\s+/u)) {
+        if (LEAK_WORDS.test(sentence)) found.add(sentence.trim());
+      }
+    } else if (Array.isArray(each)) {
+      each.forEach(visit);
+    } else if (each && typeof each === 'object') {
+      Object.values(each).forEach(visit);
+    }
+  };
+  visit(value);
+  return [...found].sort();
+}
+
+/** @param {any} value */
+const asGolden = value => `${JSON.stringify(value, null, 2)}\n`;
+
+/**
+ * Text output with its prose dropped: a line matching one of `keep` stays;
+ * a two-column row (`name   description`) keeps its first column and the
+ * column it sets; a line that wraps a row's description is dropped; any
+ * other run of lines becomes one {@link TEXT}.
+ * @param {string} text
+ * @param {RegExp[]} [keep]
+ */
+function textShape(text, keep = []) {
+  /** @type {string[]} */
+  const out = [];
+  for (const line of text.split('\n')) {
+    if (line.trim() === '') {
+      out.push('');
+    } else if (keep.some(pattern => pattern.test(line))) {
+      out.push(line);
+    } else if (/^\s{8,}\S/u.test(line)) {
+      continue;
+    } else {
+      const row = /^(\s*\S(?:.*?\S)?)( {2,})\S/u.exec(line);
+      const shaped = row ? `${row[1]}${row[2]}${TEXT}` : TEXT;
+      // A paragraph's lines are one prose run, however it wraps.
+      if (shaped !== TEXT || out.at(-1) !== TEXT) out.push(shaped);
+    }
+  }
+  return out.join('\n');
+}
+
+/**
+ * `astryx search` as a golden: the count, and each result's identity and
+ * order, with the sentences that name an experimental surface (the stable
+ * icons topic names "the icon set" a theme swaps). No result is experimental,
+ * an icon, or an icon definition.
+ * @param {string} query
+ * @param {string} cwd
+ */
+function searchGolden(query, cwd) {
+  const json = astryx(['search', ...query.split(' '), '--json'], cwd);
+  expect(json.status).toBe(0);
+  const body = JSON.parse(json.stdout);
+  for (const result of body.data.results) {
+    expect(result).not.toHaveProperty('stability');
+    expect(['icon', 'icon-set', 'icon-definition']).not.toContain(
+      result.domain,
+    );
+    expect(
+      [result.name, result.command, result.route, result.parent].join(' '),
+    ).not.toMatch(/experimental|icon-definitions|icon-sets?\b/u);
+  }
+  body.data.results = body.data.results.map((/** @type {any} */ result) => ({
+    ...skeleton(result),
+    mentions: leakMentions(result),
+  }));
+  const text = astryx(['search', ...query.split(' ')], cwd);
+  return {
+    json: asGolden(body),
+    // Each result's identity lines and the count; descriptions are prose.
+    text: text.stdout
+      .split('\n')
+      .filter(line =>
+        /^(?:Results for |(?:name|domain|package|import|command|parent|route):\s)/u.test(
+          line,
+        ),
+      )
+      .join('\n'),
+  };
+}
+
+/**
+ * The numbers a message states, in order, standing for the message: the
+ * counts icon sets could change, without the prose around them.
+ * @param {string} message
+ */
+function numbersIn(message) {
+  return `${TEXT} ${(message.match(/\d+(?:\.\d+)*/gu) ?? []).join(' ')}`.trim();
 }
 
 beforeAll(() => {
@@ -254,31 +457,33 @@ afterAll(() => {
 
 describe('with no icon set, stable output is unchanged', () => {
   // Every stable docs topic, against the CLI without the feature: the
-  // listing, each topic's sections, and a digest of each topic's JSON.
+  // listing, each topic's sections, a digest of each topic's JSON skeleton
+  // (its fields, blocks, and identities, not its prose), and the leak fields.
   it('every stable docs topic: the listing, its sections, and its JSON', async () => {
     const list = JSON.parse(astryx(['docs', '--json']).stdout);
-    /** @type {Record<string, {sections: string[], digest?: string}>} */
+    /** @type {Record<string, any>} */
     const topics = {};
     for (const {topic} of list.data) {
-      const out = astryx(['docs', topic, '--json']).stdout;
-      const doc = JSON.parse(out).data;
+      const doc = JSON.parse(astryx(['docs', topic, '--json']).stdout);
       topics[topic] = {
-        sections: (doc.sections ?? []).map(
-          (/** @type {any} */ section) =>
-            `${section.id ?? section.key}: ${section.title}`,
+        sections: (doc.data.sections ?? []).map(
+          (/** @type {any} */ section) => section.id ?? section.key,
         ),
-        digest: createHash('sha256').update(out).digest('hex'),
+        skeleton: createHash('sha256')
+          .update(JSON.stringify(skeleton(doc)))
+          .digest('hex'),
+        ...(doc.data.stability ? {stability: doc.data.stability} : {}),
+        mentions: leakMentions(doc),
       };
     }
     await expect(
-      `${JSON.stringify({list: list.data, topics}, null, 2)}\n`,
+      asGolden({list: skeleton(list.data), topics}),
     ).toMatchFileSnapshot(path.join(GOLDEN, 'docs-topics.json'));
   }, 120_000);
 
   // Every stable node of the docs tree outside `cli`, by structure and by
   // what could leak, so an unrelated doc edit rewrites no line here: each
-  // namespace's children (route and title) and each guide's sections (id and
-  // title), every `stability` the node or a child carries, and every
+  // namespace's children (routes) and each guide's sections (ids), every `stability` the node or a child carries, and every
   // sentence in the node that names `experimental`, an icon set, or an icon
   // definition. The field reference gains the stable `stability` field of
   // every doc kind, so it is compared by sections.
@@ -362,15 +567,12 @@ describe('with no icon set, stable output is unchanged', () => {
         ...(res.type === 'docs.node'
           ? {
               children: res.data.slots.flatMap((/** @type {any} */ slot) =>
-                slot.children.map(
-                  (/** @type {any} */ c) => `${c.route}: ${c.title}`,
-                ),
+                slot.children.map((/** @type {any} */ c) => c.route),
               ),
             }
           : {
               sections: (res.data.sections ?? []).map(
-                (/** @type {any} */ section) =>
-                  `${section.id ?? section.key}: ${section.title}`,
+                (/** @type {any} */ section) => section.id ?? section.key,
               ),
             }),
         ...stabilities(res),
@@ -392,7 +594,7 @@ describe('with no icon set, stable output is unchanged', () => {
   // The `cli` listings are FR0's one docs exception: they gain the
   // experimental group, commands, and API functions, each marked as help marks
   // the command group. Every entry not marked experimental reads exactly as it
-  // does without the feature, in JSON and byte for byte in text: stable rows
+  // does without the feature, in JSON and in text: stable rows
   // set the name column, and an experimental row overhangs it.
   it.each(['cli', 'cli/commands', 'cli/api/functions'])(
     'docs %s: every entry not marked experimental, text and JSON',
@@ -405,11 +607,12 @@ describe('with no icon set, stable output is unchanged', () => {
         );
       }
       delete json.meta;
-      await expect(`${JSON.stringify(json, null, 2)}\n`).toMatchFileSnapshot(
+      await expect(asGolden(skeleton(json))).toMatchFileSnapshot(
         path.join(GOLDEN, `docs-${slug}.json`),
       );
       // An experimental row and the lines it wraps onto are left out; every
-      // other line is compared as printed.
+      // other row is compared by its name and the name column it sets, so an
+      // experimental name that widened the stable column would show.
       /** @type {string[]} */
       const lines = [];
       let inExperimental = false;
@@ -422,9 +625,9 @@ describe('with no icon set, stable output is unchanged', () => {
         inExperimental = false;
         lines.push(line);
       }
-      await expect(lines.join('\n')).toMatchFileSnapshot(
-        path.join(GOLDEN, `docs-${slug}.txt`),
-      );
+      await expect(
+        textShape(lines.join('\n'), [/^package: /u]),
+      ).toMatchFileSnapshot(path.join(GOLDEN, `docs-${slug}.txt`));
     },
   );
 
@@ -432,13 +635,11 @@ describe('with no icon set, stable output is unchanged', () => {
     'search %s, text and JSON',
     async query => {
       const slug = query.replace(/\s+/g, '-');
-      const json = astryx(['search', ...query.split(' '), '--json']);
-      expect(json.status).toBe(0);
-      await expect(json.stdout).toMatchFileSnapshot(
+      const {json, text} = searchGolden(query, project);
+      await expect(json).toMatchFileSnapshot(
         path.join(GOLDEN, `search-${slug}.json`),
       );
-      const text = astryx(['search', ...query.split(' ')]);
-      await expect(text.stdout).toMatchFileSnapshot(
+      await expect(text).toMatchFileSnapshot(
         path.join(GOLDEN, `search-${slug}.txt`),
       );
     },
@@ -459,10 +660,25 @@ describe('with no icon set, stable output is unchanged', () => {
   });
 
   it('a template that declares icons prints and copies as it always has', async () => {
+    // The template's own source, from the checkout whose CLI answers: printed
+    // and copied unchanged, icons included.
+    const page = fs.readFileSync(
+      path.join(
+        process.env.GOLDEN_CLI_ROOT ?? CLI_ROOT,
+        'assets',
+        'templates',
+        'pages',
+        'settings-dialog',
+        'page.tsx',
+      ),
+      'utf-8',
+    );
     const shown = astryx(['template', 'settings-dialog', '--json']);
     expect(shown.status).toBe(0);
-    expect(JSON.parse(shown.stdout).data).not.toHaveProperty('icons');
-    await expect(shown.stdout).toMatchFileSnapshot(
+    const shownBody = JSON.parse(shown.stdout);
+    expect(shownBody.data).not.toHaveProperty('icons');
+    expect(shownBody.data.source).toBe(page);
+    await expect(asGolden(skeleton(shownBody))).toMatchFileSnapshot(
       path.join(GOLDEN, 'template-show.json'),
     );
 
@@ -473,21 +689,28 @@ describe('with no icon set, stable output is unchanged', () => {
       '--json',
     ]);
     expect(copied.status).toBe(0);
-    expect(JSON.parse(copied.stdout).data).not.toHaveProperty('icons');
-    await expect(copied.stdout).toMatchFileSnapshot(
+    const copiedBody = JSON.parse(copied.stdout);
+    expect(copiedBody.data).not.toHaveProperty('icons');
+    await expect(asGolden(skeleton(copiedBody))).toMatchFileSnapshot(
       path.join(GOLDEN, 'template-copy.json'),
     );
 
     const text = astryx(['template', 'settings-dialog', 'out/text']);
     expect(text.status).toBe(0);
     expect(`${text.stdout}${text.stderr}`).not.toContain('icons:');
-    await expect(text.stdout).toMatchFileSnapshot(
-      path.join(GOLDEN, 'template-copy.txt'),
-    );
+    await expect(
+      textShape(text.stdout, [
+        /^Copied template to /u,
+        /^package: /u,
+        /^Install missing dependencies: /u,
+      ]),
+    ).toMatchFileSnapshot(path.join(GOLDEN, 'template-copy.txt'));
     // The written file is the template's source with its own icons.
-    expect(
-      fs.readFileSync(path.join(project, 'out/json/page.tsx'), 'utf-8'),
-    ).toBe(fs.readFileSync(path.join(project, 'out/text/page.tsx'), 'utf-8'));
+    for (const out of ['out/json', 'out/text']) {
+      expect(
+        fs.readFileSync(path.join(project, out, 'page.tsx'), 'utf-8'),
+      ).toBe(page);
+    }
   });
 
   it('help gains only the experimental group', async () => {
@@ -497,9 +720,12 @@ describe('with no icon set, stable output is unchanged', () => {
       expect(added).toHaveLength(1);
       expect(added[0]).toMatch(/^\s+experimental\s+\[experimental\] /);
     }
-    // Every other line reads exactly as main prints it.
+    // Every other line as main prints it, by command and option and the
+    // column they set; descriptions are prose.
     await expect(
-      help.filter(line => !added.includes(line)).join('\n'),
+      textShape(help.filter(line => !added.includes(line)).join('\n'), [
+        /^(?:Usage|Options|Commands|Exit codes|Examples):/u,
+      ]),
     ).toMatchFileSnapshot(path.join(GOLDEN, 'help.txt'));
   });
 
@@ -524,7 +750,7 @@ describe('with no icon set, stable output is unchanged', () => {
         ([name]) => !isExperimental(name),
       ),
     );
-    await expect(`${JSON.stringify(manifest, null, 2)}\n`).toMatchFileSnapshot(
+    await expect(asGolden(skeleton(manifest))).toMatchFileSnapshot(
       path.join(GOLDEN, 'manifest.json'),
     );
   });
@@ -546,7 +772,7 @@ describe('with no icon set, stable output is unchanged', () => {
       )
       .map(
         (/** @type {{id: string, message: string}} */ check) =>
-          `${check.id}: ${check.message}`,
+          `${check.id}: ${numbersIn(check.message)}`,
       )
       .join('\n');
     await expect(`${counts}\n`).toMatchFileSnapshot(
@@ -686,13 +912,11 @@ describe.skipIf(REGENERATING)(
       'search %s equals the output without icon sets, text and JSON',
       async query => {
         const slug = query.replace(/\s+/g, '-');
-        const json = astryx(['search', ...query.split(' '), '--json'], withSet);
-        expect(json.status).toBe(0);
-        await expect(json.stdout).toMatchFileSnapshot(
+        const {json, text} = searchGolden(query, withSet);
+        await expect(json).toMatchFileSnapshot(
           path.join(GOLDEN, `search-${slug}.json`),
         );
-        const text = astryx(['search', ...query.split(' ')], withSet);
-        await expect(text.stdout).toMatchFileSnapshot(
+        await expect(text).toMatchFileSnapshot(
           path.join(GOLDEN, `search-${slug}.txt`),
         );
       },
@@ -856,7 +1080,10 @@ describe('with icon sets installed but no experimental.iconSet, stable output is
       if (!REGENERATING) {
         expect(res.stderr).not.toMatch(/integration issue/u);
       }
-      return `$ astryx ${args.join(' ')}\n${res.stderr}`;
+      return `$ astryx ${args.join(' ')}\n${textShape(res.stderr, [
+        /^(?:Warning|Error):/u,
+        /^package: /u,
+      ])}`;
     }).join('\n');
     await expect(stderr).toMatchFileSnapshot(
       path.join(GOLDEN, 'installed-set-stderr.txt'),
@@ -933,7 +1160,11 @@ describe('with icon sets installed but no experimental.iconSet, stable output is
       path.join(GOLDEN, 'validate-installed-set.json'),
     );
     await expect(
-      `exit ${text.status}\n${text.stdout}${text.stderr}`,
+      `exit ${text.status}\n${textShape(`${text.stdout}${text.stderr}`, [
+        /^Validating integration: /u,
+        /^Summary: /u,
+        /^severity:|^code:/u,
+      ])}`,
     ).toMatchFileSnapshot(path.join(GOLDEN, 'validate-installed-set.txt'));
   });
 

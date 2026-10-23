@@ -1,160 +1,94 @@
 Results for "search" (20 of 112)
-
 name:        cli/api/functions/search
 domain:      doc
 package:     @astryxdesign/cli
-title:       Astryx CLI › API › Functions › search()
-description: Unified ranked search across components, hooks, docs, templates, and themes.
 command:     pnpm exec astryx docs cli/api/functions/search
 parent:      pnpm exec astryx docs cli/api/functions
-
 name:        cli/commands/search
 domain:      doc
 package:     @astryxdesign/cli
-title:       Astryx CLI › Commands › astryx search
-description: Search components, hooks, docs, templates, and themes in one ranked list
 command:     pnpm exec astryx docs cli/commands/search
 parent:      pnpm exec astryx docs cli/commands
-
 name:        ChatToolCalls
 domain:      component
 package:     @astryxdesign/core
 import:      @astryxdesign/core/Chat
-description: ChatToolCalls displays tool or function call invocations from an LLM response. Pass an array of calls and the component handles the rest: a single call renders inline, while multiple calls collapse into a summary with the latest call visible at the surface. Use it anywhere an AI agent shows what actions it took.
 command:     pnpm exec astryx component ChatToolCalls
-
 name:        CommandPalette
 domain:      component
 package:     @astryxdesign/core
 import:      @astryxdesign/core/CommandPalette
-description: CommandPalette is a searchable dialog for quick access to commands, navigation, and actions. Use it as a keyboard-driven launcher powered by SearchSource for filtering and selection.
 command:     pnpm exec astryx component CommandPalette
-
 name:        PowerSearch
 domain:      component
 package:     @astryxdesign/core
 import:      @astryxdesign/core/PowerSearch
-description: PowerSearch is a structured filter bar where each token represents a field, operator, and value. Use it for complex multi-dimensional filtering when users need to combine multiple search criteria. For simple single-field search, use a text input instead.
 command:     pnpm exec astryx component PowerSearch
-
 name:        TextInput
 domain:      component
 package:     @astryxdesign/core
 import:      @astryxdesign/core/TextInput
-description: TextInput collects short-form text like names, emails, or search queries. Use it for single-line values where the expected input is brief. Pair it with validation status to guide users through required or formatted fields.
 command:     pnpm exec astryx component TextInput
-
 name:        useTypeahead
 domain:      hook
 package:     @astryxdesign/core
 import:      @astryxdesign/core/hooks
-description: Adds APG type-to-focus search to a collection: printable keystrokes are buffered (resetting after a pause), and the first item whose label starts with the buffer is reported through onMatch. Pressing the same letter repeatedly cycles through the matches rather than filtering deeper. It moves nothing itself; pair it with the collection's own focus management, most often useListFocus or useGridFocus.
 command:     pnpm exec astryx hook useTypeahead
-
 name:        Typeahead
 domain:      component
 package:     @astryxdesign/core
 import:      @astryxdesign/core/Typeahead
-description: A searchable input for selecting a single item from a large or dynamic dataset. Results appear as the user types, with support for async data sources, debounced search, and custom item rendering. Use it when the option list is too large for a Selector dropdown.
 command:     pnpm exec astryx component Typeahead
-
 name:        PowerSearchContentSearch
 domain:      template
 package:     @astryxdesign/core
-displayName: PowerSearch - Content Search
-kind:        block
-description: Power search with contentSearchFieldKey so free-text input maps to a title field automatically.
 command:     pnpm exec astryx template PowerSearchContentSearch --type block
-
 name:        PowerSearchFullFeatured
 domain:      template
 package:     @astryxdesign/core
-displayName: PowerSearch - Full Featured
-kind:        block
-description: Power search with multiple field types: enum, multi-select, entity, and text filters.
 command:     pnpm exec astryx template PowerSearchFullFeatured --type block
-
 name:        PowerSearchPresetFilters
 domain:      template
 package:     @astryxdesign/core
-displayName: PowerSearch - Preset Filters
-kind:        block
-description: Power search initialized with pre-set filter tokens for status and priority.
 command:     pnpm exec astryx template PowerSearchPresetFilters --type block
-
 name:        PowerSearchSearchWithTable
 domain:      template
 package:     @astryxdesign/core
-displayName: PowerSearch - Search with Table
-kind:        block
-description: Composition of PowerSearch with Table using usePowerSearchConfig to auto-generate config and filter data.
 command:     pnpm exec astryx template PowerSearchSearchWithTable --type block
-
 name:        PowerSearchShowcase
 domain:      template
 package:     @astryxdesign/core
-displayName: PowerSearch
-kind:        block
-description: Token-based filter bar with enum and text fields, pre-populated with sample filters.
 command:     pnpm exec astryx template PowerSearchShowcase --type block
-
 name:        TableFilterableTable
 domain:      template
 package:     @astryxdesign/core
-displayName: Table - Popover Filters
-kind:        block
-description: Table with popover filter controls triggered by icons in column headers.
 command:     pnpm exec astryx template TableFilterableTable --type block
-
 name:        TableInlineFilterTable
 domain:      template
 package:     @astryxdesign/core
-displayName: Table - Inline Filters
-kind:        block
-description: Table with inline filter controls rendered directly below each column header.
 command:     pnpm exec astryx template TableInlineFilterTable --type block
-
 name:        authoring/building-blocks/templates/document-the-template/template-doc-overview
-section:     document-the-shared-fields
 domain:      doc
 package:     @astryxdesign/cli
-title:       Authoring › Building Blocks › Templates › Document the template › Template doc overview › Document the shared fields
-description: The fields below apply to every page and block. The page, block, and replacement guides add the fields unique to each.
 command:     pnpm exec astryx docs authoring/building-blocks/templates/document-the-template/template-doc-overview document-the-shared-fields
 parent:      pnpm exec astryx docs authoring/building-blocks/templates/document-the-template/template-doc-overview --index
-
 name:        authoring/field-reference
-section:     config
 domain:      doc
 package:     @astryxdesign/cli
-title:       Authoring › Field reference › astryx.config
-description: The optional astryx.config.* file at your project root. Declares which integrations to load, where to route issue links, post-codemod hooks, local debug-log and gap-report handlers, a discover source, and experimental layout components....
 command:     pnpm exec astryx docs authoring/field-reference config
 parent:      pnpm exec astryx docs authoring/field-reference --index
-
 name:        cli/api/enums/response-types
 domain:      doc
 package:     @astryxdesign/cli
-title:       Astryx CLI › API › Enums › Response Types
-description: The `type` discriminant present on every --json success envelope. Consumers switch on it to narrow `data`.
 command:     pnpm exec astryx docs cli/api/enums/response-types
 parent:      pnpm exec astryx docs cli/api/enums
-
 name:        cli/api/functions/discover
 domain:      doc
 package:     @astryxdesign/cli
-title:       Astryx CLI › API › Functions › discover()
-description: Browse and search integrations: the ones a project has and, through the official list and discover sources, the ones it could add.
 command:     pnpm exec astryx docs cli/api/functions/discover
 parent:      pnpm exec astryx docs cli/api/functions
-
 name:        global/problems
-section:     core-offline
 domain:      doc
 package:     @astryxdesign/cli
-title:       Global mode › Troubleshooting global mode › "Core ... could not be installed" outside a project
-description: Outside a project, commands that read components (`component`, `search`, `template`, `build`, and the like) use your global version's Core. It ships beside the CLI only for some installs; otherwise your global install downloads it once...
 command:     pnpm exec astryx docs global/problems core-offline
 parent:      pnpm exec astryx docs global/problems --index
-
-More in packages you could add: pnpm exec astryx discover search

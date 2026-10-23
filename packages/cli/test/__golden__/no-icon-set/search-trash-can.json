@@ -9,32 +9,35 @@
         "domain": "component",
         "name": "Icon",
         "package": "@astryxdesign/core",
-        "score": 90,
-        "reason": "keyword \"trash\"",
-        "description": "Icons are small visual symbols that represent actions, objects, or concepts. They improve scannability and reinforce meaning alongside text. Supports both direct SVG components and semantic icon names that adapt to the active theme.",
+        "score": "<text>",
+        "reason": "<text>",
+        "description": "<text>",
         "import": "@astryxdesign/core/Icon",
-        "command": "astryx component Icon"
+        "command": "astryx component Icon",
+        "mentions": []
       },
       {
         "domain": "component",
         "name": "IconButton",
         "package": "@astryxdesign/core",
-        "score": 45,
-        "reason": "guidance mentions \"trash\"",
-        "description": "A button that shows only an icon with no visible text. Use IconButton in toolbars, table rows, and compact UI where space is tight and the icon is universally understood.",
+        "score": "<text>",
+        "reason": "<text>",
+        "description": "<text>",
         "import": "@astryxdesign/core/IconButton",
-        "command": "astryx component IconButton"
+        "command": "astryx component IconButton",
+        "mentions": []
       },
       {
         "domain": "template",
         "name": "ButtonWithIcon",
         "package": "@astryxdesign/core",
-        "score": 50,
-        "reason": "description mentions \"trash can\"",
-        "description": "Buttons with a leading icon that reinforces the label. Use when the icon helps the user identify the action faster, like a plus for \"New\" or a trash can for \"Delete\".",
-        "displayName": "Button — Icon",
+        "score": "<text>",
+        "reason": "<text>",
+        "description": "<text>",
+        "displayName": "<text>",
         "kind": "block",
-        "command": "astryx template ButtonWithIcon --type block"
+        "command": "astryx template ButtonWithIcon --type block",
+        "mentions": []
       }
     ]
   },

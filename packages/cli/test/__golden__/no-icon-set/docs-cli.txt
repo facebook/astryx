@@ -1,22 +1,17 @@
-Astryx CLI
-Commands, programmatic APIs, and output contracts. Building an integration is under `pnpm exec astryx docs authoring`.
+<text>
 
 package: @astryxdesign/cli
 
-Use the CLI in any folder: install it once for your computer, and every project still gets the release that matches its
-Core. See `pnpm exec astryx docs global`.
+<text>
 
-Guides
+<text>
 
-component-lookups  Look up one or several exact component identities, choose a focused projection, and handle complete
-                   batch receipts.
-host-entry         Run the Astryx CLI from your own command-line tool: the inputs `runHostedCli` takes, what it returns,
-                   and when the process ends instead.
+component-lookups  <text>
+host-entry         <text>
 
-Reference
+<text>
 
-commands  Every command and subcommand: usage, options, examples, exit codes, and what it does outside a project.
-api       The programmatic API: functions, the JSON output envelope, error codes, and response types.
+commands  <text>
+api       <text>
 
-Open one: pnpm exec astryx docs cli/<name>
-Up: pnpm exec astryx docs
+<text>

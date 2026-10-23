@@ -1,8 +1,8 @@
 exit 0
 Validating integration: @acme/glyphs@1.0.0
 
-[ok] No integration issues found.
+<text>
 
 Summary: 0 errors, 0 warnings
 
-[info] No doc files to type-check.
+<text>

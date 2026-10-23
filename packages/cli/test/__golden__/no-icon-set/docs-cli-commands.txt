@@ -1,62 +1,44 @@
-Commands
-Every command and subcommand: usage, options, examples, exit codes, and what it does outside a project.
+<text>
 
 package: @astryxdesign/cli
 
-In global mode: each command declares its behavior outside projects (`outsideProject`). Most answer like a new project;
-some write nothing and name the project they need; `doctor`, `init`, and `upgrade` behave differently. Commands with
-different behavior describe it in their `In global mode:` note, and CLI tests run each command in an empty folder
-against its declared value. Inside a project, the project's Astryx release runs every command, whichever astryx command
-you type. See `pnpm exec astryx docs global`.
+<text>
 
-blog                           astryx blog: Read the Astryx blog from the published feed
-build                          astryx build: Build a page: the template to start from, or the workflow playbook (no
-                               query)
-component                      astryx component: List components or print component docs
-discover                       astryx discover: Browse and search integrations: the ones you have and the ones you could
-                               add
-docs                           astryx docs: Print reference docs
-doctor                         astryx doctor: Diagnose Astryx projects and integration packages
-doctor-integration             astryx doctor integration: Check an integration package while authoring it
-doctor-integration-components  astryx doctor integration components: Check integration component names, replacements,
-                               and documented props
-doctor-integration-docs        astryx doctor integration docs: Check an integration's docs: the docs tree they add,
-                               every link, and overlaps with Core topics
-doctor-integration-templates   astryx doctor integration templates: Validate integration template replacements and Core
-                               id overlaps
-doctor-integration-validate    astryx doctor integration validate: Validate an integration manifest and its
-                               contributions
-gap-report                     astryx gap-report: Report a missing component or feature to the package that owns it
-hook                           astryx hook: List hooks or print hook docs
-init                           astryx init: Initialize the design system in your project
-integration                    astryx integration: Author and verify an Astryx integration package
-integration-add                astryx integration add: Add one working contribution to an integration package
-integration-check              astryx integration check: The CI check for an integration package's own build: every
-                               source check, run in continuous integration or a typecheck script, against the package in
-                               the current folder
-integration-pack               astryx integration pack: Deprecated: the old name of `integration verify`
-integration-verify             astryx integration verify: Check the package the way npm will publish it, before you
-                               publish
-manifest                       astryx manifest: Print the full CLI capability manifest (use with --json)
-postinstall                    astryx postinstall: Print the welcome message shown after install
-search                         astryx search: Search components, hooks, docs, templates, and themes in one ranked list
-swizzle                        astryx swizzle: Copy component source for customization
-template                       astryx template: List, show, or scaffold page and block templates
-theme                          astryx theme: Add, switch, build, and author themes
-theme-add                      astryx theme add: Add a built theme to the app. To copy a theme's source as an editable
-                               fork, run `theme eject <slug> [path] [--overwrite]`.
-theme-build                    astryx theme build: Compile standalone themes or one keyed theme family
-theme-eject                    astryx theme eject: Fork a theme as editable local source
-theme-list                     astryx theme list: List themes available to add
-theme-palette                  astryx theme palette: Create and work with theme-owned color palettes
-theme-palette-generate         astryx theme palette generate: Generate an OKLCH palette candidate for human review
-theme-remove                   astryx theme remove: Remove a non-default theme from the app
-theme-targets                  astryx theme targets: List the component theming targets a theme can override
-theme-template                 astryx theme template: Write the annotated theme template into your project
-theme-use                      astryx theme use: Choose the app default from its added themes
-upgrade                        astryx upgrade: Update your code after upgrading Astryx, and refresh ShadCN-copied
-                               components
+blog                           <text>
+build                          <text>
+component                      <text>
+discover                       <text>
+docs                           <text>
+doctor                         <text>
+doctor-integration             <text>
+doctor-integration-components  <text>
+doctor-integration-docs        <text>
+doctor-integration-templates   <text>
+doctor-integration-validate    <text>
+gap-report                     <text>
+hook                           <text>
+init                           <text>
+integration                    <text>
+integration-add                <text>
+integration-check              <text>
+integration-pack               <text>
+integration-verify             <text>
+manifest                       <text>
+postinstall                    <text>
+search                         <text>
+swizzle                        <text>
+template                       <text>
+theme                          <text>
+theme-add                      <text>
+theme-build                    <text>
+theme-eject                    <text>
+theme-list                     <text>
+theme-palette                  <text>
+theme-palette-generate         <text>
+theme-remove                   <text>
+theme-targets                  <text>
+theme-template                 <text>
+theme-use                      <text>
+upgrade                        <text>
 
-Open one: pnpm exec astryx docs cli/commands/<name>
-Up: pnpm exec astryx docs cli
-Next: pnpm exec astryx docs cli/api
+<text>

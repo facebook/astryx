@@ -2,280 +2,299 @@
   "list": [
     {
       "topic": "author-a-theme",
-      "description": "Create, customize, and build a theme: defineTheme, palette generation, token overrides, component style overrides, custom variants, responsive adaptations, and production builds.",
+      "description": "<text>",
       "package": "@astryxdesign/cli"
     },
     {
       "topic": "browser-support",
-      "description": "What browsers Astryx targets, which modern platform features it depends on, and how to support older browsers for your own audience.",
+      "description": "<text>",
       "package": "@astryxdesign/cli"
     },
     {
       "topic": "color",
-      "description": "Semantic color tokens for surfaces, text, icons, borders, and status indicators.",
+      "description": "<text>",
       "package": "@astryxdesign/cli"
     },
     {
       "topic": "elevation",
-      "description": "Shadow tokens for visual elevation and inset state rings.",
+      "description": "<text>",
       "package": "@astryxdesign/cli"
     },
     {
       "topic": "getting-started",
-      "description": "Add the design system to your project and start building.",
+      "description": "<text>",
       "package": "@astryxdesign/cli"
     },
     {
       "topic": "icons",
-      "description": "Semantic icon names available in the design system. These adapt to the active theme's icon registry.",
+      "description": "<text>",
       "package": "@astryxdesign/cli"
     },
     {
       "topic": "illustrations",
-      "description": "Illustration guidelines for empty states, onboarding flows, and feature highlights.",
+      "description": "<text>",
       "package": "@astryxdesign/cli"
     },
     {
       "topic": "is-my-code-good",
-      "description": "Check whether a product surface fits its app and uses Astryx well, require evidence for every claim, and improve it with a repeatable agent review.",
+      "description": "<text>",
       "package": "@astryxdesign/cli"
     },
     {
       "topic": "motion",
-      "description": "Duration and easing tokens for animations and transitions.",
+      "description": "<text>",
       "package": "@astryxdesign/cli"
     },
     {
       "topic": "principles",
-      "description": "Core design principles and rules for building with the design system.",
+      "description": "<text>",
       "package": "@astryxdesign/cli"
     },
     {
       "topic": "shape",
-      "description": "Border radius tokens for consistent component rounding, from sharp corners to full pills.",
+      "description": "<text>",
       "package": "@astryxdesign/cli"
     },
     {
       "topic": "spacing",
-      "description": "Spacing scale tokens for padding, gap, and margin: the rhythmic foundation of design system layouts.",
+      "description": "<text>",
       "package": "@astryxdesign/cli"
     },
     {
       "topic": "styling-overview",
-      "description": "How to set up CSS — exact imports for three paths: plain, Tailwind, and StyleX for your own code — plus the stylesheet each Astryx package ships.",
+      "description": "<text>",
       "package": "@astryxdesign/cli"
     },
     {
       "topic": "theme",
-      "description": "How to use and create themes: see Use a theme for applying themes, and Author a theme for creating and customizing them.",
+      "description": "<text>",
       "package": "@astryxdesign/cli"
     },
     {
       "topic": "use-a-theme",
-      "description": "Apply a theme to your app: install, import with the CLI, wire the generated module, switch dark mode, nest themes, and choose runtime or built for production.",
+      "description": "<text>",
       "package": "@astryxdesign/cli"
     },
     {
       "topic": "use-integrations",
-      "description": "Install, discover, and use integration packages that add components, templates, themes, and docs to your app.",
+      "description": "<text>",
       "package": "@astryxdesign/cli"
     },
     {
       "topic": "working-with-ai",
-      "description": "How to set up AI coding tools to generate correct component code.",
+      "description": "<text>",
       "package": "@astryxdesign/cli"
     }
   ],
   "topics": {
     "author-a-theme": {
       "sections": [
-        "creating-a-custom-theme: Custom themes",
-        "palette: Generate a palette",
-        "definetheme: defineTheme",
-        "extending-a-theme: Extending a Theme",
-        "component-style-overrides: Component Style Overrides",
-        "custom-variants: Custom Variants",
-        "theme-adaptations: Theme Adaptations",
-        "adaptation-rules: Adaptation order and validation",
-        "building-themes-for-production: Build a theme",
-        "icon-registry: Built themes with an icon registry",
-        "building-a-theme-family: Building a Theme Family",
-        "token-utilities: Token Utilities",
-        "usetheme-hook: useTheme Hook"
+        "creating-a-custom-theme",
+        "palette",
+        "definetheme",
+        "extending-a-theme",
+        "component-style-overrides",
+        "custom-variants",
+        "theme-adaptations",
+        "adaptation-rules",
+        "building-themes-for-production",
+        "icon-registry",
+        "building-a-theme-family",
+        "token-utilities",
+        "usetheme-hook"
       ],
-      "digest": "0e9cc0bae291b50c2f80f2c58c4945102de639dcf8237b3f560b1eaf56121137"
+      "skeleton": "4e494f1ed2599a4a3ba54c3f722ae1ff9808fe80843e9ed0c6ab2e8b9f0bb19e",
+      "mentions": []
     },
     "browser-support": {
       "sections": [
-        "overview: Overview",
-        "support-tiers: Support Tiers",
-        "which-features-set-the-floor: Which Features Set the Floor",
-        "which-components-are-affected: Which Components Are Affected",
-        "what-astryx-guarantees: What Astryx Guarantees",
-        "supporting-older-browsers: Supporting Older Browsers",
-        "how-these-tiers-move-over-time: How These Tiers Move Over Time"
+        "overview",
+        "support-tiers",
+        "which-features-set-the-floor",
+        "which-components-are-affected",
+        "what-astryx-guarantees",
+        "supporting-older-browsers",
+        "how-these-tiers-move-over-time"
       ],
-      "digest": "548eeee916da2a44c33dabc2fa882d4a6806596d558376f58abd05e37fbc6c66"
+      "skeleton": "98bdd1d0e1db35f5ad03896962be51d2f21679c3f3cd25cf724045778a959b5e",
+      "mentions": []
     },
     "color": {
       "sections": [
-        "overview: Overview",
-        "surface-colors: Color Tokens",
-        "usage: Use color tokens in StyleX",
-        "best-practices: Best Practices"
+        "overview",
+        "surface-colors",
+        "usage",
+        "best-practices"
       ],
-      "digest": "872fea1ea92e2d137da17ecf206846859ea300417c983e3fc10a683432a8a693"
+      "skeleton": "940c5a29904f209dfe36a4c7f19ba5a11e333eabb1f8ea0e66127b7b29337a0a",
+      "mentions": []
     },
     "elevation": {
       "sections": [
-        "overview: Overview",
-        "elevation-scale: Elevation Scale",
-        "choosing-a-level: Choosing a level",
-        "the-elevation-prop: The elevation prop",
-        "usage: Usage",
-        "best-practices: Best Practices"
+        "overview",
+        "elevation-scale",
+        "choosing-a-level",
+        "the-elevation-prop",
+        "usage",
+        "best-practices"
       ],
-      "digest": "dbf7e5bb888ec9ebab521bf76f34c6c25578224305aa8423c62834a51f43ca8b"
+      "skeleton": "7a448412efe0ab7d7c8fd7e89966e74494ec3fcff734ec7e30ec353a3542b874",
+      "mentions": []
     },
     "getting-started": {
       "sections": [
-        "quick-start-with-ai: Quick Start with AI",
-        "install: Install",
-        "install-once: Install once, use everywhere",
-        "add-base-css-and-a-theme: Add base CSS and a theme",
-        "add-your-first-component: Add your first component",
-        "customize-with-stylex: Customize with StyleX",
-        "example-apps: Example Apps",
-        "explore-the-cli: Explore the CLI"
+        "quick-start-with-ai",
+        "install",
+        "install-once",
+        "add-base-css-and-a-theme",
+        "add-your-first-component",
+        "customize-with-stylex",
+        "example-apps",
+        "explore-the-cli"
       ],
-      "digest": "40129aa01075667dfb5efad3f64d3fc3bd0907db149df646303bedea3be6cfd9"
+      "skeleton": "5188e6dee467ea12cc73e3bcfc47e5ed02dcc7d77ebc8327dfc5706e36e8c682",
+      "mentions": []
     },
     "icons": {
       "sections": [
-        "available-names: Available Names",
-        "custom-icons: Custom Icons",
-        "theme-overrides: Theme Overrides",
-        "component-and-library-icons: Component and Library Icons"
+        "available-names",
+        "custom-icons",
+        "theme-overrides",
+        "component-and-library-icons"
       ],
-      "digest": "b70e1ef818921f76c3130e0b807cccd7ad587de048c70dbc00272931a0368ee0"
+      "skeleton": "e64c5b38eb3c598a4e2d35f4301fe72a59497fee2f48a32e1faf270fc5fd41f1",
+      "mentions": [
+        "This lets you swap the icon set (e.g."
+      ]
     },
     "illustrations": {
       "sections": [
-        "when-to-use: When to Use",
-        "guidelines: Guidelines",
-        "placement: Placement"
+        "when-to-use",
+        "guidelines",
+        "placement"
       ],
-      "digest": "75a698f4f5f2b7f3e1589f4ade3ac7045fda8f1a1974038f4f84aa70fb8b5849"
+      "skeleton": "1bbcbbda636d363c3605412a29da2005832b14bea6d99a94a38e91ccdafbdeca",
+      "mentions": []
     },
     "is-my-code-good": {
       "sections": [
-        "understand-the-app: Understand the app",
-        "choose-the-review: Choose the review",
-        "apply-the-rubric: Apply the shared rubric",
-        "collect-the-evidence: Collect the evidence",
-        "ask-an-agent: Ask an agent",
-        "verify-and-repeat: Verify, improve, and repeat"
+        "understand-the-app",
+        "choose-the-review",
+        "apply-the-rubric",
+        "collect-the-evidence",
+        "ask-an-agent",
+        "verify-and-repeat"
       ],
-      "digest": "93a5722b6a3e9bab955bc197f7f12f0a29e914e977c7d3a9eb1e644d7afe103d"
+      "skeleton": "57ad5ac61d3b02e08bad08cd26a048b4096c260c40d733ac2c2cbea7e6467117",
+      "mentions": []
     },
     "motion": {
       "sections": [
-        "overview: Overview",
-        "duration: Duration",
-        "easing: Easing",
-        "where-motion-helps: Where Motion Helps",
-        "where-motion-hurts: Where Motion Hurts",
-        "movement-principles: Movement Principles",
-        "respecting-user-preferences: Respecting User Preferences",
-        "usage: Animate with motion tokens",
-        "best-practices: Best Practices"
+        "overview",
+        "duration",
+        "easing",
+        "where-motion-helps",
+        "where-motion-hurts",
+        "movement-principles",
+        "respecting-user-preferences",
+        "usage",
+        "best-practices"
       ],
-      "digest": "02deb46c58109f42157b3ff174b505654d1754849cc7dbfb282d0550a62caa80"
+      "skeleton": "e648d618f9141bbd7f15bf970ba9e0d41b59ff9ae89e0cbbb2042e98bd5f0109",
+      "mentions": []
     },
     "principles": {
       "sections": [
-        "design-philosophy: Design Philosophy",
-        "rules: Rules",
-        "styling-approach: Styling Approach",
-        "anti-patterns: Anti-Patterns",
-        "design-tokens: Design Tokens"
+        "design-philosophy",
+        "rules",
+        "styling-approach",
+        "anti-patterns",
+        "design-tokens"
       ],
-      "digest": "9b5041ee8c540dfdfefba74a0fd4f19be329e57f9cbcaa40e5932d231eb62315"
+      "skeleton": "137859678ce5cc2df84192ca7065e7a4ecb46225c5a4437fe7a7393af7f8c87e",
+      "mentions": []
     },
     "shape": {
       "sections": [
-        "overview: Overview",
-        "radius-scale: Radius Scale",
-        "concentric-radius: Concentric Radius",
-        "best-practices: Best Practices"
+        "overview",
+        "radius-scale",
+        "concentric-radius",
+        "best-practices"
       ],
-      "digest": "334873a4809ec5ef151579f50dc128a30c0a8d5dc612a864dc3254d9f0a4d080"
+      "skeleton": "f656eee5271a84e4b83cc3bbd7b09fdc47f3f308131882865f594b59581318fc",
+      "mentions": []
     },
     "spacing": {
       "sections": [
-        "overview: Overview",
-        "scale: Scale",
-        "usage: Usage",
-        "best-practices: Best Practices"
+        "overview",
+        "scale",
+        "usage",
+        "best-practices"
       ],
-      "digest": "f2e814b8b442481512e703ad1a958c95d5b62ceca7924dd7b8a3cc545285890d"
+      "skeleton": "bf2132b4acd9e8734709007ab1ae8bf40d89fb92d3281607d6ef19e4f2c7557e",
+      "mentions": []
     },
     "styling-overview": {
       "sections": [
-        "pick-a-path: Pick a path",
-        "plain: Plain CSS",
-        "tailwind: Tailwind",
-        "stylex-own-code: StyleX for your own code",
-        "other-packages: Other Astryx packages",
-        "what-each-file-does: What each import does",
-        "further-reading: Further reading"
+        "pick-a-path",
+        "plain",
+        "tailwind",
+        "stylex-own-code",
+        "other-packages",
+        "what-each-file-does",
+        "further-reading"
       ],
-      "digest": "8fbfe6997b3cd45c44aef1c8d0b21b13e4b175cd540efb45c7464252fb2dbb76"
+      "skeleton": "3bc8737677367ec17f4d8acbb551c32aee57e4cdac111e100e7e5713be617bec",
+      "mentions": []
     },
     "theme": {
       "sections": [
-        "quick-start: Wrap your app in a theme",
-        "creating-a-custom-theme: Create a custom theme",
-        "light-dark-mode: Dark mode",
-        "integration-themes: Integration themes"
+        "quick-start",
+        "creating-a-custom-theme",
+        "light-dark-mode",
+        "integration-themes"
       ],
-      "digest": "704ebed735c74666d59a9dff8307afdd4a8b510645aef017c74913002a427510"
+      "skeleton": "4af0a08dbcf2008c2ad6c12e61a1451130f10109fdb666a08933a7ce69ce18bd",
+      "mentions": []
     },
     "use-a-theme": {
       "sections": [
-        "quick-start: Wrap your app in a theme",
-        "migrating-earlier-theme-copies: Migrating Earlier Theme Copies",
-        "available-themes: Available Themes",
-        "theme-props: Theme Props",
-        "integration-themes: Using a Theme from an Integration",
-        "light-dark-mode: Dark mode",
-        "nesting-themes: Nested themes",
-        "runtime-vs-built-themes: Runtime vs Built Themes"
+        "quick-start",
+        "migrating-earlier-theme-copies",
+        "available-themes",
+        "theme-props",
+        "integration-themes",
+        "light-dark-mode",
+        "nesting-themes",
+        "runtime-vs-built-themes"
       ],
-      "digest": "578d61cf82fdd88c0d990f258fea0fcdcc7662e7d6f754dfc4fc80d16c52a2b0"
+      "skeleton": "18d1d237c612c74a060d8a54cadec27f4b89ec4a72b8310829d5d2087421ff3b",
+      "mentions": []
     },
     "use-integrations": {
       "sections": [
-        "discover-integrations: Discover integrations",
-        "install-an-integration: Install an integration",
-        "use-what-it-adds: Use what it adds",
-        "check-for-problems: Check for problems"
+        "discover-integrations",
+        "install-an-integration",
+        "use-what-it-adds",
+        "check-for-problems"
       ],
-      "digest": "6f929faf5f7be52e8850c1b374f96f045bf5f8f3f90c8aa34ee2e26563bc33f0"
+      "skeleton": "3a4c99da946a7f9893d60a1917cb634841dc414a2be0d6ecb78edb7b2420edb2",
+      "mentions": []
     },
     "working-with-ai": {
       "sections": [
-        "overview: Overview",
-        "quick-start: Set up agent docs",
-        "what-gets-generated: What Gets Generated",
-        "cursor-setup: Cursor Setup",
-        "checking-your-setup: Checking Your Setup",
-        "the-astryx-pattern: The astryx Pattern",
-        "the-dense-flag: Shorter output: --detail and --dense",
-        "mcp-server: MCP Server",
-        "global-mode: In global mode"
+        "overview",
+        "quick-start",
+        "what-gets-generated",
+        "cursor-setup",
+        "checking-your-setup",
+        "the-astryx-pattern",
+        "the-dense-flag",
+        "mcp-server",
+        "global-mode"
       ],
-      "digest": "94076943343e8f26cedf2cb8b0e747427e9a965c6cfad926baac0c0cc23a6fef"
+      "skeleton": "032b8da5c5f97f350157c8f4b270f1c954ba32da04cbb5e846f42ed7fc9e31bb",
+      "mentions": []
     }
   }
 }

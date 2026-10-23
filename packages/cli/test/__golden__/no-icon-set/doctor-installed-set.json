@@ -5,91 +5,91 @@
     "checks": [
       {
         "id": "node-version",
-        "label": "Node.js version",
+        "label": "<text>",
         "status": "pass",
-        "message": "Node v<node> meets the minimum (>=22.13.0)."
+        "message": "<text> 22.13.0"
       },
       {
         "id": "core-installed",
-        "label": "@astryxdesign/core installed",
+        "label": "<text>",
         "status": "pass",
-        "message": "@astryxdesign/core resolved (v<version>)."
+        "message": "<text>"
       },
       {
         "id": "version-alignment",
-        "label": "@astryxdesign/core <-> @astryxdesign/cli alignment",
+        "label": "<text>",
         "status": "pass",
-        "message": "@astryxdesign/core v<version> is in step with @astryxdesign/cli v<version>."
+        "message": "<text>"
       },
       {
         "id": "themes",
-        "label": "Theme packages",
+        "label": "<text>",
         "status": "warn",
-        "message": "No @astryxdesign/theme-* packages are installed.",
-        "fix": "Install a theme, e.g. `npm install @astryxdesign/theme-neutral`, then add it to the app with `pnpm exec astryx theme add neutral`."
+        "message": "<text>",
+        "fix": "<text>"
       },
       {
         "id": "theme-management",
-        "label": "CLI-managed app themes",
+        "label": "<text>",
         "status": "info",
-        "message": "The CLI manages no themes because this project has no generated theme module.",
-        "fix": "Start managing app themes with `pnpm exec astryx theme add <slug>`."
+        "message": "<text>",
+        "fix": "<text>"
       },
       {
         "id": "config",
-        "label": "astryx.config.mjs",
+        "label": "<text>",
         "status": "pass",
-        "message": "astryx.config.mjs loaded cleanly (astryx.config.mjs)."
+        "message": "<text>"
       },
       {
         "id": "implicit-integrations",
-        "label": "Implicitly linked integrations",
+        "label": "<text>",
         "status": "info",
-        "message": "None — every loaded integration is named in astryx.config."
+        "message": "<text>"
       },
       {
         "id": "configured-integrations",
-        "label": "Configured integrations",
+        "label": "<text>",
         "status": "pass",
-        "message": "1 integration named in astryx.config loaded: @acme/glyphs."
+        "message": "<text> 1"
       },
       {
         "id": "provider-identity",
-        "label": "Integration provider identity",
+        "label": "<text>",
         "status": "pass",
-        "message": "1 loaded integration has its own provider ID."
+        "message": "<text> 1"
       },
       {
         "id": "integration-issues",
-        "label": "Integration contributions",
+        "label": "<text>",
         "status": "pass",
-        "message": "1 loaded integration checked (@acme/glyphs): contributions and cross-package relationships are valid."
+        "message": "<text> 1"
       },
       {
         "id": "agent-docs",
-        "label": "AI agent docs",
+        "label": "<text>",
         "status": "info",
-        "message": "No agent docs found: looked for AGENTS.md, CLAUDE.md, .claude/CLAUDE.md, GEMINI.md, .cursorrules, .hermes.md, HERMES.md in ..",
-        "fix": "Generate agent docs with `pnpm exec astryx init --features agents`."
+        "message": "<text>",
+        "fix": "<text>"
       },
       {
         "id": "peer-deps",
-        "label": "@astryxdesign/core peer dependencies",
+        "label": "<text>",
         "status": "warn",
-        "message": "Peer dependency issues — missing: @stylexjs/stylex@^0.19.0.",
-        "fix": "Install compatible peers: `npm install @stylexjs/stylex@^0.19.0`."
+        "message": "<text> 0.19.0",
+        "fix": "<text>"
       },
       {
         "id": "package-manager",
-        "label": "Package manager",
+        "label": "<text>",
         "status": "info",
-        "message": "Detected package manager: pnpm (declared in <repo>/package.json)."
+        "message": "<text>"
       },
       {
         "id": "cli-command",
-        "label": "CLI command",
+        "label": "<text>",
         "status": "info",
-        "message": "No loaded integration declares a cliCommand, so printed commands start with `pnpm exec astryx`."
+        "message": "<text>"
       },
       {
         "id": "newest-release"
@@ -102,27 +102,27 @@
       },
       {
         "id": "authoring-docs",
-        "label": "Authoring docs",
+        "label": "<text>",
         "status": "pass",
-        "message": "All 19 authoring schemas are readable in `pnpm exec astryx docs authoring/field-reference`."
+        "message": "<text> 19"
       },
       {
         "id": "cli-docs",
-        "label": "CLI docs",
+        "label": "<text>",
         "status": "pass",
-        "message": "All 101 CLI docs are readable: 82 in the `pnpm exec astryx docs cli` tree and 19 in `pnpm exec astryx docs authoring/field-reference`."
+        "message": "<text> 101 82 19"
       },
       {
         "id": "docs-tree",
-        "label": "Docs tree",
+        "label": "<text>",
         "status": "pass",
-        "message": "The docs tree has 198 docs in 31 sections (12 at the top), each at one route."
+        "message": "<text> 198 31 12"
       },
       {
         "id": "docs-progressive-disclosure",
-        "label": "Documentation navigation and size",
+        "label": "<text>",
         "status": "pass",
-        "message": "116 topics: every section index and section fits in one 32 KB read."
+        "message": "<text> 116 32"
       }
     ],
     "summary": {

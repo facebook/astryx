@@ -18,4 +18,4 @@ $ astryx theme use stone
 $ astryx theme remove matcha
 
 $ astryx upgrade --from 0.7.0
-No Astryx agent-docs block found - AI agents have no component index. Run `pnpm exec astryx init --features agents` to install it.
+<text>
