@@ -313,6 +313,21 @@ export async function patchIntegrationRoot(
       propertyNamed(property, key),
     );
     if (!holder) {
+      // A spread here may set this key: an object added beside it would
+      // replace the spread's whole object and drop what it sets.
+      if (
+        object.properties.some((/** @type {any} */ property) =>
+          [
+            'SpreadElement',
+            'SpreadProperty',
+            'ExperimentalSpreadProperty',
+          ].includes(property?.type),
+        )
+      ) {
+        throw new Error(
+          `Could not update ${path.basename(manifestFile)} safely: it spreads another object (\`...\`) where "${key}" would go, so a written "${key}" could replace what the spread sets. Set "${kind}: '${rootPath}'" in it yourself.`,
+        );
+      }
       const created = j.objectExpression([]);
       object.properties.push(j.objectProperty(j.identifier(key), created));
       object = created;

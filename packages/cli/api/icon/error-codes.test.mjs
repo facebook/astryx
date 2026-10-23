@@ -313,3 +313,22 @@ describe('a write that fails leaves the package as it was', () => {
     expect(left).toEqual([]);
   });
 });
+
+describe('iconUse beside a spread', () => {
+  it('refuses with ERR_WRITE_FAILED and leaves a config that spreads another object as it was', async () => {
+    const dir = app();
+    const file = path.join(dir, 'astryx.config.mjs');
+    fs.writeFileSync(
+      path.join(dir, 'base.mjs'),
+      "export default {integrations: ['@acme/glyphs']};\n",
+    );
+    const before =
+      "import base from './base.mjs';\n\nexport default {\n  ...base,\n};\n";
+    fs.writeFileSync(file, before);
+    await expect(iconUse('glyphs', {cwd: dir})).rejects.toMatchObject({
+      code: 'ERR_WRITE_FAILED',
+      message: expect.stringContaining('spreads another object'),
+    });
+    expect(fs.readFileSync(file, 'utf8')).toBe(before);
+  });
+});

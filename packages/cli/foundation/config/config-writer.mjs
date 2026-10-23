@@ -8,8 +8,9 @@
  *
  * Edits the default-exported object literal in place (comments and other
  * fields kept), or creates `astryx.config.mjs` when the project has no
- * config. A config whose default export is not a static object literal is
- * refused rather than rewritten.
+ * config. A config whose default export is not a static object literal, or
+ * whose object on the path spreads another (`{...base}`), is refused rather
+ * than rewritten: a key written beside a spread could replace what it sets.
  *
  * Before any write the target is classified like every other consumer-file
  * writer (spec:AST-040 FR2, FR8): a config reached through a symbolic link,
@@ -59,6 +60,15 @@ export class ConfigProtectedError extends Error {
 function assertWritable(projectDir, file) {
   const protections = createFileProtectionResolver(projectDir).classify(file);
   if (protections.length > 0) throw new ConfigProtectedError(file, protections);
+}
+
+/** @param {any} property a member of an object literal */
+function isSpread(property) {
+  return [
+    'SpreadElement',
+    'SpreadProperty',
+    'ExperimentalSpreadProperty',
+  ].includes(property?.type);
 }
 
 /** @param {any} property @param {string} name */
@@ -120,6 +130,18 @@ export function setConfigString(projectDir, key, value) {
       `Could not update ${path.basename(existing)} safely: its default export is not a static object literal. Set "${key}: '${value}'" in it yourself.`,
     );
   if (!object) throw refuse();
+  // A spread on the path can hold the same keys: a key added beside it would
+  // shadow the spread's whole object and drop what it sets, so nothing is
+  // written there (`{...base}` may set `experimental.xle`).
+  /** @param {any} holder @param {string} where */
+  const assertNoSpread = (holder, where) => {
+    if (holder.properties.some((/** @type {any} */ each) => isSpread(each))) {
+      throw new Error(
+        `Could not update ${path.basename(existing)} safely: ${where} spreads another object (\`...\`), whose keys a written "${key}" could replace. Set "${key}: '${value}'" in it yourself.`,
+      );
+    }
+  };
+  assertNoSpread(object, 'its default export');
   for (const each of keys.slice(0, -1)) {
     const holder = object.properties.find((/** @type {any} */ property) =>
       propertyNamed(property, each),
@@ -132,6 +154,7 @@ export function setConfigString(projectDir, key, value) {
     }
     const nested = unwrapManifestExpression(holder.value);
     if (!j.ObjectExpression.check(nested)) throw refuse();
+    assertNoSpread(nested, `its "${each}" object`);
     object = nested;
   }
   const property = object.properties.find((/** @type {any} */ each) =>

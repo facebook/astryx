@@ -45,6 +45,46 @@ afterEach(() => {
 });
 
 describe('iconNewSet (experimental icon new-set)', () => {
+  it('refuses a package.json whose files is not an array of strings, and writes nothing', async () => {
+    setup({license: 'MIT'});
+    const pkgFile = path.join(tmpDir, 'package.json');
+    fs.writeFileSync(
+      pkgFile,
+      `${JSON.stringify({...JSON.parse(read('package.json')), files: 'dist'}, null, 2)}\n`,
+    );
+    const pkgBefore = read('package.json');
+    const manifestBefore = read('astryx.integration.mjs');
+    await expect(iconNewSet('outline', {cwd: tmpDir})).rejects.toThrow(
+      /files must be an array of strings/u,
+    );
+    expect(read('package.json')).toBe(pkgBefore);
+    expect(read('astryx.integration.mjs')).toBe(manifestBefore);
+    expect(fs.existsSync(path.join(tmpDir, 'icon-sets'))).toBe(false);
+  });
+
+  it('refuses a manifest that spreads another object where experimental would go, and writes nothing', async () => {
+    setup({
+      license: 'MIT',
+      manifest:
+        "const shared = {experimental: {other: './other'}};\n\nexport default {\n  ...shared,\n};\n",
+    });
+    const pkgBefore = read('package.json');
+    const manifestBefore = read('astryx.integration.mjs');
+    await expect(iconNewSet('outline', {cwd: tmpDir})).rejects.toThrow(
+      /spreads another object/u,
+    );
+    expect(read('package.json')).toBe(pkgBefore);
+    expect(read('astryx.integration.mjs')).toBe(manifestBefore);
+    const left = fs.existsSync(path.join(tmpDir, 'icon-sets'))
+      ? fs
+          .readdirSync(path.join(tmpDir, 'icon-sets'), {recursive: true})
+          .filter(each =>
+            fs.statSync(path.join(tmpDir, 'icon-sets', String(each))).isFile(),
+          )
+      : [];
+    expect(left).toEqual([]);
+  });
+
   it('names the line for the entry file, relative to it, when the entry is not at the package root', async () => {
     setup({license: 'MIT'});
     const pkgFile = path.join(tmpDir, 'package.json');

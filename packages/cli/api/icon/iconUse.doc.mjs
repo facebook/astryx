@@ -43,7 +43,10 @@ export const doc = {
       code: 'ERR_INVALID_ARGUMENT',
       when: 'two installed packages ship a set with the name',
     },
-    {code: 'ERR_WRITE_FAILED', when: 'the config cannot be updated safely'},
+    {
+      code: 'ERR_WRITE_FAILED',
+      when: 'the config cannot be updated safely: its default export is not a static object literal, or it or its `experimental` object spreads another object, whose keys the written value could replace',
+    },
     {
       code: 'ERR_CODEMOD_PROTECTED',
       when: 'the config is reached through a symbolic link, marked generated or vendored, or ignored; the error names the declaration that protects it',
