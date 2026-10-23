@@ -28,7 +28,8 @@ export const doc = {
     {
       name: 'icon',
       type: 'string',
-      description: 'An icon id in the set. Omit with `remove`.',
+      description:
+        'An icon in the set, named by its id, its export name in any case (`TrashIcon`, `trashicon`), or another name its library exports it as, as an id or as the library spells it (`trash-2`, `Trash2`); never one word of its id. Omit with `remove`.',
     },
     {
       name: 'options.cwd',
@@ -50,7 +51,7 @@ export const doc = {
       name: 'options.pairs',
       type: 'string | string[]',
       description:
-        'Many entries at once: `<definition>=<icon>` pairs separated by commas or spaces, with no definition or icon argument. Every pair is checked before any is written.',
+        'Many entries at once: `<definition>=<icon>` pairs separated by commas or spaces, with no definition or icon argument; each icon is named as the icon argument is. Every pair is checked before any is written.',
     },
   ],
   returns: [
@@ -84,7 +85,7 @@ export const doc = {
     },
     {
       code: 'ERR_MISSING_ARGUMENT',
-      when: 'the definition is missing, or the icon id without `remove`',
+      when: 'the definition is missing, or the icon without `remove`',
     },
     {
       code: 'ERR_PATH_TRAVERSAL',

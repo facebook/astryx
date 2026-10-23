@@ -11,7 +11,7 @@ export const doc = {
   stability: 'experimental',
   summary: 'Register which icon of your set draws an icon definition',
   description:
-    "Run inside an icon-set package. Sets `map[<definition>] = <icon>` in the set's data file; `integration check` prints these commands for definitions your set already has a fitting icon for. Experimental: it may change or be removed in a patch release.",
+    "Run inside an icon-set package. Sets `map[<definition>]` to the icon's id in the set's data file; name the icon by its id, its export name in any case, or another name its library exports it as (`trash-2` or `Trash2`), never by one word of its id, and the definition by its name or kebab id; `integration check` prints these commands for definitions your set already has a fitting icon for. Experimental: it may change or be removed in a patch release.",
   fn: 'iconMap',
   args: [
     {name: 'definition', param: 'definition', required: false},

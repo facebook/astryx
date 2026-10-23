@@ -169,7 +169,7 @@
  * @property {string} data.package
  * @property {string} data.file - The data file, relative to the package.
  * @property {string} data.definition
- * @property {string | null} data.icon - The icon id now mapped; null after `remove`.
+ * @property {string | null} data.icon - The id of the icon now mapped (the icon may be named by any name `map` accepts); null after `remove`.
  * @property {string | null} data.previous - The icon id it replaced.
  * @property {boolean} data.changed - Whether the file was written.
  * @property {string[]} [data.files] - The generated module and its types, when its theme map was rewritten.

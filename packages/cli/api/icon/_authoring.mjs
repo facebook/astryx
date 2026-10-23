@@ -730,18 +730,32 @@ async function refreshIconSet(
     const icons = [...fromLibrary, ...others];
     // The icons this module supplied that it no longer exports: they leave
     // the set and its generated module, and the receipt names them.
+    // Each is named for why it left: `--exclude` (or the data file's
+    // `exclude`) names its library export, or the library no longer exports
+    // it.
+    const excludedNames = new Set(excluded);
     const gone = supplied.filter(
       icon => !fromLibrary.some(each => each.export === icon.export),
     );
+    const isExcluded = (/** @type {{export: string}} */ icon) =>
+      excludedNames.has(origins.get(icon.export)?.source ?? '') ||
+      excludedNames.has(icon.export);
+    const goneExcluded = gone.filter(isExcluded);
+    const goneMissing = gone.filter(icon => !isExcluded(icon));
+    const excludedIds = new Set(goneExcluded.map(icon => icon.id));
     const ids = new Set(icons.map(icon => icon.id));
     /** @type {Record<string, string>} */
     const kept = {};
-    /** @type {string[]} */
-    const lost = [];
+    // The data file's `map` names only icons in the set (its parser refuses
+    // anything else), so each lost entry's icon is one of these.
+    /** @type {{excluded: string[], missing: string[]}} */
+    const lost = {excluded: [], missing: []};
     for (const [definition, id] of Object.entries(set.data.map ?? {})) {
       const now = renames.get(id) ?? id;
       if (ids.has(now)) kept[definition] = now;
-      else lost.push(`${definition} -> "${id}"`);
+      else if (excludedIds.has(id)) {
+        lost.excluded.push(`${definition} -> "${id}"`);
+      } else lost.missing.push(`${definition} -> "${id}"`);
     }
     const generated = generatedModulePath(set, packageDir);
     const library = librarySource(source.module, packageDir);
@@ -901,16 +915,24 @@ async function refreshIconSet(
         : []),
       ...mappedNotes(byName),
       ...suggestionNotes(suggestions),
-      ...(lost.length > 0
+      ...(goneMissing.length > 0
         ? [
-            `These map entries named icons the library no longer exports and were removed: ${lost.join(', ')}.`,
+            `${goneMissing.length} icons the library no longer exports were removed from the set: ${goneMissing.map(icon => icon.id).join(', ')}.`,
           ]
         : []),
-      // An icon the library no longer exports leaves the set and its
-      // generated module: named here, so the removal is never silent.
-      ...(gone.length > 0
+      ...(lost.missing.length > 0
         ? [
-            `${gone.length} icons the library no longer exports were removed from the set: ${gone.map(icon => icon.id).join(', ')}.`,
+            `These map entries named those icons and were removed: ${lost.missing.join(', ')}.`,
+          ]
+        : []),
+      ...(goneExcluded.length > 0
+        ? [
+            `Left out by --exclude, and removed from the set: ${goneExcluded.map(icon => icon.id).join(', ')}.`,
+          ]
+        : []),
+      ...(lost.excluded.length > 0
+        ? [
+            `These map entries named icons --exclude left out and were removed: ${lost.excluded.join(', ')}.`,
           ]
         : []),
       ...(shadowed.length > 0

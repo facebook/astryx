@@ -285,11 +285,12 @@ icon, and the CLI verifies it, writes the files, and checks the set.
     exists; every other icon (the author's `./` artwork, another library's)
     is kept with its `map` entries and variants, a library icon whose `id`
     or export one of those has is left out and named, and each icon the
-    module no longer exports is removed and named. An existing icon is known
-    by the library export its generated module re-exports, then by its own
-    export, then by its `id`; one matched this way keeps its export unchanged,
-    its `map` entries, and every other field, and an `id` the current rule
-    spells differently is reported under `renamed`
+    module no longer exports, or that `exclude` now names, is removed and
+    named for that reason, with the `map` entries that named it. An existing
+    icon is known by the library export its generated module re-exports, then
+    by its own export, then by its `id`; one matched this way keeps its export
+    unchanged, its `map` entries, and every other field, and an `id` the
+    current rule spells differently is reported under `renamed`
     (`add --variant <name> --all` meets an icon the same way). A refresh
     copies the library's license notices the set lacks, and the run that
     first records `source` takes the library's license for the descriptor,

@@ -2660,7 +2660,7 @@ describe('a refresh after the library drops an icon', () => {
     expect(refreshed.code).toBe(0);
     expect(refreshed.body.data.notes).toEqual(
       expect.arrayContaining([
-        'These map entries named icons the library no longer exports and were removed: close -> "cross".',
+        'These map entries named those icons and were removed: close -> "cross".',
         '1 icons the library no longer exports were removed from the set: cross.',
       ]),
     );
@@ -2815,5 +2815,31 @@ describe('a refresh changes only the icons the refreshed module supplies', () =>
       (/** @type {{id: string}} */ each) => each.id === 'spark',
     );
     expect(spark.variants).toBeUndefined();
+  });
+});
+
+describe('a refresh with --exclude', () => {
+  it('names the icons --exclude left out, never as ones the library no longer exports', async () => {
+    const args = [
+      'experimental',
+      'icon',
+      'new-set',
+      'outline',
+      '--from',
+      '@acme/glyph-library',
+    ];
+    await json(args);
+    await json(['experimental', 'icon', 'map', 'close', 'cross']);
+    const refreshed = await json([...args, '--exclude', 'Cross']);
+    expect(refreshed.code).toBe(0);
+    const notes = refreshed.body.data.notes;
+    expect(notes).toEqual(
+      expect.arrayContaining([
+        'Left out by --exclude, and removed from the set: cross.',
+        'These map entries named icons --exclude left out and were removed: close -> "cross".',
+      ]),
+    );
+    expect(notes.join('\n')).not.toContain('no longer exports');
+    expect(dataOf('outline').exclude).toEqual(['Cross']);
   });
 });
