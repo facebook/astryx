@@ -104,11 +104,12 @@ function scoreByAffinity(typedName, items, namesOf) {
  * The same items, closest to the typed name first; each item is as close as
  * its closest name. Equal matches keep their original order.
  *
- * With `closest`, the list also stops where the matches get weaker: when the
- * best item carries some typed word, an item that carries fewer of the typed
- * words than it does is left out (an item with every typed word is always
- * kept). When no item carries a typed word, nothing is left out. The list
- * only ever gets shorter.
+ * With `closest`, the list also stops where the matches get weaker. Only
+ * typed words longer than one character count here. When the best item
+ * carries every such word, only the items that carry every one of them stay;
+ * when it carries some of them, the items that carry none are left out. When
+ * no item carries one, nothing is left out. The list only ever gets shorter,
+ * and its order does not change.
  * @template T
  * @param {string} typedName
  * @param {T[]} items
@@ -118,11 +119,23 @@ function scoreByAffinity(typedName, items, namesOf) {
  */
 export function orderByAffinity(typedName, items, namesOf, options = {}) {
   const scored = scoreByAffinity(typedName, items, namesOf);
-  const top = scored[0]?.best ?? 0;
-  if (!options.closest || top <= 0) return scored.map(s => s.item);
-  // Tiers: 1 some typed word, 2 every typed word, 4 the same words.
-  const need = Math.min(Math.floor(top / 10), 2);
-  return scored.filter(s => Math.floor(s.best / 10) >= need).map(s => s.item);
+  if (!options.closest) return scored.map(s => s.item);
+  // One-letter words (`a` in `a11y`, `use-a-theme`) say nothing about which
+  // entry was meant, so the cut counts only the longer typed words.
+  const words = nameWords(typedName).filter(w => w.length > 1);
+  const tierOf = (/** @type {T} */ item) => {
+    let best = 0;
+    for (const name of namesOf(item)) {
+      if (name) best = Math.max(best, affinityOf(words, name));
+    }
+    // Tiers: 1 some typed word, 2 every typed word, 4 the same words.
+    return Math.floor(best / 10);
+  };
+  const tiers = scored.map(s => tierOf(s.item));
+  const top = Math.max(0, ...tiers);
+  if (top === 0) return scored.map(s => s.item);
+  const need = Math.min(top, 2);
+  return scored.filter((_, i) => tiers[i] >= need).map(s => s.item);
 }
 
 /**

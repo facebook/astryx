@@ -112,6 +112,12 @@ describe('orderByAffinity with closest', () => {
     ]);
   });
 
+  it('does not count one-letter words', () => {
+    const list = ['use-a-theme', 'author-a-theme', 'card', 'table'];
+    expect(closest(list, 'a11y')).toEqual(list);
+    expect(closest(list, 'make-a-card')).toEqual(['card']);
+  });
+
   it('keeps the whole list, in its order, when no item has a typed word', () => {
     expect(closest(['c', 'b', 'a'], 'thing')).toEqual(['c', 'b', 'a']);
   });

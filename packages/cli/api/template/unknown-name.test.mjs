@@ -43,6 +43,15 @@ describe('unknown template suggestions', () => {
   );
 
   it(
+    'does not narrow the list on a one-letter word',
+    async () => {
+      const all = await suggested('zzqx-nothing-like-it');
+      expect(await suggested('a11y')).toHaveLength(all.length);
+    },
+    SLOW,
+  );
+
+  it(
     'lists every template when no template shares a word with the name',
     async () => {
       const all = await suggested('zzqx-nothing-like-it');

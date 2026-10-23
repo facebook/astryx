@@ -261,6 +261,10 @@ describe('docs() dispatcher routing', () => {
     // A route that names none of them keeps the whole list.
     const none = await docs('cli/zzzz-nope').catch(e => e);
     expect(none.suggestions.length).toBeGreaterThan(1);
+    // One-letter words do not narrow it: `a11y` keeps the whole browse list.
+    const browse = await docs('zzzz-nope').catch(e => e);
+    const a11y = await docs('a11y').catch(e => e);
+    expect(a11y.suggestions.length).toBe(browse.suggestions.length);
   }, SLOW);
 
   it('a section no guide of a namespace has -> ERR_UNKNOWN_SECTION, naming its guides', async () => {
