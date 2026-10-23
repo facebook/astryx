@@ -150,7 +150,8 @@ export const docs = {
     {
       name: 'hasEntriesOnFocus',
       type: 'boolean',
-      description: 'Show bootstrap results on focus before typing.',
+      description:
+        'Show bootstrap results on focus before typing. After a committed bootstrap selection, keep the remaining loaded choices open and active.',
       default: 'false',
     },
     {
@@ -266,12 +267,14 @@ export const docs = {
     {
       name: 'containerClassName',
       type: 'string',
-      description: 'Class name for the field container. Same targeting as `containerXstyle`.',
+      description:
+        'Class name for the field container. Same targeting as `containerXstyle`.',
     },
     {
       name: 'containerStyle',
       type: 'CSSProperties',
-      description: 'Inline styles for the field container. Same targeting as `containerXstyle`.',
+      description:
+        'Inline styles for the field container. Same targeting as `containerXstyle`.',
     },
     {
       name: 'controlXstyle',
@@ -523,7 +526,7 @@ export const docsZh = {
       name: 'hasEntriesOnFocus',
       type: 'boolean',
       description:
-        '\u805a\u7126\u65f6\u5728\u8f93\u5165\u524d\u663e\u793a\u5f15\u5bfc\u7ed3\u679c\u3002',
+        '聚焦时在输入前显示引导结果。提交一个引导结果后，菜单会保持打开，并激活其余已加载的选项。',
       default: 'false',
     },
     {
@@ -780,10 +783,12 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
-    containerXstyle: 'StyleX styles for the field container; no effect in InputGroup or horizontal-labels FormLayout. No root xstyle/className/style.',
+    containerXstyle:
+      'StyleX styles for the field container; no effect in InputGroup or horizontal-labels FormLayout. No root xstyle/className/style.',
     containerClassName: 'Class name for the field container.',
     containerStyle: 'Inline styles for the field container.',
-    controlXstyle: 'StyleX styles for the visual control box (border, background, icons); not the native input.',
+    controlXstyle:
+      'StyleX styles for the visual control box (border, background, icons); not the native input.',
     controlClassName: 'Class name for the visual control box.',
     controlStyle: 'Inline styles for the visual control box.',
     label: 'Accessible label for input.',
@@ -810,7 +815,8 @@ export const docsDense = {
     isRequired: 'Marks field required.',
     isOptional: 'Shows optional indicator on label.',
     labelTooltip: 'Tooltip on label.',
-    hasEntriesOnFocus: 'Show bootstrap results on focus before typing.',
+    hasEntriesOnFocus:
+      'Show bootstrap results on focus before typing. After a committed bootstrap selection, keep the remaining loaded choices open and active.',
     maxMenuItems:
       'Max search results shown; the hasCreate entry sits on top of them.',
     menuWidth: 'Fixed dropdown width in pixels.',

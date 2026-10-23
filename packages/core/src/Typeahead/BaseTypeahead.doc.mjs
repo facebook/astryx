@@ -107,7 +107,8 @@ export const docs = {
     {
       name: 'searchSource',
       type: 'SearchSource<T>',
-      description: 'Data source providing search and bootstrap methods.',
+      description:
+        'Data source providing search and bootstrap methods. Replacing it during the debounce delay preserves the pending query and searches the new source.',
       required: true,
     },
     {
