@@ -251,8 +251,11 @@ contracts.
 
 ## Deciding specs
 
-None. Component, family, API, accessibility, layer, interaction, and style records
-remain authoritative for the user-facing outcomes delegated above.
+- `spec:AST-086/DEC-2` — own-content announcements behave the same in every
+  component that announces its own rendered content (INV10).
+
+Component, family, API, accessibility, layer, interaction, and style records
+remain authoritative for the other user-facing outcomes delegated above.
 
 ## Verification
 
