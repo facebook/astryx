@@ -38,6 +38,7 @@ import {
   exportValueKind,
   generatedModulePath,
   generatedNamesOf,
+  generatedSources,
   iconNaming,
   localSourceNote,
   definitionNameOf,
@@ -523,9 +524,16 @@ async function addVariantForAll({cwd, from, selector, variant}) {
   const source = resolveIconSource(from, where);
   const found = libraryIcons(source.file, {adapter: Boolean(set.data.adapter)});
   const byId = new Map(found.map(each => [each.id, each]));
-  // The export name is the stable key: an icon whose id an older id rule
-  // wrote (`squares-2-x2`) still meets its variant (`Squares2X2Icon`).
+  // An existing icon is known by the library export it re-exports, then by
+  // its own export, then by its id: an icon whose id or name an older rule
+  // wrote (`squares-2-x2`, `Squares2X2Icon`) still meets its variant
+  // (`HiSquares2X2Icon` in the solid module).
+  const byLibraryExport = new Map(found.map(each => [each.export, each]));
   const byName = new Map(found.map(each => [each.name, each]));
+  const sources = generatedSources(
+    packageDir,
+    generatedModulePath(set, packageDir),
+  );
   const generated = generatedModulePath(set, packageDir);
   /** @type {import('../../../foundation/discovery/icon-set-writer.mjs').GeneratedIcon[]} */
   const toWrite = [];
@@ -536,7 +544,11 @@ async function addVariantForAll({cwd, from, selector, variant}) {
   /** @type {string[]} */
   const missing = [];
   const icons = set.data.icons.map(icon => {
-    const match = byId.get(icon.id) ?? byName.get(icon.export);
+    const librarySource = sources.get(icon.export);
+    const match =
+      (librarySource ? byLibraryExport.get(librarySource) : undefined) ??
+      byName.get(icon.export) ??
+      byId.get(icon.id);
     if (!match) {
       missing.push(icon.id);
       return icon;

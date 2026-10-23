@@ -291,6 +291,18 @@ export function registerExperimentalIcon(group, program) {
   });
 
   /**
+   * The set an authoring subcommand edits. `experimental icon` declares
+   * `--set` too, so Commander gives the parent a `--set` written after a
+   * subcommand's name; the subcommand reads it there.
+   * @param {{set?: unknown}} options the subcommand's own options
+   * @returns {string | undefined}
+   */
+  const setOf = options => {
+    const value = options.set ?? iconCli.opts().set;
+    return typeof value === 'string' ? value : undefined;
+  };
+
+  /**
    * Run one authoring call and print its receipt, or its error.
    * @param {() => Promise<any>} call
    * @param {(result: any) => void} print
@@ -343,7 +355,7 @@ export function registerExperimentalIcon(group, program) {
         () =>
           iconMap(definition, iconId, {
             cwd: process.cwd(),
-            set: options.set,
+            set: setOf(options),
             remove: options.remove ?? false,
             pairs: options.pairs,
           }),
@@ -387,7 +399,7 @@ export function registerExperimentalIcon(group, program) {
           iconAdd(exportName, {
             cwd: process.cwd(),
             from: /** @type {string} */ (options.from),
-            set: /** @type {string | undefined} */ (options.set),
+            set: setOf(options),
             definition: /** @type {string | undefined} */ (options.definition),
             newDefinition: /** @type {string | undefined} */ (
               options.newDefinition
@@ -571,7 +583,7 @@ export function registerExperimentalIcon(group, program) {
           iconNewDefinition(name, {
             cwd: process.cwd(),
             dryRun: options.dryRun,
-            set: options.set,
+            set: setOf(options),
             description: options.description,
             words: options.words,
             icon: options.icon,

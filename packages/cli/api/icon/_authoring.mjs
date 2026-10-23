@@ -33,6 +33,7 @@ import {
   findLocalIconSet,
   generatedModulePath,
   generatedModuleText,
+  generatedNamesOf,
   generatedTypesPath,
   THEME_MAP_NAME,
   entryWiringNote,
@@ -658,25 +659,45 @@ async function refreshIconSet(
       adapter: Boolean(set.data.adapter),
       exclude: excluded,
     });
-    // An icon is the same icon when the library still exports it under the
-    // same name: the export is the stable key, the id is derived from it and
-    // its rule may change between releases (`squares-2-x2` is now
-    // `squares-2x2`). A renamed icon keeps every field it had (its variants,
-    // the words the author added, its module) and its map entries.
+    // An existing icon is the same icon when the library still exports it:
+    // its identity is the library export its generated module re-exports
+    // (`HiSquares2X2Icon`), then its public export, then its id. Ids and
+    // public names are derived, and a newer rule may spell them differently
+    // (`squares-2-x2` is now `squares-2x2`); an icon matched this way keeps
+    // its public export byte for byte, every field it had (its variants, the
+    // words the author added, its module), and its map entries.
+    const generatedBefore = generatedModulePath(set, packageDir);
     const byId = new Map(set.data.icons.map(icon => [icon.id, icon]));
     const byExport = new Map(set.data.icons.map(icon => [icon.export, icon]));
+    /** @param {{export: string, name: string, id: string}} icon */
+    const priorOf = icon => {
+      for (const name of generatedNamesOf(
+        packageDir,
+        generatedBefore,
+        source.module,
+        icon.export,
+      )) {
+        const found = byExport.get(name);
+        if (found) return found;
+      }
+      return byExport.get(icon.name) ?? byId.get(icon.id) ?? null;
+    };
     /** @type {Map<string, string>} old id → new id */
     const renames = new Map();
+    /** @type {Map<string, string>} the library export → the set's export */
+    const publicName = new Map();
     const icons = found.map(icon => {
-      const prior = byId.get(icon.id) ?? byExport.get(icon.name);
+      const prior = priorOf(icon);
       if (prior && prior.id !== icon.id) renames.set(prior.id, icon.id);
+      const name = prior?.export ?? icon.name;
+      publicName.set(icon.export, name);
       // The words its old id gave are the old rule's, not the author's.
       const oldIdWords =
         prior && prior.id !== icon.id ? new Set(idWords(prior.id)) : new Set();
       return {
         ...(prior ?? {}),
         id: icon.id,
-        export: icon.name,
+        export: name,
         words: [
           ...new Set([
             ...idWords(icon.id),
@@ -766,7 +787,7 @@ async function refreshIconSet(
         generated,
         next,
         found.map(icon => ({
-          name: icon.name,
+          name: publicName.get(icon.export) ?? icon.name,
           from: source.module,
           source: icon.export,
           adapt: icon.adapt,

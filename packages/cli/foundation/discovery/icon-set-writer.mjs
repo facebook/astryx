@@ -1294,6 +1294,44 @@ export function generatedNamesOf(packageDir, generated, from, source) {
 }
 
 /**
+ * The library export each of the set's exports re-exports, read from its
+ * generated module: `export {HiTrashIcon as TrashIcon} from '…'` gives
+ * `TrashIcon` → `HiTrashIcon`, `export {TrashIcon} from '…'` gives
+ * `TrashIcon` → `TrashIcon`, and an adapted icon's import gives the same.
+ * An existing icon is known by this name first: ids and the set's export
+ * names are derived from it, and a newer rule may spell them differently.
+ * @param {string} packageDir
+ * @param {string} generated
+ * @returns {Map<string, string>}
+ */
+export function generatedSources(packageDir, generated) {
+  /** @type {Map<string, string>} */
+  const sources = new Map();
+  const file = path.join(packageDir, generated);
+  if (!fs.existsSync(file)) return sources;
+  let statements;
+  try {
+    statements = generatedStatements(fs.readFileSync(file, 'utf-8'), generated);
+  } catch {
+    return sources;
+  }
+  for (const statement of statements) {
+    const reexport = /^export \{(\w+)(?: as (\w+))?\} from '[^']+';$/u.exec(
+      statement,
+    );
+    if (reexport && reexport[1] !== 'default') {
+      sources.set(reexport[2] ?? reexport[1], reexport[1]);
+      continue;
+    }
+    const adapted = /^import \{(\w+) as (\w+)Source\} from '[^']+';$/u.exec(
+      statement,
+    );
+    if (adapted) sources.set(adapted[2], adapted[1]);
+  }
+  return sources;
+}
+
+/**
  * Write the set's generated module and its declaration file
  * ({@link generatedModuleText}). Returns whether either changed, and a
  * function that puts both back.

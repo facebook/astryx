@@ -1081,13 +1081,29 @@ describe('the library prefix ignores constants', () => {
       'GlyphXIcon',
       'MetaIcon',
     ]);
-    expect((await wrap(['--exclude', 'meta'])).code).toBe(0);
-    expect(exportsOf()).toEqual(['EyeIcon', 'TrashIcon', 'XIcon']);
+    // Excluding meta lets the prefix come off the new ids; each existing icon
+    // is the same icon (the same library export), so it keeps its public
+    // export, and only meta leaves the module.
+    const excluded = await wrap(['--exclude', 'meta']);
+    expect(excluded.code).toBe(0);
+    expect(exportsOf()).toEqual([
+      'GlyphEyeIcon',
+      'GlyphTrashIcon',
+      'GlyphXIcon',
+    ]);
+    expect(dataOf('outline').icons.map((/** @type {any} */ i) => i.id)).toEqual(
+      ['eye', 'trash', 'x'],
+    );
+    expect(excluded.body.data.renamed).toEqual([
+      {from: 'glyph-eye', to: 'eye'},
+      {from: 'glyph-trash', to: 'trash'},
+      {from: 'glyph-x', to: 'x'},
+    ]);
     const generated = fs.readFileSync(
       path.join(pkg, 'icon-sets', 'outline', 'outline.generated.js'),
       'utf-8',
     );
-    expect(generated).not.toContain('Glyph');
+    expect(generated).not.toContain('MetaIcon');
     expect(generated).not.toContain('README');
     expect(generated).not.toContain('notes');
     // icon add reuses the icon the wrap already made for an export, even
@@ -1105,9 +1121,13 @@ describe('the library prefix ignores constants', () => {
     expect(added.code).toBe(0);
     expect(added.body.data.icon).toMatchObject({
       id: 'trash',
-      export: 'TrashIcon',
+      export: 'GlyphTrashIcon',
     });
-    expect(exportsOf()).toEqual(['EyeIcon', 'TrashIcon', 'XIcon']);
+    expect(exportsOf()).toEqual([
+      'GlyphEyeIcon',
+      'GlyphTrashIcon',
+      'GlyphXIcon',
+    ]);
   });
 
   it('--exclude needs --from', async () => {
@@ -2290,6 +2310,273 @@ describe('add --variant --all after the id rule changes', () => {
     expect(added.body.data.missing).not.toContain('squares-2-x2');
     expect(
       dataOf('outline').icons.find(
+        (/** @type {{id: string}} */ each) => each.id === 'squares-2-x2',
+      ).variants,
+    ).toEqual([{variant: 'solid', export: 'Squares2X2SolidIcon'}]);
+  });
+});
+
+describe('--set through the CLI selects the set add, map, and new-definition edit', () => {
+  beforeEach(async () => {
+    for (const set of ['one', 'two']) {
+      await json([
+        'experimental',
+        'icon',
+        'new-set',
+        set,
+        '--from',
+        '@acme/glyph-library',
+      ]);
+    }
+    // A third set that is withdrawn: its data file is not JSON.
+    const broken = path.join(pkg, 'icon-sets', 'lines');
+    fs.mkdirSync(broken, {recursive: true});
+    fs.writeFileSync(
+      path.join(broken, 'lines.doc.mjs'),
+      fs
+        .readFileSync(path.join(pkg, 'icon-sets', 'one', 'one.doc.mjs'), 'utf8')
+        .replace("name: 'one'", "name: 'lines'"),
+    );
+    fs.writeFileSync(path.join(broken, 'lines.icons.json'), '{nope');
+  });
+
+  /** @type {Array<[string, (set: string) => string[], string]>} the command, its words, the icon it maps */
+  const COMMANDS = [
+    [
+      'map',
+      set => ['experimental', 'icon', 'map', 'delete', 'bin', '--set', set],
+      'bin',
+    ],
+    [
+      'add',
+      set => [
+        'experimental',
+        'icon',
+        'add',
+        'Rocket',
+        '--from',
+        '@acme/glyph-library/rocket',
+        '--default',
+        '--definition',
+        'delete',
+        '--set',
+        set,
+      ],
+      'rocket',
+    ],
+    [
+      'new-definition',
+      set => [
+        'experimental',
+        'icon',
+        'new-definition',
+        'binIt',
+        '--description',
+        'Put something in the bin.',
+        '--words',
+        'bin',
+        '--icon',
+        'bin',
+        '--set',
+        set,
+      ],
+      'bin',
+    ],
+  ];
+
+  it.each(COMMANDS)(
+    '%s --set edits that set and leaves the other',
+    async (_name, args, id) => {
+      const before = fs.readFileSync(
+        path.join(pkg, 'icon-sets', 'one', 'one.icons.json'),
+        'utf-8',
+      );
+      const res = await json(args('two'));
+      expect(res.code, JSON.stringify(res.body)).toBe(0);
+      expect(
+        fs.readFileSync(
+          path.join(pkg, 'icon-sets', 'one', 'one.icons.json'),
+          'utf-8',
+        ),
+      ).toBe(before);
+      expect(Object.values(dataOf('two').map)).toContain(id);
+    },
+  );
+
+  it.each(COMMANDS)('%s --set with a missing set', async (_name, args) => {
+    const res = await json(args('nope'));
+    expect(res.code).toBe(1);
+    expect(res.body).toMatchObject({
+      code: 'ERR_NOT_FOUND',
+      error: 'No icon set named "nope" in this package',
+    });
+  });
+
+  it.each(COMMANDS)('%s --set with a withdrawn set', async (_name, args) => {
+    const res = await json(args('lines'));
+    expect(res.code).toBe(1);
+    expect(res.body.code).toBe('ERR_NOT_FOUND');
+    expect(res.body.error).toMatch(
+      /^Icon set "lines" is in this package but withdrawn: .*not valid JSON/u,
+    );
+  });
+});
+
+describe('a refresh of a set wrapped from a prefixed library by an older id rule', () => {
+  it('matches each icon by the library export it re-exports, and keeps its public export byte for byte', async () => {
+    const lib = path.join(pkg, 'node_modules', '@acme', 'hero');
+    fs.mkdirSync(lib, {recursive: true});
+    fs.writeFileSync(
+      path.join(lib, 'package.json'),
+      JSON.stringify({
+        name: '@acme/hero',
+        version: '1.0.0',
+        type: 'module',
+        exports: {'.': './index.js'},
+      }),
+    );
+    fs.writeFileSync(
+      path.join(lib, 'index.js'),
+      [
+        'export const HiSquares2X2Icon = props => null;',
+        'export const HiTrashIcon = props => null;',
+        'export const HiXMarkIcon = props => null;',
+        '',
+      ].join('\n'),
+    );
+    const args = [
+      'experimental',
+      'icon',
+      'new-set',
+      'hero',
+      '--from',
+      '@acme/hero',
+    ];
+    expect((await json(args)).code).toBe(0);
+    const setDir = path.join(pkg, 'icon-sets', 'hero');
+    const generatedFile = path.join(setDir, 'hero.generated.js');
+    const typesFile = path.join(setDir, 'hero.generated.d.ts');
+    // Rewrite the set as an older id rule wrote it: id `squares-2-x2`,
+    // public export `Squares2X2Icon`, re-exporting `HiSquares2X2Icon`, with
+    // a map entry and an author's word.
+    const data = dataOf('hero');
+    const squares = data.icons.find(
+      (/** @type {{id: string}} */ each) => each.id === 'squares-2x2',
+    );
+    const newName = squares.export;
+    Object.assign(squares, {
+      id: 'squares-2-x2',
+      export: 'Squares2X2Icon',
+      words: ['squares', 'x2', 'grid-view'],
+    });
+    data.map = {...data.map, moreHorizontal: 'squares-2-x2'};
+    fs.writeFileSync(
+      path.join(setDir, 'hero.icons.json'),
+      `${JSON.stringify(data, null, 2)}\n`,
+    );
+    for (const file of [generatedFile, typesFile]) {
+      fs.writeFileSync(
+        file,
+        fs.readFileSync(file, 'utf-8').replaceAll(newName, 'Squares2X2Icon'),
+      );
+    }
+    expect(fs.readFileSync(generatedFile, 'utf-8')).toContain(
+      "export {HiSquares2X2Icon as Squares2X2Icon} from '@acme/hero';",
+    );
+
+    const refreshed = await json(args);
+    expect(refreshed.code).toBe(0);
+    expect(refreshed.body.data.renamed).toEqual([
+      {from: 'squares-2-x2', to: 'squares-2x2'},
+    ]);
+    expect(refreshed.body.data.notes.join(' ')).not.toContain(
+      'no longer exports',
+    );
+    const after = dataOf('hero');
+    expect(after.map.moreHorizontal).toBe('squares-2x2');
+    const kept = after.icons.find(
+      (/** @type {{id: string}} */ each) => each.id === 'squares-2x2',
+    );
+    expect(kept.export).toBe('Squares2X2Icon');
+    expect(kept.words).toContain('grid-view');
+    const generated = fs.readFileSync(generatedFile, 'utf-8');
+    expect(generated).toContain(
+      "export {HiSquares2X2Icon as Squares2X2Icon} from '@acme/hero';",
+    );
+    expect(generated).not.toContain(
+      newName === 'Squares2X2Icon' ? '\0' : newName,
+    );
+    // The set still checks: its types match its module, and, once the entry
+    // re-exports it, every icon export resolves.
+    fs.appendFileSync(
+      path.join(pkg, 'index.js'),
+      "export * from './icon-sets/hero/hero.generated.js';\n",
+    );
+    const check = await runCli(['integration', 'check', '--json'], pkg);
+    expect(check.stdout).not.toContain('icon_generated_types_mismatch');
+    expect(check.stdout).not.toContain('icon_export_missing');
+  });
+});
+
+describe('add --variant --all on a set an older id rule wrote from a prefixed library', () => {
+  it('meets each icon by the library export it re-exports', async () => {
+    const lib = path.join(pkg, 'node_modules', '@acme', 'hero');
+    fs.mkdirSync(lib, {recursive: true});
+    fs.writeFileSync(
+      path.join(lib, 'package.json'),
+      JSON.stringify({
+        name: '@acme/hero',
+        version: '1.0.0',
+        type: 'module',
+        exports: {'.': './index.js', './solid': './solid.js'},
+      }),
+    );
+    const source =
+      'export const HiSquares2X2Icon = props => null;\nexport const HiTrashIcon = props => null;\n';
+    fs.writeFileSync(path.join(lib, 'index.js'), source);
+    fs.writeFileSync(path.join(lib, 'solid.js'), source);
+    await json([
+      'experimental',
+      'icon',
+      'new-set',
+      'hero',
+      '--from',
+      '@acme/hero',
+      '--variants',
+      'outline,solid',
+    ]);
+    const setDir = path.join(pkg, 'icon-sets', 'hero');
+    const data = dataOf('hero');
+    const squares = data.icons.find(
+      (/** @type {{id: string}} */ each) => each.id === 'squares-2x2',
+    );
+    const newName = squares.export;
+    Object.assign(squares, {id: 'squares-2-x2', export: 'Squares2X2Icon'});
+    fs.writeFileSync(
+      path.join(setDir, 'hero.icons.json'),
+      `${JSON.stringify(data, null, 2)}\n`,
+    );
+    for (const file of ['hero.generated.js', 'hero.generated.d.ts']) {
+      const full = path.join(setDir, file);
+      fs.writeFileSync(
+        full,
+        fs.readFileSync(full, 'utf-8').replaceAll(newName, 'Squares2X2Icon'),
+      );
+    }
+    const added = await json([
+      'experimental',
+      'icon',
+      'add',
+      '--variant',
+      'solid',
+      '--from',
+      '@acme/hero/solid',
+      '--all',
+    ]);
+    expect(added.code, JSON.stringify(added.body)).toBe(0);
+    expect(added.body.data.missing).toEqual([]);
+    expect(
+      dataOf('hero').icons.find(
         (/** @type {{id: string}} */ each) => each.id === 'squares-2-x2',
       ).variants,
     ).toEqual([{variant: 'solid', export: 'Squares2X2SolidIcon'}]);

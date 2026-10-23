@@ -47,6 +47,7 @@ export {
   resolveIconSource,
   generatedModulePath,
   generatedNamesOf,
+  generatedSources,
   iconExportName,
   iconNaming,
   modulePrefix,

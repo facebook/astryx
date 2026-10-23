@@ -278,15 +278,18 @@ icon, and the CLI verifies it, writes the files, and checks the set.
     is built from, never the built file), the `react` and optional
     `@types/react` and `@astryxdesign/cli` peers it does not declare, and a
     `typecheck` script running `integration check --strict` when it has
-    none. `--variants` and `--default-variant` declare `variants` and `default`;
-    `--display-name` and `--description` fill the descriptor. Run again, it
-    refreshes the icons and keeps `map` entries whose icon exists, matching
-    an icon by the export the library still has, so an icon a newer id rule
-    renames keeps its `map` entries, variants, and words and is reported
-    under `renamed`; it copies
-    the library's license notices the set lacks, and the run that first
-    records `source` takes the library's license for the descriptor, which
-    later runs keep. The package's own `license` is never written.
+    none. `--variants` and `--default-variant` declare `variants` and
+    `default`; `--display-name` and `--description` fill the descriptor. Run
+    again, it refreshes the icons and keeps `map` entries whose icon exists.
+    An existing icon is known by the library export its generated module
+    re-exports, then by its own export, then by its `id`; one matched this
+    way keeps its export unchanged, its `map` entries, and every other
+    field, and an `id` the current rule spells differently is reported
+    under `renamed` (`add --variant <name> --all` meets an icon the same
+    way). A refresh copies the library's license notices the set lacks, and
+    the run that first records `source` takes the library's license for the
+    descriptor, which later runs keep. The package's own `license` is never
+    written.
   - `experimental icon add <Export> --from <module>` verifies the export,
     lists the definitions that fit it, and with `--definition` or
     `--new-definition` adds it and maps it; `--variant <name>` adds it as
