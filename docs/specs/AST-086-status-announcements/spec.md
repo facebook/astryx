@@ -90,12 +90,26 @@ announcement channel.
 - **FR9 — One shared channel per document.** The channel is one polite and one
   assertive region per document. They are created empty, stay mounted for the
   document's lifetime, and clear their text shortly after each announcement so
-  stale text does not linger. `useAnnounce` is the public way to reach it.
+  stale text does not linger. Messages written to a region before the previous
+  one is exposed are joined in order into one announcement; none is dropped.
+  `useAnnounce` is the public way to reach it.
 - **FR10 — Modal-hosted owners keep their own channel.** While the shared
   channel is not admitted to modal hosting, a globally hosted owner that
   `spec:AST-003` rehosts above native modals (FR16, FR18) announces through its
   own persistent polite and assertive containers, which move with it. FR3, FR5,
   and FR6 apply to those containers.
+- **FR11 — A message announces when it appears, not when its view appears.**
+  A message rendered in the same commit as the view around it, including a view
+  shown by a client-side route change, is not announced. A message inserted into
+  a view already on screen, or whose text changes later, is announced once. FR4
+  applies inside a mounted live container, and FR6 governs repeats.
+- **FR12 — One internal helper delivers FR11.** Components that announce their
+  own rendered content use one shared internal helper. It reads the element's
+  rendered text after render, leaves out `aria-hidden` content, stays silent for
+  text present in the view's first commit, announces once per later appearance or
+  text change, and re-arms when the element is hidden. It is not exported; making
+  it public needs `spec:AST-002` admission. A component that adopts it is a client
+  component.
 
 ### Platform support
 
@@ -126,8 +140,9 @@ announcement channel.
 - Switch: busy is announced through the channel, and the thumb Spinner also
   mounts with `role="status"`. Under FR8 the thumb Spinner is silent. Under FR6
   StrictMode replay does not repeat the busy announcement.
-- Spinner (standalone): mounts with `role="status"` and its name. Under FR2 it
-  announces its label through the channel when it appears. The role and name it
+- Spinner (standalone): mounts with `role="status"` and its name. Under FR2 and
+  FR11 it announces its label through the channel when it appears after its
+  view, and stays silent when it renders with its view. The role and name it
   exposes without a live role are outside this record.
 - `family:input-fields` members and other busy controls (TextInput, TextArea,
   Selector, MultiSelector, ComplexSelector, Typeahead, Tokenizer, the date and
@@ -143,8 +158,9 @@ announcement channel.
   log. Under FR4 and FR8 it is silent, and ChatMessageList announces its loading
   through the channel.
 - EmptyState, the ChatComposer status bar, and the chat trigger menu's loading
-  row: each mounts a live role together with its text. Under FR2 the message
-  goes through the channel and the element carries no live role.
+  row: each mounts a live role together with its text. Under FR2, FR11, and
+  FR12 the element carries no live role and the helper announces it when it
+  appears after its view. EmptyState becomes a client component.
 - Button: its persistent loading region fits FR3, except when a Button first
   renders loading and the region mounts holding its text. Inside a live
   container it keeps its role and urgency (FR4).
@@ -157,23 +173,33 @@ announcement channel.
   FR4 inside a live log, otherwise FR2.
 - Comments (lab): its error banners and progress label mount live roles
   together with their text. Inside a live log they follow FR4; otherwise FR2.
+- Selector, MultiSelector, Typeahead, and CommandPalette already announce their
+  empty state through the helper. It never shows in the view's first commit, so
+  their behavior is unchanged.
+- `component:Banner` FR8 is unchanged: the caller announces an async outcome
+  from its transition handler, because only the caller knows whether a Banner
+  is a new outcome or persistent content. FR11 and FR12 cover components that
+  announce their own content.
+- `useAnnounce`: messages written in the same frame are joined instead of the
+  last one replacing the others (FR9).
 - `spec:AST-037` FR9 (Timer adds no unsolicited live region) already conforms.
 - Consumer tests that query these elements by `status` or `alert` role change.
   Release notes name each affected component.
 
 ## Verification
 
-| Contract | Verification                                                            | Representative states                                                                                                                                        | Mutation or failure expectation                                                                              |
-| -------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| FR1, FR4 | Shared test: one live owner per announced message                       | Toast shown; busy Switch; system notice, FieldStatus error, and failure Banner inside a chat log; busy Button and invalid DateInput inside a chat log (pass) | A live role on a second element, or a channel announcement of content added inside a live container, fails   |
-| FR2, FR3 | Shared test: no live element mounts holding its text                    | Conditional status, toast card, standalone Spinner                                                                                                           | Mounting `role="status"` with text fails                                                                     |
-| FR5      | Channel routing tests                                                   | Error, warning, success, loading                                                                                                                             | Routing an error to polite, or a success to assertive, fails                                                 |
-| FR6      | StrictMode and rerender tests on the channel spy                        | Busy start, repeated rerender, same-value update, new occasion                                                                                               | Two announcements for one occasion, or none for a new one, fails                                             |
-| FR7      | Accessibility-tree check of the visible message                         | FieldStatus attached/detached, toast card                                                                                                                    | Hiding the visible text or a word mismatch fails                                                             |
-| FR8      | Shared test: no live role inside a busy owner; channel spy on the owner | Busy TextInput, Selector, Switch thumb, ChatMessageList loader, busy CommandPalette (region inside its dialog)                                               | A composed indicator with a live role or its own announcement, or a busy owner that announces nothing, fails |
-| FR9      | `useAnnounce` tests                                                     | First use, many components, region removed, server render                                                                                                    | A second region pair, or stale text after the clear delay, fails                                             |
-| FR10     | Accessibility-tree check with a Dialog open                             | Info and error toast shown over an open Dialog                                                                                                               | A toast that reaches only the body-level channel, or no exposed live container, fails                        |
-| FR6 (AT) | Recommended `spec:AST-009` real-AT follow-up                            | Toast, busy Switch, chat notice                                                                                                                              | Missing, repeated, or out-of-order speech fails                                                              |
+| Contract   | Verification                                                            | Representative states                                                                                                                                        | Mutation or failure expectation                                                                                                                                |
+| ---------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1, FR4   | Shared test: one live owner per announced message                       | Toast shown; busy Switch; system notice, FieldStatus error, and failure Banner inside a chat log; busy Button and invalid DateInput inside a chat log (pass) | A live role on a second element, or a channel announcement of content added inside a live container, fails                                                     |
+| FR2, FR3   | Shared test: no live element mounts holding its text                    | Conditional status, toast card, standalone Spinner                                                                                                           | Mounting `role="status"` with text fails                                                                                                                       |
+| FR5        | Channel routing tests                                                   | Error, warning, success, loading                                                                                                                             | Routing an error to polite, or a success to assertive, fails                                                                                                   |
+| FR6        | StrictMode and rerender tests on the channel spy                        | Busy start, repeated rerender, same-value update, new occasion                                                                                               | Two announcements for one occasion, or none for a new one, fails                                                                                               |
+| FR7        | Accessibility-tree check of the visible message                         | FieldStatus attached/detached, toast card                                                                                                                    | Hiding the visible text or a word mismatch fails                                                                                                               |
+| FR8        | Shared test: no live role inside a busy owner; channel spy on the owner | Busy TextInput, Selector, Switch thumb, ChatMessageList loader, busy CommandPalette (region inside its dialog)                                               | A composed indicator with a live role or its own announcement, or a busy owner that announces nothing, fails                                                   |
+| FR9        | `useAnnounce` tests                                                     | First use, many components, region removed, server render, two messages in one frame                                                                         | A second region pair, stale text after the clear delay, or a dropped same-frame message fails                                                                  |
+| FR10       | Accessibility-tree check with a Dialog open                             | Info and error toast shown over an open Dialog                                                                                                               | A toast that reaches only the body-level channel, or no exposed live container, fails                                                                          |
+| FR11, FR12 | Helper and component tests                                              | EmptyState rendered with its view, inserted later, text changed, hidden and shown again, after a route change, inside a chat log                             | Announcing at first commit or after a route change, missing a later insertion, repeating one occasion, or also using the channel inside a live container fails |
+| FR6 (AT)   | Recommended `spec:AST-009` real-AT follow-up                            | Toast, busy Switch, chat notice                                                                                                                              | Missing, repeated, or out-of-order speech fails                                                                                                                |
 
 ## Decision log
 
@@ -192,6 +218,19 @@ until the shared channel can be hosted there (FR10).
 
 Rejected: delivering transient messages through each component's own live
 region — the page gains many competing regions and two-owner duplicates recur.
+
+### DEC-2 — A message announces when it appears after its view
+
+**Reference:** `spec:AST-086/DEC-2`
+**Decider:** cixzhang, 2026-10-22
+
+A message that is part of the view a person just arrived at is read with that
+view. Announcing it again interrupts them with something they are about to read.
+A message that appears into a view already in use is news and is announced once.
+One internal helper gives every self-announcing component the same behavior.
+
+Rejected: announcing on every mount — page loads and route changes would speak
+every empty state and spinner on screen.
 
 ## Open questions
 
