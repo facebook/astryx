@@ -120,7 +120,7 @@ describe('searchComponents', () => {
     const results = await searchComponents('FancyWidgetPanel', NO_CORE, {
       g: ['Panel', 'Widget', 'Sheet'],
     });
-    expect(results.map(r => r.name)).toEqual(['Panel', 'Widget']);
+    expect(results.map(r => r.name)).toEqual(['Panel']);
     expect(results[0].reason).toBe('name part "panel"');
     expect(results.every(r => r.score < 20)).toBe(true);
   });

@@ -1885,6 +1885,7 @@ export async function unknownTopicError(topic, catalog) {
       )
       .map(node => ({name: node.route, reason: node.summary}));
   }
+  let spelled = false;
   if (suggestions.length === 0 && typeof topic === 'string' && !topic.includes('/')) {
     // The same name spelled another way: case, separators and a plural
     // aside (`theme-build` is themeBuild(), `hooks` is the hook command).
@@ -1900,6 +1901,7 @@ export async function unknownTopicError(topic, catalog) {
               key(node.route.split('/').at(-1) ?? '') === wanted),
         )
         .map(node => ({name: node.route, reason: node.summary}));
+      spelled = suggestions.length > 0;
     }
   }
   if (suggestions.length === 0) {
@@ -1912,6 +1914,8 @@ export async function unknownTopicError(topic, catalog) {
   }
   if (typeof topic === 'string') {
     suggestions = orderRouteSuggestions(topic, suggestions);
+    // A spelling match lists at most five docs (spec:AST-083 FR7).
+    if (spelled) suggestions = suggestions.slice(0, 5);
   }
   // A route that moved names where it went, ahead of the usual suggestions
   // (spec:AST-046 FR9, FR6).

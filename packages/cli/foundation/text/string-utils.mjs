@@ -232,6 +232,10 @@ export async function searchComponents(needle, coreDir, components) {
         addMatch(comp, 10 + Math.min(span, 4) + atEnd, 'name part "' + run + '"');
       }
     }
+    // Keep only the strongest name parts, so a weaker part never sits
+    // beside the best one.
+    const best = Math.max(0, ...[...scored.values()].map(r => r.score));
+    for (const [name, r] of scored) if (r.score < best) scored.delete(name);
   }
 
   const results = Array.from(scored.values())
