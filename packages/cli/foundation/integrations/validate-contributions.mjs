@@ -1569,7 +1569,13 @@ export async function componentExamplesCheck(integration) {
       continue;
     }
     const parsed = readModule(source, builtins);
-    if (template.type === 'block' && template.isShowcase) {
+    // A block is a showcase when it says so, or when it shows components
+    // through `alsoShowcaseFor`, which counts them as shown above.
+    const showcase =
+      template.isShowcase === true ||
+      (Array.isArray(template.alsoShowcaseFor) &&
+        template.alsoShowcaseFor.length > 0);
+    if (template.type === 'block' && showcase) {
       const blocked = parsed.server;
       if (blocked.length > 0) {
         notes.push({

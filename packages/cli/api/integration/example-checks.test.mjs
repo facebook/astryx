@@ -361,6 +361,28 @@ describe('showcase_not_standalone', () => {
       'Fetching live data through the app is fine',
     );
   });
+
+  it('lists a block that shows components only through alsoShowcaseFor', async () => {
+    write({
+      'package.json': JSON.stringify({name: '@acme/kit', version: '1.0.0'}),
+      'templates/panel.doc.mjs': blockDoc(
+        'panel',
+        ", alsoShowcaseFor: ['AcmeCard']",
+      ),
+      'templates/panel.tsx': [
+        "import {headers} from 'next/headers';",
+        'export default function Panel() {',
+        '  return null;',
+        '}',
+        '',
+      ].join('\n'),
+    });
+
+    const notes = await notesOf(['showcase_not_standalone']);
+    expect(notes).toHaveLength(1);
+    expect(notes[0].message).toContain('templates/panel.tsx');
+    expect(notes[0].message).toContain("imports 'next/headers'");
+  });
 });
 
 describe('template_asset_not_packed', () => {
