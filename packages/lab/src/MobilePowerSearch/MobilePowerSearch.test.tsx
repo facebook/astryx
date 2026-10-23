@@ -684,6 +684,38 @@ describe('MobilePowerSearch Filters sheet', () => {
 // =============================================================================
 
 describe('MobilePowerSearch Add filter', () => {
+  it('keeps the sticky header above the rows that scroll under it, without covering the grab handle', () => {
+    setup();
+    openAddFlow();
+    const title = within(sheet()).getByRole('heading', {name: 'Add filter'});
+    // The title sits in the sticky header; the header's parent is the sheet
+    // content wrapper.
+    let header: HTMLElement | null = title;
+    while (header && getComputedStyle(header).position !== 'sticky') {
+      header = header.parentElement;
+    }
+    expect(header).not.toBeNull();
+    const content = header!.parentElement!;
+    // jsdom resolves the injected StyleX rules: the header has a layer above
+    // the List rows (position: relative, z-index auto) that follow it...
+    expect(getComputedStyle(header!).zIndex).toBe('1');
+    // ...scoped to the sheet content, so the panel's grab handle (z-index 1,
+    // outside this wrapper) still paints above the header.
+    const rules: string[] = [];
+    for (const styleSheet of Array.from(document.styleSheets)) {
+      for (const rule of Array.from(styleSheet.cssRules)) {
+        rules.push(rule.cssText);
+      }
+    }
+    const isolated = Array.from(content.classList).some(className =>
+      rules.some(
+        text =>
+          text.includes(`.${className}`) && /isolation:\s*isolate/.test(text),
+      ),
+    );
+    expect(isolated).toBe(true);
+  });
+
   it('opens directly to Add filter when no filters are selected', () => {
     setup();
     openSheet();

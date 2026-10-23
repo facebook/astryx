@@ -294,17 +294,23 @@ const styles = stylex.create({
     minHeight: 44,
   },
   // --- sheet shell ---------------------------------------------------------
+  // Scopes the sticky header's and footer's layer to this sheet's content:
+  // the List rows are `position: relative` and come after the header, so
+  // without a layer of its own the header is painted under the rows that
+  // scroll beneath it. Isolating the content keeps that z-index inside it, so
+  // the sheet's grab handle (z-index 1 on the panel, outside this wrapper)
+  // still paints above.
   sheet: {
     display: 'flex',
     flexDirection: 'column',
     minHeight: '100%',
+    isolation: 'isolate',
   },
   header: {
     position: 'sticky',
     insetBlockStart: 0,
-    // 0, not higher: the sheet's grab handle is an absolutely positioned
-    // sibling at z-index 1; anything above it paints the pill out.
-    zIndex: 0,
+    // Above the rows that scroll under it, within the isolated sheet content.
+    zIndex: 1,
     display: 'flex',
     flexDirection: 'column',
     gap: spacingVars['--spacing-3'],
@@ -341,7 +347,7 @@ const styles = stylex.create({
   footer: {
     position: 'sticky',
     insetBlockEnd: 0,
-    zIndex: 0,
+    zIndex: 1,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
