@@ -39,11 +39,11 @@ export const docs = {
           type: 'code',
           lang: 'bash',
           label: 'Quick start',
-          code: 'astryx theme add stone   # use an existing theme\nastryx theme eject stone # fork its source to customize\nastryx theme build src/themes/stone/stoneTheme.ts',
+          code: '{@command theme add stone}   # use an existing theme\n{@command theme eject stone} # fork its source to customize\n{@command theme build src/themes/stone/stoneTheme.ts}',
         },
         {
           type: 'prose',
-          text: 'For a new coordinated color system, run `astryx theme palette generate palette.config.json --out palette.generated.ts`. Review and commit the generated palette module and receipt, import its `palette` export, then reference stable stops from semantic tokens. Regenerating an accepted palette updates every mapped token that keeps those references; generation does not rewrite the theme.',
+          text: 'For a new coordinated color system, run `{@command theme palette generate palette.config.json --out palette.generated.ts}`. Review and commit the generated palette module and receipt, import its `palette` export, then reference stable stops from semantic tokens. Regenerating an accepted palette updates every mapped token that keeps those references; generation does not rewrite the theme.',
         },
         {
           type: 'code',
@@ -74,7 +74,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Install an integration and Astryx discovers its themes automatically. Import one with `astryx theme add <name> --package <integration>`. Use `theme eject` only for an independent source fork. For the full walkthrough, see {@link generic:use-a-theme}.',
+          text: 'Install an integration and Astryx discovers its themes automatically. Import one with `{@command theme add <name> --package <integration>}`. Use `theme eject` only for an independent source fork. For the full walkthrough, see {@link generic:use-a-theme}.',
         },
       ],
     },

@@ -27,7 +27,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'astryx integration add doc acme-getting-started --replaces getting-started\n# The old name now opens your topic\nastryx docs getting-started',
+          code: '{@command integration add doc acme-getting-started --replaces getting-started}\n# The old name now opens your topic\n{@command docs getting-started}',
         },
         {
           type: 'code',
@@ -52,7 +52,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'astryx integration add doc acme-theming --extends theme\nastryx docs theme --index',
+          code: '{@command integration add doc acme-theming --extends theme}\n{@command docs theme --index}',
         },
         {
           type: 'code',
@@ -114,7 +114,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'astryx doctor integration docs',
+          code: '{@command doctor integration docs}',
         },
         {
           type: 'code',

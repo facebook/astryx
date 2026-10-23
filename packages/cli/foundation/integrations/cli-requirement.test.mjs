@@ -9,6 +9,7 @@ import {
   KEYWORDS_CLI,
   NAMESPACE_DOCS_CLI,
   SECTION_IDS_CLI,
+  DOC_TOKENS_CLI,
   STABILITY_CLI,
   TEMPLATE_ICONS_CLI,
   TEMPLATE_REPLACES_CLI,
@@ -20,6 +21,7 @@ import {
   keywordsCliProblem,
   replacesCliProblem,
   sectionIdsCliProblem,
+  docTokensCliProblem,
   themesCliProblem,
   withCliPeer,
   withDocsTreeCli,
@@ -164,7 +166,9 @@ describe('template replaces and keywords floors in the shipped docs', () => {
   ])('gives the %s fix the floor the check asks for', (code, floor) => {
     const row = read('../../assets/docs/tree/troubleshooting.doc.mjs')
       .split('],')
-      .find(part => part.includes(`${code}:`));
+      .find(part => part.includes(`${code}:`))
+      // The doc's single-quoted string escapes the command's own quotes.
+      ?.replaceAll("\\'", "'");
     expect(row).toContain(`@astryxdesign/cli=>=${floor}'`);
   });
 });
@@ -224,7 +228,8 @@ describe('componentReplacesCliProblem', () => {
     );
     const row = troubleshooting
       .split('],')
-      .find(part => part.includes('`component_replaces_needs_cli`'));
+      .find(part => part.includes('`component_replaces_needs_cli`'))
+      ?.replaceAll("\\'", "'");
     expect(row).toContain(`@astryxdesign/cli=>=${COMPONENT_REPLACES_CLI}'`);
     // Every version that row names is the floor.
     expect(new Set(row?.match(/\d+\.\d+\.\d+/g))).toEqual(
@@ -254,6 +259,18 @@ describe('themesCliProblem and sectionIdsCliProblem', () => {
     }
   });
 
+  it('asks for a CLI from 0.7.4 for doc tokens', () => {
+    expect(docTokensCliProblem({name: '@acme/kit'})).toContain('writes doc tokens');
+    for (const range of ['>=0.7.4', '^0.7.4', '>=0.8.0']) {
+      expect(docTokensCliProblem({peerDependencies: {'@astryxdesign/cli': range}})).toBeNull();
+    }
+    for (const range of ['>=0.6.4', '^0.7.0', '>=0.7.3']) {
+      expect(
+        docTokensCliProblem({peerDependencies: {'@astryxdesign/cli': range}}),
+      ).toContain('admits a stable CLI before 0.7.4');
+    }
+  });
+
   it('gives replaces and keywords their own floors', () => {
     // `>=0.6.4` admits published 0.6.4 and 0.6.5, which drop a template that
     // sets `keywords` but apply one that sets `replaces`.
@@ -276,6 +293,7 @@ describe('themesCliProblem and sectionIdsCliProblem', () => {
       NAMESPACE_DOCS_CLI,
       THEMES_CLI,
       SECTION_IDS_CLI,
+      DOC_TOKENS_CLI,
       TEMPLATE_REPLACES_CLI,
       KEYWORDS_CLI,
     ]) {
@@ -326,6 +344,8 @@ describe('every feature check names its CLI floor', () => {
     themesCliProblem: '0.6.4',
     stabilityCliProblem: STABILITY_CLI,
     templateIconsCliProblem: TEMPLATE_ICONS_CLI,
+    // The release doc tokens ship in.
+    docTokensCliProblem: '0.7.4',
   };
 
   it('asks each feature for the CLI release this table names', () => {

@@ -36,7 +36,11 @@ import * as path from 'node:path';
 import {findCoreDir, findInstalledPackage, CLI_ROOT} from '../fs/paths.mjs';
 import {assertWithin, PathSafetyError} from '../fs/path-safety.mjs';
 import {createFileProtectionResolver} from '../fs/file-protection.mjs';
-import {getCliInvocation} from '../env/package-manager.mjs';
+import {
+  docPackageManager,
+  getCliInvocation,
+} from '../env/package-manager.mjs';
+import {renderCommandTokens} from '../doc-compiler/doc-syntax.mjs';
 import {isValidSemver, semverGte} from '../env/semver.mjs';
 import {discoverComponents} from '../discovery/component-discovery.mjs';
 import {Project} from '../config/project.mjs';
@@ -944,8 +948,13 @@ export async function renderAgentDocsBlock(
         .map(input => input.doc.name),
     ),
   ];
+  // Doc tokens in an integration's lines render here, for the project's
+  // package manager; the block's header names the runner for bare commands.
+  const tokenOptions = {stem: 'astryx', pm: docPackageManager(targetDir)};
   const agentDocs = project.loadedIntegrations.flatMap(integration => {
-    const append = integration.agentDocs?.append ?? [];
+    const append = (integration.agentDocs?.append ?? []).map(line =>
+      renderCommandTokens(line, tokenOptions),
+    );
     if (append.length === 0) return [];
     return [
       {

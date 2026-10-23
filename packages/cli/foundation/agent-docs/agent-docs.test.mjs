@@ -431,6 +431,52 @@ describe('renderAgentDocsBlock', () => {
       fs.rmSync(projectDir, {recursive: true, force: true});
     }
   });
+  it('renders doc tokens in an integration line for the project', async () => {
+    const projectDir = fs.mkdtempSync(
+      path.join(process.cwd(), '.astryx-agent-doc-tokens-'),
+    );
+    try {
+      fs.writeFileSync(
+        path.join(projectDir, 'package.json'),
+        JSON.stringify({name: 'consumer'}),
+      );
+      fs.writeFileSync(path.join(projectDir, 'bun.lock'), '{}\n');
+      fs.writeFileSync(
+        path.join(projectDir, 'astryx.config.mjs'),
+        `export default {integrations: ['@acme/kit']};\n`,
+      );
+      const coreDir = path.join(
+        projectDir,
+        'node_modules',
+        '@astryxdesign',
+        'core',
+      );
+      fs.mkdirSync(coreDir, {recursive: true});
+      fs.writeFileSync(
+        path.join(coreDir, 'package.json'),
+        JSON.stringify({name: '@astryxdesign/core', version: '1.0.0'}),
+      );
+      const packageDir = path.join(projectDir, 'node_modules', '@acme', 'kit');
+      fs.mkdirSync(packageDir, {recursive: true});
+      fs.writeFileSync(
+        path.join(packageDir, 'package.json'),
+        JSON.stringify({name: '@acme/kit'}),
+      );
+      fs.writeFileSync(
+        path.join(packageDir, 'astryx.integration.mjs'),
+        `export default {agentDocs: {append: ['Add it with {@pm install @acme/kit}, then run {@command doctor}.']}};\n`,
+      );
+
+      const block = await renderAgentDocsBlock(projectDir);
+      expect(block).toContain(
+        '- `@acme/kit`: Add it with `bun add @acme/kit`, then run `astryx doctor`.',
+      );
+      expect(block).not.toContain('{@');
+    } finally {
+      fs.rmSync(projectDir, {recursive: true, force: true});
+    }
+  });
+
   it('rejects a package label that could alter managed block structure', async () => {
     const projectDir = fs.mkdtempSync(
       path.join(process.cwd(), '.astryx-agent-doc-label-'),

@@ -46,6 +46,7 @@ import {
   linkBlocks,
   linkFields,
   parseLinkTarget,
+  renderTokens,
 } from '../../foundation/doc-compiler/links.mjs';
 import {
   createDocId,
@@ -317,7 +318,8 @@ function topicTextFields(doc) {
  * @returns {Promise<string>}
  */
 export async function linkDocText(catalog, providerId, text) {
-  if (typeof text !== 'string' || !text.includes('{@link')) return text;
+  if (typeof text !== 'string') return text;
+  if (!text.includes('{@link')) return renderTokens(text);
   let provider;
   try {
     provider = normalizeProviderId(providerId);
@@ -345,7 +347,8 @@ export async function linkDocText(catalog, providerId, text) {
  * @returns {Promise<{doc: T, problems: LinkProblem[]}>}
  */
 export async function linkComponentDoc(catalog, providerId, doc) {
-  if (!JSON.stringify(doc ?? null).includes('{@link')) {
+  // Doc tokens render in the same pass as links (resolveInline).
+  if (!JSON.stringify(doc ?? null).includes('{@')) {
     return {doc, problems: []};
   }
   return linkFields(
@@ -418,6 +421,7 @@ async function flatTopicInputs(catalog) {
       providerId: entry.providerId ?? entry.package,
       name: entry.name,
       title: title ?? entry.name,
+      // Rendered once, with the tree's other summaries (buildProjectTree).
       summary: description ?? '',
       category: category ?? null,
       source: `${entry.package}:${entry.name}`,
@@ -490,7 +494,7 @@ async function buildProjectTree(catalog, fresh) {
   // A summary is a doc's text too: each link in it reads as the command that
   // opens its doc, wherever the tree's summaries print (spec:AST-047 FR9).
   for (const node of result.nodes.values()) {
-    if (typeof node.summary === 'string' && node.summary.includes('{@link')) {
+    if (typeof node.summary === 'string' && node.summary.includes('{@')) {
       const replacement = node.guideOverlay?.replacement;
       node.summary = await linkSummary(
         catalog,
@@ -519,7 +523,7 @@ async function buildProjectTree(catalog, fresh) {
  * @returns {Promise<string>}
  */
 async function linkSummary(catalog, tree, providerId, summary) {
-  if (!summary.includes('{@link')) return summary;
+  if (!summary.includes('{@link')) return renderTokens(summary);
   let provider;
   try {
     provider = normalizeProviderId(providerId);
@@ -682,7 +686,7 @@ function docFinderOver(catalog, tree, fromProvider, summaries = true) {
           id: createDocId(provider, authored.type, authored.name),
           route,
           title: authored.displayName ?? authored.name,
-          summary: authored.description ?? '',
+          summary: renderTokens(authored.description ?? ''),
           command: `astryx docs ${experimental ? route : 'authoring'} ${authored.name}`,
         },
         kind: parsed.kind,
@@ -740,13 +744,16 @@ function docFinderOver(catalog, tree, fromProvider, summaries = true) {
         // The summary is the target doc's own text, so its links resolve
         // against the target's provider, never the linking doc's: a Core
         // component's against the CLI's docs, like its other fields.
-        if (summaries && link.summary.includes('{@link')) {
+        // contributedDocLink returns the authored text; it renders once here.
+        if (summaries && link.summary.includes('{@')) {
           link.summary = await linkSummary(
             catalog,
             tree,
             provider === CORE_COMPONENT_PROVIDER ? CLI_PROVIDER_ID : provider,
             link.summary,
           );
+        } else {
+          link.summary = renderTokens(link.summary);
         }
         return {link: {target, ...link}, kind: parsed.kind, typed: null};
       }
