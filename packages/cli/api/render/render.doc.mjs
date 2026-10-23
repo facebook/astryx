@@ -100,7 +100,7 @@ export const doc = {
       code: 'ERR_RENDER_NOT_ASTRYX',
       when: 'reversing a file with no embedded source and no Astryx markup; the suggestion is `astryx build "<what the page is>"`',
     },
-    {code: 'ERR_RENDER_SOURCE_DAMAGED', when: 'reversing a file whose embedded source is damaged, or carries a file a render never embeds (a dotfile or dot-folder, `node_modules`, a package manifest, lockfile or tool configuration, or any kind but a page module, stylesheet, JSON or image)'},
+    {code: 'ERR_RENDER_SOURCE_DAMAGED', when: 'reversing a file whose embedded source is damaged, lists a path twice, carries a file the page does not reach through its imports, or carries a file a render never embeds (a dotfile or dot-folder, `node_modules`, a package manifest, lockfile or tool configuration, or any kind but a page module, stylesheet, JSON or image)'},
     {code: 'ERR_PATH_TRAVERSAL', when: 'a file would be written outside the current folder (symlinks followed): `out`, or with `reverse` the page or an embedded file'},
   ],
   examples: [

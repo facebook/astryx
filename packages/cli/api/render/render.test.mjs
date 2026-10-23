@@ -295,6 +295,15 @@ describe('render(): every write stays inside the current folder', () => {
     const back2 = /** @type {any} */ (await render('src/app/page.html', {cwd: up, reverse: true, out: 'copy/app/page.tsx'}));
     expect(back2.data.output).toBe('copy/app/page.tsx');
     expect(back2.data.files).toEqual(['copy/app/page.tsx', 'copy/components/Footer.tsx']);
+    // Into a folder with another name: each neighbour goes where the page's
+    // own imports find it from there, and the page renders again.
+    const renamed = /** @type {any} */ (
+      await render('src/app/page.html', {cwd: up, reverse: true, out: 'src/reports/today/page.tsx'})
+    );
+    expect(renamed.data.output).toBe('src/reports/today/page.tsx');
+    expect(renamed.data.files).toEqual(['src/reports/today/page.tsx', 'src/reports/components/Footer.tsx']);
+    const rerendered = /** @type {any} */ (await render('src/reports/today/page.tsx', {cwd: up}));
+    expect(rerendered.type).toBe('render.page');
   }, 60_000);
 
   it('resolves a tsconfig path alias', async () => {
@@ -308,6 +317,43 @@ describe('render(): every write stays inside the current folder', () => {
     expect(r.data.files).toEqual(['page.tsx', 'Header.tsx']);
     expect(await codeOf(() => render('aliased/src/bad.tsx', {cwd: dir}))).toBe('ERR_FILE_NOT_FOUND');
   }, 60_000);
+
+  it('gives back a page that imports through an alias where this project\'s alias points', async () => {
+    put('aliased-src/tsconfig.json', '{"compilerOptions": {"baseUrl": ".", "paths": {"@/*": ["./src/*"]}}}\n');
+    put('aliased-src/package.json', '{"name":"aliased-src","private":true}');
+    put('aliased-src/src/components/Header.tsx', 'export function Header() { return <p>Alias header</p>; }\n');
+    put(
+      'aliased-src/src/app/page.tsx',
+      "import {Header} from '@/components/Header';\nexport default function Page() { return <Header />; }\n",
+    );
+    await render('aliased-src/src/app/page.tsx', {cwd: dir});
+    // Another project with the same alias, and the guide's own command.
+    put('aliased-to/tsconfig.json', '{"compilerOptions": {"baseUrl": ".", "paths": {"@/*": ["./src/*"]}}}\n');
+    put('aliased-to/package.json', '{"name":"aliased-to","private":true}');
+    fs.copyFileSync(path.join(dir, 'aliased-src/src/app/page.html'), path.join(dir, 'aliased-to/page.html'));
+    const cwd = path.join(dir, 'aliased-to');
+    const back = /** @type {any} */ (await render('page.html', {cwd, reverse: true, out: 'page.tsx'}));
+    expect(back.data.files).toEqual(['page.tsx', 'src/components/Header.tsx']);
+    const again = /** @type {any} */ (await render('page.tsx', {cwd}));
+    expect(again.type).toBe('render.page');
+    expect(fs.readFileSync(path.join(cwd, 'page.html'), 'utf8')).toContain('Alias header');
+    // Without the alias, the file it names is refused, naming why.
+    put('no-alias/package.json', '{"name":"no-alias","private":true}');
+    fs.copyFileSync(path.join(dir, 'aliased-src/src/app/page.html'), path.join(dir, 'no-alias/page.html'));
+    expect(
+      await codeOf(() => render('page.html', {cwd: path.join(dir, 'no-alias'), reverse: true, out: 'page.tsx'})),
+    ).toBe('ERR_RENDER_SOURCE_DAMAGED');
+  }, 60_000);
+
+  it('refuses a received file that lists one path twice', async () => {
+    const {sourceBlock} = await import('../../foundation/render/source-block.mjs');
+    const page = {path: 'page.tsx', bytes: Buffer.from('export default () => null;\n')};
+    put('twice.html', `<body><p class="astryx-text">x</p>${sourceBlock('page.tsx', [page, {path: 'page.tsx', bytes: Buffer.from("import './instrumentation';\n")}, {path: 'instrumentation.ts', bytes: Buffer.from('export {};\n')}])}</body>`);
+    expect(await codeOf(() => render('twice.html', {cwd: dir, reverse: true, out: 'twice-out/page.tsx'}))).toBe(
+      'ERR_RENDER_SOURCE_DAMAGED',
+    );
+    expect(fs.existsSync(path.join(dir, 'twice-out'))).toBe(false);
+  });
 
   it('reports ERR_WRITE_FAILED when the output cannot be written', async () => {
     fs.mkdirSync(path.join(dir, 'a-folder.html'), {recursive: true});

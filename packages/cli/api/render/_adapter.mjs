@@ -214,20 +214,21 @@ export function reverseToFile({cwd, input, output, overwrite}) {
       }
     });
     refuseConfigTarget(requested);
-    // The tree's root sits as far above the page as the page sat above it,
-    // so every relative import still resolves. When that would leave the
-    // current folder, the tree goes under the requested page's folder.
-    const entryRel = source.files[0].path.split('/');
-    const depth = entryRel.length - 1;
-    let root = path.dirname(requested);
-    for (let i = 0; i < depth; i++) root = path.dirname(root);
-    const rel = path.relative(cwd, root);
-    const fits = !rel.startsWith('..') && !path.isAbsolute(rel);
-    if (!fits) root = path.dirname(requested);
-    const target = fits ? requested : path.join(root, ...entryRel.slice(0, -1), path.basename(requested));
+    const seen = new Set();
+    for (const f of source.files) {
+      const key = f.path.toLowerCase();
+      if (seen.has(key)) {
+        throw new AstryxError(
+          `${shown(cwd, input)} lists ${f.path} more than once, which a render never does; nothing was written.`,
+          [],
+          ERROR_CODES.ERR_RENDER_SOURCE_DAMAGED,
+        );
+      }
+      seen.add(key);
+    }
     // Only files the page reaches through its own imports are written: a
     // file the page never imports is not part of it, whatever its name.
-    const reached = reachableFiles(source.files, {root, aliases: receivingAliases(path.dirname(target))});
+    const reached = reachableFiles(source.files, {aliases: receivingAliases(path.dirname(requested))});
     const stray = source.files.filter(f => !reached.has(f.path)).map(f => f.path);
     if (stray.length > 0) {
       throw new AstryxError(
@@ -236,12 +237,39 @@ export function reverseToFile({cwd, input, output, overwrite}) {
         ERROR_CODES.ERR_RENDER_SOURCE_DAMAGED,
       );
     }
+    // Each file the page reaches by a relative import goes where that import
+    // finds it from the page's new folder, so every relative import still
+    // resolves wherever the page lands. A file reached through an alias also
+    // goes where this project's alias points. When the layout would leave
+    // the current folder, it is kept under the requested page's folder.
+    const entryDir = path.posix.dirname(source.files[0].path);
+    /** @param {string} anchor @param {string} p */
+    const placeFrom = (anchor, p) => path.resolve(anchor, path.posix.relative(entryDir, p));
+    const inside = (/** @type {string} */ file) => {
+      const rel = path.relative(cwd, file);
+      return !rel.startsWith('..') && !path.isAbsolute(rel);
+    };
+    let anchor = path.dirname(requested);
+    const layout = source.files.filter(f => reached.get(f.path)?.relative);
+    if (!layout.every(f => inside(placeFrom(anchor, f.path)))) {
+      anchor = path.join(path.dirname(requested), ...entryDir.split('/').filter(seg => seg !== '.'));
+    }
+    const target = path.join(anchor, path.basename(requested));
     /** @type {{file: string, bytes: Buffer}[]} */
     const writes = [];
+    const placed = new Set();
     source.files.forEach((f, i) => {
-      const file = i === 0 ? target : path.join(root, ...f.path.split('/'));
-      confined(file, cwd, i === 0 ? 'The page' : 'The embedded file');
-      writes.push({file, bytes: Buffer.from(f.base64, 'base64')});
+      const reach = /** @type {import('../../foundation/render/embedded-imports.mjs').Reach} */ (reached.get(f.path));
+      const spots = [
+        ...(i === 0 ? [target] : reach.relative ? [placeFrom(anchor, f.path)] : []),
+        ...reach.aliased,
+      ];
+      for (const file of spots) {
+        if (placed.has(file)) continue;
+        placed.add(file);
+        confined(file, cwd, i === 0 ? 'The page' : 'The embedded file');
+        writes.push({file, bytes: Buffer.from(f.base64, 'base64')});
+      }
     });
     refuseExisting(writes.map(w => w.file));
     for (const w of writes) writeOutput(w.file, w.bytes, cwd);

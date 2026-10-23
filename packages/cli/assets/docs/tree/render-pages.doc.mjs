@@ -86,7 +86,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'It writes only what a render embeds, the page and the stylesheets, JSON and images it imports, and only inside the folder you run the command from; a received file that carries anything else (a dotfile, `package.json`, a tool configuration, a path that leaves the folder) is refused with nothing written. An existing file is never replaced unless you pass `--overwrite`, and the refusal names every one. Add `--json` for the result as data: what was written, how big it is, and every warning.',
+          text: 'It writes only the files the page reaches through its own imports, and only inside the folder you run the command from: each goes where the page\'s relative imports find it from wherever you put the page, and a file the page imports through a path alias (`@/components/Header`) goes where your project\'s `tsconfig.json` or `jsconfig.json` alias points. A received file that carries anything else (a file the page never imports, a dotfile, `package.json`, a tool configuration, a path that leaves the folder) is refused with nothing written. An existing file is never replaced unless you pass `--overwrite`, and the refusal names every one. Add `--json` for the result as data: what was written, how big it is, and every warning.',
         },
       ],
     },

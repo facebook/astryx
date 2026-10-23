@@ -120,16 +120,25 @@ export function receivingAliases(dir) {
 }
 
 /**
- * The embedded files the page reaches through its imports, page first.
- * @param {{path: string, base64: string}[]} files the embedded files, page first
- * @param {{root: string, aliases?: [string, string][]}} where `root`: where the
- *   tree's root lands on disk; `aliases`: the receiving project's path aliases
- * @returns {Set<string>} reachable tree paths
+ * @typedef {object} Reach
+ * @property {boolean} relative - Reached by a relative import (or it is the
+ *   page), so it goes where the page's layout puts it.
+ * @property {Set<string>} aliased - Absolute paths a receiving-project alias
+ *   import names for it, so it also goes there.
  */
-export function reachableFiles(files, {root, aliases = []}) {
+
+/**
+ * The embedded files the page reaches through its imports.
+ * @param {{path: string, base64: string}[]} files the embedded files, page
+ *   first; every path appears once (callers refuse duplicates first)
+ * @param {{aliases?: [string, string][]}} [options] the receiving project's
+ *   path aliases, absolute (see receivingAliases)
+ * @returns {Map<string, Reach>} reached tree paths
+ */
+export function reachableFiles(files, {aliases = []} = {}) {
   const byPath = new Map(files.map(f => [f.path, f]));
-  /** @type {Set<string>} */
-  const reached = new Set();
+  /** @type {Map<string, Reach>} */
+  const reached = new Map();
   /** @param {string} candidate tree path, `/`-separated */
   const resolveIn = candidate => {
     if (byPath.has(candidate)) return candidate;
@@ -137,36 +146,72 @@ export function reachableFiles(files, {root, aliases = []}) {
     for (const ext of RESOLVE_EXTENSIONS) if (byPath.has(`${candidate}/index${ext}`)) return `${candidate}/index${ext}`;
     return null;
   };
-  /** @param {string} fromPath @param {string} spec */
-  const resolveSpec = (fromPath, spec) => {
-    const bare = spec.split('?')[0];
-    if (bare.startsWith('./') || bare.startsWith('../')) {
-      const joined = path.posix.normalize(path.posix.join(path.posix.dirname(fromPath), bare));
-      return joined.startsWith('..') ? null : resolveIn(joined);
+  /**
+   * The one tree file an alias import names: the file whose path ends with
+   * the import's rest (`@/components/Header` -> `.../components/Header.tsx`).
+   * @param {string} rest
+   */
+  const bySuffix = rest => {
+    /** @type {string[]} */
+    const hits = [];
+    for (const p of byPath.keys()) {
+      for (const tail of [rest, ...RESOLVE_EXTENSIONS.map(e => rest + e), ...RESOLVE_EXTENSIONS.map(e => `${rest}/index${e}`)]) {
+        if (p === tail || p.endsWith(`/${tail}`)) {
+          hits.push(p);
+          break;
+        }
+      }
     }
-    for (const [key, target] of aliases) {
-      const hit = key.endsWith('/') ? bare.startsWith(key) : bare === key;
-      if (!hit) continue;
-      const abs = key.endsWith('/') ? target + bare.slice(key.length) : target;
-      const rel = path.relative(root, abs).split(path.sep).join('/');
-      if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) return null;
-      return resolveIn(rel);
-    }
-    return null;
+    return hits.length === 1 ? hits[0] : null;
   };
-  const queue = files.length > 0 ? [files[0].path] : [];
+  /** @param {string} p */
+  const reach = p => {
+    let r = reached.get(p);
+    const fresh = !r;
+    if (!r) {
+      r = {relative: false, aliased: new Set()};
+      reached.set(p, r);
+    }
+    return {r, fresh};
+  };
+  /** @type {string[]} */
+  const queue = [];
+  if (files.length > 0) {
+    reach(files[0].path).r.relative = true;
+    queue.push(files[0].path);
+  }
   while (queue.length > 0) {
     const current = /** @type {string} */ (queue.shift());
-    if (reached.has(current)) continue;
-    reached.add(current);
     const ext = path.posix.extname(current).toLowerCase();
     if (!PAGE_EXTENSIONS.includes(ext)) continue;
     const entry = byPath.get(current);
     if (!entry) continue;
     const source = Buffer.from(entry.base64, 'base64').toString('utf8');
     for (const spec of importSpecifiers(source, current)) {
-      const target = resolveSpec(current, spec);
-      if (target && !reached.has(target)) queue.push(target);
+      const bare = spec.split('?')[0];
+      if (bare.startsWith('./') || bare.startsWith('../')) {
+        const joined = path.posix.normalize(path.posix.join(path.posix.dirname(current), bare));
+        const target = joined.startsWith('..') ? null : resolveIn(joined);
+        if (!target) continue;
+        const {r, fresh} = reach(target);
+        r.relative = true;
+        if (fresh) queue.push(target);
+        continue;
+      }
+      for (const [key, aliasTarget] of aliases) {
+        const hit = key.endsWith('/') ? bare.startsWith(key) : bare === key;
+        if (!hit) continue;
+        const rest = key.endsWith('/') ? bare.slice(key.length) : '';
+        const target = rest ? bySuffix(rest) : null;
+        if (!target) break;
+        // The alias names the module without its extension or index file;
+        // the file keeps both: `@/c/Header` -> `<alias target>/c/Header.tsx`.
+        const abs = aliasTarget + target.slice(target.lastIndexOf(rest));
+        const {r, fresh} = reach(target);
+        r.aliased.add(abs);
+        if (fresh) queue.push(target);
+        break;
+      }
     }
   }
   return reached;
