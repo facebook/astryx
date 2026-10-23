@@ -16,20 +16,26 @@
  * - <Switch labelSpacing="default" />            → <Switch labelSpacing="hug" />
  * - <Switch labelSpacing={'default'} />          → <Switch labelSpacing={'hug'} />
  * - <Switch labelSpacing={cond ? 'default' : x}> → <Switch labelSpacing={cond ? 'hug' : x}>
- * - Storybook argTypes: labelSpacing: { options: [..., 'default', ...] }
- *     → replaces 'default' with 'hug' (files importing Switch)
- * - Object properties: { labelSpacing: 'default' } / { labelSpacing: 'default' as const }
- *     → { labelSpacing: 'hug' } (files importing Switch)
+ * - Storybook meta argTypes: labelSpacing: { options: [..., 'default', ...] }
+ *     → replaces 'default' with 'hug' (meta.component is Switch)
+ * - Storybook meta and story args: { labelSpacing: 'default' } / 'default' as const
+ *     → { labelSpacing: 'hug' } (meta.component is Switch)
  *
- * JSX edits require the element to resolve to an Astryx import that is not
- * shadowed. Object and argTypes edits require a file that imports Switch from
- * Astryx.
+ * Every edit needs binding proof. JSX edits require the element to resolve to
+ * an Astryx import that is not shadowed. Storybook `args` and `argTypes` edits
+ * require the file's default-export meta to name such a Switch as its
+ * `component`. Any other `labelSpacing: 'default'` in a file that imports
+ * Switch from Astryx is left unchanged and gets a TODO.
  *
  * The transform deliberately does NOT touch bare `'default'` strings that are
  * not a `labelSpacing` value (an extremely common string otherwise), so it is
  * safe to run across an entire codebase.
  */
 
+import {
+  importedComponentBindings,
+  storybookArgObjects,
+} from '../../storybook-args.mjs';
 import {transformProp} from '../../transform-prop.mjs';
 
 export const meta = {
@@ -71,40 +77,56 @@ function canonicalComponentName(name) {
   return name.startsWith('XDS') ? name.slice(3) : name;
 }
 
-/**
- * True when the file imports a target component from Astryx by name, or as
- * the default export of its subpath.
- * @param {any} root @param {any} j
- */
-function importsAstryxTarget(root, j) {
+const UNPROVEN_TODO = ` TODO(astryx upgrade): \`labelSpacing: '${OLD_VALUE}'\` was left unchanged because nothing proves it belongs to an Astryx Switch. If it does, change it to '${NEW_VALUE}'. `;
+
+/** @param {any} property @returns {string | null} */
+function staticPropertyName(property) {
+  const key = property?.key;
+  if (!key || (property.type !== 'ObjectProperty' && property.type !== 'Property')) {
+    return null;
+  }
+  if (!property.computed && key.type === 'Identifier') return key.name;
+  if (
+    (key.type === 'StringLiteral' || key.type === 'Literal') &&
+    typeof key.value === 'string'
+  ) {
+    return key.value;
+  }
+  return null;
+}
+
+/** @param {any} node */
+function isOldValue(node) {
   return (
-    root
-      .find(j.ImportDeclaration)
-      .filter((/** @type {any} */ path) => {
-        const source = path.node.source?.value;
-        if (
-          path.node.importKind === 'type' ||
-          typeof source !== 'string' ||
-          !isAstryxSource(source)
-        ) {
-          return false;
-        }
-        const subpath = canonicalComponentName(source.split('/').at(-1) ?? '');
-        return (path.node.specifiers ?? []).some(
-          (/** @type {any} */ specifier) =>
-            specifier.importKind !== 'type' &&
-            ((specifier.type === 'ImportSpecifier' &&
-              TARGET_COMPONENTS.has(
-                canonicalComponentName(
-                  specifier.imported?.name ?? specifier.imported?.value ?? '',
-                ),
-              )) ||
-              (specifier.type === 'ImportDefaultSpecifier' &&
-                TARGET_COMPONENTS.has(subpath))),
-        );
-      })
-      .size() > 0
+    (node?.type === 'StringLiteral' || node?.type === 'Literal') &&
+    node.value === OLD_VALUE
   );
+}
+
+/** True when the old value appears where renameInExpression would edit it. */
+/** @param {any} node @returns {boolean} */
+function containsOldValue(node) {
+  if (!node) return false;
+  if (node.type === 'ConditionalExpression') {
+    return containsOldValue(node.consequent) || containsOldValue(node.alternate);
+  }
+  if (node.type === 'LogicalExpression') {
+    return containsOldValue(node.left) || containsOldValue(node.right);
+  }
+  if (node.type === 'TSAsExpression') return containsOldValue(node.expression);
+  return isOldValue(node);
+}
+
+/** The elements of an argTypes entry's static `options` array. */
+/** @param {any} value @returns {any[]} */
+function argTypeOptions(value) {
+  if (!value || value.type !== 'ObjectExpression') return [];
+  const optionsProp = value.properties.find(
+    (/** @type {any} */ p) => staticPropertyName(p) === 'options',
+  );
+  return optionsProp?.value.type === 'ArrayExpression'
+    ? optionsProp.value.elements
+    : [];
 }
 
 /**
@@ -175,30 +197,54 @@ export default function transformer(file, api) {
     },
   );
 
-  // Object-property / argTypes transforms only run in files that import
-  // Switch from Astryx — keeps unrelated `{ labelSpacing: 'default' }` strings
-  // safe, including files that use another library's Switch.
-  if (importsAstryxTarget(root, j)) {
-    const PropertyType = j.ObjectProperty ?? j.Property;
-
-    // --- 2. Object property: { labelSpacing: 'default' } / 'default' as const ---
-    root.find(PropertyType, {key: {name: TARGET_PROP}}).forEach((/** @type {any} */ path) => {
-      if (renameInExpression(path.node.value)) hasChanges = true;
-    });
-
-    // --- 3. Storybook argTypes: labelSpacing: { options: [..., 'default', ...] } ---
-    root.find(PropertyType, {key: {name: TARGET_PROP}}).forEach((/** @type {any} */ path) => {
-      const value = path.node.value;
-      if (!value || value.type !== 'ObjectExpression') return;
-
-      const optionsProp = value.properties.find(
-        (/** @type {any} */ p) => p.key && (p.key.name === 'options' || p.key.value === 'options'),
-      );
-      if (optionsProp && optionsProp.value.type === 'ArrayExpression') {
-        optionsProp.value.elements.forEach((/** @type {any} */ el) => {
-          if (renameStringLiteral(el)) hasChanges = true;
-        });
+  // --- 2. Storybook args and argTypes on a meta whose `component` resolves to
+  // an Astryx import, and the args of the stories that render it ---
+  const bindings = importedComponentBindings(root, j, {
+    matchesImport: isAstryxSource,
+    components: TARGET_COMPONENTS,
+    normalizeComponentName: canonicalComponentName,
+  });
+  /** @type {Set<any>} property nodes edited with proof */
+  const proven = new Set();
+  for (const {kind, path} of storybookArgObjects(root, j, bindings)) {
+    for (const property of path.node.properties ?? []) {
+      if (staticPropertyName(property) !== TARGET_PROP) continue;
+      proven.add(property);
+      if (kind === 'args') {
+        if (renameInExpression(property.value)) hasChanges = true;
+      } else {
+        for (const element of argTypeOptions(property.value)) {
+          if (renameStringLiteral(element)) hasChanges = true;
+        }
       }
+    }
+  }
+
+  // --- 3. Any other candidate in a file that imports a target from Astryx
+  // has no binding proof: leave it unchanged and report it with a TODO ---
+  if (bindings.direct.size > 0 || bindings.namespaces.size > 0) {
+    const PropertyType = j.ObjectProperty ?? j.Property;
+    root.find(PropertyType).forEach((/** @type {any} */ path) => {
+      const property = path.node;
+      if (staticPropertyName(property) !== TARGET_PROP || proven.has(property)) return;
+      if (
+        !containsOldValue(property.value) &&
+        !argTypeOptions(property.value).some(isOldValue)
+      ) {
+        return;
+      }
+      if (
+        property.comments?.some(
+          (/** @type {any} */ comment) => comment.value === UNPROVEN_TODO,
+        )
+      ) {
+        return;
+      }
+      property.comments = [
+        ...(property.comments ?? []),
+        j.commentBlock(UNPROVEN_TODO, true, false),
+      ];
+      hasChanges = true;
     });
   }
 

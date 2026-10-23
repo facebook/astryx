@@ -84,20 +84,39 @@ describe('rename-text-color-active-to-accent', () => {
     expect(output).toBe(input);
   });
 
-  it('renames object color prop in files importing a target component', async () => {
-    const input = `import {Text} from '@xds/core/Text';
-const cfg = {color: 'active'};`;
+  it('renames color args on a Storybook meta and its stories for an Astryx Text', async () => {
+    const input = `import type {Meta, StoryObj} from '@storybook/react';
+import {Text} from '@xds/core/Text';
+const meta = {component: Text, args: {color: 'active'}} satisfies Meta<typeof Text>;
+export default meta;
+export const Accent: StoryObj<typeof meta> = {args: {color: 'active' as const}};`;
     const output = await applyTransform(input);
-    expect(output).toContain("color: 'accent'");
+    expect(output).toContain("args: {color: 'accent'}");
+    expect(output).toContain("'accent' as const");
     expect(output).not.toContain("'active'");
   });
 
-  it("renames color: 'active' as const in files importing a target component", async () => {
+  it('leaves an unproven color object in an Astryx file unchanged with a TODO', async () => {
     const input = `import {Text} from '@xds/core/Text';
 const COLORS = [{color: 'active' as const, description: 'Accent'}];`;
     const output = await applyTransform(input);
-    expect(output).toContain("'accent' as const");
-    expect(output).not.toContain("'active'");
+    expect(output).toContain("color: 'active' as const");
+    expect(output).toContain(
+      "TODO(astryx upgrade): `color: 'active'` was left unchanged",
+    );
+    expect(await applyTransform(output)).toBe(output);
+  });
+
+  it('does not rename another library config in a file that uses Astryx Text', async () => {
+    const input = `import {Text} from '@astryxdesign/core';
+import {Badge} from 'other-ui';
+const badgeConfig = {color: 'active'};
+export const Row = () => <Text color="active"><Badge {...badgeConfig} /></Text>;`;
+    const output = await applyTransform(input);
+    expect(output).toContain("<Text color='accent'>");
+    expect(output).toContain("color: 'active'};");
+    expect(output).not.toContain("color: 'accent'");
+    expect(output).toContain('TODO(astryx upgrade)');
   });
 
   it('does not rename object color prop when no target component is imported', async () => {
@@ -141,12 +160,32 @@ const meta = {argTypes: {color: {options: ['active']}}};`;
     expect(await applyTransform(input)).toBe(input);
   });
 
-  it('renames active in Storybook color argTypes options', async () => {
+  it('renames active in Storybook color argTypes options of an Astryx meta', async () => {
     const input = `import {Text} from '@xds/core/Text';
-const meta = {argTypes: {color: {control: 'select', options: ['primary', 'active', 'inherit']}}};`;
+export default {component: Text, argTypes: {color: {control: 'select', options: ['primary', 'active', 'inherit']}}};`;
     const output = await applyTransform(input);
     expect(output).toContain("'accent'");
     expect(output).not.toContain("'active'");
+  });
+
+  it('migrates a namespace-imported meta component and reports namespace-file candidates', async () => {
+    const input = `import * as Astryx from '@astryxdesign/core';
+const options = {color: 'active'};
+export default {component: Astryx.Heading, argTypes: {color: {options: ['active']}}};`;
+    const output = await applyTransform(input);
+    expect(output).toContain("options: ['accent']");
+    expect(output).toContain("color: 'active'");
+    expect(output).toContain('TODO(astryx upgrade)');
+  });
+
+  it('does not migrate argTypes whose meta component is not an Astryx import', async () => {
+    const input = `import {Text} from '@astryxdesign/core';
+import {Label} from 'other-ui';
+export default {component: Label, argTypes: {color: {options: ['active']}}};
+export const Row = () => <Text>Hi</Text>;`;
+    const output = await applyTransform(input);
+    expect(output).toContain("options: ['active']");
+    expect(output).toContain('TODO(astryx upgrade)');
   });
 
   it('returns undefined (no change) when nothing matches', async () => {
