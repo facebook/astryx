@@ -219,6 +219,39 @@ describe("a link in a component doc's text", () => {
   });
 });
 
+describe("doc tokens in a component doc's text", () => {
+  it(
+    'render with no link beside them, in the read and in search, for the project in cwd',
+    async () => {
+      scaffold();
+      fs.writeFileSync(path.join(tmpDir, 'bun.lock'), '{}\n');
+      const docFile = path.join(
+        tmpDir,
+        'node_modules/@acme/widgets/components/AcmeButton.doc.mjs',
+      );
+      fs.writeFileSync(
+        docFile,
+        `export default ${JSON.stringify({
+          ...ACME_BUTTON,
+          usage: {
+            description:
+              'A button. Install with {@pm install @acme/widgets}; check with {@command doctor}.',
+          },
+          props: [],
+          examples: [],
+        })};\n`,
+      );
+      const read = /** @type {any} */ (
+        await component('AcmeButton', {cwd: tmpDir})
+      );
+      expect(read.data.usage.description).toBe(
+        'A button. Install with `bun add @acme/widgets`; check with `astryx doctor`.',
+      );
+    },
+    SLOW,
+  );
+});
+
 describe("a link in a topic's description", () => {
   it(
     'reads as the command that opens its doc, in the detail and the list',
@@ -250,14 +283,14 @@ describe("a link in a guide's description, as the docs tree shows it", () => {
         'Document a theme by extending the core theme topic, so an app reads it in `astryx docs theme`.';
       const guide = /** @type {any} */ (
         await docs(
-          'cli/integrations/building-blocks/themes/document-the-theme',
+          'authoring/building-blocks/themes/document-the-theme',
           undefined,
           {cwd: tmpDir, full: true},
         )
       );
       expect(guide.data.description).toBe(expected);
       const namespace = /** @type {any} */ (
-        await docs('cli/integrations/building-blocks/themes', undefined, {
+        await docs('authoring/building-blocks/themes', undefined, {
           cwd: tmpDir,
         })
       );

@@ -32,18 +32,22 @@ import {
   GUIDE_NAMESPACE_PAGES,
   GUIDE_PAGE_NAMESPACES,
   ROOT_PAGE_ALIASES,
+  movedGuideRedirects,
   mergeFlatTopics,
   namespacePage,
   routeSlug,
+  sectionAnchors,
   withCliCommands,
   withoutResolvedTokens,
 } from './docs-pages.mjs';
 import {
   DOCSITE_CLI_COMMAND,
+  DOCSITE_PACKAGE_MANAGER,
   GLOBAL_PAGE,
   GLOBAL_PAGE_CLI_COMMAND,
   getCliInvocation,
   prefixCliCommands,
+  runWithDocPackageManager,
   runWithCliDoor,
 } from './lib/cli-command.mjs';
 import {
@@ -57,6 +61,7 @@ import {
 } from '../src/lib/integrationTargets.mjs';
 import {expandWorkspaceDirs} from '../../../scripts/lib/workspace-globs.mjs';
 import {projectThemingDoc} from './lib/theming-doc.mjs';
+import {searchLinkTables} from '../src/lib/searchLinks.mjs';
 import {collectBlogImages} from './lib/blog-images.mjs';
 import {
   buildTypeDefinitionIndex,
@@ -1769,7 +1774,11 @@ async function docsTreePages() {
     });
     if (!full) continue;
     pages.push(full.page);
-    Object.assign(redirects, full.redirects);
+    Object.assign(
+      redirects,
+      full.redirects,
+      movedGuideRedirects(root, full.redirects),
+    );
   }
   while (pending.length > 0) {
     const route = pending.shift();
@@ -1890,7 +1899,7 @@ async function generateDocsRegistry() {
   // slug (a former flat topic keeps its URL), and each guide under it
   // redirects to its section there. Guides under GUIDE_PAGE_NAMESPACES keep a
   // flat page whose slug is the route with "/" as "-", so
-  // `cli/integrations/quick-start` is /docs/cli-integrations-quick-start.
+  // `cli/component-lookups` is /docs/cli-component-lookups.
   const tree = await docsTreePages();
   for (const page of tree.pages) {
     if (docTopics.some(topic => topic.topic === page.topic)) {
@@ -1927,7 +1936,11 @@ async function generateDocsRegistry() {
     const stem = topic.topic === GLOBAL_PAGE ? globalStem : cliStem;
     topic.sections = withCliCommands(
       topic.sections,
-      (text, lang = null) => prefixCliCommands(text, stem, lang),
+      (text, lang = null) =>
+        // The CLI rendered the doc tokens as it compiled the doc (for npm,
+        // under runWithDocPackageManager below), so only bare commands are
+        // prefixed here.
+        prefixCliCommands(text, stem, lang),
       stem,
     );
   }
@@ -1992,6 +2005,46 @@ export const docRedirects: Record<string, string> = ${JSON.stringify(docRedirect
     `${JSON.stringify(docRedirects, null, 2)}\n`,
   );
   return {docTopics, docsCount: docTopics.length};
+}
+
+/**
+ * The tables the search panel opens a CLI search result through
+ * (src/lib/searchLinks.mjs): this build's doc pages, redirects, section
+ * anchors, component and template pages, and the page each block shows on.
+ * The search API (app/api/search/route.ts) reads them.
+ */
+function generateSearchLinks({
+  docTopics,
+  allComponents,
+  templates,
+  blocks,
+  packages,
+}) {
+  const docRedirects = JSON.parse(
+    fs.readFileSync(path.join(OUT_DIR, 'docRedirects.json'), 'utf-8'),
+  );
+  const tables = searchLinkTables({
+    docTopics,
+    docRedirects,
+    components: Object.values(allComponents)
+      .flat()
+      .map(c => c.name),
+    templates: templates.map(t => t.slug),
+    blocks,
+    // The package pages /docs/[topic] serves; theme packages show on /themes.
+    packagePages: packages
+      .map(p => p.name)
+      .filter(name => !name.startsWith('@astryxdesign/theme-'))
+      .map(name => name.replace('@astryxdesign/', '')),
+    sectionAnchors,
+  });
+  fs.writeFileSync(
+    path.join(OUT_DIR, 'searchLinks.json'),
+    `${JSON.stringify(tables)}\n`,
+  );
+  console.log(
+    `  wrote ${path.relative(REPO_ROOT, path.join(OUT_DIR, 'searchLinks.json'))}`,
+  );
 }
 
 async function generateThemeRegistry(packages) {
@@ -2523,7 +2576,8 @@ async function main() {
   const {blocks, blockCount} = await generateBlockRegistry();
   generatePackageStyles(packages, blocks, allComponents);
   const {templates, templateCount} = await generateTemplateRegistry();
-  const {docsCount} = await generateDocsRegistry();
+  const {docTopics, docsCount} = await generateDocsRegistry();
+  generateSearchLinks({docTopics, allComponents, templates, blocks, packages});
   const {blogPostCount} = await generateBlogRegistry();
   const shadcnCounts = generateShadcnRegistryForTarget({
     target: DOCSITE_TARGET,
@@ -2582,7 +2636,8 @@ export const shadcnRegistryIsPreview = ${registryIsPreview};
   console.log('Done.');
 }
 
-main().catch(err => {
+// Every `{@pm}` step on the site reads as npm, whatever this checkout uses.
+runWithDocPackageManager(DOCSITE_PACKAGE_MANAGER, main).catch(err => {
   console.error(err);
   process.exit(1);
 });

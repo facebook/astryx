@@ -642,7 +642,8 @@ export async function runCoreCodemods(
  *
  * @param {string} cwd
  * @param {string[]} [extraIntegrationSpecs] explicit `--integration` specs
- * @returns {Promise<{postCodemodHooks: import('../../authoring/config/type').PostCodemodHook[], integrations: import('../../foundation/integrations/integrations.mjs').LoadedIntegration[], ledger: import('../../foundation/integrations/provider-resolution.mjs').ProviderLedger}>}
+ * @returns {Promise<{postCodemodHooks: import('../../authoring/config/type').PostCodemodHook[], integrations: import('../../foundation/integrations/integrations.mjs').LoadedIntegration[], ledger: import('../../foundation/integrations/provider-resolution.mjs').ProviderLedger, iconSets: boolean}>}
+ *   `iconSets`: the project sets `experimental.iconSet`
  */
 export async function loadProjectContext(cwd, extraIntegrationSpecs = []) {
   // The CLI debug preflight may already have imported this config before core
@@ -711,7 +712,12 @@ export async function loadProjectContext(cwd, extraIntegrationSpecs = []) {
     ],
     {codemods: true, prior: providerLedgerOf(project)},
   );
-  return {postCodemodHooks, integrations, ledger};
+  return {
+    postCodemodHooks,
+    integrations,
+    ledger,
+    iconSets: Boolean(project.config.experimental?.iconSet),
+  };
 }
 
 /**
@@ -719,11 +725,24 @@ export async function loadProjectContext(cwd, extraIntegrationSpecs = []) {
  * nudge must not fail the upgrade) and is suppressed for --json/programmatic
  * callers (the silent logger).
  * @param {Array<import('../../foundation/integrations/integrations.mjs').LoadedIntegration>} integrations
+ * @param {{iconSets?: boolean}} [options] `iconSets`: the project sets
+ *   `experimental.iconSet`. Without it a package's experimental icon-set root
+ *   is not checked (spec:AST-017 FR27, spec:AST-084 FR0), as in the project's
+ *   own issues.
  * @returns {Promise<void>}
  */
-export async function warnIntegrationIssues(integrations) {
+export async function warnIntegrationIssues(integrations, {iconSets} = {}) {
   try {
-    await warnOnIntegrationIssues(integrations, {json: logger.silent});
+    await warnOnIntegrationIssues(
+      iconSets
+        ? integrations
+        : integrations.map(each =>
+            each && typeof each === 'object'
+              ? {...each, iconSets: undefined}
+              : each,
+          ),
+      {json: logger.silent},
+    );
   } catch {
     // Never let the nudge break the upgrade.
   }

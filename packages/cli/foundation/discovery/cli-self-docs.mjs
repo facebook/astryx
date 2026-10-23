@@ -41,7 +41,8 @@ const NAMESPACED_KINDS = new Set(['command', 'function', 'schema', 'enum']);
 /**
  * Every namespace a CLI doc may declare, and what reads it. The docs tree
  * adopts `cli/commands` (under `cli/commands`) and `cli/api` (under
- * `cli/api/<kind>s`); `astryx docs authoring` reads `authoring` from its list.
+ * `cli/api/<kind>s`); the field reference (`astryx docs authoring/field-reference`)
+ * reads `authoring` from its list.
  * @type {Record<string, {reader: 'tree' | 'authoring'}>}
  */
 export const CLI_DOC_NAMESPACES = {
@@ -408,15 +409,54 @@ function enumSection(doc) {
       {
         type: 'table',
         headers: ['Value', 'Meaning'],
-        rows: (doc.members ?? []).map((/** @type {any} */ m) => [
-          `\`${m.value}\``,
-          m.deprecated
-            ? `${m.description} Deprecated: ${m.deprecated}`
-            : m.description,
-        ]),
+        // An experimental value is documented on its feature's experimental
+        // route, never in the stable enum's table (spec:AST-017 FR27).
+        rows: (doc.members ?? [])
+          .filter((/** @type {any} */ m) => m.stability !== 'experimental')
+          .map((/** @type {any} */ m) => [
+            `\`${m.value}\``,
+            m.deprecated
+              ? `${m.description} Deprecated: ${m.deprecated}`
+              : m.description,
+          ]),
       },
     ],
   };
+}
+
+/**
+ * What `astryx docs <route>` prints for one icon definition: its description,
+ * its words, whether it is built in, and the command
+ * that finds the icon each installed set draws for it.
+ * @param {any} doc
+ */
+function iconDefinitionSection(doc) {
+  /** @type {string[][]} */
+  const rows = [
+    [
+      'Words',
+      doc.words.map((/** @type {string} */ w) => `\`${w}\``).join(', '),
+    ],
+  ];
+  if (doc.builtIn) {
+    rows.push([
+      'Built in',
+      'Yes: every icon set maps it, and Core renders it.',
+    ]);
+  }
+  const content = [
+    {type: 'prose', text: doc.description},
+    {type: 'table', headers: ['Field', 'Value'], rows},
+    {
+      type: 'prose',
+      text: `An icon set registers the icon that draws this definition in its data file: \`"map": {"${doc.name}": "<icon id>"}\`. Find it in each installed set: \`astryx experimental icon ${doc.name}\`.`,
+    },
+    {
+      type: 'prose',
+      text: 'Icon definitions are experimental: they may change or be removed in a patch release.',
+    },
+  ];
+  return {id: routeSegment(doc.name), title: doc.name, content};
 }
 
 /**
@@ -428,6 +468,7 @@ function enumSection(doc) {
  */
 export function cliDocSection(doc, index) {
   if (doc.type === 'command') return commandSection(doc, index);
+  if (doc.type === 'icon-definition') return iconDefinitionSection(doc);
   if (doc.type === 'function') return functionSection(doc, index);
   if (doc.type === 'enum') return enumSection(doc);
   if (doc.type === 'namespace')
@@ -449,6 +490,7 @@ export function cliDocSection(doc, index) {
  *   docs: number,
  *   tree: number,
  *   authoring: number,
+ *   experimental: {docs: number, tree: number, authoring: number},
  *   missing: string[],
  *   unknown: {source: string, namespace: string}[],
  *   misfiled: {source: string, message: string}[],
@@ -492,23 +534,34 @@ export async function auditCliSelfDocs({
       else {
         misfiled.push({
           source,
-          message: `${source} has namespace "authoring", but \`${formatCliCommand('docs authoring')}\` does not list it`,
+          message: `${source} has namespace "authoring", but \`${formatCliCommand('docs authoring/field-reference')}\` does not list it`,
         });
       }
     } else if (inAuthoring) {
       misfiled.push({
         source,
-        message: `${source} is read in \`${formatCliCommand('docs authoring')}\`, but its namespace is "${namespace}"`,
+        message: `${source} is read in \`${formatCliCommand('docs authoring/field-reference')}\`, but its namespace is "${namespace}"`,
       });
     } else {
       treeDocs.push(doc);
     }
   }
   const index = cliDocIndex(loaded.map(entry => entry.doc));
+  // Experimental docs (spec:AST-017 FR27) are audited like every other, and
+  // counted apart, so the stable counts stay what they were.
+  const experimental = (/** @type {any} */ doc) =>
+    doc?.stability === 'experimental';
   return {
     docs: loaded.length,
     tree: treeDocs.length,
     authoring,
+    experimental: {
+      docs: loaded.filter(entry => experimental(entry.doc)).length,
+      tree: treeDocs.filter(experimental).length,
+      authoring: loaded.filter(
+        entry => listed.has(entry.source) && experimental(entry.doc),
+      ).length,
+    },
     missing,
     unknown,
     misfiled,

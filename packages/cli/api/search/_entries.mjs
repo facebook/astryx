@@ -6,6 +6,7 @@
  * Built once per gathered catalog.
  */
 
+import {createHash} from 'node:crypto';
 import {DOMAINS, words, fold, nameWords} from './_query-words.mjs';
 
 /** @param {string[]} list @returns {Map<string, number>} */
@@ -57,6 +58,80 @@ export const entryId = c =>
 export function entryTable(all, cards) {
   const hit = tables.get(all);
   if (hit) return hit;
+  // Each search gathers a fresh candidate list, so the table is also kept by
+  // the text it is built from: an unchanged catalog reuses it.
+  const key = fingerprint(all, cards);
+  if (last && last.key === key) {
+    tables.set(all, last.table);
+    return last.table;
+  }
+  const built = buildTable(all, cards);
+  last = {key, table: built};
+  tables.set(all, built);
+  return built;
+}
+
+/** @type {{key: string, table: EntryTable} | null} */
+let last = null;
+/** @type {WeakMap<object, number>} */
+const cardIds = new WeakMap();
+let nextCardId = 0;
+
+/**
+ * The candidate fields buildTable reads, all of them hashed by fingerprint;
+ * `_entries.test.mjs` fails if buildTable starts reading another.
+ */
+/** How many guidance lines and prose paragraphs of a candidate the index reads. */
+const GUIDANCE_LINES = 10;
+const PROSE_PARAGRAPHS = 4;
+
+export const HASHED_FIELDS = Object.freeze([
+  'domain',
+  'name',
+  '_topic',
+  '_section',
+  '_resultName',
+  '_package',
+  'description',
+  'keywords',
+  'aliases',
+  'titles',
+  'guidance',
+  'prose',
+]);
+
+/**
+ * Everything the table reads from the catalog, hashed.
+ * @param {any[]} all
+ * @param {object} cards
+ * @returns {string}
+ */
+function fingerprint(all, cards) {
+  if (!cardIds.has(cards)) cardIds.set(cards, nextCardId++);
+  const h = createHash('sha1');
+  h.update(String(cardIds.get(cards)));
+  for (const c of all) {
+    h.update(
+      JSON.stringify(
+        HASHED_FIELDS.map(f =>
+          f === 'guidance'
+            ? (c.guidance ?? []).slice(0, GUIDANCE_LINES)
+            : f === 'prose'
+              ? (c.prose ?? []).slice(0, PROSE_PARAGRAPHS)
+              : c[f],
+        ),
+      ),
+    );
+  }
+  return h.digest('hex');
+}
+
+/**
+ * @param {any[]} all
+ * @param {Record<string, {what?: string, synonyms?: string[], props?: string[]}>} cards
+ * @returns {EntryTable}
+ */
+export function buildTable(all, cards) {
   /** @type {Map<string, any[]>} */
   const by = new Map();
   /** @type {Map<string, string>} each id's first package */
@@ -107,8 +182,8 @@ export function entryTable(all, cards) {
         ...(c.titles ?? []),
       );
       text.push(
-        ...(c.guidance ?? []).slice(0, 10),
-        ...(c.prose ?? []).slice(0, 4),
+        ...(c.guidance ?? []).slice(0, GUIDANCE_LINES),
+        ...(c.prose ?? []).slice(0, PROSE_PARAGRAPHS),
       );
     }
     const card =
@@ -153,6 +228,5 @@ export function entryTable(all, cards) {
       idf.set(w, Math.log(1 + (n - d + 0.5) / (d + 0.5)));
     table.fields[f] = {post, idf, len, avg: len.reduce((a, b) => a + b, 0) / n};
   }
-  tables.set(all, table);
   return table;
 }

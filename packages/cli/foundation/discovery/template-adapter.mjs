@@ -112,6 +112,8 @@ export function effectiveTemplateDiscovery(templates) {
  * @property {string[]} [alsoExampleFor]
  * @property {string[]} [alsoShowcaseFor]
  * @property {string[]} [componentsUsed]
+ * @property {Record<string, string>} [icons] the icon definition each
+ *   imported icon draws, by its imported name
  * @property {boolean} [isShowcase]
  * @property {string} filePath
  * @property {string} docPath
@@ -665,6 +667,7 @@ async function discoverPages() {
       keywords: doc?.keywords ?? [],
       isReady: doc?.isReady ?? true,
       scaffold: doc?.scaffold ?? false,
+      ...(doc?.icons ? {icons: doc.icons} : {}),
       filePath: path.join(dirPath, 'page.tsx'),
       docPath,
     });
@@ -695,7 +698,11 @@ async function discoverBlocks() {
       isReady: doc?.isReady ?? true,
       aspectRatio: doc?.aspectRatio ?? 1,
       componentsUsed: doc?.componentsUsed ?? [],
+      ...(doc?.icons ? {icons: doc.icons} : {}),
       isShowcase: doc?.isShowcase ?? false,
+      ...(typeof doc?.exampleFor === 'string'
+        ? {exampleFor: doc.exampleFor}
+        : {}),
       filePath: tsxPath,
       docPath,
       category: relPath,
@@ -737,7 +744,11 @@ async function discoverExternalBlocks(cwd = process.cwd()) {
         isReady: doc?.isReady ?? true,
         aspectRatio: doc?.aspectRatio ?? 1,
         componentsUsed: doc?.componentsUsed ?? [],
+        ...(doc?.icons ? {icons: doc.icons} : {}),
         isShowcase: doc?.isShowcase ?? false,
+        ...(typeof doc?.exampleFor === 'string'
+          ? {exampleFor: doc.exampleFor}
+          : {}),
         filePath: tsxPath,
         docPath,
         category: relPath,
@@ -1335,6 +1346,7 @@ export async function discoverIntegrationTemplatesForOne(integration) {
       // so read it off the envelope shape here.
       componentsUsed:
         /** @type {{componentsUsed?: string[]}} */ (doc).componentsUsed ?? [],
+      ...(doc?.icons ? {icons: doc.icons} : {}),
       filePath: sourcePath,
       docPath,
       package: pkgLabel,
@@ -1426,6 +1438,11 @@ export async function findShowcase(componentName, cwd, options) {
     filePath: b.filePath,
     docPath: b.docPath,
   });
+
+  // Priority 0: the showcase that names the component (`exampleFor`), the
+  // way packages declare it; a category no longer has to carry the name.
+  const named = showcases.find(b => (b.exampleFor ?? '').toLowerCase() === lc);
+  if (named) return toResult(named);
 
   // Priority 1: own directory (components/Badge/ for "Badge")
   const dirMatch = showcases.find(b => {

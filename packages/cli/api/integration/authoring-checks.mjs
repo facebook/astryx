@@ -22,6 +22,7 @@ import path from 'node:path';
 import {getCliInvocation} from '../../foundation/env/package-manager.mjs';
 import {
   packageComponentLinkProblems,
+  packageDocTargets,
   packageDocsProblems,
   packageReferenceProblems,
 } from '../docs/_adapter.mjs';
@@ -38,8 +39,10 @@ import {
   integrationStrayPointers,
 } from './_adapter.mjs';
 import {
+  BUILTIN_DOCS_PACKAGE,
   discoverBuiltinTopics,
   discoverIntegrationDocs,
+  isGuideRoute,
 } from '../../foundation/discovery/docs-discovery.mjs';
 import {
   applyTemplateReplacements,
@@ -489,11 +492,14 @@ export async function integrationDocConflicts(pkg, options = {}) {
       });
     }
 
-    // An extension never owns its own name. A replacement does, so it may only
-    // reuse a Core name when that is the Core topic it explicitly replaces.
+    // An extension never owns its own name, and neither does a doc that
+    // replaces a guide by its route: readers open the route. A topic
+    // replacement does, so it may only reuse a Core name when that is the
+    // Core topic it explicitly replaces.
     if (
       sameNameCore != null &&
       record.extendsTopic == null &&
+      !isGuideRoute(record.replaces) &&
       replacedCore !== sameNameCore
     ) {
       findings.push({
@@ -504,6 +510,27 @@ export async function integrationDocConflicts(pkg, options = {}) {
         message:
           `Accidental conflict: "${record.name}" is already a Core topic. ` +
           `Rename it, declare replaces: '${sameNameCore}' to take it over, or declare extends: '${sameNameCore}' to merge sections.`,
+      });
+    }
+  }
+  // A doc that replaces or extends one of the CLI's guides by its route is
+  // as intentional as one that names a Core topic.
+  if (errors.length === 0) {
+    for (const target of await packageDocTargets(
+      /** @type {{name: string}} */ (docsIntegration),
+      discovered,
+    )) {
+      if (target.kind !== 'guide' || target.owner !== BUILTIN_DOCS_PACKAGE) {
+        continue;
+      }
+      // A route the guide moved from names the guide at its route now.
+      const route = target.guide ?? target.target;
+      findings.push({
+        topic: target.topic,
+        severity: 'info',
+        relationship: target.relationship,
+        coreTopic: route,
+        message: `Intentional ${target.relationship === 'replaces' ? 'override' : 'extension'}: "${target.topic}" ${target.relationship} the CLI guide "${route}".`,
       });
     }
   }

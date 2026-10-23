@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/building-blocks/themes/generate-a-palette`:
+ * @file `astryx docs authoring/building-blocks/themes/generate-a-palette`:
  * turn a few seed colors into a full light and dark color palette.
  */
 
@@ -40,7 +40,7 @@ export const docs = {
           type: 'code',
           lang: 'bash',
           code: `# Print the palette without writing files
-astryx theme palette generate themes/ocean/palette.config.json
+{@command theme palette generate themes/ocean/palette.config.json}
 # Write the palette and its receipt
 astryx theme palette generate themes/ocean/palette.config.json \\
   --out themes/ocean/tokens/ocean.palette.ts`,

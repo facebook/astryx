@@ -57,6 +57,7 @@ import {
 } from '../Calendar';
 import {useCalendarConstraints} from '../Calendar/hooks';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {useMediaQuery} from '../hooks/useMediaQuery';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {usePopover} from '../Popover';
@@ -79,6 +80,19 @@ import {
 import {useDevWarning} from '../hooks/useDevWarning';
 
 const styles = stylex.create({
+  // While disabled or busy the field takes no hover ring, but the focus ring
+  // returns while this field's own input holds focus (spec:AST-085 FR6).
+  // Defaults repeat the shared border and shadow.
+  disabledFocusRing: {
+    borderColor: {
+      default: colorVars['--color-border-emphasized'],
+      ':has(input:focus)': colorVars['--color-accent'],
+    },
+    boxShadow: {
+      default: 'none',
+      ':has(input:focus)': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
+    },
+  },
   iconButton: {
     display: 'flex',
     alignItems: 'center',
@@ -241,13 +255,13 @@ export interface DateInputProps extends Omit<
 
   /**
    * Explains why the input is disabled. When set together with
-   * `isDisabled`, the input shows a tooltip with this text on hover and
-   * keyboard focus, and the field stays focusable (via `aria-disabled`)
+   * `isDisabled`, the field shows a tooltip with this text on hover and
+   * keyboard focus, and the field's focusable controls are described by it,
    * so the reason is discoverable by keyboard and assistive technology.
    * Typing and calendar activation stay blocked.
    *
-   * Use this instead of wrapping a disabled input in `Tooltip` — disabled
-   * controls don't emit the pointer events an external tooltip needs.
+   * Use this instead of wrapping a disabled input in `Tooltip`, so the
+   * reason is tied to the field.
    *
    * @example
    * ```
@@ -279,7 +293,9 @@ export interface DateInputProps extends Omit<
   changeAction?: (value: ISODateString | undefined) => void | Promise<void>;
 
   /**
-   * Whether the input is in a loading state.
+   * Whether the input is in a loading state. The field stays focusable and
+   * exposes `aria-busy` with a Spinner; typing, picking, and clearing are
+   * blocked until loading ends.
    * @default false
    */
   isLoading?: boolean;
@@ -306,9 +322,9 @@ export interface DateInputProps extends Omit<
   placeholder?: string;
 
   /**
-   * The size of the input.
-   * - 'sm': Compact size (18px height)
-   * - 'md': Default size (26px height)
+   * The size of the input. The field height follows the theme's element-size
+   * token for the chosen size (`--size-element-sm`, `--size-element-md`, or
+   * `--size-element-lg`).
    * @default 'md'
    */
   size?: DateInputSize;
@@ -535,13 +551,16 @@ function PointerDateField({
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
+  // The busy Spinner is decorative; this control announces its busy start
+  // (spec:AST-086 FR8).
+  useBusyAnnouncement(isBusy, t('@astryx.spinner.loading'), inputRef);
   const isEffectivelyDisabled = isDisabled || isBusy;
 
-  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
-  // tooltip listeners attach to the input container (which already exists) and
-  // the text input stays perceivable via aria-disabled instead of the disabled
-  // attribute. Typing is blocked with readOnly and value mutation guards;
-  // calendar activation is blocked by the isEffectivelyDisabled guards. Only
+  // A disabled or busy field never renders native `disabled` (spec:AST-085
+  // FR1): the input and calendar button stay focusable via aria-disabled.
+  // Typing is blocked with readOnly and value mutation guards; calendar
+  // activation is blocked by the isEffectivelyDisabled guards. The
+  // disabled-reason tooltip's listeners attach to the input container. Only
   // the persistent isDisabled state (not the transient busy state) surfaces a
   // reason.
   const showsDisabledMessage = isDisabled && !!disabledMessage;
@@ -703,8 +722,8 @@ function PointerDateField({
   // Handle input text change - update immediately if valid and allowed
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      // With a disabledMessage the input drops `disabled` for focusability, so
-      // guard value mutation explicitly (readOnly also blocks typing).
+      // The input is never natively disabled (spec:AST-085 FR1), so guard
+      // value mutation explicitly (readOnly also blocks typing).
       if (isEffectivelyDisabled) {
         return;
       }
@@ -733,6 +752,11 @@ function PointerDateField({
     if (pendingInput === null) {
       return;
     }
+    // Disabled or busy: keep the value, drop the draft (spec:AST-085 FR2).
+    if (isEffectivelyDisabled) {
+      setPendingInput(null);
+      return;
+    }
 
     if (!pendingInput.trim()) {
       if (value !== undefined) {
@@ -750,7 +774,14 @@ function PointerDateField({
       }
     }
     setPendingInput(null);
-  }, [pendingInput, value, fireChange, isDateDisabled, locale]);
+  }, [
+    pendingInput,
+    isEffectivelyDisabled,
+    value,
+    fireChange,
+    isDateDisabled,
+    locale,
+  ]);
 
   // Handle blur - validate, check constraints, and clear pending input
   const handleBlur = useCallback(() => {
@@ -807,7 +838,11 @@ function PointerDateField({
         stylex.props(
           inputWrapperStyles.base,
           sizeStyles[size],
-          isEffectivelyDisabled && inputWrapperStyles.disabled,
+          // Disabled paint belongs to the disabled state only; a busy field
+          // keeps its ordinary paint and shows the Spinner (spec:AST-085
+          // FR6, family:buttons FR4).
+          isDisabled && inputWrapperStyles.disabled,
+          isEffectivelyDisabled && styles.disabledFocusRing,
           status && inputStatusBorderStyles[status.type],
           status &&
             !isEffectivelyDisabled &&
@@ -823,7 +858,11 @@ function PointerDateField({
       <button
         type="button"
         onClick={handleToggle}
-        disabled={isEffectivelyDisabled}
+        aria-disabled={isEffectivelyDisabled || undefined}
+        // A tab stop while disabled too, so it carries the reason (FR5).
+        aria-describedby={
+          showsDisabledMessage ? disabledMessageTooltip.describedBy : undefined
+        }
         aria-label={
           popover.isOpen
             ? t('@astryx.dateInput.toggleCalendarClose')
@@ -858,16 +897,15 @@ function PointerDateField({
         value={displayValue}
         onChange={handleInputChange}
         onBlur={chainEventHandlers(handleBlur, onBlurProp)}
-        onClick={chainEventHandlers(handleInputClick, onClickProp)}
+        onClick={
+          isEffectivelyDisabled
+            ? undefined
+            : chainEventHandlers(handleInputClick, onClickProp)
+        }
         onKeyDown={chainEventHandlers(handleInputKeyDown, onKeyDownProp)}
         placeholder={placeholder}
-        // With a disabledMessage the input keeps focusability via
-        // aria-disabled so the reason is focus-discoverable; typing is
-        // blocked with readOnly and the mutation guards, and calendar
-        // activation is blocked by the isEffectivelyDisabled guards.
-        disabled={isEffectivelyDisabled && !showsDisabledMessage}
-        aria-disabled={showsDisabledMessage ? 'true' : undefined}
-        readOnly={showsDisabledMessage || undefined}
+        aria-disabled={isEffectivelyDisabled ? 'true' : undefined}
+        readOnly={isEffectivelyDisabled || undefined}
         aria-labelledby={
           ariaLabelledByProp != null
             ? joinAriaIDs(ariaLabelledBy ?? fieldLabelID, ariaLabelledByProp)
@@ -904,7 +942,7 @@ function PointerDateField({
           onClick={handleClear}
         />
       )}
-      {isBusy && <Spinner size="sm" />}
+      {isBusy && <Spinner size="sm" aria-hidden="true" />}
       {statusIcon}
       {popover.render(
         <Calendar

@@ -102,7 +102,36 @@ const RUNNERS = {
     runs: SELF_DOCS,
     sites: ['import ../../../api/blog/blog.doc.mjs', 'import ./blog.doc.mjs'],
   },
-  'clients/cli/commands/build-theme.mjs': {
+  'clients/cli/commands/experimental/icon.mjs': {
+    runs: SELF_DOCS,
+    sites: [
+      'import ../../../../api/icon/icon.doc.mjs',
+      'import ../../../../api/icon/iconAdd.doc.mjs',
+      'import ../../../../api/icon/iconMap.doc.mjs',
+      'import ../../../../api/icon/iconNewDefinition.doc.mjs',
+      'import ../../../../api/icon/iconNewSet.doc.mjs',
+      'import ../../../../api/icon/iconUse.doc.mjs',
+      'import ../experimental-icon-add.doc.mjs',
+      'import ../experimental-icon-map.doc.mjs',
+      'import ../experimental-icon-new-definition.doc.mjs',
+      'import ../experimental-icon-new-set.doc.mjs',
+      'import ../experimental-icon-use.doc.mjs',
+      'import ../experimental-icon.doc.mjs',
+    ],
+  },
+  'clients/cli/commands/experimental/index.mjs': {
+    runs: SELF_DOCS,
+    sites: ['import ../experimental.doc.mjs'],
+  },
+  'clients/cli/commands/manifest.mjs': {
+    runs: SELF_DOCS,
+    sites: ['import ./manifest.doc.mjs'],
+  },
+  'clients/cli/commands/postinstall.mjs': {
+    runs: SELF_DOCS,
+    sites: ['import ./postinstall.doc.mjs'],
+  },
+  'clients/cli/commands/theme.mjs': {
     runs: `${SELF_DOCS}; and \`astryx theme build\`, a child process per theme`,
     sites: [
       'child_process.spawn',
@@ -135,11 +164,11 @@ const RUNNERS = {
       'import ./build.doc.mjs',
     ],
   },
-  'clients/cli/commands/component/index.mjs': {
+  'clients/cli/commands/component.mjs': {
     runs: SELF_DOCS,
     sites: [
-      'import ../../../../api/component/component.doc.mjs',
-      'import ../component.doc.mjs',
+      'import ../../../api/component/component.doc.mjs',
+      'import ./component.doc.mjs',
     ],
   },
   'clients/cli/commands/discover.mjs': {
@@ -180,11 +209,11 @@ const RUNNERS = {
       'import ./gap-report.doc.mjs',
     ],
   },
-  'clients/cli/commands/hook/index.mjs': {
+  'clients/cli/commands/hook.mjs': {
     runs: SELF_DOCS,
     sites: [
-      'import ../../../../api/hook/hook.doc.mjs',
-      'import ../hook.doc.mjs',
+      'import ../../../api/hook/hook.doc.mjs',
+      'import ./hook.doc.mjs',
     ],
   },
   'clients/cli/commands/init.mjs': {
@@ -233,8 +262,8 @@ const RUNNERS = {
     ],
   },
   'clients/cli/index.mjs': {
-    runs: 'the command modules, to register each command, and the manifest command doc',
-    sites: ['import ./commands/manifest.doc.mjs', 'import(<computed>)'],
+    runs: 'the command modules, to register each command',
+    sites: ['import(<computed>)'],
   },
   'clients/cli/lib/manifest.mjs': {
     runs: 'the manifest command doc, for the exit codes the manifest reports',
@@ -268,6 +297,14 @@ const RUNNERS = {
     runs: "a package's component docs and topics, to read the props, overlays, sections, and replaces/extends they declare",
     sites: ['importDocModule ×2'],
   },
+  'foundation/discovery/doc-stability.mjs': {
+    runs: "an integration's template docs, to see which set `stability`",
+    sites: ['loadTopicModule'],
+  },
+  'foundation/discovery/template-icon-notes.mjs': {
+    runs: "an integration's template docs, to read the icons each declares",
+    sites: ['loadTopicModule'],
+  },
   'foundation/discovery/doc-fluff.mjs': {
     runs: "the CLI's own guides, to measure the median share of content words a topic's density is compared with",
     sites: ['builtinGuideFiles'],
@@ -275,6 +312,10 @@ const RUNNERS = {
   'foundation/discovery/docs-discovery.mjs': {
     runs: 'a contributed topic, for its catalog fields: name, title, description, category, and relationships',
     sites: ['importDocModule'],
+  },
+  'foundation/discovery/runner-commands.mjs': {
+    runs: "the package's topics, to find each Astryx command written with a package runner",
+    sites: ['loadTopicModule'],
   },
   'foundation/discovery/stray-pointers.mjs': {
     runs: "the CLI's own guides, for their names, to tell which written `astryx docs <name>` points at a doc that exists",
@@ -319,6 +360,10 @@ const RUNNERS = {
       'require.cache',
     ],
   },
+  'foundation/fs/read-record.mjs': {
+    runs: "nothing; it wraps node:fs's read calls to record the paths an operation reads, and republishes them to ESM imports",
+    sites: ['module.syncBuiltinESMExports'],
+  },
   'foundation/fs/paths.mjs': {
     runs: "Yarn's pnpapi, under Plug'n'Play, to find an installed package",
     sites: ['require(pnpapi)'],
@@ -326,6 +371,10 @@ const RUNNERS = {
   'foundation/integrations/integrations.mjs': {
     runs: "each installed integration's manifest",
     sites: ['importUserModule'],
+  },
+  'foundation/integrations/validate-contributions.mjs': {
+    runs: "`npm pack --dry-run --json --ignore-scripts`, to read which files an integration's package holds when a template loads an asset (no lifecycle script runs, nothing is written)",
+    sites: ['child_process.spawnSync'],
   },
   'foundation/release/cache.mjs': {
     runs: 'npm (under npm-guard.mjs), to install and look up CLI releases in the per-user cache; each installed release once, to check it starts and reports its version; and ps (tasklist on Windows), to confirm the process a stale lock records is node or npm before ending it',
@@ -373,8 +422,11 @@ const LOADER_MODULES = {
     'discoverIntegrationDocs',
     'GRAPH_BLOCK_TYPES',
     'GRAPH_ONLY_FIELDS',
+    'isGuideRoute',
     'mergeTopic',
+    'mergeTopicReport',
     'problemsInTopic',
+    'withoutPosition',
     'withSourceTitle',
   ],
 };

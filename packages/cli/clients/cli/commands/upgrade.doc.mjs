@@ -123,7 +123,7 @@ export const doc = {
   notes: [
     {
       type: 'prose',
-      text: "In global mode: in a project, upgrade runs the codemods of the project's own CLI, whichever astryx command you start; in a project with no CLI of its own, the astryx command you started runs them, so install the CLI at the new Core's version first (`astryx doctor` prints the command). Outside a project, `--list` lists this version's codemods, `--registry` finds no copied compositions, and a migration writes nothing and stops with `ERR_VERSION_DETECT`. See {@link namespace:global} and {@link generic:who-answers}.",
+      text: "In global mode: in a project, upgrade runs the codemods of the project's own CLI, whichever astryx command you start; in a project with no CLI of its own, the astryx command you started runs them, so install the CLI at the new Core's version first (`{@command doctor}` prints the command). Outside a project, `--list` lists this version's codemods, `--registry` finds no copied compositions, and a migration writes nothing and stops with `ERR_VERSION_DETECT`. See {@link namespace:global} and {@link generic:who-answers}.",
     },
     {type: 'heading', level: 3, text: 'A CLI older than your Core'},
     {
@@ -180,7 +180,7 @@ export const doc = {
       text:
         'When a codemod would change a protected file, upgrade makes the change only in memory and leaves the file as it is. ' +
         'The rest of the upgrade goes ahead. With --apply, your other files are written, then upgrade runs the ' +
-        '`hooks.postCodemod` commands from astryx.config (see `astryx docs authoring config`) and checks the protected ' +
+        '`hooks.postCodemod` commands from astryx.config (see `{@command docs authoring config}`) and checks the protected ' +
         'files again. If one still needs the change, the run is incomplete: it exits 1, prints ' +
         'ERR_CODEMOD_PROTECTED with each file and the rule that protects it, and does not refresh the agent docs. ' +
         'Regenerate or edit those files, then run the same upgrade again. A dry run reports the same files and writes nothing.',

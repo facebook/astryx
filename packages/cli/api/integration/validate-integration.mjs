@@ -36,7 +36,18 @@ import * as path from 'node:path';
 import {assertWithin} from '../../foundation/fs/path-safety.mjs';
 import {normalizeProviderId} from '../../foundation/identity/provider-identity.mjs';
 import {integrationDocTypes} from '../docs/_adapter.mjs';
+import {
+  iconSetCoverage,
+  iconSetIssues,
+} from '../../foundation/discovery/icon-set-checks.mjs';
+import {olderCliNotes} from '../../foundation/discovery/doc-stability.mjs';
+import {templateIconNotes} from '../../foundation/discovery/template-icon-notes.mjs';
 import {integrationDocConsistency} from '../../foundation/discovery/doc-consistency.mjs';
+import {
+  integrationDocCommands,
+  integrationDocTargets,
+  projectUsesIconSets,
+} from './_adapter.mjs';
 import {
   THEME_SLUG_RE,
   unreadThemeFolders,
@@ -58,6 +69,7 @@ import {
 // integration-warnings need them too, and foundation must not depend on api.
 import {
   blockComponentsCheck,
+  componentExamplesCheck,
   componentDocNamesCheck,
   INVALID_CLI_COMMAND,
   isListedIssue,
@@ -69,6 +81,21 @@ import {
   rootProblem,
 } from '../../foundation/integrations/validate-contributions.mjs';
 import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
+import {cliPeerVersionProblem} from '../../foundation/integrations/cli-peer-version.mjs';
+import {publicImportIssues} from '../../foundation/integrations/public-imports.mjs';
+import {runChoice} from '../../foundation/release/run-context.mjs';
+
+/** The running CLI is outside the package's `@astryxdesign/cli` peer range. */
+const CLI_PEER_VERSION = 'cli_peer_version';
+
+/** A doc replaces or extends a name that holds no topic and no guide. */
+const DOC_TARGET_NOT_FOUND = 'doc_target_not_found';
+
+/** An extension section's `before` or `after` names no section of the base. */
+const DOC_SECTION_UNPLACED = 'doc_section_unplaced';
+
+/** Two docs of one package replace one guide; only the last one is read. */
+const DUPLICATE_GUIDE_REPLACEMENT = 'duplicate_guide_replacement';
 
 export {validateLoadedIntegration, isListedIssue};
 
@@ -91,6 +118,11 @@ export {validateLoadedIntegration, isListedIssue};
  *   may not fail `--strict` until the next (architecture:cli-surface INV35);
  *   `integration verify` still fails on a package.json npm cannot pack.
  * @property {import('../../foundation/integrations/integrations.mjs').LoadedIntegration} [integration]
+ * @property {import('../../foundation/discovery/icon-set-checks.mjs').IconSetCoverage[]} [iconSets]
+ *   Which definitions each icon set leaves unmapped (spec:AST-084 FR15).
+ * @property {import('../../foundation/discovery/doc-stability.mjs').OlderCliNote[]} [olderCliNotes]
+ * @property {import('./validate-integration.type.mjs').PublicImportsReport} [publicImports]
+ *   what the public-import check could not judge
  */
 
 /**
@@ -277,13 +309,23 @@ async function findUnreachableContributionIssues(
  * Shared core for the local and installed entry points.
  * @param {string} packageDir
  * @param {{name: string, version?: string}} identity
- * @param {{scanUnreachable?: boolean}} [options]
+ * @param {{scanUnreachable?: boolean, own?: boolean, cwd?: string, iconSets?: boolean}} [options]
+ *   `own`: the package is the one being authored in the current folder;
+ *   `cwd`: the folder whose package manager an install command names;
+ *   `iconSets`: read the experimental `experimental.iconSets` root (default
+ *   true). Off, the root is not resolved or checked and `iconSets` is not
+ *   filled, as in a CLI without icon sets.
  * @returns {Promise<ValidateResult>}
  */
 async function validateAtPackageDir(
   packageDir,
   identity,
-  {scanUnreachable = false} = {},
+  {
+    scanUnreachable = false,
+    own = false,
+    cwd = packageDir,
+    iconSets = true,
+  } = {},
 ) {
   /** @type {Issue[]} */
   const issues = [];
@@ -396,6 +438,9 @@ async function validateAtPackageDir(
     codemods: resolveRoot(manifest.codemods, 'codemods'),
     docs: resolveRoot(manifest.docs, 'docs'),
     themes: resolveRoot(manifest.themes, 'themes'),
+    iconSets: iconSets
+      ? resolveRoot(manifest.experimental?.iconSets, 'experimental.iconSets')
+      : undefined,
     issuesUrl: manifest.issuesUrl,
     agentDocs: manifest.agentDocs,
     cliCommand: manifest.cliCommand,
@@ -425,8 +470,36 @@ async function validateAtPackageDir(
       issues.push(issue);
     }
   }
+  // The running CLI outside the package's `@astryxdesign/cli` peer range is a
+  // note for the same reason. It is built here, not among the contribution
+  // checks, so `integration verify` (which reports their layout findings)
+  // does not see it.
+  // The version an upgrade starts from is the project's: its own CLI's, or,
+  // with none, its Core's, as the project-upgrade notice takes it.
+  const choice = runChoice(cwd);
+  const from =
+    choice.inProject && choice.copy === 'starting' && choice.coreVersion
+      ? choice.coreVersion
+      : undefined;
+  const peerProblem = cliPeerVersionProblem(loaded, undefined, cwd, {
+    own,
+    from,
+  });
+  if (peerProblem) {
+    (result.notes ??= []).push({code: CLI_PEER_VERSION, message: peerProblem});
+  }
   if (loaded.themes && !rootProblem(loaded.themes))
     issues.push(...unreadThemeFolderIssues(packageDir, loaded));
+  // The icon-set checks (AST-084 FR15): data against descriptor, module
+  // exports, and theme map, all read statically.
+  if (loaded.iconSets && !rootProblem(loaded.iconSets)) {
+    /** @type {Map<string, import('../../foundation/discovery/icon-set-checks.mjs').IconSetUnchecked[]>} */
+    const unchecked = new Map();
+    issues.push(...iconSetIssues(packageDir, loaded, unchecked));
+    // Which definitions each set leaves unmapped, and what the checks could
+    // not judge: listed, never an issue.
+    result.iconSets = iconSetCoverage(loaded, unchecked);
+  }
   // What the docs say that no reader serves: a prop listed twice, an
   // overlay's text for a prop the doc lacks, an empty or unreachable section,
   // and an overlay of no topic.
@@ -443,6 +516,17 @@ async function validateAtPackageDir(
       packageDir,
     )),
   );
+  // What the package tells apps to import, read from source: package.json
+  // `exports`, docs, examples and template imports.
+  const publicImports = await publicImportIssues(packageDir, loaded);
+  issues.push(...publicImports.issues);
+  // Each finding is a note until the next minor makes it a warning.
+  // Listed now, a warning from the next minor release: `next`.
+  if (publicImports.notes.length > 0)
+    (result.notes ??= []).push(
+      ...publicImports.notes.map(note => ({...note, next: true})),
+    );
+  result.publicImports = publicImports.report;
   if (scanUnreachable) {
     issues.push(
       ...(await findUnreachableContributionIssues(
@@ -451,6 +535,25 @@ async function validateAtPackageDir(
         absoluteRoots,
       )),
     );
+  }
+  // Authoring only: a template or namespace doc that sets `stability` is
+  // dropped by a CLI before the release that reads it. Noted, never an issue.
+  if (scanUnreachable) {
+    /** @type {any} */
+    let pkg = {};
+    try {
+      pkg = JSON.parse(
+        fs.readFileSync(path.join(packageDir, 'package.json'), 'utf-8'),
+      );
+    } catch {
+      // package.json problems are reported by their own check.
+    }
+    const notes = await olderCliNotes(loaded, pkg, packageDir);
+    if (notes.length > 0) result.olderCliNotes = notes;
+    // Each template `icons` key the template's source never imports: a note
+    // with its fix, never an issue (spec:AST-084 FR10).
+    const iconNotes = await templateIconNotes(loaded, packageDir);
+    if (iconNotes.length > 0) (result.notes ??= []).push(...iconNotes);
   }
 
   return result;
@@ -506,7 +609,7 @@ export async function validateLocalIntegration(cwd = process.cwd()) {
   const result = await validateAtPackageDir(
     packageDir,
     {name, version: pkg.version},
-    {scanUnreachable: true},
+    {scanUnreachable: true, own: true},
   );
   (result.listed ??= []).unshift(
     ...fields,
@@ -599,9 +702,16 @@ function packageJsonFieldIssues(pkg, pkgJsonPath) {
  * at or above `cwd`, resolved the way the project loads it.
  * @param {string} spec package name
  * @param {string} [cwd]
+ * @param {{iconSets?: boolean}} [options] `iconSets`: check the package's
+ *   experimental icon sets; by default only when the project at `cwd` sets
+ *   `experimental.iconSet`
  * @returns {Promise<ValidateResult>}
  */
-export async function validateInstalledIntegration(spec, cwd = process.cwd()) {
+export async function validateInstalledIntegration(
+  spec,
+  cwd = process.cwd(),
+  {iconSets} = {},
+) {
   // The resolver throws (path-safety guard) on a spec with path segments,
   // `..`, or an absolute path. Every other malformed input to this command
   // degrades into a diagnostic — so catch it here and return an issue instead
@@ -641,10 +751,84 @@ export async function validateInstalledIntegration(spec, cwd = process.cwd()) {
     };
   }
 
-  return validateAtPackageDir(packageDir, {
-    name: pkg.name ?? spec,
-    version: pkg.version,
-  });
+  return validateAtPackageDir(
+    packageDir,
+    {name: pkg.name ?? spec, version: pkg.version},
+    {cwd, iconSets: iconSets ?? (await projectUsesIconSets(cwd))},
+  );
+}
+
+/**
+ * The doc-syntax notes for a package's topics: each command a topic writes
+ * with a runner (`runner_command`), for one package manager
+ * (`package_manager_command`), or bare (`plain_command`), and each token that
+ * does not parse (`doc_token`), with the file, line and what to write
+ * instead. The next minor release turns them into warnings: `next`.
+ * @param {any} integration a loaded integration
+ * @returns {Promise<Array<{code: string, message: string, next: true}>>}
+ */
+async function docCommandNotes(integration) {
+  const packageDir = integration.__packageDir;
+  return (await integrationDocCommands(integration)).map(each => ({
+    code: each.code,
+    message:
+      typeof packageDir === 'string'
+        ? `${path.relative(packageDir, each.file).split(path.sep).join('/')}: ${each.message}`
+        : each.message,
+    next: true,
+  }));
+}
+
+/**
+ * The notes for docs that replace or extend a topic or a guide the docs tree
+ * places, or place an extension's section with `before` or `after`: a name
+ * that holds neither (such as a namespace) applies nothing, and a key that
+ * names no section adds the section at the end. Each is listed, failing nothing, until
+ * the next minor release (architecture:cli-surface INV35).
+ * @param {any} integration a loaded integration
+ * @returns {Promise<Array<{code: string, message: string}>>}
+ */
+async function docTargetNotes(integration) {
+  /** @type {Array<{code: string, message: string}>} */
+  const notes = [];
+  const targets = await integrationDocTargets(integration);
+  /** @type {Map<string, string[]>} lowercased route → the docs replacing it */
+  const replacers = new Map();
+  for (const each of targets) {
+    if (each.kind !== 'guide' || each.relationship !== 'replaces') continue;
+    // An old route and the new one name one guide.
+    const key = each.guide ?? each.target.toLowerCase();
+    replacers.set(key, [...(replacers.get(key) ?? []), each.topic]);
+  }
+  for (const [route, topics] of replacers) {
+    if (topics.length < 2) continue;
+    notes.push({
+      code: DUPLICATE_GUIDE_REPLACEMENT,
+      message: `"${topics.join('", "')}" all replace the guide "${route}", and only the last, "${topics.at(-1)}", is read. Fix: keep one replacement, or make the others extend it.`,
+    });
+  }
+  for (const each of targets) {
+    if (each.kind === 'namespace') {
+      const shown = each.guidesBelow.slice(0, 8);
+      const more = each.guidesBelow.length - shown.length;
+      notes.push({
+        code: DOC_TARGET_NOT_FOUND,
+        message: `"${each.topic}" ${each.relationship} "${each.target}", which is a namespace of the docs tree: it holds no sections to ${each.relationship === 'replaces' ? 'replace' : 'extend'}, so this changes nothing. Fix: name the route of a guide below it${shown.length > 0 ? `: ${shown.join(', ')}${more > 0 ? `, and ${more} more` : ''}` : ''}.`,
+      });
+    } else if (each.kind == null) {
+      notes.push({
+        code: DOC_TARGET_NOT_FOUND,
+        message: `"${each.topic}" ${each.relationship} "${each.target}", which is neither a topic nor a guide of the CLI's docs or this package's own: it changes nothing unless an app also installs a package that provides it. Fix: if it should name one of those, name a topic as \`${formatCliCommand('docs')}\` lists it, or a guide's route as \`${formatCliCommand('docs authoring --depth all')}\` or \`${formatCliCommand('docs cli --depth all')}\` lists it.`,
+      });
+    }
+    for (const {section, field, key} of each.unplaced) {
+      notes.push({
+        code: DOC_SECTION_UNPLACED,
+        message: `Section "${section}" of "${each.topic}" goes ${field} "${key}", which is no section of "${each.guide ?? each.target}", so it is added at the end. Fix: use a key \`${formatCliCommand(`docs ${each.guide ?? each.target} --index`)}\` lists.`,
+      });
+    }
+  }
+  return notes;
 }
 
 /**
@@ -681,22 +865,44 @@ export async function validateIntegration(pkg, options = {}) {
         await blockComponentsCheck(integration),
       ]
     : undefined;
+  // Components no block template shows.
+  const examples = integration
+    ? await componentExamplesCheck(integration)
+    : undefined;
   const docNames = names?.[0].report;
   const blockComponents = names?.[1].report;
   // Notes fail nothing: a malformed `cliCommand`, and the findings added
   // after the last minor release, each with its fix in the message, which
   // may not fail `--strict` until the next (architecture:cli-surface INV35):
   // the layout findings and the component names judged wrong.
+  // A finding the next minor release turns into a warning is marked `next`:
+  // `integration check --strict --next` fails on it today.
   const notes = result.found
     ? [
-        ...(result.notes ?? []),
+        // A malformed cliCommand fails --strict from the next minor
+        // (spec:AST-081 FR5).
+        ...(result.notes ?? []).map(note =>
+          note.code === INVALID_CLI_COMMAND ? {...note, next: true} : note,
+        ),
         ...(result.listed ?? []).map(issue => ({
           code: issue.code,
           message: issue.message,
+          next: true,
         })),
-        ...(names ?? []).flatMap(each => each.notes),
+        ...(names ?? []).flatMap(each =>
+          each.notes.map(note => ({...note, next: true})),
+        ),
+        ...(examples?.notes ?? []).map(note => ({...note, next: true})),
       ]
     : [];
+  // The doc-syntax findings in the package's topics, as `next` notes with
+  // their fixes, the same way.
+  if (integration?.docs) {
+    notes.push(...(await docCommandNotes(integration)));
+    notes.push(
+      ...(await docTargetNotes(integration)).map(note => ({...note, next: true})),
+    );
+  }
   return {
     type: 'integration.validate',
     data: {
@@ -720,6 +926,26 @@ export async function validateIntegration(pkg, options = {}) {
       ...(docTypes ? {docTypes} : {}),
       ...(docNames ? {docNames} : {}),
       ...(blockComponents ? {blockComponents} : {}),
+      // Additive, never counted: present only for a package with icon sets,
+      // or with descriptors an older CLI drops.
+      ...(result.found && result.iconSets ? {iconSets: result.iconSets} : {}),
+      ...(result.found && result.olderCliNotes
+        ? {olderCliNotes: result.olderCliNotes}
+        : {}),
+      // Template assets npm could not place, when there are any.
+      ...(examples && examples.unchecked.length > 0
+        ? {
+            exampleAssets: {
+              status: 'checked',
+              findings: [],
+              unchecked: examples.unchecked,
+            },
+          }
+        : {}),
+      // What the public-import check could not judge: listed, never failed on.
+      ...(result.found && result.publicImports
+        ? {publicImports: result.publicImports}
+        : {}),
     },
   };
 }

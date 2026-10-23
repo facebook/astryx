@@ -22,4 +22,16 @@ export const doc = {
   ],
   isReady: true,
   category: 'Table - Tree/Hierarchical List',
+  icons: {
+    BookOpen: 'book',
+    ChartColumn: 'chart',
+    Code: 'code',
+    Eye: 'eye',
+    File: 'file',
+    Folder: 'folder',
+    Search: 'search',
+    ShieldCheck: 'shield',
+    Star: 'star',
+    Tag: 'tag',
+  },
 };

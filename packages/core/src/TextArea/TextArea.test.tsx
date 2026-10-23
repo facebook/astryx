@@ -55,6 +55,14 @@ beforeEach(() => {
 // accessibility tree. Use hidden: true to find it.
 const h = {hidden: true} as const;
 
+/** A busy control's Spinner is decorative and silent (spec:AST-086 FR8). */
+function expectSilentBusySpinner() {
+  const spinner = document.querySelector('.astryx-spinner');
+  expect(spinner).not.toBeNull();
+  expect(spinner).toHaveAttribute('aria-hidden', 'true');
+  expect(screen.queryByRole('status', {name: 'Loading'})).toBeNull();
+}
+
 describe('TextArea', () => {
   it('renders with label', () => {
     render(<TextArea label="Description" value="" onChange={() => {}} />);
@@ -348,7 +356,7 @@ describe('TextArea', () => {
       );
       // Matches the other inputs: spinner (role="status") and the status icon
       // render side by side in the end slot, not mutually exclusively.
-      expect(screen.getByRole('status')).toBeInTheDocument();
+      expectSilentBusySpinner();
       // Status icon svg is also present alongside the spinner.
       expect(container.querySelectorAll('svg').length).toBeGreaterThan(0);
     });
