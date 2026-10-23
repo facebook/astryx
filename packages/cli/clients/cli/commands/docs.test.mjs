@@ -53,6 +53,21 @@ describe('registerDocs', () => {
     const errorOutput = console.error.mock.calls.map(c => c[0]).join('\n');
     expect(errorOutput).toContain('Unknown topic');
   });
+
+  it('suggests the doc a topic names in another spelling', async () => {
+    const program = createProgram();
+    vi.spyOn(process, 'exit').mockImplementation(code => {
+      throw new Error(`exit ${code}`);
+    });
+
+    await expect(
+      program.parseAsync(['node', 'astryx', 'docs', 'Theme_Builds']),
+    ).rejects.toThrow('exit 1');
+
+    const errorOutput = console.error.mock.calls.map(c => c[0]).join('\n');
+    expect(errorOutput).toContain('cli/commands/theme-build');
+    expect(errorOutput).not.toContain('docs namespace');
+  });
 });
 
 describe('hyphenated doc filenames', () => {

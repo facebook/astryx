@@ -1885,6 +1885,23 @@ export async function unknownTopicError(topic, catalog) {
       )
       .map(node => ({name: node.route, reason: node.summary}));
   }
+  if (suggestions.length === 0 && typeof topic === 'string' && !topic.includes('/')) {
+    // The same name spelled another way: case, separators and a plural
+    // aside (`theme-build` is themeBuild(), `hooks` is the hook command).
+    const key = (/** @type {string} */ s) =>
+      s.toLowerCase().replace(/[^a-z0-9]/g, '').replace(/s$/, '');
+    const wanted = key(topic);
+    if (wanted.length >= 3) {
+      suggestions = [...tree.nodes.values()]
+        .filter(
+          node =>
+            !node.ref?.flatTopic &&
+            (key(node.name) === wanted ||
+              key(node.route.split('/').at(-1) ?? '') === wanted),
+        )
+        .map(node => ({name: node.route, reason: node.summary}));
+    }
+  }
   if (suggestions.length === 0) {
     suggestions = [
       ...tree
