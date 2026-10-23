@@ -236,6 +236,7 @@
     "sections": [
       "replace-a-topic: Replace a topic",
       "extend-a-topic: Extend a topic",
+      "replace-or-extend-a-cli-guide: Replace or extend a CLI guide",
       "check-overlaps-with-core-topics: Check overlaps with Core topics",
       "global-mode: In global mode"
     ],
