@@ -442,8 +442,19 @@ export function reverseToFile({cwd, input, output, overwrite}) {
     writes.forEach((w, i) => confined(w.file, cwd, i === 0 ? 'The page' : 'The embedded file'));
     // Where each file lands, not only its name in the file, must be one no
     // test, story or benchmark runner picks up.
+    // Runners search from the project root: the nearest folder at or above
+    // the current one with a package.json, else the repository root, else
+    // the current folder.
+    /** @param {string} marker */
+    const nearest = marker => {
+      for (let d = cwd; ; d = path.dirname(d)) {
+        if (fs.existsSync(path.join(d, marker))) return d;
+        if (path.dirname(d) === d) return null;
+      }
+    };
+    const projectRoot = nearest('package.json') ?? nearest('.git') ?? cwd;
     const runnable = writes
-      .map(w => path.relative(cwd, w.file).split(path.sep))
+      .map(w => path.relative(projectRoot, w.file).split(path.sep))
       .filter(segments => runnerPicksUp(segments))
       .map(segments => segments.join('/'));
     if (runnable.length > 0) {

@@ -303,8 +303,13 @@ export const ERROR_CODES = Object.freeze({
    */
   ERR_RENDER_NOT_ASTRYX: 'ERR_RENDER_NOT_ASTRYX',
   /**
-   * `render --reverse` found an embedded source block that is damaged (not
-   * valid, or a file does not match its checksum). Nothing was written.
+   * `render --reverse` refused the received file: its embedded source is
+   * damaged (not valid, or a file does not match its checksum), lists a path
+   * twice, carries a file the page does not import, or carries a file a
+   * render never embeds (a dotfile, node_modules, a manifest, lockfile or
+   * tool configuration, a file a test, story or benchmark runner would run,
+   * or any kind but a page module, stylesheet, JSON file or image). Nothing
+   * was written.
    */
   ERR_RENDER_SOURCE_DAMAGED: 'ERR_RENDER_SOURCE_DAMAGED',
 });

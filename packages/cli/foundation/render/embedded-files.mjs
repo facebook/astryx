@@ -37,15 +37,17 @@ const PLAIN_SCRIPT = /\.(c|m)?[jt]s$/i;
  * (`*.bench.*`, `*.benchmark.*`), Storybook (`*.stories.*`, `*.story.*`),
  * Cypress (`*.cy.*`), Bun (`*_test.*`, `*_spec.*`), `node --test`
  * (`*-test.*`, `test/`) and AVA (`tests/`), and `test-*` for .js and .ts.
- * @param {string[]} segments the path where the file lands, `/`-split
+ * @param {string[]} segments the path where the file lands, from the project
+ *   root (the folder runners search), `/`-split
  */
 export function runnerPicksUp(segments) {
   const base = segments[segments.length - 1];
   if (!SCRIPT.test(base)) return false;
   const stem = base.replace(/\.[^.]+$/, '').toLowerCase();
   const folders = segments.slice(0, -1).map(seg => seg.toLowerCase());
-  if (/(^|\.)(test|spec|bench|benchmark|stories|story|cy)$/.test(stem)) return true;
-  if (/[_-]test$|_spec$/.test(stem)) return true;
+  // Jest's `?(*.)+(spec|test)` repeats: `spectest.js`, `test.spec.js`.
+  if (/(^|[._-])(test|spec)+$/.test(stem)) return true;
+  if (/\.(bench|benchmark|stories|story|cy)$/.test(stem)) return true;
   if (folders.some(seg => seg === '__tests__' || seg === 'test' || seg === 'tests')) return true;
   // `test-*` only for the .js and .ts families: no default runner picks up
   // `test-results.tsx`.

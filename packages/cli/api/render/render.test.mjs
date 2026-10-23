@@ -543,6 +543,8 @@ describe('render(): every write stays inside the current folder', () => {
       'report.benchmark.ts',
       'report_test.tsx',
       'tests/helper.js',
+      'spectest.js',
+      'testtest.ts',
     ]) {
       const page = {path: 'page.tsx', bytes: Buffer.from(`import './${name.replace(/\.(tsx?|[mc]?[jt]s)$/, '')}';\nexport default () => null;\n`)};
       put('tests-in.html', `<body><p class="astryx-text">x</p>${sourceBlock('page.tsx', [page, {path: name, bytes: Buffer.from('export {};\n')}])}</body>`);
@@ -574,6 +576,19 @@ describe('render(): every write stays inside the current folder', () => {
     expect(ok.data.files).toEqual(['results-restored/stories/test-results.tsx', 'results-restored/mock-data.ts']);
   });
 
+
+  it('judges where a file lands from the project root, not the current folder', async () => {
+    const {sourceBlock} = await import('../../foundation/render/source-block.mjs');
+    put('rooted-runner/package.json', '{"name":"rr","private":true}');
+    put('rooted-runner/test/fixtures/page.html', `<body><p class="astryx-text">x</p>${sourceBlock('page.mjs', [{path: 'page.mjs', bytes: Buffer.from("import './helper.mjs';\nexport default () => null;\n")}, {path: 'helper.mjs', bytes: Buffer.from('export {};\n')}])}</body>`);
+    const cwd = path.join(dir, 'rooted-runner/test/fixtures');
+    expect(await codeOf(() => render('page.html', {cwd, reverse: true}))).toBe('ERR_RENDER_SOURCE_DAMAGED');
+    expect(fs.readdirSync(cwd)).toEqual(['page.html']);
+  });
+
+  it('refuses --title with --reverse', async () => {
+    expect(await codeOf(() => render('page.html', {cwd: dir, reverse: true, title: 'x'}))).toBe('ERR_INVALID_ARGUMENT');
+  });
 
   it('keeps a received title out of the rebuilt code', async () => {
     put('evil-title.html', '<html><head><title>x\rprocess.exit(7)\u2028//</title></head><body><div class="astryx-stack"><p class="astryx-text">Hi</p></div></body></html>');
