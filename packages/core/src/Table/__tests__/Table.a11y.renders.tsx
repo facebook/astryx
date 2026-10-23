@@ -33,6 +33,20 @@ const SORTABLE_COLUMNS: TableColumn<Member>[] = COLUMNS.map(column => ({
   sortable: true,
 }));
 
+// useTableSortable only exposes the sort state; the caller orders the data.
+// Rows follow the state so the exposed aria-sort always matches the rows.
+function sortMembers(members: Member[], sort: TableSortState): Member[] {
+  const [primary] = sort;
+  if (primary == null) {
+    return members;
+  }
+  const key = primary.sortKey as keyof Member;
+  const sign = primary.direction === 'descending' ? -1 : 1;
+  return [...members].sort(
+    (a, b) => sign * (a[key] < b[key] ? -1 : a[key] > b[key] ? 1 : 0),
+  );
+}
+
 function SortedTable(): ReactElement {
   const [sort, setSort] = useState<TableSortState>([
     {sortKey: 'name', direction: 'descending'},
@@ -43,7 +57,7 @@ function SortedTable(): ReactElement {
       data-a11y-table
       aria-label="Team members"
       columns={SORTABLE_COLUMNS}
-      data={MEMBERS}
+      data={sortMembers(MEMBERS, sort)}
       plugins={{sort: sortPlugin}}
     />
   );

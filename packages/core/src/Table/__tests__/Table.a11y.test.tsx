@@ -131,6 +131,26 @@ describe('the Table binding inventory', () => {
     expect(TABLE_A11Y_STATES.map(state => state.id)).toContain('empty-data');
   });
 
+  it('renders the rows of every sorted state in the order its sort state declares', () => {
+    // useTableSortable exposes aria-sort but never reorders data, so a binding
+    // can claim a direction its own rows contradict.
+    for (const state of TABLE_A11Y_STATES) {
+      for (const {column, direction} of state.facts.sort) {
+        render(TABLE_A11Y_RENDERS[state.id]());
+        const values = [
+          ...subjectFor().querySelectorAll(':scope > tbody > tr'),
+        ].map(row => row.children[column]?.textContent ?? '');
+        const ordered = [...values].sort();
+        if (direction === 'descending') {
+          ordered.reverse();
+        }
+        expect(values.length, state.id).toBeGreaterThan(1);
+        expect(values, `${state.id} column ${column}`).toEqual(ordered);
+        cleanup();
+      }
+    }
+  });
+
   it('records every adjacent exclusion with an owner and reason', () => {
     expect(TABLE_A11Y_EXCLUSIONS.every(row => row.owner && row.reason)).toBe(
       true,

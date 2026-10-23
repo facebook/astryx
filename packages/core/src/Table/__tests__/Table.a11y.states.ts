@@ -94,6 +94,11 @@ export const TABLE_A11Y_EXCLUSIONS = [
       'Selection controls, their labels, and row aria-selected are module behavior under component:Table FR6; this binding does not add the selection column.',
   },
   {
+    owner: 'useTableRowStatus tests (module:Table/useTableRowStatus)',
+    reason:
+      'The generated status column adds a visually hidden header name and per-row indicator cells, which are exactly the parts this contract checks; this binding does not add the status column, so those parts bind separately.',
+  },
+  {
     owner:
       'useTableRowExpansion, useTableGroupedRows, and useTableTreeData tests',
     reason:

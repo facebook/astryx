@@ -53,6 +53,8 @@ interface Options {
   readonly otherTable?: 'row' | 'column-header' | 'row-header' | 'cell';
   /** `aria-sort` per column header index, as authored. */
   readonly ariaSort?: Readonly<Record<number, string>>;
+  /** Render the body rows in descending Name order (Grace, then Ada). */
+  readonly descendingRows?: boolean;
 }
 
 function attr(name: string, value: string | null | undefined): string {
@@ -78,7 +80,10 @@ function html(options: Options = {}): string {
         : 'data-a11y-table-column-header';
     return `<th ${designated} scope="col" ${role} ${rename} ${sort}>${column}</th>`;
   }).join('');
-  const body = ROWS.map((row, rowIndex) => {
+  const body = ROWS.map((authoredRow, rowIndex) => {
+    const row = options.descendingRows
+      ? (ROWS[ROWS.length - 1 - rowIndex] ?? authoredRow)
+      : authoredRow;
     const cells = row
       .map((value, cellIndex) => {
         if (options.rowHeaders && cellIndex === 0) {
@@ -183,7 +188,7 @@ export const TABLE_FIXTURES: readonly TableFixture[] = [
     summary:
       'a table sorted by one column, with an explicit none on an unsorted header',
     facts: facts({sort: SORTED}),
-    html: html({ariaSort: {0: 'descending', 2: 'none'}}),
+    html: html({ariaSort: {0: 'descending', 2: 'none'}, descendingRows: true}),
   },
   {
     id: 'conforming-unlabelled',
@@ -289,13 +294,13 @@ export const TABLE_FIXTURES: readonly TableFixture[] = [
     id: 'violating-sort-missing',
     summary: 'the sorted column header exposes no sort state',
     facts: facts({sort: SORTED}),
-    html: html(),
+    html: html({descendingRows: true}),
   },
   {
     id: 'violating-sort-direction',
     summary: 'the sorted column header exposes the opposite direction',
     facts: facts({sort: SORTED}),
-    html: html({ariaSort: {0: 'ascending'}}),
+    html: html({ariaSort: {0: 'ascending'}, descendingRows: true}),
   },
   {
     id: 'violating-sort-stale',

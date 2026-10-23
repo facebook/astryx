@@ -20,6 +20,7 @@ import {
   TABLE_MUTATIONS,
   TABLE_ROW_HEADER_SELECTOR,
   TABLE_ROW_SELECTOR,
+  TABLE_FIXTURES,
   TABLE_SUBJECT_SELECTOR,
   tableFixture,
   type TableFixture,
@@ -111,6 +112,32 @@ describe('Table contract — completeness', () => {
         .map(expectation => expectation.id),
     ).toEqual([]);
   });
+});
+
+describe('Table contract — sorted fixtures are truthful tables', () => {
+  // A sort claim is only a positive proof when the rows follow it; the
+  // violating twins keep the same rows so only the exposed state is wrong.
+  const sorted = TABLE_FIXTURES.filter(target => target.facts.sort.length > 0);
+
+  it.each(sorted.map(target => [target.id, target] as const))(
+    '%s renders its rows in the declared order',
+    (_id, target) => {
+      const container = document.createElement('div');
+      container.innerHTML = target.html;
+      const table = container.querySelector(TABLE_SUBJECT_SELECTOR)!;
+      for (const {column, direction} of target.facts.sort) {
+        const values = [...table.querySelectorAll(':scope > tbody > tr')].map(
+          row => row.children[column]?.textContent ?? '',
+        );
+        const ordered = [...values].sort();
+        if (direction === 'descending') {
+          ordered.reverse();
+        }
+        expect(values.length).toBeGreaterThan(1);
+        expect(values).toEqual(ordered);
+      }
+    },
+  );
 });
 
 describe('Table contract — the jsdom harness stays within its evidence boundary', () => {
