@@ -201,13 +201,22 @@ export function reachableFiles(files, {aliases = []} = {}) {
       for (const [key, aliasTarget] of aliases) {
         const named = key.endsWith('/') ? bare.startsWith(key) : bare === key;
         if (!named) continue;
-        const rest = key.endsWith('/') ? bare.slice(key.length) : '';
+        // A wildcard alias names a path under its target; an exact alias
+        // (`"@theme": ["./src/theme.ts"]`) names its target file itself.
+        const exactExt = key.endsWith('/') ? '' : path.extname(aliasTarget);
+        const rest = key.endsWith('/')
+          ? bare.slice(key.length)
+          : path.basename(aliasTarget, exactExt);
         const hit = rest ? bySuffix(rest) : null;
         if (!hit) break;
         const target = hit.path;
         // The alias names the module without its extension or index file;
         // the file keeps both: `@/c/Header` -> `<alias target>/c/Header.tsx`.
-        const abs = aliasTarget + hit.tail;
+        const abs = key.endsWith('/')
+          ? aliasTarget + hit.tail
+          : exactExt
+            ? aliasTarget
+            : aliasTarget + hit.tail.slice(rest.length);
         const {r, fresh} = reach(target);
         r.aliased.add(abs);
         if (fresh) queue.push(target);
