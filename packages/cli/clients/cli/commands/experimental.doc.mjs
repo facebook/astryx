@@ -13,7 +13,8 @@ export const doc = {
   displayName: 'astryx experimental',
   namespace: 'cli/commands',
   stability: 'experimental',
-  summary: 'Try features that may change or be removed in a patch release',
+  summary:
+    'Try features that may change in a patch release: icon sets (find icons, build an icon-set package)',
   description:
     'The experimental command group. Every command under it is experimental: its arguments, options, output, and JSON may change or be removed in any patch release, with no deprecation period. A feature leaves this group when it becomes stable. Nothing here changes what any other command does unless you use it.',
   subcommands: ['icon'],

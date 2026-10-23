@@ -13,10 +13,10 @@ export const doc = {
   summary:
     'Register one icon you chose from a library in the set being authored.',
   description:
-    "Run inside an icon-set package. The caller picks the export; the CLI never searches the library. It proves the export is a runtime component of `from` (a package, a package subpath, or a relative path this package exports), read without running it. With no definition it answers the icon definitions that fit the export, Astryx's and the set's own, and writes nothing. With `definition` it adds the icon (id from its name, `module` the source unless the set's own module already exports it, words from its name and the definition) and maps the definition to it. With `newDefinition` it first writes the set's own definition file. A `variant` adds the export as that declared variant of an existing icon. Running it again changes nothing. Experimental: it may change or be removed in a patch release.",
+    "Run inside an icon-set package. The caller picks the export; the CLI never searches the library. It proves the export is a runtime component of `from` (a package, a package subpath, or a ./ path to a file inside this package), read without running it. With no definition it answers the icon definitions that fit the export, Astryx's and the set's own, and writes nothing. With `definition` it adds the icon (id from its name, `module` the source unless the set's own module already exports it, words from its name and the definition) and maps the definition to it. With `newDefinition` it first writes the set's own definition file. A `variant` adds the export as that declared variant of an existing icon. With `variant`, `from`, and `all` and no export name, it adds that variant for every icon of the set whose id an export of `from` has, in one write. Running it again changes nothing. Experimental: it may change or be removed in a patch release.",
   importPath: '@astryxdesign/cli/api',
   signature:
-    'iconAdd(exportName: string, options: IconAddOptions): Promise<IconAddResponse | IconDefinitionMatchesResponse>',
+    'iconAdd(exportName: string | undefined, options: IconAddOptions): Promise<IconAddResponse | IconDefinitionMatchesResponse | IconAddVariantsResponse | IconRemoveResponse>',
   keywords: [
     'icon',
     'icon set',
@@ -28,9 +28,9 @@ export const doc = {
   params: [
     {
       name: 'exportName',
-      type: 'string',
+      type: 'string | undefined',
       description:
-        'The export the set exposes the icon as, such as `Bin`; the set exports it as `<Name>Icon`.',
+        'The export the set exposes the icon as, such as `Bin`; the set exports it as `<Name>Icon`. Omitted with `options.all`.',
       required: true,
     },
     {
@@ -83,6 +83,20 @@ export const doc = {
       description: "The icon's id, instead of the one its name gives.",
     },
     {
+      name: 'options.all',
+      type: 'boolean',
+      description:
+        'With `variant` and `from`, and no export name: add that variant for every icon of the set whose id an export of `from` has (`TrashIcon` in a solid module becomes the solid variant of `trash`).',
+      default: 'false',
+    },
+    {
+      name: 'options.remove',
+      type: 'boolean',
+      description:
+        "Take an icon out of the set, named by options.id or by the set's export name: its variants, the map entries that name it, and its generated exports go too. Takes no from.",
+      default: 'false',
+    },
+    {
       name: 'options.cwd',
       type: 'string',
       description: 'A directory inside the icon-set package.',
@@ -93,6 +107,16 @@ export const doc = {
       type: 'icon.add',
       description:
         'The icon registered, the definition mapped, and the files written.',
+    },
+    {
+      type: 'icon.remove',
+      description:
+        'With remove: the icon removed, its exports, the definitions it no longer draws, and the files written.',
+    },
+    {
+      type: 'icon.addVariants',
+      description:
+        'With all: how many icons gained the variant, how many had it, the ids the module has no export for, and the files written.',
     },
     {
       type: 'icon.definitionMatches',

@@ -21,6 +21,8 @@ import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {iconSearch} from './search/search.mjs';
 import {iconDetail} from './detail/detail.mjs';
 import {iconList} from './list/list.mjs';
+import {iconSetIcons} from './search/search.mjs';
+import {astryxIconDefinitions} from './_adapter.mjs';
 
 /** The default `limit` for `icon.search`. */
 export const DEFAULT_ICON_LIMIT = 10;
@@ -36,7 +38,7 @@ const REFERENCE_RE = /^[^\s/][^\s]*\/[a-z0-9]+(?:-[a-z0-9]+)*$/u;
  * @experimental
  * @param {string} [query] words to search for, or `<set>/<id>`
  * @param {import('./icon.type.mjs').IconOptions} [options]
- * @returns {Promise<import('./icon.type.mjs').IconSearchResponse | import('./icon.type.mjs').IconDetailResponse | import('./icon.type.mjs').IconListResponse>}
+ * @returns {Promise<import('./icon.type.mjs').IconSearchResponse | import('./icon.type.mjs').IconDetailResponse | import('./icon.type.mjs').IconListResponse | import('./icon.type.mjs').IconSetIconsResponse | import('./icon.type.mjs').IconDefinitionsResponse>}
  */
 export async function icon(query, options = {}) {
   const {
@@ -44,6 +46,8 @@ export async function icon(query, options = {}) {
     list = false,
     set,
     limit = DEFAULT_ICON_LIMIT,
+    allIcons = false,
+    definitions = false,
   } = options;
   if (query != null && typeof query !== 'string') {
     throw new AstryxError(
@@ -67,6 +71,41 @@ export async function icon(query, options = {}) {
       );
     }
     return iconList({cwd});
+  }
+  if (definitions) {
+    if (term || set != null || allIcons || list) {
+      throw new AstryxError(
+        '--definitions lists every Astryx icon definition and takes nothing else',
+        undefined,
+        ERROR_CODES.ERR_INVALID_ARGUMENT,
+      );
+    }
+    return {
+      type: /** @type {const} */ ('icon.definitions'),
+      data: {
+        definitions: astryxIconDefinitions().definitions.map(({doc}) => ({
+          name: doc.name,
+          builtIn: doc.builtIn === true,
+          description: doc.description,
+          words: doc.words,
+        })),
+      },
+    };
+  }
+  if (allIcons) {
+    if (term || set == null) {
+      throw new AstryxError(
+        '--all-icons lists every icon of one set: pass --set and no words',
+        [
+          {
+            name: 'astryx experimental icon --set <name> --all-icons',
+            reason: "list one set's icons",
+          },
+        ],
+        ERROR_CODES.ERR_INVALID_ARGUMENT,
+      );
+    }
+    return iconSetIcons({cwd, set});
   }
   if (!term) {
     throw new AstryxError(

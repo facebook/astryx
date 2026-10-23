@@ -93,7 +93,7 @@ export const doc = {
   examples: [
     {
       label: 'Add and map a definition',
-      code: "await iconNewDefinition('rotate', {description: 'Rotate an image or shape.', words: ['turn', 'spin'], icon: 'rotate-cw'});",
+      code: "await iconNewDefinition('random', {description: 'Pick something at random.', words: ['dice', 'shuffle', 'chance'], icon: 'dice-5'});",
     },
   ],
   command: 'experimental icon new-definition',

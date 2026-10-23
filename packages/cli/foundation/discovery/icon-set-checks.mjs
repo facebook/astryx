@@ -63,6 +63,7 @@ import {
   staticExportBindings,
 } from './module-exports.mjs';
 import {astryxIconDefinitions} from './icon-definition-discovery.mjs';
+import {rankIcons} from './icon-ranking.mjs';
 import {
   issueError,
   issueWarning,
@@ -272,7 +273,17 @@ function checkContract(set, packageName, pkg, unchecked) {
       const actual = fs.existsSync(typesFile)
         ? fs.readFileSync(typesFile, 'utf-8')
         : null;
-      if (expected != null && actual !== expected) {
+      // The header comment is the writer's, and changes between releases;
+      // the declarations are what must match.
+      const code = (/** @type {string} */ text) =>
+        text
+          .split('\n')
+          .filter(line => !line.startsWith('//'))
+          .join('\n');
+      if (
+        expected != null &&
+        (actual == null || code(actual) !== code(expected))
+      ) {
         issues.push(
           issueError(
             ICON_GENERATED_TYPES_MISMATCH,
@@ -350,7 +361,7 @@ function checkDefinitions(set) {
     issues.push(
       issueError(
         ICON_BUILTIN_DEFINITION_MISSING,
-        `${label} maps no icon to the built-in icon definition "${doc.name}" (${doc.description} Words: ${doc.words.join(', ')}.). Every set maps every built-in definition: add it to "map" in ${set.name}.icons.json with the id of the icon that draws it.${hint}`,
+        `${label} maps no icon to the built-in icon definition "${doc.name}" (${doc.description} Words: ${doc.words.join(', ')}.). Every set maps every built-in definition: run \`astryx experimental icon map ${doc.name} <icon id>\` with the icon that draws it${findHint(set, doc)}.${hint}`,
       ),
     );
   }
@@ -368,7 +379,7 @@ function checkDefinitions(set) {
       issues.push(
         issueWarning(
           ICON_DEFINITION_UNUSED,
-          `${label} declares the icon definition "${doc.name}", but "map" names no icon for it. Add it to "map" with the id of the icon that draws it, or remove definitions/${doc.name}.doc.mjs.${suggestion ? ` Suggested: astryx experimental icon map ${doc.name} ${suggestion.icon}.` : ''}`,
+          `${label} declares the icon definition "${doc.name}", but "map" names no icon for it. Map it with \`astryx experimental icon map ${doc.name} <icon id>\`, or remove definitions/${doc.name}.doc.mjs.${suggestion ? ` Suggested: astryx experimental icon map ${doc.name} ${suggestion.icon}.` : ''}`,
         ),
       );
     }
@@ -441,17 +452,183 @@ export function iconSetCoverage(loaded, unchecked = new Map()) {
  * @returns {{map: string, icon: string} | null}
  */
 export function suggestIcon(set, doc) {
-  const kebab = doc.name.replace(/([a-z0-9])([A-Z])/gu, '$1-$2').toLowerCase();
-  // No guessing: only an icon whose whole id is the definition's name or one
-  // of its words.
-  for (const candidate of [
-    kebab,
-    ...doc.words.map(word => word.trim().toLowerCase().replace(/\s+/gu, '-')),
-  ]) {
-    const icon = set.data.icons.find(each => each.id === candidate);
-    if (icon) return {map: doc.name, icon: icon.id};
+  const [first] = suggestedIcons(set, doc);
+  return first ? {map: doc.name, icon: first.icon} : null;
+}
+
+/**
+ * Words that turn an icon into the opposite or a variation of its first
+ * words: `lock-open`, `bell-off`, `video-camera-slash`, `audio-lines-x`.
+ */
+const NEGATING_WORDS = new Set([
+  'off',
+  'slash',
+  'x',
+  'open',
+  'minus',
+  'ban',
+  'dashed',
+  'dot',
+  'code',
+  'formatting',
+  'exclamation',
+  'question',
+  'warning',
+]);
+
+/** Direction words that mean the other way. */
+/** @type {Record<string, string>} */
+const OPPOSITES = {
+  horizontal: 'vertical',
+  vertical: 'horizontal',
+  left: 'right',
+  right: 'left',
+  up: 'down',
+  down: 'up',
+  in: 'out',
+  out: 'in',
+};
+
+/** How many icons one definition is suggested at most. */
+export const SUGGESTIONS_PER_DEFINITION = 3;
+
+/**
+ * The icons a definition might map to, best first, at most three: each icon
+ * whose id starts with the definition's name (`video` → `video-camera`, but
+ * never `close` → `panel-left-close`), then each icon whose whole id is the definition's name or
+ * one of its words (`delete` → `trash`). An icon `map` already names for
+ * another definition, or whose id is another definition's name, is left out:
+ * it has a meaning of its own. Never a guess from parts of words.
+ * @param {{data: {icons: Array<{id: string, words?: string[]}>, map?: Record<string, string>}, definitions?: Array<{doc: {name: string}}>}} set
+ * @param {{name: string, words: string[]}} doc
+ * @returns {Array<{icon: string, word: string}>}
+ */
+export function suggestedIcons(set, doc) {
+  const toId = (/** @type {string} */ name) =>
+    name.replace(/([a-z0-9])([A-Z])/gu, '$1-$2').toLowerCase();
+  const nameId = toId(doc.name);
+  const nameWords = nameId.split('-').map(stem);
+  const map = set.data.map ?? {};
+  const taken = new Set([
+    ...Object.entries(map)
+      .filter(([name]) => name !== doc.name)
+      .map(([, id]) => id),
+    ...[...astryxIconDefinitions().definitions, ...(set.definitions ?? [])]
+      .map(each => toId(each.doc.name))
+      .filter(id => id !== nameId),
+  ]);
+  const wordIds = doc.words.map(word =>
+    word.trim().toLowerCase().replace(/\s+/gu, '-'),
+  );
+  // Every word the definition is known by, stemmed: its name's and its words'.
+  const meaning = new Set([
+    ...nameWords,
+    ...wordIds.flatMap(id => id.split('-')).map(stem),
+  ]);
+  const icons = set.data.icons.map(icon => ({
+    id: icon.id,
+    words: icon.id.split('-').map(stem),
+    raw: icon.id.split('-'),
+    other: (icon.words ?? []).filter(
+      word => !icon.id.split('-').includes(word),
+    ),
+  }));
+  /** How many of the definition's words an id has: more is a better fit. */
+  const fit = (/** @type {string[]} */ words) =>
+    words.filter(word => meaning.has(word)).length;
+  /**
+   * Candidates best first: most of the definition's words, then fewest
+   * extra words, then by id.
+   * @param {typeof icons} list
+   */
+  const ranked = list =>
+    [...list].sort(
+      (a, b) =>
+        fit(b.words) - fit(a.words) ||
+        a.words.length - b.words.length ||
+        (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+    );
+  // An id that turns the definition around (`ellipsis-vertical` for
+  // moreHorizontal) is never its icon.
+  const opposite = new Set(
+    nameWords.flatMap(word => (OPPOSITES[word] ? [OPPOSITES[word]] : [])),
+  );
+  const negated = (/** @type {string[]} */ words) =>
+    words.some(word => NEGATING_WORDS.has(word) || opposite.has(word));
+  /** @type {Array<{icon: string, word: string}>} */
+  const found = [];
+  const add = (/** @type {string} */ icon, /** @type {string} */ word) => {
+    if (taken.has(icon) || found.some(each => each.icon === icon)) return;
+    found.push({icon, word});
+  };
+  const squashed = nameId.replace(/-/gu, '');
+  // 1. The name itself, spelled with or without hyphens or a plural
+  //    (`lightbulb` → `light-bulb`, `language` → `languages`).
+  for (const icon of icons) {
+    if (
+      icon.id === nameId ||
+      icon.id.replace(/-/gu, '') === squashed ||
+      (icon.words.length === nameWords.length &&
+        icon.words.every((word, index) => word === nameWords[index]))
+    ) {
+      add(icon.id, nameId);
+    }
   }
-  return null;
+  // 2. An icon the library once named after the definition, or that it
+  //    gives the definition's name as another name (Lucide's
+  //    `more-horizontal` on `ellipsis`, `unlock` on `lock-open`).
+  for (const icon of icons) {
+    if (icon.other.includes(nameId)) add(icon.id, nameId);
+  }
+  // 3. Ids that start with the name (`video` → `video-camera`,
+  //    `trendUp` → `trending-up`), never a negated form.
+  ranked(
+    icons.filter(
+      icon =>
+        icon.words.length > nameWords.length &&
+        nameWords.every((word, index) => icon.words[index] === word) &&
+        !negated(icon.raw.slice(nameWords.length)),
+    ),
+  ).forEach(icon => add(icon.id, nameId));
+  // 4. An icon whose whole id is one of the definition's words.
+  for (const id of wordIds) {
+    if (icons.some(icon => icon.id === id)) add(id, id.replace(/-/gu, ' '));
+  }
+  // 5. Another name the library gives an icon that is one of the
+  //    definition's words (Lucide's `smile` on `face-slightly-smiling`).
+  for (const [index, id] of wordIds.entries()) {
+    for (const icon of icons) {
+      if (icon.other.includes(id)) add(icon.id, doc.words[index]);
+    }
+  }
+  // 6. Last, two-word ids that start with a one-word word (`columns` →
+  //    `columns-3`), best fit first, never a negated form.
+  for (const word of doc.words) {
+    if (!/^[a-z]{3,}$/u.test(word)) continue;
+    ranked(
+      icons.filter(
+        icon =>
+          icon.words.length === 2 &&
+          icon.words[0] === stem(word) &&
+          !negated(icon.raw.slice(1)),
+      ),
+    ).forEach(icon => add(icon.id, word));
+  }
+  return found.slice(0, SUGGESTIONS_PER_DEFINITION);
+}
+
+/**
+ * A word with a plural or verb ending taken off, so `trending` meets
+ * `trend` and `languages` meets `language`. Short words are kept.
+ * @param {string} word
+ */
+function stem(word) {
+  if (word.length > 5 && word.endsWith('ing')) return word.slice(0, -3);
+  if (word.length > 4 && word.endsWith('ed')) return word.slice(0, -2);
+  if (word.length > 3 && word.endsWith('s') && !word.endsWith('ss')) {
+    return word.slice(0, -1);
+  }
+  return word;
 }
 
 /**
@@ -665,6 +842,33 @@ function checkExports(set, packageDir, packageName, unchecked) {
   return issues;
 }
 
+/** The lowest search score a find hint needs: a whole word or a word start. */
+const FIND_FLOOR = 60;
+
+/**
+ * A search that finds icons for a definition in the set, named only when it
+ * answers: the definition's name, then each of its words, as a query against
+ * the set's icon ids and words. Empty when none answers, so the message never
+ * names a search that finds nothing.
+ * @param {DiscoveredIconSet} set
+ * @param {{name: string, words: string[]}} doc
+ */
+function findHint(set, doc) {
+  const queries = [
+    doc.name.replace(/([a-z0-9])([A-Z])/gu, '$1 $2').toLowerCase(),
+    ...doc.words,
+  ];
+  for (const query of queries) {
+    const found = rankIcons([set], query).filter(
+      each => each.score >= FIND_FLOOR,
+    );
+    if (found.length > 0) {
+      return ` (icons matching "${query}": \`astryx experimental icon ${query} --set ${set.name}\`)`;
+    }
+  }
+  return ' (no icon in the set has its name or words: pick the library icon that draws it; if the library has none, map the closest, or add your own artwork with `astryx experimental icon add <Name> --from ./src/icons/<name>.js --definition <definition>`)';
+}
+
 /**
  * The upstream checks of one set: version drift and license notices.
  * @param {DiscoveredIconSet} set
@@ -693,7 +897,7 @@ function checkUpstream(set, packageDir, pkg) {
     issues.push(
       issueWarning(
         ICON_SOURCE_VERSION_DRIFT,
-        `${label} was generated from ${source.package}@${source.version}, but the package resolves ${source.package}@${installed}. Regenerate ${set.name}.icons.json.`,
+        `${label} was generated from ${source.package}@${source.version}, but the package resolves ${source.package}@${installed}. Refresh it: \`astryx experimental icon new-set ${set.name} --from <the ${source.package} module it wraps>\`, then rerun any \`add --variant … --all\`.`,
       ),
     );
   } else if (
@@ -704,7 +908,7 @@ function checkUpstream(set, packageDir, pkg) {
     issues.push(
       issueWarning(
         ICON_SOURCE_VERSION_DRIFT,
-        `${label} was generated from ${source.package}@${source.version}, but the package depends on ${source.package}@${range}. Regenerate ${set.name}.icons.json.`,
+        `${label} was generated from ${source.package}@${source.version}, but the package depends on ${source.package}@${range}. Refresh it: \`astryx experimental icon new-set ${set.name} --from <the ${source.package} module it wraps>\`, then rerun any \`add --variant … --all\`.`,
       ),
     );
   }

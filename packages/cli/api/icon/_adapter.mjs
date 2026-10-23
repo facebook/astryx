@@ -51,6 +51,9 @@ export {
   variantExportName,
   writeGeneratedIcons,
   writeIconSetData,
+  definitionNameOf,
+  iconIdIn,
+  publishLocalSource,
   THEME_MAP_NAME,
 } from '../../foundation/discovery/icon-set-writer.mjs';
 export {exportValueKind} from '../../foundation/discovery/module-exports.mjs';

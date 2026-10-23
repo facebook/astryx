@@ -6,6 +6,7 @@ import * as path from 'node:path';
 import {integrationAdd} from '../../integration/add-contribution.mjs';
 import {iconNewSet} from './new-set.mjs';
 import {discoverIconSetDirectory} from '../../../foundation/discovery/icon-set-discovery.mjs';
+import {cliVersion} from '../../../foundation/release/run-context.mjs';
 
 /** @type {string} */
 let tmpDir;
@@ -85,7 +86,7 @@ describe('iconNewSet (experimental icon new-set)', () => {
     expect(left).toEqual([]);
   });
 
-  it('names the line for the entry file, relative to it, when the entry is not at the package root', async () => {
+  it('adds the export line to the entry file, relative to it, when the entry is not at the package root', async () => {
     setup({license: 'MIT'});
     const pkgFile = path.join(tmpDir, 'package.json');
     fs.writeFileSync(
@@ -99,9 +100,35 @@ describe('iconNewSet (experimental icon new-set)', () => {
     fs.mkdirSync(path.join(tmpDir, 'src'));
     fs.writeFileSync(path.join(tmpDir, 'src', 'index.js'), 'export {};\n');
     const result = await iconNewSet('outline', {cwd: tmpDir});
-    expect(result.data.notes).toEqual([
-      "Add `export * from '../icon-sets/outline/outline.generated.js';` to src/index.js, so the icons import from @acme/icons.",
-      'Run `astryx integration check` to see the icon definitions still to map.',
+    expect(read('src/index.js')).toBe(
+      "export {};\nexport * from '../icon-sets/outline/outline.generated.js';\n",
+    );
+    expect(
+      result.data.notes?.filter(note => note.includes('export * from')),
+    ).toEqual([
+      expect.stringContaining(
+        "added `export * from '../icon-sets/outline/outline.generated.js';` to src/index.js",
+      ),
+    ]);
+  });
+
+  it('names the line, relative to the entry, for an entry it does not edit', async () => {
+    setup({license: 'MIT'});
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({
+        ...JSON.parse(read('package.json')),
+        exports: {'.': './dist/index.cjs'},
+      }),
+    );
+    fs.mkdirSync(path.join(tmpDir, 'dist'));
+    fs.writeFileSync(path.join(tmpDir, 'dist', 'index.cjs'), '');
+    const result = await iconNewSet('outline', {cwd: tmpDir});
+    expect(read('dist/index.cjs')).toBe('');
+    expect(
+      result.data.notes?.filter(note => note.includes('export * from')),
+    ).toEqual([
+      "Add `export * from '../icon-sets/outline/outline.generated.js';` to dist/index.cjs, so the icons import from @acme/icons.",
     ]);
   });
 
@@ -121,9 +148,12 @@ describe('iconNewSet (experimental icon new-set)', () => {
       "export * from '../icon-sets/outline/outline.generated.js';\n",
     );
     const result = await iconNewSet('outline', {cwd: tmpDir});
-    expect(result.data.notes).toEqual([
-      'Run `astryx integration check` to see the icon definitions still to map.',
-    ]);
+    expect(read('src/index.js')).toBe(
+      "export * from '../icon-sets/outline/outline.generated.js';\n",
+    );
+    expect(
+      result.data.notes?.filter(note => note.includes('export * from')),
+    ).toEqual([]);
   });
 
   it('writes a typed descriptor and a starter data file, declares the root, and adds it to files', async () => {
@@ -142,6 +172,8 @@ describe('iconNewSet (experimental icon new-set)', () => {
           'icon-sets/outline/outline.icons.json',
           'icon-sets/outline/outline.generated.js',
           'icon-sets/outline/outline.generated.d.ts',
+          'index.js',
+          'index.d.ts',
           'package.json',
           'astryx.integration.mjs',
         ],
@@ -149,11 +181,23 @@ describe('iconNewSet (experimental icon new-set)', () => {
         dryRun: false,
         icons: 0,
         notes: [
-          // No exports and no root file: nothing to add the line to yet.
-          '"@acme/icons" does not resolve yet: point its package.json "exports" at a file that has `export * from \'./icon-sets/outline/outline.generated.js\';`.',
+          `In your package it created index.js and index.d.ts, which re-export the set, and named them in exports, main, and types; declared the peers react >=18, @types/react >=18 (optional), @astryxdesign/cli >=${cliVersion()} (optional); added the typecheck script (\`astryx integration check --strict\`).`,
+          'The set\'s description is a placeholder ("Outline icons."): apps and discover show it. Pass --description when you create a set, or edit icon-sets/outline/outline.doc.mjs.',
           'Run `astryx integration check` to see the icon definitions still to map.',
         ],
       },
+    });
+    // A package with no entry gets one that re-exports the generated module.
+    expect(read('index.js')).toBe(
+      "export * from './icon-sets/outline/outline.generated.js';\n",
+    );
+    expect(read('index.d.ts')).toBe(
+      "export * from './icon-sets/outline/outline.generated.js';\n",
+    );
+    expect(JSON.parse(read('package.json'))).toMatchObject({
+      main: './index.js',
+      types: './index.d.ts',
+      exports: {'.': {types: './index.d.ts', default: './index.js'}},
     });
     // The generated module starts with an empty theme map, and its types.
     expect(read('icon-sets/outline/outline.generated.js')).toContain(
@@ -185,6 +229,8 @@ describe('iconNewSet (experimental icon new-set)', () => {
       'dist',
       'icon-sets',
       'astryx.integration.mjs',
+      'index.js',
+      'index.d.ts',
     ]);
 
     // The written set is a valid, discoverable set.
@@ -198,14 +244,19 @@ describe('iconNewSet (experimental icon new-set)', () => {
     ]);
   });
 
-  it('creates the manifest on first add and never creates a files field', async () => {
+  it('creates the manifest on first add, and a files list naming what the set publishes', async () => {
     setup({manifest: null, files: null});
     const result = await iconNewSet('brand-glyphs', {cwd: tmpDir});
     expect(result.data.root).toEqual({path: './icon-sets', created: true});
     expect(result.data.files).toContain('astryx.integration.mjs');
     expect(read('astryx.integration.mjs')).toContain('experimental: {');
     expect(read('astryx.integration.mjs')).toContain("iconSets: './icon-sets'");
-    expect(JSON.parse(read('package.json')).files).toBeUndefined();
+    expect(JSON.parse(read('package.json')).files).toEqual([
+      'index.js',
+      'index.d.ts',
+      'icon-sets',
+      'astryx.integration.mjs',
+    ]);
     // No package license: the descriptor says so instead of guessing one.
     expect(read('icon-sets/brand-glyphs/brand-glyphs.doc.mjs')).toContain(
       "license: 'UNLICENSED'",

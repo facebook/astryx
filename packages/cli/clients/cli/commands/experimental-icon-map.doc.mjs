@@ -14,7 +14,7 @@ export const doc = {
     "Run inside an icon-set package. Sets `map[<definition>] = <icon>` in the set's data file; `integration check` prints these commands for definitions your set already has a fitting icon for. Experimental: it may change or be removed in a patch release.",
   fn: 'iconMap',
   args: [
-    {name: 'definition', param: 'definition', required: true},
+    {name: 'definition', param: 'definition', required: false},
     {name: 'icon', param: 'icon', required: false},
   ],
   options: [
@@ -28,11 +28,21 @@ export const doc = {
       param: 'options.remove',
       description: "Remove the definition's entry; takes no icon",
     },
+    {
+      flag: '--pairs <list>',
+      param: 'options.pairs',
+      description:
+        'Many entries in one write: <definition>=<icon> pairs, comma-separated; checked together, all or none; an existing entry is replaced',
+    },
   ],
   examples: [
     {
       label: 'Map a definition',
       cli: 'astryx experimental icon map delete trash',
+    },
+    {
+      label: 'Map many at once',
+      cli: 'astryx experimental icon map --pairs close=x-mark,error=x-circle,search=magnifying-glass',
     },
     {
       label: 'Remove an entry',

@@ -249,27 +249,27 @@ const CASES = {
   },
   iconNewDefinition: {
     ERR_PROJECT_REQUIRED: () =>
-      iconNewDefinition('rotate', {cwd: outside(), ...DEFINITION}),
+      iconNewDefinition('random', {cwd: outside(), ...DEFINITION}),
     ERR_INVALID_ARGUMENT: () =>
       iconNewDefinition('Not-Camel', {cwd: pkg(), ...DEFINITION}),
     ERR_MISSING_ARGUMENT: () =>
-      iconNewDefinition('rotate', {cwd: pkg(), words: ['turn']}),
+      iconNewDefinition('random', {cwd: pkg(), words: ['turn']}),
     ERR_FILE_EXISTS: async () => {
       const dir = pkg();
-      await iconNewDefinition('rotate', {cwd: dir, ...DEFINITION});
-      return iconNewDefinition('rotate', {cwd: dir, ...DEFINITION});
+      await iconNewDefinition('random', {cwd: dir, ...DEFINITION});
+      return iconNewDefinition('random', {cwd: dir, ...DEFINITION});
     },
     ERR_NOT_FOUND: () =>
-      iconNewDefinition('rotate', {cwd: pkg(), ...DEFINITION, icon: 'nope'}),
+      iconNewDefinition('random', {cwd: pkg(), ...DEFINITION, icon: 'nope'}),
     ERR_PATH_TRAVERSAL: () => {
       const dir = pkg();
       manifest(dir, "export default {experimental: {iconSets: '../out'}};\n");
-      return iconNewDefinition('rotate', {cwd: dir, ...DEFINITION});
+      return iconNewDefinition('random', {cwd: dir, ...DEFINITION});
     },
     ERR_WRITE_FAILED: () => {
       const dir = pkg();
       lock(path.join(dir, 'icon-sets', 'glyphs', 'definitions'));
-      return iconNewDefinition('rotate', {cwd: dir, ...DEFINITION});
+      return iconNewDefinition('random', {cwd: dir, ...DEFINITION});
     },
   },
 };

@@ -125,6 +125,59 @@ describe('mapTemplateIcons', () => {
     ]);
   });
 
+  it("drops a library's sizing props from a mapped icon and reports them", () => {
+    const {source, icons} = map(
+      [
+        "import {CloseGlyph, PencilGlyph} from '@acme/library';",
+        '',
+        'export const A = () => (',
+        '  <div>',
+        '    <CloseGlyph size={16} strokeWidth={2} className="x" />',
+        '    <CloseGlyph',
+        '      absoluteStrokeWidth',
+        '    />',
+        '    <PencilGlyph size={16} />',
+        '  </div>',
+        ');',
+        '',
+      ].join('\n'),
+      DECLARED,
+    );
+    expect(source).toContain('<XIcon className="x" />');
+    expect(source).toMatch(/<XIcon\s*\/>/u);
+    expect(source).not.toContain('absoluteStrokeWidth');
+    // A kept icon keeps its props.
+    expect(source).toContain('<PencilGlyph size={16} />');
+    expect(icons.mapped[0].dropped).toEqual([
+      'absoluteStrokeWidth',
+      'size',
+      'strokeWidth',
+    ]);
+    expect(icons.kept[0]).not.toHaveProperty('dropped');
+  });
+
+  it('keeps comments inside and after a rewritten import line', () => {
+    const {source} = map(
+      [
+        "import {CloseGlyph /* close */, PencilGlyph /* pen */} from '@acme/library'; // tools",
+        "import {HomeGlyph} from '@acme/library/home'; // the home link",
+        '',
+        'export const A = () => <><CloseGlyph /><PencilGlyph /><HomeGlyph /></>;',
+        '',
+      ].join('\n'),
+      DECLARED,
+    );
+    expect(source).toContain('/* close */');
+    expect(source).toContain('/* pen */');
+    expect(source).toContain('// tools');
+    expect(source).toContain('// the home link');
+    // Each comment is outside any code it would swallow.
+    expect(source).toContain(
+      "import {PencilGlyph /* pen */} from '@acme/library'; // tools",
+    );
+    expect(source).toMatch(/^\/\/ the home link$/mu);
+  });
+
   it('an undeclared import is not an icon: it is left alone and not reported', () => {
     const source =
       "import {CloseGlyph} from '@acme/library';\nexport const A = () => <CloseGlyph />;\n";

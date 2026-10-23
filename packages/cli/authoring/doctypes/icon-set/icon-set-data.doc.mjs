@@ -38,6 +38,12 @@ export const doc = {
         'The upstream library and version the file was generated from. Omit it for a set with no upstream.',
     },
     {
+      name: 'exclude',
+      type: 'string[]',
+      description:
+        'Library exports that are not icons. `experimental icon new-set --from` leaves them out every time it wraps or refreshes the set; `--exclude` adds to the list.',
+    },
+    {
       name: 'generated',
       type: 'string',
       description:

@@ -96,7 +96,7 @@
  * @property {'selected' | 'none' | 'ambiguous' | 'missing' | 'withdrawn'} status The project's icon-set state.
  * @property {string | null} set The project's icon set as `<package>/<set>`, when selected.
  * @property {string} reason Why the project has that set, or none.
- * @property {Array<{source: {module: string, export: string}, target: {set: string, package: string, id: string, module: string, export: string}, by: 'match' | 'definition'}>} mapped Icons rewritten to the project's set, and the rule that chose each one: a reviewed `exact` or `strong` match, or the icon the set's `map` names for the icon definition the template declares.
+ * @property {Array<{source: {module: string, export: string}, target: {set: string, package: string, id: string, module: string, export: string}, by: 'match' | 'definition', dropped?: string[]}>} mapped Icons rewritten to the project's set, and the rule that chose each one: a reviewed `exact` or `strong` match, or the icon the set's `map` names for the icon definition the template declares. `dropped` names the library's sizing props (`size`, `strokeWidth`, `absoluteStrokeWidth`) removed from the icon's elements: an icon set's icons take their size from CSS.
  * @property {Array<{module: string | null, export: string, reason: string, suggestion?: {set: string, id: string, module: string, export: string, confidence: 'likely'}}>} kept Icons left as the template wrote them, with why, and a `likely` reviewed match as a suggestion when the project set has one. Every declared key is mapped or kept; `module` is null for a key the template does not import, and `export` is `default` for a default import and `*` for a namespace import.
  */
 

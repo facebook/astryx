@@ -16,13 +16,13 @@ export const doc = {
     "Run inside an icon-set package. Sets `map[definition] = icon` in the set's data file, or removes the entry. The definition must be Astryx's or one the set declares, and the icon an id in the file. The file is written in one fixed shape, `map` keys sorted. `integration check` suggests these commands for definitions the set has a fitting icon for. Experimental: it may change or be removed in a patch release.",
   importPath: '@astryxdesign/cli/api',
   signature:
-    'iconMap(definition: string, icon?: string, options?: IconMapOptions): Promise<IconMapResponse>',
+    'iconMap(definition: string | undefined, icon?: string, options?: IconMapOptions): Promise<IconMapResponse | IconMapManyResponse>',
   keywords: ['icon', 'icon set', 'map', 'icon definition', 'register'],
   params: [
     {
       name: 'definition',
-      type: 'string',
-      description: 'The icon definition.',
+      type: 'string | undefined',
+      description: 'The icon definition. Omit with `options.pairs`.',
       required: true,
     },
     {
@@ -46,8 +46,19 @@ export const doc = {
       description: "Remove the definition's entry.",
       default: 'false',
     },
+    {
+      name: 'options.pairs',
+      type: 'string | string[]',
+      description:
+        'Many entries at once: `<definition>=<icon>` pairs separated by commas or spaces, with no definition or icon argument. Every pair is checked before any is written.',
+    },
   ],
   returns: [
+    {
+      type: 'icon.mapMany',
+      description:
+        'With pairs: the set, the data file, each entry with the icon it replaced, and whether the file changed.',
+    },
     {
       type: 'icon.map',
       description:

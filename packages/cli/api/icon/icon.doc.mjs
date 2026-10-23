@@ -45,6 +45,20 @@ export const doc = {
         'Max matches, a positive integer (default 10). `matchCount` counts every match.',
     },
     {
+      name: 'options.allIcons',
+      type: 'boolean',
+      description:
+        'With options.set and no query: every icon of that set, by id.',
+      default: 'false',
+    },
+    {
+      name: 'options.definitions',
+      type: 'boolean',
+      description:
+        'Every Astryx icon definition: name, whether it is built in, description, and words. Takes no query or other option.',
+      default: 'false',
+    },
+    {
       name: 'options.cwd',
       type: 'string',
       description: 'Project directory (default: the current directory).',
@@ -60,6 +74,16 @@ export const doc = {
       type: 'icon.detail',
       description:
         "One icon's fields, as a match names them, with every variant's import line. The envelope names the set's package.",
+    },
+    {
+      type: 'icon.definitions',
+      description:
+        'With definitions: every Astryx icon definition, with whether it is built in, its description, and its words.',
+    },
+    {
+      type: 'icon.setIcons',
+      description:
+        'With set and all: every icon of that set by id, with its export, words, and the definitions it draws.',
     },
     {
       type: 'icon.list',

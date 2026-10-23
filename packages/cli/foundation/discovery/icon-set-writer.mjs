@@ -34,8 +34,11 @@ import {levenshteinDistance} from '../text/string-utils.mjs';
 import {astryxDefinitionsByName} from './icon-definition-discovery.mjs';
 import {
   discoverIconSetDirectory,
+  NOTICE_FILE_RE,
   resolveIconModule,
 } from './icon-set-discovery.mjs';
+import {findInstalledPackage} from '../fs/paths.mjs';
+import {cliVersion} from '../release/run-context.mjs';
 import {
   exportScalarType,
   exportValueKind,
@@ -64,16 +67,31 @@ export class IconSetAuthoringError extends Error {
 
 /**
  * `XMarkIcon` → `x-mark`; `Trash2` → `trash-2`; `ArrowUpDown` →
- * `arrow-up-down`: an icon id from an export name.
+ * `arrow-up-down`; `Squares2X2Icon` and `Grid2x2` → `squares-2x2`,
+ * `grid-2x2`: an icon id from an export name. A dimension (a digit, `x` or
+ * `X`, a digit) stays one word.
  * @param {string} name
  */
 export function iconIdOf(name) {
-  return name
-    .replace(/Icon$/u, '')
-    .replace(/([a-z])([A-Z0-9])/gu, '$1-$2')
-    .replace(/([0-9])([A-Z])/gu, '$1-$2')
-    .replace(/([A-Z])([A-Z][a-z])/gu, '$1-$2')
-    .toLowerCase();
+  return (
+    name
+      .replace(/Icon$/u, '')
+      // `2X2` and `2x2` are one word: lower the x first.
+      .replace(/([0-9])[xX](?=[0-9])/gu, '$1x')
+      // A one-letter word before a digit ends there: `CalendarX2` is
+      // `calendar-x-2`, as its library names it.
+      .replace(/([a-z][A-Z])(?=[0-9])/gu, '$1-')
+      // A lower-case letter before a capital or a digit ends a word, except
+      // the x inside a dimension.
+      .replace(/([a-z])(?=[A-Z0-9])/gu, (match, letter, offset, whole) =>
+        letter === 'x' && /[0-9]/u.test(whole[offset - 1] ?? '')
+          ? letter
+          : `${letter}-`,
+      )
+      .replace(/([0-9])([A-Z])/gu, '$1-$2')
+      .replace(/([A-Z])([A-Z][a-z])/gu, '$1-$2')
+      .toLowerCase()
+  );
 }
 
 /**
@@ -207,6 +225,7 @@ const DATA_KEYS = [
   'schemaVersion',
   'module',
   'source',
+  'exclude',
   'generated',
   'adapter',
   'variants',
@@ -386,6 +405,51 @@ export function resolveIconSource(from, {packageDir, pkg}) {
   return {file, module: from};
 }
 
+/**
+ * The installed library a package specifier reads from: its name, version,
+ * license, and license notice files, from its own package.json. Null for a
+ * ./ path, or when the library is not installed or has no version.
+ * @param {string} from a package or package subpath
+ * @param {string} packageDir the set's package
+ * @returns {{package: string, version: string, license: string | null, dir: string, notices: string[]} | null}
+ */
+export function librarySource(from, packageDir) {
+  if (from.startsWith('.') || path.isAbsolute(from)) return null;
+  const parts = from.split('/');
+  const name = from.startsWith('@') ? parts.slice(0, 2).join('/') : parts[0];
+  const dir = findInstalledPackage(packageDir, name, Infinity);
+  if (!dir) return null;
+  /** @type {Record<string, any>} */
+  let pkg;
+  try {
+    pkg = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf-8'));
+  } catch {
+    return null;
+  }
+  if (typeof pkg.version !== 'string' || pkg.version === '') return null;
+  /** @type {string[]} */
+  let notices = [];
+  try {
+    notices = fs
+      .readdirSync(dir, {withFileTypes: true})
+      .filter(file => file.isFile() && NOTICE_FILE_RE.test(file.name))
+      .map(file => file.name)
+      .sort();
+  } catch {
+    // No readable notices.
+  }
+  return {
+    package: name,
+    version: pkg.version,
+    license:
+      typeof pkg.license === 'string' && pkg.license.trim() !== ''
+        ? pkg.license
+        : null,
+    dir,
+    notices,
+  };
+}
+
 /** @param {string} base */
 function resolveFile(base) {
   const extensions = ['', '.mjs', '.js', '.cjs', '.ts', '.tsx', '.jsx', '.mts'];
@@ -419,7 +483,16 @@ export function assertIconExport(file, module, exportName) {
         ? `"${module}" has no default export.`
         : `"${module}" does not export "${exportName}".`,
       'ERR_NOT_FOUND',
-      closestNames(exportName, names).map(name => ({
+      [
+        ...new Set([
+          // `XMark` for `XMarkIcon`: the library's name with its suffix.
+          ...names.filter(
+            name =>
+              name === `${exportName}Icon` || `${name}Icon` === exportName,
+          ),
+          ...closestNames(exportName, names),
+        ]),
+      ].map(name => ({
         name,
         reason: `an export of ${module}`,
       })),
@@ -434,7 +507,7 @@ const SCREAMING_CASE_RE = /^[A-Z][A-Z0-9_]+$/u;
  * The library exports that can be icons: PascalCase components and, when the
  * set declares an adapter, also data exports, camelCase included: objects,
  * and plain strings only in a library whose candidates are all strings.
- * Left out: `default`, `Icon`, SCREAMING_CASE constants, number and boolean
+ * Left out: `default`, `Icon`, `…Provider` and `…Context` components, SCREAMING_CASE constants, number and boolean
  * exports, and `exclude`.
  * @param {string} file
  * @param {{adapter?: boolean, exclude?: string[]}} [options] `exclude`: export
@@ -447,6 +520,9 @@ function iconCandidates(file, {adapter = false, exclude = []} = {}) {
   const out = [];
   for (const name of followedExportNames(file)) {
     if (name === 'default' || name === 'Icon' || skipped.has(name)) continue;
+    // A context provider or context (`LucideProvider`) is a component that
+    // draws nothing.
+    if (/(?:Provider|Context)$/u.test(name)) continue;
     // SCREAMING_CASE names are constants (`README`, `VERSION`), not icons.
     if (SCREAMING_CASE_RE.test(name)) continue;
     const kind = exportValueKind(file, name);
@@ -468,6 +544,21 @@ function iconCandidates(file, {adapter = false, exclude = []} = {}) {
   return out.some(each => each.scalar == null)
     ? out.filter(each => each.scalar == null)
     : out;
+}
+
+/**
+ * The exports of a library that are not icons and that wrapping it leaves
+ * out (`Icon`, `LucideProvider`, `createLucideIcon`, constants), so the
+ * receipt can say so. Another name of an icon is not listed.
+ * @param {string} file
+ * @param {{adapter?: boolean, exclude?: string[]}} [options]
+ * @returns {string[]}
+ */
+export function nonIconExports(file, options = {}) {
+  const icons = new Set(iconCandidates(file, options).map(each => each.name));
+  return followedExportNames(file).filter(
+    name => name !== 'default' && !icons.has(name),
+  );
 }
 
 /**
@@ -550,7 +641,9 @@ export function modulePrefix(file, options) {
  * @param {string} file
  * @param {{adapter?: boolean, exclude?: string[]}} [options] `adapter`:
  *   whether the set declares one; `exclude`: export names that are not icons
- * @returns {Array<{export: string, id: string, name: string, adapt: boolean}>}
+ * @returns {Array<{export: string, id: string, name: string, adapt: boolean, aliases: string[]}>}
+ *   `aliases`: the ids of the other names the library exports the icon as,
+ *   leaving out the library's own name (`lucide-trash`)
  */
 export function libraryIcons(file, options = {}) {
   const candidates = iconCandidates(file, options);
@@ -564,7 +657,7 @@ export function libraryIcons(file, options = {}) {
     entry.names.push(name);
     byOrigin.set(key, entry);
   }
-  /** @type {Array<[string, string, boolean, string | null]>} */
+  /** @type {Array<[string, string, boolean, string | null, string[]]>} */
   const chosen = [];
   for (const [key, {names, adapt, scalar}] of byOrigin) {
     const local = key.split('\0')[1];
@@ -575,17 +668,48 @@ export function libraryIcons(file, options = {}) {
       [...(withIcon.length > 0 ? withIcon : names)].sort(
         (a, b) => a.length - b.length || (a < b ? -1 : 1),
       )[0];
-    chosen.push([key, preferred, adapt, scalar]);
+    chosen.push([key, preferred, adapt, scalar, names]);
   }
   const prefix = libraryPrefix(
     prefixNames(chosen.map(([, name, , scalar]) => ({name, scalar}))),
   );
-  /** @type {Map<string, {export: string, id: string, name: string, adapt: boolean}>} */
+  /** @type {Map<string, {export: string, id: string, name: string, adapt: boolean, aliases: string[]}>} */
   const byId = new Map();
-  for (const [, preferred, adapt] of chosen) {
+  for (const [, preferred, adapt, , names] of chosen) {
     const naming = iconNaming(preferred, prefix);
     if (!naming.id || byId.has(naming.id)) continue;
-    byId.set(naming.id, {export: preferred, ...naming, adapt});
+    // The other names the library exports the same icon as (Lucide's
+    // `Trash2` for `Trash`), as ids: an icon is found and mapped by them too.
+    const aliases = [
+      ...new Set(names.map(name => iconNaming(name, prefix).id)),
+    ].filter(alias => alias && alias !== naming.id);
+    byId.set(naming.id, {export: preferred, ...naming, adapt, aliases});
+  }
+  // A word every alias of most icons starts with (`lucide` in
+  // `LucideTrash`) is the library's name, not an alias.
+  /** @type {Map<string, number>} */
+  const leads = new Map();
+  for (const icon of byId.values()) {
+    for (const alias of icon.aliases) {
+      if (alias.endsWith(`-${icon.id}`)) {
+        const lead = alias.slice(0, -icon.id.length - 1);
+        leads.set(lead, (leads.get(lead) ?? 0) + 1);
+      }
+    }
+  }
+  const brand = new Set(
+    [...leads]
+      .filter(([, count]) => count >= Math.max(2, byId.size / 2))
+      .map(([lead]) => lead),
+  );
+  for (const icon of byId.values()) {
+    icon.aliases = icon.aliases
+      .filter(
+        alias =>
+          ![...brand].some(lead => alias.startsWith(`${lead}-`)) &&
+          !byId.has(alias),
+      )
+      .sort();
   }
   return [...byId.values()].sort((a, b) =>
     a.id < b.id ? -1 : a.id > b.id ? 1 : 0,
@@ -695,8 +819,10 @@ export function writeDefinitionFile(set, doc) {
 
 /** The comment the generated icons module opens with. */
 const GENERATED_HEADER = [
-  '// Generated by `astryx experimental icon add`: one export per icon of this set.',
-  '// Edit with `astryx experimental icon add`; a statement added by hand is kept.',
+  '// Generated by `astryx experimental icon` (new-set, add, map): one export per icon of this set.',
+  '// Edit with those commands; a statement added by hand is kept.',
+  '// themeIcons has one entry per built-in icon definition in map (the names Core renders), not one per icon;',
+  '// the import lines above it give it local names for the re-exported icons.',
 ];
 
 /**
@@ -917,8 +1043,11 @@ export function generatedModuleText(
   /** @param {string} name */
   const existing = name =>
     [...exports].find(line =>
+      // The name the module exports: after `as`, alone in braces, or a
+      // const; never the source name of another export (`TrashIcon as
+      // TrashSolidIcon` exports TrashSolidIcon).
       new RegExp(
-        `(?:\\b(?:as\\s+|export\\s+\\{\\s*|export const\\s+))${name}\\b`,
+        `(?:\\bas\\s+${name}\\s*\\}|^export\\s+\\{\\s*${name}\\s*\\}|^export const\\s+${name}\\b)`,
         'u',
       ).test(line),
     );
@@ -1178,4 +1307,289 @@ export function setModuleNote(set, where, generated, name) {
     .join('/');
   if (!relative.startsWith('.')) relative = `./${relative}`;
   return `Add \`export * from '${relative}';\` to ${path.relative(where.packageDir, entry).split(path.sep).join('/')}, so the icons import from ${set.data.module}.`;
+}
+
+/**
+ * Declare the peers an icon-set package publishes with, as the guide's
+ * "Before you publish" asks: `react` (the theme map and adapter use it) and
+ * `@astryxdesign/cli` as an optional peer from the release that reads the
+ * set. A peer the package already declares is kept; a `dependencies` entry
+ * for either moves to `devDependencies`, so it stays installed for building
+ * and testing. Mutates `pkg`; returns what changed, one line each.
+ * @param {Record<string, any>} pkg
+ * @returns {string[]}
+ */
+export function declarePeers(pkg) {
+  /** @type {Record<string, {range: string, optional: boolean}>} */
+  const wanted = {
+    react: {range: '>=18', optional: false},
+    // The generated declaration file imports React's types.
+    '@types/react': {range: '>=18', optional: true},
+    '@astryxdesign/cli': {range: `>=${cliVersion()}`, optional: true},
+  };
+  /** @type {string[]} */
+  const declared = [];
+  /** @type {string[]} */
+  const moved = [];
+  for (const [name, {range, optional}] of Object.entries(wanted)) {
+    if (pkg.peerDependencies?.[name] != null) continue;
+    pkg.peerDependencies = {...(pkg.peerDependencies ?? {}), [name]: range};
+    if (optional) {
+      pkg.peerDependenciesMeta = {
+        ...(pkg.peerDependenciesMeta ?? {}),
+        [name]: {optional: true},
+      };
+    }
+    const installed = pkg.dependencies?.[name];
+    if (installed != null) {
+      const {[name]: _moved, ...rest} = pkg.dependencies;
+      pkg.dependencies = rest;
+      if (Object.keys(rest).length === 0) delete pkg.dependencies;
+      pkg.devDependencies = {...(pkg.devDependencies ?? {}), [name]: installed};
+      moved.push(name);
+    }
+    declared.push(`${name} ${range}${optional ? ' (optional)' : ''}`);
+  }
+  // The check every integration runs in its build (the quick start's
+  // `typecheck` script), when the package has none.
+  /** @type {string[]} */
+  const scripts = [];
+  if (pkg.scripts?.typecheck == null) {
+    pkg.scripts = {
+      ...(pkg.scripts ?? {}),
+      typecheck: 'astryx integration check --strict',
+    };
+    scripts.push(
+      'added the typecheck script (`astryx integration check --strict`)',
+    );
+  }
+  return [
+    ...(declared.length > 0
+      ? [`declared the peers ${declared.join(', ')}`]
+      : []),
+    ...(moved.length > 0
+      ? [`moved ${moved.join(' and ')} from dependencies to devDependencies`]
+      : []),
+    ...scripts,
+  ];
+}
+
+/**
+ * How a new set's generated module joins the package's public entry, so its
+ * icons and theme map import from the package by name (FR14):
+ *   - a package with no entry (no `exports`, no `main`, no `index.js`) gets
+ *     `index.js` and `index.d.ts` that re-export the generated module, and
+ *     package.json `exports`, `main`, and `types` naming them;
+ *   - an entry file inside the package (and its declaration file, when one
+ *     is named) gains the `export *` line, once;
+ *   - anything else (a built entry, CommonJS) is left alone, with a note.
+ * @param {string} packageDir
+ * @param {string} pkgText package.json's text, possibly already updated
+ * @param {string} generated the generated module's ./ path from the package root
+ * @param {string} [manifestName] the integration manifest's file name
+ * @returns {{writes: Array<{path: string, contents: string, createOnly: boolean, expectedOriginal?: Buffer}>, packageJson: string | null, wired: string[], changes: string[], note: string | null}}
+ */
+export function entryWiring(
+  packageDir,
+  pkgText,
+  generated,
+  manifestName = 'astryx.integration.mjs',
+) {
+  /** @type {Record<string, any>} */
+  const pkg = JSON.parse(pkgText);
+  const changes = declarePeers(pkg);
+  const peersAdded = changes.length > 0;
+  const target = generated.replace(/\.[cm]?[jt]sx?$/u, '.js');
+  /** @param {string} from a file in the package */
+  const lineFor = from => {
+    let relative = path
+      .relative(path.dirname(from), path.join(packageDir, target))
+      .split(path.sep)
+      .join('/');
+    if (!relative.startsWith('.')) relative = `./${relative}`;
+    return `export * from '${relative}';`;
+  };
+  /** @type {Array<{path: string, contents: string, createOnly: boolean, expectedOriginal?: Buffer}>} */
+  const writes = [];
+  /** @type {string[]} */
+  const wired = [];
+  const name = typeof pkg.name === 'string' ? pkg.name : '';
+  const entry = name
+    ? resolveIconModule(name, packageDir, {name, dir: packageDir})
+    : null;
+  if (
+    entry == null &&
+    pkg.exports === undefined &&
+    pkg.main === undefined &&
+    !fs.existsSync(path.join(packageDir, 'index.js'))
+  ) {
+    for (const file of ['index.js', 'index.d.ts']) {
+      const full = path.join(packageDir, file);
+      writes.push({
+        path: full,
+        contents: `${lineFor(full)}\n`,
+        createOnly: true,
+      });
+      wired.push(file);
+    }
+    pkg.main = './index.js';
+    pkg.types = './index.d.ts';
+    pkg.exports = {'.': {types: './index.d.ts', default: './index.js'}};
+    changes.unshift(
+      'created index.js and index.d.ts, which re-export the set, and named them in exports, main, and types',
+    );
+    if (Array.isArray(pkg.files)) {
+      for (const file of ['index.js', 'index.d.ts']) {
+        if (!pkg.files.includes(file)) pkg.files.push(file);
+      }
+    } else if (pkg.files === undefined) {
+      // A new package publishes what the set needs, not every file in the
+      // folder (tests, scratch files).
+      const root = generated.replace(/^\.\//u, '').split('/')[0];
+      pkg.files = ['index.js', 'index.d.ts', root, manifestName];
+      changes.push(`set files to ${pkg.files.join(', ')}`);
+    }
+    return {
+      writes,
+      packageJson: `${JSON.stringify(pkg, null, 2)}\n`,
+      wired: [...wired, 'package.json'],
+      changes,
+      note: null,
+    };
+  }
+  const inside = (/** @type {string} */ file) => {
+    const relative = path.relative(packageDir, file);
+    return (
+      !relative.startsWith('..') &&
+      !path.isAbsolute(relative) &&
+      !relative.split(path.sep).includes('node_modules')
+    );
+  };
+  /** @param {string} file */
+  const append = file => {
+    const before = fs.readFileSync(file);
+    const text = before.toString('utf-8');
+    const line = lineFor(file);
+    if (text.includes(line)) return;
+    writes.push({
+      path: file,
+      contents: `${text}${text === '' || text.endsWith('\n') ? '' : '\n'}${line}\n`,
+      createOnly: false,
+      expectedOriginal: before,
+    });
+    const relative = path.relative(packageDir, file).split(path.sep).join('/');
+    wired.push(relative);
+    changes.push(`added \`${line}\` to ${relative}`);
+  };
+  if (entry && inside(entry) && /\.(?:m?js|m?tsx?|jsx)$/u.test(entry)) {
+    append(entry);
+    const rootExport =
+      pkg.exports && typeof pkg.exports === 'object' ? pkg.exports['.'] : null;
+    const typesPath =
+      (typeof pkg.types === 'string' && pkg.types) ||
+      (typeof pkg.typings === 'string' && pkg.typings) ||
+      (rootExport && typeof rootExport.types === 'string'
+        ? rootExport.types
+        : null);
+    if (typesPath) {
+      const typesFile = path.resolve(packageDir, typesPath);
+      if (inside(typesFile) && fs.existsSync(typesFile)) append(typesFile);
+    }
+    return {
+      writes,
+      packageJson: peersAdded ? `${JSON.stringify(pkg, null, 2)}\n` : null,
+      wired,
+      changes,
+      note: null,
+    };
+  }
+  return {
+    writes,
+    packageJson: peersAdded ? `${JSON.stringify(pkg, null, 2)}\n` : null,
+    wired,
+    changes,
+    note: `Add \`export * from '${generated}';\` to the module "${name}" resolves to (and to its types), so the icons and \`${THEME_MAP_NAME}\` import from it.`,
+  };
+}
+
+/**
+ * A definition name as `map` keys it: camelCase. The docs list each
+ * definition by its kebab id too (`eye-slash`), so that spelling resolves.
+ * @param {string} name
+ * @param {Set<string>} known the definitions the set may map
+ * @returns {string}
+ */
+export function definitionNameOf(name, known) {
+  if (known.has(name)) return name;
+  const camel = name.replace(/-([a-z0-9])/gu, (_, c) => c.toUpperCase());
+  return known.has(camel) ? camel : name;
+}
+
+/**
+ * An icon id in the set, also by another name the library exports the same
+ * icon as (`trash-2` for `trash`, recorded in its words): a word exactly one
+ * icon has. Null when neither names an icon.
+ * @param {{data: {icons: Array<{id: string, export: string, words: string[]}>}}} set
+ * @param {string} id
+ * @returns {string | null}
+ */
+export function iconIdIn(set, id) {
+  if (set.data.icons.some(icon => icon.id === id)) return id;
+  // The export, or the name the library exports it by (`XMarkIcon`,
+  // `XMark`, `X`), in any case.
+  const lower = id.toLowerCase();
+  const byExport = set.data.icons.find(
+    icon =>
+      icon.export.toLowerCase() === lower ||
+      icon.export.toLowerCase() === `${lower}icon`,
+  );
+  if (byExport) return byExport.id;
+  if (/[A-Z]/u.test(id)) {
+    const kebab = iconIdOf(id);
+    if (set.data.icons.some(icon => icon.id === kebab)) return kebab;
+  }
+  // Only a word exactly one icon has: a shared word names no one icon.
+  const holders = set.data.icons.filter(icon => icon.words.includes(id));
+  return holders.length === 1 ? holders[0].id : null;
+}
+
+/**
+ * Add a ./ source's folder (`src/icons` for `./src/icons/x.js`) to package.json
+ * `files` when the package lists files and none covers it, so the icon ships.
+ * @param {string} packageDir
+ * @param {string} module the source specifier
+ * @returns {string | null} the folder added, or null when nothing changed
+ */
+export function publishLocalSource(packageDir, module) {
+  if (!module.startsWith('./')) return null;
+  // The file's own folder (`src/icons`), never more: other files beside
+  // the package's source stay unpublished.
+  const parts = module.slice(2).split('/');
+  const top = parts.length > 1 ? parts.slice(0, -1).join('/') : parts[0];
+  if (!top) return null;
+  const file = path.join(packageDir, 'package.json');
+  /** @type {Record<string, any>} */
+  let pkg;
+  try {
+    pkg = JSON.parse(fs.readFileSync(file, 'utf-8'));
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(pkg.files)) return null;
+  const normalize = (/** @type {string} */ value) =>
+    value.replace(/^\.\//u, '').replace(/\/$/u, '');
+  const wanted = normalize(module);
+  if (
+    pkg.files.some(
+      (/** @type {unknown} */ each) =>
+        typeof each === 'string' &&
+        (wanted === normalize(each) ||
+          wanted.startsWith(`${normalize(each)}/`)),
+    )
+  ) {
+    return null;
+  }
+  pkg.files = [...pkg.files, top];
+  fs.writeFileSync(file, `${JSON.stringify(pkg, null, 2)}\n`);
+  return top;
 }

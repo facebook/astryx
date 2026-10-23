@@ -12,7 +12,16 @@ import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 
 /** The options each call takes. */
 const ALLOWED = {
-  'icon-set': new Set(['cwd', 'dryRun', 'from', 'exclude']),
+  'icon-set': new Set([
+    'cwd',
+    'dryRun',
+    'from',
+    'exclude',
+    'variants',
+    'default',
+    'displayName',
+    'description',
+  ]),
   'icon-definition': new Set([
     'cwd',
     'dryRun',

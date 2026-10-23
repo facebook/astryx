@@ -142,6 +142,21 @@
  * @property {string} [cwd]
  * @property {string} [set] - The set to edit, when the package ships several.
  * @property {boolean} [remove] - Remove the definition's entry instead.
+ * @property {string | string[]} [pairs] - Many entries at once, as `<definition>=<icon>` pairs separated by commas or spaces; then no definition or icon is passed. All are checked before any is written.
+ */
+
+/**
+ * `astryx --json experimental icon map --pairs <definition>=<icon>,...`.
+ * @experimental May change or be removed in a patch release.
+ * @typedef {object} IconMapManyResponse
+ * @property {'icon.mapMany'} type
+ * @property {object} data
+ * @property {string} data.set
+ * @property {string} data.package
+ * @property {string} data.file - The data file, relative to the package.
+ * @property {Array<{definition: string, icon: string, previous: string | null, changed: boolean}>} data.entries - Each pair, in order, and what it replaced.
+ * @property {boolean} data.changed - Whether the file was written.
+ * @property {string[]} [data.files] - The generated module and its types, when its theme map was rewritten.
  */
 
 /**
@@ -174,6 +189,39 @@
  * @property {boolean} [useDefault] - The module's default export is the icon.
  * @property {string} [variant] - Add the export as this declared variant of an existing icon.
  * @property {string} [id] - The icon's id, instead of the one its name gives.
+ * @property {boolean} [all] - With `variant` and `from`, and no export name: add that variant for every icon whose id an export of `from` has.
+ * @property {boolean} [remove] - Take the icon (by `id`, or by the set's export name) out of the set, with its variants, `map` entries, and generated exports.
+ */
+
+/**
+ * `astryx --json experimental icon add --id <id> --remove`.
+ * @experimental May change or be removed in a patch release.
+ * @typedef {object} IconRemoveResponse
+ * @property {'icon.remove'} type
+ * @property {object} data
+ * @property {string} data.set
+ * @property {string} data.package
+ * @property {string} data.id - The icon removed.
+ * @property {string[]} data.exports - The set's exports removed: the icon's and its variants'.
+ * @property {string[]} data.unmapped - The definitions whose `map` entry named it.
+ * @property {string[]} data.files - Files written, relative to the package.
+ */
+
+/**
+ * `astryx --json experimental icon add --variant <name> --from <module> --all`.
+ * @experimental May change or be removed in a patch release.
+ * @typedef {object} IconAddVariantsResponse
+ * @property {'icon.addVariants'} type
+ * @property {object} data
+ * @property {string} data.set
+ * @property {string} data.package
+ * @property {string} data.variant
+ * @property {string} data.from - The module the variant exports are read from.
+ * @property {number} data.added - Icons that gained the variant.
+ * @property {number} data.already - Icons that already had it.
+ * @property {string[]} data.missing - Ids of icons `from` has no export for; they keep no such variant.
+ * @property {string[]} data.files - Files written, relative to the package.
+ * @property {boolean} data.changed
  */
 
 /**
@@ -226,6 +274,29 @@
  * @property {boolean} [list] - List the installed sets.
  * @property {string} [set] - Keep one set, by name or `<package>/<set>`.
  * @property {number} [limit] - Max matches (default 10).
+ * @property {boolean} [allIcons] - With `set` and no query: every icon of that set.
+ * @property {boolean} [definitions] - Every Astryx icon definition, and nothing else.
+ */
+
+/**
+ * `astryx --json experimental icon --definitions`.
+ * @experimental May change or be removed in a patch release.
+ * @typedef {object} IconDefinitionsResponse
+ * @property {'icon.definitions'} type
+ * @property {object} data
+ * @property {Array<{name: string, builtIn: boolean, description: string, words: string[]}>} data.definitions - Every Astryx icon definition, by name; `builtIn` ones every set maps.
+ */
+
+/**
+ * `astryx --json experimental icon --set <name> --all-icons`.
+ * @experimental May change or be removed in a patch release.
+ * @typedef {object} IconSetIconsResponse
+ * @property {'icon.setIcons'} type
+ * @property {object} data
+ * @property {string} data.set
+ * @property {string} data.package
+ * @property {number} data.iconCount
+ * @property {Array<{id: string, export: string, words: string[], definitions: string[]}>} data.icons - Every icon, by id, with the definitions `map` names it for.
  */
 
 /**
@@ -236,6 +307,10 @@
  * @property {boolean} [dryRun] - Return the receipt without writing.
  * @property {string} [from] - A module whose every icon component the set wraps: a package, a package subpath, or a ./ path in the package.
  * @property {string[] | string} [exclude] - With `from`: export names that are not icons; a string is split on commas.
+ * @property {string[] | string} [variants] - The variants the set supplies, such as `outline,solid`; a string is split on commas.
+ * @property {string} [default] - With `variants`: the variant each icon's own export draws; the first variant when absent.
+ * @property {string} [displayName] - The descriptor's display name; the set name in title case when absent.
+ * @property {string} [description] - The descriptor's one-line description; `<Display name> icons.` when absent.
  */
 
 /**
@@ -263,6 +338,9 @@
  * @property {boolean} dryRun
  * @property {string} [from]
  * @property {number} [icons] - With `from`: how many icons it wrote.
+ * @property {boolean} [refreshed] - With `from` on an existing set: the set was refreshed, not created.
+ * @property {Array<{definition: string, icon: string}>} [mapped] - With `from`: the `map` entries an icon with the definition's exact name gives (on a refresh, every such entry, kept or new); check each.
+ * @property {Array<{definition: string, icon: string, word: string}>} [suggestions] - With `from`: icons an unmapped Astryx definition might map to, because the icon's id is one of the definition's words. Never written.
  * @property {string[]} [notes] - What the author does next.
  */
 

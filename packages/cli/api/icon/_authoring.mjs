@@ -35,8 +35,11 @@ import {
   generatedModuleText,
   generatedTypesPath,
   THEME_MAP_NAME,
+  entryWiring,
   iconSetDataText,
+  librarySource,
   libraryIcons,
+  nonIconExports,
   resolveIconSource,
   setModuleNote,
   writeDefinitionFile,
@@ -44,6 +47,11 @@ import {
   writeIconSetData,
 } from '../../foundation/discovery/icon-set-writer.mjs';
 import {astryxIconDefinitions} from '../../foundation/discovery/icon-definition-discovery.mjs';
+import {suggestedIcons} from '../../foundation/discovery/icon-set-checks.mjs';
+import {
+  resolveProjectTypeScript,
+  TYPESCRIPT_FIX,
+} from '../../foundation/discovery/project-typescript.mjs';
 import {
   KEBAB_NAME_RE,
   applyWrites,
@@ -82,11 +90,12 @@ function quoteJs(value) {
  * discoverable; `integration check` then names every built-in icon
  * definition it still has to map.
  * @param {string} name  icon set name (kebab-case)
- * @param {{cwd?: string, dryRun?: boolean, from?: string, exclude?: string[] | string}} options
+ * @param {{cwd?: string, dryRun?: boolean, from?: string, exclude?: string[] | string, variants?: string[] | string, default?: string, displayName?: string, description?: string}} options
  * @returns {Promise<{type: 'integration.add', data: import('./icon.type.mjs').IconNewData}>}
  */
 export async function addIconSet(name, options) {
   const {cwd = process.cwd(), dryRun = false, from} = options;
+  const looks = variantOptions(options);
   const exclude =
     typeof options.exclude === 'string'
       ? options.exclude
@@ -179,6 +188,11 @@ export async function addIconSet(name, options) {
       dryRun,
       from,
       exclude,
+      looks,
+      describe: {
+        displayName: options.displayName,
+        description: options.description,
+      },
       packageDir,
       rootPath,
       manifestPath: projectPath(path.relative(packageDir, manifestFile)),
@@ -203,6 +217,12 @@ export async function addIconSet(name, options) {
   let map = {};
   /** @type {import('../../foundation/discovery/icon-set-writer.mjs').GeneratedIcon[]} */
   let exportsToWrite = [];
+  /** @type {Array<{definition: string, icon: string, word: string}>} */
+  let suggestions = [];
+  /** @type {string[]} */
+  let skipped = [];
+  /** @type {ReturnType<typeof librarySource>} */
+  let library = null;
   if (from != null) {
     const source = await iconAuthoring(() =>
       resolveIconSource(from, {packageDir, pkg}),
@@ -218,9 +238,12 @@ export async function addIconSet(name, options) {
     icons = found.map(icon => ({
       id: icon.id,
       export: icon.name,
-      words: icon.id.split('-'),
+      words: [...new Set([...idWords(icon.id), ...icon.aliases])],
     }));
     map = exactDefinitionMap(icons, {});
+    skipped = nonIconExports(source.file, {exclude});
+    suggestions = definitionSuggestions(icons, map);
+    library = librarySource(source.module, packageDir);
     exportsToWrite = found.map(icon => ({
       name: icon.name,
       from: source.module,
@@ -231,7 +254,14 @@ export async function addIconSet(name, options) {
   const data = {
     schemaVersion: /** @type {const} */ (1),
     module: pkg.name,
+    ...(library
+      ? {source: {package: library.package, version: library.version}}
+      : {}),
+    ...(exclude.length > 0 ? {exclude: [...new Set(exclude)].sort()} : {}),
     generated,
+    ...(looks
+      ? {variants: looks.variants, default: {variant: looks.default}}
+      : {}),
     themeMap: THEME_MAP_NAME,
     map,
     icons,
@@ -240,20 +270,21 @@ export async function addIconSet(name, options) {
     generatedModuleText(packageDir, generated, null, data, exportsToWrite),
   );
 
-  const displayName = kebabToTitle(name);
-  // The artwork license defaults to the package's own license; the author
-  // edits it when the artwork comes from elsewhere.
+  const displayName = options.displayName?.trim() || kebabToTitle(name);
+  // The artwork license is the wrapped library's, else the package's own;
+  // the author edits it when the artwork comes from elsewhere.
   const license =
-    typeof pkg.license === 'string' && pkg.license.trim() !== ''
+    library?.license ??
+    (typeof pkg.license === 'string' && pkg.license.trim() !== ''
       ? pkg.license
-      : 'UNLICENSED';
+      : 'UNLICENSED');
   const docContents = [
     "/** @type {import('@astryxdesign/cli/authoring').IconSetDoc} */",
     'export default {',
     "  type: 'icon-set',",
     `  name: ${quoteJs(name)},`,
     `  displayName: ${quoteJs(displayName)},`,
-    `  description: ${quoteJs(`${displayName} icons.`)},`,
+    `  description: ${quoteJs(options.description?.trim() || `${displayName} icons.`)},`,
     '  maintained: true,',
     `  license: ${quoteJs(license)},`,
     '};',
@@ -273,6 +304,16 @@ export async function addIconSet(name, options) {
     contents: generatedText.js,
     createOnly: true,
   });
+  // The wrapped library's license notices travel with its artwork.
+  for (const notice of library?.notices ?? []) {
+    const target = assertWithin(notice, setDir, {label: 'license notice'});
+    if (!library || fs.existsSync(target)) continue;
+    plans.push({
+      path: target,
+      contents: fs.readFileSync(path.join(library.dir, notice), 'utf-8'),
+      createOnly: true,
+    });
+  }
   const typesPath = generatedTypesPath(generated);
   if (typesPath && generatedText.dts != null) {
     plans.push({
@@ -288,12 +329,23 @@ export async function addIconSet(name, options) {
     rootPath,
     path.basename(manifestFile),
   );
-  if (pkgUpdate != null) {
+  // The set's icons import from the package by name: wire the generated
+  // module into its entry, creating one when the package has none.
+  const wiring = entryWiring(
+    packageDir,
+    pkgUpdate?.contents ?? fs.readFileSync(packageFile, 'utf-8'),
+    generated,
+    path.basename(manifestFile),
+  );
+  plans.push(...wiring.writes);
+  const pkgContents = wiring.packageJson ?? pkgUpdate?.contents ?? null;
+  if (pkgContents != null) {
     plans.push({
       path: packageFile,
-      contents: pkgUpdate.contents,
+      contents: pkgContents,
       createOnly: false,
-      expectedOriginal: pkgUpdate.expectedOriginal,
+      expectedOriginal:
+        pkgUpdate?.expectedOriginal ?? fs.readFileSync(packageFile),
     });
   }
 
@@ -377,8 +429,42 @@ export async function addIconSet(name, options) {
       generated,
       THEME_MAP_NAME,
     );
+    if (from != null) {
+      result.data.mapped = Object.entries(map).map(([definition, icon]) => ({
+        definition,
+        icon,
+      }));
+      result.data.suggestions = suggestions;
+    }
+    // `integration check --strict` type-checks the set's typed doc files.
+    const typescript = resolveProjectTypeScript([packageDir]);
     result.data.notes = [
-      ...(moduleNote ? [moduleNote] : []),
+      // First, so a long receipt never hides it: the strict check needs it.
+      ...(typescript?.ts
+        ? []
+        : [
+            typescript
+              ? `\`integration check --strict\` type-checks the set's doc files with this package's TypeScript, ${typescript.version}, which has no compiler API. ${TYPESCRIPT_FIX}`
+              : "`integration check --strict` type-checks the set's doc files with TypeScript, which this package does not have: run `npm install -D typescript@6` (TypeScript 5.0 through 6).",
+          ]),
+      // A built or CommonJS entry is left alone: the note names the line, relative
+      // to the entry when it resolves.
+      ...(wiring.note ? [moduleNote ?? wiring.note] : []),
+      ...(wiring.changes.length > 0
+        ? [`In your package it ${wiring.changes.join('; ')}.`]
+        : []),
+      ...(options.description?.trim()
+        ? []
+        : [
+            `The set's description is a placeholder ("${displayName} icons."): apps and discover show it. Pass --description when you create a set, or edit ${projectPath(path.relative(packageDir, docFile))}.`,
+          ]),
+      ...(skipped.length > 0
+        ? [
+            `Left out ${skipped.length} exports that are not icons: ${skipped.slice(0, 12).join(', ')}${skipped.length > 12 ? ', …' : ''}.`,
+          ]
+        : []),
+      ...mappedNotes(map),
+      ...suggestionNotes(suggestions),
       'Run `astryx integration check` to see the icon definitions still to map.',
     ];
   }
@@ -386,8 +472,26 @@ export async function addIconSet(name, options) {
 }
 
 /**
- * The `map` entries an exact hit gives: each Astryx definition whose name, or
- * one of whose words, is an icon's id. Entries the map already has are kept.
+ * An icon's words from its id: each part, leaving out a bare number
+ * (`volume-2` is `volume`) unless the id is only numbers.
+ * @param {string} id
+ */
+function idWords(id) {
+  const parts = id.split('-');
+  const named = parts.filter(part => !/^[0-9]+$/u.test(part));
+  return named.length > 0 ? named : parts;
+}
+
+/** @param {string} name a camelCase definition name, as a kebab id */
+const definitionId = name =>
+  name.replace(/([a-z0-9])([A-Z])/gu, '$1-$2').toLowerCase();
+
+/**
+ * The `map` entries an exact name gives: each Astryx definition whose name
+ * is an icon's id (`delete` → icon `delete`). A word alone never maps: a
+ * library's `trash` may not mean what a template's delete means, so it is a
+ * suggestion ({@link definitionSuggestions}). Entries the map already has are
+ * kept.
  * @param {Array<{id: string}>} icons
  * @param {Record<string, string>} map
  */
@@ -397,16 +501,110 @@ function exactDefinitionMap(icons, map) {
   const next = {...map};
   for (const {doc} of astryxIconDefinitions().definitions) {
     if (next[doc.name]) continue;
-    const kebab = doc.name
-      .replace(/([a-z0-9])([A-Z])/gu, '$1-$2')
-      .toLowerCase();
-    const hit = [
-      kebab,
-      ...doc.words.map(word => word.replace(/\s+/gu, '-')),
-    ].find(candidate => ids.has(candidate));
-    if (hit) next[doc.name] = hit;
+    const id = definitionId(doc.name);
+    if (ids.has(id)) next[doc.name] = id;
   }
   return next;
+}
+
+/**
+ * The icons each still-unmapped Astryx definition might map to
+ * ({@link suggestedIcons}). Never written; the author chooses with
+ * `astryx experimental icon map <definition> <icon>`.
+ * @param {Array<{id: string, words: string[]}>} icons
+ * @param {Record<string, string>} map
+ * @returns {Array<{definition: string, icon: string, word: string}>}
+ */
+function definitionSuggestions(icons, map) {
+  const set = {data: {icons, map}};
+  return astryxIconDefinitions()
+    .definitions.map(each => each.doc)
+    .filter(doc => !map[doc.name])
+    .flatMap(doc =>
+      suggestedIcons(set, doc).map(each => ({definition: doc.name, ...each})),
+    )
+    .sort((a, b) =>
+      a.definition < b.definition ? -1 : a.definition > b.definition ? 1 : 0,
+    );
+}
+
+/**
+ * The receipt's note for the suggestions, if any.
+ * @param {Array<{definition: string, icon: string}>} suggestions
+ */
+function suggestionNotes(suggestions) {
+  if (suggestions.length === 0) return [];
+  const count = new Set(suggestions.map(each => each.definition)).size;
+  return [
+    `${count} unmapped icon definitions have possible icons (listed under Suggestions; nothing was written for them). Check each meaning, then map the ones that fit: \`astryx experimental icon map <definition> <icon>\`.`,
+  ];
+}
+
+/**
+ * The receipt's note for the entries an exact name wrote, if any.
+ * @param {Record<string, string>} map
+ */
+function mappedNotes(map) {
+  const count = Object.keys(map).length;
+  if (count === 0) return [];
+  return [
+    `${count} icon definitions were mapped because an icon has their exact name (listed under Mapped by name). A library can draw another meaning under the same name, such as a backspace key named delete: check each, and remap with \`astryx experimental icon map <definition> <icon>\`.`,
+  ];
+}
+
+/** A variant name: lower-kebab, such as `outline` or `mini-solid`. */
+const VARIANT_NAME_RE = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/u;
+
+/**
+ * The variants and default variant `--variants` and `--default` declare, or
+ * null when neither is given. The default is the first variant unless named.
+ * @param {{variants?: string[] | string, default?: string}} options
+ * @returns {{variants: string[], default: string} | null}
+ */
+function variantOptions(options) {
+  const given =
+    typeof options.variants === 'string'
+      ? options.variants.split(',')
+      : options.variants;
+  const variants = [
+    ...new Set((given ?? []).map(each => each.trim()).filter(Boolean)),
+  ];
+  const chosen = options.default?.trim();
+  if (variants.length === 0) {
+    if (chosen) {
+      throw new AstryxError(
+        "--default names one of the set's variants, so it needs --variants.",
+        [
+          {
+            name: `--variants ${chosen},<other>`,
+            reason: 'declare the variants',
+          },
+        ],
+        ERROR_CODES.ERR_INVALID_ARGUMENT,
+      );
+    }
+    return null;
+  }
+  for (const variant of variants) {
+    if (!VARIANT_NAME_RE.test(variant)) {
+      throw new AstryxError(
+        `Invalid variant name "${variant}": use lower-kebab, such as outline or solid.`,
+        undefined,
+        ERROR_CODES.ERR_INVALID_ARGUMENT,
+      );
+    }
+  }
+  if (chosen && !variants.includes(chosen)) {
+    throw new AstryxError(
+      `--default "${chosen}" is not one of --variants (${variants.join(', ')}).`,
+      variants.map(each => ({
+        name: `--default ${each}`,
+        reason: 'a declared variant',
+      })),
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
+  }
+  return {variants, default: chosen || variants[0]};
 }
 
 /**
@@ -444,19 +642,33 @@ async function iconAuthoring(step) {
  * them), the generated module gains the new exports, `map` keeps every entry
  * whose icon still exists, and the receipt names the entries that lost theirs.
  * @param {string} name
- * @param {{cwd: string, dryRun: boolean, from: string, exclude: string[], packageDir: string, rootPath: string, manifestPath: string}} options
+ * @param {{cwd: string, dryRun: boolean, from: string, exclude: string[], looks: {variants: string[], default: string} | null, describe: {displayName?: string, description?: string}, packageDir: string, rootPath: string, manifestPath: string}} options
  */
 async function refreshIconSet(
   name,
-  {cwd, dryRun, from, exclude, packageDir, rootPath, manifestPath},
+  {
+    cwd,
+    dryRun,
+    from,
+    exclude,
+    looks,
+    describe,
+    packageDir,
+    rootPath,
+    manifestPath,
+  },
 ) {
   return iconAuthoring(async () => {
     const where = await findLocalIconSet(cwd, name);
     const {set} = where;
     const source = resolveIconSource(from, where);
+    // Exports left out before stay out; --exclude adds to them.
+    const excluded = [
+      ...new Set([...(set.data.exclude ?? []), ...exclude]),
+    ].sort();
     const found = libraryIcons(source.file, {
       adapter: Boolean(set.data.adapter),
-      exclude,
+      exclude: excluded,
     });
     const previous = new Map(set.data.icons.map(icon => [icon.id, icon]));
     const icons = found.map(icon => {
@@ -465,7 +677,13 @@ async function refreshIconSet(
         ...(prior ?? {}),
         id: icon.id,
         export: icon.name,
-        words: [...new Set([...icon.id.split('-'), ...(prior?.words ?? [])])],
+        words: [
+          ...new Set([
+            ...idWords(icon.id),
+            ...icon.aliases,
+            ...(prior?.words ?? []),
+          ]),
+        ],
       };
     });
     const ids = new Set(icons.map(icon => icon.id));
@@ -478,15 +696,48 @@ async function refreshIconSet(
       else lost.push(`${definition} -> "${id}"`);
     }
     const generated = generatedModulePath(set, packageDir);
+    const library = librarySource(source.module, packageDir);
+    const map = exactDefinitionMap(icons, kept);
+    const suggestions = definitionSuggestions(icons, map);
     const next = {
       ...set.data,
+      ...(library
+        ? {source: {package: library.package, version: library.version}}
+        : {}),
+      ...(excluded.length > 0 ? {exclude: excluded} : {}),
       generated,
+      ...(looks
+        ? {variants: looks.variants, default: {variant: looks.default}}
+        : {}),
       ...(set.data.themeMap ? {} : {themeMap: THEME_MAP_NAME}),
-      map: exactDefinitionMap(icons, kept),
+      map,
       icons,
     };
     /** @type {string[]} */
     const files = [];
+    const dataChanged =
+      iconSetDataText(next) !== fs.readFileSync(set.dataPath, 'utf-8');
+    // --display-name and --description rewrite the descriptor's fields.
+    const docFile = path.join(set.dir, `${set.name}.doc.mjs`);
+    const docBefore = fs.readFileSync(docFile, 'utf-8');
+    let docAfter = docBefore;
+    for (const [field, value] of /** @type {const} */ ([
+      ['displayName', describe.displayName],
+      ['description', describe.description],
+    ])) {
+      if (!value?.trim()) continue;
+      docAfter = docAfter.replace(
+        new RegExp(
+          `^(\\s*${field}:\\s*)(['"\`])(?:\\\\.|(?!\\2).)*\\2,?$`,
+          'mu',
+        ),
+        (_, lead) => `${lead}${quoteJs(value.trim())},`,
+      );
+    }
+    if (docAfter !== docBefore) {
+      files.push(projectPath(path.relative(packageDir, docFile)));
+      if (!dryRun) fs.writeFileSync(docFile, docAfter);
+    }
     if (!dryRun) {
       const written = writeGeneratedIcons(
         packageDir,
@@ -511,7 +762,9 @@ async function refreshIconSet(
         throw error;
       }
     }
-    files.push(projectPath(path.relative(packageDir, set.dataPath)));
+    if (dataChanged) {
+      files.push(projectPath(path.relative(packageDir, set.dataPath)));
+    }
     const result = receipt(
       'icon-set',
       name,
@@ -521,13 +774,31 @@ async function refreshIconSet(
       dryRun,
     );
     result.data.icons = icons.length;
+    result.data.refreshed = true;
+    // Every entry an exact name gives, kept or new, so a refresh lists
+    // them for review again.
+    const byName = Object.fromEntries(
+      Object.entries(map).filter(
+        ([definition, id]) =>
+          !(definition in kept) || id === definitionId(definition),
+      ),
+    );
+    result.data.mapped = Object.entries(byName).map(([definition, icon]) => ({
+      definition,
+      icon,
+    }));
+    result.data.suggestions = suggestions;
     result.data.notes = [
+      ...mappedNotes(byName),
+      ...suggestionNotes(suggestions),
       ...(lost.length > 0
         ? [
             `These map entries named icons the library no longer exports and were removed: ${lost.join(', ')}.`,
           ]
         : []),
-      'Run `astryx integration check` to see the icon definitions still to map.',
+      astryxIconDefinitions().definitions.every(({doc}) => map[doc.name])
+        ? 'Every Astryx icon definition is mapped.'
+        : 'Run `astryx integration check` to see the icon definitions still to map.',
     ];
     return result;
   });

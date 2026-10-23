@@ -140,6 +140,12 @@ export const doc = {
         'The `experimental.iconSet` written to astryx.config, the set it names as `<package>/<set>`, the config file, whether it was created, the value it replaced, and whether anything changed.',
     },
     {
+      value: 'icon.mapMany',
+      stability: 'experimental',
+      description:
+        'Many `map` entries written at once (--pairs): the set, its package, the data file, each entry {definition, icon, previous, changed}, whether anything changed, and the generated files rewritten.',
+    },
+    {
       value: 'icon.map',
       stability: 'experimental',
       description:
@@ -150,6 +156,30 @@ export const doc = {
       stability: 'experimental',
       description:
         "One icon registered in the icon set being authored: the set, its package, the icon {id, export, module}, the variant when it was added as one, the definition mapped to it, the definition file written when it added the set's own, the files written, and whether anything changed.",
+    },
+    {
+      value: 'icon.definitions',
+      stability: 'experimental',
+      description:
+        'Every Astryx icon definition (--definitions): each {name, builtIn, description, words}.',
+    },
+    {
+      value: 'icon.setIcons',
+      stability: 'experimental',
+      description:
+        'Every icon of one set (--set with --all-icons): the set, its package, how many icons, and each icon {id, export, words, definitions}, by id.',
+    },
+    {
+      value: 'icon.remove',
+      stability: 'experimental',
+      description:
+        'One icon taken out of the set (add --remove): the set, its package, the icon id, the exports removed, the definitions it no longer draws, and the files written.',
+    },
+    {
+      value: 'icon.addVariants',
+      stability: 'experimental',
+      description:
+        'One variant added for every icon of the set at once (--all): the set, its package, the variant, the module read, how many icons gained it, how many already had it, the ids the module has no export for, the files written, and whether anything changed.',
     },
     {
       value: 'icon.definitionMatches',
@@ -189,7 +219,7 @@ export const doc = {
     {
       value: 'discover.item',
       description:
-        'One item that is not an installed component, for an @scope/name/<item> query: its kind, name, package, version, and whether the project has the package. The envelope\'s package names the same package.',
+        "One item that is not an installed component, for an @scope/name/<item> query: its kind, name, package, version, and whether the project has the package. The envelope's package names the same package.",
     },
     {
       value: 'discover.search',
