@@ -836,7 +836,9 @@ export async function validateIntegration(pkg, options = {}) {
   // their fixes, the same way.
   if (integration?.docs) {
     notes.push(...(await docCommandNotes(integration)));
-    notes.push(...(await docTargetNotes(integration)));
+    notes.push(
+      ...(await docTargetNotes(integration)).map(note => ({...note, next: true})),
+    );
   }
   return {
     type: 'integration.validate',
