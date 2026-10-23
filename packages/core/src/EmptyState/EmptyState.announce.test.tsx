@@ -3,15 +3,14 @@
 /**
  * @file EmptyState.announce.test.tsx
  * @input A fresh EmptyState module with the page's first paint held back
- * @output Proves an EmptyState rendered with the page announces nothing and one
- *   that appears later announces its message once through the shared polite
- *   live region (spec:AST-086 FR2)
+ * @output spec:AST-086 FR11/FR12 tests for EmptyState's announcement
  * @position Component test for EmptyState's announcement
  */
 
 import {act, StrictMode, useState} from 'react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {createRoot} from 'react-dom/client';
+import {createRoot, hydrateRoot} from 'react-dom/client';
+import {renderToString} from 'react-dom/server';
 
 // Each test imports a fresh EmptyState with the first-paint frame held back, so
 // a render before `paint()` is "with the page" and one after it is inserted.
@@ -32,31 +31,20 @@ async function importEmptyState() {
 const nextFrame = async () =>
   new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
 
-/**
- * Every message written to the shared polite region, in order: one entry per
- * write, so writing the same words twice is recorded twice.
- */
+/** Every write to the shared polite region, one entry per write. */
 function recordPolite() {
   const spoken: string[] = [];
   const observer = new MutationObserver(records => {
-    for (const record of records) {
-      const region = record.target as Element;
-      if (region.getAttribute?.('data-astryx-live-region') !== 'polite') {
-        continue;
-      }
-      for (const node of record.addedNodes) {
-        const text = node.textContent?.trim() ?? '';
-        if (text !== '') {
-          spoken.push(text);
-        }
+    for (const {target, addedNodes} of records) {
+      const isPolite =
+        (target as Element).getAttribute?.('data-astryx-live-region') ===
+        'polite';
+      for (const node of isPolite ? addedNodes : []) {
+        if (node.textContent?.trim()) {spoken.push(node.textContent.trim());}
       }
     }
   });
-  observer.observe(document.body, {
-    subtree: true,
-    childList: true,
-    characterData: true,
-  });
+  observer.observe(document.body, {subtree: true, childList: true});
   return {spoken, stop: () => observer.disconnect()};
 }
 
@@ -169,6 +157,23 @@ describe('EmptyState announcement (spec:AST-086 FR2)', () => {
     await act(nextFrame);
     polite.stop();
     expect(polite.spoken).toEqual(['No results']);
+    await act(async () => root.unmount());
+  });
+
+  it('announces nothing from a server render or its hydration (FR12)', async () => {
+    const {EmptyState, paint} = await importEmptyState();
+    const tree = <EmptyState title="No projects" />;
+    const container = document.createElement('div');
+    container.innerHTML = renderToString(tree);
+    document.body.appendChild(container);
+    expect(container.querySelector('[role], [aria-live]')).toBeNull();
+    paint();
+    const polite = recordPolite();
+    const root = await act(async () => hydrateRoot(container, tree));
+    await act(nextFrame);
+    await act(nextFrame);
+    polite.stop();
+    expect(polite.spoken).toEqual([]);
     await act(async () => root.unmount());
   });
 });
