@@ -7,7 +7,7 @@ export const doc = {
   name: 'VisuallyHidden — Supplementary Context',
   displayName: 'VisuallyHidden — Supplementary Context',
   description:
-    'Add screen-reader-only context to terse visual data, like spelling out what a trend arrow means.',
+    'Stat cards whose trend arrows get screen-reader-only text, so a change like +12% is read as an increase from last month. Use to make terse visual data accessible.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['VisuallyHidden', 'Card', 'HStack', 'VStack', 'Text', 'Icon'],
