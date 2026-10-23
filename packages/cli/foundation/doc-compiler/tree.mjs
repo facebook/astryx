@@ -973,3 +973,18 @@ export function loadDocsTree({selfDocs = true, fresh = false} = {}) {
   }
   return tree;
 }
+
+/**
+ * Whether a tree node documents an experimental surface (spec:AST-017 FR27):
+ * a typed doc marked experimental, or anything under an experimental
+ * namespace.
+ * @param {DocsTree} tree
+ * @param {TreeNode} node
+ * @returns {boolean}
+ */
+export function isExperimentalTreeNode(tree, node) {
+  return [...tree.ancestors(node), node].some(
+    (/** @type {any} */ each) =>
+      each.ref?.selfDoc?.stability === 'experimental',
+  );
+}

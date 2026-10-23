@@ -63,6 +63,7 @@ import {
 } from '../docs/_adapter.mjs';
 import {typedEdges} from '../docs/node/node.mjs';
 import {detailView, indexView} from '../../foundation/doc-compiler/lenses.mjs';
+import {isExperimentalTreeNode} from '../../foundation/doc-compiler/tree.mjs';
 import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env/semver.mjs';
 import {checkAppThemes, checkThemes} from './theme-checks.mjs';
 import {availableLine, RUN_FROM_PROJECT, upgradeLine} from '../../foundation/release/notices.mjs';
@@ -1275,7 +1276,7 @@ export async function checkCliDocs(_ctx, options = {}) {
       id,
       label,
       status: 'pass',
-      message: `All ${audit.docs} CLI docs are readable: ${audit.tree} in the \`${formatCliCommand('docs cli')}\` tree and ${audit.authoring} in \`${formatCliCommand('docs authoring/field-reference')}\`.`,
+      message: `All ${audit.docs - audit.experimental.docs} CLI docs are readable: ${audit.tree - audit.experimental.tree} in the \`${formatCliCommand('docs cli')}\` tree and ${audit.authoring - audit.experimental.authoring} in \`${formatCliCommand('docs authoring/field-reference')}\`.`,
     };
   } catch (err) {
     return {
@@ -1348,7 +1349,11 @@ export async function checkDocsTree(_ctx, options = {}) {
         fix: DOCS_TREE_FIX,
       };
     }
-    const nodes = [...tree.nodes.values()];
+    // Experimental docs are checked like every other but not counted
+    // (spec:AST-017 FR27).
+    const nodes = [...tree.nodes.values()].filter(
+      node => !isExperimentalTreeNode(tree, node),
+    );
     const namespaces = nodes.filter(node => node.kind === 'namespace').length;
     return {
       id,
@@ -1391,16 +1396,23 @@ export async function checkDocsProgressiveDisclosure(ctx) {
   if (catalog) {
     // A guide the docs tree places is a topic read by its route; it is held
     // to the same budget as every flat topic.
-    const guides = [...(await projectTree(catalog)).nodes.values()]
+    const tree = await projectTree(catalog);
+    const placed = [...tree.nodes.values()]
       // A flat topic in a topic level is checked above, as a topic.
-      .filter(node => node.kind === 'generic' && !node.ref?.flatTopic)
-      .map(guideEntry);
+      .filter(node => node.kind === 'generic' && !node.ref?.flatTopic);
+    // An experimental guide is checked but not counted (spec:AST-017 FR27).
+    const uncounted = new Set(
+      placed
+        .filter(node => isExperimentalTreeNode(tree, node))
+        .map(node => node.route),
+    );
+    const guides = placed.map(guideEntry);
     for (const entry of [...catalog.entries(), ...guides]) {
       for (const lang of [null, ...overlayLanguages(entry)]) {
         const where = lang ? `${entry.name} [${lang}]` : entry.name;
         try {
           const doc = detailView(await compileTopic(catalog, entry, lang));
-          if (lang == null) topics += 1;
+          if (lang == null && !uncounted.has(entry.name)) topics += 1;
           const indexBytes = docsIndexBytes(buildDocsIndexData(doc));
           if (indexBytes > DOC_OUTPUT_BUDGET_BYTES) {
             problems.push(

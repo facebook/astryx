@@ -450,6 +450,7 @@ export function cliDocSection(doc, index) {
  *   docs: number,
  *   tree: number,
  *   authoring: number,
+ *   experimental: {docs: number, tree: number, authoring: number},
  *   missing: string[],
  *   unknown: {source: string, namespace: string}[],
  *   misfiled: {source: string, message: string}[],
@@ -506,10 +507,21 @@ export async function auditCliSelfDocs({
     }
   }
   const index = cliDocIndex(loaded.map(entry => entry.doc));
+  // Experimental docs (spec:AST-017 FR27) are audited like every other, and
+  // counted apart, so the stable counts stay what they were.
+  const experimental = (/** @type {any} */ doc) =>
+    doc?.stability === 'experimental';
   return {
     docs: loaded.length,
     tree: treeDocs.length,
     authoring,
+    experimental: {
+      docs: loaded.filter(entry => experimental(entry.doc)).length,
+      tree: treeDocs.filter(experimental).length,
+      authoring: loaded.filter(
+        entry => listed.has(entry.source) && experimental(entry.doc),
+      ).length,
+    },
     missing,
     unknown,
     misfiled,
