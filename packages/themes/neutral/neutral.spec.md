@@ -217,16 +217,20 @@ changing semantic token mappings in the palette-value change.
 **Decider:** `rubyycheung`, `2026-09-04`
 
 Neutral's semantic, categorical, syntax, and color-bearing effect values use
-named palette-stop references when an approved match exists. Token names and
-meanings remain unchanged. Alpha variants derive from the referenced stop
-rather than duplicating its hex value.
+named palette-stop references when an approved match exists. Token names remain
+stable. Under the status-role contract, the base `--color-info`, `--color-success`,
+`--color-warning`, and `--color-error` tokens mean strong fills paired with their
+`--color-on-*` content; plain-surface foregrounds use
+`--color-status-foreground-*`, and pale surfaces use the muted/on-muted pairs.
+Alpha variants derive from the referenced stop rather than duplicating its hex
+value.
 
-The mapping is role-aware rather than a blind nearest-color conversion. Very
-dark foregrounds preserve their darker role, ordinary backgrounds do not become
-true black automatically, and a reviewed token may use the closer value from
-the companion ramp. Intentional values without an approved palette match remain
-explicit theme-local values, including the released filled-accent and Banner
-on-tint roles.
+The mapping is role-aware rather than a blind nearest-color conversion. A
+reviewed role keeps the darkness or lightness required by its surface and may use
+the closer value from the companion ramp; ordinary backgrounds do not become
+true black automatically. Intentional values without an approved palette match
+remain explicit theme-local values, including the released filled-accent and
+Banner on-tint roles.
 
 ### DEC-5 — Generate the selected runtime references from their owned sources
 
