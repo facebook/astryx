@@ -4,21 +4,26 @@
 
 /**
  * @file MobilePowerSearchValueEditor.tsx
- * @input OperatorValue, staged FilterValue, onChange, timezoneID; public
- *   @astryxdesign/core inputs only (DateInput, DateRangeInput, DateTimeInput,
- *   Icon, List, NumberInput, TextInput, TimeInput, Tokenizer, Typeahead,
- *   VisuallyHidden)
+ * @input OperatorValue, staged FilterValue, onChange, label, timezoneID;
+ *   public @astryxdesign/core inputs (DateInput, DateRangeInput,
+ *   DateTimeInput, Icon, List, NumberInput, TextInput, TimeInput, Typeahead,
+ *   VisuallyHidden) and the Lab MobileTokenizer
  * @output Sheet-native value editor for MobilePowerSearch: enum, enum_list and
- *   date_relative as full-row List choices with trailing checks; every other
- *   non-nested value type as the matching public input
+ *   date_relative as full-row List choices with trailing checks; string_list
+ *   and entity_list as a MobileTokenizer whose own sheet opens over the step;
+ *   every other non-nested value type as the matching public input
  * @position Lab sub-component consumed by MobilePowerSearch.tsx
  *
  * Core's PowerSearchValueEditor is private, so this file rebuilds each
  * editor from public inputs. Closed vocabularies (enum, enum_list,
  * date_relative) are rendered as rows instead of a Selector or Tokenizer,
  * because a dropdown layer inside a sheet stacks a second overlay on a surface
- * the user is already inside. Every editor stages its value; the sheet footer
- * confirms it.
+ * the user is already inside. Open lists (string_list, entity_list) use the
+ * touch MobileTokenizer instead of Core's chip input with a popover menu: its
+ * trigger shows the staged tokens in the step, and tapping it opens a tall
+ * searchable sheet titled with the field's name. The step's heading and
+ * operator rows already name the field, so that tokenizer's label is hidden.
+ * Every editor stages its value; the sheet footer confirms it.
  */
 
 import React, {useCallback, useMemo, type FormEvent} from 'react';
@@ -40,12 +45,12 @@ import type {
 } from '@astryxdesign/core/PowerSearch';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {TimeInput} from '@astryxdesign/core/TimeInput';
-import {Tokenizer} from '@astryxdesign/core/Tokenizer';
 import {Typeahead} from '@astryxdesign/core/Typeahead';
 import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
 import type {ISODateString, ISOTimeString} from '@astryxdesign/core/utils';
 import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
 import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
+import {MobileTokenizer} from '../MobileTokenizer';
 import {
   isoDateTimeToUnixSeconds,
   isoDateToUnixSeconds,
@@ -64,6 +69,11 @@ export interface MobilePowerSearchValueEditorProps {
   filterValue: FilterValue | undefined;
   /** Stage a value without leaving the sheet. */
   onChange: (value: FilterValue) => void;
+  /**
+   * The field's name. Titles the sheet a list value's tokenizer opens, so it
+   * reads as the field being edited.
+   */
+  label?: string;
   isDisabled?: boolean;
   /** Max suggestions in string and entity value typeaheads. */
   maxMenuItems?: number;
@@ -200,6 +210,7 @@ export function MobilePowerSearchValueEditor({
   operatorValue,
   filterValue,
   onChange,
+  label,
   isDisabled = false,
   maxMenuItems,
   timezoneID,
@@ -292,8 +303,8 @@ export function MobilePowerSearchValueEditor({
         operatorValue.isArbitraryStringAllowed || !operatorValue.searchSource;
       return (
         <div {...stylex.props(styles.input)}>
-          <Tokenizer
-            label="Values"
+          <MobileTokenizer
+            label={label ?? 'Values'}
             isLabelHidden
             searchSource={operatorValue.searchSource ?? EMPTY_SOURCE}
             value={current}
@@ -308,7 +319,6 @@ export function MobilePowerSearchValueEditor({
             hasCreate={hasCreate}
             maxMenuItems={maxMenuItems}
             isDisabled={isDisabled}
-            width="100%"
           />
         </div>
       );
@@ -528,8 +538,8 @@ export function MobilePowerSearchValueEditor({
           : [];
       return (
         <div {...stylex.props(styles.input)}>
-          <Tokenizer
-            label="Entities"
+          <MobileTokenizer
+            label={label ?? 'Entities'}
             isLabelHidden
             searchSource={operatorValue.searchSource ?? EMPTY_SOURCE}
             value={current}
@@ -552,7 +562,6 @@ export function MobilePowerSearchValueEditor({
             debounceMs={operatorValue.searchSource ? 150 : 0}
             maxMenuItems={maxMenuItems}
             isDisabled={isDisabled}
-            width="100%"
           />
         </div>
       );

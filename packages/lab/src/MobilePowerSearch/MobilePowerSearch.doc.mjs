@@ -153,7 +153,7 @@ export const docs = {
         name: 'Value sheet',
         required: true,
         description:
-          'Field or field-and-operator title, operator radios when needed, the value editor, and Cancel plus Add filter or Apply and Remove.',
+          'Field or field-and-operator title, operator radios when needed, the value editor, and Cancel plus Add filter or Apply and Remove. A list value (string_list, entity_list) edits through the Lab MobileTokenizer: its trigger shows the staged tokens in the step, and tapping it opens a second, searchable sheet titled with the field name.',
       },
     ],
   },

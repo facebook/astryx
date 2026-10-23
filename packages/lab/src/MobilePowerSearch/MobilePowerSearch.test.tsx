@@ -357,6 +357,25 @@ function sheet(): HTMLElement {
 }
 
 /**
+ * The sheet a list value's MobileTokenizer opens over the value step: the
+ * last open dialog in the document, which is the topmost.
+ */
+function tokenizerSheet(): HTMLElement {
+  const dialogs = document.querySelectorAll<HTMLElement>('dialog[open]');
+  if (dialogs.length < 2) {
+    throw new Error('no tokenizer sheet over the value step');
+  }
+  return dialogs[dialogs.length - 1];
+}
+
+/** Opens the MobileTokenizer named `name` from the value step. */
+function openTokenizer(name: string): HTMLElement {
+  const trigger = within(sheet()).getByRole('button', {name});
+  fireEvent.click(trigger);
+  return trigger;
+}
+
+/**
  * Completes every pending sheet motion. jsdom resolves no transition timing,
  * so the panels wait for a native transitionend; this fires it.
  */
@@ -1470,15 +1489,29 @@ describe('MobilePowerSearch value types', () => {
     );
   });
 
-  it('string_list: tokenizer creates free-text values', async () => {
+  it('string_list: the mobile tokenizer creates free-text values in its own sheet, staged on the trigger and committed by the footer', async () => {
     const {onChange} = setupValues();
     openAddFlow();
     tapRow('ID');
-    const input = within(sheet()).getByRole('combobox', {name: 'Values'});
-    fireEvent.change(input, {target: {value: 'ABC-1'}});
+    const trigger = openTokenizer('ID');
+    const inner = tokenizerSheet();
+    fireEvent.change(within(inner).getByLabelText('Search ID'), {
+      target: {value: 'ABC-1'},
+    });
+    // The value editor debounces the search by 150ms; on a busy CI box that
+    // and the sheet's render can outlast the 1s default, so wait longer.
     fireEvent.click(
-      await screen.findByRole('option', {name: /ABC-1/, hidden: true}),
+      await within(inner).findByRole(
+        'button',
+        {name: 'Add ABC-1'},
+        {timeout: 15000},
+      ),
     );
+    // The pick shows on the trigger in the value step at once; the step's
+    // footer stays disabled by nothing but the staged value.
+    expect(within(trigger).getByText('ABC-1')).toBeInTheDocument();
+    fireEvent.click(within(inner).getByRole('button', {name: 'Done'}));
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
     addFilter();
     expect(onChange).toHaveBeenCalledWith(
       [
@@ -1620,15 +1653,31 @@ describe('MobilePowerSearch value types', () => {
     );
   });
 
-  it('entity_list: tokenizer picks entities from the search source', async () => {
+  it('entity_list: the mobile tokenizer picks entities from the search source in its own sheet, staged on the trigger and committed by the footer', async () => {
     const {onChange} = setupValues();
     openAddFlow();
     tapRow('Assignee');
-    const input = within(sheet()).getByRole('combobox', {name: 'Entities'});
-    fireEvent.change(input, {target: {value: 'Ada'}});
+    const trigger = openTokenizer('Assignee');
+    const inner = tokenizerSheet();
+    fireEvent.change(within(inner).getByLabelText('Search Assignee'), {
+      target: {value: 'Ada'},
+    });
+    // The value editor debounces the search by 150ms; on a busy CI box that
+    // and the sheet's render can outlast the 1s default, so wait longer.
     fireEvent.click(
-      await screen.findByRole('option', {name: /Ada Lovelace/, hidden: true}),
+      await within(inner).findByRole(
+        'checkbox',
+        {name: 'Ada Lovelace'},
+        {timeout: 15000},
+      ),
     );
+    expect(within(trigger).getByText('Ada Lovelace')).toBeInTheDocument();
+    // The footer's Done shows once the search is cleared.
+    fireEvent.change(within(inner).getByLabelText('Search Assignee'), {
+      target: {value: ''},
+    });
+    fireEvent.click(within(inner).getByRole('button', {name: 'Done'}));
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
     addFilter();
     expect(onChange).toHaveBeenCalledWith(
       [
@@ -1644,6 +1693,41 @@ describe('MobilePowerSearch value types', () => {
       'add',
       0,
     );
+  });
+
+  it("entity_list: the tokenizer's sheet is titled with the field's name, and the hidden label still names the trigger", () => {
+    setupValues();
+    openAddFlow();
+    tapRow('Assignee');
+    // The step already shows the field heading and the operator rows, so the
+    // tokenizer paints no label of its own...
+    const step = sheet();
+    expect(within(step).queryByText('Entities')).toBeNull();
+    const trigger = within(step).getByRole('button', {name: 'Assignee'});
+    // ...while the trigger is still named after the field.
+    expect(trigger).toHaveAccessibleName('Assignee');
+    fireEvent.click(trigger);
+    expect(tokenizerSheet()).toHaveAccessibleName('Assignee');
+  });
+
+  it("entity_list: Escape in the tokenizer's sheet closes only that sheet; the value step and the flow stay open", () => {
+    setupValues();
+    openAddFlow();
+    tapRow('Assignee');
+    const trigger = openTokenizer('Assignee');
+    const inner = tokenizerSheet();
+    expect(inner).toHaveAccessibleName('Assignee');
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.keyDown(inner, {key: 'Escape'});
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    // The inner sheet closes its dialog after its exit motion...
+    settleSheets();
+    expect(inner).not.toHaveAttribute('open');
+    // ...and the flow behind it is untouched.
+    expect(isSheetOpen()).toBe(true);
+    expect(
+      within(sheet()).getByRole('button', {name: 'Assignee'}),
+    ).toBeInTheDocument();
   });
 
   it('custom: the configured editor stages a JSON string', () => {

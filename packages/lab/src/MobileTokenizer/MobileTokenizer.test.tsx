@@ -340,6 +340,33 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
     );
   });
 
+  it('hides the visible label on request while the trigger and the sheet keep it as their name, and renders rows through renderItem', async () => {
+    render(
+      <MobileTokenizer
+        label="Tags"
+        isLabelHidden
+        searchSource={source}
+        value={[]}
+        debounceMs={0}
+        onChange={() => {}}
+        renderItem={item => <em data-testid="custom-row">{item.label}!</em>}
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: 'Tags'});
+    // The Field's label is clipped out of the layout (sr-only), as Core
+    // Tokenizer's is, while the trigger keeps it as its name.
+    const label = screen.getByText('Tags', {selector: 'label'});
+    expect(getComputedStyle(label).position).toBe('absolute');
+    expect(getComputedStyle(label).clip).toMatch(
+      /^rect\(0(px)?, 0(px)?, 0(px)?, 0(px)?\)$/,
+    );
+    expect(trigger).toHaveAccessibleName('Tags');
+    fireEvent.click(trigger);
+    expect(await screen.findByRole('dialog')).toHaveAccessibleName('Tags');
+    const row = await screen.findByRole('checkbox', {name: 'Design'});
+    expect(within(row).getByTestId('custom-row')).toHaveTextContent('Design!');
+  });
+
   it('keeps a disabled trigger focusable without opening the sheet (AST-085 FR1, FR2)', () => {
     render(
       <MobileTokenizer

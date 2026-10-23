@@ -1647,6 +1647,7 @@ export function MobilePowerSearch({
                         operatorValue={draftOperator.value}
                         filterValue={draft.value}
                         onChange={handleDraftValueChange}
+                        label={draftField.label}
                         isDisabled={isEditorDisabled}
                         maxMenuItems={maxOperatorMenuItems}
                         timezoneID={timezoneID}
