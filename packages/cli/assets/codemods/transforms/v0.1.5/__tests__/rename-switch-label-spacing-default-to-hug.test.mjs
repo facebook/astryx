@@ -73,39 +73,6 @@ export const Adjacent = {args: {labelSpacing: 'default' as const}};`;
     expect(output).not.toContain("'default'");
   });
 
-  it('leaves an unproven labelSpacing object in an Astryx file unchanged with a TODO', async () => {
-    const input = `import {Switch} from '@astryxdesign/core/Switch';
-const ROWS = [{labelSpacing: 'default' as const, label: 'Adjacent'}];`;
-    const output = await applyTransform(input);
-    expect(output).toContain("labelSpacing: 'default' as const");
-    expect(output).toContain(
-      "TODO(astryx upgrade): `labelSpacing: 'default'` was left unchanged",
-    );
-    expect(await applyTransform(output)).toBe(output);
-  });
-
-  it('does not rename another library config in a file that uses Astryx Switch', async () => {
-    const input = `import {Switch} from '@astryxdesign/core';
-import {Toggle} from 'other-ui';
-const toggleConfig = {labelSpacing: 'default'};
-export const Row = () => <><Switch label="A" value labelSpacing="default" /><Toggle {...toggleConfig} /></>;`;
-    const output = await applyTransform(input);
-    expect(output).toContain("labelSpacing='hug'");
-    expect(output).toContain("labelSpacing: 'default'};");
-    expect(output).not.toContain("labelSpacing: 'hug'");
-    expect(output).toContain('TODO(astryx upgrade)');
-  });
-
-  it('migrates a namespace-imported Switch meta and reports namespace-file candidates', async () => {
-    const input = `import * as Astryx from '@astryxdesign/core';
-const options = {labelSpacing: 'default'};
-export default {component: Astryx.Switch, argTypes: {labelSpacing: {options: ['default', 'spread']}}};`;
-    const output = await applyTransform(input);
-    expect(output).toContain("options: ['hug', 'spread']");
-    expect(output).toContain("labelSpacing: 'default'");
-    expect(output).toContain('TODO(astryx upgrade)');
-  });
-
   it('does not rename object labelSpacing prop when Switch is not imported', async () => {
     const input = `const cfg = {labelSpacing: 'default'};`;
     const output = await applyTransform(input);
@@ -132,5 +99,67 @@ export default meta;`;
     expect(output).toContain("'hug'");
     expect(output).toContain("'spread'");
     expect(output).not.toContain("'default'");
+  });
+
+  it('leaves an unproven labelSpacing object in an Astryx file byte-for-byte unchanged', async () => {
+    const input = `import {Switch} from '@astryxdesign/core/Switch';
+const ROWS = [{labelSpacing: 'default' as const, label: 'Adjacent'}];`;
+    expect(await applyTransform(input)).toBe(input);
+  });
+
+  it('migrates Astryx JSX and leaves another library config in the same file unchanged', async () => {
+    const input = `import {Switch} from '@astryxdesign/core';
+import {Toggle} from 'other-ui';
+const toggleConfig = {labelSpacing: 'default'};
+export const Row = () => <><Switch label="A" value labelSpacing="default" /><Toggle {...toggleConfig} /></>;`;
+    expect(await applyTransform(input)).toBe(
+      input.replace('labelSpacing="default" />', "labelSpacing='hug' />"),
+    );
+  });
+
+  it('migrates a namespace-imported Switch meta and leaves other objects unchanged', async () => {
+    const input = `import * as Astryx from '@astryxdesign/core';
+const options = {labelSpacing: 'default'};
+export default {component: Astryx.Switch, argTypes: {labelSpacing: {options: ['default', 'spread']}}};`;
+    expect(await applyTransform(input)).toBe(
+      input.replace(
+        "options: ['default', 'spread']",
+        "options: ['hug', 'spread']",
+      ),
+    );
+  });
+
+  it('migrates a story whose own component is an Astryx Switch, not one from another package', async () => {
+    const input = `import {Switch} from '@astryxdesign/core';
+import {Switch as OtherSwitch} from 'other-ui';
+export default {title: 'Switch'};
+export const Hug = {component: Switch, args: {labelSpacing: 'default'}};
+export const Other = {component: OtherSwitch, args: {labelSpacing: 'default'}};`;
+    expect(await applyTransform(input)).toBe(
+      input.replace(
+        "{component: Switch, args: {labelSpacing: 'default'}}",
+        "{component: Switch, args: {labelSpacing: 'hug'}}",
+      ),
+    );
+  });
+
+  it('migrates stories exported by name and args held in top-level bindings', async () => {
+    const input = `import {Switch} from '@astryxdesign/core';
+const baseArgs = {labelSpacing: 'default'};
+export default {component: Switch, args: baseArgs};
+const Primary = {args: {labelSpacing: 'default'}};
+export {Primary};
+const unrelated = {labelSpacing: 'default'};`;
+    expect(await applyTransform(input)).toBe(
+      input
+        .replace(
+          "const baseArgs = {labelSpacing: 'default'}",
+          "const baseArgs = {labelSpacing: 'hug'}",
+        )
+        .replace(
+          "{args: {labelSpacing: 'default'}}",
+          "{args: {labelSpacing: 'hug'}}",
+        ),
+    );
   });
 });

@@ -96,29 +96,6 @@ export const Accent: StoryObj<typeof meta> = {args: {color: 'active' as const}};
     expect(output).not.toContain("'active'");
   });
 
-  it('leaves an unproven color object in an Astryx file unchanged with a TODO', async () => {
-    const input = `import {Text} from '@xds/core/Text';
-const COLORS = [{color: 'active' as const, description: 'Accent'}];`;
-    const output = await applyTransform(input);
-    expect(output).toContain("color: 'active' as const");
-    expect(output).toContain(
-      "TODO(astryx upgrade): `color: 'active'` was left unchanged",
-    );
-    expect(await applyTransform(output)).toBe(output);
-  });
-
-  it('does not rename another library config in a file that uses Astryx Text', async () => {
-    const input = `import {Text} from '@astryxdesign/core';
-import {Badge} from 'other-ui';
-const badgeConfig = {color: 'active'};
-export const Row = () => <Text color="active"><Badge {...badgeConfig} /></Text>;`;
-    const output = await applyTransform(input);
-    expect(output).toContain("<Text color='accent'>");
-    expect(output).toContain("color: 'active'};");
-    expect(output).not.toContain("color: 'accent'");
-    expect(output).toContain('TODO(astryx upgrade)');
-  });
-
   it('does not rename object color prop when no target component is imported', async () => {
     const input = `const cfg = {color: 'active'};`;
     const output = await applyTransform(input);
@@ -168,30 +145,82 @@ export default {component: Text, argTypes: {color: {control: 'select', options: 
     expect(output).not.toContain("'active'");
   });
 
-  it('migrates a namespace-imported meta component and reports namespace-file candidates', async () => {
-    const input = `import * as Astryx from '@astryxdesign/core';
-const options = {color: 'active'};
-export default {component: Astryx.Heading, argTypes: {color: {options: ['active']}}};`;
-    const output = await applyTransform(input);
-    expect(output).toContain("options: ['accent']");
-    expect(output).toContain("color: 'active'");
-    expect(output).toContain('TODO(astryx upgrade)');
-  });
-
-  it('does not migrate argTypes whose meta component is not an Astryx import', async () => {
-    const input = `import {Text} from '@astryxdesign/core';
-import {Label} from 'other-ui';
-export default {component: Label, argTypes: {color: {options: ['active']}}};
-export const Row = () => <Text>Hi</Text>;`;
-    const output = await applyTransform(input);
-    expect(output).toContain("options: ['active']");
-    expect(output).toContain('TODO(astryx upgrade)');
-  });
-
   it('returns undefined (no change) when nothing matches', async () => {
     const input = `<Text color="primary">Hi</Text>`;
     const output = await applyTransform(input);
     // applyTransform falls back to source when transform returns undefined
     expect(output).toBe(input);
+  });
+
+  it('leaves an unproven color object in an Astryx file byte-for-byte unchanged', async () => {
+    const input = `import {Text} from '@xds/core/Text';
+const COLORS = [{color: 'active' as const, description: 'Accent'}];`;
+    expect(await applyTransform(input)).toBe(input);
+  });
+
+  it('migrates Astryx JSX and leaves another library config in the same file unchanged', async () => {
+    const input = `import {Text} from '@astryxdesign/core';
+import {Badge} from 'other-ui';
+const badgeConfig = {color: 'active'};
+export const Row = () => <Text color="active"><Badge {...badgeConfig} /></Text>;`;
+    expect(await applyTransform(input)).toBe(
+      input.replace('<Text color="active">', "<Text color='accent'>"),
+    );
+  });
+
+  it('migrates a namespace-imported meta and leaves other objects unchanged', async () => {
+    const input = `import * as Astryx from '@astryxdesign/core';
+const options = {color: 'active'};
+export default {component: Astryx.Heading, argTypes: {color: {options: ['active']}}};`;
+    expect(await applyTransform(input)).toBe(
+      input.replace("options: ['active']", "options: ['accent']"),
+    );
+  });
+
+  it('does not migrate a meta whose component is not an Astryx import', async () => {
+    const input = `import {Text} from '@astryxdesign/core';
+import {Label} from 'other-ui';
+export default {component: Label, argTypes: {color: {options: ['active']}}};
+export const Row = () => <Text>Hi</Text>;`;
+    expect(await applyTransform(input)).toBe(input);
+  });
+
+  it('migrates a story whose own component is an Astryx import, not one from another package', async () => {
+    const input = `import {Heading, Text} from '@astryxdesign/core';
+import {Label} from 'other-ui';
+export default {component: Text};
+export const Title = {component: Heading, args: {color: 'active'}};
+export const Other = {component: Label, args: {color: 'active'}};`;
+    expect(await applyTransform(input)).toBe(
+      input.replace(
+        "{component: Heading, args: {color: 'active'}}",
+        "{component: Heading, args: {color: 'accent'}}",
+      ),
+    );
+  });
+
+  it('migrates stories exported by name and args held in top-level bindings', async () => {
+    const input = `import {Text} from '@astryxdesign/core';
+const baseArgs = {color: 'active'};
+const meta = {component: Text, args: baseArgs};
+export default meta;
+const args = {color: 'active'};
+const Primary = {args};
+const Secondary = {args: {color: 'active'}};
+export {Primary, Secondary as Accent};
+const unrelated = {color: 'active'};`;
+    const output = await applyTransform(input);
+    expect(output).toBe(
+      input
+        .replace(
+          "const baseArgs = {color: 'active'}",
+          "const baseArgs = {color: 'accent'}",
+        )
+        .replace(
+          "const args = {color: 'active'}",
+          "const args = {color: 'accent'}",
+        )
+        .replace("{args: {color: 'active'}}", "{args: {color: 'accent'}}"),
+    );
   });
 });
