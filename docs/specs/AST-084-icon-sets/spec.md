@@ -298,8 +298,11 @@ icon, and the CLI verifies it, writes the files, and checks the set.
     current rule spells differently is reported under `renamed`
     (`add --variant <name> --all` meets an icon the same way). A refresh
     copies the library's license notices the set lacks, and the run that
-    first records `source` takes the library's license for the descriptor,
-    which later runs keep. The package's own `license` is never written.
+    first records `source` takes the library's license for the descriptor
+    when its `license` is still the one `new-set` wrote (the package's own,
+    or `UNLICENSED`); a `license` the author changed is kept, and the
+    receipt names both. Later runs keep the descriptor's `license`. The
+    package's own `license` is never written.
   - `experimental icon add <Export> --from <module>` verifies the export,
     lists the definitions that fit it, and with `--definition` or
     `--new-definition` adds it and maps it; `--variant <name>` adds it as

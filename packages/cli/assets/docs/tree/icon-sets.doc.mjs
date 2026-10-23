@@ -125,7 +125,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: "With a package or package subpath, it also records the installed library and version as the data file's `source`, so `integration check` warns when your dependency moves to another version; copies the library's LICENSE (and NOTICE) files into the set directory; and sets the descriptor's `license` to the library's. A set you started without `--from` gets the same the first time a refresh records its source; a later refresh keeps the `license` you set. Your package.json `license` is never changed. Edit `license` when the artwork's license differs from the library's package license.",
+          text: "With a package or package subpath, it also records the installed library and version as the data file's `source`, so `integration check` warns when your dependency moves to another version; copies the library's LICENSE (and NOTICE) files into the set directory; and sets the descriptor's `license` to the library's. A set you started without `--from` gets the same the first time a refresh records its source, unless you already changed `license`: a `license` you set is kept (the receipt names the library's), and every later refresh keeps it too. Your package.json `license` is never changed. Edit `license` when the artwork's license differs from the library's package license.",
         },
         {
           type: 'prose',
