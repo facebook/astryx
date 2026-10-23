@@ -17,10 +17,13 @@ describe('ties below the first result', () => {
     expect(results[1]?.name).toMatch(/^ProgressBar./);
   });
 
-  it('keeps which results are shown', async () => {
-    const results = (await search('chat')).data.results.map(r => r.name);
-    expect(results).toContain('ai-chat');
-    expect(results).toContain('ai-chat-landing');
+  it('shows the top of one answer at every limit', async () => {
+    const query = 'progress bar with percent';
+    const all = (await search(query)).data.results.map(r => r.name);
+    const three = (await search(query, {limit: 3})).data.results.map(
+      r => r.name,
+    );
+    expect(three).toEqual(all.slice(0, 3));
   });
 
   it('reads a punctuated query word by its parts', async () => {

@@ -12,8 +12,7 @@
  * that scored the same move as one block; an entry the query names leads; in a
  * query of one or two words, the matches on every word keep their lexical
  * order; and an integration's matches that scored the same keep theirs.
- * Below the first result, inside the results shown, a block of one domain is
- * ordered by fit (tiesByFit): a part of the first result, then rarer matched
+ * Below the first result, a block of one domain is ordered by fit (tiesByFit): a part of the first result, then rarer matched
  * words, then the lexical order.
  */
 
@@ -106,9 +105,9 @@ export function orderMatches(table, order, lexical, query, limit) {
     ranked = keepLexical(ranked, it => (it.res.score ?? 0) >= FULL_COVERAGE);
   }
   ranked = integrationTies(ranked);
-  // Ties are ordered by fit only among the results shown, so which results
-  // are shown stays as before.
-  const shown = tiesByFit(ranked.slice(0, limit), table, blockOf);
+  // Each whole tie is ordered by fit before the limit, so every limit shows
+  // the top of one answer.
+  const shown = tiesByFit(ranked, table, blockOf).slice(0, limit);
   const response = {
     ...lexical,
     data: {...lexical.data, results: shown.map(it => it.res)},
