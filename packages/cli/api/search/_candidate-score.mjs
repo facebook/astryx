@@ -91,6 +91,9 @@ function headOfLetters(term, name) {
   );
 }
 
+/** How many of a family's members a query naming the family lists. */
+const FAMILY_MEMBERS = 3;
+
 /**
  * Score a single candidate against the search term across name, keywords,
  * and prose signals. Returns the best (highest) score plus a human reason,
@@ -107,7 +110,9 @@ function headOfLetters(term, name) {
  * @param {string} [candidate.description]
  * @param {string[]} [candidate.prose] - Extra free-text blobs (doc section text, best practices).
  * @param {string[]} [candidate.guidance] - Usage guidance (features, best practices) — scored a tier below description.
- * @param {{fuzzy?: boolean, joins?: boolean, part?: boolean}} [opts] - `fuzzy`: allow edit-distance (typo) matches. Default true; multi-word queries pass false. `joins`: read a spaced query joined into a name or keyword (default true); off when the query names an entry outright. `part`: the term is one word of a longer query, so a name's head word after single letters (Stack in VStack) does not count as a keyword hit for it.
+ * @param {string} [candidate._family] - The family whose doc lists the entry as a member.
+ * @param {number} [candidate._familyIndex] - The entry's place among that family's members.
+ * @param {{fuzzy?: boolean, joins?: boolean, part?: boolean, synonym?: boolean}} [opts] - `fuzzy`: allow edit-distance (typo) matches. Default true; multi-word queries pass false. `joins`: read a spaced query joined into a name or keyword (default true); off when the query names an entry outright. `part`: the term is one word of a longer query, so a name's head word after single letters (Stack in VStack) does not count as a keyword hit for it. `synonym`: the term stands in for a word of the query, so it names no family.
  * @returns {{score: number, reason: string, alias?: 'partial' | 'keyword'} | null}
  *   `alias` marks a hit that read the query's words joined.
  */
@@ -122,8 +127,10 @@ export function scoreCandidate(
     description = '',
     prose = [],
     guidance = [],
+    _family,
+    _familyIndex,
   },
-  {fuzzy = true, joins = true, part = false} = {},
+  {fuzzy = true, joins = true, part = false, synonym = false} = {},
 ) {
   let best = 0;
   let reason = '';
@@ -211,6 +218,23 @@ export function scoreCandidate(
         }
       }
     }
+  }
+
+  // ── Family signal ───────────────────────────────────────────────
+  // A query naming a family lists its first members as a keyword would: the
+  // family doc names them, whether or not a component of the family's name
+  // exists ("chat" lists ChatMessage and its siblings). Only the whole query
+  // names the family: a word of a longer query lifts no member.
+  if (
+    !part &&
+    !synonym &&
+    _family &&
+    (_familyIndex ?? Infinity) < FAMILY_MEMBERS &&
+    (term === _family.toLowerCase() ||
+      term === wordsOf(_family).join(' ') ||
+      term.replace(/\s+/g, '') === _family.toLowerCase())
+  ) {
+    consider(90, `member of ${_family}`);
   }
 
   // ── Keyword signals ─────────────────────────────────────────────
