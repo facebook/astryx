@@ -197,6 +197,9 @@ announcement channel.
   from its transition handler, because only the caller knows whether a Banner
   is a new outcome or persistent content. FR11 and FR12 cover components that
   announce their own content.
+- The chat trigger menu's loading announcement and the ChatComposer status bar
+  each own an announcement Effect today. Under FR13 they move onto the helper;
+  the FR13 shared test lands with that conformance work.
 - `useAnnounce`: messages written in the same frame are joined instead of the
   last one replacing the others (FR9).
 - `spec:AST-037` FR9 (Timer adds no unsolicited live region) already conforms.
