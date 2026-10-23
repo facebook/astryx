@@ -182,9 +182,11 @@ announcement channel.
 - EmptyState: its root mounts a live role together with its text. Under FR2,
   FR11, and FR12 it carries no live role and announces when it appears
   after page load. EmptyState stays server-renderable.
-- The ChatComposer status bar and the chat trigger menu's loading row carry no
-  live role and announce through the channel from their own Effects. Under
-  `architecture:react-component-runtime` INV10 they move onto the shared module.
+- The ChatComposer status bar carries no live role and announces the caller's
+  status message from its own Effect. That is own content, so under
+  `architecture:react-component-runtime` INV10 it moves onto the shared module.
+- The chat trigger menu's loading row carries no live role. Its "Searching…"
+  announcement is the menu's busy start under FR8 and keeps its own owner.
 - Button: its persistent loading region fits FR3, except when a Button first
   renders loading and the region mounts holding its text. Inside a live
   container it keeps its role and urgency (FR4).
@@ -207,8 +209,8 @@ announcement channel.
   from its transition handler, because only the caller knows whether a Banner
   is a new outcome or persistent content. FR11 and FR12 cover components that
   announce their own content.
-- The INV10 shared test lands with the conformance work that moves the two chat
-  adopters onto the shared module.
+- The INV10 shared test lands with the conformance work that moves the
+  ChatComposer status bar onto the shared module.
 - `useAnnounce`: messages written in the same frame are joined instead of the
   last one replacing the others (FR9).
 - `spec:AST-037` FR9 (Timer adds no unsolicited live region) already conforms.
@@ -229,7 +231,7 @@ announcement channel.
 | FR10          | Accessibility-tree check with a Dialog open                               | Info and error toast shown over an open Dialog                                                                                                                                                                  | A toast that reaches only the body-level channel, or no exposed live container, fails                                                                                                                                                                                          |
 | FR11, FR12    | Helper and component tests                                                | EmptyState present at page load, server-rendered, inserted later, text changed, hidden and shown again, brought in by a client-rendered route change, inside a chat log, empty Selector panel open at page load | Announcing at page load or from a server render (other than an announcement-only message), missing a later insertion, a client-rendered route change, or an empty Selector panel at page load, repeating one occasion, or also using the channel inside a live container fails |
 | FR12 (server) | Server-safe component boundary check plus a server render of each adopter | EmptyState rendered on the server and hydrated                                                                                                                                                                  | An adopter that fails the boundary check, or emits an announcement or live role from a server render, fails                                                                                                                                                                    |
-| FR13          | Helper StrictMode, hide/show, and unmount tests on each adopter           | EmptyState, Spinner, ChatComposer status bar, trigger-menu loading row                                                                                                                                          | A duplicate announcement under StrictMode, work while hidden, or a resource left after unmount fails                                                                                                                                                                           |
+| FR13          | Helper StrictMode, hide/show, and unmount tests on each adopter           | EmptyState, Spinner, ChatComposer status bar                                                                                                                                                                    | A duplicate announcement under StrictMode, work while hidden, or a resource left after unmount fails                                                                                                                                                                           |
 | FR6 (AT)      | Recommended `spec:AST-009` real-AT follow-up                              | Toast, busy Switch, chat notice                                                                                                                                                                                 | Missing, repeated, or out-of-order speech fails                                                                                                                                                                                                                                |
 
 ## Decision log
