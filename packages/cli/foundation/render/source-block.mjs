@@ -17,7 +17,7 @@ export const SOURCE_TYPE = 'application/x-astryx-source';
 
 /**
  * @typedef {object} EmbeddedFile
- * @property {string} path - Path relative to the page's folder, `/`-separated; the page itself first.
+ * @property {string} path - Path relative to the folder that holds every embedded file, `/`-separated; the page itself first.
  * @property {string} sha256 - SHA-256 of the file's bytes, hex.
  * @property {string} base64 - The file's bytes.
  */

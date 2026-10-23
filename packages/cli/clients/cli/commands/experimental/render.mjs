@@ -79,24 +79,29 @@ export function registerExperimentalRender(group, program) {
         return answered;
       }
       const d = result.data;
-      if (d.mode === 'embedded') {
-        emit(
-          section(`Restored ${d.output}`),
-          text(`The page's embedded source, written back exactly: ${d.files.join(', ')}`),
-        );
-        return answered;
-      }
       emit(
-        section(`Rebuilt ${d.output}`),
-        text(
-          'The file had no embedded source, so the page was rebuilt from its Astryx markup: text and layout only. Review it before use.',
-        ),
+        section(d.mode === 'embedded' ? `Restored ${d.output}` : `Rebuilt ${d.output}`),
         record({
-          components: (d.components ?? []).join(', ') || 'none',
-          elements: d.elements ?? 0,
-          ...(d.omitted?.length ? {omitted: d.omitted.join(', ')} : {}),
-          ...(d.unknown?.length ? {unknown: d.unknown.join(', ')} : {}),
+          mode: d.mode,
+          exact: d.exact,
+          output: d.output,
+          files: d.files.join(', '),
+          ...(d.mode === 'rebuilt'
+            ? {
+                components: (d.components ?? []).join(', ') || 'none',
+                elements: d.elements ?? 0,
+                ...(d.omitted?.length ? {omitted: d.omitted.join(', ')} : {}),
+                ...(d.unknown?.length ? {unknown: d.unknown.join(', ')} : {}),
+              }
+            : {}),
         }),
+        ...(d.mode === 'rebuilt'
+          ? [
+              text(
+                'The file had no embedded source, so the page was rebuilt from its Astryx markup: text and layout only. Review it before use.',
+              ),
+            ]
+          : []),
       );
       return answered;
     },

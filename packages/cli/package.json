@@ -42,6 +42,10 @@
       "types": "./api/index.d.mts",
       "import": "./api/index.mjs"
     },
+    "./api/experimental": {
+      "types": "./api/experimental.d.mts",
+      "import": "./api/experimental.mjs"
+    },
     "./host": {
       "types": "./host/index.d.ts",
       "import": "./host/index.mjs"

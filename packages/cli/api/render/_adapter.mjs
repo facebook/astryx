@@ -184,24 +184,33 @@ export function reverseToFile({cwd, input, output, overwrite}) {
   if (block.found) {
     const {source} = block;
     // The entry name comes from the file, so only its base name is used.
-    const target = output ?? path.join(path.dirname(input), path.basename(source.entry));
-    const base = path.dirname(target);
-    /** @type {{file: string, bytes: Buffer}[]} */
-    const writes = [];
-    source.files.forEach((f, i) => {
-      const file = i === 0 ? target : path.resolve(base, ...f.path.split('/'));
-      if (i > 0 && path.isAbsolute(f.path)) {
+    const requested = output ?? path.join(path.dirname(input), path.basename(source.entry));
+    for (const f of source.files) {
+      if (path.isAbsolute(f.path) || f.path.split('/').includes('..') || f.path.includes('\\')) {
         throw new AstryxError(
-          `${shown(cwd, input)} names an embedded file by an absolute path (${f.path}); nothing was written.`,
+          `${shown(cwd, input)} names an embedded file outside its own tree (${f.path}); nothing was written.`,
           [],
           ERROR_CODES.ERR_PATH_TRAVERSAL,
         );
       }
+    }
+    // The tree's root sits as far above the page as the page sat above it,
+    // so every relative import still resolves. When that would leave the
+    // current folder, the tree goes under the requested page's folder.
+    const entryRel = source.files[0].path.split('/');
+    const depth = entryRel.length - 1;
+    let root = path.dirname(requested);
+    for (let i = 0; i < depth; i++) root = path.dirname(root);
+    const rel = path.relative(cwd, root);
+    const fits = !rel.startsWith('..') && !path.isAbsolute(rel);
+    if (!fits) root = path.dirname(requested);
+    const target = fits ? requested : path.join(root, ...entryRel.slice(0, -1), path.basename(requested));
+    /** @type {{file: string, bytes: Buffer}[]} */
+    const writes = [];
+    source.files.forEach((f, i) => {
+      const file = i === 0 ? target : path.join(root, ...f.path.split('/'));
       confined(file, cwd, i === 0 ? 'The page' : 'The embedded file');
-      writes.push({
-        file,
-        bytes: Buffer.from(f.base64, 'base64'),
-      });
+      writes.push({file, bytes: Buffer.from(f.base64, 'base64')});
     });
     for (const w of writes) refuseExisting(w.file);
     for (const w of writes) writeOutput(w.file, w.bytes, cwd);

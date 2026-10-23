@@ -257,7 +257,7 @@ export default function Page() {
 });
 
 describe('render(): every write stays inside the current folder', () => {
-  it('keeps an embedded entry name inside: only its base name is used', async () => {
+  it('refuses an embedded entry path that climbs out', async () => {
     const {sourceBlock} = await import('../../foundation/render/source-block.mjs');
     fs.mkdirSync(path.join(dir, 'inner'), {recursive: true});
     put(
@@ -266,10 +266,49 @@ describe('render(): every write stays inside the current folder', () => {
         {path: '../../../outside.tsx', bytes: Buffer.from('export default () => null;')},
       ])}</body>`,
     );
-    // Only the base name is used: it lands beside the HTML file.
-    const r = /** @type {any} */ (await render('inner/entry.html', {cwd: dir, reverse: true}));
-    expect(r.data.output).toBe('inner/outside.tsx');
+    expect(await codeOf(() => render('inner/entry.html', {cwd: dir, reverse: true}))).toBe('ERR_PATH_TRAVERSAL');
+    expect(fs.existsSync(path.join(dir, 'inner/outside.tsx'))).toBe(false);
   });
+
+  it('gives back a page that imports from a parent folder, keeping the layout inside the current folder', async () => {
+    put('tree/src/components/Footer.tsx', 'export function Footer() { return <p>Parent footer</p>; }\n');
+    put(
+      'tree/src/app/page.tsx',
+      "import {Footer} from '../components/Footer';\nexport default function Page() { return <main><h1>Tree</h1><Footer /></main>; }\n",
+    );
+    const cwd = path.join(dir, 'tree/src/app');
+    const r = /** @type {any} */ (await render('page.tsx', {cwd}));
+    expect(r.data.files).toEqual(['app/page.tsx', 'components/Footer.tsx']);
+    // The guide's command, from the page's own folder: the parent folder is
+    // outside it, so the files keep their layout under it.
+    const back = /** @type {any} */ (await render('page.html', {cwd, reverse: true, out: 'back.tsx'}));
+    expect(back.data.output).toBe('app/back.tsx');
+    expect(back.data.files).toEqual(['app/back.tsx', 'components/Footer.tsx']);
+    const again = /** @type {any} */ (await render('app/back.tsx', {cwd}));
+    expect(again.type).toBe('render.page');
+    // From a folder that holds the whole tree, the page lands where asked.
+    const up = path.join(dir, 'tree');
+    const back2 = /** @type {any} */ (await render('src/app/page.html', {cwd: up, reverse: true, out: 'copy/app/page.tsx'}));
+    expect(back2.data.output).toBe('copy/app/page.tsx');
+    expect(back2.data.files).toEqual(['copy/app/page.tsx', 'copy/components/Footer.tsx']);
+  }, 60_000);
+
+  it('resolves a tsconfig path alias', async () => {
+    put('aliased/tsconfig.json', '{\n  // paths\n  "compilerOptions": {"baseUrl": ".", "paths": {"@/*": ["./src/*"]}},\n}\n');
+    put('aliased/package.json', '{"name":"aliased","private":true}');
+    put('aliased/src/Header.tsx', 'export function Header() { return <p>Aliased header</p>; }\n');
+    put('aliased/src/page.tsx', "import {Header} from '@/Header';\nexport default function Page() { return <Header />; }\n");
+    put('aliased/src/bad.tsx', "import X from '@/nope';\nexport default function Page() { return <X />; }\n");
+    const r = /** @type {any} */ (await render('aliased/src/page.tsx', {cwd: dir}));
+    expect(fs.readFileSync(path.join(dir, 'aliased/src/page.html'), 'utf8')).toContain('Aliased header');
+    expect(r.data.files).toEqual(['page.tsx', 'Header.tsx']);
+    expect(await codeOf(() => render('aliased/src/bad.tsx', {cwd: dir}))).toBe('ERR_FILE_NOT_FOUND');
+  }, 60_000);
+
+  it('reports ERR_WRITE_FAILED when the output cannot be written', async () => {
+    fs.mkdirSync(path.join(dir, 'a-folder.html'), {recursive: true});
+    expect(await codeOf(() => render('page.tsx', {cwd: dir, out: 'a-folder.html'}))).toBe('ERR_WRITE_FAILED');
+  }, 60_000);
 
   it('refuses --out outside the current folder, and a write through a symlink that leaves it', async () => {
     expect(await codeOf(() => render('page.tsx', {cwd: dir, out: '../escaped.html'}))).toBe('ERR_PATH_TRAVERSAL');

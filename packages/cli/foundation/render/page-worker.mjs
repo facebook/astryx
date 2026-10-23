@@ -137,7 +137,7 @@ function pagePlugin(filename) {
       ImportDeclaration(/** @type {any} */ p) {
         const spec = /** @type {string} */ (p.node.source.value);
         const bare = spec.split('?')[0];
-        if (!bare.startsWith('.') && !path.isAbsolute(bare)) {
+        if (!bare.startsWith('.') && !path.isAbsolute(bare) && !isAliased(bare)) {
           packages.add(
             bare.startsWith('@')
               ? bare.split('/').slice(0, 2).join('/')
@@ -264,6 +264,52 @@ function pagePlugin(filename) {
   });
 }
 
+/**
+ * Path aliases from the project's tsconfig.json or jsconfig.json
+ * (`compilerOptions.paths`), as jiti aliases: `"@/*": ["./src/*"]` becomes
+ * `{"@/": "<root>/src/"}`.
+ * @returns {Record<string, string>}
+ */
+function projectAliases() {
+  /** @type {Record<string, string>} */
+  const alias = {};
+  for (const name of ['tsconfig.json', 'jsconfig.json']) {
+    const file = path.join(root, name);
+    if (!fs.existsSync(file)) continue;
+    /** @type {any} */
+    let config;
+    try {
+      // Allow the comments and trailing commas these files often carry.
+      const text = fs
+        .readFileSync(file, 'utf8')
+        .replace(/("(?:[^"\\]|\\.)*")|\/\/[^\n]*|\/\*[\s\S]*?\*\//g, (_, str) => str ?? '')
+        .replace(/,(\s*[}\]])/g, '$1');
+      config = JSON.parse(text);
+    } catch {
+      continue;
+    }
+    const options = config?.compilerOptions ?? {};
+    const baseDir = path.resolve(root, typeof options.baseUrl === 'string' ? options.baseUrl : '.');
+    for (const [key, targets] of Object.entries(options.paths ?? {})) {
+      const target = Array.isArray(targets) ? targets[0] : undefined;
+      if (typeof target !== 'string') continue;
+      if (key.endsWith('/*') && target.endsWith('/*')) {
+        alias[key.slice(0, -1)] = `${path.resolve(baseDir, target.slice(0, -2))}/`;
+      } else if (!key.includes('*') && !target.includes('*')) {
+        alias[key] = path.resolve(baseDir, target);
+      }
+    }
+    break;
+  }
+  return alias;
+}
+
+const ALIASES = projectAliases();
+
+/** @param {string} spec whether a specifier goes through a project alias */
+const isAliased = spec =>
+  Object.keys(ALIASES).some(key => (key.endsWith('/') ? spec.startsWith(key) : spec === key));
+
 const plain = createJiti(entry, {fsCache: false, jsx: {runtime: 'automatic'}});
 
 const jiti = createJiti(entry, {
@@ -272,6 +318,7 @@ const jiti = createJiti(entry, {
   extensions: ['.js', '.mjs', '.cjs', '.jsx', '.ts', '.tsx', '.mts', '.cts', '.json'],
   moduleCache: true,
   interopDefault: true,
+  alias: ALIASES,
   jsx: {runtime: 'automatic'},
   transform(opts) {
     const filename = opts.filename ?? '';
@@ -338,6 +385,13 @@ function classify(e) {
   const missing =
     /Cannot find (?:module|package) ['"]([^'"]+)['"]/.exec(message) ??
     /Failed to resolve import ['"]([^'"]+)['"]/.exec(message);
+  if (missing && (isAliased(missing[1]) || /^[@~#]\/|^#/.test(missing[1]))) {
+    return fail(
+      'ERR_FILE_NOT_FOUND',
+      `The page imports ${missing[1]} through a path alias that does not lead to a file. Check \`compilerOptions.paths\` in the project's tsconfig.json, or import it by a relative path.`,
+      {module: missing[1]},
+    );
+  }
   if (missing && !missing[1].startsWith('.') && !path.isAbsolute(missing[1])) {
     const spec = missing[1];
     const pkg = spec.startsWith('@') ? spec.split('/').slice(0, 2).join('/') : spec.split('/')[0];

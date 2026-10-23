@@ -35,7 +35,7 @@
  * @property {string} data.input - The page module, relative to cwd when inside it.
  * @property {string} data.output - The HTML file written.
  * @property {number} data.bytes - Size of the HTML file.
- * @property {string[]} data.files - Local modules the page loaded, relative to its folder, page first; each is embedded so --reverse can give it back.
+ * @property {string[]} data.files - Local files the page loaded (modules, stylesheets, images, JSON), relative to the folder that holds them all (the page's folder unless it imports from above it), page first; each is embedded so --reverse can give it back.
  * @property {string[]} data.stylesheets - Package stylesheets that were cut to the rules the page uses and inlined.
  * @property {number} data.classes - Distinct class names in the markup.
  * @property {number} data.cssBytes - Size of the inlined CSS.
@@ -51,7 +51,7 @@
  * @property {object} data
  * @property {string} data.input - The HTML file read.
  * @property {'embedded' | 'rebuilt'} data.mode - `embedded`: the file carried its source, written back byte for byte. `rebuilt`: rebuilt from Astryx markup (text and layout only).
- * @property {string} data.output - The page module written.
+ * @property {string} data.output - The page module written. When the page imported files from above its own folder and keeping them there would leave the current folder, the files keep their layout under the output's folder, and this names where the page landed.
  * @property {string[]} data.files - Every file written, page first.
  * @property {boolean} data.exact - Whether the page is exactly the one that was rendered.
  * @property {string[]} [data.components] - Rebuilt only: the components the page uses.

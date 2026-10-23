@@ -39,7 +39,7 @@ export const PAGE_EXTENSIONS = ['.tsx', '.jsx', '.ts', '.js', '.mjs'];
 /**
  * @typedef {object} RenderedPage
  * @property {string} html - The whole file.
- * @property {string[]} files - Local files the page loaded, relative to its folder; the page first. Each is embedded.
+ * @property {string[]} files - Local files the page loaded, relative to the folder that holds them all (the page's folder unless it imports from above it); the page first. Each is embedded.
  * @property {string[]} stylesheets - The packages' stylesheets that were cut and inlined.
  * @property {number} classes - Distinct class names in the markup.
  * @property {number} cssBytes - Bytes of inlined CSS.
@@ -350,8 +350,16 @@ export async function renderPage(entry, options = {}) {
 
   const files = /** @type {string[]} */ (message.files ?? [entry]);
   if (!files.includes(entry)) files.unshift(entry);
-  const embedded = files.map(f => ({
-    path: path.relative(dir, f).split(path.sep).join('/'),
+  // Paths are kept relative to the folder that holds every file: the page's
+  // folder, or an ancestor when the page imports from above it.
+  let base = dir;
+  for (const f of files) {
+    while (path.relative(base, f).startsWith('..')) base = path.dirname(base);
+  }
+  // Page first, so the reader knows which file is the page.
+  const ordered = [entry, ...files.filter(f => f !== entry)];
+  const embedded = ordered.map(f => ({
+    path: path.relative(base, f).split(path.sep).join('/'),
     bytes: fs.readFileSync(f),
   }));
   const heading = /<h1\b[^>]*>([\s\S]*?)<\/h1>/i.exec(markup)?.[1]?.replace(/<[^>]*>/g, '').trim();
