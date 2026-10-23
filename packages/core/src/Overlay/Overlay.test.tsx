@@ -12,7 +12,7 @@
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {render, screen, renderHook, fireEvent} from '@testing-library/react';
-import {createRef} from 'react';
+import {createRef, type ReactNode} from 'react';
 import {Overlay} from './Overlay';
 import {useOverlay} from './useOverlay';
 import {OverlayRegion, resolveOverlayRegionAxis} from './OverlayRegion';
@@ -373,6 +373,15 @@ function placementOf(region: HTMLElement) {
   };
 }
 
+/** Renders regions in a fill Overlay's content, where they are placed. */
+function renderInFill(regions: ReactNode) {
+  return render(
+    <Overlay scrim={false} content={regions}>
+      <div />
+    </Overlay>,
+  );
+}
+
 function regionOf(text: string): HTMLElement {
   const region = screen.getByText(text).parentElement;
   if (region === null) {
@@ -453,7 +462,7 @@ describe('OverlayRegion', () => {
     });
 
     it('places an open sized region by its top-left corner, in fractions', () => {
-      render(
+      renderInFill(
         <OverlayRegion position={{x: 0.1, y: 0.04, width: 0.8, height: 0.16}}>
           <span>caption</span>
         </OverlayRegion>,
@@ -467,7 +476,7 @@ describe('OverlayRegion', () => {
     });
 
     it('clamps an open sized region inside the surface', () => {
-      render(
+      renderInFill(
         <OverlayRegion position={{x: 0.9, y: 0.95, width: 0.4, height: 0.2}}>
           <span>caption</span>
         </OverlayRegion>,
@@ -479,7 +488,7 @@ describe('OverlayRegion', () => {
     });
 
     it('fits an open content-sized region to its content from its point', () => {
-      render(
+      renderInFill(
         <OverlayRegion position={{x: 0.25, y: 0.75}}>
           <span>pin</span>
         </OverlayRegion>,
@@ -495,16 +504,22 @@ describe('OverlayRegion', () => {
     it('measures open placement from the left edge in right-to-left', () => {
       render(
         <div dir="rtl">
-          <OverlayRegion position={{x: 0.2, y: 0.5, width: 0.2}}>
-            <span>tag</span>
-          </OverlayRegion>
+          <Overlay
+            scrim={false}
+            content={
+              <OverlayRegion position={{x: 0.2, y: 0.5, width: 0.2}}>
+                <span>tag</span>
+              </OverlayRegion>
+            }>
+            <div />
+          </Overlay>
         </div>,
       );
       expect(placementOf(regionOf('tag')).left).toBe('20%');
     });
 
     it('places presets without open-placement values', () => {
-      render(
+      renderInFill(
         <>
           <OverlayRegion position="top">
             <span>top</span>
@@ -541,6 +556,28 @@ describe('OverlayRegion', () => {
       }
     });
 
+    it('is not placed outside any Overlay or in its children, and warns', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        render(
+          <>
+            <OverlayRegion position={{x: 0.4, y: 0.4, width: 0.2}}>
+              <span>loose</span>
+            </OverlayRegion>
+            <Overlay content={<span>overlay content</span>}>
+              <OverlayRegion position="center">
+                <span>in children</span>
+              </OverlayRegion>
+            </Overlay>
+          </>,
+        );
+        expect(placementOf(regionOf('loose')).left).toBe('');
+        expect(warn).toHaveBeenCalledTimes(2);
+      } finally {
+        warn.mockRestore();
+      }
+    });
+
     it('does not warn inside a fill overlay', () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       try {
@@ -561,7 +598,7 @@ describe('OverlayRegion', () => {
     });
 
     it('adds no role, name, text, or focus stop', () => {
-      render(
+      renderInFill(
         <OverlayRegion position="center">
           <span>caption</span>
         </OverlayRegion>,
@@ -572,7 +609,7 @@ describe('OverlayRegion', () => {
     });
 
     it('attaches no pointer or keyboard behavior of its own', () => {
-      render(
+      renderInFill(
         <OverlayRegion position={{x: 0.5, y: 0.5}}>
           <span>caption</span>
         </OverlayRegion>,
@@ -604,7 +641,7 @@ describe('OverlayRegion', () => {
 
     it('forwards ref and composes caller styling inputs', () => {
       const ref = createRef<HTMLDivElement>();
-      render(
+      renderInFill(
         <OverlayRegion
           ref={ref}
           position={{x: 0.5, y: 0.5}}

@@ -14,7 +14,7 @@ export const docs = {
       name: 'position',
       type: "'fill' | 'top' | 'bottom' | 'center' | 'top-start' | 'top-end' | 'bottom-start' | 'bottom-end' | {x: number; y: number; width?: number; height?: number}",
       description:
-        'Where the region sits. Presets: fill, top, and bottom mean what they mean on Overlay; center and the corners hold content-sized boxes, and start/end corners flip in right-to-left. Open placement: x and y are the region’s top-left corner as 0–1 fractions of the media, measured from its top-left in every direction; width and height (0–1) extend right and down, and a sized box stays inside the media. Without a size the region fits its content. Inside a top or bottom Overlay a region is not placed and warns in development.',
+        'Where the region sits. Presets: fill, top, and bottom mean what they mean on Overlay; center and the corners hold content-sized boxes, and start/end corners flip in right-to-left. Open placement: x and y are the region’s top-left corner as 0–1 fractions of the media, measured from its top-left in every direction; width and height (0–1) extend right and down, and a sized box stays inside the media. Without a size the region fits its content. Regions are placed only in a fill Overlay’s content; anywhere else (a top or bottom strip, an Overlay’s children, or outside any Overlay) a region is not placed and warns in development.',
       required: true,
     },
     {
@@ -55,7 +55,7 @@ export const docsDense = {
     'one item at a preset or fractional spot on a fill Overlay; positions only, caller moves it',
   propDescriptions: {
     position:
-      'preset fill/top/bottom/center/top-start/top-end/bottom-start/bottom-end (corners flip in RTL) or {x, y, width?, height?}: top-left corner in 0–1 fractions, physical, sized box kept inside; strip Overlay = not placed + dev warning',
+      'preset fill/top/bottom/center/top-start/top-end/bottom-start/bottom-end (corners flip in RTL) or {x, y, width?, height?}: top-left corner in 0–1 fractions, physical, sized box kept inside; outside a fill Overlay’s content = not placed + dev warning',
     children: 'content at the position; region adds no role or focus',
     xstyle: 'StyleX styles; inset/size overrides replace placement',
     className: 'additional region class names',

@@ -16,8 +16,9 @@
  * follows the surface through every resize with no measurement. Moving a
  * region is the caller's job: pass a new `position`.
  *
- * Regions belong to fill overlays. Inside a top or bottom strip a region is
- * not placed: its content flows with the strip, and a dev warning fires.
+ * Regions are placed only in a fill Overlay's content. Anywhere else (a top
+ * or bottom strip, an Overlay's children, or outside any Overlay) a region is
+ * not placed: its content flows where it stands, and a dev warning fires.
  */
 
 import {use, type ReactNode, type Ref} from 'react';
@@ -145,7 +146,7 @@ const styles = stylex.create({
     maxInlineSize: '100%',
     maxBlockSize: '100%',
   }),
-  // Inside a strip the region is not placed: its content flows with it.
+  // Outside a fill host the region is not placed: its content flows.
   unplaced: {position: 'static', zIndex: 'auto'},
 });
 
@@ -207,12 +208,13 @@ export function OverlayRegion({
   style,
   ref,
 }: OverlayRegionProps) {
-  const hostPosition = use(OverlayPositionContext);
-  const isInStrip = hostPosition === 'top' || hostPosition === 'bottom';
+  // Only a fill scrim provides a surface to place against; a strip, an
+  // Overlay's children, or no Overlay at all leaves the region unplaced.
+  const isPlaced = use(OverlayPositionContext) === 'fill';
   useDevWarning(
     'OverlayRegion',
-    'belongs to an Overlay with position="fill". Inside a top or bottom strip it is not placed: its content flows with the strip.',
-    isInStrip,
+    'is placed only in the content of an Overlay with position="fill". Here it is not placed: its content flows where it stands.',
+    !isPlaced,
   );
 
   return (
@@ -222,7 +224,7 @@ export function OverlayRegion({
         stylex.props(
           overlayRegionMarker,
           styles.region,
-          isInStrip ? styles.unplaced : placementStyle(position),
+          isPlaced ? placementStyle(position) : styles.unplaced,
           xstyle,
         ),
         className,
