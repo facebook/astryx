@@ -460,18 +460,78 @@ function namesBinding(name, locals, namespaces, members) {
   );
 }
 
-/** @param {any} typeNode @param {ReturnType<typeof astryxThemeBindings>} bindings */
-function isAstryxThemeType(typeNode, bindings) {
+/** @param {any} typeNode @param {any} usePath @param {ReturnType<typeof astryxThemeBindings>} bindings */
+function isAstryxThemeType(typeNode, usePath, bindings) {
   const node = typeNode?.typeAnnotation ?? typeNode;
-  return (
-    node?.type === 'TSTypeReference' &&
-    namesBinding(
+  if (
+    node?.type !== 'TSTypeReference' ||
+    !namesBinding(
       node.typeName,
       bindings.themeTypes,
       bindings.namespaces,
       THEME_TYPE_NAMES,
     )
+  ) {
+    return false;
+  }
+  const root =
+    node.typeName.type === 'Identifier' ? node.typeName : node.typeName.left;
+  return isModuleTypeBinding(usePath, root.name);
+}
+
+/** @param {any} statement @param {string} name */
+function statementDeclares(statement, name) {
+  const node =
+    statement?.type === 'ExportNamedDeclaration' ||
+    statement?.type === 'ExportDefaultDeclaration'
+      ? statement.declaration
+      : statement;
+  if (node?.id?.type === 'Identifier' && node.id.name === name) return true;
+  return (node?.declarations ?? []).some(
+    (/** @type {any} */ declarator) =>
+      declarator.id?.type === 'Identifier' && declarator.id.name === name,
   );
+}
+
+/**
+ * True when a type-position `name` at `path` can only mean the module-scope
+ * import: no enclosing type parameter, parameter, or block-level declaration
+ * (type alias, interface, enum, class, namespace, function, or variable)
+ * reuses the name. Anything this cannot rule out counts as shadowed.
+ * @param {any} path @param {string} name
+ */
+function isModuleTypeBinding(path, name) {
+  const valueScope = path.scope?.lookup(name);
+  if (valueScope != null && valueScope.path.node.type !== 'Program') {
+    return false;
+  }
+  for (let current = path; current != null; current = current.parent) {
+    const node = current.node;
+    if (node.type === 'Program') return true;
+    const typeParameters = node.typeParameters?.params ?? [];
+    if (
+      typeParameters.some(
+        (/** @type {any} */ parameter) =>
+          (parameter.name?.name ?? parameter.name) === name,
+      )
+    ) {
+      return false;
+    }
+    const statements =
+      node.type === 'SwitchCase'
+        ? node.consequent
+        : node.type !== 'ClassBody' && Array.isArray(node.body)
+          ? node.body
+          : [];
+    if (
+      statements.some((/** @type {any} */ statement) =>
+        statementDeclares(statement, name),
+      )
+    ) {
+      return false;
+    }
+  }
+  return false;
 }
 
 /**
@@ -543,7 +603,9 @@ function isThemeRoot(objectPath, bindings) {
   let child = objectPath;
   let parent = objectPath.parent;
   while (parent != null && TS_WRAPPERS.has(parent.node.type)) {
-    if (isAstryxThemeType(parent.node.typeAnnotation, bindings)) return true;
+    if (isAstryxThemeType(parent.node.typeAnnotation, parent, bindings)) {
+      return true;
+    }
     child = parent;
     parent = parent.parent;
   }
@@ -557,7 +619,7 @@ function isThemeRoot(objectPath, bindings) {
   }
   if (
     node?.type === 'VariableDeclarator' &&
-    isAstryxThemeType(node.id?.typeAnnotation, bindings)
+    isAstryxThemeType(node.id?.typeAnnotation, parent, bindings)
   ) {
     return true;
   }

@@ -278,6 +278,51 @@ const brand: DefineThemeInput = {name: 'brand', components: {navicon: {base: {}}
     expect(output).not.toMatch(/navicon\s*:/);
   });
 
+  it.each([
+    [
+      'a locally redeclared named type',
+      `import type {DefineThemeInput} from '@astryxdesign/core';
+function unrelated() {
+  type DefineThemeInput = OtherTheme;
+  return {name: 'fake', components: {checkbox: {root: {}}}} satisfies DefineThemeInput;
+}`,
+    ],
+    [
+      'an aliased type shadowed by a type parameter',
+      `import type {DefineThemeInput as Theme} from '@astryxdesign/core';
+function unrelated<Theme>(value: unknown) {
+  const theme: Theme = {name: 'fake', components: {checkbox: {root: {}}}};
+  return theme;
+}`,
+    ],
+    [
+      'a namespace shadowed by a type parameter',
+      `import type * as Astryx from '@astryxdesign/core';
+function unrelated<Astryx>() {
+  return {name: 'fake', components: {checkbox: {root: {}}}} satisfies Astryx.DefineThemeInput;
+}`,
+    ],
+    [
+      'a namespace shadowed by a local namespace',
+      `import * as Astryx from '@astryxdesign/core';
+function unrelated() {
+  namespace Astryx { export type DefineThemeInput = OtherTheme; }
+  return ({name: 'fake', components: {checkbox: {root: {}}}}) as Astryx.DefineThemeInput;
+}`,
+    ],
+  ])('does not treat %s as an Astryx theme type', (_name, input) => {
+    expect(apply(input)).toBe(input);
+  });
+
+  it('still recognizes an unshadowed theme type inside a function', () => {
+    const output =
+      apply(`import type {DefineThemeInput} from '@astryxdesign/core';
+function makeTheme<T>() {
+  return {components: {navicon: {base: {}}}} satisfies DefineThemeInput;
+}`);
+    expect(output).toContain("'nav-icon':");
+  });
+
   it('renames a clear-icon alias with a TODO naming the owner scope it loses', () => {
     const output = apply(
       defined(`{'selector-clear-icon': {base: {color: 'red'}}}`),
