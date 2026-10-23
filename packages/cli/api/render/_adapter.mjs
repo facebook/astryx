@@ -19,6 +19,7 @@ import {
 import {readSourceBlock} from '../../foundation/render/source-block.mjs';
 import {isAstryxMarkup, rebuildPage} from '../../foundation/render/reverse.mjs';
 import {cliVersion} from '../../foundation/integrations/cli-peer-version.mjs';
+import {assertWithin, PathSafetyError} from '../../foundation/fs/path-safety.mjs';
 
 export {PAGE_EXTENSIONS};
 
@@ -46,6 +47,29 @@ function readInput(file, cwd) {
       [],
       ERROR_CODES.ERR_FILE_NOT_FOUND,
     );
+  }
+}
+
+/**
+ * Refuse a write outside the current folder, symlinks followed (cli-surface
+ * INV10).
+ * @param {string} file absolute
+ * @param {string} cwd
+ * @param {string} what
+ * @returns {string}
+ */
+function confined(file, cwd, what) {
+  try {
+    return assertWithin(file, cwd, {allowAbsolute: true, label: what});
+  } catch (e) {
+    if (e instanceof PathSafetyError) {
+      throw new AstryxError(
+        `${what} ${shown(cwd, file)} is outside the current folder; nothing was written. Write inside the folder you run the command from.`,
+        [],
+        ERROR_CODES.ERR_PATH_TRAVERSAL,
+      );
+    }
+    throw e;
   }
 }
 
@@ -93,6 +117,7 @@ function asAstryxError(e) {
  */
 export async function renderToFile({cwd, input, output, title}) {
   readInput(input, cwd);
+  confined(output, cwd, 'The output');
   /** @type {import('../../foundation/render/render-page.mjs').RenderedPage} */
   let page;
   try {
@@ -141,20 +166,21 @@ export function reverseToFile({cwd, input, output, overwrite}) {
   }
   if (block.found) {
     const {source} = block;
-    const target = output ?? path.join(path.dirname(input), source.entry);
+    // The entry name comes from the file, so only its base name is used.
+    const target = output ?? path.join(path.dirname(input), path.basename(source.entry));
     const base = path.dirname(target);
     /** @type {{file: string, bytes: Buffer}[]} */
     const writes = [];
     source.files.forEach((f, i) => {
       const file = i === 0 ? target : path.resolve(base, ...f.path.split('/'));
-      const rel = path.relative(cwd, file);
-      if (i > 0 && (path.isAbsolute(f.path) || rel.startsWith('..') || path.isAbsolute(rel))) {
+      if (i > 0 && path.isAbsolute(f.path)) {
         throw new AstryxError(
-          `${shown(cwd, input)} would write an embedded file outside the current folder (${f.path}); nothing was written. Run it from a folder that holds the page's project.`,
+          `${shown(cwd, input)} names an embedded file by an absolute path (${f.path}); nothing was written.`,
           [],
           ERROR_CODES.ERR_PATH_TRAVERSAL,
         );
       }
+      confined(file, cwd, i === 0 ? 'The page' : 'The embedded file');
       writes.push({
         file,
         bytes: Buffer.from(f.base64, 'base64'),
@@ -183,6 +209,7 @@ export function reverseToFile({cwd, input, output, overwrite}) {
     );
   }
   const target = output ?? path.join(path.dirname(input), `${path.basename(input).replace(/\.[^.]+$/, '')}.tsx`);
+  confined(target, cwd, 'The page');
   refuseExisting(target);
   const rebuilt = rebuildPage(html, cwd);
   writeOutput(target, rebuilt.source, cwd);

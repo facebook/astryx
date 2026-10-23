@@ -53,7 +53,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'The result is ONE file with nothing beside it: the markup, only the Core CSS rules the page uses, the page\u2019s own StyleX styles, and local images as data: URIs. It runs no script and loads nothing from the network, so it opens from disk, attaches to a message, and displays inside a sandboxed frame that blocks network and script. Colors follow the viewer\u2019s light or dark setting, and a `data-theme` of `light` or `dark` on the root element picks one.',
+          text: 'The result is ONE file with nothing beside it: the markup, only the CSS rules the page uses (from Core and from any stylesheet it imports, such as a theme), the page\u2019s own StyleX styles, and local images as data: URIs. It runs no script and loads nothing from the network, so it opens from disk, attaches to a message, and displays inside a sandboxed frame that blocks network and script. Colors follow the viewer\u2019s light or dark setting, and a `data-theme` of `light` or `dark` on the root element picks one.',
         },
         {
           type: 'prose',
@@ -86,7 +86,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'An existing file is never replaced unless you pass `--overwrite`. Add `--json` for the result as data: what was written, how big it is, and every warning.',
+          text: 'Files are written only inside the folder you run the command from, and an existing file is never replaced unless you pass `--overwrite`. Add `--json` for the result as data: what was written, how big it is, and every warning.',
         },
       ],
     },

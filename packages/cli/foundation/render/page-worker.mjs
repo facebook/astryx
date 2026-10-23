@@ -52,6 +52,9 @@ const importedCss = [];
 /** Every local (non-package) module the page loaded, page first. */
 /** @type {string[]} */
 const localFiles = [];
+/** Package stylesheets the page imports, by specifier and importing file. */
+/** @type {{spec: string, from: string}[]} */
+const packageCss = [];
 /** Local files inlined from asset imports. */
 /** @type {Set<string>} */
 const assetsInlined = new Set();
@@ -141,15 +144,22 @@ function pagePlugin(filename) {
               : bare.split('/')[0],
           );
         }
+        if (/\.json$/i.test(bare) && (bare.startsWith('.') || path.isAbsolute(bare))) {
+          const file = path.resolve(dir, bare);
+          if (fs.existsSync(file) && !localFiles.includes(file)) localFiles.push(file);
+        }
         if (/\.(css|scss|sass|less)$/i.test(bare)) {
           if (bare.startsWith('.') || path.isAbsolute(bare)) {
             const file = path.resolve(dir, bare);
             if (/\.css$/i.test(bare) && fs.existsSync(file)) {
               importedCss.push({file, css: fs.readFileSync(file, 'utf8')});
+              if (!localFiles.includes(file)) localFiles.push(file);
             }
+          } else {
+            // A package stylesheet (a theme's, say): the caller resolves it
+            // from this file and inlines the rules the page uses.
+            packageCss.push({spec: bare, from: filename});
           }
-          // Package stylesheets (Core's own included) are cut and inlined by
-          // the caller; an import of one is dropped here.
           p.remove();
           return;
         }
@@ -157,6 +167,7 @@ function pagePlugin(filename) {
           const file = path.resolve(dir, bare);
           const uri = assetDataUri(file);
           assetsInlined.add(file);
+          if (!localFiles.includes(file)) localFiles.push(file);
           const local = p.node.specifiers.find(
             (/** @type {any} */ s) => s.type === 'ImportDefaultSpecifier',
           );
@@ -265,6 +276,9 @@ const jiti = createJiti(entry, {
   transform(opts) {
     const filename = opts.filename ?? '';
     let source = opts.source;
+    if (filename && isLocal(filename) && /\.json$/i.test(filename) && !localFiles.includes(filename)) {
+      localFiles.push(filename);
+    }
     if (filename && isLocal(filename) && /\.(tsx?|jsx?|mjs|cjs|mts|cts)$/.test(filename)) {
       if (!localFiles.includes(filename)) localFiles.push(filename);
       const ts = /\.(tsx?|mts|cts)$/.test(filename);
@@ -399,6 +413,7 @@ try {
     css,
     importedCss,
     packages: [...packages],
+    packageCss,
     assets: [...assetsInlined],
     files: localFiles,
     texts,

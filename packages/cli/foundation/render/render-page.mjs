@@ -148,7 +148,8 @@ function runWorker(entry, root, timeoutMs) {
 }
 
 /**
- * Inline local images (src, srcset, poster and CSS url()) as data: URIs.
+ * Inline local images (src, srcset, poster and CSS url()) as data: URIs. A
+ * link (`href`) loads nothing, so it is left alone.
  * @param {string} text markup or CSS
  * @param {'html' | 'css'} kind
  * @param {{dir: string, root: string, warnings: RenderWarning[], counted: Set<string>}} ctx
@@ -197,7 +198,7 @@ function inlineAssets(text, kind, ctx) {
     });
   if (kind === 'css') return urls(text);
   return text
-    .replace(/\s(src|poster|href)="([^"]*)"/g, (whole, attr, ref) => {
+    .replace(/\s(src|poster)="([^"]*)"/g, (whole, attr, ref) => {
       const uri = resolveRef(ref);
       return uri ? ` ${attr}="${uri}"` : whole;
     })
@@ -256,6 +257,20 @@ export async function renderPage(entry, options = {}) {
   };
   const hasCore = addSheet('@astryxdesign/core/reset.css');
   if (hasCore) addSheet('@astryxdesign/core/astryx.css');
+  // Package stylesheets the page imports itself, such as a theme's.
+  for (const {spec, from} of /** @type {{spec: string, from: string}[]} */ (message.packageCss ?? [])) {
+    if (sheets.includes(spec)) continue;
+    try {
+      const file = createRequire(from).resolve(spec);
+      sheets.push(spec);
+      sheetText.push(fs.readFileSync(file, 'utf8'));
+    } catch {
+      warnings.push({
+        code: 'missing-asset',
+        message: `The page imports the stylesheet ${spec}, which could not be found, so its styles are missing.`,
+      });
+    }
+  }
   for (const pkg of /** @type {string[]} */ (message.packages ?? [])) {
     const m = /^@astryxdesign\/([a-z0-9-]+)$/.exec(pkg);
     if (!m || m[1] === 'core') continue;

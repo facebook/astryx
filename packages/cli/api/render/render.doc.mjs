@@ -100,7 +100,7 @@ export const doc = {
       when: 'reversing a file with no embedded source and no Astryx markup; the suggestion is `astryx build "<what the page is>"`',
     },
     {code: 'ERR_RENDER_SOURCE_DAMAGED', when: 'reversing a file whose embedded source is damaged'},
-    {code: 'ERR_PATH_TRAVERSAL', when: 'reversing would write an embedded file outside the current folder'},
+    {code: 'ERR_PATH_TRAVERSAL', when: 'a file would be written outside the current folder (symlinks followed): `out`, or with `reverse` the page or an embedded file'},
   ],
   examples: [
     {label: 'Render a page', code: "const {data} = await render('src/app/page.tsx', {out: 'page.html'});"},
