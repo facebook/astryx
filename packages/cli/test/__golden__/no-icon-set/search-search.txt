@@ -68,11 +68,13 @@ domain:      template
 package:     @astryxdesign/core
 command:     pnpm exec astryx template TableInlineFilterTable --type block
 name:        authoring/building-blocks/templates/document-the-template/template-doc-overview
+section:     document-the-shared-fields
 domain:      doc
 package:     @astryxdesign/cli
 command:     pnpm exec astryx docs authoring/building-blocks/templates/document-the-template/template-doc-overview document-the-shared-fields
 parent:      pnpm exec astryx docs authoring/building-blocks/templates/document-the-template/template-doc-overview --index
 name:        authoring/field-reference
+section:     config
 domain:      doc
 package:     @astryxdesign/cli
 command:     pnpm exec astryx docs authoring/field-reference config
@@ -88,6 +90,7 @@ package:     @astryxdesign/cli
 command:     pnpm exec astryx docs cli/api/functions/discover
 parent:      pnpm exec astryx docs cli/api/functions
 name:        global/problems
+section:     core-offline
 domain:      doc
 package:     @astryxdesign/cli
 command:     pnpm exec astryx docs global/problems core-offline

@@ -403,6 +403,14 @@ function searchGolden(query, cwd) {
   const json = astryx(['search', ...query.split(' '), '--json'], cwd);
   expect(json.status).toBe(0);
   const body = JSON.parse(json.stdout);
+  // The one stable addition FR18 makes: the field reference's `stability`
+  // field, named by its value. Main has no such field; nothing else may be
+  // added.
+  const added = body.data.results.filter(isStableAddition);
+  body.data.results = body.data.results.filter(
+    (/** @type {any} */ result) => !isStableAddition(result),
+  );
+  body.data.matchCount -= added.length;
   for (const result of body.data.results) {
     expect(result).not.toHaveProperty('stability');
     expect(['icon', 'icon-set', 'icon-definition']).not.toContain(
@@ -417,18 +425,49 @@ function searchGolden(query, cwd) {
     mentions: leakMentions(result),
   }));
   const text = astryx(['search', ...query.split(' ')], cwd);
+  // The same addition left out of the text: its block, and its count.
+  const blocks = text.stdout
+    .split('\n\n')
+    .filter(
+      block =>
+        !(
+          /^name: +authoring\/field-reference$/mu.test(block) &&
+          /^section: +authored-doc-graph-fields$/mu.test(block)
+        ),
+    );
   return {
     json: asGolden(body),
     // Each result's identity lines and the count; descriptions are prose.
-    text: text.stdout
+    text: blocks
+      .join('\n\n')
+      .replace(
+        /^(Results for .*\()(\d+)((?: of (\d+))?\))$/mu,
+        (_, head, shown, tail, total) =>
+          total
+            ? `${head}${Number(shown)}${tail.replace(total, String(Number(total) - added.length))}`
+            : `${head}${Number(shown) - added.length}${tail}`,
+      )
       .split('\n')
       .filter(line =>
-        /^(?:Results for |(?:name|domain|package|import|command|parent|route):\s)/u.test(
+        /^(?:Results for |(?:name|section|domain|package|import|command|parent|route):\s)/u.test(
           line,
         ),
       )
       .join('\n'),
   };
+}
+
+/**
+ * Is this search result FR18's one stable addition: the field reference's
+ * section on the authored doc graph fields, which gains `stability`?
+ * @param {any} result
+ */
+function isStableAddition(result) {
+  return (
+    result.name === 'authoring/field-reference' &&
+    result.section === 'authored-doc-graph-fields' &&
+    !REGENERATING
+  );
 }
 
 /**
@@ -591,6 +630,50 @@ describe('with no icon set, stable output is unchanged', () => {
     );
   }, 120_000);
 
+  // Every stable node of the `cli` tree (the tree minus the nodes marked
+  // experimental and what sits under them): every sentence, link, and
+  // command in it that names `experimental`, an icon set, or an icon
+  // definition, which must be main's own (spec:AST-084 FR0). A stable doc
+  // that points at an experimental route, or a stable node whose previous or
+  // next link is one, fails here.
+  it('every stable cli docs node: no mention of an experimental surface main lacks', async () => {
+    const root = process.env.GOLDEN_CLI_ROOT ?? CLI_ROOT;
+    const {docs} = await import(
+      pathToFileURL(path.join(root, 'api', 'docs', 'docs.mjs')).href
+    );
+    /** @type {Record<string, string[]>} */
+    const mentions = {};
+    const queue = ['cli'];
+    /** @type {Set<string>} */
+    const seen = new Set();
+    while (queue.length > 0) {
+      const route = /** @type {string} */ (queue.shift());
+      if (seen.has(route)) continue;
+      seen.add(route);
+      const res = await docs(route, undefined, {cwd: project});
+      if (res.data?.stability === 'experimental') continue;
+      if (res.type === 'docs.node') {
+        for (const slot of res.data.slots) {
+          slot.children = slot.children.filter(
+            (/** @type {any} */ child) => child.stability !== 'experimental',
+          );
+          for (const child of slot.children) queue.push(child.route);
+        }
+      }
+      const found = leakMentions(res.data);
+      if (found.length > 0) mentions[route] = found;
+    }
+    expect(seen.size).toBeGreaterThan(50);
+    const sorted = Object.fromEntries(
+      Object.keys(mentions)
+        .sort()
+        .map(route => [route, mentions[route]]),
+    );
+    await expect(asGolden(sorted)).toMatchFileSnapshot(
+      path.join(GOLDEN, 'docs-cli-mentions.json'),
+    );
+  }, 120_000);
+
   // The `cli` listings are FR0's one docs exception: they gain the
   // experimental group, commands, and API functions, each marked as help marks
   // the command group. Every entry not marked experimental reads exactly as it
@@ -631,19 +714,24 @@ describe('with no icon set, stable output is unchanged', () => {
     },
   );
 
-  it.each(['delete', 'close', 'icon', 'trash can', 'search'])(
-    'search %s, text and JSON',
-    async query => {
-      const slug = query.replace(/\s+/g, '-');
-      const {json, text} = searchGolden(query, project);
-      await expect(json).toMatchFileSnapshot(
-        path.join(GOLDEN, `search-${slug}.json`),
-      );
-      await expect(text).toMatchFileSnapshot(
-        path.join(GOLDEN, `search-${slug}.txt`),
-      );
-    },
-  );
+  it.each([
+    'delete',
+    'close',
+    'icon',
+    'trash can',
+    'search',
+    'experimental',
+    'icon set',
+  ])('search %s, text and JSON', async query => {
+    const slug = query.replace(/\s+/g, '-');
+    const {json, text} = searchGolden(query, project);
+    await expect(json).toMatchFileSnapshot(
+      path.join(GOLDEN, `search-${slug}.json`),
+    );
+    await expect(text).toMatchFileSnapshot(
+      path.join(GOLDEN, `search-${slug}.txt`),
+    );
+  });
 
   it('search --type icon is an unknown type, offering only the stable domains', async () => {
     const res = astryx(['search', 'trash', '--type', 'icon', '--json']);
@@ -908,7 +996,7 @@ describe.skipIf(REGENERATING)(
 
     // Icon words: icon lookup by meaning is only `astryx experimental icon`;
     // `astryx search` joins it only at promotion (spec:AST-084 FR11).
-    it.each(['delete', 'close', 'trash can'])(
+    it.each(['delete', 'close', 'trash can', 'experimental', 'icon set'])(
       'search %s equals the output without icon sets, text and JSON',
       async query => {
         const slug = query.replace(/\s+/g, '-');

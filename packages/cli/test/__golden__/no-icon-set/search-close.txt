@@ -55,16 +55,19 @@ package:     @astryxdesign/core
 import:      @astryxdesign/core/Popover
 command:     pnpm exec astryx hook usePopover
 name:        authoring/building-blocks/components/describe-the-component/subcomponent
+section:     write-the-subcomponent-doc
 domain:      doc
 package:     @astryxdesign/cli
 command:     pnpm exec astryx docs authoring/building-blocks/components/describe-the-component/subcomponent write-the-subcomponent-doc
 parent:      pnpm exec astryx docs authoring/building-blocks/components/describe-the-component/subcomponent --index
 name:        authoring/field-reference
+section:     schema-doc
 domain:      doc
 package:     @astryxdesign/cli
 command:     pnpm exec astryx docs authoring/field-reference schema-doc
 parent:      pnpm exec astryx docs authoring/field-reference --index
 name:        browser-support
+section:     how-these-tiers-move-over-time
 domain:      doc
 package:     @astryxdesign/cli
 command:     pnpm exec astryx docs browser-support how-these-tiers-move-over-time
@@ -75,21 +78,25 @@ package:     @astryxdesign/cli
 command:     pnpm exec astryx docs cli/api/functions/build
 parent:      pnpm exec astryx docs cli/api/functions
 name:        icons
+section:     available-names
 domain:      doc
 package:     @astryxdesign/cli
 command:     pnpm exec astryx docs icons available-names
 parent:      pnpm exec astryx docs icons --index
 name:        icons
+section:     theme-overrides
 domain:      doc
 package:     @astryxdesign/cli
 command:     pnpm exec astryx docs icons theme-overrides
 parent:      pnpm exec astryx docs icons --index
 name:        migration/component-migration
+section:     move-the-app-frame-first
 domain:      doc
 package:     @astryxdesign/cli
 command:     pnpm exec astryx docs migration/component-migration move-the-app-frame-first
 parent:      pnpm exec astryx docs migration/component-migration --index
 name:        styling/styling-advanced
+section:     compound-components
 domain:      doc
 package:     @astryxdesign/cli
 command:     pnpm exec astryx docs styling/styling-advanced compound-components

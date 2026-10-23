@@ -39,6 +39,7 @@ import {
 } from '../../foundation/doc-compiler/read.mjs';
 import {
   buildDocsTree,
+  isExperimentalTreeNode,
   loadTreeInputs,
 } from '../../foundation/doc-compiler/tree.mjs';
 import {sortDiagnostics} from '../../foundation/doc-compiler/diagnostics.mjs';
@@ -1676,9 +1677,20 @@ export function placeLinks(tree, node) {
     up: node.parent == null ? 'astryx docs' : `astryx docs ${node.parent}`,
   };
   const parent = node.parent == null ? undefined : tree.get(node.parent);
-  const siblings =
+  // A stable node moves only to stable neighbors, so its links read as they
+  // do without experimental features (spec:AST-017 FR27, spec:AST-084 FR0),
+  // and an experimental node only to experimental ones, so each next read
+  // still names this one as its previous.
+  const experimental = isExperimentalTreeNode(tree, node);
+  const siblings = (
     parent?.slots.find(slot => slot.children.includes(node.route))?.children ??
-    [];
+    []
+  ).filter(route => {
+    const sibling = tree.get(route);
+    return (
+      sibling == null || isExperimentalTreeNode(tree, sibling) === experimental
+    );
+  });
   const at = siblings.indexOf(node.route);
   if (at > 0) links.previous = `astryx docs ${siblings[at - 1]}`;
   if (at !== -1 && at < siblings.length - 1) {

@@ -25,26 +25,31 @@ package:     @astryxdesign/cli
 command:     pnpm exec astryx docs cli/commands/theme-template
 parent:      pnpm exec astryx docs cli/commands
 name:        global/computer-agent-guide
+section:     choose
 domain:      doc
 package:     @astryxdesign/cli
 command:     pnpm exec astryx docs global/computer-agent-guide choose
 parent:      pnpm exec astryx docs global/computer-agent-guide --index
 name:        global/uninstall
+section:     agent-guide
 domain:      doc
 package:     @astryxdesign/cli
 command:     pnpm exec astryx docs global/uninstall agent-guide
 parent:      pnpm exec astryx docs global/uninstall --index
 name:        global/uninstall
+section:     reset
 domain:      doc
 package:     @astryxdesign/cli
 command:     pnpm exec astryx docs global/uninstall reset
 parent:      pnpm exec astryx docs global/uninstall --index
 name:        migration/migration-setup
+section:     foundation-smoke-test
 domain:      doc
 package:     @astryxdesign/cli
 command:     pnpm exec astryx docs migration/migration-setup foundation-smoke-test
 parent:      pnpm exec astryx docs migration/migration-setup --index
 name:        use-a-theme
+section:     migrating-earlier-theme-copies
 domain:      doc
 package:     @astryxdesign/cli
 command:     pnpm exec astryx docs use-a-theme migrating-earlier-theme-copies
