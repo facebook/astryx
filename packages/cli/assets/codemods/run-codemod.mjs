@@ -87,9 +87,10 @@ function logProtected(log, protections) {
 /**
  * Recursively find candidate source files in a directory.
  * @param {string} dir
+ * @param {string} [root] the operation's project root (default: `dir`)
  * @returns {string[]}
  */
-export function findSourceFiles(dir) {
+export function findSourceFiles(dir, root = dir) {
   /** @type {string[]} */
   const results = [];
   /** @param {string} currentDir @param {Set<string>} [ancestors] */
@@ -125,6 +126,7 @@ export function findSourceFiles(dir) {
               fullPath,
               entry.name,
               fs.realpathSync(fullPath),
+              root,
             )
           ) {
             walk(fullPath, nextAncestors);

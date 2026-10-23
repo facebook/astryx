@@ -138,7 +138,7 @@ describe('findSourceFiles — symbolic links into dependency trees', () => {
       }),
     ]);
     expect(
-      findIntegrationSourceFiles(path.join(project, 'src')).map(f =>
+      findIntegrationSourceFiles(path.join(project, 'src'), project).map(f =>
         path.relative(project, f),
       ),
     ).toEqual([path.join('src', 'linked', 'nested.ts')]);
@@ -171,6 +171,34 @@ describe('findSourceFiles — symbolic links into dependency trees', () => {
       ),
     ).toEqual([path.join('src', 'real.ts')]);
     expect(fs.readFileSync(path.join(cached, 'index.ts'), 'utf-8')).toBe(
+      'const foo = 1;\n',
+    );
+  });
+
+  it('does not descend a link from a project below node_modules to a sibling dependency', async () => {
+    const project = path.join(tmpDir, 'node_modules', 'consumer');
+    const sibling = path.join(tmpDir, 'node_modules', 'dep');
+    fs.mkdirSync(path.join(project, 'src'), {recursive: true});
+    fs.mkdirSync(sibling, {recursive: true});
+    fs.writeFileSync(path.join(sibling, 'index.ts'), 'const foo = 1;\n');
+    fs.writeFileSync(path.join(project, 'src', 'real.ts'), 'const foo = 2;\n');
+    fs.symlinkSync(sibling, path.join(project, 'src', 'dep'));
+
+    const r = await runCodemods(manifests, {
+      apply: true,
+      path: path.join(project, 'src'),
+      root: project,
+      silent: true,
+    });
+
+    expect(r.writtenFiles.map(f => path.basename(f))).toEqual(['real.ts']);
+    expect(r.protectedFiles).toEqual([]);
+    expect(
+      findIntegrationSourceFiles(path.join(project, 'src'), project).map(f =>
+        path.relative(project, f),
+      ),
+    ).toEqual([path.join('src', 'real.ts')]);
+    expect(fs.readFileSync(path.join(sibling, 'index.ts'), 'utf-8')).toBe(
       'const foo = 1;\n',
     );
   });

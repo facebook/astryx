@@ -92,37 +92,43 @@ export function isIgnoredDirectory(root, fullPath, name) {
  * and its resolved target's absolute path is searched for the same hard
  * boundaries, wherever the target lives: a symlinked `node_modules`, or a link
  * into a dependency, package-store or version-control tree such as another
- * project's `.yarn/cache`, is not walked. A boundary that lies wholly in the
- * part of the path the target shares with the scan root's real path does not
- * count, so a project that itself sits below a `node_modules` folder is still
- * scanned.
+ * project's `.yarn/cache`, is not walked. Only a target that stays inside the
+ * operation root may sit below a boundary that also contains that root, so a
+ * project that itself lives below a `node_modules` folder is still scanned; a
+ * link from it to a sibling package under that same folder is not.
  * @param {string} root scan root
  * @param {string} fullPath the link's path
  * @param {string} name the link's name
  * @param {string} realTarget the link's resolved real path
+ * @param {string} [operationRoot] the project root of the operation (default: the scan root)
  * @returns {boolean}
  */
-export function isIgnoredLinkedDirectory(root, fullPath, name, realTarget) {
+export function isIgnoredLinkedDirectory(
+  root,
+  fullPath,
+  name,
+  realTarget,
+  operationRoot = root,
+) {
   if (isIgnoredDirectory(root, fullPath, name)) return true;
-  let realRoot = root;
+  let realRoot = operationRoot;
   try {
-    realRoot = fs.realpathSync(root);
+    realRoot = fs.realpathSync(operationRoot);
   } catch {
     // An unreadable root has no descendants to compare against.
   }
-  const rootParts = realRoot.split(path.sep);
+  const relative = path.relative(realRoot, realTarget);
+  const inside =
+    relative === '' ||
+    (relative !== '..' &&
+      !relative.startsWith(`..${path.sep}`) &&
+      !path.isAbsolute(relative));
+  // Inside the root, only a boundary that ends below the root counts.
+  const floor = inside ? realRoot.split(path.sep).length : 0;
   const targetParts = realTarget.split(path.sep);
-  let shared = 0;
-  while (
-    shared < rootParts.length &&
-    shared < targetParts.length &&
-    rootParts[shared] === targetParts[shared]
-  ) {
-    shared++;
-  }
   for (let index = 0; index < targetParts.length; index++) {
     const length = boundaryLength(targetParts, index);
-    if (length > 0 && index + length > shared) return true;
+    if (length > 0 && index + length > floor) return true;
   }
   return false;
 }
@@ -130,9 +136,10 @@ export function isIgnoredLinkedDirectory(root, fullPath, name, realTarget) {
 /**
  * Recursively find all source files in a directory.
  * @param {string} dir
+ * @param {string} [root] the operation's project root (default: `dir`)
  * @returns {string[]}
  */
-function findSourceFiles(dir) {
+function findSourceFiles(dir, root = dir) {
   /** @type {string[]} */
   const results = [];
   const extensions = new Set([
@@ -182,6 +189,7 @@ function findSourceFiles(dir) {
               fullPath,
               entry.name,
               fs.realpathSync(fullPath),
+              root,
             )
           ) {
             walk(fullPath, nextAncestors);
@@ -537,7 +545,7 @@ export async function runCodemods(
   let files = [];
   if (sourcePathExists) {
     log.step(`Scanning ${resolvedPath} for source files...`);
-    files = findSourceFiles(resolvedPath);
+    files = findSourceFiles(resolvedPath, path.resolve(root));
     if (files.length === 0) {
       log.warn('No source files found.');
     } else {
