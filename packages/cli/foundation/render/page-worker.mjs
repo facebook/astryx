@@ -174,6 +174,11 @@ function pagePlugin(filename) {
             const file = path.resolve(dir, bare);
             // A stylesheet two modules import is inlined once, where it was
             // first imported, as bundlers do.
+            if (!fs.existsSync(file)) {
+              const err = new Error(`${path.basename(filename)} imports ${spec}, which does not exist.`);
+              /** @type {any} */ (err).renderCode = 'ERR_FILE_NOT_FOUND';
+              throw err;
+            }
             if (/\.css$/i.test(bare) && fs.existsSync(file) && !importedCss.some(c => c.file === file)) {
               importedCss.push({file, css: fs.readFileSync(file, 'utf8')});
               if (!localFiles.includes(file)) localFiles.push(file);

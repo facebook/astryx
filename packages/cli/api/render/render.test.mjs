@@ -685,6 +685,19 @@ describe('render(): every write stays inside the current folder', () => {
     expect(error?.code).toBe('ERR_RENDER_COMPILE');
     expect(error.message).toContain('inner.css');
     expect(error.message).toContain('outer.css');
+    // A stylesheet import naming a missing file, directly or through an alias.
+    for (const spec of ['./gone.css', '@/styles/gone.css']) {
+      put('al/src/missing.tsx', `import '${spec}';\nexport default function Page() { return <p>Hi</p>; }\n`);
+      /** @type {any} */
+      let missing;
+      try {
+        await render('al/src/missing.tsx', {cwd: dir});
+      } catch (e) {
+        missing = e;
+      }
+      expect(missing?.code).toBe('ERR_FILE_NOT_FOUND');
+      expect(missing.message).toContain('gone.css');
+    }
   }, 90_000);
 
   it('refuses a carried "image" whose bytes are not one', async () => {
