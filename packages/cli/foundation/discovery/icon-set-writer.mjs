@@ -1549,9 +1549,10 @@ export function definitionNameOf(name, known) {
 }
 
 /**
- * An icon id in the set, also by another name the library exports the same
- * icon as (`trash-2` for `trash`, recorded in its words): a word exactly one
- * icon has. Null when neither names an icon.
+ * An icon id in the set, named by its id, its export name in any case
+ * (`XMarkIcon`, `xmark`), or another name the library exports the same icon
+ * as (`trash-2` for `trash`, recorded in its words; AST-084 FR13). Never by
+ * a word alone: null when none of these names an icon.
  * @param {{data: {icons: Array<{id: string, export: string, words: string[]}>}}} set
  * @param {string} id
  * @returns {string | null}
@@ -1571,9 +1572,42 @@ export function iconIdIn(set, id) {
     const kebab = iconIdOf(id);
     if (set.data.icons.some(icon => icon.id === kebab)) return kebab;
   }
-  // Only a word exactly one icon has: a shared word names no one icon.
-  const holders = set.data.icons.filter(icon => icon.words.includes(id));
+  // Another name the library exports the icon as (`trash-2`, `unlock`):
+  // one of its words that is not a part of its own id. A part of an id
+  // (`glass` in `magnifying-glass`) names no icon, and neither does a name
+  // two icons share.
+  const holders = set.data.icons.filter(icon =>
+    otherNamesOf(icon).includes(id),
+  );
   return holders.length === 1 ? holders[0].id : null;
+}
+
+/**
+ * The other names a library exports an icon as, recorded among its words:
+ * each word that is not a part of its id.
+ * @param {{id: string, words?: string[]}} icon
+ * @returns {string[]}
+ */
+export function otherNamesOf(icon) {
+  const parts = icon.id.split('-');
+  return (icon.words ?? []).filter(word => !parts.includes(word));
+}
+
+/**
+ * The icons that carry `word` but are not named by it, for a refusal's
+ * suggestions: `glass` is a word of `magnifying-glass`, not its name.
+ * @param {{data: {icons: Array<{id: string, words?: string[]}>}}} set
+ * @param {string} word
+ * @returns {string[]}
+ */
+export function iconsWithWord(set, word) {
+  return set.data.icons
+    .filter(
+      icon =>
+        (icon.words ?? []).includes(word) || icon.id.split('-').includes(word),
+    )
+    .map(icon => icon.id)
+    .slice(0, 5);
 }
 
 /**

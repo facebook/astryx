@@ -54,6 +54,7 @@ import {
   THEME_MAP_NAME,
   entryWiringNote,
   generatedTypesPath,
+  otherNamesOf,
   generatedTypesText,
   readGeneratedStatements,
 } from './icon-set-writer.mjs';
@@ -534,9 +535,8 @@ export function suggestedIcons(set, doc) {
     id: icon.id,
     words: icon.id.split('-').map(stem),
     raw: icon.id.split('-'),
-    other: (icon.words ?? []).filter(
-      word => !icon.id.split('-').includes(word),
-    ),
+    // The library's other names for it, the same ones `map` accepts.
+    other: otherNamesOf(icon),
   }));
   /** How many of the definition's words an id has: more is a better fit. */
   const fit = (/** @type {string[]} */ words) =>

@@ -253,9 +253,9 @@ icon, and the CLI verifies it, writes the files, and checks the set.
     or the opposite direction (`ellipsis-vertical` for `moreHorizontal`).
     Ids keep a dimension as one word (`Squares2X2Icon` is `squares-2x2`)
     and split a one-letter word from a digit (`CalendarX2` is
-    `calendar-x-2`); a shared library prefix is left
-    out of ids and names; an icon exported under several names is recorded
-    once, its other names as words; `…Provider` and `…Context` components
+    `calendar-x-2`); a shared library prefix is left out of ids and names;
+    an icon exported under several names is recorded once, its other names
+    as words; `…Provider` and `…Context` components
     are never icons; and `--exclude` adds exports that are not icons to the
     data file's `exclude`, which every refresh honors. From an installed
     package it records `source` (the library and version), copies the
@@ -270,7 +270,10 @@ icon, and the CLI verifies it, writes the files, and checks the set.
     `typecheck` script running `integration check --strict` when it has
     none. `--variants` and `--default` declare `variants` and `default`;
     `--display-name` and `--description` fill the descriptor. Run again, it
-    refreshes the icons and keeps `map` entries whose icon exists.
+    refreshes the icons and keeps `map` entries whose icon exists; it copies
+    the library's license notices the set lacks, and the run that first
+    records `source` takes the library's license for the descriptor, which
+    later runs keep. The package's own `license` is never written.
   - `experimental icon add <Export> --from <module>` verifies the export,
     lists the definitions that fit it, and with `--definition` or
     `--new-definition` adds it and maps it; `--variant <name>` adds it as
@@ -283,8 +286,10 @@ icon, and the CLI verifies it, writes the files, and checks the set.
   - `experimental icon map <definition> <icon>` writes one `map` entry,
     `--remove` removes one, and `--pairs` writes many in one checked write;
     here and in `add --definition` a definition may be named by its kebab
-    id, and here an icon by one of its library's other names or by its
-    export name in any case;
+    id. `map` names an icon only by its `id`, its export name in any case,
+    or another name its library exports it as (a word it carries that is
+    not a part of its `id`); a part of an `id` alone (`glass` for
+    `magnifying-glass`) is refused with the icons that carry it;
     `new-definition` writes one of the set's own definitions; `use <set>`
     writes `experimental.iconSet`.
   - The generated module re-exports each library component, or wraps a data

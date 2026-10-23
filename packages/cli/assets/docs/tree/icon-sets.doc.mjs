@@ -106,7 +106,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: '`experimental icon map <definition> <icon>` points a definition at an icon the set already has (a definition is named in camelCase, `eyeSlash`, or by the kebab id the definitions list shows, `eye-slash`), `experimental icon map --pairs close=x-mark,search=magnifying-glass` writes many entries at once (checked together, all or none; an entry the map already has is replaced, and the receipt shows what it was), and `--remove` drops an entry. `experimental icon new-definition <name> --description ... --words ... --icon <id>` adds your own definition for an icon you already have, and `experimental icon add --id <id> --remove` takes an icon out again, with its variants, `map` entries, and generated exports. `experimental icon --definitions` lists every Astryx definition, built in or not, with its words (`--json` for a script).',
+          text: '`experimental icon map <definition> <icon>` points a definition at an icon the set already has (a definition is named in camelCase, `eyeSlash`, or by the kebab id the definitions list shows, `eye-slash`; an icon by its id, its export name in any case, or another name its library exports it as, such as `trash-2`, never by one word of its id), `experimental icon map --pairs close=x-mark,search=magnifying-glass` writes many entries at once (checked together, all or none; an entry the map already has is replaced, and the receipt shows what it was), and `--remove` drops an entry. `experimental icon new-definition <name> --description ... --words ... --icon <id>` adds your own definition for an icon you already have, and `experimental icon add --id <id> --remove` takes an icon out again, with its variants, `map` entries, and generated exports. `experimental icon --definitions` lists every Astryx definition, built in or not, with its words (`--json` for a script).',
         },
       ],
     },
@@ -125,7 +125,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: "With a package or package subpath, it also records the installed library and version as the data file's `source`, so `integration check` warns when your dependency moves to another version; copies the library's LICENSE (and NOTICE) files into the set directory; and sets the descriptor's `license` to the library's. Edit `license` when the artwork's license differs from the library's package license.",
+          text: "With a package or package subpath, it also records the installed library and version as the data file's `source`, so `integration check` warns when your dependency moves to another version; copies the library's LICENSE (and NOTICE) files into the set directory; and sets the descriptor's `license` to the library's. A set you started without `--from` gets the same the first time a refresh records its source; a later refresh keeps the `license` you set. Your package.json `license` is never changed. Edit `license` when the artwork's license differs from the library's package license.",
         },
         {
           type: 'prose',

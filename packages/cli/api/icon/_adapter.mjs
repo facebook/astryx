@@ -56,6 +56,7 @@ export {
   writeIconSetData,
   definitionNameOf,
   iconIdIn,
+  iconsWithWord,
   localSourceNote,
   THEME_MAP_NAME,
 } from '../../foundation/discovery/icon-set-writer.mjs';

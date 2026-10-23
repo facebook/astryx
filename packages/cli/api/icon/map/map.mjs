@@ -21,6 +21,7 @@ import {
   writeIconSetData,
   definitionNameOf,
   iconIdIn,
+  iconsWithWord,
 } from '../_adapter.mjs';
 
 /**
@@ -89,11 +90,8 @@ export async function iconMap(definition, icon, options = {}) {
       const ids = set.data.icons.map(each => each.id);
       if (!ids.includes(/** @type {string} */ (icon))) {
         throw new AstryxError(
-          `Icon set "${set.name}" has no icon "${icon}".`,
-          closestNames(/** @type {string} */ (icon), ids).map(name => ({
-            name,
-            reason: 'an icon in this set',
-          })),
+          `Icon set "${set.name}" has no icon "${icon}". Name an icon by its id, its export name, or another name its library exports it as; a word it carries is not its name.`,
+          refusalSuggestions(set, /** @type {string} */ (icon), ids),
           ERROR_CODES.ERR_NOT_FOUND,
         );
       }
@@ -186,11 +184,8 @@ async function mapMany(definition, icon, {cwd, selector, remove, pairs}) {
     }
     if (!ids.includes(id)) {
       throw new AstryxError(
-        `Icon set "${set.name}" has no icon "${id}" (for ${name}). Nothing was written.`,
-        closestNames(id, ids).map(each => ({
-          name: each,
-          reason: 'an icon in this set',
-        })),
+        `Icon set "${set.name}" has no icon "${id}" (for ${name}). Name an icon by its id, its export name, or another name its library exports it as; a word it carries is not its name. Nothing was written.`,
+        refusalSuggestions(set, id, ids),
         ERROR_CODES.ERR_NOT_FOUND,
       );
     }
@@ -230,4 +225,17 @@ async function mapMany(definition, icon, {cwd, selector, remove, pairs}) {
       ...(files.length > 0 ? {files} : {}),
     },
   };
+}
+
+/**
+ * The icons a refused name may have meant: those that carry it as a word
+ * (`glass` → `magnifying-glass`), then the closest ids.
+ * @param {import('../../../foundation/discovery/icon-set-discovery.mjs').DiscoveredIconSet} set
+ * @param {string} name
+ * @param {string[]} ids
+ */
+function refusalSuggestions(set, name, ids) {
+  return [...new Set([...iconsWithWord(set, name), ...closestNames(name, ids)])]
+    .slice(0, 5)
+    .map(each => ({name: each, reason: 'an icon in this set'}));
 }

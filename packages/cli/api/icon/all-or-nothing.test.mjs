@@ -113,7 +113,7 @@ function makePackage() {
     JSON.stringify({
       name: '@acme/glyph-library',
       version: '2.0.0',
-      license: 'MIT',
+      license: 'ISC',
       type: 'module',
       exports: {'.': './index.js', './solid': './solid.js'},
     }),
@@ -185,6 +185,11 @@ const COMMANDS = [
         description: 'Acme glyphs.',
         variants: 'outline,solid',
       }),
+  ],
+  [
+    'a refresh that first records the source (notices and license)',
+    dir => iconNewSet('glyphs', {cwd: dir}),
+    dir => iconNewSet('glyphs', {cwd: dir, from: FROM}),
   ],
   [
     'add --new-definition',

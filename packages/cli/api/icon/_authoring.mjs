@@ -721,8 +721,30 @@ async function refreshIconSet(
         (_, lead) => `${lead}${quoteJs(value.trim())},`,
       );
     }
+    // A refresh that first records the library as the set's source does what
+    // `new-set --from` does: the descriptor takes the library's license.
+    // The author's later edits to it are kept.
+    if (library?.license && !set.data.source) {
+      const license = library.license;
+      docAfter = docAfter.replace(
+        /^(\s*license:\s*)(['"`])(?:\\.|(?!\2).)*\2,?$/mu,
+        (_, lead) => `${lead}${quoteJs(license)},`,
+      );
+    }
     if (docAfter !== docBefore) {
       files.push(projectPath(path.relative(packageDir, docFile)));
+    }
+    // The library's license notices travel with its artwork, as new-set
+    // copies them: each one the set directory does not have yet.
+    const libraryDir = library?.dir ?? '';
+    const notices = (library?.notices ?? [])
+      .map(notice => ({
+        notice,
+        target: assertWithin(notice, set.dir, {label: 'license notice'}),
+      }))
+      .filter(({target}) => !fs.existsSync(target));
+    for (const {target} of notices) {
+      files.push(projectPath(path.relative(packageDir, target)));
     }
     if (!dryRun) {
       const written = writeGeneratedIcons(
@@ -745,6 +767,13 @@ async function refreshIconSet(
         writeIconSetData(set, next);
         // The descriptor last: the command's journal puts it back with the
         // rest if anything after it fails (AST-084 FR13).
+        for (const {notice, target} of notices) {
+          journalFile(target);
+          fs.writeFileSync(
+            target,
+            fs.readFileSync(path.join(libraryDir, notice)),
+          );
+        }
         if (docAfter !== docBefore) {
           journalFile(docFile);
           fs.writeFileSync(docFile, docAfter);

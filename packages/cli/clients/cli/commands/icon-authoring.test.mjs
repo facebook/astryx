@@ -2031,3 +2031,150 @@ describe('package wiring stays the author’s', () => {
     ).toEqual([]);
   });
 });
+
+describe('a refresh that first records the source', () => {
+  it('copies the library notices and takes its license, as new-set --from does', async () => {
+    const lib = path.join(pkg, 'node_modules', '@acme', 'glyph-library');
+    fs.writeFileSync(path.join(lib, 'LICENSE'), 'ISC License\n');
+    fs.writeFileSync(
+      path.join(lib, 'package.json'),
+      JSON.stringify({
+        ...JSON.parse(fs.readFileSync(path.join(lib, 'package.json'), 'utf-8')),
+        license: 'ISC',
+      }),
+    );
+    expect(
+      (await json(['experimental', 'icon', 'new-set', 'glyphs'])).code,
+    ).toBe(0);
+    const doc = path.join(pkg, 'icon-sets', 'glyphs', 'glyphs.doc.mjs');
+    expect(fs.readFileSync(doc, 'utf-8')).toContain("license: 'MIT'");
+    const pkgBefore = fs.readFileSync(path.join(pkg, 'package.json'), 'utf-8');
+
+    const refreshed = await json([
+      'experimental',
+      'icon',
+      'new-set',
+      'glyphs',
+      '--from',
+      '@acme/glyph-library',
+    ]);
+    expect(refreshed.code).toBe(0);
+    expect(refreshed.body.data.refreshed).toBe(true);
+    expect(refreshed.body.data.files).toEqual(
+      expect.arrayContaining([
+        'icon-sets/glyphs/glyphs.doc.mjs',
+        'icon-sets/glyphs/LICENSE',
+      ]),
+    );
+    expect(dataOf('glyphs').source).toEqual({
+      package: '@acme/glyph-library',
+      version: '2.0.0',
+    });
+    expect(
+      fs.readFileSync(
+        path.join(pkg, 'icon-sets', 'glyphs', 'LICENSE'),
+        'utf-8',
+      ),
+    ).toBe('ISC License\n');
+    expect(fs.readFileSync(doc, 'utf-8')).toContain("license: 'ISC'");
+    // The package's own license is the author's (INV16).
+    expect(fs.readFileSync(path.join(pkg, 'package.json'), 'utf-8')).toBe(
+      pkgBefore,
+    );
+    const strict = await runCli(
+      ['integration', 'check', '--strict', '--json'],
+      pkg,
+    );
+    expect(strict.stdout).not.toContain('icon_license_notice_missing');
+
+    // A later refresh keeps the author's license.
+    fs.writeFileSync(
+      doc,
+      fs
+        .readFileSync(doc, 'utf-8')
+        .replace("license: 'ISC'", "license: 'ISC AND CC-BY-4.0'"),
+    );
+    await json([
+      'experimental',
+      'icon',
+      'new-set',
+      'glyphs',
+      '--from',
+      '@acme/glyph-library',
+    ]);
+    expect(fs.readFileSync(doc, 'utf-8')).toContain(
+      "license: 'ISC AND CC-BY-4.0'",
+    );
+  });
+});
+
+describe('map names an icon only by its id, export name, or another library name', () => {
+  beforeEach(() => {
+    const lib = path.join(pkg, 'node_modules', '@acme', 'glyph-library');
+    fs.writeFileSync(
+      path.join(lib, 'icons', 'glass.js'),
+      'export const MagnifyingGlass = props => null;\n',
+    );
+    fs.appendFileSync(
+      path.join(lib, 'index.js'),
+      "export {MagnifyingGlass, MagnifyingGlass as Search} from './icons/glass.js';\n",
+    );
+  });
+
+  it('refuses a word an icon carries, with the icons that carry it, and writes nothing', async () => {
+    await json([
+      'experimental',
+      'icon',
+      'new-set',
+      'outline',
+      '--from',
+      '@acme/glyph-library',
+    ]);
+    const dataFile = path.join(
+      pkg,
+      'icon-sets',
+      'outline',
+      'outline.icons.json',
+    );
+    const before = fs.readFileSync(dataFile, 'utf-8');
+
+    const word = await json([
+      'experimental',
+      'icon',
+      'map',
+      'moreHorizontal',
+      'glass',
+    ]);
+    expect(word.code).toBe(1);
+    expect(word.body.error).toContain('has no icon "glass"');
+    expect(word.body.error).toContain('a word it carries is not its name');
+    expect(
+      word.body.suggestions.map(
+        (/** @type {{name: string}} */ each) => each.name,
+      ),
+    ).toContain('magnifying-glass');
+
+    const pairs = await json([
+      'experimental',
+      'icon',
+      'map',
+      '--pairs',
+      'close=cross,moreHorizontal=glass',
+    ]);
+    expect(pairs.code).toBe(1);
+    expect(pairs.body.error).toContain('Nothing was written');
+    expect(fs.readFileSync(dataFile, 'utf-8')).toBe(before);
+
+    // The id, the export name in any case, and another library name map.
+    for (const [given, id] of [
+      ['magnifying-glass', 'magnifying-glass'],
+      ['magnifyingglassicon', 'magnifying-glass'],
+      ['MagnifyingGlass', 'magnifying-glass'],
+      ['search', 'magnifying-glass'],
+    ]) {
+      const ok = await json(['experimental', 'icon', 'map', 'search', given]);
+      expect(ok.code, given).toBe(0);
+      expect(ok.body.data.icon, given).toBe(id);
+    }
+  });
+});
