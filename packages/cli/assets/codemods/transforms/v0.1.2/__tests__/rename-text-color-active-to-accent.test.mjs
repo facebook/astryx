@@ -223,4 +223,64 @@ const unrelated = {color: 'active'};`;
         .replace("{args: {color: 'active'}}", "{args: {color: 'accent'}}"),
     );
   });
+
+  it('honours includeStories and excludeStories', async () => {
+    const exclude = `import {Text} from '@astryxdesign/core';
+export default {component: Text, excludeStories: ['fixture']};
+export const fixture = {args: {color: 'active'}};
+export const Primary = {args: {color: 'active'}};`;
+    expect(await applyTransform(exclude)).toBe(
+      exclude.replace(
+        "Primary = {args: {color: 'active'}}",
+        "Primary = {args: {color: 'accent'}}",
+      ),
+    );
+    const include = `import {Text} from '@astryxdesign/core';
+export default {component: Text, includeStories: /^[A-Z]/};
+export const fixture = {args: {color: 'active'}};
+export const Primary = {args: {color: 'active'}};`;
+    expect(await applyTransform(include)).toBe(
+      include.replace(
+        "Primary = {args: {color: 'active'}}",
+        "Primary = {args: {color: 'accent'}}",
+      ),
+    );
+  });
+
+  it('leaves named exports unchanged when the story filter cannot be read', async () => {
+    const input = `import {Text} from '@astryxdesign/core';
+import {STORIES} from './stories';
+export default {component: Text, includeStories: STORIES, args: {color: 'active'}};
+export const Primary = {args: {color: 'active'}};`;
+    expect(await applyTransform(input)).toBe(
+      input.replace(
+        "includeStories: STORIES, args: {color: 'active'}",
+        "includeStories: STORIES, args: {color: 'accent'}",
+      ),
+    );
+  });
+
+  it('leaves args and argTypes shared with another component story unchanged', async () => {
+    const input = `import {Text} from '@astryxdesign/core';
+import {Label} from 'other-ui';
+const sharedArgs = {color: 'active'};
+const sharedArgTypes = {color: {options: ['active']}};
+export default {component: Text};
+export const TextStory = {args: sharedArgs, argTypes: sharedArgTypes};
+export const LabelStory = {component: Label, args: sharedArgs, argTypes: sharedArgTypes};`;
+    expect(await applyTransform(input)).toBe(input);
+  });
+
+  it('leaves bindings referenced elsewhere and let or var bindings unchanged', async () => {
+    const input = `import {Text} from '@astryxdesign/core';
+let meta = {component: Text, args: {color: 'active'}};
+meta = {component: Text};
+export default meta;
+var args = {color: 'active'};
+export const Primary = {args};
+const reused = {color: 'active'};
+export const Secondary = {args: reused};
+console.log(reused);`;
+    expect(await applyTransform(input)).toBe(input);
+  });
 });

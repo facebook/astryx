@@ -162,4 +162,58 @@ const unrelated = {labelSpacing: 'default'};`;
         ),
     );
   });
+
+  it('honours includeStories and excludeStories', async () => {
+    const exclude = `import {Switch} from '@astryxdesign/core';
+export default {component: Switch, excludeStories: /Fixture$/};
+export const switchFixture = {args: {labelSpacing: 'default'}};
+export const Hug = {args: {labelSpacing: 'default'}};`;
+    expect(await applyTransform(exclude)).toBe(
+      exclude.replace(
+        "Hug = {args: {labelSpacing: 'default'}}",
+        "Hug = {args: {labelSpacing: 'hug'}}",
+      ),
+    );
+    const include = `import {Switch} from '@astryxdesign/core';
+export default {component: Switch, includeStories: ['Hug']};
+export const fixture = {args: {labelSpacing: 'default'}};
+export const Hug = {args: {labelSpacing: 'default'}};`;
+    expect(await applyTransform(include)).toBe(
+      include.replace(
+        "Hug = {args: {labelSpacing: 'default'}}",
+        "Hug = {args: {labelSpacing: 'hug'}}",
+      ),
+    );
+  });
+
+  it('leaves named exports unchanged when the story filter cannot be read', async () => {
+    const input = `import {Switch} from '@astryxdesign/core';
+export default {component: Switch, excludeStories: [...FIXTURES]};
+export const Hug = {args: {labelSpacing: 'default'}};`;
+    expect(await applyTransform(input)).toBe(input);
+  });
+
+  it('leaves args and argTypes shared with another component story unchanged', async () => {
+    const input = `import {Switch} from '@astryxdesign/core';
+import {Toggle} from 'other-ui';
+const sharedArgs = {labelSpacing: 'default'};
+const sharedArgTypes = {labelSpacing: {options: ['default', 'spread']}};
+export default {component: Switch};
+export const SwitchStory = {args: sharedArgs, argTypes: sharedArgTypes};
+export const ToggleStory = {component: Toggle, args: sharedArgs, argTypes: sharedArgTypes};`;
+    expect(await applyTransform(input)).toBe(input);
+  });
+
+  it('leaves bindings referenced elsewhere and let or var bindings unchanged', async () => {
+    const input = `import {Switch} from '@astryxdesign/core';
+let meta = {component: Switch, args: {labelSpacing: 'default'}};
+meta = {component: Switch};
+export default meta;
+var args = {labelSpacing: 'default'};
+export const Hug = {args};
+const reused = {labelSpacing: 'default'};
+export const Spread = {...{args: reused}};
+export const Again = {args: reused};`;
+    expect(await applyTransform(input)).toBe(input);
+  });
 });
