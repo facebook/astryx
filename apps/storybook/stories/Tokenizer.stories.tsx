@@ -70,8 +70,10 @@ const meta: Meta<typeof Tokenizer> = {
     },
   },
   decorators: [
+    // A 400px column where there is room that shrinks with the viewport, so
+    // the stories read the same on a phone-sized canvas.
     Story => (
-      <div style={{width: 400}}>
+      <div style={{display: 'grid', gridTemplateColumns: 'minmax(0, 400px)'}}>
         <Story />
       </div>
     ),
@@ -454,8 +456,7 @@ export const StatusVariantComparison: Story = {
     const [a, setA] = useState<SearchableItem[]>([]);
     const [b, setB] = useState<SearchableItem[]>([]);
     return (
-      <div
-        style={{display: 'flex', flexDirection: 'column', gap: 24, width: 320}}>
+      <div style={{display: 'flex', flexDirection: 'column', gap: 24}}>
         <Tokenizer
           label="Attached (default)"
           searchSource={userSource}
@@ -506,14 +507,12 @@ export const LogicalOrder: Story = {
   render: args => {
     const [value, setValue] = useState([users[0], users[2]]);
     return (
-      <div style={{width: 420}}>
-        <Tokenizer
-          {...args}
-          searchSource={userSource}
-          value={value}
-          onChange={items => setValue(items)}
-        />
-      </div>
+      <Tokenizer
+        {...args}
+        searchSource={userSource}
+        value={value}
+        onChange={items => setValue(items)}
+      />
     );
   },
   args: {
