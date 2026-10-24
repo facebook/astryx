@@ -52,21 +52,26 @@
  * mid-flight.
  *
  * Start time: a call that starts from rest (nothing on its channels moving,
- * no `options.at`) gets no start time, so the browser starts it when it
- * commits it, as Core Animation starts an animation at its transaction's
- * commit: a main-thread block before that frame delays the motion instead of
- * skipping into it. Everything the call starts, and every
- * call from rest in the same task, starts at that one time, which
- * `handle.started` reports. A call that continues motion on
+ * no `options.at`) promotes its element in the calling task, holds the
+ * current value, and creates its animations in the next animation frame,
+ * without a start time: the browser starts them when it commits that frame,
+ * as Core Animation starts an animation at its transaction's commit. Work
+ * that follows the call in the same task (a React commit, layout effects)
+ * delays the motion instead of skipping into it; WebKit would otherwise date
+ * an animation created before that work to the frame before it. Everything
+ * the call starts, and every call from rest in the same task, starts at that
+ * one time, which `handle.started` reports; until then the curves read from
+ * the call time. Anything else that changes the animator before that frame (`set`,
+ * `stop`, an explicit start, `rebase`, `attach`, `dispose`) creates the held
+ * animations first, in call order. A call that continues motion on
  * screen (a retarget, a catch) keeps an explicit start at the call time, or
  * `options.at` to line several animators up, so the new curve continues
  * from the frame on screen. Keyframes are sampled from the call's start, so
  * a value that keeps moving through a rebuild stays on its curve to the
  * frame.
  *
- * WebKit starts an animation created just before a block at its last frame
- * time before the block, so there the motion still skips into its curve;
- * Chromium starts it after the block.
+ * A block that starts inside the very frame that commits the animations can
+ * still date them before it in WebKit; Chromium starts them after the block.
  *
  * Promotion: Mobile Safari runs an animation whose start time is set from
  * script on its compositor at its first commit only if the element (or the
@@ -273,8 +278,9 @@ export interface MotionHandle {
   readonly finished: Promise<boolean>;
   /**
    * When the motion started on the document timeline (ms): for a call from
-   * rest, the time the browser committed it (a block before the first frame
-   * moves it later); otherwise the call time, or `at`.
+   * rest, the time the browser committed its animations, which it creates in
+   * the next animation frame (work or a block before that frame moves it
+   * later); otherwise the call time, or `at`.
    */
   readonly started: Promise<number>;
   /** Presentation value of a property at `time` (default now). */
@@ -385,14 +391,18 @@ interface Segment {
 }
 
 /**
- * A call started from rest. Its animations are created without a start time,
- * so the browser starts them when it commits them, as Core Animation starts
- * an animation at its transaction's commit: a main-thread block before that
- * frame delays the motion instead of skipping into it. Until then the curves
- * read from the call time; once the browser's start is known they move to it.
+ * A call started from rest. Its animations are created in the next animation
+ * frame (`deferred` until then; the element shows its current value) without a start
+ * time, so the browser starts them when it commits that frame, as Core
+ * Animation starts an animation at its transaction's commit: work or a block
+ * before that frame delays the motion instead of skipping into it. Until then
+ * the curves read from the call time; once the browser's start is known they
+ * move to it.
  */
 interface StartGroup {
   readonly provisional: number;
+  /** Its animations wait for the next animation frame. */
+  deferred: boolean;
   readonly segments: Segment[];
   readonly animations: Animation[];
   readonly channels: Set<Channel>;
@@ -620,6 +630,12 @@ export function createAnimator(
   const pendingGroups = new Set<StartGroup>();
   /** The call being committed, when it starts from rest. */
   let callGroup: StartGroup | null = null;
+  /** Calls from rest whose animations wait for the next frame (StartGroup). */
+  const deferredCalls: {
+    group: StartGroup;
+    changed: MotionProperty[];
+    time: number;
+  }[] = [];
   /** Channels promoted to the element's compositing layer (will-change). */
   const promoted = new Set<Channel>();
   /** The element's own inline will-change, restored when promotion ends. */
@@ -995,18 +1011,18 @@ export function createAnimator(
     if (demoteTimer != null) {
       clearTimeout(demoteTimer);
     }
-    let end = now();
-    for (const segment of segments.values()) {
-      end = Math.max(end, segment.start + segment.duration);
-    }
+    const end = motionEnd();
     demoteTimer = setTimeout(
       () => {
         demoteTimer = null;
-        const time = now();
-        const moving = [...segments.values()].some(
-          segment => time < segment.start + segment.duration,
-        );
-        if (moving || pendingGroups.size > 0) {
+        // A call still waiting for its start reschedules this once it has one.
+        if (pendingGroups.size > 0) {
+          return;
+        }
+        // Motion that ends later waits again. Otherwise the timer itself is
+        // the clock: `now()` is not read again, so a test that fakes timers
+        // but not the clock cannot keep it rescheduling.
+        if (motionEnd() > end) {
           scheduleDemote();
           return;
         }
@@ -1014,6 +1030,15 @@ export function createAnimator(
       },
       Math.max(0, end - now()) + PROMOTION_LINGER_MS,
     );
+  };
+
+  /** When the last curve ends, ms on the document timeline (-Infinity: none). */
+  const motionEnd = (): number => {
+    let end = -Infinity;
+    for (const segment of segments.values()) {
+      end = Math.max(end, segment.start + segment.duration);
+    }
+    return end;
   };
 
   const demote = () => {
@@ -1068,6 +1093,7 @@ export function createAnimator(
     });
     return {
       provisional: time,
+      deferred: false,
       segments: [],
       animations: [],
       channels: new Set(),
@@ -1093,15 +1119,57 @@ export function createAnimator(
         }
       }
     }
+    if (group != null && group.segments.length > 0 && requestFrame != null) {
+      // From rest: promote now, hold the current value, and create the
+      // animations in the next animation frame (StartGroup).
+      group.deferred = true;
+      pendingGroups.add(group);
+      for (const property of changed) {
+        promote(CHANNEL_OF[property]);
+      }
+      deferredCalls.push({group, changed, time});
+      if (deferredCalls.length === 1) {
+        requestFrame(flushDeferred);
+      }
+      return;
+    }
     callGroup = group;
     try {
       commit(changed, time);
     } finally {
       callGroup = null;
     }
-    if (group == null) {
+    if (group != null) {
+      startFromRest(group);
+    }
+  };
+
+  /**
+   * Creates the held calls' animations, in call order, exactly as each call
+   * would have in its own task: in the frame after them, or at once when
+   * anything else touches the animator first (it sees no held call).
+   */
+  const flushDeferred = () => {
+    if (deferredCalls.length === 0) {
       return;
     }
+    const calls = deferredCalls.splice(0);
+    for (const call of calls) {
+      call.group.deferred = false;
+    }
+    for (const call of calls) {
+      callGroup = call.group;
+      try {
+        commit(call.changed, call.time);
+      } finally {
+        callGroup = null;
+      }
+      startFromRest(call.group);
+    }
+  };
+
+  /** Waits for the browser to start a call's animations (StartGroup). */
+  const startFromRest = (group: StartGroup) => {
     if (group.animations.length === 0) {
       resolveGroup(group, group.provisional); // nothing to start
       return;
@@ -1152,6 +1220,7 @@ export function createAnimator(
       return;
     }
     group.resolved = true;
+    group.deferred = false;
     pendingGroups.delete(group);
     for (const animation of group.animations) {
       // One clock for the whole call; a cancelled one stays cancelled (a
@@ -1194,6 +1263,9 @@ export function createAnimator(
           Math.max(0, Math.max(start, ...ends) - now()),
         );
       }
+    }
+    if (promoted.size > 0) {
+      scheduleDemote(); // the curves may end later now
     }
     group.resolve(start);
   };
@@ -1512,6 +1584,7 @@ export function createAnimator(
     },
 
     attach(next) {
+      flushDeferred(); // a held call starts first, as it would have
       if (next === target) {
         return;
       }
@@ -1551,6 +1624,7 @@ export function createAnimator(
     },
 
     set(values) {
+      flushDeferred(); // a held call starts first, as it would have
       syncPending();
       const time = now();
       const next = expand(values);
@@ -1619,6 +1693,9 @@ export function createAnimator(
         Object.keys(next) as MotionProperty[],
         animateOptions.at,
       );
+      if (group == null) {
+        flushDeferred(); // an explicit start sees no held call
+      }
       const changed: MotionProperty[] = [];
       for (const [property, segment] of Object.entries(next) as [
         MotionProperty,
@@ -1706,6 +1783,9 @@ export function createAnimator(
         Object.keys(next) as MotionProperty[],
         playOptions.at,
       );
+      if (group == null) {
+        flushDeferred(); // an explicit start sees no held call
+      }
       const changed: MotionProperty[] = [];
       for (const [property, segment] of Object.entries(next) as [
         MotionProperty,
@@ -1735,6 +1815,9 @@ export function createAnimator(
       );
       const properties = Object.keys(velocities) as MotionProperty[];
       const group = beginGroup(time, properties, decayOptions.at);
+      if (group == null) {
+        flushDeferred(); // an explicit start sees no held call
+      }
       for (const property of properties) {
         const from = valueAt(property, time);
         const v0 = velocities[property] as number;
@@ -1826,6 +1909,7 @@ export function createAnimator(
     },
 
     stop(properties) {
+      flushDeferred(); // a held call starts first, as it would have
       syncPending();
       const time = now();
       const list = properties == null ? PROPERTIES : expandList(properties);
@@ -1844,6 +1928,7 @@ export function createAnimator(
     },
 
     rebase(deltas, rebaseOptions = {}) {
+      flushDeferred(); // a held call starts first, as it would have
       syncPending();
       const time = rebaseOptions.at ?? now();
       const changed: MotionProperty[] = [];
@@ -1940,6 +2025,7 @@ export function createAnimator(
     },
 
     dispose() {
+      flushDeferred(); // a held call starts first, as it would have
       const time = now();
       for (const property of PROPERTIES) {
         interrupt(property, time);

@@ -186,6 +186,8 @@ Chromium and WebKit on the phone profile.
 - A slow spring keeps advancing on every screencast frame while the main
   thread is blocked for 1 s, and every frame sits on the analytic curve with
   one consistent time offset.
+- A spring started right before a 400 ms block, in the same task, plays its
+  whole curve after the block: the animator creates it in the next frame.
 - A spring that ends inside the block keeps showing its end state. Without the
   animator's end-state hold, WebKit falls back to a mid-flight value.
 - No Layout or Paint runs while it animates (Chromium trace).

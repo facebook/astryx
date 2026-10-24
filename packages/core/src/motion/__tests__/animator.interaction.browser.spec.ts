@@ -198,20 +198,16 @@ test('a spring that ends inside the block keeps showing its end state', async ({
 
 test('a spring started right before a block plays in full after it', async ({
   page,
-  browserName,
 }) => {
-  test.skip(
-    browserName === 'webkit',
-    'WebKit starts a pending animation at its last frame time before the block (animator header, known limits)',
-  );
   await open(page);
   const box = page.locator('#box');
   await markElement(box, {inset: MARKER_INSET});
   const cast = await startScreencast(page);
-  // Started and blocked in one task: the browser has not committed it yet.
-  // It starts when the first frame after the block commits it, as Core
-  // Animation starts an animation at its transaction's commit, instead of
-  // landing 400 ms into its curve.
+  // Started and blocked in one task, as a React commit would: the animator
+  // creates the animation in the first frame after the block, which starts
+  // it, as Core Animation starts an animation at its transaction's commit,
+  // instead of landing 400 ms into its curve (WebKit dates an animation
+  // created before the block to the frame before it).
   const busy = await page.evaluate(
     ({spring, travel}) => {
       window.animator.animate({x: travel}, {spring});

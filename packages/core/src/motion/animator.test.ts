@@ -116,17 +116,28 @@ function setup(options: AnimatorOptions = {}) {
   return {element, animator};
 }
 
-/** The browser commits a frame at `at`: pending animations start there. */
-async function commitFrame(at: number) {
-  for (const animation of recorded) {
-    if (animation.startTime == null && !animation.cancelled) {
-      animation.commit(at);
-    }
-  }
+/**
+ * The next animation frame's callbacks run: a call from rest creates its
+ * animations here (they stay pending until the frame commits).
+ */
+function frame() {
   const frames = frameQueue;
   frameQueue = [];
   for (const callback of frames) {
     callback();
+  }
+}
+
+/**
+ * The browser renders a frame at `at`: its animation-frame callbacks run,
+ * then it commits, and pending animations start there.
+ */
+async function commitFrame(at: number) {
+  frame();
+  for (const animation of recorded) {
+    if (animation.startTime == null && !animation.cancelled) {
+      animation.commit(at);
+    }
   }
   await Promise.resolve();
   await Promise.resolve();
@@ -142,7 +153,9 @@ async function advance(ms: number) {
   await vi.advanceTimersByTimeAsync(ms);
 }
 
+/** The animations on a channel, as the next frame sees them (`frame`). */
 function live(channel: string): Recorded[] {
+  frame();
   return recorded.filter(
     a => !a.cancelled && channel in (a.keyframes[0] ?? {}),
   );
@@ -228,12 +241,13 @@ describe('animate: keyframes on the compositor', () => {
     expect(live('translate')[0].keyframes.length).toBeLessThan(200);
   });
 
-  it('writes the end values inline up front, so the last frame needs no main thread', () => {
+  it('writes the end values inline with the animations, so the last frame needs no main thread', () => {
     const {animator, element} = setup();
     animator.animate(
       {x: 120, y: -40, scale: 1.1, rotate: 12, opacity: 0.25},
       {spring: springs.snappy},
     );
+    frame(); // the frame that creates the animations
     expect(element.style.translate).toBe('120px -40px');
     expect(element.style.scale).toBe('1.1 1.1');
     expect(element.style.rotate).toBe('12deg');
@@ -389,6 +403,45 @@ describe('a call from rest starts at the commit, as Core Animation does', () => 
   });
 });
 
+describe('a call from rest creates its animations in the next frame', () => {
+  it('promotes in the calling task and creates the animations in the next frame', async () => {
+    const {animator, element} = setup();
+    animator.set({x: 40});
+    const handle = animator.animate({x: 300}, {spring: springs.smooth});
+    // The task that called it may keep working (a React commit): nothing is
+    // created yet, the element is promoted and still shows where it was.
+    expect(
+      recorded.filter(a => 'translate' in (a.keyframes[0] ?? {})),
+    ).toHaveLength(0);
+    expect(element.style.willChange).toContain('translate');
+    expect(element.style.translate).toBe('40px 0px');
+    // The busy work ends; the next frame creates and commits the animation.
+    clock = 1300;
+    await commitFrame(1300);
+    const [animation] = live('translate');
+    expect(animation.createdAt).toBe(1300);
+    await expect(handle.started).resolves.toBe(1300);
+    expect(element.style.translate).toBe('300px 0px');
+  });
+
+  it('a set, a stop or an explicit start before that frame creates the held call first', async () => {
+    const {animator} = setup();
+    animator.animate({x: 300}, {spring: springs.smooth});
+    const second = animator.animate(
+      {y: 100},
+      {spring: springs.smooth},
+      {at: clock},
+    );
+    // The held x went first, in call order; the explicit y then rebuilt the
+    // one translate track, on the explicit clock.
+    const [animation] = live('translate');
+    expect(animation.startTime).toBe(1000);
+    await expect(second.started).resolves.toBe(1000);
+    const curve = solveSpring(toSpring(springs.smooth), {from: 0, to: 300});
+    expect(animator.get('x', 1100)).toBeCloseTo(curve.value(0.1), 9);
+  });
+});
+
 describe('animatorFor: one animator per element', () => {
   it('gives every caller the same animator for an element', () => {
     const a = document.createElement('div');
@@ -461,6 +514,16 @@ describe('rebase: a layout shift under a moving element', () => {
 });
 
 describe('promotion: a compositing layer while it moves', () => {
+  it('ends promotion on the timers alone, when a test fakes them but not the clock', async () => {
+    const {animator, element} = setup();
+    animator.animate({x: 300}, {spring: springs.smooth});
+    await commitFrame(1000);
+    expect(element.style.willChange).toContain('translate');
+    // The injected clock stands still while every timer runs.
+    await vi.runAllTimersAsync();
+    expect(element.style.willChange).toBe('');
+  });
+
   it('promotes the animated channels in the task that starts the motion, and ends it after rest', async () => {
     const {animator, element} = setup();
     animator.animate({x: 120, opacity: 0.5}, {spring: springs.smooth});
@@ -1110,7 +1173,9 @@ describe('pseudoElement: a dialog\u2019s ::backdrop', () => {
     expect(element.style.opacity).toBe('');
 
     animator.animate({opacity: 1}, {spring: springs.alertPresent});
-    // The new animation exists before the hold goes: no frame in between.
+    expect(held.cancelled).toBe(false); // it holds until the next frame
+    frame();
+    // That frame creates the new animation before the hold goes.
     expect(held.cancelled).toBe(true);
     const [fade] = live('opacity');
     expect(fade.options).toMatchObject({
@@ -1142,6 +1207,7 @@ describe('pseudoElement: a dialog\u2019s ::backdrop', () => {
     const [rest] = live('opacity');
     expect(rest.keyframes.map(k => k.opacity)).toEqual(['0', '0']);
     animator.animate({opacity: 1}, {spring: springs.alertPresent});
+    frame();
     expect(rest.cancelled).toBe(true);
     expect(live('opacity')).toHaveLength(1);
   });
