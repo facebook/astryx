@@ -85,9 +85,9 @@ Consumer migration instructions belong in consumer docs and release notes.
 - The Banner frame that groups both surfaces and carries the current whole-banner
   elevation and elevated-card silhouette.
 - The semantic foreground context for Banner-authored title, description, icon,
-  collapse, and dismiss content on the status surface. Built-in controls receive
-  that context on their Button element only, so their tooltip remains an ordinary
-  Button surface.
+  collapse, and dismiss content on the status surface, as FR9's accepted target.
+  Built-in controls receive that context on their Button element only, so their
+  tooltip remains an ordinary Button surface.
 
 **Does not own / non-goals**
 
@@ -175,12 +175,12 @@ unchanged.
 
 ## Design relationships
 
-| Anatomy or state        | Design requirement                                                                                                                                                                                  | Representation authority                      | Hierarchy role | Component contract |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- | -------------- | ------------------ |
-| Banner frame            | Groups the status and optional content surfaces and carries their shared silhouette and elevation.                                                                                                  | Current source and public docs                | Supporting     | FR2, FR3, FR4      |
-| Status surface          | Acts as Banner's primary painted surface, carrying the status fill, message, and controls.                                                                                                          | Current source and public docs                | Prominent      | FR1                |
-| Content surface         | Carries optional supporting detail below the status surface.                                                                                                                                        | Current source and public docs                | Supporting     | FR4, FR7           |
-| Action/dismiss controls | Built-in control content receives the Status surface's on-muted foreground on the Button element; interaction layers and tooltips remain Button-owned. Consumer-supplied `endContent` is unchanged. | Banner status context plus `component:Button` | Supporting     | FR7, FR9           |
+| Anatomy or state        | Design requirement                                                                                                                                                                                                         | Representation authority                      | Hierarchy role | Component contract |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- | -------------- | ------------------ |
+| Banner frame            | Groups the status and optional content surfaces and carries their shared silhouette and elevation.                                                                                                                         | Current source and public docs                | Supporting     | FR2, FR3, FR4      |
+| Status surface          | Acts as Banner's primary painted surface, carrying the status fill, message, and controls.                                                                                                                                 | Current source and public docs                | Prominent      | FR1                |
+| Content surface         | Carries optional supporting detail below the status surface.                                                                                                                                                               | Current source and public docs                | Supporting     | FR4, FR7           |
+| Action/dismiss controls | FR9's accepted target: built-in control content receives the Status surface's on-muted foreground on the Button element; interaction layers and tooltips remain Button-owned. Consumer-supplied `endContent` is unchanged. | Banner status context plus `component:Button` | Supporting     | FR7, FR9           |
 
 The Banner frame is stable anatomy and owns the additive `banner-frame` target.
 The Status surface remains Banner's primary painted surface and keeps the
@@ -210,9 +210,10 @@ unqualified `banner` target.
 This map records runtime reachability. `banner` belongs to the primary Status
 surface rather than the outermost DOM element, while `banner-frame` belongs to
 the visible frame that owns whole-banner elevation and silhouette. Delegation to
-Button preserves each built-in control's anatomy and interaction ownership;
-Banner supplies only the status-surface foreground context on the Button element,
-and does not restyle a consumer-provided `endContent` child.
+Button preserves each built-in control's anatomy and interaction ownership.
+Under FR9's accepted target, Banner supplies only the status-surface foreground
+context on the Button element, and it does not restyle a consumer-provided
+`endContent` child.
 
 ## Family and system relationships
 
