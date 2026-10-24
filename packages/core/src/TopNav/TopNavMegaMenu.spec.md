@@ -17,7 +17,7 @@ verified_by:
   ]
 modules: []
 families: [family:overlay-dismissal]
-design_specs: []
+design_specs: [design:reduced-motion]
 architecture:
   [
     architecture:interaction-modality,
@@ -38,7 +38,7 @@ system_specs: []
 | Behavior                | In the bar, a button that opens a wide panel of links below the whole TopNav on hover or click; the panel is a labeled group, not an ARIA menu. In the drawer, a disclosure that expands items and featured content inline. Hidden in the mobile bar. |
 | End-user impact         | Users browse a grid of destinations with descriptions and a featured card; keyboard users reach the panel's links from the trigger; drawer users expand the group in place.                                                                           |
 | Builder impact          | None.                                                                                                                                                                                                                                                 |
-| Compatibility/readiness | Records shipped behavior; no public change.                                                                                                                                                                                                           |
+| Compatibility/readiness | Records shipped behavior; no public change. Three current-state gaps (see Current-state impact).                                                                                                                                                      |
 | Review checks           | Reject exposing the panel as `role="menu"`, wrapping it in a modal dialog, keyboard activation that closes an open panel, or a collapsed drawer group that stays reachable.                                                                           |
 | Governing rules         | `architecture:public-component-api` INV5 and INV7; `architecture:interaction-modality`; `component:TopNav` render modes.                                                                                                                              |
 
@@ -60,6 +60,18 @@ lives in `TopNavMegaMenu.doc.mjs`.
 - Migration decision: none
 
 Consumer migration instructions belong in consumer docs and release notes.
+
+## Current-state impact
+
+- **The trigger announces a menu.** The trigger carries `aria-haspopup="true"`,
+  which WAI-ARIA 1.2 defines as a menu popup, while the panel is a
+  `role="group"` (FR5).
+- **Motion under reduced motion.** The panel still slides 4 px on open, and the
+  drawer group still animates its height, when reduced motion is requested.
+  `design:reduced-motion` DR1 and DR3 forbid travel and resizing then.
+- **Same-label drawer groups share an id.** The drawer group's id is derived
+  from `label`, so two mega menus with the same label in one drawer produce
+  duplicate ids.
 
 ## Ownership boundary
 
@@ -83,19 +95,19 @@ No component-local concept beyond the consumer props in
 
 ## Behavioral and layout contract
 
-| ID   | Invariant                                                                                                                                                                                                                                                                                                                                                                                                                    | Basis                    |
-| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| FR1  | In `default` mode the trigger is a `<button>` showing `label` and a chevron that turns when open; it carries `top-nav-mega-menu`, the forwarded `ref`, and other DOM props, exposes `aria-haspopup` and `aria-expanded`, and its `aria-controls` names the panel.                                                                                                                                                            | Current source and tests |
-| FR2  | The panel is an auto popover with the trigger as its native invoker, anchored below the closest enclosing `<nav>` and aligned to the trigger's TopNav slot. The browser's light dismiss closes it, and opening a sibling mega menu closes it.                                                                                                                                                                                | Current source and tests |
-| FR3  | On a hover-capable pointer, hovering opens after `delay` ms and the panel stays transient: leaving the trigger and panel closes it after `hideDelay` ms, and re-entering the trigger cancels a pending close. A click pins it open. A click within 500 ms of a hover-open pins rather than closes; re-hovering an open panel does not restart that window. After a close, the pointer entering the panel does not reopen it. | Current source and tests |
-| FR4  | Enter and Space open the panel and never close an open one. Escape closes it and returns focus to the trigger.                                                                                                                                                                                                                                                                                                               | Current source and tests |
-| FR5  | The panel is a `role="group"` named by `label`, not a `menu` and not a modal dialog. A click-open moves focus to the panel's first link or button; a hover-open leaves focus on the trigger.                                                                                                                                                                                                                                 | Current source and tests |
-| FR6  | The panel paints its own surface: `items` in a two-column grid, then `featured` beside it, wrapping on narrow widths. The panel is at most `min(960px, 100dvw − 16px)` wide and at most the space below the nav tall; taller content scrolls inside the panel. Opening fades and slides in from 4 px above.                                                                                                                  | Current source           |
-| FR7  | `onOpenChange` fires `true` when the panel shows and `false` when it hides, whatever the cause.                                                                                                                                                                                                                                                                                                                              | Current source           |
-| FR8  | Caller `onClick`, `onMouseEnter`, and `onMouseLeave` on the trigger compose with the built-in behavior.                                                                                                                                                                                                                                                                                                                      | Current source and tests |
-| FR9  | In `drawer` mode the trigger is a full-width disclosure button with `aria-expanded` and `aria-controls` and `mode="drawer"`; activating it toggles the group, which holds `items` (rendering their drawer form) then `featured`. Collapsed content is `inert` and `aria-hidden`, and the group clips only while collapsed. The group's id derives from `label`.                                                              | Current source and tests |
-| FR10 | In `mobile-bar` mode TopNavMegaMenu renders nothing.                                                                                                                                                                                                                                                                                                                                                                         | Current source and tests |
-| FR11 | The bar trigger and drawer trigger paint the shared focus outline.                                                                                                                                                                                                                                                                                                                                                           | Current source and tests |
+| ID   | Invariant                                                                                                                                                                                                                                                                                                                                                                                                                                             | Basis                    |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| FR1  | In `default` mode the trigger is a `<button>` showing `label` and a chevron that turns when open; it carries `top-nav-mega-menu`, the forwarded `ref`, and other DOM props, exposes `aria-expanded`, and its `aria-controls` names the panel.                                                                                                                                                                                                         | Current source and tests |
+| FR2  | The panel is an auto popover with the trigger as its native invoker, anchored below the closest enclosing `<nav>` and aligned to the trigger's TopNav slot. The browser's light dismiss closes it, and opening a sibling mega menu closes it.                                                                                                                                                                                                         | Current source and tests |
+| FR3  | On a hover-capable pointer, hovering opens after `delay` ms and the panel stays transient: leaving the trigger and panel closes it after `hideDelay` ms, and re-entering the trigger cancels a pending close. A click pins it open. A click within 500 ms of a hover-open pins rather than closes; re-hovering an open panel does not restart that window. After a close, the pointer entering the panel does not reopen it.                          | Current source and tests |
+| FR4  | Enter and Space open the panel and never close an open one. Escape closes it and returns focus to the trigger.                                                                                                                                                                                                                                                                                                                                        | Current source and tests |
+| FR5  | The panel is a `role="group"` named by `label`, not a `menu` and not a modal dialog. A click-open moves focus to the panel's first link or button; a hover-open leaves focus on the trigger.                                                                                                                                                                                                                                                          | Current source and tests |
+| FR6  | The panel paints its own surface: `items` in a two-column grid, then `featured` beside it, wrapping on narrow widths. The panel is at most `min(960px, 100dvw − 16px)` wide and at most the space below the nav tall; taller content scrolls inside the panel. Without a reduced-motion preference, opening fades and slides in from 4 px above.                                                                                                      | Current source           |
+| FR7  | `onOpenChange` fires `true` when the panel shows and `false` when it hides, whatever the cause.                                                                                                                                                                                                                                                                                                                                                       | Current source           |
+| FR8  | Caller `onClick`, `onMouseEnter`, and `onMouseLeave` on the trigger run before the built-in behavior and compose with it; a caller handler that calls `preventDefault()` cancels the built-in open or toggle for that event.                                                                                                                                                                                                                          | Current source and tests |
+| FR9  | In `drawer` mode the trigger is a full-width disclosure button with `aria-expanded` and `aria-controls` and `mode="drawer"`; activating it toggles the group, which holds `items` (rendering their drawer form) then `featured`. Collapsed content is `inert` and `aria-hidden`, and the group clips only while collapsed. Without a reduced-motion preference, expansion animates the group's height. The trigger's `aria-controls` names the group. | Current source and tests |
+| FR10 | In `mobile-bar` mode TopNavMegaMenu renders nothing.                                                                                                                                                                                                                                                                                                                                                                                                  | Current source and tests |
+| FR11 | The bar trigger and drawer trigger paint the shared focus outline.                                                                                                                                                                                                                                                                                                                                                                                    | Current source and tests |
 
 ### Allowed variation
 
@@ -123,8 +135,8 @@ No component-local concept beyond the consumer props in
 
 - **AR1 — Group, not menu.** A link grid is exposed as a named group, not an
   ARIA menu, and not a modal dialog.
-- **AR2 — Trigger state.** The trigger exposes its popup, expanded state, and the
-  panel it controls.
+- **AR2 — Trigger state.** The trigger exposes its expanded state and the panel
+  it controls.
 - **AR3 — Drawer disclosure.** The drawer trigger exposes its expanded state;
   collapsed content is unreachable.
 

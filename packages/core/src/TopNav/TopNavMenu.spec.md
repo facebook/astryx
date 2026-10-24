@@ -17,7 +17,7 @@ verified_by:
   ]
 modules: []
 families: [family:navigation-destinations, family:overlay-dismissal]
-design_specs: []
+design_specs: [design:reduced-motion]
 architecture:
   [
     architecture:interaction-modality,
@@ -38,7 +38,7 @@ system_specs: []
 | Behavior                | In the bar, a button that opens a menu of rich items on hover or click, with APG menu keyboard support. In the drawer, a disclosure that expands its items inline. Hidden in the mobile bar. |
 | End-user impact         | Mouse users preview destinations on hover; keyboard users move through items with arrows and typeahead; drawer users expand the group in place.                                              |
 | Builder impact          | None.                                                                                                                                                                                        |
-| Compatibility/readiness | Records shipped behavior; no public change.                                                                                                                                                  |
+| Compatibility/readiness | Records shipped behavior; no public change. Two current-state gaps (see Current-state impact).                                                                                               |
 | Review checks           | Reject wrapping the popup in a modal dialog, more than one tab stop among items, a collapsed drawer group that stays reachable, or caller trigger handlers that replace the built-in ones.   |
 | Governing rules         | `architecture:public-component-api` INV5 and INV7; `architecture:interaction-modality`; `component:TopNav` render modes.                                                                     |
 
@@ -59,6 +59,16 @@ expandable group in the mobile drawer. Consumer usage lives in
 - Migration decision: none
 
 Consumer migration instructions belong in consumer docs and release notes.
+
+## Current-state impact
+
+- **Drawer action items are not keyboard operable.** A drawer item with only
+  `onClick` renders a link without `href`, so keyboard users cannot reach or
+  activate it. WCAG 2.1.1 and `architecture:interaction-modality` INV4 require an
+  operable keyboard path.
+- **Motion under reduced motion.** The drawer group still animates its height
+  when reduced motion is requested; `design:reduced-motion` DR1 and DR3 forbid
+  resizing then.
 
 ## Ownership boundary
 
@@ -84,18 +94,18 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Behavioral and layout contract
 
-| ID   | Invariant                                                                                                                                                                                                                                                                                          | Basis                    |
-| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| FR1  | In `default` mode the trigger is a `<button>` showing `label` and a chevron that turns when open; it carries `top-nav-menu`, the forwarded `ref`, and other DOM props, and announces a menu popup with its expanded state.                                                                         | Current source and tests |
-| FR2  | On a hover-capable pointer, hovering the trigger opens the menu after `delay` ms and leaving closes it after `hideDelay` ms; focus stays on the trigger. A click opens the menu and moves focus to the first item; a click within 500 ms of a hover-open keeps it open.                            | Current source and tests |
-| FR3  | The popup is a non-modal popover below the trigger, aligned to the trigger's TopNav slot (start, center, or end). It contains one `role="menu"` named by `label`.                                                                                                                                  | Current source and tests |
-| FR4  | Each item is a `role="menuitem"`: an `<a>` when `href` is set (rendering its `href` only when the URL is accepted), else a `div`. Bar items render a native `<a>`, not the `LinkProvider` link. It shows an icon box, the title, and the description, and runs the item's `onClick` on activation. | Current source and tests |
-| FR5  | Items use a roving tab index with exactly one tab stop. ArrowDown and ArrowUp move focus and wrap at both ends; typing a character moves to the matching item; Enter or Space activates the focused item; Escape closes the menu and returns focus to the trigger.                                 | APG menu pattern; tests  |
-| FR6  | Caller `onClick`, `onMouseEnter`, and `onMouseLeave` on the trigger compose with the built-in open behavior instead of replacing it; caller attributes never override the popup wiring.                                                                                                            | Current source and tests |
-| FR7  | In `drawer` mode the trigger is a full-width disclosure button with `aria-expanded` and `aria-controls`; activating it toggles the group. Collapsed items are `inert` and `aria-hidden`, and the group clips only while collapsed. Expansion animates row height.                                  | Current source and tests |
-| FR8  | Drawer items render through the `LinkProvider` link component; activating one runs the item's `onClick` and then closes the AppShell drawer.                                                                                                                                                       | Current source           |
-| FR9  | In `mobile-bar` mode TopNavMenu renders nothing.                                                                                                                                                                                                                                                   | Current source           |
-| FR10 | The trigger, each bar item, and each drawer control paint the shared focus outline.                                                                                                                                                                                                                | Current source and tests |
+| ID   | Invariant                                                                                                                                                                                                                                                                                                      | Basis                    |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| FR1  | In `default` mode the trigger is a `<button>` showing `label` and a chevron that turns when open; it carries `top-nav-menu`, the forwarded `ref`, and other DOM props, and announces a menu popup with its expanded state.                                                                                     | Current source and tests |
+| FR2  | On a hover-capable pointer, hovering the trigger opens the menu after `delay` ms and leaving closes it after `hideDelay` ms; focus stays on the trigger. A click opens the menu and moves focus to the first item; a click within 500 ms of a hover-open keeps it open.                                        | Current source and tests |
+| FR3  | The popup is a non-modal popover below the trigger, aligned to the trigger's TopNav slot (start, center, or end). It contains one `role="menu"` named by `label`.                                                                                                                                              | Current source and tests |
+| FR4  | Each item is a `role="menuitem"`: an `<a>` when `href` is set (rendering its `href` only when the URL is accepted), else a `div`. Bar items render a native `<a>`, not the `LinkProvider` link. It shows an icon box, the title, and the description, and runs the item's `onClick` on activation.             | Current source and tests |
+| FR5  | Items use a roving tab index with exactly one tab stop. ArrowDown and ArrowUp move focus and wrap at both ends; typing a character moves to the matching item; Enter or Space activates the focused item; Escape closes the menu and returns focus to the trigger.                                             | APG menu pattern; tests  |
+| FR6  | Caller `onClick`, `onMouseEnter`, and `onMouseLeave` on the trigger run before the built-in open behavior and compose with it instead of replacing it; a caller handler that calls `preventDefault()` cancels the built-in open or toggle for that event. Caller attributes never override the popup wiring.   | Current source and tests |
+| FR7  | In `drawer` mode the trigger is a full-width disclosure button with `aria-expanded` and `aria-controls`; activating it toggles the group. Collapsed items are `inert` and `aria-hidden`, and the group clips only while collapsed. Without a reduced-motion preference, expansion animates the group's height. | Current source and tests |
+| FR8  | Drawer items render through the `LinkProvider` link component; activating one runs the item's `onClick` and then closes the AppShell drawer.                                                                                                                                                                   | Current source           |
+| FR9  | In `mobile-bar` mode TopNavMenu renders nothing.                                                                                                                                                                                                                                                               | Current source           |
+| FR10 | The trigger, each bar item, and each drawer control paint the shared focus outline.                                                                                                                                                                                                                            | Current source and tests |
 
 ### Allowed variation
 
