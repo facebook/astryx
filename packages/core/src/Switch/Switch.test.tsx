@@ -31,11 +31,7 @@ import {
   getAllInjectedCss,
   getForcedColorsRules,
 } from '../__tests__/forcedColors';
-import {
-  hasPressedArm,
-  hasReleaseFade,
-  readsPressStrength,
-} from '../__tests__/pressState';
+import {hasPressedArm, readsPressStrength} from '../__tests__/pressState';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {InternationalizationProvider} from '../i18n';
 
@@ -429,7 +425,9 @@ describe('Switch', () => {
           continue;
         }
         for (const node of record.addedNodes) {
-          if (node.textContent) {written.push(node.textContent);}
+          if (node.textContent) {
+            written.push(node.textContent);
+          }
         }
       }
     });
@@ -976,7 +974,7 @@ describe('Switch', () => {
       expect(hasPressedArm(thumb)).toBe(true);
     });
 
-    it('fades the touch press out from the row, with the track and thumb reading its strength', () => {
+    it('paints no pressed overlay under a finger: the thumb lifts instead', () => {
       const {container} = render(
         <Switch label="Notifications" value={false} onChange={() => {}} />,
       );
@@ -986,13 +984,14 @@ describe('Switch', () => {
       if (track == null || thumb == null || row == null) {
         throw new Error('the switch has no pressable row, track or thumb');
       }
-      // The controller writes the row; the row owns the strength and its
-      // release, and the two parts paint the pressed token at that strength
-      // on both touch arms, so they fade together.
-      expect(hasReleaseFade(row)).toBe(true);
+      // The row stays a pressable surface, so a touch on the switch does not
+      // light a pressable row around it; the touch presentation answers the
+      // press with the thumb's lift (useSwitchTouch.ts), not the overlay.
       for (const part of [track, thumb]) {
-        expect(readsPressStrength(part, '[data-astryx-press="on"]')).toBe(true);
-        expect(readsPressStrength(part)).toBe(true);
+        expect(readsPressStrength(part, '[data-astryx-press="on"]')).toBe(
+          false,
+        );
+        expect(readsPressStrength(part)).toBe(false);
       }
     });
   });

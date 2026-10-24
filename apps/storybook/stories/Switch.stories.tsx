@@ -627,7 +627,7 @@ export const PressedState: Story = {
     docs: {
       description: {
         story:
-          "Press and hold an enabled switch to paint the system's `--color-overlay-pressed` layer on its track and thumb together. The disabled example remains visually unchanged and cannot toggle.",
+          "Press and hold an enabled switch with a mouse to paint the system's `--color-overlay-pressed` layer on its track and thumb together; under a finger the thumb lifts into a glass lens instead. The disabled example remains visually unchanged and cannot toggle.",
       },
     },
   },
@@ -644,6 +644,37 @@ export const PressedState: Story = {
           onChange={() => {}}
           isDisabled
         />
+      </div>
+    );
+  },
+};
+
+export const InScrollingList: Story = {
+  name: 'In a scrolling list',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Switches in rows of a list taller than the screen, as in a settings page. On a touch screen a finger that starts moving at once scrolls the page; a finger that rests on a switch first keeps it, so moving then never scrolls and lifting toggles.',
+      },
+    },
+  },
+  render: () => {
+    const [values, setValues] = useState<boolean[]>(() =>
+      Array.from({length: 24}, (_, i) => i % 3 === 0),
+    );
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 20}}>
+        {values.map((value, i) => (
+          <Switch
+            key={i}
+            label={`Setting ${i + 1}`}
+            value={value}
+            onChange={next =>
+              setValues(current => current.map((v, j) => (j === i ? next : v)))
+            }
+          />
+        ))}
       </div>
     );
   },
