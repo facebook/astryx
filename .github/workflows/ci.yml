@@ -2681,6 +2681,17 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
+      # A badge is never shorter than one line of its own text: at the default
+      # size it keeps the theme's height, and when its text grows (a theme
+      # following the reader's iOS text size) the pill grows and still holds
+      # the label. Box and line heights need real layout.
+      - name: Run Badge larger-text contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/Badge/__tests__/BadgeLargerText.a11y.chromium.spec.ts \
+            --project chromium \
+            --output badge-larger-text-output
+
       # The heading-links module contract is broader than axe: exact fragments,
       # native sibling anchors, hover/focus/touch discovery, forced colors,
       # reduced motion, dark mode, and RTL geometry all need a real engine.

@@ -17,6 +17,10 @@
  *   chrome (scrollbars, native form controls, date pickers) reflects the mode.
  * - `data-astryx-theme` — enables @scope'd theme CSS to reach elements rendered
  *   outside the Theme wrapper (portals, toast fallback viewports).
+ * - `data-astryx-text-size` — on iOS only, the reader's text size category
+ *   (Dynamic Type), read from a hidden `font: -apple-system-body` probe and
+ *   kept current; themes with `typography.dynamicType` scale their font sizes
+ *   on it (see dynamicType.ts).
  *
  * For RSC / SSR, set `data-theme` on `<html>` in your root server layout
  * to avoid a flash of wrong theme before hydration:
@@ -43,6 +47,7 @@ import {colorVars, typographyVars} from './tokens.stylex';
 import {generateThemeCSS, type DefinedTheme} from './defineTheme';
 import {registerTheme} from './themeRegistry';
 import {dataAttr} from '../naming';
+import {syncTextSizeCategory} from './dynamicType';
 import {ThemeContext} from './useTheme';
 import {warnOnce} from '../utils/devWarning';
 
@@ -224,6 +229,20 @@ function useRootThemeSync(
   }, [isNested, mode, themeName]);
 }
 
+/**
+ * Hook to keep `<html data-astryx-text-size>` on the reader's text size
+ * category (iOS Dynamic Type) for the root provider; see dynamicType.ts.
+ * Skipped for nested Theme instances, and a no-op outside iOS WebKit.
+ */
+function useRootTextSizeSync(isNested: boolean): void {
+  useIsomorphicLayoutEffect(() => {
+    if (isNested || typeof document === 'undefined') {
+      return;
+    }
+    return syncTextSizeCategory(document);
+  }, [isNested]);
+}
+
 // =============================================================================
 // Component
 // =============================================================================
@@ -252,6 +271,7 @@ export function Theme({
 
   useThemeStyleInjection(theme);
   useRootThemeSync(isNested, mode, theme.name);
+  useRootTextSizeSync(isNested);
 
   // Get color-scheme style
   const colorSchemeStyle =
