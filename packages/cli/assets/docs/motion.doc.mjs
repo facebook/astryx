@@ -198,6 +198,24 @@ const calmTheme = defineTheme({
               '0.5s 0',
             ],
             [
+              'slider.dropSpring',
+              '--motion-slider-drop-spring',
+              'spring',
+              '0.5s 0.3',
+            ],
+            [
+              'slider.liftSpring',
+              '--motion-slider-lift-spring',
+              'spring',
+              '0.215s 0.4',
+            ],
+            [
+              'slider.releaseSpring',
+              '--motion-slider-release-spring',
+              'spring',
+              '0.4s 0',
+            ],
+            [
               'springs.actionSheetDismiss',
               '--motion-springs-action-sheet-dismiss',
               'spring',
