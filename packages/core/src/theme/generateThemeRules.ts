@@ -503,6 +503,10 @@ const SCOPED_STATUS_ROLE_DEFAULTS: ReadonlyArray<
 
 const SCOPED_STATUS_ROLE_SOURCES = new Map(SCOPED_STATUS_ROLE_DEFAULTS);
 
+const STATUS_ROLE_ORDER = new Map(
+  SCOPED_STATUS_ROLE_DEFAULTS.map(([role], index) => [role, index]),
+);
+
 type TokenValues = Record<string, unknown>;
 
 function stringifyTokenValue(value: unknown): string {
@@ -759,7 +763,12 @@ function generatedScopedStatusRoleDefaults(
       }
     }
   }
-  return entries;
+  // One canonical order whether a role is derived or aliased, so themes that
+  // differ only in which roles needed computing still emit comparable rules.
+  return entries.sort(
+    ([a], [b]) =>
+      (STATUS_ROLE_ORDER.get(a) ?? 0) - (STATUS_ROLE_ORDER.get(b) ?? 0),
+  );
 }
 
 function authoredStatusRoleEntries(

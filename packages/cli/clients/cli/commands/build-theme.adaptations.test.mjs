@@ -141,8 +141,14 @@ describe('theme build adaptations', () => {
     const adaptationAlias = '--color-text-success: var(--color-text-green);';
     const authoredRole = '--color-text-success: #123456;';
     expect(css).toContain('--color-on-info: var(--color-on-accent);');
-    expect(css).toContain('--color-text-info: var(--color-text-blue);');
-    expect(css).toContain('--color-on-info-muted: var(--color-text-blue);');
+    // The authored accent is a concrete hue, so theme generation derives the
+    // Info text and pale-fill content (theme-compilation INV17).
+    expect(css).toMatch(
+      /--color-text-info: light-dark\(#[0-9A-F]{6}, #[0-9A-F]{6}\);/,
+    );
+    expect(css).toMatch(
+      /--color-on-info-muted: light-dark\(#[0-9A-F]{6}, #[0-9A-F]{6}\);/,
+    );
     expect(css.split(infoAlias).length - 1).toBeGreaterThanOrEqual(2);
     expect(css).toContain(adaptationAlias);
     expect(css.split(authoredRole).length - 1).toBeGreaterThanOrEqual(2);

@@ -410,8 +410,8 @@ export function resolveThemeTokens(
   // CSS derives (architecture:theme-compilation INV17), so JavaScript and CSS
   // agree (architecture:theme-tokens INV6).
   for (const [key, value] of deriveStatusRoleTokens(
-    theme.tokens as Record<string, string>,
-    (theme.localTokens ?? {}) as Record<string, string>,
+    theme.tokens,
+    theme.localTokens ?? {},
   )) {
     resolved[key] = resolveXDSTokenValue(value, mode);
   }

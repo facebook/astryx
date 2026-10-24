@@ -8,15 +8,9 @@
  */
 
 import {describe, it, expect, beforeAll} from 'vitest';
-import * as stylex from '@stylexjs/stylex';
 import {render, screen, waitFor} from '@testing-library/react';
-import {colorVars} from '../theme/tokens.stylex';
 import {ProgressBar} from './ProgressBar';
-
-const semanticRoleStyles = stylex.create({
-  onInfo: {backgroundColor: colorVars['--color-on-info']},
-  onAccent: {backgroundColor: colorVars['--color-on-accent']},
-});
+import {getForcedColorsRules} from '../__tests__/forcedColors';
 
 // A labeled mark wraps the tick in a lazily-loaded Tooltip (React.lazy +
 // Suspense). Preload that chunk once so the Tooltip (and its
@@ -538,34 +532,6 @@ describe('ProgressBar', () => {
       expect(styleClasses(offMarks[1])).not.toBe(styleClasses(liveMarks[1]));
     });
 
-    it('pairs the accent fill with the info on-color', () => {
-      const {container} = render(
-        <>
-          <ProgressBar
-            value={60}
-            variant="accent"
-            label="A"
-            marks={[{value: 20, label: 'On fill'}]}
-          />
-          <span
-            data-testid="on-info-reference"
-            {...stylex.props(semanticRoleStyles.onInfo)}
-          />
-          <span
-            data-testid="on-accent-reference"
-            {...stylex.props(semanticRoleStyles.onAccent)}
-          />
-        </>,
-      );
-      const mark = container.querySelector<HTMLElement>(MARK)!;
-      const onInfoClass = styleClasses(screen.getByTestId('on-info-reference'));
-      const onAccentClass = styleClasses(
-        screen.getByTestId('on-accent-reference'),
-      );
-      expect(mark).toHaveClass(onInfoClass);
-      expect(mark).not.toHaveClass(onAccentClass);
-    });
-
     it('recolors marks per variant when they sit on the fill', () => {
       // Two bars at the same progress with different variants give their
       // on-fill marks different colors (different atomic classes), while
@@ -871,5 +837,16 @@ describe('ProgressBar theme target names', () => {
     expect(container.querySelector('.astryx-progressbar-track')).toBeNull();
     expect(container.querySelector('.astryx-progressbar-fill')).toBeNull();
     expect(container.querySelector('.astryx-progressbar-mark')).toBeNull();
+  });
+});
+
+// jsdom cannot emulate forced colors, so this asserts the compiled rule the
+// status fill relies on (architecture:theme-tokens INV11).
+describe('ProgressBar forced colors', () => {
+  it('keeps a visible boundary on the status fill', () => {
+    render(<ProgressBar value={40} variant="error" label="Upload" />);
+    const css = getForcedColorsRules();
+    expect(css).toContain('outline-style: solid;');
+    expect(css).toContain('outline-color: canvastext;');
   });
 });

@@ -51,6 +51,15 @@ const ATTACHED_OVERLAP = `var(--_field-status-overlap, ${spacingVars['--spacing-
 
 const styles = stylex.create({
   base: {
+    // Forced colors replace status fills with Canvas; this boundary keeps the
+    // fill's shape visible (architecture:theme-tokens INV11).
+    outlineWidth: {default: null, '@media (forced-colors: active)': '1px'},
+    outlineStyle: {default: null, '@media (forced-colors: active)': 'solid'},
+    outlineColor: {
+      default: null,
+      '@media (forced-colors: active)': 'CanvasText',
+    },
+    outlineOffset: {default: null, '@media (forced-colors: active)': '-1px'},
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: typeScaleVars['--text-supporting-leading'],

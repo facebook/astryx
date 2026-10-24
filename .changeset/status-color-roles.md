@@ -21,6 +21,7 @@ Astryx components move to the new roles, so their colours change where a theme's
 - Input and FileInput status borders use the border roles. Core's light warning border is now `#753F07` instead of `#E9AF08`. Butter's light success and warning input rims are now mid-ramp stops that reach 3:1.
 - Banner paints its built-in title, description, icon, and controls with the on-muted roles.
 - Status fills keep a visible boundary in forced-colors mode.
+- Chocolate and Matcha's `--color-on-success` and `--color-on-error` are now a dark ink instead of white, and Stone's `--color-on-success`, `--color-on-warning` and `--color-on-error` are white in light mode and near-black in dark mode instead of the status hue, so content on those fills reaches 4.5:1. Apps that pair them with `bg-success` and the other base fills get the readable ink too.
 - Neutral's strong fills are its reviewed status-fill colours. Stone, Gothic, and Y2K Info fills are blue instead of their neutral accent.
 
 Custom themes get every status role they don't set: theme generation derives readable text, a strong fill that carries its content, and on-muted content from the theme's base status colours (and accent, for Info). To keep a component's previous colour, set the matching role in your theme; for example, set `--color-icon-success` to your old `--color-success` value.

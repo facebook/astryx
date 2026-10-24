@@ -237,6 +237,15 @@ const styles = stylex.create({
   },
   fill: {
     height: '100%',
+    // Forced colors replace status fills with Canvas; this boundary keeps the
+    // fill's shape visible (architecture:theme-tokens INV11).
+    outlineWidth: {default: null, '@media (forced-colors: active)': '1px'},
+    outlineStyle: {default: null, '@media (forced-colors: active)': 'solid'},
+    outlineColor: {
+      default: null,
+      '@media (forced-colors: active)': 'CanvasText',
+    },
+    outlineOffset: {default: null, '@media (forced-colors: active)': '-1px'},
     borderRadius: radiusVars['--radius-full'],
     transitionProperty: 'width',
     transitionDuration: durationVars['--duration-medium'],
@@ -244,6 +253,15 @@ const styles = stylex.create({
   },
   indeterminateFill: {
     height: '100%',
+    // Forced colors replace status fills with Canvas; this boundary keeps the
+    // fill's shape visible (architecture:theme-tokens INV11).
+    outlineWidth: {default: null, '@media (forced-colors: active)': '1px'},
+    outlineStyle: {default: null, '@media (forced-colors: active)': 'solid'},
+    outlineColor: {
+      default: null,
+      '@media (forced-colors: active)': 'CanvasText',
+    },
+    outlineOffset: {default: null, '@media (forced-colors: active)': '-1px'},
     width: '40%',
     borderRadius: radiusVars['--radius-full'],
     animationName: {
@@ -288,7 +306,7 @@ const styles = stylex.create({
 
 const variantStyles = stylex.create({
   accent: {
-    backgroundColor: colorVars['--color-info-emphasized'],
+    backgroundColor: colorVars['--color-accent'],
   },
   success: {
     backgroundColor: colorVars['--color-success-emphasized'],
@@ -321,7 +339,7 @@ const variantStyles = stylex.create({
 // grayed-out component.
 const markOnFillStyles = stylex.create({
   accent: {
-    backgroundColor: colorVars['--color-on-info'],
+    backgroundColor: colorVars['--color-on-accent'],
   },
   success: {
     backgroundColor: colorVars['--color-on-success'],

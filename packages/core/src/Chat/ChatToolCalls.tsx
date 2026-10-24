@@ -336,7 +336,7 @@ const styles = stylex.create({
 
   // Status colors
   colorPending: {color: colorVars['--color-text-disabled']},
-  colorRunning: {color: colorVars['--color-icon-info']},
+  colorRunning: {color: colorVars['--color-accent']},
   colorComplete: {color: colorVars['--color-icon-success']},
   colorError: {color: colorVars['--color-icon-error']},
 });

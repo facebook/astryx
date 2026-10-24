@@ -532,7 +532,7 @@ const styles = stylex.create({
   },
   // Semantic status overrides for the icon — color only.
   iconAccent: {
-    color: colorVars['--color-icon-info'],
+    color: colorVars['--color-accent'],
   },
   iconSuccess: {
     color: colorVars['--color-icon-success'],
@@ -547,6 +547,15 @@ const styles = stylex.create({
   // Number badge — same box as every other indicator (see INDICATOR_SIZE).
   numberBadge: {
     display: 'grid',
+    // Forced colors replace status fills with Canvas; this boundary keeps the
+    // fill's shape visible (architecture:theme-tokens INV11).
+    outlineWidth: {default: null, '@media (forced-colors: active)': '1px'},
+    outlineStyle: {default: null, '@media (forced-colors: active)': 'solid'},
+    outlineColor: {
+      default: null,
+      '@media (forced-colors: active)': 'CanvasText',
+    },
+    outlineOffset: {default: null, '@media (forced-colors: active)': '-1px'},
     placeItems: 'center',
     width: INDICATOR_SIZE,
     height: INDICATOR_SIZE,
@@ -581,8 +590,8 @@ const styles = stylex.create({
   },
   // Semantic status overrides for the number badge — color only.
   numberAccent: {
-    backgroundColor: colorVars['--color-info-emphasized'],
-    color: colorVars['--color-on-info'],
+    backgroundColor: colorVars['--color-accent'],
+    color: colorVars['--color-on-accent'],
   },
   numberSuccess: {
     backgroundColor: colorVars['--color-success-emphasized'],
@@ -1225,19 +1234,17 @@ export function Step({
                     : progress === 'in-progress'
                       ? styles.iconInProgress
                       : styles.iconNotStarted
-          : status === 'accent'
-            ? styles.iconAccent
-            : statusGlyph === 'success'
-              ? styles.iconSuccess
-              : statusGlyph === 'warning'
-                ? styles.iconWarning
-                : statusGlyph === 'error'
-                  ? styles.iconError
-                  : progress === 'completed'
-                    ? styles.iconCompleted
-                    : progress === 'in-progress'
-                      ? styles.iconInProgress
-                      : styles.iconNotStarted;
+          : statusGlyph === 'success'
+            ? styles.iconSuccess
+            : statusGlyph === 'warning'
+              ? styles.iconWarning
+              : statusGlyph === 'error'
+                ? styles.iconError
+                : progress === 'completed'
+                  ? styles.iconCompleted
+                  : progress === 'in-progress'
+                    ? styles.iconInProgress
+                    : styles.iconNotStarted;
 
       indicatorNode = (
         <div
