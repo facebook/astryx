@@ -2332,6 +2332,29 @@ describe('NumberInput stepping', () => {
       ).not.toHaveAttribute('aria-disabled');
     });
 
+    it('commits nothing from a click on the stepper at the reached boundary (spec:AST-085 FR2)', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <NumberInput
+          label="Quantity"
+          value={5}
+          onChange={onChange}
+          min={0}
+          max={10}
+          hasNumberSteppers
+        />,
+      );
+      const input = screen.getByRole('spinbutton');
+      await user.clear(input);
+      await user.type(input, '10');
+      onChange.mockClear();
+      await user.click(
+        screen.getByRole('button', {name: 'Increment Quantity'}),
+      );
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
     it('disables both steppers with the input', () => {
       render(
         <NumberInput

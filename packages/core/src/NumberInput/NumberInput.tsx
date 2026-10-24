@@ -1014,6 +1014,11 @@ export function NumberInput({
             aria-label={t('@astryx.numberInput.incrementLabel', {label})}
             onPointerDown={event => event.preventDefault()}
             onClick={() => {
+              // An aria-disabled stepper does nothing, as a natively disabled
+              // one did (spec:AST-085 FR2).
+              if (isDisabled || isReadOnly || !canIncrement) {
+                return;
+              }
               inputRef.current?.focus();
               stepValue(1);
             }}
@@ -1040,6 +1045,11 @@ export function NumberInput({
             aria-label={t('@astryx.numberInput.decrementLabel', {label})}
             onPointerDown={event => event.preventDefault()}
             onClick={() => {
+              // An aria-disabled stepper does nothing, as a natively disabled
+              // one did (spec:AST-085 FR2).
+              if (isDisabled || isReadOnly || !canDecrement) {
+                return;
+              }
               inputRef.current?.focus();
               stepValue(-1);
             }}
