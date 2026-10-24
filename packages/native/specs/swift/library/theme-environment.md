@@ -84,8 +84,12 @@ settings system for an app to keep in step.
 
 - `packages/native/apple` has the `Astryx` product: the `Theme` and `Tokens`
   types, the `.astryxTheme(_:)` modifier, which sets the tint and a
-  single-mode theme's color scheme, and SwiftUI components that read the theme
-  from the `astryx` environment value.
+  single-mode theme's color scheme, and seven SwiftUI components (Banner,
+  Button, Card, Heading, Icon, Text, TextInput) that read the theme from the
+  `astryx` environment value. Components choose light or dark tokens from
+  `colorScheme`, with or without the modifier, scale text with
+  `dynamicTypeSize`, and draw a custom face one weight step heavier under Bold
+  Text.
 
 ## Open questions
 
