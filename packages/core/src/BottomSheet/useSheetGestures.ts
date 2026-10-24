@@ -40,7 +40,10 @@
  * the layout reconcile. The live offset is readable through
  * `activeOffsetRef`. Under a mouse the release keeps the theme's duration
  * and easing instead of UIKit's springs (releaseMotion.ts), on the same
- * channel.
+ * channel. Under a finger the host also presents and dismisses the sheet on
+ * that channel (`present` / `dismiss`): UIKit's sheet spring from below the
+ * screen and back, the dim on the same spring's progress, a fade on it under
+ * Reduce Motion.
  *
  * Those are pixels, and the stops behind them are relative to the viewport, so
  * a sheet at rest re-resolves its detent on `resize` / `orientationchange`,
@@ -114,6 +117,7 @@ import {
   themeCurve,
   type ReleaseMotion,
 } from './releaseMotion';
+import {readTouchPresentation} from '../utils/touchPresentation';
 import {resolveSheetRelease} from './sheetRelease';
 import {
   computeDetentOffsets,
@@ -439,6 +443,22 @@ export interface UseSheetGesturesResult {
    * gesture's travel into it. A no-op while travel is animating.
    */
   resetTravel: () => void;
+  /**
+   * Presents the sheet the way UIKit does under a finger: from below the
+   * screen to its detent on `springs.sheetPresent`, the dim on the same
+   * curve (a fade on that spring under Reduce Motion). Call from an effect
+   * as the sheet opens, before its dialog is shown (a child's effect runs
+   * before its host's): the dim is taken over at once, and the travel starts
+   * in a microtask, once every effect has run and the dialog has laid out.
+   * False under a mouse, whose entrance stays the stylesheet's.
+   */
+  present: () => boolean;
+  /**
+   * Dismisses the sheet the way UIKit does under a finger: off screen on
+   * `springs.sheetDismiss`, the dim on the same curve. Sets and returns
+   * `gestureExitRef`'s exit for the host to wait on; null under a mouse.
+   */
+  dismiss: () => SheetGestureExit | null;
   /**
    * How much of `settledOffset` is expressed as layout height rather than as a
    * transform. Equals `settledOffset` at the resizing detents; 0 at fully open
@@ -1333,6 +1353,178 @@ export function useSheetGestures({
     );
   }, [dismissRequest, isOpen, settledOffset, springTravel]);
 
+  // The dim for an offset of a sheet `height` tall: full at the shortest
+  // working detent and above, linear to clear at gone (UIKit's dim).
+  const dimForHeight = useCallback(
+    (offset: number, height: number) => {
+      const {offsets, peekOffset} = resolveDetents(height);
+      const shortest = offsets[offsets.length - 1];
+      return scrimOpacityForOffset(
+        offset,
+        offsets,
+        dismissedOffsetFor(
+          shortest,
+          visibleHeightForOffset(
+            height,
+            shortest,
+            offscreenBlockEndInsetRef.current,
+          ),
+        ),
+        peekOffset,
+      );
+    },
+    [resolveDetents],
+  );
+
+  // Present and dismiss: UIKit animates a sheet in and out on one critically
+  // damped spring (sheetPresent / sheetDismiss) and its dimming view's colour
+  // on the same spring, from clear to its resting dim and back (so the dim
+  // follows the spring's progress, not the drag's position map). Under
+  // Reduce Motion with Prefer Cross-Fade the sheet fades on that spring
+  // instead (the animator's crossfadeAs). Under a finger only.
+  const present = useCallback((): boolean => {
+    if (!readTouchPresentation().isTouch) {
+      return false;
+    }
+    // Before the host shows the dialog: its backdrop must not start its own
+    // fade-in.
+    beginScrimTracking();
+    queueMicrotask(() => {
+      const element = sheetElRef.current;
+      if (element == null || !isOpenRef.current) {
+        endScrimTracking(1);
+        return;
+      }
+      // Below the screen: the sheet's visible height at its rest.
+      const height = measureHeight();
+      const restOffset = settledOffset;
+      const distance = visibleHeightForOffset(
+        height,
+        restOffset,
+        offscreenBlockEndInsetRef.current,
+      );
+      const dimFor = (o: number) => dimForHeight(o, height);
+      if (distance <= 0 || height <= 0) {
+        endScrimTracking(dimFor(restOffset));
+        return;
+      }
+      travelBaseRef.current = settledOffset - settledLayoutOffsetRef.current;
+      animator.set({y: distance});
+      const at = performance.now();
+      const handle = animator.animate(
+        {y: 0},
+        {spring: springs.sheetPresent},
+        {at, crossfade: springs.sheetPresent, crossfadeAs: 'entrance'},
+      );
+      const curve = solveSpring(toSpring(springs.sheetPresent), {
+        from: distance,
+        to: 0,
+      });
+      const restingDim = dimFor(restOffset);
+      followScrim(
+        {
+          duration: curve.settleTime(0.5),
+          // The spring's progress, 0 below the screen to 1 at rest.
+          offsetAt: t => 1 - curve.value(t) / distance,
+        },
+        progress => restingDim * progress,
+        at,
+      );
+      travelHandleRef.current = handle;
+      void handle.finished.then(finished => {
+        if (travelHandleRef.current !== handle) {
+          return;
+        }
+        travelHandleRef.current = null;
+        if (finished) {
+          endScrimTracking(restingDim);
+        }
+      });
+    });
+    return true;
+  }, [
+    animator,
+    beginScrimTracking,
+    dimForHeight,
+    endScrimTracking,
+    followScrim,
+    measureHeight,
+    settledOffset,
+  ]);
+
+  const dismiss = useCallback((): SheetGestureExit | null => {
+    if (gestureExitRef.current != null) {
+      return gestureExitRef.current;
+    }
+    if (sheetElRef.current == null || !readTouchPresentation().isTouch) {
+      return null;
+    }
+    if (travelHandleRef.current != null) {
+      // A settle or the entrance still running: leave from where it is.
+      travelHandleRef.current = null;
+      animator.stop(['y']);
+    } else {
+      travelBaseRef.current = settledOffset - settledLayoutOffsetRef.current;
+    }
+    // Computed, not read from layout: by now the host may have rendered its
+    // closing style, whose transform the exit's held transform replaces in
+    // this same commit.
+    const height = measureHeight();
+    const from = animator.get('y');
+    const fromOffset =
+      settledLayoutOffsetRef.current + travelBaseRef.current + from;
+    // Below the screen: what is still visible of the sheet.
+    const distance = visibleHeightForOffset(
+      height,
+      fromOffset,
+      offscreenBlockEndInsetRef.current,
+    );
+    const startingDim = dimForHeight(fromOffset, height);
+    beginScrimTracking();
+    const at = performance.now();
+    const handle = animator.animate(
+      {y: from + distance},
+      {spring: springs.sheetDismiss},
+      {at, crossfade: springs.sheetDismiss, crossfadeAs: 'exit'},
+    );
+    const curve = solveSpring(toSpring(springs.sheetDismiss), {
+      from,
+      to: from + distance,
+    });
+    followScrim(
+      {
+        duration: curve.settleTime(0.5),
+        // The spring's progress, 0 where the sheet is to 1 below the screen.
+        offsetAt: t => (distance > 0 ? (curve.value(t) - from) / distance : 1),
+      },
+      progress => startingDim * (1 - progress),
+      at,
+    );
+    travelHandleRef.current = handle;
+    void handle.finished.then(finished => {
+      if (travelHandleRef.current === handle) {
+        travelHandleRef.current = null;
+      }
+      if (finished) {
+        endScrimTracking(0);
+      }
+    });
+    const base = travelBaseRef.current;
+    gestureExitRef.current = {
+      finished: handle.finished,
+      transform: base !== 0 ? `translateY(${base}px)` : 'none',
+    };
+    return gestureExitRef.current;
+  }, [
+    animator,
+    beginScrimTracking,
+    dimForHeight,
+    endScrimTracking,
+    followScrim,
+    measureHeight,
+    settledOffset,
+  ]);
+
   const beginDrag = useCallback(
     (event: ReactPointerEvent, sheetHeight: number, startCoord?: number) => {
       // A closing sheet is not grabbed: its exit owns the surface.
@@ -2065,5 +2257,7 @@ export function useSheetGestures({
     completeScrollAreaSettle,
     gestureExitRef,
     resetTravel,
+    present,
+    dismiss,
   };
 }

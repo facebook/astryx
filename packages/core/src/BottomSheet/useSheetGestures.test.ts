@@ -2377,3 +2377,203 @@ describe('useSheetGestures: the dim follows the sheet', () => {
     expect(Number(order[handBack - 1].slice(4))).toBeCloseTo(dimAt(360), 9);
   });
 });
+
+describe('useSheetGestures: present and dismiss under a finger', () => {
+  function stubMedia({reducedMotion = false}: {reducedMotion?: boolean} = {}) {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => ({
+        matches:
+          query.includes('pointer: coarse') ||
+          (reducedMotion && query.includes('prefers-reduced-motion')),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    );
+  }
+  beforeEach(() => {
+    stubMedia();
+    vi.stubGlobal('innerHeight', 800);
+  });
+
+  interface Played {
+    keyframes: Keyframe[];
+    options: KeyframeAnimationOptions & {pseudoElement?: string};
+  }
+  function recordAnimations(el: HTMLElement): Played[] {
+    const played: Played[] = [];
+    el.animate = vi.fn((keyframes, options) => {
+      played.push({
+        keyframes: keyframes as Keyframe[],
+        options: options as Played['options'],
+      });
+      return {cancel: vi.fn(), startTime: 0} as unknown as Animation;
+    });
+    return played;
+  }
+  function valueAt(
+    animation: Played,
+    ms: number,
+    read: (frame: Keyframe) => number,
+  ): number {
+    const duration = animation.options.duration as number;
+    const frames = animation.keyframes.map(frame => ({
+      t: (frame.offset as number) * duration,
+      v: read(frame),
+    }));
+    for (let i = 1; i < frames.length; i++) {
+      if (ms <= frames[i].t) {
+        const a = frames[i - 1];
+        const b = frames[i];
+        return a.v + ((b.v - a.v) * (ms - a.t)) / (b.t - a.t);
+      }
+    }
+    return frames[frames.length - 1].v;
+  }
+  const travelOf = (frame: Keyframe) =>
+    Number.parseFloat(String(frame.translate ?? '0px 0px').split(' ')[1]);
+  const opacityOf = (frame: Keyframe) => Number(frame.opacity);
+
+  /** A sheet resting with its top at 400 of an 800 px viewport, in a dialog. */
+  function presentedSheet() {
+    const onScrimOpacity = vi.fn();
+    const onScrimTracking = vi.fn();
+    const {hook} = setup({onScrimOpacity, onScrimTracking});
+    const dialog = document.createElement('dialog');
+    const target = makeTarget();
+    target.getBoundingClientRect = () =>
+      ({top: 400, height: SHEET_HEIGHT}) as DOMRect;
+    dialog.appendChild(target);
+    document.body.appendChild(dialog);
+    const sheetAnimations = recordAnimations(target);
+    const backdrop = recordAnimations(dialog);
+    act(() => hook.result.current.sheetRef(target));
+    return {
+      hook,
+      target,
+      sheetAnimations,
+      backdrop,
+      onScrimOpacity,
+      onScrimTracking,
+    };
+  }
+
+  it('presents from below the screen on the sheet spring, its dim on the same curve', async () => {
+    const {hook, sheetAnimations, backdrop, onScrimTracking} = presentedSheet();
+    let started = false;
+    act(() => {
+      started = hook.result.current.present();
+    });
+    expect(started).toBe(true);
+    // The dim is taken over at once, the travel once the dialog has laid out.
+    expect(onScrimTracking.mock.calls).toEqual([[true]]);
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const travel = sheetAnimations.at(-1) as Played;
+    const curve = solveSpring(toSpring(springs.sheetPresent), {
+      from: 400,
+      to: 0,
+    });
+    for (const ms of [0, 16, 50, 100, 200, 400]) {
+      expect(valueAt(travel, ms, travelOf)).toBeCloseTo(
+        curve.value(ms / 1000),
+        1,
+      );
+    }
+    // The dim rises with the spring's progress, clear below the screen.
+    const dim = backdrop.at(-1) as Played;
+    expect(dim.options.pseudoElement).toBe('::backdrop');
+    for (const ms of [0, 50, 100, 200, 400]) {
+      expect(valueAt(dim, ms, opacityOf)).toBeCloseTo(
+        1 - curve.value(ms / 1000) / 400,
+        2,
+      );
+    }
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(onScrimTracking.mock.calls).toEqual([[true], [false]]);
+  });
+
+  it('dismisses off screen on the sheet spring, for the host to wait on', () => {
+    const {hook, sheetAnimations, backdrop} = presentedSheet();
+    let exit: ReturnType<typeof hook.result.current.dismiss> = null;
+    act(() => {
+      exit = hook.result.current.dismiss();
+    });
+    expect(exit).not.toBeNull();
+    expect(hook.result.current.gestureExitRef.current).toBe(exit);
+    const travel = sheetAnimations.at(-1) as Played;
+    const curve = solveSpring(toSpring(springs.sheetDismiss), {
+      from: 0,
+      to: 400,
+    });
+    for (const ms of [16, 50, 100, 200, 400]) {
+      expect(valueAt(travel, ms, travelOf)).toBeCloseTo(
+        curve.value(ms / 1000),
+        1,
+      );
+    }
+    const dim = backdrop.at(-1) as Played;
+    for (const ms of [0, 50, 100, 200]) {
+      expect(valueAt(dim, ms, opacityOf)).toBeCloseTo(
+        1 - curve.value(ms / 1000) / 400,
+        2,
+      );
+    }
+    // A second close asks for the same exit.
+    act(() => {
+      expect(hook.result.current.dismiss()).toBe(exit);
+    });
+  });
+
+  it('fades in on the sheet spring under Reduce Motion instead of sliding', async () => {
+    stubMedia({reducedMotion: true});
+    const {hook, sheetAnimations} = presentedSheet();
+    act(() => {
+      hook.result.current.present();
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const fade = sheetAnimations.find(a =>
+      a.keyframes.some(frame => frame.opacity != null),
+    );
+    expect(fade).toBeDefined();
+    const opacity = fade as Played;
+    expect(valueAt(opacity, 0, opacityOf)).toBeCloseTo(0, 2);
+    expect(
+      valueAt(opacity, opacity.options.duration as number, opacityOf),
+    ).toBeCloseTo(1, 2);
+    // No frame of it slides: the travel lands at once.
+    for (const animation of sheetAnimations) {
+      for (const frame of animation.keyframes) {
+        if (frame.translate != null) {
+          expect(travelOf(frame)).toBe(0);
+        }
+      }
+    }
+  });
+
+  it('leaves the entrance and exit to the stylesheet under a mouse', () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({
+        matches: false,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    );
+    const {hook, sheetAnimations, onScrimTracking} = presentedSheet();
+    act(() => {
+      expect(hook.result.current.present()).toBe(false);
+      expect(hook.result.current.dismiss()).toBeNull();
+    });
+    expect(sheetAnimations).toHaveLength(0);
+    expect(onScrimTracking).not.toHaveBeenCalled();
+  });
+});

@@ -742,6 +742,93 @@ describe('BottomSheet', () => {
     });
   });
 
+  describe('under a finger', () => {
+    // A coarse primary pointer: the sheet opens and closes on UIKit's sheet
+    // spring, played on the travel channel (useSheetGestures present/dismiss).
+    beforeEach(() => {
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn((query: string) => ({
+          matches: query.includes('pointer: coarse'),
+          media: query,
+          onchange: null,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        })),
+      );
+      vi.stubGlobal('innerHeight', 800);
+    });
+
+    it('opens and closes on the sheet spring, closing the dialog when it lands', async () => {
+      const played: {keyframes: Keyframe[]; target: Element}[] = [];
+      // jsdom has no Web Animations: record what the animator plays.
+      Object.defineProperty(Element.prototype, 'animate', {
+        configurable: true,
+        writable: true,
+        value: function (this: Element, keyframes: Keyframe[]) {
+          played.push({keyframes, target: this});
+          return {cancel: vi.fn(), startTime: 0} as unknown as Animation;
+        },
+      });
+      const {rerender} = render(
+        <BottomSheet isOpen={false} onOpenChange={vi.fn()} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      rerender(
+        <BottomSheet isOpen onOpenChange={vi.fn()} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      vi.spyOn(getSheet(), 'getBoundingClientRect').mockReturnValue(
+        rect({top: 300, bottom: 848}),
+      );
+      await act(async () => {
+        await Promise.resolve();
+      });
+      const travel = (target: Element) =>
+        played
+          .filter(p => p.target === target)
+          .flatMap(p => p.keyframes)
+          .filter(frame => frame.translate != null)
+          .map(frame =>
+            Number.parseFloat(String(frame.translate).split(' ')[1]),
+          );
+      // In from below the screen: 500 px of travel to its rest.
+      const opening = travel(getSheet());
+      expect(opening[0]).toBeCloseTo(500, 0);
+      expect(opening.at(-1)).toBeCloseTo(0, 0);
+      const dialog = screen.getByRole('dialog');
+      expect(dialog.style.getPropertyValue('--_sheet-scrim-duration')).toBe(
+        '0s',
+      );
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2000);
+      });
+      expect(dialog.style.getPropertyValue('--_sheet-scrim-duration')).toBe('');
+
+      played.length = 0;
+      rerender(
+        <BottomSheet isOpen={false} onOpenChange={vi.fn()} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      // Out below the screen on the dismiss spring, not the stylesheet exit.
+      const closing = travel(getSheet());
+      expect(closing[0]).toBeCloseTo(0, 0);
+      expect(closing.at(-1)).toBeCloseTo(500, 0);
+      expect(dialog).toHaveAttribute('open');
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2000);
+      });
+      expect(dialog).not.toHaveAttribute('open');
+      delete (Element.prototype as {animate?: unknown}).animate;
+    });
+  });
+
   describe('swipe to dismiss', () => {
     it('requests close when dragged past the dismiss threshold', () => {
       const onOpenChange = vi.fn();
