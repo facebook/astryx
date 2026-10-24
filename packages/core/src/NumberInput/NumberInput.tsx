@@ -23,6 +23,7 @@ import {
   useState,
   useMemo,
   useCallback,
+  useEffect,
   useRef,
   type FocusEvent,
   type KeyboardEvent,
@@ -52,7 +53,15 @@ import {VisuallyHidden} from '../VisuallyHidden';
 import {useTooltip} from '../Tooltip';
 import {getInputARIA} from '../utils';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
-import {usePressFeedback} from '../hooks/usePressFeedback';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
+import {
+  paintPress,
+  readPressPaint,
+  usePressTracker,
+  type PointerKind,
+} from '../gestures';
+import {stepper, UIKIT_GESTURES} from '../motion/uikit';
+import {halfAt, StepperTracking, type StepperHalf} from './stepperTracking';
 import {inputDisabledFocusStyles} from '../Field/inputDisabledFocus';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
@@ -84,6 +93,10 @@ const padInlineEnd = `var(--astryx-number-input-padding-inline-end, ${padInline}
 const padBlockStart = `var(--astryx-number-input-padding-block-start, ${padBlockAll})`;
 const padBlockEnd = `var(--astryx-number-input-padding-block-end, ${padBlockAll})`;
 
+// The touch presentation's query (TOUCH_QUERY, utils/touchPresentation.ts) as
+// a media key, so the right control paints before hydration.
+const COARSE = '@media (pointer: coarse)';
+
 const styles = stylex.create({
   wrapper: {
     zIndex: 1,
@@ -98,6 +111,16 @@ const styles = stylex.create({
   },
   wrapperWithNumberSteppers: {
     paddingInlineEnd: 0,
+  },
+  // On a touch screen the steppers leave the field (numberSteppersTouch):
+  // the field takes its own end padding back and gives up the control's
+  // width and a gap beside it.
+  wrapperWithTouchSteppers: {
+    paddingInlineEnd: {default: 0, [COARSE]: padInlineEnd},
+    marginInlineEnd: {
+      default: null,
+      [COARSE]: `calc(94px + ${spacingVars['--spacing-2']})`,
+    },
   },
   input: {
     display: 'block',
@@ -155,6 +178,59 @@ const styles = stylex.create({
     overflow: 'hidden',
     borderStartEndRadius: 'var(--_field-radius)',
     borderEndEndRadius: 'var(--_field-radius)',
+    // A finger held on a stepper is pressing it, not selecting text: without
+    // these, iOS Safari selects the nearest text (the field's label) after
+    // about half a second and shows its edit menu. `manipulation` keeps
+    // rapid taps from double-tap zooming the page while pans and pinch-zoom
+    // stay the browser's.
+    WebkitTouchCallout: 'none',
+    WebkitUserSelect: 'none',
+    userSelect: 'none',
+    touchAction: 'manipulation',
+  },
+  // On a touch screen (the touch presentation's query, TOUCH_QUERY in
+  // utils/touchPresentation.ts) the steppers are one control beside the field,
+  // shaped like iOS 26's UIStepper (motion/uikit/stepper.ts `look`): a 94 x 32
+  // capsule of the theme's neutral fill, − on the left and + on the right in
+  // either writing direction, as UIKit draws it, and a 1 x 24 divider. StyleX
+  // inlines only same-file values, so the table's numbers are spelled here;
+  // NumberInput.stepperLook.test.tsx keeps them equal.
+  numberSteppersTouch: {
+    position: {default: null, [COARSE]: 'absolute'},
+    insetInlineStart: {
+      default: null,
+      [COARSE]: `calc(100% + ${borderVars['--border-width']} + ${spacingVars['--spacing-2']})`,
+    },
+    insetBlockStart: {default: null, [COARSE]: 'calc(50% - 16px)'},
+    // The increment button comes first in the DOM: reversed in a left-to-right
+    // page and in order in a right-to-left one, − lands on the left either way.
+    flexDirection: {
+      default: 'column',
+      [COARSE]: {default: 'row-reverse', ':is([dir="rtl"] *)': 'row'},
+    },
+    width: {default: spacingVars['--spacing-4'], [COARSE]: '94px'},
+    height: {default: null, [COARSE]: '32px'},
+    marginBlockStart: {default: `calc(-1 * ${padBlockStart})`, [COARSE]: 0},
+    marginBlockEnd: {default: `calc(-1 * ${padBlockEnd})`, [COARSE]: 0},
+    borderInlineStartWidth: {
+      default: borderVars['--border-width'],
+      [COARSE]: 0,
+    },
+    borderStartStartRadius: {default: null, [COARSE]: '16px'},
+    borderStartEndRadius: {default: 'var(--_field-radius)', [COARSE]: '16px'},
+    borderEndStartRadius: {default: null, [COARSE]: '16px'},
+    borderEndEndRadius: {default: 'var(--_field-radius)', [COARSE]: '16px'},
+    backgroundColor: {default: null, [COARSE]: colorVars['--color-neutral']},
+    '::after': {
+      content: {default: null, [COARSE]: '""'},
+      position: 'absolute',
+      insetBlockStart: '4px',
+      insetInlineStart: 'calc(50% - 0.5px)',
+      width: '1px',
+      height: '24px',
+      backgroundColor: colorVars['--color-track'],
+      pointerEvents: 'none',
+    },
   },
   numberStepperButton: {
     boxSizing: 'border-box',
@@ -174,6 +250,45 @@ const styles = stylex.create({
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     outline: 'none',
+  },
+  // Each half of the touch control: transparent over the capsule, so the
+  // press paint darkens just that half, with the glyph in the primary icon
+  // colour.
+  numberStepperButtonTouch: {
+    backgroundColor: {
+      default: colorVars['--color-background-surface'],
+      [COARSE]: 'transparent',
+    },
+    color: {
+      default: colorVars['--color-icon-secondary'],
+      [COARSE]: colorVars['--color-icon-primary'],
+    },
+  },
+  // UIKit draws a disabled half's glyph in the divider's colour.
+  numberStepperButtonDisabledTouch: {
+    color: {
+      default: colorVars['--color-icon-disabled'],
+      [COARSE]: colorVars['--color-track'],
+    },
+  },
+  decrementButtonTouch: {
+    borderBlockStartWidth: {
+      default: borderVars['--border-width'],
+      [COARSE]: 0,
+    },
+  },
+  // The column's chevrons, hidden on a touch screen.
+  chevronNotTouch: {
+    display: {default: null, [COARSE]: 'none'},
+  },
+  // UIKit's glyphs, drawn on a touch screen only (touchGlyphPaths): a 13pt
+  // box, 1.67pt strokes. Vector strokes keep their weight at every pixel
+  // ratio, where a 1.67px box would be snapped to a whole pixel.
+  touchGlyph: {
+    display: {default: 'none', [COARSE]: 'block'},
+    flexShrink: 0,
+    width: '13px',
+    height: '13px',
   },
   numberStepperButtonDisabled: {
     color: colorVars['--color-icon-disabled'],
@@ -203,6 +318,23 @@ const sizeStyles = stylex.create({
 });
 
 export type NumberInputSize = keyof typeof sizeStyles;
+
+/** UIStepper's glyphs in a 13pt box (motion/uikit/stepper.ts `look`). */
+const TOUCH_GLYPH_MINUS = 'M0 6.5H13';
+const TOUCH_GLYPH_PLUS = 'M0 6.5H13M6.5 0V13';
+
+/** A stepper glyph of the touch control, hidden with a mouse. */
+function TouchGlyph({path}: {path: string}) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 13 13"
+      fill="none"
+      {...stylex.props(styles.touchGlyph)}>
+      <path d={path} stroke="currentColor" strokeWidth={1.67} />
+    </svg>
+  );
+}
 
 import {groupStyles} from '../InputGroup/groupStyles';
 
@@ -582,7 +714,6 @@ export function NumberInput({
     containerClassName,
     containerStyle,
   });
-  const pressable = usePressFeedback();
   const t = useTranslator();
   const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
@@ -882,6 +1013,205 @@ export function NumberInput({
   const canIncrement = getNextValue(1) !== valueForStepping;
   const canDecrement = getNextValue(-1) !== valueForStepping;
 
+  // The kind of pointer that pressed a stepper, read when its click lands.
+  const stepperPointerTypeRef = useRef<string | null>(null);
+
+  const handleStepperPointerDown = (
+    event: React.PointerEvent<HTMLButtonElement>,
+  ) => {
+    // The stepper never takes focus: an editing field stays focused.
+    event.preventDefault();
+    stepperPointerTypeRef.current = event.pointerType;
+  };
+
+  const pressStepper = (
+    direction: StepDirection,
+    event: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    const pointerType = stepperPointerTypeRef.current;
+    stepperPointerTypeRef.current = null;
+    // An aria-disabled stepper does nothing, as a natively disabled one did
+    // (spec:AST-085 FR2).
+    if (
+      isDisabled ||
+      isReadOnly ||
+      (direction === 1 ? !canIncrement : !canDecrement)
+    ) {
+      return;
+    }
+    // A mouse click moves focus to the field, so the arrow keys and the wheel
+    // keep stepping. A finger, a pen or assistive technology steps the value
+    // without moving focus: on a phone, focusing the field would bring up the
+    // on-screen keyboard, which a stepper never does.
+    if (pointerType === 'mouse' && event.detail > 0) {
+      inputRef.current?.focus();
+    }
+    // A finger or a pen the steppers tracked has stepped already, at its
+    // lift or while held; its click is not another step.
+    if (
+      (pointerType === 'touch' || pointerType === 'pen') &&
+      stepperTrackedPressRef.current
+    ) {
+      stepperTrackedPressRef.current = false;
+      return;
+    }
+    stepValue(direction);
+  };
+
+  // A finger or a pen on the steppers is tracked as UIStepper tracks one
+  // (stepperTracking.ts, motion/uikit/stepper.ts): a tap steps at the lift, a
+  // held half repeats on UIKit's cadence, the finger can slide from one half
+  // to the other, and leaving the column stops the repeat. The press paints
+  // the half under the finger at once and clears at once, as UIKit's does;
+  // inside a scroll view it waits for the content-touch delay, and a scroll
+  // that takes the touch cancels it. A mouse keeps the click.
+  const stepperColumnRef = useRef<HTMLDivElement | null>(null);
+  const incrementRef = useRef<HTMLButtonElement | null>(null);
+  const decrementRef = useRef<HTMLButtonElement | null>(null);
+  // Whether the touch or pen press that a click follows was tracked here.
+  const stepperTrackedPressRef = useRef(false);
+  const stepperPressRef = useRef<{
+    pointerType: PointerKind | null;
+    downTime: number;
+    isDelayed: boolean;
+    /**
+     * The halves' centres in client px, read once at touch-down. A point
+     * belongs to the nearer one: the decrement half is below the increment in
+     * the column and beside it in the touch control.
+     */
+    centers: {
+      increment: {x: number; y: number};
+      decrement: {x: number; y: number};
+    } | null;
+    /** The half under the finger, kept through the lift for a quick tap's flash. */
+    half: StepperHalf | null;
+  }>({
+    pointerType: null,
+    downTime: 0,
+    isDelayed: false,
+    centers: null,
+    half: null,
+  });
+  const latestSteppingRef = useRef({
+    stepValue,
+    canIncrement,
+    canDecrement,
+    isDisabled,
+    isReadOnly,
+  });
+  useIsomorphicLayoutEffect(() => {
+    latestSteppingRef.current = {
+      stepValue,
+      canIncrement,
+      canDecrement,
+      isDisabled,
+      isReadOnly,
+    };
+  });
+  const [stepperTracking] = useState(
+    () =>
+      new StepperTracking({
+        step: half => {
+          const latest = latestSteppingRef.current;
+          if (
+            latest.isDisabled ||
+            latest.isReadOnly ||
+            (half === 'increment' ? !latest.canIncrement : !latest.canDecrement)
+          ) {
+            return false;
+          }
+          latest.stepValue(half === 'increment' ? 1 : -1);
+          return true;
+        },
+      }),
+  );
+  useEffect(() => () => stepperTracking.dispose(), [stepperTracking]);
+
+  const paintStepper = (half: StepperHalf | null) => {
+    for (const [own, button] of [
+      ['increment', incrementRef.current],
+      ['decrement', decrementRef.current],
+    ] as const) {
+      const next = half === own ? 'on' : 'none';
+      // Only real changes are written: an unchanged write still restyles.
+      if (button != null && readPressPaint(button) !== next) {
+        paintPress(button, next);
+      }
+    }
+  };
+
+  const stepperPressTracker = usePressTracker(stepperColumnRef, {
+    trackingExpansion: stepper.tracking.expansion,
+    isEnabled: () =>
+      !latestSteppingRef.current.isDisabled &&
+      !latestSteppingRef.current.isReadOnly,
+    onControlEvent: (event, touch) => {
+      const press = stepperPressRef.current;
+      if (event === 'touchDown') {
+        press.pointerType = touch.pointerType;
+        if (touch.pointerType === 'mouse') {
+          return;
+        }
+        // The one layout read of the press.
+        const centerOf = (button: HTMLButtonElement | null) => {
+          const rect = button?.getBoundingClientRect();
+          return rect == null
+            ? {x: 0, y: 0}
+            : {x: rect.left + rect.width / 2, y: rect.top + rect.height / 2};
+        };
+        press.centers = {
+          increment: centerOf(incrementRef.current),
+          decrement: centerOf(decrementRef.current),
+        };
+        press.downTime = touch.time;
+        // PressTracker's control profile delays a finger's highlight inside a
+        // scroll view; the press reaches the stepper when it lights.
+        press.isDelayed =
+          touch.pointerType === 'touch' &&
+          touch.scroll?.isInsideScroller === true;
+        press.half = halfAt(press.centers, touch);
+        stepperTrackedPressRef.current = true;
+        stepperTracking.begin(press.half);
+        return;
+      }
+      if (press.pointerType === 'mouse') {
+        return;
+      }
+      const isInside =
+        event === 'touchDragInside' ||
+        event === 'touchDragEnter' ||
+        event === 'touchUpInside';
+      const half: StepperHalf | null = isInside
+        ? halfAt(press.centers, touch)
+        : null;
+      if (event === 'touchCancel') {
+        stepperTracking.cancel();
+        press.half = null;
+      } else if (event === 'touchUpInside' || event === 'touchUpOutside') {
+        press.half = half;
+        stepperTracking.end(half);
+      } else {
+        press.half = half;
+        stepperTracking.move(half);
+      }
+      paintStepper(stepperPressTracker.isHighlighted ? press.half : null);
+    },
+    onHighlightChange: isHighlighted => {
+      const press = stepperPressRef.current;
+      if (press.pointerType === 'mouse') {
+        return;
+      }
+      if (isHighlighted) {
+        stepperTracking.deliver(
+          press.isDelayed
+            ? press.downTime + UIKIT_GESTURES.press.contentTouchDelay.value
+            : press.downTime,
+        );
+      }
+      paintStepper(isHighlighted ? press.half : null);
+    },
+  });
+
   // Handle clear button click
   const handleClear = useCallback(
     (e?: React.MouseEvent<HTMLButtonElement>) => {
@@ -932,7 +1262,10 @@ export function NumberInput({
         stylex.props(
           inputWrapperStyles.base,
           styles.wrapper,
-          hasNumberSteppers && styles.wrapperWithNumberSteppers,
+          hasNumberSteppers &&
+            (inputGroup
+              ? styles.wrapperWithNumberSteppers
+              : styles.wrapperWithTouchSteppers),
           sizeStyles[size],
           isDisabled && inputWrapperStyles.disabled,
           isDisabled && inputDisabledFocusStyles.ring,
@@ -1020,64 +1353,72 @@ export function NumberInput({
       )}
       {statusIcon}
       {hasNumberSteppers && (
-        <div {...stylex.props(styles.numberSteppers)}>
+        <div
+          ref={stepperColumnRef}
+          {...stylex.props(
+            styles.numberSteppers,
+            !inputGroup && styles.numberSteppersTouch,
+          )}>
           <button
+            ref={incrementRef}
             type="button"
             tabIndex={-1}
-            {...pressable}
             aria-disabled={
               isDisabled || isReadOnly || !canIncrement || undefined
             }
             aria-label={t('@astryx.numberInput.incrementLabel', {label})}
-            onPointerDown={event => event.preventDefault()}
-            onClick={() => {
-              // An aria-disabled stepper does nothing, as a natively disabled
-              // one did (spec:AST-085 FR2).
-              if (isDisabled || isReadOnly || !canIncrement) {
-                return;
-              }
-              inputRef.current?.focus();
-              stepValue(1);
-            }}
+            onPointerDown={handleStepperPointerDown}
+            onClick={event => pressStepper(1, event)}
             {...stylex.props(
               styles.numberStepperButton,
+              !inputGroup && styles.numberStepperButtonTouch,
               interactionOverlayStyles.backgroundImage,
               (isDisabled || isReadOnly || !canIncrement) &&
                 styles.numberStepperButtonDisabled,
+              (isDisabled || isReadOnly || !canIncrement) &&
+                !inputGroup &&
+                styles.numberStepperButtonDisabledTouch,
             )}>
             <Icon
               icon="numberInput:stepperDown"
               size="xsm"
               color="inherit"
-              xstyle={styles.incrementIcon}
+              xstyle={[
+                styles.incrementIcon,
+                !inputGroup && styles.chevronNotTouch,
+              ]}
             />
+            {!inputGroup && <TouchGlyph path={TOUCH_GLYPH_PLUS} />}
           </button>
           <button
+            ref={decrementRef}
             type="button"
             tabIndex={-1}
-            {...pressable}
             aria-disabled={
               isDisabled || isReadOnly || !canDecrement || undefined
             }
             aria-label={t('@astryx.numberInput.decrementLabel', {label})}
-            onPointerDown={event => event.preventDefault()}
-            onClick={() => {
-              // An aria-disabled stepper does nothing, as a natively disabled
-              // one did (spec:AST-085 FR2).
-              if (isDisabled || isReadOnly || !canDecrement) {
-                return;
-              }
-              inputRef.current?.focus();
-              stepValue(-1);
-            }}
+            onPointerDown={handleStepperPointerDown}
+            onClick={event => pressStepper(-1, event)}
             {...stylex.props(
               styles.numberStepperButton,
+              !inputGroup && styles.numberStepperButtonTouch,
               interactionOverlayStyles.backgroundImage,
               styles.decrementButton,
+              !inputGroup && styles.decrementButtonTouch,
               (isDisabled || isReadOnly || !canDecrement) &&
                 styles.numberStepperButtonDisabled,
+              (isDisabled || isReadOnly || !canDecrement) &&
+                !inputGroup &&
+                styles.numberStepperButtonDisabledTouch,
             )}>
-            <Icon icon="numberInput:stepperDown" size="xsm" color="inherit" />
+            <Icon
+              icon="numberInput:stepperDown"
+              size="xsm"
+              color="inherit"
+              xstyle={!inputGroup && styles.chevronNotTouch}
+            />
+            {!inputGroup && <TouchGlyph path={TOUCH_GLYPH_MINUS} />}
           </button>
         </div>
       )}
