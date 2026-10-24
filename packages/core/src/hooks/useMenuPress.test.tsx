@@ -82,6 +82,7 @@ interface HarnessProps {
   onHighlight?: (row: HTMLElement | null) => void;
   touchModel?: 'pointer' | 'uikit';
   longPressDelayMs?: number;
+  isInClosedPopover?: boolean;
   /** Receives the hook's return, for calls the trigger does not make. */
   pressRef?: {current: UseMenuPressReturn | null};
 }
@@ -95,6 +96,7 @@ function Harness({
   onHighlight,
   touchModel,
   longPressDelayMs,
+  isInClosedPopover = false,
   pressRef,
 }: HarnessProps) {
   const menuRef = useRef<HTMLDivElement>(null);
@@ -143,23 +145,26 @@ function Harness({
         }}>
         Open
       </button>
-      <div ref={menuRef} role="menu" tabIndex={-1} {...press.menuProps}>
-        {['A', 'B', 'C'].map(label => (
+      {/* The layer a menu shows in: closed when asked (a closed menu). */}
+      <div popover={isInClosedPopover ? 'auto' : undefined} data-testid="layer">
+        <div ref={menuRef} role="menu" tabIndex={-1} {...press.menuProps}>
+          {['A', 'B', 'C'].map(label => (
+            <div
+              key={label}
+              role="menuitem"
+              tabIndex={-1}
+              onClick={() => onSelect?.(label)}>
+              {label}
+            </div>
+          ))}
           <div
-            key={label}
             role="menuitem"
-            tabIndex={-1}
-            onClick={() => onSelect?.(label)}>
-            {label}
+            aria-disabled="true"
+            onClick={() => onSelect?.('D')}>
+            D (disabled)
           </div>
-        ))}
-        <div
-          role="menuitem"
-          aria-disabled="true"
-          onClick={() => onSelect?.('D')}>
-          D (disabled)
+          <div role="separator" data-testid="divider" />
         </div>
-        <div role="separator" data-testid="divider" />
       </div>
       <button type="button" data-testid="outside">
         Outside

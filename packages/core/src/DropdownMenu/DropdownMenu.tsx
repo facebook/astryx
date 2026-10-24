@@ -1569,9 +1569,11 @@ function DropdownMenuPopover({
     itemSelector: MENU_ITEM_SELECTOR,
     onTriggerPress: handleTriggerPress,
     onDismiss: closeMenu,
-    // Under a finger the trigger is UIMenu's pull-down button (spec:AST-094);
+    // Under a finger the trigger opens as spec:AST-094 FR29 states and a
+    // finger in the menu is tracked as UIMenu's list tracks it (FR26–FR30);
     // `presentation="popover"` pins the pointer model, today's included.
     touchModel: touchModes ? 'uikit' : 'pointer',
+    isOpen,
   });
   cancelMenuPressRef.current = menuPress.cancel;
 
@@ -1711,8 +1713,9 @@ function DropdownMenuPopover({
       host: surfaceHost,
       ownerId: menuId,
       menuMaxHeight: resolvedMaxHeight ?? undefined,
+      touchModes: touchModes === true,
     }),
-    [surfaceHost, menuId, resolvedMaxHeight],
+    [surfaceHost, menuId, resolvedMaxHeight, touchModes],
   );
 
   // Resolve menu content: data-driven items become components

@@ -40,6 +40,12 @@
  * - While a press is tracked in an overflowing menu, a pointer resting near
  *   the top or bottom edge scrolls the menu toward that edge (the shared
  *   timer of utils/edgeAutoscroll.ts).
+ * - Under the internal touch model `'uikit'` a finger that lands in the menu
+ *   is tracked as UIMenu's list tracks it instead (menuSelectionRecognizer.ts on the
+ *   gesture system, driving the shared action-group tracker): its row lights
+ *   after UIKit's content-touch delay, a tap acts at the lift, and in a menu
+ *   that scrolls a travelling finger scrolls it, on every touch device. A
+ *   mouse keeps the pointer model.
  *
  * The menu root is marked `data-astryx-menu-press` so a nested flyout (a DOM
  * descendant of its parent menu) can tell which level owns a press, and so a
@@ -73,6 +79,13 @@ import {
 } from './menuPressGesture';
 import {createNativeScrollProbe} from '../gestures/nativeScroll';
 import {UIKIT_GESTURES} from '../motion/uikit/gestures';
+import {getGestureHost} from '../gestures/GestureHost';
+import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
+import {
+  createActionGroupTracker,
+  type ActionGroupTracker,
+} from './actionGroupTracker';
+import {MenuSelectionGestureRecognizer} from './menuSelectionRecognizer';
 import {scroll} from '../motion/uikit/scroll';
 import {useLongPress, type UseLongPressHandlers} from './useLongPress';
 import {edgeAutoscroll} from '../utils/edgeAutoscroll';
@@ -261,10 +274,21 @@ export interface DropdownMenuPressOptions extends UseMenuPressOptions {
    * settle rule. `'uikit'` (`spec:AST-094` FR29): as the finger presses on a
    * trigger in a fixed bar, and inside a scroll view once the content-touch
    * delay has passed with no scroll; the opening finger picks only after
-   * UIMenu's handoff distance. A mouse is unaffected.
+   * UIMenu's handoff distance. `'uikit'` also tracks a finger that lands in
+   * the open menu as UIMenu's list tracks it (menuSelectionRecognizer.ts;
+   * `spec:AST-094` FR26 to FR30): its row lights after the content-touch
+   * delay, a tap acts at the lift, and in a menu that scrolls a travelling
+   * finger scrolls it. A mouse is unaffected.
    * @default 'pointer'
    */
   touchModel?: 'pointer' | 'uikit';
+  /**
+   * Whether the menu shows. Under the touch model `'uikit'` the finger
+   * tracking joins the gesture system only while it does, so a closed menu
+   * adds no listener anywhere. Without it, a menu in a popover follows the
+   * popover's own toggle.
+   */
+  isOpen?: boolean;
 }
 
 export interface UseMenuPressReturn {
@@ -388,6 +412,32 @@ function isInMenuTree(element: Element, root: HTMLElement): boolean {
   return owner != null && getOutermostRoot(owner) === root;
 }
 
+/**
+ * The release a finger's recognized press hands the activation: a primary
+ * button at the lift's position, with no modifiers.
+ */
+function syntheticRelease(
+  row: HTMLElement,
+  {x, y}: {x: number; y: number},
+): PointerEvent {
+  const view = row.ownerDocument.defaultView;
+  const init = {
+    bubbles: true,
+    cancelable: true,
+    button: 0,
+    clientX: x,
+    clientY: y,
+    screenX: x,
+    screenY: y,
+  };
+  const PointerEventCtor = view?.PointerEvent;
+  return (
+    typeof PointerEventCtor === 'function'
+      ? new PointerEventCtor('pointerup', {...init, pointerType: 'touch'})
+      : new MouseEvent('pointerup', init)
+  ) as PointerEvent;
+}
+
 interface ResolvedPoint {
   row: HTMLElement | null;
   isInMenu: boolean;
@@ -397,6 +447,31 @@ interface ResolvedPoint {
 // =============================================================================
 // Hook
 // =============================================================================
+
+/**
+ * Whether the menu root is rendered: false inside a closed popover. An
+ * environment without `checkVisibility` counts it as showing.
+ */
+/**
+ * Follows a popover's `beforetoggle` (whether it is about to show); returns
+ * the function that stops following it.
+ */
+function watchToggle(
+  layer: Element,
+  onToggle: (isOpen: boolean) => void,
+): () => void {
+  const onBeforeToggle = (event: Event) => {
+    onToggle((event as ToggleEvent).newState === 'open');
+  };
+  layer.addEventListener('beforetoggle', onBeforeToggle);
+  return () => layer.removeEventListener('beforetoggle', onBeforeToggle);
+}
+
+function isShowing(element: Element): boolean {
+  return typeof element.checkVisibility === 'function'
+    ? element.checkVisibility()
+    : true;
+}
 
 /**
  * The press model for a menu: the row under the release acts, the highlight
@@ -931,6 +1006,13 @@ export function useDropdownMenuPress(
       if (pointerType === 'mouse' && event.button !== 0) {
         return;
       }
+      if (
+        pointerType !== 'mouse' &&
+        optionsRef.current.touchModel === 'uikit'
+      ) {
+        // The selection recognizer tracks fingers (see below).
+        return;
+      }
       // The innermost model owns the press: a flyout is a DOM descendant of
       // its parent menu, and both would otherwise track the same pointer.
       const target = event.target as Element | null;
@@ -1038,6 +1120,190 @@ export function useDropdownMenuPress(
       triggerGestureRef.current === currentGesture()
     );
   }, []);
+
+  // --- A finger in the menu, as UIMenu's list tracks it ('uikit') ----------
+
+  // The shared action-group tracker: the rows' rects are read once when the
+  // press begins, the highlight is focus (DEC-6), the lift runs the row as
+  // its own click would. Rows of the open flyouts are part of the group.
+  const trackerRef = useRef<ActionGroupTracker | null>(null);
+  const releaseRef = useRef<{x: number; y: number}>({x: 0, y: 0});
+  trackerRef.current ??= createActionGroupTracker(() => ({
+    roots: () => {
+      const menu = optionsRef.current.menuRef.current;
+      if (menu == null) {
+        return [];
+      }
+      // The whole menu tree is one group: the outermost root holds the
+      // flyouts nested in it, but a menu the root renders beside itself (a
+      // sub-menu's dialog in the root's surface host) is not inside it.
+      const root = getOutermostRoot(menu);
+      return root.contains(menu) ? [root] : [root, menu];
+    },
+    itemSelector: optionsRef.current.itemSelector,
+    highlightExpansion: 0,
+    paintsHighlight: false,
+    onHighlightChange: row => highlightRef.current(row),
+    onActivate: row =>
+      activateRef.current(row, syntheticRelease(row, releaseRef.current)),
+  }));
+  useEffect(() => () => trackerRef.current?.dispose(), []);
+  const highlightRef = useRef(highlight);
+  highlightRef.current = highlight;
+  const activateRef = useRef(activate);
+  activateRef.current = activate;
+  const getScrollerRef = useRef(getScroller);
+  getScrollerRef.current = getScroller;
+
+  const [selection] = useState(
+    () =>
+      new MenuSelectionGestureRecognizer({
+        name: 'MenuSelection',
+        scrolls: () => getScrollerRef.current() != null,
+        // The rows' own press tracking never sees the finger; the browser's
+        // click for a recognized press is withheld (the row runs at the lift).
+        delaysTouchesBegan: true,
+        shouldReceiveTouch: (_recognizer, touch) => {
+          // The innermost menu owns the finger: a flyout tracks its own.
+          const target = touch.target;
+          return (
+            target instanceof Element &&
+            target.closest(MENU_PRESS_ROOT_SELECTOR) ===
+              optionsRef.current.menuRef.current
+          );
+        },
+      }),
+  );
+  const onSelection = useCallback(
+    (recognizer: MenuSelectionGestureRecognizer) => {
+      const tracker = trackerRef.current;
+      if (tracker == null) {
+        return;
+      }
+      switch (recognizer.state) {
+        case 'began': {
+          // The press begins where the finger landed, then follows it.
+          const landing = recognizer.landingLocation();
+          tracker.begin(landing.x, landing.y);
+          const {x, y} = recognizer.location();
+          if (x !== landing.x || y !== landing.y) {
+            tracker.move(x, y);
+          }
+          break;
+        }
+        case 'changed': {
+          const {x, y} = recognizer.location();
+          tracker.move(x, y);
+          break;
+        }
+        case 'ended': {
+          const {x, y} = recognizer.location();
+          if (tracker.isTracking) {
+            tracker.move(x, y);
+          } else {
+            // A tap: the row under it highlights and acts at the lift.
+            tracker.begin(x, y);
+          }
+          releaseRef.current = {x, y};
+          // The browser's own click for this finger is withheld by the
+          // gesture host; a late one (WebKit aims it at the row the finger
+          // landed on) is swallowed here too, as for every tracked press.
+          armStrayClick(getDocument());
+          tracker.end();
+          break;
+        }
+        case 'cancelled':
+          tracker.cancel();
+          if (recognizer.endedByAnotherFinger) {
+            // A click the browser still reports for the first finger acts
+            // on nothing (FR4, FR5).
+            armStrayClick(getDocument());
+          }
+          break;
+        case 'possible':
+        case 'failed':
+          break;
+      }
+    },
+    [getDocument],
+  );
+  // Synchronizes with the selection recognizer (gesture system): its state
+  // changes drive the action-group tracker.
+  useEffect(() => selection.addListener(onSelection), [selection, onSelection]);
+  const isSelectionEnabled =
+    options.touchModel === 'uikit' && (options.isEnabled ?? true);
+  // Synchronizes the selection recognizer's enabled flag. Turning it off
+  // mid-press cancels the recognizer, whose listener cancels the tracker
+  // (a consumer's onHighlight(null)).
+  useIsomorphicLayoutEffect(() => {
+    selection.setEnabled(isSelectionEnabled);
+  }, [selection, isSelectionEnabled]);
+  // Synchronizes the gesture host: the recognizer is attached to the menu
+  // root only while the menu shows, so a closed menu adds no listeners to
+  // the page. A menu in a popover follows the popover's beforetoggle; one
+  // outside a popover is attached while it is in the document. The root is
+  // re-read on every commit: a layer mounts its content after the hook's
+  // first commit, and a flyout's on open.
+  const selectionHostRef = useRef<{
+    element: Element;
+    layer: Element | null;
+    detach: (() => void) | null;
+    stopWatching: () => void;
+  } | null>(null);
+  const isMenuOpen = options.isOpen;
+  useIsomorphicLayoutEffect(() => {
+    const element =
+      isSelectionEnabled && isMenuOpen !== false
+        ? options.menuRef.current
+        : null;
+    if (selectionHostRef.current?.element === element) {
+      return;
+    }
+    const previous = selectionHostRef.current;
+    previous?.stopWatching();
+    previous?.detach?.();
+    if (element == null) {
+      selectionHostRef.current = null;
+      return;
+    }
+    const layer = element.closest('[popover]');
+    const entry: NonNullable<typeof selectionHostRef.current> = {
+      element,
+      layer,
+      detach: null,
+      stopWatching: () => {},
+    };
+    const setAttached = (attached: boolean) => {
+      if (attached && entry.detach == null) {
+        // The menu declares its own touch-action (FR4).
+        entry.detach = getGestureHost(element.ownerDocument).attach(
+          element,
+          selection,
+          {manageStyle: false},
+        );
+      } else if (!attached && entry.detach != null) {
+        entry.detach();
+        entry.detach = null;
+      }
+    };
+    if (layer == null || isMenuOpen === true) {
+      // The owner says it shows (or nothing else can tell).
+      setAttached(true);
+    } else {
+      setAttached(isShowing(element));
+      entry.stopWatching = watchToggle(layer, isOpen => setAttached(isOpen));
+    }
+    selectionHostRef.current = entry;
+  });
+  // Detaches from the gesture host on unmount.
+  useEffect(
+    () => () => {
+      selectionHostRef.current?.stopWatching();
+      selectionHostRef.current?.detach?.();
+      selectionHostRef.current = null;
+    },
+    [],
+  );
 
   const cancel = useCallback(() => {
     // The host closed the menu under the gesture: end it with no effect of

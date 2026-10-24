@@ -93,6 +93,11 @@ export interface DropdownMenuSurfaceValue {
   ownerId: string;
   /** The root's resolved `menuMaxHeight`, which a drilled-in view caps at. */
   menuMaxHeight?: string;
+  /**
+   * Whether the root's touch modes apply (its resolved presentation): a
+   * sub-menu tracks a finger as the root does.
+   */
+  touchModes: boolean;
 }
 
 /**
