@@ -36,7 +36,7 @@ system_specs: [spec:AST-012, spec:AST-027]
 | Behavior                | One page frame: skip link, then a header region, an inline side region, and one `main` region. Below the mobile breakpoint the side nav leaves the page and AppShell composes a mobile drawer from the nav slots, unless `mobileNav` disables or replaces it.                      |
 | End-user impact         | Keyboard users get a skip link to the main region; screen-reader users get one banner and one main landmark; phone-width users reach the side nav through a toggle and drawer while page content, its input values, and focus survive the layout switch.                           |
 | Builder impact          | None. Callers fill slots and choose height, variant, content padding, and mobile behavior.                                                                                                                                                                                         |
-| Compatibility/readiness | Records shipped behavior; no prop, default, or export changes. The shell's stacking values are an implementation gap against `spec:AST-027` (see Current-state impact).                                                                                                            |
+| Compatibility/readiness | Records shipped behavior; no prop, default, or export changes. Two implementation gaps: page-level stacking values (`spec:AST-027`) and a fill-height main region that is not a tab stop (`spec:AST-025`); see Current-state impact.                                               |
 | Review checks           | Reject a second `main` or banner landmark from AppShell, a skip link that is not the first focusable element or does not move focus to `main`, a breakpoint that treats equality as mobile, or remounting page content when the breakpoint changes.                                |
 | Governing rules         | `spec:AST-012` FR8 (width points), `family:layout-regions` FR9, `architecture:theme-application` INV10, `spec:AST-027` FR1–FR5 (local stacking), `architecture:component-theming-surface`.                                                                                         |
 
@@ -70,6 +70,11 @@ Consumer migration instructions belong in consumer docs and release notes.
   ordered against unrelated page content rather than inside an isolated shell
   surface. `spec:AST-027` FR2–FR4 require local values inside a surface-owned
   isolation boundary and no page-wide bands.
+- **The fill-height main region is not a tab stop while it overflows.** In
+  `height="fill"` the main region is a scroll container, but it is never a
+  sequential tab stop, so keyboard users reach overflowing content only through
+  the skip link or focusable content inside it. `spec:AST-025` FR12 requires
+  effective scroll content to stay keyboard reachable.
 
 ## Ownership boundary
 
@@ -132,7 +137,7 @@ the only component record in the AppShell root.
 | FR1  | The root element carries `app-shell`, the forwarded `ref`, `data-testid`, and other DOM props, and contains, in order: the skip link, the Layout frame (header region, inline side region, content region), then any mobile drawer.                                                                                                                                                                                                                                                                                                                                | Current source and tests             |
 | FR2  | A slot is present when its value is renderable: not `null`, `undefined`, a boolean, or an empty string. A component that renders nothing still counts as present.                                                                                                                                                                                                                                                                                                                                                                                                  | Current source and public types      |
 | FR3  | The header region renders only when `topNav` or `banner` is present; it carries `app-shell-header` and `role="banner"`, places `banner` above `topNav`, and is never inside another landmark. The sidenav-only mobile top bar (FR9) also carries `app-shell-header` and takes `role="banner"` only when no header region renders. AppShell renders at most one banner landmark.                                                                                                                                                                                    | Current source and tests             |
-| FR4  | `children` render in one region with `role="main"`, `id="astryx-app-shell-main"`, and `tabIndex=-1`. Its padding is `contentPadding`, default `0`. Programmatic focus on it draws no focus ring because it is never a sequential tab stop.                                                                                                                                                                                                                                                                                                                         | Current source and tests             |
+| FR4  | `children` render in one region with `role="main"` and `id="astryx-app-shell-main"`, programmatically focusable so the skip link can move focus to it; programmatic focus on it draws no focus ring. Its padding is `contentPadding`, default `0`. Whether it is a sequential tab stop is keyboard access to a scroll region (`spec:AST-025` FR12).                                                                                                                                                                                                                | Current source and tests             |
 | FR5  | The skip link is the first focusable element in the shell. It links to `#astryx-app-shell-main`, shows the translated `@astryx.appShell.skipToContent` text, is visually hidden until focused, and on activation moves focus to the main region.                                                                                                                                                                                                                                                                                                                   | WCAG 2.4.1; current source and tests |
 | FR6  | `fill` sizes the root to `100dvh` and the inline side region and main region scroll on their own. `auto` gives the root a `100dvh` minimum, makes the header sticky at the block start, keeps the inline side region sticky below the measured header height with its own scrolling, and lets the page scroll. Header height is measured only in `auto`.                                                                                                                                                                                                           | Current source and tests             |
 | FR7  | Variant backgrounds: `wash` paints body background on the frame, nav areas, and content; `surface` paints surface on all three; `section` paints surface on the frame and divides the nav areas from content, and in `auto` the header paints surface itself; `elevated` paints body background on the frame and nav areas and surface on content (FR16 for the corner).                                                                                                                                                                                           | Current source and tests             |
@@ -265,9 +270,11 @@ reachability, not a decision that it must stay unthemeable.
 | FR7, FR16           | `AppShell.stories.tsx` and visual baselines                                                  | `elevated` with both navs and with the mobile nav             | A changed `elevated` background or missing corner shows in visual review.        | `audit:AppShell/visual`        |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                                                                | Consumer anatomy and current targets                          | Missing, extra, stale, or multiply assigned mappings fail repository validation. | `audit:AppShell/theming`       |
 
-The `wash`, `surface`, and fill-height `section` backgrounds in FR7, FR12's
-`mobileNav={false}`, `content`, and `hasToggle: false` branches, FR15, and PR2
-are read from source; no focused test or baseline checks them yet.
+The `wash`, `surface`, and fill-height `section` backgrounds in FR7; FR9's
+drawer-node clause; FR10's reduced-motion hold; FR11's `mobileNav.onOpenChange`
+call; FR12's `mobileNav={false}`, `content`, and `hasToggle: false` branches;
+FR15; and PR2 are read from source; no focused test or baseline checks them
+yet.
 
 ## Decision log
 
