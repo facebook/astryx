@@ -106,9 +106,10 @@ import {useMediaQuery} from '../hooks';
 import {
   createAnimator,
   type Animator,
+  type MotionCurve,
   type MotionHandle,
 } from '../motion/animator';
-import type {SpringDescription} from '../motion/spring';
+import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
 import {registerSpringsTable, springs} from '../motion/uikit/springs';
 import {
   readReleaseMotion,
@@ -136,21 +137,26 @@ interface SheetDetents {
   peekOffset: number | null;
 }
 
-// Where a release is judged, and how it moves, follows the pointer
-// (releaseMotion.ts, sheetRelease.ts). Under a finger it is UIKit's, and a sheet
-// released at rest dismisses once it is more than halfway from its shortest
-// detent to gone; everywhere else today's rule dismisses past
-// DEFAULT_DISMISS_OVERSHOOT_RATIO of that height. Either way that line is
-// where the scrim reaches clear.
-function restingDismissOffset(
+// Gone: the sheet's top at the bottom of the screen. A release under a finger
+// can carry the sheet there (sheetRelease.ts).
+function dismissedOffsetFor(
+  maxOffset: number,
+  shortestDetentHeight: number,
+): number {
+  return maxOffset + shortestDetentHeight;
+}
+// Where the scrim reaches clear. Under a finger, gone: UIKit's dim is linear
+// from the shortest detent to the dismissed position. Under a mouse, today's
+// dismiss line: DEFAULT_DISMISS_OVERSHOOT_RATIO of the shortest detent's
+// height below it.
+function scrimClearOffset(
   maxOffset: number,
   shortestDetentHeight: number,
   isUIKit: boolean,
 ): number {
-  return (
-    maxOffset +
-    shortestDetentHeight * (isUIKit ? 0.5 : DEFAULT_DISMISS_OVERSHOOT_RATIO)
-  );
+  return isUIKit
+    ? dismissedOffsetFor(maxOffset, shortestDetentHeight)
+    : maxOffset + shortestDetentHeight * DEFAULT_DISMISS_OVERSHOOT_RATIO;
 }
 // Under a mouse the release speed is today's: the pointer's speed over
 // its last stretch, not between its last two samples (one slow sample before
@@ -319,12 +325,19 @@ export interface UseSheetGesturesOptions {
   onSnap?: (heightPx: number) => void;
   /**
    * Called with the scrim opacity the sheet should show (1 = fully visible,
-   * 0 = hidden) as the drag moves and on settle. Full while the sheet is at
-   * or above its mid detent, fading to 0 as it collapses onto the shortest
-   * "peek" detent — thinning to a faint glance state without fully clearing — and
-   * on the dismiss overshoot. Lets the owner mirror it onto the scrim.
+   * 0 = hidden) as the drag moves and on settle. Full at the shortest working
+   * detent and above; below it, linear in the sheet's position to 0 at the
+   * dismissed position (UIKit's dim), or to a faint glance state at a "peek"
+   * detent. Lets the owner mirror it onto the scrim.
    */
   onScrimOpacity?: (opacity: number) => void;
+  /**
+   * Given by a host whose scrim is a modal dialog's `::backdrop`. While true,
+   * the dim follows the sheet with no easing of its own: a gesture writes it
+   * at once, and a release plays it on the compositor in lockstep with the
+   * sheet. False hands it back, at the value last written.
+   */
+  onScrimTracking?: (tracking: boolean) => void;
 }
 
 export interface SheetContentProps {
@@ -468,6 +481,7 @@ export function useSheetGestures({
   snapHeights,
   onSnap,
   onScrimOpacity,
+  onScrimTracking,
 }: UseSheetGesturesOptions): UseSheetGesturesResult {
   const [dragOffset, setDragOffset] = useState(0);
   const [settledOffset, setSettledOffset] = useState(0);
@@ -584,12 +598,88 @@ export function useSheetGestures({
   const canDismissRef = useRef(canDismiss);
   const onSnapRef = useRef(onSnap);
   const onScrimOpacityRef = useRef(onScrimOpacity);
+  const onScrimTrackingRef = useRef(onScrimTracking);
   useEffect(() => {
     onDismissRef.current = onDismiss;
     canDismissRef.current = canDismiss;
     onSnapRef.current = onSnap;
     onScrimOpacityRef.current = onScrimOpacity;
+    onScrimTrackingRef.current = onScrimTracking;
   });
+
+  // The scrim, while a gesture or its release moves it (`onScrimTracking`):
+  // the release plays the dim on the dialog's ::backdrop with the same clock
+  // as the sheet, each frame's value read from where the sheet is on its
+  // curve, as UIKit recomputes its dim from position every frame.
+  const scrimAnimatorRef = useRef<Animator | null>(null);
+  const isScrimTrackingRef = useRef(false);
+  // Stops a release's dim where it is, and says where that was.
+  const stopScrimFollow = useCallback((): number | null => {
+    const scrim = scrimAnimatorRef.current;
+    if (scrim == null) {
+      return null;
+    }
+    const current = scrim.get('opacity');
+    scrim.dispose();
+    scrimAnimatorRef.current = null;
+    return current;
+  }, []);
+  // A gesture takes the dim: a release's dim still playing is picked up
+  // where it is, and the host stops easing it.
+  const beginScrimTracking = useCallback(() => {
+    const current = stopScrimFollow();
+    if (current != null) {
+      onScrimOpacityRef.current?.(current);
+    }
+    if (!isScrimTrackingRef.current && onScrimTrackingRef.current != null) {
+      isScrimTrackingRef.current = true;
+      onScrimTrackingRef.current(true);
+    }
+  }, [stopScrimFollow]);
+  // The motion is over: the host gets the dim back at its final value.
+  const endScrimTracking = useCallback(
+    (dim: number) => {
+      stopScrimFollow();
+      onScrimOpacityRef.current?.(dim);
+      if (isScrimTrackingRef.current) {
+        isScrimTrackingRef.current = false;
+        onScrimTrackingRef.current?.(false);
+      }
+    },
+    [stopScrimFollow],
+  );
+  // Plays the dim along the sheet's curve: `offsetAt(t)` is where the sheet
+  // is `t` s after `at`.
+  const followScrim = useCallback(
+    (
+      curve: {duration: number; offsetAt: (t: number) => number},
+      dimFor: (offset: number) => number,
+      at: number,
+    ) => {
+      const dialog = sheetElRef.current?.closest('dialog');
+      if (!isScrimTrackingRef.current || dialog == null) {
+        return;
+      }
+      stopScrimFollow();
+      const dim = (t: number) => dimFor(curve.offsetAt(t));
+      const dimCurve: MotionCurve = {
+        duration: curve.duration,
+        at: dim,
+        velocity: t => {
+          const h = 0.0005;
+          const a = Math.max(0, t - h);
+          const b = Math.min(curve.duration, t + h);
+          return b > a ? (dim(b) - dim(a)) / (b - a) : 0;
+        },
+      };
+      const scrim = createAnimator(dialog, {pseudoElement: '::backdrop'});
+      scrimAnimatorRef.current = scrim;
+      scrim.play({opacity: dimCurve}, {at});
+    },
+    [stopScrimFollow],
+  );
+  // The dim map of the last release, for a spring-back that interrupts it.
+  const lastDimForRef = useRef<((offset: number) => number) | null>(null);
 
   // Live drag bookkeeping (refs so pointermove doesn't churn renders).
   const dragStateRef = useRef<{
@@ -794,8 +884,13 @@ export function useSheetGestures({
       gestureExitRef.current = null;
       travelHandleRef.current = null;
       animator.set({y: 0});
+      stopScrimFollow();
+      if (isScrimTrackingRef.current) {
+        isScrimTrackingRef.current = false;
+        onScrimTrackingRef.current?.(false);
+      }
     }
-  }, [animator, isOpen, recordSettledLayoutOffset]);
+  }, [animator, isOpen, recordSettledLayoutOffset, stopScrimFollow]);
 
   // The fully-open height for detent math. Prefer the ResizeObserver-locked
   // value; fall back to a live measure of the tracked sheet element if the
@@ -919,7 +1014,7 @@ export function useSheetGestures({
       scrimOpacityForOffset(
         target,
         offsets,
-        restingDismissOffset(
+        scrimClearOffset(
           maxOffset,
           shortestDetentHeight,
           readTouchPresentation().isTouch,
@@ -988,55 +1083,84 @@ export function useSheetGestures({
       layoutOffset: number,
       spring: SpringDescription,
       velocity?: number,
+      dimFor?: (offset: number) => number,
       crossfadeAs?: 'exit',
     ): MotionHandle => {
       // The springs table's roles, so a theme's values for them apply: once,
       // before the sheet's first animation (motion/roles.ts).
       registerSpringsTable();
-      const to = offset - layoutOffset - travelBaseRef.current;
+      const base = layoutOffset + travelBaseRef.current;
+      const to = offset - base;
+      const from = animator.get('y');
       const motion = releaseMotionRef.current;
+      // One clock for the sheet and its dim.
+      const at = performance.now();
       // Under reduced motion the animator's own cross-fade replaces the
       // travel (design:reduced-motion). A finger started it, so it fades
       // whatever the primary pointer (DR2).
       const touchRelease = dragTouchRef.current;
-      // Thrown up onto the tallest detent, the 80 % damped spring overshoots
-      // above it; the sheet extends only its reserve below the screen, so
-      // the hand-off is capped to keep the page from showing under it.
-      const handed = velocity ?? animator.getVelocity('y');
-      const v =
-        motion.kind === 'uikit' && offset === 0
-          ? limitOvershoot(
-              spring,
-              animator.get('y'),
-              to,
-              handed,
-              offscreenBlockEndInsetRef.current,
-            )
-          : handed;
-      const handle =
-        motion.kind === 'theme'
-          ? animator.play(
-              {y: themeCurve(animator.get('y'), to, motion)},
-              {crossfadeAs, touchRelease},
-            )
-          : animator.animate(
-              {y: to},
-              {spring, velocity: {y: v}},
-              {crossfadeAs, touchRelease},
-            );
+      let handle: MotionHandle;
+      if (motion.kind === 'theme') {
+        const curve = themeCurve(from, to, motion);
+        handle = animator.play({y: curve}, {at, crossfadeAs, touchRelease});
+        if (dimFor != null) {
+          followScrim(
+            {duration: curve.duration, offsetAt: t => base + curve.at(t)},
+            dimFor,
+            at,
+          );
+        }
+      } else {
+        // Thrown up onto the tallest detent, the 80 % damped spring overshoots
+        // above it; the sheet extends only its reserve below the screen, so
+        // the hand-off is capped to keep the page from showing under it.
+        const handed = velocity ?? animator.getVelocity('y');
+        const v =
+          offset === 0
+            ? limitOvershoot(
+                spring,
+                from,
+                to,
+                handed,
+                offscreenBlockEndInsetRef.current,
+              )
+            : handed;
+        handle = animator.animate(
+          {y: to},
+          {spring, velocity: {y: v}},
+          {at, crossfadeAs, touchRelease},
+        );
+        if (dimFor != null) {
+          const curve = solveSpring(toSpring(spring), {from, to, velocity: v});
+          followScrim(
+            {
+              duration: curve.settleTime(0.5),
+              offsetAt: t => base + curve.value(t),
+            },
+            dimFor,
+            at,
+          );
+        }
+      }
       travelHandleRef.current = handle;
       void handle.finished.then(finished => {
         if (travelHandleRef.current !== handle) {
           return;
         }
         travelHandleRef.current = null;
-        if (finished && settlingLayoutOffsetRef.current != null) {
+        if (!finished) {
+          return;
+        }
+        if (dimFor != null) {
+          endScrimTracking(dimFor(offset));
+        }
+        if (settlingLayoutOffsetRef.current != null) {
           completeScrollAreaSettle();
         }
       });
       return handle;
     },
-    [animator, completeScrollAreaSettle],
+    [animator, completeScrollAreaSettle, endScrimTracking, followScrim],
   );
 
   // The host calls this right after it writes a resting transform: the travel
@@ -1096,11 +1220,31 @@ export function useSheetGestures({
         state.naturalEndGap,
         releaseAnimates(),
       );
+      const cancelDimFor = (o: number) => {
+        const {offsets: stops, peekOffset: peek} = resolveDetents(state.height);
+        const shortest = stops[stops.length - 1];
+        return scrimOpacityForOffset(
+          o,
+          stops,
+          scrimClearOffset(
+            shortest,
+            visibleHeightForOffset(
+              state.height,
+              shortest,
+              offscreenBlockEndInsetRef.current,
+            ),
+            releaseMotionRef.current.kind === 'uikit',
+          ),
+          peek,
+        );
+      };
       if (settlingLayoutOffsetRef.current != null) {
         springTravel(
           state.baseOffset,
           state.committedLayoutOffset,
           springs.sheetDetent,
+          undefined,
+          cancelDimFor,
         );
       }
 
@@ -1114,21 +1258,33 @@ export function useSheetGestures({
         maxOffset,
         offscreenBlockEndInsetRef.current,
       );
-      const dismissOffset = restingDismissOffset(
+      const clearOffset = scrimClearOffset(
         maxOffset,
         shortestDetentHeight,
         releaseMotionRef.current.kind === 'uikit',
       );
-      onScrimOpacityRef.current?.(
-        scrimOpacityForOffset(
-          state.baseOffset,
-          offsets,
-          dismissOffset,
-          peekOffset,
-        ),
-      );
+      if (settlingLayoutOffsetRef.current == null) {
+        endScrimTracking(
+          scrimOpacityForOffset(
+            state.baseOffset,
+            offsets,
+            clearOffset,
+            peekOffset,
+          ),
+        );
+      } else {
+        onScrimOpacityRef.current?.(
+          scrimOpacityForOffset(
+            state.baseOffset,
+            offsets,
+            clearOffset,
+            peekOffset,
+          ),
+        );
+      }
     },
     [
+      endScrimTracking,
       prepareScrollAreaSettle,
       releaseAnimates,
       resolveDetents,
@@ -1172,13 +1328,20 @@ export function useSheetGestures({
         offscreenBlockEndInsetRef.current,
       );
       const isUIKit = releaseMotionRef.current.kind === 'uikit';
-      const dismissOffset = restingDismissOffset(
+      const dismissedOffset = dismissedOffsetFor(
+        maxOffset,
+        shortestDetentHeight,
+      );
+      // Where the scrim reaches clear, and the dim at any offset this release
+      // passes through.
+      const clearOffset = scrimClearOffset(
         maxOffset,
         shortestDetentHeight,
         isUIKit,
       );
-      // Gone: the top of the sheet at the bottom of the screen.
-      const dismissedOffset = maxOffset + shortestDetentHeight;
+      const dimFor = (o: number) =>
+        scrimOpacityForOffset(o, offsets, clearOffset, peekOffset);
+      lastDimForRef.current = dimFor;
       // UIKit's rule under a finger; today's under a mouse (sheetRelease.ts).
       const release = isUIKit
         ? resolveSheetRelease({
@@ -1216,6 +1379,7 @@ export function useSheetGestures({
             baseLayoutOffset,
             release.spring,
             velocity,
+            dimFor,
             'exit',
           );
           const base = travelBaseRef.current;
@@ -1225,6 +1389,8 @@ export function useSheetGestures({
           };
           setDismissRequest(request => request + 1);
         } else {
+          // The host's own exit fades the dim from where it is.
+          endScrimTracking(dimFor(renderedOffset));
           foldTravel();
         }
         onDismissRef.current();
@@ -1245,7 +1411,9 @@ export function useSheetGestures({
         releaseAnimates(),
       );
       if (settlingLayoutOffsetRef.current != null) {
-        springTravel(target, layoutOffset, release.spring, velocity);
+        springTravel(target, layoutOffset, release.spring, velocity, dimFor);
+      } else {
+        endScrimTracking(dimFor(target));
       }
       recordSettledLayoutOffset(targetLayoutOffset);
       settledDetentIndexRef.current = Math.max(0, release.index);
@@ -1257,15 +1425,14 @@ export function useSheetGestures({
           offscreenBlockEndInsetRef.current,
         ),
       );
-      onScrimOpacityRef.current?.(
-        scrimOpacityForOffset(target, offsets, dismissOffset, peekOffset),
-      );
+      onScrimOpacityRef.current?.(dimFor(target));
       if (target !== baseOffset) {
         // A short tick where the platform vibrates (gestures/haptics.ts).
         playHaptic('impactLight');
       }
     },
     [
+      endScrimTracking,
       foldTravel,
       prepareScrollAreaSettle,
       recordSettledLayoutOffset,
@@ -1290,6 +1457,8 @@ export function useSheetGestures({
       settledOffset,
       settledLayoutOffsetRef.current,
       springs.sheetDetent,
+      undefined,
+      lastDimForRef.current ?? undefined,
     );
     return () => {
       if (travelHandleRef.current === handle) {
@@ -1347,6 +1516,7 @@ export function useSheetGestures({
         travelBaseRef.current = settledOffset - baseLayoutOffset;
       }
       activeOffsetRef.current = baseOffset;
+      beginScrimTracking();
       // Read before this drag turns transitions off (releaseMotion.ts).
       releaseMotionRef.current = readReleaseMotion(sheetElRef.current);
       const tracker = new VelocityTracker();
@@ -1382,6 +1552,7 @@ export function useSheetGestures({
     },
     [
       animator,
+      beginScrimTracking,
       lockSelection,
       recordSettledLayoutOffset,
       settledOffset,
@@ -1506,13 +1677,17 @@ export function useSheetGestures({
         floorOffset,
         offscreenBlockEndInsetRef.current,
       );
-      const dismissOffset = restingDismissOffset(
-        floorOffset,
-        shortestDetentHeight,
-        releaseMotionRef.current.kind === 'uikit',
-      );
       onScrimOpacityRef.current?.(
-        scrimOpacityForOffset(next, offsets, dismissOffset, peekOffset),
+        scrimOpacityForOffset(
+          next,
+          offsets,
+          scrimClearOffset(
+            floorOffset,
+            shortestDetentHeight,
+            releaseMotionRef.current.kind === 'uikit',
+          ),
+          peekOffset,
+        ),
       );
     },
     [resolveDetents, updateScrollPreservationInset, writeLiveTransform],

@@ -313,6 +313,8 @@ interface BottomSheetPanelProps extends BaseProps<HTMLDivElement> {
   isPageScrollLocked?: boolean;
   onDismiss: () => void;
   onScrimOpacity: (opacity: number) => void;
+  /** Given by a host whose scrim is the dialog's ::backdrop; see useSheetGestures. */
+  onScrimTracking?: (tracking: boolean) => void;
   onElementChange?: (element: HTMLDivElement | null) => void;
   onMotionStart?: (motion: BottomSheetPanelMotion) => void;
   onMotionComplete?: (motion: BottomSheetPanelMotion) => void;
@@ -444,6 +446,7 @@ export function BottomSheetPanel({
   isPageScrollLocked = false,
   onDismiss,
   onScrimOpacity,
+  onScrimTracking,
   onElementChange,
   onMotionStart,
   onMotionComplete,
@@ -533,6 +536,7 @@ export function BottomSheetPanel({
     onDismiss,
     snapHeights,
     onScrimOpacity,
+    onScrimTracking,
   });
 
   const {getViewportProps, getContentProps} = useScrollableArea({
