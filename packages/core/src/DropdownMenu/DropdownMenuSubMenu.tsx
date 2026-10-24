@@ -373,7 +373,7 @@ interface DropdownMenuSubMenuBaseProps extends Omit<
    * `aria-haspopup="dialog"`, Tab and Shift+Tab walk the header's controls,
    * the rows as one stop and the footer's controls and wrap, and Escape
    * returns to the row. A pointer leaving the flyout does not close it while
-   * focus is inside. A `ContextMenu` does not show it.
+   * focus is inside.
    */
   header?: ReactNode;
   /**
@@ -511,15 +511,15 @@ export function DropdownMenuSubMenu(
   // With a header or footer the sub-menu's surface holds controls that are not
   // menu items, so it is a modal dialog around the sub-menu's menu, rendered
   // into the root's surface host: outside every menu element. A root that
-  // renders no host (no surface context, as in ContextMenu) has nowhere
-  // outside its menu to put them, so the sub-menu shows its rows alone there.
+  // renders no host (no surface context) has nowhere outside its menu to
+  // put them, so the sub-menu shows its rows alone there.
   const wantsRegions = isRenderable(header) || isRenderable(footer);
   const rootHostsSurfaces = rootSurface != null;
   const hasRegions = wantsRegions && rootHostsSurfaces;
   const surfaceHost = rootSurface?.host.getElement() ?? null;
   useDevWarning(
     'DropdownMenuSubMenu',
-    'header and footer show only inside a DropdownMenu; this menu has no place outside its rows for them, so they are not rendered.',
+    "header and footer show only in a DropdownMenu or in a ContextMenu's pointer menu; this menu has no place outside its rows for them, so they are not rendered.",
     wantsRegions && !rootHostsSurfaces,
   );
   const frameId = useId();

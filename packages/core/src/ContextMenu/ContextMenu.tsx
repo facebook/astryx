@@ -57,7 +57,10 @@ import {renderDropdownItems} from '../DropdownMenu/renderDropdownItems';
 import {
   DropdownMenuContext,
   DropdownMenuRootOpenContext,
+  DropdownMenuSurfaceContext,
   type DropdownMenuContextValue,
+  type DropdownMenuSurfaceHost,
+  type DropdownMenuSurfaceValue,
 } from '../DropdownMenu/DropdownMenuContext';
 import {
   MENU_ITEM_ROLES,
@@ -67,10 +70,16 @@ import {
 } from '../DropdownMenu/menuItemRoles';
 import {useMenuOverflow} from '../DropdownMenu/useMenuOverflow';
 import {useMenuDrillIn} from '../DropdownMenu/useMenuDrillIn';
+import {
+  openSheetLevel,
+  resolveSheetLevel,
+  type SheetPathEntry,
+} from '../DropdownMenu/menuSheetPath';
 import {useListFocus} from '../hooks/useListFocus';
 import {useMenuPress} from '../hooks/useMenuPress';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useLongPress} from '../hooks/useLongPress';
+import {useInteractionModalityTracking} from '../utils/interactionModality';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {
   colorVars,
@@ -80,7 +89,7 @@ import {
   easeVars,
   shadowVars,
 } from '../theme/tokens.stylex';
-import {mergeProps, rtlStyles} from '../utils';
+import {isRenderable, mergeProps, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {StyleXStyles} from '../theme/types';
 import {themeProps} from '../utils/themeProps';
@@ -129,7 +138,12 @@ const styles = stylex.create({
   },
   menu: {
     boxSizing: 'border-box',
-    display: 'flex',
+    display: {
+      default: 'flex',
+      // A sub-menu's drilled-in view with a header or footer shows in the
+      // surface host that follows, in the menu's place.
+      ':has(~ * > [data-astryx-submenu-regions="view"]:not([hidden]))': 'none',
+    },
     flexDirection: 'column',
     gap: spacingVars['--spacing-0-5'],
     maxHeight: '300px',
@@ -158,6 +172,27 @@ const styles = stylex.create({
   popover: {
     minWidth: '160px',
   },
+  // Where a sub-menu with a header or footer renders its surface: beside the
+  // menu, never inside it. It owns no box until such a sub-menu's drilled-in
+  // view shows there; then the menu steps aside (see `menu`) and the host
+  // paints the menu's surface in its place, under the menu's theme target and
+  // the caller's styling.
+  surfaceHost: {
+    boxSizing: 'border-box',
+    '--_dropdown-menu-radius': radiusVars['--radius-container'],
+    borderRadius: 'var(--_dropdown-menu-radius)',
+    backgroundColor: colorVars['--color-background-popover'],
+    boxShadow: shadowVars['--shadow-low'],
+  },
+  // Applied after the caller's styling, so the host owns no box until a view
+  // shows.
+  surfaceHostDisplay: {
+    display: {
+      default: 'contents',
+      ':has(> [data-astryx-submenu-regions="view"]:not([hidden]))': 'block',
+    },
+  },
+
   popoverCustomWidth: (width: string | number) => ({
     minWidth: typeof width === 'number' ? `${width}px` : width,
   }),
@@ -174,6 +209,13 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-background-surface'],
     outline: 'none',
     userSelect: 'none',
+  },
+  // A sub-level's header or footer: caller content, so text inside it stays
+  // selectable and editable under the sheet's no-select rows.
+  sheetRegion: {
+    paddingInline: spacingVars['--spacing-3'],
+    paddingBlock: spacingVars['--spacing-2'],
+    userSelect: 'auto',
   },
   sheetHeader: {
     display: 'flex',
@@ -355,10 +397,20 @@ export function ContextMenu({
   // does not fall to <body> after Escape or outside-click dismissal.
   const triggerFocusRef = useRef<HTMLElement | null>(null);
 
+  // Records how the user last interacted, so a sub-menu's drilled-in view with
+  // a header or footer shows the keyboard focus ring only after keyboard
+  // input, as in DropdownMenu.
+  useInteractionModalityTracking();
+
   const [isOpen, setIsOpen] = useState(false);
-  const [submenuPath, setSubmenuPath] = useState<ContextMenuItemData[]>([]);
-  const currentSubmenu = submenuPath.at(-1);
+  const [submenuPath, setSubmenuPath] = useState<SheetPathEntry[]>([]);
+  // The opened level as the caller renders it now: its rows, header and
+  // footer stay live while it shows.
+  const currentSubmenu = resolveSheetLevel(items, submenuPath);
   const currentItems = currentSubmenu?.items ?? items;
+  // A level whose row has a header or footer shows them around its actions.
+  const levelHeader = currentSubmenu?.header;
+  const levelFooter = currentSubmenu?.footer;
   const currentTitle = currentSubmenu?.label ?? label;
   const sheetLabel = typeof currentTitle === 'string' ? currentTitle : label;
 
@@ -458,10 +510,29 @@ export function ContextMenu({
       ),
   });
 
+  // The surface host is owned through a ref; state keeps only a key that
+  // changes whenever a host element attaches, so sub-menus re-render into it.
+  const surfaceHostRef = useRef<HTMLDivElement | null>(null);
+  const [surfaceHostKey, setSurfaceHostKey] = useState(0);
+  const attachSurfaceHost = useCallback((node: HTMLDivElement | null) => {
+    surfaceHostRef.current = node;
+    if (node != null) {
+      setSurfaceHostKey(key => key + 1);
+    }
+  }, []);
+  const surfaceHost = useMemo<DropdownMenuSurfaceHost>(
+    () => ({
+      getElement: () => (surfaceHostKey > 0 ? surfaceHostRef.current : null),
+    }),
+    [surfaceHostKey],
+  );
+
   // Dismiss on any click outside the menu. We use popover="manual" (not
   // "auto") because the native light-dismiss treats the mouseup from the
   // opening right-click as a dismiss event. Handling it ourselves via
-  // mousedown avoids that race.
+  // mousedown avoids that race. A sub-menu with a header or footer renders
+  // its dialog in the surface host beside the menu, so a press there is
+  // inside too.
   useEffect(() => {
     if (!isOpen || usesBottomSheet) {
       return;
@@ -478,7 +549,12 @@ export function ContextMenu({
         return;
       }
       judged.add(e);
-      if (menu && !menu.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        menu &&
+        !menu.contains(target) &&
+        !surfaceHostRef.current?.contains(target)
+      ) {
         closeMenu();
       }
     };
@@ -670,9 +746,18 @@ export function ContextMenu({
     () => ({closeMenu, menuSize: size, drillIn, menuLabel: label}),
     [closeMenu, size, drillIn, label],
   );
+  // What a sub-menu with a header or footer needs, on an internal context.
+  const surfaceValue = useMemo<DropdownMenuSurfaceValue>(
+    () => ({host: surfaceHost, ownerId: menuId}),
+    [surfaceHost, menuId],
+  );
 
   const resolvedMenuContent = wrapContent(
-    itemsProp !== undefined ? renderDropdownItems(items) : menuContent,
+    itemsProp !== undefined
+      ? // The pointer menu shows a sub-menu's header and footer; the sheet
+        // shows a data item's level regions itself.
+        renderDropdownItems(items, {showsRegions: !usesBottomSheet})
+      : menuContent,
   );
 
   const hasOverflow = useMenuOverflow(
@@ -700,7 +785,18 @@ export function ContextMenu({
       tabIndex={usesBottomSheet ? 0 : -1}
       aria-label={label}
       onKeyDown={listKeyDown}
-      onContextMenu={e => e.preventDefault()}
+      onContextMenu={e => {
+        // Only a right-click on a menu's rows: a sub-menu's dialog renders
+        // beside this element but React still bubbles its events here. Its rows
+        // sit in its own role="menu" and stay cancelled; a field in its header
+        // or footer keeps the browser's own menu (paste, spelling).
+        if (
+          e.target instanceof Element &&
+          e.target.closest('[role="menu"]') != null
+        ) {
+          e.preventDefault();
+        }
+      }}
       {...menuPress.menuProps}
       {...mergeProps(
         themeProps('context-menu'),
@@ -714,9 +810,14 @@ export function ContextMenu({
         style,
       )}>
       <DropdownMenuContext value={contextValue}>
-        <DropdownMenuRootOpenContext value={isOpen}>
-          {resolvedMenuContent}
-        </DropdownMenuRootOpenContext>
+        {/* The bottom sheet renders no surface host: a sub-menu with a header
+            or footer shows its rows alone there. */}
+        <DropdownMenuSurfaceContext
+          value={usesBottomSheet ? null : surfaceValue}>
+          <DropdownMenuRootOpenContext value={isOpen}>
+            {resolvedMenuContent}
+          </DropdownMenuRootOpenContext>
+        </DropdownMenuSurfaceContext>
       </DropdownMenuContext>
     </div>
   );
@@ -757,11 +858,33 @@ export function ContextMenu({
             {currentTitle}
           </Heading>
         </div>
+        {isRenderable(levelHeader) && (
+          // Keyed by level, so what was typed into one level's field never
+          // shows up in another's.
+          <div
+            key={`header-${submenuPath.length}`}
+            {...stylex.props(styles.sheetRegion)}>
+            {levelHeader}
+          </div>
+        )}
         <MenuBottomSheetActionList
           items={currentItems}
           onSelect={handleBottomSheetSelect}
-          onOpenSubmenu={item => setSubmenuPath(path => [...path, item])}
+          showsLevelRegions
+          onOpenSubmenu={item =>
+            setSubmenuPath(path => [
+              ...path,
+              openSheetLevel(currentItems, item),
+            ])
+          }
         />
+        {isRenderable(levelFooter) && (
+          <div
+            key={`footer-${submenuPath.length}`}
+            {...stylex.props(styles.sheetRegion)}>
+            {levelFooter}
+          </div>
+        )}
       </div>
     ) : (
       renderedMenu
@@ -813,11 +936,29 @@ export function ContextMenu({
           </LazyMenuBottomSheet>
         </Suspense>
       ) : (
-        layer.render(<LayerDepthProvider>{renderedMenu}</LayerDepthProvider>, {
-          placement: 'below',
-          alignment: 'start',
-          xstyle: [popoverXstyle, layerAnimations.below],
-        })
+        layer.render(
+          <LayerDepthProvider>
+            {renderedMenu}
+            <div
+              ref={attachSurfaceHost}
+              {...mergeProps(
+                themeProps('context-menu'),
+                stylex.props(
+                  styles.surfaceHost,
+                  xstyle,
+                  styles.surfaceHostDisplay,
+                ),
+                className,
+                style,
+              )}
+            />
+          </LayerDepthProvider>,
+          {
+            placement: 'below',
+            alignment: 'start',
+            xstyle: [popoverXstyle, layerAnimations.below],
+          },
+        )
       )}
     </>
   );

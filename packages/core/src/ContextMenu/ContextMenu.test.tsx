@@ -295,6 +295,162 @@ describe('ContextMenu', () => {
     );
   });
 
+  it('opens a data item with a header and empty items as a sub-menu that shows its field, in the pointer menu and the BottomSheet', async () => {
+    const user = userEvent.setup();
+    const items = [
+      {label: 'Rename', onClick: () => {}},
+      {
+        label: 'Labels',
+        header: <input aria-label="Filter labels" />,
+        items: [],
+      },
+    ];
+    const {unmount} = render(
+      <ContextMenu label="Row actions" items={items}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    const row = screen.getByRole('menuitem', {name: /Labels/, hidden: true});
+    expect(row).toHaveAttribute('aria-haspopup', 'dialog');
+    fireEvent.click(row, {detail: 1});
+    const dialog = await screen.findByRole('dialog', {
+      name: /Labels/,
+      hidden: true,
+    });
+    expect(dialog).toContainElement(
+      screen.getByRole('textbox', {name: 'Filter labels', hidden: true}),
+    );
+    unmount();
+
+    render(
+      <ContextMenu
+        presentation="bottom-sheet"
+        label="Row actions"
+        items={items}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    await user.click(await screen.findByRole('button', {name: 'Labels'}));
+    expect(
+      await screen.findByRole('textbox', {name: 'Filter labels'}),
+    ).toBeInTheDocument();
+  });
+
+  it('reads an open BottomSheet level from the current items, so a row the caller adds while it shows appears', async () => {
+    const user = userEvent.setup();
+    function RowMenu({labels}: {labels: string[]}) {
+      return (
+        <ContextMenu
+          presentation="bottom-sheet"
+          label="Row actions"
+          items={[
+            {label: 'Rename', onClick: () => {}},
+            {label: 'Labels', items: labels.map(label => ({label}))},
+          ]}>
+          <div>Right-click me</div>
+        </ContextMenu>
+      );
+    }
+    const {rerender} = render(<RowMenu labels={['Bug']} />);
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    await user.click(await screen.findByRole('button', {name: 'Labels'}));
+    await screen.findByRole('button', {name: 'Bug'});
+
+    rerender(<RowMenu labels={['Bug', 'Feature']} />);
+    expect(
+      await screen.findByRole('button', {name: 'Feature'}),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: 'Rename'})).toBeNull();
+  });
+
+  it("shows a level's own header and footer around its actions in the BottomSheet", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <ContextMenu
+        presentation="bottom-sheet"
+        label="Row actions"
+        items={[
+          {
+            label: 'Labels',
+            header: <input aria-label="Filter labels" />,
+            footer: <button type="button">Create label</button>,
+            items: [{label: 'Bug', onClick: () => {}}],
+          },
+        ]}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    const labels = await screen.findByRole('button', {name: 'Labels'});
+    // The top level has no regions of its own.
+    expect(screen.queryByRole('textbox', {name: 'Filter labels'})).toBeNull();
+
+    await user.click(labels);
+    expect(
+      await screen.findByRole('textbox', {name: 'Filter labels'}),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Bug'})).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: 'Create label'}),
+    ).toBeInTheDocument();
+
+    // Back at the top level, the level's regions go with it.
+    await user.click(screen.getByRole('button', {name: /back/i}));
+    await waitFor(() =>
+      expect(screen.queryByRole('textbox', {name: 'Filter labels'})).toBeNull(),
+    );
+    expect(screen.queryByRole('button', {name: 'Create label'})).toBeNull();
+  });
+  it('keeps a level with a header a sub-menu in the BottomSheet while its filter matches nothing, so it opens again after Back', async () => {
+    const user = userEvent.setup();
+    function FilteredLabels() {
+      const [query, setQuery] = useState('');
+      const labels = ['Bug', 'Feature'].filter(label =>
+        label.toLowerCase().includes(query.toLowerCase()),
+      );
+      return (
+        <ContextMenu
+          presentation="bottom-sheet"
+          label="Row actions"
+          items={[
+            {
+              label: 'Labels',
+              header: (
+                <input
+                  aria-label="Filter labels"
+                  value={query}
+                  onChange={event => setQuery(event.target.value)}
+                />
+              ),
+              items: labels.map(label => ({label, onClick: () => {}})),
+            },
+          ]}>
+          <div>Right-click me</div>
+        </ContextMenu>
+      );
+    }
+    render(<FilteredLabels />);
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    await user.click(await screen.findByRole('button', {name: 'Labels'}));
+    await user.type(
+      await screen.findByRole('textbox', {name: 'Filter labels'}),
+      'zz',
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('button', {name: 'Bug'})).toBeNull(),
+    );
+
+    await user.click(screen.getByRole('button', {name: /back/i}));
+    await user.click(await screen.findByRole('button', {name: 'Labels'}));
+    expect(
+      await screen.findByRole('textbox', {name: 'Filter labels'}),
+    ).toHaveValue('zz');
+  });
+
   it('keeps only the top content padding in a menu BottomSheet', () => {
     const source = readFileSync(
       'packages/core/src/DropdownMenu/MenuBottomSheet.tsx',
@@ -741,11 +897,181 @@ describe('ContextMenu dividers', () => {
 });
 
 describe('ContextMenu compound mode', () => {
-  it('shows a sub-menu with a header or footer as its rows alone, and says why in development', async () => {
+  it('renders a sub-menu with a header and footer beside the menu, in a dialog named by its row', async () => {
+    render(
+      <ContextMenu
+        menuContent={
+          <>
+            <DropdownMenuItem label="Rename" onClick={() => {}} />
+            <DropdownMenuSubMenu
+              label="Labels"
+              header={<input aria-label="Filter labels" />}
+              footer={<button type="button">Create label</button>}>
+              <DropdownMenuItem label="Bug" onClick={() => {}} />
+            </DropdownMenuSubMenu>
+          </>
+        }>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    const row = screen.getByRole('menuitem', {name: /Labels/, hidden: true});
+    const menu = row.closest<HTMLElement>('[role="menu"]')!;
+    expect(row).toHaveAttribute('aria-haspopup', 'dialog');
+    fireEvent.click(row, {detail: 1});
+    const dialog = await screen.findByRole('dialog', {
+      name: /Labels/,
+      hidden: true,
+    });
+    expect(menu).not.toContainElement(dialog);
+    expect(menu.closest('[popover]')).toContainElement(dialog);
+    expect(dialog).toContainElement(
+      screen.getByRole('textbox', {name: 'Filter labels', hidden: true}),
+    );
+    expect(dialog).toContainElement(
+      screen.getByRole('button', {name: 'Create label', hidden: true}),
+    );
+  });
+
+  it("a right-click on a regioned sub-menu's field keeps the browser's own menu, and one on a row, the sub-menu's included, does not", async () => {
+    const user = userEvent.setup();
+    render(
+      <ContextMenu
+        label="Row actions"
+        menuContent={
+          <>
+            <DropdownMenuItem label="Rename" onClick={() => {}} />
+            <DropdownMenuSubMenu
+              label="Labels"
+              header={<input aria-label="Filter labels" />}>
+              <DropdownMenuItem label="Bug" onClick={() => {}} />
+            </DropdownMenuSubMenu>
+          </>
+        }>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    await user.click(
+      screen.getByRole('menuitem', {name: /Labels/, hidden: true}),
+    );
+    const field = await screen.findByRole('textbox', {
+      name: 'Filter labels',
+      hidden: true,
+    });
+    // fireEvent returns false when a handler prevented the default.
+    expect(fireEvent.contextMenu(field)).toBe(true);
+    expect(
+      fireEvent.contextMenu(
+        screen.getByRole('menuitem', {name: 'Rename', hidden: true}),
+      ),
+    ).toBe(false);
+    // The sub-menu's rows render in its dialog, outside the root's menu, and
+    // stay cancelled as on a sub-menu without regions.
+    expect(
+      fireEvent.contextMenu(
+        screen.getByRole('menuitem', {name: 'Bug', hidden: true}),
+      ),
+    ).toBe(false);
+  });
+
+  it("a mouse press on a regioned sub-menu's field, button or row reaches it and keeps the menu open", async () => {
+    const user = userEvent.setup();
+    const onCreate = vi.fn();
+    const onBug = vi.fn();
+    render(
+      <ContextMenu
+        label="Row actions"
+        menuContent={
+          <>
+            <DropdownMenuItem label="Rename" onClick={() => {}} />
+            <DropdownMenuSubMenu
+              label="Labels"
+              header={<input aria-label="Filter labels" />}
+              footer={
+                <button type="button" onClick={onCreate}>
+                  Create label
+                </button>
+              }>
+              <DropdownMenuItem label="Bug" onClick={onBug} />
+            </DropdownMenuSubMenu>
+          </>
+        }>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    const menu = screen.getByRole('menu', {name: 'Row actions', hidden: true});
+    const rootPopover = menu.closest('[popover]');
+    await user.click(
+      screen.getByRole('menuitem', {name: /Labels/, hidden: true}),
+    );
+    await screen.findByRole('dialog', {name: /Labels/, hidden: true});
+
+    // The dialog renders beside the menu, so a press in it is not outside.
+    const field = screen.getByRole('textbox', {
+      name: 'Filter labels',
+      hidden: true,
+    });
+    await user.click(field);
+    expect(rootPopover).toHaveAttribute('popover-open');
+    expect(field).toHaveFocus();
+    await user.keyboard('bu');
+    expect(field).toHaveValue('bu');
+
+    await user.click(
+      screen.getByRole('button', {name: 'Create label', hidden: true}),
+    );
+    expect(onCreate).toHaveBeenCalledOnce();
+    expect(rootPopover).toHaveAttribute('popover-open');
+
+    // A row acts, as a row of any sub-menu does.
+    await user.click(screen.getByRole('menuitem', {name: 'Bug', hidden: true}));
+    expect(onBug).toHaveBeenCalledOnce();
+  });
+
+  it("paints a drilled-in sub-menu's view under the menu's theme target and the caller's styling", async () => {
+    render(
+      <ContextMenu
+        label="Row actions"
+        className="caller-menu"
+        style={{outlineColor: 'rgb(255, 0, 0)'}}
+        menuContent={
+          <DropdownMenuSubMenu
+            label="Labels"
+            presentation="drill-in"
+            header={<input aria-label="Filter labels" />}>
+            <DropdownMenuItem label="Bug" onClick={() => {}} />
+          </DropdownMenuSubMenu>
+        }>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    fireEvent.click(
+      screen.getByRole('menuitem', {name: /Labels/, hidden: true}),
+      {detail: 1},
+    );
+    const dialog = await screen.findByRole('dialog', {
+      name: /Labels/,
+      hidden: true,
+    });
+    // The view shows in the menu's place, outside the menu, on a surface that
+    // carries what the menu carries.
+    const surface = dialog.closest<HTMLElement>('.astryx-context-menu');
+    expect(surface).not.toBeNull();
+    expect(surface).not.toHaveAttribute('role', 'menu');
+    expect(surface).toHaveClass('caller-menu');
+    expect(surface?.style.outlineColor).toBe('rgb(255, 0, 0)');
+  });
+
+  it('shows a sub-menu with a header or footer as its rows alone in the bottom sheet, and says why in development', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     try {
       render(
         <ContextMenu
+          presentation="bottom-sheet"
+          label="Row actions"
           menuContent={
             <>
               <DropdownMenuItem label="Rename" onClick={() => {}} />
@@ -761,18 +1087,20 @@ describe('ContextMenu compound mode', () => {
         </ContextMenu>,
       );
       fireEvent.contextMenu(screen.getByText('Right-click me'));
-      const row = screen.getByRole('menuitem', {name: /Labels/, hidden: true});
-      // No region can sit outside this menu, so none renders inside it.
+      // The sheet is lazy: wait for its rows.
+      const row = await screen.findByRole('menuitem', {
+        name: /Labels/,
+        hidden: true,
+      });
+      // The sheet renders no surface host, so no region can sit outside its
+      // menu, and none renders inside it.
       expect(row).toHaveAttribute('aria-haspopup', 'menu');
-      fireEvent.click(row, {detail: 1});
-      await waitFor(() => expect(row).toHaveAttribute('aria-expanded', 'true'));
-      expect(screen.queryByRole('dialog', {hidden: true})).toBeNull();
       expect(
         screen.queryByRole('textbox', {name: 'Filter labels', hidden: true}),
       ).toBeNull();
       expect(
-        screen.getByRole('menuitem', {name: 'Bug', hidden: true}),
-      ).toBeInTheDocument();
+        screen.queryByRole('dialog', {name: /Labels/, hidden: true}),
+      ).toBeNull();
       expect(warn).toHaveBeenCalledWith(
         expect.stringContaining('DropdownMenuSubMenu: header and footer'),
       );
