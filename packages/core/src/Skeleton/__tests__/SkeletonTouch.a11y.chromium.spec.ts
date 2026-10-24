@@ -32,8 +32,10 @@ test.afterAll(async () => {
 
 const STORY = 'core-skeleton--default';
 
-async function open(page: Page) {
-  await page.goto(`${storybook.origin}/iframe.html?id=${STORY}&viewMode=story`);
+async function open(page: Page, globals = '') {
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=${STORY}&viewMode=story${globals ? `&globals=${globals}` : ''}`,
+  );
   await page.waitForSelector('.astryx-skeleton');
   // Past the pulse's start delay (1 s plus the stagger).
   await page.waitForTimeout(1600);
@@ -76,6 +78,56 @@ test.describe('under a finger', () => {
       // The pulse's top step: SwiftUI's placeholder weight on white.
       expect(first[i]).toBeCloseTo(0.925, 3);
       expect(second[i]).toBe(first[i]);
+    }
+  });
+
+  test('in dark mode it rests still at the same top step, in the theme\u2019s dark color', async ({
+    page,
+  }) => {
+    await open(page, 'colorMode:dark');
+    const {count, animations, first, second} = await placeholders(page);
+    const colors = await page.evaluate(() => ({
+      scheme: getComputedStyle(document.documentElement).colorScheme,
+      fill: getComputedStyle(
+        document.querySelector('.astryx-skeleton') as Element,
+      ).backgroundColor,
+    }));
+    expect(colors.scheme).toBe('dark');
+    // Storybook's default theme: light-dark(#f1f1f1, #525252).
+    expect(colors.fill).toBe('rgb(82, 82, 82)');
+    expect(count).toBeGreaterThan(0);
+    expect(animations.every(n => n === 0)).toBe(true);
+    for (let i = 0; i < count; i += 1) {
+      expect(first[i]).toBeCloseTo(0.925, 3);
+      expect(second[i]).toBe(first[i]);
+    }
+  });
+
+  test('reduced motion changes nothing: still at the top step', async ({
+    page,
+  }) => {
+    await page.emulateMedia({reducedMotion: 'reduce'});
+    await open(page);
+    const {count, animations, first, second} = await placeholders(page);
+    expect(count).toBeGreaterThan(0);
+    expect(animations.every(n => n === 0)).toBe(true);
+    for (let i = 0; i < count; i += 1) {
+      expect(first[i]).toBeCloseTo(0.925, 3);
+      expect(second[i]).toBe(first[i]);
+    }
+  });
+
+  test('forced colors are unchanged: GrayText at full opacity, still', async ({
+    page,
+  }) => {
+    await page.emulateMedia({forcedColors: 'active'});
+    await open(page);
+    const {count, animations, first, second} = await placeholders(page);
+    expect(count).toBeGreaterThan(0);
+    expect(animations.every(n => n === 0)).toBe(true);
+    for (let i = 0; i < count; i += 1) {
+      expect(first[i]).toBe(1);
+      expect(second[i]).toBe(1);
     }
   });
 
@@ -128,5 +180,19 @@ test.describe('with a mouse or trackpad', () => {
     expect(animations.every(n => n === 1)).toBe(true);
     // The pulse moves the opacity between samples.
     expect(first.some((value, i) => value !== second[i])).toBe(true);
+  });
+
+  test('reduced motion still stops the pulse at its 0.25 rest', async ({
+    page,
+  }) => {
+    await page.emulateMedia({reducedMotion: 'reduce'});
+    await open(page);
+    const {count, animations, first, second} = await placeholders(page);
+    expect(count).toBeGreaterThan(0);
+    expect(animations.every(n => n === 0)).toBe(true);
+    for (let i = 0; i < count; i += 1) {
+      expect(first[i]).toBeCloseTo(0.25, 3);
+      expect(second[i]).toBe(first[i]);
+    }
   });
 });
