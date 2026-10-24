@@ -4,7 +4,8 @@
 
 /**
  * @file Item.tsx
- * @input Uses React, ReactNode, StyleXStyles, theme tokens, useClickableContainer
+ * @input Uses React, ReactNode, StyleXStyles, theme tokens, useClickableContainer,
+ *   the shared press overlays and the compositor press layer
  * @output Exports Item component, ItemProps type; publishes the shared inline inset
  * @position Core layout primitive; consumed by index.ts, tested by Item.test.tsx
  *
@@ -886,6 +887,10 @@ export function Item({
           align === 'first-line' && styles.alignFirstLine,
           isInteractive && styles.interactive,
           isInteractive && interactionOverlayStyles.backgroundColor,
+          // The touch press on a compositor layer (after the overlay, whose
+          // own touch paint it turns off): the release keeps fading while
+          // script runs.
+          isInteractive && interactionOverlayStyles.cell,
           isLinkRoot && styles.linkRoot,
           isHighlighted && styles.highlighted,
           isSelected && styles.selected,

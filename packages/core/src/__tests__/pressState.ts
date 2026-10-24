@@ -194,7 +194,11 @@ export function durationToMs(value: string): number {
  * on a descendant that merely reads the strength.
  */
 export function hasReleaseFade(el: Element): boolean {
-  const fading = rulesWithSelector(el, FADING_ARM);
+  // The element's own release: a layer of its own (a row's `::before`, a
+  // card's `::after`) runs its clock separately.
+  const fading = rulesWithSelector(el, FADING_ARM).filter(
+    rule => !rule.slice(0, rule.indexOf('{')).includes('::'),
+  );
   const durations = fading.flatMap(rule => {
     const match = rule.match(/animation-duration:\s*([^;}]+)/);
     return match == null ? [] : [durationToMs(match[1])];
