@@ -45,8 +45,8 @@ re-implements theme logic.
     light and one for dark.
   - `<swiftName>` is the theme's `name` with a leading `astryx-` removed, in
     lower camel case (`neutral` → `neutral`, `y2k` → `y2k`, a product's
-    `acme-brand` → `acmeBrand`). Core's default theme (`astryx`) is
-    `default`. A name that is not a valid Swift identifier, is a Swift keyword
+    `acme-brand` → `acmeBrand`). Core's defaults, which core resolves with no
+    theme (`resolveThemeTokens(null, {mode})`), are `default`. A name that is not a valid Swift identifier, is a Swift keyword
     other than `default`, or repeats another generated theme's name fails the
     run.
   - Each file starts with a header naming the source package, its version, and
@@ -82,7 +82,9 @@ re-implements theme logic.
   - Colors are `Color` values in sRGB, from `#RGB`, `#RGBA`, `#RRGGBB`,
     `#RRGGBBAA`, `rgb()`/`rgba()` and `hsl()`/`hsla()` (comma or space
     separated, hue in degrees or unitless, alpha as a number or a percentage),
-    and the keywords `black`, `white`, and `transparent`.
+    and the keywords `black`, `white`, and `transparent`. Every color is
+    stored as 8-bit sRGB channels: an `hsl()` value is converted exactly, then
+    each channel is rounded to the nearest of 256 steps, halves up.
   - Lengths are `CGFloat` points: `rem` × 16, `px` × 1. Unitless numbers
     (weights, line-height ratios) are `CGFloat`.
   - Font families are `[String]`, quotes removed, in the CSS stack's order.
@@ -97,7 +99,9 @@ re-implements theme logic.
   by its exact custom-property name (AST-006 FR3, DEC-2), with no second
   identifier and no prefix read or removed, in a map of its value's type (G7)
   for light and for dark, carried only by that theme
-  (`AstryxTheme.neutral.local.dark.colors["--neutral-status-fill"]`). Only code written for that theme reads them; shared components never
+  (`AstryxTheme.neutral.local.dark.colors["--astryx-theme-neutral-color-status-fill-accent"]`).
+  A name the theme does not declare returns `nil`, and the caller chooses
+  what to draw. Only code written for that theme reads them; shared components never
   do.
 - **G9 — Components read typed members.** Components read tokens only through
   the typed members (`theme.color.textPrimary`). A lookup by token name may
@@ -135,7 +139,7 @@ re-implements theme logic.
 | Requirement | Check                                                                                                                                                                                                                                                                                                                                                                              |
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | G1          | A theme whose resolved token differs from its raw `theme.tokens` entry (a reference) shows the resolved value in Swift. A `DefinedTheme` with web component overrides generates the same file as the same theme without them.                                                                                                                                                      |
-| G2          | A source check finds no import of core in `packages/native/scripts/` outside the two named theme entries (later, outside the portable entry). Generated Swift imports only SwiftUI.                                                                                                                                                                                                |
+| G2          | A source check finds no import of core in `packages/native/` outside the build-time reads AST-082 FR16 lists (the two theme entries and core's component documentation, later only the portable entry). Generated Swift imports only SwiftUI.                                                                                                                                      |
 | G3          | `swiftc -typecheck` compiles `AstryxTokens.swift` and every theme file together; each theme file declares one `AstryxTheme` static named as G3 says; two themes with the same name fail the run.                                                                                                                                                                                   |
 | G4          | Generating twice, and on two CI machines, gives byte-identical output.                                                                                                                                                                                                                                                                                                             |
 | G5          | Every theme's light and dark values fill every member of `AstryxTokens`, equal to core's resolved names filtered by the G5 groups.                                                                                                                                                                                                                                                 |
@@ -153,12 +157,16 @@ re-implements theme logic.
 
 - **D1 — The boundary check covers all of `packages/native/`.** The
   package-boundary check scans every folder under `packages/native/`, so a core
-  import anywhere in the package is checked against AST-082 FR16, with the G2
-  build-time reads listed by name as FR16 requires.
-- **D2 — Tokens are typed from the start.** The generator emits typed members
+  import anywhere in the package is checked against AST-082 FR16, with every
+  build-time read FR16 allows listed by name: the generator's two theme entries
+  (G2) and the contract generator's read of core's component documentation.
+- **D2 — Shared tokens are typed from the start.** For the shared token
+  surface, the generator emits typed members
   (G3, G6), not string-keyed dictionaries, so a wrong token name fails to
   compile and autocompletion lists every token. Rejected: string keys with a
-  missing-token fallback, because a typo ships invisible text.
+  missing-token fallback, because a typo ships invisible text. A theme's local
+  values are keyed by their exact names instead (G8), because AST-006 FR3
+  allows no second identifier.
 - **D3 — Native intent comes from `defineNativeTheme` into a reserved slot.**
   Native visual intent (durable `material`, platform entries, icons; AST-082
   FR10, FR17) comes from `defineNativeTheme`, a native theme that wraps the
