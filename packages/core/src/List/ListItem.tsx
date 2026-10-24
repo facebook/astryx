@@ -192,13 +192,19 @@ const styles = stylex.create({
     // and the one above it, in the frame the press is believed, with no
     // transition, as a highlighted UIKit cell hides its separators; both
     // come back in the first frame of the release, while the press is still
-    // fading. With a mouse the dividers stay drawn.
+    // fading. A selection hold (the row kept selected through a navigation
+    // push) hides them the same way until its deselect begins, and again
+    // after a cancel. With a mouse the dividers stay drawn.
     borderBlockEndColor: {
       default: colorVars['--color-border'],
       '@media (pointer: coarse)': {
         default: null,
         '[data-astryx-press="on"]': 'transparent',
+        '[data-astryx-press="held"]:not([data-astryx-deselecting])':
+          'transparent',
         ':has(+ [data-astryx-press="on"])': 'transparent',
+        ':has(+ [data-astryx-press="held"]:not([data-astryx-deselecting]))':
+          'transparent',
       },
     },
     // A longhand, not the `borderBlockEnd` shorthand: StyleX's default
@@ -217,6 +223,10 @@ const styles = stylex.create({
         '@media (pointer: coarse)': {
           default: null,
           '[data-astryx-press="on"]': {
+            default: `calc(-1 * ${borderVars['--border-width']})`,
+            ':last-child': 0,
+          },
+          '[data-astryx-press="held"]:not([data-astryx-deselecting])': {
             default: `calc(-1 * ${borderVars['--border-width']})`,
             ':last-child': 0,
           },
