@@ -127,12 +127,6 @@ const PAN_HYSTERESIS = UIKIT_GESTURES.pan.hysteresis.value;
  * click is swallowed, ms (it follows the lift within a frame or two).
  */
 const CLICK_GUARD_MS = 1000;
-/**
- * How long the text-selection guard outlives a held press: iOS Safari
- * re-applies its long-press selection on the lift (seen within 15 ms on the
- * iOS 26.2 simulator).
- */
-const SELECTION_GUARD_AFTER_LIFT_MS = 500;
 
 function now(): number {
   return typeof performance === 'undefined' ? Date.now() : performance.now();
@@ -245,9 +239,6 @@ export class SwitchTouchController {
   private clickGuardUntil = 0;
   /** Passive: the switch released on this touch; its `touchend` is cancelled. */
   private cancelsTouchEnd = false;
-  /** Removes the document's text-selection block (see guardSelection). */
-  private unguardSelection: (() => void) | null = null;
-  private selectionTimer: ReturnType<typeof setTimeout> | null = null;
   private reconcileTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(isOn: boolean, geometry: SwitchTouchGeometry) {
@@ -316,6 +307,9 @@ export class SwitchTouchController {
       direction: 'horizontal',
       maximumNumberOfTouches: 1,
       allowedPointerTypes: TOUCH_TYPES,
+      // A drag that drives the thumb selects no text (the gesture host locks
+      // the surface for the contact); the press's own styles do the same.
+      preventsTextSelection: true,
       shouldReceiveTouch: () => !isBraking(),
     });
     const tap = new TapGestureRecognizer({
@@ -420,7 +414,6 @@ export class SwitchTouchController {
       detach();
     }
     this.detachers = [];
-    this.releaseSelection();
     this.clearTimers();
     for (const animator of [this.thumb, this.fill, this.glass, this.on]) {
       const element = animator?.element;
@@ -555,60 +548,6 @@ export class SwitchTouchController {
     }
   }
 
-  /**
-   * While the thumb is lifted, the page selects no text: iOS Safari's own
-   * long press otherwise selects past the row (whose CSS already opts out),
-   * at the nearest block boundary, with a loupe, a handle and an edit menu.
-   * It fires no `selectstart` for that, and clearing the selection it makes
-   * leaves its menu up, so nothing is selectable while the finger is down.
-   * UISwitch selects nothing.
-   */
-  private guardSelection(): void {
-    if (this.selectionTimer != null) {
-      clearTimeout(this.selectionTimer);
-      this.selectionTimer = null;
-    }
-    const root = this.elements?.surface.ownerDocument.documentElement;
-    if (root == null || this.unguardSelection != null) {
-      return;
-    }
-    const previous = ['-webkit-user-select', 'user-select'].map(
-      property => [property, root.style.getPropertyValue(property)] as const,
-    );
-    for (const [property] of previous) {
-      root.style.setProperty(property, 'none');
-    }
-    this.unguardSelection = () => {
-      for (const [property, value] of previous) {
-        if (value === '') {
-          root.style.removeProperty(property);
-        } else {
-          root.style.setProperty(property, value);
-        }
-      }
-    };
-  }
-
-  /** iOS applies its long-press selection again as the finger lifts. */
-  private releaseSelectionSoon(): void {
-    if (this.unguardSelection == null || this.selectionTimer != null) {
-      return;
-    }
-    this.selectionTimer = setTimeout(
-      () => this.releaseSelection(),
-      SELECTION_GUARD_AFTER_LIFT_MS,
-    );
-  }
-
-  private releaseSelection(): void {
-    if (this.selectionTimer != null) {
-      clearTimeout(this.selectionTimer);
-      this.selectionTimer = null;
-    }
-    this.unguardSelection?.();
-    this.unguardSelection = null;
-  }
-
   private onGesture(
     recognizer: LongPressGestureRecognizer | PanGestureRecognizer,
   ): void {
@@ -694,7 +633,6 @@ export class SwitchTouchController {
     }
     this.showSide(commit, time);
     this.settle(time);
-    this.releaseSelectionSoon();
     if (commit !== this.isOn) {
       // The browser's click was cancelled with the gesture; the input's own
       // click keeps every native path (form value, onChange, the label).
@@ -714,7 +652,6 @@ export class SwitchTouchController {
     this.drag = null;
     this.showSide(this.isOn, time);
     this.settle(time);
-    this.releaseSelectionSoon();
   }
 
   // --- Visuals ---------------------------------------------------------------
@@ -763,7 +700,6 @@ export class SwitchTouchController {
       return;
     }
     this.liftTime = time;
-    this.guardSelection();
     const options = {at: time} as const;
     this.thumb.animate(
       {scaleX: this.geometry.liftScaleX, scaleY: this.geometry.liftScaleY},

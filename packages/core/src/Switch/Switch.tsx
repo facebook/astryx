@@ -178,12 +178,6 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
-    // Under a finger a held switch selects no text beside it and opens no
-    // callout, as a UISwitch's row does not (iOS Safari otherwise selects
-    // the label's nearest word during the hold).
-    userSelect: {default: null, [TOUCH]: 'none'},
-    WebkitUserSelect: {default: null, [TOUCH]: 'none'},
-    WebkitTouchCallout: {default: null, [TOUCH]: 'none'},
   },
   // A hidden label is sr-only, so its wrapper is a zero-width flex item — the
   // row gap would still be painted beside the track, making the field box

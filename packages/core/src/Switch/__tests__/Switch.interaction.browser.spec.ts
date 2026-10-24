@@ -260,21 +260,65 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
     await expect(input).toBeChecked();
   });
 
-  test('P2 · a held switch selects no text beside it and opens no callout', async ({
+  /**
+   * The element under a held finger, read 300 ms into a 600 ms hold and
+   * again after the lift: its role, how it selects text, and whether an
+   * inline lock is on it.
+   */
+  interface HeldHit {
+    role: string | null;
+    userSelect: string;
+    locked: boolean;
+  }
+  async function hitDuringHold(
+    page: Page,
+    driver: TouchDriver,
+    at: {x: number; y: number},
+  ): Promise<{during: HeldHit | null; after: HeldHit | null}> {
+    const read = async () =>
+      page.evaluate(({x, y}) => {
+        const el = document.elementFromPoint(x, y) as HTMLElement | null;
+        if (el == null) {
+          return null;
+        }
+        const style = getComputedStyle(el);
+        return {
+          role: el.getAttribute('role'),
+          userSelect:
+            style.getPropertyValue('-webkit-user-select') || style.userSelect,
+          locked:
+            el.style.getPropertyValue('user-select') === 'none' ||
+            el.style.getPropertyValue('-webkit-user-select') === 'none',
+        };
+      }, at);
+    let during: HeldHit | null = null;
+    await driver.play(tap(at, {holdMs: 600}), {
+      onEvent: async step => {
+        if (step.type === 'touchStart') {
+          await page.waitForTimeout(300);
+          during = await read();
+        }
+      },
+    });
+    // The lock lets go when the contact ends.
+    await page.waitForTimeout(300);
+    return {during, after: await read()};
+  }
+
+  test('P2 · while a finger holds the switch, the input under it selects no text, so a still hold opens no loupe', async ({
     page,
   }) => {
-    const {input} = await openSwitch(page);
-    // iOS Safari selects the label's nearest word during a hold unless the
-    // row opts out (seen on the simulator before the row did).
-    const row = input.locator('xpath=ancestor::*[@data-astryx-pressable][1]');
-    const style = await row.evaluate(el => {
-      const cs = getComputedStyle(el);
-      return {
-        userSelect: cs.userSelect || cs.getPropertyValue('-webkit-user-select'),
-        callout: cs.getPropertyValue('-webkit-touch-callout'),
-      };
-    });
-    expect(style.userSelect).toBe('none');
+    // The finger lands on the switch's own input, and the engine's form
+    // control styles give an input `-webkit-user-select: text` whatever its
+    // ancestors say: iOS Safari then opened its text loupe 0.65 s into a still
+    // hold (simulator, iOS 26.2). The gesture host locks a non-text input
+    // under a held finger on a touch control, and lets go after the lift.
+    const {driver, center} = await openSwitch(page);
+    const held = await hitDuringHold(page, driver, center);
+    expect(held.during?.role).toBe('switch');
+    expect(held.during?.userSelect).toBe('none');
+    expect(held.during?.locked).toBe(true);
+    expect(held.after?.locked).toBe(false);
   });
 
   test('P3 · a drag flips once the finger is 26/63 of the track past where it landed, and the lift commits it', async ({
