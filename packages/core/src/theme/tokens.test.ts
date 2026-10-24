@@ -114,6 +114,26 @@ describe('resolveThemeToken', () => {
       resolveThemeToken(testTheme, '--missing-token', {mode: 'dark'}),
     ).toBe('');
   });
+
+  it('resolves the modal dim to the iOS dimming colour and to an override', () => {
+    // A modal's ::backdrop: black at 20 % (light) and 48 % (dark), the colour
+    // of the iOS 26 dimming view behind alerts, sheets and popovers.
+    expect(
+      resolveThemeToken(null, '--color-background-backdrop', {mode: 'light'}),
+    ).toBe('rgba(0, 0, 0, 0.2)');
+    expect(
+      resolveThemeToken(null, '--color-background-backdrop', {mode: 'dark'}),
+    ).toBe('rgba(0, 0, 0, 0.48)');
+    const heavyDim = defineTheme({
+      name: 'heavy-dim',
+      tokens: {'--color-background-backdrop': ['#00000080', '#000000CC']},
+    });
+    expect(
+      resolveThemeToken(heavyDim, '--color-background-backdrop', {
+        mode: 'dark',
+      }),
+    ).toBe('#000000CC');
+  });
 });
 
 describe('resolveThemeTokens — reference resolution', () => {

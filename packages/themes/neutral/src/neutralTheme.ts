@@ -133,6 +133,12 @@ export const neutralTheme = defineTheme({
       withAlpha(neutral.light[0], '80'),
       withAlpha(neutral.dark[0], 'CC'),
     ],
+    // The modal dim (a dialog, drawer or sheet ::backdrop) keeps the overlay
+    // this theme already dimmed with.
+    '--color-background-backdrop': [
+      withAlpha(neutral.light[0], '80'),
+      withAlpha(neutral.dark[0], 'CC'),
+    ],
     '--color-overlay-hover': [
       withAlpha(neutral.light[0], '0D'),
       withAlpha(neutral.dark[100], '0D'),
