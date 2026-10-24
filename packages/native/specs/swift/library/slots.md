@@ -27,8 +27,7 @@ places as on the web, read by VoiceOver in the same order.
     accepts this wider form under the AST-082 FR4 amendment that lets a
     platform accept a wider form for a slot with the same meaning, as the web
     accepts a React node. The component's native additions still name the Astryx
-    components the core slot holds, and whether it holds one or many (a row's
-    start holds one of `Avatar`, `Icon`, `Thumbnail`; a card holds many).
+    components the core slot holds, and whether it holds one or many (a list item's `startContent` holds one of `Avatar`, `Icon`, `Thumbnail`; a card holds many).
     Text and icon slots take no wider form (no attributed or localized text, no
     image), so they mean the same thing on Swift as in the core. A free-form web
     prop with no slot kind stays in the web contract only.
