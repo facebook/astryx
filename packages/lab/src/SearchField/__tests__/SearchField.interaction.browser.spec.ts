@@ -14,7 +14,8 @@
  *   keeps advancing every frame through a blocked main thread and does no
  *   Layout or Paint; Reduce Motion keeps the travel; right to left it
  *   narrows from the left; under a mouse every part takes its place at once;
- *   storyboards of the activation and the cancel
+ *   a theme's search.activationMs role times the activation; storyboards of
+ *   the activation and the cancel
  * @position Interaction proof for lab SearchField (SearchField.tsx,
  *   searchFieldModel.ts); shape copied from the harness exemplar,
  *   BottomSheetDetent.interaction.browser.spec.ts
@@ -489,6 +490,25 @@ test('right to left: the field narrows from the left and the close button slides
   // gives up.
   expect(await translateX(end(page))).toBeCloseTo(NARROWING, 1);
   expect(await translateX(close(page))).toBeCloseTo(0, 1);
+});
+
+test('a theme’s activation clock (the search.activationMs role) times the activation', async ({
+  page,
+}) => {
+  const {driver, field} = await openField(page);
+  // A theme writes the role's variable on its scope; it inherits from here.
+  await page.evaluate(() =>
+    document.documentElement.style.setProperty(
+      '--motion-search-activation-ms',
+      '600ms',
+    ),
+  );
+  await driver.tap(await centerOf(field));
+  const [activation] = await waitForAnimation(end(page));
+  await waitForRest(end(page));
+  expect(activation.to - activation.from).toBeGreaterThan(595);
+  expect(activation.to - activation.from).toBeLessThan(605);
+  expect(await translateX(end(page))).toBeCloseTo(-NARROWING, 1);
 });
 
 test.describe('with a mouse', () => {
