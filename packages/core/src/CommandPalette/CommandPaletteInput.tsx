@@ -194,11 +194,19 @@ export function CommandPaletteInput({
   // The search Spinner is decorative; the input announces each busy start,
   // including the load on opening or clearing the query. Inside the palette's
   // native modal it does so from a region in the dialog (spec:AST-086 FR8, FR3).
-  useBusyAnnouncement(
+  const settleBusyAnnouncement = useBusyAnnouncement(
     ctx?.isBusy === true,
     t('@astryx.commandPalette.loading'),
     inputRef,
   );
+  const registerSettle = ctx?.registerBusyAnnouncementSettle;
+  useEffect(() => {
+    if (registerSettle == null) {
+      return;
+    }
+    registerSettle(settleBusyAnnouncement);
+    return () => registerSettle(null);
+  }, [registerSettle, settleBusyAnnouncement]);
   const [isKeyboardFocus, setIsKeyboardFocus] = useState(false);
 
   // Text-entry controls match :focus-visible after pointer focus in Chromium.
