@@ -417,3 +417,50 @@ test('a held-open tooltip whose host moves keeps its trigger clear', async ({
   }
   expect(overlaps(await rect(page, TOOLTIP), triggerBox)).toBe(false);
 });
+
+test('a trigger that moves in layout while its tooltip is open, without resizing or scrolling, is kept clear', async ({
+  page,
+}) => {
+  await page.setViewportSize({width: 1280, height: 720});
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-tooltip--tall-content&viewMode=story&args=content:A+short+tooltip`,
+  );
+  await holdMotionStill(page);
+  const trigger = page.getByRole('button', {name: 'Hover for details'});
+  await expect(trigger).toBeVisible();
+  // The trigger's top at 650px, near the bottom of a 720px viewport.
+  await page.evaluate(sel => {
+    const el = document.querySelector(sel) as HTMLElement;
+    window.scrollBy(0, el.getBoundingClientRect().top - 650);
+  }, TRIGGER);
+  // Opened from the keyboard, so no pointer is involved.
+  await trigger.focus();
+  await expect(page.getByRole('tooltip')).toBeVisible();
+  // Its content becomes 368px tall: it still fits above the trigger.
+  await page.evaluate(sel => {
+    const content = document.querySelector(sel)?.firstElementChild;
+    for (let i = 1; i <= 17; i++) {
+      const line = document.createElement('div');
+      line.textContent = `Line ${i}`;
+      content?.appendChild(line);
+    }
+  }, TOOLTIP);
+  await page.waitForTimeout(200);
+  const before = await rect(page, TRIGGER);
+  expect(overlaps(await rect(page, TOOLTIP), before)).toBe(false);
+  const scrollY = await page.evaluate(() => window.scrollY);
+
+  // The same-size trigger moves up to 340px in layout. Nothing resizes or
+  // scrolls; now the tooltip fits neither above nor below it.
+  await page.evaluate(sel => {
+    (document.querySelector(sel) as HTMLElement).style.marginBlockStart =
+      '-620px';
+  }, TRIGGER);
+  await page.waitForTimeout(300);
+  const after = await rect(page, TRIGGER);
+  expect(Math.round(after.top)).toBe(Math.round(before.top) - 310);
+  expect(after.bottom - after.top).toBe(before.bottom - before.top);
+  expect(await page.evaluate(() => window.scrollY)).toBe(scrollY);
+  await expect(page.getByRole('tooltip')).toBeVisible();
+  expect(overlaps(await rect(page, TOOLTIP), after)).toBe(false);
+});
