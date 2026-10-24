@@ -194,11 +194,13 @@ while its content overflows. No option in that list is sized to whatever room
 is left: a browser keeps an open layer on the option it last used while that
 option still fits, so an anchor that moves takes the layer to the side now
 roomier instead of shrinking it. A browser also keeps a laid-out layer on its
-last option when its list changes, so a switch after the layer has painted takes
-the layer out of rendering for one forced layout in the same task (no frame
-paints, the popover stays open, no toggle event fires), and the engine places it
-afresh from the new list; a later read that finds it failing again does the
-same, since no engine re-runs the list when a scroll carries the anchor.
+last option when its list changes, so when a switch does not take effect at
+once the runtime takes the layer out of rendering for one forced layout in the
+same task (no frame paints, the popover stays open, no toggle event fires), and
+the engine places it afresh from the new list; a later read that finds it
+failing again does the same, since no engine re-runs the list when a scroll
+carries the anchor. Leaving rendering restarts the CSS animations of the layer
+and its content, so the runtime puts each one back where it was.
 Chromium tries no more than five
 options, so the second list replaces the first rather than extending it.
 Once the anchor has left the viewport the runtime pins the layer's

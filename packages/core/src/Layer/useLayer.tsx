@@ -443,13 +443,19 @@ function toCssLength(value: number | string): string {
   return typeof value === 'number' ? `${value}px` : value;
 }
 
-/** What identifies a CSS animation or transition across a restart. */
-function animationKey(animation: Animation): string {
+/**
+ * What identifies a CSS animation or transition across a restart: the
+ * element (and pseudo-element) it runs on and its animation name or
+ * transitioned property.
+ */
+function animationKey(animation: Animation): [Element | null, string] {
   const named = animation as Animation & {
     animationName?: string;
     transitionProperty?: string;
   };
-  return named.animationName ?? named.transitionProperty ?? '';
+  const effect = animation.effect as KeyframeEffect | null;
+  const name = named.animationName ?? named.transitionProperty ?? '';
+  return [effect?.target ?? null, `${effect?.pseudoElement ?? ''}|${name}`];
 }
 
 /**
@@ -458,17 +464,21 @@ function animationKey(animation: Animation): string {
  * being rendered, so the layer is taken out of rendering for one forced
  * layout and restored, in the same task. No frame paints in between and the
  * popover stays open, so no toggle event fires and focus and hover are
- * untouched. Leaving rendering also restarts the layer's CSS animations, so
- * each one is put back where it was: one that was running resumes at its
- * time, and one that had already finished (an entry fade that has played)
- * is finished again, so the re-placement never replays it.
+ * untouched. Leaving rendering also restarts the CSS animations of the layer
+ * and everything inside it, so each one is put back where it was: one that
+ * was running resumes at its time, and one that had already finished (an
+ * entry fade that has played) is finished again, so a re-placement never
+ * replays or rewinds any of them.
  */
 function placeAfresh(layer: HTMLElement): void {
   const canAnimate = typeof layer.getAnimations === 'function';
-  const times = new Map<string, CSSNumberish | null>();
+  const times = new Map<Element | null, Map<string, CSSNumberish | null>>();
   if (canAnimate) {
-    for (const animation of layer.getAnimations()) {
-      times.set(animationKey(animation), animation.currentTime);
+    for (const animation of layer.getAnimations({subtree: true})) {
+      const [target, key] = animationKey(animation);
+      const forTarget = times.get(target) ?? new Map();
+      forTarget.set(key, animation.currentTime);
+      times.set(target, forTarget);
     }
   }
   const display = layer.style.display;
@@ -476,18 +486,42 @@ function placeAfresh(layer: HTMLElement): void {
   layer.getBoundingClientRect();
   layer.style.display = display;
   if (canAnimate) {
-    for (const animation of layer.getAnimations()) {
-      const key = animationKey(animation);
-      if (!times.has(key)) {
+    for (const animation of layer.getAnimations({subtree: true})) {
+      const [target, key] = animationKey(animation);
+      const forTarget = times.get(target);
+      if (forTarget == null || !forTarget.has(key)) {
         animation.finish();
       } else {
-        const time = times.get(key);
+        const time = forTarget.get(key);
         if (time != null) {
           animation.currentTime = time;
         }
       }
     }
   }
+}
+
+/**
+ * Whether the standard list has failed a layer that must keep its anchor
+ * clear: its box covers the anchor or, while the anchor is in view, leaves the
+ * viewport on the block axis. Only a box that overlaps the anchor counts; a
+ * layer flush against it does not.
+ */
+function failsAnchor(layer: HTMLElement, anchor: HTMLElement): boolean {
+  const a = anchor.getBoundingClientRect();
+  const l = layer.getBoundingClientRect();
+  if (l.width <= 0 || l.height <= 0) {
+    return false;
+  }
+  const covers =
+    l.left < a.right &&
+    a.left < l.right &&
+    l.top < a.bottom &&
+    a.top < l.bottom;
+  // The viewport's block extent, as the layer's anchor positioning sees it.
+  const viewportBlock = layer.ownerDocument.documentElement.clientHeight;
+  const anchorInView = a.bottom > 0 && a.top < viewportBlock;
+  return covers || (anchorInView && (l.top < 0 || l.bottom > viewportBlock));
 }
 
 /**
@@ -505,31 +539,20 @@ function placeAfresh(layer: HTMLElement): void {
  * screen, in layout or because something scrolled, is read after paint, from
  * the anchor-move observer (FR8). Scroll events are not read: during one the
  * anchor has moved but the layer anchored to it not yet, so the read would
- * compare a moved anchor with a stale layer. Only a box that overlaps the
- * anchor counts; a layer flush against it does not. Once switched, a layer keeps its anchor-clear list until
- * it next opens, so it never jumps back over its trigger while open.
+ * compare a moved anchor with a stale layer. Once switched, a layer keeps its
+ * anchor-clear list until it next opens, so it never jumps back over its
+ * trigger while open; it is placed afresh (`placeAfresh`) only when the switch
+ * does not take effect at once, or when a later read finds it failing again.
  */
 function keepAnchorClear(layer: HTMLElement, anchor: HTMLElement | null): void {
-  if (anchor) {
-    const a = anchor.getBoundingClientRect();
-    const l = layer.getBoundingClientRect();
-    const hasBox = l.width > 0 && l.height > 0;
-    const covers =
-      hasBox &&
-      l.left < a.right &&
-      a.left < l.right &&
-      l.top < a.bottom &&
-      a.top < l.bottom;
-    // The viewport's block extent, as the layer's anchor positioning sees it.
-    const viewportBlock = layer.ownerDocument.documentElement.clientHeight;
-    const anchorInView = a.bottom > 0 && a.top < viewportBlock;
-    const leavesViewport =
-      hasBox && anchorInView && (l.top < 0 || l.bottom > viewportBlock);
-    if (covers || leavesViewport) {
-      layer.setAttribute(LAYER_CLEARS_ANCHOR_ATTRIBUTE, '');
-      // The engine keeps the option it last used, even one the new list does
-      // not contain or one a scroll has since made fail: place it afresh, on
-      // the first switch and on any later read that finds it failing again.
+  if (anchor && failsAnchor(layer, anchor)) {
+    const switching = !layer.hasAttribute(LAYER_CLEARS_ANCHOR_ATTRIBUTE);
+    layer.setAttribute(LAYER_CLEARS_ANCHOR_ATTRIBUTE, '');
+    // A switch usually takes effect at once. The engine may instead keep the
+    // option it last used, even one the new list does not contain or one a
+    // scroll has since made fail: then, and on any later read that finds the
+    // switched layer failing again, place it afresh.
+    if (!switching || failsAnchor(layer, anchor)) {
       placeAfresh(layer);
     }
   }

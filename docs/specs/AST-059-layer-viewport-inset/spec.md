@@ -196,10 +196,11 @@ the app reaches every layer instead of the components that happen to read it.
   when its anchor moves, the layer moves to the side that is now roomier
   rather than shrinking to a sliver. It scrolls what it cannot show, and only
   then, so a layer that fits stays a plain box (FR3). Once switched, it keeps
-  the second list until it next opens; a switch after the layer has painted
-  places it afresh from the second list in the same frame, without closing it,
-  and so does a later read that finds it failing again, because no engine
-  re-runs the list when a scroll carries the anchor.
+  the second list until it next opens; a switch that the engine does not apply
+  at once places it afresh from the second list in the same frame, without
+  closing it or replaying any animation of the layer or its content, and so
+  does a later read that finds it failing again, because no engine re-runs
+  the list when a scroll carries the anchor.
   Chromium tries no more than five position
   options, so this is a second list that replaces the first, not an extension
   of it. The runtime authors both orders; a component passes no fallbacks of

@@ -967,3 +967,64 @@ test('placing a shown tooltip afresh never replays its entry animation', async (
     expect(opacity, `painted frame ${i + 1}`).toBe(1);
   }
 });
+
+test('placing a shown tooltip afresh keeps animations inside its content running', async ({
+  page,
+}) => {
+  // A held-open short tooltip whose content holds a 10-second animation. It
+  // grows and its trigger moves up, so the engine's old option leaves it past
+  // the top of the viewport and the runtime places it afresh after paint. The
+  // content's animation carries on where it was rather than restarting.
+  await page.setViewportSize({width: 1280, height: 720});
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-tooltip--tall-content&viewMode=story&args=content:A+short+tooltip;isOpen:!true`,
+  );
+  await expect(page.getByRole('tooltip')).toBeVisible();
+  await page.evaluate(sel => {
+    const el = document.querySelector(sel) as HTMLElement;
+    window.scrollBy(0, el.getBoundingClientRect().top - 650);
+  }, TRIGGER);
+  await page.waitForTimeout(300);
+  await page.addStyleTag({
+    content:
+      '@keyframes test-pulse{from{opacity:0}to{opacity:1}}.test-pulse{animation:test-pulse 10s linear both}',
+  });
+  await page.evaluate(sel => {
+    const content = document.querySelector(sel)?.firstElementChild;
+    const pulse = document.createElement('div');
+    pulse.className = 'test-pulse';
+    pulse.textContent = 'Animated line';
+    content?.appendChild(pulse);
+    for (let i = 1; i <= 17; i++) {
+      const line = document.createElement('div');
+      line.textContent = `Line ${i}`;
+      content?.appendChild(line);
+    }
+  }, TOOLTIP);
+  await page.waitForTimeout(700);
+  const read = async () =>
+    page.evaluate(() => {
+      const pulse = document.querySelector('.test-pulse') as HTMLElement;
+      const [animation] = pulse.getAnimations();
+      return {
+        time: Number(animation?.currentTime ?? 0),
+        opacity: Number(getComputedStyle(pulse).opacity),
+      };
+    });
+  const before = await read();
+  expect(before.time).toBeGreaterThan(500);
+  await page.evaluate(sel => {
+    const el = document.querySelector(sel) as HTMLElement;
+    el.style.position = 'relative';
+    el.style.insetBlockStart = '-310px';
+  }, TRIGGER);
+  await page.waitForTimeout(450);
+  expect(await hasSwitched(page)).toBe(true);
+  const tooltip = await rect(page, TOOLTIP);
+  expect(tooltip.top).toBeGreaterThanOrEqual(0);
+  const after = await read();
+  // Carried on: later than before by about the time that passed, never
+  // rewound, and never less visible.
+  expect(after.time).toBeGreaterThanOrEqual(before.time + 300);
+  expect(after.opacity).toBeGreaterThanOrEqual(before.opacity);
+});
