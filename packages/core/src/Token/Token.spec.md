@@ -28,7 +28,7 @@ architecture:
     architecture:public-component-api,
   ]
 contributing: []
-system_specs: [spec:AST-005, spec:AST-085]
+system_specs: [spec:AST-005, spec:AST-009, spec:AST-085]
 ---
 
 # Token component contract
