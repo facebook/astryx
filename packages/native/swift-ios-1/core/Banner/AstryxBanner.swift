@@ -69,6 +69,12 @@ public struct AstryxBanner: View {
       RoundedRectangle(cornerRadius: astryx.size("radius-container", 12), style: .continuous)
         .fill(astryx.color(status.groundToken))
     )
-    .accessibilityElement(children: .combine)
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(Text(accessibilityText))
+  }
+
+  /// What VoiceOver reads: the title, then the description.
+  var accessibilityText: String {
+    description.map { "\(title), \($0)" } ?? title
   }
 }

@@ -90,8 +90,11 @@ core's own resolver, light and dark. Regenerate it after a core token change:
 pnpm -F @astryxdesign/native generate:swift-ios
 ```
 
-A test in `@astryxdesign/native` fails when the committed file drifts from
-core's tokens.
+The same command writes `core/Resources/<locale>.lproj/Localizable.strings`
+from core's locale catalogs, so words the components speak to assistive
+technology, such as a loading button's "Loading", follow the person's language.
+Tests in `@astryxdesign/native` fail when either committed output drifts from
+core.
 
 ## Working on it
 

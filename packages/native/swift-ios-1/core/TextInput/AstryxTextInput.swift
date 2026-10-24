@@ -52,9 +52,13 @@ public struct AstryxTextInput: View {
         )
         .disabled(isDisabled)
         .opacity(isDisabled ? 0.5 : 1)
-        .accessibilityLabel(label)
+        .accessibilityLabel(Text(accessibilityText))
     }
   }
+
+  /// The field's accessible name: its visible label, which VoiceOver reads
+  /// on the field itself rather than as separate text.
+  var accessibilityText: String { label }
 
   @ViewBuilder private var field: some View {
     let prompt = placeholder.map { Text($0).foregroundStyle(astryx.color("color-text-secondary")) }
