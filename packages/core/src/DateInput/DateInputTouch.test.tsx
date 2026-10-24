@@ -42,6 +42,7 @@ import {useState} from 'react';
 import type {ISODateString} from '../utils';
 import {InputGroup} from '../InputGroup';
 import {InternationalizationProvider} from '../i18n';
+import {picker} from '../motion/uikit';
 import {DateInput} from './DateInput';
 import {
   toMonthIndex,
@@ -55,7 +56,6 @@ import {
   DEFAULT_MONTH_REACH,
 } from './monthGeometry';
 import {SWIPE_DISTANCE} from './useOwnScrollGesture';
-import {DRAG_SLOP} from './usePointerDragScroll';
 import {SCROLL_QUIET_MS} from './useScrollSettle';
 
 // ---------------------------------------------------------------------------
@@ -2101,175 +2101,8 @@ describe('DateInput — nested scrollers keep their own touch gesture', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Dragging a wheel with a mouse
-// ---------------------------------------------------------------------------
-
-/**
- * A wheel is a scroll container, so a finger pans it for free. A mouse gets
- * nothing: browsers do not drag-scroll an overflow container, so pressing and
- * pulling on the one control shaped like a thing you spin did nothing at all.
- *
- * It matters on desktop specifically because that is where this surface is
- * reviewed, themed and screenshotted.
- */
-describe('DateInput — a mouse can drag a wheel', () => {
-  const title = () =>
-    document.querySelector<HTMLElement>('[data-title="month-year"]')!;
-
-  /** jsdom has no layout: give the rows a height and the wheel a scrollTop. */
-  function withWheelLayout<T>(fn: () => T): T {
-    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
-      configurable: true,
-      get(this: HTMLElement) {
-        return this.getAttribute('role') === 'option' ? 28 : 0;
-      },
-    });
-    try {
-      return fn();
-    } finally {
-      // @ts-expect-error - deleting the shadow restores Element's own getter
-      delete HTMLElement.prototype.offsetHeight;
-    }
-  }
-
-  const wheel = () => screen.getByRole('listbox', {name: 'Month'});
-
-  const pointer = (
-    type: string,
-    {y = 0, pointerType = 'mouse', button = 0, id = 1} = {},
-  ) => {
-    const event = new Event(type, {bubbles: true, cancelable: true});
-    Object.defineProperties(event, {
-      clientY: {value: y},
-      pointerId: {value: id},
-      pointerType: {value: pointerType},
-      button: {value: button},
-    });
-    return event;
-  };
-
-  /** Stubs jsdom's missing capture API and records scrollTop as it moves. */
-  function trackable(el: HTMLElement) {
-    let top = 0;
-    Object.defineProperty(el, 'scrollTop', {
-      configurable: true,
-      get: () => top,
-      set: (v: number) => {
-        top = v;
-      },
-    });
-    el.setPointerCapture = () => {};
-    el.releasePointerCapture = () => {};
-    el.hasPointerCapture = () => true;
-    el.scrollTo = ((opts: ScrollToOptions) => {
-      top = opts.top ?? top;
-    }) as HTMLElement['scrollTo'];
-    return {
-      get scrollTop() {
-        return top;
-      },
-    };
-  }
-
-  it('scrolls the wheel when a mouse drags it', () => {
-    renderAndOpen();
-    fireEvent.click(title());
-    withWheelLayout(() => {
-      const el = wheel();
-      const track = trackable(el);
-      el.dispatchEvent(pointer('pointerdown', {y: 200}));
-      el.dispatchEvent(pointer('pointermove', {y: 160}));
-      // Content follows the hand: pulling up scrolls further down the list.
-      expect(track.scrollTop).toBe(40);
-      el.dispatchEvent(pointer('pointerup', {y: 160}));
-      // And the release lands on a row boundary rather than between two.
-      expect(track.scrollTop % 28).toBe(0);
-    });
-  });
-
-  it('ignores movement too small to be a drag, so a click is still a click', () => {
-    renderAndOpen();
-    fireEvent.click(title());
-    withWheelLayout(() => {
-      const el = wheel();
-      const track = trackable(el);
-      el.dispatchEvent(pointer('pointerdown', {y: 200}));
-      el.dispatchEvent(pointer('pointermove', {y: 200 - (DRAG_SLOP - 1)}));
-      expect(track.scrollTop).toBe(0);
-    });
-  });
-
-  it('leaves touch and pen alone — they pan natively, and better', () => {
-    renderAndOpen();
-    fireEvent.click(title());
-    withWheelLayout(() => {
-      for (const pointerType of ['touch', 'pen']) {
-        const el = wheel();
-        const track = trackable(el);
-        el.dispatchEvent(pointer('pointerdown', {y: 200, pointerType}));
-        el.dispatchEvent(pointer('pointermove', {y: 120, pointerType}));
-        expect(track.scrollTop).toBe(0);
-        el.dispatchEvent(pointer('pointerup', {y: 120, pointerType}));
-      }
-    });
-  });
-
-  it('ignores a secondary button, which belongs to the context menu', () => {
-    renderAndOpen();
-    fireEvent.click(title());
-    withWheelLayout(() => {
-      const el = wheel();
-      const track = trackable(el);
-      el.dispatchEvent(pointer('pointerdown', {y: 200, button: 2}));
-      el.dispatchEvent(pointer('pointermove', {y: 120}));
-      expect(track.scrollTop).toBe(0);
-    });
-  });
-
-  /**
-   * `scroll-snap-type: y mandatory` re-snaps after every scroll, programmatic
-   * ones included. Measured with it left on: 7 of 8 five-pixel drag steps were
-   * yanked back to a snap position, so the wheel stuck to a row and then
-   * jumped a whole one.
-   */
-  it('suspends snapping for the drag, and restores it after', () => {
-    renderAndOpen();
-    fireEvent.click(title());
-    withWheelLayout(() => {
-      const el = wheel();
-      trackable(el);
-      expect(el.style.scrollSnapType).toBe('');
-      el.dispatchEvent(pointer('pointerdown', {y: 200}));
-      el.dispatchEvent(pointer('pointermove', {y: 160}));
-      expect(el.style.scrollSnapType).toBe('none');
-      el.dispatchEvent(pointer('pointerup', {y: 160}));
-      el.dispatchEvent(new Event('scrollend'));
-      expect(el.style.scrollSnapType).toBe('');
-    });
-  });
-
-  /**
-   * BottomSheet starts its own drag-to-dismiss from a `pointerdown` on its
-   * body and CAPTURES the pointer for it, which retargets every later pointer
-   * event — including the click. Measured before this: a click on a wheel row
-   * that wobbled more than a pixel selected nothing at all.
-   */
-  it('keeps the press away from the sheet, which would capture the pointer', () => {
-    renderAndOpen();
-    fireEvent.click(title());
-    withWheelLayout(() => {
-      const el = wheel();
-      trackable(el);
-      const seen: string[] = [];
-      const listener = (event: Event) => seen.push(event.type);
-      document.body.addEventListener('pointerdown', listener);
-      el.dispatchEvent(pointer('pointerdown', {y: 200}));
-      expect(seen).not.toContain('pointerdown');
-      document.body.removeEventListener('pointerdown', listener);
-    });
-  });
-});
+// A finger or a mouse dragging a wheel goes through the gesture system: see
+// Wheel.test.tsx.
 
 // ---------------------------------------------------------------------------
 // Pure month arithmetic
@@ -2521,55 +2354,36 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     expect(read('Wheel.tsx')).toContain("boxSizing: 'border-box'");
   });
 
-  it('sizes the wheel row tighter than a day cell, with larger text', () => {
+  it('sizes the wheels as UIPickerView, with the theme’s large text', () => {
+    // StyleX inlines only literals, so the picker's geometry is repeated in
+    // the tokens; it must stay the UIKit table's.
     const tokens = read('tokens.stylex.ts');
-    // Scroll-first rows: closer together than day cells and closer to the
-    // text they hold, the way a platform picker packs them.
-    expect(tokens).toContain("wheelItemSize: '28px'");
+    const {geometry} = picker;
+    expect(tokens).toContain(`pickerHeight: '${geometry.height}px'`);
+    expect(tokens).toContain(`rowHeight: '${geometry.rowHeight}px'`);
+    expect(tokens).toContain(`rowHalfHeight: '${geometry.rowHeight / 2}px'`);
+    expect(tokens).toContain(`rowOriginDepth: '-${geometry.cylinderRadius}px'`);
+    expect(tokens).toContain(`perspective: '${geometry.perspective}px'`);
+    expect(tokens).toContain(`bandHeight: '${geometry.bandHeight}px'`);
+    expect(tokens).toContain(`bandInset: '${geometry.bandInset}px'`);
+    expect(tokens).toContain(
+      `bandMagnification: '${geometry.bandMagnification.toFixed(3)}'`,
+    );
+    expect(tokens).toContain(`outerOpacity: '${geometry.outerOpacity}'`);
     expect(read('Wheel.tsx')).toContain(
       "fontSize: typeScaleVars['--text-large-size']",
     );
   });
 
-  it('centers wheel rows and pads both ends so either extreme can reach the band', () => {
-    const source = read('Wheel.tsx');
-    expect(source).toContain("scrollSnapType: 'y mandatory'");
-    expect(source).toContain("scrollSnapAlign: 'center'");
-    expect(source).toContain(
-      'paddingBlock: dateInputTouchGeometry.wheelEdgePadding',
+  it('draws the dimmed rows on the cylinder, in perspective, with the band cut out', () => {
+    const drum = declarations(read('Wheel.tsx'), 'drum');
+    expect(drum).toContain('perspective: wheelGeometry.perspective');
+    expect(drum.join(' ')).toContain('polygon(evenodd');
+    const row = declarations(read('Wheel.tsx'), 'row');
+    expect(row).toContain(
+      'transformOrigin: `50% 50% ${wheelGeometry.rowOriginDepth}`',
     );
-  });
-
-  it('leaves a two-finger pinch to the page over the wheels', () => {
-    // `pan-y` alone also refuses the browser's pinch-zoom over the wheel, so
-    // the page could not be zoomed over an open picker. The real-engine proof
-    // is WheelPinchZoom.a11y.chromium.spec.ts; jsdom computes no touch-action.
-    expect(declarations(read('Wheel.tsx'), 'scroller')).toContain(
-      "touchAction: 'pan-y pinch-zoom'",
-    );
-  });
-
-  it('guards the scroll-driven falloff behind @supports', () => {
-    const source = read('Wheel.tsx');
-    // Without the guard, a browser that does not understand animation-timeline
-    // runs these keyframes once on the document timeline instead.
-    expect(source).toContain("'@supports (animation-timeline: view())'");
-    expect(source).toContain("animationTimeline: 'view(y)'");
-    expect(source).toContain("'@media (prefers-reduced-motion: reduce)'");
-  });
-
-  it('keeps the falloff off the snap area itself', () => {
-    // A transform moves the snap area, and the wheel then settles a few
-    // pixels off the row it is showing.
-    const source = read('Wheel.tsx');
-    const itemInner = source.slice(source.indexOf('itemInner: {'));
-    expect(itemInner).toContain("animationTimeline: 'view(y)'");
-    const item = source.slice(
-      source.indexOf('  item: {'),
-      source.indexOf('itemInner: {'),
-    );
-    expect(item).not.toContain('animationTimeline');
-    expect(item).not.toContain("overflow: 'hidden'");
+    expect(row).toContain("backfaceVisibility: 'hidden'");
   });
 
   it('insets the sheet content equally on every edge', () => {
@@ -2755,7 +2569,7 @@ describe('DateInput — scroll CSS (definition-level)', () => {
    * sit under text.
    */
   it('gives the wheel band enough contrast for its fade to read', () => {
-    const source = read('Wheel.tsx');
+    const source = read('WheelGroup.tsx');
     const band = source.slice(
       source.indexOf('  band: {'),
       source.indexOf('});', source.indexOf('  band: {')),
