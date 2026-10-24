@@ -53,7 +53,7 @@ import {VisuallyHidden} from '../VisuallyHidden';
 import {useTooltip} from '../Tooltip';
 import {getInputARIA} from '../utils';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
-import {usePressFeedback} from '../hooks/usePressFeedback';
+import {useStepperTouch} from './NumberInputTouch';
 import {inputDisabledFocusStyles} from '../Field/inputDisabledFocus';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
@@ -157,14 +157,10 @@ const styles = stylex.create({
     overflow: 'hidden',
     borderStartEndRadius: 'var(--_field-radius)',
     borderEndEndRadius: 'var(--_field-radius)',
-    // A finger held on a stepper is pressing it, not selecting text: without
-    // these, iOS Safari selects the nearest text (the field's label) after
-    // about half a second and shows its edit menu. `manipulation` keeps
-    // rapid taps from double-tap zooming the page while pans and pinch-zoom
-    // stay the browser's.
-    WebkitTouchCallout: 'none',
-    WebkitUserSelect: 'none',
-    userSelect: 'none',
+    // `manipulation` keeps rapid taps from double-tap zooming the page while
+    // pans and pinch-zoom stay the browser's. A held finger selects nothing:
+    // the gesture host turns text selection and the touch callout off on the
+    // press-tracked column for as long as a finger or a pen is down.
     touchAction: 'manipulation',
   },
   numberStepperButton: {
@@ -593,7 +589,6 @@ export function NumberInput({
     containerClassName,
     containerStyle,
   });
-  const pressable = usePressFeedback();
   const t = useTranslator();
   const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
@@ -928,8 +923,25 @@ export function NumberInput({
     if (pointerType === 'mouse' && event.detail > 0) {
       inputRef.current?.focus();
     }
+    // A finger or a pen the touch layer tracked has stepped already, at its
+    // lift or while held: the click the engine sends after it is no step.
+    if (stepperTouch.takeTrackedClick(event.nativeEvent, pointerType)) {
+      return;
+    }
     stepValue(direction);
   };
+
+  // A finger or a pen on the steppers is tracked by the touch layer
+  // (NumberInputTouch.tsx) as UIStepper tracks one; a mouse keeps the click.
+  const incrementRef = useRef<HTMLButtonElement | null>(null);
+  const decrementRef = useRef<HTMLButtonElement | null>(null);
+  const stepperColumnRef = useRef<HTMLDivElement | null>(null);
+  const stepperTouch = useStepperTouch(
+    {stepValue, canIncrement, canDecrement, isDisabled, isReadOnly},
+    incrementRef,
+    decrementRef,
+    stepperColumnRef,
+  );
 
   // Handle clear button click
   const handleClear = useCallback(
@@ -1069,11 +1081,11 @@ export function NumberInput({
       )}
       {statusIcon}
       {hasNumberSteppers && (
-        <div {...stylex.props(styles.numberSteppers)}>
+        <div ref={stepperColumnRef} {...stylex.props(styles.numberSteppers)}>
           <button
+            ref={incrementRef}
             type="button"
             tabIndex={-1}
-            {...pressable}
             aria-disabled={
               isDisabled || isReadOnly || !canIncrement || undefined
             }
@@ -1094,9 +1106,9 @@ export function NumberInput({
             />
           </button>
           <button
+            ref={decrementRef}
             type="button"
             tabIndex={-1}
-            {...pressable}
             aria-disabled={
               isDisabled || isReadOnly || !canDecrement || undefined
             }

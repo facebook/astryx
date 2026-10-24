@@ -226,12 +226,14 @@ export const docs = {
     {
       name: 'containerClassName',
       type: 'string',
-      description: 'Class name for the field container. Same targeting as `containerXstyle`.',
+      description:
+        'Class name for the field container. Same targeting as `containerXstyle`.',
     },
     {
       name: 'containerStyle',
       type: 'CSSProperties',
-      description: 'Inline styles for the field container. Same targeting as `containerXstyle`.',
+      description:
+        'Inline styles for the field container. Same targeting as `containerXstyle`.',
     },
     {
       name: 'controlXstyle',
@@ -336,7 +338,7 @@ export const docs = {
         name: 'Number steppers',
         required: false,
         description:
-          'Optional buttons that increment or decrement by the configured step.',
+          'Optional buttons that increment or decrement by the configured step. Under a finger a tap steps once when the finger lifts, and a button held down keeps stepping: after half a second, then faster after three seconds, until the finger lifts or slides off.',
       },
     ],
   },
@@ -641,7 +643,7 @@ export const docsZh = {
         name: 'Number steppers',
         required: false,
         description:
-          'Optional buttons that increment or decrement by the configured step.',
+          'Optional buttons that increment or decrement by the configured step. Under a finger a tap steps once when the finger lifts, and a button held down keeps stepping: after half a second, then faster after three seconds, until the finger lifts or slides off.',
       },
     ],
   },
@@ -715,15 +717,17 @@ export const docsDense = {
         name: 'Number steppers',
         required: false,
         description:
-          'Optional buttons that increment or decrement by the configured step.',
+          'Optional buttons that increment or decrement by the configured step. Under a finger a tap steps once when the finger lifts, and a button held down keeps stepping: after half a second, then faster after three seconds, until the finger lifts or slides off.',
       },
     ],
   },
   propDescriptions: {
-    containerXstyle: 'StyleX styles for the field container; no effect in InputGroup or horizontal-labels FormLayout. No root xstyle/className/style.',
+    containerXstyle:
+      'StyleX styles for the field container; no effect in InputGroup or horizontal-labels FormLayout. No root xstyle/className/style.',
     containerClassName: 'Class name for the field container.',
     containerStyle: 'Inline styles for the field container.',
-    controlXstyle: 'StyleX styles for the visual control box (border, background, icons); not the native input.',
+    controlXstyle:
+      'StyleX styles for the visual control box (border, background, icons); not the native input.',
     controlClassName: 'Class name for the visual control box.',
     controlStyle: 'Inline styles for the visual control box.',
     label: 'Label text (always rendered for accessibility).',

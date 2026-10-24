@@ -2365,9 +2365,11 @@ describe('NumberInput stepping', () => {
     });
 
     // UIStepper never becomes first responder, and focusing the field on a
-    // phone brings up the on-screen keyboard.
-    it.each(['touch', 'pen'])(
-      'steps the value without focusing the input on a %s tap',
+    // phone brings up the on-screen keyboard. A tracked finger or pen steps
+    // through the gesture system (NumberInput.stepperTouch.test.tsx); a touch
+    // click the steppers did not track still steps, without focus.
+    it.each(['touch'])(
+      'steps the value without focusing the input on an untracked %s click',
       pointerType => {
         const onChange = vi.fn();
         render(
@@ -2705,19 +2707,22 @@ describe('NumberInput stepper padding coupling', () => {
 });
 
 describe('NumberInput stepper column under a held finger', () => {
-  it('declares the selection, callout and touch-action opt-outs in source', () => {
-    // iOS Safari reads the prefixed declarations (the published CSS is not
-    // autoprefixed) and Chromium reads only the unprefixed one and ignores the
-    // callout, so the browser spec cannot catch a lost prefix: pin all four.
+  it('leaves selection to the press tracker and keeps touch-action manipulation', () => {
+    // The gesture host turns selection and the touch callout off on a
+    // press-tracked element while a finger is down, prefixes included, on
+    // every engine; the column itself declares only touch-action.
     const source = readFileSync(
       'packages/core/src/NumberInput/NumberInput.tsx',
       'utf8',
     );
     const start = source.indexOf('  numberSteppers: {');
     const column = source.slice(start, source.indexOf('\n  },', start));
-    expect(column).toContain("WebkitTouchCallout: 'none',");
-    expect(column).toContain("WebkitUserSelect: 'none',");
-    expect(column).toContain("userSelect: 'none',");
     expect(column).toContain("touchAction: 'manipulation',");
+    expect(
+      readFileSync(
+        'packages/core/src/NumberInput/NumberInputTouch.tsx',
+        'utf8',
+      ),
+    ).toMatch(/usePressTracker\(\s*columnRef,/);
   });
 });

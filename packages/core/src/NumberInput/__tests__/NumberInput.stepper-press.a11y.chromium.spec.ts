@@ -6,15 +6,14 @@
  * iOS Safari selects the nearest text after a finger rests about half a second
  * on content that allows selection: on a stepper that is the field's label,
  * with the edit menu over the field, and the tap that would have stepped is
- * lost. The stepper column opts out of selection and of the touch callout,
- * and takes `touch-action: manipulation`, which keeps panning and pinch-zoom
- * the browser's: a scroll that starts on a stepper still scrolls the page and
- * steps nothing. Chromium can observe only part of the fix: its computed
- * `user-select` (from the unprefixed declaration) and `touch-action`, and the
- * paths the fix must not change, including a hold longer than a tap. It does
- * not select on a long press and ignores `-webkit-touch-callout`, so the
- * prefixed declarations iOS Safari reads are pinned in NumberInput.test.tsx and
- * the selection itself is proven on the iOS simulator.
+ * lost. The gesture host turns selection and the touch callout off on the
+ * press-tracked stepper column while a finger is down, and the column takes
+ * `touch-action: manipulation`, which keeps panning and pinch-zoom the
+ * browser's: a scroll that starts on a stepper still scrolls the page and
+ * steps nothing. (Chromium's touch emulation does not select on a long press,
+ * so the selection itself is proven on the iOS simulator; this proves the
+ * lock the fix relies on and the paths it must not change, including a hold
+ * longer than a tap.)
  */
 
 import {expect, test, type Page} from '@playwright/test';
@@ -45,15 +44,35 @@ async function open(page: Page): Promise<void> {
   await page.getByRole('spinbutton', {name: 'Quantity'}).waitFor();
 }
 
-test('the stepper column opts out of text selection and double-tap zoom', async ({
+test('a held finger turns text selection off on the stepper column, which keeps touch-action manipulation', async ({
   page,
 }) => {
   await open(page);
-  const column = page
-    .getByRole('button', {name: 'Increment Quantity'})
-    .locator('..');
-  await expect(column).toHaveCSS('user-select', 'none');
+  const plus = page.getByRole('button', {name: 'Increment Quantity'});
+  const column = plus.locator('..');
   await expect(column).toHaveCSS('touch-action', 'manipulation');
+  // The gesture host locks selection on the press-tracked column while a
+  // finger is down (an inline style), and restores it at the lift.
+  const lock = async () =>
+    column.evaluate(el =>
+      (el as HTMLElement).style.getPropertyValue('user-select'),
+    );
+  expect(await lock()).toBe('');
+  const box = await plus.boundingBox();
+  if (box == null) {
+    throw new Error('the stepper has no box');
+  }
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [{x: box.x + box.width / 2, y: box.y + box.height / 2}],
+  });
+  await expect.poll(lock).toBe('none');
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchEnd',
+    touchPoints: [],
+  });
+  await expect.poll(lock).toBe('');
   // The field itself stays selectable and pannable.
   await expect(page.getByRole('spinbutton', {name: 'Quantity'})).toHaveCSS(
     'touch-action',
@@ -112,15 +131,8 @@ test('a tap on a stepper still steps the value', async ({page}) => {
   ).toHaveAttribute('aria-valuenow', '3');
 });
 
-test('a finger held 1.6 s, longer than a tap, selects nothing', async ({
-  page,
-}) => {
-  // Without the fix iOS Safari selects the field's label here, and past 1.5 s
-  // (UIKit's tap maximum) it makes no click, so nothing steps. Chromium does
-  // not select on a long press and still clicks once after it: this pins what
-  // both engines share (no selection, never more than that one click); the
-  // iOS outcome is shown on the simulator.
-  await open(page);
+/** Holds a finger on + for 1.6 s, longer than a tap; returns the value after. */
+async function holdPlus(page: Page): Promise<number> {
   const input = page.getByRole('spinbutton', {name: 'Quantity'});
   const box = await page
     .getByRole('button', {name: 'Increment Quantity'})
@@ -141,5 +153,17 @@ test('a finger held 1.6 s, longer than a tap, selects nothing', async ({
   });
   await page.waitForTimeout(300);
   expect(await page.evaluate(() => String(getSelection()))).toBe('');
-  expect(['2', '3']).toContain(await input.getAttribute('aria-valuenow'));
+  return Number(await input.getAttribute('aria-valuenow'));
+}
+
+test('a finger held 1.6 s selects nothing and keeps stepping', async ({
+  page,
+}) => {
+  // The steppers track the finger: a hold repeats from 0.5 s as UIStepper
+  // does, and the click after the lift adds nothing.
+  await open(page);
+  // The steps at 0.5, 1 and 1.5 s; one more if the lift comes after 2 s.
+  const value = await holdPlus(page);
+  expect(value).toBeGreaterThanOrEqual(4);
+  expect(value).toBeLessThanOrEqual(6);
 });
