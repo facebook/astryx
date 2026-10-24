@@ -137,9 +137,11 @@ intentional decision. A `current` contract contains no unresolved rows.
 - **AR3 — No live region; announced when it appears.** EmptyState adds no live
   role or `aria-live` to the root and does not move focus. Rendered with the
   page (before the first paint, or while hydrating), it announces nothing. When
-  it appears, or its message changes, later, it announces its title and
-  description once through the shared polite channel (`spec:AST-086` FR2, FR11).
-  Action controls keep their own names, roles, and behavior.
+  it appears, or its message changes, later, it announces its message once
+  through the shared polite channel (`spec:AST-086` FR2, FR11). The message is
+  the title and description, without content hidden from assistive technology;
+  action labels are not part of it. Action controls keep their own names,
+  roles, and behavior.
 
 ## Design relationships
 
