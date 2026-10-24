@@ -39,6 +39,12 @@
  *   gesture with nothing acting; the model never re-implements scrolling.
  * - While a press is tracked in an overflowing menu, a pointer resting near
  *   the top or bottom edge scrolls the menu toward that edge.
+ * - With `touchTracking: 'uikit'` a finger that lands in the menu is tracked
+ *   as UIMenu's list tracks it instead (menuSelectionRecognizer.ts on the
+ *   gesture system, driving the shared action-group tracker): its row lights
+ *   after UIKit's content-touch delay, a tap acts at the lift, and in a menu
+ *   that scrolls a travelling finger scrolls it. A mouse keeps the pointer
+ *   model.
  *
  * The menu root is marked `data-astryx-menu-press` so a nested flyout (a DOM
  * descendant of its parent menu) can tell which level owns a press, and so a
@@ -53,7 +59,14 @@
  * - /packages/core/src/hooks/menuPressGesture.ts
  */
 
-import {useCallback, useEffect, useMemo, useRef, type RefObject} from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  type RefObject,
+  useState,
+} from 'react';
 import {currentGesture} from '../Layer/gestureCounter';
 import {
   IDLE_MENU_PRESS,
@@ -64,6 +77,13 @@ import {
   type MenuPressPointerType,
 } from './menuPressGesture';
 import {createNativeScrollProbe} from '../gestures/nativeScroll';
+import {getGestureHost} from '../gestures/GestureHost';
+import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
+import {
+  createActionGroupTracker,
+  type ActionGroupTracker,
+} from './actionGroupTracker';
+import {MenuSelectionGestureRecognizer} from './menuSelectionRecognizer';
 import {menu} from '../motion/uikit/menu';
 import {scroll} from '../motion/uikit/scroll';
 import {useLongPress, type UseLongPressHandlers} from './useLongPress';
@@ -248,6 +268,23 @@ export interface UseMenuPressOptions {
    * @default 'tap'
    */
   touchOpen?: 'tap' | 'press';
+  /**
+   * How a finger (or a pen) that lands in the menu is tracked. `'pointer'`:
+   * the highlight follows it from the touch-down. `'uikit'`: as UIMenu's
+   * list tracks it (menuSelectionRecognizer.ts): the row under a still
+   * finger highlights after UIKit's content-touch delay, a tap acts at the
+   * lift, and in a menu that scrolls a travelling finger scrolls it; the
+   * tracking runs on the gesture system and the shared action-group tracker.
+   * A mouse is unaffected.
+   * @default 'pointer'
+   */
+  touchTracking?: 'pointer' | 'uikit';
+  /**
+   * Whether the menu is showing. `'uikit'` touch tracking attaches its
+   * recognizer only while it is, so a closed menu adds no listeners.
+   * @default true
+   */
+  isOpen?: boolean;
   /** Whether the model is live. @default true */
   isEnabled?: boolean;
 }
@@ -348,6 +385,32 @@ function isInMenuTree(element: Element, root: HTMLElement): boolean {
   }
   const owner = element.closest<HTMLElement>(MENU_PRESS_ROOT_SELECTOR);
   return owner != null && getOutermostRoot(owner) === root;
+}
+
+/**
+ * The release a finger's recognized press hands the activation: a primary
+ * button at the lift's position, with no modifiers.
+ */
+function syntheticRelease(
+  row: HTMLElement,
+  {x, y}: {x: number; y: number},
+): PointerEvent {
+  const view = row.ownerDocument.defaultView;
+  const init = {
+    bubbles: true,
+    cancelable: true,
+    button: 0,
+    clientX: x,
+    clientY: y,
+    screenX: x,
+    screenY: y,
+  };
+  const PointerEventCtor = view?.PointerEvent;
+  return (
+    typeof PointerEventCtor === 'function'
+      ? new PointerEventCtor('pointerup', {...init, pointerType: 'touch'})
+      : new MouseEvent('pointerup', init)
+  ) as PointerEvent;
 }
 
 interface ResolvedPoint {
@@ -850,6 +913,13 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
       if (pointerType === 'mouse' && event.button !== 0) {
         return;
       }
+      if (
+        pointerType !== 'mouse' &&
+        optionsRef.current.touchTracking === 'uikit'
+      ) {
+        // The selection recognizer tracks fingers (see below).
+        return;
+      }
       // The innermost model owns the press: a flyout is a DOM descendant of
       // its parent menu, and both would otherwise track the same pointer.
       const target = event.target as Element | null;
@@ -955,6 +1025,149 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
       triggerGestureRef.current === currentGesture()
     );
   }, []);
+
+  // --- A finger in the menu, as UIMenu's list tracks it ('uikit') ----------
+
+  // The shared action-group tracker: the rows' rects are read once when the
+  // press begins, the highlight is focus (DEC-6), the lift runs the row as
+  // its own click would. Rows of the open flyouts are part of the group.
+  const trackerRef = useRef<ActionGroupTracker | null>(null);
+  const releaseRef = useRef<{x: number; y: number}>({x: 0, y: 0});
+  trackerRef.current ??= createActionGroupTracker(() => ({
+    roots: () => {
+      const menu = optionsRef.current.menuRef.current;
+      if (menu == null) {
+        return [];
+      }
+      // The whole menu tree is one group: the outermost root holds the
+      // flyouts nested in it, but a menu the root renders beside itself (a
+      // sub-menu's dialog in the root's surface host) is not inside it.
+      const root = getOutermostRoot(menu);
+      return root.contains(menu) ? [root] : [root, menu];
+    },
+    itemSelector: optionsRef.current.itemSelector,
+    highlightExpansion: 0,
+    paintsHighlight: false,
+    onHighlightChange: row => highlightRef.current(row),
+    onActivate: row =>
+      activateRef.current(row, syntheticRelease(row, releaseRef.current)),
+  }));
+  useEffect(() => () => trackerRef.current?.dispose(), []);
+  const highlightRef = useRef(highlight);
+  highlightRef.current = highlight;
+  const activateRef = useRef(activate);
+  activateRef.current = activate;
+  const getScrollerRef = useRef(getScroller);
+  getScrollerRef.current = getScroller;
+
+  const [selection] = useState(
+    () =>
+      new MenuSelectionGestureRecognizer({
+        name: 'MenuSelection',
+        scrolls: () => getScrollerRef.current() != null,
+        // The rows' own press tracking never sees the finger; the browser's
+        // click for a recognized press is withheld (the row runs at the lift).
+        delaysTouchesBegan: true,
+        shouldReceiveTouch: (_recognizer, touch) => {
+          // The innermost menu owns the finger: a flyout tracks its own.
+          const target = touch.target;
+          return (
+            target instanceof Element &&
+            target.closest(MENU_PRESS_ROOT_SELECTOR) ===
+              optionsRef.current.menuRef.current
+          );
+        },
+      }),
+  );
+  const onSelection = useCallback(
+    (recognizer: MenuSelectionGestureRecognizer) => {
+      const tracker = trackerRef.current;
+      if (tracker == null) {
+        return;
+      }
+      switch (recognizer.state) {
+        case 'began': {
+          // The press begins where the finger landed, then follows it.
+          const landing = recognizer.landingLocation();
+          tracker.begin(landing.x, landing.y);
+          const {x, y} = recognizer.location();
+          if (x !== landing.x || y !== landing.y) {
+            tracker.move(x, y);
+          }
+          break;
+        }
+        case 'changed': {
+          const {x, y} = recognizer.location();
+          tracker.move(x, y);
+          break;
+        }
+        case 'ended': {
+          const {x, y} = recognizer.location();
+          if (tracker.isTracking) {
+            tracker.move(x, y);
+          } else {
+            // A tap: the row under it highlights and acts at the lift.
+            tracker.begin(x, y);
+          }
+          releaseRef.current = {x, y};
+          // The browser's own click for this finger is withheld by the
+          // gesture host; a late one (WebKit aims it at the row the finger
+          // landed on) is swallowed here too, as for every tracked press.
+          armStrayClick(getDocument());
+          tracker.end();
+          break;
+        }
+        case 'cancelled':
+          tracker.cancel();
+          break;
+        case 'possible':
+        case 'failed':
+          break;
+      }
+    },
+    [getDocument],
+  );
+  useEffect(() => selection.addListener(onSelection), [selection, onSelection]);
+  const isSelectionEnabled =
+    options.touchTracking === 'uikit' &&
+    (options.isEnabled ?? true) &&
+    (options.isOpen ?? true);
+  useIsomorphicLayoutEffect(() => {
+    selection.setEnabled(isSelectionEnabled);
+  }, [selection, isSelectionEnabled]);
+  // Attached to the menu root once it is in the document: a layer mounts its
+  // content after the hook's first commit, and a flyout's on open. Checked
+  // on every commit; attaching costs nothing when the element is unchanged.
+  const selectionHostRef = useRef<{
+    element: Element;
+    detach: () => void;
+  } | null>(null);
+  useIsomorphicLayoutEffect(() => {
+    const element = isSelectionEnabled ? options.menuRef.current : null;
+    if (selectionHostRef.current?.element === element) {
+      return;
+    }
+    selectionHostRef.current?.detach();
+    selectionHostRef.current =
+      element == null
+        ? null
+        : {
+            element,
+            // The menu declares its own touch-action (FR4).
+            detach: getGestureHost(element.ownerDocument).attach(
+              element,
+              selection,
+              {manageStyle: false},
+            ),
+          };
+  });
+  useEffect(
+    () => () => {
+      selectionHostRef.current?.detach();
+      selectionHostRef.current = null;
+    },
+    [],
+  );
 
   const continueGesture = useCallback(
     (pointer: MenuPressContinuation) => {

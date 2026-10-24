@@ -28,6 +28,7 @@ import {DropdownMenuItem} from './DropdownMenuItem';
 import {DropdownMenuDivider} from './DropdownMenuDivider';
 import {DropdownMenuGroup} from './DropdownMenuGroup';
 import {warmMenuBottomSheet} from './__tests__/warmMenuBottomSheet';
+import {finger, placeRows, rowCenter} from './__tests__/fingerTouch';
 import {DropdownMenuSubMenu} from './DropdownMenuSubMenu';
 import {Divider} from '../Divider';
 import {rtlStyles} from '../utils';
@@ -2836,14 +2837,89 @@ describe('DropdownMenu press model', () => {
     const user = userEvent.setup();
     const trigger = renderMenu(onPick);
     await user.click(trigger);
-    fireEvent.pointerDown(item('Edit'), touch);
-    fireEvent.pointerMove(item('Delete'), touch);
+    // The finger is tracked by the gesture system (as UIMenu's list tracks
+    // it): touch events over rows with a layout box.
+    placeRows([item('Edit'), item('Duplicate'), item('Delete')]);
+    const contact = finger();
+    contact.down(item('Edit'), rowCenter(0));
+    contact.move(item('Edit'), rowCenter(2));
     expect(item('Delete')).toHaveFocus();
-    fireEvent.pointerUp(item('Delete'), touch);
+    contact.up(item('Edit'), rowCenter(2));
     // The WebKit tail: a click aimed at the row the touch began on.
     fireEvent.click(item('Edit'), {detail: 1});
     expect(onPick).toHaveBeenCalledTimes(1);
     expect(onPick).toHaveBeenCalledWith('Delete');
+  });
+
+  describe('a finger in the menu, tracked as UIMenu\u2019s list tracks it', () => {
+    // iOS 26.2: a row highlights about 160 ms after the finger lands (the
+    // list's content-touch delay), a tap picks at the lift, and a quick drag
+    // scrolls a long menu but scrubs a short one.
+    async function openPlaced(onPick: (label: string) => void) {
+      const user = userEvent.setup();
+      const trigger = renderMenu(onPick);
+      await user.click(trigger);
+      const rows = [item('Edit'), item('Duplicate'), item('Delete')];
+      placeRows(rows);
+      return {trigger, rows};
+    }
+    const ONSET = 150;
+
+    it('a resting finger highlights its row only after the content-touch delay, and the lift picks it once', async () => {
+      const onPick = vi.fn();
+      const {rows} = await openPlaced(onPick);
+      const contact = finger();
+      contact.down(rows[0], rowCenter(0));
+      contact.move(rows[0], {...rowCenter(0), y: rowCenter(0).y + 2}, 100);
+      expect(rows[0]).not.toHaveFocus();
+      contact.move(
+        rows[0],
+        {...rowCenter(0), y: rowCenter(0).y + 3},
+        ONSET - 90,
+      );
+      expect(rows[0]).toHaveFocus();
+      contact.up(rows[0], rowCenter(0));
+      fireEvent.click(rows[0], {detail: 1});
+      expect(onPick).toHaveBeenCalledTimes(1);
+      expect(onPick).toHaveBeenCalledWith('Edit');
+    });
+
+    it('a tap picks the row at the lift', async () => {
+      const onPick = vi.fn();
+      const {rows} = await openPlaced(onPick);
+      const contact = finger();
+      contact.down(rows[1], rowCenter(1));
+      contact.up(rows[1], rowCenter(1), 60);
+      expect(onPick).toHaveBeenCalledTimes(1);
+      expect(onPick).toHaveBeenCalledWith('Duplicate');
+    });
+
+    it('in a menu that fits, a quick drag scrubs from where it landed and picks the row it lifts on', async () => {
+      const onPick = vi.fn();
+      const {rows} = await openPlaced(onPick);
+      const contact = finger();
+      contact.down(rows[0], rowCenter(0));
+      contact.move(rows[0], rowCenter(2), 30);
+      expect(rows[2]).toHaveFocus();
+      contact.up(rows[0], rowCenter(2), 30);
+      expect(onPick).toHaveBeenCalledTimes(1);
+      expect(onPick).toHaveBeenCalledWith('Delete');
+    });
+
+    it('in a menu that scrolls, a quick drag is the list\u2019s scroll: nothing highlights, nothing is picked', async () => {
+      const onPick = vi.fn();
+      const {rows} = await openPlaced(onPick);
+      const menu = screen.getByRole('menu', {hidden: true});
+      Object.defineProperty(menu, 'scrollHeight', {value: 600});
+      Object.defineProperty(menu, 'clientHeight', {value: 300});
+      const contact = finger();
+      contact.down(rows[0], rowCenter(0));
+      contact.move(rows[0], rowCenter(2), 30);
+      expect(rows[2]).not.toHaveFocus();
+      expect(rows[0]).not.toHaveFocus();
+      contact.up(rows[0], rowCenter(2), 30);
+      expect(onPick).not.toHaveBeenCalled();
+    });
   });
 
   it('a mouse released outside closes the menu; a finger released outside leaves it open', async () => {

@@ -90,6 +90,12 @@ export const docs = {
       default: "'tap'",
     },
     {
+      name: 'options.touchTracking',
+      type: "'pointer' | 'uikit'",
+      description:
+        "How a finger or pen that lands in the menu is tracked. 'pointer' (the default): the highlight follows it from the touch-down. 'uikit': as the list of an iOS menu tracks it \u2014 the row under a resting finger lights after UIKit\u2019s content-touch delay (150 ms), a tap acts at the lift, and in a menu that scrolls a finger that travels first scrolls it (nothing lights or acts) while in a menu that fits it slides the highlight at once. A mouse is unaffected.",
+    },
+    {
       name: 'options.isEnabled',
       type: 'boolean',
       description: 'Whether the model is live.',

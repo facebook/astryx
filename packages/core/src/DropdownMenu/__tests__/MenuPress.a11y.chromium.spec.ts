@@ -329,7 +329,9 @@ test.describe('DropdownMenu press model (Chromium)', () => {
     const edit = await center(page, 'menuitem', 'Edit');
     const del = await center(page, 'menuitem', 'Delete');
     await touch.start(cdp, edit);
-    expect(await activeRowName(page)).toBe('Edit');
+    // As in UIMenu, the row under a resting finger lights after the list's
+    // content-touch delay (150 ms), not on the touch.
+    await expect.poll(async () => activeRowName(page)).toBe('Edit');
     await touch.slide(cdp, edit, del);
     expect(await activeRowName(page)).toBe('Delete');
     await touch.end(cdp);

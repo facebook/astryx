@@ -1561,6 +1561,9 @@ function DropdownMenuPopover({
     onTriggerPress: handleTriggerPress,
     onDismiss: closeMenu,
     touchOpen,
+    // A finger in the menu is tracked as UIMenu's list tracks it.
+    touchTracking: 'uikit',
+    isOpen: isPopoverOpen,
   });
   cancelMenuPressRef.current = menuPress.cancel;
 

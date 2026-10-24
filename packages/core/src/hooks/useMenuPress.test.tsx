@@ -33,6 +33,8 @@ interface HarnessProps {
   getScroller?: () => HTMLElement | null;
   onHighlight?: (row: HTMLElement | null) => void;
   touchOpen?: 'tap' | 'press';
+  touchTracking?: 'pointer' | 'uikit';
+  isOpen?: boolean;
   /** Receives the hook's return, for calls the trigger does not make. */
   pressRef?: {current: UseMenuPressReturn | null};
 }
@@ -45,6 +47,8 @@ function Harness({
   getScroller,
   onHighlight,
   touchOpen,
+  touchTracking,
+  isOpen: isMenuOpen,
   pressRef,
 }: HarnessProps) {
   const menuRef = useRef<HTMLDivElement>(null);
@@ -71,6 +75,8 @@ function Harness({
     getScroller,
     onHighlight,
     touchOpen,
+    touchTracking,
+    isOpen: isMenuOpen,
   });
   if (pressRef != null) {
     pressRef.current = press;
@@ -673,6 +679,45 @@ describe('useMenuPress — a finger that opens on the press (touchOpen: press)',
     });
     document.dispatchEvent(scrollMove);
     expect(scrollMove.defaultPrevented).toBe(false);
+  });
+});
+
+describe("useMenuPress — touchTracking: 'uikit'", () => {
+  it('leaves a finger in the menu to the selection recognizer: its pointer events alone light and run nothing', () => {
+    const onSelect = vi.fn();
+    render(<Harness onSelect={onSelect} touchTracking="uikit" />);
+    const finger = {pointerType: 'touch', pointerId: 21};
+    fireEvent.pointerDown(row('A'), finger);
+    fireEvent.pointerMove(row('B'), finger);
+    expect(row('B')).not.toHaveFocus();
+    fireEvent.pointerUp(row('B'), finger);
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it('adds no listeners while the menu is closed', () => {
+    const addListener = vi.spyOn(document, 'addEventListener');
+    try {
+      render(<Harness touchTracking="uikit" isOpen={false} />);
+      expect(
+        addListener.mock.calls.some(([type]) =>
+          ['pointercancel', 'touchstart'].includes(type),
+        ),
+      ).toBe(false);
+    } finally {
+      addListener.mockRestore();
+    }
+  });
+
+  it('keeps the pointer model for a mouse', () => {
+    const onSelect = vi.fn();
+    render(<Harness onSelect={onSelect} touchTracking="uikit" />);
+    const mouse = {pointerType: 'mouse', pointerId: 22, button: 0};
+    fireEvent.pointerDown(row('A'), mouse);
+    expect(row('A')).toHaveFocus();
+    fireEvent.pointerMove(row('B'), mouse);
+    expect(row('B')).toHaveFocus();
+    fireEvent.pointerUp(row('B'), mouse);
+    expect(onSelect).toHaveBeenCalledWith('B');
   });
 });
 
