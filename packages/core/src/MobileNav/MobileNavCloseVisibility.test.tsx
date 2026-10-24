@@ -15,18 +15,19 @@
  * already `display: none`. A browser that fails to un-block the document when
  * such a dialog closes leaves the page inert with no JavaScript error.
  *
- * The fix keeps `display` in the transition with `allow-discrete`, so the drawer
- * stays rendered until the slide-out finishes, and moves the unmount close into
- * its own effect so the deferred close is no longer cut off by its own cleanup.
+ * The drawer now stays rendered (its `open` styling is held by the component)
+ * until the native close() at the end of the slide-out, so close() always runs
+ * on a rendered dialog. Until then the dialog is also `inert`: like a UIKit
+ * dismissal, nothing takes input while the drawer leaves.
  *
  * Note on scope: jsdom has no top layer and no CSS transitions, so the inertness
- * itself is not observable here. These tests pin the two mechanisms that prevent
- * it — the declared transition, and the close actually being deferred.
+ * itself is not observable here. These tests pin the mechanisms that prevent
+ * it — the held open styling, and the close running at the slide-out's end.
  */
 
 import {describe, it, expect, vi, beforeAll} from 'vitest';
 import {render, screen, act} from '@testing-library/react';
-import {MobileNav} from './MobileNav';
+import {MAX_EXIT_MS, MobileNav} from './MobileNav';
 import {stubMatchMedia} from '../__tests__/stubMatchMedia';
 
 // jsdom doesn't implement showModal/close on <dialog>, so we mock them
@@ -51,24 +52,41 @@ function Drawer({isOpen}: {isOpen: boolean}) {
   );
 }
 
-describe('MobileNav stays rendered while it closes', () => {
-  it('transitions display with allow-discrete so it hides only once closed', () => {
-    render(<Drawer isOpen />);
-    const style = getComputedStyle(screen.getByTestId('mobile-nav'));
+function drawerOf(dialog: HTMLElement): HTMLElement {
+  const drawer = dialog.querySelector<HTMLElement>('[tabindex="-1"]');
+  if (drawer == null) {
+    throw new Error('no drawer panel');
+  }
+  return drawer;
+}
 
-    // Without these two the drawer blanks out the instant `isOpen` flips,
-    // leaving an open modal dialog that nothing renders — and nothing can
-    // click past. See the file header.
-    expect(style.transitionProperty).toContain('display');
-    expect(style.transitionBehavior).toBe('allow-discrete');
-    // A zero hold is the bug wearing the fix's clothes: the drawer stops being
-    // rendered on the next style recalc, before any effect can close it.
-    expect(style.transitionDuration.trim()).not.toBe('');
-    // The hold must stay tied to the motion token rather than a literal: the
-    // close delay is derived by reading this value back, so a hardcoded hold
-    // and a themed slide-out would drift apart again. jsdom leaves var()
-    // unresolved, which is exactly why this reads as a declaration.
-    expect(style.transitionDuration).toContain('var(');
+describe('MobileNav stays rendered while it closes', () => {
+  it('holds the drawer rendered through the slide-out, with no display transition', () => {
+    vi.useFakeTimers();
+    try {
+      const {rerender} = render(<Drawer isOpen />);
+      const dialog = screen.getByTestId('mobile-nav');
+      // A `display` transition is not what keeps the drawer rendered: WebKit
+      // drops a discrete `display` transition at once. The component holds
+      // the open styling itself (the readable class StyleX emits in tests).
+      expect(getComputedStyle(dialog).transitionProperty).not.toContain(
+        'display',
+      );
+
+      act(() => {
+        rerender(<Drawer isOpen={false} />);
+      });
+      expect(dialog.className).toMatch(/styles\.open/);
+      expect(dialog.className).not.toMatch(/styles\.backdropOpen/);
+
+      act(() => {
+        vi.advanceTimersByTime(MAX_EXIT_MS);
+      });
+      expect(dialog).not.toHaveAttribute('open');
+      expect(dialog.className).not.toMatch(/styles\.open/);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('keeps the native dialog open until the slide-out has run', () => {
@@ -83,13 +101,21 @@ describe('MobileNav stays rendered while it closes', () => {
       });
 
       // The drawer is on its way out but the dialog is still open, so it is
-      // still rendered and still the thing holding the top layer.
+      // still rendered and still the thing holding the top layer. It is inert
+      // meanwhile: neither it nor the page behind it takes input.
+      expect(dialog).toHaveAttribute('open');
+      expect(drawerOf(dialog).inert).toBe(true);
+
+      act(() => {
+        vi.advanceTimersByTime(MAX_EXIT_MS - 1);
+      });
       expect(dialog).toHaveAttribute('open');
 
       act(() => {
-        vi.advanceTimersByTime(300);
+        vi.advanceTimersByTime(1);
       });
       expect(dialog).not.toHaveAttribute('open');
+      expect(drawerOf(dialog).inert).toBe(false);
     } finally {
       vi.useRealTimers();
     }
@@ -160,11 +186,13 @@ describe('MobileNav stays rendered while it closes', () => {
         rerender(<Drawer isOpen />);
       });
       act(() => {
-        vi.advanceTimersByTime(300);
+        vi.advanceTimersByTime(MAX_EXIT_MS);
       });
 
-      // The queued close must not fire after the drawer has been re-opened.
+      // The queued close must not fire after the drawer has been re-opened,
+      // and the reopened drawer takes input again.
       expect(dialog).toHaveAttribute('open');
+      expect(drawerOf(dialog).inert).toBe(false);
     } finally {
       vi.useRealTimers();
     }

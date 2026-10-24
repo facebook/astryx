@@ -22,11 +22,13 @@
  * - `close()` does NOT hand focus back. That is the behaviour reported
  *   against Safari 26.5.2, and it is what the component must not depend on.
  *
- * The native close is deferred past the slide-out (#4290), and the restore has
- * to follow it: while a modal <dialog> holds the top layer the rest of the
- * document is inert, so `focus()` on the opener is silently dropped. jsdom has
- * no top layer and cannot reproduce that, so these tests pin the call order
- * and the timing directly instead.
+ * The native close runs when the slide-out ends (UIKit hands input back only
+ * when a dismissal completes), and the restore has to follow it: while a
+ * modal <dialog> holds the top layer the rest of the document is inert, so
+ * `focus()` on the opener is silently dropped. jsdom has no top layer and
+ * cannot reproduce that, so these tests pin the call order and the timing
+ * directly instead. jsdom cannot read the theme's slide-out duration either,
+ * so the slide-out runs for MAX_EXIT_MS here.
  *
  * SYNC: When MobileNav.tsx's focus handling changes, update these tests.
  */
@@ -42,7 +44,7 @@ import {
 } from 'vitest';
 import {useState} from 'react';
 import {render, screen, fireEvent, act} from '@testing-library/react';
-import {MobileNav} from './MobileNav';
+import {MAX_EXIT_MS, MobileNav} from './MobileNav';
 import {AppShell} from '../AppShell/AppShell';
 import {SideNav, SideNavItem, SideNavSection} from '../SideNav';
 import {stubMatchMedia} from '../__tests__/stubMatchMedia';
@@ -233,6 +235,14 @@ function clickDrawerClose() {
   fireEvent.click(screen.getByRole('button', {name: /close navigation/i}));
 }
 
+function drawerOf(dialog: HTMLElement): HTMLElement {
+  const drawer = dialog.querySelector<HTMLElement>('[tabindex="-1"]');
+  if (drawer == null) {
+    throw new Error('no drawer panel');
+  }
+  return drawer;
+}
+
 describe('MobileNav focus restoration', () => {
   it('returns focus to the trigger when the drawer closes (standalone)', () => {
     vi.useFakeTimers();
@@ -242,7 +252,7 @@ describe('MobileNav focus restoration', () => {
 
       clickDrawerClose();
       act(() => {
-        vi.advanceTimersByTime(400);
+        vi.advanceTimersByTime(MAX_EXIT_MS);
       });
 
       expect(trigger).toHaveFocus();
@@ -270,7 +280,7 @@ describe('MobileNav focus restoration', () => {
 
       fireEvent.click(screen.getByRole('button', {name: /close navigation/i}));
       act(() => {
-        vi.advanceTimersByTime(400);
+        vi.advanceTimersByTime(MAX_EXIT_MS);
       });
 
       expect(document.activeElement).not.toBe(document.body);
@@ -302,7 +312,7 @@ describe('MobileNav focus restoration', () => {
 
       clickDrawerClose();
       act(() => {
-        vi.advanceTimersByTime(400);
+        vi.advanceTimersByTime(MAX_EXIT_MS);
       });
 
       expect(closeSpy).toHaveBeenCalled();
@@ -315,10 +325,10 @@ describe('MobileNav focus restoration', () => {
     }
   });
 
-  it('waits for the delayed close before restoring focus', () => {
-    // The close is deferred so the slide-out can play (250ms cap outside
-    // reduced motion). Until it runs the dialog is still modal and the trigger
-    // is inert, so an early restore would be a silent no-op in a browser.
+  it('waits for the end of the slide-out before restoring focus', () => {
+    // The dialog closes when the slide-out ends. Until then it is still modal
+    // and the trigger is inert, so an early restore would be a silent no-op in
+    // a browser. Meanwhile the dialog itself is inert: nothing takes input.
     vi.useFakeTimers();
     try {
       render(<StandaloneHarness />);
@@ -332,20 +342,22 @@ describe('MobileNav focus restoration', () => {
 
       expect(closeSpy).not.toHaveBeenCalled();
       expect(screen.getByTestId('nav')).toHaveAttribute('open');
+      expect(drawerOf(screen.getByTestId('nav')).inert).toBe(true);
       expect(trigger).not.toHaveFocus();
 
       act(() => {
-        vi.advanceTimersByTime(100);
+        vi.advanceTimersByTime(MAX_EXIT_MS - 200);
       });
 
       expect(closeSpy).toHaveBeenCalledTimes(1);
+      expect(drawerOf(screen.getByTestId('nav')).inert).toBe(false);
       expect(trigger).toHaveFocus();
     } finally {
       vi.useRealTimers();
     }
   });
 
-  it('keeps focus in the drawer when it is reopened before the delayed close', () => {
+  it('puts focus back in the drawer when it is reopened during the slide-out', () => {
     vi.useFakeTimers();
     try {
       render(<StandaloneHarness />);
@@ -356,16 +368,19 @@ describe('MobileNav focus restoration', () => {
       act(() => {
         vi.advanceTimersByTime(100);
       });
-      // Reopened while the close was still pending: the dialog never closed,
-      // so there is nothing to hand focus back from.
+      // Reopened during the slide-out: the dialog never closed, so focus is
+      // not handed back to the trigger; it returns into the drawer, which the
+      // inert dialog had dropped it from.
       fireEvent.click(trigger);
       act(() => {
-        vi.advanceTimersByTime(400);
+        vi.advanceTimersByTime(MAX_EXIT_MS);
       });
 
-      expect(screen.getByTestId('nav')).toHaveAttribute('open');
+      const nav = screen.getByTestId('nav');
+      expect(nav).toHaveAttribute('open');
+      expect(drawerOf(nav).inert).toBe(false);
       expect(focusSpy).not.toHaveBeenCalled();
-      expect(trigger).not.toHaveFocus();
+      expect(document.activeElement).toBe(nav.querySelector('[tabindex="-1"]'));
     } finally {
       vi.useRealTimers();
     }
@@ -385,13 +400,13 @@ describe('MobileNav focus restoration', () => {
       // not replace the opener the drawer captured on the way in.
       fireEvent.click(trigger);
       act(() => {
-        vi.advanceTimersByTime(400);
+        vi.advanceTimersByTime(MAX_EXIT_MS);
       });
       expect(trigger).not.toHaveFocus();
 
       clickDrawerClose();
       act(() => {
-        vi.advanceTimersByTime(400);
+        vi.advanceTimersByTime(MAX_EXIT_MS);
       });
 
       expect(screen.getByTestId('nav')).not.toHaveAttribute('open');
@@ -401,7 +416,7 @@ describe('MobileNav focus restoration', () => {
     }
   });
 
-  it('restores focus when the drawer unmounts while its delayed close is pending', () => {
+  it('restores focus when the drawer unmounts during the slide-out', () => {
     vi.useFakeTimers();
     try {
       render(<DrawerUnmountHarness />);
@@ -428,7 +443,7 @@ describe('MobileNav focus restoration', () => {
 
       // The cancelled timer must not fire a second close later.
       act(() => {
-        vi.advanceTimersByTime(400);
+        vi.advanceTimersByTime(MAX_EXIT_MS);
       });
       expect(closeSpy).toHaveBeenCalledTimes(1);
     } finally {
@@ -449,7 +464,7 @@ describe('MobileNav focus restoration', () => {
 
       clickDrawerClose();
       act(() => {
-        vi.advanceTimersByTime(400);
+        vi.advanceTimersByTime(MAX_EXIT_MS);
       });
 
       expect(trigger).toHaveFocus();
@@ -470,7 +485,7 @@ describe('MobileNav focus restoration', () => {
         new Event('cancel', {bubbles: false, cancelable: true}),
       );
       act(() => {
-        vi.advanceTimersByTime(400);
+        vi.advanceTimersByTime(MAX_EXIT_MS);
       });
 
       expect(trigger).toHaveFocus();
@@ -491,7 +506,7 @@ describe('MobileNav focus restoration', () => {
       expect(() => {
         fireEvent.click(screen.getByTestId('unmount'));
         act(() => {
-          vi.advanceTimersByTime(400);
+          vi.advanceTimersByTime(MAX_EXIT_MS);
         });
       }).not.toThrow();
       expect(document.activeElement).toBe(document.body);
@@ -512,7 +527,7 @@ describe('MobileNav focus restoration', () => {
       expect(() => {
         fireEvent.click(screen.getByTestId('detach'));
         act(() => {
-          vi.advanceTimersByTime(400);
+          vi.advanceTimersByTime(MAX_EXIT_MS);
         });
       }).not.toThrow();
       expect(screen.queryByTestId('trigger')).toBeNull();
@@ -532,7 +547,7 @@ describe('MobileNav focus restoration', () => {
       expect(document.activeElement).toBe(document.body);
       fireEvent.click(screen.getByTestId('programmatic'));
       act(() => {
-        vi.advanceTimersByTime(400);
+        vi.advanceTimersByTime(MAX_EXIT_MS);
       });
 
       // jsdom treats <body> as a non-focusable area, so body.focus() is a
@@ -542,7 +557,7 @@ describe('MobileNav focus restoration', () => {
       const bodyFocus = vi.spyOn(document.body, 'focus');
       clickDrawerClose();
       act(() => {
-        vi.advanceTimersByTime(400);
+        vi.advanceTimersByTime(MAX_EXIT_MS);
       });
 
       expect(bodyFocus).not.toHaveBeenCalled();

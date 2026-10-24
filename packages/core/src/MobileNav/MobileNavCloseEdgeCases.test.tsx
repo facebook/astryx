@@ -28,7 +28,7 @@ import {
 } from 'vitest';
 import {StrictMode, useLayoutEffect} from 'react';
 import {render, screen, fireEvent, act} from '@testing-library/react';
-import {MobileNav} from './MobileNav';
+import {MAX_EXIT_MS, MobileNav} from './MobileNav';
 import {AppShell} from '../AppShell/AppShell';
 import {SideNav, SideNavItem, SideNavSection} from '../SideNav';
 import {stubMatchMedia} from '../__tests__/stubMatchMedia';
@@ -88,6 +88,14 @@ function Drawer({
   );
 }
 
+function drawerOf(dialog: HTMLElement): HTMLElement {
+  const drawer = dialog.querySelector<HTMLElement>('[tabindex="-1"]');
+  if (drawer == null) {
+    throw new Error('no drawer panel');
+  }
+  return drawer;
+}
+
 function TestShell() {
   return (
     <AppShell
@@ -128,7 +136,7 @@ describe('MobileNav close path edge cases', () => {
         );
       });
       act(() => {
-        vi.advanceTimersByTime(300);
+        vi.advanceTimersByTime(MAX_EXIT_MS);
       });
       expect(dialog).not.toHaveAttribute('open');
     } finally {
@@ -162,7 +170,7 @@ describe('MobileNav close path edge cases', () => {
       expect(dialog.className).not.toMatch(/styles\.backdropOpen/);
 
       act(() => {
-        vi.advanceTimersByTime(300);
+        vi.advanceTimersByTime(MAX_EXIT_MS);
       });
       // Closed: the hold is released along with the dialog.
       expect(dialog).not.toHaveAttribute('open');
@@ -184,7 +192,7 @@ describe('MobileNav close path edge cases', () => {
     expect(dialog).not.toHaveAttribute('open');
   });
 
-  it('does not restart the pending close when the side prop changes', () => {
+  it('does not restart the slide-out when the side prop changes', () => {
     vi.useFakeTimers();
     try {
       const {rerender} = render(<Drawer isOpen side="start" />);
@@ -195,21 +203,20 @@ describe('MobileNav close path edge cases', () => {
       });
       expect(dialog).toHaveAttribute('open');
 
-      // Most of the way through the pending close...
+      // Most of the way through the slide-out...
       act(() => {
-        vi.advanceTimersByTime(200);
+        vi.advanceTimersByTime(MAX_EXIT_MS - 100);
       });
       expect(dialog).toHaveAttribute('open');
 
       // ...then change the side. Side resolution lives in its own effect, so
       // this has to leave the close alone. Were `side` a dep of the open/close
       // effect, its cleanup would cancel the pending close and re-arm a fresh
-      // full delay — while the CSS hold keeps running from the commit that
-      // started the slide-out. The close would then land after the drawer had
-      // stopped being rendered, which is the #4290 state again.
+      // full timer, holding the page behind the modal dialog long after the
+      // slide-out it is waiting for has ended.
       //
-      // The split advance is the whole point: the total must clear one delay
-      // but not two.
+      // The split advance is the whole point: the total must clear one
+      // slide-out but not two.
       act(() => {
         rerender(<Drawer isOpen={false} side="end" />);
       });
@@ -242,7 +249,7 @@ describe('MobileNav close path edge cases', () => {
         rerender(<Drawer isOpen={false} />);
       });
       act(() => {
-        vi.advanceTimersByTime(300);
+        vi.advanceTimersByTime(MAX_EXIT_MS);
       });
 
       expect(dialog).not.toHaveAttribute('open');
@@ -265,7 +272,7 @@ describe('MobileNav close path edge cases', () => {
         rerender(<Drawer isOpen={false} />);
       });
       act(() => {
-        vi.advanceTimersByTime(300);
+        vi.advanceTimersByTime(MAX_EXIT_MS);
       });
       // Pin the close itself. The effect cleanup resets overflow on every
       // isOpen flip, so the overflow assertion alone passes even with the whole
@@ -305,42 +312,46 @@ describe('MobileNav close path edge cases', () => {
     }
   });
 
-  it('closes inside the display hold when a theme shortens it', () => {
-    // The hold is `--duration-medium`, which themes rewrite: the shipped y2k
-    // theme uses 250ms and the documented "Snappy" preset does too. A close
-    // scheduled on the hold's boundary lands on the frame the drawer stops
-    // being rendered — which is exactly the #4290 state. The delay has to be
-    // derived from the hold actually in effect, not assumed.
-    // Full motion (the file default) — under reduced motion the close is
-    // immediate and the boundary is never exercised.
+  it('closes when a slide-out a theme shortens has run', () => {
+    // The slide-out is `--duration-medium`, which themes rewrite: the shipped
+    // y2k theme uses 250ms. The dialog has to close when the drawer's own
+    // transition ends, not after an assumed one.
     vi.useFakeTimers();
     try {
-      const hold = 250;
-      const {rerender} = render(
-        <MobileNav
-          isOpen
-          onOpenChange={() => {}}
-          style={{transitionDuration: `${hold}ms`}}
-          data-testid="mobile-nav">
-          <span>Nav content</span>
-        </MobileNav>,
-      );
+      const {rerender} = render(<Drawer isOpen />);
       const dialog = screen.getByTestId('mobile-nav');
-      expect(getComputedStyle(dialog).transitionDuration).toBe(`${hold}ms`);
+      drawerOf(dialog).style.transitionDuration = '250ms';
 
       act(() => {
-        rerender(
-          <MobileNav
-            isOpen={false}
-            onOpenChange={() => {}}
-            style={{transitionDuration: `${hold}ms`}}
-            data-testid="mobile-nav">
-            <span>Nav content</span>
-          </MobileNav>,
-        );
+        rerender(<Drawer isOpen={false} />);
       });
       act(() => {
-        vi.advanceTimersByTime(hold - 1);
+        vi.advanceTimersByTime(249);
+      });
+      expect(dialog).toHaveAttribute('open');
+
+      act(() => {
+        vi.advanceTimersByTime(1);
+      });
+      expect(dialog).not.toHaveAttribute('open');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('caps a slide-out longer than MAX_EXIT_MS', () => {
+    // A theme with a long --duration-medium must not hold the page longer.
+    vi.useFakeTimers();
+    try {
+      const {rerender} = render(<Drawer isOpen />);
+      const dialog = screen.getByTestId('mobile-nav');
+      drawerOf(dialog).style.transitionDuration = '2s';
+
+      act(() => {
+        rerender(<Drawer isOpen={false} />);
+      });
+      act(() => {
+        vi.advanceTimersByTime(MAX_EXIT_MS);
       });
 
       expect(dialog).not.toHaveAttribute('open');
@@ -349,36 +360,18 @@ describe('MobileNav close path edge cases', () => {
     }
   });
 
-  it('closes on the next macrotask when the hold is zero', () => {
-    // A theme can set --duration-medium to 0 — nothing validates motion values
-    // — and then `display` flips on the next style recalc with no hold at all.
-    // No delay is safe at that point, so the close has to go out immediately
-    // rather than fall back to the cap and land a quarter-second after the
-    // drawer stopped being rendered, which is #4290 restored.
+  it('closes on the next macrotask when the slide-out is zero', () => {
+    // A theme can set --duration-medium to 0 — nothing validates motion
+    // values. There is then nothing to wait for, so the close goes out on
+    // the next macrotask rather than falling back to the cap.
     vi.useFakeTimers();
     try {
-      const style = {transitionDuration: '0ms'};
-      const {rerender} = render(
-        <MobileNav
-          isOpen
-          onOpenChange={() => {}}
-          style={style}
-          data-testid="mobile-nav">
-          <span>Nav content</span>
-        </MobileNav>,
-      );
+      const {rerender} = render(<Drawer isOpen />);
       const dialog = screen.getByTestId('mobile-nav');
+      drawerOf(dialog).style.transitionDuration = '0ms';
 
       act(() => {
-        rerender(
-          <MobileNav
-            isOpen={false}
-            onOpenChange={() => {}}
-            style={style}
-            data-testid="mobile-nav">
-            <span>Nav content</span>
-          </MobileNav>,
-        );
+        rerender(<Drawer isOpen={false} />);
       });
       act(() => {
         vi.advanceTimersByTime(1);
@@ -391,40 +384,17 @@ describe('MobileNav close path edge cases', () => {
   });
 
   it('closes on the next macrotask under reduced motion', () => {
-    // Reduced motion should make the close *sooner*, not the safety margin
-    // *smaller*. Shortening the hold to match leaves no slack: one slow frame
-    // between the commit and the close macrotask and the drawer has already
-    // stopped being rendered — #4290 again, on the accessibility setting.
-    //
-    // Only the delay is assertable here. That the hold itself stays long is a
-    // CSS fact — styles.dialog carries no reduced-motion override, unlike
-    // styles.drawer and ::backdrop — and jsdom does not evaluate media queries
-    // inside stylesheets, so there is nothing to read back.
+    // Reduced motion moves the drawer and the scrim in 0.01s, so there is no
+    // slide-out to wait for.
     stubMatchMedia({reduceMotion: true});
     vi.useFakeTimers();
     try {
-      const style = {transitionDuration: '410ms'};
-      const {rerender} = render(
-        <MobileNav
-          isOpen
-          onOpenChange={() => {}}
-          style={style}
-          data-testid="mobile-nav">
-          <span>Nav content</span>
-        </MobileNav>,
-      );
+      const {rerender} = render(<Drawer isOpen />);
       const dialog = screen.getByTestId('mobile-nav');
+      drawerOf(dialog).style.transitionDuration = '410ms';
 
       act(() => {
-        rerender(
-          <MobileNav
-            isOpen={false}
-            onOpenChange={() => {}}
-            style={style}
-            data-testid="mobile-nav">
-            <span>Nav content</span>
-          </MobileNav>,
-        );
+        rerender(<Drawer isOpen={false} />);
       });
       act(() => {
         vi.advanceTimersByTime(1);
@@ -456,7 +426,7 @@ describe('MobileNav close path edge cases', () => {
         );
       });
       act(() => {
-        vi.advanceTimersByTime(300);
+        vi.advanceTimersByTime(MAX_EXIT_MS);
       });
 
       expect(dialog).not.toHaveAttribute('open');
@@ -481,7 +451,7 @@ describe('MobileNav close path edge cases', () => {
         fireEvent.click(dialog);
       });
       act(() => {
-        vi.advanceTimersByTime(300);
+        vi.advanceTimersByTime(MAX_EXIT_MS);
       });
 
       expect(dialog).not.toHaveAttribute('open');
@@ -491,14 +461,11 @@ describe('MobileNav close path edge cases', () => {
   });
 
   // #5701: AppShell mounts the drawer inside a React.Activity boundary that
-  // used to flip to mode="hidden" in the SAME commit as the close, which
-  // forced this file's own unmount-only safety-net effect to call
-  // dialog.close() synchronously — closing correctly, but skipping the
-  // slide-out transition entirely, because Activity's display:none landed
-  // before any transition could run. AppShell now defers that flip, so the
-  // dialog should still be open (and rendered) for a beat after closing,
-  // not synchronously cut off.
-  it('keeps the drawer open long enough for its close transition to run (#5701)', () => {
+  // used to flip to mode="hidden" in the SAME commit as the close, cutting
+  // the slide-out off before it could run. AppShell defers that flip by the
+  // drawer's longest slide-out (MAX_EXIT_MS) plus a buffer, so the slide-out
+  // runs to its end and MobileNav closes its own dialog first.
+  it('keeps the drawer mounted long enough for its slide-out to run (#5701)', () => {
     vi.useFakeTimers();
     try {
       render(<TestShell />);
@@ -515,22 +482,20 @@ describe('MobileNav close path edge cases', () => {
       });
 
       // Immediately after closing, with no timers advanced: the old
-      // synchronous-hide bug closed the dialog on this exact tick. The fix
-      // means it must still be open here — Activity hasn't hidden the
-      // subtree yet, so MobileNav's own deferred close effect is still the
-      // one in control.
+      // synchronous-hide bug closed the dialog on this exact tick. The
+      // slide-out is running, so the dialog is still open, inert, and shown.
       expect(dialog).toHaveAttribute('open');
+      expect(drawerOf(dialog).inert).toBe(true);
+      // Activity hides its subtree with an inline `display: none`.
+      expect(dialog.style.display).not.toBe('none');
 
-      // MobileNav's own close delay (capped at 250ms) runs first: about
-      // 260ms after the click the dialog has closed on its own timing while
-      // AppShell's Activity boundary (held for 250ms + 50ms) still shows the
-      // subtree. Hiding first would cut off that close (#5701).
+      // The slide-out (capped at MAX_EXIT_MS in jsdom, where the theme's
+      // duration cannot be read) ends and MobileNav closes its dialog while
+      // AppShell's Activity boundary still shows the subtree.
       act(() => {
-        vi.advanceTimersByTime(260);
+        vi.advanceTimersByTime(MAX_EXIT_MS);
       });
       expect(dialog).not.toHaveAttribute('open');
-      // Activity hides its subtree with an inline `display: none`; a closed
-      // dialog's own UA style does not count here.
       expect(dialog.style.display).not.toBe('none');
 
       // After the hold, Activity hides the subtree.
