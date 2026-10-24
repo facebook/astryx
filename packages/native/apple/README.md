@@ -26,6 +26,7 @@ apple/
 │   │   │   └── Generated/ # typed tokens and every published theme, generated; do not edit
 │   │   ├── Resources/     # core's messages per locale, generated; do not edit
 │   │   ├── Localization/
+│   │   ├── Icon/          # Icon, Icon.spec.md
 │   │   ├── Text/          # Text
 │   │   ├── Heading/       # Heading
 │   │   ├── Button/        # Button
@@ -102,6 +103,12 @@ tokens in the current mode as typed members (`tokens.color.textPrimary`,
 compile. Text sizes grow with Dynamic Type. The components still read some
 tokens by core's name (`astryx.color("color-accent")`); moving them onto the
 typed members comes next.
+
+`Icon(.search)` draws a shared icon name as the platform's SF Symbol, at
+core's icon size and color, hidden from VoiceOver unless it has a `label`.
+`IconName` holds every built-in name as a static member; a theme maps a name
+to another symbol, or registers a `<library>:<name>` name, with
+`Theme(…, icons: ["acme:rocket": "airplane"])`.
 
 Font families come from the theme's `font-family-*` stacks: the first family
 the device has wins, and a system family such as `-apple-system` or
