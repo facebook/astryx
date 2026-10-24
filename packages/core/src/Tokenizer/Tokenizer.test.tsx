@@ -381,6 +381,23 @@ describe('Tokenizer', () => {
       expect(tokenNamed('Alice')).not.toHaveAttribute('data-selected');
     });
 
+    it('announces the selection to screen readers, then the removal', async () => {
+      stubPointer(true);
+      render(<Controlled onChange={vi.fn()} />);
+      const input = screen.getByRole('combobox');
+      act(() => input.focus());
+      fireEvent.keyDown(input, {key: 'Backspace'});
+      await waitFor(() => {
+        expect(politeRegion()?.textContent).toBe(
+          'Bob selected. Delete again to remove it.',
+        );
+      });
+      fireEvent.keyDown(input, {key: 'Backspace'});
+      await waitFor(() => {
+        expect(politeRegion()?.textContent).toBe('Removed Bob');
+      });
+    });
+
     it('keeps the selected token when another key is typed', () => {
       stubPointer(true);
       const onChange = vi.fn();
