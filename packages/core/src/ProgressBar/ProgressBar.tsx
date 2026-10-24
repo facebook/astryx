@@ -254,7 +254,13 @@ const styles = stylex.create({
     },
     willChange: 'transform',
     transitionProperty: 'transform',
-    transitionDuration: durationVars['--duration-medium'],
+    // Under reduced motion a new value lands at once, on every pointer:
+    // progress indicators sit outside design:reduced-motion's scope, and a
+    // fill that never travels is the choice that cannot conflict with it.
+    transitionDuration: {
+      default: durationVars['--duration-medium'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   indeterminateFill: {
