@@ -280,9 +280,11 @@ test('the coast keeps advancing every frame while the main thread is blocked', a
   expect(blockTo - blockFrom, 'the block covers the coast').toBeGreaterThan(
     200,
   );
-  const marked = minutes.getByRole('option', {
-    name: String(Math.round(rest / ROW)).padStart(2, '0'),
-  });
+  // The row as drawn on the cylinder (the options are transparent, over the
+  // band).
+  const marked = minutes.locator(
+    `[data-wheel-drum] [data-label="${String(Math.round(rest / ROW)).padStart(2, '0')}"]`,
+  );
   // The dimmed copy's rows are 44.7 % opaque, which washes out the marker
   // chip's colour; this one row is drawn opaque for the evidence.
   await marked.evaluate(element => {
