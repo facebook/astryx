@@ -6,7 +6,7 @@ id: spec:AST-086
 authority: current
 archive_reason: null
 superseded_by: null
-approved_by: imdreamrunner
+approved_by: cixzhang
 approved_at: 2026-10-23
 phase: accepted
 owners: [cixzhang]
@@ -96,7 +96,8 @@ announcement channel.
   identical message repeated within the same frame is one message (FR6). An
   empty message clears the region, including messages joined but not yet
   exposed.
-  `useAnnounce` is the public way to reach it.
+  `useAnnounce` is the public way to reach it. Inside an open Astryx modal,
+  it delivers through that modal's FR14 containers instead.
 - **FR10 — Modal-hosted owners keep their own channel.** While the shared
   channel is not admitted to modal hosting, a globally hosted owner that
   `spec:AST-003` rehosts above native modals (FR16, FR18) announces through its
@@ -132,31 +133,36 @@ announcement channel.
   announcements, such as a result count from a query handler or FR8 busy
   starts, keep their own owner. `architecture:react-component-runtime` INV10
   owns where this work lives.
-- **FR14 — Owners inside an open native modal deliver inside it.** While the
+- **FR14 — Owners inside an open Astryx modal deliver inside it.** While the
   shared channel is not exposed inside native modals (Platform support), a
   message its owner would otherwise send through the shared channel — an FR2
   message or an action announcement such as a result count, a selection
   change, or a busy start — is delivered, when that owner is rendered inside
-  an open native modal dialog, through a persistent polite container and a
-  persistent assertive container inside the nearest enclosing open modal
-  dialog, and through the shared channel otherwise. The route follows where the owner is when it announces, so one
-  owner that is sometimes inside a modal and sometimes not needs no second
-  announcement path. FR14 adds one container of each urgency per dialog for
-  these messages; an owner's own persistent FR3 region — Button's loading
-  region, an input's invalid-entry region — keeps its role and urgency inside
-  the dialog as FR4 says, and an owner that `spec:AST-003` rehosts above the
-  modal keeps FR10's own containers. FR14's containers are direct children of
-  the dialog, created empty on first use (FR3), carry `status` and `alert`
+  an open native modal that Astryx renders (such as a Dialog, a modal
+  BottomSheet, a modal Drawer, a Lightbox, or CommandPalette), through a
+  persistent polite container and a persistent assertive container inside the
+  nearest enclosing open Astryx modal, and through the shared channel
+  otherwise. The public `useAnnounce` takes this route: a message sent with it
+  from inside such a modal, by a component or by app code, is delivered
+  through that modal's containers, with no separate path. The route follows
+  where the owner is when it announces, so one owner that is sometimes inside
+  a modal and sometimes not needs no second announcement path. FR14 adds one
+  container of each urgency per modal for these messages; an owner's own
+  persistent FR3 region — Button's loading region, an input's invalid-entry
+  region — keeps its role and urgency inside the modal as FR4 says, and an
+  owner that `spec:AST-003` rehosts above the modal keeps FR10's own
+  containers. FR14's containers are direct children of the modal's dialog
+  element, created empty on first use (FR3), carry `status` and `alert`
   respectively (FR5), and clear shortly after each announcement; messages
-  written to one before the previous is exposed are joined in order, and an
+  written to one before the previous is exposed are joined in order, an
+  identical message repeated within the same frame is one message, and an
   empty message clears it, including messages joined but not yet exposed, as
-  FR9 says of the shared channel. FR6 applies: the owner, not the container,
-  decides what is one occasion. A busy owner's FR8 region inside a modal is
+  FR9 says of the shared channel. FR6 applies to each owner's messages. A busy owner's FR8 region inside a modal is
   FR14's polite container. When a later modal opens above the owner's modal
   (`spec:AST-003` FR17), the owner's containers are inert with its modal, and
   a message it announces while covered is not heard — the container clears it
   before the modal is on top again — as the owner itself is not operable
-  until then.
+  until then. A modal an app renders without Astryx is outside this record.
 
 ### Platform support
 
@@ -168,11 +174,11 @@ announcement channel.
   hosting. Owners rehosted above the modal use their own containers (FR10),
   and an owner rendered inside the modal — a busy control (FR8), a picker's
   selection and result messages, a sheet's search outcome — announces through
-  the persistent containers inside that dialog (FR14). Delivery from an owner
-  that is neither inside the modal nor rehosted above it is outside this
-  record.
+  the persistent containers inside that modal (FR14). Delivery from an owner
+  that is neither inside the modal nor rehosted above it, and delivery inside
+  a modal that Astryx does not render, are outside this record.
 - Browser evidence: DOM and accessibility-tree checks prove routing (FR1–FR5,
-  FR7–FR10). Spoken timing, order, and repetition on real AT are
+  FR7–FR10, FR14). Spoken timing, order, and repetition on real AT are
   recommended `spec:AST-009` follow-up, not a merge or release requirement.
 
 ## Current-state impact
@@ -204,11 +210,11 @@ announcement channel.
   start, including its load on opening or clearing the query, through a
   persistent region inside its dialog (FR3); under FR14 that region is the
   dialog's polite container.
-- Owners inside native modals (FR14): the public `useAnnounce` is unchanged
-  and always writes to the shared channel; FR14 is delivered by an internal
-  route an owner adopts, so an owner changes only when it adopts it. Owners
-  rendered inside a native modal whose channel messages are not exposed there
-  until they adopt FR14: CommandPalette's result counts and empty results (its
+- Owners inside Astryx modals (FR14): `useAnnounce` writes only to the
+  page-body channel. Under FR14 it routes to the nearest open Astryx modal's
+  containers, so the change is in `useAnnounce` and no owner adopts a separate
+  path. Channel messages that are not exposed inside a modal and become
+  audible, including app messages sent with `useAnnounce`: CommandPalette's result counts and empty results (its
   busy starts already use its in-dialog region); Lightbox's position and zoom
   messages; a Selector, MultiSelector, Typeahead, Tokenizer, date or time
   input, or any other channel caller rendered inside a Dialog, a modal
@@ -263,21 +269,21 @@ announcement channel.
 
 ## Verification
 
-| Contract      | Verification                                                              | Representative states                                                                                                                                                                                                                                                                                                                                         | Mutation or failure expectation                                                                                                                                                                                                                                                                                                             |
-| ------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1, FR4      | Shared test: one live owner per announced message                         | Toast shown; busy Switch; system notice, FieldStatus error, and failure Banner inside a chat log; busy Button and invalid DateInput inside a chat log (pass)                                                                                                                                                                                                  | A live role on a second element, or a channel announcement of content added inside a live container, fails                                                                                                                                                                                                                                  |
-| FR2, FR3      | Shared test: no live element mounts holding its text                      | Conditional status, toast card, standalone Spinner                                                                                                                                                                                                                                                                                                            | Mounting `role="status"` with text fails                                                                                                                                                                                                                                                                                                    |
-| FR5           | Channel routing tests                                                     | Error, warning, success, loading                                                                                                                                                                                                                                                                                                                              | Routing an error to polite, or a success to assertive, fails                                                                                                                                                                                                                                                                                |
-| FR6           | StrictMode and rerender tests on the channel spy                          | Busy start, repeated rerender, same-value update, new occasion                                                                                                                                                                                                                                                                                                | Two announcements for one occasion, or none for a new one, fails                                                                                                                                                                                                                                                                            |
-| FR7           | Accessibility-tree check of the visible message                           | FieldStatus attached/detached, toast card                                                                                                                                                                                                                                                                                                                     | Hiding the visible text or a word mismatch fails                                                                                                                                                                                                                                                                                            |
-| FR8           | Shared test: no live role inside a busy owner; channel spy on the owner   | Busy TextInput, Selector, Switch thumb, ChatMessageList loader, busy CommandPalette (region inside its dialog), operation that settles before its busy announcement is exposed                                                                                                                                                                                | A composed indicator with a live role or its own announcement, or a busy owner that announces nothing, fails, or a busy start announced after its outcome, fails                                                                                                                                                                            |
-| FR9           | `useAnnounce` tests                                                       | First use, many components, region removed, server render, two messages in one frame, clear after a joined message, the same message twice in one frame                                                                                                                                                                                                       | A second region pair, stale text after the clear delay, a dropped same-frame message, or a joined message surviving a clear fails, or an identical same-frame repeat announced twice, fails                                                                                                                                                 |
-| FR10          | Accessibility-tree check with a Dialog open                               | Info and error toast shown over an open Dialog                                                                                                                                                                                                                                                                                                                | A toast that reaches only the body-level channel, or no exposed live container, fails                                                                                                                                                                                                                                                       |
-| FR14          | Hook tests and an accessibility-tree check with a native modal open       | Owner outside any modal, inside an open non-modal dialog, inside an open modal (polite and assertive, repeat of the same words, empty message), busy start inside a modal; a modal sheet's row toggle in a real engine                                                                                                                                        | A channel message from inside an open modal that reaches only the body-level channel, an FR14 container mounted holding its text, a second FR14 container of one urgency in one dialog, an FR14 container the engine's accessibility tree omits, a dropped message of two written before the first is exposed, or an empty message that leaves text in the dialog's FR14 container fails |
-| FR11, FR12    | Helper and component tests                                                | EmptyState present at page load, server-rendered, inserted later, text changed, hidden and shown again, brought in by a client-rendered route change, inside a chat log, empty Selector panel open at page load, server-rendered message inserted by client navigation, message inserted after first render but before the document finishes loading (silent) | Announcing at page load or during a server render (other than an announcement-only message), missing a later insertion or a server-rendered message inserted by client navigation, a client-rendered route change, or an empty Selector panel at page load, repeating one occasion, or also using the channel inside a live container fails |
-| FR12 (server) | Server-safe component boundary check plus a server render of each adopter | EmptyState rendered on the server and hydrated                                                                                                                                                                                                                                                                                                                | An adopter that fails the boundary check, or emits an announcement or live role from a server render, fails                                                                                                                                                                                                                                 |
-| FR13          | Helper StrictMode, hide/show, and unmount tests on each adopter           | EmptyState, Spinner, ChatComposer status bar, ChatTypingIndicator                                                                                                                                                                                                                                                                                             | A duplicate announcement under StrictMode, work while hidden, or a resource left after unmount fails                                                                                                                                                                                                                                        |
-| FR6 (AT)      | Recommended `spec:AST-009` real-AT follow-up                              | Toast, busy Switch, chat notice                                                                                                                                                                                                                                                                                                                               | Missing, repeated, or out-of-order speech fails                                                                                                                                                                                                                                                                                             |
+| Contract      | Verification                                                              | Representative states                                                                                                                                                                                                                                                                                                                                         | Mutation or failure expectation                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| ------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| FR1, FR4      | Shared test: one live owner per announced message                         | Toast shown; busy Switch; system notice, FieldStatus error, and failure Banner inside a chat log; busy Button and invalid DateInput inside a chat log (pass)                                                                                                                                                                                                  | A live role on a second element, or a channel announcement of content added inside a live container, fails                                                                                                                                                                                                                                                                                                                                                                                 |
+| FR2, FR3      | Shared test: no live element mounts holding its text                      | Conditional status, toast card, standalone Spinner                                                                                                                                                                                                                                                                                                            | Mounting `role="status"` with text fails                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| FR5           | Channel routing tests                                                     | Error, warning, success, loading                                                                                                                                                                                                                                                                                                                              | Routing an error to polite, or a success to assertive, fails                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| FR6           | StrictMode and rerender tests on the channel spy                          | Busy start, repeated rerender, same-value update, new occasion                                                                                                                                                                                                                                                                                                | Two announcements for one occasion, or none for a new one, fails                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| FR7           | Accessibility-tree check of the visible message                           | FieldStatus attached/detached, toast card                                                                                                                                                                                                                                                                                                                     | Hiding the visible text or a word mismatch fails                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| FR8           | Shared test: no live role inside a busy owner; channel spy on the owner   | Busy TextInput, Selector, Switch thumb, ChatMessageList loader, busy CommandPalette (region inside its dialog), operation that settles before its busy announcement is exposed                                                                                                                                                                                | A composed indicator with a live role or its own announcement, or a busy owner that announces nothing, fails, or a busy start announced after its outcome, fails                                                                                                                                                                                                                                                                                                                           |
+| FR9           | `useAnnounce` tests                                                       | First use, many components, region removed, server render, two messages in one frame, clear after a joined message, the same message twice in one frame                                                                                                                                                                                                       | A second document-level region pair, stale text after the clear delay, a dropped same-frame message, or a joined message surviving a clear fails, or an identical same-frame repeat announced twice, fails                                                                                                                                                                                                                                                                                 |
+| FR10          | Accessibility-tree check with a Dialog open                               | Info and error toast shown over an open Dialog                                                                                                                                                                                                                                                                                                                | A toast that reaches only the body-level channel, or no exposed live container, fails                                                                                                                                                                                                                                                                                                                                                                                                      |
+| FR14          | Hook tests and an accessibility-tree check with an Astryx modal open      | Owner outside any modal, inside an open non-modal dialog, inside an open modal (polite and assertive, repeat of the same words, empty message), busy start inside a modal; a modal sheet's row toggle in a real engine, app code calling `useAnnounce` inside a Dialog                                                                                        | A channel message from inside an open modal that reaches only the body-level channel, an FR14 container mounted holding its text, a second FR14 container of one urgency in one dialog, an FR14 container the engine's accessibility tree omits, a dropped message of two written before the first is exposed, an empty message that leaves text in the modal's FR14 container, or an app `useAnnounce` message from inside an Astryx modal that reaches only the body-level channel fails |
+| FR11, FR12    | Helper and component tests                                                | EmptyState present at page load, server-rendered, inserted later, text changed, hidden and shown again, brought in by a client-rendered route change, inside a chat log, empty Selector panel open at page load, server-rendered message inserted by client navigation, message inserted after first render but before the document finishes loading (silent) | Announcing at page load or during a server render (other than an announcement-only message), missing a later insertion or a server-rendered message inserted by client navigation, a client-rendered route change, or an empty Selector panel at page load, repeating one occasion, or also using the channel inside a live container fails                                                                                                                                                |
+| FR12 (server) | Server-safe component boundary check plus a server render of each adopter | EmptyState rendered on the server and hydrated                                                                                                                                                                                                                                                                                                                | An adopter that fails the boundary check, or emits an announcement or live role from a server render, fails                                                                                                                                                                                                                                                                                                                                                                                |
+| FR13          | Helper StrictMode, hide/show, and unmount tests on each adopter           | EmptyState, Spinner, ChatComposer status bar, ChatTypingIndicator                                                                                                                                                                                                                                                                                             | A duplicate announcement under StrictMode, work while hidden, or a resource left after unmount fails                                                                                                                                                                                                                                                                                                                                                                                       |
+| FR6 (AT)      | Recommended `spec:AST-009` real-AT follow-up                              | Toast, busy Switch, chat notice                                                                                                                                                                                                                                                                                                                               | Missing, repeated, or out-of-order speech fails                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 
 ## Decision log
 
@@ -311,12 +317,12 @@ Every self-announcing component behaves the same way (FR12).
 Rejected: announcing on every mount — page loads would speak every empty state
 and spinner on screen.
 
-### DEC-3 — An owner inside a native modal announces inside it
+### DEC-3 — An owner inside an Astryx modal announces inside it
 
 **Reference:** `spec:AST-086/DEC-3`
-**Decider:** imdreamrunner, 2026-10-23
+**Decider:** cixzhang, 2026-10-23
 
-A control rendered inside an open native modal — a modal sheet's checkbox rows,
+A control rendered inside an open Astryx modal — a modal sheet's checkbox rows,
 its search, a busy control — is heard only through containers inside that
 dialog, because the page-body channel is outside the modal's exposed subtree.
 Busy starts already took that route (FR8); FR14 gives every status message
@@ -324,9 +330,13 @@ from such an owner the same route, chosen per announcement by where the owner
 is, so a component that is sometimes modal-hosted and sometimes inline keeps
 one announcement path. One FR14 container per urgency per dialog keeps FR1's
 single owner and FR9's joining and clearing inside the modal, beside the
-owners' own FR3 regions, which FR4 already lets stand.
+owners' own FR3 regions, which FR4 already lets stand. The public
+`useAnnounce` follows the same route, so a message an app sends from inside a
+modal is heard as well as one a component sends.
 
-Rejected: admitting the shared channel to modal hosting — `spec:AST-003` owns
+Rejected: an internal route that each component adopts while the public
+`useAnnounce` keeps writing to the page body — app messages from inside a modal
+stay silent; admitting the shared channel to modal hosting — `spec:AST-003` owns
 hosting and has not admitted it; a per-component region for each message —
 competing regions and two-owner duplicates inside one dialog.
 
