@@ -33,6 +33,7 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
+  focusVars,
   fontWeightVars,
   radiusVars,
   spacingVars,
@@ -52,7 +53,10 @@ import type {AppShellMobileContextValue} from './AppShellMobileContext';
 import type {SpacingStep} from '../utils/types';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps, isRenderable} from '../utils';
-import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {
+  focusOutlineProps,
+  focusOutlineStyles,
+} from '../utils/focusOutline.stylex';
 import {useMediaQuery} from '../hooks/useMediaQuery';
 import {observeResize} from '../utils/sharedResizeObserver';
 import {themeProps} from '../utils/themeProps';
@@ -65,6 +69,8 @@ import {
 import type {AppShellVariantMap} from './index';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useScrollableArea} from '../hooks/useScrollableArea';
+import {attachScrollKeyboardDelegation} from '../hooks/scrollKeyboardDelegation';
 const HasActivity = typeof React.Activity !== 'undefined';
 const ActivityWrapper = HasActivity
   ? ({
@@ -358,13 +364,22 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-semibold'],
     fontSize: typeScaleVars['--text-body-size'],
   },
-  // Programmatic focus target for the skip link. The main container is only
+  // Programmatic focus target for the skip link. While main fits, it is only
   // focusable via tabIndex={-1} (never tabbable), so a focus ring around the
   // entire content area would be noise rather than guidance — suppress it.
   mainFocusTarget: {
     outline: {
       default: null,
       ':focus': 'none',
+    },
+  },
+  // While main scrolls its overflowing content it is a keyboard stop, and
+  // keyboard focus on it draws the standard ring, inset so the shell's own
+  // clipping cannot hide it.
+  mainScrollRegionInset: {
+    outlineOffset: {
+      default: '0',
+      ':focus-visible': `calc(-1 * ${focusVars['--focus-outline-width']})`,
     },
   },
 
@@ -593,6 +608,33 @@ export function AppShell({
   const isFill = height === 'fill';
   const isAuto = height === 'auto';
 
+  // With `fill`, main is the page's scroller. While its content overflows it
+  // must be reachable from the keyboard even when nothing inside it is
+  // focusable (AST-025 FR12): it joins the tab order, and Tab entry moves on
+  // to its first link or button when it has one. The shared hook only
+  // measures here; LayoutContent keeps owning main's overflow and styles.
+  const {
+    getViewportProps: getMainViewportProps,
+    getContentProps: getMainContentProps,
+    state: mainScroll,
+  } = useScrollableArea({
+    axis: 'both',
+    keyboardAccess: {owner: 'content'},
+    stickyContainment: 'always',
+  });
+  const [mainElement, setMainElement] = useState<HTMLDivElement | null>(null);
+  const mainRef = getMainContentProps<HTMLDivElement>(
+    getMainViewportProps<HTMLDivElement>({ref: setMainElement}),
+  ).ref;
+  const isMainScrollRegion =
+    isFill && (mainScroll.block.isScrollable || mainScroll.inline.isScrollable);
+  useEffect(() => {
+    if (!isMainScrollRegion || mainElement == null) {
+      return;
+    }
+    return attachScrollKeyboardDelegation(mainElement, mainElement);
+  }, [isMainScrollRegion, mainElement]);
+
   // Nav style derived values
   const hasBanner = isRenderable(banner);
   const hasTopNav = isRenderable(topNav);
@@ -785,14 +827,21 @@ export function AppShell({
 
   const mainInner = (
     <LayoutContent
+      ref={mainRef}
       padding={contentPadding ?? 0}
       role="main"
       id={MAIN_CONTENT_ID}
       // Focusable skip-link target (WCAG 2.4.1) — without tabIndex, several
       // browsers won't move focus to the div when the skip link is activated.
-      tabIndex={-1}
+      // A keyboard stop only while it scrolls overflowing content.
+      tabIndex={isMainScrollRegion ? 0 : -1}
       isScrollable={isFill}
-      xstyle={[contentAreaStyle, styles.mainFocusTarget]}>
+      xstyle={[
+        contentAreaStyle,
+        isMainScrollRegion
+          ? [focusOutlineStyles.focusVisible, styles.mainScrollRegionInset]
+          : styles.mainFocusTarget,
+      ]}>
       {children}
     </LayoutContent>
   );
