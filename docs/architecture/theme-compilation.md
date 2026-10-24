@@ -212,8 +212,8 @@ Platform-specific details stay inside that compiler.
     mode.
   - `--color-<status>-emphasized` is the status hue, adjusted only as far as
     needed for the theme's `--color-on-<status>` to reach 4.5:1 on it.
-  - `--color-<status>-muted` is the status hue at the opacity of the theme's
-    `--color-accent-muted` (Core: 20% light, 25% dark), and `--color-on-<status>-muted` is the status hue at the
+  - `--color-<status>-muted` is the status hue at Core's pale-fill strength,
+    20% opacity in light mode and 25% in dark mode, and `--color-on-<status>-muted` is the status hue at the
     lightness that reaches 4.5:1 on that fill over the default surface.
 
   The status hue is the theme's base status colour for success, warning, and
@@ -339,6 +339,10 @@ tiers.
 | INV17            | A minimal custom theme that sets only `--color-success`, `--color-warning`, `--color-error`, and an accent, compiled at runtime and through the CLI build, plus one theme that overrides `--color-text-<status>` and one with a grey accent | A status role is missing, misses an INV11 floor in light or dark mode, is grey, ignores a value the theme set, or differs between runtime and build; or an overridden text colour does not reach an unset icon or border role |
 
 ## Known conformance and verification gaps
+
+Generated status roles (INV16) and derived status defaults (INV17) are
+accepted but not yet shipped. Their verification rows describe implementation
+acceptance, not existing enforcement.
 
 Declaration-boundary enforcement and the warnings-array collector in INV13–INV14
 are accepted but not yet shipped. Their verification obligations above describe
