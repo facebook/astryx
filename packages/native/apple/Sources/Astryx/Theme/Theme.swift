@@ -49,11 +49,16 @@ public struct AstryxStyle: Sendable {
   public let textScale: CGFloat
   /// The theme's replacements for shared icon names.
   public let icons: [String: String]
+  /// Whether the person turned on Bold Text (`legibilityWeight == .bold`).
+  public let isBoldText: Bool
 
-  public init(tokens: Tokens, textScale: CGFloat = 1, icons: [String: String] = [:]) {
+  public init(
+    tokens: Tokens, textScale: CGFloat = 1, icons: [String: String] = [:], isBoldText: Bool = false
+  ) {
     self.tokens = tokens
     self.textScale = textScale
     self.icons = icons
+    self.isBoldText = isBoldText
   }
 
   /// A token color by its CSS name, for code that only has the name. A name
@@ -91,7 +96,8 @@ public struct AstryxStyle: Sendable {
     astryxFont(
       families: tokens.font.families(named: family) ?? [],
       size: fontSize(token, fallback),
-      weight: fontWeight(size(weight, 400))
+      weight: fontWeight(size(weight, 400)),
+      isBoldText: isBoldText
     )
   }
 
@@ -149,7 +155,10 @@ extension Color {
 }
 
 /// A font from a CSS family stack: the first system family or installed font.
-func astryxFont(families: [String], size: CGFloat, weight: Font.Weight) -> Font {
+/// System fonts follow Bold Text by themselves; an installed custom face is
+/// drawn one weight step heavier when Bold Text is on (theme environment
+/// spec, E1).
+func astryxFont(families: [String], size: CGFloat, weight: Font.Weight, isBoldText: Bool = false) -> Font {
   for family in families {
     switch family.lowercased() {
     case "-apple-system", "blinkmacsystemfont", "system-ui", "ui-sans-serif", "sans-serif":
@@ -163,11 +172,27 @@ func astryxFont(families: [String], size: CGFloat, weight: Font.Weight) -> Font 
     default:
       if astryxFontIsInstalled(family) {
         // Fixed size: the size already carries the Dynamic Type scale.
-        return .custom(family, fixedSize: size).weight(weight)
+        return .custom(family, fixedSize: size).weight(isBoldText ? astryxBoldTextWeight(weight) : weight)
       }
     }
   }
   return .system(size: size, weight: weight)
+}
+
+/// The weight a custom face draws at with Bold Text on: one step heavier,
+/// with regular and medium both stepping to semibold, as iOS does for its own
+/// text.
+func astryxBoldTextWeight(_ weight: Font.Weight) -> Font.Weight {
+  switch weight {
+  case .ultraLight: .thin
+  case .thin: .light
+  case .light: .regular
+  case .regular, .medium: .semibold
+  case .semibold: .bold
+  case .bold: .heavy
+  case .heavy, .black: .black
+  default: weight
+  }
 }
 
 func astryxFontIsInstalled(_ name: String) -> Bool {
@@ -219,7 +244,8 @@ extension EnvironmentValues {
     return AstryxStyle(
       tokens: colorScheme == .dark ? theme.dark : theme.light,
       textScale: astryxTextScale(for: dynamicTypeSize),
-      icons: theme.icons
+      icons: theme.icons,
+      isBoldText: legibilityWeight == .bold
     )
   }
 }

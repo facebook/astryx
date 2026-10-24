@@ -34,3 +34,33 @@ import Testing
   #expect(Theme.default.light.font.familyBody.first == "-apple-system")
   #expect(Theme.default.light.font.familyHeading.isEmpty == false)
 }
+
+// Theme environment spec, E1: with Bold Text on, a custom face from the
+// theme's family list is drawn one weight step heavier; system fonts follow
+// Bold Text by themselves.
+
+@Test func boldTextStepsCustomFacesHeavier() {
+  let steps: [(Font.Weight, Font.Weight)] = [
+    (.ultraLight, .thin), (.thin, .light), (.light, .regular), (.regular, .semibold),
+    (.medium, .semibold), (.semibold, .bold), (.bold, .heavy), (.heavy, .black), (.black, .black),
+  ]
+  for (weight, bolder) in steps {
+    #expect(astryxBoldTextWeight(weight) == bolder)
+  }
+  #expect(
+    astryxFont(families: ["Helvetica"], size: 14, weight: .regular, isBoldText: true)
+      == .custom("Helvetica", fixedSize: 14).weight(.semibold))
+  #expect(
+    astryxFont(families: ["Helvetica"], size: 14, weight: .bold, isBoldText: true)
+      == .custom("Helvetica", fixedSize: 14).weight(.heavy))
+  #expect(
+    astryxFont(families: ["-apple-system"], size: 14, weight: .regular, isBoldText: true)
+      == .system(size: 14, weight: .regular))
+}
+
+@Test func theStyleReadsBoldTextFromTheEnvironment() {
+  var environment = EnvironmentValues()
+  #expect(environment.astryx.isBoldText == false)
+  environment.legibilityWeight = .bold
+  #expect(environment.astryx.isBoldText)
+}
