@@ -109,7 +109,7 @@ export const docs = {
       name: 'size',
       type: "'sm' | 'md'",
       description:
-        'The size of the checkbox. sm for compact layouts, md for default.',
+        'The size of the checkbox: a 20 px box for sm (compact layouts), 24 px for md (default). Under a coarse pointer the row is at least 44 px tall and the checkbox target at least 44 × 44 px.',
       default: "'md'",
     },
     {
@@ -352,7 +352,8 @@ export const docsZh = {
     {
       name: 'size',
       type: "'sm' | 'md'",
-      description: '复选框尺寸。sm 用于紧凑布局，md 为默认。',
+      description:
+        '复选框尺寸：sm 为 20 px 的方框（紧凑布局），md 为 24 px（默认）。在粗指针（触摸）下，行高至少 44 px，复选框的点击区域至少 44 × 44 px。',
       default: "'md'",
     },
     {

@@ -4,7 +4,8 @@
 
 /**
  * @file RadioListItem.tsx
- * @input Uses React use, useId, useRef, RadioListContext, Item
+ * @input Uses React use, useId, useRef, RadioListContext, Item, the touch
+ *   target floor (Indicator/touchTarget.stylex.ts)
  * @output Exports RadioListItem component, RadioListItemProps
  * @position Core implementation; consumed by index.ts, tested by RadioList.test.tsx
  *
@@ -30,6 +31,7 @@ import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useIndicator} from '../Indicator';
 import {Item, type ItemAlign} from '../Item';
+import {touchTargetStyles} from '../Indicator/touchTarget.stylex';
 import {themeProps} from '../utils/themeProps';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 
@@ -410,6 +412,10 @@ export function RadioListItem({
           // still overrides it from the higher `astryx-theme` layer.
           rowStyles.root,
           !isDisabled && rowStyles.press,
+          // Under a finger each option's row is at least as tall as an iOS
+          // control, and the rows touch (RadioList drops its gap), so the
+          // whole column is target.
+          touchTargetStyles.row,
           xstyle,
         ] as StyleXStyles
       }
