@@ -4,8 +4,8 @@
  * @file menu.ts
  * @input Nothing; data only
  * @output Exports `menu`: UIMenu's touch timing (when a held finger opens a
- *   pull-down button's menu, how far it travels before it can pick a row)
- *   and its haptics
+ *   pull-down button's menu, how far it travels before it can pick a row),
+ *   the shape the menu grows out of and collapses into, and its haptics
  * @position The menu domain of the UIKit constants table (motion/uikit); its
  *   springs are `springs.menuOpen`, `springs.menuClose` and, under Reduce
  *   Motion, `springs.menuReducedMotion`
@@ -69,6 +69,16 @@ export const menu = {
    * @measure M-MN2
    */
   scrubHandoffPx: 10,
+  /**
+   * The menu grows out of, and collapses back into, a square this size
+   * centered on the button.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, per-frame presentation frames of the menu's morph view,
+   *   Oct 23 2026: 22 × 22 centered on the button in the first frame of the
+   *   open; the close animates its model to the same 22 × 22 square
+   * @measure M-MN3
+   */
+  collapsedSize: 22,
   /**
    * Haptics: a selection tick each time a scrubbing finger moves the
    * highlight to another row; nothing at the open or at the pick.

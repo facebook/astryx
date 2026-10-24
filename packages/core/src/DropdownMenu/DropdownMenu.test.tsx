@@ -2643,6 +2643,118 @@ describe('DropdownMenu data/compound parity', () => {
   });
 });
 
+describe('DropdownMenu touch presentation (UIMenu)', () => {
+  const originalRect = HTMLElement.prototype.getBoundingClientRect;
+  beforeEach(() => {
+    // A finger: the primary pointer is coarse.
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn().mockImplementation((query: string) => ({
+        matches: query === '(pointer: coarse)',
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    );
+    // jsdom runs no animations and has no layout.
+    HTMLElement.prototype.animate = vi.fn(function () {
+      return {
+        cancel: vi.fn(),
+        finished: new Promise(() => {}),
+        startTime: null,
+      } as unknown as Animation;
+    });
+    HTMLElement.prototype.getBoundingClientRect = function (this: HTMLElement) {
+      const box = this.hasAttribute('popover')
+        ? {left: 75, top: 160, width: 250, height: 146}
+        : {left: 140, top: 160, width: 120, height: 44};
+      return {
+        ...box,
+        x: box.left,
+        y: box.top,
+        right: box.left + box.width,
+        bottom: box.top + box.height,
+        toJSON: () => ({}),
+      };
+    };
+  });
+  afterEach(() => {
+    Reflect.deleteProperty(HTMLElement.prototype, 'animate');
+    HTMLElement.prototype.getBoundingClientRect = originalRect;
+  });
+
+  function renderMenu() {
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} />
+        <DropdownMenuItem label="Delete" onClick={() => {}} />
+      </DropdownMenu>,
+    );
+    return screen.getByRole('button', {name: /Actions/});
+  }
+  const popoverOf = () =>
+    document.querySelector<HTMLElement>('[popover]:has([role="menu"])')!;
+
+  it('grows out of its trigger: UIKit\u2019s pivot, and no CSS entrance', async () => {
+    const user = userEvent.setup();
+    const trigger = renderMenu();
+    await user.click(trigger);
+    const popover = popoverOf();
+    expect(popover.style.getPropertyValue('animation-name')).toBe('none');
+    expect(popover.style.getPropertyValue('transform-origin')).not.toBe('');
+  });
+
+  it('closes on a static copy of the menu, hidden from assistive technology', async () => {
+    const user = userEvent.setup();
+    const trigger = renderMenu();
+    await user.click(trigger);
+    act(() => {
+      const event = new Event('beforetoggle');
+      Object.defineProperty(event, 'newState', {value: 'closed'});
+      popoverOf().dispatchEvent(event);
+    });
+    const copy = document.querySelector('[data-astryx-menu-exit]');
+    expect(copy).not.toBeNull();
+    expect(copy).toHaveAttribute('aria-hidden', 'true');
+    expect(copy!.querySelector('[id]')).toBeNull();
+  });
+
+  it('a pan that starts outside dismisses it as the browser takes the touch; a tap outside is the browser\u2019s', async () => {
+    const user = userEvent.setup();
+    const trigger = renderMenu();
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    const finger = {pointerType: 'touch', pointerId: 5};
+    // A tap outside: no cancel, so nothing here (light dismiss acts at the lift).
+    fireEvent.pointerDown(document.body, finger);
+    fireEvent.pointerUp(document.body, finger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    // A pan outside: the browser cancels the pointer as it starts scrolling.
+    fireEvent.pointerDown(document.body, finger);
+    fireEvent.pointerCancel(document.body, finger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('a pan that starts inside the menu, or a mouse, does not dismiss it', async () => {
+    const user = userEvent.setup();
+    const trigger = renderMenu();
+    await user.click(trigger);
+    const finger = {pointerType: 'touch', pointerId: 6};
+    const row = screen.getByRole('menuitem', {name: 'Edit', hidden: true});
+    fireEvent.pointerDown(row, finger);
+    fireEvent.pointerCancel(row, finger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    const mouse = {pointerType: 'mouse', pointerId: 7, button: 0};
+    fireEvent.pointerDown(document.body, mouse);
+    fireEvent.pointerCancel(document.body, mouse);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+});
+
 describe('DropdownMenu press model', () => {
   const mouse = {pointerType: 'mouse', pointerId: 1, button: 0};
   const touch = {pointerType: 'touch', pointerId: 1};
