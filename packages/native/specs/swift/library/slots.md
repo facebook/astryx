@@ -1,9 +1,10 @@
 # Typed slots (Swift)
 
 - Status: draft
-- Relation: applies AST-082 FR4 (typed slots: text, icon, content), including
-  its amendment that lets a platform accept a wider form for a content slot
-  with the same meaning, and FR17 (shared icon names) to Swift. It decides how each slot kind appears in
+- Relation: applies AST-082 FR4
+  (`docs/specs/AST-082-native-first-surfaces/spec.md`: typed slots, text,
+  icon, and content, and a platform's wider form for a content slot with the
+  same meaning), and FR17 (shared icon names) to Swift. It decides how each slot kind appears in
   SwiftUI; it does not define the kinds.
 
 ## Summary
@@ -24,10 +25,10 @@ places as on the web, read by VoiceOver in the same order.
   - An **icon** slot is an `IconName` (S2).
   - A **content** slot accepts any SwiftUI view, through a `@ViewBuilder`
     closure (S3). The core's content slot holds named Astryx components; Swift
-    accepts this wider form under the AST-082 FR4 amendment that lets a
-    platform accept a wider form for a slot with the same meaning, as the web
+    accepts this wider form under AST-082 FR4, which lets a platform accept a
+    wider form for a content slot with the same meaning, as the web
     accepts a React node. The component's native additions still name the Astryx
-    components the core slot holds, and whether it holds one or many (a list item's `startContent` holds one of `Avatar`, `Icon`, `Thumbnail`; a card holds many).
+    components the core slot holds, and whether it holds one or many (a list item's `startContent` holds one of `Icon`, `Avatar`, or `CheckboxInput`; a card holds many).
     Text and icon slots take no wider form (no attributed or localized text, no
     image), so they mean the same thing on Swift as in the core. A free-form web
     prop with no slot kind stays in the web contract only.
