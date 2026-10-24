@@ -16,15 +16,16 @@ places as on the web, read by VoiceOver in the same order.
 ## Requirements
 
 - **S1 — Each AST-082 slot kind has one Swift form.**
-  - A **text** slot is a `String`, with a `LocalizedStringResource` spelling
-    as the component API spec gives every word.
+  - A **text** slot is a `String`, the contract's exact type (AST-093 FR5). A
+    localizable spelling waits on the component API spec's open question about
+    SwiftUI spellings.
   - An **icon** slot is an `AstryxIconName` (S2).
   - A **content** slot holds named Astryx components. Its component's native
     additions list which ones it accepts, and whether it holds one or many
     (a row's start holds one of `Avatar`, `Icon`, `Thumbnail`; a card holds
     many of any).
     The Swift contract accepts only these core forms. It takes no wider form for
-    any slot (no arbitrary `View`, no image, no attributed text), so a slot means
+    any slot (no arbitrary `View`, no image, no attributed or localized text), so a slot means
     the same thing on Swift as in the core. A free-form web prop with no slot
     kind stays in the web contract only.
 - **S2 — Icon names are a string-backed type with the built-ins as members.**
