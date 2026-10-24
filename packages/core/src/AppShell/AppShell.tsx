@@ -83,6 +83,15 @@ const ActivityWrapper = HasActivity
 const MAIN_CONTENT_ID = 'astryx-app-shell-main';
 
 /**
+ * A primary pointer that is a finger. The browser attaches its page behaviors
+ * to the document's own scroll (on iOS, where the page is a native scroll
+ * view: scroll to top from a status-bar tap, the toolbar that minimizes as
+ * you scroll), and a scroll region inside a viewport-high shell gets none of
+ * them, so `height="adaptive"` scrolls the page on such a device.
+ */
+const TOUCH_POINTER_QUERY = '(pointer: coarse)';
+
+/**
  * Extra time, on top of MobileNav's own worst-case close delay, that
  * AppShell waits before flipping its `Activity` boundary to `'hidden'`.
  *
@@ -211,9 +220,16 @@ export interface AppShellProps extends BaseProps<HTMLDivElement> {
    * Height behavior:
    * - `fill`: Shell fills viewport, content scrolls internally (default)
    * - `auto`: Shell grows with content, page scrolls as a whole
+   * - `adaptive`: `fill` with a mouse or trackpad, `auto` where the primary
+   *   pointer is touch, so phones keep the browser's own page behaviors
+   *   (scroll to top from the status bar, a toolbar that minimizes as you
+   *   scroll)
+   *
+   * The root reports which element scrolls in `data-scroll-owner`:
+   * `content` (the main region) or `document` (the page).
    * @default 'fill'
    */
-  height?: 'fill' | 'auto';
+  height?: 'fill' | 'auto' | 'adaptive';
 
   /**
    * Mobile navigation configuration.
@@ -590,8 +606,17 @@ export function AppShell({
     document.getElementById(MAIN_CONTENT_ID)?.focus();
   }, []);
 
-  const isFill = height === 'fill';
-  const isAuto = height === 'auto';
+  // `adaptive` resolves per device: the page scrolls where the primary pointer
+  // is touch. The SSR hint for mobile layout also seeds the touch query, so a
+  // server-rendered phone page starts out scrolling the page.
+  const isTouchPointer = useMediaQuery(
+    TOUCH_POINTER_QUERY,
+    mobileNavConfig?.defaultIsMobile ?? false,
+  );
+  const scrollsDocument =
+    height === 'auto' || (height === 'adaptive' && isTouchPointer);
+  const isFill = !scrollsDocument;
+  const isAuto = scrollsDocument;
 
   // Nav style derived values
   const hasBanner = isRenderable(banner);
@@ -860,6 +885,7 @@ export function AppShell({
         {...rest}
         ref={useMergedRefs(ref, shellRef)}
         data-testid={dataTestId}
+        data-scroll-owner={scrollsDocument ? 'document' : 'content'}
         {...mergeProps(
           themeProps('app-shell', {variant}),
           stylex.props(
@@ -887,7 +913,7 @@ export function AppShell({
         </a>
 
         <Layout
-          height={height}
+          height={isFill ? 'fill' : 'auto'}
           padding={0}
           header={
             <>
