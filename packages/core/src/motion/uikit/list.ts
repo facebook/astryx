@@ -5,12 +5,14 @@
  * @input `timing` (the press clocks the touch press model measured)
  * @output Exports `list`: the clocks and curves of UITableView and
  *   UICollectionView list cells (the cell highlight's release, the selected
- *   cell's deselect inside a navigation pop, the touch row heights)
+ *   cell's deselect inside a navigation pop, the touch row heights, the
+ *   springs of list updates and outline expansion)
  * @position The list domain of the UIKit constants table (motion/uikit);
  *   read by utils/pressLayer.stylex.ts (row press paint) through its
  *   build-time mirror, by utils/selectionHold.ts (a row kept selected
- *   through a navigation push), and by List/listRow.stylex.ts (touch row
- *   heights) through its mirror
+ *   through a navigation push), by List/listRow.stylex.ts (touch row
+ *   heights) through its mirror, and by TreeList/useTreeExpansionMotion.ts
+ *   (expand and collapse)
  *
  * Every leaf carries one or more `@source`; GUESS values also carry the
  * `@measure` task that will confirm or replace them (MEASUREMENTS.md, M-LI
@@ -94,5 +96,28 @@ export const list = {
      *   pt)
      */
     controlSize: 44,
+  },
+  update: {
+    /**
+     * An outline list's expand and collapse (UICollectionView list,
+     * `outlineDisclosure`, a section snapshot applied with animated
+     * differences): the children slide out from under the parent as one
+     * block inside a clip that grows with them, the rows below move with
+     * them, and the disclosure chevron turns 90°, all on this spring
+     * (critically damped, response 0.25 s, 0.367 s to settle). No fade.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 sim iPhone
+     *   17 Pro, CAAnimation dump (CASpringAnimation m1 k631.655 c50.265 on
+     *   the children, the rows below, the clip and the chevron), Oct 23 2026
+     */
+    outlineSpring: {mass: 1, stiffness: 631.655, damping: 50.265},
+    /**
+     * A table's row updates: insert, delete, move and reload (`.automatic`
+     * and `.fade`), batch updates, editing's slide-in and self-sizing
+     * growth (critically damped, response 0.3 s, 0.441 s to settle).
+     * @source measured: UIKit lab (injected host app), iOS 26.2 sim iPhone
+     *   17 Pro, CAAnimation dump (CASpringAnimation m1 k438.649 c41.888),
+     *   Oct 23 2026
+     */
+    tableSpring: {mass: 1, stiffness: 438.649, damping: 41.888},
   },
 } as const;

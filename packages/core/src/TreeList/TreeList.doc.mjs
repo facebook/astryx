@@ -137,7 +137,7 @@ export const docs = {
   usage: {
     anatomy,
     description:
-      'An expandable tree structure for displaying hierarchical data with branch connector lines. Use it for file explorers, nested category browsers, or any interface that visualizes parent-child relationships.',
+      'An expandable tree structure for displaying hierarchical data with branch connector lines. Use it for file explorers, nested category browsers, or any interface that visualizes parent-child relationships. On a touch screen, a row\'s children slide out from under it as it expands, and back under it as it collapses, as in an iOS outline list.',
     bestPractices: [
       {guidance: true, description: 'Provide meaningful labels and icons for each node to make the hierarchy easy to scan.'},
       {guidance: true, description: 'Pre-expand important branches so users see key content immediately.'},

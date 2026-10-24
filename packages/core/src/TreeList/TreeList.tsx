@@ -264,6 +264,9 @@ export function TreeList({
       onToggleExpand: handleToggle,
       onActivate: activateItem,
       hasRovingTabIndex: true,
+      // Rows still sliding away after a collapse sit in an inert group
+      // (useTreeExpansionMotion): arrow keys skip them, as if already gone.
+      itemSelector: '[role="treeitem"]:not([inert] *)',
       // Rows are named by their label (AR1); typeahead matches that label, not
       // the chevron toggle, start content or description.
       matchLabelledBy: true,
@@ -316,14 +319,16 @@ export function TreeList({
         ? [...ancestorsIsLast, isLast]
         : ancestorsIsLast;
 
-      const renderedChildren =
-        isExpanded && hasChildren
-          ? renderItems(
+      // Rendered by the row when it shows them: while expanded, and while
+      // they slide away after a collapse (useTreeExpansionMotion).
+      const renderChildren = hasChildren
+        ? (): ReactNode =>
+            renderItems(
               item.children ?? [],
               nestedLevel + 1,
               ancestorsIsLastForChildren,
             )
-          : undefined;
+        : undefined;
 
       return (
         <TreeListItem
@@ -350,7 +355,7 @@ export function TreeList({
           onToggle={handleToggle}
           density={density}
           variant={variant}
-          renderedChildren={renderedChildren}
+          renderChildren={renderChildren}
           posInSet={index + 1}
           setSize={items.length}
           isTabbable={item.id === initialTabbableId}
