@@ -1,8 +1,9 @@
 # Typed slots (Swift)
 
 - Status: draft
-- Relation: applies AST-082 FR4 (typed slots: text, icon, content) and FR17
-  (shared icon names) to Swift. It decides how each slot kind appears in
+- Relation: applies AST-082 FR4 (typed slots: text, icon, content), including
+  its amendment that lets a platform accept a wider form for a content slot
+  with the same meaning, and FR17 (shared icon names) to Swift. It decides how each slot kind appears in
   SwiftUI; it does not define the kinds.
 
 ## Summary
@@ -23,9 +24,9 @@ places as on the web, read by VoiceOver in the same order.
   - An **icon** slot is an `IconName` (S2).
   - A **content** slot accepts any SwiftUI view, through a `@ViewBuilder`
     closure (S3). The core's content slot holds named Astryx components; Swift
-    accepts this wider form under AST-082 FR4's allowance that a platform may
-    accept a wider form for a slot with the same meaning, as the web accepts a
-    React node. The component's native additions still name the Astryx
+    accepts this wider form under the AST-082 FR4 amendment that lets a
+    platform accept a wider form for a slot with the same meaning, as the web
+    accepts a React node. The component's native additions still name the Astryx
     components the core slot holds, and whether it holds one or many (a row's
     start holds one of `Avatar`, `Icon`, `Thumbnail`; a card holds many).
     Text and icon slots take no wider form (no attributed or localized text, no
@@ -40,20 +41,23 @@ places as on the web, read by VoiceOver in the same order.
   stops a development build with a message naming it, and draws nothing in a
   release build, never a substitute.
 - **S3 — Content slots are open, the SwiftUI way.** A content slot is a generic
-  `@ViewBuilder` closure parameter (`start: () -> Start` where
-  `Start: View`), as in SwiftUI's `Label { } icon: { }`, never `AnyView`. For
+  `@ViewBuilder` closure parameter named as the core prop
+  (`startContent: () -> StartContent` where `StartContent: View`), as in
+  SwiftUI's `Label { } icon: { }`, never `AnyView`. For
   each Astryx component the core slot names, the view also has a convenience
   initializer that takes that component's props directly (for example a row's
-  `start: AvatarProps`). The props initializer takes the slot as the matching
+  `startContent: AvatarProps`). The props initializer takes the slot as the matching
   generated node type.
 - **S4 — The owner sizes what it holds.** A component proposes the size of
   each slot from its own size and clips or aligns what the slot draws to it,
-  whatever view is in it. An Astryx child takes its size from its owner, as
-  core does (an `Icon` in a small `IconButton` is small); an explicit size on
-  the child wins.
+  whatever view is in it. An Astryx child inherits its owner's size only where
+  core's does: an `Icon` in an owner's documented icon slot (an `Icon` in a
+  small `IconButton` is small), and a child of a component whose contract
+  adopts the size cascade. Every other child keeps its own default (an unsized
+  `Avatar` in a list item stays `md`), and an explicit size on any child wins.
 - **S5 — Reading order follows the slots.** VoiceOver reads a component's slots
-  in the core contract's order (start, label, description, end), whatever
-  views they hold. A decorative
+  in the core contract's order (for a list item: `marker`, `startContent`,
+  `label`, `description`, `endContent`), whatever views they hold. A decorative
   icon in a slot is hidden unless it carries a label (AST-082 FR17).
 - **S6 — Slots are declared, not guessed.** Each component's native additions
   name the slot kind, and for a content slot the Astryx components the core
@@ -62,13 +66,13 @@ places as on the web, read by VoiceOver in the same order.
 
 ## Acceptance checks
 
-| Requirement | Check                                                                                                                                                                                                                                  |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| S1, S6      | The generator test fails on a fixture component whose free-form prop has no slot kind, and produces the Swift form of each kind for a fixture with all three.                                                                          |
-| S2          | Every built-in name maps to an SF Symbol that exists on the package's iOS floor; registering `acme:rocket` makes `"acme:rocket"` draw it; an unregistered name stops a development build and draws nothing in release.                 |
-| S3          | A compile test passes `Avatar(…)` into a row's start slot through the closure, through the `AvatarProps` convenience initializer, and a plain SwiftUI `Image` through the closure; `AnyView` does not appear in the components module. |
-| S4          | A test reads the resolved size of an unsized icon inside a small and a large owner, and the drawn bounds of an oversized SwiftUI view in a row's start slot stay within the slot.                                                      |
-| S5          | A UI test reads a row with an avatar, label, description, and an end view in that order, with an Astryx badge and with a plain SwiftUI text at the end.                                                                                |
+| Requirement | Check                                                                                                                                                                                                                                                                          |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| S1, S6      | The generator test fails on a fixture component that keeps a free-form prop with no slot kind, or keeps a content slot that names no components; a fixture's unkept free-form prop stays web-only with no Swift form; a fixture with all three kinds produces each Swift form. |
+| S2          | Every built-in name maps to an SF Symbol that exists on the package's iOS floor; registering `acme:rocket` makes `"acme:rocket"` draw it; an unregistered name stops a development build and draws nothing in release.                                                         |
+| S3          | A compile test passes `Avatar(…)` into a list item's `startContent` through the closure, through the `AvatarProps` convenience initializer, and a plain SwiftUI `Image` through the closure; `AnyView` does not appear in the components module.                               |
+| S4          | A test reads the resolved size of an unsized icon in a small and a large owner's icon slot, finds an unsized `Avatar` in a list item at `md`, and finds the drawn bounds of an oversized SwiftUI view in `startContent` within the slot.                                       |
+| S5          | A UI test reads a list item with a marker, `startContent`, label, description, and `endContent` in that order, with an Astryx badge and with a plain SwiftUI text in `endContent`.                                                                                             |
 
 ## Current state
 
