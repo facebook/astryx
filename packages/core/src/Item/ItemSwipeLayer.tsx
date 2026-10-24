@@ -5,19 +5,20 @@
 /**
  * @file ItemSwipeLayer.tsx
  * @input The row root (by ref), the swipe entries per side, the behavior;
- *   useSwipeAction, theme tokens
+ *   useSwipeAction, useTouchIdiom (whose idiom the swipe follows), theme
+ *   tokens
  * @output Exports ItemSwipeLayer (default) — the panels of a row's swipe
  *   actions and the gesture that uncovers them — and the ItemSwipeBridge type
- *   through which the root reaches the gesture's handlers
+ *   through which the root reaches the gesture's key handler
  * @position Internal to Item, reached only through a dynamic import from
  *   Item.tsx when `swipeActions` is set, so a row without them never loads
  *   the gesture. Tested through Item.test.tsx and Item.source-build.test.mjs.
  *
  * The row's root stays Item's: it carries the swipe root styles and forwards
- * its pointer, click-capture and key events into the bridge this layer fills.
- * This layer renders the two panels as out-of-flow children of that root and
- * runs the gesture against it, so the DOM is the one Item rendered before the
- * split — no element is added for the swipe (spec AST-057, FR2).
+ * its key events into the bridge this layer fills; the gesture attaches to
+ * the root itself. This layer renders the two panels as out-of-flow children
+ * of that root, so the DOM is the one Item rendered before the split — no
+ * element is added for the swipe (spec AST-057, FR2).
  */
 
 import {useEffect, useRef, type RefObject} from 'react';
@@ -33,11 +34,8 @@ import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useMediaQuery} from '../hooks/useMediaQuery';
-import {
-  useSwipeAction,
-  type SwipeHandlers,
-  type SwipeSide,
-} from './useSwipeAction';
+import {useTouchIdiom} from '../utils/touchPresentation';
+import {useSwipeAction, type SwipeSide} from './useSwipeAction';
 import type {ItemSwipeAction, ItemSwipeBehavior} from './Item';
 
 // =============================================================================
@@ -45,13 +43,12 @@ import type {ItemSwipeAction, ItemSwipeBehavior} from './Item';
 // =============================================================================
 
 /**
- * What the root needs from the gesture: the handlers it forwards its events
- * into, and the test for the click the browser synthesizes after a drag. The
- * layer writes it on every render; the root reads it on every event.
+ * What the root needs from the gesture: the key handler it forwards its key
+ * events into (Escape closes a resting row). The layer writes it on every
+ * render; the root reads it on every event.
  */
 export interface ItemSwipeBridge {
-  handlers: SwipeHandlers;
-  shouldSuppressClick: () => boolean;
+  onKeyDown: (event: React.KeyboardEvent) => void;
 }
 
 export interface ItemSwipeLayerProps {
@@ -65,6 +62,12 @@ export interface ItemSwipeLayerProps {
   leading: ItemSwipeAction[];
   trailing: ItemSwipeAction[];
   behavior: ItemSwipeBehavior;
+  /**
+   * The role each panel carries. A grid row (`role="row"`) passes `gridcell`,
+   * so every exposed child of the row is a cell, the panel included; every
+   * other row passes nothing.
+   */
+  panelRole?: 'gridcell';
 }
 
 // =============================================================================
@@ -192,17 +195,20 @@ export default function ItemSwipeLayer({
   leading,
   trailing,
   behavior,
+  panelRole,
 }: ItemSwipeLayerProps) {
   const leadingEntriesRef = useRef<HTMLDivElement | null>(null);
   const trailingEntriesRef = useRef<HTMLDivElement | null>(null);
   const isReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+  // iOS's swipe on iOS; today's row on Android and any other finger.
+  const idiom = useTouchIdiom();
   const outermost = (side: SwipeSide): ItemSwipeAction | undefined => {
     const entries = side === 'leading' ? leading : trailing;
     return entries[entries.length - 1];
   };
   const swipe = useSwipeAction({
-    isEnabled: true,
     behavior,
+    idiom,
     sides: {
       leading: leading.length > 0,
       trailing: trailing.length > 0,
@@ -221,15 +227,12 @@ export default function ItemSwipeLayer({
     isReducedMotion,
     rootRef,
   });
-  // The root forwards its events into what this publishes. Published from an
-  // effect, like the gesture's own latest-callback refs: React flushes
-  // effects before it delivers a discrete event, so a handler never meets a
-  // stale bridge; and withdrawn when the layer leaves.
+  // The root forwards its key events into what this publishes. Published
+  // from an effect, like the gesture's own latest-callback refs: React
+  // flushes effects before it delivers a discrete event, so a handler never
+  // meets a stale bridge; and withdrawn when the layer leaves.
   useEffect(() => {
-    onBridge({
-      handlers: swipe.handlers,
-      shouldSuppressClick: swipe.shouldSuppressClick,
-    });
+    onBridge({onKeyDown: swipe.onKeyDown});
     return () => {
       onBridge(null);
     };
@@ -250,6 +253,8 @@ export default function ItemSwipeLayer({
     return (
       <div
         key={side}
+        ref={swipe.panelRef}
+        role={panelRole}
         data-swipe-panel={side}
         inert={isLive ? undefined : true}
         aria-hidden={isCommit ? true : undefined}

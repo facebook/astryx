@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useState, type ReactNode} from 'react';
+import {useState, type KeyboardEvent, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {Meta, StoryObj} from '@storybook/react';
 import {expect} from 'storybook/test';
@@ -11,6 +11,7 @@ import {Icon} from '@astryxdesign/core/Icon';
 import {Text} from '@astryxdesign/core/Text';
 import {Stack} from '@astryxdesign/core/Layout';
 import {List, ListItem} from '@astryxdesign/core/List';
+import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
 import {RadioList, RadioListItem} from '@astryxdesign/core/RadioList';
 import {StatusDot} from '@astryxdesign/core/StatusDot';
 
@@ -578,6 +579,175 @@ export const SwipeCommit: Story = {
         ))}
         {rows.length === 0 && <ListItem label="All caught up." />}
       </List>
+    );
+  },
+};
+
+/**
+ * A row that opens something: `controlProps` puts the disclosure's state and
+ * relation on the control a keyboard user focuses (the row's invisible
+ * button), where a screen reader reads them with the name. The root keeps
+ * the rest of the row's props.
+ */
+export const DisclosureRow: Story = {
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <Stack gap={1}>
+        <Item
+          label="Changed files"
+          description={isOpen ? '3 files, shown below' : '3 files'}
+          onClick={() => setIsOpen(open => !open)}
+          endContent={<Text color="secondary">{isOpen ? 'Hide' : 'Show'}</Text>}
+          controlProps={{
+            'aria-expanded': isOpen,
+            'aria-controls': 'disclosure-row-panel',
+          }}
+        />
+        {isOpen && (
+          <div id="disclosure-row-panel">
+            <Item label="src/app.tsx" description="+12 −4" />
+            <Item label="src/row.tsx" description="+3 −1" />
+            <Item label="docs/row.md" description="+40" />
+          </div>
+        )}
+      </Stack>
+    );
+  },
+};
+
+const gridStyles = stylex.create({
+  grid: {
+    overflowInline: 'clip',
+  },
+});
+
+/**
+ * Rows of a grid: `role="row"` renders the row's parts as `gridcell`s (the
+ * select cell, the label cell with its link, the end cell, each swipe panel)
+ * and keeps the row's own control, where the grid's roving focus lands
+ * through `controlProps`. The grid is one tab stop, the last focused cell:
+ * Up and Down move between rows, Left and Right between a row's select cell
+ * and its link, Space on the select cell selects the row; a touch swipe
+ * toward the inline start uncovers Archive. Selection is the row's
+ * `aria-selected`.
+ */
+export const GridRows: Story = {
+  render: () => {
+    const [rows, setRows] = useState(() =>
+      Array.from({length: 5}, (_, index) => ({
+        id: `m-${index + 1}`,
+        label: `Message ${index + 1}`,
+        selected: index === 1,
+      })),
+    );
+    // The one tab stop of the grid: a row and one of its two cells.
+    const [focusedIndex, setFocusedIndex] = useState(0);
+    const [focusedCell, setFocusedCell] = useState<'select' | 'link'>('select');
+    // Removing a row keeps one cell in the tab order: the roving stop clamps
+    // to the rows that remain.
+    const remove = (id: string) =>
+      setRows(current => {
+        const next = current.filter(row => row.id !== id);
+        setFocusedIndex(stop => Math.min(stop, Math.max(0, next.length - 1)));
+        return next;
+      });
+    const toggle = (id: string) =>
+      setRows(current =>
+        current.map(row =>
+          row.id === id ? {...row, selected: !row.selected} : row,
+        ),
+      );
+    // One tab stop for the whole grid: exactly one cell carries tabIndex 0
+    // and every other cell -1. Up and Down move between rows, Left and Right
+    // between a row's select cell and its link; a pointer that focuses a cell
+    // moves the stop there too, so Tab returns to the last focused cell.
+    const rememberCell = (index: number, cell: 'select' | 'link') => {
+      setFocusedIndex(index);
+      setFocusedCell(cell);
+    };
+    const focusRow = (index: number, cell: 'select' | 'link') => {
+      const next = Math.max(0, Math.min(rows.length - 1, index));
+      rememberCell(next, cell);
+      const id = rows[next]?.id;
+      document
+        .querySelector<HTMLElement>(
+          cell === 'link'
+            ? `[data-nav-id="${id}"]`
+            : `[data-select-id="${id}"]`,
+        )
+        ?.focus();
+    };
+    const onCellKeyDown =
+      (index: number, cell: 'select' | 'link') => (event: KeyboardEvent) => {
+        if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          focusRow(index + 1, cell);
+        } else if (event.key === 'ArrowUp') {
+          event.preventDefault();
+          focusRow(index - 1, cell);
+        } else if (event.key === 'ArrowRight' && cell === 'select') {
+          event.preventDefault();
+          focusRow(index, 'link');
+        } else if (event.key === 'ArrowLeft' && cell === 'link') {
+          event.preventDefault();
+          focusRow(index, 'select');
+        }
+      };
+    return (
+      <div
+        role="grid"
+        aria-label="Inbox"
+        aria-multiselectable="true"
+        aria-rowcount={rows.length}
+        // The element holding swipe-capable rows clips in the inline axis
+        // (AST-057 FR9), as List does for its rows.
+        {...stylex.props(gridStyles.grid)}>
+        {rows.map((row, index) => (
+          <Item
+            key={row.id}
+            role="row"
+            aria-rowindex={index + 1}
+            label={row.label}
+            description="A short snippet of the message"
+            href={`#${row.id}`}
+            isSelected={row.selected}
+            startContent={
+              <CheckboxInput
+                label={`Select ${row.label}`}
+                isLabelHidden
+                value={row.selected}
+                onChange={() => toggle(row.id)}
+                data-select-id={row.id}
+                tabIndex={
+                  index === focusedIndex && focusedCell === 'select' ? 0 : -1
+                }
+                onFocus={() => rememberCell(index, 'select')}
+                onKeyDown={onCellKeyDown(index, 'select')}
+              />
+            }
+            endContent={<Text color="secondary">2h</Text>}
+            controlProps={{
+              'data-nav-id': row.id,
+              tabIndex:
+                index === focusedIndex && focusedCell === 'link' ? 0 : -1,
+              onFocus: () => rememberCell(index, 'link'),
+              onKeyDown: onCellKeyDown(index, 'link'),
+            }}
+            swipeActions={{
+              trailing: [
+                {
+                  label: 'Archive',
+                  icon: <Icon icon={ArchiveBoxIcon} size="sm" />,
+                  onActivate: () => remove(row.id),
+                  variant: 'neutral',
+                  hasRemoval: true,
+                },
+              ],
+            }}
+          />
+        ))}
+      </div>
     );
   },
 };
