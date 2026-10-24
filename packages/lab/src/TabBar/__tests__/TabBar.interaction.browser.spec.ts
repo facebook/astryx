@@ -36,7 +36,9 @@ import {
   drag,
   holdAnimations,
   markElement,
+  merge,
   openStory,
+  PARTIAL_LIFT_SKIP,
   releaseAnimations,
   sampleCurve,
   sampleRects,
@@ -49,6 +51,7 @@ import {
   trackMarker,
   waitForAnimation,
   waitForRest,
+  withFinger,
   withStorybook,
   writeEvidence,
 } from '@astryxdesign/interaction-harness';
@@ -454,6 +457,70 @@ test('a drag chases the finger and the lift commits the item nearest it', async 
   expect(Math.abs((await lensCenterX(page)) - profile.x)).toBeLessThan(0.5);
 });
 
+test('a second finger landing mid-drag never moves the lens or changes the choice', async ({
+  page,
+}) => {
+  const {driver} = await openBar(page);
+  test.skip(!driver.partialLifts, PARTIAL_LIFT_SKIP);
+  const home = await itemCenter(page, 'Home');
+  const browse = await itemCenter(page, 'Browse');
+  const profile = await itemCenter(page, 'Profile');
+  const first = withFinger(
+    drag(home, browse, {durationMs: 500, restMs: 300}),
+    1,
+  );
+  const second = withFinger(tapScript(profile, {holdMs: 100}), 2, 250);
+  // While both fingers are down, the lens stays with the first.
+  let farthest = -Infinity;
+  let twoFingers = 0;
+  await driver.play(merge(first, second), {
+    onEvent: async step => {
+      if (step.fingers.length < 2) {
+        return;
+      }
+      twoFingers += 1;
+      farthest = Math.max(farthest, await lensCenterX(page));
+    },
+  });
+  expect(twoFingers).toBeGreaterThan(0);
+  expect(farthest).toBeLessThan(browse.x + 9);
+  await expect(tab(page, 'Browse')).toHaveAttribute('aria-selected', 'true');
+  await waitForRest(page.getByRole('tablist'));
+  expect(Math.abs((await lensCenterX(page)) - browse.x)).toBeLessThan(0.5);
+});
+
+test('right to left, a drag runs from the first tab leftward and commits where it lifts', async ({
+  page,
+}) => {
+  const {driver} = await openBar(page, 'right-to-left');
+  const library = await itemCenter(page, 'Library');
+  const profile = await itemCenter(page, 'Profile');
+  // The later tab sits to the left.
+  expect(profile.x).toBeLessThan(library.x);
+  await driver.play(drag(library, profile, {durationMs: 500, restMs: 300}));
+  await expect(tab(page, 'Profile')).toHaveAttribute('aria-selected', 'true');
+  await waitForRest(page.getByRole('tablist'));
+  expect(Math.abs((await lensCenterX(page)) - profile.x)).toBeLessThan(0.5);
+});
+
+test('a lift over a disabled tab leaves the selection, and the lens settles back', async ({
+  page,
+}) => {
+  const {driver} = await openBar(page, 'disabled-tab');
+  const home = await itemCenter(page, 'Home');
+  const browse = await itemCenter(page, 'Browse');
+  await driver.play(drag(home, browse, {durationMs: 400, restMs: 200}));
+  // (UIKit's own drag commits a disabled tab; a tap does not. Neither does
+  // here.)
+  await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+  await expect(tab(page, 'Browse')).toHaveAttribute('aria-disabled', 'true');
+  await expect
+    .poll(async () => Math.abs((await lensCenterX(page)) - home.x), {
+      timeout: 3000,
+    })
+    .toBeLessThan(0.5);
+});
+
 test('a lift between two items commits the nearer one (an exact tie goes to the leading one: tabBarModel.test.ts)', async ({
   page,
 }) => {
@@ -837,6 +904,30 @@ test.describe('minimize on scroll', () => {
     await expect.poll(() => isMinimized(page)).toBe(false);
     expect(await pageScroll(page)).toBe(scrolled);
     await expect(tab(page, 'Library')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  test('minimized, the circle alone stands for the bar: the selected tab, collapsed; the keys expand it onto that tab', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    await minimizeBar(page, driver);
+    const button = page.getByRole('button', {name: 'Library'});
+    await expect(button).toHaveAttribute('aria-expanded', 'false');
+    // The tabs are inert: out of reach of assistive technology and focus.
+    const tabsInert = () =>
+      page
+        .getByRole('tablist')
+        .evaluate(list =>
+          [...list.querySelectorAll<HTMLElement>('[role="tab"]')].map(
+            element => element.inert,
+          ),
+        );
+    expect(await tabsInert()).toEqual([true, true, true, true]);
+    await button.focus();
+    await page.keyboard.press('Enter');
+    await expect.poll(() => isMinimized(page)).toBe(false);
+    await expect(tab(page, 'Library')).toBeFocused();
+    expect(await tabsInert()).toEqual([false, false, false, false]);
   });
 
   test('minimized, the page takes the touches outside the circle', async ({

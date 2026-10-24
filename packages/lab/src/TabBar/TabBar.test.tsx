@@ -317,6 +317,35 @@ describe('TabBar minimize on scroll', () => {
     expect(isMinimized()).toBe(true);
   });
 
+  it('minimized, exposes only the circle: the selected tab, collapsed', () => {
+    touchScreen();
+    render(<Bar minimizeBehavior="onScrollDown" initial="library" />);
+    const circle = document.querySelector('[data-tab-bar-circle]');
+    expect(circle).toHaveAttribute('aria-hidden', 'true');
+    dragPage([200]);
+    // The tabs are out of reach until the bar expands, as on iOS.
+    for (const tab of screen.getAllByRole('tab', {hidden: true})) {
+      expect(tab).toHaveAttribute('inert');
+    }
+    const button = screen.getByRole('button', {name: 'Library'});
+    expect(button).toBe(circle);
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+    expect(button).toHaveAttribute('tabindex', '0');
+  });
+
+  it('activating the circle from the keys expands the bar and focuses the selected tab', () => {
+    touchScreen();
+    render(<Bar minimizeBehavior="onScrollDown" initial="library" />);
+    dragPage([200]);
+    const button = screen.getByRole('button', {name: 'Library'});
+    button.focus();
+    fireEvent.click(button);
+    expect(isMinimized()).toBe(false);
+    const library = screen.getByRole('tab', {name: 'Library'});
+    expect(library).not.toHaveAttribute('inert');
+    expect(library).toHaveFocus();
+  });
+
   it('expands on a tap on the circle, keeping the selection', () => {
     touchScreen();
     const onChange = vi.fn();
@@ -564,5 +593,51 @@ describe('TabBar search tab, selected', () => {
     expect(accessory).not.toHaveAttribute('inert');
     fireEvent.click(screen.getByRole('tab', {name: 'Search'}));
     expect(accessory).toHaveAttribute('inert');
+  });
+});
+
+describe('TabBar disabled tab', () => {
+  function Disabled({onChange}: {onChange?: (value: string) => void}) {
+    const [value, setValue] = useState('home');
+    return (
+      <TabBar
+        value={value}
+        onChange={next => {
+          setValue(next);
+          onChange?.(next);
+        }}
+        label="Sections">
+        <TabBarItem value="home" label="Home" icon={<Glyph name="home" />} />
+        <TabBarItem
+          value="browse"
+          label="Browse"
+          icon={<Glyph name="browse" />}
+          isDisabled
+        />
+        <TabBarItem
+          value="profile"
+          label="Profile"
+          icon={<Glyph name="profile" />}
+        />
+      </TabBar>
+    );
+  }
+
+  it('is marked disabled and ignores a tap', () => {
+    const onChange = vi.fn();
+    render(<Disabled onChange={onChange} />);
+    const browse = screen.getByRole('tab', {name: 'Browse'});
+    expect(browse).toHaveAttribute('aria-disabled', 'true');
+    fireEvent.click(browse);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(browse).toHaveAttribute('aria-selected', 'false');
+  });
+
+  it('is skipped by the arrow keys', () => {
+    render(<Disabled />);
+    const home = screen.getByRole('tab', {name: 'Home'});
+    home.focus();
+    fireEvent.keyDown(home, {key: 'ArrowRight'});
+    expect(screen.getByRole('tab', {name: 'Profile'})).toHaveFocus();
   });
 });

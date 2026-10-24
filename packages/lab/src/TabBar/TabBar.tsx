@@ -74,7 +74,11 @@
  * Accessibility: a `tablist` of `tab` buttons (`aria-selected`), one tab stop
  * with the arrow keys, Home and End moving between tabs and Enter or Space
  * choosing one. A badge is part of its tab's name (`badgeLabel`, or the badge
- * itself).
+ * itself). A disabled tab is dimmed, skipped by the keys and never chosen.
+ * Collapsed, the bar is one button for assistive technology, as on iOS: the
+ * circle, named after the selected tab and collapsed (`aria-expanded`), the
+ * tabs inert until it expands; activated from the keys, focus lands on the
+ * selected tab.
  *
  * SYNC: When modified, update TabBar.doc.mjs, TabBar.test.tsx,
  * useTabBarLens.ts, useTabBarMinimize.ts, useTabBarSearch.ts,
@@ -146,6 +150,11 @@ export interface TabBarItemProps {
    * ("3 unread"). Defaults to the badge itself.
    */
   badgeLabel?: string;
+  /**
+   * Shows the tab dimmed and keeps it from being chosen: a tap, the keys and
+   * a lift of the lens over it leave the selection as it is.
+   */
+  isDisabled?: boolean;
 }
 
 export interface TabBarProps extends Omit<
@@ -512,12 +521,30 @@ const styles = stylex.create({
     color: colorVars['--color-accent'],
     pointerEvents: 'none',
   },
+  circleButton: {
+    margin: 0,
+    padding: 0,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    font: 'inherit',
+    outlineStyle: {
+      default: 'none',
+      ':focus-visible': focusVars['--focus-outline-style'],
+    },
+    outlineWidth: focusVars['--focus-outline-width'],
+    outlineColor: focusVars['--focus-outline-color'],
+    outlineOffset: focusVars['--focus-outline-offset'],
+    WebkitTapHighlightColor: 'transparent',
+  },
   circleActive: {
     pointerEvents: 'auto',
     cursor: {
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
+  },
+  itemDisabled: {
+    color: colorVars['--color-text-disabled'],
   },
   item: {
     position: 'absolute',
@@ -809,7 +836,10 @@ export function TabBar({
     hasRovingTabIndex: true,
   });
   const choose = useCallback(
-    (item: {value: string}) => {
+    (item: {value: string; isDisabled?: boolean}) => {
+      if (item.isDisabled === true) {
+        return;
+      }
       if (item.value === value) {
         onReselect?.(item.value);
       } else {
@@ -868,6 +898,7 @@ export function TabBar({
     isActive: isSearchActive,
   });
   const searchHostRef = useRef<HTMLDivElement | null>(null);
+  const circleRef = useRef<HTMLButtonElement | null>(null);
   const lens = useTabBarLens({
     capsuleRef,
     count,
@@ -877,6 +908,7 @@ export function TabBar({
     onLift: index => choose(items[index]),
   });
   const mergedCapsuleRef = useMergedRefs(capsuleRef, listRef, lens.capsule);
+  const mergedCircleRef = useMergedRefs(minimize.circleIcon, circleRef);
   const {isCollapsed: isMinimized, expand} = minimize;
   const placement: TabBarAccessoryPlacement = isMinimized
     ? 'inline'
@@ -884,6 +916,22 @@ export function TabBar({
   const selectedItem = shownIndex >= 0 ? items[shownIndex] : null;
 
   const restIndex = Math.max(shownIndex, 0);
+  // The collapsed circle: it expands the bar, or while searching returns to
+  // the tab it holds. Activated from the keys (or VoiceOver), focus moves on
+  // to the selected tab once the bar has expanded.
+  const chooseCircle = () => {
+    if (isSearchSelected) {
+      if (selectedItem != null) {
+        choose(selectedItem);
+      }
+      return;
+    }
+    const hadFocus = document.activeElement === circleRef.current;
+    flushSync(expand);
+    if (hadFocus && selectedIndex >= 0) {
+      document.getElementById(`${baseId}-tab-${selectedIndex}`)?.focus();
+    }
+  };
   const capsuleInset = px(tabBar.itemInset);
   const itemSize = `calc(${size(count)})`;
 
@@ -974,25 +1022,6 @@ export function TabBar({
               expand();
             }
           }}
-          onClick={
-            isMinimized
-              ? event => {
-                  // The minimized circle expands the bar (while searching,
-                  // it returns to the tab it holds); the search tab beside
-                  // it is a tab of its own.
-                  if (
-                    !(event.target as Element).closest('[data-tab-bar-circle]')
-                  ) {
-                    return;
-                  }
-                  if (isSearchSelected && selectedItem != null) {
-                    choose(selectedItem);
-                  } else {
-                    expand();
-                  }
-                }
-              : undefined
-          }
           {...stylex.props(
             styles.capsule,
             hasSearch && styles.capsuleBesideSearch(SEARCH_ROOM),
@@ -1033,6 +1062,10 @@ export function TabBar({
                     ? 0
                     : -1
                 }
+                aria-disabled={item.isDisabled === true ? true : undefined}
+                // Collapsed, the circle stands for the bar (UIKit exposes it
+                // alone to VoiceOver); the tabs return as it expands.
+                inert={isMinimized}
                 data-tab-bar-value={item.value}
                 onClick={() => choose(item)}
                 {...mergeProps(
@@ -1043,6 +1076,7 @@ export function TabBar({
                     tabBarItemMarker,
                     styles.item,
                     styles.column(start, width),
+                    item.isDisabled === true && styles.itemDisabled,
                   ),
                 )}>
                 <span
@@ -1069,6 +1103,7 @@ export function TabBar({
               aria-label={search.label}
               tabIndex={isSearchSelected ? 0 : -1}
               ref={searchMotion.circle}
+              inert={isSearchSelected}
               data-tab-bar-search={search.value}
               onClick={chooseSearch}
               {...mergeProps(
@@ -1190,32 +1225,42 @@ export function TabBar({
               ) : null,
             )}
           </div>
-          <div
-            ref={minimize.circleIcon}
-            aria-hidden
-            data-tab-bar-circle=""
-            {...stylex.props(
-              styles.circle,
-              styles.box(CIRCLE_INSET, CIRCLE_INSET, CIRCLE_SIZE, CIRCLE_SIZE),
-              isMinimized && styles.circleActive,
-              isSearchSelected && styles.circlePlain,
-            )}>
-            {selectedItem != null ? (
-              <span
-                {...stylex.props(
-                  styles.icon,
-                  styles.box(
-                    CIRCLE_ICON_INSET,
-                    CIRCLE_ICON_INSET,
-                    ICON_SIZE,
-                    ICON_SIZE,
-                  ),
-                )}>
-                {selectedItem.selectedIcon ?? selectedItem.icon}
-              </span>
-            ) : null}
-          </div>
         </div>
+        <button
+          ref={mergedCircleRef}
+          type="button"
+          data-tab-bar-circle=""
+          // Collapsed, the circle is the bar's one element for assistive
+          // technology, as on iOS: the selected tab, collapsed (while
+          // searching, the tab it returns to). Expanded, it is hidden.
+          aria-label={isMinimized ? selectedItem?.label : undefined}
+          aria-expanded={isMinimized && !isSearchSelected ? false : undefined}
+          aria-hidden={isMinimized ? undefined : true}
+          tabIndex={isMinimized ? 0 : -1}
+          onClick={chooseCircle}
+          {...stylex.props(
+            styles.circle,
+            styles.circleButton,
+            styles.box(CIRCLE_INSET, CIRCLE_INSET, CIRCLE_SIZE, CIRCLE_SIZE),
+            isMinimized && styles.circleActive,
+            isSearchSelected && styles.circlePlain,
+          )}>
+          {selectedItem != null ? (
+            <span
+              aria-hidden
+              {...stylex.props(
+                styles.icon,
+                styles.box(
+                  CIRCLE_ICON_INSET,
+                  CIRCLE_ICON_INSET,
+                  ICON_SIZE,
+                  ICON_SIZE,
+                ),
+              )}>
+              {selectedItem.selectedIcon ?? selectedItem.icon}
+            </span>
+          ) : null}
+        </button>
         {search != null ? (
           <div
             ref={searchHostRef}

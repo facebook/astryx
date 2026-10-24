@@ -105,6 +105,7 @@ function Bar({
   minimizeBehavior,
   bottomAccessory,
   hasSearch = false,
+  disabled = [],
 }: {
   sections?: Section[];
   initial?: string;
@@ -112,6 +113,7 @@ function Bar({
   minimizeBehavior?: 'never' | 'onScrollDown';
   bottomAccessory?: (placement: TabBarAccessoryPlacement) => React.ReactNode;
   hasSearch?: boolean;
+  disabled?: string[];
 }) {
   const [value, setValue] = useState(initial);
   const [reselects, setReselects] = useState(0);
@@ -144,6 +146,7 @@ function Bar({
             icon={<Icon icon={section.icon} size="lg" />}
             selectedIcon={<Icon icon={section.selectedIcon} size="lg" />}
             badge={badges[section.value]}
+            isDisabled={disabled.includes(section.value)}
           />
         ))}
         {hasSearch ? (
@@ -368,6 +371,11 @@ function TabBarHost({badges}: {badges: Record<string, string | number>}) {
 
 export const Badges: Story = {
   render: () => <BadgesDemo />,
+};
+
+/** Browse is disabled: dimmed, and a tap, the keys or the lens leave it unchosen. */
+export const DisabledTab: Story = {
+  render: () => <Bar disabled={['browse']} />,
 };
 
 /** Five tabs: the items overlap more, as they do on iOS. */
