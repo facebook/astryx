@@ -186,9 +186,9 @@ approved policy.
 
 - **PR1 — Bounded calendar window.** The bottom-sheet calendar mounts a bounded window
   of month panes around the visible month rather than the complete reachable century.
-- **PR2 — Scroll work.** Scroll-driven measurement and selection updates remain
-  animation-frame throttled or settle-driven; listeners, frames, timers, and observers
-  are cleaned up on deactivation or unmount.
+- **PR2 — Gesture work.** A drag moves the month grid without a render; the visible
+  month is reported once per half-month crossed and once at the release; listeners,
+  frames, timers, and observers are cleaned up on deactivation or unmount.
 
 ## Accessibility contract
 
@@ -221,8 +221,7 @@ approved policy.
   `aria-selected` on the chosen day; ArrowLeft and ArrowRight move by a day
   following the reading direction, ArrowUp and ArrowDown by a week, Home and End
   to the ends of the week, PageUp and PageDown by a month, and Enter or Space
-  picks the focused day. Implementation gap: PageUp/PageDown do not page by a
-  month.
+  picks the focused day.
 
 ## Design relationships
 

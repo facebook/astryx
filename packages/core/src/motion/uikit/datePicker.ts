@@ -83,6 +83,18 @@ export const datePicker = {
        *   last allowed month, Oct 23 2026
        */
       release: 'paging',
+      /**
+       * In a sheet, a drag that starts on the grid moves the sheet only when
+       * it is steeper than 45° (vertical travel over horizontal above this
+       * ratio). The grid pages only within its own axis lock
+       * (`paging.panAxisRatio`, 26.6°), so the drags in between move
+       * neither.
+       * @source measured: UIKit lab, iOS 26.2 simulator, `.date` `.inline`
+       *   in a sheet: drags at 20° paged the grid; at 35° and 45° moved
+       *   neither the grid nor the sheet; at 55° and 65° moved the sheet,
+       *   Oct 23 2026
+       */
+      sheetAxisRatio: 1,
     },
     chevron: {
       /**

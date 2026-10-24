@@ -49,14 +49,10 @@ import {
   monthIndexOf,
   fromMonthIndex,
   clampIndex,
-  rowAtScrollOffset,
-  scrollOffsetForRow,
   paneWindow,
   rowsIn,
   DEFAULT_MONTH_REACH,
 } from './monthGeometry';
-import {SWIPE_DISTANCE} from './useOwnScrollGesture';
-import {SCROLL_QUIET_MS} from './useScrollSettle';
 
 // ---------------------------------------------------------------------------
 // jsdom scaffolding
@@ -68,8 +64,6 @@ class MockResizeObserver {
   disconnect() {}
 }
 
-/** An arbitrary pane size for the pure geometry tests. */
-const PANE = 264;
 /**
  * What the month scrollport measures as. The scroller pages along the INLINE
  * axis, so its pane size is a WIDTH — a phone's worth, since the value only
@@ -146,11 +140,6 @@ function setViewport(kind: 'mobile' | 'desktop'): void {
  * and torn down immediately: a getter left on `HTMLElement.prototype` makes
  * EVERY later DOM read take a slow path, measured at ~2.4s per test here.
  */
-/** One animation frame, for the rAF-throttled scroll handlers. */
-async function frame(): Promise<void> {
-  return new Promise(resolve => requestAnimationFrame(() => resolve()));
-}
-
 function withLayout<T>(fn: () => T): T {
   // jsdom defines clientWidth on Element.prototype; shadowing it on
   // HTMLElement.prototype and deleting the shadow afterwards restores the
@@ -858,59 +847,41 @@ describe('DateInput — calendar surface', () => {
   });
 
   /**
-   * A programmatic scroll must not report its own arrival as if the user had
-   * scrolled there. Nothing needs the report — whatever asked for the scroll
-   * already knows the month — and trusting it turns a steer into a cycle.
-   *
-   * The case that bit: a wheel commit steers this scroller while it is hidden
-   * behind the wheels, and a hidden scroller does not reliably stay put. On
-   * iOS the position is re-snapped when the panel becomes visible again,
-   * firing a scroll just as the wheels close and reports start being trusted
-   * again — so the month drifted on the way back to the calendar.
+   * The arrows step the pager on `setContentOffset(_:animated:)`'s curve and
+   * the title names the new month at the tap, as UIDatePicker's does; a
+   * second tap before the grid arrives steps again from the month already
+   * named.
    */
-  it('does not report a scroll it was told to make', async () => {
-    await withLayout(async () => {
-      render(
-        <Controlled initial="2026-03-21" min="2026-01-01" max="2026-12-31" />,
-      );
-      fireEvent.click(field());
-      const header = () =>
-        document.querySelector<HTMLElement>('[data-title="month-year"]')!;
-      const scroller = document.querySelector<HTMLElement>(
-        '[data-scroller="months"]',
-      )!;
+  it('names the month at the tap and steps again from it mid-scroll', () => {
+    renderAndOpen(
+      <Controlled initial="2026-03-21" min="2026-01-01" max="2026-12-31" />,
+    );
+    const header = () =>
+      document.querySelector<HTMLElement>('[data-title="month-year"]')!;
+    fireEvent.click(screen.getByRole('button', {name: 'Next month'}));
+    expect(header()).toHaveTextContent('April 2026');
+    fireEvent.click(screen.getByRole('button', {name: 'Next month'}));
+    expect(header()).toHaveTextContent('May 2026');
+    // The window follows the target, so May's pane is mounted already.
+    expect(pane('May 2026')).toBeInTheDocument();
+  });
 
-      // An arrow steers it to April. The scroll that lands there is our own
-      // doing, so whatever it reports must not move the month again.
-      fireEvent.click(screen.getByRole('button', {name: 'Next month'}));
-      expect(header()).toHaveTextContent('April 2026');
-      // Row 3 of a range starting in January is April: the month the steer
-      // was aiming at, arriving.
-      scroller.scrollLeft = 3 * SCROLLPORT_WIDTH;
-      fireEvent.scroll(scroller);
-      await frame();
-      expect(header()).toHaveTextContent('April 2026');
-
-      // A finger ends the steering: from here the months it passes are the
-      // user's, and every one of them counts.
-      // jsdom has no constructible TouchEvent, and a bare Event carries no
-      // `touches` — which crashes the gesture hook that reads `touches[0]`.
-      // That crash is the fake event's fault, not the hook's: a browser's
-      // touchstart always has the list.
-      const touchStart = new Event('touchstart', {bubbles: true});
-      const point = {identifier: 1, clientX: 100, clientY: 100};
-      Object.defineProperties(touchStart, {
-        touches: {value: [point]},
-        targetTouches: {value: [point]},
-        changedTouches: {value: [point]},
-      });
-      scroller.dispatchEvent(touchStart);
-      scroller.scrollLeft = 5 * SCROLLPORT_WIDTH;
-      fireEvent.scroll(scroller);
-      // The report is made from inside a rAF callback, so the state update
-      // lands outside the act() that fireEvent wraps.
-      await waitFor(() => expect(header()).toHaveTextContent('June 2026'));
+  it('pages the keyboard focus by month with PageUp/PageDown and by year with Shift', () => {
+    renderAndOpen(
+      <Controlled initial="2026-03-21" min="2025-01-01" max="2026-12-31" />,
+    );
+    const header = () =>
+      document.querySelector<HTMLElement>('[data-title="month-year"]')!;
+    const day = within(pane('March 2026')).getByRole('button', {
+      name: /March 21, 2026/,
     });
+    day.focus();
+    fireEvent.keyDown(day, {key: 'PageDown'});
+    expect(document.activeElement).toHaveAttribute('data-date', '2026-04-21');
+    expect(header()).toHaveTextContent('April 2026');
+    fireEvent.keyDown(document.activeElement!, {key: 'PageUp', shiftKey: true});
+    expect(document.activeElement).toHaveAttribute('data-date', '2025-04-21');
+    expect(header()).toHaveTextContent('April 2025');
   });
 
   /**
@@ -1220,196 +1191,6 @@ describe('DateInput — calendar surface', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Resting between two months — the iOS snap failure
-// ---------------------------------------------------------------------------
-
-/**
- * `scroll-snap-type: mandatory` is supposed to make all of this unnecessary,
- * and on a static list it does. This list is virtualized: seven panes exist
- * out of twelve hundred, and THE PANES ARE THE SNAP AREAS — so every month
- * the finger crosses mounts one and unmounts another, mid-fling.
- *
- * iOS scrolls off the main thread. It picks a landing place from the snap
- * points it knows about at the time, and a React re-render that lands after
- * that decision moves them; the scroller comes to rest where no snap point
- * exists any more and nothing re-snaps it. Reported from a device as the
- * calendar sitting between two months with the weekday header still square —
- * which is exactly the shape of it: the grid is not skewed, the scrollport is
- * parked a couple of columns into a pane, so the left of March and the right
- * of April are on screen under one Sun-to-Sat header.
- *
- * Chrome never shows it, because it snaps again after the mutation. jsdom
- * implements no snapping at all, which makes it a fine place to test the
- * correction: the scroller can simply be PUT at a bad offset, exactly as iOS
- * leaves it, and the settle has to fix it.
- */
-describe('DateInput — a rest position between two months', () => {
-  /** The row March 2026 occupies in a range that opens in January 2024. */
-  const MARCH_2026_ROW = 26;
-  const FIVE_YEARS = {min: '2024-01-01', max: '2028-12-31'} as const;
-
-  /** A touchstart carrying the list a real one always has. */
-  const touchEvent = (type: string) => {
-    const event = new Event(type, {bubbles: true});
-    const point = {identifier: 1, clientX: 100, clientY: 100};
-    Object.defineProperties(event, {
-      touches: {value: type === 'touchend' ? [] : [point]},
-      targetTouches: {value: type === 'touchend' ? [] : [point]},
-      changedTouches: {value: [point]},
-    });
-    return event;
-  };
-
-  /** Drag, release, and let the quiet period elapse. */
-  const swipeTo = async (scroller: HTMLElement, offset: number) => {
-    scroller.dispatchEvent(touchEvent('touchstart'));
-    scroller.scrollLeft = offset;
-    fireEvent.scroll(scroller);
-    scroller.dispatchEvent(touchEvent('touchend'));
-  };
-
-  const openCalendar = () => {
-    render(<Controlled initial="2026-03-21" {...FIVE_YEARS} />);
-    fireEvent.click(screen.getByLabelText('Event date'));
-    const scroller = document.querySelector<HTMLElement>(
-      '[data-scroller="months"]',
-    )!;
-    const scrollTo = vi.mocked(Element.prototype.scrollTo);
-    scrollTo.mockClear();
-    return {scroller, scrollTo};
-  };
-
-  it('puts the calendar back on a pane once the swipe is over', async () => {
-    await withLayout(async () => {
-      const {scroller, scrollTo} = openCalendar();
-      // Two columns in — what the device screenshot showed.
-      const stray = Math.round((SCROLLPORT_WIDTH * 2) / 7);
-      await swipeTo(scroller, MARCH_2026_ROW * SCROLLPORT_WIDTH + stray);
-
-      await waitFor(() =>
-        expect(scrollTo).toHaveBeenCalledWith(
-          expect.objectContaining({left: MARCH_2026_ROW * SCROLLPORT_WIDTH}),
-        ),
-      );
-    });
-  });
-
-  it('goes to the nearer pane, not back the way it came', async () => {
-    await withLayout(async () => {
-      const {scroller, scrollTo} = openCalendar();
-      // Three quarters of the way to April: April is the honest answer, and a
-      // correction that always rounded down would drag the user backwards.
-      await swipeTo(
-        scroller,
-        MARCH_2026_ROW * SCROLLPORT_WIDTH + SCROLLPORT_WIDTH * 0.75,
-      );
-
-      await waitFor(() =>
-        expect(scrollTo).toHaveBeenCalledWith(
-          expect.objectContaining({
-            left: (MARCH_2026_ROW + 1) * SCROLLPORT_WIDTH,
-          }),
-        ),
-      );
-    });
-  });
-
-  /**
-   * A scroller the browser snapped for itself must be left alone. Correcting
-   * it anyway would mean every swipe on Chrome — where snapping works — ended
-   * with a second, pointless scroll.
-   */
-  it('leaves a scroller that snapped properly alone', async () => {
-    await withLayout(async () => {
-      const {scroller, scrollTo} = openCalendar();
-      await swipeTo(scroller, (MARCH_2026_ROW + 2) * SCROLLPORT_WIDTH);
-
-      // Long enough that the settle has certainly run.
-      await new Promise(resolve => setTimeout(resolve, SCROLL_QUIET_MS * 2));
-      expect(scrollTo).not.toHaveBeenCalled();
-    });
-  });
-
-  /**
-   * Sub-pixel drift is the browser's own rounding on a fractional viewport,
-   * not a failed snap. Correcting it would fire a scroll after every gesture
-   * on any device whose width is not a whole number of pixels.
-   */
-  it('ignores sub-pixel drift', async () => {
-    await withLayout(async () => {
-      const {scroller, scrollTo} = openCalendar();
-      await swipeTo(scroller, MARCH_2026_ROW * SCROLLPORT_WIDTH + 0.4);
-
-      await new Promise(resolve => setTimeout(resolve, SCROLL_QUIET_MS * 2));
-      expect(scrollTo).not.toHaveBeenCalled();
-    });
-  });
-
-  /**
-   * The correction waits for the finger. Firing it mid-drag would fight the
-   * hand that is still moving the scroller — the same mistake that made the
-   * wheels climb a month at a time on iOS, and the reason `useScrollSettle`
-   * waits for a release rather than for quiet alone.
-   */
-  it('does not correct while the finger is still down', async () => {
-    await withLayout(async () => {
-      const {scroller, scrollTo} = openCalendar();
-      scroller.dispatchEvent(touchEvent('touchstart'));
-      scroller.scrollLeft = MARCH_2026_ROW * SCROLLPORT_WIDTH + 120;
-      fireEvent.scroll(scroller);
-
-      await new Promise(resolve => setTimeout(resolve, SCROLL_QUIET_MS * 2));
-      expect(scrollTo).not.toHaveBeenCalled();
-
-      // And on release it does the correction it was holding back.
-      scroller.dispatchEvent(touchEvent('touchend'));
-      await waitFor(() => expect(scrollTo).toHaveBeenCalled());
-    });
-  });
-
-  /**
-   * The one that actually reverses a swipe, and the reason the correction
-   * re-checks stillness rather than trusting the quiet period.
-   *
-   * iOS runs its own snap animation for ~150-300ms after the finger lifts,
-   * and fires scroll events irregularly while it does — a gap longer than the
-   * quiet period is routine in the slow tail. The settle lands mid-animation,
-   * reads an offset still travelling toward April, rounds THAT to the nearest
-   * pane (still March, since the animation is not yet halfway), and drags the
-   * calendar back where it came from. Swipe forward, get pulled backward.
-   *
-   * Simulated by moving the scroller between the two samples, which is what
-   * an animation in flight looks like from here.
-   */
-  it('does not correct a scroller that is still travelling', async () => {
-    await withLayout(async () => {
-      const {scroller, scrollTo} = openCalendar();
-      // A quarter of the way to April, and still going.
-      let offset = MARCH_2026_ROW * SCROLLPORT_WIDTH + SCROLLPORT_WIDTH * 0.25;
-      Object.defineProperty(scroller, 'scrollLeft', {
-        configurable: true,
-        get: () => {
-          // Every read advances it, the way an in-flight animation does.
-          offset += 8;
-          return offset;
-        },
-        set: (value: number) => {
-          offset = value;
-        },
-      });
-
-      await swipeTo(scroller, offset);
-      await new Promise(resolve => setTimeout(resolve, SCROLL_QUIET_MS * 3));
-      // Nothing. Correcting here would have sent it back to March, undoing a
-      // swipe the browser was already completing.
-      expect(scrollTo).not.toHaveBeenCalled();
-    });
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Month / year wheels
-// ---------------------------------------------------------------------------
 
 describe('DateInput — month/year wheels', () => {
   /**
@@ -1495,24 +1276,12 @@ describe('DateInput — month/year wheels', () => {
   });
 
   /**
-   * A wheel commit steers the hidden calendar, and the calendar reports the
-   * month it lands on. Taking that report back while the wheels are open
-   * closes a cycle: commit -> echo -> the echo moves the wheel's selected row
-   * -> the wheel is repositioned -> that scroll reads as another commit.
-   *
-   * Whether it converges comes down to how precisely a browser says
-   * "scrolling stopped". Chrome has `scrollend` and settles at once; iOS
-   * below Safari 26 has none, and its momentum runs on after the finger
-   * lifts, so each lap committed the next month along and the month climbed
-   * on its own — reported from a device, invisible in Chrome.
-   *
-   * Driven here through the calendar's real scroll listener, which needs a
-   * measured scrollport (`withLayout`) and a `scrollLeft` far enough to land
-   * on another pane, then a frame for the rAF throttle. No timing assumptions:
-   * the echo either reaches the month or it does not.
+   * The wheels steer the calendar while it is hidden behind them, and the
+   * steering is not reported back: the owner asked for that month already.
+   * Back on the dates, the calendar rests on the month the wheels named.
    */
-  it('ignores the calendar echo while the wheels are steering it', async () => {
-    await withLayout(async () => {
+  it('moves the hidden calendar to the wheels\u2019 month without an echo', () => {
+    withLayout(() => {
       render(<Controlled initial="2026-03-21" {...FIVE_YEARS} />);
       fireEvent.click(field());
       openWheels();
@@ -1522,71 +1291,9 @@ describe('DateInput — month/year wheels', () => {
         ),
       );
       expect(title()).toHaveTextContent('January 2026');
-
-      // The calendar, scrolling to January behind the wheels, reports each
-      // month it passes. None of it may move the month the wheels just set.
-      const scroller = document.querySelector<HTMLElement>(
-        '[data-scroller="months"]',
-      )!;
-      for (const row of [5, 6, 7, 8]) {
-        scroller.scrollLeft = row * SCROLLPORT_WIDTH;
-        fireEvent.scroll(scroller);
-        await frame();
-      }
-      expect(title()).toHaveTextContent('January 2026');
-    });
-    // The other direction — the calendar reporting its month when it IS the
-    // surface — is what every test in the calendar-surface block above
-    // depends on, so it is covered rather than restated here.
-  });
-
-  /**
-   * The reveal case, which is the one that was reported from a device.
-   *
-   * A wheel commit steers the calendar while it is hidden behind the wheels,
-   * and `visibility: hidden` keeps the layout box but does not guarantee the
-   * scroll position survives: iOS re-snaps the scroller when it becomes
-   * visible again, and not necessarily onto the pane it was put on. That
-   * fires a scroll exactly as the wheels close and reports start being
-   * trusted again — so the month drifted on the way back to the dates.
-   *
-   * Simulated here by moving the hidden scroller somewhere it was never sent,
-   * which is what the re-snap amounts to.
-   */
-  it('holds the month when the hidden calendar is re-snapped on reveal', async () => {
-    await withLayout(async () => {
-      render(<Controlled initial="2026-03-21" {...FIVE_YEARS} />);
-      fireEvent.click(field());
-      openWheels();
-      fireEvent.click(
-        within(screen.getByRole('listbox', {name: 'Month'})).getByText(
-          'January',
-        ),
-      );
-      expect(title()).toHaveTextContent('January 2026');
-
-      // iOS moves the hidden scroller off the pane it was steered to.
-      const scroller = document.querySelector<HTMLElement>(
-        '[data-scroller="months"]',
-      )!;
-      scroller.scrollLeft += 4 * SCROLLPORT_WIDTH;
-
-      // Back to the dates. Two things have to hold: the stray position must
-      // not become the month, and the calendar must be put back on the pane
-      // the month names — or the header would say January over a different
-      // month's grid.
-      const scrollTo = vi.mocked(Element.prototype.scrollTo);
-      scrollTo.mockClear();
       fireEvent.click(title());
-      fireEvent.scroll(scroller);
-      await frame();
-      await frame();
       expect(title()).toHaveTextContent('January 2026');
-
-      // January 2026 is row 24 of a range that starts in January 2024.
-      expect(scrollTo).toHaveBeenCalledWith(
-        expect.objectContaining({left: 24 * SCROLLPORT_WIDTH}),
-      );
+      expect(pane('January 2026')).toBeInTheDocument();
     });
   });
 
@@ -1930,51 +1637,17 @@ describe('DateInput — nested scrollers keep their own touch gesture', () => {
     return el.dispatchEvent(event);
   };
 
-  /**
-   * A whole gesture: down at the origin, drag by (dx, dy), lift. Returns the
-   * scroller's stubbed `scrollBy`, which is how the paging fallback shows up
-   * (jsdom implements neither scrolling nor `scrollBy`).
-   */
-  const swipe = (
-    el: Element,
-    dx: number,
-    dy: number,
-    {scrollsBy = 0}: {scrollsBy?: number} = {},
-  ) => {
-    // jsdom has no layout, so `scrollLeft` never moves on its own. Shadow it
-    // on this instance for the gesture: a native pan is the browser moving
-    // the scroller mid-drag, and watching for exactly that is how the hook
-    // knows whether its claim was honoured. Instance-only and deleted after,
-    // per the prototype-getter cost noted at the top of this file.
-    let offset = 0;
-    const scrollBy = vi.fn();
-    Object.defineProperties(el, {
-      scrollLeft: {
-        configurable: true,
-        get: () => offset,
-        set: (value: number) => {
-          offset = value;
-        },
-      },
-      scrollBy: {configurable: true, value: scrollBy},
-    });
+  /** A whole gesture: down at the origin, drag by (dx, dy), lift. */
+  const swipe = (el: Element, dx: number, dy: number) => {
     const origin = {x: 150, y: 200};
     touch(el, 'touchstart', origin);
     for (const step of [0.5, 1]) {
-      if (step === 0.5) {
-        offset += scrollsBy;
-      }
       touch(el, 'touchmove', {
         x: origin.x + dx * step,
         y: origin.y + dy * step,
       });
     }
     touch(el, 'touchend');
-    // @ts-expect-error - removing the shadows restores the prototype's
-    delete el.scrollLeft;
-    // @ts-expect-error - same
-    delete el.scrollBy;
-    return scrollBy;
   };
 
   it('lets a touch on the calendar reach the sheet, now that it pages sideways', () => {
@@ -2012,54 +1685,30 @@ describe('DateInput — nested scrollers keep their own touch gesture', () => {
     ancestor.stop();
   });
 
-  it('keeps a diagonal drag, because a thumb arcs as it swipes', () => {
+  /**
+   * UIDatePicker's split in a sheet (`datePicker.calendar.pager
+   * .sheetAxisRatio`): up to 45° the drag is the calendar's, so the sheet
+   * keeps off it (the pager itself pans only within 26.6°, so 30-45° moves
+   * neither, as in UIKit); steeper, it is the sheet's.
+   */
+  it('keeps a drag up to 45° from the sheet', () => {
     renderAndOpen();
     const scroller = document.querySelector('[data-scroller="months"]')!;
     const ancestor = watchAncestor();
-    // ~50° off horizontal: past the browser's own pan-x cone, still ours.
-    swipe(scroller, -60, 72);
+    // ~42° off horizontal.
+    swipe(scroller, -80, 72);
     expect(ancestor.seen).not.toContain('touchmove');
     ancestor.stop();
   });
 
-  /**
-   * The band between our claim and the browser's `pan-x` cone. The sheet has
-   * been told to keep off, and the compositor refuses to pan, so without the
-   * fallback these gestures would do nothing at all — measured as a dead zone
-   * from 45° to 60° on an iPhone 15 profile.
-   */
-  it('pages a month itself when the browser refuses to pan a claimed swipe', () => {
+  it('gives a drag steeper than 45° to the sheet', () => {
     renderAndOpen();
     const scroller = document.querySelector('[data-scroller="months"]')!;
-
-    const forward = swipe(scroller, -60, 72);
-    expect(forward).toHaveBeenCalledTimes(1);
-    expect(forward.mock.calls[0][0]).toMatchObject({behavior: 'smooth'});
-    // Swiping left advances: the offset moves towards the end of the line.
-    expect(forward.mock.calls[0][0].left).toBeGreaterThan(0);
-
-    const back = swipe(scroller, 60, 72);
-    expect(back.mock.calls[0][0].left).toBeLessThan(0);
-  });
-
-  it('stays out of the way when the browser did pan', () => {
-    renderAndOpen();
-    const scroller = document.querySelector('[data-scroller="months"]')!;
-    // Native momentum and snapping own this one; a second nudge would fight
-    // them. `scrollsBy` stands in for the compositor moving the scroller.
-    expect(swipe(scroller, -120, 0, {scrollsBy: 40})).not.toHaveBeenCalled();
-  });
-
-  it('ignores a claimed gesture too short to be a swipe', () => {
-    renderAndOpen();
-    const scroller = document.querySelector('[data-scroller="months"]')!;
-    expect(swipe(scroller, -SWIPE_DISTANCE + 4, 0)).not.toHaveBeenCalled();
-  });
-
-  it('never pages from a drag it gave to the sheet', () => {
-    renderAndOpen();
-    const scroller = document.querySelector('[data-scroller="months"]')!;
-    expect(swipe(scroller, -40, 200)).not.toHaveBeenCalled();
+    const ancestor = watchAncestor();
+    // ~50° off horizontal.
+    swipe(scroller, -60, 72);
+    expect(ancestor.seen).toContain('touchmove');
+    ancestor.stop();
   });
 
   it('stops a touch on a wheel from reaching the sheet', () => {
@@ -2144,52 +1793,6 @@ describe('monthGeometry', () => {
     expect(clampIndex(15, 10, 20)).toBe(15);
   });
 
-  describe('rowAtScrollOffset', () => {
-    it('maps an exact offset to its row', () => {
-      expect(rowAtScrollOffset(0, PANE, 100)).toBe(0);
-      expect(rowAtScrollOffset(PANE * 7, PANE, 100)).toBe(7);
-    });
-
-    it('rounds to the nearest row mid-scroll', () => {
-      expect(rowAtScrollOffset(PANE * 7 + 10, PANE, 100)).toBe(7);
-      expect(rowAtScrollOffset(PANE * 7 - 10, PANE, 100)).toBe(7);
-      expect(rowAtScrollOffset(PANE * 6.6, PANE, 100)).toBe(7);
-    });
-
-    it('never leaves the list', () => {
-      expect(rowAtScrollOffset(-500, PANE, 100)).toBe(0);
-      expect(rowAtScrollOffset(PANE * 1000, PANE, 100)).toBe(99);
-    });
-
-    it('is 0 before the pane size is known, rather than dividing by zero', () => {
-      expect(rowAtScrollOffset(1234, 0, 100)).toBe(0);
-    });
-
-    it('reads RTL scrollLeft, which counts down from zero', () => {
-      // The spec puts the inline start at 0 and runs negative from there, so
-      // an unsigned read would pin an RTL calendar to month zero forever.
-      expect(rowAtScrollOffset(-PANE * 7, PANE, 100, true)).toBe(7);
-      expect(rowAtScrollOffset(-PANE * 7 - 10, PANE, 100, true)).toBe(7);
-      expect(rowAtScrollOffset(0, PANE, 100, true)).toBe(0);
-    });
-  });
-
-  describe('scrollOffsetForRow', () => {
-    it('is the inverse of rowAtScrollOffset, in both directions', () => {
-      for (const isRTL of [false, true]) {
-        for (const row of [0, 1, 7, 99]) {
-          const offset = scrollOffsetForRow(row, PANE, isRTL);
-          expect(rowAtScrollOffset(offset, PANE, 100, isRTL)).toBe(row);
-        }
-      }
-    });
-
-    it('runs negative under RTL', () => {
-      expect(scrollOffsetForRow(3, PANE, false)).toBe(PANE * 3);
-      expect(scrollOffsetForRow(3, PANE, true)).toBe(-PANE * 3);
-    });
-  });
-
   describe('paneWindow', () => {
     it('mounts the overscan on both sides', () => {
       expect(paneWindow(50, 100, 3)).toEqual({start: 47, end: 53});
@@ -2243,16 +1846,16 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     return declarations(source.slice(at), object);
   };
 
-  it('pages the month scroller one whole pane at a time, horizontally', () => {
+  it('pages the months with the shared pager, each pane on its own layer', () => {
     const source = read('MonthScroller.tsx');
-    expect(source).toContain("scrollSnapType: 'x mandatory'");
-    expect(source).toContain("scrollSnapAlign: 'start'");
-    // pan-x is what splits the gesture by axis: horizontal pans stay with the
-    // calendar, vertical ones reach the sheet as swipe-to-dismiss. Without it
-    // the two would fight again, the way they did when this scrolled down.
-    expect(source).toContain("touchAction: 'pan-x'");
-    // The pane and the scrollport must come from the same expression, or a
-    // pane stops being exactly one screen and every snap offset drifts.
+    // UIKit's paging scroll view, not native scroll snapping: iOS gives a
+    // snapping scroller the fast rate bent onto WebKit's own target.
+    expect(source).toContain('usePager(');
+    expect(source).not.toContain('scrollSnapType');
+    // Mobile Safari paints a layer whole before it moves.
+    expect(source).toContain("willChange: 'transform'");
+    // The pane and the viewport must come from the same expression, or a
+    // pane stops being exactly one screen.
     expect(
       source.match(/blockSize: dateInputTouchGeometry\.paneBlockSize/g),
     ).toHaveLength(2);
