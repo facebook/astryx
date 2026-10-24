@@ -52,20 +52,29 @@ function packageStylesheetPath(packageDir) {
 // text, or null when the import cannot be bundled.
 function bundleImportWithInputs(entry, exportName) {
   if (!entry || !fs.existsSync(entry)) return null;
+  const os = require('node:os');
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-size-'));
   try {
     const esbuild = require('esbuild');
     const workingDir = process.cwd();
+    const entryFile = path.join(scratch, 'entry.mjs');
+    fs.writeFileSync(
+      entryFile,
+      exportName
+        ? `export {${exportName}} from ${JSON.stringify(path.resolve(entry))};`
+        : `export * from ${JSON.stringify(path.resolve(entry))};`,
+    );
+    // Code splitting keeps modules reached only through import() in their own
+    // chunks, so the figure counts what the import loads eagerly: the entry
+    // chunk and every chunk it imports statically.
+    const outdir = path.join(scratch, 'out');
     const result = esbuild.buildSync({
       absWorkingDir: workingDir,
+      entryPoints: [entryFile],
+      outdir,
       metafile: true,
-      stdin: {
-        contents: exportName
-          ? `export {${exportName}} from ${JSON.stringify(path.resolve(entry))};`
-          : `export * from ${JSON.stringify(path.resolve(entry))};`,
-        resolveDir: path.dirname(path.resolve(entry)),
-        loader: 'js',
-      },
       bundle: true,
+      splitting: true,
       minify: true,
       format: 'esm',
       platform: 'browser',
@@ -74,14 +83,42 @@ function bundleImportWithInputs(entry, exportName) {
       write: false,
       logLevel: 'silent',
     });
-    return {
-      text: result.outputFiles[0].text,
-      inputs: Object.keys(result.metafile.inputs)
-        .filter(input => input !== '<stdin>')
-        .map(input => path.resolve(workingDir, input)),
-    };
+    const outputs = result.metafile.outputs;
+    const byPath = new Map(
+      result.outputFiles.map(file => [
+        path.relative(workingDir, file.path),
+        file.text,
+      ]),
+    );
+    const entryOutput = Object.keys(outputs).find(
+      key => outputs[key].entryPoint !== undefined,
+    );
+    const eager = new Set();
+    const pending = [entryOutput];
+    while (pending.length > 0) {
+      const key = pending.pop();
+      if (key === undefined || eager.has(key)) continue;
+      eager.add(key);
+      for (const imported of outputs[key].imports || []) {
+        if (imported.kind === 'import-statement' && !imported.external) {
+          pending.push(imported.path);
+        }
+      }
+    }
+    const inputs = new Set();
+    let text = '';
+    for (const key of eager) {
+      text += byPath.get(key) ?? '';
+      for (const input of Object.keys(outputs[key].inputs || {})) {
+        inputs.add(path.resolve(workingDir, input));
+      }
+    }
+    inputs.delete(entryFile);
+    return {text, inputs: [...inputs]};
   } catch {
     return null;
+  } finally {
+    fs.rmSync(scratch, {recursive: true, force: true});
   }
 }
 

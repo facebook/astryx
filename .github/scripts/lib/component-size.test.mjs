@@ -110,6 +110,18 @@ describe('component import size', () => {
     ).toContain('xbtn9');
   });
 
+  it('counts only what the import loads eagerly, not import() targets', () => {
+    const root = tree({
+      'dist/Menu/index.js':
+        "export function Menu() { return import('./Touch.js').then(m => m.touch()); }\n",
+      'dist/Menu/Touch.js':
+        "export function touch() { return 'LAZY_TOUCH_CODE'; }\n",
+    });
+    const js = bundleImport(path.join(root, 'dist/Menu/index.js'));
+    expect(js).not.toContain('LAZY_TOUCH_CODE');
+    expect(js).toContain('import(');
+  });
+
   it('keeps the @keyframes a kept rule names', () => {
     const css =
       '@layer astryx-base{.xspin2{animation-name:xrot1}.xother9{animation-name:xrot9}@keyframes xrot1{from{opacity:0}to{opacity:1}}@keyframes xrot9{to{opacity:1}}}';

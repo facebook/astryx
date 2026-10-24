@@ -572,15 +572,23 @@ function measureSizes(targets) {
   const sizes = {};
   for (const target of targets) {
     const dist = path.join(process.cwd(), pkgDist(target.pkg));
-    sizes[target.key] = {
-      package: target.pkg.name,
-      ...measureComponentImport(
-        path.join(dist, target.distModule),
+    let size = measureComponentImport(
+      path.join(dist, target.distModule),
+      packageStylesheet(target.pkg),
+      dist,
+      target.name,
+    );
+    // An alias (`export {A as B}`) is not exported by its defining module;
+    // measure it through the package entry instead.
+    if (size.importGzipBytes === null) {
+      size = measureComponentImport(
+        path.join(dist, 'index.js'),
         packageStylesheet(target.pkg),
         dist,
         target.name,
-      ),
-    };
+      );
+    }
+    sizes[target.key] = {package: target.pkg.name, ...size};
   }
   return sizes;
 }
