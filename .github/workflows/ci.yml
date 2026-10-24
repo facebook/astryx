@@ -1581,6 +1581,17 @@ jobs:
             --project chromium \
             --output menu-press-shadow-root-output
 
+      # A two-finger pinch over an open picker wheel must zoom the page (WCAG
+      # 1.4.4) while one finger still scrolls the wheel. jsdom computes no
+      # touch-action, so only a real engine shows which gesture the browser
+      # keeps.
+      - name: Run picker wheel pinch-zoom contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/DateInput/__tests__/WheelPinchZoom.a11y.chromium.spec.ts \
+            --project chromium \
+            --output wheel-pinch-zoom-output
+
       # A sub-menu with a header or footer is a modal dialog beside the root's
       # menu, outside every role="menu" element. Its Tab order, a header radio
       # group the browser moves focus in after the pointer leaves, the
@@ -1592,6 +1603,18 @@ jobs:
             --project chromium \
             --output submenu-header-footer-output
 
+      # Tooltip and HoverCard answer a touch only once it is a tap: they open
+      # when the finger lifts, never for a touch that turns into a scroll, and
+      # a tap-opened layer closes when a tap outside lifts. Whether a touch is
+      # a tap, a scroll or a long press is the engine's own gesture decision,
+      # which only real touch input reaches.
+      - name: Run hover layer touch contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/Layer/__tests__/TouchTrigger.a11y.chromium.spec.ts \
+            --project chromium \
+            --output hover-layer-touch-output
+
       # A pointer that crosses from a Tooltip's trigger onto the tooltip in one
       # step must not lose it (WCAG 1.4.13 hoverable). The defect is in the
       # order the engine dispatches mouseout and mouseleave on that step, which
@@ -1602,6 +1625,17 @@ jobs:
             packages/core/src/Tooltip/__tests__/TooltipHoverBridge.a11y.chromium.spec.ts \
             --project chromium \
             --output tooltip-hover-bridge-output
+
+      # A picker wheel dragged onto a row outside its bounds must come to rest
+      # on the nearest row inside them. The stop comes from native scrolling,
+      # CSS snapping and the browser's end-of-scroll signal, none of which
+      # jsdom has.
+      - name: Run picker wheel rest contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/DateInput/__tests__/WheelRest.a11y.chromium.spec.ts \
+            --project chromium \
+            --output wheel-rest-output
 
       # A Token's remove target is enlarged past its 16px X, and only a real
       # engine hit-tests it: a press on the end of the value beside the X must
@@ -3127,6 +3161,38 @@ jobs:
           path: |
             dropdown-menu-radio-group-a11y-report.json
             dropdown-menu-radio-group-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
+      # DropdownMenuRadioItem owns one menuitemradio row: its checked state,
+      # decorative radio marker, icon, description, end content, disabled
+      # paint, and composition of caller handlers with row activation. The
+      # group owns value propagation; DropdownMenu owns keyboard navigation.
+      - name: Run DropdownMenuRadioItem audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuRadioItem:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output dropdown-menu-radio-item-a11y-report.json \
+            --components DropdownMenuRadioItem \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/DropdownMenu/__tests__/DropdownMenuRadioItemAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload DropdownMenuRadioItem audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuRadioItem:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: dropdown-menu-radio-item-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            dropdown-menu-radio-item-a11y-report.json
+            dropdown-menu-radio-item-audit-evidence/
           retention-days: 30
           if-no-files-found: error
 

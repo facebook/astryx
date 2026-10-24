@@ -8,16 +8,16 @@
  *   (TouchDateField, MonthScroller, Wheel, MonthYearWheels) and by the
  *   DateTimeInput and TimeInput touch fields
  *
- * The picker's whole geometry derives from two numbers, which is what makes
- * the fixed height and the scroll snapping exact:
+ * The calendar's geometry derives from one number, which is what makes the
+ * fixed height and the scroll snapping exact:
  *
  *   pane height = weeks x day size            (one month, always 6 rows)
- *   body height = pane height                 (calendar body AND wheel body)
- *   wheel pad   = (body height - item) / 2    (so row 0 can rest centered)
  *
  * Every month pane is the same height as the scrollport, so `scroll-snap-align:
- * start` produces a paged scroller with no partial rest positions, and the
- * wheel overlay swaps in without the component changing size.
+ * start` produces a paged scroller with no partial rest positions. The wheels
+ * are UIPickerView's own size (`wheelGeometry`, the UIKit picker table in
+ * motion/uikit/picker.ts), centred in the same pane, so the wheel overlay swaps
+ * in without the component changing size.
  *
  * The derived values are `defineConsts`, not plain exported strings: StyleX
  * inlines a constant at build time only through `defineVars`/`defineConsts`
@@ -37,23 +37,18 @@ import * as stylex from '@stylexjs/stylex';
 export const WEEKS_PER_PANE = 6;
 
 /**
- * The picker's two size inputs.
+ * The calendar's size input.
  *
  * `defineConsts`, not `defineVars`: these are inlined at build time and emit
  * no CSS custom property, so they are internal geometry rather than public
- * theming API. That is deliberate for both of them.
+ * theming API. That is deliberate.
  *
  * The day size is an accessibility floor — 44px is the comfortable minimum
  * tap target on iOS and Android, and every other target in the sheet is held
  * to it. Exposing it as a variable would let a theme quietly lower the floor,
  * which is not a knob a design system should hand out.
  *
- * The wheel row height is only meaningful against the day size (see below),
- * so tuning one without the other produces a picker whose panes no longer
- * agree — a variable that is only safe to change in lockstep with another is
- * not really a variable.
- *
- * If a real need to theme either appears, promoting a const to a var is an
+ * If a real need to theme it appears, promoting a const to a var is an
  * additive change; removing a var that consumers have started setting is not.
  */
 export const dateInputTouchSizes = stylex.defineConsts({
@@ -62,22 +57,6 @@ export const dateInputTouchSizes = stylex.defineConsts({
    * comfortable minimum tap target on both iOS and Android.
    */
   daySize: '44px',
-  /**
-   * Height of one wheel option row, and so the spacing between options and
-   * the height of the selection band.
-   *
-   * 28px against a day's 44px: a wheel row is scroll-first — a value is
-   * chosen by bringing it under the band, and tapping one is a shortcut
-   * rather than the mechanism — so it does not carry a day cell's tap-target
-   * duty, and a mis-tap costs nothing, because the neighbouring rows are the
-   * same control and the result is visible immediately.
-   *
-   * The row is deliberately close to the text it holds (17px), the way a
-   * platform picker packs them: the list should read as one continuous
-   * column of values, not as a stack of buttons with air between them. At
-   * this height ~9 options are on screen.
-   */
-  wheelItemSize: '28px',
 });
 
 // Local aliases for the derived values below. StyleX resolves a `defineConsts`
@@ -85,7 +64,6 @@ export const dateInputTouchSizes = stylex.defineConsts({
 // rather than a re-exported plain const, which its static analysis cannot
 // follow across files.
 const DAY_SIZE = dateInputTouchSizes.daySize;
-const WHEEL_ITEM_SIZE = dateInputTouchSizes.wheelItemSize;
 
 /** Geometry derived from the sizes above, shared across the component. */
 export const dateInputTouchGeometry = stylex.defineConsts({
@@ -93,9 +71,30 @@ export const dateInputTouchGeometry = stylex.defineConsts({
   paneBlockSize: `calc(${WEEKS_PER_PANE} * ${DAY_SIZE})`,
   /** The six equal week rows inside a pane. */
   paneRows: `repeat(${WEEKS_PER_PANE}, 1fr)`,
-  /**
-   * Padding above the first and below the last wheel option, so either end
-   * can come to rest under the centered selection band.
-   */
-  wheelEdgePadding: `calc((${WEEKS_PER_PANE} * ${DAY_SIZE} - ${WHEEL_ITEM_SIZE}) / 2)`,
+});
+
+/**
+ * UIPickerView's geometry in px, from the UIKit constants table
+ * (motion/uikit/picker.ts, measured on the iOS 26.2 simulator). StyleX
+ * inlines only literal constants, so the values are repeated here; a test
+ * holds them to the table.
+ */
+export const wheelGeometry = stylex.defineConsts({
+  /** The picker's height: picker.geometry.height. */
+  pickerHeight: '216px',
+  /** Row pitch: picker.geometry.rowHeight. */
+  rowHeight: '32px',
+  /** Half the row pitch, where a row's top sits above the band's centre. */
+  rowHalfHeight: '16px',
+  /** The cylinder's radius behind each row: −picker.geometry.cylinderRadius. */
+  rowOriginDepth: '-97.2px',
+  /** The dimmed copies' perspective: picker.geometry.perspective. */
+  perspective: '900px',
+  /** The band: picker.geometry.bandHeight and bandInset. */
+  bandHeight: '34px',
+  bandInset: '9px',
+  /** The band copy's magnification: picker.geometry.bandMagnification. */
+  bandMagnification: '1.119',
+  /** The dimmed copies' opacity: picker.geometry.outerOpacity. */
+  outerOpacity: '0.447',
 });
