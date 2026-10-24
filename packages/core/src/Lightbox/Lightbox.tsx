@@ -12,7 +12,8 @@
  *   40 pt gap), and the compositor animator for Photos' drag to dismiss (the
  *   backdrop and the controls' layers fade with the drag), zoomFromSource (UIKit's
  *   zoom transition between a source, `sourceFor`, and the photo), zoomStage's chrome
- *   curves (a tap on the photo hides the controls, as Photos' chrome)
+ *   curves (a tap on the photo hides the controls, as Photos' chrome) and pinch-close
+ *   fades (a pinch in from the fitted size closes the viewer)
  * @output Exports Lightbox component, LightboxProps, LightboxMedia
  * @position Core implementation; consumed by index.ts
  *
@@ -26,6 +27,7 @@
  * - /packages/core/src/Lightbox/__tests__/LightboxDismiss.interaction.browser.spec.ts (drag to dismiss proofs)
  * - /packages/core/src/Lightbox/__tests__/LightboxZoomTransition.interaction.browser.spec.ts (zoom transition proofs)
  * - /packages/core/src/Lightbox/__tests__/LightboxChrome.interaction.browser.spec.ts (controls hidden by a tap)
+ * - /packages/core/src/Lightbox/__tests__/LightboxPinchClose.interaction.browser.spec.ts (pinch to close)
  * - /packages/core/src/Lightbox/zoomFromSource.ts (the transition driver)
  * - /packages/core/src/Lightbox/index.ts (exports if types change)
  * - /packages/core/src/Layer/useLayerDismissal.ts (dismissal stack)
@@ -84,6 +86,8 @@ import {
   chromeFadeCurve,
   dismissBackdropAlpha,
   dismissChromeAlpha,
+  pinchCloseBackdropAlpha,
+  pinchCloseChromeAlpha,
 } from './zoomStage';
 /**
  * Media type for lightbox items.
@@ -658,6 +662,10 @@ export function Lightbox({
   if (isOpen && !isPresented) {
     setIsPresented(true);
   }
+  // Latched during render when the viewer opens, as `viewedItem` is.
+  if (isOpen && !isPresented) {
+    setIsPresented(true);
+  }
   const {shouldDismissOnCloseRequest} = useLayerDismissal({
     isActive: isOpen || isPresented,
     escapeBehavior: isOpen ? 'close' : 'block',
@@ -815,7 +823,10 @@ export function Lightbox({
       return false;
     }
     for (const animator of faded) {
-      animator.set({opacity: 1});
+      // The black layer rests where the controls' state puts it (restChrome).
+      if (animator.element?.hasAttribute('data-lightbox-blackout') !== true) {
+        animator.set({opacity: 1});
+      }
     }
     faded.clear();
     return true;
@@ -985,6 +996,23 @@ export function Lightbox({
 
   // The stage, for callbacks that run before this render returns it.
   const stageApiRef = useRef<ZoomStage | null>(null);
+  // A dismissal in progress (a drag down or a pinch in): the backdrop, the
+  // black behind the photo when it shows, and the controls and neighbouring
+  // photos (hidden controls stay hidden).
+  const fadeForDismissal = (backdropAlpha: number, chromeAlpha: number) => {
+    const {backdrop, chrome} = dismissFades();
+    markFaded(backdrop == null ? chrome : [backdrop, ...chrome]);
+    backdrop?.set({opacity: backdropAlpha});
+    const hidden = chromeHiddenRef.current;
+    for (const animator of chrome) {
+      animator.set({
+        opacity: hidden && isChromeElement(animator.element) ? 0 : chromeAlpha,
+      });
+    }
+    if (immersiveRef.current) {
+      blackoutAnimator()?.set({opacity: backdropAlpha});
+    }
+  };
   // The zoom stage for every pointer (the keyboard, a mouse double-click and
   // drag) and, under a finger, its touch layer: one touch model on every
   // touch device (the shared touch resolver), whose pinch and pan give past
@@ -1052,21 +1080,21 @@ export function Lightbox({
     dismiss: {
       isEnabled: isOpen && !isVideo,
       onDrag: travel => {
-        const {backdrop, chrome} = dismissFades();
-        markFaded(backdrop == null ? chrome : [backdrop, ...chrome]);
-        const backdropAlpha = dismissBackdropAlpha(travel);
-        backdrop?.set({opacity: backdropAlpha});
-        const opacity = dismissChromeAlpha(travel);
-        const hidden = chromeHiddenRef.current;
-        for (const animator of chrome) {
-          animator.set({
-            opacity: hidden && isChromeElement(animator.element) ? 0 : opacity,
-          });
-        }
-        if (immersiveRef.current) {
-          blackoutAnimator()?.set({opacity: backdropAlpha});
-        }
+        fadeForDismissal(
+          dismissBackdropAlpha(travel),
+          dismissChromeAlpha(travel),
+        );
       },
+      // Photos' pinch to close fades them by the pinch's scale instead,
+      // under any finger (one touch model).
+      onPinch: isTouch
+        ? scale => {
+            fadeForDismissal(
+              pinchCloseBackdropAlpha(scale),
+              pinchCloseChromeAlpha(scale),
+            );
+          }
+        : undefined,
       target: () => sourceBoxOf(sourceElementFor(index)),
       onRelease: dismisses => {
         if (dismisses) {

@@ -9,8 +9,9 @@
  *   Photos' double-tap and maximum zoom, the gap between its pages, and
  *   its drag-to-dismiss (the shrink and fades by travel, the release rule,
  *   the dismissal's and the cancel's springs), the zoom transition from
- *   a source (its springs and the two portals' fades), and the chrome a tap
- *   or a zoom hides (its fade and the background's turn to black)
+ *   a source (its springs and the two portals' fades), the chrome a tap
+ *   or a zoom hides (its fade and the background's turn to black), and the
+ *   pinch that closes the viewer (its release rule, fades and springs)
  * @position A component domain of the UIKit constants table (motion/uikit);
  *   read by Lightbox's zoom stage (Lightbox/zoomStage.ts) and its touch
  *   module. Internal constants: touch motion has no theme surface
@@ -293,5 +294,73 @@ export const zoomMedia = {
      *   chrome hides, 0 when it shows), Oct 24 2026
      */
     backgroundHideDelaySeconds: 0.1,
+  },
+  pinchClose: {
+    /**
+     * A pinch that starts at the fitted size and goes below it shrinks the
+     * photo with the fingers, about their centroid, which it follows: no
+     * resistance (a pinch that starts zoomed rubber-bands below the fitted
+     * size instead, `overshoot`, and never closes). Released, it closes into
+     * its thumbnail when the pinch's scale (the recognizer's, relative to the
+     * span it began at, as UIPinchGestureRecognizer's) went below this and
+     * was not reopened by `reopenScale`: straight in, 0.93414 at the lift
+     * closed and 0.93517 sprang back (finger scales 0.903 and 0.904, two runs
+     * each), still or moving, at any speed.
+     * @source measured: Photos, iOS 26.2 simulator, iPhone 17 Pro, a
+     *   3000 × 2000 photo opened from the Library grid, two-finger pinches
+     *   synthesized in-process (60 Hz), the pinch recognizer's scale read
+     *   after every touch event and the outcome of releases at finger scales
+     *   0.95 … 0.40 and 0.901 … 0.909, Oct 24 2026
+     */
+    closeScale: 0.9347,
+    /**
+     * A pinch reopened by this much from its smallest scale springs back
+     * instead of closing, at any depth (recognizer scale, absolute: the same
+     * at depths 0.62 and 0.83): +0.04965 closed and +0.05069 sprang back.
+     * The recognizer's velocity does not decide it (+0.035 closed while its
+     * velocity read −0.9 per s, +0.040 … +0.048 closed at +1.1 … +5.2 per s).
+     * @source measured: Photos, iOS 26.2 simulator, iPhone 17 Pro, the same
+     *   setup, pinches in to finger scales 0.6 and 0.8 reopened by 0.035 …
+     *   0.052 before a still release, the recognizer read after every touch
+     *   event, Oct 24 2026
+     */
+    reopenScale: 0.0502,
+    /**
+     * The backdrop's opacity against the pinch's scale, as [scale, opacity]
+     * pairs; between them it interpolates, past the last it is 0.
+     * @source measured: Photos, iOS 26.2 simulator, iPhone 17 Pro, a
+     *   3000 × 2000 photo opened from the Library grid, two-finger pinches
+     *   synthesized in-process (60 Hz), the one-up background view's opacity per frame (the same on the way back out), Oct 24 2026
+     */
+    // prettier-ignore
+    backdropAlpha: [[1, 1], [0.95, 0.98], [0.9, 0.95], [0.87, 0.93], [0.85, 0.9], [0.82, 0.86], [0.8, 0.81], [0.77, 0.76], [0.75, 0.7], [0.72, 0.64], [0.69, 0.58], [0.67, 0.51], [0.64, 0.44], [0.62, 0.38], [0.59, 0.31], [0.56, 0.26], [0.54, 0.2], [0.51, 0.15], [0.49, 0.11], [0.46, 0.08], [0.43, 0.05], [0.41, 0.02]],
+    /**
+     * The chrome's opacity falls this much per unit of scale below 1, from
+     * 1: 0.98 → 0.89, 0.90 → 0.43, 0.85 → 0.12, gone at 0.83.
+     * @source measured: Photos, iOS 26.2 simulator, iPhone 17 Pro, a
+     *   3000 × 2000 photo opened from the Library grid, two-finger pinches
+     *   synthesized in-process (60 Hz), the navigation bar's opacity per frame, Oct 24 2026
+     */
+    chromeAlphaPerScale: 5.9,
+    /**
+     * Closing, the photo flies into its thumbnail on this critically damped
+     * spring (position and size, from the release's velocity), while the
+     * backdrop and the chrome fade out on it.
+     * @source measured: Photos, iOS 26.2 simulator, iPhone 17 Pro, a
+     *   3000 × 2000 photo opened from the Library grid, two-finger pinches
+     *   synthesized in-process (60 Hz), CASpringAnimation on position and bounds.size at the lift: mass 1, damping ratio 1, stiffness 924 … 969 (response 0.202 … 0.207 s); opacities stiffness 947.29, damping 61.556, Oct 24 2026
+     */
+    closeSpring: {response: 0.204, dampingRatio: 1},
+    /**
+     * Springing back, the photo returns to the fitted size on this
+     * critically damped spring from rest, settled ~0.37 s after the lift;
+     * the backdrop and the chrome return on `closeSpring`. (Photos starts
+     * the closing spring first and adds this one 2–3 ms later, a ~70 ms dip
+     * toward the thumbnail that is not reproduced.)
+     * @source measured: Photos, iOS 26.2 simulator, iPhone 17 Pro, a
+     *   3000 × 2000 photo opened from the Library grid, two-finger pinches
+     *   synthesized in-process (60 Hz), the return CASpringAnimation (stiffness 695.97, damping 52.762, mass 1, initial velocity 0), Oct 24 2026
+     */
+    returnSpring: {response: 0.238, dampingRatio: 1},
   },
 } as const;

@@ -69,7 +69,7 @@ export const docs = {
       name: 'onOpenChange',
       type: '(isOpen: boolean) => void',
       description:
-        'Callback when the lightbox open state changes: the Close button, Escape, a tap beside the media, or (on a touch screen) dragging a photo down.',
+        'Callback when the lightbox open state changes: the Close button, Escape, a tap beside the media, or (on a touch screen) dragging a photo down or pinching it in from its fitted size.',
       required: true,
     },
     {
@@ -99,7 +99,7 @@ export const docs = {
       name: 'hasZoom',
       type: 'boolean',
       description:
-        'Enable zoom (images only): pinch, or double-tap or double-click to zoom in at that point and back, or Enter/Space/+/- via keyboard. When zoomed, drag (with momentum) or use arrow keys to pan. On a touch screen a tap on the photo hides the controls and turns the background black, as a zoom in does; the next tap, a return to the fitted size, or a keyboard focus on a control brings them back.',
+        'Enable zoom (images only): pinch, or double-tap or double-click to zoom in at that point and back, or Enter/Space/+/- via keyboard. When zoomed, drag (with momentum) or use arrow keys to pan. On a touch screen a tap on the photo hides the controls and turns the background black, as a zoom in does; the next tap, a return to the fitted size, or a keyboard focus on a control brings them back. On a touch screen a pinch in from the fitted size shrinks the photo, and closes the viewer into its thumbnail once it goes below about 93.5 % unless it is opened again by 5 % before the lift.',
       default: 'false',
     },
     {
@@ -196,7 +196,7 @@ export const docsZh = {
       name: 'onOpenChange',
       type: '(isOpen: boolean) => void',
       description:
-        '灯箱打开状态变化时的回调：关闭按钮、Esc 键、点按媒体旁空白处，或（触摸屏上）向下拖动照片。',
+        '灯箱打开状态变化时的回调：关闭按钮、Esc 键、点按媒体旁空白处，或（触摸屏上）向下拖动照片或从适合大小向内捏合照片。',
       required: true,
     },
     {
@@ -220,7 +220,7 @@ export const docsZh = {
       name: 'hasZoom',
       type: 'boolean',
       description:
-        '启用缩放（仅图片）：双指捏合，或双击/双点按在该处放大并还原，或使用 Enter/Space/+/- 键。缩放后可拖动（带惯性）或用方向键平移。在触摸屏上，点按照片会隐藏控件并使背景变黑（放大时也是如此）；再次点按、还原到适合大小或用键盘聚焦控件会让控件重新出现。',
+        '启用缩放（仅图片）：双指捏合，或双击/双点按在该处放大并还原，或使用 Enter/Space/+/- 键。缩放后可拖动（带惯性）或用方向键平移。在触摸屏上，点按照片会隐藏控件并使背景变黑（放大时也是如此）；再次点按、还原到适合大小或用键盘聚焦控件会让控件重新出现。在触摸屏上，从适合大小双指向内捏合会缩小照片；一旦小于约 93.5%，除非松开前又张开 5%，查看器就会关闭并缩回缩略图。',
       default: 'false',
     },
     {
@@ -307,13 +307,13 @@ export const docsDense = {
   propDescriptions: {
     isOpen: 'Whether the lightbox is open.',
     onOpenChange:
-      'Callback when open state changes (including a photo dragged down on a touch screen).',
+      'Callback when open state changes (including a photo dragged down or pinched in on a touch screen).',
     media: 'Single media object or array for gallery mode.',
     index: 'Current index in gallery mode.',
     onIndexChange:
       'Callback when gallery index changes (buttons, keys or a swipe).',
     hasZoom:
-      'Enable zoom (pinch, double-tap or double-click, Enter/Space, or +/-) and pan (drag or arrow keys) for images; on touch, a tap on the photo hides the controls.',
+      'Enable zoom (pinch, double-tap or double-click, Enter/Space, or +/-) and pan (drag or arrow keys) for images; on touch, a tap on the photo hides the controls and a pinch in closes the viewer.',
     sourceFor:
       'The element an item zooms out of on open and back into on close (its thumbnail).',
     xstyle: 'StyleX styles for layout customization.',
