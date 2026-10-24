@@ -274,17 +274,41 @@ extension View {
   }
 }
 
-/// Sets the theme and writes the SwiftUI values a theme has an equivalent for,
-/// in the subtree's color scheme.
+/// Sets the theme and writes the SwiftUI values a theme has an equivalent for.
+/// The colors resolve where they are drawn, so a subtree with its own color
+/// scheme gets that mode's colors (theme environment spec, E3).
 private struct AstryxThemeModifier: ViewModifier {
   let theme: Theme
-  @Environment(\.colorScheme) private var colorScheme
 
   func body(content: Content) -> some View {
-    let color = (colorScheme == .dark ? theme.dark : theme.light).color
     content
-      .tint(color.accent)
-      .foregroundStyle(color.textPrimary, color.textSecondary, color.textDisabled)
+      .tint(AstryxThemeColor(theme: theme, role: .accent))
+      .foregroundStyle(
+        AstryxThemeColor(theme: theme, role: .textPrimary),
+        AstryxThemeColor(theme: theme, role: .textSecondary),
+        AstryxThemeColor(theme: theme, role: .textDisabled)
+      )
       .environment(\.astryxTheme, theme)
+  }
+}
+
+/// A theme color that picks light or dark from the color scheme where it is
+/// drawn.
+struct AstryxThemeColor: ShapeStyle {
+  enum Role: Sendable {
+    case accent, textPrimary, textSecondary, textDisabled
+  }
+
+  let theme: Theme
+  let role: Role
+
+  func resolve(in environment: EnvironmentValues) -> Color {
+    let color = (environment.colorScheme == .dark ? theme.dark : theme.light).color
+    switch role {
+    case .accent: return color.accent
+    case .textPrimary: return color.textPrimary
+    case .textSecondary: return color.textSecondary
+    case .textDisabled: return color.textDisabled
+    }
   }
 }
