@@ -1654,3 +1654,65 @@ export const SubMenuHeaderChoice: Story = {
     );
   },
 };
+
+/**
+ * The same Labels level in the action sheet: the sheet is already a dialog,
+ * so the level shows its own filter field and "Create" button above and below
+ * its actions, in place of the menu's own, and the field filters them live.
+ */
+export const SubMenuHeaderAndFooterActionSheet: Story = {
+  name: 'Submenu / header and footer, action sheet',
+  render: () => {
+    const [query, setQuery] = useState('');
+    const [created, setCreated] = useState(0);
+    const [last, setLast] = useState('');
+    const visible = LABELS.filter(label =>
+      label.toLowerCase().includes(query.trim().toLowerCase()),
+    );
+    return (
+      <div data-testid="submenu-regions-sheet-fixture" style={{padding: 16}}>
+        <DropdownMenu
+          button={{label: 'Session'}}
+          presentation="bottom-sheet"
+          items={[
+            {
+              label: 'Rename',
+              icon: PencilIcon,
+              onClick: () => setLast('Rename'),
+            },
+            {
+              label: 'Labels',
+              header: (
+                <TextInput
+                  label="Filter labels"
+                  isLabelHidden
+                  placeholder="Filter labels"
+                  value={query}
+                  onChange={setQuery}
+                />
+              ),
+              footer: (
+                <Button
+                  label="Create label"
+                  variant="ghost"
+                  onClick={() => setCreated(count => count + 1)}
+                />
+              ),
+              items: visible.map(label => ({
+                label,
+                onClick: () => setLast(label),
+              })),
+            },
+            {
+              label: 'Delete',
+              icon: TrashIcon,
+              onClick: () => setLast('Delete'),
+            },
+          ]}
+        />
+        <output data-testid="last">{last}</output>
+        <output data-testid="created">{created}</output>
+      </div>
+    );
+  },
+};
