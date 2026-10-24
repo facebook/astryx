@@ -19,10 +19,19 @@ import {
   waitFor,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import * as stylex from '@stylexjs/stylex';
 import {CheckboxList} from './CheckboxList';
 import {CheckboxListItem} from './CheckboxListItem';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {List} from '../List/List';
+import {CheckboxInput} from '../CheckboxInput/CheckboxInput';
+import {checkboxRowPressScope} from '../CheckboxInput/checkboxRowPress.markers.stylex';
+import {indicatorScope} from '../Indicator/indicator.markers.stylex';
+import {
+  hasPressedArm,
+  hasReleaseFade,
+  readsPressStrength,
+} from '../__tests__/pressState';
 
 // FieldStatus announces status messages through the persistent useAnnounce
 // singletons; remove them between tests so role/aria-live queries in this
@@ -1155,5 +1164,133 @@ describe('CheckboxListItem ARIA props', () => {
         expect(checkbox).toHaveAttribute('aria-disabled', 'true');
       }
     });
+  });
+});
+
+describe('CheckboxListItem press surface', () => {
+  const rowScopeClass = stylex.props(checkboxRowPressScope).className ?? '';
+  const hoverScopeClass = stylex.props(indicatorScope).className ?? '';
+
+  /** The row's checkbox: its indicator wrapper and the control around it. */
+  function parts(row: HTMLElement) {
+    const box = row.querySelector('.astryx-checkbox-indicator');
+    const wrapper = box?.parentElement?.parentElement;
+    const control = wrapper?.parentElement;
+    if (wrapper == null || control == null) {
+      throw new Error('the row has no checkbox to press');
+    }
+    return {wrapper, control};
+  }
+
+  function rowOf(name: string): HTMLElement {
+    const row = screen.getByRole('checkbox', {name}).closest('li');
+    if (row == null) {
+      throw new Error(`no row for ${name}`);
+    }
+    return row;
+  }
+
+  function classesOf(element: Element): string[] {
+    return element.className.split(/\s+/);
+  }
+
+  it('makes the row the one press surface, so the label and the box press the same element', () => {
+    render(
+      <CheckboxList label="Notifications" value={['email']} onChange={() => {}}>
+        <CheckboxListItem label="Email" value="email" />
+        <CheckboxListItem label="SMS" value="sms" description="Rates apply" />
+      </CheckboxList>,
+    );
+    expect(rowScopeClass).not.toBe('');
+    expect(hoverScopeClass).not.toBe('');
+    for (const name of ['Email', 'SMS']) {
+      const row = rowOf(name);
+      const {wrapper, control} = parts(row);
+      // The touch press paints the innermost marked element under the
+      // finger: with nothing marked inside the row, every point of it presses
+      // the row.
+      expect(row).toHaveAttribute('data-astryx-pressable');
+      expect(row.querySelectorAll('[data-astryx-pressable]')).toHaveLength(0);
+      expect(control).not.toHaveAttribute('data-astryx-pressable');
+      // The row carries the row press scope, so the box paints from the
+      // row's press at the row's strength, and the row runs the release.
+      expect(classesOf(row)).toContain(rowScopeClass);
+      expect(readsPressStrength(wrapper, '[data-astryx-press="on"]')).toBe(
+        true,
+      );
+      expect(readsPressStrength(wrapper)).toBe(true);
+      expect(hasReleaseFade(row)).toBe(true);
+      // A mouse's press and hover stay the checkbox's own.
+      expect(classesOf(control)).toContain(hoverScopeClass);
+      expect(classesOf(row)).not.toContain(hoverScopeClass);
+      expect(hasPressedArm(wrapper)).toBe(true);
+    }
+  });
+
+  it('makes a standalone row with a check handler its press surface too', () => {
+    render(
+      <List>
+        <CheckboxListItem
+          label="Accept terms"
+          isChecked={false}
+          onCheck={() => {}}
+        />
+      </List>,
+    );
+    const row = rowOf('Accept terms');
+    expect(row).toHaveAttribute('data-astryx-pressable');
+    expect(row.querySelectorAll('[data-astryx-pressable]')).toHaveLength(0);
+    expect(classesOf(row)).toContain(rowScopeClass);
+  });
+
+  it('leaves a row that does not respond to presses out of it', () => {
+    // A standalone row with no check handler delegates nothing, so its
+    // checkbox keeps its own press.
+    render(
+      <List>
+        <CheckboxListItem label="Completed task" isChecked />
+      </List>,
+    );
+    const row = rowOf('Completed task');
+    const {control} = parts(row);
+    expect(row).not.toHaveAttribute('data-astryx-pressable');
+    expect(classesOf(row)).not.toContain(rowScopeClass);
+    expect(control).toHaveAttribute('data-astryx-pressable');
+  });
+
+  it('paints no press on a disabled item', () => {
+    render(
+      <CheckboxList label="Notifications" value={[]} onChange={() => {}}>
+        <CheckboxListItem label="Email" value="email" isDisabled />
+      </CheckboxList>,
+    );
+    const row = rowOf('Email');
+    const {wrapper, control} = parts(row);
+    expect(row.querySelectorAll('[data-astryx-pressable]')).toHaveLength(0);
+    expect(control).not.toHaveAttribute('data-astryx-pressable');
+    expect(classesOf(row)).not.toContain(rowScopeClass);
+    expect(hasPressedArm(wrapper)).toBe(false);
+  });
+
+  it("keeps a checkbox placed in the row's content its own press surface", () => {
+    render(
+      <CheckboxList label="Notifications" value={[]} onChange={() => {}}>
+        <CheckboxListItem
+          label="Email"
+          value="email"
+          endContent={
+            <CheckboxInput
+              label="Daily digest"
+              value={false}
+              onChange={() => {}}
+            />
+          }
+        />
+      </CheckboxList>,
+    );
+    const nested = screen.getByRole('checkbox', {name: 'Daily digest'});
+    const nestedSurface = nested.closest('[data-astryx-pressable]');
+    expect(nestedSurface).not.toBeNull();
+    expect(nestedSurface?.tagName).not.toBe('LI');
   });
 });
