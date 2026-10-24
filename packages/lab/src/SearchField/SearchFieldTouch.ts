@@ -21,6 +21,7 @@
 
 import {useCallback, useLayoutEffect, useRef, type RefObject} from 'react';
 import {useTouchPresentation} from '@astryxdesign/core/gestures/experimental';
+import {isRtlElement} from '@astryxdesign/core/hooks';
 import {
   uikit,
   useAnimator,
@@ -78,11 +79,7 @@ export function useSearchFieldMotion({
       restWidth: field?.getBoundingClientRect().width ?? 0,
       height: fieldHeight,
       lift,
-      // Core's `isRtlElement` replaces this read once core exports it.
-      isRtl:
-        field != null &&
-        field.ownerDocument.defaultView?.getComputedStyle(field).direction ===
-          'rtl',
+      isRtl: isRtlElement(field),
     };
   }, [fieldHeight, lift]);
 
