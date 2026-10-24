@@ -48,7 +48,10 @@ async function openSheet(page: Page) {
   // The sheet panel carries the component class and the transform.
   const sheet = dialog.locator('.astryx-bottom-sheet').first();
   await expect(sheet).toBeVisible();
-  await page.waitForTimeout(600); // the entrance
+  // The entrance: the sheet takes no input until it has landed.
+  await expect
+    .poll(async () => sheet.evaluate(el => el.getAnimations().length))
+    .toBe(0);
   return {dialog, sheet};
 }
 

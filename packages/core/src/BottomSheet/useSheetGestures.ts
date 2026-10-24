@@ -341,6 +341,12 @@ export interface UseSheetGesturesOptions {
    * sheet. False hands it back, at the value last written.
    */
   onScrimTracking?: (tracking: boolean) => void;
+  /**
+   * True while the sheet presents under a finger (`present`), false once it
+   * lands. UIKit drops every touch that begins during a sheet's presentation,
+   * for its whole life (F4 b59): the host holds input meanwhile.
+   */
+  onPresentingChange?: (presenting: boolean) => void;
 }
 
 export interface SheetContentProps {
@@ -461,8 +467,10 @@ export interface UseSheetGesturesResult {
   present: () => boolean;
   /**
    * Dismisses the sheet the way UIKit does under a finger: off screen on
-   * `springs.sheetDismiss`, the dim on the same curve. Sets and returns
-   * `gestureExitRef`'s exit for the host to wait on; null under a mouse.
+   * `springs.sheetDismiss`, the dim on the same curve. During the entrance it
+   * waits for the sheet to land, then runs from the detent, as UIKit queues
+   * it. Sets and returns `gestureExitRef`'s exit for the host to wait on;
+   * null under a mouse.
    */
   dismiss: () => SheetGestureExit | null;
   /**
@@ -501,6 +509,7 @@ export function useSheetGestures({
   onSnap,
   onScrimOpacity,
   onScrimTracking,
+  onPresentingChange,
 }: UseSheetGesturesOptions): UseSheetGesturesResult {
   const [dragOffset, setDragOffset] = useState(0);
   const [settledOffset, setSettledOffset] = useState(0);
@@ -618,12 +627,14 @@ export function useSheetGestures({
   const onSnapRef = useRef(onSnap);
   const onScrimOpacityRef = useRef(onScrimOpacity);
   const onScrimTrackingRef = useRef(onScrimTracking);
+  const onPresentingChangeRef = useRef(onPresentingChange);
   useEffect(() => {
     onDismissRef.current = onDismiss;
     canDismissRef.current = canDismiss;
     onSnapRef.current = onSnap;
     onScrimOpacityRef.current = onScrimOpacity;
     onScrimTrackingRef.current = onScrimTracking;
+    onPresentingChangeRef.current = onPresentingChange;
   });
 
   // The scrim, while a gesture or its release moves it (`onScrimTracking`):
@@ -725,6 +736,18 @@ export function useSheetGestures({
   // The dim map of the last release, for a spring-back that interrupts it.
   const lastDimForRef = useRef<((offset: number) => number) | null>(null);
 
+  // The entrance under a finger (`present`): while it runs the host holds
+  // input, and a close waits for it (see `dismiss`).
+  const presentingRef = useRef(false);
+  const entranceRef = useRef<Promise<boolean> | null>(null);
+  const endPresenting = useCallback(() => {
+    entranceRef.current = null;
+    if (presentingRef.current) {
+      presentingRef.current = false;
+      onPresentingChangeRef.current?.(false);
+    }
+  }, []);
+
   // Live drag bookkeeping (refs so pointermove doesn't churn renders).
   const dragStateRef = useRef<{
     // Whether the touch path drives this drag. Such a drag holds no pointer
@@ -798,6 +821,10 @@ export function useSheetGestures({
   animatorRef.current ??= createAnimator(null);
   const animator = animatorRef.current;
   const travelBaseRef = useRef(0);
+  // The layout offset the running travel is measured from (a release keeps
+  // the drag's base layout until it lands, while settledLayoutOffset already
+  // names the target's).
+  const travelLayoutBaseRef = useRef(0);
   // The settle, return or exit running on the travel channel, if any.
   const travelHandleRef = useRef<MotionHandle | null>(null);
   // Which timing the gesture's release runs on: UIKit's springs under a
@@ -1145,6 +1172,7 @@ export function useSheetGestures({
       // before the sheet's first animation (motion/roles.ts).
       registerSpringsTable();
       const base = layoutOffset + travelBaseRef.current;
+      travelLayoutBaseRef.current = layoutOffset;
       const to = offset - base;
       const from = animator.get('y');
       const motion = releaseMotionRef.current;
@@ -1570,6 +1598,9 @@ export function useSheetGestures({
     if (!readTouchPresentation().isTouch) {
       return false;
     }
+    // Input is held from now until the sheet lands (F4 b59).
+    presentingRef.current = true;
+    onPresentingChangeRef.current?.(true);
     // Before the host shows the dialog: its backdrop must not start its own
     // fade-in.
     beginScrimTracking();
@@ -1577,6 +1608,7 @@ export function useSheetGestures({
       const element = sheetElRef.current;
       if (element == null || !isOpenRef.current) {
         endScrimTracking(1);
+        endPresenting();
         return;
       }
       // Below the screen: the sheet's visible height at its rest.
@@ -1590,9 +1622,11 @@ export function useSheetGestures({
       const dimFor = (o: number) => dimForHeight(o, height);
       if (distance <= 0 || height <= 0) {
         endScrimTracking(dimFor(restOffset));
+        endPresenting();
         return;
       }
       travelBaseRef.current = settledOffset - settledLayoutOffsetRef.current;
+      travelLayoutBaseRef.current = settledLayoutOffsetRef.current;
       animator.set({y: distance});
       const at = performance.now();
       const handle = animator.animate(
@@ -1615,7 +1649,10 @@ export function useSheetGestures({
         at,
       );
       travelHandleRef.current = handle;
+      // A close asked for meanwhile waits on this (see `dismiss`).
+      entranceRef.current = handle.finished;
       void handle.finished.then(finished => {
+        endPresenting();
         if (travelHandleRef.current !== handle) {
           return;
         }
@@ -1630,13 +1667,14 @@ export function useSheetGestures({
     animator,
     beginScrimTracking,
     dimForHeight,
+    endPresenting,
     endScrimTracking,
     followScrim,
     measureHeight,
     settledOffset,
   ]);
 
-  const dismiss = useCallback((): SheetGestureExit | null => {
+  const startDismiss = useCallback((): SheetGestureExit | null => {
     if (gestureExitRef.current != null) {
       return gestureExitRef.current;
     }
@@ -1644,11 +1682,12 @@ export function useSheetGestures({
       return null;
     }
     if (travelHandleRef.current != null) {
-      // A settle or the entrance still running: leave from where it is.
+      // A settle still running: leave from where it is.
       travelHandleRef.current = null;
       animator.stop(['y']);
     } else {
       travelBaseRef.current = settledOffset - settledLayoutOffsetRef.current;
+      travelLayoutBaseRef.current = settledLayoutOffsetRef.current;
     }
     // Computed, not read from layout: by now the host may have rendered its
     // closing style, whose transform the exit's held transform replaces in
@@ -1656,14 +1695,18 @@ export function useSheetGestures({
     const height = measureHeight();
     const from = animator.get('y');
     const fromOffset =
-      settledLayoutOffsetRef.current + travelBaseRef.current + from;
+      travelLayoutBaseRef.current + travelBaseRef.current + from;
     // Below the screen: what is still visible of the sheet.
     const distance = visibleHeightForOffset(
       height,
       fromOffset,
       offscreenBlockEndInsetRef.current,
     );
-    const startingDim = dimForHeight(fromOffset, height);
+    // The dim fades from where it is: an entrance (whose dim follows its
+    // progress, not position) or a release may still be playing it.
+    const startingDim =
+      scrimAnimatorRef.current?.get('opacity') ??
+      dimForHeight(fromOffset, height);
     beginScrimTracking();
     const at = performance.now();
     const handle = animator.animate(
@@ -1708,6 +1751,30 @@ export function useSheetGestures({
     measureHeight,
     settledOffset,
   ]);
+
+  // UIKit queues a dismissal asked for during the presentation: the sheet
+  // lands on its detent, then a full dismissal runs from there (F4 b59).
+  const dismiss = useCallback((): SheetGestureExit | null => {
+    if (gestureExitRef.current != null) {
+      return gestureExitRef.current;
+    }
+    const entrance = entranceRef.current;
+    if (entrance == null) {
+      return startDismiss();
+    }
+    const base = travelBaseRef.current;
+    const queued: SheetGestureExit = {
+      finished: entrance.then(async () => {
+        if (gestureExitRef.current === queued) {
+          gestureExitRef.current = null;
+        }
+        return startDismiss()?.finished ?? true;
+      }),
+      transform: base !== 0 ? `translateY(${base}px)` : 'none',
+    };
+    gestureExitRef.current = queued;
+    return queued;
+  }, [startDismiss]);
 
   const beginDrag = useCallback(
     (event: ReactPointerEvent, sheetHeight: number, startCoord?: number) => {
@@ -2216,6 +2283,8 @@ export function useSheetGestures({
       const touch = event.changedTouches[0] as Touch | undefined;
       if (
         travelHandleRef.current == null ||
+        // The entrance's touches are the hold's (see `present`).
+        presentingRef.current ||
         event.touches.length !== 1 ||
         touch == null ||
         !onDrawnSheet(touch.clientX, touch.clientY)
@@ -2267,6 +2336,7 @@ export function useSheetGestures({
         (caughtTouchRef.current != null ||
           (event.type === 'pointerdown' &&
             travelHandleRef.current != null &&
+            !presentingRef.current &&
             onDrawnSheet(event.clientX, event.clientY)))
       ) {
         event.stopPropagation();
