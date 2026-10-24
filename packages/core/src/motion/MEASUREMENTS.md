@@ -274,3 +274,15 @@ else in it is measured.
 | ID    | What                 | App and gesture                                                                                                                    | Extract                                                                                                                          | Method |
 | ----- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------ |
 | M-TB1 | Minimize glass morph | Stock UITabBarController with `.onScrollDown` over a long list: scroll down past the trigger, then back to the top; tap the circle | what the screen shows between the bar and the circle (60 fps video): the platter's outline, the items' opacity or blur, the lens | B      |
+
+## Search (UISearchController)
+
+Done (iOS 26.2 simulator, Oct 24 2026; in the search table): the activation
+and cancel clock and curve, the stacked field and its close button, the large
+title's fade, the field scrolling away, the bottom and tab placements' rest
+above the keyboard, the bottom placement's geometry and its field and close
+button frames during activation and cancel, the clear button.
+
+| ID    | What                       | App and gesture                                                                                                                | Extract                                                                             | Method | Feeds                                   |
+| ----- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- | ------ | --------------------------------------- |
+| M-SE1 | Scroll-away snap threshold | Probe app: a list with `hidesSearchBarWhenScrolling`; slow pans released at 16, 18, 20 … 28 pt of collapse, then binary search | the collapse at which a release snaps the field closed instead of springing it open | C      | `search.scrollAway.collapseThresholdPt` |

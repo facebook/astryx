@@ -641,6 +641,11 @@
       "aliases": []
     },
     {
+      "name": "component-lab-search-field",
+      "path": "components/lab/search-field",
+      "aliases": []
+    },
+    {
       "name": "component-lab-stat",
       "path": "components/lab/stat",
       "aliases": []
@@ -3882,6 +3887,11 @@
     {
       "name": "hook-use-keyboard-hint",
       "path": "hooks/use-keyboard-hint",
+      "aliases": []
+    },
+    {
+      "name": "hook-use-keyboard-layout-guide",
+      "path": "hooks/use-keyboard-layout-guide",
       "aliases": []
     },
     {

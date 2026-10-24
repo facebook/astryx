@@ -1,6 +1,7 @@
 # <Name> (<language>)
 
-<!-- Copy to packages/native/specs/<language>/<Name>.md. Fill every section;
+<!-- Copy into the component's folder as <Name>.spec.md (Swift:
+packages/native/swift-ios-1/core/<Name>/<Name>.spec.md). Fill every section;
 write "None" rather than deleting one. Present tense: describe what the
 component does, not how it was decided. Rules: AST-093. -->
 

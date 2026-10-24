@@ -3,7 +3,8 @@
 /**
  * @file index.ts
  * @input The domain files of the UIKit constants table
- * @output Re-exports `springs`, `scroll`, `timing`, `navigation`, `tabBar`
+ * @output Re-exports `springs`, `scroll`, `timing`, `navigation`, `tabBar`,
+ *   `keyboard`, `search`
  *   and the gesture thresholds (`UIKIT_GESTURES` and the haptic tables)
  * @position Entry of the UIKit constants table (motion/uikit). Internal to
  *   core: not exported from the package entry point
@@ -28,8 +29,10 @@ export {
   type HapticFeedbackKind,
   type SourcedGestureConstant,
 } from './gestures';
+export {keyboard} from './keyboard';
 export {navigation} from './navigation';
 export {scroll} from './scroll';
+export {search} from './search';
 export {springs} from './springs';
 export {tabBar} from './tabBar';
 export {timing} from './timing';
