@@ -81,7 +81,7 @@ export const docs = {
           name: 'handleRef',
           type: 'Ref<SearchFieldHandle>',
           description:
-            "focus() and blur() for a host that activates the field from its own tap, such as a tab bar's search tab. Call focus() inside that tap, after committing the activation, so the touch keyboard rises.",
+            "focus(), blur() and cancel() for a host that activates the field from its own tap, such as a tab bar's search tab. Call focus() inside that tap, after committing the activation, so the touch keyboard rises; cancel() does what the close button does (clears, ends editing, reports onActiveChange(false)) for a host that draws its own cancel button.",
         },
         {
           name: 'lift',
@@ -91,9 +91,9 @@ export const docs = {
         },
         {
           name: 'placement',
-          type: "'stacked' | 'bottom'",
+          type: "'stacked' | 'bottom' | 'tab'",
           description:
-            "Where the field lives. 'stacked' (default): in a page header or under a navigation bar's title. 'bottom': iOS 26's toolbar field, 38 px tall and 33 px from each side, in a bar you keep at the bottom of the viewport; it rides the software keyboard (its centre 36 px above the keyboard's top while active) and grows a 38 px close button in beside it. lift applies to 'stacked' only.",
+            "Where the field lives. 'stacked' (default): in a page header or under a navigation bar's title. 'bottom': iOS 26's toolbar field, 38 px tall and 33 px from each side, in a bar you keep at the bottom of the viewport; it rides the software keyboard (its centre 36 px above the keyboard's top while active) and grows a 38 px close button in beside it. 'tab': inside a tab bar's search tab, which draws the glass, the cancel button and every motion; the field draws only its content, sized to the box it is given. lift applies to 'stacked' only.",
           default: "'stacked'",
         },
         {

@@ -1,8 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useState} from 'react';
+import {useRef, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {SearchField} from '@astryxdesign/lab';
+import {SearchField, type SearchFieldHandle} from '@astryxdesign/lab';
 
 // =============================================================================
 // Meta
@@ -202,4 +202,71 @@ export const Bottom: Story = {
 /** The bottom field right to left: it narrows from the left. */
 export const BottomRightToLeft: Story = {
   render: () => <BottomScreen dir="rtl" />,
+};
+
+// A tab bar's search tab draws the field's glass and its cancel button (its
+// search circle); here a plain box and button stand in for them.
+const tabGlass: React.CSSProperties = {
+  position: 'fixed',
+  insetInlineStart: 8,
+  bottom: 33,
+  width: 330,
+  height: 48,
+  borderRadius: 24,
+  background: 'rgba(127, 127, 127, 0.14)',
+};
+const tabCircle: React.CSSProperties = {
+  position: 'fixed',
+  insetInlineEnd: 8,
+  bottom: 33,
+  width: 48,
+  height: 48,
+  borderRadius: 24,
+  border: 0,
+  background: 'rgba(127, 127, 127, 0.14)',
+  fontSize: 20,
+};
+
+function TabScreen() {
+  const handle = useRef<SearchFieldHandle>(null);
+  const [query, setQuery] = useState('');
+  const [isActive, setIsActive] = useState(false);
+  return (
+    <div style={{...page, paddingBottom: 104}}>
+      <h1 style={largeTitle(false)}>Search</h1>
+      <p
+        data-testid="search-state"
+        style={{padding: '0 16px', fontSize: 13, opacity: 0.6}}>
+        {isActive ? 'active' : 'inactive'}
+      </p>
+      <div style={tabGlass}>
+        <SearchField
+          label="Search"
+          placeholder="Fruits"
+          placement="tab"
+          handleRef={handle}
+          value={query}
+          onChange={setQuery}
+          isActive={isActive}
+          onActiveChange={setIsActive}
+        />
+      </div>
+      <button
+        type="button"
+        aria-label="Cancel"
+        style={tabCircle}
+        onClick={() => handle.current?.cancel()}>
+        ×
+      </button>
+    </div>
+  );
+}
+
+/**
+ * The field as a tab bar's search tab holds it: content only, in the box the
+ * tab bar gives it; the tab bar's own cancel button calls `cancel()`. TabBar's
+ * search story shows the real thing.
+ */
+export const InTabBar: Story = {
+  render: () => <TabScreen />,
 };
