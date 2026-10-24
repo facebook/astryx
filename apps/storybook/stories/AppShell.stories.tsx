@@ -246,7 +246,7 @@ const meta: Meta<typeof AppShell> = {
   argTypes: {
     height: {
       control: 'radio',
-      options: ['fill', 'auto'],
+      options: ['fill', 'auto', 'adaptive'],
     },
     variant: {
       control: 'radio',
@@ -277,7 +277,7 @@ export const Playground: StoryObj<typeof AppShell> = {
     },
     height: {
       control: 'radio',
-      options: ['fill', 'auto'],
+      options: ['fill', 'auto', 'adaptive'],
     },
   },
   args: {
@@ -500,6 +500,25 @@ export const AutoHeight: Story = {
       topNav={<AppTopNav />}
       sideNav={<SideNavWithoutHeader />}
       height="auto">
+      <MockContent paragraphs={20} />
+    </AppShell>
+  ),
+};
+
+/**
+ * Adaptive height: `fill` with a mouse or trackpad, `auto` where the primary
+ * pointer is touch. On a phone (or with touch emulation) the page itself
+ * scrolls under the sticky header, so a status-bar tap returns to the top and
+ * the browser's toolbar minimizes as you scroll. On a desktop the main region
+ * scrolls inside the viewport-high shell.
+ */
+export const AdaptiveHeight: Story = {
+  render: () => (
+    <AppShell
+      contentPadding={6}
+      topNav={<AppTopNav />}
+      sideNav={<SideNavWithoutHeader />}
+      height="adaptive">
       <MockContent paragraphs={20} />
     </AppShell>
   ),
