@@ -2739,6 +2739,61 @@ describe('DropdownMenu touch presentation (UIMenu)', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
+  describe('on a phone (compact and touch): over its trigger, as UIMenu', () => {
+    beforeEach(() => {
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn().mockImplementation((query: string) => ({
+          // Coarse primary pointer, and the compact viewport.
+          matches: query === '(pointer: coarse)' || query.includes('744px'),
+          media: query,
+          onchange: null,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        })),
+      );
+    });
+
+    it('is centered on its trigger, 8 px off the viewport\u2019s sides, and top-aligned with a trigger in the upper half', async () => {
+      const user = userEvent.setup();
+      const trigger = renderMenu();
+      await user.click(trigger);
+      const {style} = popoverOf();
+      expect(style.getPropertyValue('justify-self')).toBe('anchor-center');
+      expect(style.getPropertyValue('left')).toBe('8px');
+      expect(style.getPropertyValue('right')).toBe('8px');
+      // jsdom drops anchor() values; the bottom edge is released and the top
+      // edge is the one pinned (its value is checked in a real browser).
+      expect(style.getPropertyValue('bottom')).toBe('auto');
+      expect(style.getPropertyValue('top')).not.toBe('auto');
+      // Not the layer's below-the-trigger placement.
+      expect(style.getPropertyValue('position-area')).toBe('');
+    });
+
+    it('is bottom-aligned with a trigger whose center is in the lower half', async () => {
+      const lowRect = HTMLElement.prototype.getBoundingClientRect;
+      HTMLElement.prototype.getBoundingClientRect = function (
+        this: HTMLElement,
+      ) {
+        const rect = lowRect.call(this);
+        if (this.hasAttribute('popover')) {
+          return rect;
+        }
+        const top = window.innerHeight - 100;
+        return {...rect, top, y: top, bottom: top + rect.height};
+      };
+      const user = userEvent.setup();
+      const trigger = renderMenu();
+      await user.click(trigger);
+      const {style} = popoverOf();
+      expect(style.getPropertyValue('top')).toBe('auto');
+      expect(style.getPropertyValue('bottom')).not.toBe('auto');
+    });
+  });
+
   it('a pan that starts inside the menu, or a mouse, does not dismiss it', async () => {
     const user = userEvent.setup();
     const trigger = renderMenu();

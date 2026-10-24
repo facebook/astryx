@@ -26,7 +26,10 @@
  * the popover opens and closes the way UIMenu does: it grows out of its
  * trigger on UIKit's open spring and collapses back into it on the close
  * spring (menuSurfaceMotion.ts). Under a mouse it keeps the layer's own
- * entrance and the theme's motion tokens (D-01).
+ * entrance and the theme's motion tokens (D-01). On a phone (compact and
+ * touch) it also sits where UIMenu does: over its trigger, centered on it,
+ * top-aligned (bottom-aligned when the trigger is in the lower half of the
+ * viewport), 8 px from the viewport's sides.
  *
  * Initial focus on open follows the input modality: a keyboard open
  * (Enter / Space / ArrowDown on the trigger) focuses the first enabled item
@@ -90,7 +93,11 @@ import {
   useAdaptivePresentation,
   type AdaptivePresentation,
 } from '../hooks/useAdaptivePresentation';
-import {readTouchPresentation} from '../utils/touchPresentation';
+import {
+  readTouchPresentation,
+  useTouchPresentation,
+} from '../utils/touchPresentation';
+import {menu as uikitMenu} from '../motion/uikit/menu';
 import {
   createMenuSurfaceMotion,
   type MenuSurfaceMotion,
@@ -989,6 +996,12 @@ function DropdownMenuPopover({
   } | null>(null);
   // Whether the open in progress is the touch presentation.
   const isTouchPresentationRef = useRef(false);
+  // On a phone the popover covers its trigger as UIMenu does (iOS 26.2):
+  // centered on it, kept off the viewport's sides by CSS, with its vertical
+  // edge chosen as it opens (placeOverTrigger).
+  const {isCompactTouch: coversTrigger} = useTouchPresentation();
+  const coversTriggerRef = useRef(coversTrigger);
+  coversTriggerRef.current = coversTrigger;
   const getSurfaceMotion = useCallback(
     (element: HTMLElement): MenuSurfaceMotion => {
       const current = surfaceMotionRef.current;
@@ -1139,6 +1152,7 @@ function DropdownMenuPopover({
     isTouchPresentationRef.current = isTouchPresentation;
     const trigger = buttonRef.current;
     if (surface != null && trigger != null) {
+      placeOverTrigger(surface, trigger, coversTriggerRef.current);
       const motion = getSurfaceMotion(surface);
       if (isTouchPresentation) {
         motion.enter(() => {
@@ -1883,21 +1897,70 @@ function DropdownMenuPopover({
             </MenuRegionsContext>
           </div>,
         ),
-        {
-          placement,
-          alignment,
-          offset: spacingVars['--spacing-1'],
-          xstyle: [
-            styles.popoverViewport,
-            resolvedMaxHeight != null &&
-              dynamicStyles.popoverViewportMaxBlockSize(resolvedMaxHeight),
-            popoverXstyle,
-            layerAnimations[placement],
-          ],
-        },
+        coversTrigger
+          ? {
+              positioning: 'custom',
+              style: COVER_TRIGGER_STYLE,
+              xstyle: [
+                styles.popoverViewport,
+                resolvedMaxHeight != null &&
+                  dynamicStyles.popoverViewportMaxBlockSize(resolvedMaxHeight),
+                popoverXstyle,
+              ],
+            }
+          : {
+              placement,
+              alignment,
+              offset: spacingVars['--spacing-1'],
+              xstyle: [
+                styles.popoverViewport,
+                resolvedMaxHeight != null &&
+                  dynamicStyles.popoverViewportMaxBlockSize(resolvedMaxHeight),
+                popoverXstyle,
+                layerAnimations[placement],
+              ],
+            },
       )}
     </>
   );
+}
+
+/**
+ * Over the trigger on a phone, as UIMenu: centered on it (`anchor-center`)
+ * within the viewport less UIKit's screen margin on each side. The vertical
+ * edge is set as the menu opens (placeOverTrigger).
+ */
+const COVER_TRIGGER_STYLE: React.CSSProperties = {
+  left: `${uikitMenu.screenMargin}px`,
+  right: `${uikitMenu.screenMargin}px`,
+  justifySelf: 'anchor-center',
+  margin: 0,
+};
+
+/**
+ * Pins the covering menu's vertical edge to its trigger as it opens: its top
+ * to the trigger's top, or, when the trigger's center is in the lower part of
+ * the viewport, its bottom to the trigger's bottom (UIMenu on iOS 26.2).
+ * Anchored, so it follows the trigger while open. Clears both off a menu
+ * that does not cover its trigger.
+ */
+function placeOverTrigger(
+  surface: HTMLElement,
+  trigger: HTMLElement,
+  covers: boolean,
+): void {
+  const {style} = surface;
+  if (!covers) {
+    style.removeProperty('top');
+    style.removeProperty('bottom');
+    return;
+  }
+  const view = surface.ownerDocument.defaultView;
+  const height = view?.visualViewport?.height ?? view?.innerHeight ?? 0;
+  const box = trigger.getBoundingClientRect();
+  const upward = box.top + box.height / 2 > height * uikitMenu.openUpwardBelow;
+  style.setProperty('top', upward ? 'auto' : 'anchor(top)');
+  style.setProperty('bottom', upward ? 'anchor(bottom)' : 'auto');
 }
 
 export function DropdownMenu(props: DropdownMenuProps) {
