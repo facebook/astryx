@@ -152,11 +152,11 @@ const denseTheme = defineTheme({
       content: [
         {
           type: 'prose',
-          text: "On iPhone and iPad, readers pick a text size in Settings (Display & Text Size, then Larger Text), and native apps grow or shrink their text with it. Set `typography.dynamicType: true` and Safari on iOS does the same for the theme: every font size follows the reader's choice on the curve of the iOS text style it plays, so body text scales like Body, `heading-1` like Title 1 and display text like Large Title. At the default size every font size is the theme's own. Spacing, radius and the root font size never change, line heights keep their ratios, and other browsers are unaffected.",
+          text: "On iPhone and iPad, readers pick a text size in Settings (Display & Text Size, then Larger Text), and native apps grow or shrink their text with it. Set `typography.dynamicType: true` and the theme does the same wherever the browser exposes that choice through `font: -apple-system-body`, as every browser on iPhone and iPad does: every font size follows the reader's choice on the curve of the iOS text style it plays, so body text scales like Body, `heading-1` like Title 1 and display text like Large Title. At the default size every font size is the theme's own. Spacing, radius and the root font size never change, line heights keep their ratios, and elsewhere nothing changes.",
         },
         {
           type: 'prose',
-          text: "The root `Theme` writes the reader's category on `<html data-astryx-text-size>` on iOS (`xs`, `s`, `m`, `l` for the default, `xl`, `xxl`, `xxxl`, then `ax1` to `ax5` for the accessibility sizes), whether or not the theme follows it, so a layout can react to the accessibility sizes with `[data-astryx-text-size^=\"ax\"]`. Fixed-height controls such as `Button` and the text inputs keep their height, so their labels can overflow at the accessibility sizes.",
+          text: "The root `Theme` writes the reader's category on `<html data-astryx-text-size>` wherever the browser exposes it (`xs`, `s`, `m`, `l` for the default, `xl`, `xxl`, `xxxl`, then `ax1` to `ax5` for the accessibility sizes), whether or not the theme follows it, so a layout can react to the accessibility sizes with `[data-astryx-text-size^=\"ax\"]`. Fixed-height controls such as `Button` and the text inputs keep their height, so their labels can overflow at the accessibility sizes.",
         },
         {
           type: 'code',

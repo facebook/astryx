@@ -7,7 +7,7 @@
  * @output Proves the Dynamic Type rules: Body's size names the reader's
  *   category, each raw font-size step scales exactly on its UIKit curve and is
  *   the theme's own size at Large, a theme emits the scaled sizes only when it
- *   opts in (root and adaptation rules, iOS WebKit only), and the root sync
+ *   opts in (root and adaptation rules, behind the capability alone), and the root sync
  *   writes and clears `<html data-astryx-text-size>`
  * @position Testing; validates theme/dynamicType.ts and its use in
  *   generateThemeRules.ts without a browser (the iOS evidence is the
@@ -329,7 +329,7 @@ describe('a theme that follows the reader text size', () => {
     expect(css).not.toContain('--_dynamic-type-');
   });
 
-  it('scales its own raw sizes on iOS WebKit, after everything else', () => {
+  it('scales its own raw sizes where the engine provides the reader text size, after everything else', () => {
     const theme = defineTheme({
       name: 'dt-on',
       typography: {dynamicType: true, scale: {base: 15, ratio: 1.25}},
@@ -337,6 +337,12 @@ describe('a theme that follows the reader text size', () => {
     const css = generateThemeCSS(theme).component;
     const block = supportsBlock(css);
     expect(block).not.toBe('');
+    // Gated by the capability alone: no touch-callout or pointer idiom (one
+    // touch behavior on every touch device).
+    expect(block.startsWith('@supports (font: -apple-system-body) {')).toBe(
+      true,
+    );
+    expect(css).not.toContain('touch-callout');
     // The category scales live on <html>, where the root Theme writes it.
     expect(block).toContain(`:root[${TEXT_SIZE_ATTRIBUTE}="xs"] {`);
     // Every step, from the theme's own value.
@@ -413,9 +419,27 @@ describe('the root sync', () => {
   let observerCallback: (() => void) | null = null;
   let probeSize = '17px';
 
-  /** iOS WebKit, as far as the sync can tell. */
-  function pretendIOS(supports: boolean) {
-    vi.stubGlobal('CSS', {supports: vi.fn(() => supports)});
+  /**
+   * An engine as the sync can see it: whether it provides
+   * `font: -apple-system-body` (the capability), and whether it has a touch
+   * callout (an iOS idiom the sync must not look at).
+   */
+  function pretendEngine({
+    textSize,
+    touchCallout = textSize,
+  }: {
+    textSize: boolean;
+    touchCallout?: boolean;
+  }) {
+    vi.stubGlobal('CSS', {
+      supports: vi.fn((property: string, value?: string) =>
+        property === 'font' && value === '-apple-system-body'
+          ? textSize
+          : property === '-webkit-touch-callout'
+            ? touchCallout
+            : false,
+      ),
+    });
     vi.stubGlobal(
       'ResizeObserver',
       class {
@@ -444,15 +468,34 @@ describe('the root sync', () => {
     probeSize = '17px';
   });
 
-  it('does nothing outside iOS WebKit', () => {
-    pretendIOS(false);
+  // The gate is the capability alone, never a platform idiom (one touch
+  // behavior on every touch device).
+  it('does nothing where the engine has no font: -apple-system-body, touch callout or not', () => {
+    pretendEngine({textSize: false, touchCallout: true});
     expect(syncTextSizeCategory(document)).toBeUndefined();
     expect(html.hasAttribute(TEXT_SIZE_ATTRIBUTE)).toBe(false);
     expect(document.querySelector('[data-astryx-text-size-probe]')).toBeNull();
   });
 
+  it('follows the reader text size wherever the engine provides it, with no platform check', () => {
+    pretendEngine({textSize: true, touchCallout: false});
+    probeSize = '23px';
+    const cleanup = syncTextSizeCategory(document);
+    expect(html.getAttribute(TEXT_SIZE_ATTRIBUTE)).toBe('xxxl');
+    cleanup?.();
+  });
+
+  it('writes no category where the keyword follows no reader setting (a fixed 13px Body, as on a Mac)', () => {
+    pretendEngine({textSize: true, touchCallout: false});
+    probeSize = '13px';
+    const cleanup = syncTextSizeCategory(document);
+    expect(cleanup).toBeTypeOf('function');
+    expect(html.hasAttribute(TEXT_SIZE_ATTRIBUTE)).toBe(false);
+    cleanup?.();
+  });
+
   it('writes the category, follows a change, and cleans up', () => {
-    pretendIOS(true);
+    pretendEngine({textSize: true});
     probeSize = '23px';
     const cleanup = syncTextSizeCategory(document);
     const probe = document.querySelector<HTMLElement>(

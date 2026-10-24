@@ -1247,8 +1247,9 @@ const silentSink: DiagnosticSink = () => {};
  * The reader's text size (iOS Dynamic Type) for a theme with
  * `typography.dynamicType`, or an empty string.
  *
- * Inside `@supports` for iOS WebKit: the rules that give each text size
- * category its scales on `<html>` (the root Theme writes the category there),
+ * Inside `@supports (font: -apple-system-body)`, the capability that carries
+ * the reader's text size: the rules that give each text size category its
+ * scales on `<html>` (the root Theme writes the category there),
  * then the theme's raw font-size steps re-declared as their own values times
  * their curve's scale, at the root and inside every adaptation rule that
  * writes them. Nothing else changes, and at Large every scale is 1. See

@@ -306,20 +306,40 @@ describe('Theme', () => {
     expect(injected).toContain('@layer reset, astryx-base, astryx-theme;');
     expect(injected).not.toContain(':root {');
   });
-  it('writes no text size category outside iOS WebKit', () => {
-    render(
-      <Theme theme={testTheme}>
-        <span>web</span>
-      </Theme>,
-    );
-    expect(document.documentElement.hasAttribute('data-astryx-text-size')).toBe(
-      false,
-    );
-    expect(document.querySelector('[data-astryx-text-size-probe]')).toBeNull();
+  // The gate is the capability alone, never a platform idiom (one touch
+  // behavior on every touch device): a touch callout without
+  // `font: -apple-system-body` writes nothing.
+  it('writes no text size category where the engine has no font: -apple-system-body', () => {
+    vi.stubGlobal('CSS', {
+      supports: vi.fn(
+        (property: string) => property === '-webkit-touch-callout',
+      ),
+    });
+    try {
+      render(
+        <Theme theme={testTheme}>
+          <span>web</span>
+        </Theme>,
+      );
+      expect(
+        document.documentElement.hasAttribute('data-astryx-text-size'),
+      ).toBe(false);
+      expect(
+        document.querySelector('[data-astryx-text-size-probe]'),
+      ).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
-  it('keeps <html data-astryx-text-size> on the iOS reader text size, from the root Theme only', () => {
-    vi.stubGlobal('CSS', {supports: vi.fn(() => true)});
+  it('keeps <html data-astryx-text-size> on the reader text size wherever the engine provides it, from the root Theme only', () => {
+    // The capability and nothing else: no touch callout.
+    vi.stubGlobal('CSS', {
+      supports: vi.fn(
+        (property: string, value?: string) =>
+          property === 'font' && value === '-apple-system-body',
+      ),
+    });
     const real = window.getComputedStyle.bind(window);
     const computed = vi
       .spyOn(window, 'getComputedStyle')

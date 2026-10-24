@@ -17,7 +17,7 @@
  *   chrome (scrollbars, native form controls, date pickers) reflects the mode.
  * - `data-astryx-theme` — enables @scope'd theme CSS to reach elements rendered
  *   outside the Theme wrapper (portals, toast fallback viewports).
- * - `data-astryx-text-size` — on iOS only, the reader's text size category
+ * - `data-astryx-text-size` — where the engine reports it, the reader's text size category
  *   (Dynamic Type), read from a hidden `font: -apple-system-body` probe and
  *   kept current; themes with `typography.dynamicType` scale their font sizes
  *   on it (see dynamicType.ts).
@@ -232,7 +232,8 @@ function useRootThemeSync(
 /**
  * Hook to keep `<html data-astryx-text-size>` on the reader's text size
  * category (iOS Dynamic Type) for the root provider; see dynamicType.ts.
- * Skipped for nested Theme instances, and a no-op outside iOS WebKit.
+ * Skipped for nested Theme instances, and a no-op where the engine has no
+ * `font: -apple-system-body`.
  */
 function useRootTextSizeSync(isNested: boolean): void {
   useIsomorphicLayoutEffect(() => {

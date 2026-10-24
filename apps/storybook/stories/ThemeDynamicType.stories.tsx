@@ -34,7 +34,8 @@ const readoutStyle: React.CSSProperties = {
  * On iPhone and iPad, a theme with `typography.dynamicType` follows the
  * reader's text size (Settings › Display & Text Size › Larger Text): every
  * size grows or shrinks on the curve of the iOS text style it plays. At the
- * default size, and in every other browser, these are the theme's own sizes.
+ * default size, and wherever the browser does not expose the reader's text
+ * size (`font: -apple-system-body`), these are the theme's own sizes.
  * Change the text size with this page open: it restyles in place, and the
  * time it was loaded stays the same.
  */
@@ -58,7 +59,7 @@ export const DynamicType: StoryObj = {
         <Stack direction="vertical" gap={3} style={{padding: 16}}>
           <div style={readoutStyle}>
             <span data-testid="text-size-category">
-              Text size: {category ?? 'not set (not iOS)'}
+              Text size: {category ?? 'not reported by this browser'}
             </span>
             {' · '}
             <span data-testid="page-loaded-at">page loaded at {LOADED_AT}</span>

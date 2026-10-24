@@ -21,12 +21,19 @@
  * names the category from Body's size (each category has its own), and writes
  * it to `<html data-astryx-text-size>`; it rereads when the probe resizes, so
  * a change made while the page is open applies at once, as Safari restyles its
- * own keywords. A theme with `typography.dynamicType` then re-declares, on iOS
- * only, each raw font-size step as its own value times the scale of the UIKit
- * text style that step plays (UIKit's own rule for custom fonts,
- * `UIFontMetrics`). Every scale is 1 at Large, the default category, so a
- * default reader sees exactly the theme's sizes, and only sizes move: spacing,
- * radius and the root stay where the theme put them.
+ * own keywords. A theme with `typography.dynamicType` then re-declares each
+ * raw font-size step as its own value times the scale of the UIKit text style
+ * that step plays (UIKit's own rule for custom fonts, `UIFontMetrics`). Every
+ * scale is 1 at Large, the default category, so a default reader sees exactly
+ * the theme's sizes, and only sizes move: spacing, radius and the root stay
+ * where the theme put them.
+ *
+ * The gate is the capability alone: the engine provides
+ * `font: -apple-system-body`, as every browser on iPhone and iPad does. There
+ * is no platform, touch-callout or pointer check, since touch behavior is one
+ * on every touch device and this is a style the engine itself provides. macOS Safari knows the keyword too, but its Body is a fixed 13px
+ * that names no category, so nothing scales there; other engines do not know
+ * it.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/theme/dynamicType.test.ts
@@ -145,12 +152,15 @@ const SCALED_STYLES = (Object.keys(typography) as DynamicTypeStyle[]).filter(
 // =============================================================================
 
 /**
- * Where the Dynamic Type CSS applies: iOS WebKit, the only engine whose
- * `-apple-system-body` follows the reader's text size (macOS Safari also
- * knows the keyword, but has no touch callout).
+ * Where the Dynamic Type CSS applies: wherever the engine provides
+ * `font: -apple-system-body`, the keyword that carries the reader's text size.
+ * The capability is the whole gate, with no touch-callout or pointer check
+ * (one touch behavior on every touch device). The scales come only from the
+ * category the root Theme
+ * writes, so where the keyword follows no reader setting (macOS Safari's fixed
+ * Body) every scale stays 1.
  */
-export const DYNAMIC_TYPE_SUPPORTS =
-  '(-webkit-touch-callout: none) and (font: -apple-system-body)';
+export const DYNAMIC_TYPE_SUPPORTS = '(font: -apple-system-body)';
 
 /** A scale written to four decimals, without trailing zeros. */
 function formatScale(scale: number): string {
@@ -230,7 +240,9 @@ function lengthInPx(value: string | undefined): number | null {
 
 /**
  * Measure the reader's text size and keep `<html data-astryx-text-size>` on
- * its category; returns the cleanup. Does nothing outside iOS WebKit.
+ * its category; returns the cleanup. Does nothing where the engine has no
+ * `font: -apple-system-body`; where its Body size names no category (macOS
+ * Safari's fixed 13px), it writes none.
  *
  * The probe is a hidden `font: -apple-system-body` element appended to
  * `<body>`, outside every app subtree; its box resizes when the reader's text
@@ -242,7 +254,6 @@ export function syncTextSizeCategory(doc: Document): (() => void) | undefined {
   if (
     view == null ||
     typeof supports !== 'function' ||
-    !view.CSS.supports('-webkit-touch-callout', 'none') ||
     !view.CSS.supports('font', '-apple-system-body')
   ) {
     return undefined;
