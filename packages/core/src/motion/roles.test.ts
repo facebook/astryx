@@ -24,7 +24,7 @@ import {
   registerMotionTable,
 } from './roles';
 import {dampingRatioOf, naturalFrequency, toSpring} from './spring';
-import {navigation, scroll, springs, timing} from './uikit';
+import {navigation, picker, scroll, springs, timing} from './uikit';
 import {
   motionTableFiles,
   REGISTER_EXPORT,
@@ -108,6 +108,12 @@ describe('motion roles', () => {
     expect(motionRoleIn(timing.press, 'scrollBrakeMs')).toBeUndefined();
     expect(motionRoleIn(scroll, 'delaysContentTouchesMs')).toBeUndefined();
     expect(motionRoleIn(navigation, 'parallax')).toBeUndefined();
+    expect(motionRoleIn(picker.tapSpin, 'durationMs')?.id).toBe(
+      'picker.tapSpin.durationMs',
+    );
+    expect(
+      motionRoleIn(picker.selectionTick, 'minimumIntervalMs'),
+    ).toBeUndefined();
     expect(motionRole('springs.navigationPush')?.value).toBe(
       springs.navigationPush,
     );

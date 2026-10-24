@@ -190,6 +190,12 @@ const calmTheme = defineTheme({
               'duration',
               '350ms',
             ],
+            [
+              'picker.tapSpin.durationMs',
+              '--motion-picker-tap-spin-duration-ms',
+              'duration',
+              '300ms',
+            ],
             ['scroll.bounce', '--motion-scroll-bounce', 'spring', '0.5s 0'],
             [
               'scroll.paging.snap',
