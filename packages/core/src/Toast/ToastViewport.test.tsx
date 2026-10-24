@@ -1924,6 +1924,92 @@ describe('toast announcements via singleton live regions', () => {
     expect(within(viewport).getByText('Kept')).toBeInTheDocument();
     expect(within(viewport).queryByText('Dropped')).not.toBeInTheDocument();
   });
+
+  it('shows an ignored-collision toast whose namesake is already leaving', () => {
+    renderViewport(
+      <>
+        <ShowToastButton
+          options={{
+            uniqueID: 'offline',
+            collisionBehavior: 'ignore',
+            isAutoHide: false,
+            body: 'You are offline',
+          }}
+          triggerLabel="Show 1"
+        />
+        <ShowToastButton
+          options={{
+            uniqueID: 'offline',
+            collisionBehavior: 'ignore',
+            isAutoHide: false,
+            body: 'Still offline',
+          }}
+          triggerLabel="Show 2"
+        />
+      </>,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText('Show 1'));
+    });
+    // The user closes the first toast; it starts leaving.
+    const first = getToastWrapperByText('You are offline');
+    act(() => {
+      fireEvent.click(
+        within(first).getByRole('button', {name: 'Dismiss notification'}),
+      );
+    });
+    // The same message arrives again while the first one is still leaving.
+    act(() => {
+      fireEvent.click(screen.getByText('Show 2'));
+    });
+    expect(announceSpy).toHaveBeenLastCalledWith('Still offline', 'polite');
+    const viewport = screen.getByRole('region', {name: 'Notifications'});
+    expect(within(viewport).getByText('Still offline')).toBeInTheDocument();
+    // The first one finishes leaving on its own.
+    expect(within(viewport).getByText('You are offline')).toBeInTheDocument();
+    act(() => {
+      completeExit(first.dataset.toastId ?? '');
+    });
+    expect(within(viewport).queryByText('You are offline')).toBeNull();
+    expect(within(viewport).getByText('Still offline')).toBeInTheDocument();
+  });
+
+  it('lets a leaving toast finish its exit when an overwrite arrives', () => {
+    renderViewport(
+      <>
+        <ShowToastButton
+          options={{uniqueID: 'upload', isAutoHide: false, body: 'Upload 30%'}}
+          triggerLabel="Show 1"
+        />
+        <ShowToastButton
+          options={{uniqueID: 'upload', isAutoHide: false, body: 'Upload 31%'}}
+          triggerLabel="Show 2"
+        />
+      </>,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText('Show 1'));
+    });
+    const first = getToastWrapperByText('Upload 30%');
+    const firstId = first.dataset.toastId ?? '';
+    act(() => {
+      fireEvent.click(
+        within(first).getByRole('button', {name: 'Dismiss notification'}),
+      );
+    });
+    act(() => {
+      fireEvent.click(screen.getByText('Show 2'));
+    });
+    // The dismissed toast is not brought back as the new one: it keeps
+    // leaving in its own row while the new toast arrives.
+    expect(getToastWrapperByText('Upload 30%').dataset.toastId).toBe(firstId);
+    expect(screen.getByText('Upload 31%')).toBeInTheDocument();
+    act(() => {
+      completeExit(firstId);
+    });
+    expect(screen.queryByText('Upload 30%')).toBeNull();
+    expect(screen.getByText('Upload 31%')).toBeInTheDocument();
+  });
 });
 
 describe('toast timer lifecycle (#3589)', () => {
