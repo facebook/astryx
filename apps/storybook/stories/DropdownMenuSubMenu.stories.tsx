@@ -26,7 +26,10 @@ const meta: Meta<RowStatesArgs> = {
   title: 'Core/DropdownMenuSubMenu',
   tags: ['autodocs', 'visual-theme-matrix'],
   parameters: {
-    layout: 'centered',
+    // The menu opens from the inline start of the canvas so a flyout has room
+    // beside its row in both directions; the viewport flip stays reachable at
+    // narrow widths.
+    layout: 'padded',
     docs: {
       description: {
         component:

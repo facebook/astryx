@@ -299,7 +299,7 @@ for (const item of cases) {
       const read = () =>
         Array.from(
           document.querySelectorAll(
-            '[role="menu"], [role="menuitem"], [role="dialog"]',
+            'button, [role="menu"], [role="menuitem"], [role="dialog"]',
           ),
         )
           .filter(node => node.getClientRects().length > 0)
@@ -465,8 +465,10 @@ for (const item of cases) {
               .querySelector('[data-astryx-theme]')
               ?.getAttribute('data-astryx-theme') ?? null,
           mode: document.documentElement.getAttribute('data-theme'),
-          direction:
-            rootMenu === null ? null : getComputedStyle(rootMenu).direction,
+          // A closed menu leaves only its trigger to read direction from.
+          direction: getComputedStyle(
+            rootMenu ?? document.querySelector('button') ?? document.body,
+          ).direction,
           viewport: {width: innerWidth, height: innerHeight},
           media: {
             pointerCoarse: matchMedia('(pointer: coarse)').matches,
