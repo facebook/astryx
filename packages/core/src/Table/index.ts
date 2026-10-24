@@ -30,6 +30,8 @@ export interface TableSemanticRowStatus {
 export {Table} from './Table';
 export {useTableActivation} from './plugins/activation';
 export type {UseTableActivationConfig} from './plugins/activation';
+export {useTableInfiniteScroll} from './plugins/infiniteScroll';
+export type {UseTableInfiniteScrollConfig} from './plugins/infiniteScroll';
 export {useTableVirtualization} from './plugins/virtualization';
 export type {
   UseTableVirtualizationConfig,
