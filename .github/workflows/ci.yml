@@ -1990,6 +1990,55 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+      # The table contract's table role and name, header and cell roles, and
+      # their place in the table's accessibility subtree are accessibility-tree
+      # facts that jsdom cannot observe. Run the contract's own fixture proof and
+      # the Table binding whenever Table source, the binding's stories, or the
+      # contract changes. Its own --output directory; the JSON report is the
+      # head-bound record, uploaded next.
+      - name: Run Table accessibility contract
+        id: table-contract
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PLAYWRIGHT_JSON_OUTPUT_FILE: table-contract/report.json
+        run: |
+          should_run=false
+          # Table and the contract are matched by file name.
+          # The helper comes from the base, since an older PR head lacks it.
+          # Exit 1 means out of scope; 0 in scope; 2 unknown, so run.
+          scope=2
+          helper="$(mktemp)"
+          if git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA" \
+            && git show "$BASE_SHA:.github/scripts/pr-scope-touches.sh" > "$helper"; then
+            scope=0
+            bash "$helper" "$BASE_SHA" \
+              '^(internal/a11y-spec/src/patterns/table\.|packages/core/src/Table/|apps/storybook/stories/TableA11y)' || scope=$?
+          fi
+          if [ "$scope" != 1 ]; then
+            should_run=true
+          fi
+          echo "should_run=${should_run}" >> "$GITHUB_OUTPUT"
+          if [ "$should_run" != true ]; then
+            echo "Table and the table contract are not in PR scope; skipping table evidence."
+            exit 0
+          fi
+          pnpm exec playwright test \
+            internal/a11y-spec/src/patterns/table.chromium.spec.ts \
+            packages/core/src/Table/__tests__/Table.a11y.chromium.spec.ts \
+            --project chromium \
+            --reporter list,json \
+            --output table-contract-output
+
+      - name: Upload Table accessibility contract evidence
+        if: ${{ !cancelled() && steps.table-contract.outputs.should_run == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: table-contract-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: table-contract/
+          retention-days: 30
+          if-no-files-found: warn
+
       # The toolbar contract's role and name, the controls inside it, the single
       # Tab stop, and the arrow (wrap, RTL, vertical) and Home/End movement are
       # accessibility-tree and real-browser facts that jsdom cannot observe. Run
