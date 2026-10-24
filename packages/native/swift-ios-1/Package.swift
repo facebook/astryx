@@ -20,5 +20,6 @@ let package = Package(
     // Resources holds core's catalog messages per locale, generated.
     .target(name: "AstryxCore", path: "core", resources: [.process("Resources")]),
     .testTarget(name: "AstryxCoreTests", dependencies: ["AstryxCore"], path: "tests/core"),
+    .testTarget(name: "AstryxAccessibilityProbe", dependencies: ["AstryxCore"], path: "tests/accessibility"),
   ]
 )

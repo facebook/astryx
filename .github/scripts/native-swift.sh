@@ -77,7 +77,7 @@ for package in $packages; do
     if [ "$tests" = True ]; then
       results="$work/$(basename "$package")-ios.xcresult"
       rm -rf "$results"
-      xcodebuild test -scheme "$scheme" -destination "platform=iOS Simulator,id=$simulator" -resultBundlePath "$results" -quiet
+      xcodebuild test -scheme "$scheme" -destination "platform=iOS Simulator,id=$simulator" -resultBundlePath "$results"
       # -quiet prints only failures, so report the counts, and fail if the
       # scheme ran no tests at all.
       xcrun xcresulttool get test-results summary --path "$results" --compact > "$work/summary.json"
