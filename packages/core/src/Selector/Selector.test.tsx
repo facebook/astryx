@@ -1038,6 +1038,26 @@ describe('Selector', () => {
       expect(screen.getByRole('combobox', h)).toBeInTheDocument();
     });
 
+    it('keeps Enter selecting the highlighted option in the search row: the Search key is only its label', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          onChange={onChange}
+          hasSearch
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      const search = screen.getByRole('combobox', h);
+      expect(search).toHaveAttribute('enterkeyhint', 'search');
+      await user.type(search, 'ban');
+      await user.keyboard('{ArrowDown}');
+      fireEvent.keyDown(search, {key: 'Enter'});
+      expect(onChange).toHaveBeenCalledWith('Banana');
+    });
+
     it('asks a touch keyboard for its Search key and no autocorrection in the search row', async () => {
       const user = userEvent.setup();
       render(

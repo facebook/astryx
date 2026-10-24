@@ -558,6 +558,28 @@ describe('BaseTypeahead focus-out', () => {
 });
 
 describe('Typeahead', () => {
+  it('keeps Enter selecting the highlighted result: the Search key is only its label', async () => {
+    const onChange = vi.fn();
+    render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={onChange}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    expect(input).toHaveAttribute('enterkeyhint', 'search');
+    fireEvent.change(input, {target: {value: 'App'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+    fireEvent.keyDown(input, {key: 'Enter'});
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({label: 'Apple'}),
+    );
+  });
+
   it('asks a touch keyboard for its Search key and no autocorrection', () => {
     render(
       <Typeahead
