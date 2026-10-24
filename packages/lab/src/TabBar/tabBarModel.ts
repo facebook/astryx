@@ -9,8 +9,9 @@
  *   lift commits, the lens's target under a finger (rubber-banded past the
  *   ends), the lifted lens's scale, the counter-transform that keeps the
  *   selected copy of the items still inside a moving lens, where the
- *   minimized circle sits, and the bottom accessory's box above the bar and
- *   inline beside the circle
+ *   minimized circle sits, the bottom accessory's box above the bar and
+ *   inline beside the circle, and the search field's box inline in the bar
+ *   and while active
  * @position Math of the lab TabBar (TabBar.tsx); no DOM, no React
  *
  * Coordinates are the capsule's own, in px, before its flex scale: x from
@@ -167,11 +168,17 @@ export interface AccessoryBox {
 }
 
 /**
- * The bottom accessory's box in a capsule `width` px wide: above the bar and
- * as wide as it, or (minimized) inline between the circle and the bar's
- * trailing end, concentric with the trailing cap.
+ * The bottom accessory's box in a bar `width` px wide (the capsule, and the
+ * search circle when there is one): above the bar and as wide as it, or
+ * (minimized) inline between the circle and the bar's trailing end,
+ * concentric with the trailing cap, or ending `accessoryGap` before the
+ * minimized search circle.
  */
-export function accessoryBox(width: number, isInline: boolean): AccessoryBox {
+export function accessoryBox(
+  width: number,
+  isInline: boolean,
+  hasSearch = false,
+): AccessoryBox {
   const {barHeight, minimizedSize, accessoryHeight, accessoryGap} = tabBar;
   if (!isInline) {
     return {start: 0, top: -(accessoryGap + accessoryHeight), width};
@@ -180,6 +187,37 @@ export function accessoryBox(width: number, isInline: boolean): AccessoryBox {
   return {
     start,
     top: (barHeight - accessoryHeight) / 2,
-    width: width - start - (barHeight - minimizedSize) / 2,
+    width: width - start - accessoryEnd(hasSearch),
+  };
+}
+
+/** The inline accessory's distance from the bar's trailing end. */
+export function accessoryEnd(hasSearch: boolean): number {
+  const inset = (tabBar.barHeight - tabBar.minimizedSize) / 2;
+  return hasSearch ? inset + tabBar.minimizedSize + tabBar.accessoryGap : inset;
+}
+
+/**
+ * The search field's box in a bar `width` px wide, from the bar's
+ * inline-start edge: inline in the bar's row beside the leading circle, or
+ * (active, above the keyboard) spanning the screen but for the cancel
+ * button. `top` is the inline row; the active field's height above it is
+ * the keyboard's (the field rides it).
+ */
+export function searchFieldBox(width: number, isActive: boolean): AccessoryBox {
+  const {barHeight, minimizedSize, searchFieldGap, barInset, searchActive} =
+    tabBar;
+  const inset = (barHeight - minimizedSize) / 2;
+  const top = inset;
+  if (!isActive) {
+    const start = inset + minimizedSize + searchFieldGap;
+    return {start, top, width: width - start - inset};
+  }
+  const outset = barInset - searchActive.inset;
+  return {
+    start: -outset,
+    top,
+    width:
+      width + 2 * outset - searchActive.cancelSize - searchActive.cancelGap,
   };
 }

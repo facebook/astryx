@@ -9,9 +9,10 @@
  * @position Barrel export; consumed by packages/lab/src/index.ts
  */
 
-export {TabBar, TabBarItem} from './TabBar';
+export {TabBar, TabBarItem, TabBarSearchTab} from './TabBar';
 export type {
   TabBarAccessoryPlacement,
   TabBarItemProps,
   TabBarProps,
+  TabBarSearchTabProps,
 } from './TabBar';

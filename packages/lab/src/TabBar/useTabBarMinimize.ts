@@ -5,12 +5,14 @@
 /**
  * @file useTabBarMinimize.ts
  * @input The TabBar's capsule element, its item count, whether minimizing
- *   applies; core's compositor animator
- *   (`@astryxdesign/core/motion/experimental`) and the UIKit tab-bar table
+ *   applies, whether it has a search tab and whether that is selected; core's
+ *   compositor animator (`@astryxdesign/core/motion/experimental`) and the
+ *   UIKit tab-bar table
  * @output Exports useTabBarMinimize: whether the bar is minimized (UIKit's
- *   `tabBarMinimizeBehavior = .onScrollDown`), a way to expand it, and the
- *   refs TabBar puts on the platter's pieces, the items, the badges, the
- *   minimized circle's icon and the bottom accessory
+ *   `tabBarMinimizeBehavior = .onScrollDown`) or drawn collapsed, a way to
+ *   expand it, and the refs TabBar puts on the platter's pieces, the items,
+ *   the badges, the minimized circle's icon, the search tab's glass and the
+ *   bottom accessory
  * @position Internal to the lab TabBar (TabBar.tsx)
  *
  * WHEN (uikit/tabBar.ts, measured on iOS 26.2)
@@ -31,15 +33,19 @@
  * `minimizedSize` about the leading cap's centre (`collapseSize`). The items
  * and their badges fade out (`minimizeFade`) and the selected icon fades in
  * at the circle's centre; useTabBarLens.ts carries the lens into the circle.
- * The bottom accessory moves down inline beside the circle
- * (`accessoryCollapse`): its box changes in CSS and it starts where it was,
- * its glass drawn in the same three pieces so its width changes with
- * transforms too, its content laid out at once for its new place. Expanding
- * plays the same motion back (`accessoryExpand` for the accessory). Every animation runs on the
- * compositor, transforms and opacity only.
+ * A search tab's circle shrinks to `minimizedSize` about its centre, its
+ * glyph unchanged. The bottom accessory moves down inline beside the circle
+ * (`accessoryCollapse`), ending before the search tab when there is one: its
+ * box changes in CSS and it starts where it was, its glass drawn in the same
+ * three pieces so its width changes with transforms too, its content laid
+ * out at once for its new place. Expanding plays the same motion back
+ * (`accessoryExpand` for the accessory). Choosing the search tab collapses
+ * the bar the same way (useTabBarSearch.ts shows its field) and the
+ * accessory steps aside. Every animation runs on the compositor, transforms
+ * and opacity only.
  *
- * SYNC: When modified, update TabBar.tsx, useTabBarLens.ts and
- * __tests__/TabBar.interaction.browser.spec.ts.
+ * SYNC: When modified, update TabBar.tsx, useTabBarLens.ts,
+ * useTabBarSearch.ts and __tests__/TabBar.interaction.browser.spec.ts.
  */
 
 import {
@@ -71,12 +77,19 @@ const USER_SCROLL_GAP_MS = 150;
 export interface UseTabBarMinimizeOptions {
   readonly capsuleRef: RefObject<HTMLDivElement | null>;
   readonly count: number;
+  /** A search tab sits at the bar's trailing end. */
+  readonly hasSearch: boolean;
+  /** The search tab is selected: the bar collapses as it does minimized. */
+  readonly isSearching: boolean;
   /** `minimizeBehavior="onScrollDown"` under a finger. */
   readonly isEnabled: boolean;
 }
 
 export interface TabBarMinimize {
+  /** Minimized by the page's scrolling. */
   readonly isMinimized: boolean;
+  /** Drawn collapsed: minimized, or the search tab selected. */
+  readonly isCollapsed: boolean;
   /** Expands a minimized bar (a tap on the circle, focus on a tab). */
   readonly expand: () => void;
   /** The platter: shrinks to the circle about the leading cap's centre. */
@@ -97,6 +110,8 @@ export interface TabBarMinimize {
   readonly accessoryMiddle: (element: HTMLElement | null) => void;
   /** The accessory glass's trailing cap: its width. */
   readonly accessoryEnd: (element: HTMLElement | null) => void;
+  /** The search tab's glass: shrinks to the minimized size about its centre. */
+  readonly searchGlass: (element: HTMLElement | null) => void;
 }
 
 /** One animator per item, stable across renders. */
@@ -190,9 +205,12 @@ function useScrollMinimize(isEnabled: boolean) {
 export function useTabBarMinimize({
   capsuleRef,
   count,
+  hasSearch,
+  isSearching,
   isEnabled,
 }: UseTabBarMinimizeOptions): TabBarMinimize {
   const {isMinimized, expand} = useScrollMinimize(isEnabled);
+  const isCollapsed = isMinimized || isSearching;
   const platter = useAnimator();
   const platterMiddle = useAnimator();
   const platterEnd = useAnimator();
@@ -202,13 +220,14 @@ export function useTabBarMinimize({
   const accessory = useAnimator();
   const accessoryMiddle = useAnimator();
   const accessoryEnd = useAnimator();
+  const searchGlass = useAnimator();
 
-  const previousRef = useRef(isMinimized);
+  const previousRef = useRef(isCollapsed);
   useLayoutEffect(() => {
     const was = previousRef.current;
-    previousRef.current = isMinimized;
+    previousRef.current = isCollapsed;
     const element = capsuleRef.current;
-    if (was === isMinimized || element == null) {
+    if (was === isCollapsed || element == null) {
       return;
     }
     const isRtl = getComputedStyle(element).direction === 'rtl';
@@ -225,34 +244,41 @@ export function useTabBarMinimize({
     const size = {spring: tabBar.collapseSize};
     const fade = {spring: tabBar.minimizeFade};
     platterMiddle.animator.animate(
-      {scaleX: isMinimized ? 0 : 1},
+      {scaleX: isCollapsed ? 0 : 1},
       size,
       options,
     );
     platterEnd.animator.animate(
-      {x: isMinimized ? (isRtl ? travel : -travel) : 0},
+      {x: isCollapsed ? (isRtl ? travel : -travel) : 0},
       size,
       options,
     );
     platter.animator.animate(
-      {scale: isMinimized ? tabBar.minimizedSize / tabBar.barHeight : 1},
+      {scale: isCollapsed ? tabBar.minimizedSize / tabBar.barHeight : 1},
       size,
       options,
     );
     for (const item of items.animators.slice(0, count)) {
-      item.animate({opacity: isMinimized ? 0 : 1}, fade, options);
+      item.animate({opacity: isCollapsed ? 0 : 1}, fade, options);
     }
-    badges.animator.animate({opacity: isMinimized ? 0 : 1}, fade, options);
+    badges.animator.animate({opacity: isCollapsed ? 0 : 1}, fade, options);
     circleIcon.animator.animate(
-      {opacity: isMinimized ? 1 : 0},
-      isMinimized ? size : fade,
+      {opacity: isCollapsed ? 1 : 0},
+      isCollapsed ? size : fade,
+      options,
+    );
+    // The search tab's glass shrinks to the minimized size, its glyph kept.
+    searchGlass.animator.animate(
+      {scale: isCollapsed ? tabBar.minimizedSize / tabBar.barHeight : 1},
+      size,
       options,
     );
     // The accessory's box changed in CSS this frame: it starts where it was
-    // on screen (its offset and width carried over) and springs to rest.
-    const width = element.offsetWidth;
-    const from = accessoryBox(width, was);
-    const to = accessoryBox(width, isMinimized);
+    // on screen (its offset and width carried over) and springs to rest. It
+    // spans the whole bar: the capsule and the search tab.
+    const width = element.parentElement?.offsetWidth ?? element.offsetWidth;
+    const from = accessoryBox(width, was, hasSearch);
+    const to = accessoryBox(width, isCollapsed, hasSearch);
     const sign = isRtl ? -1 : 1;
     const cap = tabBar.accessoryHeight;
     const moved = {
@@ -268,13 +294,13 @@ export function useTabBarMinimize({
     accessoryEnd.animator.set({x: end});
     accessoryMiddle.animator.set({scaleX: middle});
     const move = {
-      spring: isMinimized ? tabBar.accessoryCollapse : tabBar.accessoryExpand,
+      spring: isCollapsed ? tabBar.accessoryCollapse : tabBar.accessoryExpand,
     };
     accessory.animator.animate({x: 0, y: 0}, move, options);
     accessoryEnd.animator.animate({x: 0}, move, options);
     accessoryMiddle.animator.animate({scaleX: 1}, move, options);
   }, [
-    isMinimized,
+    isCollapsed,
     count,
     capsuleRef,
     platter,
@@ -286,10 +312,27 @@ export function useTabBarMinimize({
     accessory,
     accessoryMiddle,
     accessoryEnd,
+    searchGlass,
+    hasSearch,
   ]);
+
+  // While the search tab is selected the accessory steps aside.
+  const wasSearchingRef = useRef(isSearching);
+  useLayoutEffect(() => {
+    if (wasSearchingRef.current === isSearching) {
+      return;
+    }
+    wasSearchingRef.current = isSearching;
+    accessory.animator.animate(
+      {opacity: isSearching ? 0 : 1},
+      {spring: tabBar.minimizeFade},
+      MOTION,
+    );
+  }, [isSearching, accessory]);
 
   return {
     isMinimized,
+    isCollapsed,
     expand,
     platter: platter.ref,
     platterMiddle: platterMiddle.ref,
@@ -300,5 +343,6 @@ export function useTabBarMinimize({
     accessory: accessory.ref,
     accessoryMiddle: accessoryMiddle.ref,
     accessoryEnd: accessoryEnd.ref,
+    searchGlass: searchGlass.ref,
   };
 }

@@ -15,9 +15,9 @@
  */
 
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {useState} from 'react';
+import {useRef, useState} from 'react';
 import {act, fireEvent, render, screen} from '@testing-library/react';
-import {TabBar, TabBarItem, type TabBarProps} from './TabBar';
+import {TabBar, TabBarItem, TabBarSearchTab, type TabBarProps} from './TabBar';
 
 function Glyph({name}: {name: string}) {
   return <svg data-testid={`icon-${name}`} />;
@@ -392,5 +392,177 @@ describe('TabBar bottom accessory', () => {
   it('renders nothing without one', () => {
     render(<Bar />);
     expect(document.querySelector('[data-tab-bar-accessory]')).toBeNull();
+  });
+});
+
+describe('TabBar search tab', () => {
+  function SearchBar({onChange}: {onChange?: (value: string) => void}) {
+    const [value, setValue] = useState('home');
+    return (
+      <TabBar
+        value={value}
+        onChange={next => {
+          setValue(next);
+          onChange?.(next);
+        }}
+        label="Sections">
+        <TabBarItem value="home" label="Home" icon={<Glyph name="home" />} />
+        <TabBarItem
+          value="browse"
+          label="Browse"
+          icon={<Glyph name="browse" />}
+        />
+        <TabBarSearchTab
+          value="search"
+          label="Search"
+          icon={<Glyph name="search" />}
+        />
+      </TabBar>
+    );
+  }
+
+  it('is the last tab of the tablist, named by its label', () => {
+    render(<SearchBar />);
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs.at(-1)).toHaveAccessibleName('Search');
+    expect(tabs.at(-1)).toHaveAttribute('aria-selected', 'false');
+    expect(tabs.at(-1)).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('selects the search tab like any other, taking the tab stop', () => {
+    const onChange = vi.fn();
+    render(<SearchBar onChange={onChange} />);
+    fireEvent.click(screen.getByRole('tab', {name: 'Search'}));
+    expect(onChange).toHaveBeenCalledWith('search');
+    const search = screen.getByRole('tab', {name: 'Search'});
+    expect(search).toHaveAttribute('aria-selected', 'true');
+    expect(search).toHaveAttribute('tabindex', '0');
+    expect(screen.getByRole('tab', {name: 'Home'})).toHaveAttribute(
+      'tabindex',
+      '-1',
+    );
+  });
+
+  it('reaches the search tab with the arrow keys', () => {
+    render(<SearchBar />);
+    const home = screen.getByRole('tab', {name: 'Home'});
+    home.focus();
+    fireEvent.keyDown(home, {key: 'End'});
+    expect(screen.getByRole('tab', {name: 'Search'})).toHaveFocus();
+  });
+});
+
+describe('TabBar search tab, selected', () => {
+  function Searching({
+    automaticallyActivates,
+    onActiveChange,
+    bottomAccessory,
+  }: {
+    automaticallyActivates?: boolean;
+    onActiveChange?: (isActive: boolean) => void;
+    bottomAccessory?: React.ReactNode;
+  }) {
+    const [value, setValue] = useState('browse');
+    const [isActive, setIsActive] = useState(false);
+    const fieldRef = useRef<HTMLInputElement | null>(null);
+    return (
+      <TabBar
+        value={value}
+        onChange={setValue}
+        label="Sections"
+        bottomAccessory={bottomAccessory}>
+        <TabBarItem value="home" label="Home" icon={<Glyph name="home" />} />
+        <TabBarItem
+          value="browse"
+          label="Browse"
+          icon={<Glyph name="browse" />}
+          selectedIcon={<Glyph name="browse-filled" />}
+        />
+        <TabBarSearchTab
+          value="search"
+          label="Search"
+          icon={<Glyph name="search" />}
+          isActive={isActive}
+          onActiveChange={next => {
+            setIsActive(next);
+            onActiveChange?.(next);
+          }}
+          fieldRef={fieldRef}
+          automaticallyActivates={automaticallyActivates}>
+          <input ref={fieldRef} aria-label="Search query" />
+        </TabBarSearchTab>
+      </TabBar>
+    );
+  }
+
+  it('keeps the field mounted but inert until the search tab is chosen', () => {
+    render(<Searching />);
+    const field = screen.getByLabelText('Search query', {selector: 'input'});
+    expect(field.closest('[data-tab-bar-search-field]')).toHaveAttribute(
+      'inert',
+    );
+  });
+
+  it('activates and focuses the field in the tap that chooses the search tab', () => {
+    const onActiveChange = vi.fn();
+    render(<Searching onActiveChange={onActiveChange} />);
+    fireEvent.click(screen.getByRole('tab', {name: 'Search'}));
+    expect(onActiveChange).toHaveBeenCalledWith(true);
+    const field = screen.getByLabelText('Search query', {selector: 'input'});
+    expect(field).toHaveFocus();
+    const host = field.closest('[data-tab-bar-search-field]');
+    expect(host).not.toHaveAttribute('inert');
+    expect(host).toHaveAttribute('data-tab-bar-search-field', 'active');
+  });
+
+  it('with automaticallyActivates={false}, the field waits inline', () => {
+    const onActiveChange = vi.fn();
+    render(
+      <Searching
+        automaticallyActivates={false}
+        onActiveChange={onActiveChange}
+      />,
+    );
+    fireEvent.click(screen.getByRole('tab', {name: 'Search'}));
+    expect(onActiveChange).not.toHaveBeenCalled();
+    const field = screen.getByLabelText('Search query', {selector: 'input'});
+    expect(field).not.toHaveFocus();
+    expect(field.closest('[data-tab-bar-search-field]')).toHaveAttribute(
+      'data-tab-bar-search-field',
+      'inline',
+    );
+  });
+
+  it('collapses the bar to a circle holding the tab it came from, which returns to it', () => {
+    const {container} = render(<Searching automaticallyActivates={false} />);
+    fireEvent.click(screen.getByRole('tab', {name: 'Search'}));
+    expect(screen.getByRole('tablist')).toHaveAttribute(
+      'data-tab-bar-minimized',
+    );
+    const circle = container.querySelector('[data-tab-bar-circle]');
+    expect(
+      circle?.querySelector('[data-testid="icon-browse-filled"]'),
+    ).not.toBeNull();
+    fireEvent.click(circle as Element);
+    expect(screen.getByRole('tab', {name: 'Browse'})).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.getByRole('tablist')).not.toHaveAttribute(
+      'data-tab-bar-minimized',
+    );
+  });
+
+  it('sets the bottom accessory aside while searching', () => {
+    const {container} = render(
+      <Searching
+        automaticallyActivates={false}
+        bottomAccessory={<button type="button">Play</button>}
+      />,
+    );
+    const accessory = container.querySelector('[data-tab-bar-accessory]');
+    expect(accessory).not.toHaveAttribute('inert');
+    fireEvent.click(screen.getByRole('tab', {name: 'Search'}));
+    expect(accessory).toHaveAttribute('inert');
   });
 });

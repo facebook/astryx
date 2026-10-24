@@ -377,6 +377,11 @@ export function useTabBarLens({
         name: 'tab-bar-selection',
         minimumPressDuration: 0,
         allowedPointerTypes: ['touch', 'pen'],
+        // Only the capsule's own box: the search tab beside it is a button.
+        shouldReceiveTouch: (_recognizer, touch) => {
+          const box = capsuleRef.current?.getBoundingClientRect();
+          return box != null && touch.x >= box.left && touch.x <= box.right;
+        },
       }),
     recognizer => {
       switch (recognizer.state) {
