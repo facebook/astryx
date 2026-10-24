@@ -300,7 +300,9 @@ export interface TimeInputProps extends Omit<
 
   /**
    * Increment in minutes when using arrow keys. Steps are whole minutes: a
-   * fractional value leaves the time unchanged.
+   * fractional value leaves the time unchanged. Under a finger the
+   * bottom-sheet wheels show every n-th minute when it divides 60 (1 to 30),
+   * and every minute otherwise; with a mouse they list every minute.
    * @default 1
    */
   increment?: number;
