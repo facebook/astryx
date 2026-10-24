@@ -22,8 +22,8 @@ function politeText(): string {
 
 function renderBusy() {
   return renderHook(
-    ({isBusy}: {isBusy: boolean}) =>
-      useBusyAnnouncement(isBusy, 'Loading', useRef(null)),
+    ({isBusy, message = 'Loading'}: {isBusy: boolean; message?: string}) =>
+      useBusyAnnouncement(isBusy, message, useRef(null)),
     {initialProps: {isBusy: true}},
   );
 }
@@ -63,8 +63,9 @@ describe('useBusyAnnouncement', () => {
     act(() => {
       result.current();
     });
-    // Still busy until the settled state commits: nothing is rescheduled.
-    rerender({isBusy: true});
+    // Still busy until the settled state commits: nothing is rescheduled,
+    // even when the busy message changes (a locale switch, say).
+    rerender({isBusy: true, message: 'Chargement'});
     runFrames();
     expect(politeText()).toBe('');
 
