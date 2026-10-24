@@ -106,8 +106,9 @@ the only component record in the AppShell root.
   (`component:SideNav` covers only its row geometry). AppShell only selects the
   mode.
 - The drawer dialog itself: modal presentation, focus containment and return,
-  Escape and backdrop dismissal, slide motion, and its close delay — owned by
-  `component:MobileNav`. The hamburger control is MobileNav's
+  backdrop dismissal, slide motion, and its close delay — owned by MobileNav and
+  uncontracted here; Escape and close-request ordering — owned by
+  `family:overlay-dismissal`. The hamburger control is MobileNav's
   `MobileNavToggle`.
 - Layout regions, their padding, and region scrolling — owned by
   `family:layout-regions`; keyboard access to an overflowing region — owned by
@@ -146,7 +147,7 @@ the only component record in the AppShell root.
 | FR10 | The auto drawer renders only in the mobile layout and only when `mobileNav` is not `false`, not a node, and has no `content`. Without `topNav` it is SideNav in drawer mode; with `topNav` it is TopNav in drawer mode carrying the side nav content; with a heading-only TopNav the side nav items render exactly once. It stays mounted while closed and, after a close, is not hidden before MobileNav's close delay has elapsed (hidden at once under reduced motion); an open is visible in the commit that carries it.                                       | Current source and tests             |
 | FR11 | The drawer is closed by default and AppShell owns its state unless `mobileNav.isOpen` is defined. Every requested change calls `mobileNav.onOpenChange`. Open and toggle requests do nothing unless mobile navigation is enabled: a nav slot is present, `mobileNav` is not `false`, and `mobileNav` is not a node.                                                                                                                                                                                                                                                | Current source and tests             |
 | FR12 | `mobileNav={false}` renders no drawer and no toggle; in the mobile layout the side nav then renders neither inline nor in a drawer. A node (element or string) renders as given at every width, replaces the auto drawer, and leaves TopNav in its full mode. A config object's `content` replaces the auto drawer in the mobile layout when a nav slot is present. `hasToggle: false` removes the auto toggle.                                                                                                                                                    | Current source and tests             |
-| FR13 | AppShell provides its subtree with: whether the mobile layout applies, whether the drawer is open, one drawer id shared by the drawer's `id` and the toggle's `aria-controls`, open, close, and toggle actions, whether mobile navigation is enabled, and whether auto toggles render.                                                                                                                                                                                                                                                                             | Current source and tests             |
+| FR13 | AppShell provides its subtree with: whether the mobile layout applies, whether the drawer is open, one drawer id shared by the drawer's `id` and the toggle's `aria-controls`, open, close, and toggle actions, whether mobile navigation is enabled, and whether auto toggles are enabled (`hasToggle` is not `false`; true at every width unless `hasToggle` is `false`).                                                                                                                                                                                        | Current source and tests             |
 | FR14 | Main content stays mounted across the breakpoint (`family:layout-regions` FR9); in addition, input values and focus inside `children` survive in both directions.                                                                                                                                                                                                                                                                                                                                                                                                  | Current source and tests             |
 | FR15 | `className`, `style`, and `xstyle` merge onto the root after component styles.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Current source                       |
 | FR16 | With `elevated`, a present `topNav`, and an inline side nav, the content area is a raised surface whose block-start, inline-start corner uses the page radius; otherwise the content wrapper creates no layout box.                                                                                                                                                                                                                                                                                                                                                | Current source and stories           |
@@ -199,7 +200,8 @@ the only component record in the AppShell root.
   the shared focus-outline treatment.
 - **AR3 — Drawer wiring.** The auto toggle's `aria-controls` names the drawer that
   opens and its `aria-expanded` reflects the drawer state (FR13). Focus
-  containment and return inside the drawer are owned by `component:MobileNav`.
+  containment and return inside the drawer belong to MobileNav and are
+  uncontracted here.
 - **AR4 — Focus continuity.** A breakpoint change does not move focus out of the
   main region's content (FR14).
 
@@ -258,23 +260,27 @@ reachability, not a decision that it must stay unthemeable.
 
 ## Verification map
 
-| Contract            | Verification                                                                                 | Representative states                                         | Mutation or failure expectation                                                  | Audit section                  |
-| ------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------ |
-| FR1–FR4, AR1        | `AppShell.test.tsx` slot, landmark, banner, and ref suites                                   | Content only; each slot; mobile top bar with banner           | A missing or duplicate landmark, or a nested banner, fails role queries.         | `audit:AppShell/anatomy`       |
-| FR5, AR2            | `AppShell.test.tsx` skip-link and keyboard suites                                            | First Tab; Enter; click; translated text                      | Losing the href, the focus move, or tab order fails.                             | `audit:AppShell/accessibility` |
-| FR6, PR1            | `AppShell.test.tsx` height-mode suites                                                       | `fill`, `auto`, section header in `auto`                      | Dropping sticky placement or measuring in `fill` fails.                          | `audit:AppShell/behavior`      |
-| FR8                 | `AppShell.test.tsx` breakpoint suites                                                        | Every name; `none`; nearest, root, and built themes; SSR hint | Wrong map, inclusive edge, or `none` entering mobile fails.                      | `audit:AppShell/behavior`      |
-| FR9–FR12            | `AppShell.test.tsx` mobile suites; `MobileNavCloseEdgeCases.test.tsx` AppShell drawer suites | Sidenav only; both navs; heading-only TopNav; custom node     | A missing toggle, duplicated items, a stale drawer, or an early hide fails.      | `audit:AppShell/behavior`      |
-| FR13, AR3           | `AppShell.test.tsx` keyboard drawer and `useAppShellMobile` suites                           | Outside a shell; inside, closed and open                      | A wrong id link or stale state fails.                                            | `audit:AppShell/accessibility` |
-| FR14, AR4           | `AppShell.test.tsx` breakpoint continuity test                                               | Desktop to mobile and back with a focused input               | Remounting content loses the value or focus.                                     | `audit:AppShell/behavior`      |
-| FR7, FR16           | `AppShell.stories.tsx` and visual baselines                                                  | `elevated` with both navs and with the mobile nav             | A changed `elevated` background or missing corner shows in visual review.        | `audit:AppShell/visual`        |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                                                                | Consumer anatomy and current targets                          | Missing, extra, stale, or multiply assigned mappings fail repository validation. | `audit:AppShell/theming`       |
+| Contract            | Verification                                                                                 | Representative states                                                               | Mutation or failure expectation                                                  | Audit section                  |
+| ------------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------ |
+| FR1–FR4, AR1        | `AppShell.test.tsx` slot, landmark, banner, and ref suites                                   | Content only; each slot; mobile top bar with banner                                 | A missing or duplicate landmark, or a nested banner, fails role queries.         | `audit:AppShell/anatomy`       |
+| FR5, AR2            | `AppShell.test.tsx` skip-link and keyboard suites                                            | First Tab; Enter; click; translated text                                            | Losing the href, the focus move, or tab order fails.                             | `audit:AppShell/accessibility` |
+| FR6, PR1            | `AppShell.test.tsx` height-mode suites                                                       | `fill`, `auto`, section header in `auto`                                            | Dropping sticky placement or measuring in `fill` fails.                          | `audit:AppShell/behavior`      |
+| FR8                 | `AppShell.test.tsx` breakpoint suites                                                        | `lg`, `xl`, `2xl`, explicit `md`, `none`; nearest, root, and built themes; SSR hint | Wrong map, inclusive edge, or `none` entering mobile fails.                      | `audit:AppShell/behavior`      |
+| FR9–FR12            | `AppShell.test.tsx` mobile suites; `MobileNavCloseEdgeCases.test.tsx` AppShell drawer suites | Sidenav only; both navs; heading-only TopNav; custom node                           | A missing toggle, duplicated items, a stale drawer, or an early hide fails.      | `audit:AppShell/behavior`      |
+| FR13, AR3           | `AppShell.test.tsx` keyboard drawer and `useAppShellMobile` suites                           | Outside a shell; inside, closed and open                                            | A wrong id link or stale state fails.                                            | `audit:AppShell/accessibility` |
+| FR14, AR4           | `AppShell.test.tsx` breakpoint continuity test                                               | Desktop to mobile and back with a focused input                                     | Remounting content loses the value or focus.                                     | `audit:AppShell/behavior`      |
+| FR7, FR16           | `AppShell.stories.tsx` and visual baselines                                                  | `elevated` with both navs and with the mobile nav                                   | A changed `elevated` background or missing corner shows in visual review.        | `audit:AppShell/visual`        |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                                                | Consumer anatomy and current targets                                                | Missing, extra, stale, or multiply assigned mappings fail repository validation. | `audit:AppShell/theming`       |
 
-The `wash`, `surface`, and fill-height `section` backgrounds in FR7; FR9's
-drawer-node clause; FR10's reduced-motion hold; FR11's `mobileNav.onOpenChange`
-call; FR12's `mobileNav={false}`, `content`, and `hasToggle: false` branches;
-FR15; and PR2 are read from source; no focused test or baseline checks them
-yet.
+Read from source, with no focused test or baseline yet: the placement of the
+three targets (FR1); `banner` above `topNav` (FR3); the `contentPadding` value
+and its `0` default (FR4); the skip link's visual hiding until focus (FR5); root sizing and region scrolling in each height mode (FR6); the `wash`, `surface`, and fill-height `section`
+backgrounds (FR7); the default `md` breakpoint and `sm` (FR8); the mobile top
+bar's navigation name and its drawer-node clause (FR9); the reduced-motion hold
+(FR10); the `mobileNav.onOpenChange` call and no-op requests while disabled
+(FR11); the `mobileNav={false}`, `content`, and `hasToggle: false` branches and
+full-mode TopNav beside a drawer node (FR12); `hasAutoToggle` (FR13); FR15; and
+PR2.
 
 ## Decision log
 
