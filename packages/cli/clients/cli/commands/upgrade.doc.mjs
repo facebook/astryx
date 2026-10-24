@@ -160,6 +160,13 @@ export const doc = {
     {
       type: 'prose',
       text:
+        'upgrade does not scan installed dependencies or version-control folders at all, including through a symbolic link: ' +
+        'a symlinked `node_modules`, or a link whose target is inside one or inside a package store such as `.yarn/cache`, is skipped. ' +
+        'Other symbolically linked folders are scanned so a change they need is reported, but nothing is written through them.',
+    },
+    {
+      type: 'prose',
+      text:
         'Rules work as they do in Git: a later rule wins, so `linguist-generated=false` or a `!` line in an ignore file ' +
         'returns a file to normal handling. A folder name such as `dist` or `generated` protects nothing by itself. ' +
         'If a protection file cannot be read or parsed, upgrade stops with ERR_CODEMOD_PROTECTION_SOURCE before it writes anything.',
@@ -193,6 +200,16 @@ export const doc = {
         '(the rules that protect it), `codemods`, and `commands`. A generated file can name the command that rebuilds it on a ' +
         '`Command:` line in its header, such as `// Command: pnpm run gen:panel`; upgrade prints it as ' +
         '`Regenerate with: <command>` and lists it in `commands`.',
+    },
+    {type: 'heading', level: 3, text: 'A failed codemod'},
+    {
+      type: 'prose',
+      text:
+        'When a codemod or a `hooks.postCodemod` command fails, upgrade still makes every other change, exits 1 with ERR_CODEMOD_FAILED, and does not refresh the agent docs. ' +
+        'With --json, the result is the usual error, `{"error": ..., "code": "ERR_CODEMOD_FAILED"}`, plus a `receipt`: the same fields a finished run returns, with `complete: false`, ' +
+        'each failure in `errors`, and every file upgrade changed (or would change) in `modifiedFiles`, so a script can review, keep, or revert them. ' +
+        'An error that stops the run after codemods have written files, such as an astryx.config that fails validation, carries a `receipt` too. ' +
+        'Rerun past a failed codemod with --skip-codemod.',
     },
   ],
 };
