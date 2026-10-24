@@ -85,3 +85,28 @@ import Testing
   environment.astryxTheme = .neutral
   #expect(environment.astryx.color("color-border") == Theme.neutral.light.color.border)
 }
+
+// Theme environment spec, E2 and E5: the theme writes SwiftUI's tint and
+// foreground styles, so stock SwiftUI views in the subtree carry the brand.
+
+@MainActor
+@Test func theThemeSetsSwiftUIsTintAndForegroundStyles() {
+  let swatches = SwiftUI.HStack(spacing: 0) {
+    Rectangle().fill(.tint).frame(width: 20, height: 20)
+    Rectangle().fill(.primary).frame(width: 20, height: 20)
+    Rectangle().fill(.secondary).frame(width: 20, height: 20)
+  }
+  let butter = Pixels(swatches, theme: .butter)
+  #expect(close(butter.at(10, 10), rgba(Theme.butter.light.color.accent)))
+  #expect(close(butter.at(30, 10), rgba(Theme.butter.light.color.textPrimary)))
+  #expect(close(butter.at(50, 10), rgba(Theme.butter.light.color.textSecondary)))
+  let dark = Pixels(swatches, theme: .butter, scheme: .dark)
+  #expect(close(dark.at(10, 10), rgba(Theme.butter.dark.color.accent)))
+}
+
+@MainActor
+@Test func anInnerThemeReplacesTheOuterTint() {
+  let swatch = Rectangle().fill(.tint).frame(width: 20, height: 20).astryxTheme(.neutral)
+  let pixels = Pixels(swatch, theme: .butter)
+  #expect(close(pixels.at(10, 10), rgba(Theme.neutral.light.color.accent)))
+}
