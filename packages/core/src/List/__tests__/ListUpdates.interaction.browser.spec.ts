@@ -7,8 +7,10 @@
  *   table (motion/uikit/list.ts)
  * @output Interaction and animation proofs for a List with `hasAnimatedChanges`:
  *   after a removal the rows below start where they were and slide up on the
- *   table spring; after an insert the new row fades in and the rows below
- *   slide down; a reorder moves rows to their new places; content below the
+ *   table spring; after an insert the rows below slide down and the new row
+ *   fades in once they have cleared its band; a reorder moves rows to their
+ *   new places, the row crossing the others riding above them with the
+ *   surface behind it; content below the
  *   list moves with its rows, the button a finger tapped included; a change
  *   while rows still move makes no jump; Reduce Motion keeps the motion; a
  *   theme's table spring times it; a row swiped away leaves only its gap to
@@ -161,7 +163,7 @@ test('a removal: the rows below start where they were and slide up on the table 
   await expect.poll(async () => translateY(drafts)).toBe(0);
 });
 
-test('an insert: the new row fades in and the rows below slide down', async ({
+test('an insert: the rows below slide down, and the new row fades in once they have cleared its band', async ({
   page,
 }) => {
   await open(page);
@@ -169,16 +171,31 @@ test('an insert: the new row fades in and the rows below slide down', async ({
   const inserted = row(page, 'Folder 1');
   await expect(inserted).toBeVisible();
   await holdAnimations(page);
-  await seekAnimations(page, 0);
-  expect(await opacity(inserted)).toBeCloseTo(0, 2);
   const sent = row(page, 'Sent');
-  const start = await translateY(sent);
-  expect(start).toBeLessThan(-1);
-  await seekAnimations(page, SETTLE_MS / 4);
-  const mid = await opacity(inserted);
-  expect(mid).toBeGreaterThan(0.2);
-  expect(mid).toBeLessThan(1);
-  expect(await translateY(sent)).toBeGreaterThan(start);
+  const height = await inserted.evaluate(
+    el => el.getBoundingClientRect().height,
+  );
+  await seekAnimations(page, 0);
+  expect(await translateY(sent)).toBeLessThan(-1);
+  // While Sent's label is within half a row of the new row's (Sent starts
+  // in the new row's band), the new row shows nothing: rows have no
+  // background, and the two labels would overlap. Then it fades in.
+  let crossing = 0;
+  let previous = 0;
+  for (let t = 0; t <= SETTLE_MS; t += 10) {
+    await seekAnimations(page, t);
+    const y = await translateY(sent);
+    const shown = await opacity(inserted);
+    if (y < -height / 2 - 0.5) {
+      expect(shown, `t=${t}`).toBeCloseTo(0, 3);
+      crossing += 1;
+    }
+    expect(shown, `t=${t}`).toBeGreaterThanOrEqual(previous - 0.001);
+    previous = shown;
+  }
+  expect(crossing).toBeGreaterThan(2);
+  await seekAnimations(page, SETTLE_MS * 0.6);
+  expect(await opacity(inserted)).toBeGreaterThan(0.5);
   await releaseAnimations(page, {finish: true});
   await expect.poll(async () => opacity(inserted)).toBe(1);
   await expect.poll(async () => translateY(sent)).toBe(0);
@@ -196,9 +213,36 @@ test('a reorder: each row slides from its old place to its new one', async ({
   // Spam starts four rows down (where it was) and Inbox one row up.
   expect(await translateY(spam)).toBeGreaterThan(1);
   expect(await translateY(inbox)).toBeLessThan(-1);
+  // Spam crosses the rows moving down: it rides above them with the list's
+  // surface behind it, so their labels never show through each other.
+  const paint = async (element: Locator) =>
+    element.evaluate(node => {
+      const layer = getComputedStyle(node, '::after');
+      const probe = document.createElement('div');
+      probe.style.backgroundColor = 'var(--color-background-surface)';
+      node.parentElement?.append(probe);
+      const surface = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return {
+        zIndex: getComputedStyle(node).zIndex,
+        layer:
+          layer.content === 'none' || layer.content === ''
+            ? null
+            : layer.backgroundColor,
+        surface,
+      };
+    });
+  await seekAnimations(page, SETTLE_MS / 4);
+  const travelling = await paint(spam);
+  expect(travelling.zIndex).toBe('1');
+  expect(travelling.layer).toBe(travelling.surface);
+  expect((await paint(inbox)).layer).toBeNull();
   await releaseAnimations(page, {finish: true});
   await expect.poll(async () => translateY(spam)).toBe(0);
   await expect.poll(async () => translateY(inbox)).toBe(0);
+  // At rest it is a row like the others again.
+  await expect.poll(async () => (await paint(spam)).layer).toBeNull();
+  expect((await paint(spam)).zIndex).toBe('auto');
 });
 
 test('content below the list moves with its rows and lands with no jump', async ({

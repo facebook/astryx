@@ -8,7 +8,8 @@
  *   (motion/uikit/list.ts)
  * @output The moves list rows share: one animator per element for all the
  *   code that moves it (`animatorFor`; `animateRow` starts a recorded
- *   spring, `motionOf` reads the running one and its spring),
+ *   spring, `playRow` a recorded curve, `motionOf` reads the running one
+ *   and its spring),
  *   `springHome` (spring a property to its resting value after the layout
  *   moved the element, keeping the velocity on screen), `springTo`,
  *   `stopRow` (at rest now, for an owner going away mid-motion),
@@ -30,7 +31,11 @@
  * utils/useListUpdateMotion.ts.
  */
 
-import {animatorFor, type MotionHandle} from '../motion/animator';
+import {
+  animatorFor,
+  type MotionCurve,
+  type MotionHandle,
+} from '../motion/animator';
 import type {SpringDescription} from '../motion/spring';
 
 /**
@@ -129,6 +134,29 @@ export function animateRow(
       {spring, velocity: options.velocity},
       {at: options.at, crossfadeAs: options.crossfadeAs},
     ),
+    spring,
+  );
+}
+
+/**
+ * Plays a closed-form curve on one of the element's properties through its
+ * shared animator and records it with the spring it keeps pace with, like
+ * `animateRow` (a fade timed against the rows sliding around it). With no
+ * `at`, a curve from rest starts when the browser commits it, with every
+ * other call from rest in the same task (the slides it is timed against).
+ */
+export function playRow(
+  element: HTMLElement,
+  property: RowProperty,
+  curve: MotionCurve,
+  spring: SpringDescription,
+  at?: number,
+): MotionHandle {
+  moved.add(element);
+  return track(
+    element,
+    [property],
+    animatorFor(element).play({[property]: curve}, at == null ? {} : {at}),
     spring,
   );
 }

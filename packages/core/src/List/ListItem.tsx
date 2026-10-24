@@ -7,9 +7,10 @@
  * @input Uses React, ReactNode, StyleXStyles, theme tokens, the List row edge
  *   treatment, the press layer (dividers beside a touch-pressed or held row
  *   hide and the layer reaches over the row's own), the touch row heights
- *   (listRow.stylex.ts), CheckboxInput, and the marker or task checkbox a
- *   ListMarkerScope sets (Markdown's nested lists and the task items of mixed
- *   lists)
+ *   (listRow.stylex.ts), the travelling marker of an update's slide
+ *   (utils/useListUpdateMotion.ts), CheckboxInput, and the marker or task
+ *   checkbox a ListMarkerScope sets (Markdown's nested lists and the task
+ *   items of mixed lists)
  * @output Exports ListItem component, ListItemProps type
  * @position Core implementation; consumed by List, index.ts, tested by List.test.tsx
  *
@@ -153,6 +154,31 @@ export interface ListItemProps extends BaseProps<HTMLLIElement> {
 const styles = stylex.create({
   withCounter: {
     counterIncrement: 'astryx-list',
+  },
+  // A row an update slides across rows moving the other way rides above them
+  // with the surface behind it, for the length of its slide (the attribute
+  // utils/useListUpdateMotion.ts writes): a UIKit cell passes its neighbours
+  // opaque and on top, and rows here have no background of their own. The
+  // layer covers the padding box, under the press layer, so the row's divider
+  // and its press stay visible; a selected row keeps its own fill.
+  travelling: {
+    zIndex: {
+      default: null,
+      '[data-astryx-travelling]': 1,
+    },
+    '::after': {
+      content: {
+        default: null,
+        '[data-astryx-travelling]:not([aria-selected="true"],[aria-current="true"])':
+          '""',
+      },
+      position: 'absolute',
+      inset: 0,
+      zIndex: -2,
+      borderRadius: 'inherit',
+      pointerEvents: 'none',
+      backgroundColor: colorVars['--color-background-surface'],
+    },
   },
   // List's edge treatments. Each reads --_item-inset-inline, the variable
   // Item derives its paddingInline from, on the row itself (custom properties
@@ -430,6 +456,7 @@ export function ListItem({
       xstyle={
         [
           hasMarkers && styles.withCounter,
+          styles.travelling,
           hasDividers && styles.withDivider,
           hasDividers && embeddedStyles.noRadius,
           // A list with markers is running text (bullets, numbers, a

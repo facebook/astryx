@@ -6,7 +6,9 @@
  *   WebKit for iOS, an Android finger, a mouse) and stubbed row positions
  *   (jsdom lays nothing out)
  * @output Unit tests for when List's update motion moves rows: survivors whose
- *   place changed get a motion in the iOS idiom; nothing moves with an Android
+ *   place changed get a motion in the iOS idiom; a new row shows nothing
+ *   until the row it displaced has cleared its band; a row crossing rows
+ *   that move the other way rides above them; nothing moves with an Android
  *   finger or a mouse, without `hasAnimatedChanges`, on the first render, or
  *   while a reorder session owns the list; content below the list moves with
  *   it unless the list keeps it still; a resize of the list between commits
@@ -18,7 +20,7 @@
 import {act, render, screen} from '@testing-library/react';
 import {afterEach, beforeAll, describe, expect, it, vi} from 'vitest';
 import {List, ListItem} from '../List';
-import {motionNow, motionOf, presentation} from './rowMotion';
+import {motionNow, motionOf, presentation, type RowMotion} from './rowMotion';
 
 const ROW = 40;
 /** Each row's height as the stubbed layout reports it. */
@@ -34,6 +36,12 @@ beforeAll(() => {
         return 0;
       }
       return Array.from(parent.children).indexOf(this) * rowHeight;
+    },
+  });
+  Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+    configurable: true,
+    get(this: HTMLElement) {
+      return this.tagName === 'LI' ? rowHeight : 0;
     },
   });
 });
@@ -106,6 +114,58 @@ describe('List update motion', () => {
     rerender(<Rows labels={['D', 'A', 'C']} />);
     expect(motionOf(rowOf('D'), 'opacity')).toBeDefined();
     expect(motionOf(rowOf('A'))).toBeDefined();
+  });
+
+  it('a new row shows nothing while the row it displaced still crosses its band, then fades in, arriving with it', async () => {
+    stubIdiom('ios');
+    const {rerender} = render(<Rows labels={['A', 'C']} />);
+    await act(async () => undefined);
+    // Insert B second: C slides down out of B's band.
+    rerender(<Rows labels={['A', 'B', 'C']} />);
+    const inserted = rowOf('B');
+    const displaced = rowOf('C');
+    expect(motionOf(inserted, 'opacity')).toBeDefined();
+    // Sampled from the one start the browser gives the commit's motions
+    // (calls from rest start when it commits them), never from a clock read
+    // after the rerender, which a busy runner moves.
+    const at = await (motionOf(displaced, 'y') as RowMotion).handle.started;
+    let crossing = 0;
+    let previous = 0;
+    for (let t = 0; t <= 600; t += 5) {
+      const y = presentation(displaced, 'y', at + t);
+      const shown = presentation(inserted, 'opacity', at + t);
+      // C's label within half a row of B's: B shows nothing (the labels
+      // would overlap; rows have no background to hide one).
+      if (y < -ROW / 2 - 0.01) {
+        expect(shown, `t=${t}`).toBe(0);
+        crossing += 1;
+      }
+      expect(shown, `t=${t}`).toBeGreaterThanOrEqual(previous);
+      previous = shown;
+    }
+    expect(crossing).toBeGreaterThan(3);
+    expect(presentation(inserted, 'opacity', at + 600)).toBe(1);
+  });
+
+  it('a row that slides across rows moving the other way rides above them for its slide', async () => {
+    stubIdiom('ios');
+    const {rerender} = render(<Rows labels={['A', 'B', 'C', 'D']} />);
+    await act(async () => undefined);
+    const rides = (label: string) =>
+      rowOf(label).hasAttribute('data-astryx-travelling');
+    // D moves first: it crosses A, B and C, which each move down one row.
+    rerender(<Rows labels={['D', 'A', 'B', 'C']} />);
+    expect(rides('D')).toBe(true);
+    expect(['A', 'B', 'C'].filter(rides)).toEqual([]);
+    // Once its slide rests, it rides with the others again.
+    await vi.waitFor(() => expect(motionOf(rowOf('D'))).toBeUndefined(), {
+      timeout: 3000,
+    });
+    expect(rides('D')).toBe(false);
+    // A removal moves every row the same way: nothing crosses, nothing rides.
+    rerender(<Rows labels={['D', 'B', 'C']} />);
+    expect(motionOf(rowOf('B'))).toBeDefined();
+    expect(['D', 'B', 'C'].filter(rides)).toEqual([]);
   });
 
   it('moves nothing with an Android finger or a mouse, or without hasAnimatedChanges', async () => {
