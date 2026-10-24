@@ -159,6 +159,58 @@ test('every frame of the cycle matches UIKit’s, and reduced motion keeps the p
   expect(first.indexOf(Math.max(...first))).toBe(INDICATOR.headSpokeAtStart);
 });
 
+test('in RTL the indicator is not mirrored and still steps clockwise, as UIKit does', async ({
+  page,
+}) => {
+  await openSizes(page);
+  const glyph = glyphOf(page, 1);
+  const heads = await glyph.evaluate((element, frameMs) => {
+    (element.closest('[dir]') as HTMLElement).setAttribute('dir', 'rtl');
+    const spokes = Array.from(element.children) as HTMLElement[];
+    const animations = spokes.map(spoke => spoke.getAnimations()[0]);
+    for (const animation of animations) {
+      animation.pause();
+    }
+    const box = element.getBoundingClientRect();
+    const cx = box.x + box.width / 2;
+    const cy = box.y + box.height / 2;
+    const out: number[] = [];
+    // One spoke every two frames: the head's place on screen at four steps.
+    for (const frame of [0, 2, 4, 6]) {
+      for (const animation of animations) {
+        animation.currentTime = (frame + 0.5) * frameMs;
+      }
+      const opacities = spokes.map(spoke =>
+        Number(getComputedStyle(spoke).opacity),
+      );
+      const head = spokes[opacities.indexOf(Math.max(...opacities))];
+      const capsule = (
+        head.querySelector('rect') as Element
+      ).getBoundingClientRect();
+      const dx = capsule.x + capsule.width / 2 - cx;
+      const dy = capsule.y + capsule.height / 2 - cy;
+      // Degrees clockwise from 12 o'clock, on screen.
+      out.push(Math.round(((Math.atan2(dx, -dy) * 180) / Math.PI + 360) % 360));
+    }
+    return {
+      direction: getComputedStyle(element).direction,
+      transform: getComputedStyle(element).transform,
+      out,
+    };
+  }, FRAME_MS);
+  expect(heads.direction).toBe('rtl');
+  expect(heads.transform).toBe('none');
+  // 9 o'clock, then 10:30, 12 and 1:30: clockwise, as in LTR.
+  const expected = [270, 315, 0, 45];
+  heads.out.forEach((angle, i) => {
+    const error = Math.min(
+      Math.abs(angle - expected[i]),
+      360 - Math.abs(angle - expected[i]),
+    );
+    expect(error, `step ${i}: ${angle}°`).toBeLessThanOrEqual(3);
+  });
+});
+
 /** Holds the main thread with a synchronous loop; returns when it ran. */
 async function blockMainThread(page: Page, ms: number) {
   return page.evaluate(duration => {
