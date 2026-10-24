@@ -43,7 +43,11 @@
  * next row's top. The box translates up by the row's height while the row
  * inside translates down by as much, so the content stays put and the clip
  * closes, compositor only; a ghost below another removed row rides up with
- * it. The ghost goes once its motion rests. A row moved again mid-motion
+ * it. The ghost goes when its collapse ends, and at once, its motion
+ * stopped, when the motion stops owning the list (hasAnimatedChanges off, a
+ * mouse, an unmount): the layer's one transient exit copy
+ * (`architecture:component-style-authoring` INV7), gone within a second on
+ * the table spring. A row moved again mid-motion
  * keeps its velocity, and its curve: a layout shift never changes a running
  * motion's spring (a reorder's drop settles on its own), so the table spring
  * applies to rows at rest. Page content below the list moves on the same
@@ -57,9 +61,9 @@
  * fades out where it is, a new row fades in where it lands, and the rows
  * that move and the content below cross-fade into place.
  *
- * It runs in the iOS idiom only (useMotionPresentation: a finger on WebKit
- * for iOS). With an Android finger (Android's list animations are its own)
- * or a mouse (the theme's presentation) nothing moves. A list root that
+ * It runs under any finger (useTouchPresentation: a coarse primary pointer,
+ * iOS and Android alike; one touch model). With a mouse (the theme's
+ * presentation) nothing moves. A list root that
  * carries `data-astryx-reordering` (a drag session in progress) is left to
  * the reorder: its rows' places are remembered, nothing is moved.
  *
@@ -73,7 +77,7 @@ import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import type {MotionCurve} from '../motion/animator';
 import {resolveMotion} from '../motion/resolveMotion';
 import {solveSpring, toSpring, type SpringCurve} from '../motion/spring';
-import {list} from '../motion/uikit/list';
+import {list, registerListTable} from '../motion/uikit/list';
 import {
   animateRow,
   contentBelow,
@@ -83,9 +87,10 @@ import {
   presentation,
   releaseMotion,
   springHome,
+  stopRow,
 } from './rowMotion';
 import {observeResize} from './sharedResizeObserver';
-import {useMotionPresentation} from './touchPresentation';
+import {useTouchPresentation} from './touchPresentation';
 
 const SPRING = list.update.tableSpring;
 
@@ -145,6 +150,28 @@ interface Layout {
 }
 
 /**
+ * Writes what the Web Animations running on `row` and its parts present
+ * (a swipe's travel, on the compositor) as inline styles. A removed row is
+ * detached from the document, which drops those animations, and the
+ * removal's collapse re-inserts it: without this it would show its resting
+ * state for the length of the collapse. Animations on pseudo-elements, or
+ * that cannot write their values, are left alone.
+ */
+export function keepPresentation(row: HTMLElement): void {
+  if (typeof row.getAnimations !== 'function') {
+    return;
+  }
+  for (const animation of row.getAnimations({subtree: true})) {
+    try {
+      animation.commitStyles();
+    } catch {
+      // A pseudo-element's or an unrendered target's animation: nothing to
+      // keep.
+    }
+  }
+}
+
+/**
  * Puts a removed row back for its exit: inside a clipping box at its old
  * place (`box`, inside the list) spanning the list's content box, so the row
  * lays out inside it as it did in the list, before `next` (the first row that
@@ -190,6 +217,15 @@ function ghostOf(
     ghost.append(tail);
   }
   element.insertBefore(ghost, next?.parentElement === element ? next : null);
+  // The row's parts show what `keepPresentation` wrote as it left. Any
+  // animation they still carry applies again now that they are back in the
+  // document (a detached element reports none), and would fight that: stop
+  // it.
+  if (typeof row.getAnimations === 'function') {
+    for (const animation of row.getAnimations({subtree: true})) {
+      animation.cancel();
+    }
+  }
   return ghost;
 }
 
@@ -306,16 +342,18 @@ export function useListUpdateMotion(
   enabled: boolean,
   followingContent: 'moves' | 'stays' = 'moves',
 ): void {
-  const animates = useMotionPresentation() === 'uikit' && enabled;
+  const animates = useTouchPresentation().isTouch && enabled;
   /**
    * The rows and their layout boxes after the previous commit, or after the
    * last resize of the list since.
    */
   const layoutRef = useRef<Layout | null>(null);
+  /** The removed rows' copies still collapsing, each with its row. */
+  const ghostsRef = useRef(new Map<HTMLElement, HTMLElement>());
 
   useIsomorphicLayoutEffect(() => {
     const element = listRef.current;
-    // Motion off (no `hasAnimatedChanges`, or outside the iOS idiom): read
+    // Motion off (no `hasAnimatedChanges`, or a mouse): read
     // nothing at all. The first commit after it turns on only records.
     if (element == null || !animates) {
       layoutRef.current = null;
@@ -330,6 +368,8 @@ export function useListUpdateMotion(
     if (before == null || element.hasAttribute('data-astryx-reordering')) {
       return;
     }
+    // Its springs are the list table's roles, resolved under the theme.
+    registerListTable();
     const at = motionNow();
     const slides: Slide[] = [];
     const entering: HTMLElement[] = [];
@@ -406,6 +446,7 @@ export function useListUpdateMotion(
     // Removed rows collapse in place on the slides' spring, the row below
     // each glued to its bottom edge (UIKit's deleteRows).
     let removedAbove = 0;
+    const ghosts = ghostsRef.current;
     for (const [index, row] of before.rows.entries()) {
       const box = before.boxes.get(row);
       if (row.isConnected || box == null) {
@@ -426,9 +467,12 @@ export function useListUpdateMotion(
       // the start of all of them, so the edges meet on every frame. Under
       // reduced motion the removed row fades out where it is instead.
       void animateRow(row, {y: box.height}, SPRING, {crossfadeAs: 'exit'});
+      // The copy leaves when its collapse ends (arrival or interruption).
+      ghosts.set(ghost, row);
       void animateRow(ghost, {y: -(box.height + lift)}, SPRING, {
         crossfadeAs: 'exit',
       }).finished.then(() => {
+        ghosts.delete(ghost);
         ghost.remove();
       });
     }
@@ -447,6 +491,25 @@ export function useListUpdateMotion(
       });
     }
   });
+
+  // External system (`architecture:react-component-runtime` INV3): the
+  // removed rows' copies this hook put in the list, DOM outside React. When
+  // the motion stops owning the list (hasAnimatedChanges off, a mouse, an
+  // unmount), each leaves at once with its motion stopped.
+  useIsomorphicLayoutEffect(() => {
+    if (!animates) {
+      return;
+    }
+    const ghosts = ghostsRef.current;
+    return () => {
+      for (const [ghost, row] of ghosts) {
+        stopRow(row, 'translate');
+        stopRow(ghost, 'translate', 'opacity');
+        ghost.remove();
+      }
+      ghosts.clear();
+    };
+  }, [animates]);
 
   // Layout that changes with no commit (a web font arriving, a rotation that
   // rewraps rows, a stylesheet or theme changing row heights, a row resizing

@@ -30,7 +30,10 @@ import {
 } from './ListContext';
 import {mergeProps} from '../utils';
 import {useMergedRefs} from '../hooks/useMergedRefs';
-import {useListUpdateMotion} from '../utils/useListUpdateMotion';
+import {
+  keepPresentation,
+  useListUpdateMotion,
+} from '../utils/useListUpdateMotion';
 import {themeProps} from '../utils/themeProps';
 import {useDevWarning} from '../hooks/useDevWarning';
 
@@ -64,14 +67,14 @@ export interface ListProps extends BaseProps<
   density?: ListDensity;
 
   /**
-   * On an iPhone or iPad under a finger, animate the list's changes the way
-   * an iOS table does: when rows are inserted, removed or reordered, the rows
+   * Under a finger (iOS and Android alike), animate the list's changes the
+   * way an iOS table does: when rows are inserted, removed or reordered, the rows
    * that stay slide from where they were to where they are and new rows fade
    * in once the rows sliding past have cleared them, on UIKit's table update
    * spring. A row that crosses rows moving the other way rides above them
    * with the surface color behind it. A removed row collapses in place, a
    * swiped one with its action showing, while the rows below close its gap.
-   * Off by default; elsewhere (another touch screen, a mouse) nothing moves.
+   * Off by default; with a mouse nothing moves.
    * @default false
    */
   hasAnimatedChanges?: boolean;
@@ -279,8 +282,14 @@ export function List({
   const reachesContainerPadding = edge === 'outset' || edge === 'bleed';
 
   const contextValue = useMemo(
-    () => ({density, hasDividers, edge, listStyle}),
-    [density, hasDividers, edge, listStyle],
+    () => ({
+      density,
+      hasDividers,
+      edge,
+      listStyle,
+      keepRowPresentation: hasAnimatedChanges ? keepPresentation : undefined,
+    }),
+    [density, hasDividers, edge, listStyle, hasAnimatedChanges],
   );
 
   const listElement = (
