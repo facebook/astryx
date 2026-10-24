@@ -3865,6 +3865,11 @@
       "aliases": []
     },
     {
+      "name": "hook-use-list-reorder",
+      "path": "hooks/use-list-reorder",
+      "aliases": []
+    },
+    {
       "name": "hook-use-locale",
       "path": "hooks/use-locale",
       "aliases": []

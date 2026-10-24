@@ -10,8 +10,9 @@
  * @output `ListReorderHandle`: the trailing handle of a reorderable List row,
  *   a button that drags its row (held still for a moment by a finger, at
  *   once by a mouse) and moves it with the arrow keys
- * @position Internal to List; ListItem renders it at the end of each row of
- *   a List with `onReorder`
+ * @position ListItem renders it at the end of each row of a List with
+ *   `onReorder`; also exported, experimental, from
+ *   `@astryxdesign/core/List/experimental` for rows that are not ListItems
  *
  * UIKit's reorder control (iOS 26.2, measured): the three gray lines at the
  * trailing edge of a row in edit mode. A finger held still on it for the
@@ -184,6 +185,7 @@ function useHandleGestures(
   );
 }
 
+/** @experimental */
 export interface ListReorderHandleProps {
   /** The row's label: a string names the handle after it. */
   readonly label: ReactNode;
@@ -193,22 +195,38 @@ export interface ListReorderHandleProps {
    * (spec:AST-085).
    */
   readonly isDisabled?: boolean;
+  /**
+   * The handle's whole accessible name, for a row whose label does not name
+   * it (a record of fields: "Reorder guest 2"). Replaces "Reorder {label}".
+   */
+  readonly 'aria-label'?: string;
 }
 
 /**
- * The reorder handle of a List row. Renders nothing outside a List with
- * `onReorder`.
+ * The reorder handle of a list row. Renders nothing outside a reorder
+ * session (`ListReorderContext` with `useListReorder`'s value).
+ * @experimental
  */
 export function ListReorderHandle({
   label,
   isDisabled = false,
+  'aria-label': ariaLabel,
 }: ListReorderHandleProps) {
   const context = use(ListReorderContext);
   const ref = useRef<HTMLButtonElement>(null);
   const t = useTranslator();
   const controller = context?.controller;
   useHandleGestures(ref, controller, isDisabled);
-  const named = typeof label === 'string' || typeof label === 'number';
+  const labelText =
+    typeof label === 'string' || typeof label === 'number'
+      ? String(label)
+      : null;
+  const name =
+    ariaLabel ??
+    (labelText == null
+      ? undefined
+      : t('@astryx.list.reorderHandle', {label: labelText}));
+  const named = name != null;
   // A row without a text label is named after its place, read from the DOM
   // after each commit (the row does not know its index).
   useIsomorphicLayoutEffect(() => {
@@ -235,11 +253,7 @@ export function ListReorderHandle({
       // The handle takes its own press, so the row does not highlight under
       // it (it paints nothing itself).
       data-astryx-pressable=""
-      aria-label={
-        named
-          ? t('@astryx.list.reorderHandle', {label: String(label)})
-          : undefined
-      }
+      aria-label={name}
       aria-describedby={context.hintId}
       aria-disabled={isDisabled || undefined}
       onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {
