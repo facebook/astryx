@@ -29,9 +29,11 @@ import {checkboxRowPressScope} from '../CheckboxInput/checkboxRowPress.markers.s
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
 import {
   hasPressedArm,
-  hasReleaseFade,
   readsPressStrength,
+  showsLayerPress,
 } from '../__tests__/pressState';
+import {readIndicatorPressLayer} from '../__tests__/indicatorPressLayer';
+import {pressLayerConsts} from '../utils/pressLayer.stylex';
 
 // FieldStatus announces status messages through the persistent useAnnounce
 // singletons; remove them between tests so role/aria-live queries in this
@@ -1212,14 +1214,20 @@ describe('CheckboxListItem press surface', () => {
       expect(row).toHaveAttribute('data-astryx-pressable');
       expect(row.querySelectorAll('[data-astryx-pressable]')).toHaveLength(0);
       expect(control).not.toHaveAttribute('data-astryx-pressable');
-      // The row carries the row press scope, so the box paints from the
-      // row's press at the row's strength, and the row runs the release.
+      // The row carries the row press scope, so the layer over the box
+      // paints the row's press at full strength and releases it by its own
+      // opacity on the row's deselect clock, beside the row's own press
+      // layer, both on the compositor.
       expect(classesOf(row)).toContain(rowScopeClass);
-      expect(readsPressStrength(wrapper, '[data-astryx-press="on"]')).toBe(
-        true,
-      );
-      expect(readsPressStrength(wrapper)).toBe(true);
-      expect(hasReleaseFade(row)).toBe(true);
+      expect(readIndicatorPressLayer(wrapper, rowScopeClass)).toEqual({
+        paintsOn: true,
+        paintsFading: true,
+        releases: true,
+        releaseMs: [pressLayerConsts.cellReleaseMs],
+        fillsBoth: true,
+      });
+      expect(readsPressStrength(wrapper)).toBe(false);
+      expect(showsLayerPress(row)).toBe(true);
       // A mouse's press and hover stay the checkbox's own.
       expect(classesOf(control)).toContain(hoverScopeClass);
       expect(classesOf(row)).not.toContain(hoverScopeClass);

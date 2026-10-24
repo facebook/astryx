@@ -17,9 +17,13 @@ import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   hasPressedArm,
-  hasReleaseFade,
   readsPressStrength,
+  rulesDeclaredFor,
 } from '../__tests__/pressState';
+import {readIndicatorPressLayer} from '../__tests__/indicatorPressLayer';
+import * as stylex from '@stylexjs/stylex';
+import {indicatorScope} from '../Indicator/indicator.markers.stylex';
+import {pressLayerConsts} from '../utils/pressLayer.stylex';
 import {RadioList} from './RadioList';
 import {RadioListItem} from './RadioListItem';
 import {getForcedColorsRules} from '../__tests__/forcedColors';
@@ -914,7 +918,7 @@ describe('pressed state', () => {
     expect(hasPressedArm(wrapper)).toBe(false);
   });
 
-  it('fades the touch press out from the row, with the overlay reading its strength', () => {
+  it('paints the touch press on the circle’s own layer and releases it on the row’s clock', () => {
     const {container} = render(
       <RadioList label="Plan" value="a" onChange={() => {}}>
         <RadioListItem label="Option A" value="a" />
@@ -927,14 +931,32 @@ describe('pressed state', () => {
     if (wrapper == null || row == null) {
       throw new Error('the radio has no pressable row or indicator wrapper');
     }
-    // The controller writes the row; the row owns the strength and its
-    // release, and the owner-drawn layer over the circle paints the pressed
-    // token at that strength on both touch arms.
-    expect(hasReleaseFade(row)).toBe(true);
-    expect(readsPressStrength(wrapper, '[data-astryx-press="on"]')).toBe(true);
-    expect(readsPressStrength(wrapper)).toBe(true);
+    // The controller writes the row (a cell); the layer over the circle
+    // paints the pressed token at full strength and fades by its own opacity
+    // on the row's deselect clock, on the compositor.
+    expect(
+      readIndicatorPressLayer(
+        wrapper,
+        stylex.props(indicatorScope).className ?? '',
+      ),
+    ).toEqual({
+      paintsOn: true,
+      paintsFading: true,
+      releases: true,
+      releaseMs: [pressLayerConsts.cellReleaseMs],
+      fillsBoth: true,
+    });
+    expect(readsPressStrength(wrapper)).toBe(false);
     // The row itself paints nothing under a finger, as under a mouse: only
-    // the circle answers.
+    // the circle answers. Neither the overlay's image nor the row's press
+    // layer (Item's `::before`, removed here) shows.
     expect(readsPressStrength(row, '[data-astryx-press="on"]')).toBe(false);
+    expect(
+      rulesDeclaredFor(row).some(
+        rule =>
+          rule.slice(0, rule.indexOf('{')).includes('::before') &&
+          /content:\s*none/.test(rule),
+      ),
+    ).toBe(true);
   });
 });
