@@ -89,9 +89,17 @@ const styles = stylex.create({
     },
     opacity: {
       default: 0.25,
+      // Under a finger the placeholder rests at the pulse's top step. SwiftUI's
+      // placeholder (`.redacted(reason: .placeholder)`, measured on the iOS
+      // 26.2 simulator) is the label color at about 16%, #D6D6D6 on white:
+      // 1.45:1 against the page. With the default light skeleton color the
+      // top step is 1.46:1, where the 0.25 rest would be 1.1:1, barely there
+      // on a phone. Themes keep their own skeleton colors.
+      '@media (pointer: coarse)': 0.925,
       // The resting 0.25 opacity would render GrayText nearly invisible on
       // Canvas; full opacity keeps the static placeholder perceivable (the
-      // fade animation still pulses when motion is allowed).
+      // fade animation still pulses when motion is allowed). Listed last so
+      // it wins under a finger too.
       '@media (forced-colors: active)': 1,
     },
   },
@@ -100,10 +108,14 @@ const styles = stylex.create({
     animationDuration: durationVars['--duration-medium-max'],
     animationIterationCount: 'infinite',
     // Disable the pulse under reduced-motion; the static placeholder still
-    // reads as loading (complex-20).
+    // reads as loading (complex-20). Under a finger it is static too, as
+    // SwiftUI's placeholder (`.redacted(reason: .placeholder)`) is, measured
+    // still in light, dark and Reduce Motion: it shows the shape of what is
+    // coming without moving.
     animationName: {
       default: skeletonFade,
       '@media (prefers-reduced-motion: reduce)': 'none',
+      '@media (pointer: coarse)': 'none',
     },
     // Linear between the keyframes' holds; see skeletonFade.
     animationTimingFunction: 'linear',

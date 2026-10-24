@@ -2313,6 +2313,16 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+      # Under a finger a Skeleton rests still, as SwiftUI's placeholder does,
+      # while a mouse keeps its pulse. jsdom cannot match a pointer media
+      # query or run an animation, so only a real engine shows which applies.
+      - name: Run Skeleton touch contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/Skeleton/__tests__/SkeletonTouch.a11y.chromium.spec.ts \
+            --project chromium \
+            --output skeleton-touch-output
+
       # The carousel contract's collection and slide names, off-screen slide
       # exposure, scroll-area keyboard entry and exit, and control focus are
       # accessibility-tree and engine facts that jsdom cannot observe. Run the
