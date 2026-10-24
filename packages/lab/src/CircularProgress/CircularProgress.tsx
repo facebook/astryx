@@ -209,7 +209,8 @@ const styles = stylex.create({
   //
   // The theme's duration and easing still time a change: they are declared
   // here and read back when the value changes (`transition-property: none`,
-  // so nothing transitions on its own).
+  // so nothing transitions on its own). Under reduced motion the duration is
+  // 0 s, so a new value shows at once, as ProgressBar's fill does.
   fill: {
     position: 'absolute',
     inset: 0,
@@ -217,7 +218,10 @@ const styles = stylex.create({
     overflow: 'hidden',
     pointerEvents: 'none',
     transitionProperty: 'none',
-    transitionDuration: durationVars['--duration-medium'],
+    transitionDuration: {
+      default: durationVars['--duration-medium'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   fillHalf: {
@@ -576,7 +580,16 @@ export function CircularProgress({
     const previous = shown.current;
     shown.current = percentage;
     const running = motion.current;
-    if (previous === percentage || isIndeterminate) {
+    if (isIndeterminate) {
+      // The determinate layers are about to unmount: a change running on
+      // them stops here, and a return to a value starts from rest.
+      for (const animation of running?.animations ?? []) {
+        animation.cancel();
+      }
+      motion.current = null;
+      return;
+    }
+    if (previous === percentage) {
       return;
     }
     const fill = fillRef.current;
