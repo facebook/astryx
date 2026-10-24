@@ -9,11 +9,15 @@ import Testing
 
 @Test func theLoadingMessageIsLocalizedFromCoresCatalog() throws {
   func message(in locale: String) throws -> String {
-    let path = try #require(AstryxStrings.resourceBundle.path(forResource: locale, ofType: "lproj"))
+    // SwiftPM may change a localization folder's case, so match it loosely.
+    let resources = AstryxStrings.resourceBundle
+    let name = try #require(resources.localizations.first { $0.lowercased() == locale.lowercased() })
+    let path = try #require(resources.path(forResource: name, ofType: "lproj"))
     let bundle = try #require(Bundle(path: path))
     return bundle.localizedString(forKey: "@astryx.button.loading", value: nil, table: nil)
   }
   #expect(try message(in: "en") == "Loading")
-  #expect(try message(in: "de-DE") == "Wird geladen")
-  #expect(try message(in: "ja-JP") != "Loading")
+  #expect(try message(in: "de") == "Wird geladen")
+  #expect(try message(in: "pt-BR") == "Carregando")
+  #expect(try message(in: "ja") != "Loading")
 }

@@ -14,10 +14,17 @@ describe('swift-ios localized strings', () => {
     expect(files['en.lproj/Localizable.strings']).toContain(
       '"@astryx.button.loading" = "Loading";',
     );
-    expect(files['de-DE.lproj/Localizable.strings']).toContain(
+    expect(files['de.lproj/Localizable.strings']).toContain(
       '"@astryx.button.loading" = "Wird geladen";',
     );
-    expect(Object.keys(files)).toContain('zh-Hans.lproj/Localizable.strings');
+    expect(Object.keys(files)).toEqual(
+      expect.arrayContaining([
+        'pt-BR.lproj/Localizable.strings',
+        'pt-PT.lproj/Localizable.strings',
+        'zh-Hans.lproj/Localizable.strings',
+        'nb.lproj/Localizable.strings',
+      ]),
+    );
     expect(Object.keys(files).some(name => name.startsWith('pseudo'))).toBe(
       false,
     );
