@@ -129,6 +129,117 @@ const translateX = async (card: Locator) =>
 const card = (page: Page, key: string) =>
   page.locator(`[data-navigation-screen="${key}"]`);
 
+/** One frame of `traceBars`: each screen's card and bar x, the back button. */
+interface BarFrame {
+  t: number;
+  cards: Record<string, number>;
+  bars: Record<string, number>;
+  /** Effective opacity (own times every ancestor's) of the back button. */
+  back: {platter: number; chevron: number} | null;
+}
+
+/**
+ * Starts sampling, every frame, each card's and bar's x relative to the
+ * stack and the back button's effective opacities; the returned function
+ * stops and returns them.
+ */
+async function traceBars(page: Page): Promise<() => Promise<BarFrame[]>> {
+  await page.evaluate(() => {
+    const w = window as unknown as {__bars: unknown[]; __barsStop: boolean};
+    w.__bars = [];
+    w.__barsStop = false;
+    const stack = document.querySelector('[data-testid="navigation-stack"]');
+    const effective = (element: Element) => {
+      let opacity = 1;
+      for (
+        let node: Element | null = element;
+        node != null && node !== document.documentElement;
+        node = node.parentElement
+      ) {
+        opacity *= Number(getComputedStyle(node).opacity);
+      }
+      return opacity;
+    };
+    const t0 = performance.now();
+    const tick = () => {
+      const left = stack?.getBoundingClientRect().left ?? 0;
+      const read = (selector: string, attribute: string) => {
+        const out: Record<string, number> = {};
+        for (const element of document.querySelectorAll<HTMLElement>(
+          selector,
+        )) {
+          const key = element.getAttribute(attribute);
+          if (key != null) {
+            out[key] = element.getBoundingClientRect().left - left;
+          }
+        }
+        return out;
+      };
+      const button = document.querySelector('[data-navigation-back]');
+      const chevron = button?.firstElementChild ?? null;
+      w.__bars.push({
+        t: performance.now() - t0,
+        cards: read('[data-navigation-screen]', 'data-navigation-screen'),
+        bars: read('[data-navigation-bar]', 'data-navigation-bar'),
+        back:
+          button == null || chevron == null
+            ? null
+            : {platter: effective(button), chevron: effective(chevron)},
+      });
+      if (!w.__barsStop) {
+        requestAnimationFrame(tick);
+      }
+    };
+    requestAnimationFrame(tick);
+  });
+  return async () =>
+    page.evaluate(() => {
+      const w = window as unknown as {__bars: unknown[]; __barsStop: boolean};
+      w.__barsStop = true;
+      return w.__bars;
+    }) as Promise<BarFrame[]>;
+}
+
+/** The first frame at which `key`'s card has left where it started. */
+const firstMove = (frames: BarFrame[], key: string) => {
+  const start = frames.find(f => f.cards[key] != null)?.cards[key];
+  return frames.find(
+    f => f.cards[key] != null && Math.abs(f.cards[key] - (start ?? 0)) > 0.5,
+  );
+};
+
+/**
+ * The time (ms) at which the screens' push or pop spring (critically damped,
+ * 0.3 s, starting at navigation.pushVelocity widths/s) reaches `progress`:
+ * the screens' own clock, read from where a card is, so a check keyed to it
+ * holds however late an engine shows the first frame.
+ */
+const screensClock = (progress: number) => {
+  const omega = (2 * Math.PI) / 0.3;
+  const at = (s: number) =>
+    1 - (1 + (omega - 8.773) * s) * Math.exp(-omega * s);
+  let lo = 0;
+  let hi = 2;
+  for (let i = 0; i < 50; i++) {
+    const mid = (lo + hi) / 2;
+    if (at(mid) < progress) {
+      lo = mid;
+    } else {
+      hi = mid;
+    }
+  }
+  return ((lo + hi) / 2) * 1000;
+};
+
+/** Critically damped from rest: progress of a spring of `response` s. */
+const crit = (response: number, ms: number) => {
+  if (ms <= 0) {
+    return 0;
+  }
+  const u = ((2 * Math.PI) / response) * (ms / 1000);
+  return 1 - (1 + u) * Math.exp(-u);
+};
+
 const rowCenter = async (page: Page, name: string) => {
   const box = await page.getByRole('button', {name}).first().boundingBox();
   if (box == null) {
@@ -203,51 +314,45 @@ test('a push follows UIKit’s push spring, the card underneath at 0.3 of its sp
   expect(samples.at(-1)?.top ?? Infinity).toBeLessThan(0.5);
 });
 
-test('a push’s bar: the new title appears in place, the covered one slides away, the chevron fades in', async ({
+test('a push’s bar: the new bar slides in with its screen, the covered one rides its parallax, the chevron fades in a beat later', async ({
   page,
 }) => {
   const {driver, width} = await openStack(page, 'settings');
+  const stop = await traceBars(page);
   await driver.tap(await rowCenter(page, 'General'));
-  const top = card(page, 'screen-General');
-  await waitForAnimation(top);
-  await holdAnimations(page);
-  // Critically damped from rest (springs.navigationCoveredTitle 0.178 s,
-  // springs.navigationBackButton 0.4 s), fitted to iOS 26.2's frames.
-  const crit = (response: number, ms: number) => {
-    const u = ((2 * Math.PI) / response) * (ms / 1000);
-    return 1 - (1 + u) * Math.exp(-u);
-  };
-  for (const t of [33.3, 100, 200]) {
-    const read = await page.evaluate(ms => {
-      const held =
-        (window as unknown as {__harnessHeld?: Animation[]}).__harnessHeld ??
-        [];
-      for (const animation of held) {
-        const end = Number(
-          animation.effect?.getComputedTiming().endTime ?? Infinity,
-        );
-        animation.currentTime = Math.min(ms, end - 0.5);
-      }
-      const x = (el: Element | null) => {
-        const value = el == null ? 'none' : getComputedStyle(el).translate;
-        return value === 'none' ? 0 : parseFloat(value);
-      };
-      const bar = (key: string) =>
-        document.querySelector(`[data-navigation-bar="${key}"]`);
-      return {
-        topTitle: x(bar('screen-General')?.querySelector('h2') ?? null),
-        underTitle: x(bar('root')?.querySelector('h2') ?? null),
-        back: Number(
-          getComputedStyle(bar('screen-General')?.firstElementChild as Element)
-            .opacity,
-        ),
-      };
-    }, t);
-    expect(read.topTitle).toBe(0);
-    expect(read.underTitle).toBeCloseTo(-0.3 * width * crit(0.178, t), 0);
-    expect(Math.abs(read.back - crit(0.4, t))).toBeLessThan(0.03);
+  await page.waitForTimeout(900);
+  const frames = await stop();
+  const start = firstMove(frames, 'screen-General');
+  expect(start).toBeDefined();
+  const during = frames.filter(
+    f => f.t >= (start?.t ?? 0) && f.cards['screen-General'] > 0.5,
+  );
+  expect(during.length).toBeGreaterThan(5);
+  for (const f of during) {
+    // UIKit's bar copy is part of its screen: it moves with the card (one
+    // clock and spring; within 1 % of the width, as engines sample rects).
+    expect(
+      Math.abs(f.bars['screen-General'] - f.cards['screen-General']),
+      JSON.stringify(f),
+    ).toBeLessThan(width * 0.01);
+    expect(
+      Math.abs(f.bars.root - f.cards.root),
+      JSON.stringify(f),
+    ).toBeLessThan(width * 0.01);
+    // The glass platter is there from the first frame.
+    expect(f.back?.platter ?? 0, JSON.stringify(f)).toBeGreaterThan(0.99);
   }
-  await releaseAnimations(page, {finish: true});
+  // The chevron (springs.navigationBackButton 0.4 s) starts 60 ms after the
+  // screens start moving (navigation.backChevronPushDelayMs), on their
+  // clock: read it from where the pushed card is.
+  for (const f of during) {
+    const ms = screensClock(1 - f.cards['screen-General'] / width);
+    const expected = crit(0.4, ms - 60);
+    expect(
+      Math.abs((f.back?.chevron ?? 0) - expected),
+      JSON.stringify({ms: Math.round(ms), ...f.back, expected}),
+    ).toBeLessThan(0.1);
+  }
 });
 
 test('the back swipe from the leading edge tracks the finger and pops past half', async ({
@@ -466,7 +571,7 @@ test('a push keeps advancing every frame while the main thread is blocked', asyn
   expect(proof.longestStallMs).toBeLessThan(40);
 });
 
-test('the covered title is removed on time while the main thread is blocked', async ({
+test('the incoming bar covers the old title while the main thread is blocked', async ({
   page,
   browserName,
 }) => {
@@ -475,9 +580,8 @@ test('the covered title is removed on time while the main thread is blocked', as
     'screencast frame evidence is Chromium-only in Playwright (WebKit: the iOS simulator rig)',
   );
   const {driver} = await openStack(page, 'settings');
-  // The root's bar title slides away under a push and is removed 0.54 s in
-  // (navigation.coveredTitleRemovedMs); a marker at its trailing end (clear
-  // of the pushed screen's back button) goes with it.
+  // A marker at the trailing end of the root's title: the pushed screen's
+  // opaque bar slides over it on the compositor.
   await page.locator('[data-navigation-bar="root"] h2').evaluate(title => {
     const element = title as HTMLElement;
     element.style.position = 'relative';
@@ -489,35 +593,21 @@ test('the covered title is removed on time while the main thread is blocked', as
   });
   const cast = await startScreencast(page);
   await driver.tap(await rowCenter(page, 'General'));
-  const [push] = await waitForAnimation(card(page, 'screen-General'), {
-    minProgressMs: 16,
-  });
-  // Blocked well past the removal: the removal must not wait for it.
+  await waitForAnimation(card(page, 'screen-General'), {minProgressMs: 16});
   const block = await blockMainThread(page, 900);
   await page.waitForTimeout(150);
   const frames = await cast.stop();
   const tracked = await trackMarker(page, frames);
-  const removeAt = push.from + 540;
-  expect(block.to).toBeGreaterThan(removeAt + 150);
-  const before = tracked.filter(
-    f => f.t > push.from + 50 && f.t < removeAt - 50,
-  );
-  expect(before.length).toBeGreaterThan(3);
-  expect(
-    before.every(f => f.box != null),
-    JSON.stringify(
-      before.map(f => [Math.round(f.t - push.from), f.box?.x ?? null]),
-    ),
-  ).toBe(true);
-  // The screencast sends a frame only when the screen changes, so the last
-  // frame before the block ends is the screen as the block leaves it: it
-  // must come from after the removal and show no title.
-  const last = tracked.filter(f => f.t < block.to - 20).at(-1);
   const trace = JSON.stringify(
-    tracked.map(f => [Math.round(f.t - push.from), f.box?.x ?? null]),
+    tracked.map(f => [Math.round(f.t - block.from), f.box?.x ?? null]),
   );
-  expect(last?.box ?? null, trace).toBeNull();
-  expect(last?.t ?? 0, trace).toBeGreaterThan(removeAt - 10);
+  const during = tracked.filter(f => f.t > block.from && f.t < block.to - 20);
+  // Seen while blocked, then covered before the block ends.
+  expect(
+    during.some(f => f.box != null),
+    trace,
+  ).toBe(true);
+  expect(during.at(-1)?.box ?? null, trace).toBeNull();
 });
 
 test('on Android the back swipes stay off: the system back owns both edges', async ({
@@ -552,6 +642,96 @@ test('on Android the back swipes stay off: the system back owns both edges', asy
   await expect(top).toHaveCount(0);
 });
 
+test.describe('the bars ride with their screens, as UIKit’s', () => {
+  test('a programmatic pop rides the revealed bar in from its parallax and the leaving one out', async ({
+    page,
+  }) => {
+    const {driver, width} = await openStack(page, 'settings');
+    await driver.tap(await rowCenter(page, 'General'));
+    await waitForRest(card(page, 'screen-General'));
+    const stop = await traceBars(page);
+    await page.locator('[data-navigation-back]').click();
+    await page.waitForTimeout(900);
+    const frames = await stop();
+    const moving = frames.filter(
+      f =>
+        f.cards['screen-General'] != null &&
+        f.cards['screen-General'] > 0.5 &&
+        f.cards.root < -0.5,
+    );
+    expect(moving.length).toBeGreaterThan(5);
+    for (const f of moving) {
+      expect(
+        Math.abs(f.bars['screen-General'] - f.cards['screen-General']),
+        JSON.stringify(f),
+      ).toBeLessThan(width * 0.01);
+      expect(
+        Math.abs(f.bars.root - f.cards.root),
+        JSON.stringify(f),
+      ).toBeLessThan(width * 0.01);
+      // The chevron fades out at once on the 0.4 s spring, on the screens'
+      // clock; the platter stays until the screen has left.
+      const ms = screensClock(f.cards['screen-General'] / width);
+      expect(f.back?.platter ?? 0, JSON.stringify(f)).toBeGreaterThan(0.99);
+      expect(
+        Math.abs((f.back?.chevron ?? 0) - (1 - crit(0.4, ms))),
+        JSON.stringify({ms: Math.round(ms), ...f.back}),
+      ).toBeLessThan(0.1);
+    }
+    expect(frames.at(-1)?.back ?? null).toBeNull();
+  });
+
+  test('a back swipe holds the revealed bar still while the top one follows the finger', async ({
+    page,
+  }) => {
+    const {driver, width, left} = await openStack(page, 'pushed');
+    const stop = await traceBars(page);
+    await driver.play(
+      drag(
+        {x: left + width * 0.3, y: 420},
+        {x: left + width * 0.7, y: 420},
+        {durationMs: 1000, restMs: 300},
+      ),
+    );
+    await page.waitForTimeout(1200);
+    const frames = await stop();
+    const swiping = frames.filter(f => (f.cards['screen-About'] ?? 0) > 0.5);
+    expect(swiping.length).toBeGreaterThan(10);
+    for (const f of swiping) {
+      expect(
+        Math.abs(f.bars['screen-About'] - f.cards['screen-About']),
+        JSON.stringify(f),
+      ).toBeLessThan(1);
+      // UIKit's revealed title stays centred while its screen slides in.
+      expect(
+        Math.abs(f.bars['screen-General']),
+        JSON.stringify(f),
+      ).toBeLessThan(0.5);
+      // The back button does not follow a finger: full opacity throughout.
+      expect(f.back?.chevron ?? 0, JSON.stringify(f)).toBeGreaterThan(0.99);
+    }
+  });
+
+  test('each bar is opaque and stacks over the one it covers', async ({
+    page,
+  }) => {
+    const {driver} = await openStack(page, 'settings');
+    await driver.tap(await rowCenter(page, 'General'));
+    await waitForRest(card(page, 'screen-General'));
+    const bars = await page.evaluate(() =>
+      [...document.querySelectorAll('[data-navigation-bar]')].map(bar => ({
+        key: bar.getAttribute('data-navigation-bar'),
+        background: getComputedStyle(bar).backgroundColor,
+      })),
+    );
+    expect(bars.map(bar => bar.key)).toEqual(['root', 'screen-General']);
+    for (const bar of bars) {
+      // An rgb() colour has no alpha; rgba(…, 0) would let the title show.
+      expect(bar.background, JSON.stringify(bar)).toMatch(/^rgb\(/);
+    }
+  });
+});
+
 test('a push does no Layout or Paint per frame', async ({
   page,
   browserName,
@@ -581,6 +761,40 @@ test('a push does no Layout or Paint per frame', async ({
 });
 
 test.describe('with Reduce Motion', () => {
+  test('a push never dims the covered screen', async ({page}) => {
+    await page.emulateMedia({reducedMotion: 'reduce'});
+    const {driver} = await openStack(page, 'settings');
+    const dimmed = await page.evaluate(() => {
+      const w = window as unknown as {__dim: number[]; __dimStop: boolean};
+      w.__dim = [];
+      w.__dimStop = false;
+      const dim = document.querySelector(
+        '[data-navigation-screen="root"]',
+      )?.lastElementChild;
+      const tick = () => {
+        if (dim != null) {
+          w.__dim.push(Number(getComputedStyle(dim).opacity));
+        }
+        if (!w.__dimStop) {
+          requestAnimationFrame(tick);
+        }
+      };
+      requestAnimationFrame(tick);
+      return dim != null;
+    });
+    expect(dimmed).toBe(true);
+    await driver.tap(await rowCenter(page, 'General'));
+    await page.waitForTimeout(800);
+    const samples = await page.evaluate(() => {
+      const w = window as unknown as {__dim: number[]; __dimStop: boolean};
+      w.__dimStop = true;
+      return w.__dim;
+    });
+    expect(samples.length).toBeGreaterThan(10);
+    // UIKit's cross-fade has no dimming: the 10 % shade belongs to the slide.
+    expect(Math.max(...samples), JSON.stringify(samples)).toBeLessThan(0.01);
+  });
+
   test('a push cross-fades in place instead of sliding', async ({page}) => {
     await page.emulateMedia({reducedMotion: 'reduce'});
     const {driver} = await openStack(page, 'settings');
