@@ -346,12 +346,46 @@ describe('Tokenizer', () => {
       expect(input).not.toHaveFocus();
     });
 
+    it('leaves the input unfocused after a pen removes a token with the keyboard down', () => {
+      const {input, remove, onChange} = renderPair();
+      fireEvent.pointerDown(remove, {pointerType: 'pen'});
+      act(() => remove.focus());
+      fireEvent.click(remove);
+      expect(onChange).toHaveBeenCalledWith([users[1]], {
+        item: users[0],
+        type: 'remove',
+      });
+      expect(input).not.toHaveFocus();
+    });
+
     it('keeps the input focused after a finger removes a token while typing', () => {
       const {input, remove} = renderPair();
       act(() => input.focus());
       fireEvent.pointerDown(remove, {pointerType: 'touch'});
+      // Chrome focuses the tapped button before the click.
+      act(() => remove.focus());
       fireEvent.click(remove);
       expect(input).toHaveFocus();
+    });
+
+    it('lets go of the tapped × before it unmounts, so the field blurs', () => {
+      const onBlur = vi.fn();
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[users[0], users[1]]}
+          onChange={vi.fn()}
+          onBlur={onBlur}
+        />,
+      );
+      const remove = screen.getByRole('button', {name: 'Remove Alice'});
+      fireEvent.pointerDown(remove, {pointerType: 'touch'});
+      // Chrome focuses the tapped button before the click.
+      act(() => remove.focus());
+      fireEvent.click(remove);
+      expect(onBlur).toHaveBeenCalled();
+      expect(document.activeElement).toBe(document.body);
     });
 
     it('focuses the input after a mouse removes a token', () => {

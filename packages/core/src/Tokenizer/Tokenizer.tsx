@@ -914,9 +914,26 @@ export function Tokenizer<T extends SearchableItem>({
       // focused still lands on the input.
       if (!isTouchPressWithKeyboardDown()) {
         inputRef.current?.focus();
+        return;
+      }
+      // Where the browser focused the pressed × (Chrome does on a tap), that
+      // button is about to unmount with its token, and an element removed
+      // while focused drops focus without a blur: the field would stay
+      // focused-within (an `unfocusedInline` field expanded) after a tap
+      // elsewhere. Let go of it first.
+      const active = inputRef.current?.ownerDocument.activeElement;
+      if (active instanceof HTMLElement && isFocusInTokenizer(active)) {
+        active.blur();
       }
     },
-    [value, onChange, announce, t, isTouchPressWithKeyboardDown],
+    [
+      value,
+      onChange,
+      announce,
+      t,
+      isTouchPressWithKeyboardDown,
+      isFocusInTokenizer,
+    ],
   );
 
   // Handle clearing all items
