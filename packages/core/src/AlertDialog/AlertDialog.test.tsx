@@ -38,7 +38,7 @@ function stubAlertDialogMedia({
     'matchMedia',
     vi.fn((query: string) => {
       let matches = false;
-      if (query.includes('max-width: 640px')) {
+      if (query.includes('width < 744px')) {
         matches = smallScreen;
       } else if (query.includes('pointer: coarse')) {
         matches = coarsePointer;
@@ -172,7 +172,9 @@ describe('AlertDialog', () => {
 
       // The layout reads the width alone. The pointer query only picks the
       // motion (UIKit's under a finger), never the order or the stacking.
-      expect(window.matchMedia).toHaveBeenCalledWith('(max-width: 640px)');
+      expect(window.matchMedia).toHaveBeenCalledWith(
+        '(width < 744px), (height < 500px)',
+      );
       expect(window.matchMedia).not.toHaveBeenCalledWith('(hover: none)');
       const dialog = screen.getByRole('alertdialog');
       const buttons = within(dialog).getAllByRole('button');
@@ -234,7 +236,9 @@ describe('AlertDialog', () => {
 
       // The layout reads the width alone. The pointer query only picks the
       // motion (UIKit's under a finger), never the order or the stacking.
-      expect(window.matchMedia).toHaveBeenCalledWith('(max-width: 640px)');
+      expect(window.matchMedia).toHaveBeenCalledWith(
+        '(width < 744px), (height < 500px)',
+      );
       expect(window.matchMedia).not.toHaveBeenCalledWith('(hover: none)');
       const dialog = screen.getByRole('alertdialog');
       const buttons = within(dialog).getAllByRole('button');
@@ -253,6 +257,47 @@ describe('AlertDialog', () => {
       }
     });
 
+    it('puts two short actions in a row on a compact screen, Cancel leading, as UIKit does', () => {
+      stubAlertDialogMedia({
+        smallScreen: true,
+        coarsePointer: true,
+        noHover: true,
+      });
+      // jsdom lays nothing out: a 338 px action row and 50 px labels.
+      vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(
+        function (this: HTMLElement) {
+          return this.querySelector(':scope > [data-astryx-alert-action]') !=
+            null
+            ? 338
+            : 0;
+        },
+      );
+      vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(
+        function (this: HTMLElement) {
+          const text = this.textContent ?? '';
+          return this.children.length === 0 &&
+            (text === 'Cancel' || text === 'Delete')
+            ? 50
+            : 0;
+        },
+      );
+      render(<AlertDialog {...defaultProps} />);
+
+      const dialog = screen.getByRole('alertdialog');
+      const buttons = within(dialog).getAllByRole('button');
+      // DOM and tab order are the visual order: Cancel leads the row.
+      expect(buttons.map(button => button.textContent)).toEqual([
+        'Cancel',
+        'Delete',
+      ]);
+      const footerStack = buttons[0].parentElement as HTMLElement;
+      expect(getComputedStyle(footerStack).flexDirection).toBe('row');
+      for (const button of buttons) {
+        expect(getComputedStyle(button).flexGrow).toBe('1');
+      }
+      vi.restoreAllMocks();
+    });
+
     it('uses the same stacked layout on a mobile touch screen', () => {
       stubAlertDialogMedia({
         smallScreen: true,
@@ -269,7 +314,9 @@ describe('AlertDialog', () => {
 
       // The layout reads the width alone. The pointer query only picks the
       // motion (UIKit's under a finger), never the order or the stacking.
-      expect(window.matchMedia).toHaveBeenCalledWith('(max-width: 640px)');
+      expect(window.matchMedia).toHaveBeenCalledWith(
+        '(width < 744px), (height < 500px)',
+      );
       expect(window.matchMedia).not.toHaveBeenCalledWith('(hover: none)');
       const dialog = screen.getByRole('alertdialog');
       const buttons = within(dialog).getAllByRole('button');

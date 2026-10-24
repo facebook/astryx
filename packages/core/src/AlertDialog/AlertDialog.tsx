@@ -48,14 +48,15 @@ import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
-import {useMediaQuery} from '../hooks';
 import {useActionGroupTracking} from '../hooks/useActionGroupTracking';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {alertController} from '../motion/uikit/alert';
-import {useMotionPresentation} from '../utils/touchPresentation';
+import {
+  useMotionPresentation,
+  useTouchPresentation,
+} from '../utils/touchPresentation';
+import {useAlertActionLayout} from './useAlertActionLayout';
 import {useAlertMotion} from './useAlertMotion';
-
-const SMALL_SCREEN_QUERY = '(max-width: 640px)';
 
 /** Marks the actions the touch tracking hit-tests. */
 const ACTION_ATTRIBUTE = 'data-astryx-alert-action';
@@ -89,6 +90,11 @@ const styles = stylex.create({
   },
   stackedAction: {
     width: '100%',
+  },
+  // A compact row: the two actions split it evenly, as UIKit's do.
+  sharedRowAction: {
+    flexGrow: 1,
+    flexBasis: 0,
   },
 });
 
@@ -209,10 +215,12 @@ export function AlertDialog({
   const cancelLabel = cancelLabelFromProps ?? t('@astryx.alertDialog.cancel');
   const titleId = useId();
   const descriptionId = useId();
-  // Width stays delegated to Dialog: this query exists only so AlertDialog can
-  // keep narrow visual, DOM, and tab order aligned for its destructive/cancel
-  // semantics without coupling action order to pointer or hover capability.
-  const isSmallScreen = useMediaQuery(SMALL_SCREEN_QUERY);
+  // Width stays delegated to Dialog. On a compact viewport the actions take
+  // UIKit's layout (useAlertActionLayout): a row, Cancel leading, when each
+  // label fits its half; a stack, Cancel at the bottom, when one does not.
+  // The order follows available size, never pointer or hover capability, and
+  // DOM and tab order always match the visual order.
+  const {isCompact} = useTouchPresentation();
 
   const handleCancel = useCallback(() => {
     onOpenChange(false);
@@ -243,6 +251,13 @@ export function AlertDialog({
     isEnabled: isTracking,
     manageStyle: false,
   });
+  const actionRowRef = useRef<HTMLElement>(null);
+  const isStacked =
+    useAlertActionLayout(actionRowRef, {
+      isCompact,
+      itemSelector: `[${ACTION_ATTRIBUTE}]`,
+      labels: [cancelLabel, actionLabel],
+    }) === 'stack';
   const actionTrackingProps = {
     [ACTION_ATTRIBUTE]: '',
     // Overrides Button's own marker for the document press controller, which
@@ -252,7 +267,7 @@ export function AlertDialog({
 
   const buttonActionStyle = [
     styles.action,
-    isSmallScreen && styles.stackedAction,
+    isCompact && (isStacked ? styles.stackedAction : styles.sharedRowAction),
   ];
   const cancelButton = (
     <Button
@@ -319,15 +334,16 @@ export function AlertDialog({
         footer={
           <LayoutFooter>
             {/* Generic Dialog footers should wrap, but their consumers own
-                action semantics and order. AlertDialog keeps this
-                destructive-above-Cancel narrow order because confirmation
-                actions have component-specific meaning here. */}
+                action semantics and order. A compact AlertDialog keeps UIKit's:
+                Cancel leading in a row, at the bottom of a stack, because
+                confirmation actions have component-specific meaning here. */}
             <Stack
-              direction={isSmallScreen ? 'vertical' : 'horizontal'}
+              ref={actionRowRef}
+              direction={isStacked ? 'vertical' : 'horizontal'}
               gap={2}
-              hAlign={isSmallScreen ? 'stretch' : 'end'}
-              wrap={isSmallScreen ? 'nowrap' : 'wrap'}>
-              {isSmallScreen
+              hAlign={isCompact ? 'stretch' : 'end'}
+              wrap={isCompact ? 'nowrap' : 'wrap'}>
+              {isStacked
                 ? [actionButton, cancelButton]
                 : [cancelButton, actionButton]}
             </Stack>
