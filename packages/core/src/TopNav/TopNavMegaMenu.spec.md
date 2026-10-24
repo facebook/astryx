@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-10-24
+approved_at: 2026-10-25
 owners: [cixzhang]
 review_triggers: [public-api, behavior, layout, accessibility]
 verified_by:
