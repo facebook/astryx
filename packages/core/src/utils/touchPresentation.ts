@@ -59,6 +59,7 @@ export const COMPACT_QUERY = '(width < 744px), (height < 500px)';
 export const COMPACT_TOUCH_QUERY =
   '(width < 744px) and (pointer: coarse), (height < 500px) and (pointer: coarse)';
 
+/** @experimental */
 export interface TouchPresentation {
   /** The primary pointer is coarse (a finger). */
   readonly isTouch: boolean;
@@ -74,6 +75,7 @@ export type MotionPresentation = 'uikit' | 'theme';
 /**
  * The touch presentation now. SSR-safe: hooks render the server default and
  * update after hydration.
+ * @experimental
  */
 export function useTouchPresentation(
   serverDefault: Partial<Omit<TouchPresentation, 'isCompactTouch'>> = {},
@@ -103,6 +105,7 @@ export function useMotionPresentation(
  * The touch presentation at this moment, for a decision taken once (a menu
  * deciding how it presents as it opens). Not touch and not compact where
  * there is no window.
+ * @experimental
  */
 export function readTouchPresentation(
   view: Window | null = typeof window === 'undefined' ? null : window,

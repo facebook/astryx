@@ -24,6 +24,10 @@
  *   there and must agree; uikit/uikit.test.ts checks it)
  */
 
+/**
+ * UIKit's press clocks, named curves and fixed durations.
+ * @experimental
+ */
 export const timing = {
   press: {
     /**

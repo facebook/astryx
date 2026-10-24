@@ -24,6 +24,10 @@
  * SYNC: When modified, update /packages/core/src/motion/MEASUREMENTS.md
  */
 
+/**
+ * UINavigationController's push, pop and interactive-pop values.
+ * @experimental
+ */
 export const navigation = {
   /**
    * The push and pop springs start moving at this many travels per second
