@@ -117,6 +117,42 @@ function translateY(element: HTMLElement): number {
   return parseFloat(parts[1] ?? '0');
 }
 
+/**
+ * A host whose glyph wrapper holds the drawing's two spoke layers, as
+ * RefreshControl's does.
+ */
+function LayeredRefreshable({
+  children,
+  ...options
+}: UseRefreshControlOptions & {children: ReactNode}) {
+  const control = useRefreshControl(options);
+  return (
+    <div
+      data-testid="refresh"
+      ref={control.contentRef}
+      aria-busy={control.isRefreshing || undefined}>
+      <div ref={control.indicatorRef} aria-hidden>
+        <span ref={control.spinnerRef}>
+          <span data-testid="reveal-layer" ref={control.revealLayerRef} />
+          <span data-testid="spin-layer" ref={control.spinLayerRef} />
+        </span>
+      </div>
+      <button type="button" onClick={control.refresh}>
+        Refresh
+      </button>
+      {children}
+    </div>
+  );
+}
+
+/** The two spoke layers' opacities, as the hook last wrote them. */
+function layers(): {reveal: string; spin: string} {
+  return {
+    reveal: screen.getByTestId('reveal-layer').style.opacity,
+    spin: screen.getByTestId('spin-layer').style.opacity,
+  };
+}
+
 function content(): HTMLElement {
   return screen.getByTestId('refresh');
 }
@@ -533,5 +569,58 @@ describe('useRefreshControl', () => {
     expect(scroller.style.overscrollBehaviorY).toBe('none');
     rerender(<Host hasControl={false} />);
     expect(scroller.style.overscrollBehaviorY).toBe('');
+  });
+  it('cross-fades the drawing\u2019s spoke layers at the trigger and resets them at the end', async () => {
+    let resolve: () => void = () => {};
+    render(
+      <LayeredRefreshable
+        onRefresh={() =>
+          new Promise<void>(done => {
+            resolve = done;
+          })
+        }>
+        <p>Inbox</p>
+      </LayeredRefreshable>,
+    );
+    pull(content(), [30, 30, 30, 30]);
+    // On the gradient spring (the animator lands it at once here): the
+    // revealed spokes out, the stepping gradient in.
+    expect(layers()).toEqual({reveal: '0', spin: '1'});
+    await act(async () => {
+      resolve();
+    });
+    expect(content()).not.toHaveAttribute('aria-busy');
+    // Once the end's slide has finished.
+    await waitFor(() => expect(layers()).toEqual({reveal: '1', spin: '0'}));
+  });
+
+  it('shows the gradient at once for a refresh begun without a pull', () => {
+    render(
+      <LayeredRefreshable onRefresh={() => new Promise<void>(() => {})}>
+        <p>Inbox</p>
+      </LayeredRefreshable>,
+    );
+    act(() => {
+      screen.getByRole('button', {name: 'Refresh'}).click();
+    });
+    expect(content()).toHaveAttribute('aria-busy', 'true');
+    expect(layers()).toEqual({reveal: '0', spin: '1'});
+  });
+
+  it('brings the revealed spokes back when a refresh ends under the finger', () => {
+    function Controlled({isRefreshing}: {isRefreshing: boolean}) {
+      return (
+        <LayeredRefreshable isRefreshing={isRefreshing} onRefresh={() => {}}>
+          <p>Inbox</p>
+        </LayeredRefreshable>
+      );
+    }
+    const {rerender} = render(<Controlled isRefreshing={false} />);
+    // A pull past the trigger, the finger still down.
+    pull(content(), [30, 30, 30, 30], false);
+    rerender(<Controlled isRefreshing />);
+    expect(layers()).toEqual({reveal: '0', spin: '1'});
+    rerender(<Controlled isRefreshing={false} />);
+    expect(layers()).toEqual({reveal: '1', spin: '0'});
   });
 });

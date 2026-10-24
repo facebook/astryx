@@ -21,7 +21,10 @@
  * spoke is its own layer holding its capsule already drawn at its angle, so
  * nothing is resampled at rest, and the spin is opacity steps keyed on the
  * indicator's `data-refresh-spinning` attribute: compositor animations that
- * keep turning while a script runs.
+ * keep turning while a script runs. The gradient's spring is the hook's: it
+ * cross-fades the two spoke layers (`revealLayerRef`, `spinLayerRef`) on the
+ * animator, so a theme that retunes `refreshControl.triggerGradientSpring`
+ * retunes it; Reduce Motion leaves the fade as it is (nothing travels).
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/lab/src/RefreshControl/RefreshControl.doc.mjs
@@ -223,61 +226,6 @@ const spinSpoke7 = stylex.keyframes({
     {opacity: 0.56},
 });
 
-// At the trigger the gradient springs in (refresh.ts
-// `triggerGradientSpring`, critically damped, k = 5): UIKit's per-spoke alpha
-// is (1 − g) + g × the stepping alpha, g the spring's progress. The uniform
-// spokes fade out by 1 − g while the stepping ones fade in by g, added with
-// `plus-lighter`, which sums the two exactly. g sampled every 0.2 s over the
-// spring's 4 s.
-// SYNC: RefreshControl.test.tsx checks these samples against the spring.
-const gradientIn = stylex.keyframes({
-  '0%': {opacity: 0},
-  '5%': {opacity: 0.0746},
-  '10%': {opacity: 0.2255},
-  '15%': {opacity: 0.3879},
-  '20%': {opacity: 0.5338},
-  '25%': {opacity: 0.6541},
-  '30%': {opacity: 0.7483},
-  '35%': {opacity: 0.8195},
-  '40%': {opacity: 0.8721},
-  '45%': {opacity: 0.9102},
-  '50%': {opacity: 0.9375},
-  '55%': {opacity: 0.9568},
-  '60%': {opacity: 0.9703},
-  '65%': {opacity: 0.9797},
-  '70%': {opacity: 0.9861},
-  '75%': {opacity: 0.9906},
-  '80%': {opacity: 0.9936},
-  '85%': {opacity: 0.9957},
-  '90%': {opacity: 0.9971},
-  '95%': {opacity: 0.9981},
-  '100%': {opacity: 1},
-});
-
-const uniformOut = stylex.keyframes({
-  '0%': {opacity: 1},
-  '5%': {opacity: 0.9254},
-  '10%': {opacity: 0.7745},
-  '15%': {opacity: 0.6121},
-  '20%': {opacity: 0.4662},
-  '25%': {opacity: 0.3459},
-  '30%': {opacity: 0.2517},
-  '35%': {opacity: 0.1805},
-  '40%': {opacity: 0.1279},
-  '45%': {opacity: 0.0898},
-  '50%': {opacity: 0.0625},
-  '55%': {opacity: 0.0432},
-  '60%': {opacity: 0.0297},
-  '65%': {opacity: 0.0203},
-  '70%': {opacity: 0.0139},
-  '75%': {opacity: 0.0094},
-  '80%': {opacity: 0.0064},
-  '85%': {opacity: 0.0043},
-  '90%': {opacity: 0.0029},
-  '95%': {opacity: 0.0019},
-  '100%': {opacity: 0},
-});
-
 const styles = stylex.create({
   root: {
     position: 'relative',
@@ -313,44 +261,24 @@ const styles = stylex.create({
     position: 'absolute',
     inset: 0,
   },
-  // The spokes the pull reveals; at the trigger they fade out as the
-  // stepping gradient springs in.
+  // The spokes the pull reveals. At the trigger the hook fades this layer
+  // out on the gradient spring as it fades the stepping layer in
+  // (`revealLayerRef`, `spinLayerRef`); UIKit's per-spoke alpha is
+  // (1 − g) + g × the stepping alpha, g the spring's progress, and
+  // `plus-lighter` sums the two layers exactly.
   uniformSet: {
-    opacity: {
-      default: 1,
-      [stylex.when.ancestor('[data-refresh-spinning]', refreshIndicatorScope)]:
-        0,
-    },
+    opacity: 1,
     willChange: 'opacity',
-    animationName: {
-      default: 'none',
-      [stylex.when.ancestor('[data-refresh-spinning]', refreshIndicatorScope)]:
-        uniformOut,
-    },
-    animationDuration: '4s',
-    animationTimingFunction: 'linear',
-    animationFillMode: 'both',
   },
   gradientSet: {
-    opacity: {
-      default: 0,
-      [stylex.when.ancestor('[data-refresh-spinning]', refreshIndicatorScope)]:
-        1,
-    },
+    opacity: 0,
     mixBlendMode: 'plus-lighter',
     willChange: 'opacity',
-    animationName: {
-      default: 'none',
-      [stylex.when.ancestor('[data-refresh-spinning]', refreshIndicatorScope)]:
-        gradientIn,
-    },
-    animationDuration: '4s',
-    animationTimingFunction: 'linear',
-    animationFillMode: 'both',
   },
-  // Each stepping spoke runs its own phase of the gradient while spinning.
-  // Eight turns of refresh.ts `spinMs` per iteration (StyleX needs the
-  // literal).
+  // Each stepping spoke runs its own phase of the gradient while spinning,
+  // eight turns per iteration: eight times the `refreshControl.spinMs`
+  // motion role (a theme that sets it writes the variable; otherwise the
+  // table's 1 s).
   spin0: {
     animationName: {
       default: 'none',
@@ -409,7 +337,8 @@ const styles = stylex.create({
   },
   spinTiming: {
     willChange: 'opacity',
-    animationDuration: '8000ms',
+    animationDuration:
+      'calc(8 * var(--motion-refresh-control-spin-ms, 1000ms))',
     animationIterationCount: 'infinite',
     animationTimingFunction: 'linear',
   },
@@ -554,10 +483,14 @@ export function RefreshControl({
           refreshIndicatorScope,
         )}>
         <span ref={control.spinnerRef} {...stylex.props(styles.glyph)}>
-          <span {...stylex.props(styles.spokeSet, styles.uniformSet)}>
+          <span
+            ref={control.revealLayerRef}
+            {...stylex.props(styles.spokeSet, styles.uniformSet)}>
             {revealed}
           </span>
-          <span {...stylex.props(styles.spokeSet, styles.gradientSet)}>
+          <span
+            ref={control.spinLayerRef}
+            {...stylex.props(styles.spokeSet, styles.gradientSet)}>
             {spinning}
           </span>
         </span>

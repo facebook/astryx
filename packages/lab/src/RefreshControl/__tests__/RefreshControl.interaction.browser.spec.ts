@@ -1032,29 +1032,43 @@ test('reduced motion leaves the drawing as it is (UIKit\u2019s reduced-motion re
   browserName,
 }) => {
   test.skip(browserName !== 'chromium', 'Chromium proof');
+  const read = async () => {
+    const {driver, content, start} = await openRefresh(page, undefined, {
+      refreshMs: '8000',
+    });
+    await driver.play(slowPull(start, 300, 200));
+    await expect.poll(() => isBusy(content)).toBe(true);
+    const glyph = content.locator(':scope > div > span').first();
+    return glyph.evaluate(element =>
+      element
+        .getAnimations({subtree: true})
+        .filter(a => (a.effect as KeyframeEffect).target !== element)
+        .map(a => ({
+          layer:
+            ((a.effect as KeyframeEffect).target as Element).parentElement ===
+            element,
+          duration: Math.round(Number(a.effect?.getTiming().duration)),
+          iterations: Number(a.effect?.getTiming().iterations),
+          state: a.playState,
+        })),
+    );
+  };
+  const normal = await read();
   await page.emulateMedia({reducedMotion: 'reduce'});
-  const {driver, content, start} = await openRefresh(page, undefined, {
-    refreshMs: '8000',
-  });
-  await driver.play(slowPull(start, 300, 200));
-  await expect.poll(() => isBusy(content)).toBe(true);
-  const glyph = content.locator(':scope > div > span').first();
-  const timings = await glyph.evaluate(element =>
-    element
-      .getAnimations({subtree: true})
-      .filter(a => (a.effect as KeyframeEffect).target !== element)
-      .map(a => ({
-        duration: Number(a.effect?.getTiming().duration),
-        iterations: Number(a.effect?.getTiming().iterations),
-        state: a.playState,
-      })),
-  );
-  // The gradient's two 4 s springs and the eight 8 s spin iterations, running.
-  expect(timings.filter(t => t.duration === 4000)).toHaveLength(2);
+  const reduced = await read();
+  // The gradient's two layers spring in on the same curve (nothing travels,
+  // so the animator plays the opacity spring as is), and the eight spokes
+  // step on their 8 s iterations.
+  const layers = (list: typeof normal) =>
+    list.filter(t => t.layer).map(t => t.duration);
+  expect(layers(reduced)).toHaveLength(2);
+  expect(layers(reduced)).toEqual(layers(normal));
   expect(
-    timings.filter(t => t.duration === 8000 && t.iterations === Infinity),
+    reduced.filter(
+      t => !t.layer && t.duration === 8000 && t.iterations === Infinity,
+    ),
   ).toHaveLength(8);
-  expect(timings.every(t => t.state === 'running')).toBe(true);
+  expect(reduced.every(t => t.state === 'running')).toBe(true);
 });
 
 test(

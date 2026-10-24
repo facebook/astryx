@@ -14,7 +14,15 @@
  */
 
 import {act, render, screen, waitFor} from '@testing-library/react';
-import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi,
+} from 'vitest';
 import {uikit} from '@astryxdesign/core/motion/experimental';
 import {RefreshControl} from './RefreshControl';
 
@@ -319,36 +327,59 @@ describe('RefreshControl indicator: UIRefreshControl\u2019s replicator', () => {
     });
     const css = allCss();
     expect(css).not.toMatch(/steps\(/);
+    // Eight turns per iteration: eight times the `refreshControl.spinMs`
+    // motion role's variable, whose fallback is the table's value.
     const durations = Array.from(
-      css.matchAll(/animation-duration:\s*([\d.]+)(m?s)/g),
+      css.matchAll(
+        /animation-duration:\s*calc\(8\s*\*\s*var\((--[\w-]+),\s*([\d.]+)(m?s)\)\)/g,
+      ),
     );
     expect(
       durations.some(
-        ([, value, unit]) =>
-          Number(value) * (unit === 's' ? 1000 : 1) === 8 * table.spinMs,
+        ([, variable, value, unit]) =>
+          variable === '--motion-refresh-control-spin-ms' &&
+          Number(value) * (unit === 's' ? 1000 : 1) === table.spinMs,
       ),
     ).toBe(true);
   });
 
-  it('springs the gradient in on the measured, critically damped spring', () => {
-    render(
-      <RefreshControl onRefresh={() => {}}>
+  it('cross-fades its two spoke layers on the hook\u2019s gradient spring at the trigger', () => {
+    // On iOS under a finger, where the hook starts the drawing.
+    const matchMedia = window.matchMedia;
+    useTouchScreen(true);
+    useIos(true);
+    onTestFinished(() => {
+      window.matchMedia = matchMedia;
+      if (originalCss) {
+        Object.defineProperty(window, 'CSS', originalCss);
+      } else {
+        Reflect.deleteProperty(window, 'CSS');
+      }
+    });
+    const {rerender} = render(
+      <RefreshControl onRefresh={() => {}} isRefreshing={false}>
         <div>Row</div>
       </RefreshControl>,
     );
-    const [revealed, spinning] = Array.from(glyphOf().children);
+    const [revealed, spinning] = Array.from(
+      glyphOf().children,
+    ) as HTMLElement[];
+    // The measured spring is critically damped: the clamp Core Animation
+    // applies.
     const spring = table.triggerGradientSpring;
-    const omega = Math.sqrt(spring.stiffness / spring.mass);
-    // Critical damping: the clamp Core Animation applies.
     expect(spring.damping).toBeCloseTo(2 * Math.sqrt(spring.stiffness), 2);
-    const g = (t: number) => 1 - (1 + omega * t) * Math.exp(-omega * t);
-    const fadeIn = opacityFrames(animationNameOf(spinning));
-    const fadeOut = opacityFrames(animationNameOf(revealed));
-    for (const [x, value] of fadeIn.slice(0, -1)) {
-      expect(value, `in at ${x}`).toBeCloseTo(g(4 * x), 3);
-    }
-    for (const [x, value] of fadeOut.slice(0, -1)) {
-      expect(value, `out at ${x}`).toBeCloseTo(1 - g(4 * x), 3);
-    }
+    // At rest the revealed spokes show and the stepping ones are hidden; the
+    // layers carry no CSS animation of their own (the hook's animator runs
+    // the spring, so a theme that retunes it retunes the fade).
+    expect(animationNameOf(revealed)).toBe('');
+    expect(animationNameOf(spinning)).toBe('');
+    // A refresh begun without a pull hands the gradient over at once.
+    rerender(
+      <RefreshControl onRefresh={() => {}} isRefreshing>
+        <div>Row</div>
+      </RefreshControl>,
+    );
+    expect(revealed.style.opacity).toBe('0');
+    expect(spinning.style.opacity).toBe('1');
   });
 });

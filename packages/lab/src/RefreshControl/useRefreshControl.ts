@@ -135,6 +135,18 @@ export interface UseRefreshControlResult {
    * trigger, while the glyph inside it spins on its own.
    */
   spinnerRef: RefCallback<HTMLElement>;
+  /**
+   * Attach to the glyph's layer of spokes the pull reveals (optional): at the
+   * trigger it fades out on the gradient spring as `spinLayerRef`'s layer
+   * fades in, so the two sum to UIKit's refreshing gradient.
+   */
+  revealLayerRef: RefCallback<HTMLElement>;
+  /**
+   * Attach to the glyph's layer of stepping spokes (optional): it fades in on
+   * the gradient spring at the trigger and steps while
+   * `data-refresh-spinning` is set.
+   */
+  spinLayerRef: RefCallback<HTMLElement>;
   /** Whether a refresh is in progress. */
   isRefreshing: boolean;
   /** Starts a refresh without a pull (the non-gesture path). */
@@ -221,6 +233,9 @@ export function useRefreshControl({
   const indicator = useAnimator();
   // The spinner turns on its own: the title beside it must not.
   const turn = useAnimator();
+  // The drawing's two spoke layers, cross-faded at the trigger.
+  const revealLayer = useAnimator();
+  const spinLayer = useAnimator();
   const contentElement = useRef<HTMLElement | null>(null);
   const indicatorElement = useRef<HTMLElement | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -305,11 +320,26 @@ export function useRefreshControl({
     }
   }, [indicator.animator, turn.animator]);
 
+  /**
+   * The revealed spokes shown, the stepping gradient hidden. Each layer is
+   * written only when it is not there already, so an idle layer is not
+   * promoted (and released mid-settle) for nothing.
+   */
+  const showRevealLayer = useCallback(() => {
+    if (revealLayer.animator.get('opacity') !== 1) {
+      revealLayer.animator.set({opacity: 1});
+    }
+    if (spinLayer.animator.get('opacity') !== 0) {
+      spinLayer.animator.set({opacity: 0});
+    }
+  }, [revealLayer.animator, spinLayer.animator]);
+
   const resetIndicator = useCallback(() => {
     indicatorElement.current?.removeAttribute(REFRESH_SPINNING_ATTRIBUTE);
     setReveal(0);
     restoreIndicator();
-  }, [restoreIndicator, setReveal]);
+    showRevealLayer();
+  }, [restoreIndicator, setReveal, showRevealLayer]);
 
   const startSpinning = useCallback(
     (withTurn: boolean) => {
@@ -325,9 +355,28 @@ export function useRefreshControl({
           {spring: refreshControl.triggerTurnSpring, velocity: {rotate: 0}},
           {reducedMotion: 'keep'},
         );
+        // UIKit springs the refreshing gradient in at the trigger: the
+        // revealed spokes fade out as the stepping ones fade in, on one
+        // spring, started with the turn so all three share a frame.
+        const gradient = {
+          spring: refreshControl.triggerGradientSpring,
+          velocity: {opacity: 0},
+        };
+        revealLayer.animator.animate({opacity: 0}, gradient);
+        spinLayer.animator.animate({opacity: 1}, gradient);
+      } else {
+        // A refresh begun without a pull shows the gradient at once.
+        revealLayer.animator.set({opacity: 0});
+        spinLayer.animator.set({opacity: 1});
       }
     },
-    [indicator.animator, setReveal, turn.animator],
+    [
+      indicator.animator,
+      revealLayer.animator,
+      setReveal,
+      spinLayer.animator,
+      turn.animator,
+    ],
   );
 
   // -- Scroll owner and its top-edge policy ----------------------------------
@@ -515,6 +564,7 @@ export function useRefreshControl({
       // indicator retracts with it.
       pull.current.floor = 0;
       indicatorElement.current?.removeAttribute(REFRESH_SPINNING_ATTRIBUTE);
+      showRevealLayer();
       return;
     }
     if (!hadInset) {
@@ -555,7 +605,7 @@ export function useRefreshControl({
           }
         }
       });
-  }, [content.animator, resetIndicator, resolveOwner]);
+  }, [content.animator, resetIndicator, resolveOwner, showRevealLayer]);
 
   const run = useCallback(
     (effect: RefreshEffect) => {
@@ -742,5 +792,47 @@ export function useRefreshControl({
     [turn],
   );
 
-  return {contentRef, indicatorRef, spinnerRef, isRefreshing, refresh};
+  // Each layer starts where the drawing shows it: revealed spokes shown and
+  // the gradient hidden, unless the indicator is already spinning (a drawing
+  // mounted mid-refresh). The animator then springs from there; nothing is
+  // written when the layer already holds that value.
+  const attachLayer = useCallback(
+    (
+      layer: typeof revealLayer,
+      element: HTMLElement | null,
+      opacity: (isSpinning: boolean) => number,
+    ) => {
+      layer.ref(element);
+      if (element == null) {
+        return;
+      }
+      const target = opacity(
+        element.closest(`[${REFRESH_SPINNING_ATTRIBUTE}]`) != null,
+      );
+      if (layer.animator.get('opacity') !== target) {
+        layer.animator.set({opacity: target});
+      }
+    },
+    [],
+  );
+  const revealLayerRef = useCallback(
+    (element: HTMLElement | null) =>
+      attachLayer(revealLayer, element, isSpinning => (isSpinning ? 0 : 1)),
+    [attachLayer, revealLayer],
+  );
+  const spinLayerRef = useCallback(
+    (element: HTMLElement | null) =>
+      attachLayer(spinLayer, element, isSpinning => (isSpinning ? 1 : 0)),
+    [attachLayer, spinLayer],
+  );
+
+  return {
+    contentRef,
+    indicatorRef,
+    spinnerRef,
+    revealLayerRef,
+    spinLayerRef,
+    isRefreshing,
+    refresh,
+  };
 }
