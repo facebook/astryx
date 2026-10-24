@@ -19,6 +19,7 @@ import {popover, springs} from '../motion/uikit';
 import {
   createPopoverSurfaceMotion,
   POPOVER_EXIT_COPY_ATTRIBUTE,
+  POPOVER_HOLD_ATTRIBUTE,
   popoverCollapsedState,
   popoverFrame,
   type PopoverSurfaceGeometry,
@@ -434,5 +435,111 @@ describe('createPopoverSurfaceMotion', () => {
         }
       }
     }
+  });
+  describe('the hold while it is presented', () => {
+    const shown = new Set<Element>();
+    const original = {
+      show: Object.getOwnPropertyDescriptor(
+        HTMLElement.prototype,
+        'showPopover',
+      ),
+      hide: Object.getOwnPropertyDescriptor(
+        HTMLElement.prototype,
+        'hidePopover',
+      ),
+    };
+    const restore = (
+      name: 'showPopover' | 'hidePopover',
+      descriptor?: PropertyDescriptor,
+    ) => {
+      if (descriptor == null) {
+        Reflect.deleteProperty(HTMLElement.prototype, name);
+      } else {
+        Object.defineProperty(HTMLElement.prototype, name, descriptor);
+      }
+    };
+    beforeEach(() => {
+      shown.clear();
+      Object.defineProperty(HTMLElement.prototype, 'showPopover', {
+        configurable: true,
+        writable: true,
+        value(this: HTMLElement) {
+          shown.add(this);
+        },
+      });
+      Object.defineProperty(HTMLElement.prototype, 'hidePopover', {
+        configurable: true,
+        writable: true,
+        value(this: HTMLElement) {
+          shown.delete(this);
+        },
+      });
+    });
+    afterEach(() => {
+      restore('showPopover', original.show);
+      restore('hidePopover', original.hide);
+    });
+
+    const holdOf = (element: HTMLElement) =>
+      element.querySelector<HTMLElement>(`[${POPOVER_HOLD_ATTRIBUTE}]`);
+
+    it('takes every touch until the present spring settles, as UIKit ignores touches during the presentation', async () => {
+      const {element, motion} = create();
+      motion.enter(() => GEOMETRY);
+      const hold = holdOf(element);
+      expect(hold).not.toBeNull();
+      // A manual popover inside the layer: above everything in the top layer,
+      // and a tap on it is a tap inside the popover.
+      expect(hold!.parentElement).toBe(element);
+      expect(hold!.getAttribute('popover')).toBe('manual');
+      expect(hold!.getAttribute('aria-hidden')).toBe('true');
+      expect(shown.has(hold!)).toBe(true);
+      const style = hold!.getAttribute('style') ?? '';
+      expect(style).toContain('position: fixed');
+      expect(style).toContain('inset: 0');
+      expect(style).toContain('background: transparent');
+      expect(style).toContain('touch-action: none');
+      // Still there well into the presentation (UIKit ignored a tap 60 ms
+      // in), gone once the spring has settled.
+      clock += 300;
+      vi.advanceTimersByTime(300);
+      await Promise.resolve();
+      expect(holdOf(element)).toBe(hold);
+      const [presenting] = live('scale', element);
+      const duration = Number(presenting.options.duration);
+      clock += duration;
+      vi.advanceTimersByTime(duration);
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(holdOf(element)).toBeNull();
+      expect(shown.has(hold!)).toBe(false);
+    });
+
+    it('lets go at once when the popover is dismissed or reset during the presentation', () => {
+      const dismissed = create();
+      dismissed.motion.enter(() => GEOMETRY);
+      expect(holdOf(dismissed.element)).not.toBeNull();
+      dismissed.motion.exit();
+      expect(holdOf(dismissed.element)).toBeNull();
+
+      const reset = create();
+      reset.motion.enter(() => GEOMETRY);
+      reset.motion.reset();
+      expect(holdOf(reset.element)).toBeNull();
+      expect(shown.size).toBe(0);
+    });
+
+    it('holds under Reduce Motion too: the fade runs on the same spring', () => {
+      const {element, motion} = create(true);
+      motion.enter(() => GEOMETRY);
+      expect(holdOf(element)).not.toBeNull();
+    });
+
+    it('places no hold where the browser has no popovers', () => {
+      Reflect.deleteProperty(HTMLElement.prototype, 'showPopover');
+      const {element, motion} = create();
+      motion.enter(() => GEOMETRY);
+      expect(holdOf(element)).toBeNull();
+    });
   });
 });

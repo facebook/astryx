@@ -14,7 +14,8 @@
  *   per frame; Reduce Motion fades on the same springs; outside iOS
  *   (Chromium as an Android phone) a finger keeps the layer's own entrance;
  *   a pan that starts outside dismisses it as it begins, on iOS and
- *   elsewhere; storyboards of both
+ *   elsewhere; a tap or a pan outside during the presentation starts
+ *   nothing; storyboards of both
  * @position Evidence for Popover's touch presentation; the model itself is
  *   unit-tested in popoverSurfaceMotion.test.ts
  */
@@ -219,10 +220,24 @@ async function installTouchLog(page: Page) {
       up: [] as number[],
       cancel: [] as number[],
       closed: [] as number[],
+      // Per touch after the first: whether it landed on the hold.
+      held: [] as boolean[],
     };
     (window as unknown as {__touchLog: typeof log}).__touchLog = log;
     const push = (list: number[]) => () => list.push(performance.now());
     document.addEventListener('pointerdown', push(log.down), true);
+    document.addEventListener(
+      'pointerdown',
+      event => {
+        if (log.down.length > 1) {
+          log.held.push(
+            event.target instanceof Element &&
+              event.target.closest('[data-astryx-popover-hold]') != null,
+          );
+        }
+      },
+      true,
+    );
     document.addEventListener('pointerup', push(log.up), true);
     document.addEventListener('pointercancel', push(log.cancel), true);
     document.addEventListener(
@@ -247,6 +262,7 @@ const readTouchLog = async (page: Page) =>
             up: number[];
             cancel: number[];
             closed: number[];
+            held: boolean[];
           };
         }
       ).__touchLog,
@@ -372,6 +388,92 @@ test('outside iOS (Chromium as an Android phone), a finger keeps the layer\u2019
   await story.driver.tap({x: 20, y: viewport.height - 20});
   await expect(story.trigger).toHaveAttribute('aria-expanded', 'false');
   await expect(exitCopyOf(page)).toHaveCount(0);
+});
+
+test('a tap outside during the presentation is ignored: the presentation finishes and the popover stays', async ({
+  page,
+}) => {
+  const story = await openDefault(page);
+  await installTouchLog(page);
+  // A button outside that counts the taps that reach it.
+  await page.evaluate(() => {
+    const probe = document.createElement('button');
+    probe.textContent = 'Outside';
+    Object.assign(probe.style, {
+      position: 'fixed',
+      right: '20px',
+      bottom: '20px',
+      width: '120px',
+      height: '44px',
+    });
+    const counter = window as unknown as {__outsideClicks: number};
+    counter.__outsideClicks = 0;
+    probe.addEventListener('click', () => {
+      counter.__outsideClicks += 1;
+    });
+    document.body.append(probe);
+  });
+  const outsideClicks = async () =>
+    page.evaluate(
+      () => (window as unknown as {__outsideClicks: number}).__outsideClicks,
+    );
+  const viewport = page.viewportSize();
+  if (viewport == null) {
+    throw new Error('no viewport');
+  }
+  const outside = {x: viewport.width - 80, y: viewport.height - 42};
+  await story.driver.tap(story.center);
+  // 60 ms into the presentation, where UIKit ignored the tap.
+  await page.waitForTimeout(60);
+  await story.driver.tap(outside);
+  await waitForRest(story.layer);
+  await expect(story.trigger).toHaveAttribute('aria-expanded', 'true');
+  const log = await readTouchLog(page);
+  expect(log.closed).toEqual([]);
+  expect(await outsideClicks()).toBe(0);
+  // It was the hold that took the tap, inside the popover's own subtree.
+  expect(log.held).toEqual([true]);
+  // Once it is in, the hold is gone and a tap outside dismisses it.
+  await expect(page.locator('[data-astryx-popover-hold]')).toHaveCount(0);
+  await story.driver.tap(outside);
+  await expect(story.trigger).toHaveAttribute('aria-expanded', 'false');
+});
+
+test('a pan outside during the presentation starts nothing: no scroll, and the popover stays', async ({
+  page,
+}) => {
+  const story = await openDefault(page);
+  test.skip(
+    !story.driver.drivesNativeGestures,
+    'scripted touches do not start native pans in this engine (iOS evidence: the simulator run)',
+  );
+  await installTouchLog(page);
+  // Room to scroll, so a pan the browser took would scroll the page.
+  await page.evaluate(() => {
+    const spacer = document.createElement('div');
+    spacer.style.height = '2000px';
+    document.body.append(spacer);
+  });
+  const viewport = page.viewportSize();
+  if (viewport == null) {
+    throw new Error('no viewport');
+  }
+  await story.driver.tap(story.center);
+  // 60 ms into the presentation, a finger drags up from outside.
+  await page.waitForTimeout(60);
+  const from = {x: viewport.width - 40, y: viewport.height - 120};
+  await story.driver.play(
+    drag(from, {x: from.x, y: from.y - 100}, {durationMs: 200, hz: 60}),
+  );
+  await waitForRest(story.layer);
+  await expect(story.trigger).toHaveAttribute('aria-expanded', 'true');
+  const log = await readTouchLog(page);
+  // The hold took the touch: the browser started no pan, so nothing
+  // scrolled and the pan-outside dismissal never fired.
+  expect(log.held).toEqual([true]);
+  expect(log.cancel).toEqual([]);
+  expect(log.closed).toEqual([]);
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
 });
 
 test('the presentation grows out of the trigger on UIKit\u2019s present spring', async ({
