@@ -52,6 +52,7 @@ if (baseStatsFile) {
     const base = JSON.parse(fs.readFileSync(baseStatsFile, 'utf8'));
     analysis.baseComponentStats = base.baseComponentStats || undefined;
     analysis.baseBundlePackages = base.baseBundlePackages || undefined;
+    analysis.baseComponentSizes = base.baseComponentSizes || undefined;
   } catch (e) {
     console.error('Warning: Could not read base stats:', e.message);
   }
@@ -130,8 +131,6 @@ if (analysis.newComponents && analysis.newComponents.length > 0) {
       : '';
     componentSection += `<details>\n<summary><strong>${inline(comp)}</strong>${pkgBadge}${sbBadge}</summary>\n\n`;
     componentSection += `| Metric | Value |\n|--------|-------|\n`;
-    componentSection += `| Import (gzip, transitive) | ${sizeText(stats.importGzipBytes)} |\n`;
-    componentSection += `| CSS (gzip) | ${sizeText(stats.cssGzipBytes)} |\n`;
     componentSection += `| Entry File (ESM) | ${inline(stats.esmSize) || 'N/A'} |\n`;
     if (stats.cjsSize)
       componentSection += `| Entry File (CJS) | ${inline(stats.cjsSize)} |\n`;
@@ -175,23 +174,38 @@ if (analysis.modifiedComponents && analysis.modifiedComponents.length > 0) {
           : `${esmDelta}B`
         : 'N/A';
 
-    const importDelta = bytesDelta(
-      stats.importGzipBytes,
-      baseStats.importGzipBytes,
-    );
-    const cssDelta = bytesDelta(stats.cssGzipBytes, baseStats.cssGzipBytes);
-    const jsOver = importDelta !== null && importDelta > JS_BUDGET_BYTES;
-    const cssOver = cssDelta !== null && cssDelta > CSS_BUDGET_BYTES;
-    if (jsOver || cssOver)
-      budgetFlags.push({comp, importDelta, cssDelta, jsOver, cssOver});
-
-    componentSection += `| Import (gzip, transitive) | ${sizeText(baseStats.importGzipBytes)} | ${sizeText(stats.importGzipBytes)} | ${signedSizeText(importDelta)}${jsOver ? ' ⚠️' : ''} |\n`;
-    componentSection += `| CSS (gzip) | ${sizeText(baseStats.cssGzipBytes)} | ${sizeText(stats.cssGzipBytes)} | ${signedSizeText(cssDelta)}${cssOver ? ' ⚠️' : ''} |\n`;
     componentSection += `| Entry File (ESM) | ${inline(baseStats.esmSize) || 'N/A'} | ${inline(stats.esmSize) || 'N/A'} | ${esmDeltaStr} |\n`;
     componentSection += `| Lines of Code | ${inline(baseStats.linesOfCode) || 'N/A'} | ${inline(stats.linesOfCode) || 'N/A'} | - |\n`;
     componentSection += `| Complexity | ${inline(baseStats.complexityRating) || 'N/A'} | ${inline(stats.complexityRating) || 'N/A'} (${num(stats.complexity)}) | - |\n`;
     componentSection += `\n</details>\n\n`;
   }
+}
+
+// Import and CSS size of every public component whose implementation changed,
+// family folders included, before and after.
+let sizeSection = '';
+const componentSizes = analysis.componentSizes || {};
+const baseComponentSizes = analysis.baseComponentSizes || {};
+const sizeKeys = Object.keys(componentSizes).sort();
+if (sizeKeys.length > 0) {
+  sizeSection += '### Component Size\n\n';
+  sizeSection +=
+    '| Component | Import before | Import after | Delta | CSS before | CSS after | Delta |\n';
+  sizeSection +=
+    '|-----------|---------------|--------------|-------|------------|-----------|-------|\n';
+  for (const key of sizeKeys) {
+    const head = componentSizes[key] || {};
+    const base = baseComponentSizes[key] || {};
+    const importDelta = bytesDelta(head.importGzipBytes, base.importGzipBytes);
+    const cssDelta = bytesDelta(head.cssGzipBytes, base.cssGzipBytes);
+    const jsOver = importDelta !== null && importDelta > JS_BUDGET_BYTES;
+    const cssOver = cssDelta !== null && cssDelta > CSS_BUDGET_BYTES;
+    if (jsOver || cssOver)
+      budgetFlags.push({comp: key, importDelta, cssDelta, jsOver, cssOver});
+    sizeSection += `| ${inline(key)} | ${sizeText(base.importGzipBytes)} | ${sizeText(head.importGzipBytes)} | ${signedSizeText(importDelta)}${jsOver ? ' ⚠️' : ''} | ${sizeText(base.cssGzipBytes)} | ${sizeText(head.cssGzipBytes)} | ${signedSizeText(cssDelta)}${cssOver ? ' ⚠️' : ''} |\n`;
+  }
+  sizeSection +=
+    '\nSizes are gzip. Import counts every module the import reaches; CSS counts the package stylesheet rules its own package modules reference.\n\n';
 }
 
 // Components whose growth passes the touch-only budget.
@@ -332,7 +346,7 @@ const body = `## PR Analysis Report
 <!-- astryx-pr-analysis -->
 
 ${diffModeCaveat}${previewAvailabilitySection}${storybookSection}${sandboxSection}${componentSection || '_No new or modified components detected._\n\n'}
-${budgetSection}${bundleSection}
+${sizeSection}${budgetSection}${bundleSection}
 ${a11ySection}
 ${visualSection}---
 

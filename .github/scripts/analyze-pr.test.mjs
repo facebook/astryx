@@ -295,7 +295,20 @@ describe('analyze-pr base and head sizes', () => {
       write(
         repo,
         'packages/core/src/index.ts',
-        "export {Card} from './Card';\n",
+        "export {Card} from './Card';\nexport {Chat, ChatComposer} from './Chat';\n",
+      );
+      write(
+        repo,
+        'packages/core/src/Chat/index.ts',
+        "export {Chat} from './Chat';\nexport {ChatComposer} from './ChatComposer';\n",
+      );
+      write(repo, 'packages/core/src/Chat/Chat.tsx', 'export function Chat() {}\n');
+      write(repo, 'packages/core/src/Chat/ChatComposer.tsx', 'export function ChatComposer() {}\n');
+      write(repo, 'packages/core/src/Chat/Chat.doc.mjs', "export const docs = {\n  name: 'Chat',\n};\n");
+      write(
+        repo,
+        'packages/core/src/Chat/ChatComposer.doc.mjs',
+        "export const docs = {\n  name: 'ChatComposer',\n};\n",
       );
       write(
         repo,
@@ -323,7 +336,11 @@ describe('analyze-pr base and head sizes', () => {
         path.join(repo, 'packages/core/src/Card/Card.tsx'),
         'export const changed = true;\n',
       );
-      git(repo, ['commit', '-qam', 'touch Card']);
+      fs.appendFileSync(
+        path.join(repo, 'packages/core/src/Chat/ChatComposer.tsx'),
+        'export const changed = true;\n',
+      );
+      git(repo, ['commit', '-qam', 'touch Card and the Chat family']);
 
       // Babel writes ES modules as `.js` in a "type": "module" package.
       write(baseRoot, 'packages/core/dist/Card/index.js', 'x'.repeat(100));
@@ -333,6 +350,19 @@ describe('analyze-pr base and head sizes', () => {
         'export const base = 1;\n'.repeat(10),
       );
       write(repo, 'packages/core/dist/Card/index.js', 'x'.repeat(160));
+      write(baseRoot, 'packages/core/dist/Card/Card.js', 'export function Card() {}\n');
+      write(
+        repo,
+        'packages/core/dist/Card/Card.js',
+        'export function Card() { return "a longer head body"; }\nexport const changed = true;\n',
+      );
+      write(baseRoot, 'packages/core/dist/Chat/Chat.js', 'export function Chat() {}\n');
+      write(repo, 'packages/core/dist/Chat/Chat.js', 'export function Chat() {}\n');
+      write(
+        repo,
+        'packages/core/dist/Chat/ChatComposer.js',
+        'export function ChatComposer() { return "new"; }\n',
+      );
       write(
         repo,
         'packages/core/dist/index.js',
@@ -360,8 +390,18 @@ describe('analyze-pr base and head sizes', () => {
       expect(analysis.componentStats.Card.esmBytes).toBe(160);
       expect(analysis.componentStats.Card.cjsBytes).toBeNull();
       expect(analysis.baseComponentStats.Card.esmBytes).toBe(100);
-      expect(analysis.componentStats.Card.importGzipBytes).toBeGreaterThan(0);
-      expect(analysis.baseComponentStats.Card.importGzipBytes).toBeGreaterThan(0);
+      // Every public component in a changed folder is sized, family folders
+      // included, at head and at the merge base.
+      expect(Object.keys(analysis.componentSizes).sort()).toEqual([
+        'core/Card',
+        'core/Chat',
+        'core/ChatComposer',
+      ]);
+      expect(analysis.componentSizes['core/Card'].importGzipBytes).toBeGreaterThan(
+        analysis.baseComponentSizes['core/Card'].importGzipBytes,
+      );
+      expect(analysis.componentSizes['core/ChatComposer'].importGzipBytes).toBeGreaterThan(0);
+      expect(analysis.baseComponentSizes['core/ChatComposer'].importGzipBytes).toBeNull();
       const [headBundle] = analysis.bundlePackages;
       const [baseBundle] = analysis.baseBundlePackages;
       expect(headBundle.package).toBe('@astryxdesign/core');
@@ -392,6 +432,7 @@ describe('analyze-pr base and head sizes', () => {
       expect(baseOnly.baseSha).toBe(git(repo, ['rev-parse', 'main']));
       expect(baseOnly.baseComponentStats.Card.esmBytes).toBe(100);
       expect(baseOnly.componentStats).toBeUndefined();
+      expect(baseOnly.baseComponentSizes['core/Chat'].importGzipBytes).toBeGreaterThan(0);
     } finally {
       fs.rmSync(repo, {recursive: true, force: true});
     }

@@ -199,7 +199,17 @@ function componentExistsInBase(pkg, componentName) {
     });
     return true;
   } catch {
-    return false;
+    // A nested component folder without an index barrel still exists in base.
+    if (pkg.layout === 'flat') return false;
+    try {
+      const listing = execSync(
+        `git ls-tree --name-only ${baseBranch} -- ${pkgSrc(pkg)}/${componentName}/`,
+        { encoding: 'utf8', stdio: 'pipe' },
+      );
+      return listing.trim().length > 0;
+    } catch {
+      return false;
+    }
   }
 }
 
@@ -514,14 +524,65 @@ function packageStylesheet(pkg) {
   return stylesheetCache.get(file);
 }
 
-// The dist module a component's import resolves to: `dist/<Name>/index.js` in
-// a nested package (or `dist/<Name>/<Name>.js` when the folder has no index),
-// `dist/<Name>.js` in a flat one.
-function componentImportEntry(pkg, componentName) {
-  const dist = path.join(process.cwd(), pkgDist(pkg));
-  if (pkg.layout === 'flat') return path.join(dist, `${componentName}.js`);
-  const index = path.join(dist, componentName, 'index.js');
-  return fs.existsSync(index) ? index : path.join(dist, componentName, `${componentName}.js`);
+// Every canonical public component whose implementation lives in a changed
+// directory (nested packages) or file (flat packages), with the dist module
+// that defines its export. Family folders that hold several components yield
+// each of them.
+function sizeTargets(changedFiles) {
+  const targets = [];
+  for (const pkg of PACKAGES) {
+    const sourceDir = path.join(process.cwd(), pkgSrc(pkg));
+    const prefix = pkgSrc(pkg) + '/';
+    const changed = new Set(
+      changedFiles
+        .filter((file) => file.startsWith(prefix))
+        .map((file) => file.slice(prefix.length).split('/')[0].replace(/\.tsx?$/, '')),
+    );
+    if (changed.size === 0) continue;
+    if (pkg.layout === 'flat') {
+      for (const name of getComponentNames(pkg)) {
+        if (changed.has(name)) {
+          targets.push({ key: `${pkg.packageName}/${name}`, pkg, name, distModule: `${name}.js` });
+        }
+      }
+      continue;
+    }
+    const exports = componentExportsFromBarrel(path.join(sourceDir, 'index.ts'), sourceDir);
+    for (const name of nestedPackageComponentNames(process.cwd(), pkg)) {
+      const file = exports.get(name);
+      if (!file) continue;
+      const relative = path.relative(sourceDir, file);
+      if (!changed.has(relative.split(path.sep)[0])) continue;
+      targets.push({
+        key: `${pkg.packageName}/${name}`,
+        pkg,
+        name,
+        distModule: relative.replace(/\.tsx?$/, '.js'),
+      });
+    }
+  }
+  return targets;
+}
+
+// What each target's import costs in the current tree: the gzip JavaScript it
+// pulls in, transitive modules included, and the gzip CSS of the package
+// stylesheet rules its own package's modules reference (spec:AST-080 FR8,
+// architecture:component-style-authoring INV6).
+function measureSizes(targets) {
+  const sizes = {};
+  for (const target of targets) {
+    const dist = path.join(process.cwd(), pkgDist(target.pkg));
+    sizes[target.key] = {
+      package: target.pkg.name,
+      ...measureComponentImport(
+        path.join(dist, target.distModule),
+        packageStylesheet(target.pkg),
+        dist,
+        target.name,
+      ),
+    };
+  }
+  return sizes;
 }
 
 // Get component stats
@@ -536,19 +597,8 @@ function getComponentStats(pkg, componentName) {
   const entries = distDir ? resolveEntries(distDir, pkg) : { esmPath: null, cjsPath: null };
   const loc = getComponentLOC(pkg, componentName);
   const complexity = getComplexity(pkg, componentName);
-  // What the component's import costs: the gzip JavaScript it pulls in,
-  // transitive modules included, and the gzip CSS of the stylesheet rules
-  // that JavaScript references (spec:AST-080 FR8, INV6).
-  const importSize = measureComponentImport(
-    componentImportEntry(pkg, componentName),
-    packageStylesheet(pkg),
-    path.join(process.cwd(), pkgDist(pkg)),
-  );
-
   return {
     package: pkg.name,
-    importGzipBytes: importSize.importGzipBytes,
-    cssGzipBytes: importSize.cssGzipBytes,
     esmSize: getFileSize(entries.esmPath),
     esmBytes: getFileSizeBytes(entries.esmPath),
     cjsSize: getFileSize(entries.cjsPath),
@@ -693,6 +743,9 @@ function analyze() {
   // and package lists stay the head's; only the stats are read in the base tree.
   let baseComponentStats = null;
   let baseBundlePackages = null;
+  const targets = sizeTargets(changedFiles);
+  const componentSizes = baseOnly ? null : measureSizes(targets);
+  let baseComponentSizes = null;
   if (baseRoot) {
     const headDir = process.cwd();
     process.chdir(path.resolve(headDir, baseRoot));
@@ -705,6 +758,7 @@ function analyze() {
       baseBundlePackages = PACKAGES.filter((p) => changedPackages.has(p.name)).map((p) =>
         getPackageBundleStats(p),
       );
+      baseComponentSizes = measureSizes(targets);
     } finally {
       process.chdir(headDir);
     }
@@ -716,6 +770,7 @@ function analyze() {
       baseSha: execSync('git rev-parse HEAD', { cwd: baseRoot, encoding: 'utf8' }).trim(),
       baseComponentStats,
       baseBundlePackages,
+      baseComponentSizes,
       analyzedAt: new Date().toISOString(),
     };
     fs.writeFileSync(outputFile, JSON.stringify(baseResult, null, 2));
@@ -739,7 +794,8 @@ function analyze() {
     // or render it in the report should caveat when this is 'two-dot'.
     diffMode,
     bundlePackages,
-    ...(baseRoot ? { baseComponentStats, baseBundlePackages } : {}),
+    componentSizes,
+    ...(baseRoot ? { baseComponentStats, baseBundlePackages, baseComponentSizes } : {}),
     // Back-compat: keep totalBundle pointed at core when core changed, so any
     // older consumer of this field still resolves.
     totalBundle: bundlePackages.find((b) => b.package === '@astryxdesign/core') || null,

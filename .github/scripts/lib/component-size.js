@@ -50,7 +50,7 @@ function packageStylesheetPath(packageDir) {
 // modules reached through package imports (other Astryx packages, React,
 // StyleX, third-party libraries), minified for production. Returns the bundle
 // text, or null when the import cannot be bundled.
-function bundleImportWithInputs(entry) {
+function bundleImportWithInputs(entry, exportName) {
   if (!entry || !fs.existsSync(entry)) return null;
   try {
     const esbuild = require('esbuild');
@@ -59,7 +59,9 @@ function bundleImportWithInputs(entry) {
       absWorkingDir: workingDir,
       metafile: true,
       stdin: {
-        contents: `export * from ${JSON.stringify(path.resolve(entry))};`,
+        contents: exportName
+          ? `export {${exportName}} from ${JSON.stringify(path.resolve(entry))};`
+          : `export * from ${JSON.stringify(path.resolve(entry))};`,
         resolveDir: path.dirname(path.resolve(entry)),
         loader: 'js',
       },
@@ -199,8 +201,8 @@ function rulesForClasses(css, classes) {
  * Measure one component import: gzip JavaScript it pulls in and gzip CSS of
  * the stylesheet rules that JavaScript references. Null where unmeasurable.
  */
-function measureComponentImport(entry, stylesheetText, ownDistDir) {
-  const bundle = bundleImportWithInputs(entry);
+function measureComponentImport(entry, stylesheetText, ownDistDir, exportName) {
+  const bundle = bundleImportWithInputs(entry, exportName);
   if (bundle === null) return {importGzipBytes: null, cssGzipBytes: null};
   // CSS counts only the rules the component's own package modules reference:
   // classes from modules reached in other packages belong to their stylesheets.

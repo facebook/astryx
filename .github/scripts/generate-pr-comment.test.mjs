@@ -234,12 +234,17 @@ describe('generate-pr-comment touch-only budget', () => {
       fs.writeFileSync(
         baseFile,
         JSON.stringify({
-          baseComponentStats: {Card: base},
+          baseComponentSizes: {'core/BottomSheet': base},
           baseBundlePackages: [],
         }),
       );
       return runComment(
-        {...baseAnalysis, componentStats: {Card: head}, bundlePackages: []},
+        {
+          ...baseAnalysis,
+          modifiedComponents: [],
+          componentSizes: {'core/BottomSheet': head},
+          bundlePackages: [],
+        },
         ['--base-stats', baseFile],
       );
     } finally {
@@ -247,7 +252,7 @@ describe('generate-pr-comment touch-only budget', () => {
     }
   }
 
-  it('flags JavaScript growth over 2 KB and CSS growth over 1 KB', () => {
+  it('flags JavaScript growth over 2 KB and CSS growth over 1 KB, family folders included', () => {
     const out = withBase(
       {
         package: '@astryxdesign/core',
@@ -262,9 +267,8 @@ describe('generate-pr-comment touch-only budget', () => {
     );
     expect(out).toContain('### ⚠️ Touch-only size budget');
     expect(out).toContain(
-      '| Import (gzip, transitive) | 6.8KB | 9.8KB | +2.9KB ⚠️ |',
+      '| core/BottomSheet | 6.8KB | 9.8KB | +2.9KB ⚠️ | 1.9KB | 2.9KB | +1.1KB ⚠️ |',
     );
-    expect(out).toContain('| CSS (gzip) | 1.9KB | 2.9KB | +1.1KB ⚠️ |');
   });
 
   it('does not flag growth within budget', () => {
@@ -282,7 +286,23 @@ describe('generate-pr-comment touch-only budget', () => {
     );
     expect(out).not.toContain('Touch-only size budget');
     expect(out).toContain(
-      '| Import (gzip, transitive) | 6.8KB | 8.8KB | +2.0KB |',
+      '| core/BottomSheet | 6.8KB | 8.8KB | +2.0KB | 1.9KB | 2.8KB | +1000B |',
     );
+  });
+
+  it('does not flag a component that is new at head', () => {
+    const out = withBase(
+      {
+        package: '@astryxdesign/core',
+        importGzipBytes: 90000,
+        cssGzipBytes: 9000,
+      },
+      {
+        package: '@astryxdesign/core',
+        importGzipBytes: null,
+        cssGzipBytes: null,
+      },
+    );
+    expect(out).not.toContain('Touch-only size budget');
   });
 });
