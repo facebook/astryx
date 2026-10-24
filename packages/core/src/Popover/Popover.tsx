@@ -4,14 +4,25 @@
 
 /**
  * @file Popover.tsx
- * @input Uses React layout measurement and the usePopover hook
+ * @input Uses React layout measurement, the usePopover hook and the touch
+ *   presentation's surface motion
  * @output Exports Popover with conditional overflow and content-first focus above the layer runtime's viewport fit
  * @position Layer component; declarative wrapper around usePopover hook
+ *
+ * In the iOS idiom (the shared touch resolver: WebKit on iOS under a finger)
+ * the popover is presented and dismissed the way a UIKit popover is: it grows
+ * out of its anchor on UIKit's present spring and shrinks back into it on the
+ * dismiss spring (popoverSurfaceMotion.ts). A mouse, and a finger elsewhere
+ * (Android), keep the layer's own entrance and the theme's motion tokens
+ * (D-01). A popover that would run under the software keyboard shrinks to
+ * stay above it, on every touch screen.
  *
  * For hover-triggered overlays, use HoverCard instead.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Popover/Popover.test.tsx
+ * - /packages/core/src/Popover/usePopoverSurfaceMotion.ts
+ * - /packages/core/src/Popover/usePopoverKeyboardAvoidance.ts
  * - /packages/core/src/Popover/index.ts
  * - /apps/storybook/stories/Popover.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/Popover/ (showcase blocks)
@@ -19,6 +30,7 @@
 
 import React, {
   useCallback,
+  useMemo,
   useRef,
   useState,
   type ReactElement,
@@ -29,6 +41,9 @@ import * as stylex from '@stylexjs/stylex';
 import {devWarn} from '../utils/devWarning';
 import type {BaseProps} from '../BaseProps';
 import {usePopover} from './usePopover';
+import {usePopoverSurfaceMotion} from './usePopoverSurfaceMotion';
+import {usePanOutsideDismiss} from '../Layer/usePanOutsideDismiss';
+import {usePopoverKeyboardAvoidance} from './usePopoverKeyboardAvoidance';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {layerViewportInset} from '../Layer/layerViewportInset.stylex';
@@ -368,8 +383,17 @@ export function Popover({
   const measurementFrameRef = useRef<number | null>(null);
   const [hasOverflow, setHasOverflow] = useState(false);
   const isControlled = isOpen !== undefined;
+  // The element the popover is anchored to, whichever way it was attached:
+  // the touch presentation grows the popover out of it.
+  const anchorElementRef = useRef<HTMLElement | null>(null);
+  const {present: presentSurface, isTouchPresentation} =
+    usePopoverSurfaceMotion();
+  // Runs as the popover opens, before it paints; set once `usePopover` has
+  // returned the surface it presents.
+  const presentSurfaceRef = useRef<() => void>(() => {});
 
   const handlePopoverShow = useCallback(() => {
+    presentSurfaceRef.current();
     onOpenChange?.(true);
   }, [onOpenChange]);
 
@@ -403,6 +427,38 @@ export function Popover({
     onShow: handlePopoverShow,
     onHide: handlePopoverHide,
   });
+
+  // On iOS, under a finger, the popover grows out of its anchor and shrinks
+  // back into it, as a UIKit popover (usePopoverSurfaceMotion.ts); a mouse
+  // and other touch screens keep the layer's entrance.
+  const {contentRef: surfaceRef} = popover;
+  useIsomorphicLayoutEffect(() => {
+    presentSurfaceRef.current = () => {
+      presentSurface(
+        surfaceRef.current?.closest<HTMLElement>('[popover]') ?? null,
+        anchorElementRef.current,
+      );
+    };
+  }, [presentSurface, surfaceRef]);
+
+  // A pan that starts outside the touch-presented popover dismisses it as
+  // the pan begins, and the same touch goes on to scroll the page; a tap or a
+  // hold outside dismisses at the lift (the browser's light dismiss), as
+  // UIKit's popovers do on iOS 26.2. Escape-only popovers keep it.
+  const panInsideRefs = useMemo(
+    () => [surfaceRef, anchorElementRef],
+    [surfaceRef],
+  );
+  usePanOutsideDismiss({
+    isOpen: popover.isOpen && hasLightDismiss,
+    isTouchPresentation,
+    inside: panInsideRefs,
+    onDismiss: popover.hide,
+  });
+
+  // A popover that would run under the software keyboard shrinks to stay
+  // above it, as on iOS (usePopoverKeyboardAvoidance.ts).
+  usePopoverKeyboardAvoidance(popover.isOpen, surfaceRef);
 
   const measureOverflow = useCallback(() => {
     const surface = popover.contentRef.current;
@@ -578,12 +634,14 @@ export function Popover({
     }
 
     // Set up anchor positioning on the anchorRef element itself
+    anchorElementRef.current = el;
     popover.triggerRef(el);
 
     // Attach handlers + ARIA to the button
     const detach = attachTrigger(button);
 
     return () => {
+      anchorElementRef.current = null;
       popover.triggerRef(null);
       detach();
     };
@@ -606,6 +664,7 @@ export function Popover({
 
     // Use the wrapper as the CSS anchor — it doesn't receive pressed-state
     // transforms, so the anchor position stays stable.
+    anchorElementRef.current = wrapper;
     popover.triggerRef(wrapper);
 
     // Find the button inside the wrapper
@@ -624,6 +683,7 @@ export function Popover({
     const detach = attachTrigger(button);
 
     return () => {
+      anchorElementRef.current = null;
       popover.triggerRef(null);
       detach();
     };
@@ -671,7 +731,10 @@ export function Popover({
 
   if (isRenderProp) {
     const triggerProps: PopoverTriggerRenderProps = {
-      ref: popover.triggerRef,
+      ref: (el: HTMLElement | null) => {
+        anchorElementRef.current = el;
+        popover.triggerRef(el);
+      },
       // The caller renders and owns this trigger element.
       onClick: () => handleTriggerClick(),
       'aria-haspopup': 'dialog',
