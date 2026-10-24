@@ -4,8 +4,9 @@
 
 /**
  * @file AlertDialog.tsx
- * @input Uses React, StyleX, Dialog, Layout, Heading, Text, Button, and its
- *   touch layer (AlertDialogTouch)
+ * @input Uses React, StyleX, Dialog, Layout, Heading, Text, Button, the touch
+ *   presentation resolver, its touch layer (AlertDialogTouch) and the alert
+ *   entries of the UIKit constants table
  * @output Exports AlertDialog component, AlertDialogProps type
  * @position Core implementation; consumed by index.ts, tested by AlertDialog.test.tsx
  *
@@ -17,12 +18,22 @@
  * action. A mouse, the keyboard and assistive technology keep the buttons'
  * own click.
  *
+ * Under a finger (a coarse primary pointer: useTouchPresentation) it also
+ * appears and leaves the way UIKit's alert does (useAlertMotion): it scales
+ * down from 1.2 and fades in with the dimming, and leaves with a fade alone,
+ * both on the compositor; the dialog stays open until the fade ends. A touch
+ * reaches nothing while it appears (keys and assistive technology still act),
+ * and no input reaches it while it leaves. One touch model on every touch
+ * device. With a mouse the theme's entrance plays and the dialog closes at
+ * once, as before.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/AlertDialog/AlertDialogTouch.ts (the touch layer)
  * - /packages/core/src/AlertDialog/AlertDialog.doc.mjs (props table, features, examples)
  * - /packages/core/src/AlertDialog/AlertDialog.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/AlertDialog/index.ts (exports if types change)
  * - /packages/core/src/AlertDialog/__tests__/AlertDialog.interaction.browser.spec.ts (touch tracking)
+ * - /packages/core/src/AlertDialog/__tests__/AlertDialog.motion.interaction.browser.spec.ts (touch motion)
  * - /apps/storybook/stories/AlertDialog.stories.tsx (storybook stories)
  * - /packages/cli/assets/templates/blocks/components/AlertDialog/ (showcase blocks)
  */
@@ -43,6 +54,8 @@ import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 import {useMediaQuery} from '../hooks';
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {alertController} from '../motion/uikit/alert';
+import {useTouchPresentation} from '../utils/touchPresentation';
 import {useAlertDialogTouch} from './AlertDialogTouch';
 
 const SMALL_SCREEN_QUERY = '(max-width: 640px)';
@@ -62,6 +75,17 @@ const styles = stylex.create({
   // (`manageStyle: false`).
   trackingSurface: {
     touchAction: 'pinch-zoom',
+  },
+  // UIKit's alert motion drives the dialog (useAlertMotion): the theme's
+  // entrance keyframes stand down.
+  uikitMotion: {
+    animationName: 'none',
+    // The motion animator promotes the dimming while it moves through this
+    // custom property on the dialog: Mobile Safari keeps an unlayered
+    // ::backdrop's animation on the main thread at its first commit.
+    '::backdrop': {
+      willChange: 'var(--astryx-motion-will-change-backdrop, auto)',
+    },
   },
   action: {
     maxWidth: '100%',
@@ -134,7 +158,8 @@ export interface AlertDialogProps extends BaseProps<HTMLDialogElement> {
 
   /**
    * The width of the dialog.
-   * Numbers are treated as pixels, strings are used as-is.
+   * Numbers are treated as pixels, strings are used as-is. By default 400,
+   * and under a finger UIKit's alert width, 320.
    * @default 400
    */
   width?: number | string;
@@ -178,7 +203,7 @@ export function AlertDialog({
   actionVariant = 'destructive',
   isActionLoading,
   onAction,
-  width = 400,
+  width: widthProp,
   xstyle,
   className,
   style,
@@ -194,24 +219,54 @@ export function AlertDialog({
   // semantics without coupling action order to pointer or hover capability.
   const isSmallScreen = useMediaQuery(SMALL_SCREEN_QUERY);
 
-  const handleCancel = useCallback(() => {
-    onOpenChange(false);
-  }, [onOpenChange]);
-
   // A finger is tracked across both actions as one group (UIKit's alert
   // tracking, in the touch layer); the backdrop, where a touch targets the
   // dialog itself, is not part of it. Each action opts out of its own press
   // tracking while the group owns its touches, and runs through its own click
-  // at the lift.
+  // at the lift. Under a finger the alert also appears and leaves the way
+  // UIKit's does (the touch layer's useAlertMotion): it stays presented while
+  // it fades out, and touches during either transition are taken and dropped.
+  const {isTouch} = useTouchPresentation();
+  // UIKit's alert width under a finger (alertController.width), so the
+  // presentation's 1.2 start stays on screen; with a mouse Dialog's 400.
+  const width = widthProp ?? (isTouch ? alertController.width : 400);
   const surfaceRef = useRef<HTMLDialogElement>(null);
-  const mergedRef = useMergedRefs(ref, surfaceRef);
   const bodyRef = useRef<HTMLDivElement>(null);
-  const {isTracking, isBodyScrollable} = useAlertDialogTouch(surfaceRef, {
-    isOpen,
-    isInline: isInline === true,
-    itemSelector: `[${ACTION_ATTRIBUTE}]`,
-    bodyRef,
-  });
+  const {isTracking, isBodyScrollable, motion} = useAlertDialogTouch(
+    surfaceRef,
+    {
+      isOpen,
+      isInline: isInline === true,
+      isTouch,
+      itemSelector: `[${ACTION_ATTRIBUTE}]`,
+      bodyRef,
+    },
+  );
+  // While the alert leaves (closed by the caller, still presented while it
+  // fades out under a finger), UIKit delivers no input to it: a click, Enter
+  // or an assistive-technology activation on an action, and Escape, do
+  // nothing until it is hidden. Focus stays where it is, so Dialog returns it
+  // to the opener when the fade ends.
+  const isLeaving = motion.isDriving && motion.isPresented && !isOpen;
+  const handleCancel = useCallback(() => {
+    if (!isLeaving) {
+      onOpenChange(false);
+    }
+  }, [isLeaving, onOpenChange]);
+  const handleAction = useCallback(() => {
+    if (!isLeaving) {
+      void onAction();
+    }
+  }, [isLeaving, onAction]);
+  const handleOpenChange = useCallback(
+    (next: boolean) => {
+      if (!isLeaving) {
+        onOpenChange(next);
+      }
+    },
+    [isLeaving, onOpenChange],
+  );
+  const mergedRef = useMergedRefs(ref, surfaceRef, motion.ref);
   const actionTrackingProps = {
     [ACTION_ATTRIBUTE]: '',
     // Overrides Button's own marker for the document press controller, which
@@ -243,7 +298,7 @@ export function AlertDialog({
       key="action"
       variant={actionVariant}
       label={actionLabel}
-      onClick={onAction}
+      onClick={handleAction}
       isLoading={isActionLoading}
       xstyle={buttonActionStyle}
       {...actionTrackingProps}
@@ -254,9 +309,9 @@ export function AlertDialog({
     <Dialog
       {...rest}
       ref={mergedRef}
-      isOpen={isOpen}
+      isOpen={motion.isPresented}
       isInline={isInline}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleOpenChange}
       width={width}
       purpose="form"
       // `alertdialog` is a modal role: it promises an interruption the user
@@ -268,7 +323,11 @@ export function AlertDialog({
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
       {...mergeProps(themeProps('alert-dialog'), {className, style})}
-      xstyle={[isTracking && styles.trackingSurface, xstyle]}
+      xstyle={[
+        isTracking && styles.trackingSurface,
+        motion.isDriving && styles.uikitMotion,
+        xstyle,
+      ]}
       data-testid={testId}>
       <Layout
         content={

@@ -388,10 +388,12 @@ test(
     expect(frames[0]).toBe('none/none'); // before the touch
     expect(frames[1]).toBe('on/none'); // touch-down on Delete
     expect(frames).toContain('none/on'); // over Cancel
-    // The lift runs Cancel; the alert closes at once (no exit here), which
-    // ends Cancel's release fade with the tracking.
-    expect(frames.at(-1)).toBe('none/none');
+    // The lift runs Cancel. Under a finger the alert then leaves with a
+    // fade, and Cancel's release fade plays through it: 100 ms after the
+    // lift it is still fading, and it ends before the alert is hidden.
+    expect(frames.at(-1)).toBe('none/fading');
     expect(frames.indexOf('none/on')).toBeGreaterThan(1);
+    await expect(dialog).toBeHidden();
     const {clicks, paints} = await readLog(page);
     expect(clicks).toEqual(['Cancel']);
     expect(paints.map(entry => entry.split('@')[0]).slice(-2)).toEqual([
