@@ -39,7 +39,8 @@
  *
  * Nothing reads layout after the press begins: the actions' rects are read
  * once when it begins, then hit-tested. A move costs at most two attribute
- * writes and never a render.
+ * writes and never a render. The tracking itself is actionGroupTracker.ts;
+ * this hook binds it to the one recognizer.
  *
  * SYNC: When modified, update useActionGroupTracking.test.tsx
  */
@@ -49,8 +50,10 @@ import {LongPressGestureRecognizer} from '../gestures/LongPressGestureRecognizer
 import type {GestureTouch, PointerKind} from '../gestures/types';
 import {useGestureRecognizer} from '../gestures/useGestureRecognizer';
 import {UIKIT_GESTURES} from '../motion/uikit/gestures';
-import {PRESSED_ATTRIBUTE} from '../utils/pressFeedback';
-import {PRESS_FADE_MS} from '../utils/pressGesture';
+import {
+  createActionGroupTracker,
+  type ActionGroupTracker,
+} from './actionGroupTracker';
 import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
 
 export interface ActionGroupTrackingOptions {
@@ -84,22 +87,6 @@ export interface ActionGroupTrackingOptions {
   onActivate?: (item: HTMLElement) => void;
 }
 
-/** An action that is not enabled takes no highlight and does not run. */
-const DISABLED = ':disabled, [aria-disabled="true"]';
-
-interface TrackedAction {
-  readonly element: HTMLElement;
-  readonly left: number;
-  readonly top: number;
-  readonly right: number;
-  readonly bottom: number;
-}
-
-interface TrackingState {
-  actions: TrackedAction[];
-  highlighted: HTMLElement | null;
-}
-
 const PRESS = UIKIT_GESTURES.press;
 
 /**
@@ -116,8 +103,14 @@ export function useActionGroupTracking(
   useIsomorphicLayoutEffect(() => {
     optionsRef.current = options;
   });
-  const stateRef = useRef<TrackingState>({actions: [], highlighted: null});
-  const fadesRef = useRef(new Map<Element, ReturnType<typeof setTimeout>>());
+  const trackerRef = useRef<ActionGroupTracker | null>(null);
+  trackerRef.current ??= createActionGroupTracker(() => ({
+    roots: () => [ref.current],
+    itemSelector: optionsRef.current.itemSelector,
+    highlightExpansion: optionsRef.current.highlightExpansion,
+    onActivate: optionsRef.current.onActivate,
+  }));
+  const tracker = trackerRef.current;
   const isEnabled = options.isEnabled ?? true;
   // When tracking turns off and when the group unmounts: drops a touch it is
   // tracking (its highlight is cut, and its lift runs nothing, as the
@@ -125,86 +118,13 @@ export function useActionGroupTracking(
   // to a disabled recognizer's listener), and ends the release fades it
   // started (their timers, and the paint each would remove): the lift that
   // runs an action usually closes the alert before its fade ends.
-  useEffect(() => {
-    const fades = fadesRef.current;
-    const tracking = stateRef;
-    return () => {
-      const {highlighted} = tracking.current;
-      if (highlighted?.getAttribute(PRESSED_ATTRIBUTE) === 'on') {
-        highlighted.removeAttribute(PRESSED_ATTRIBUTE);
-      }
-      tracking.current = {actions: [], highlighted: null};
-      for (const [element, timer] of fades) {
-        clearTimeout(timer);
-        if (element.getAttribute(PRESSED_ATTRIBUTE) === 'fading') {
-          element.removeAttribute(PRESSED_ATTRIBUTE);
-        }
-      }
-      fades.clear();
-    };
-  }, [isEnabled]);
-
-  const clearFade = (element: Element) => {
-    const fade = fadesRef.current.get(element);
-    if (fade != null) {
-      clearTimeout(fade);
-      fadesRef.current.delete(element);
-    }
-  };
-  const paint = (element: HTMLElement) => {
-    clearFade(element);
-    element.setAttribute(PRESSED_ATTRIBUTE, 'on');
-  };
-  const cut = (element: HTMLElement) => {
-    clearFade(element);
-    element.removeAttribute(PRESSED_ATTRIBUTE);
-  };
-  const release = (element: HTMLElement) => {
-    clearFade(element);
-    element.setAttribute(PRESSED_ATTRIBUTE, 'fading');
-    fadesRef.current.set(
-      element,
-      setTimeout(() => {
-        fadesRef.current.delete(element);
-        if (element.getAttribute(PRESSED_ATTRIBUTE) === 'fading') {
-          element.removeAttribute(PRESSED_ATTRIBUTE);
-        }
-      }, PRESS_FADE_MS),
-    );
-  };
-
-  const highlight = (next: HTMLElement | null) => {
-    const state = stateRef.current;
-    if (next === state.highlighted) {
-      return;
-    }
-    if (state.highlighted != null) {
-      cut(state.highlighted);
-    }
-    state.highlighted = next;
-    if (next != null) {
-      paint(next);
-    }
-  };
-
-  const actionAt = (x: number, y: number): HTMLElement | null => {
-    const margin = optionsRef.current.highlightExpansion;
-    for (const action of stateRef.current.actions) {
-      if (
-        x >= action.left - margin &&
-        x <= action.right + margin &&
-        y >= action.top - margin &&
-        y <= action.bottom + margin
-      ) {
-        return action.element;
-      }
-    }
-    return null;
-  };
-
-  const reset = () => {
-    stateRef.current = {actions: [], highlighted: null};
-  };
+  useEffect(
+    () => () => {
+      trackerRef.current?.cancel();
+      trackerRef.current?.dispose();
+    },
+    [isEnabled],
+  );
 
   return useGestureRecognizer(
     ref,
@@ -226,61 +146,22 @@ export function useActionGroupTracking(
     recognizer => {
       switch (recognizer.state) {
         case 'began': {
-          const root = ref.current;
-          const actions: TrackedAction[] = [];
-          // An inert press tracks no action: nothing to paint, nothing to run.
-          if (root != null && optionsRef.current.isInert?.() !== true) {
-            for (const element of root.querySelectorAll<HTMLElement>(
-              optionsRef.current.itemSelector,
-            )) {
-              if (element.matches(DISABLED)) {
-                continue;
-              }
-              const rect = element.getBoundingClientRect();
-              actions.push({
-                element,
-                left: rect.left,
-                top: rect.top,
-                right: rect.right,
-                bottom: rect.bottom,
-              });
-            }
-          }
-          stateRef.current = {actions, highlighted: null};
           const {x, y} = recognizer.location();
-          highlight(actionAt(x, y));
+          // An inert press is taken and tracks nothing.
+          tracker.begin(x, y, {inert: optionsRef.current.isInert?.() === true});
           break;
         }
         case 'changed': {
           const {x, y} = recognizer.location();
-          highlight(actionAt(x, y));
+          tracker.move(x, y);
           break;
         }
-        case 'ended': {
-          const lifted = stateRef.current.highlighted;
-          reset();
-          if (lifted == null) {
-            break;
-          }
-          release(lifted);
-          if (!lifted.matches(DISABLED)) {
-            const activate = optionsRef.current.onActivate;
-            if (activate != null) {
-              activate(lifted);
-            } else {
-              lifted.click();
-            }
-          }
+        case 'ended':
+          tracker.end();
           break;
-        }
-        case 'cancelled': {
-          const highlighted = stateRef.current.highlighted;
-          reset();
-          if (highlighted != null) {
-            cut(highlighted);
-          }
+        case 'cancelled':
+          tracker.cancel();
           break;
-        }
         case 'possible':
         case 'failed':
           // Listeners are not called for these.
