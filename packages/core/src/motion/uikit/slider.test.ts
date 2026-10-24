@@ -9,10 +9,12 @@
  *   tracking rule, the thumb's lift and drop against its per-frame width,
  *   and the release coast against the per-frame value after a lift
  * @position Testing; parity of the slider constants (law P4, unit layer).
- *   The browser layer is
- *   Slider/__tests__/SliderTouch.interaction.browser.spec.ts.
+ *   The browser layer comes with Slider's touch presentation, which reads
+ *   this table.
  */
 
+import fs from 'node:fs';
+import path from 'node:path';
 import {describe, expect, it} from 'vitest';
 import {projectDistance} from '../projection';
 import {listMotionRoles, motionRole, motionRoleOf} from '../roles';
@@ -107,6 +109,18 @@ function rms(errors: ReadonlyArray<number>): number {
     errors.reduce((sum, error) => sum + error * error, 0) / errors.length,
   );
 }
+
+describe('slider on the experimental surface', () => {
+  it('carries the experimental marker, as every table `uikit` re-exports does (AST-017 FR21)', () => {
+    const source = fs.readFileSync(
+      path.resolve(__dirname, 'slider.ts'),
+      'utf8',
+    );
+    expect(source).toMatch(
+      /\/\*\*(?:(?!\*\/)[\s\S])*@experimental(?:(?!\*\/)[\s\S])*\*\/\s*export const slider\b/,
+    );
+  });
+});
 
 describe('slider motion roles', () => {
   it('registers its three springs, and nothing else, as roles a theme may retune', () => {

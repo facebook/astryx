@@ -47,6 +47,11 @@
 
 import {registerMotionTable} from '../roles';
 
+/**
+ * UISlider's touch values: hit target, tracking, release coast, lift, drop
+ * and the end-of-track haptic.
+ * @experimental
+ */
 export const slider = {
   /**
    * The thumb's touch target, a square in pt centered on the thumb: the
@@ -131,9 +136,11 @@ export const slider = {
    * The drop: the thumb shrinking back to its rest size when the finger
    * lifts, while the coast runs.
    * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
-   *   iPhone 17 Pro, capture b40, per-frame lens width after the lift of an
-   *   800 ms hold fitted with one spring (response 0.49 s, damping ratio
-   *   0.70, rms 0.10 pt; undershoot to 36.04 pt), Oct 23 2026
+   *   iPhone 17 Pro, capture b40, the lens's spring behavior read at the
+   *   lift of an 800 ms hold (response 0.5 s, damping ratio 0.7: the stored
+   *   value); the per-frame lens width after that lift fits one spring at
+   *   response 0.49 s, damping ratio 0.70 (rms 0.10 pt; the read leaves
+   *   0.20 pt; undershoot to 36.04 pt), Oct 23 2026
    */
   dropSpring: {response: 0.5, dampingRatio: 0.7},
   /**
