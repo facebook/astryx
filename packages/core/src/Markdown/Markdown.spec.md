@@ -75,9 +75,9 @@ released one.
 ## Compatibility and migration
 
 - Released default preserved: `yes`, except the default Code block path for `diff` fences (FR29, below), its long-line wrap (below), and its headerless layout (below)
-- Compatibility class: additive, opt-in public API, with two visible
-  default-path rendering changes (the FR29 diff layer and the fenced-code wrap,
-  below); existing parser nodes, DOM, styling, targets,
+- Compatibility class: additive, opt-in public API, with three visible
+  default-path rendering changes (the FR29 diff layer, the fenced-code wrap, and
+  the headerless layout, below); existing parser nodes, DOM, styling, targets,
   dollar-delimited text, `components`, and `inlinePlugins` remain unchanged unless
   the caller supplies `plugins`, supplies `components.math`, or passes the matching
   explicit parser option.
@@ -89,7 +89,7 @@ released one.
   which rendered as plain text with a `diff` label and viewport name, its
   leading word being all Markdown read — as the layer over that language with
   a `<language> diff` label; the header, copy, disclosure, and viewport name
-  stay, and a supplied `code` renderer's contract is unchanged. The way back to
+  stay as for any other fence, and a supplied `code` renderer's contract is unchanged. The way back to
   plain text is a `text` fence or a custom `code` renderer. Every other fence
   is unchanged apart from the wrap and the headerless layout below.
 - Default-path wrap change (`spec:AST-061` FR5, DEC-9), visual and not breaking:
@@ -100,8 +100,8 @@ released one.
   scrolling is a custom `code` renderer.
 - Default-path headerless layout (`component:CodeBlock` FR11), visual and not
   breaking: a fence with no language label shows Copy in its own column beside
-  the code, so long lines wrap before it; a one-line fence with a language and
-  fewer lines than the collapse threshold renders as one row, its label beside
+  the code, so long lines wrap before it; a one-line fence with a language
+  renders as one row, its label beside
   Copy, and takes the header when a second line arrives. Text, copy output,
   syntax colours, the viewport name, and a supplied `code` renderer's contract
   are unchanged.
