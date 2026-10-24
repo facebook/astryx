@@ -23,6 +23,14 @@
  * here as `buttonDown`: painted at once, held through any travel, faded on
  * release like a finger's.
  *
+ * A CONTROL OUTSIDE A SCROLLER does not wait at all. UIKit delays a touch
+ * only for a view inside a scroll view (`delaysContentTouches`); a UIControl
+ * anywhere else highlights in the frame the finger lands. The controller
+ * says which touch is which (`down`'s `delayed`, from the surface's profile
+ * and its ancestors), and an undelayed touch goes straight to `pressed`.
+ * Everything after that is the same machine: travel past the slop or a
+ * cancel ends it with no fade, the lift fades it.
+ *
  * Every constant below was measured against the real Settings and Contacts
  * apps on an iPhone simulator, driven with real HID touches at 60 fps, before
  * it was written down. The machine is deliberately ignorant of the DOM: it
@@ -113,7 +121,17 @@ export interface PressGesture {
 }
 
 export type PressEvent =
-  | {kind: 'down'; x: number; y: number}
+  | {
+      kind: 'down';
+      x: number;
+      y: number;
+      /**
+       * Whether this touch waits {@link PRESS_ONSET_MS} before it paints:
+       * a cell always does, a control only inside a scroller. Defaults to
+       * `true`.
+       */
+      delayed?: boolean;
+    }
   /**
    * A mouse button or the Space key went down on the surface. The
    * controller sends this only where the stylesheet has dropped `:active`
@@ -175,6 +193,15 @@ export function pressGestureStep(
   event: PressEvent,
 ): PressStep {
   if (event.kind === 'down') {
+    // A control with no scroller above it: nothing can turn this touch into a
+    // scroll, so it paints in the frame it lands, as a UIControl highlights.
+    if (event.delayed === false) {
+      return {
+        gesture: {originX: event.x, originY: event.y, phase: 'pressed'},
+        paint: 'on',
+        timer: null,
+      };
+    }
     // A new touch always starts armed and painting nothing, whatever the last
     // gesture ended as. This is the only way out of `dead`.
     return {

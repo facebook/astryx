@@ -4,9 +4,9 @@
  * @file pressFeedback.ts
  * @input The press state machine (pressGesture.ts) and the document's pointer,
  *   keyboard, scroll and visibility events
- * @output Exports PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE, pressableProps, the
- *   list row's press profile (CELL_PRESS_PROFILE, cellPressableProps) and
- *   installPressFeedback
+ * @output Exports PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE, PRESS_PROFILES,
+ *   pressableProps, the list row's press profile (CELL_PRESS_PROFILE,
+ *   cellPressableProps) and installPressFeedback
  * @position The DOM half of the touch press model: one delegated controller
  *   per document that writes `data-astryx-press` on the nearest pressable surface.
  *   Installed by usePressFeedback (hooks/usePressFeedback.ts) on first mount;
@@ -15,6 +15,23 @@
  *   pressFeedback.test.ts.
  *
  * ONE listener set for every pressable surface in the document.
+ *
+ * TWO PROFILES, chosen by the marker's value. A control (an empty marker: a
+ * button, a card, a switch) is a UIControl: under a finger it highlights in
+ * the frame the finger lands, unless a scroller sits above it, where it waits
+ * UIScrollView's content-touch delay like everything else in a scroll view.
+ * A cell (`cell`: a list or tree row) always waits that delay, because a
+ * UIKit cell always sits in a scroll view. Both are cancelled by travel past
+ * the slop or by the scroll that takes the touch, and both fade at the lift
+ * on their profile's clock.
+ *
+ * LISTENERS ONLY WHILE A PRESS IS LIVE. At rest the document carries two
+ * passive listeners, `pointerdown` and `keydown`, which only arm. A touch, or
+ * a mouse button or Space press the controller paints, attaches the rest
+ * (move, up, cancel, the finger's lift, scroll, drag and visibility; a Space
+ * press also the key's release and focus loss). They come down once no press
+ * is live and no finger is down, or, when a lift leaves a fling scrolling,
+ * at that scroller's `scrollend`: the brake hears the fling until then.
  *
  * Why a delegated document-level controller and not a hook on the element: a
  * virtualized list can carry more than a thousand rows, and four listeners
@@ -51,7 +68,6 @@ import {
   PRESS_FADE_MS,
   PRESS_FLASH_MS,
   PRESS_ONSET_MS,
-  PRESS_SCROLL_BRAKE_MS,
   pressGestureStep,
 } from './pressGesture';
 import {TOUCH_QUERY} from './touchPresentation';
@@ -72,10 +88,22 @@ export const PRESSABLE_ATTRIBUTE = 'data-astryx-pressable';
  */
 export const PRESSED_ATTRIBUTE = 'data-astryx-press';
 
-/** Spread onto the element that paints the press. */
+/** Spread onto the element that paints the press: a control. */
 export const pressableProps: {readonly [PRESSABLE_ATTRIBUTE]: ''} = {
   [PRESSABLE_ATTRIBUTE]: '',
 };
+
+/** How a surface's press behaves under a finger. */
+export interface PressProfile {
+  /**
+   * When the highlight waits UIScrollView's content-touch delay
+   * (`PRESS_ONSET_MS`): only inside a scroller (a control), or always (a
+   * cell).
+   */
+  readonly highlightDelay: 'inScrollers' | 'always';
+  /** How long the release's exit runs, in ms: the attribute leaves after it. */
+  readonly releaseMs: number;
+}
 
 /**
  * The press profile a list row carries in its {@link PRESSABLE_ATTRIBUTE}
@@ -93,12 +121,112 @@ export const cellPressableProps: {
 } = {[PRESSABLE_ATTRIBUTE]: CELL_PRESS_PROFILE};
 
 /**
- * How long after a touch a scroll can still be that finger's momentum.
- *
- * iOS momentum runs for a second or two after the lift; past this window a
- * scroll is the program moving something, not a list still gliding.
+ * The two press profiles, selected by the marker's value: empty for a
+ * control, {@link CELL_PRESS_PROFILE} for a row.
  */
-export const PRESS_GESTURE_MEMORY_MS = 3000;
+export const PRESS_PROFILES = {
+  /** UIControl: highlighted in the frame the finger lands, outside scrollers. */
+  control: {highlightDelay: 'inScrollers', releaseMs: PRESS_FADE_MS},
+  /** A table or collection cell: always inside a scroll view, so it waits. */
+  cell: {highlightDelay: 'always', releaseMs: PRESS_FADE_MS},
+} as const satisfies Readonly<Record<string, PressProfile>>;
+
+export type PressProfileName = keyof typeof PRESS_PROFILES;
+
+/** The profile a surface's marker selects. */
+function profileOf(element: HTMLElement): PressProfile {
+  return element.getAttribute(PRESSABLE_ATTRIBUTE) === CELL_PRESS_PROFILE
+    ? PRESS_PROFILES.cell
+    : PRESS_PROFILES.control;
+}
+
+/** Overflow values that let a box scroll, and how far it must overflow to. */
+const SCROLLABLE: ReadonlySet<string> = new Set(['auto', 'scroll', 'overlay']);
+const OVERFLOW_TOLERANCE_PX = 1;
+
+/** The root scrolls unless it or the body clips it (as a scroll lock does). */
+function rootScrolls(doc: Document, axis: 'x' | 'y'): boolean {
+  const view = doc.defaultView;
+  if (view == null) {
+    return false;
+  }
+  for (const element of [doc.documentElement, doc.body]) {
+    if (element == null) {
+      continue;
+    }
+    const style = view.getComputedStyle(element);
+    const value = axis === 'x' ? style.overflowX : style.overflowY;
+    if (value === 'hidden' || value === 'clip') {
+      return false;
+    }
+  }
+  return true;
+}
+
+/** Which pans `touch-action` leaves the browser on this element. */
+function allowedPans(value: string): {x: boolean; y: boolean} {
+  const tokens = value.trim().split(/\s+/);
+  if (tokens.includes('auto') || tokens.includes('manipulation')) {
+    return {x: true, y: true};
+  }
+  if (tokens.includes('none')) {
+    return {x: false, y: false};
+  }
+  return {
+    x: tokens.some(token => /^pan-(x|left|right)$/.test(token)),
+    y: tokens.some(token => /^pan-(y|up|down)$/.test(token)),
+  };
+}
+
+/**
+ * Whether the browser could scroll something under this element: a box above
+ * it (the page included) that overflows on an axis it scrolls and that
+ * `touch-action` leaves to the browser. That is UIKit's question for a
+ * control: is it inside a scroll view?
+ */
+function isInsideScroller(element: Element): boolean {
+  const doc = element.ownerDocument;
+  const view = doc.defaultView;
+  if (view == null) {
+    return false;
+  }
+  const root = doc.scrollingElement ?? doc.documentElement;
+  let panX = true;
+  let panY = true;
+  for (let node: Node | null = element; node != null;) {
+    if (node instanceof Element) {
+      const style = view.getComputedStyle(node);
+      const pans = allowedPans(style.touchAction || 'auto');
+      panX &&= pans.x;
+      panY &&= pans.y;
+      if (node === root || node === doc.documentElement) {
+        break;
+      }
+      if (
+        (panY &&
+          SCROLLABLE.has(style.overflowY) &&
+          node.scrollHeight - node.clientHeight > OVERFLOW_TOLERANCE_PX) ||
+        (panX &&
+          SCROLLABLE.has(style.overflowX) &&
+          node.scrollWidth - node.clientWidth > OVERFLOW_TOLERANCE_PX)
+      ) {
+        return true;
+      }
+    }
+    node =
+      node.parentNode instanceof ShadowRoot
+        ? node.parentNode.host
+        : node.parentNode;
+  }
+  return (
+    (panY &&
+      rootScrolls(doc, 'y') &&
+      root.scrollHeight - root.clientHeight > OVERFLOW_TOLERANCE_PX) ||
+    (panX &&
+      rootScrolls(doc, 'x') &&
+      root.scrollWidth - root.clientWidth > OVERFLOW_TOLERANCE_PX)
+  );
+}
 
 /** A surface that is not enabled does not press, however it is touched. */
 const DISABLED = ':disabled, [aria-disabled="true"]';
@@ -133,6 +261,8 @@ interface LiveGesture {
    * for a press of the Space key.
    */
   pointerId: number | null;
+  /** The surface's profile's release clock, in ms. */
+  releaseMs: number;
   timer: ReturnType<typeof setTimeout> | null;
 }
 
@@ -153,19 +283,20 @@ const button: Slot = {live: null};
 let holders = 0;
 /** Whether the stylesheet left mouse and keyboard presses to the controller; read at the first one. */
 /**
- * When a scroller last moved UNDER A FINGER OF ITS OWN, and which one.
+ * The scroller a finger set moving, from its first scroll until its
+ * `scrollend`: during a drag and through the fling that follows the lift.
  *
  * Only a finger-driven scroll is recorded, so the brake cannot fire for a
  * scroll the app performed itself. The test is the touch's own target: a
- * scroll is that finger's if the finger was inside the scroller that moved,
- * within {@link PRESS_GESTURE_MEMORY_MS}.
+ * scroll is that finger's if the finger is down inside the scroller that
+ * moved, or if it is the fling that finger left running.
  */
-let lastScrollAt = 0;
-let lastScroller: Node | null = null;
-/** When a finger was last on the glass, and where it landed. */
-let lastTouchAt = 0;
+let fling: Node | null = null;
+/** Whether a finger is on the glass, and where the last one landed. */
+let touching = false;
 let lastTouchTarget: Node | null = null;
 
+/** The machine's clocks; `fade` runs the surface's profile's instead. */
 const TIMER_MS: Record<NonNullable<PressStep['timer']>, number> = {
   fade: PRESS_FADE_MS,
   flash: PRESS_FLASH_MS,
@@ -196,7 +327,11 @@ function paintElement(element: HTMLElement, paint: PressPaint): void {
     element.removeAttribute(PRESSED_ATTRIBUTE);
     return;
   }
-  element.setAttribute(PRESSED_ATTRIBUTE, paint);
+  // A pass-through step repeats the paint it already wrote: writing it again
+  // would only wake every observer of the attribute for nothing.
+  if (element.getAttribute(PRESSED_ATTRIBUTE) !== paint) {
+    element.setAttribute(PRESSED_ATTRIBUTE, paint);
+  }
 }
 
 function clearTimer(slot: Slot): void {
@@ -239,6 +374,7 @@ function apply(slot: Slot, step: PressStep): void {
   paintElement(live.element, step.paint);
   if (step.gesture.phase === 'idle') {
     slot.live = null;
+    settle();
     return;
   }
   if (step.timer != null) {
@@ -246,17 +382,20 @@ function apply(slot: Slot, step: PressStep): void {
     // A TIMER, never `requestAnimationFrame`: iOS throttles frame callbacks
     // while a scroll runs, so a frame-based delay would fire late, after the
     // scroll, and paint a control nobody is pressing any more.
-    live.timer = setTimeout(() => {
-      if (slot.live != null) {
-        slot.live.timer = null;
-      }
-      apply(
-        slot,
-        pressGestureStep(slot.live?.gesture ?? idlePressGesture(), {
-          kind: TIMER_EVENT[kind],
-        }),
-      );
-    }, TIMER_MS[kind]);
+    live.timer = setTimeout(
+      () => {
+        if (slot.live != null) {
+          slot.live.timer = null;
+        }
+        apply(
+          slot,
+          pressGestureStep(slot.live?.gesture ?? idlePressGesture(), {
+            kind: TIMER_EVENT[kind],
+          }),
+        );
+      },
+      kind === 'fade' ? live.releaseMs : TIMER_MS[kind],
+    );
   }
 }
 
@@ -296,15 +435,15 @@ function surfaceAt(target: EventTarget | null): HTMLElement | null {
  *     says nothing about a control elsewhere.
  *  2. The scroll must have been driven by a finger IN THAT SCROLLER, which is
  *     what `onScroll` records. "Any finger anywhere, recently" is not enough:
- *     tap a control, then within the memory window press a button inside a
- *     pane that is scrolling on its own, and that press would be swallowed by
- *     a scroll no finger drove.
+ *     tap a control, then press a button inside a pane that is scrolling on
+ *     its own, and that press would be swallowed by a scroll no finger drove.
  */
 function scrollerIsBraking(element: HTMLElement): boolean {
-  if (Date.now() - lastScrollAt >= PRESS_SCROLL_BRAKE_MS) {
-    return false;
+  if (fling != null && !fling.isConnected) {
+    // The scroller left the document mid-fling: no `scrollend` will come.
+    fling = null;
   }
-  return lastScroller instanceof Node && lastScroller.contains(element);
+  return fling != null && fling.contains(element);
 }
 
 /**
@@ -318,6 +457,7 @@ function releaseIfDead(slot: Slot): void {
   if (slot.live?.gesture.phase === 'dead') {
     clearTimer(slot);
     slot.live = null;
+    settle();
   }
 }
 
@@ -335,6 +475,7 @@ function finish(slot: Slot): void {
   if (slot === button) {
     holdKey(false);
   }
+  settle();
 }
 
 /** A new press on an element owns its paint: the other slot's gesture there ends. */
@@ -390,7 +531,14 @@ function pressButton(
     return;
   }
   takeOver(finger, element);
-  button.live = {element, gesture: idlePressGesture(), pointerId, timer: null};
+  track();
+  button.live = {
+    element,
+    gesture: idlePressGesture(),
+    pointerId,
+    releaseMs: profileOf(element).releaseMs,
+    timer: null,
+  };
   holdKey(pointerId == null);
   apply(button, pressGestureStep(button.live.gesture, {kind: 'buttonDown'}));
 }
@@ -425,6 +573,9 @@ function onPointerDown(event: PointerEvent): void {
     }
     return;
   }
+  // Any finger arms the listeners, a press or not: the scroll it may start is
+  // what the brake listens for.
+  track();
   if (finger.live != null) {
     const fingerIsUp =
       finger.live.gesture.phase === 'fading' ||
@@ -442,21 +593,23 @@ function onPointerDown(event: PointerEvent): void {
     finish(finger);
   }
   const element = surfaceAt(event.target);
-  // The touch clock is stamped AFTER the brake reads it, deliberately: the
-  // question the brake asks is whether a PREVIOUS finger could still be
-  // driving this scroll, and stamping first would make every first touch on a
-  // freshly restored page answer yes.
+  // The finger is recorded AFTER the brake reads the fling, deliberately: the
+  // question the brake asks is whether a PREVIOUS finger's fling is still
+  // running here.
   const braking = element != null && scrollerIsBraking(element);
-  lastTouchAt = Date.now();
+  touching = true;
   lastTouchTarget = event.target instanceof Node ? event.target : null;
   if (element == null || braking) {
+    settle();
     return;
   }
   takeOver(button, element);
+  const profile = profileOf(element);
   finger.live = {
     element,
     gesture: idlePressGesture(),
     pointerId: event.pointerId,
+    releaseMs: profile.releaseMs,
     timer: null,
   };
   apply(
@@ -465,6 +618,7 @@ function onPointerDown(event: PointerEvent): void {
       kind: 'down',
       x: event.clientX,
       y: event.clientY,
+      delayed: profile.highlightDelay === 'always' || isInsideScroller(element),
     }),
   );
 }
@@ -499,8 +653,6 @@ function onPointerUp(event: PointerEvent): void {
     }
     return;
   }
-  // The lift is when momentum starts, so it is the clock the brake wants most.
-  lastTouchAt = Date.now();
   if (event.target instanceof Node) {
     lastTouchTarget = event.target;
   }
@@ -556,16 +708,16 @@ function onDragStart(): void {
 /** A scroll anywhere above the pressed element, caught in the capture phase. */
 function onScroll(event: Event): void {
   const scroller = event.target instanceof Node ? event.target : document;
-  // A scroll counts as a finger's only if that finger was inside THIS
-  // scroller, recently. Anything else is the program moving something, and
-  // must leave the brake unarmed rather than merely un-refreshed.
+  // A scroll counts as a finger's only if that finger is down inside THIS
+  // scroller, or this is the fling it left running. Anything else is the
+  // program moving something, and must leave the brake unarmed. The fling is
+  // remembered only where `scrollend` will say when it stops.
   const driven =
-    Date.now() - lastTouchAt < PRESS_GESTURE_MEMORY_MS &&
+    (touching || fling === scroller) &&
     lastTouchTarget != null &&
     scroller.contains(lastTouchTarget);
-  if (driven) {
-    lastScrollAt = Date.now();
-    lastScroller = scroller;
+  if (driven && 'onscrollend' in window) {
+    fling = scroller;
   }
   const live = finger.live;
   if (live == null) {
@@ -579,6 +731,26 @@ function onScroll(event: Event): void {
     return;
   }
   onCancel();
+}
+
+/**
+ * The fling stopped: the brake's window ends here, at the scroller's own
+ * signal, and so do the listeners that waited for it.
+ */
+function onScrollEnd(event: Event): void {
+  const scroller = event.target instanceof Node ? event.target : document;
+  if (fling != null && scroller === fling) {
+    fling = null;
+    settle();
+  }
+}
+
+/** The last finger left the glass. */
+function onTouchEnd(event: TouchEvent): void {
+  if (event.touches.length === 0) {
+    touching = false;
+    settle();
+  }
 }
 
 /** Whether a Space press on this element is an activation browsers paint as `:active`. */
@@ -641,6 +813,10 @@ function onBlur(): void {
  */
 function onVisibilityChange(): void {
   if (document.visibilityState === 'hidden') {
+    // A hidden page hears no lift and no `scrollend`: nothing is down or
+    // flinging when it comes back.
+    touching = false;
+    fling = null;
     finish(finger);
     finish(button);
   }
@@ -649,33 +825,43 @@ function onVisibilityChange(): void {
 const PASSIVE_CAPTURE = {capture: true, passive: true} as const;
 const PASSIVE = {passive: true} as const;
 
-function addListeners(): void {
+/** The two listeners a document carries at rest: they only arm the rest. */
+function addArmingListeners(): void {
   window.addEventListener('pointerdown', onPointerDown, PASSIVE_CAPTURE);
+  window.addEventListener('keydown', onKeyDown, PASSIVE);
+}
+
+function removeArmingListeners(): void {
+  window.removeEventListener('pointerdown', onPointerDown, PASSIVE_CAPTURE);
+  window.removeEventListener('keydown', onKeyDown);
+}
+
+function addTrackingListeners(): void {
   window.addEventListener('pointermove', onPointerMove, PASSIVE_CAPTURE);
   window.addEventListener('pointerup', onPointerUp, PASSIVE_CAPTURE);
   window.addEventListener('pointercancel', onCancel, PASSIVE_CAPTURE);
   window.addEventListener('touchcancel', onCancel, PASSIVE_CAPTURE);
+  window.addEventListener('touchend', onTouchEnd, PASSIVE_CAPTURE);
+  window.addEventListener('touchcancel', onTouchEnd, PASSIVE_CAPTURE);
   window.addEventListener('dragstart', onDragStart, PASSIVE_CAPTURE);
-  // `scroll` does not bubble, so the capture phase is the only way one
-  // listener hears every scroller in the document.
+  // `scroll` and `scrollend` do not bubble, so the capture phase is the only
+  // way one listener hears every scroller in the document.
   document.addEventListener('scroll', onScroll, PASSIVE_CAPTURE);
+  document.addEventListener('scrollend', onScrollEnd, PASSIVE_CAPTURE);
   document.addEventListener('visibilitychange', onVisibilityChange);
-  // Only Space's press needs the key's release and focus loss, so those two
-  // are attached while it is held (holdKey).
-  window.addEventListener('keydown', onKeyDown, PASSIVE);
 }
 
-function removeListeners(): void {
-  window.removeEventListener('pointerdown', onPointerDown, PASSIVE_CAPTURE);
+function removeTrackingListeners(): void {
   window.removeEventListener('pointermove', onPointerMove, PASSIVE_CAPTURE);
   window.removeEventListener('pointerup', onPointerUp, PASSIVE_CAPTURE);
   window.removeEventListener('pointercancel', onCancel, PASSIVE_CAPTURE);
   window.removeEventListener('touchcancel', onCancel, PASSIVE_CAPTURE);
+  window.removeEventListener('touchend', onTouchEnd, PASSIVE_CAPTURE);
+  window.removeEventListener('touchcancel', onTouchEnd, PASSIVE_CAPTURE);
   window.removeEventListener('dragstart', onDragStart, PASSIVE_CAPTURE);
   document.removeEventListener('scroll', onScroll, PASSIVE_CAPTURE);
+  document.removeEventListener('scrollend', onScrollEnd, PASSIVE_CAPTURE);
   document.removeEventListener('visibilitychange', onVisibilityChange);
-  window.removeEventListener('keydown', onKeyDown);
-  holdKey(false);
 }
 
 /** Whether the key-release listeners are attached. */
@@ -702,6 +888,36 @@ function holdKey(held: boolean): void {
   }
 }
 
+/** Whether the tracking listeners are attached. */
+let tracking = false;
+
+/** A press, or a finger, is live: attach the tracking listeners. */
+function track(): void {
+  if (!tracking) {
+    tracking = true;
+    addTrackingListeners();
+  }
+}
+
+function untrack(): void {
+  if (tracking) {
+    tracking = false;
+    removeTrackingListeners();
+  }
+}
+
+/**
+ * Take the tracking listeners down once nothing needs them: no press is live,
+ * no finger is down, and no fling a finger left running is still scrolling
+ * (its `scrollend` calls this again).
+ */
+function settle(): void {
+  if (finger.live != null || button.live != null || touching || fling != null) {
+    return;
+  }
+  untrack();
+}
+
 /**
  * Install the touch press controller on this document, once, however many
  * times it is called: the listeners exist while at least one caller holds it.
@@ -720,7 +936,7 @@ export function installPressFeedback(): () => void {
     return () => undefined;
   }
   if (holders === 0) {
-    addListeners();
+    addArmingListeners();
   }
   holders += 1;
   let released = false;
@@ -733,12 +949,12 @@ export function installPressFeedback(): () => void {
     if (holders > 0) {
       return;
     }
-    removeListeners();
+    removeArmingListeners();
     finish(finger);
     finish(button);
-    lastScrollAt = 0;
-    lastScroller = null;
-    lastTouchAt = 0;
+    untrack();
+    touching = false;
+    fling = null;
     lastTouchTarget = null;
   };
 }
