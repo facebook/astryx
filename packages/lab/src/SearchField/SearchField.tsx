@@ -331,8 +331,17 @@ const styles = stylex.create({
   }),
   // Inactive, the close button is transparent (the animator holds its
   // opacity at 0) and takes no taps.
+  // The resting (inactive) close button, in CSS so a server-rendered page
+  // paints it transparent and out of place before the animator's held
+  // values take over: 44 px toward the trailing end
+  // (`search.stacked.closeTravel`, kept equal by a test).
   closeInert: {
     pointerEvents: 'none',
+    opacity: 0,
+    translate: {
+      default: '44px 0',
+      ':is([dir="rtl"] *)': '-44px 0',
+    },
   },
 });
 

@@ -20,6 +20,8 @@ import {createRef, useState} from 'react';
 import {flushSync} from 'react-dom';
 import {act, fireEvent, render, screen} from '@testing-library/react';
 import {InternationalizationProvider} from '@astryxdesign/core/i18n';
+import {renderToString} from 'react-dom/server';
+import {uikit} from '@astryxdesign/core/motion/experimental';
 import {
   SearchField,
   type SearchFieldHandle,
@@ -95,6 +97,25 @@ describe('SearchField', () => {
     expect(onActiveChange).toHaveBeenLastCalledWith(false);
     expect(box()).toHaveValue('');
     expect(box()).not.toHaveFocus();
+  });
+
+  it('server-renders the resting close button transparent and out of place, before hydration', () => {
+    // No effects run: this is the markup and CSS a server-rendered page
+    // paints first.
+    const host = document.createElement('div');
+    host.innerHTML = renderToString(<SearchField label="Search" />);
+    document.body.appendChild(host);
+    try {
+      const button = host.querySelector(
+        '[data-search-field-close]',
+      ) as HTMLElement;
+      expect(getComputedStyle(button).opacity).toBe('0');
+      expect(getComputedStyle(button).pointerEvents).toBe('none');
+      // The CSS offset is the table's close travel.
+      expect(uikit.search.stacked.closeTravel).toBe(44);
+    } finally {
+      host.remove();
+    }
   });
 
   it('a cancel from the close button with focus leaves focus on the search landmark, not on the hidden button', () => {
