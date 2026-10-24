@@ -144,7 +144,8 @@ same generated contract.
   (SwiftUI views with core's names, `Button`, `Text`, and so on, re-exporting
   SwiftUI and the contracts) and the `AstryxNative` product (generated contract
   types, unprefixed: `ButtonProps`, `ButtonVariant`).
-- Button keeps hand-written parameters until it moves onto `ButtonProps`.
+- All six views still take hand-written parameters until each moves onto its
+  generated `<Name>Props`; Banner has no generated contract.
 - The generated iOS `SwitchProps` still declares `size`, and `HStackProps` and
   `VStackProps` are still generated for iOS and macOS.
 
