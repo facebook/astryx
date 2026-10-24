@@ -32,7 +32,11 @@
  * - the marker's value picks the press profile (PRESS_PROFILES): empty or
  *   `control` for a button-like control, `cell` for a row, which waits the
  *   content-touch delay everywhere, is cancelled by travel past the pan
- *   hysteresis, and releases on its own clock.
+ *   hysteresis, and releases on its own clock;
+ * - the release fade and the quick-tap flash follow the element's theme:
+ *   they are resolved from the profile's motion roles (`resolveMotion`) when
+ *   the touch lands and when the release starts, so the `fading` timer
+ *   lasts exactly as long as the CSS fade the theme sets.
  *
  * Install it once per attribute (installs are counted, and the first one's
  * options hold); do not install it on the same attribute as the older
@@ -42,6 +46,8 @@
  */
 
 import {useEffect, useState} from 'react';
+import {resolveMotion} from '../motion/resolveMotion';
+import {timing} from '../motion/uikit/timing';
 import {PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE} from '../utils/pressFeedback';
 import {getGestureHost} from './GestureHost';
 import {paintPress} from './pressPaint';
@@ -155,7 +161,11 @@ function addPressType(
       // control does not.
       paintPress(element, 'fading', {
         attribute: pressed,
-        releaseMs: profile.releaseMs,
+        // The theme's value when the release starts, as the CSS fade reads it.
+        releaseMs:
+          profile.releaseRole == null
+            ? profile.releaseMs
+            : resolveMotion(element, timing.press, profile.releaseRole),
       });
     } else {
       paintPress(element, 'none', {attribute: pressed});
@@ -180,7 +190,10 @@ function addPressType(
         trackingExpansion: options.trackingExpansion,
         highlightDelay: profile.highlightDelay,
         cancelTravel: profile.cancelTravel,
-        quickTapFlash: profile.quickTapFlash,
+        quickTapFlash:
+          profile.flashRole == null
+            ? profile.quickTapFlash
+            : resolveMotion(element, timing.press, profile.flashRole),
         isBraking: () => host.isScrollBraking(element),
         onControlEvent: (event, touch) => {
           last = event;

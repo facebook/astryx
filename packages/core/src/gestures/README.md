@@ -163,6 +163,13 @@ assistive-technology activation keep working.
   lift straight into the release, and the release takes the list's
   deselect clock.
 
+The release and the flash are motion roles (`timing.press.buttonReleaseMs`,
+`.highlightOutMs`, `.flashMs`): a theme retunes them, and the delegated
+press consumer resolves them under the pressed element's theme when the
+touch lands and when the release starts, so its `fading` timer lasts as long
+as the CSS fade the theme sets. The arbitration windows (the content-touch
+delay, the scroll brake) are not motion and stay the table's.
+
 `paintPress(element, 'on' | 'held' | 'fading' | 'none', {releaseMs})` is
 the one writer of `data-astryx-press`. It owns the release timer and writes
 only over values the caller may replace (by default none, `on` and

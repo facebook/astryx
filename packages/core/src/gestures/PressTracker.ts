@@ -120,8 +120,16 @@ export interface PressProfile {
   readonly highlightDelay: PressHighlightDelay;
   readonly cancelTravel?: number;
   readonly quickTapFlash: number;
-  /** The release (`fading`) clock a painter uses, ms. */
+  /** The release (`fading`) clock a painter uses, ms: the table's value. */
   readonly releaseMs: number;
+  /**
+   * The `timing.press` motion role behind `releaseMs`: a painter resolves
+   * it under the pressed element's theme, so its fade timer matches the CSS
+   * fade the theme sets. Without it, `releaseMs` is used as is.
+   */
+  readonly releaseRole?: 'buttonReleaseMs' | 'highlightOutMs';
+  /** The motion role behind `quickTapFlash`, resolved the same way. */
+  readonly flashRole?: 'flashMs';
 }
 
 /** @experimental */
@@ -131,6 +139,8 @@ export const PRESS_PROFILES = {
     highlightDelay: 'inScrollers',
     quickTapFlash: PRESS.quickTapFlash.value,
     releaseMs: timing.press.buttonReleaseMs,
+    releaseRole: 'buttonReleaseMs',
+    flashRole: 'flashMs',
   },
   /** A table or collection cell: delayed highlight, cancelled by the scroll. */
   cell: {
@@ -138,6 +148,7 @@ export const PRESS_PROFILES = {
     cancelTravel: UIKIT_GESTURES.pan.hysteresis.value,
     quickTapFlash: 0,
     releaseMs: timing.press.highlightOutMs,
+    releaseRole: 'highlightOutMs',
   },
 } as const satisfies Record<string, PressProfile>;
 

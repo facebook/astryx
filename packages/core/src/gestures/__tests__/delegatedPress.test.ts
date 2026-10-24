@@ -183,6 +183,31 @@ describe('installPressAttribute', () => {
     expect(types.every(type => type.startsWith('touch'))).toBe(true);
   });
 
+  it("fades a release and flashes a quick tap on the theme's press timings", () => {
+    const {theme, row, cell} = mount(
+      `<div id="theme" data-astryx-theme="slow">
+         <div id="row" data-astryx-pressable>Row</div>
+         <div id="cell" data-astryx-pressable="cell">Cell</div>
+       </div>`,
+    );
+    theme.style.setProperty('--motion-timing-press-button-release-ms', '400ms');
+    theme.style.setProperty('--motion-timing-press-highlight-out-ms', '320ms');
+    touch('touchstart', row, {id: 1, x: 5, y: 5}, 0);
+    touch('touchend', row, {id: 1, x: 5, y: 5}, 80);
+    vi.advanceTimersByTime(399);
+    expect(row.getAttribute('data-astryx-press')).toBe('fading');
+    vi.advanceTimersByTime(1);
+    expect(row.hasAttribute('data-astryx-press')).toBe(false);
+
+    touch('touchstart', cell, {id: 2, x: 5, y: 5}, 1000);
+    vi.advanceTimersByTime(UIKIT_GESTURES.press.contentTouchDelay.value);
+    touch('touchend', cell, {id: 2, x: 5, y: 5}, 1300);
+    vi.advanceTimersByTime(319);
+    expect(cell.getAttribute('data-astryx-press')).toBe('fading');
+    vi.advanceTimersByTime(1);
+    expect(cell.hasAttribute('data-astryx-press')).toBe(false);
+  });
+
   it('presses a cell with the cell profile: delayed, cancelled by travel, its own release', () => {
     const {row} = mount('<div id="row" data-astryx-pressable="cell">Row</div>');
     touch('touchstart', row, {id: 1, x: 5, y: 5}, 0);
