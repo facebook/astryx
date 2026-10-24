@@ -504,6 +504,57 @@ describe('CircularProgress', () => {
   });
 
   describe('indeterminate mode', () => {
+    it('steps the left half at once each time the breathing arc crosses half', () => {
+      const calls: {target: Element; keyframes: Keyframe[]}[] = [];
+      const original = Element.prototype.animate;
+      const originalStyle = window.getComputedStyle;
+      Element.prototype.animate = function (
+        this: Element,
+        keyframes: Keyframe[],
+      ) {
+        calls.push({target: this, keyframes});
+        return {
+          cancel() {},
+          playState: 'running',
+          effect: {getComputedTiming: () => ({progress: 0})},
+          onfinish: null,
+        } as unknown as Animation;
+      } as typeof Element.prototype.animate;
+      // The spin's and the cycle's durations, as the styles would give them.
+      window.getComputedStyle = ((element: Element) => {
+        const real = originalStyle(element);
+        return {...real, animationDuration: '1.5s'} as CSSStyleDeclaration;
+      }) as typeof window.getComputedStyle;
+      try {
+        render(<CircularProgress isIndeterminate size="md" label="Loading" />);
+        // spin, tail, right, left, cap, start
+        expect(calls.length).toBe(6);
+        const left = calls[3].keyframes;
+        const angle = (frame: Keyframe) =>
+          Number(/rotate\(([-\d.]+)deg\)/.exec(String(frame.transform))?.[1]);
+        // The arc grows past half and shrinks back each cycle.
+        expect(left.some(f => angle(f) > 180)).toBe(true);
+        expect(left.some(f => f.opacity === 0)).toBe(true);
+        // Fully shown wherever the left half draws part of the arc, and
+        // its visibility never fades across a sample interval.
+        for (const frame of left) {
+          if (angle(frame) > 180) {
+            expect(frame.opacity, `at ${frame.offset}`).toBe(1);
+          }
+        }
+        for (let i = 1; i < left.length; i += 1) {
+          if (left[i].opacity !== left[i - 1].opacity) {
+            expect(
+              Number(left[i].offset) - Number(left[i - 1].offset),
+            ).toBeLessThanOrEqual(1e-4);
+          }
+        }
+      } finally {
+        Element.prototype.animate = original;
+        window.getComputedStyle = originalStyle;
+      }
+    });
+
     it('renders indeterminate when isIndeterminate is true', () => {
       render(<CircularProgress isIndeterminate value={50} label="Loading" />);
       const progressbar = screen.getByRole('progressbar');

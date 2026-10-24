@@ -1074,6 +1074,116 @@ test('without its animations the indeterminate arc rests as a quarter turn from 
   expect(Math.abs(arc.length - (90 + 2 * cap))).toBeLessThanOrEqual(3);
 });
 
+test('the indeterminate arc has no seam where its halves meet', async ({
+  page,
+}) => {
+  // The halves turn with the arc's start, so the line between them falls
+  // across pixels: both clips antialiased it and left a light hairline
+  // across the arc whenever it was longer than half. Scan the arc's
+  // centerline, over one breathing cycle, for anything lighter than the fill.
+  await openIndeterminate(page);
+  const palette = await colors(page);
+  await page.evaluate(() => {
+    for (const animation of document.getAnimations()) {
+      animation.pause();
+    }
+  });
+  const shots: string[] = [];
+  const times: number[] = [];
+  for (let t = 0; t < 1500; t += 20) {
+    await page.evaluate(time => {
+      for (const animation of document.getAnimations()) {
+        animation.currentTime = time;
+      }
+    }, t);
+    times.push(t);
+    shots.push(
+      (await page.getByRole('progressbar').screenshot()).toString('base64'),
+    );
+  }
+  const scratch = await page.context().newPage();
+  try {
+    const scans = await scratch.evaluate(
+      async ({items, fill, track, diameter, stroke}) =>
+        Promise.all(
+          items.map(async item => {
+            const bitmap = await createImageBitmap(
+              await (await fetch(`data:image/png;base64,${item}`)).blob(),
+            );
+            const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+            const context = canvas.getContext('2d');
+            if (context == null) {
+              throw new Error('no 2d context');
+            }
+            context.drawImage(bitmap, 0, 0);
+            const {data, width} = context.getImageData(
+              0,
+              0,
+              bitmap.width,
+              bitmap.height,
+            );
+            const scale = bitmap.width / diameter;
+            const r = ((diameter - stroke) / 2) * scale;
+            const c = (diameter / 2) * scale;
+            const d = (a: number[], b: number[]) =>
+              Math.abs(a[0] - b[0]) +
+              Math.abs(a[1] - b[1]) +
+              Math.abs(a[2] - b[2]);
+            const STEPS = 1440;
+            const off: number[] = [];
+            const inked: boolean[] = [];
+            for (let k = 0; k < STEPS; k += 1) {
+              const angle = (k / STEPS) * 2 * Math.PI;
+              const x = Math.round(c + r * Math.sin(angle));
+              const y = Math.round(c - r * Math.cos(angle));
+              const i = (y * width + x) * 4;
+              const pixel = [data[i], data[i + 1], data[i + 2]];
+              off.push(d(pixel, fill));
+              inked.push(d(pixel, fill) < d(pixel, track));
+            }
+            // The arc: the longest circular run of ink, bridging gaps of up
+            // to 2deg (a hairline may break the ink for a sample or two).
+            const GAP = 8;
+            let best = {start: 0, length: 0};
+            for (let k = 0; k < STEPS; k += 1) {
+              if (!inked[k] || inked[(k + STEPS - 1) % STEPS]) {
+                continue;
+              }
+              let length = 0;
+              let gap = 0;
+              while (length < STEPS && gap <= GAP) {
+                gap = inked[(k + length) % STEPS] ? 0 : gap + 1;
+                length += 1;
+              }
+              length -= gap;
+              if (length > best.length) {
+                best = {start: k, length};
+              }
+            }
+            // Away from the caps, how far any centerline pixel strays from
+            // the fill color.
+            let farthest = 0;
+            for (let k = 24; k < best.length - 24; k += 1) {
+              farthest = Math.max(farthest, off[(best.start + k) % STEPS]);
+            }
+            return {degrees: best.length / 4, farthest};
+          }),
+        ),
+      {items: shots, ...palette, diameter: DIAMETER, stroke: STROKE},
+    );
+    const long = scans.filter(s => s.degrees > 190);
+    expect(long.length).toBeGreaterThan(5);
+    scans.forEach(({degrees, farthest}, i) => {
+      expect(
+        farthest,
+        `at ${times[i]} ms, arc ${degrees.toFixed(1)}deg: color off the fill`,
+      ).toBeLessThan(40);
+    });
+  } finally {
+    await scratch.close();
+  }
+});
+
 test('storyboard: one indeterminate cycle @storyboard', async ({page}) => {
   await openIndeterminate(page);
   await page.evaluate(() => {

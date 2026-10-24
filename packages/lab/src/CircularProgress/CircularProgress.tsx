@@ -225,6 +225,20 @@ const styles = stylex.create({
   fillTurnLeft: {
     left: 0,
   },
+  // In the indeterminate arc the halves turn with the arc's start, so the
+  // line between them (the turned arc's 6 o'clock) falls across pixels: both
+  // clips antialiased it, and together they left a light hairline across the
+  // arc whenever it was longer than half. Here the left half reaches half a
+  // pixel past that line, over the right half's drawing, which covers it;
+  // its turning layer keeps the ring's size, so it still turns about the
+  // ring's center. (While the arc is shorter than half the left half is
+  // hidden, so the extra half pixel never shows.)
+  fillHalfLeftJoint: {
+    width: 'calc(50% + 0.5px)',
+  },
+  fillTurnLeftJoint: {
+    width: 'calc((100% - 0.5px) * 2)',
+  },
   fillCap: {
     position: 'absolute',
     inset: 0,
@@ -532,6 +546,15 @@ function indeterminateKeyframes(duration: number, ease: (t: number) => number) {
     const {tail, arc} = indeterminateAt(t, ease);
     return {t, tail, ...fillTurns(arc / 360)};
   });
+  // As for a value change: the sample on half keeps the side the arc is
+  // leaving, so the left half steps at once as the arc shrinks through half
+  // rather than fading while it still draws part of the arc.
+  const onHalf = new Set(crossings);
+  for (let i = 1; i < frames.length; i += 1) {
+    if (onHalf.has(frames[i].t)) {
+      frames[i].leftShown = frames[i - 1].leftShown;
+    }
+  }
   return {
     tail: frames.map(f => ({offset: f.t, transform: `rotate(${f.tail}deg)`})),
     right: frames.map(f => ({
@@ -801,10 +824,19 @@ export function CircularProgress({
           {halfRing}
         </span>
       </span>
-      <span {...stylex.props(styles.fillHalf, styles.fillHalfLeft)}>
+      <span
+        {...stylex.props(
+          styles.fillHalf,
+          styles.fillHalfLeft,
+          isIndeterminate && styles.fillHalfLeftJoint,
+        )}>
         <span
           ref={leftRef}
-          {...stylex.props(styles.fillTurn, styles.fillTurnLeft)}
+          {...stylex.props(
+            styles.fillTurn,
+            styles.fillTurnLeft,
+            isIndeterminate && styles.fillTurnLeftJoint,
+          )}
           style={{
             transform: `rotate(${turns.left}deg)`,
             opacity: turns.leftShown,
