@@ -51,6 +51,7 @@ import {
   readLongTasks,
   releaseAnimations,
   releaseVelocity,
+  seekAnimations,
   springStep,
   startScreencast,
   thawTimers,
@@ -377,6 +378,65 @@ test('on Android too, the drag tracks the finger 1:1 and holds at the tallest de
     },
   );
   expect(Math.min(...tops)).toBeGreaterThanOrEqual(tallTop - 0.5);
+});
+
+test('the dim follows the sheet: at once under the finger, in lockstep with the release', async ({
+  page,
+}) => {
+  const {driver, sheet, tallTop, halfTop, handle} = await openSheet(page);
+  const dialog = page.getByRole('dialog', {name: 'Nearby places'});
+  const viewportHeight = page.viewportSize()?.height ?? 0;
+  // UIKit's dim: full at the shortest detent and above, linear in the sheet's
+  // top below it, clear when the top reaches the bottom of the screen.
+  const dimAt = (top: number) =>
+    Math.min(
+      1,
+      Math.max(0, (viewportHeight - top) / (viewportHeight - halfTop)),
+    );
+  const backdropOpacity = async () =>
+    dialog.evaluate(el => Number(getComputedStyle(el, '::backdrop').opacity));
+  // Down to the half detent first.
+  await driver.play(slowDragTo(handle, Math.round((halfTop - tallTop) * 0.8)));
+  await waitForRest(sheet);
+  expect(await sheetTop(sheet)).toBeCloseTo(halfTop, 0);
+  expect(await backdropOpacity()).toBeCloseTo(1, 2);
+  // 100 px below it, slowly: the dim follows every move at once.
+  const fromHalf = {x: handle.x, y: halfTop + 12};
+  const tracked: {top: number; dim: number}[] = [];
+  await driver.play(
+    drag(
+      fromHalf,
+      {x: fromHalf.x, y: fromHalf.y + 100},
+      {durationMs: 400, hz: 60, restMs: 150},
+    ),
+    {
+      onEvent: async step => {
+        if (step.type === 'touchMove') {
+          await frames(page, 1);
+          tracked.push({
+            top: await sheetTop(sheet),
+            dim: await backdropOpacity(),
+          });
+        }
+      },
+    },
+  );
+  expect(tracked.at(-1)?.top).toBeGreaterThan(halfTop + 90);
+  for (const {top, dim} of tracked) {
+    expect(dim).toBeCloseTo(dimAt(top), 2);
+  }
+  // Released at 250 px/s, short of halfway to gone: back to the half detent,
+  // the dim riding the same spring, each moment's dim the one for where the
+  // sheet is.
+  await holdAnimations(page, dialog);
+  for (const t of [0, 33, 83, 150, 250, 400]) {
+    await seekAnimations(page, t);
+    const top = await sheetTop(sheet);
+    expect(await backdropOpacity(), `t=${t} top=${top}`).toBeCloseTo(
+      dimAt(top),
+      2,
+    );
+  }
 });
 
 test('a downward flick lands on the next detent, and from there dismisses', async ({

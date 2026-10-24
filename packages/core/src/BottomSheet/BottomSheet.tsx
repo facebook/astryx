@@ -354,6 +354,24 @@ function StandaloneBottomSheet({
       String(opacity),
     );
   }, []);
+  // While the sheet's gesture or its release moves the dim, the backdrop
+  // follows it with no easing of its own (the release plays it in lockstep
+  // with the sheet). The pin is lifted only after a style flush has applied
+  // the last value, so that value does not ease in again.
+  const handleScrimTracking = useCallback((tracking: boolean) => {
+    const dialog = dialogRef.current;
+    if (dialog == null) {
+      return;
+    }
+    if (tracking) {
+      dialog.style.setProperty('--_sheet-scrim-duration', '0s');
+      return;
+    }
+    if (typeof getComputedStyle === 'function') {
+      void getComputedStyle(dialog, '::backdrop').opacity;
+    }
+    dialog.style.removeProperty('--_sheet-scrim-duration');
+  }, []);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -495,6 +513,7 @@ function StandaloneBottomSheet({
           xstyle={xstyle}
           onDismiss={dismissOnLightInteraction}
           onScrimOpacity={handleScrimOpacity}
+          onScrimTracking={hasScrim ? handleScrimTracking : undefined}
           onElementChange={handlePanelElementChange}
           onMotionComplete={handleMotionComplete}>
           <LayerDepthProvider>{children}</LayerDepthProvider>
