@@ -17,10 +17,13 @@ import {search, timing} from '.';
 import {listMotionRoles} from '../roles';
 
 describe('UIKit search table', () => {
-  it('activates on UIKit’s ease-in-ease-out over 383 ms, keeping the travel under Reduce Motion', () => {
+  it('activates on UIKit’s ease-in-ease-out over 383 ms', () => {
     expect(search.activationCurve).toEqual(timing.curves.easeInOut);
     expect(search.activationMs).toBeCloseTo(383.3, 1);
-    expect(search.reducedMotion).toBe('keep');
+  });
+
+  it('holds no Reduce Motion setting: design:reduced-motion decides', () => {
+    expect('reducedMotion' in search).toBe(false);
   });
 
   it('narrows the stacked field to 315 pt beside the close button on a 402 pt screen', () => {

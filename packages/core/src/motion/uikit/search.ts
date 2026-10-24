@@ -57,14 +57,10 @@ export const search = {
    *   iPhone 17 Pro, UICubicTimingParameters read at setup, Oct 24 2026
    */
   activationCurve: [0.42, 0, 0.58, 1],
-  /**
-   * Reduce Motion keeps the activation's travel and adds no cross-fade:
-   * `'keep'` in the animator's terms.
-   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
-   *   iPhone 17 Pro, Reduce Motion on with Prefer Cross-Fade Transitions off
-   *   (M-16): the same frames and alphas as without it, Oct 24 2026
-   */
-  reducedMotion: 'keep',
+  // Reduce Motion: UIKit keeps the activation's travel with or without
+  // Prefer Cross-Fade Transitions (measured in the same UIKit lab, iOS 26.2
+  // simulator, iPhone 17 Pro, Oct 24 2026); Astryx follows
+  // `design:reduced-motion` instead, so the table holds no setting for it.
   stacked: {
     /**
      * The stacked field's height, pt.
