@@ -14,9 +14,9 @@
  * SYNC: When MobileNav.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, beforeAll, afterEach} from 'vitest';
-import {render, cleanup} from '@testing-library/react';
-import {MobileNav} from './MobileNav';
+import {describe, it, expect, beforeAll, afterEach, vi} from 'vitest';
+import {render, cleanup, act} from '@testing-library/react';
+import {MAX_EXIT_MS, MobileNav} from './MobileNav';
 
 beforeAll(() => {
   // jsdom doesn't implement showModal/close on <dialog>
@@ -64,7 +64,7 @@ describe('MobileNav scrollbar gutter', () => {
       </MobileNav>,
     );
 
-    expect(document.documentElement.style.overflow).toBe('clip');
+    expect(document.documentElement.style.overflow).toBe('hidden');
     expect(rootGutter()).toBe('stable');
 
     view.unmount();
@@ -73,24 +73,39 @@ describe('MobileNav scrollbar gutter', () => {
     expect(rootGutter()).toBe('');
   });
 
-  it('gives the gutter back when the drawer closes', () => {
+  it('gives the gutter back when the drawer has closed', () => {
     stubViewport(1024, 1009);
+    vi.useFakeTimers();
+    try {
+      const view = render(
+        <MobileNav isOpen={true} onOpenChange={() => {}}>
+          <span>Nav content</span>
+        </MobileNav>,
+      );
 
-    const view = render(
-      <MobileNav isOpen={true} onOpenChange={() => {}}>
-        <span>Nav content</span>
-      </MobileNav>,
-    );
+      expect(rootGutter()).toBe('stable');
 
-    expect(rootGutter()).toBe('stable');
+      act(() => {
+        view.rerender(
+          <MobileNav isOpen={false} onOpenChange={() => {}}>
+            <span>Nav content</span>
+          </MobileNav>,
+        );
+      });
 
-    view.rerender(
-      <MobileNav isOpen={false} onOpenChange={() => {}}>
-        <span>Nav content</span>
-      </MobileNav>,
-    );
+      // The page stays locked, gutter included, while the drawer slides out
+      // and the dialog is still open: nothing shifts under the leaving drawer.
+      expect(rootGutter()).toBe('stable');
+      expect(document.documentElement.style.overflow).toBe('hidden');
 
-    expect(rootGutter()).toBe('');
+      act(() => {
+        vi.advanceTimersByTime(MAX_EXIT_MS);
+      });
+      expect(rootGutter()).toBe('');
+      expect(document.documentElement.style.overflow).toBe('');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('holds nothing when the scrollbar is an overlay one', () => {
@@ -102,7 +117,7 @@ describe('MobileNav scrollbar gutter', () => {
       </MobileNav>,
     );
 
-    expect(document.documentElement.style.overflow).toBe('clip');
+    expect(document.documentElement.style.overflow).toBe('hidden');
     expect(rootGutter()).toBe('');
     expect(document.documentElement.style.paddingRight).toBe('');
   });
