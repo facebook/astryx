@@ -35,6 +35,13 @@ function hex2(n) {
   return Math.round(n).toString(16).padStart(2, '0').toUpperCase();
 }
 
+// The CSS color keywords core's resolved tokens use.
+const NAMED_COLORS = {
+  black: '#000000FF',
+  white: '#FFFFFFFF',
+  transparent: '#00000000',
+};
+
 /** A CSS color as `#RRGGBBAA`, or null when it is not a plain color. */
 export function toHexColor(value) {
   const v = value.trim();
@@ -58,8 +65,7 @@ export function toHexColor(value) {
           : parseFloat(m[4]);
     return `#${hex2(+m[1])}${hex2(+m[2])}${hex2(+m[3])}${hex2(alpha * 255)}`;
   }
-  if (v === 'transparent') return '#00000000';
-  return null;
+  return NAMED_COLORS[v.toLowerCase()] ?? null;
 }
 
 /** A CSS length or unitless number as points, or null. */
@@ -80,12 +86,24 @@ async function resolveMode(mode) {
   )) {
     if (!KEEP.test(name) || typeof value !== 'string') continue;
     const key = name.slice(2);
+    // A kept token that cannot be read fails the run, so no token goes
+    // missing from the Swift theme without a message.
     if (key.startsWith('color-')) {
       const color = toHexColor(value);
-      if (color) colors[key] = color;
+      if (color === null) {
+        throw new Error(
+          `${mode}: ${name} is not a color Swift can read: ${value}`,
+        );
+      }
+      colors[key] = color;
     } else {
       const points = toPoints(value);
-      if (points !== null) sizes[key] = points;
+      if (points === null) {
+        throw new Error(
+          `${mode}: ${name} is not a size Swift can read: ${value}`,
+        );
+      }
+      sizes[key] = points;
     }
   }
   return {colors, sizes};

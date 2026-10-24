@@ -28,7 +28,7 @@ public enum AstryxButtonSize: String, CaseIterable, Sendable {
 }
 
 /// A labeled action, painted with the theme's tokens. The tap area reaches
-/// the platform's 44-point minimum even when the drawn button is shorter.
+/// the platform's 44-by-44-point minimum even when the drawn button is smaller.
 public struct AstryxButton: View {
   let label: String
   let variant: AstryxButtonVariant
@@ -130,9 +130,9 @@ struct AstryxButtonStyle: ButtonStyle {
       .frame(maxWidth: fillsWidth ? .infinity : nil, minHeight: height)
       .background(shape.fill(background))
       .opacity(isEnabled ? (configuration.isPressed ? 0.75 : 1) : 0.5)
-      // Drawn at the token height; laid out at least 44 high so the whole
+      // Drawn at the token size; laid out at least 44 by 44 so the whole
       // platform-minimum tap area counts.
-      .frame(minHeight: 44)
+      .frame(minWidth: 44, minHeight: 44)
       .contentShape(Rectangle())
   }
 }
