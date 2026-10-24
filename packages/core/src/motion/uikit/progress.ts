@@ -22,15 +22,18 @@
  * Lengths are in points (CSS px), durations in ms, alphas in 0..1.
  *
  * The table is registered with the theme's motion roles (motion/roles.ts):
- * the cycle (`activityIndicator.cycleMs`) is a role a theme may retune; the
- * frame count, alphas and geometry are drawing, not motion.
+ * the indicator's cycle (`activityIndicator.cycleMs`) and the progress
+ * view's whole-track duration (`progressView.wholeTrackMs`) are roles a
+ * theme may retune; frame counts, alphas and geometry are drawing, not
+ * motion.
  *
  * SYNC: When modified, update /packages/core/src/Spinner/Spinner.tsx (its
  * keyframes and spoke geometry are literals, and its cycle reads the role's
  * variable with this file's value as the fallback, which Spinner.test.tsx
  * checks against this file) and
  * /packages/core/src/ProgressBar/ProgressBar.tsx (its minimum fill is a
- * literal, which ProgressBar.test.tsx checks).
+ * literal, and its touch timing reads the whole-track role's variable with
+ * this file's value as the fallback, which ProgressBar.test.tsx checks).
  */
 
 import {registerMotionTable} from '../roles';
@@ -221,14 +224,15 @@ export const progress = {
      */
     emptyFillAlpha: 0,
     /**
-     * setProgress(_:animated: true) runs for this long per whole unit of
-     * progress it moves, measured on the model values (0.2 → 0.8 takes
-     * 0.6 s), starting from wherever the fill is drawn when it is retargeted.
+     * setProgress(_:animated: true) runs this long for a change of the whole
+     * track (0 → 1), and in proportion for less, measured on the model
+     * values (0.2 → 0.8 takes 0.6 s), starting from wherever the fill is
+     * drawn when it is retargeted.
      * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
      *   iPhone 17 Pro, UIView animation on the fill's frame (duration,
      *   beginFromCurrentState) for jumps of 0.6, 0.4 and 0.6, Oct 23 2026
      */
-    animatedMsPerProgress: 1000,
+    wholeTrackMs: 1000,
     /**
      * That animation's curve is linear, and Reduce Motion leaves it
      * unchanged.
@@ -240,5 +244,5 @@ export const progress = {
   },
 } as const;
 
-// The cycle above is a motion role a theme may retune (motion/roles.ts).
+// The durations above are motion roles a theme may retune (motion/roles.ts).
 registerMotionTable('progress', progress);

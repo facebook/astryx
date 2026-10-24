@@ -11,6 +11,8 @@ import {describe, it, expect, beforeAll} from 'vitest';
 import {render, screen, waitFor} from '@testing-library/react';
 import {ProgressBar} from './ProgressBar';
 import {progress} from '../motion/uikit/progress';
+import {motionRoleIn} from '../motion/roles';
+import {IOS_TOUCH_STYLE_KEYS} from '../utils/touchPresentation';
 
 // A labeled mark wraps the tick in a lazily-loaded Tooltip (React.lazy +
 // Suspense). Preload that chunk once so the Tooltip (and its
@@ -897,15 +899,32 @@ describe('ProgressBar theme target names', () => {
 
 /**
  * The declarations the element's classes carry in rules at the top level
- * (`media` null) or inside `@media <media>`, as `prop: value`.
+ * (`media` null), inside `@media <media>`, or inside exactly the nested
+ * conditions listed (`@media` texts as they are, `@supports` ones prefixed,
+ * in either nesting order), as `prop: value`.
  */
-function rulesOf(el: Element, media: string | null): string[] {
+function rulesOf(
+  el: Element,
+  media: string | null | ReadonlyArray<string>,
+): string[] {
   const out: string[] = [];
-  const visit = (rules: CSSRuleList, inMedia: string | null) => {
+  const key = (list: ReadonlyArray<string>) => list.slice().sort().join(' & ');
+  const want = key(
+    media == null ? [] : typeof media === 'string' ? [media] : media,
+  );
+  const visit = (rules: CSSRuleList, conditions: ReadonlyArray<string>) => {
     for (const rule of Array.from(rules)) {
       if (rule instanceof CSSMediaRule) {
-        visit(rule.cssRules, rule.conditionText ?? rule.media.mediaText);
-      } else if (rule instanceof CSSStyleRule && inMedia === media) {
+        visit(rule.cssRules, [
+          ...conditions,
+          rule.conditionText ?? rule.media.mediaText,
+        ]);
+      } else if (rule instanceof CSSSupportsRule) {
+        visit(rule.cssRules, [
+          ...conditions,
+          `@supports ${rule.conditionText}`,
+        ]);
+      } else if (rule instanceof CSSStyleRule && key(conditions) === want) {
         if (
           Array.from(el.classList).some(c =>
             rule.selectorText.includes(`.${c}`),
@@ -921,7 +940,7 @@ function rulesOf(el: Element, media: string | null): string[] {
   };
   for (const sheet of Array.from(document.styleSheets)) {
     try {
-      visit(sheet.cssRules, null);
+      visit(sheet.cssRules, []);
     } catch {
       // ignore cross-origin sheets
     }
@@ -934,31 +953,51 @@ const valueOf = (declarations: string[], prop: string) =>
     .filter(d => d.startsWith(`${prop}:`))
     .map(d => d.slice(prop.length + 1).trim());
 
-describe('ProgressBar under a finger: UIProgressView', () => {
+describe('ProgressBar under a finger on iOS: UIProgressView', () => {
   const view = progress.progressView;
+  // The resolver's iOS gate, as IOS_TOUCH_STYLE_KEYS spells it.
+  const IOS = [
+    IOS_TOUCH_STYLE_KEYS[0].replace('@media ', ''),
+    IOS_TOUCH_STYLE_KEYS[1],
+  ];
   const fillOf = () =>
     screen.getByRole('progressbar').firstElementChild as HTMLElement;
-  const durationOf = () =>
-    fillOf().style.getPropertyValue('--_progress-bar-duration');
+  const changeOf = () =>
+    Number(fillOf().style.getPropertyValue('--_progress-bar-change'));
 
-  it('moves linearly for 1 s per whole track of the change, from the last value', () => {
+  it('moves linearly for the whole-track role times the share of the track it moved, from the last value', () => {
     const {rerender} = render(<ProgressBar value={10} label="Upload" />);
     // Nothing to animate on the first render.
-    expect(durationOf()).toBe('0ms');
+    expect(changeOf()).toBe(0);
     rerender(<ProgressBar value={60} label="Upload" />);
-    expect(durationOf()).toBe(`${0.5 * view.animatedMsPerProgress}ms`);
-    // A re-render with the same value keeps the running change's duration.
+    expect(changeOf()).toBeCloseTo(0.5, 6);
+    // A re-render with the same value keeps the running change's share.
     rerender(<ProgressBar value={60} label="Upload" />);
-    expect(durationOf()).toBe(`${0.5 * view.animatedMsPerProgress}ms`);
+    expect(changeOf()).toBeCloseTo(0.5, 6);
     // The duration is the model change: 60 → 40 is 0.2 of the track.
     rerender(<ProgressBar value={40} label="Upload" />);
-    expect(durationOf()).toBe(`${0.2 * view.animatedMsPerProgress}ms`);
-    const coarse = rulesOf(fillOf(), '(pointer: coarse)');
-    expect(valueOf(coarse, 'transition-duration')).toEqual([
-      'var(--_progress-bar-duration,0s)',
-    ]);
+    expect(changeOf()).toBeCloseTo(0.2, 6);
+    const ios = rulesOf(fillOf(), IOS);
+    // The share times the role's variable, the table's 1 s by default.
+    const role = motionRoleIn(view, 'wholeTrackMs');
+    expect(role?.variable).toBe(
+      '--motion-progress-progress-view-whole-track-ms',
+    );
+    const [duration] = valueOf(ios, 'transition-duration');
+    const match =
+      /^calc\(var\(--_progress-bar-change,\s*0\)\s*\*\s*var\((--[\w-]+),\s*([^)]+)\)\)$/.exec(
+        duration,
+      );
+    expect(match?.[1], duration).toBe(role?.variable);
+    const fallback = match?.[2] ?? '';
+    expect(
+      Number.parseFloat(fallback) * (fallback.endsWith('ms') ? 1 : 1000),
+    ).toBe(view.wholeTrackMs);
     expect(view.animatedCurveIsLinear).toBe(true);
-    expect(valueOf(coarse, 'transition-timing-function')).toEqual(['linear']);
+    expect(valueOf(ios, 'transition-timing-function')).toEqual(['linear']);
+    // A finger anywhere else (Android) keeps the theme's timing: nothing
+    // switches on the touch query alone.
+    expect(rulesOf(fillOf(), '(pointer: coarse)')).toEqual([]);
     // With a mouse or trackpad the theme's tokens still time it.
     const fine = rulesOf(fillOf(), null);
     expect(valueOf(fine, 'transition-duration')[0]).toMatch(/^var\(--/);
@@ -972,7 +1011,7 @@ describe('ProgressBar under a finger: UIProgressView', () => {
       valueOf(rulesOf(track, null), 'height')[0],
     );
     const minimum = view.minimumFillHeights * trackHeight;
-    const coarse = rulesOf(fillOf(), '(pointer: coarse)');
+    const coarse = rulesOf(fillOf(), IOS);
     expect(valueOf(coarse, 'transform').join(' ')).toContain(
       `max(var(--_progress-bar-fill,0%),${minimum}px)`,
     );
@@ -982,14 +1021,10 @@ describe('ProgressBar under a finger: UIProgressView', () => {
     );
     // At zero the fill is transparent under a finger (UIKit's alpha 0)…
     expect(view.emptyFillAlpha).toBe(0);
-    expect(valueOf(rulesOf(fillOf(), '(pointer: coarse)'), 'opacity')).toEqual([
-      '0',
-    ]);
+    expect(valueOf(rulesOf(fillOf(), IOS), 'opacity')).toEqual(['0']);
     // …and drawn as soon as there is any progress.
     rerender(<ProgressBar value={1} label="Upload" />);
-    expect(valueOf(rulesOf(fillOf(), '(pointer: coarse)'), 'opacity')).toEqual(
-      [],
-    );
+    expect(valueOf(rulesOf(fillOf(), IOS), 'opacity')).toEqual([]);
   });
 
   it('keeps its pace under reduced motion, as UIKit does', () => {
