@@ -568,6 +568,60 @@ test("the arc stays one piece as it crosses 6 o'clock", async ({page}) => {
   expect(reaches.some(r => r > 170 && r < 190)).toBe(true);
 });
 
+test('a change keeps the theme\u2019s duration and easing', async ({page}) => {
+  await open(page, 20);
+  const palette = await colors(page);
+  // The tokens the stroked circle's transition used, still declared on the
+  // fill and read back when a change starts.
+  const theme = await page.evaluate(() => {
+    const fill = document.querySelector(
+      '.astryx-circular-progress-fill',
+    ) as HTMLElement;
+    const style = getComputedStyle(fill);
+    return {
+      duration: style.transitionDuration,
+      easing: style.transitionTimingFunction,
+    };
+  });
+  await changeAndPause(page, 80);
+  const timing = await page.evaluate(easing => {
+    const [first] = document.getAnimations();
+    const duration = Number(first?.effect?.getTiming().duration);
+    // The theme's easing, evaluated by the browser through a detached animation.
+    const probe = new Animation(
+      new KeyframeEffect(null, null, {duration: 1000, easing, fill: 'both'}),
+    );
+    const eased = [0.25, 0.5, 0.75].map(t => {
+      probe.currentTime = t * 1000;
+      return probe.effect?.getComputedTiming().progress ?? t;
+    });
+    return {duration, eased};
+  }, theme.easing);
+  const tokenMs =
+    Number.parseFloat(theme.duration) *
+    (theme.duration.endsWith('ms') ? 1 : 1000);
+  expect(timing.duration).toBeCloseTo(tokenMs, 0);
+  // The arc reaches where the theme's easing puts it at each quarter.
+  const shots: string[] = [];
+  for (const t of [0.25, 0.5, 0.75]) {
+    await seek(page, t * timing.duration);
+    shots.push(
+      (await page.getByRole('progressbar').screenshot()).toString('base64'),
+    );
+  }
+  const rows = await inkByDegree(page, shots, palette);
+  // The leading round cap reaches half the stroke past the arc's end.
+  const cap = (STROKE / 2 / ((DIAMETER - STROKE) / 2)) * (180 / Math.PI);
+  rows.forEach((row, i) => {
+    const expected = 360 * (0.2 + 0.6 * timing.eased[i]) + cap;
+    const {last} = span(row);
+    expect(
+      Math.abs(last - expected),
+      `quarter ${i + 1}: ${last}°`,
+    ).toBeLessThanOrEqual(4);
+  });
+});
+
 test('storyboard: 20% to 80% @storyboard', async ({page}, testInfo) => {
   await open(page, 20);
   await changeAndPause(page, 80);
