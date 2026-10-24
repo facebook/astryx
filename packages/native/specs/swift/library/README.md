@@ -11,4 +11,5 @@ wins.
 | File                 | Concern                                                                               |
 | -------------------- | ------------------------------------------------------------------------------------- |
 | `accessibility.md`   | How core's accessibility semantics reach VoiceOver and Apple's accessibility settings |
+| `slots.md`           | How each slot kind (text, icon, content) appears in SwiftUI                           |
 | `theme-generator.md` | How any Astryx theme becomes a Swift `AstryxTheme`                                    |
