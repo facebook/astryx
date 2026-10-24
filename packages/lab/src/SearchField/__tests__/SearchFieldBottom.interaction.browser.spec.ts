@@ -13,8 +13,10 @@
  *   the bar rides the keyboard on the keyboard's spring with the field's
  *   centre 36 px above the keyboard's top; the close button narrows the
  *   field 16 px at each side, springs it out to rest and shrinks the button
- *   in place while the bar rides down; the ride keeps advancing through a
- *   blocked main thread; storyboards of the activation and the cancel
+ *   in place while the bar rides down; a tap focuses without Safari's reveal
+ *   (preventScroll); Reduce Motion keeps the travel; the ride keeps advancing
+ *   through a blocked main thread; storyboards of the activation and the
+ *   cancel
  * @position Interaction proof for lab SearchField's bottom placement
  *   (SearchField.tsx, searchFieldModel.ts). Headless browsers have no
  *   software keyboard, so the page's `visualViewport` is replaced by one the
@@ -301,6 +303,65 @@ test('a tap plays iOS’s measured activation on every part', async ({
     ACTIVE.trailing - REST.trailing,
     1,
   );
+});
+
+test('a tap focuses the field without Safari’s reveal', async ({page}) => {
+  const {driver, field} = await openBottom(page);
+  // Every focus the page makes, with the options it passes.
+  await page.evaluate(() => {
+    const calls: unknown[] = [];
+    (window as unknown as {__focusCalls: unknown[]}).__focusCalls = calls;
+    const focus = HTMLElement.prototype.focus;
+    HTMLElement.prototype.focus = function (options?: FocusOptions) {
+      calls.push({role: this.getAttribute('role'), options: options ?? null});
+      focus.call(this, options);
+    };
+  });
+  const scrollBefore = await page.evaluate(() => window.scrollY);
+  await driver.tap(await centerOf(field));
+  await expect(field).toBeFocused();
+  const calls = await page.evaluate(
+    () => (window as unknown as {__focusCalls: unknown[]}).__focusCalls,
+  );
+  // The field's own tap focused it, asking the browser not to scroll it into
+  // view (Mobile Safari would pan the page instead of letting the bar ride).
+  expect(calls).toEqual([{role: 'searchbox', options: {preventScroll: true}}]);
+  expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore);
+});
+
+test.describe('with Reduce Motion', () => {
+  test('the field still swells and narrows, with no cross-fade', async ({
+    page,
+  }) => {
+    await page.emulateMedia({reducedMotion: 'reduce'});
+    const {driver, field} = await openBottom(page);
+    await driver.tap(await centerOf(field));
+    await waitForAnimation(end(page), {minProgressMs: 150});
+    const midway = await page.evaluate(() => {
+      const read = (selector: string) => {
+        const element = document.querySelector(selector) as HTMLElement;
+        const style = getComputedStyle(element);
+        return {
+          x: style.translate === 'none' ? 0 : parseFloat(style.translate),
+          opacity: Number(style.opacity),
+        };
+      };
+      return {
+        end: read('[data-search-field-end]'),
+        root: read('[role="search"]'),
+      };
+    });
+    // Part-way along the measured travel, and nothing fades.
+    expect(midway.end.x).not.toBeCloseTo(0, 0);
+    expect(midway.end.x).not.toBeCloseTo(ACTIVE.trailing - REST.trailing, 0);
+    expect(midway.root.opacity).toBe(1);
+    expect(midway.end.opacity).toBe(1);
+    await waitForRest(end(page));
+    expect((await translate(end(page)))[0]).toBeCloseTo(
+      ACTIVE.trailing - REST.trailing,
+      1,
+    );
+  });
 });
 
 test('the bar rides the keyboard on its spring, the field’s centre 36 px above the keyboard', async ({
