@@ -325,8 +325,7 @@ export interface TextAreaProps
    */
   startIcon?: ReactNode | IconType;
   /**
-   * Whether to enable browser spell checking. Turning it off also stops iOS
-   * from replacing quotes and dashes with their typographic forms.
+   * Whether to enable browser spell checking.
    * @default true
    */
   hasSpellCheck?: boolean;

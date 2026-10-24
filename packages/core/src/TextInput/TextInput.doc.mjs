@@ -198,7 +198,7 @@ export const docs = {
       name: 'hasSpellCheck',
       type: 'boolean',
       description:
-        'Whether misspelled words are underlined (the native `spellcheck`). Turning it off also stops iOS from replacing quotes and dashes with their typographic forms. Unset, the browser decides.',
+        'Whether misspelled words are underlined (the native `spellcheck`). Unset, the browser decides.',
     },
     {
       name: 'containerXstyle',
@@ -441,7 +441,7 @@ export const docsZh = {
       name: 'hasSpellCheck',
       type: 'boolean',
       description:
-        '是否为拼错的单词加下划线（原生 `spellcheck`）。关闭后 iOS 也不再把引号和破折号替换成排版形式。未设置时由浏览器决定。',
+        '是否为拼错的单词加下划线（原生 `spellcheck`）。未设置时由浏览器决定。',
     },
     {
       name: 'containerXstyle',

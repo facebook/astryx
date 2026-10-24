@@ -294,8 +294,7 @@ export interface TextInputProps
   autoComplete?: React.InputHTMLAttributes<HTMLInputElement>['autoComplete'];
   /**
    * Whether misspelled words are underlined (the native `spellcheck`).
-   * Turning it off also stops iOS from replacing quotes and dashes with their
-   * typographic forms. Unset, the browser decides.
+   * Unset, the browser decides.
    */
   hasSpellCheck?: boolean;
 }
@@ -510,7 +509,8 @@ export function TextInput({
           autoCapitalize,
           hasAutoCorrect,
         })}
-        spellCheck={hasSpellCheck}
+        // Only when set, so an untyped `spellCheck` passed through still applies.
+        {...(hasSpellCheck != null ? {spellCheck: hasSpellCheck} : {})}
         value={optimisticValue}
         onChange={handleChange}
         onKeyDown={

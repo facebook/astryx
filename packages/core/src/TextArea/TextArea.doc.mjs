@@ -213,7 +213,7 @@ export const docs = {
       name: 'hasSpellCheck',
       type: 'boolean',
       description:
-        'Enables or disables browser spell checking. Turning it off also stops iOS from replacing quotes and dashes with their typographic forms.',
+        'Enables or disables browser spell checking.',
       default: 'true',
     },
     {
@@ -525,7 +525,7 @@ export const docsZh = {
     {
       name: 'hasSpellCheck',
       type: 'boolean',
-      description: '启用或禁用浏览器拼写检查。关闭后 iOS 也不再把引号和破折号替换成排版形式。',
+      description: '启用或禁用浏览器拼写检查。',
       default: 'true',
     },
     {

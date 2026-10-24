@@ -671,6 +671,22 @@ describe('TextInput', () => {
       expect(input).toHaveAttribute('spellcheck', 'false');
     });
 
+    it('keeps an untyped spellCheck passed through while hasSpellCheck is unset', () => {
+      const passthrough = {spellCheck: false} as Record<string, unknown>;
+      render(
+        <TextInput
+          label="Code"
+          value=""
+          onChange={() => {}}
+          {...passthrough}
+        />,
+      );
+      expect(screen.getByRole('textbox')).toHaveAttribute(
+        'spellcheck',
+        'false',
+      );
+    });
+
     it('turns correction and spell checking on explicitly', () => {
       render(
         <TextInput
