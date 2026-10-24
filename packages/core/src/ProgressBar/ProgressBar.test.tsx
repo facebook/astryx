@@ -757,7 +757,8 @@ describe('ProgressBar', () => {
         /transform:\s*translateX\(calc\(var\(--_progress-bar-fill,\s*0%\) - 100%\)\)/,
       );
       expect(css).toMatch(
-        /dir="?rtl"?[^{]*\{[^}]*transform:\s*translateX\(calc\(100% - var\(--_progress-bar-fill,\s*0%\)\)\)/,
+        // The bar's own direction (`:dir(rtl)`), not any RTL ancestor.
+        /:dir\(rtl\)[^{]*\{[^}]*transform:\s*translateX\(calc\(100% - var\(--_progress-bar-fill,\s*0%\)\)\)/,
       );
     });
 

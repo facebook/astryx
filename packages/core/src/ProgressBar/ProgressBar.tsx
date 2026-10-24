@@ -239,16 +239,18 @@ const styles = stylex.create({
   // while a script runs; animating `width` would lay out and repaint on the
   // main thread every frame and stall with it. `--_progress-bar-fill` is the
   // filled share of the track (set inline); the fill's leading edge sits
-  // exactly there, mirrored in RTL. The layer is declared up front so Safari
-  // has the whole bar painted before it first moves.
+  // exactly there, mirrored in RTL. The mirror follows the bar's own
+  // direction (`:dir(rtl)`, the nearest `dir`), not any RTL ancestor, so a bar
+  // in an LTR region of an RTL page fills from the left like its label and
+  // marks. The layer is declared up front so Safari has the whole bar painted
+  // before it first moves.
   fill: {
     width: '100%',
     height: '100%',
     borderRadius: radiusVars['--radius-full'],
     transform: {
       default: 'translateX(calc(var(--_progress-bar-fill, 0%) - 100%))',
-      ':is([dir="rtl"] *)':
-        'translateX(calc(100% - var(--_progress-bar-fill, 0%)))',
+      ':dir(rtl)': 'translateX(calc(100% - var(--_progress-bar-fill, 0%)))',
     },
     willChange: 'transform',
     transitionProperty: 'transform',

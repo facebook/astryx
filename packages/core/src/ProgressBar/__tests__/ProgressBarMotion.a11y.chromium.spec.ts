@@ -45,8 +45,10 @@ const DPR = 2;
 
 test.use({viewport: {width: 402, height: 200}, deviceScaleFactor: DPR});
 
-async function open(page: Page, value: number) {
-  await page.goto(`${storybook.origin}/iframe.html?id=${STORY}&viewMode=story`);
+async function open(page: Page, value: number, globals = '') {
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=${STORY}&viewMode=story${globals ? `&globals=${globals}` : ''}`,
+  );
   await expect(page.getByRole('progressbar')).toBeVisible();
   await setValue(page, value);
   // Let any transition from the story's own value finish.
@@ -313,16 +315,34 @@ test('moving the fill lays out and paints nothing per frame', async ({
   expect(count('Paint')).toBeLessThanOrEqual(2);
 });
 
-test('the leading edge sits at the value, mirrored in RTL', async ({page}) => {
-  for (const dir of ['ltr', 'rtl'] as const) {
-    await open(page, 0);
-    await page.evaluate(d => {
-      document.documentElement.dir = d;
-    }, dir);
+test('the leading edge sits at the value, mirrored in an RTL region', async ({
+  page,
+}) => {
+  // The story's own direction makes a real RTL region (Storybook keeps the
+  // story inside its own `dir`); an LTR region inside an RTL page fills from
+  // the left, like its label and marks.
+  const cases = [
+    {name: 'ltr', globals: '', nested: false, fromLeft: true},
+    {name: 'rtl', globals: 'direction:rtl', nested: false, fromLeft: false},
+    {
+      name: 'ltr inside rtl',
+      globals: 'direction:rtl',
+      nested: true,
+      fromLeft: true,
+    },
+  ];
+  for (const {name, globals, nested, fromLeft} of cases) {
+    await open(page, 0, globals);
+    if (nested) {
+      await page.evaluate(() => {
+        const bar = document.querySelector('[role="progressbar"]');
+        bar?.parentElement?.setAttribute('dir', 'ltr');
+      });
+    }
     for (const value of [0, 25, 60, 100]) {
       await setValue(page, value);
       await page.waitForTimeout(700);
-      const {track, fill} = await page.evaluate(() => {
+      const {track, fill, direction} = await page.evaluate(() => {
         const bar = document.querySelector('[role="progressbar"]');
         const child = bar?.firstElementChild;
         if (bar == null || child == null) {
@@ -332,18 +352,23 @@ test('the leading edge sits at the value, mirrored in RTL', async ({page}) => {
           const b = e.getBoundingClientRect();
           return {left: b.left, right: b.right, width: b.width};
         };
-        return {track: r(bar), fill: r(child)};
+        return {
+          track: r(bar),
+          fill: r(child),
+          direction: getComputedStyle(bar).direction,
+        };
       });
+      expect(direction, name).toBe(fromLeft ? 'ltr' : 'rtl');
       // The fill spans the track and is moved back by the unfilled share.
       expect(fill.width).toBeCloseTo(track.width, 1);
       const filled = (track.width * value) / 100;
-      if (dir === 'ltr') {
-        expect(fill.right - track.left, `${dir} ${value}`).toBeCloseTo(
+      if (fromLeft) {
+        expect(fill.right - track.left, `${name} ${value}`).toBeCloseTo(
           filled,
           0,
         );
       } else {
-        expect(track.right - fill.left, `${dir} ${value}`).toBeCloseTo(
+        expect(track.right - fill.left, `${name} ${value}`).toBeCloseTo(
           filled,
           0,
         );
