@@ -14,7 +14,8 @@
  *   a release coasts on UIKit's spring to 0.4 of the momentum projection
  *   (final value and presented curve against an independent spring), a slow
  *   release does not coast, a drag that rests before the lift still coasts
- *   on its last velocity, Reduce Motion keeps the lift and the coast, a
+ *   on its last velocity, under Reduce Motion no lift and a release or tap
+ *   cross-fades (design:reduced-motion), a
  *   finger landing on a coasting thumb stops it where it is, a held thumb
  *   selects no text, and a finger lifted outside stays at the lift value;
  *   `onChangeEnd`
@@ -648,41 +649,95 @@ test('a drag that rests before the lift still coasts on its last velocity, as UI
   expect(await value()).toBe(expected);
 });
 
-test('Reduce Motion keeps the finger-driven lift and coast on their springs', async ({
+test('Reduce Motion: no lift, and a release or a track tap cross-fades the thumb to its value within 200 ms (design:reduced-motion)', async ({
   page,
 }) => {
   await page.emulateMedia({reducedMotion: 'reduce'});
-  const {driver, thumb, center, value} = await openSlider(
+  const {driver, thumb, center} = await openSlider(
     page,
     'core-slider--touch-tracking',
     {name: 'Brightness'},
   );
+  /** The thumb's opacity, scale and value each frame for `ms` from now. */
+  const watch = async (ms: number) =>
+    thumb.evaluate(async (element, duration) => {
+      const samples: {
+        t: number;
+        opacity: number;
+        scale: number;
+        value: number;
+      }[] = [];
+      const start = performance.now();
+      while (performance.now() - start < duration) {
+        await new Promise(requestAnimationFrame);
+        const style = getComputedStyle(element);
+        samples.push({
+          t: performance.now() - start,
+          opacity: Number(style.opacity),
+          scale: style.scale === 'none' ? 1 : Number(style.scale),
+          value: Number(element.getAttribute('aria-valuenow')),
+        });
+      }
+      return samples;
+    }, ms);
+  type Sample = Awaited<ReturnType<typeof watch>>[number];
+  /** Opacity only, back to 1 within 200 ms of the change, nothing scaled. */
+  const expectCrossFade = (samples: ReadonlyArray<Sample>) => {
+    expect(Math.min(...samples.map(sample => sample.opacity))).toBeLessThan(
+      0.5,
+    );
+    expect(Math.max(...samples.map(sample => sample.scale))).toBe(1);
+    const after = samples.filter(sample => sample.t > 220);
+    expect(after.length).toBeGreaterThan(0);
+    expect(after.every(sample => sample.opacity === 1)).toBe(true);
+  };
+  // A held thumb keeps its size: the press shows in its paint alone (DR1).
   const at = await center();
-  // The lift: the thumb grows on its spring, not at once.
-  const [midLift] = await playReading(
+  const [held] = await playReading(
     page,
     driver,
     tap(at, {holdMs: 400}),
     [0],
-    async () => {
-      await page.waitForTimeout(40);
-      return thumb.evaluate(element => Number(getComputedStyle(element).scale));
-    },
+    async () => watch(250),
   );
-  expect(midLift).toBeGreaterThan(1);
-  expect(midLift).toBeLessThan(UISLIDER.liftScale);
-  await page.waitForTimeout(700);
-  // The coast: still a compositor animation, not an instant jump.
-  const start = await value();
-  const next = await center();
-  await driver.play(flick(next, {velocity: {x: 400, y: 0}, durationMs: 100}));
-  const running = await thumb.evaluate(
-    element => element.getAnimations().length,
+  expect(Math.max(...held.map(sample => sample.scale))).toBe(1);
+  await frames(page, 6);
+  // A flick's release: the thumb fades out and back in where the coast
+  // would have taken it (the value moves on past the lift's), opacity only
+  // (DR2).
+  const from = await center();
+  const script = flick(from, {velocity: {x: 400, y: 0}, durationMs: 100});
+  const [release] = await playReading(
+    page,
+    driver,
+    script,
+    [script.length - 1],
+    async () => watch(320),
   );
-  expect(running).toBeGreaterThan(0);
-  await waitForRest(thumb);
-  await frames(page, 4);
-  expect(await value()).toBeGreaterThan(start);
+  expectCrossFade(release);
+  expect(release[release.length - 1].value).toBeGreaterThan(release[0].value);
+  await frames(page, 6);
+  // A tap on the track: the same cross-fade, to the tap's value.
+  const control = thumb.locator(
+    'xpath=ancestor::*[contains(@class, "astryx-slider-control")][1]',
+  );
+  const box = await control.boundingBox();
+  if (box == null) {
+    throw new Error('no control');
+  }
+  const target = {x: box.x + box.width * 0.1, y: box.y + box.height / 2};
+  const tapScript = tap(target);
+  const [tapped] = await playReading(
+    page,
+    driver,
+    tapScript,
+    [tapScript.length - 1],
+    async () => watch(320),
+  );
+  expectCrossFade(tapped);
+  expect(tapped[tapped.length - 1].value).toBe(
+    Math.round(((target.x - box.x - THUMB / 2) / (box.width - THUMB)) * 100),
+  );
 });
 
 test('a finger landing on a coasting thumb stops it where it is', async ({

@@ -52,6 +52,10 @@
  *   value. A finger landing on a coasting thumb stops it where it is.
  * - Reaching an end plays `slider.endHaptic` once per entry, during the drag
  *   and the coast, where the browser can vibrate.
+ * - Under Reduce Motion (`design:reduced-motion`) the thumb does not lift (the
+ *   press shows in its paint), and the animator turns a release's coast and a
+ *   tap's spring into an opacity-only cross-fade of 200 ms to the same value.
+ *   The finger's own tracking is direct movement and stays.
  * - A pan along the travel that starts on a thumb is the slider's: ancestor
  *   pans and swipes along that axis are vetoed for it (UISlider's
  *   `gestureRecognizerShouldBegin`), so a pager or a swipe row does not take
@@ -391,6 +395,12 @@ export class SliderTouchController {
       // property, so the class's progress-driven translate shows again.
       animator.set({x: 0, y: 0});
       element.style.removeProperty('translate');
+      // A Reduced Motion cross-fade wrote the opacity: end it at 1 and hand it
+      // back too (a caught fade stops part-way).
+      if (element.style.getPropertyValue('opacity') !== '') {
+        animator.set({opacity: 1});
+        element.style.removeProperty('opacity');
+      }
     }
   }
 
@@ -641,7 +651,7 @@ export class SliderTouchController {
     const pxPerValue = range > 0 ? geometry.travel / range : 0;
     const valueVelocity =
       (velocity / geometry.length) * range * UIKIT_SLIDER.trackingGain;
-    this.coastTo(interaction, target, valueVelocity * pxPerValue);
+    this.coastTo(interaction, target, valueVelocity * pxPerValue, true);
   }
 
   /**
@@ -676,19 +686,22 @@ export class SliderTouchController {
       released: true,
     };
     this.interactions.set(index, interaction);
-    this.coastTo(interaction, target, 0);
+    this.coastTo(interaction, target, 0, false);
   }
 
   /**
    * Springs the interaction's thumb from its value to `target`, starting at
    * `velocityPx` (px/s along the travel), on the compositor and clamped:
    * `onChange` follows from the coast's fourth frame and the interaction
-   * ends (`onChangeEnd`) on its last.
+   * ends (`onChangeEnd`) on its last. `touchRelease`: a finger's release
+   * started it. Under Reduce Motion the animator replaces the spring with an
+   * opacity-only cross-fade (design:reduced-motion DR2).
    */
   private coastTo(
     interaction: Interaction,
     target: number,
     velocityPx: number,
+    touchRelease: boolean,
   ): void {
     const {geometry, index} = interaction;
     const {min, max} = this.model;
@@ -717,7 +730,7 @@ export class SliderTouchController {
       this.finish(interaction, true, target);
       return;
     }
-    const handles = this.playCoast(interaction, curve);
+    const handles = this.playCoast(interaction, curve, touchRelease);
     if (handles.length === 0) {
       this.finish(interaction, true, target);
       return;
@@ -754,6 +767,7 @@ export class SliderTouchController {
   private playCoast(
     interaction: Interaction,
     curve: MotionCurve,
+    touchRelease: boolean,
   ): MotionHandle[] {
     const parts = this.getParts();
     if (parts == null) {
@@ -808,7 +822,7 @@ export class SliderTouchController {
       const [element, partCurve] = entry;
       const animator = this.animatorFor(element);
       animator.set({[axis]: partCurve.at(0)});
-      handles.push(animator.play({[axis]: partCurve}, {at}));
+      handles.push(animator.play({[axis]: partCurve}, {at, touchRelease}));
     }
     return handles;
   }
@@ -874,7 +888,14 @@ export class SliderTouchController {
     if (thumb == null) {
       return;
     }
-    this.animatorFor(thumb).animate(
+    const animator = this.animatorFor(thumb);
+    // The lift is feedback with no fade of its own: under Reduce Motion the
+    // press shows in the pressed paint alone, and a change of state never
+    // scales (design:reduced-motion DR1).
+    if (animator.reducedMotion() !== 'off') {
+      return;
+    }
+    animator.animate(
       {scale: UIKIT_SLIDER.liftScale},
       {spring: UIKIT_SLIDER.liftSpring},
     );
