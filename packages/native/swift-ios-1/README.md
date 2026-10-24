@@ -66,9 +66,9 @@ struct DemoApp: App {
 }
 ```
 
-`astryxTheme()` paints a subtree with core's default theme in the current
-color scheme and text size. Pass an `AstryxTheme` to use other tokens.
-Without it, components paint with the default light tokens.
+`astryxTheme(_:)` paints a subtree with a theme; without it, components use
+core's default theme. Either way they follow Dark Mode and the person's text
+size.
 
 ## Theme tokens
 
@@ -76,6 +76,12 @@ Components read every color, size, and font from the `astryx` environment
 value, never from a constant of their own. Token names are core's, without
 the leading `--` (`color-accent`, `spacing-4`, `size-element-md`). Text sizes
 grow with Dynamic Type.
+
+Font families come from the theme's `font-family-*` stacks: the first family
+the device has wins, and a system family such as `-apple-system` or
+`sans-serif` is the system font. Icons use core's shared icon names
+(`success`, `warning`, …), drawn as an SF Symbol by default; a theme replaces
+one with `AstryxTheme(…, icons: ["success": "checkmark.seal.fill"])`.
 
 `core/Theme/Generated/DefaultTheme.swift` is core's default theme run through
 core's own resolver, light and dark. Regenerate it after a core token change:

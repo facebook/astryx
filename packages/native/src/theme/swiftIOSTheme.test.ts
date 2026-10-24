@@ -5,6 +5,7 @@ import {describe, expect, it} from 'vitest';
 import {
   SWIFT_IOS_THEME_FILE,
   renderSwiftIOSTheme,
+  toFontFamilies,
   toHexColor,
   toPoints,
 } from '../../scripts/swift-ios-theme.mjs';
@@ -22,6 +23,15 @@ describe('swift-ios default theme', () => {
     expect(toPoints('32px')).toBe(32);
     expect(toPoints('600')).toBe(600);
     expect(toPoints('cubic-bezier(0, 0, 1, 1)')).toBeNull();
+  });
+
+  it('reads font stacks as family names, first choice first', async () => {
+    expect(
+      toFontFamilies('-apple-system, "Segoe UI", \'Inter\', sans-serif'),
+    ).toEqual(['-apple-system', 'Segoe UI', 'Inter', 'sans-serif']);
+    expect(await renderSwiftIOSTheme()).toContain(
+      '"font-family-heading": ["-apple-system",',
+    );
   });
 
   it('keeps every color token, keywords included', async () => {

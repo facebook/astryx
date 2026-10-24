@@ -65,14 +65,20 @@ public struct AstryxButton: View {
   }
 
   public var body: some View {
-    Button(action: action) {
+    Button(action: activate) {
+      // The label keeps its place while loading so the width holds; the
+      // spinner draws over it.
       HStack(spacing: astryx.space(2)) {
-        if isLoading {
-          ProgressView().controlSize(.small).tint(foreground)
-        } else if let icon {
+        if let icon {
           Image(systemName: icon)
         }
         Text(label).lineLimit(1)
+      }
+      .opacity(isLoading ? 0 : 1)
+      .overlay {
+        if isLoading {
+          ProgressView().controlSize(.small).tint(foreground)
+        }
       }
     }
     .buttonStyle(
@@ -84,9 +90,23 @@ public struct AstryxButton: View {
         background: background
       )
     )
-    // A loading button keeps its label for VoiceOver, and the progress
-    // indicator announces itself; taps are ignored until it finishes.
-    .disabled(isDisabled || isLoading)
+    // As core's Button: a loading button stays undimmed and focusable, keeps
+    // its label, and says Loading; taps do nothing until it finishes.
+    .disabled(isDisabled)
+    .accessibilityLabel(Text(label))
+    .accessibilityValue(Text(loadingValue ?? ""))
+    .onChange(of: isLoading) { _, loading in
+      if loading { AccessibilityNotification.Announcement("Loading").post() }
+    }
+  }
+
+  /// What assistive technology reads after the label while loading.
+  var loadingValue: String? { isLoading ? "Loading" : nil }
+
+  /// Runs the action unless the button is loading.
+  func activate() {
+    guard !isLoading else { return }
+    action()
   }
 
   private var foreground: Color {

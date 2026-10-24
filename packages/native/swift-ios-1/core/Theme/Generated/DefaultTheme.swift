@@ -233,6 +233,11 @@ extension AstryxTokens {
       "text-supporting-leading": 1.6667,
       "text-supporting-size": 12,
       "text-supporting-weight": 400,
+    ],
+    fonts: [
+      "font-family-body": ["-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica", "Arial", "sans-serif"],
+      "font-family-code": ["SF Mono", "Monaco", "Consolas", "monospace"],
+      "font-family-heading": ["-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica", "Arial", "sans-serif"],
     ]
   )
 
@@ -467,6 +472,11 @@ extension AstryxTokens {
       "text-supporting-leading": 1.6667,
       "text-supporting-size": 12,
       "text-supporting-weight": 400,
+    ],
+    fonts: [
+      "font-family-body": ["-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica", "Arial", "sans-serif"],
+      "font-family-code": ["SF Mono", "Monaco", "Consolas", "monospace"],
+      "font-family-heading": ["-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica", "Arial", "sans-serif"],
     ]
   )
 }

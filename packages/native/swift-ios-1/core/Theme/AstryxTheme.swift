@@ -3,15 +3,24 @@
 
 import SwiftUI
 
-/// One mode of a theme, resolved: colors as `#RRGGBBAA` and sizes in points,
-/// keyed by core's token names without the leading `--`.
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
+
+/// One mode of a theme, resolved: colors as `#RRGGBBAA`, sizes in points, and
+/// font families as their CSS stacks, first choice first, keyed by core's
+/// token names without the leading `--`.
 public struct AstryxTokens: Equatable, Sendable {
   public var colors: [String: String]
   public var sizes: [String: Double]
+  public var fonts: [String: [String]]
 
-  public init(colors: [String: String], sizes: [String: Double]) {
+  public init(colors: [String: String], sizes: [String: Double], fonts: [String: [String]] = [:]) {
     self.colors = colors
     self.sizes = sizes
+    self.fonts = fonts
   }
 }
 
@@ -20,10 +29,14 @@ public struct AstryxTokens: Equatable, Sendable {
 public struct AstryxTheme: Equatable, Sendable {
   public var light: AstryxTokens
   public var dark: AstryxTokens
+  /// SF Symbols that replace the defaults for shared icon names, such as
+  /// `["success": "checkmark.seal.fill"]` (AST-082 FR17).
+  public var icons: [String: String]
 
-  public init(light: AstryxTokens, dark: AstryxTokens) {
+  public init(light: AstryxTokens, dark: AstryxTokens, icons: [String: String] = [:]) {
     self.light = light
     self.dark = dark
+    self.icons = icons
   }
 
   public static let `default` = AstryxTheme(
@@ -39,10 +52,13 @@ public struct AstryxStyle: Sendable {
   public let tokens: AstryxTokens
   /// How much Dynamic Type grows text at the person's setting (1 at Large).
   public let textScale: CGFloat
+  /// The theme's replacements for shared icon names.
+  public let icons: [String: String]
 
-  public init(tokens: AstryxTokens, textScale: CGFloat = 1) {
+  public init(tokens: AstryxTokens, textScale: CGFloat = 1, icons: [String: String] = [:]) {
     self.tokens = tokens
     self.textScale = textScale
+    self.icons = icons
   }
 
   /// A token color. A token the theme does not define draws clear, so a
@@ -67,9 +83,29 @@ public struct AstryxStyle: Sendable {
     size(token, fallback) * textScale
   }
 
-  /// A system font at a token size and a token weight.
-  public func font(size token: String, _ fallback: CGFloat, weight: String) -> Font {
-    .system(size: fontSize(token, fallback), weight: fontWeight(size(weight, 400)))
+  /// The theme's font family at a token size and a token weight. The first
+  /// family in the stack that the device has wins; a system family, such as
+  /// `-apple-system` or `sans-serif`, is the system font.
+  public func font(
+    size token: String,
+    _ fallback: CGFloat,
+    weight: String,
+    family: String = "font-family-body"
+  ) -> Font {
+    astryxFont(
+      families: tokens.fonts[family] ?? [],
+      size: fontSize(token, fallback),
+      weight: fontWeight(size(weight, 400))
+    )
+  }
+
+  /// The SF Symbol for a shared icon name (AST-082 FR17): the theme's
+  /// replacement, else the default. An unknown name stops a development
+  /// build with a message that names it, and draws nothing in a release build.
+  public func icon(_ name: String) -> String? {
+    if let symbol = icons[name] ?? astryxDefaultIcons[name] { return symbol }
+    assertionFailure("Astryx has no icon named \"\(name)\"")
+    return nil
   }
 
   func fontWeight(_ value: CGFloat) -> Font.Weight {
@@ -105,6 +141,46 @@ extension Color {
   }
 }
 
+/// iOS's default SF Symbol for each shared icon name these components use.
+let astryxDefaultIcons: [String: String] = [
+  "info": "info.circle.fill",
+  "warning": "exclamationmark.triangle.fill",
+  "error": "exclamationmark.circle.fill",
+  "success": "checkmark.circle.fill",
+]
+
+/// A font from a CSS family stack: the first system family or installed font.
+func astryxFont(families: [String], size: CGFloat, weight: Font.Weight) -> Font {
+  for family in families {
+    switch family.lowercased() {
+    case "-apple-system", "blinkmacsystemfont", "system-ui", "ui-sans-serif", "sans-serif":
+      return .system(size: size, weight: weight)
+    case "ui-monospace", "monospace":
+      return .system(size: size, weight: weight, design: .monospaced)
+    case "ui-serif", "serif":
+      return .system(size: size, weight: weight, design: .serif)
+    case "ui-rounded":
+      return .system(size: size, weight: weight, design: .rounded)
+    default:
+      if astryxFontIsInstalled(family) {
+        // Fixed size: the size already carries the Dynamic Type scale.
+        return .custom(family, fixedSize: size).weight(weight)
+      }
+    }
+  }
+  return .system(size: size, weight: weight)
+}
+
+func astryxFontIsInstalled(_ name: String) -> Bool {
+  #if canImport(UIKit)
+  UIFont(name: name, size: 12) != nil
+  #elseif canImport(AppKit)
+  NSFont(name: name, size: 12) != nil
+  #else
+  false
+  #endif
+}
+
 /// Dynamic Type's growth for body-sized text, as Apple's Body style grows
 /// (17 pt at Large).
 func astryxTextScale(for size: DynamicTypeSize) -> CGFloat {
@@ -125,39 +201,34 @@ func astryxTextScale(for size: DynamicTypeSize) -> CGFloat {
   }
 }
 
-private struct AstryxStyleKey: EnvironmentKey {
-  static let defaultValue = AstryxStyle(tokens: .defaultLight)
+private struct AstryxThemeKey: EnvironmentKey {
+  static let defaultValue = AstryxTheme.default
 }
 
 extension EnvironmentValues {
-  /// The style components paint with. `astryxTheme(_:)` sets it; without it,
-  /// components paint with core's default light tokens.
-  public var astryx: AstryxStyle {
-    get { self[AstryxStyleKey.self] }
-    set { self[AstryxStyleKey.self] = newValue }
+  /// The theme `astryxTheme(_:)` sets; core's default theme without it.
+  public var astryxTheme: AstryxTheme {
+    get { self[AstryxThemeKey.self] }
+    set { self[AstryxThemeKey.self] = newValue }
   }
-}
 
-private struct AstryxThemeModifier: ViewModifier {
-  let theme: AstryxTheme
-  @Environment(\.colorScheme) private var scheme
-  @Environment(\.dynamicTypeSize) private var typeSize
-
-  func body(content: Content) -> some View {
-    content.environment(
-      \.astryx,
-      AstryxStyle(
-        tokens: scheme == .dark ? theme.dark : theme.light,
-        textScale: astryxTextScale(for: typeSize)
-      )
+  /// The style components paint with: the theme's tokens for the current
+  /// color scheme, grown by the person's text size. It follows Dark Mode and
+  /// Dynamic Type with or without `astryxTheme(_:)`.
+  public var astryx: AstryxStyle {
+    let theme = astryxTheme
+    return AstryxStyle(
+      tokens: colorScheme == .dark ? theme.dark : theme.light,
+      textScale: astryxTextScale(for: dynamicTypeSize),
+      icons: theme.icons
     )
   }
 }
 
 extension View {
-  /// Paints this subtree with a theme, following the color scheme and the
-  /// person's text size.
+  /// Paints this subtree with a theme. Components follow the color scheme and
+  /// the person's text size either way.
   public func astryxTheme(_ theme: AstryxTheme = .default) -> some View {
-    modifier(AstryxThemeModifier(theme: theme))
+    environment(\.astryxTheme, theme)
   }
 }

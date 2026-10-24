@@ -28,7 +28,7 @@ export const SWIFT_IOS_THEME_FILE = path.join(
 // The token groups the Swift components read. Everything else (shadows,
 // motion, layout breakpoints) stays out until a component needs it.
 const KEEP =
-  /^--(color-|spacing-|radius-|size-element-|border-width$|font-size-|font-weight-|text-(heading-\d|body|large|label|supporting)-)/;
+  /^--(color-|spacing-|radius-|size-element-|border-width$|font-family-|font-size-|font-weight-|text-(heading-\d|body|large|label|supporting)-)/;
 const REM = 16;
 
 function hex2(n) {
@@ -68,6 +68,14 @@ export function toHexColor(value) {
   return NAMED_COLORS[v.toLowerCase()] ?? null;
 }
 
+/** A CSS font-family stack as its family names, first choice first. */
+export function toFontFamilies(value) {
+  return value
+    .split(',')
+    .map(family => family.trim().replace(/^(["'])(.*)\1$/, '$2'))
+    .filter(Boolean);
+}
+
 /** A CSS length or unitless number as points, or null. */
 export function toPoints(value) {
   const m = /^(-?[\d.]+)(rem|px)?$/.exec(value.trim());
@@ -81,6 +89,7 @@ async function resolveMode(mode) {
   const theme = defineTheme({name: 'astryx', tokens: {}});
   const colors = {};
   const sizes = {};
+  const fonts = {};
   for (const [name, value] of Object.entries(
     resolveThemeTokens(theme, {mode}),
   )) {
@@ -88,7 +97,13 @@ async function resolveMode(mode) {
     const key = name.slice(2);
     // A kept token that cannot be read fails the run, so no token goes
     // missing from the Swift theme without a message.
-    if (key.startsWith('color-')) {
+    if (key.startsWith('font-family-')) {
+      const families = toFontFamilies(value);
+      if (families.length === 0) {
+        throw new Error(`${mode}: ${name} names no font family: ${value}`);
+      }
+      fonts[key] = families;
+    } else if (key.startsWith('color-')) {
       const color = toHexColor(value);
       if (color === null) {
         throw new Error(
@@ -106,7 +121,7 @@ async function resolveMode(mode) {
       sizes[key] = points;
     }
   }
-  return {colors, sizes};
+  return {colors, sizes, fonts};
 }
 
 function swiftDictionary(entries, format) {
@@ -114,7 +129,7 @@ function swiftDictionary(entries, format) {
   return keys.map(key => `      "${key}": ${format(entries[key])},`).join('\n');
 }
 
-function swiftTokens(name, mode, {colors, sizes}) {
+function swiftTokens(name, mode, {colors, sizes, fonts}) {
   return `  /// Core's default theme, ${mode} mode.
   public static let ${name} = AstryxTokens(
     colors: [
@@ -122,6 +137,9 @@ ${swiftDictionary(colors, v => `"${v}"`)}
     ],
     sizes: [
 ${swiftDictionary(sizes, v => String(v))}
+    ],
+    fonts: [
+${swiftDictionary(fonts, v => `[${v.map(f => JSON.stringify(f)).join(', ')}]`)}
     ]
   )`;
 }
