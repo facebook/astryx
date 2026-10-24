@@ -34,6 +34,8 @@ import {rtlStyles} from '../utils';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {spacingVars} from '../theme/tokens.stylex';
+import {COMPACT_TOUCH_PRESENTATION_QUERY} from '../hooks/useAdaptivePresentation';
+import {menu as uikitMenu} from '../motion/uikit/menu';
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
 beforeEach(() => {
@@ -341,7 +343,7 @@ describe('DropdownMenu', () => {
     vi.stubGlobal(
       'matchMedia',
       vi.fn().mockImplementation((query: string) => ({
-        matches: query === '(max-width: 768px) and (pointer: coarse)',
+        matches: query === COMPACT_TOUCH_PRESENTATION_QUERY,
         media: query,
         onchange: null,
         addEventListener: vi.fn(),
@@ -2817,15 +2819,31 @@ describe('DropdownMenu press model', () => {
     try {
       const onPick = vi.fn();
       const trigger = renderMenu(onPick);
-      fireEvent.pointerDown(trigger, touch);
+      fireEvent.pointerDown(trigger, {...touch, clientX: 0, clientY: 0});
       expect(trigger).toHaveAttribute('aria-expanded', 'false');
       act(() => {
-        vi.advanceTimersByTime(500);
+        vi.advanceTimersByTime(uikitMenu.holdOpenMs - 1);
+      });
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      act(() => {
+        vi.advanceTimersByTime(1);
       });
       expect(trigger).toHaveAttribute('aria-expanded', 'true');
-      fireEvent.pointerMove(item('Delete'), touch);
+      // UIMenu's handoff: the finger picks once it travels from the first
+      // sample the menu saw.
+      fireEvent.pointerMove(item('Delete'), {...touch, clientX: 0, clientY: 3});
+      expect(item('Delete')).not.toHaveFocus();
+      fireEvent.pointerMove(item('Delete'), {
+        ...touch,
+        clientX: 0,
+        clientY: 3 + uikitMenu.scrubHandoffPx,
+      });
       expect(item('Delete')).toHaveFocus();
-      fireEvent.pointerUp(item('Delete'), touch);
+      fireEvent.pointerUp(item('Delete'), {
+        ...touch,
+        clientX: 0,
+        clientY: 3 + uikitMenu.scrubHandoffPx,
+      });
       expect(onPick).toHaveBeenCalledWith('Delete');
       // The click the browser aims at the trigger for this gesture is spent.
       fireEvent.click(trigger, {detail: 1});
@@ -2865,6 +2883,96 @@ describe('DropdownMenu press model', () => {
     fireEvent.pointerUp(trigger, touch);
     fireEvent.click(trigger, {detail: 1});
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  describe('touchOpen="press"', () => {
+    function renderPressMenu({
+      onPick = () => {},
+      onOpenChange,
+    }: {
+      onPick?: (label: string) => void;
+      onOpenChange?: (isOpen: boolean) => void;
+    } = {}) {
+      render(
+        <DropdownMenu
+          button={{label: 'Spaces'}}
+          touchOpen="press"
+          onOpenChange={onOpenChange}>
+          <DropdownMenuItem label="Edit" onClick={() => onPick('Edit')} />
+          <DropdownMenuItem
+            label="Duplicate"
+            onClick={() => onPick('Duplicate')}
+          />
+          <DropdownMenuItem label="Delete" onClick={() => onPick('Delete')} />
+        </DropdownMenu>,
+      );
+      return screen.getByRole('button', {name: /Spaces/});
+    }
+
+    it('a finger press opens the menu before it lifts, and its tap leaves the menu open', () => {
+      const trigger = renderPressMenu();
+      fireEvent.pointerDown(trigger, touch);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      expect(HTMLElement.prototype.showPopover).toHaveBeenCalledTimes(1);
+      fireEvent.pointerUp(trigger, touch);
+      // The click the browser composes for the tap is spent: it neither
+      // closes the menu nor opens it a second time.
+      fireEvent.click(trigger, {detail: 1});
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      expect(HTMLElement.prototype.showPopover).toHaveBeenCalledTimes(1);
+    });
+
+    it('the press continues as a slide onto a row, picked on release', () => {
+      const onPick = vi.fn();
+      const trigger = renderPressMenu({onPick});
+      fireEvent.pointerDown(trigger, {...touch, clientX: 0, clientY: 0});
+      fireEvent.pointerMove(item('Delete'), {...touch, clientX: 0, clientY: 2});
+      fireEvent.pointerMove(item('Delete'), {
+        ...touch,
+        clientX: 0,
+        clientY: 40,
+      });
+      expect(item('Delete')).toHaveFocus();
+      fireEvent.pointerUp(item('Delete'), {...touch, clientX: 0, clientY: 40});
+      expect(onPick).toHaveBeenCalledTimes(1);
+      expect(onPick).toHaveBeenCalledWith('Delete');
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('a scroll the browser takes before the finger reaches the menu closes it again', () => {
+      const trigger = renderPressMenu();
+      fireEvent.pointerDown(trigger, touch);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      fireEvent.pointerCancel(trigger, touch);
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('a finger press on the trigger of an open menu closes it, and its click does not reopen it', () => {
+      const trigger = renderPressMenu();
+      fireEvent.pointerDown(trigger, touch);
+      fireEvent.pointerUp(trigger, touch);
+      fireEvent.click(trigger, {detail: 1});
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+      fireEvent.pointerDown(trigger, touch);
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      fireEvent.pointerUp(trigger, touch);
+      fireEvent.click(trigger, {detail: 1});
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(HTMLElement.prototype.showPopover).toHaveBeenCalledTimes(1);
+    });
+
+    it('Escape closes a menu the finger is still holding open, once', () => {
+      const onOpenChange = vi.fn();
+      const trigger = renderPressMenu({onOpenChange});
+      fireEvent.pointerDown(trigger, touch);
+      expect(onOpenChange).toHaveBeenLastCalledWith(true);
+      fireEvent.keyDown(screen.getByRole('menu', {hidden: true}), {
+        key: 'Escape',
+      });
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(onOpenChange.mock.calls).toEqual([[true], [false]]);
+    });
   });
 });
 

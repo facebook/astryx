@@ -132,7 +132,7 @@ export const docs = {
       name: 'presentation',
       type: "'popover' | 'bottom-sheet' | 'adaptive'",
       description:
-        'Presentation policy. `popover` opens at the pointer position, `bottom-sheet` always uses an action sheet, and `adaptive` uses the BottomSheet at 768px and below when the primary pointer is coarse.',
+        'Presentation policy. `popover` opens at the pointer position, `bottom-sheet` always uses an action sheet, and `adaptive` uses the BottomSheet on a compact touch screen: a coarse primary pointer, and a viewport narrower than 744px or shorter than 500px.',
       default: "'popover'",
     },
     {
@@ -160,7 +160,7 @@ export const docs = {
   usage: {
     anatomy,
     description:
-      'A right-click context menu that appears at the cursor position. Use to provide contextual actions for specific elements or regions without cluttering the UI with visible buttons.',
+      'A right-click context menu that appears at the cursor position. Use to provide contextual actions for specific elements or regions without cluttering the UI with visible buttons. On a touch screen a held finger opens it with iOS timing: the trigger starts to grow at 150 ms, a haptic plays at 400 ms where the device can play one, and the menu opens at 735 ms, or as soon as the finger lifts after 400 ms. A finger still down when the menu opens can slide onto an action and lift to pick it.',
     bestPractices: [
       {
         guidance: true,
@@ -186,6 +186,11 @@ export const docs = {
         guidance: true,
         description:
           'Keep a visible MoreMenu or equivalent trigger for important mobile actions; long-press must not be the only route.',
+      },
+      {
+        guidance: true,
+        description:
+          'Leave a little room around a block trigger: a held finger grows it from its center, by about 6%, until the menu closes.',
       },
       {
         guidance: false,
@@ -224,7 +229,7 @@ export const docs = {
 export const docsZh = {
   usage: {
     description:
-      '右键点击时在光标位置出现的上下文菜单。用于为特定元素或区域提供上下文操作，而不使 UI 杂乱。',
+      '右键点击时在光标位置出现的上下文菜单。用于为特定元素或区域提供上下文操作，而不使 UI 杂乱。在触摸屏上，按住手指即可打开，时序与 iOS 相同：150 毫秒时触发区域开始放大，400 毫秒时在设备支持的情况下伴随触感反馈，735 毫秒时菜单打开；若手指在 400 毫秒后抬起，菜单在抬起时立即打开。菜单打开时手指仍按住，可滑到某个操作上并抬起来选择它。',
     bestPractices: [
       {guidance: true, description: '保持菜单项简洁和面向操作。'},
       {guidance: true, description: '有很多项时使用分组和分隔线。'},
@@ -241,6 +246,11 @@ export const docsZh = {
         guidance: true,
         description:
           '重要的移动端操作还应提供可见的 MoreMenu 或同等入口，不要只依赖长按。',
+      },
+      {
+        guidance: true,
+        description:
+          '块级触发区域周围请留出少量空间：按住时它会从中心放大约 6%，直到菜单关闭。',
       },
       {
         guidance: false,
@@ -260,7 +270,7 @@ export const docsDense = {
   usage: {
     anatomy,
     description:
-      'A right-click context menu that appears at the cursor position. Use to provide contextual actions for specific elements or regions.',
+      'A right-click context menu that appears at the cursor position. Use to provide contextual actions for specific elements or regions. Touch: a held finger opens it at 735 ms, or on a lift after 400 ms (iOS timing); the trigger grows from 150 ms; slide onto an action and lift to pick it.',
     bestPractices: [
       {guidance: true, description: 'Keep items concise and action-oriented.'},
       {
@@ -280,6 +290,11 @@ export const docsDense = {
       {
         guidance: true,
         description: 'Keep a visible mobile entry point for important actions.',
+      },
+      {
+        guidance: true,
+        description:
+          'Leave room around a block trigger: a held finger grows it about 6%.',
       },
       {
         guidance: false,
