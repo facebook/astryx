@@ -31,6 +31,7 @@ import {
   useCallback,
   useId,
   useRef,
+  useState,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -114,10 +115,9 @@ export interface ItemSwipeActions {
 
 /**
  * `reveal`: every entry of a resting row is a real button, and a long drag
- * fires the outermost. On iOS, as in a UIKit list, a fast release goes the
- * way it moves (a flick opens the row, a flick back closes it) and a slow one
- * rests the row open past half the panel; elsewhere a release past half the
- * panel rests it open and a fling fires the outermost, as before. `commit`: a
+ * fires the outermost. As in a UIKit list, a fast release goes the way it
+ * moves (a flick opens the row, a flick back closes it) and a slow one rests
+ * the row open past half the panel. `commit`: a
  * release past the commit point slides the row out and fires the outermost
  * entry; nothing rests, and the panel is presentational.
  */
@@ -276,7 +276,9 @@ export interface ItemProps extends BaseProps<HTMLElement> {
    * a touch accelerator and never a row's only path to a verb: a verb
    * reachable only by swipe is unreachable by keyboard and by mouse, so every
    * entry must also be reachable through the row's own content (a menu or a
-   * button in `endContent`).
+   * button in `endContent`). An open row closes on a tap on its own content,
+   * which activates nothing and paints no press, on a touch elsewhere, when
+   * the list or page scrolls with focus outside it, and on Escape.
    *
    * Available on a row whose role permits interactive descendants — a
    * `listitem`, a row with no role — and not served on one whose role forbids
@@ -651,6 +653,9 @@ export function Item({
   const setSwipeBridge = useCallback((bridge: ItemSwipeBridge | null) => {
     swipeBridgeRef.current = bridge;
   }, []);
+  // An open row's root is no pressable surface: a tap on its content only
+  // closes it, and UIKit's cell neither sees that touch nor highlights.
+  const [isSwipeOpen, setSwipeOpen] = useState(false);
   const linkRootProps = isLinkRoot
     ? {
         // A disabled row keeps its place in the tree but goes nowhere.
@@ -855,7 +860,7 @@ export function Item({
         (isSelected && !allowsAriaSelected ? true : undefined)
       }
       aria-disabled={isDisabled || undefined}
-      {...(isInteractive ? pressable : undefined)}
+      {...(isInteractive && !isSwipeOpen ? pressable : undefined)}
       {...mergeProps(
         themeProps('item', {density, align}),
         focusOutlineProps.focusWithin(
@@ -888,6 +893,7 @@ export function Item({
         <Suspense fallback={null}>
           <LazyItemSwipeLayer
             onBridge={setSwipeBridge}
+            onOpenChange={setSwipeOpen}
             leading={leadingSwipe}
             trailing={trailingSwipe}
             behavior={swipeBehavior}

@@ -62,6 +62,13 @@ export interface ItemSwipeLayerProps {
    * of the layer, and with `null` when the layer leaves.
    */
   onBridge: (bridge: ItemSwipeBridge | null) => void;
+  /**
+   * Called with `true` when the row opens (from the release that opens it)
+   * and with `false` when it closes or the layer leaves. The root takes no
+   * press while open: a tap on an open row's content only closes it, as in
+   * UIKit, where the cell never sees that touch.
+   */
+  onOpenChange: (isOpen: boolean) => void;
   leading: ItemSwipeAction[];
   trailing: ItemSwipeAction[];
   behavior: ItemSwipeBehavior;
@@ -196,6 +203,7 @@ const swipeVariantStyles = stylex.create({
  */
 export default function ItemSwipeLayer({
   onBridge,
+  onOpenChange,
   leading,
   trailing,
   behavior,
@@ -209,6 +217,8 @@ export default function ItemSwipeLayer({
   });
   const swipe = useSwipeAction({
     behavior,
+    // An open row's root takes no press.
+    onOpenChange,
     fireOutermost: side => {
       const entries = entriesRef.current[side];
       const entry = entries[entries.length - 1];
