@@ -62,6 +62,13 @@ pnpm vitest run --project node packages/native
 Generated Swift is committed so a Swift package can pin a commit. A test fails
 when it drifts from the contracts.
 
+**Cleanup needed.** Committing the generated Swift
+(`apple/Sources/AstryxNative/Generated`) is temporary. It is there only because
+Swift Package Manager installs a package from a git commit and cannot run the
+Node generator. The intended replacement: CI generates the Swift files and
+publishes them to a Swift-only branch or tag that apps pin, and the generated
+files are ignored on `main`.
+
 Boundaries, checked by `pnpm check:package-boundaries`:
 
 - `@astryxdesign/core` never imports this package.
