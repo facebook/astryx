@@ -1582,6 +1582,17 @@ jobs:
           path: a11y-report.json
           retention-days: 1
 
+      # Under a finger a CheckboxList row is one press surface: a touch on its
+      # label and a touch on its box press the same element and paint the same
+      # pixels. Which element a finger presses comes from the engine's own hit
+      # test and touch events, so only a real engine shows it.
+      - name: Run CheckboxList row press contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/CheckboxList/__tests__/CheckboxListPress.a11y.chromium.spec.ts \
+            --project chromium \
+            --output checkbox-list-row-press-output
+
       # A modal <dialog> hidden before close() blocks the whole page in Safari
       # 26.1 and leaves no trace (#4290). The ordering is produced by a CSS
       # transition, which jsdom does not run — so the unit suite cannot see it
