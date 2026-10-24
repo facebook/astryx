@@ -117,27 +117,29 @@ intentional decision.
 | FR4 | A disabled row MUST expose `aria-disabled="true"`, render no `tabindex`, take no hover focus, and on any activation, including an assistive-technology click, MUST NOT call `onChange`, close the menu, or call the caller `onClick`. It paints at half opacity with a default cursor. | Current source, focused tests, and browser evidence                        | verify             |
 | FR5 | Ref, supported host attributes and handlers, `className`, `style`, and `xstyle` MUST reach or compose on the row root. Caller `onPointerMove` MUST run after the row's hover focus, and caller handlers MUST NOT replace the row's own behavior.                                       | `architecture:public-component-api/INV5–INV8`; focused tests               | verify             |
 | FR6 | The marker MUST be the shared radio Indicator, hidden from assistive technology, never the pointer target, sized `sm` in a small menu and `md` otherwise, at the row's inline start on a fine pointer and its inline end on a coarse pointer.                                          | Current source, focused tests, and browser evidence                        | verify             |
-| FR7 | The row MUST carry the `dropdown-menu-item` target with the menu size and the marker MUST carry the `dropdown-menu-radio` target with size, checked, and disabled reflections; focus paints the menu overlay tint without an outline.                                                  | `architecture:component-theming-surface/INV4–INV6`; current source/docs    | verify             |
+| FR7 | The row MUST carry the `dropdown-menu-item` target with the menu size and the marker MUST carry the `dropdown-menu-radio` target with size, checked, and disabled reflections.                                                                                                         | `architecture:component-theming-surface/INV4–INV6`; current source/docs    | verify             |
 | FR8 | The row MUST add no key handler or tab stop of its own: enabled rows are `tabindex="-1"` for the parent's roving focus, and keyboard selection arrives as the parent's synthesized click.                                                                                              | `architecture:interaction-modality`; parent keyboard tests                 | verify             |
 
 ### Allowed variation
 
 - **AV1 — Content.** Label, description, icon, and end content may vary in
   length and kind; long string labels truncate on one line.
-- **AV2 — Size.** The row and marker follow the parent menu size.
+- **AV2 — Size.** The marker follows the parent menu size: `sm` in a small
+  menu, `md` otherwise. Row padding does not currently vary with the menu size,
+  unlike action rows; this is an observation, not an invariant.
 - **AV3 — Root styling.** Caller style inputs may extend the row while its role,
   checked state, and marker remain intact.
 
 ### Representative states
 
-| State          | Required invariant                                                        | Allowed variation                  |
-| -------------- | ------------------------------------------------------------------------- | ---------------------------------- |
-| Checked        | `aria-checked=true`; the marker shows its checked dot.                    | Content, size, theme, and mode.    |
-| Unchecked      | `aria-checked=false`; the marker shows an empty circle.                   | Content, size, theme, and mode.    |
-| Focused        | The row holds focus and paints the overlay tint.                          | Pointer hover or keyboard arrival. |
-| Disabled       | `aria-disabled=true`, no tab stop, half opacity, and no activation.       | Checked or unchecked value.        |
-| Coarse pointer | The marker sits at the inline end of the row.                             | Direction mirrors the placement.   |
-| RTL / narrow   | Content and marker follow logical order with no horizontal page overflow. | Parent menu placement and width.   |
+| State          | Required invariant                                                        | Allowed variation                                              |
+| -------------- | ------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Checked        | `aria-checked=true`; the marker shows its checked dot.                    | Content, size, theme, and mode.                                |
+| Unchecked      | `aria-checked=false`; the marker shows an empty circle.                   | Content, size, theme, and mode.                                |
+| Focused        | The row holds focus.                                                      | Pointer hover or keyboard arrival; focus paint is the AR4 gap. |
+| Disabled       | `aria-disabled=true`, no tab stop, half opacity, and no activation.       | Checked or unchecked value.                                    |
+| Coarse pointer | The marker sits at the inline end of the row.                             | Direction mirrors the placement.                               |
+| RTL / narrow   | Content and marker follow logical order with no horizontal page overflow. | Parent menu placement and width.                               |
 
 ### Transformation and precedence order
 
@@ -163,15 +165,21 @@ intentional decision.
 - **AR3 — Keyboard ownership.** DropdownMenu owns focus movement and activation;
   the row adds no key handling. Whether disabled rows stay keyboard-discoverable
   is owned by `component:DropdownMenu` (its OQ1).
+- **AR4 — Focus visibility (objective gap).** Keyboard focus MUST be
+  perceivable (WCAG 2.2 SC 2.4.7 and 1.4.11). The row currently paints focus
+  only as the menu overlay tint with no outline, which measures about 1.1:1
+  against the menu surface and paints nothing under forced colors. The
+  remediation is a shared row-visual decision with `component:DropdownMenuItem`
+  (its OQ2); this draft records the gap and does not settle it.
 
 ## Design relationships
 
-| Anatomy or state | Design requirement                                        | Representation authority         | Hierarchy role | Component contract |
-| ---------------- | --------------------------------------------------------- | -------------------------------- | -------------- | ------------------ |
-| Row              | Menu row paint, radius, and overlay focus tint.           | Current source and menu tokens   | structural     | FR7                |
-| Radio marker     | Shared radio Indicator at the menu's control size.        | Shared radio Indicator           | prominent      | FR1, FR6           |
-| Disabled         | Half-opacity row with a default cursor.                   | Current source                   | supporting     | FR4                |
-| Direction/touch  | Logical marker placement that mirrors and moves on touch. | Bidirectionality and current CSS | structural     | FR6                |
+| Anatomy or state | Design requirement                                               | Representation authority         | Hierarchy role | Component contract |
+| ---------------- | ---------------------------------------------------------------- | -------------------------------- | -------------- | ------------------ |
+| Row              | Menu row paint and radius; focus paint is the AR4 objective gap. | Current source and menu tokens   | structural     | FR7, AR4           |
+| Radio marker     | Shared radio Indicator at the menu's control size.               | Shared radio Indicator           | prominent      | FR1, FR6           |
+| Disabled         | Half-opacity row with a default cursor.                          | Current source                   | supporting     | FR4                |
+| Direction/touch  | Logical marker placement that mirrors and moves on touch.        | Bidirectionality and current CSS | structural     | FR6                |
 
 No new component-local visual decision is settled by this draft.
 
@@ -191,12 +199,13 @@ No new component-local visual decision is settled by this draft.
 
 ## Verification map
 
-| Contract      | Verification                                                                                        | Representative states                                          | Mutation or failure expectation                                                            | Audit section                              |
-| ------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------ |
-| FR1, FR2, AR1 | `DropdownMenuSelectable.test.tsx`; reusable radio-group and Menu contracts; scoped axe              | checked, unchecked, outside a group                            | A nested radio, wrong checked row, extra announced control, or missing throw fails         | `audit:DropdownMenuRadioItem/§1,§4,§6`     |
-| FR3, FR5, FR8 | `DropdownMenuSelectable.test.tsx` handler, keyboard, close, and ref cases; browser fixture counters | pointer and keyboard activation, close on/off, caller handlers | A dropped caller handler, wrong order, or missing close fails                              | `audit:DropdownMenuRadioItem/§3,§4,§6`     |
-| FR4, AR2      | Disabled focused test with an assistive-technology click; browser disabled-hover frame              | disabled checked/unchecked                                     | Removing the disabled guard makes the focused test fail                                    | `audit:DropdownMenuRadioItem/§1,§4`        |
-| FR6, FR7      | Marker and target tests; exact-head Neutral/Butter/RTL/narrow/size/coarse/focus frames              | sm/md/lg, fine/coarse, LTR/RTL, light/dark                     | A lost target or reflection, a marker that is announced, wrongly sized, or misplaced fails | `audit:DropdownMenuRadioItem/§2,§5,§9,§10` |
+| Contract      | Verification                                                                                        | Representative states                                          | Mutation or failure expectation                                                                                              | Audit section                              |
+| ------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| FR1, FR2, AR1 | `DropdownMenuSelectable.test.tsx`; reusable radio-group and Menu contracts; scoped axe              | checked, unchecked, outside a group                            | A nested radio, wrong checked row, extra announced control, or missing throw fails                                           | `audit:DropdownMenuRadioItem/§1,§4,§6`     |
+| FR3, FR5, FR8 | `DropdownMenuSelectable.test.tsx` handler, keyboard, close, and ref cases; browser fixture counters | pointer and keyboard activation, close on/off, caller handlers | A dropped caller handler, wrong order, or missing close fails                                                                | `audit:DropdownMenuRadioItem/§3,§4,§6`     |
+| FR4, AR2      | Disabled focused test with an assistive-technology click; browser disabled-hover frame              | disabled checked/unchecked                                     | Removing the disabled guard makes the focused test fail                                                                      | `audit:DropdownMenuRadioItem/§1,§4`        |
+| AR4           | Exact-head keyboard-focus and forced-colors frames with rendered contrast                           | Neutral/Butter light/dark focus, forced colors                 | Current frames record the gap; a remediation passes only with a perceivable indicator in every theme and under forced colors | `audit:DropdownMenuRadioItem/§1,§5`        |
+| FR6, FR7      | Marker and target tests; exact-head Neutral/Butter/RTL/narrow/size/coarse/focus frames              | sm/md/lg, fine/coarse, LTR/RTL, light/dark                     | A lost target or reflection, a marker that is announced, wrongly sized, or misplaced fails                                   | `audit:DropdownMenuRadioItem/§2,§5,§9,§10` |
 
 ## Decision log
 

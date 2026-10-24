@@ -65,6 +65,8 @@ const overrides: (Partial<AuditCase> &
   },
   {key: 'size-sm-light-rest', size: 'sm', interaction: 'rest'},
   {key: 'size-lg-light-rest', size: 'lg', interaction: 'rest'},
+  {key: 'size-sm-dark-rest', size: 'sm', mode: 'dark', interaction: 'rest'},
+  {key: 'size-lg-dark-rest', size: 'lg', mode: 'dark', interaction: 'rest'},
   {key: 'coarse-light-rest', pointer: 'coarse', interaction: 'rest'},
   {
     key: 'coarse-rtl-light-rest',
@@ -79,7 +81,14 @@ const overrides: (Partial<AuditCase> &
   {key: 'butter-light-focus', theme: 'butter', interaction: 'focus'},
   {key: 'neutral-light-pressed', interaction: 'pressed'},
   {key: 'neutral-light-select', interaction: 'select'},
+  {key: 'neutral-dark-pressed', mode: 'dark', interaction: 'pressed'},
+  {key: 'neutral-dark-select', mode: 'dark', interaction: 'select'},
   {key: 'neutral-light-disabled-hover', interaction: 'disabled-hover'},
+  {
+    key: 'neutral-dark-disabled-hover',
+    mode: 'dark',
+    interaction: 'disabled-hover',
+  },
   {key: 'forced-colors-focus', forcedColors: true, interaction: 'focus'},
 ];
 const cases: AuditCase[] = overrides.map(item => ({...defaults, ...item}));
@@ -209,6 +218,35 @@ for (const item of cases) {
       await row('Archive').hover();
     }
     await settle(page);
+
+    // Geometry must be settled before any frame is trusted: read every row and
+    // marker box, wait two animation frames plus a pause, and read again.
+    const settledGeometry = await menu.evaluate(async element => {
+      const read = () =>
+        [
+          element,
+          ...Array.from(
+            element.querySelectorAll(
+              '[role="menuitemradio"], .astryx-dropdown-menu-radio',
+            ),
+          ),
+        ]
+          .map(node => {
+            const box = node.getBoundingClientRect();
+            return [box.x, box.y, box.width, box.height]
+              .map(value => value.toFixed(2))
+              .join(',');
+          })
+          .join('|');
+      const first = read();
+      await new Promise<void>(resolve => {
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => setTimeout(resolve, 120)),
+        );
+      });
+      const second = read();
+      return {stable: first === second, boxes: first.split('|').length};
+    });
 
     const observed = await menu.evaluate(element => {
       const canvas = document.createElement('canvas');
@@ -443,6 +481,7 @@ for (const item of cases) {
             ? row.indicator.inlineEndOffset < row.indicator.inlineStartOffset
             : row.indicator.inlineStartOffset < row.indicator.inlineEndOffset,
       ),
+      geometrySettled: settledGeometry.stable && settledGeometry.boxes === 11,
       geometry: observed.rows.every(
         row => row.geometry.width > 0 && row.geometry.height >= 24,
       ),
@@ -473,6 +512,7 @@ for (const item of cases) {
         build: storybookSha,
         browser: context.browser()?.version() ?? null,
         ...observed,
+        settledGeometry,
         pageErrors,
       },
       image: {
