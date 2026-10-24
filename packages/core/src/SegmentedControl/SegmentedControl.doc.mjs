@@ -168,7 +168,7 @@ function WorkspaceCard() {
   usage: {
     anatomy,
     description:
-      'A segmented button group that allows users to make a single selection from a small set of mutually exclusive options. Use SegmentedControl when all options should be visible at once and the selection controls a value or mode, not page navigation.',
+      'A segmented button group that allows users to make a single selection from a small set of mutually exclusive options. Use SegmentedControl when all options should be visible at once and the selection controls a value or mode, not page navigation. On iPhone and iPad the selection slides to the new segment and the labels cross-fade, as in iOS, whether a tap, an arrow key or a new value moved it; with Reduce Motion it moves without travel. Other touch screens and desktops keep the color fade. A theme can retune the slide and the cross-fade through their motion roles.',
     accessibility: [
       {
         name: 'Text label',
@@ -240,7 +240,7 @@ export const docsZh = {
   usage: {
     anatomy,
     description:
-      'A segmented button group that allows users to make a single selection from a small set of mutually exclusive options. Use SegmentedControl when all options should be visible at once and the selection controls a value or mode, not page navigation.',
+      'A segmented button group that allows users to make a single selection from a small set of mutually exclusive options. Use SegmentedControl when all options should be visible at once and the selection controls a value or mode, not page navigation. On iPhone and iPad the selection slides to the new segment and the labels cross-fade, as in iOS, whether a tap, an arrow key or a new value moved it; with Reduce Motion it moves without travel. Other touch screens and desktops keep the color fade. A theme can retune the slide and the cross-fade through their motion roles.',
     bestPractices: [
       {guidance: true, description: 'Use for switching between 2–5 mutually exclusive views or modes where all options should be visible.'},
       {guidance: true, description: 'Provide a descriptive label for the control to ensure the group is accessible to screen readers.'},
@@ -256,7 +256,7 @@ export const docsDense = {
   usage: {
     anatomy,
     description:
-      'A segmented button group that allows users to make a single selection from a small set of mutually exclusive options. Use SegmentedControl when all options should be visible at once and the selection controls a value or mode, not page navigation.',
+      'A segmented button group that allows users to make a single selection from a small set of mutually exclusive options. Use SegmentedControl when all options should be visible at once and the selection controls a value or mode, not page navigation. On iPhone and iPad the selection slides to the new segment and the labels cross-fade, as in iOS, whether a tap, an arrow key or a new value moved it; with Reduce Motion it moves without travel. Other touch screens and desktops keep the color fade. A theme can retune the slide and the cross-fade through their motion roles.',
     bestPractices: [
       {guidance: true, description: 'Use for switching between 2–5 mutually exclusive views or modes where all options should be visible.'},
       {guidance: true, description: 'Provide a descriptive label for the control to ensure the group is accessible to screen readers.'},

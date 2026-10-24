@@ -9,9 +9,13 @@
  * @position Child item; renders as a radio button within the segmented control.
  *   Its title is two layers in one grid cell: the visible title, and an
  *   aria-hidden twin at the selected weight that reserves the selected width,
- *   so a selection never changes a segment's width.
+ *   so a selection never changes a segment's width. In the touch presentation
+ *   the twin also carries the outgoing rendering while the title cross-fades
+ *   (useSegmentedSelectionMotion.ts), and the segment drops its CSS
+ *   transitions: that motion animates the change instead.
  *
  * SYNC: When modified, update:
+ * - /packages/core/src/SegmentedControl/useSegmentedSelectionMotion.ts (title layers)
  * - /packages/core/src/SegmentedControl/SegmentedControl.doc.mjs
  * - /packages/core/src/SegmentedControl/index.ts
  * - /packages/core/src/SegmentedControl/SegmentedControl.test.tsx
@@ -158,7 +162,9 @@ const styles = stylex.create({
     textOverflow: 'ellipsis',
     minWidth: 0,
   },
-  // Reserves the selected width; never painted.
+  // Reserves the selected width at rest. In the touch presentation the
+  // selection motion makes it visible, with the outgoing rendering's color and
+  // weight written inline, for the length of a title cross-fade.
   titleTwin: {
     gridRowStart: 1,
     gridColumnStart: 1,
@@ -168,6 +174,12 @@ const styles = stylex.create({
     visibility: 'hidden',
     pointerEvents: 'none',
     fontWeight: fontWeightVars['--font-weight-semibold'],
+  },
+  // Under a finger the selection change is animated in script (the surface
+  // slides, the titles cross-fade on opacity); a CSS transition would run a
+  // second, main-thread version of the same change.
+  touchPresentation: {
+    transitionProperty: 'none',
   },
 });
 
@@ -283,6 +295,7 @@ export function SegmentedControlItem({
             !isItemDisabled &&
             interactionOverlayStyles.backgroundColor,
           isItemDisabled && styles.disabled,
+          ctx.isTouchPresentation === true && styles.touchPresentation,
           xstyle,
         ),
       )}>

@@ -4,18 +4,24 @@
 
 /**
  * @file SegmentedControl.tsx
- * @input Uses React, StyleX, SegmentedControlContext, useListFocus, useKeyboardHint
+ * @input Uses React, StyleX, SegmentedControlContext, useListFocus,
+ *   useKeyboardHint, useMotionPresentation (the shared touch presentation),
+ *   useSegmentedSelectionMotion
  * @output Exports SegmentedControl component and SegmentedControlProps type
- * @position Container wrapper; provides context to SegmentedControlItem children
+ * @position Container wrapper; provides context to SegmentedControlItem
+ *   children. In the touch presentation it also renders the proxy that carries
+ *   the selected surface while the selection slides (see
+ *   useSegmentedSelectionMotion.ts).
  *
  * SYNC: When modified, update:
  * - /packages/core/src/SegmentedControl/SegmentedControl.doc.mjs
  * - /packages/core/src/SegmentedControl/index.ts
  * - /packages/core/src/SegmentedControl/SegmentedControl.test.tsx
+ * - /packages/core/src/SegmentedControl/useSegmentedSelectionMotion.ts
  * - /packages/cli/assets/templates/blocks/components/SegmentedControl/ (showcase blocks)
  */
 
-import React, {useMemo, useCallback, type ReactNode} from 'react';
+import React, {useMemo, useCallback, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars, radiusVars} from '../theme/tokens.stylex';
 import {SegmentedControlContext} from './SegmentedControlContext';
@@ -32,6 +38,9 @@ import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useMotionPresentation} from '../utils/touchPresentation';
+import {useSegmentedSelectionMotion} from './useSegmentedSelectionMotion';
+
 export interface SegmentedControlProps extends Omit<
   BaseProps<HTMLDivElement>,
   'onChange'
@@ -90,6 +99,11 @@ export interface SegmentedControlProps extends Omit<
 
 const styles = stylex.create({
   container: {
+    // The containing block and stacking context of the selection proxy
+    // (touch presentation), which sits at z-index -1 inside it: above the
+    // track's own background, below every segment.
+    position: 'relative',
+    isolation: 'isolate',
     display: 'inline-flex',
     alignItems: 'center',
     width: 'fit-content',
@@ -126,6 +140,27 @@ const styles = stylex.create({
   // Selection is still blocked by the isDisabled guards.
   disabledWithMessage: {
     opacity: 0.5,
+  },
+  // The touch presentation's selection proxy: a copy of the selected
+  // segment's surface that springs from the old segment to the new one, then
+  // hands the surface back (useSegmentedSelectionMotion). A negative z-index
+  // keeps it under every segment's content however the engine composites
+  // it: WebKit's overlap test misses segments the moving layer will cover,
+  // so DOM order alone let it paint over their titles mid-slide on iOS.
+  // Its paint and box are written when a slide starts; at rest it is hidden.
+  thumb: {
+    position: 'absolute',
+    zIndex: -1,
+    top: 0,
+    // eslint-disable-next-line @astryx/no-physical-properties -- intentional: the proxy is placed by a physical translate measured from client rects (useSegmentedSelectionMotion), in both directions; a logical anchor would start it at the right edge under RTL.
+    left: 0,
+    boxSizing: 'border-box',
+    transformOrigin: '0 0',
+    pointerEvents: 'none',
+    visibility: 'hidden',
+    // It carries a copy of an already resolved surface, forced colors
+    // included (Highlight), so the UA must not remap it again.
+    forcedColorAdjust: 'none',
   },
 });
 
@@ -176,6 +211,15 @@ export function SegmentedControl({
   ...rest
 }: SegmentedControlProps) {
   const size = useSize(sizeProp, 'md');
+  // UIKit's motion under a finger (the selection slides on a spring and the
+  // titles cross-fade), the theme's transitions under a mouse.
+  const isTouchPresentation = useMotionPresentation() === 'uikit';
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const {thumbRef} = useSegmentedSelectionMotion(
+    trackRef,
+    value,
+    isTouchPresentation,
+  );
 
   // Disabled-reason tooltip. Applies to the whole-group disabled state. Disabled
   // controls swallow pointer events, so the tooltip listeners attach to the
@@ -269,14 +313,23 @@ export function SegmentedControl({
       layout,
       isDisabled,
       hasDisabledMessage: showsDisabledMessage,
+      isTouchPresentation,
     }),
-    [value, onChange, size, layout, isDisabled, showsDisabledMessage],
+    [
+      value,
+      onChange,
+      size,
+      layout,
+      isDisabled,
+      showsDisabledMessage,
+      isTouchPresentation,
+    ],
   );
 
   return (
     <SegmentedControlContext value={contextValue}>
       <div
-        ref={useMergedRefs(ref, listRef, disabledMessageTooltip.ref)}
+        ref={useMergedRefs(ref, listRef, trackRef, disabledMessageTooltip.ref)}
         {...rest}
         role="radiogroup"
         aria-label={label}
@@ -302,6 +355,14 @@ export function SegmentedControl({
           className,
           style,
         )}>
+        {isTouchPresentation && (
+          <span
+            ref={thumbRef}
+            aria-hidden="true"
+            data-selection-proxy=""
+            {...stylex.props(styles.thumb)}
+          />
+        )}
         {children}
         {hint.hintElement}
       </div>
