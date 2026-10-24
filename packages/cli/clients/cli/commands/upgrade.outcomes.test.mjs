@@ -83,7 +83,7 @@ afterEach(() => {
 });
 
 describe('generated files to regenerate', () => {
-  it('are listed with the rebuild command and keep the run incomplete with ERR_CODEMOD_PROTECTED', () => {
+  it('are listed with the rebuild command, and in protectedFiles with the declaration that protects them', () => {
     seed();
     write('app/theme.css', STALE_THEME);
 
@@ -97,6 +97,17 @@ describe('generated files to regenerate', () => {
         errorCode: 'ERR_CODEMOD_PROTECTED',
         errors: [],
         manualActions: [],
+        // The stale theme carries an @generated header, so it is a protected
+        // file that still requires a change, with its declaration.
+        protectedFiles: [
+          {
+            file: 'app/theme.css',
+            codemods: [CODEMOD],
+            reasons: ['generated'],
+            declarations: [expect.stringContaining('@generated')],
+            commands: ['astryx theme build'],
+          },
+        ],
         regenerate: [
           {
             file: 'app/theme.css',
@@ -108,13 +119,44 @@ describe('generated files to regenerate', () => {
       },
     });
     expect(read('app/theme.css')).toBe(STALE_THEME);
+  });
+
+  it('read as incomplete in text, never as up to date', () => {
+    seed();
+    write('app/theme.css', STALE_THEME);
 
     const text = run([...ONLY, '--path', '.', '--apply'], {json: false});
+
     expect(text.status).toBe(1);
     expect(text.stderr).toMatch(
-      /ERR_CODEMOD_PROTECTED: 1 generated file must be regenerated:\n\s+app\/theme\.css — /,
+      /ERR_CODEMOD_PROTECTED: 1 protected file still requires a codemod change:\n\s+app\/theme\.css — .*@generated/,
     );
     expect(text.stdout).toMatch(/Regenerate with: astryx theme build/);
+    expect(text.stdout).toMatch(/Upgrade incomplete/);
+    expect(`${text.stdout}\n${text.stderr}`).not.toMatch(/No changes needed/);
+  });
+
+  it('keep the incomplete result, not a config error, when astryx.config fails validation too', () => {
+    seed({config: "export default {theme: 'neutral'};\n"});
+    write('app/theme.css', STALE_THEME);
+
+    const applied = run([...ONLY, '--path', '.', '--apply']);
+
+    expect(applied.status).toBe(1);
+    expect(applied.envelope).toMatchObject({
+      type: 'upgrade.run',
+      data: {
+        complete: false,
+        errorCode: 'ERR_CODEMOD_PROTECTED',
+        protectedFiles: [expect.objectContaining({file: 'app/theme.css'})],
+        regenerate: [
+          expect.objectContaining({
+            file: 'app/theme.css',
+            commands: ['astryx theme build'],
+          }),
+        ],
+      },
+    });
   });
 
   it('include protected generated files with their header command, alongside protectedFiles', () => {

@@ -169,6 +169,46 @@ describe('regeneration in the upgrade receipt', () => {
       manualActions: [expect.objectContaining({file: 'src/chart.ts'})],
     });
   });
+  it('lists a reported file the project protects in protectedFiles too, with its declaration', async () => {
+    write('src/theme.ts', '// @generated\n// STALE\n');
+
+    const result = await upgrade(APPLY, {cwd: dir});
+
+    expect(result.data).toMatchObject({
+      complete: false,
+      errorCode: 'ERR_CODEMOD_PROTECTED',
+      protectedFiles: [
+        {
+          file: 'src/theme.ts',
+          codemods: ['core:report-raw'],
+          reasons: ['generated'],
+          declarations: [expect.stringContaining('@generated')],
+          commands: ['gen theme'],
+        },
+      ],
+      regenerate: [
+        expect.objectContaining({
+          file: 'src/theme.ts',
+          commands: ['gen theme'],
+        }),
+      ],
+    });
+  });
+
+  it('does not say the code is up to date when the only findings are outcomes', async () => {
+    fs.rmSync(path.join(dir, 'src/index.ts'));
+    write('src/theme.ts', '// STALE\n');
+    logger.setSilent(false);
+    const out = vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const result = await upgrade(APPLY, {cwd: dir});
+
+    const stdout = out.mock.calls.map(c => c.join(' ')).join('\n');
+    expect(result.data.filesChanged).toBe(0);
+    expect(stdout).not.toMatch(/No changes needed/);
+    expect(stdout).toMatch(/Upgrade incomplete/);
+  });
 });
 
 describe('a failure beside outcomes', () => {

@@ -154,7 +154,7 @@
  * @property {RegistryCompositionSummary} [data.registryCompositions]
  * @property {boolean} [data.complete] False when protected required changes remain or a file in `regenerate` must be rebuilt. Manual actions alone never make it false. Also false on the receipt a failed run's error carries (`UpgradeFailureReceipt`).
  * @property {ManualAction[]} [data.manualActions] Code a codemod identified but cannot migrate: a person changes it. Listed for review; never an error, never incomplete.
- * @property {RegenerateFile[]} [data.regenerate] Generated files to rebuild, with their commands. Any entry makes the run incomplete (`ERR_CODEMOD_PROTECTED`, as for a protected file); rebuild them, then run the same upgrade again.
+ * @property {RegenerateFile[]} [data.regenerate] Generated files to rebuild, with their commands. Any entry makes the run incomplete (`ERR_CODEMOD_PROTECTED`, as for a protected file); rebuild them, then run the same upgrade again. A listed file the project protects (for example with an `@generated` header) is also in `protectedFiles`, with the declaration that protects it and the same commands.
  * @property {string} [data.errorCode] Stable incomplete-result code when complete is false: `ERR_CODEMOD_PROTECTED` on a returned receipt; on the receipt a failed run's error carries, the error's own code.
  * @property {number} [data.filesChanged] Distinct files changed across core + integration codemods (apply mode). One file that four codemods each changed counts once.
  * @property {string[]} [data.modifiedFiles] Files changed or previewed, relative to the folder the command ran in.

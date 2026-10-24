@@ -192,6 +192,43 @@ function summarizeRegenerate(protectedFiles, outcomes) {
 }
 
 /**
+ * Protection rows for generated outputs a codemod reported out of date, from
+ * the run's protection resolver, in the shape the runners report blocked
+ * protected candidates. A reported file the project protects (an `@generated`
+ * header, `linguist-generated`, ...) is a protected file that still requires a
+ * change, so it is listed in `protectedFiles` with the declaration that
+ * protects it (spec:AST-040 FR6), and the command the codemod names is one of
+ * its `commands`. A reported file nothing protects stays only in `regenerate`.
+ * @param {import('../_adapter.mjs').CodemodOutcomeRecord[]} outcomes
+ * @param {{classify: (file: string) => import('../../../foundation/fs/file-protection.mjs').FileProtection[]}} protection
+ * @param {string} cwd
+ * @returns {Array<{file: string, codemod: string, reason: string, declaration: string, generated: boolean, command?: string}>}
+ */
+function regenerationProtectionRows(outcomes, protection, cwd) {
+  /** @type {Array<{file: string, codemod: string, reason: string, declaration: string, generated: boolean, command?: string}>} */
+  const rows = [];
+  for (const outcome of outcomes) {
+    if (outcome.kind !== 'regenerate') continue;
+    for (const item of protection.classify(path.resolve(cwd, outcome.file))) {
+      const base = {
+        file: item.file,
+        codemod: outcome.codemod,
+        reason: item.reason,
+        declaration: item.declaration,
+        generated: item.reason === 'generated',
+      };
+      const commands = [
+        ...(item.command ? [item.command] : []),
+        ...outcome.commands,
+      ];
+      if (commands.length === 0) rows.push(base);
+      for (const command of commands) rows.push({...base, command});
+    }
+  }
+  return rows;
+}
+
+/**
  * The receipt of a run that stopped after codemods ran. Whatever the codemods
  * already wrote stays on disk, so the error the run throws carries this
  * receipt (`failWithReceipt`): a caller that reads only the error would
@@ -439,6 +476,7 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
       root: cwd,
       protection,
       coversTarget: !cliBehindCore,
+      outcomes: initialOutcomes.outcomes,
     },
   );
   const coreResult =
@@ -462,14 +500,31 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
     iconSets = projectContext.iconSets;
   } catch (err) {
     const configErr = /** @type {Error} */ (err);
-    const allProtected = coreResult?.protectedFiles ?? [];
-    if (allProtected.length > 0) {
+    const allProtected = [
+      ...(coreResult?.protectedFiles ?? []),
+      ...regenerationProtectionRows(initialOutcomes.outcomes, protection, cwd),
+    ];
+    const pendingRegeneration = initialOutcomes.outcomes.some(
+      outcome => outcome.kind === 'regenerate',
+    );
+    // A file to regenerate blocks the run exactly like a protected file, so
+    // it keeps this incomplete result rather than the config error.
+    if (allProtected.length > 0 || pendingRegeneration) {
       const protectedFiles = summarizeProtectedFiles(allProtected);
+      const regenerate = summarizeRegenerate(
+        protectedFiles,
+        initialOutcomes.outcomes,
+      );
       logger.error(
         `${ERROR_CODES.ERR_CODEMOD_PROTECTED}: protected codemod changes remain while loading the Astryx config.`,
       );
       for (const item of protectedFiles) {
         logger.error(`  ${item.file} — ${item.declarations.join('; ')}`);
+      }
+      for (const item of regenerate) {
+        if (!protectedFiles.some(row => row.file === item.file)) {
+          logger.error(`  ${item.file} — ${item.messages.join(' ')}`);
+        }
       }
       if (cliBehindCore) logCliBehindCore(cliBehindCore, targetVersion);
       logger.log('Upgrade incomplete: protected changes remain\n');
@@ -498,10 +553,7 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
           protectedFiles,
           declinedCandidates: [],
           manualActions: summarizeManualActions(initialOutcomes.outcomes),
-          regenerate: summarizeRegenerate(
-            protectedFiles,
-            initialOutcomes.outcomes,
-          ),
+          regenerate,
           complete: false,
           errorCode: 'ERR_CODEMOD_PROTECTED',
           errors: coreResult?.errors ?? [],
@@ -776,7 +828,11 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
             cwd,
             changedFiles: mergedChangedFiles,
             transformsApplied: mergedTransformsApplied,
-            protectedRows: [],
+            protectedRows: regenerationProtectionRows(
+              initialOutcomes.outcomes,
+              protection,
+              cwd,
+            ),
             outcomes: initialOutcomes.outcomes,
             errors: [
               ...mergedErrors,
@@ -814,6 +870,7 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
   // to distinguish resolved outputs from changes that remain blocked.
   let remainingProtected = initialProtected;
   let finalOutcomes = initialOutcomes.outcomes;
+  let finalProtection = protection;
   if (apply && shouldRunHooks && !hookFailure) {
     let refreshedProtection;
     try {
@@ -831,7 +888,14 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
         cwd,
         changedFiles: [...mergedChangedFiles, ...hookModifiedFiles],
         transformsApplied: mergedTransformsApplied,
-        protectedRows: initialProtected,
+        protectedRows: [
+          ...initialProtected,
+          ...regenerationProtectionRows(
+            initialOutcomes.outcomes,
+            protection,
+            cwd,
+          ),
+        ],
         outcomes: initialOutcomes.outcomes,
         errors: [
           ...mergedErrors,
@@ -897,6 +961,7 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
     }
     remainingProtected = recheckedProtected;
     finalOutcomes = recheckOutcomes.outcomes;
+    finalProtection = refreshedProtection;
     finalErrors = [
       ...mergedErrors,
       ...(checkedCore?.errors ?? []),
@@ -904,7 +969,10 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
     ];
   }
 
-  const protectedFiles = summarizeProtectedFiles(remainingProtected);
+  const protectedFiles = summarizeProtectedFiles([
+    ...remainingProtected,
+    ...regenerationProtectionRows(finalOutcomes, finalProtection, cwd),
+  ]);
   receipt.filesChanged = mergedFilesChanged;
   receipt.transformsApplied = mergedTransformsApplied;
   receipt.modifiedFiles = uniqueFiles([

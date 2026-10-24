@@ -658,7 +658,7 @@ export function withCodemodOutcomes(versionManifests, root) {
  * Run the CORE registry codemods. Runs BEFORE the config is loaded so a core
  * CONFIG codemod can repair a config the strict loader would otherwise reject.
  * @param {CoreVersionManifest[]} versionManifests
- * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>, root?: string, protection?: {root: string, classify: (file: string) => import('../../foundation/fs/file-protection.mjs').FileProtection[]}, silent?: boolean, coversTarget?: boolean}} options
+ * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>, root?: string, protection?: {root: string, classify: (file: string) => import('../../foundation/fs/file-protection.mjs').FileProtection[]}, silent?: boolean, coversTarget?: boolean, outcomes?: CodemodOutcomeRecord[]}} options
  */
 export async function runCoreCodemods(
   versionManifests,
@@ -671,6 +671,7 @@ export async function runCoreCodemods(
     protection,
     silent,
     coversTarget,
+    outcomes,
   },
 ) {
   return runCodemods(versionManifests, {
@@ -682,6 +683,7 @@ export async function runCoreCodemods(
     root,
     protection,
     coversTarget,
+    outcomes,
   });
 }
 
