@@ -1195,6 +1195,32 @@ describe('ListInput', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('cancels a pointer reorder when a second pointer lands, as a pinch does', () => {
+    const onChange = vi.fn();
+    const {container} = renderListInput({isReorderable: true, onChange});
+    const handle = screen.getByRole('button', {name: 'Reorder guest 1'});
+
+    fireEvent.pointerDown(handle, {
+      button: 0,
+      pointerId: 8,
+      clientX: 10,
+      clientY: 10,
+    });
+    fireEvent.pointerMove(handle, {pointerId: 8, clientX: 10, clientY: 34});
+    expect(
+      container.querySelector('[data-list-input-reorder-source]'),
+    ).toBeInTheDocument();
+
+    // The second finger of a pinch lands elsewhere on the page.
+    fireEvent.pointerDown(document.body, {pointerId: 9, clientX: 200});
+    expect(
+      container.querySelector('[data-list-input-reorder-source]'),
+    ).not.toBeInTheDocument();
+
+    fireEvent.pointerUp(handle, {pointerId: 8, clientX: 10, clientY: 90});
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it('clears a sub-threshold pointer drag without reordering', () => {
     const onChange = vi.fn();
     const {container} = renderListInput({isReorderable: true, onChange});
