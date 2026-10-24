@@ -149,6 +149,13 @@ export interface ListItemProps extends BaseProps<HTMLLIElement> {
   isReorderDisabled?: boolean;
 
   /**
+   * In a List with `onReorder`, the text this row's reorder handle is named
+   * after ("Reorder {reorderLabel}"), for a row whose `label` is not plain
+   * text. Without it such a handle is named after the row's place.
+   */
+  reorderLabel?: string;
+
+  /**
    * Swipe actions for touch, passed through to `Item` unchanged: the verbs a
    * sideways drag uncovers on each side. See `Item.swipeActions`; `List`
    * clips the rows in the inline axis for them.
@@ -403,6 +410,7 @@ export function ListItem({
   isDisabled = false,
   isSelected = false,
   isReorderDisabled = false,
+  reorderLabel,
   align,
   xstyle,
   className,
@@ -488,7 +496,10 @@ export function ListItem({
         hasReorderHandle ? (
           <>
             {endContent}
-            <ListReorderHandle label={label} isDisabled={isDisabled} />
+            <ListReorderHandle
+              label={reorderLabel ?? label}
+              isDisabled={isDisabled}
+            />
           </>
         ) : isReorderable && isRenderable(endContent) ? (
           // A fixed row keeps its end content in the movable rows' column.

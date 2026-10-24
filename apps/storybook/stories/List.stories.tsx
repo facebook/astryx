@@ -675,8 +675,10 @@ export const Reorderable: Story = {
           'With `onReorder`, each row gets a reorder handle. On a touch ' +
           'screen, hold a handle for a moment, then drag: the rows you pass ' +
           'slide out of the way and the row settles into its new place on ' +
-          'release. A mouse drags a handle at once; from the keyboard, the ' +
-          'arrow keys move the focused handle’s row.',
+          'release. A mouse drags a handle at once; a tap or click on a ' +
+          'handle opens its moves (Move up, Move down, Move to top, Move to ' +
+          'bottom); from the keyboard, the arrow keys move the focused ' +
+          'handle’s row.',
       },
     },
   },

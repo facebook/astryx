@@ -9,8 +9,9 @@
  *   (utils/touchPresentation.ts), the translator and theme tokens
  * @output `ListReorderHandle`: the trailing handle of a reorderable List row,
  *   a button that drags its row (held still for a moment by a finger where
- *   the primary pointer is coarse, at once by a mouse) and moves it with the
- *   arrow keys; `MOUSE_DRAG_SLOP`
+ *   the primary pointer is coarse, at once by a mouse), moves it with the
+ *   arrow keys, and, activated without a drag, opens its moves (a
+ *   DropdownMenu anchored to the handle); `MOUSE_DRAG_SLOP`
  * @position Internal to List; ListItem renders it at the end of each row of
  *   a List with `onReorder`
  *
@@ -26,6 +27,10 @@
  * own pointer events, never through the gesture system: a press that moves
  * less than `MOUSE_DRAG_SLOP` stays a click.
  *
+ * A drag is not everyone's: activating the handle without one — a tap, a
+ * click, a screen reader's double tap — opens Move up, Move down, Move to top
+ * and Move to bottom (WCAG 2.2 SC 2.5.7, a single pointer and no drag),
+ * through the same moves as the keys. A press that dragged opens nothing.
  *
  * SYNC: When modified, update List/useListReorder.ts and List/ListItem.tsx.
  */
@@ -34,6 +39,7 @@ import {
   use,
   useEffect,
   useRef,
+  useState,
   type KeyboardEvent,
   type PointerEvent,
   type ReactNode,
@@ -44,11 +50,20 @@ import {colorVars, focusVars} from '../theme/tokens.stylex';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useTranslator} from '../i18n/useTranslator';
 import {useTouchPresentation} from '../utils/touchPresentation';
+import {DropdownMenu} from '../DropdownMenu/DropdownMenu';
 import {
   HANDLE_ATTRIBUTE,
   ListReorderContext,
   type ListReorderController,
+  type ReorderMove,
 } from './useListReorder';
+
+const MOVE_LABELS = {
+  up: '@astryx.list.reorderMoveUp',
+  down: '@astryx.list.reorderMoveDown',
+  top: '@astryx.list.reorderMoveToTop',
+  bottom: '@astryx.list.reorderMoveToBottom',
+} as const satisfies Record<ReorderMove['kind'], string>;
 
 /** A touch target's side: the handle's width and height. */
 const HANDLE_SIZE = 44;
@@ -125,6 +140,20 @@ const styles = stylex.create({
     width: HANDLE_SIZE,
     marginInlineEnd: -8,
   },
+  // Over the handle at the row's end, out of the row's layout.
+  menuHost: {
+    position: 'absolute',
+    insetBlock: 0,
+    insetInlineEnd: 0,
+    width: HANDLE_SIZE,
+    pointerEvents: 'none',
+  },
+  menuAnchor: {
+    display: 'block',
+    width: '100%',
+    height: '100%',
+    outline: 'none',
+  },
 });
 
 /**
@@ -144,15 +173,21 @@ export function ListReorderSlot() {
 /**
  * The handle's gestures. A finger's hold goes through the reorder's touch
  * layer, only where the primary pointer is coarse; a mouse drags on the
- * handle's own pointer events. Returns the handle's pointerdown listener.
+ * handle's own pointer events. `onDrag` runs once a press moves its row.
+ * Returns the handle's pointerdown listener.
  */
 function useHandleGestures(
   ref: React.RefObject<HTMLButtonElement | null>,
   controller: ListReorderController | undefined,
   isDisabled: boolean,
+  onDrag: () => void,
 ): (event: PointerEvent<HTMLButtonElement>) => void {
   const isEnabled = controller != null && !isDisabled;
   const isTouch = useTouchPresentation().isTouch;
+  const onDragRef = useRef(onDrag);
+  useIsomorphicLayoutEffect(() => {
+    onDragRef.current = onDrag;
+  });
   // The row the handle sits in, read after each commit: the list's own ref is
   // attached after its rows' layout effects run, and by the cleanup below the
   // handle may already be out of the row.
@@ -181,7 +216,7 @@ function useHandleGestures(
     if (!isEnabled || !isTouch || handle == null || controller == null) {
       return undefined;
     }
-    return controller.attachTouch(handle);
+    return controller.attachTouch(handle, () => onDragRef.current());
   }, [ref, controller, isEnabled, isTouch]);
   // A mouse: the press is the handle's own until it lifts (pointer capture),
   // and drags the row once it has moved MOUSE_DRAG_SLOP, from where it
@@ -220,6 +255,7 @@ function useHandleGestures(
           return;
         }
         isDragging = true;
+        onDragRef.current();
         controller.gesture(controller.rowOf(handle), {state: 'began', y});
       }
       controller.gesture(null, {state: 'changed', y: move.clientY});
@@ -274,7 +310,22 @@ export function ListReorderHandle({
   const ref = useRef<HTMLButtonElement>(null);
   const t = useTranslator();
   const controller = context?.controller;
-  const onMousePress = useHandleGestures(ref, controller, isDisabled);
+  // The moves menu exists only while it is open: a mounted menu anchors to
+  // the handle, and a dragged handle would then lay out on every move.
+  // Mounted closed, then opened, so the menu moves focus into its rows.
+  const [menu, setMenu] = useState<'closed' | 'mounting' | 'open'>('closed');
+  useEffect(() => {
+    if (menu !== 'mounting') {
+      return;
+    }
+    const frame = requestAnimationFrame(() => setMenu('open'));
+    return () => cancelAnimationFrame(frame);
+  }, [menu]);
+  // A press that dragged the row does not also open the moves menu.
+  const draggedRef = useRef(false);
+  const onMousePress = useHandleGestures(ref, controller, isDisabled, () => {
+    draggedRef.current = true;
+  });
   const named = typeof label === 'string' || typeof label === 'number';
   // A row without a text label is named after its place, read from the DOM
   // after each commit (the row does not know its index). A passive effect:
@@ -293,47 +344,104 @@ export function ListReorderHandle({
   if (context == null) {
     return null;
   }
+  const rowMoves = () =>
+    controller?.movesFor(controller.rowOf(ref.current)) ?? [];
   const name = named
     ? t('@astryx.list.reorderHandle', {label: String(label)})
     : undefined;
+  // Activating the handle — a tap, a click, a screen reader's double tap —
+  // opens its moves: a way to reorder with a single pointer and no drag
+  // (WCAG 2.5.7). The keys keep their own moves (Space picks up).
   return (
-    <button
-      ref={ref}
-      type="button"
-      {...{[HANDLE_ATTRIBUTE]: ''}}
-      // The handle takes its own press, so the row does not highlight under
-      // it (it paints nothing itself).
-      data-astryx-pressable=""
-      // It rings itself: the row's focus-within ring stays off for it.
-      data-astryx-own-ring=""
-      aria-label={name}
-      aria-describedby={context.hintId}
-      aria-disabled={isDisabled || undefined}
-      onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {
-        if (!isDisabled) {
-          controller?.keyDown(controller.rowOf(ref.current), event);
-        }
-      }}
-      onBlur={() => controller?.blur(controller.rowOf(ref.current))}
-      // The row's own pointer handling (its swipe) never sees the handle's
-      // touches; the gesture system listens on the document, before this. A
-      // mouse press starts the handle's own drag.
-      onPointerDown={(event: PointerEvent<HTMLButtonElement>) => {
-        event.stopPropagation();
-        onMousePress(event);
-      }}
-      {...focusOutlineProps.focusVisible(styles.handle)}>
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 20 14"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={2}
-        strokeLinecap="round"
-        {...stylex.props(styles.lines)}>
-        <path d="M1 1h18M1 7h18M1 13h18" />
-      </svg>
-    </button>
+    <>
+      <button
+        ref={ref}
+        type="button"
+        {...{[HANDLE_ATTRIBUTE]: ''}}
+        // The handle takes its own press, so the row does not highlight under
+        // it (it paints nothing itself).
+        data-astryx-pressable=""
+        // It rings itself: the row's focus-within ring stays off for it.
+        data-astryx-own-ring=""
+        aria-label={name}
+        aria-describedby={context.hintId}
+        aria-disabled={isDisabled || undefined}
+        aria-haspopup="menu"
+        aria-expanded={menu === 'open'}
+        onClick={() => {
+          if (draggedRef.current) {
+            draggedRef.current = false;
+            return;
+          }
+          if (!isDisabled && menu === 'closed' && rowMoves().length > 0) {
+            setMenu('mounting');
+          }
+        }}
+        onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {
+          if (!isDisabled) {
+            controller?.keyDown(controller.rowOf(ref.current), event);
+          }
+        }}
+        onBlur={() => controller?.blur(controller.rowOf(ref.current))}
+        // The row's own pointer handling (its swipe) never sees the handle's
+        // touches; the gesture system listens on the document, before this. A
+        // mouse press starts the handle's own drag.
+        onPointerDown={(event: PointerEvent<HTMLButtonElement>) => {
+          draggedRef.current = false;
+          event.stopPropagation();
+          onMousePress(event);
+        }}
+        {...focusOutlineProps.focusVisible(styles.handle)}>
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 20 14"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          {...stylex.props(styles.lines)}>
+          <path d="M1 1h18M1 7h18M1 13h18" />
+        </svg>
+      </button>
+      {menu !== 'closed' && (
+        // The menu's events stay out of the row (its own press, its keys).
+        <span
+          onClick={event => event.stopPropagation()}
+          onKeyDown={event => event.stopPropagation()}
+          onPointerDown={event => event.stopPropagation()}
+          {...stylex.props(styles.menuHost)}>
+          <DropdownMenu
+            isMenuOpen={menu === 'open'}
+            onOpenChange={isOpen => {
+              if (!isOpen) {
+                setMenu('closed');
+              }
+            }}
+            hasChevron={false}
+            items={rowMoves().map(move => ({
+              id: move.kind,
+              label: t(MOVE_LABELS[move.kind]),
+              onClick: () =>
+                controller?.moveRow(controller.rowOf(ref.current), move.to),
+            }))}
+            // Anchored over the handle; named after it; focus coming back to
+            // it goes on to the handle.
+            renderTrigger={trigger => (
+              <span
+                ref={trigger.ref}
+                id={trigger.id}
+                tabIndex={-1}
+                aria-label={
+                  name ?? ref.current?.getAttribute('aria-label') ?? undefined
+                }
+                onFocus={() => ref.current?.focus({preventScroll: true})}
+                {...stylex.props(styles.menuAnchor)}
+              />
+            )}
+          />
+        </span>
+      )}
+    </>
   );
 }
 
