@@ -22,9 +22,9 @@ rests on evidence.
 | Wire           | `AstryxNode`, `AstryxAction`      | Each component as JSON a TypeScript core sends a native host (arm C), and the action a host sends back when a view calls a callback. Swift decodes `<Name>Node` and turns it into `<Name>Props` with `viewProps(send:)`.                     |
 | Logic core     | `@astryxdesign/native/logic`      | `createLogicCore` holds a screen's state, builds its node tree, and reduces actions; `connectBridge` carries it to a native host as JSON. ECMAScript built-ins only, so it runs in Hermes. Shaped after EJ Campbell's astryx-swift spike.    |
 
-Contracts cover Button, Card, Divider, Heading, HStack, ProgressBar, Selector,
-Switch, Text, TextInput, and VStack. React Native and Android bindings are not built yet; see
-[the experiment matrix](#experiment-matrix).
+Contracts cover Badge, Button, Card, Divider, Heading, HStack, ProgressBar,
+Selector, Switch, Text, TextInput, and VStack. React Native and Android
+bindings are not built yet; see [the experiment matrix](#experiment-matrix).
 
 ```ts
 // tsconfig.json for an iOS app: "customConditions": ["ios"]

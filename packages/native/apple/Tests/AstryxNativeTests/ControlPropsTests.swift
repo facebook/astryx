@@ -15,6 +15,8 @@ import Testing
   let heading = HeadingProps(level: .v2, children: "Orders")
   #expect(heading.level.rawValue == 2)
   #expect(heading.children == "Orders")
+  let badge = BadgeProps(variant: .success, label: "Paid")
+  #expect(badge.label == "Paid")
   let divider = DividerProps(label: "Or")
   #expect(divider.label == "Or")
 }

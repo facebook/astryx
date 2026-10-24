@@ -7,6 +7,7 @@ import Foundation
 /// or a known one with a value its enums lack or a required prop missing. An older
 /// app then keeps drawing the rest of a newer core's tree.
 public enum AstryxNode: Decodable, Equatable, Sendable {
+  case badge(BadgeNode)
   case button(ButtonNode)
   case card(CardNode)
   case divider(DividerNode)
@@ -22,6 +23,7 @@ public enum AstryxNode: Decodable, Equatable, Sendable {
 
   public var key: String {
     switch self {
+    case .badge(let node): return node.key
     case .button(let node): return node.key
     case .card(let node): return node.key
     case .divider(let node): return node.key
@@ -45,6 +47,7 @@ public enum AstryxNode: Decodable, Equatable, Sendable {
     let key = try container.decode(String.self, forKey: .key)
     do {
       switch component {
+      case "Badge": self = .badge(try BadgeNode(from: decoder))
       case "Button": self = .button(try ButtonNode(from: decoder))
       case "Card": self = .card(try CardNode(from: decoder))
       case "Divider": self = .divider(try DividerNode(from: decoder))

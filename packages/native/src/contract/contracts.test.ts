@@ -76,6 +76,13 @@ describe('native contracts', () => {
       values: [1, 2, 3, 4, 5, 6],
     });
     expect(byName.get('Text')!.core).not.toHaveProperty('id');
+    expect(byName.get('Badge')!.core.label).toMatchObject({
+      type: {kind: 'string'},
+      optional: false,
+    });
+    expect(byName.get('Badge')!.webOnly.map(prop => prop.name)).toContain(
+      'icon',
+    );
   });
 
   it('reports naming and portability errors', () => {
