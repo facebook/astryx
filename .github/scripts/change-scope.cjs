@@ -4,7 +4,10 @@
 /* global console, module, process, require */
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const {isComponentSpecRecordPath} = require('./knowledge-paths.cjs');
+const {
+  isComponentSpecRecordPath,
+  isPackageArchitectureRecordPath,
+} = require('./knowledge-paths.cjs');
 
 /**
  * Classifies changed paths without reading PR-controlled content.
@@ -99,6 +102,7 @@ function isPackageReleasePath(filePath) {
 function isKnowledgeRecordPath(filePath) {
   return (
     isSpecRecordPath(filePath) ||
+    isPackageArchitectureRecordPath(filePath) ||
     KNOWLEDGE_RECORD_PATTERNS.some(pattern => pattern.test(filePath))
   );
 }

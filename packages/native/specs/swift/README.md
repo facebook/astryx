@@ -17,8 +17,10 @@ except `tooltip.spec.md`, which is a draft.
 | `theme-environment.spec.md`    | How the theme rides on SwiftUI's environment in both directions                       |
 | `theme-generator.spec.md`      | How any Astryx theme becomes a Swift `Theme`                                          |
 
-A single component's spec lives in that component's own folder, beside its
-views: `packages/native/apple/Sources/Astryx/<Name>/<Name>.spec.md`, named as the
-core component (`Button.spec.md`, `TextInput.spec.md`). See
+A single component's spec lives beside its views in the folder where core
+keeps the component: usually its own,
+`packages/native/apple/Sources/Astryx/<Name>/<Name>.spec.md`, named as the
+core component (`Button.spec.md`, `TextInput.spec.md`), and core's folder when
+core keeps it in another (`Avatar/AvatarStatusDot.spec.md`). See
 [`../README.md`](../README.md). Start with a component that already has a
 generated contract in `packages/native/src/components/`.

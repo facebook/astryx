@@ -651,6 +651,91 @@ describe('resolveSpecsForFile', () => {
     ).toEqual([]);
   });
 
+  it("routes only a platform member record's own files in the folder it shares", () => {
+    const root = fixtureRoot();
+    for (const [file, id] of [
+      [
+        'packages/native/apple/Sources/Astryx/Avatar/Avatar.spec.md',
+        'component:swift/Avatar',
+      ],
+      [
+        'packages/native/apple/Sources/Astryx/Avatar/AvatarStatusDot.spec.md',
+        'component:swift/AvatarStatusDot',
+      ],
+    ]) {
+      writeRecord(root, file, {
+        kind: 'component',
+        id,
+        platform_of: id.replace('swift/', ''),
+      });
+    }
+    write(root, 'packages/native/apple/Sources/Astryx/Avatar/Avatar.swift');
+    write(
+      root,
+      'packages/native/apple/Sources/Astryx/Avatar/AvatarStatusDot.swift',
+    );
+    const index = loadKnowledgeIndex(root);
+    const swiftIds = file =>
+      ids(resolveSpecsForFile(index, file).records).filter(id =>
+        id.includes('swift/'),
+      );
+    expect(
+      swiftIds('packages/native/apple/Sources/Astryx/Avatar/Avatar.swift'),
+    ).toEqual(['component:swift/Avatar']);
+    expect(
+      swiftIds(
+        'packages/native/apple/Sources/Astryx/Avatar/AvatarStatusDot.swift',
+      ),
+    ).toEqual(['component:swift/Avatar', 'component:swift/AvatarStatusDot']);
+  });
+
+  it('routes a platform component file to its platform record and, through platform_of, its core record', () => {
+    const root = fixtureRoot();
+    writeRecord(root, 'packages/core/src/Button/Button.spec.md', {
+      kind: 'component',
+      id: 'component:Button',
+      platform_of: 'null',
+    });
+    writeRecord(
+      root,
+      'packages/native/apple/Sources/Astryx/Button/Button.spec.md',
+      {
+        kind: 'component',
+        id: 'component:swift/Button',
+        platform_of: 'component:Button',
+      },
+    );
+    write(
+      root,
+      'packages/native/apple/Sources/Astryx/Button/AstryxButton.swift',
+    );
+    write(root, 'packages/native/apple/Sources/Astryx/Card/AstryxCard.swift');
+    const index = loadKnowledgeIndex(root);
+
+    const button = resolveSpecsForFile(
+      index,
+      'packages/native/apple/Sources/Astryx/Button/AstryxButton.swift',
+    );
+    expect(ids(button.records)).toEqual([
+      'component:Button',
+      'component:swift/Button',
+    ]);
+    expect(
+      button.records.find(record => record.id === 'component:Button').routes,
+    ).toEqual([
+      {via: 'inherited:platform_of', detail: 'component:swift/Button'},
+    ]);
+
+    expect(
+      ids(
+        resolveSpecsForFile(
+          index,
+          'packages/native/apple/Sources/Astryx/Card/AstryxCard.swift',
+        ).records,
+      ),
+    ).toEqual([]);
+  });
+
   it('reports a path no record reaches instead of guessing', () => {
     const index = loadKnowledgeIndex(popoverFixture());
     const result = resolveSpecsForFile(

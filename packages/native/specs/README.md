@@ -2,13 +2,16 @@
 
 Every native spec is a standard knowledge record
 ([`architecture:knowledge-contracts`](../../../docs/architecture/knowledge-contracts.md)
-INV27). The rules live in
+INV27), checked by `pnpm check:knowledge`. The rules live in
 [AST-093 (Native component guidelines)](../../../docs/specs/AST-093-native-component-guidelines/spec.md),
 which applies [AST-082 (Native-first surfaces)](../../../docs/specs/AST-082-native-first-surfaces/spec.md).
 
-- **A native component's spec** sits in the component's own folder beside its
-  implementation, the way core keeps `TabList.spec.md` next to `TabList.tsx`:
-  `packages/native/apple/Sources/Astryx/<Name>/<Name>.spec.md`. It is a
+- **A native component's spec** sits beside its implementation in the folder
+  where core keeps the component, the way core keeps `TabList.spec.md` next to
+  `TabList.tsx`: usually its own folder,
+  `packages/native/apple/Sources/Astryx/<Name>/<Name>.spec.md`, and core's
+  folder when core keeps it in another (`Avatar/AvatarStatusDot.spec.md`,
+  `List/ListItem.spec.md`). It is a
   `component` record
   with id `component:swift/<Name>` and `platform_of: component:<Name>`, built
   from
@@ -54,7 +57,8 @@ the same everywhere. A native spec never renames or changes it.
 
 1. Copy the template for the record's kind from `docs/templates/knowledge/` to
    the location above, and fill its frontmatter and every section.
-2. Run the rubric in `docs/contributing/spec-writing.md`.
+2. Run `pnpm check:knowledge` and the rubric in
+   `docs/contributing/spec-writing.md`.
 3. Open a pull request that changes only files under `packages/native/`. A spec
    can land on its own or with the component it describes.
 

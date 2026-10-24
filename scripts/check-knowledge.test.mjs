@@ -39,7 +39,9 @@ function fixtureRoot() {
     path.join(root, 'docs/templates/knowledge'),
     {recursive: true},
   );
-  for (const version of ['v1.json', 'v2.json', 'v3.json', 'v4.json']) {
+  for (const version of fs
+    .readdirSync(path.join(repoRoot, 'docs/schemas/knowledge'))
+    .filter(name => /^v[0-9]+\.json$/.test(name))) {
     fs.copyFileSync(
       path.join(repoRoot, `docs/schemas/knowledge/${version}`),
       path.join(root, `docs/schemas/knowledge/${version}`),
@@ -87,10 +89,11 @@ function addSchemaVersion(root, version) {
 
 function componentRecord(overrides = {}) {
   const values = {
-    schema_version: '3',
+    schema_version: '5',
     template_version: '1',
     kind: 'component',
     id: 'component:Button',
+    platform_of: 'null',
     authority: 'draft',
     archive_reason: 'null',
     superseded_by: 'null',
@@ -2137,10 +2140,10 @@ describe('knowledge validation', () => {
     fs.mkdirSync(directory);
     fs.writeFileSync(
       path.join(directory, 'Button.spec.md'),
-      componentRecord({template_version: '8'}),
+      componentRecord({template_version: '9'}),
     );
     expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
-      /template_version 8 is newer than 7/,
+      /template_version 9 is newer than 8/,
     );
   });
 
@@ -2154,7 +2157,7 @@ describe('knowledge validation', () => {
       componentRecord({schema_version: '0'}),
     );
     expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
-      /active component records must use latest schema_version 3 for that kind/,
+      /active component records must use latest schema_version 5 for that kind/,
     );
   });
 
@@ -2363,6 +2366,306 @@ describe('INV25 record reachability', () => {
     );
     gitFixture(root);
     expect(await validateKnowledgeRoot(root)).toEqual([]);
+  });
+
+  it('fails a spec-shaped file at no record location (INV27)', async () => {
+    const root = fixtureRoot();
+    for (const relative of [
+      'packages/native/specs/TEMPLATE.md',
+      'packages/native/specs/swift/library/accessibility.md',
+      'packages/widgets/docs/Widget.spec.md',
+      'apps/demo/specs/notes.md',
+    ]) {
+      fs.mkdirSync(path.dirname(path.join(root, relative)), {recursive: true});
+      fs.writeFileSync(path.join(root, relative), '# Not a record\n');
+    }
+    for (const relative of [
+      'packages/native/specs/README.md',
+      'packages/native/specs/swift/plan.md',
+      'packages/native/specs/__fixtures__/fixture.md',
+      'packages/widgets/node_modules/dep/Dep.spec.md',
+      'packages/widgets/src/.Hidden.spec.md',
+    ]) {
+      fs.mkdirSync(path.dirname(path.join(root, relative)), {recursive: true});
+      fs.writeFileSync(path.join(root, relative), '# Not a candidate\n');
+    }
+    const problems = await validateKnowledgeRoot(root);
+    expect(problems.map(problem => problem.split(':')[0]).sort()).toEqual([
+      'apps/demo/specs/notes.md',
+      'packages/native/specs/TEMPLATE.md',
+      'packages/native/specs/swift/library/accessibility.md',
+      'packages/widgets/docs/Widget.spec.md',
+    ]);
+    expect(problems[0]).toContain('INV27');
+  });
+
+  it('accepts a package record whose kind and id follow its path', async () => {
+    const root = fixtureRoot();
+    const template = fs.readFileSync(
+      path.join(root, 'docs/templates/knowledge/architecture.md'),
+      'utf8',
+    );
+    const recordPath = path.join(
+      root,
+      'packages/native/specs/swift/accessibility.spec.md',
+    );
+    fs.mkdirSync(path.dirname(recordPath), {recursive: true});
+    const record = template.replace(
+      'id: architecture:<surface>',
+      'id: architecture:native-swift-accessibility',
+    );
+    fs.writeFileSync(recordPath, record);
+    expect(await validateKnowledgeRoot(root)).toEqual([]);
+    expect(
+      discoverKnowledgeRecords(root).map(filePath =>
+        path.relative(root, filePath).split(path.sep).join('/'),
+      ),
+    ).toContain('packages/native/specs/swift/accessibility.spec.md');
+
+    fs.writeFileSync(
+      recordPath,
+      record.replace(
+        'id: architecture:native-swift-accessibility',
+        'id: architecture:swift-accessibility',
+      ),
+    );
+    expect(await validateKnowledgeRoot(root)).toEqual([
+      'packages/native/specs/swift/accessibility.spec.md: package record id must be architecture:native-swift-accessibility to match its path.',
+    ]);
+  });
+
+  describe('platform component records (DEC-13)', () => {
+    const platformPath =
+      'packages/native/apple/Sources/Astryx/Button/Button.spec.md';
+
+    function writeCore(root) {
+      const directory = path.join(root, 'packages/core/src/Button');
+      fs.mkdirSync(directory, {recursive: true});
+      fs.writeFileSync(
+        path.join(directory, 'Button.spec.md'),
+        componentRecord(),
+      );
+    }
+
+    function writePlatform(root, overrides = {}) {
+      fs.mkdirSync(path.dirname(path.join(root, platformPath)), {
+        recursive: true,
+      });
+      fs.writeFileSync(
+        path.join(root, platformPath),
+        componentRecord({
+          id: 'component:swift/Button',
+          platform_of: 'component:Button',
+          ...overrides,
+        }),
+      );
+    }
+
+    it('accepts a platform record that names its core record', async () => {
+      const root = fixtureRoot();
+      writeCore(root);
+      writePlatform(root);
+      expect(await validateKnowledgeRoot(root)).toEqual([]);
+    });
+
+    it('rejects a platform record whose id does not follow its path', async () => {
+      const root = fixtureRoot();
+      writeCore(root);
+      writePlatform(root, {id: 'component:Button'});
+      expect(await validateKnowledgeRoot(root)).toContain(
+        `${platformPath}: platform component record id must be component:swift/Button to match its path.`,
+      );
+    });
+
+    it('accepts core source in place of a core record, until one exists', async () => {
+      const root = fixtureRoot();
+      fs.mkdirSync(path.join(root, 'packages/core/src/Button'), {
+        recursive: true,
+      });
+      writePlatform(root);
+      expect(await validateKnowledgeRoot(root)).toEqual([]);
+    });
+
+    it('rejects a platform record saved in another component folder', async () => {
+      const root = fixtureRoot();
+      const recordPath =
+        'packages/native/apple/Sources/Astryx/Icon/Banner.spec.md';
+      fs.mkdirSync(path.dirname(path.join(root, recordPath)), {
+        recursive: true,
+      });
+      fs.mkdirSync(path.join(root, 'packages/core/src/Banner'), {
+        recursive: true,
+      });
+      fs.writeFileSync(
+        path.join(root, recordPath),
+        componentRecord({
+          id: 'component:swift/Banner',
+          platform_of: 'component:Banner',
+        }),
+      );
+      expect(await validateKnowledgeRoot(root)).toContain(
+        `${recordPath}: a platform component record lives in the folder where core keeps its component: Banner.spec.md belongs in packages/native/apple/Sources/Astryx/Banner/.`,
+      );
+    });
+
+    it('accepts a member beside its family, where core keeps its record (Avatar/AvatarStatusDot)', async () => {
+      const root = fixtureRoot();
+      const avatarDir = path.join(root, 'packages/core/src/Avatar');
+      fs.mkdirSync(avatarDir, {recursive: true});
+      fs.writeFileSync(
+        path.join(avatarDir, 'AvatarStatusDot.doc.mjs'),
+        "export const docs = {name: 'AvatarStatusDot'};\n",
+      );
+      fs.writeFileSync(
+        path.join(avatarDir, 'AvatarStatusDot.spec.md'),
+        componentRecord({id: 'component:AvatarStatusDot'}),
+      );
+      const recordPath =
+        'packages/native/apple/Sources/Astryx/Avatar/AvatarStatusDot.spec.md';
+      fs.mkdirSync(path.dirname(path.join(root, recordPath)), {
+        recursive: true,
+      });
+      fs.writeFileSync(
+        path.join(root, recordPath),
+        componentRecord({
+          id: 'component:swift/AvatarStatusDot',
+          platform_of: 'component:AvatarStatusDot',
+        }),
+      );
+      expect(await validateKnowledgeRoot(root)).toEqual([]);
+    });
+
+    it('rejects a member in a folder that is neither its own nor its family', async () => {
+      const root = fixtureRoot();
+      const listDir = path.join(root, 'packages/core/src/List');
+      fs.mkdirSync(listDir, {recursive: true});
+      fs.writeFileSync(
+        path.join(listDir, 'ListItem.doc.mjs'),
+        "export const docs = {name: 'ListItem'};\n",
+      );
+      const recordPath =
+        'packages/native/apple/Sources/Astryx/Card/ListItem.spec.md';
+      fs.mkdirSync(path.dirname(path.join(root, recordPath)), {
+        recursive: true,
+      });
+      fs.writeFileSync(
+        path.join(root, recordPath),
+        componentRecord({
+          id: 'component:swift/ListItem',
+          platform_of: 'component:ListItem',
+        }),
+      );
+      expect(await validateKnowledgeRoot(root)).toContain(
+        `${recordPath}: a platform component record lives in the folder where core keeps its component: ListItem.spec.md belongs in packages/native/apple/Sources/Astryx/List/.`,
+      );
+    });
+
+    it('rejects a member in its own folder when core keeps it beside its family', async () => {
+      const root = fixtureRoot();
+      const listDir = path.join(root, 'packages/core/src/List');
+      fs.mkdirSync(listDir, {recursive: true});
+      fs.writeFileSync(
+        path.join(listDir, 'ListItem.doc.mjs'),
+        "export const docs = {name: 'ListItem'};\n",
+      );
+      const recordPath =
+        'packages/native/apple/Sources/Astryx/ListItem/ListItem.spec.md';
+      fs.mkdirSync(path.dirname(path.join(root, recordPath)), {
+        recursive: true,
+      });
+      fs.writeFileSync(
+        path.join(root, recordPath),
+        componentRecord({
+          id: 'component:swift/ListItem',
+          platform_of: 'component:ListItem',
+        }),
+      );
+      expect(await validateKnowledgeRoot(root)).toContain(
+        `${recordPath}: a platform component record lives in the folder where core keeps its component: ListItem.spec.md belongs in packages/native/apple/Sources/Astryx/List/.`,
+      );
+    });
+
+    it('accepts a member beside its family, where core documents it (List/ListItem)', async () => {
+      const root = fixtureRoot();
+      const listDir = path.join(root, 'packages/core/src/List');
+      fs.mkdirSync(listDir, {recursive: true});
+      fs.writeFileSync(
+        path.join(listDir, 'ListItem.doc.mjs'),
+        "export const docs = {name: 'ListItem'};\n",
+      );
+      const recordPath =
+        'packages/native/apple/Sources/Astryx/List/ListItem.spec.md';
+      fs.mkdirSync(path.dirname(path.join(root, recordPath)), {
+        recursive: true,
+      });
+      fs.writeFileSync(
+        path.join(root, recordPath),
+        componentRecord({
+          id: 'component:swift/ListItem',
+          platform_of: 'component:ListItem',
+        }),
+      );
+      expect(await validateKnowledgeRoot(root)).toEqual([]);
+    });
+
+    it('rejects a platform record that names no core component', async () => {
+      const root = fixtureRoot();
+      writePlatform(root);
+      expect(await validateKnowledgeRoot(root)).toEqual([
+        `${platformPath}: platform_of component:Button names no core component: there is no Core or Lab record for it, no packages/core/src/Button/, and no Button.doc.mjs under packages/core/src/.`,
+      ]);
+      writePlatform(root, {platform_of: 'null'});
+      expect(await validateKnowledgeRoot(root)).toEqual([
+        `${platformPath}: platform_of must be component:Button, the core component this platform implements.`,
+      ]);
+    });
+
+    it('fails a component spec outside the Swift component tree', async () => {
+      const root = fixtureRoot();
+      writeCore(root);
+      const stray =
+        'packages/native/apple/Sources/AstryxNative/Button/Button.spec.md';
+      fs.mkdirSync(path.dirname(path.join(root, stray)), {recursive: true});
+      fs.writeFileSync(
+        path.join(root, stray),
+        componentRecord({
+          id: 'component:swift/Button',
+          platform_of: 'component:Button',
+        }),
+      );
+      expect((await validateKnowledgeRoot(root)).join('\n')).toContain(
+        `${stray}: a spec-shaped file must be a knowledge record at its kind's canonical location`,
+      );
+    });
+
+    it('rejects platform_of on a Core record', async () => {
+      const root = fixtureRoot();
+      const directory = path.join(root, 'packages/core/src/Button');
+      fs.mkdirSync(directory, {recursive: true});
+      fs.writeFileSync(
+        path.join(directory, 'Button.spec.md'),
+        componentRecord({platform_of: 'component:Other'}),
+      );
+      expect(await validateKnowledgeRoot(root)).toEqual([
+        "packages/core/src/Button/Button.spec.md: platform_of must be null on a Core or Lab component record; only a platform implementation's record names its core record.",
+      ]);
+    });
+
+    it('rejects an anatomy-theming map in a platform record', async () => {
+      const root = fixtureRoot();
+      writeCore(root);
+      writePlatform(root);
+      fs.writeFileSync(
+        path.join(root, platformPath),
+        withAnatomyTheming(
+          fs.readFileSync(path.join(root, platformPath), 'utf8'),
+          {Root: {target: 'button'}},
+        ),
+      );
+      expect(await validateKnowledgeRoot(root)).toContain(
+        `${platformPath}: a platform component record carries no anatomy-theming map; its core record owns the anatomy.`,
+      );
+    });
   });
 
   it('skips reachability when the root has no tracked file list', async () => {
