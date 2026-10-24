@@ -1498,7 +1498,24 @@ jobs:
       # or paint, so only a real engine shows the fill moving through a busy
       # main thread and landing on the value in both directions.
       - name: Run ProgressBar busy main thread contract
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
+          # The helper comes from the base, since an older PR head lacks it.
+          # Exit 1 means out of scope; 0 in scope; 2 unknown, so run.
+          scope=2
+          helper="$(mktemp)"
+          if git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA" \
+            && git show "$BASE_SHA:.github/scripts/pr-scope-touches.sh" > "$helper"; then
+            scope=0
+            bash "$helper" "$BASE_SHA" \
+              '^packages/core/src/ProgressBar/' || scope=$?
+          fi
+          if [ "$scope" = 1 ]; then
+            echo "ProgressBar is not in PR scope; skipping its contract."
+            exit 0
+          fi
           pnpm exec playwright test \
             packages/core/src/ProgressBar/__tests__/ProgressBarMotion.a11y.chromium.spec.ts \
             --project chromium \
