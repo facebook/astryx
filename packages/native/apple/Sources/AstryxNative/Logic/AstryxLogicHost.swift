@@ -84,6 +84,8 @@ public final class AstryxLogicHost {
   }
 
   private func receive(_ json: String) {
+    // A failed host stays failed: a later tree does not bring it back.
+    guard failure == nil else { return }
     do {
       root = try JSONDecoder().decode(AstryxNode.self, from: Data(json.utf8))
     } catch {

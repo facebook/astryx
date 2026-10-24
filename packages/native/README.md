@@ -98,7 +98,10 @@ if case .switch(let wifi) = host.root {
 ```
 
 ```ts
+// tsconfig: "customConditions": ["ios"]
+import type {AstryxAction, AstryxNode} from '@astryxdesign/native/components';
 import {connectBridge, createLogicCore} from '@astryxdesign/native/logic';
+import type {Bridge, BridgeHost} from '@astryxdesign/native/logic';
 
 const core = createLogicCore<{wifi: boolean}, AstryxNode, AstryxAction>({
   initial: {wifi: true},
@@ -113,13 +116,10 @@ const core = createLogicCore<{wifi: boolean}, AstryxNode, AstryxAction>({
       ? {wifi: action.args[0]}
       : state,
 });
-// In the app's JavaScript engine: the host reads snapshots and dispatches actions.
-const bridge = connectBridge(core, {
-  connected() {},
-  changed(json) {
-    /* to Swift */
-  },
-});
+// The bundle's entry: the native host calls it with its two calls in and
+// gets back the bridge it reads snapshots from and dispatches actions to.
+(globalThis as {astryxStart?: (host: BridgeHost) => Bridge}).astryxStart =
+  host => connectBridge(core, host);
 ```
 
 ## Working on it

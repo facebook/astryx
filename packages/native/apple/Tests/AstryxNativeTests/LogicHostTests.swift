@@ -63,6 +63,20 @@ function astryxStart(host) {
 }
 
 @MainActor
+@Test func aTreeAfterAFailureIsIgnored() {
+  let bundle = """
+  function astryxStart(h) {
+    h.connected(2);
+    h.changed(JSON.stringify({component: 'Text', key: 'late', props: {children: 'Too late'}}));
+    return {getSnapshot: function () { return '{}'; }, dispatch: function () {}};
+  }
+  """
+  let host = AstryxLogicHost(bundle: bundle)
+  #expect(host.failure?.contains("bridge 2") == true)
+  #expect(host.root == nil)
+}
+
+@MainActor
 @Test func aBundleWithoutTheEntryOrWithAnErrorFails() {
   #expect(AstryxLogicHost(bundle: "var x = 1;").failure == "The bundle defines no astryxStart function")
   #expect(AstryxLogicHost(bundle: "throw new Error('boom');").failure?.contains("boom") == true)
