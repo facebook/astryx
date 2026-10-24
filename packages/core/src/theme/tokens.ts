@@ -406,6 +406,13 @@ export function resolveThemeTokens(
     return resolveReferences(resolved);
   }
 
+  // A theme's local tokens resolve its references to them, then leave the
+  // result: they are theme-local names, not Astryx tokens.
+  const localKeys = Object.keys(theme.localTokens ?? {});
+  for (const [key, value] of Object.entries(theme.localTokens ?? {})) {
+    resolved[key] = resolveXDSTokenValue(value, mode);
+  }
+
   // Status roles the theme leaves unset resolve to the values its generated
   // CSS derives (architecture:theme-compilation INV17), so JavaScript and CSS
   // agree (architecture:theme-tokens INV6).
@@ -428,7 +435,11 @@ export function resolveThemeTokens(
     }
   }
 
-  return resolveReferences(resolved);
+  const out = resolveReferences(resolved);
+  for (const key of localKeys) {
+    delete out[key];
+  }
+  return out;
 }
 
 /** Resolve one Astryx token value for a theme and effective color mode. */
