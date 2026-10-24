@@ -1525,6 +1525,17 @@ jobs:
             --project chromium \
             --output disabled-trigger-focus-output
 
+      # A pinch that starts on, or reaches, a Lab reorder grip (ListInput,
+      # TransferList) must zoom the page (WCAG 1.4.4), while a one-finger drag
+      # on the grip still reorders. touch-action and pinch-zoom only exist in a
+      # real engine with two-finger touch input.
+      - name: Run Lab reorder grip pinch-zoom contract
+        run: |
+          pnpm exec playwright test \
+            packages/lab/src/__tests__/ReorderGripPinchZoom.a11y.chromium.spec.ts \
+            --project chromium \
+            --output reorder-grip-pinch-zoom-output
+
       # Table merges a consumer min-width with its column floors through CSS
       # max(). jsdom keeps any string, so only a real engine shows whether the
       # emitted declaration parses; an invalid one drops the floors entirely.
@@ -3176,6 +3187,38 @@ jobs:
           path: |
             dropdown-menu-radio-item-a11y-report.json
             dropdown-menu-radio-item-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
+      # DropdownMenuSubMenu owns one menuitem row that reveals its own rows: the
+      # popup state and wiring, the flyout beside the row, the drilled-in view,
+      # the caret or spinner, and disabled paint. DropdownMenu owns the root
+      # surface, the drill-in stack, and root keyboard navigation.
+      - name: Run DropdownMenuSubMenu audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuSubMenu:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output dropdown-menu-submenu-a11y-report.json \
+            --components DropdownMenuSubMenu \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/DropdownMenu/__tests__/DropdownMenuSubMenuAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload DropdownMenuSubMenu audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuSubMenu:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: dropdown-menu-submenu-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            dropdown-menu-submenu-a11y-report.json
+            dropdown-menu-submenu-audit-evidence/
           retention-days: 30
           if-no-files-found: error
 

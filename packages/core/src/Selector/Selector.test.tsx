@@ -3829,6 +3829,50 @@ describe('Selector search affordances', () => {
     expect(search).toHaveFocus();
   });
 
+  // iOS raises the software keyboard only for a focus made while the browser
+  // still dispatches the tap, and a UIKit search field's clear button makes
+  // the field first responder even when it was not editing.
+  it('puts focus back in the search input inside the tap on clear, after the input lost focus', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Apple"
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const search = screen.getByRole<HTMLInputElement>('combobox', {
+      hidden: true,
+    });
+    await user.type(search, 'ap');
+    const clear = screen.getByRole('button', {
+      name: 'Clear Search options',
+      hidden: true,
+    });
+    // The person dismissed the keyboard: the input no longer has focus.
+    act(() => search.blur());
+    expect(search).not.toHaveFocus();
+
+    const focusedDuring: (string | undefined)[] = [];
+    const focus = HTMLElement.prototype.focus;
+    Object.defineProperty(search, 'focus', {
+      configurable: true,
+      value(options?: FocusOptions) {
+        focusedDuring.push(window.event?.type);
+        focus.call(search, options);
+      },
+    });
+    fireEvent.click(clear, {detail: 1});
+
+    // No frame has run: the focus is in place when the tap's dispatch returns.
+    expect(search).toHaveValue('');
+    expect(search).toHaveFocus();
+    expect(focusedDuring).toEqual(['click']);
+  });
+
   it('does not render the clear button when the query is empty', async () => {
     const user = userEvent.setup();
     render(

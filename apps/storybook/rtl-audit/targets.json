@@ -242,6 +242,18 @@
     }
   },
   {
+    "component": "DropdownMenuSubMenu",
+    "storyId": "core-dropdownmenusubmenu--row-states",
+    "dims": ["D4"],
+    "setup": {
+      "click": "[role=\"menuitem\"]:has-text(\"Share\")"
+    },
+    "selectors": {
+      "overlay": "[data-testid=\"dropdown-menu-submenu-flyout\"]",
+      "overlayRoot": "[role=\"menu\"]"
+    }
+  },
+  {
     "component": "Layer",
     "storyId": "core-layer--placements",
     "dims": ["D4"],
