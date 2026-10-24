@@ -10,6 +10,7 @@
 import {describe, it, expect} from 'vitest';
 import {
   IDLE_MENU_PRESS,
+  MENU_PRESS_HANDOFF_PX,
   MENU_PRESS_SETTLE_MS,
   menuPressStep,
   type MenuPressEvent,
@@ -33,7 +34,7 @@ const downInMenu = (
   row: Row | null,
   pointerType: 'mouse' | 'touch' = 'touch',
 ) => ({type: 'down', target: 'menu', pointerType, row, time: 0}) as const;
-const downOnTrigger = (pointerType: 'mouse' | 'touch', time = 0) =>
+const downOnTrigger = (pointerType: 'mouse' | 'touch' | 'pen', time = 0) =>
   ({type: 'down', target: 'trigger', pointerType, row: null, time}) as const;
 const move = (row: Row | null, isInMenu = true, time = 10) =>
   ({type: 'move', row, isInMenu, time}) as const;
@@ -112,9 +113,19 @@ describe('menuPressStep — inside the menu', () => {
     expect(last).toEqual({type: 'settle', stray: true, dismiss: false});
   });
 
-  it('Tracking → Idle: a cancel (scroll, second pointer, browser) acts on nothing', () => {
+  it('Tracking → Idle: a cancel (scroll, second pointer, browser) acts on nothing and clears the lit row', () => {
     const {gesture, last} = run([downInMenu('A'), move('B'), {type: 'cancel'}]);
     expect(gesture.phase).toBe('idle');
+    expect(last).toEqual({
+      type: 'settle',
+      stray: false,
+      dismiss: false,
+      clear: true,
+    });
+  });
+
+  it('Tracking → Idle: a cancel with nothing lit has nothing to clear', () => {
+    const {last} = run([downInMenu('A'), move(null), {type: 'cancel'}]);
     expect(last).toEqual({type: 'settle', stray: false, dismiss: false});
   });
 
@@ -281,9 +292,14 @@ describe('menuPressStep — a finger that opens on the press (touchOpen: press)'
     expect(last).toEqual({type: 'settle', stray: false, dismiss: true});
   });
 
-  it('Open → Tracking → Idle: once the finger is in the menu, a cancel keeps the menu', () => {
+  it('Open → Tracking → Idle: once the finger is in the menu, a cancel keeps the menu and clears the lit row', () => {
     const {last} = run([pressOnTrigger(), move('A', true), {type: 'cancel'}]);
-    expect(last).toEqual({type: 'settle', stray: false, dismiss: false});
+    expect(last).toEqual({
+      type: 'settle',
+      stray: false,
+      dismiss: false,
+      clear: true,
+    });
   });
 
   it('Open → Acted: a slide from the trigger onto a row acts on that row', () => {
@@ -318,5 +334,175 @@ describe('menuPressStep — a finger that opens on the press (touchOpen: press)'
       run([{...downOnTrigger('mouse'), touchOpen: 'press'}, {type: 'cancel'}])
         .last,
     ).toEqual({type: 'settle', stray: false, dismiss: false});
+  });
+});
+
+describe('menuPressStep — a finger that opened the menu hands off after travelling (UIMenu)', () => {
+  // UIKit on iOS 26.2: the menu opens under a held finger; the finger picks
+  // only once it has moved the handoff distance from the first sample the
+  // menu saw. Positions are viewport px.
+  const held = (pointerType: 'touch' | 'pen' = 'touch') =>
+    [
+      downOnTrigger(pointerType, 0),
+      {type: 'opened', time: 150},
+    ] as MenuPressEvent<Row>[];
+  const moveTo = (x: number, y: number, row: Row | null = 'A', time = 400) =>
+    ({type: 'move', row, isInMenu: row != null, time, x, y}) as const;
+  const upAt = (
+    x: number,
+    y: number,
+    row: Row | null = 'A',
+    {isInMenu = row != null, isOnTrigger = false, time = 600} = {},
+  ) => ({type: 'up', row, isInMenu, isOnTrigger, time, x, y}) as const;
+
+  it('the handoff distance is the one in the UIKit constants table', () => {
+    expect(MENU_PRESS_HANDOFF_PX).toBe(10);
+  });
+
+  it('Open → Idle: the opening finger lifted without moving picks nothing, however long it rested', () => {
+    for (const time of [200, 600, 5000]) {
+      const {gesture, last} = run([...held(), upAt(200, 182, 'A', {time})]);
+      expect(gesture.phase).toBe('idle');
+      expect(last).toEqual({type: 'settle', stray: true, dismiss: false});
+    }
+  });
+
+  it('Open → Open: the first sample after the open is where the distance counts from', () => {
+    const {gesture, last} = run([...held(), moveTo(200, 189)]);
+    expect(gesture).toMatchObject({
+      phase: 'open',
+      handoffFrom: {x: 200, y: 189},
+    });
+    expect(last).toEqual({type: 'none'});
+  });
+
+  it('Open → Open: under the handoff distance nothing is highlighted', () => {
+    const {gesture, last} = run([
+      ...held(),
+      moveTo(200, 189),
+      moveTo(200, 189 + MENU_PRESS_HANDOFF_PX - 1),
+    ]);
+    expect(gesture.phase).toBe('open');
+    expect(last).toEqual({type: 'none'});
+  });
+
+  it('Open → Tracking: at the handoff distance the highlight follows the finger', () => {
+    const {gesture, last} = run([
+      ...held(),
+      moveTo(200, 189),
+      moveTo(200, 189 + MENU_PRESS_HANDOFF_PX, 'B'),
+    ]);
+    expect(gesture).toMatchObject({
+      phase: 'tracking',
+      origin: 'trigger',
+      row: 'B',
+    });
+    expect(last).toEqual({type: 'highlight', row: 'B'});
+  });
+
+  it('counts from the first sample, not from where the finger was when the menu opened (b4 capture: 7.3 pt, then 11 pt)', () => {
+    // The finger rested at y 182 when the menu opened; samples then came at
+    // 189.33, 196.67 (14.7 from the open point, 7.3 from the first sample)
+    // and 200.33 (11 from the first sample), where UIKit began.
+    const samples = [189.33, 196.67, 200.33];
+    const phases = samples.map(
+      (_, i) =>
+        run([...held(), ...samples.slice(0, i + 1).map(y => moveTo(200, y))])
+          .gesture.phase,
+    );
+    expect(phases).toEqual(['open', 'open', 'tracking']);
+  });
+
+  it('measures a straight-line distance, as UIMenu does (iOS 26.2: after a 1 pt first step)', () => {
+    // UIKit lab: (0, 9) and (7, 7) [9.9] pick nothing; (0, 10), (10, 0) and
+    // (9, 9) [12.7] pick.
+    const phaseAfter = (dx: number, dy: number) =>
+      run([...held(), moveTo(100, 100), moveTo(100 + dx, 100 + dy)]).gesture
+        .phase;
+    expect(phaseAfter(0, 9)).toBe('open');
+    expect(phaseAfter(7, 7)).toBe('open');
+    expect(phaseAfter(0, 10)).toBe('tracking');
+    expect(phaseAfter(10, 0)).toBe('tracking');
+    expect(phaseAfter(9, 9)).toBe('tracking');
+    expect(phaseAfter(0, -10)).toBe('tracking');
+  });
+
+  it('counts from the first sample, not from where the finger was at the open (iOS 26.2: a 9 pt step, then 3 more, picks nothing)', () => {
+    const {gesture, last} = run([
+      ...held(),
+      moveTo(200, 191),
+      moveTo(200, 194),
+      upAt(200, 194, 'A'),
+    ]);
+    expect(gesture.phase).toBe('idle');
+    expect(last).toEqual({type: 'settle', stray: true, dismiss: false});
+  });
+
+  it('Open → Tracking → Acted: after the handoff, the lift acts on the row under it', () => {
+    const {last} = run([
+      ...held(),
+      moveTo(200, 189),
+      moveTo(200, 230, 'A'),
+      moveTo(200, 280, 'B'),
+      upAt(200, 292, 'B'),
+    ]);
+    expect(last).toEqual({type: 'act', row: 'B'});
+  });
+
+  it('Open → Idle: a finger that moved under the distance and lifted over a row picks nothing', () => {
+    const {last} = run([
+      ...held(),
+      moveTo(200, 189),
+      moveTo(200, 195),
+      upAt(200, 195, 'A'),
+    ]);
+    expect(last).toEqual({type: 'settle', stray: true, dismiss: false});
+  });
+
+  it('a pen follows the finger rules', () => {
+    expect(run([...held('pen'), upAt(200, 182, 'A')]).last).toEqual({
+      type: 'settle',
+      stray: true,
+      dismiss: false,
+    });
+  });
+
+  it('a mouse keeps the settle rule: entering the menu tracks at once', () => {
+    const {gesture, last} = run([
+      downOnTrigger('mouse', 0),
+      moveTo(200, 189, 'A', 40),
+    ]);
+    expect(gesture).toMatchObject({phase: 'tracking', row: 'A'});
+    expect(last).toEqual({type: 'highlight', row: 'A'});
+    expect(
+      run([
+        downOnTrigger('mouse', 0),
+        upAt(200, 182, 'A', {time: MENU_PRESS_SETTLE_MS}),
+      ]).last,
+    ).toEqual({type: 'act', row: 'A'});
+  });
+
+  it('a tentative press-open whose handoff happens before the menu still withdraws on a cancel until the finger reaches it', () => {
+    const press = {...downOnTrigger('touch', 0), touchOpen: 'press'} as const;
+    const outside = run([
+      press,
+      moveTo(200, 182, null),
+      moveTo(200, 196, null),
+      {type: 'cancel'},
+    ]);
+    expect(outside.last).toEqual({type: 'settle', stray: false, dismiss: true});
+    const inside = run([
+      press,
+      moveTo(200, 182, null),
+      moveTo(200, 196, null),
+      moveTo(200, 230, 'A'),
+      {type: 'cancel'},
+    ]);
+    expect(inside.last).toEqual({
+      type: 'settle',
+      stray: false,
+      dismiss: false,
+      clear: true,
+    });
   });
 });
