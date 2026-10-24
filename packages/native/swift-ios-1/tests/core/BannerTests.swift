@@ -28,3 +28,20 @@ import Testing
   let pixels = Pixels(banner, theme: theme)
   #expect(close(pixels.at(pixels.width - 6, pixels.height / 2), rgba("#FDE68AFF")))
 }
+
+@MainActor
+@Test func aBannerReadsItsTitleThenItsDescription() {
+  #expect(AstryxBanner(status: .error, title: "Upload failed").accessibilityText == "Upload failed")
+  #expect(
+    AstryxBanner(status: .error, title: "Upload failed", description: "Try again.").accessibilityText
+      == "Upload failed, Try again."
+  )
+}
+
+@MainActor
+@Test func aBannerGrowsAtTheLargestTextSize() {
+  let banner = AstryxBanner(status: .info, title: "Heads up", description: "Details.").frame(width: 320)
+  let large = Pixels(banner)
+  let largest = Pixels(banner, typeSize: .accessibility5)
+  #expect(largest.height > large.height * 2)
+}

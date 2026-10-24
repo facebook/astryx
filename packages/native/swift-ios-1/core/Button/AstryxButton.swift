@@ -96,12 +96,13 @@ public struct AstryxButton: View {
     .accessibilityLabel(Text(label))
     .accessibilityValue(Text(loadingValue ?? ""))
     .onChange(of: isLoading) { _, loading in
-      if loading { AccessibilityNotification.Announcement("Loading").post() }
+      if loading { AccessibilityNotification.Announcement(AstryxStrings.buttonLoading).post() }
     }
   }
 
-  /// What assistive technology reads after the label while loading.
-  var loadingValue: String? { isLoading ? "Loading" : nil }
+  /// What assistive technology reads after the label while loading: core's
+  /// catalog message, in the person's language.
+  var loadingValue: String? { isLoading ? AstryxStrings.buttonLoading : nil }
 
   /// Runs the action unless the button is loading.
   func activate() {

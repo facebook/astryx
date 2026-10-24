@@ -11,12 +11,14 @@ import PackageDescription
 
 let package = Package(
   name: "AstryxSwiftIOS",
+  defaultLocalization: "en",
   platforms: [.iOS(.v17), .macOS(.v14)],
   products: [
     .library(name: "AstryxCore", targets: ["AstryxCore"]),
   ],
   targets: [
-    .target(name: "AstryxCore", path: "core"),
+    // Resources holds core's catalog messages per locale, generated.
+    .target(name: "AstryxCore", path: "core", resources: [.process("Resources")]),
     .testTarget(name: "AstryxCoreTests", dependencies: ["AstryxCore"], path: "tests/core"),
   ]
 )
