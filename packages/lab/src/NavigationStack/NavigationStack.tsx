@@ -86,7 +86,7 @@ import {navigation, springs} from '@astryxdesign/core/motion/uikit';
 import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
 import {isRtlElement} from '@astryxdesign/core/hooks';
 import {useTranslator} from '@astryxdesign/core/i18n';
-import {focusOutlineStyles} from '@astryxdesign/core/utils';
+import {focusOutlineStyles, observeResize} from '@astryxdesign/core/utils';
 import {Icon} from '@astryxdesign/core/Icon';
 import {
   colorVars,
@@ -357,18 +357,20 @@ function CardLayer({
   // scroll decides whether it contains its overscroll.
   useLayoutEffect(() => {
     const element = cardElementRef.current;
-    if (element == null || typeof ResizeObserver === 'undefined') {
+    if (element == null) {
       return undefined;
     }
+    // Through core's shared observer, which also measures once right away.
     const measure = () =>
       setIsOverflowing(element.scrollHeight > element.clientHeight + 1);
-    const observer = new ResizeObserver(measure);
-    observer.observe(element);
-    if (element.firstElementChild != null) {
-      observer.observe(element.firstElementChild);
-    }
-    measure();
-    return () => observer.disconnect();
+    const unobserveCard = observeResize(element, measure);
+    const content = element.firstElementChild;
+    const unobserveContent =
+      content == null ? undefined : observeResize(content, measure);
+    return () => {
+      unobserveCard();
+      unobserveContent?.();
+    };
   }, []);
   useLayoutEffect(() => {
     const entry = registry.get(model.key) ?? {};
@@ -482,20 +484,28 @@ function BackControl({
   control: (element: HTMLElement | null) => void;
   chevron: (element: HTMLElement | null) => void;
 }) {
+  // The chevron is the icon's own element (one element per role, no
+  // wrapper). An Icon named from the registry takes no ref, so the animator
+  // binds to the element the button holds.
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  useLayoutEffect(() => {
+    const icon = buttonRef.current?.firstElementChild;
+    chevron(icon instanceof HTMLElement ? icon : null);
+    return () => chevron(null);
+  }, [chevron]);
   return (
     <div
       ref={control}
       inert={isLeaving || undefined}
       {...stylex.props(styles.backControl)}>
       <button
+        ref={buttonRef}
         type="button"
         onClick={onBack}
         aria-label={label}
         data-navigation-back
         {...stylex.props(styles.back)}>
-        <span ref={chevron} {...stylex.props(styles.backIcon)}>
-          <Icon icon="chevronLeft" color="inherit" />
-        </span>
+        <Icon icon="chevronLeft" color="inherit" xstyle={styles.backIcon} />
       </button>
     </div>
   );

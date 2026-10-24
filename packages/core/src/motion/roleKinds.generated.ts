@@ -12,6 +12,7 @@
 import type {MotionRoleKind} from './roles';
 
 export const MOTION_ROLE_KINDS: Readonly<Record<string, MotionRoleKind>> = {
+  'navigation.backChevronPushDelayMs': 'duration',
   'navigation.transitionMs': 'duration',
   'scroll.bounce': 'spring',
   'scroll.paging.snap': 'spring',
@@ -28,6 +29,7 @@ export const MOTION_ROLE_KINDS: Readonly<Record<string, MotionRoleKind>> = {
   'springs.menuClose': 'spring',
   'springs.menuOpen': 'spring',
   'springs.menuReducedMotion': 'spring',
+  'springs.navigationBackButton': 'spring',
   'springs.navigationBarElements': 'spring',
   'springs.navigationInteractivePopFinish': 'spring',
   'springs.navigationPop': 'spring',
