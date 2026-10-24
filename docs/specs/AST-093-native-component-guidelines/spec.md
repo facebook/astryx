@@ -93,8 +93,10 @@ validating, and reviewing individual native components while
   change to a native component ships with:
   - unit tests in its package's test target for parameter mapping, defaults,
     and state changes, built and run on every platform the package supports;
-  - parameters named and typed as the generated contract for the component
-    (`spec:AST-082/FR5`), with the contract drift tests passing, except for the
+  - parameters named and typed as the platform's generated contract for the
+    component (`spec:AST-082/FR5`): the core props every platform honors plus
+    that platform's own props (`spec:AST-082/FR3`), never a prop kept for parity
+    alone, with the contract drift tests passing, except for the
     interim Swift views listed in Current-state impact;
   - accessibility assertions for the label, traits, and value the core
     contract requires, plus a check at the largest Dynamic Type size;

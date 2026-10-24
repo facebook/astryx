@@ -11,7 +11,7 @@
  *   press is painted once, not twice
  * @position Run with `pnpm test:a11y-contract`. Browser layer of the cards'
  *   press overlay; the jsdom layer is each card's own test and
- *   utils/pressArmLayering.test.ts.
+ *   utils/customPropertyArmLayering.test.ts.
  *
  * Storybook builds StyleX with cascade layers, where a custom property's
  * own declaration outranks every attribute arm of it, so this is where a
