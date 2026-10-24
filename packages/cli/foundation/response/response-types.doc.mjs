@@ -112,6 +112,19 @@ export const doc = {
       description:
         "One post's metadata plus the feed URL and the post's full plaintext body.",
     },
+    // render (experimental: may change or be removed in a patch release)
+    {
+      value: 'render.page',
+      stability: 'experimental',
+      description:
+        'A page rendered to one self-contained file: `input`, `output`, `bytes`, the local files embedded (`files`: modules, stylesheets, images and JSON), the package `stylesheets` cut and inlined, `classes`, `cssBytes`, `images` inlined, and `warnings` (`{code, message}`; empty when nothing looked wrong). Experimental: may change or be removed in a patch release.',
+    },
+    {
+      value: 'render.reverse',
+      stability: 'experimental',
+      description:
+        'A rendered file turned back into a page: `input`, `mode` (`embedded`: the embedded source written back byte for byte; `rebuilt`: rebuilt from Astryx markup, text and layout only), `output`, every file written (`files`), `exact`, the relative imports it did not carry (`missing`, when any), and for a rebuilt page `components`, `elements`, `unknown` and `omitted`. Experimental: may change or be removed in a patch release.',
+    },
 
     // experimental icon (installed icon sets, AST-084): experimental values,
     // documented under `astryx docs cli/experimental`, not in this table.
@@ -140,6 +153,12 @@ export const doc = {
         'The `experimental.iconSet` written to astryx.config, the set it names as `<package>/<set>`, the config file, whether it was created, the value it replaced, and whether anything changed.',
     },
     {
+      value: 'icon.mapMany',
+      stability: 'experimental',
+      description:
+        'Many `map` entries written at once (--pairs): the set, its package, the data file, each entry {definition, icon, previous, changed}, whether anything changed, and the generated files rewritten.',
+    },
+    {
       value: 'icon.map',
       stability: 'experimental',
       description:
@@ -150,6 +169,24 @@ export const doc = {
       stability: 'experimental',
       description:
         "One icon registered in the icon set being authored: the set, its package, the icon {id, export, module}, the variant when it was added as one, the definition mapped to it, the definition file written when it added the set's own, the files written, and whether anything changed.",
+    },
+    {
+      value: 'icon.definitions',
+      stability: 'experimental',
+      description:
+        'Every Astryx icon definition (--definitions): each {name, builtIn, description, words}.',
+    },
+    {
+      value: 'icon.setIcons',
+      stability: 'experimental',
+      description:
+        'Every icon of one set (--set with --all-icons): the set, its package, how many icons, and each icon {id, export, words, definitions}, by id.',
+    },
+    {
+      value: 'icon.addVariants',
+      stability: 'experimental',
+      description:
+        'One variant added for every icon of the set at once (--all): the set, its package, the variant, the module read, how many icons gained it, how many already had it, the ids the module has no export for, the files written, and whether anything changed.',
     },
     {
       value: 'icon.definitionMatches',
@@ -189,7 +226,7 @@ export const doc = {
     {
       value: 'discover.item',
       description:
-        'One item that is not an installed component, for an @scope/name/<item> query: its kind, name, package, version, and whether the project has the package. The envelope\'s package names the same package.',
+        "One item that is not an installed component, for an @scope/name/<item> query: its kind, name, package, version, and whether the project has the package. The envelope's package names the same package.",
     },
     {
       value: 'discover.search',

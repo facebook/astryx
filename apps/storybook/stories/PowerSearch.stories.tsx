@@ -557,7 +557,7 @@ export const NearFullTokenRow: Story = {
       {
         field: 'title',
         operator: 'contains',
-        value: {type: 'string', value: 'aaaaaaaaaaaaaaaaaa'},
+        value: {type: 'string', value: 'aaaaaaaaaaaaa'},
       },
     ]);
     return (

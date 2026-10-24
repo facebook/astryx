@@ -36,6 +36,7 @@ deciding_specs:
     spec:AST-012/DEC-3,
     spec:AST-012/DEC-5,
     spec:AST-017/DEC-1,
+    spec:AST-087/DEC-9,
   ]
 ---
 
@@ -172,7 +173,9 @@ but acceptance alone is best effort, not a compatibility promise.
   distinct public visual contract.
 - **INV6 — State stays on the owning target.** Variant, size, selection, disabled,
   and interaction state are reflected as target capabilities through
-  `themeProps`; they do not create parallel targets solely for each state.
+  `themeProps`; they do not create parallel targets solely for each state. An
+  artwork request, such as `Icon.variant`, selects supplied artwork rather than
+  styling and is not reflected.
 - **INV7 — Guarantees use one catalog and exact target declarations.** The shared
   catalog defines the supported vocabulary, not an automatic target promise. Each
   target's `guaranteedProperties` lists the rational catalog subset it guarantees
@@ -212,8 +215,13 @@ but acceptance alone is best effort, not a compatibility promise.
   be theme-extensible only when it is visual and an unavailable custom value has
   one safe, deterministic baseline that does not depend on the active theme.
   `Heading.type` qualifies because required `Heading.level` provides that
-  baseline. `Icon.size` does not: no missing custom size can be inferred without
-  silently changing geometry, alignment, or composition. Behavioral, structural,
+  baseline. `Icon.variant` qualifies because an unlisted variant renders the
+  request without a variant, which is the same for every theme. It is an
+  artwork request, not a styling selector: the `icon` target does not reflect
+  it, so it has no `themeProps()` reflection, `visualProps` entry, or
+  component styling map. `Icon.size` does
+  not: no missing custom size can be inferred without silently changing
+  geometry, alignment, or composition. Behavioral, structural,
   placement, directional, and state-machine axes remain closed regardless. A
   theme may redefine an existing value on a closed axis, but it may not add one.
 - **INV15 — Conditional styling does not create conditional API.** Adaptation
@@ -358,7 +366,11 @@ how themes become output, or the design rationale for a component's appearance.
   and every ineligible axis stays closed. A focused component test covers the
   custom value with no matching active theme rule. `extensibleAxes.test.ts`
   checks only the structural wiring: the public map, `themeProps()` reflection,
-  and consumer metadata.
+  and consumer metadata. An artwork axis keeps the public map check, because
+  its map is the one theme build augments, but has no styling wiring: the guard
+  exempts it from the `themeProps()` reflection and `visualProps` checks only,
+  by an explicit list of artwork-request maps, currently `IconVariantMap`. Its
+  focused fallback test renders an unlisted name.
 - Adding a property to a target's `guaranteedProperties` records its purpose and
   scope, proves a rational observable effect on the owned anatomy part, and adds
   representative compiler/runtime coverage. Catalog membership alone does not add
@@ -412,6 +424,8 @@ how themes become output, or the design rationale for a component's appearance.
   writes to the closed ordered rule model. `spec:AST-012/DEC-5` makes component
   validation shared with root themes and reserves effective-root presence for
   values whose validity depends on theme enrollment.
+- `spec:AST-087/DEC-9` makes `Icon.variant` a theme-extensible axis whose names
+  each theme lists once and whose fallback is the request without a variant.
 - `spec:AST-017/DEC-1` owns published compatibility classification and migration:
   compatibility-path removal is breaking. This record owns the exact deprecated
   theming cohort and its approved 0.7.0 removal window.
@@ -428,7 +442,7 @@ how themes become output, or the design rationale for a component's appearance.
 | INV9         | API docs and compatibility review                                                                                                                                                | Generic property acceptance is presented as a supported compatibility promise                                                                                                 |
 | INV10, INV11 | Existing registry/public-var/runtime tests (partial; gaps below)                                                                                                                 | A public semantic var bypasses admission, or a consumer must write a private var to reach promised behavior                                                                   |
 | INV12, INV13 | Canonical-only runtime emission and discovery, removed-alias rejection, complete codemod mapping/tests, canonical maintained-theme/template inventory, and family-owner fixtures | A removed alias is emitted or discovered, the migration mapping is incomplete, canonical targets change, removed compatibility metadata survives, or ownership stays implicit |
-| INV14        | Component contract, owner review, focused no-match fallback test, and structural `extensibleAxes.test.ts` coverage                                                               | An ineligible axis opens, a missing rule changes behavior unpredictably, or the map/reflection/docs wiring drifts                                                             |
+| INV14        | Component contract, owner review, focused no-match fallback test, and structural `extensibleAxes.test.ts` coverage with its explicit artwork-axis exemption list                 | An ineligible axis opens, a missing rule changes behavior unpredictably, the map/reflection/docs wiring drifts, or an artwork axis gains reflection or loses its exemption    |
 | INV15        | Shared root/adaptation component-validation fixtures covering finite, open, enrolled, and unresolved domains                                                                     | Root and adaptation disagree, a valid open value requires a root style, a rule conditionally enrolls a custom value, or unresolved behavior becomes adaptation-specific       |
 
 Known conformance and verification gaps:

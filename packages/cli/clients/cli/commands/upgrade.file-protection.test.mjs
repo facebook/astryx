@@ -199,6 +199,35 @@ describe('upgrade protected-file contract', () => {
     });
   });
 
+  it('keeps the error and adds the receipt when a hook leaves a protection declaration unreadable', () => {
+    seed();
+    write(
+      'astryx.config.mjs',
+      `export default {hooks: {postCodemod: [{name: 'regenerate', buildCommand: () => ({command: process.execPath, args: ['-e', ${JSON.stringify("require('node:fs').writeFileSync('.hgignore', 'syntax: regexp\\n[bad\\n')")}]})}]}};\n`,
+    );
+
+    const applied = run([...ARGS, '--apply']);
+
+    expect(applied.status).toBe(1);
+    expect(applied.envelope).not.toHaveProperty('type');
+    expect(applied.envelope).toMatchObject({
+      code: 'ERR_CODEMOD_PROTECTION_SOURCE',
+      error: expect.stringContaining('.hgignore'),
+      receipt: {
+        complete: false,
+        errorCode: 'ERR_CODEMOD_PROTECTION_SOURCE',
+        modifiedFiles: ['src/owned.tsx'],
+        protectedFiles: [
+          expect.objectContaining({file: 'generated/panel.tsx'}),
+        ],
+        errors: [expect.objectContaining({codemod: 'file-protection'})],
+      },
+    });
+    expect(fs.readFileSync(path.join(root, 'src/owned.tsx'), 'utf8')).toContain(
+      'minSize: 200',
+    );
+  });
+
   it('runs declared regeneration and clears a generated-file block after reevaluation', () => {
     seed({hook: true});
 

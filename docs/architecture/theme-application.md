@@ -25,7 +25,7 @@ verified_by:
     packages/core/src/theme/themeRegistry.test.ts,
     packages/core/src/AppShell/AppShell.test.tsx,
   ]
-deciding_specs: [spec:AST-012/DEC-1]
+deciding_specs: [spec:AST-012/DEC-1, spec:AST-087/DEC-2]
 ---
 
 # Theme application
@@ -36,7 +36,7 @@ deciding_specs: [spec:AST-012/DEC-1]
 {
   "scope": "global",
   "triggers": {
-    "theming": ["INV1", "INV2", "INV3", "INV7", "INV8", "INV9"]
+    "theming": ["INV1", "INV2", "INV3", "INV7", "INV8", "INV9", "INV11"]
   }
 }
 ```
@@ -52,7 +52,10 @@ duplicate styles or let one provider remove styles another provider still uses.
 
 ## System model
 
-`Theme` receives a `DefinedTheme`, a color mode, and children.
+`Theme` receives a `DefinedTheme`, a color mode, and children. A theme that holds
+function icon entries or slot functions is passed to `Theme` from client code.
+Server code may resolve icons with such a theme; passing it as a prop from a
+Server Component to a Client Component is unsupported.
 
 - It registers the theme by name.
 - For a theme that was not built ahead of time, it asks the web compiler for CSS
@@ -119,6 +122,9 @@ standard width map.
   `sm`/`md`/`lg`/`xl`/`2xl` from the nearest active theme through the same root
   fallback as other no-provider consumers. Its mobile side is strictly below the
   point; equality belongs to the wider layout.
+- **INV11 — Icon resolution agrees across server and client.** Server rendering
+  and hydration resolve every icon and slot request to the same node for the
+  active theme.
 
 This record does not own theme authoring, token definitions, compiler output, or
 which component parts are public theme targets.
@@ -151,6 +157,8 @@ which component parts are public theme targets.
 ## Deciding specs
 
 - `spec:AST-012/DEC-1` owns the fixed width-point vocabulary AppShell consumes.
+- `spec:AST-087/DEC-2` makes theme icon entries functions, so a theme holding
+  them reaches `Theme` from client code.
 
 ## Verification
 
@@ -162,3 +170,4 @@ which component parts are public theme targets.
 | INV8             | `MediaTheme.dom.test.tsx`                 | Surface mode replaces the theme, loses parent component rules, or remounts children                |
 | INV9             | Runtime/build compiler comparison         | Provider-mounted CSS differs from built CSS for the same theme                                     |
 | INV10            | `AppShell.test.tsx`                       | A named point ignores the nearest theme or treats equality as mobile                               |
+| INV11            | SSR and hydration icon fixtures           | A server-rendered icon differs from the hydrated icon for the same theme                           |
