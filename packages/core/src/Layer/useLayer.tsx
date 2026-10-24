@@ -37,7 +37,12 @@ import {layerViewportInset} from './layerViewportInset.stylex';
 import {layerInsetProperties} from './layerInset';
 import {
   LAYER_CLEARANCE_PROPERTY,
+  LAYER_CLEARS_ANCHOR_ATTRIBUTE,
+  LAYER_SCROLLS_ATTRIBUTE,
+  LAYER_CLEAR_FALLBACKS_PROPERTY,
+  LAYER_TRY_FALLBACKS_PROPERTY,
   ensureSlideRules,
+  getAnchorClearFallbacks,
   slideRuleName,
 } from './layerSlideRules';
 import {useLayerContext} from './LayerContext';
@@ -416,11 +421,174 @@ interface InternalLayerFields {
   wasJustDismissed: () => boolean;
 }
 
+/**
+ * Context-mode options a core component may pass through `useLayerInternal`;
+ * not part of the public `useLayer` options.
+ */
+interface InternalContextLayerOptions extends ContextLayerOptions {
+  /**
+   * The layer must never settle over its anchor (spec:AST-059 FR4). When the
+   * standard fallback list settles it over its anchor, it switches to its
+   * anchor-clear list: beside the trigger, then the roomier block side sized
+   * to its room. For a hover-summoned layer, which the hover on its trigger
+   * keeps open.
+   */
+  keepsAnchorClear?: boolean;
+}
+
 type InternalContextLayerReturn = ContextLayerReturn & InternalLayerFields;
 type InternalFixedLayerReturn = FixedLayerReturn & InternalLayerFields;
 
 function toCssLength(value: number | string): string {
   return typeof value === 'number' ? `${value}px` : value;
+}
+
+/**
+ * For a layer that must never settle over its anchor (spec:AST-059 FR4): read
+ * where its fallback list settled it and, if its box covers the anchor, switch it to
+ * its anchor-clear list; then let it scroll only if its content overflows the
+ * box it was given (FR3). The runtime calls this in the same task as every
+ * show and remount, and while the layer is open whenever its size, its
+ * content's size, its anchor's size, a scroll position or the viewport
+ * changes. Each of those reads lands before the next frame paints (FR8). Only
+ * a box that overlaps the anchor counts; a layer flush against it does not.
+ * Once switched, a layer keeps its anchor-clear list until it next opens, so
+ * it never jumps back over its trigger while open.
+ */
+function keepAnchorClear(layer: HTMLElement, anchor: HTMLElement | null): void {
+  if (anchor) {
+    const a = anchor.getBoundingClientRect();
+    const l = layer.getBoundingClientRect();
+    const covers =
+      l.width > 0 &&
+      l.height > 0 &&
+      l.left < a.right &&
+      a.left < l.right &&
+      l.top < a.bottom &&
+      a.top < l.bottom;
+    if (covers) {
+      layer.setAttribute(LAYER_CLEARS_ANCHOR_ATTRIBUTE, '');
+    }
+  }
+  // A layer that fits has no scroll range and stays a plain box, so a wheel
+  // over it still scrolls the page.
+  layer.toggleAttribute(
+    LAYER_SCROLLS_ATTRIBUTE,
+    layer.scrollHeight > layer.clientHeight + 1,
+  );
+}
+
+/**
+ * Call `onMove` when an element moves in layout without changing size or the
+ * page scrolling — a sibling above it grows, a margin changes. Nothing else
+ * reports that: ResizeObserver sees only size. The element is observed by an
+ * IntersectionObserver whose root is the viewport shrunk, through
+ * `rootMargin`, to the element's own rectangle, so any move changes the
+ * intersection ratio and fires the callback, which then re-arms on the new
+ * rectangle. Intersection callbacks run after the frame that moved the
+ * element has painted, so the caller corrects that move in the next frame.
+ * Returns the function that stops observing.
+ */
+function observeMove(element: HTMLElement, onMove: () => void): () => void {
+  const doc = element.ownerDocument;
+  if (typeof IntersectionObserver === 'undefined') {
+    return () => {};
+  }
+  let observer: IntersectionObserver | null = null;
+  const arm = (threshold: number) => {
+    observer?.disconnect();
+    observer = null;
+    const root = doc.documentElement;
+    const rect = element.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      return;
+    }
+    const top = Math.floor(rect.top);
+    const left = Math.floor(rect.left);
+    const right = Math.floor(root.clientWidth - rect.right);
+    const bottom = Math.floor(root.clientHeight - rect.bottom);
+    let isFirst = true;
+    observer = new IntersectionObserver(
+      entries => {
+        const ratio = entries[entries.length - 1]?.intersectionRatio ?? 0;
+        if (isFirst) {
+          isFirst = false;
+          // Partly outside the viewport: watch for any change from the ratio
+          // it has now. Wholly outside: nothing to keep clear of until the
+          // anchor-visibility observation brings it back.
+          if (ratio !== threshold && ratio > 0) {
+            arm(ratio);
+          }
+          return;
+        }
+        if (ratio !== threshold) {
+          onMove();
+          arm(1);
+        }
+      },
+      {
+        root: doc,
+        rootMargin: `${-top}px ${-right}px ${-bottom}px ${-left}px`,
+        threshold,
+      },
+    );
+    observer.observe(element);
+  };
+  arm(1);
+  return () => {
+    observer?.disconnect();
+    observer = null;
+  };
+}
+
+/**
+ * Watch an open layer that keeps its anchor clear, and its anchor, for every
+ * change that can re-settle the layer over the anchor or give it a scroll
+ * range (spec:AST-059 FR4, FR8): the layer, its content or the anchor
+ * resizing (ResizeObserver, before paint), a scroll or viewport resize (before
+ * paint), and the anchor moving in layout without resizing (`observeMove`,
+ * after paint). Each calls `keepAnchorClear` for this layer and anchor while
+ * `isCurrent` says they are still the live pair. Returns the function that
+ * removes every observer and listener it added.
+ */
+function observeAnchorClearance(
+  layer: HTMLElement,
+  anchor: HTMLElement,
+  isCurrent: () => boolean,
+): () => void {
+  const view = layer.ownerDocument.defaultView;
+  if (!view) {
+    return () => {};
+  }
+  const reread = () => {
+    if (isCurrent()) {
+      keepAnchorClear(layer, anchor);
+    }
+  };
+  const onScroll = (event: Event) => {
+    // The layer's own scrolling moves nothing else.
+    if (event.target !== layer) {
+      reread();
+    }
+  };
+  let observer: ResizeObserver | null = null;
+  if (typeof ResizeObserver !== 'undefined') {
+    observer = new ResizeObserver(reread);
+    observer.observe(layer);
+    for (const child of Array.from(layer.children)) {
+      observer.observe(child);
+    }
+    observer.observe(anchor);
+  }
+  const stopObservingMove = observeMove(anchor, reread);
+  view.addEventListener('scroll', onScroll, {capture: true, passive: true});
+  view.addEventListener('resize', reread);
+  return () => {
+    observer?.disconnect();
+    stopObservingMove();
+    view.removeEventListener('scroll', onScroll, {capture: true});
+    view.removeEventListener('resize', reread);
+  };
 }
 
 /**
@@ -691,10 +859,12 @@ export function useKeepLayerOpenProps(
  * ```
  */
 function useLayerImplementation(
-  options: ContextLayerOptions | FixedLayerOptions,
+  options: InternalContextLayerOptions | FixedLayerOptions,
 ): InternalContextLayerReturn | InternalFixedLayerReturn {
   const {mode, onShow, onHide, lightDismiss = false} = options;
   const lazyMount = mode === 'context' ? (options.lazyMount ?? false) : false;
+  const keepsAnchorClear =
+    mode === 'context' ? (options.keepsAnchorClear ?? false) : false;
   const id = useId();
   const anchorId = `--astryx-layer-${id.replace(/:/g, '')}`;
 
@@ -855,13 +1025,19 @@ function useLayerImplementation(
         });
         return;
       }
+      popover.removeAttribute(LAYER_CLEARS_ANCHOR_ATTRIBUTE);
+      popover.removeAttribute(LAYER_SCROLLS_ATTRIBUTE);
       showPopoverElement(popover);
+      if (keepsAnchorClear) {
+        keepAnchorClear(popover, triggerRef.current);
+      }
       isOpenRef.current = true;
       setIsOpen(true);
       onShow?.();
     }
   }, [
     onShow,
+    keepsAnchorClear,
     requestContextMount,
     showPopoverElement,
     isCurrentContextPopover,
@@ -903,6 +1079,12 @@ function useLayerImplementation(
   const showRef = useRef(show);
   showRef.current = show;
 
+  // The open-state geometry observers of a layer that keeps its anchor clear
+  // (`observeAnchorClearance`), as their teardown. The open-state layout
+  // effect binds them; the trigger callback ref rebinds them when a caller
+  // replaces the trigger element while the layer stays open.
+  const clearObserversRef = useRef<(() => void) | null>(null);
+
   // Stable ref for the trigger element (context mode only).
   const contextRef = useCallback(
     (el: HTMLElement | null) => {
@@ -916,9 +1098,28 @@ function useLayerImplementation(
         addAnchorName(el, anchorId);
       }
 
+      const previous = triggerRef.current;
       triggerRef.current = el;
+
+      // A trigger replaced while the layer is open (React detaches the old
+      // node with `null`, then attaches the new one): the old trigger's
+      // observers are removed before the new trigger's are added (INV6), and
+      // binding them reads the new trigger's geometry at once.
+      if (keepsAnchorClear && isOpenRef.current && el !== previous) {
+        clearObserversRef.current?.();
+        clearObserversRef.current = null;
+        const layer = popoverRef.current;
+        if (el && layer) {
+          clearObserversRef.current = observeAnchorClearance(
+            layer,
+            el,
+            () => popoverRef.current === layer && triggerRef.current === el,
+          );
+          keepAnchorClear(layer, el);
+        }
+      }
     },
-    [anchorId],
+    [anchorId, keepsAnchorClear],
   );
 
   // Arm only when the dismissing gesture's click is still ahead of us. Some
@@ -1040,6 +1241,9 @@ function useLayerImplementation(
         // Changing a portal target remounts the popover. Preserve the logical
         // open state without firing onShow again for the replacement element.
         showPopoverElement(el);
+        if (keepsAnchorClear) {
+          keepAnchorClear(el, triggerRef.current);
+        }
       }
     },
     [
@@ -1048,6 +1252,7 @@ function useLayerImplementation(
       show,
       showPopoverElement,
       isCurrentContextPopover,
+      keepsAnchorClear,
     ],
   );
 
@@ -1134,6 +1339,35 @@ function useLayerImplementation(
     return () => observer.disconnect();
   }, [isOpen, mode, updateAnchorInView]);
 
+  // A layer that keeps its anchor clear (FR4) re-reads its geometry while it
+  // is open: content that grows, an anchor that resizes or moves, a scroll or
+  // a viewport resize can each re-settle the standard list over the anchor or
+  // give the layer a scroll range (`observeAnchorClearance`). The external
+  // systems are those browser observers and listeners; this effect binds them
+  // while the layer is open and removes them when it closes, unmounts or is
+  // remounted by a moved render call (`contextMount`). A trigger replaced while
+  // open is rebound by the trigger callback ref, so no DOM node enters state.
+  useIsomorphicLayoutEffect(() => {
+    if (!keepsAnchorClear || !isOpen || mode !== 'context') {
+      return;
+    }
+    const layer = popoverRef.current;
+    const anchor = triggerRef.current;
+    if (!layer || !anchor) {
+      return;
+    }
+    clearObserversRef.current?.();
+    clearObserversRef.current = observeAnchorClearance(
+      layer,
+      anchor,
+      () => popoverRef.current === layer && triggerRef.current === anchor,
+    );
+    return () => {
+      clearObserversRef.current?.();
+      clearObserversRef.current = null;
+    };
+  }, [keepsAnchorClear, isOpen, mode, contextMount]);
+
   // Render function for context mode
   const renderContext = useCallback(
     (children: ReactNode, props?: ContextRenderProps) => {
@@ -1162,6 +1396,16 @@ function useLayerImplementation(
       } = props || {};
 
       // CSS anchor positioning (dynamic, not in StyleX)
+      const standardFallbacks = getPositionTryFallbacks(placement, alignment);
+      // A layer that keeps its anchor clear carries a second list; `show()`
+      // switches to it when the standard list settles over the anchor (FR4).
+      const clearFallbacks =
+        keepsAnchorClear && positioning === 'anchor'
+          ? getAnchorClearFallbacks(placement)
+          : '';
+      const clearFallbacksProperty: Record<string, string> = clearFallbacks
+        ? {[LAYER_CLEAR_FALLBACKS_PROPERTY]: clearFallbacks}
+        : {};
       const anchorStyle: React.CSSProperties =
         positioning === 'custom'
           ? // Consumer authors its own position styles via `style` — keep
@@ -1170,10 +1414,9 @@ function useLayerImplementation(
           : {
               positionAnchor: anchorId,
               positionArea: getPositionArea(placement, alignment),
-              positionTryFallbacks: getPositionTryFallbacks(
-                placement,
-                alignment,
-              ),
+              positionTryFallbacks: clearFallbacks
+                ? `var(${LAYER_TRY_FALLBACKS_PROPERTY}, ${standardFallbacks})`
+                : standardFallbacks,
               ...getSelfAlignment(placement, alignment, isAnchorInView),
             };
 
@@ -1234,6 +1477,7 @@ function useLayerImplementation(
             ...stylexResult.style,
             ...anchorStyle,
             ...clearanceProperty,
+            ...clearFallbacksProperty,
             ...layerInsetProperties(declaredInset),
             ...contextMount.portalStyle,
             ...extraStyle,
@@ -1259,6 +1503,7 @@ function useLayerImplementation(
       declaredInset,
       id,
       isAnchorInView,
+      keepsAnchorClear,
       lightDismiss,
       popoverRefCallback,
       sentinelRefCallback,
@@ -1358,15 +1603,18 @@ export function useLayer(
   }, [internalLayer]);
 }
 
-/** @internal Shared with usePopover; not exported from the package barrel. */
+/**
+ * @internal Shared with usePopover and useTooltip; not exported from the
+ * package barrel.
+ */
 export function useLayerInternal(
-  options: ContextLayerOptions,
+  options: InternalContextLayerOptions,
 ): InternalContextLayerReturn;
 export function useLayerInternal(
   options: FixedLayerOptions,
 ): InternalFixedLayerReturn;
 export function useLayerInternal(
-  options: ContextLayerOptions | FixedLayerOptions,
+  options: InternalContextLayerOptions | FixedLayerOptions,
 ): InternalContextLayerReturn | InternalFixedLayerReturn {
   return useLayerImplementation(options);
 }

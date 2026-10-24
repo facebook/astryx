@@ -3,7 +3,9 @@
 /**
  * @file layerSlideRules.ts
  * @input A layer's placement and alignment
- * @output The `@position-try` rules for its slide options and their names
+ * @output The `@position-try` rules for its slide options and their names, and
+ *   the beside and fit options of a layer that must never settle over its
+ *   anchor
  * @position Layer runtime geometry; the slide of spec:AST-059 FR4
  *
  * The slide is a position option whose area spans the whole alignment axis,
@@ -15,6 +17,18 @@
  * axis. Each slide option therefore carries its own declarations — the
  * gutter on both alignment-axis edges, and the clearance facing the anchor
  * with the gutter on the far edge of the side it lands on.
+ *
+ * A layer that must never settle over its anchor (spec:AST-059 FR4, Tooltip)
+ * has a second fallback list, for when its settled box covers its anchor:
+ * content taller than the room above and below its trigger. `beside` lands on a side
+ * across the alignment axis, spanning the whole block axis, at the content's
+ * own inline size, so it fits only where the layer fits without squeezing.
+ * `fit` lands above or below sized to the room on that side, so overflow
+ * scrolls inside the layer; its `roomier` variant is never smaller than half
+ * of the room the trigger leaves on the block axis, so it fits only on the
+ * side with more room. Chromium applies a position option's width and height
+ * properties but not their min/max forms, so the sizes are `inline-size` and
+ * `block-size`.
  *
  * The rules are static — the anchor clearance travels through a custom
  * property — so one style sheet per document carries all of them. It is
@@ -122,14 +136,126 @@ const PLACEMENTS: ReadonlyArray<LayerPlacement> = [
 ];
 const ALIGNMENTS: ReadonlyArray<LayerAlignment> = ['start', 'center', 'end'];
 
-/** Every slide rule, for every placement and alignment. */
+/** The name of the `beside` option that lands on `side`, across the block axis. */
+export function besideRuleName(side: 'start' | 'end'): string {
+  return `--astryx-layer-beside-${side}`;
+}
+
+/**
+ * The name of the `fit` option that lands on `side` sized to the room there;
+ * `roomier` also requires that side to hold at least half of the room the
+ * trigger leaves on the block axis.
+ */
+export function fitRuleName(side: 'above' | 'below', roomier: boolean): string {
+  return `--astryx-layer-fit-${side}${roomier ? '-roomier' : ''}`;
+}
+
+/**
+ * `beside`: the slide's geometry on an inline side, at the content's own
+ * inline size. A content-sized layer would otherwise wrap to whatever sliver
+ * of room the trigger leaves and always fit.
+ */
+function besideRule(side: 'start' | 'end'): string {
+  return `@position-try ${besideRuleName(side)}{position-area:${areaFor(side)};${placementMargins(side)}${alignmentMargins(side)}inline-size:max-content;}`;
+}
+
+/** The block size of the room on one block side: the area minus its margins. */
+function roomCap(gutter: string): string {
+  return `calc(100% - ${CLEARANCE} - ${gutter})`;
+}
+
+/**
+ * Half of the room the trigger leaves on the block axis, minus one side's
+ * margins: a side whose room is at least this much is the roomier side.
+ */
+function halfRoom(viewport: string, gutter: string): string {
+  return `calc((${viewport} - anchor-size(block)) / 2 - ${CLEARANCE} - ${gutter})`;
+}
+
+/**
+ * `fit`: the slide's geometry on a block side, sized to the room on that
+ * side; the layer scrolls what does not fit (FR3). The `roomier` variant is
+ * at least half of the room the trigger leaves, so it overflows, and does not
+ * fit, on the side with less room.
+ */
+function fitRule(side: 'above' | 'below', roomier: boolean): string {
+  const size = (viewport: string, gutter: string) =>
+    roomier
+      ? `max(${roomCap(gutter)}, ${halfRoom(viewport, gutter)})`
+      : roomCap(gutter);
+  const blockSize = pair(
+    'block-size',
+    size('100vh', layerViewportInset.gutterBlockFallback),
+    size('100dvb', layerViewportInset.gutterBlock),
+  );
+  return `@position-try ${fitRuleName(side, roomier)}{position-area:${areaFor(side)};${placementMargins(side)}${alignmentMargins(side)}${blockSize}}`;
+}
+
+/**
+ * The fallback list of a layer that must never settle over its anchor, once
+ * its settled box covers it (FR4): beside the trigger on the inline end, then the
+ * inline start, then the preferred block side sized to its room when it is
+ * the roomier side, then the opposite side sized to its room. Chromium tries
+ * no more than five options, so this replaces the standard list rather than
+ * extending it. Side placements already slide along the block axis at full
+ * height, so they have none.
+ */
+export function getAnchorClearFallbacks(placement: LayerPlacement): string {
+  if (placement !== 'above' && placement !== 'below') {
+    return '';
+  }
+  const opposite = placement === 'above' ? 'below' : 'above';
+  return `${besideRuleName('end')}, ${besideRuleName('start')}, ${fitRuleName(placement, true)}, ${fitRuleName(opposite, false)}`;
+}
+
+/** The custom property a layer writes its anchor-clear fallback list to. */
+export const LAYER_CLEAR_FALLBACKS_PROPERTY = '--_astryx-layer-clear-fallbacks';
+
+/** The custom property its `position-try-fallbacks` reads first. */
+export const LAYER_TRY_FALLBACKS_PROPERTY = '--_astryx-layer-try-fallbacks';
+
+/**
+ * The attribute the runtime sets on a layer whose settled box covered its
+ * anchor; it switches the layer to its anchor-clear list.
+ */
+export const LAYER_CLEARS_ANCHOR_ATTRIBUTE = 'data-astryx-clears-anchor';
+
+/**
+ * The attribute the runtime sets on a layer that keeps its anchor clear while
+ * its content overflows the box it was given; only then does it scroll, so a
+ * layer that fits stays a plain box and a wheel over it still scrolls the
+ * page.
+ */
+export const LAYER_SCROLLS_ATTRIBUTE = 'data-astryx-layer-scrolls';
+
+/**
+ * Switches a layer that set the attribute to its anchor-clear list, and lets
+ * a layer whose content overflows scroll it.
+ */
+function clearSwitchCss(): string {
+  return `[${LAYER_CLEARS_ANCHOR_ATTRIBUTE}]{${LAYER_TRY_FALLBACKS_PROPERTY}:var(${LAYER_CLEAR_FALLBACKS_PROPERTY});}[${LAYER_SCROLLS_ATTRIBUTE}]{overflow-y:auto;overscroll-behavior:contain;}`;
+}
+
+/**
+ * Every slide rule, for every placement and alignment, and the beside and fit
+ * rules.
+ */
 export function slideRulesCss(): string {
-  return PLACEMENTS.flatMap(placement =>
-    ALIGNMENTS.flatMap(alignment => [
-      rule(placement, alignment, 'same'),
-      rule(placement, alignment, 'opposite'),
-    ]),
-  ).join('');
+  return [
+    ...PLACEMENTS.flatMap(placement =>
+      ALIGNMENTS.flatMap(alignment => [
+        rule(placement, alignment, 'same'),
+        rule(placement, alignment, 'opposite'),
+      ]),
+    ),
+    besideRule('end'),
+    besideRule('start'),
+    fitRule('above', true),
+    fitRule('above', false),
+    fitRule('below', true),
+    fitRule('below', false),
+    clearSwitchCss(),
+  ].join('');
 }
 
 export const SLIDE_RULES_ID = 'astryx-layer-slide-rules';
