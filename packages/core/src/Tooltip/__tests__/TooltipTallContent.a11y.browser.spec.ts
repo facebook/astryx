@@ -1028,3 +1028,77 @@ test('placing a shown tooltip afresh keeps animations inside its content running
   expect(after.time).toBeGreaterThanOrEqual(before.time + 300);
   expect(after.opacity).toBeGreaterThanOrEqual(before.opacity);
 });
+
+test('placing a shown tooltip afresh keeps each same-name animation on one element at its own time', async ({
+  page,
+}) => {
+  // Two additive animations of the same keyframes on one content element,
+  // one three seconds ahead of the other, go through the after-paint re-placement. Each keeps
+  // its own time, so the composed transform moves on only by the time that
+  // passed.
+  await page.setViewportSize({width: 1280, height: 720});
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-tooltip--tall-content&viewMode=story&args=content:A+short+tooltip;isOpen:!true`,
+  );
+  await expect(page.getByRole('tooltip')).toBeVisible();
+  await page.evaluate(sel => {
+    const el = document.querySelector(sel) as HTMLElement;
+    window.scrollBy(0, el.getBoundingClientRect().top - 650);
+  }, TRIGGER);
+  await page.waitForTimeout(300);
+  await page.addStyleTag({
+    content:
+      '@keyframes test-shift{from{translate:0}to{translate:100px}}.test-shift{animation:test-shift 10s linear both,test-shift 10s linear both;animation-composition:add,add}',
+  });
+  await page.evaluate(sel => {
+    const content = document.querySelector(sel)?.firstElementChild;
+    const shift = document.createElement('div');
+    shift.className = 'test-shift';
+    shift.textContent = 'Shifting line';
+    content?.appendChild(shift);
+    for (let i = 1; i <= 17; i++) {
+      const line = document.createElement('div');
+      line.textContent = `Line ${i}`;
+      content?.appendChild(line);
+    }
+  }, TOOLTIP);
+  await page.waitForTimeout(700);
+  // Put the second instance three seconds ahead of the first.
+  await page.evaluate(() => {
+    const [first, second] = (
+      document.querySelector('.test-shift') as HTMLElement
+    ).getAnimations();
+    second.currentTime = Number(first.currentTime ?? 0) + 3000;
+  });
+  const read = async () =>
+    page.evaluate(() => {
+      const shift = document.querySelector('.test-shift') as HTMLElement;
+      return {
+        times: shift.getAnimations().map(a => Number(a.currentTime ?? 0)),
+        translate: parseFloat(getComputedStyle(shift).translate) || 0,
+        at: performance.now(),
+      };
+    });
+  const before = await read();
+  expect(before.times.length).toBe(2);
+  expect(before.times[1] - before.times[0]).toBeGreaterThan(2900);
+  await page.evaluate(sel => {
+    const el = document.querySelector(sel) as HTMLElement;
+    el.style.position = 'relative';
+    el.style.insetBlockStart = '-310px';
+  }, TRIGGER);
+  await page.waitForTimeout(450);
+  expect(await hasSwitched(page)).toBe(true);
+  const after = await read();
+  const elapsed = after.at - before.at;
+  expect(after.times.length).toBe(2);
+  for (const i of [0, 1]) {
+    const advanced = after.times[i] - before.times[i];
+    expect(advanced, `animation ${i + 1}`).toBeGreaterThan(elapsed - 200);
+    expect(advanced, `animation ${i + 1}`).toBeLessThan(elapsed + 200);
+  }
+  // 100px over 10s for each of the two: the composed shift moves on by about
+  // 2 × elapsed / 100 pixels.
+  const expected = before.translate + (2 * elapsed) / 100;
+  expect(Math.abs(after.translate - expected)).toBeLessThan(5);
+});

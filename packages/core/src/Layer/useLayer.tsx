@@ -444,9 +444,10 @@ function toCssLength(value: number | string): string {
 }
 
 /**
- * What identifies a CSS animation or transition across a restart: the
- * element (and pseudo-element) it runs on and its animation name or
- * transitioned property.
+ * What a restarted CSS animation or transition is matched by: the element
+ * (and pseudo-element) it runs on and its animation name or transitioned
+ * property. One element can run several animations of the same name, so
+ * matches are made in order within each key.
  */
 function animationKey(animation: Animation): [Element | null, string] {
   const named = animation as Animation & {
@@ -458,6 +459,20 @@ function animationKey(animation: Animation): [Element | null, string] {
   return [effect?.target ?? null, `${effect?.pseudoElement ?? ''}|${name}`];
 }
 
+/** The current times of a set of animations, by element and key, in order. */
+type AnimationTimes = Map<Element | null, Map<string, (CSSNumberish | null)[]>>;
+
+function snapshotAnimationTimes(animations: Animation[]): AnimationTimes {
+  const times: AnimationTimes = new Map();
+  for (const animation of animations) {
+    const [target, key] = animationKey(animation);
+    const forTarget = times.get(target) ?? new Map();
+    forTarget.set(key, [...(forTarget.get(key) ?? []), animation.currentTime]);
+    times.set(target, forTarget);
+  }
+  return times;
+}
+
 /**
  * Make the engine choose a shown layer's position option afresh: a browser
  * keeps a laid-out layer on the option it last used until the layer stops
@@ -466,33 +481,28 @@ function animationKey(animation: Animation): [Element | null, string] {
  * popover stays open, so no toggle event fires and focus and hover are
  * untouched. Leaving rendering also restarts the CSS animations of the layer
  * and everything inside it, so each one is put back where it was: one that
- * was running resumes at its time, and one that had already finished (an
- * entry fade that has played) is finished again, so a re-placement never
- * replays or rewinds any of them.
+ * was running resumes at its own time (animations that share an element and
+ * a name are matched in their order, each keeping its own time), and one
+ * that had already finished (an entry fade that has played) is finished
+ * again, so a re-placement never replays or rewinds any of them.
  */
 function placeAfresh(layer: HTMLElement): void {
   const canAnimate = typeof layer.getAnimations === 'function';
-  const times = new Map<Element | null, Map<string, CSSNumberish | null>>();
-  if (canAnimate) {
-    for (const animation of layer.getAnimations({subtree: true})) {
-      const [target, key] = animationKey(animation);
-      const forTarget = times.get(target) ?? new Map();
-      forTarget.set(key, animation.currentTime);
-      times.set(target, forTarget);
-    }
-  }
+  const times = canAnimate
+    ? snapshotAnimationTimes(layer.getAnimations({subtree: true}))
+    : null;
   const display = layer.style.display;
   layer.style.display = 'none';
   layer.getBoundingClientRect();
   layer.style.display = display;
-  if (canAnimate) {
+  if (times != null) {
     for (const animation of layer.getAnimations({subtree: true})) {
       const [target, key] = animationKey(animation);
-      const forTarget = times.get(target);
-      if (forTarget == null || !forTarget.has(key)) {
+      const saved = times.get(target)?.get(key);
+      if (saved == null || saved.length === 0) {
         animation.finish();
       } else {
-        const time = forTarget.get(key);
+        const time = saved.shift();
         if (time != null) {
           animation.currentTime = time;
         }
