@@ -12,6 +12,11 @@
 # the iOS Simulator, since `#if os(iOS)` code compiles only there; a package
 # without a test target only builds for it.
 #
+# When ASTRYX_SCREENSHOT_DIR is set, a package's iOS Simulator tests receive it
+# as <dir>/<package directory name>, and tests that draw components write
+# their PNGs there. xcodebuild passes TEST_RUNNER_<NAME> to the tests as
+# <NAME>.
+#
 # The steps live in this file, not inline in ci.yml, so a change to them is in
 # the native Swift scope and runs on its own pull request.
 set -euo pipefail
@@ -75,6 +80,9 @@ for package in $packages; do
       swift build
     fi
     if [ "$tests" = True ]; then
+      if [ -n "${ASTRYX_SCREENSHOT_DIR:-}" ]; then
+        export TEST_RUNNER_ASTRYX_SCREENSHOT_DIR="$ASTRYX_SCREENSHOT_DIR/$(basename "$package")"
+      fi
       results="$work/$(basename "$package")-ios.xcresult"
       rm -rf "$results"
       xcodebuild test -scheme "$scheme" -destination "platform=iOS Simulator,id=$simulator" -resultBundlePath "$results" -quiet

@@ -807,7 +807,22 @@ jobs:
       # so a change to them runs on its own pull request.
       - name: Build and test each native Swift package
         if: needs.native-swift-scope.outputs.applies == 'true'
+        env:
+          ASTRYX_SCREENSHOT_DIR: ${{ runner.temp }}/native-screenshots
         run: bash .github/scripts/native-swift.sh
+
+      # Each component state the Swift packages draw on the iOS Simulator, in
+      # light and dark, as <package>/<Component>/<state>-<scheme>.png. Named
+      # with the head SHA so captures line up with the web screenshots of the
+      # same commit.
+      - name: Upload native component screenshots
+        if: needs.native-swift-scope.outputs.applies == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: native-screenshots-${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}
+          path: ${{ runner.temp }}/native-screenshots
+          if-no-files-found: warn
+          retention-days: 30
 
   # Public registry contract. Generation proves schema, dependency, route-lock,
   # alias, and release-gating invariants; the final step drives every canonical
