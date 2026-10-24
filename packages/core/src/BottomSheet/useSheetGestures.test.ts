@@ -2984,6 +2984,42 @@ describe('useSheetGestures: present and dismiss under a finger', () => {
     };
   }
 
+  it('plans a reopen from the tallest detent, not from where the last close left the sheet', async () => {
+    // The last session ended at the 96 px peek (offset 304, a 0.3 scrim).
+    const {hook, target, sheetAnimations, backdrop} = presentedSheet({
+      snapHeights: () => [96],
+    });
+    down(hook, 0, 0, target);
+    stream(hook, target, {from: 0, to: 300, t0: 0, t1: 900});
+    restAt(hook, 300, 950, target);
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(
+        pointerEvent(300, 1100, target),
+      ),
+    );
+    // The release lands (its completion settles in microtasks).
+    await act(async () => {
+      vi.advanceTimersByTime(2000);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(hook.result.current.settledOffset).toBe(304);
+    // Presented again before the reopen reset has rendered.
+    act(() => {
+      hook.result.current.present();
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const travel = sheetAnimations.at(-1) as Played;
+    // From the whole sheet below the screen to the tallest detent.
+    expect(valueAt(travel, 0, travelOf)).toBeCloseTo(400, 0);
+    expect(valueAt(travel, 2000, travelOf)).toBeCloseTo(0, 0);
+    // The dim rises to the full scrim, not the peek's 0.3.
+    const dim = backdrop.at(-1) as Played;
+    expect(valueAt(dim, 2000, opacityOf)).toBeCloseTo(1, 2);
+  });
+
   it('presents from below the screen on the sheet spring, its dim on the same curve', async () => {
     const {hook, sheetAnimations, backdrop, onScrimTracking} = presentedSheet();
     let started = false;

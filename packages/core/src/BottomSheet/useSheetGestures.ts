@@ -1616,9 +1616,12 @@ export function useSheetGestures({
         endPresenting();
         return;
       }
-      // Below the screen: the sheet's visible height at its rest.
+      // Below the screen: the sheet's visible height at its rest. It opens at
+      // its tallest detent: the reopen reset renders only after this
+      // microtask, so `settledOffset` may still be where the last close left
+      // the sheet (a peek, with its lighter scrim).
       const height = measureHeight();
-      const restOffset = settledOffset;
+      const restOffset = 0;
       const distance = visibleHeightForOffset(
         height,
         restOffset,
@@ -1630,8 +1633,8 @@ export function useSheetGestures({
         endPresenting();
         return;
       }
-      travelBaseRef.current = settledOffset - settledLayoutOffsetRef.current;
-      travelLayoutBaseRef.current = settledLayoutOffsetRef.current;
+      travelBaseRef.current = 0;
+      travelLayoutBaseRef.current = 0;
       animator.set({y: distance});
       // From rest, with no start time: the browser starts the entrance when
       // it commits it, as Core Animation starts it at its transaction's
