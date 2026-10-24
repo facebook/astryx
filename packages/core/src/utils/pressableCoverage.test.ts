@@ -64,8 +64,10 @@ const source = new Map(
 );
 
 const PRESS_ARM = /':active|'\[data-astryx-press=|interactionOverlayStyles\./;
+// The trailing comma is what the formatter writes when a call wraps over
+// several lines.
 const ANCESTOR_ARM =
-  /stylex\.when\.ancestor\(\s*'(?::active|\[data-astryx-press=[^)]*)',\s*(\w+)\s*\)/g;
+  /stylex\.when\.ancestor\(\s*'(?::active|\[data-astryx-press=[^)]*)',\s*(\w+)\s*,?\s*\)/g;
 
 function isMarked(file: string): boolean {
   return (source.get(file) ?? '').includes('usePressFeedback(');
