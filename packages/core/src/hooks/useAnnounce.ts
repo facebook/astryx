@@ -73,8 +73,9 @@ function cancelScheduledClear(politeness: AnnouncePoliteness): void {
 }
 
 // Messages announced before the region exposes them (written in the same
-// frame) wait here and are exposed together, in order, so none is dropped
-// (spec:AST-086 FR9). One frame per region writes them.
+// frame) wait here and are exposed together, in order, so none is dropped;
+// an identical repeat is the same message and is kept once (spec:AST-086
+// FR9). One frame per region writes them.
 const pendingFrames: Record<AnnouncePoliteness, number | null> = {
   polite: null,
   assertive: null,
@@ -152,6 +153,9 @@ function announceMessage(
     return;
   }
   const target = politeness === 'assertive' ? r.assertive : r.polite;
+  if (pendingMessages[politeness].includes(message)) {
+    return;
+  }
   pendingMessages[politeness].push(message);
   if (pendingFrames[politeness] == null) {
     // Clearing first guarantees the mutation is observed even when the new
@@ -195,7 +199,7 @@ function clearRegion(politeness: AnnouncePoliteness): void {
  * mounted, so announcements are reliable even for messages that appear
  * immediately (unlike a live region rendered together with its content).
  * Messages announced in the same frame are joined, in order, into one
- * announcement. Each message is automatically cleared a couple of seconds after being
+ * announcement, and an identical repeat is kept once. Each message is automatically cleared a couple of seconds after being
  * announced, so users browsing the DOM later do not encounter stale status
  * text; announcing again before the clear simply resets the countdown.
  *

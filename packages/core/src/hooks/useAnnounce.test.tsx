@@ -71,6 +71,22 @@ describe('useAnnounce', () => {
     },
   );
 
+  it('keeps an identical message repeated in the same frame once (AST-086 FR9)', () => {
+    vi.useFakeTimers();
+    try {
+      const {result} = renderHook(() => useAnnounce());
+      result.current('1 result');
+      result.current('Filter applied');
+      result.current('1 result');
+      act(() => {
+        vi.advanceTimersByTime(50);
+      });
+      expect(politeRegion()!.textContent).toBe('1 result Filter applied');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('starts a new announcement for a message after the joined one is exposed (AST-086 FR9)', () => {
     vi.useFakeTimers();
     try {
