@@ -190,11 +190,17 @@ const styles = stylex.create({
     // A touch press hides this row's divider and the one above it, in the
     // frame the press is believed, with no transition, as a highlighted
     // UIKit cell hides its separators; both come back in the first frame of
-    // the release, while the press is still fading.
+    // the release, while the press is still fading. A selection hold (the row
+    // kept selected through a navigation push) hides them the same way until
+    // its deselect begins, and again after a cancel.
     borderBlockEndColor: {
       default: colorVars['--color-border'],
       '[data-astryx-press="on"]': 'transparent',
+      '[data-astryx-press="held"]:not([data-astryx-deselecting])':
+        'transparent',
       ':has(+ [data-astryx-press="on"])': 'transparent',
+      ':has(+ [data-astryx-press="held"]:not([data-astryx-deselecting]))':
+        'transparent',
     },
     // A longhand, not the `borderBlockEnd` shorthand: StyleX's default
     // property-specificity mode drops border shorthands silently, so the
@@ -210,6 +216,10 @@ const styles = stylex.create({
       insetBlockEnd: {
         default: null,
         '[data-astryx-press="on"]': {
+          default: `calc(-1 * ${borderVars['--border-width']})`,
+          ':last-child': 0,
+        },
+        '[data-astryx-press="held"]:not([data-astryx-deselecting])': {
           default: `calc(-1 * ${borderVars['--border-width']})`,
           ':last-child': 0,
         },
