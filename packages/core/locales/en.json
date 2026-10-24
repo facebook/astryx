@@ -791,6 +791,10 @@
     "defaultMessage": "Tabs",
     "description": "Screen-reader-only fallback name for a horizontal tab bar. Plural noun; \"Tabs\" here = UI tab panels, not browser tabs or the Tab key."
   },
+  "@astryx.tabBar.more": {
+    "defaultMessage": "More",
+    "description": "Label of the tab that collects a phone tab bar's sections past the fourth (iOS's More tab), and the name of the list of those sections it shows. One short word."
+  },
   "@astryx.table.label": {
     "defaultMessage": "Table",
     "description": "Fallback screen-reader-only accessible name for a data-table region when the consumer provides none. Noun (\"a table\"), not the verb \"to table\"."
