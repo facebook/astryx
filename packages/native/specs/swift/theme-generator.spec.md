@@ -1,10 +1,32 @@
-# Theme generator (Swift)
+---
+schema_version: 1
+template_version: 3
+kind: architecture
+id: architecture:native-swift-theme-generator
+authority: current
+archive_reason: null
+superseded_by: null
+approved_by: cixzhang
+approved_at: 2026-10-25
+owners: [cixzhang]
+applies_to: [packages/native/]
+verified_by:
+  [.github/scripts/native-swift.sh, scripts/check-package-boundaries.js]
+deciding_specs:
+  [
+    spec:AST-082/FR10,
+    spec:AST-082/FR18,
+    spec:AST-093/FR4,
+    spec:AST-082/FR16,
+    spec:AST-006,
+  ]
+---
 
-- Status: draft
-- Relation: extends AST-082 FR10, FR18 and AST-093 FR4, and applies AST-082
-  FR16 and AST-006. It is the one path by which a theme reaches Swift.
+# Theme generator architecture (Swift)
 
-## Summary
+<!-- Describe the system, not the project: present tense, what it does. No proposals, history, pull requests, or research in the record; see docs/contributing/spec-writing.md and report its rubric results in the pull request. -->
+
+## Purpose
 
 An iOS app built with Astryx shows its own brand, not only core's default: any
 Astryx theme, from a published theme package such as neutral or from the
@@ -14,7 +36,12 @@ token is a typed Swift member, so a misspelled token fails to compile instead
 of drawing nothing. The generator runs core's own resolver, so Swift never
 re-implements theme logic.
 
-## Requirements
+## System model
+
+This record extends AST-082 FR10, FR18 and AST-093 FR4, and applies AST-082 FR16
+and AST-006. It is the one path by which a theme reaches Swift.
+
+## Boundaries and invariants
 
 - **G1 — Input is a portable theme; core resolves it.** The generator is one
   function, `renderSwiftTheme(theme, options)`. Its input is a `PortableTheme`
@@ -161,7 +188,26 @@ re-implements theme logic.
   files are committed beside the Swift sources until CI publishes generated
   Swift to a Swift-only branch or tag, as the package README notes.
 
-## Acceptance checks
+## Change coupling
+
+A change to the Swift code or build step this record governs is reviewed against
+its requirements, and a change to a record it builds on is reviewed for its
+effect here. The checks under Verification prove the record stays current.
+
+## Owning code
+
+- `packages/native/scripts/` — the theme generator and its drift check.
+- `packages/native/apple/Sources/Astryx/` — the generated Swift themes.
+
+## Deciding specs
+
+- `spec:AST-082/FR10`
+- `spec:AST-082/FR18`
+- `spec:AST-093/FR4`
+- `spec:AST-082/FR16`
+- `spec:AST-006`
+
+## Verification
 
 | Requirement | Check                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
