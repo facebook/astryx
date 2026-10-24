@@ -19,8 +19,8 @@ places as on the web, read by VoiceOver in the same order.
 
 - **S1 — Each AST-082 slot kind has one Swift form.**
   - A **text** slot is a `String`, the contract's exact type (AST-093 FR5). A
-    localizable spelling waits on the component API spec's open question about
-    SwiftUI spellings.
+    localizable spelling waits on OQ1 of
+    `packages/native/specs/swift/library/component-api.md`.
   - An **icon** slot is an `IconName` (S2).
   - A **content** slot accepts any SwiftUI view, through a `@ViewBuilder`
     closure (S3). The core's content slot holds named Astryx components; Swift
@@ -34,7 +34,9 @@ places as on the web, read by VoiceOver in the same order.
 - **S2 — Icon names are a string-backed type with the built-ins as members.**
   `IconName` is a `RawRepresentable`, `ExpressibleByStringLiteral`,
   `Hashable`, `Codable`, `Sendable` value. Every built-in semantic name is a
-  static member (`.search`, `.close`), generated from core's icon registry. A
+  static member (`.search`, `.close`), generated from AST-082 FR17's shared
+  icon names, read at build time through the icon-names read AST-082 FR16 lists
+  (later through core's portable entry), never from core's web icon registry. A
   namespaced name (`"acme:rocket"`) is valid once the app registers it in code
   with the image to draw (an SF Symbol name or an asset). An unknown name
   stops a development build with a message naming it, and draws nothing in a
