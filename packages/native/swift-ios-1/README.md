@@ -3,8 +3,8 @@
 > **Experimental. Canary only.** Part of `@astryxdesign/native`. APIs change
 > without notice.
 
-This is a Swift package that draws Astryx components and page templates with
-SwiftUI on iOS. It is arm A of the AST-082 experiment (pure native: platform
+This is a Swift package that draws Astryx components with SwiftUI on iOS, plus
+page templates to copy into an app. It is arm A of the AST-082 experiment (pure native: platform
 views painted with Astryx's tokens), and the starting point for comparing it
 with the other arms.
 
@@ -16,7 +16,7 @@ on the same scorecard before one is retired.
 
 ```text
 swift-ios-1/
-├── Package.swift        # products AstryxCore and AstryxTemplates
+├── Package.swift        # product AstryxCore
 ├── core/                # components (module AstryxCore)
 │   ├── Theme/           # tokens, the theme environment, Dynamic Type
 │   │   └── Generated/   # core's default theme, generated; do not edit
@@ -25,7 +25,7 @@ swift-ios-1/
 │   ├── TextInput/       # AstryxTextInput
 │   ├── Card/            # AstryxCard
 │   └── Banner/          # AstryxBanner
-├── templates/           # page templates (module AstryxTemplates)
+├── templates/           # page templates to copy, compiled and tested here
 │   └── Login/           # LoginTemplate, from `astryx template login`
 └── tests/
     ├── core/
@@ -37,23 +37,29 @@ swift-ios-1/
   and values (`variant: .primary`, `size: .lg`, `isLoading`), so code reads
   the same across web and native.
 - **`templates/`** holds one folder per page template, named after the
-  `astryx template` id. A template is built only from `AstryxCore`
-  components and SwiftUI layout, and matches the web template's content and
-  states. Rules a template needs, such as validation, live in a plain value
-  type beside the view so tests can check them without a screen.
+  `astryx template` id. Templates are clone-only, as on the web: you copy a
+  template's folder into your app and own it from then on. They are not a
+  product of this package, so nothing imports them. A template is built only
+  from `AstryxCore` components and SwiftUI layout, and matches the web
+  template's content and states. Rules a template needs, such as validation,
+  live in a plain value type beside the view so tests can check them without a
+  screen.
 
 ## Use it
 
+Depend on the `AstryxCore` product. To start from a template, copy its folder,
+such as `templates/Login/`, into your app's sources; it then belongs to your
+app.
+
 ```swift
 import AstryxCore
-import AstryxTemplates
 import SwiftUI
 
 @main
 struct DemoApp: App {
   var body: some Scene {
     WindowGroup {
-      LoginTemplate().astryxTheme()
+      LoginTemplate().astryxTheme() // copied from templates/Login/
     }
   }
 }
