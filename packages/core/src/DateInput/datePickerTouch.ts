@@ -5,7 +5,9 @@
  * @input The date and time pickers' touch-only pieces
  * @output Re-exports what the DateInput, TimeInput and DateTimeInput bottom
  *   sheets use only under a finger: TimeWheels (the time wheels that follow
- *   UIDatePicker) and MonthPager (the calendar's months paging like it)
+ *   UIDatePicker), MonthPager (the calendar's months paging like it),
+ *   useWheelsWarmUp (the month/year wheels laid out ahead of the toggle) and
+ *   useChevronDip (the title chevron's reduced-motion dip)
  * @position The date and time pickers' touch layer. The sheets import touch
  *   behaviour from here and only here, so a desktop build can replace this one
  *   module.
@@ -23,3 +25,5 @@
 export {TimeWheels} from '../TimeInput/TimeWheels';
 export type {TimeWheelsProps} from '../TimeInput/TimeWheels';
 export {MonthPager} from './MonthPager';
+export {useChevronDip} from './useChevronDip';
+export {useWheelsWarmUp} from './useWheelsWarmUp';
