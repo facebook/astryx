@@ -214,6 +214,12 @@ const calmTheme = defineTheme({
               'duration',
               '350ms',
             ],
+            [
+              'reorder.slide.spring',
+              '--motion-reorder-slide-spring',
+              'spring',
+              '0.3s 0',
+            ],
             ['scroll.bounce', '--motion-scroll-bounce', 'spring', '0.5s 0'],
             [
               'scroll.paging.snap',

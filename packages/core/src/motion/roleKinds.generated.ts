@@ -17,6 +17,7 @@ export const MOTION_ROLE_KINDS: Readonly<Record<string, MotionRoleKind>> = {
   'list.update.outlineSpring': 'spring',
   'list.update.tableSpring': 'spring',
   'navigation.transitionMs': 'duration',
+  'reorder.slide.spring': 'spring',
   'scroll.bounce': 'spring',
   'scroll.paging.snap': 'spring',
   'springs.actionSheetDismiss': 'spring',
