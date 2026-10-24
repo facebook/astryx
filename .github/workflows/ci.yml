@@ -1482,6 +1482,16 @@ jobs:
       - name: Run theme var reachability guard
         run: node .github/scripts/theme-var-reachability.js --storybook-dir apps/storybook/dist
 
+      # AppShell keeps its header's items and the end of its content inside
+      # the device's safe area while the header's background reaches under the
+      # status bar. jsdom resolves no env(); Chromium emulates the insets.
+      - name: Run AppShell safe-area contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/AppShell/__tests__/AppShellSafeArea.a11y.chromium.spec.ts \
+            --project chromium \
+            --output appshell-safe-area-output
+
       # A story play function is where geometry assertions live (they need
       # getBoundingClientRect, so jsdom is out), but nothing else observes the
       # result: Vitest never collects stories, and pr-visual loads stories
