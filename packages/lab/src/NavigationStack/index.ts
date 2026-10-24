@@ -17,6 +17,7 @@ export {
 } from './NavigationStack';
 export type {
   NavigationScreenProps,
+  NavigationSearch,
   NavigationStackApi,
   NavigationStackProps,
 } from './NavigationStack';

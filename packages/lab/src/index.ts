@@ -31,6 +31,7 @@ export {
   NavigationStack,
   useNavigationStack,
   type NavigationScreenProps,
+  type NavigationSearch,
   type NavigationStackApi,
   type NavigationStackProps,
 } from './NavigationStack';
