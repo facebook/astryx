@@ -1544,6 +1544,18 @@ jobs:
             packages/core/src/CodeBlock/__tests__/DiffRowPaint.a11y.chromium.spec.ts \
             --project chromium \
             --output codeblock-diff-row-paint-output
+
+      # A Spinner must keep turning while a script holds the main thread, so
+      # its arc turns on the compositor and paints nothing per frame. jsdom
+      # has neither a compositor nor paint, so only a real engine shows the
+      # frames still changing through a busy main thread.
+      - name: Run Spinner busy main thread contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/Spinner/__tests__/SpinnerMotion.a11y.chromium.spec.ts \
+            --project chromium \
+            --output spinner-motion-output
+
       # A CodeBlock viewport is a Tab stop only while its code overflows; jsdom
       # has no layout, so only a real engine shows the stop appear with a wide
       # or capped block and stay away from a short one.
