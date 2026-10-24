@@ -3,7 +3,8 @@
 /**
  * @file MenuHoverFocus.a11y.chromium.spec.ts
  * @input The `Core/DropdownMenu` Default, LabCheckboxItems, LabRadioGroup and
- *   Submenu stories and the `Core/ContextMenu` Default story in a built
+ *   Submenu stories, the `Core/ContextMenu` Default story and the
+ *   `Core/Breadcrumbs` Menu Crumb story in a built
  *   Storybook, with real mouse and keyboard input.
  * @output Real-engine evidence that focus the pointer moves onto a row (a
  *   resting mouse, or a held press dragged over it) follows the last input
@@ -115,6 +116,23 @@ test('after a pointer open, rows the mouse rests on take focus without :focus-vi
   await page.keyboard.press('ArrowDown');
   await expect(del).toBeFocused();
   expect(await matchesFocusVisible(del)).toBe(true);
+});
+
+test('in a Breadcrumbs menu alone on the page, rows the mouse rests on take focus without :focus-visible after a pointer open', async ({
+  page,
+}) => {
+  // Nothing else on this page activates the modality tracking, so the menu
+  // crumb must activate it itself.
+  await gotoStory(page, 'core-breadcrumbs--menu-crumb');
+  await page.getByRole('button', {name: 'Teams'}).click();
+  const menu = page.getByRole('menu');
+  await expect(menu).toBeVisible();
+  const design = menu.getByRole('menuitem', {name: 'Design'});
+  const engineering = menu.getByRole('menuitem', {name: 'Engineering'});
+  await hover(page, design);
+  expect(await matchesFocusVisible(design)).toBe(false);
+  await hover(page, engineering);
+  expect(await matchesFocusVisible(engineering)).toBe(false);
 });
 
 test('after a keyboard open, a row the mouse moves to keeps the indicator: no pointer press changed the last input', async ({

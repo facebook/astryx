@@ -47,9 +47,10 @@ export function focusMenuItemOnHover(
     // it (the menu after a pointer open), so after a pointer press it is moved
     // with the browser's focusVisible option instead. After a key press the
     // keyboard is the last input and the indicator stays. A browser without
-    // the option (Chrome and Edge before 145, Safari before 18.4) ignores it:
-    // the reduced fallback component:DropdownMenuItem records (spec:AST-013).
-    // The menu's press model activates the modality tracking this reads.
+    // the option (Chrome and Edge before 145, Safari before 18.4) ignores it,
+    // and the row may then match :focus-visible as it did before.
+    // The menu activates the modality tracking this reads (its press model,
+    // or the Breadcrumbs menu trigger).
     focusForLastInput(el, {preventScroll: true});
   }
 }
