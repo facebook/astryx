@@ -190,6 +190,48 @@ const calmTheme = defineTheme({
               'duration',
               '350ms',
             ],
+            [
+              'pageControl.fadeOutCurve',
+              '--motion-page-control-fade-out-curve',
+              'curve',
+              'cubic-bezier(0, 0, 0.58, 1)',
+            ],
+            [
+              'pageControl.fadeOutMs',
+              '--motion-page-control-fade-out-ms',
+              'duration',
+              '250ms',
+            ],
+            [
+              'pageControl.switchCurve',
+              '--motion-page-control-switch-curve',
+              'curve',
+              'cubic-bezier(0.42, 0, 0.58, 1)',
+            ],
+            [
+              'pageControl.switchMs',
+              '--motion-page-control-switch-ms',
+              'duration',
+              '15.625ms',
+            ],
+            [
+              'pageControl.tapFadeOutMs',
+              '--motion-page-control-tap-fade-out-ms',
+              'duration',
+              '125ms',
+            ],
+            [
+              'pageControl.windowSlide',
+              '--motion-page-control-window-slide',
+              'spring',
+              '0.15s 0',
+            ],
+            [
+              'pageControl.windowSlideDelayMs',
+              '--motion-page-control-window-slide-delay-ms',
+              'duration',
+              '50ms',
+            ],
             ['scroll.bounce', '--motion-scroll-bounce', 'spring', '0.5s 0'],
             [
               'scroll.paging.snap',
