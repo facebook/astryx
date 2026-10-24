@@ -37,6 +37,7 @@ import {
   type FieldInputBaseProps,
   useFieldInputStyling,
 } from '../Field/fieldParts';
+import {inputDisabledFocusStyles} from '../Field/inputDisabledFocus';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import type {SizeValue} from '../utils/types';
@@ -216,8 +217,8 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
    * reason is discoverable by keyboard and assistive technology. Input stays
    * blocked.
    *
-   * Use this instead of wrapping a disabled tokenizer in `Tooltip` — disabled
-   * controls don't emit the pointer events an external tooltip needs.
+   * Use this instead of wrapping a disabled tokenizer in `Tooltip`, so the
+   * reason is attached to the field itself.
    */
   disabledMessage?: string;
   /** Show clear button (clears all tokens). @default false */
@@ -603,8 +604,7 @@ export function Tokenizer<T extends SearchableItem>({
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
-  // tooltip listeners attach to the input wrapper and the typeahead input stays
+  // Disabled-reason tooltip. The tooltip listeners attach to the input wrapper and the typeahead input stays
   // perceivable via aria-disabled instead of the disabled attribute. Input is
   // blocked by the isDisabled guards in BaseTypeahead and handleWrapperClick.
   const showsDisabledMessage = isDisabled && !!disabledMessage;
@@ -988,6 +988,7 @@ export function Tokenizer<T extends SearchableItem>({
           isTruncated ? truncatedSizeStyles[size] : sizeStyle,
           isTruncated && styles.truncatedWrapper,
           isDisabled && inputWrapperStyles.disabled,
+          isDisabled && inputDisabledFocusStyles.nestedRing,
           status && inputStatusBorderStyles[status.type],
           status && !isDisabled && inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
@@ -1064,17 +1065,12 @@ export function Tokenizer<T extends SearchableItem>({
           />
         </TrailingKeyDownContext>
       </BusyIndicatorLaneProvider>
+      {/* A disabled field submits nothing (spec:AST-085 FR3), so its hidden
+          carriers are not rendered. */}
       {htmlName != null &&
+        !isDisabled &&
         value.map(item => (
-          <input
-            key={item.id}
-            type="hidden"
-            name={htmlName}
-            value={item.id}
-            // Disabled native controls are excluded from form submission;
-            // mirror that for the hidden carriers.
-            disabled={isDisabled}
-          />
+          <input key={item.id} type="hidden" name={htmlName} value={item.id} />
         ))}
       <EndLane
         lane={busyLane}

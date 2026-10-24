@@ -21,6 +21,8 @@ import {
 } from 'vitest';
 import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import * as stylex from '@stylexjs/stylex';
+import {colorVars} from '../theme/tokens.stylex';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {
   createRef,
@@ -42,6 +44,21 @@ import {
 import type {SearchSource, SearchableItem} from './types';
 import {InternationalizationProvider} from '../i18n';
 import {InputGroup} from '../InputGroup';
+
+// jsdom cannot match `:focus-visible`: compare the ring's StyleX class hash.
+const NESTED_RING = stylex
+  .props(
+    stylex.create({
+      ring: {
+        boxShadow: {
+          default: null,
+          ':has(input[aria-disabled="true"]:focus-visible)': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
+        },
+      },
+    }).ring,
+  )
+  .className!.split(' ')
+  .pop()!;
 
 // Store original matches to restore later
 const originalMatches = HTMLElement.prototype.matches;
@@ -375,7 +392,78 @@ describe('BaseTypeahead', () => {
         isDisabled
       />,
     );
-    expect(screen.getByRole('combobox')).toBeDisabled();
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+  });
+
+  it('runs no search from a click once disabled after a selection (spec:AST-085 FR2)', async () => {
+    const user = userEvent.setup();
+    const bootstrap = vi.fn(fruitSource.bootstrap!);
+    const field = (isDisabled: boolean) => (
+      <BaseTypeahead
+        searchSource={{...fruitSource, bootstrap}}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+        debounceMs={0}
+        isDisabled={isDisabled}
+      />
+    );
+    const {rerender} = render(field(false));
+    const input = screen.getByRole('combobox');
+    await user.click(input);
+    await waitFor(() => expect(input).toHaveAttribute('aria-expanded', 'true'));
+    // Becoming disabled closes an open list.
+    rerender(field(true));
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+    rerender(field(false));
+    await user.click(input);
+    await waitFor(() => expect(input).toHaveAttribute('aria-expanded', 'true'));
+    await user.keyboard('{ArrowDown}{Enter}');
+    rerender(field(true));
+    const calls = bootstrap.mock.calls.length;
+    await user.click(input);
+    expect(bootstrap).toHaveBeenCalledTimes(calls);
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('keeps a disabled Typeahead focusable and inert (spec:AST-085 FR1, FR2, FR6)', async () => {
+    const user = userEvent.setup();
+    const handlers = {
+      onChange: vi.fn(),
+      onKeyDown: vi.fn(),
+      onClick: vi.fn(),
+      onPaste: vi.fn(),
+    };
+    const search = vi.fn(fruitSource.search);
+    const onSubmit = vi.fn((e: React.FormEvent) => e.preventDefault());
+    render(
+      <form onSubmit={onSubmit}>
+        <button type="button">Before</button>
+        <Typeahead
+          label="Fruit"
+          searchSource={{...fruitSource, search}}
+          value={null}
+          hasEntriesOnFocus
+          isDisabled
+          {...handlers}
+        />
+      </form>,
+    );
+    await user.click(screen.getByRole('button', {name: 'Before'}));
+    await user.tab();
+    const input = screen.getByRole('combobox');
+    expect(input).toHaveFocus();
+    expect(input.closest(`.${NESTED_RING}`)).not.toBeNull();
+    await user.click(input);
+    await user.keyboard('a{ArrowDown}{Enter}');
+    await user.paste('x');
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+    for (const fn of [...Object.values(handlers), search, onSubmit]) {
+      expect(fn).not.toHaveBeenCalled();
+    }
   });
 
   it('uses anchorRef for dropdown positioning', () => {
@@ -2115,7 +2203,7 @@ describe('Typeahead disabledMessage', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it('remains natively disabled when disabled without a reason', () => {
+  it('stays focusable when disabled without a reason (spec:AST-085)', () => {
     render(
       <Typeahead
         label="Assignee"
@@ -2126,8 +2214,8 @@ describe('Typeahead disabledMessage', () => {
       />,
     );
     const input = screen.getByRole('combobox');
-    expect(input).toBeDisabled();
-    expect(input).not.toHaveAttribute('aria-disabled');
+    expect(input).not.toBeDisabled();
+    expect(input).toHaveAttribute('aria-disabled', 'true');
   });
 });
 

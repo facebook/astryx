@@ -150,13 +150,9 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
   isDisabled?: boolean;
 
   /**
-   * When disabled with a reason, keeps the input focusable via `aria-disabled`
-   * (instead of the native `disabled` attribute) and `readOnly` so an
-   * associated disabled-reason tooltip stays discoverable by keyboard and
-   * assistive technology. Query and text mutation are blocked, but an
-   * already-open highlighted option can still be selected with Enter after a
-   * transition into this state. Consumers (Typeahead) own the tooltip and
-   * wrapper.
+   * A disabled input always stays focusable via `aria-disabled` and
+   * `readOnly` (`spec:AST-085`), so this no longer changes anything; it is
+   * kept so existing callers still type-check.
    * @default false
    */
   isFocusableDisabled?: boolean;
@@ -973,7 +969,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // dropdown never reopens until the user clicks away and back (#6845). See
   // wasAlreadyFocusedRef above for how the two cases are told apart.
   const handleClick = useCallback(() => {
-    if (!wasAlreadyFocusedRef.current || popover.isOpen) {
+    if (isDisabled || !wasAlreadyFocusedRef.current || popover.isOpen) {
       return;
     }
     if (
@@ -986,6 +982,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     }
     openIfEligible();
   }, [
+    isDisabled,
     popover.isOpen,
     hasEntriesOnFocus,
     query.length,
@@ -1023,6 +1020,14 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   const trailingKeyDown = useTrailingKeyDown();
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (isDisabled) {
+        // A disabled field runs no caller handler and selects nothing
+        // (`spec:AST-085` FR2); a read-only input still submits on Enter.
+        if (e.key === 'Enter') {
+          e.preventDefault();
+        }
+        return;
+      }
       externalOnKeyDown?.(e);
       if (e.defaultPrevented) {
         return;
@@ -1112,6 +1117,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       }
     },
     [
+      isDisabled,
       popover,
       results,
       highlightedIndex,
@@ -1143,6 +1149,24 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   const selectedKey =
     value == null ? null : getKey(value.id, () => results.indexOf(value));
 
+  // A disabled field opens no surface (spec:AST-085 FR2), so becoming
+  // disabled closes an open list.
+  const hidePopover = popover.hide;
+  useEffect(() => {
+    if (isDisabled) {
+      hidePopover();
+    }
+  }, [isDisabled, hidePopover]);
+
+  // While disabled the input keeps only a caller's focus and blur handlers
+  // (`spec:AST-085` FR2).
+  const callerOn = <H,>(handler: H) => (isDisabled ? undefined : handler);
+  const callerProps = isDisabled
+    ? Object.fromEntries(
+        Object.entries(rest).filter(([key]) => !/^on[A-Z]/.test(key)),
+      )
+    : rest;
+
   // Unmount: clear the pending debounce and cancel in-flight work.
   useEffect(() => {
     return () => {
@@ -1156,7 +1180,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   return (
     <>
       <input
-        {...rest}
+        {...callerProps}
         ref={useMergedRefs(ref, inputRef, fallbackAnchorRef)}
         id={inputId}
         type="text"
@@ -1174,7 +1198,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         aria-busy={isLoading || undefined}
         aria-describedby={inputAriaDescribedBy}
         aria-labelledby={inputAriaLabelledBy}
-        aria-disabled={isFocusableDisabled ? 'true' : undefined}
+        aria-disabled={isDisabled ? 'true' : undefined}
         tabIndex={resolvedInputTabIndex}
         value={query}
         onChange={handleInputChange}
@@ -1192,12 +1216,12 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
             },
             {once: true},
           );
-        }, onPointerDownProp)}
+        }, callerOn(onPointerDownProp))}
         onFocus={composeEventHandlers(handleFocus, onFocusProp)}
-        onClick={composeEventHandlers(handleClick, onClickProp)}
+        onClick={composeEventHandlers(handleClick, callerOn(onClickProp))}
         onBlur={composeEventHandlers(handleBlur, onBlurProp)}
         onKeyDown={
-          trailingKeyDown
+          trailingKeyDown && !isDisabled
             ? event => {
                 handleKeyDown(event);
                 trailingKeyDown(event);
@@ -1205,12 +1229,9 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
             : handleKeyDown
         }
         placeholder={placeholder}
-        // When a disabled-reason tooltip is shown the input keeps focusability
-        // via aria-disabled + readOnly instead of the native disabled
-        // attribute. Query and text mutation are blocked, but an already-open
-        // highlighted option can still be selected with Enter after transition.
-        disabled={isDisabled && !isFocusableDisabled}
-        readOnly={isFocusableDisabled || undefined}
+        // A disabled input keeps its tab stop (spec:AST-085): aria-disabled
+        // and readOnly instead of the native attribute.
+        readOnly={isDisabled || undefined}
         autoFocus={hasAutoFocus}
         data-autofocus={hasAutoFocus || undefined}
         autoComplete="off"

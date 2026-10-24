@@ -437,7 +437,7 @@ describe('PowerSearch', () => {
       expect((input as HTMLInputElement).value).toBe('');
     });
 
-    it('keeps the input natively disabled when disabled without a reason', () => {
+    it('keeps the input focusable when disabled without a reason (spec:AST-085)', () => {
       render(
         <PowerSearch
           config={config}
@@ -446,7 +446,10 @@ describe('PowerSearch', () => {
           isDisabled
         />,
       );
-      expect(screen.getByRole('combobox')).toBeDisabled();
+      expect(screen.getByRole('combobox')).toHaveAttribute(
+        'aria-disabled',
+        'true',
+      );
     });
   });
 

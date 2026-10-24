@@ -190,8 +190,8 @@ export const Disabled: Story = {
 // Disabled with an explanation tooltip. Hover or keyboard-focus the field to
 // see why it's disabled — the reason is announced to assistive tech via
 // aria-describedby, and the field stays focusable (activation is still
-// blocked). Use disabledMessage instead of wrapping a disabled Typeahead in Tooltip:
-// disabled controls swallow the pointer events a Tooltip wrapper needs.
+// blocked). Use disabledMessage instead of wrapping a disabled Typeahead in
+// Tooltip, so the reason is attached to the field itself.
 export const DisabledWithMessage: Story = {
   ...Default,
   args: {

@@ -22,12 +22,29 @@ import {
 import {render, screen, fireEvent, act, waitFor} from '@testing-library/react';
 import {createRef, Profiler, useState} from 'react';
 import userEvent from '@testing-library/user-event';
+import * as stylex from '@stylexjs/stylex';
+import {colorVars} from '../theme/tokens.stylex';
 import {Tokenizer} from './Tokenizer';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import type {SearchSource, SearchableItem} from '../Typeahead/types';
 import {TestIcon} from '../__tests__/TestIcon';
 import {InternationalizationProvider} from '../i18n';
 import type * as TokenModule from '../Token';
+
+// jsdom cannot match `:focus-visible`: compare the ring's StyleX class hash.
+const NESTED_RING = stylex
+  .props(
+    stylex.create({
+      ring: {
+        boxShadow: {
+          default: null,
+          ':has(input[aria-disabled="true"]:focus-visible)': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
+        },
+      },
+    }).ring,
+  )
+  .className!.split(' ')
+  .pop()!;
 
 // Every Token render, in order, by label.
 //
@@ -405,11 +422,39 @@ describe('Tokenizer', () => {
         isDisabled
       />,
     );
-    expect(screen.getByRole('combobox')).toBeDisabled();
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
     // Remove button should not be present when disabled
     expect(
       screen.queryByRole('button', {name: 'Remove Alice'}),
     ).not.toBeInTheDocument();
+  });
+
+  it('keeps a disabled Tokenizer focusable, ringed and out of form data (spec:AST-085 FR1, FR3, FR6)', async () => {
+    const user = userEvent.setup();
+    render(
+      <form aria-label="Form">
+        <button type="button">Before</button>
+        <Tokenizer
+          label="Members"
+          htmlName="members"
+          searchSource={userSource}
+          value={[users[0]]}
+          onChange={() => {}}
+          isDisabled
+        />
+      </form>,
+    );
+    await user.click(screen.getByRole('button', {name: 'Before'}));
+    await user.tab();
+    const input = screen.getByRole('combobox');
+    expect(input).toHaveFocus();
+    expect(input.closest(`.${NESTED_RING}`)).not.toBeNull();
+    const form = screen.getByRole<HTMLFormElement>('form', {name: 'Form'});
+    expect(new FormData(form).getAll('members')).toEqual([]);
+    expect(form.querySelector('[disabled]')).toBeNull();
   });
 
   it('renders with data-testid', () => {
@@ -1307,7 +1352,7 @@ describe('Tokenizer', () => {
       expect(onChange).not.toHaveBeenCalled();
     });
 
-    it('keeps the input natively disabled when disabled without a reason', () => {
+    it('keeps the input focusable when disabled without a reason (spec:AST-085)', () => {
       render(
         <Tokenizer
           label="Members"
@@ -1317,7 +1362,10 @@ describe('Tokenizer', () => {
           isDisabled
         />,
       );
-      expect(screen.getByRole('combobox')).toBeDisabled();
+      expect(screen.getByRole('combobox')).toHaveAttribute(
+        'aria-disabled',
+        'true',
+      );
     });
   });
   describe('announcements', () => {

@@ -431,8 +431,8 @@ export const CreatableWithSearch: Story = {
 // Disabled with an explanation tooltip. Hover or keyboard-focus the input to see
 // why it's disabled — the reason is announced to assistive tech via
 // aria-describedby, and the input stays focusable (input is still blocked). Use
-// disabledMessage instead of wrapping a disabled Tokenizer in Tooltip: disabled
-// controls swallow the pointer events a Tooltip wrapper needs.
+// disabledMessage instead of wrapping a disabled Tokenizer in Tooltip, so the
+// reason is attached to the field itself.
 export const DisabledWithMessage: Story = {
   render: args => {
     const [value] = useState([users[0], users[1]]);

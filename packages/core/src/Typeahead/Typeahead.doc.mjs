@@ -161,7 +161,7 @@ export const docs = {
       name: 'disabledMessage',
       type: 'string',
       description:
-        'Explains why the input is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the field focusable via aria-disabled (activation stays blocked). Use this instead of wrapping a disabled Typeahead in Tooltip. Disabled controls swallow the hover events an external Tooltip needs.',
+        'Explains why the input is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the field focusable via aria-disabled (activation stays blocked). Use this instead of wrapping a disabled Typeahead in Tooltip, so the reason is attached to the field itself.',
     },
     {
       name: 'maxMenuItems',
@@ -354,7 +354,7 @@ export const docs = {
       {
         guidance: false,
         description:
-          'Wrap a disabled Typeahead in Tooltip to explain why it is disabled; disabled triggers swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+          'Wrap a disabled Typeahead in Tooltip to explain why it is disabled. Use the disabledMessage prop, which attaches the reason to the field itself.',
       },
     ],
   },
@@ -398,7 +398,7 @@ export const docsZh = {
       {
         guidance: false,
         description:
-          'Wrap a disabled Typeahead in Tooltip to explain why it is disabled; disabled triggers swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+          'Wrap a disabled Typeahead in Tooltip to explain why it is disabled. Use the disabledMessage prop, which attaches the reason to the field itself.',
       },
     ],
   },
@@ -449,7 +449,7 @@ export const docsDense = {
       {
         guidance: false,
         description:
-          'Wrap a disabled Typeahead in Tooltip to explain why it is disabled; disabled triggers swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+          'Wrap a disabled Typeahead in Tooltip to explain why it is disabled. Use the disabledMessage prop, which attaches the reason to the field itself.',
       },
     ],
   },

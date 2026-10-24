@@ -65,6 +65,7 @@ import {
   type FieldInputBaseProps,
   useFieldInputStyling,
 } from '../Field/fieldParts';
+import {inputDisabledFocusStyles} from '../Field/inputDisabledFocus';
 import type {SizeValue} from '../utils/types';
 import type {SearchableItem, SearchSource} from './types';
 import {themeProps} from '../utils/themeProps';
@@ -170,8 +171,8 @@ export interface TypeaheadProps<T extends SearchableItem> extends Omit<
    * discoverable by keyboard and assistive technology. Editing and selection
    * stay blocked.
    *
-   * Use this instead of wrapping a disabled input in `Tooltip` — disabled
-   * controls don't emit the pointer events an external tooltip needs.
+   * Use this instead of wrapping a disabled input in `Tooltip`, so the reason
+   * is attached to the field itself.
    *
    * @example
    * ```
@@ -433,8 +434,7 @@ export function Typeahead<T extends SearchableItem>({
   const inputRef = useRef<HTMLInputElement>(null);
   const tokenRef = useRef<HTMLElement>(null);
 
-  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
-  // tooltip listeners attach to the input wrapper (which already exists) and
+  // Disabled-reason tooltip. The tooltip listeners attach to the input wrapper (which already exists) and
   // the input stays perceivable via aria-disabled + readOnly instead of the
   // disabled attribute. Editing and selection stay blocked by the isDisabled
   // guards (handleWrapperClick, handleEnterEditMode, and BaseTypeahead's own
@@ -618,6 +618,7 @@ export function Typeahead<T extends SearchableItem>({
             status && !isDisabled && inputStatusHoverShadowStyles[status.type],
             status && inputStatusFocusWithinStyles[status.type],
             isDisabled && inputWrapperStyles.disabled,
+            isDisabled && inputDisabledFocusStyles.nestedRing,
             inputGroup && groupStyles.inGroup,
             controlXstyle,
           ),
