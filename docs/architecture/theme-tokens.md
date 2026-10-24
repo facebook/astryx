@@ -114,8 +114,13 @@ then have contradictory winners.
   `resolveThemeToken()`, `tokenDefaults`) return the token's value with its
   unit; code that needs pixels resolves the value against the root font size
   instead of parsing a number.
-- **INV10 — Colour token names follow one grammar.** Every portable colour
-  token name takes one of five shapes:
+- **INV10 — Astryx's colour token names follow one grammar.** The grammar
+  governs only the colour tokens Astryx defines: the Core `colorDefaults`, the
+  domain-layer defaults, and the tokens Astryx's first-party themes set from
+  that vocabulary. It does not govern names Astryx does not define, such as a
+  product's or application's own CSS variables, a theme author's extensions or
+  local tokens (INV8), or another design system's tokens. Every colour token
+  Astryx defines takes one of five shapes:
   1. `--color-<property>-<role>`: a colour for one paint property. The property
      is `text`, `icon`, `background`, or `border`. The role is an emphasis
      (`primary`, `secondary`, `disabled`, `emphasized`), an intent
@@ -241,6 +246,6 @@ decision).
 | INV6                         | `packages/core/src/theme/tokens.test.ts`                                                                                                                                                                                                                                                                   | JavaScript resolution disagrees with defaults, mode selection, references, or supported color expressions                                   |
 | INV8                         | `defineTheme.test.ts`, template checks, and token-doc generation                                                                                                                                                                                                                                           | A local name enters portable helpers/docs or can conflict with a portable declaration                                                       |
 | INV9                         | `tokens.test.ts` (core defaults), `SpacingRootFontSize.a11y.chromium.spec.ts` (real-Chromium root font size), each overriding theme's `*Theme.spacing.test.ts`, `check-cli-theme-bundle.test.mjs` (bundled copies byte-equal to the packages), `theme-concentricity.test.ts` (playground ramp read in rem) | A spacing step in `px` that no theme documents as its exception: a core default, a theme override, a bundled copy, or a generated ramp step |
-| INV10                        | `tokens.test.ts` name check over `colorDefaults` and `domainTokenDefaults`                                                                                                                                                                                                                                 | A colour token name fits none of the five shapes                                                                                            |
+| INV10                        | `tokens.test.ts` name check over Astryx's own `colorDefaults` and `domainTokenDefaults` only                                                                                                                                                                                                               | A colour token Astryx defines fits none of the five shapes                                                                                  |
 | Released token compatibility | Type checking plus representative package/source builds                                                                                                                                                                                                                                                    | A released CSS variable or typed token name disappears without an explicit migration decision                                               |
 | Visual defaults              | Real Chromium examples in light, dark, status, and high-contrast contexts                                                                                                                                                                                                                                  | A changed default produces unreadable or semantically inconsistent output                                                                   |

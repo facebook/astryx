@@ -332,6 +332,8 @@ describe('focus outline tokens', () => {
   });
 });
 
+// INV10 governs only the colour tokens Astryx defines. The check reads Astryx's
+// own defaults, never consumer, application, or theme-author variables.
 describe('colour token name grammar (architecture:theme-tokens INV10)', () => {
   const property = '(?:text|icon|background|border)';
   const intent = '(?:accent|neutral|info|success|warning|error)';
@@ -368,7 +370,7 @@ describe('colour token name grammar (architecture:theme-tokens INV10)', () => {
     expect(colourNames.length).toBeGreaterThan(50);
   });
 
-  it('gives every colour token one of the five shapes', () => {
+  it('gives every colour token Astryx defines one of the five shapes', () => {
     const misfits = colourNames.filter(
       name =>
         !utilityNames.has(name) && !shapes.some(shape => shape.test(name)),
