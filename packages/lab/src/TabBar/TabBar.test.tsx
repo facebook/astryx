@@ -583,6 +583,43 @@ describe('TabBar search tab, selected', () => {
     );
   });
 
+  it("active, the search circle is the field's cancel button: without a cancel on the handle it reports inactive", () => {
+    const onActiveChange = vi.fn();
+    render(<Searching onActiveChange={onActiveChange} />);
+    fireEvent.click(screen.getByRole('tab', {name: 'Search'}));
+    const cancel = screen.getByRole('button', {name: 'Cancel'});
+    expect(cancel).not.toHaveAttribute('inert');
+    expect(cancel).toHaveAttribute('data-tab-bar-search-cancel');
+    fireEvent.click(cancel);
+    expect(onActiveChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it("active, the cancel button cancels through the field's handle", () => {
+    const cancel = vi.fn();
+    function WithHandle() {
+      const [value, setValue] = useState('home');
+      const [isActive, setIsActive] = useState(false);
+      const handle = useRef({focus: () => {}, blur: () => {}, cancel});
+      return (
+        <TabBar value={value} onChange={setValue} label="Sections">
+          <TabBarItem value="home" label="Home" icon={<Glyph name="home" />} />
+          <TabBarSearchTab
+            value="search"
+            label="Search"
+            icon={<Glyph name="search" />}
+            isActive={isActive}
+            onActiveChange={setIsActive}
+            fieldRef={handle}
+          />
+        </TabBar>
+      );
+    }
+    render(<WithHandle />);
+    fireEvent.click(screen.getByRole('tab', {name: 'Search'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+    expect(cancel).toHaveBeenCalledTimes(1);
+  });
+
   it('sets the bottom accessory aside while searching', () => {
     const {container} = render(
       <Searching

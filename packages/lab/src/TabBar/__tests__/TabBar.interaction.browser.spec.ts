@@ -1380,14 +1380,16 @@ test.describe('search tab', () => {
       await driver.tap(at);
     }
 
-    await expect(tab(page, 'Search')).toHaveAttribute('aria-selected', 'true');
+    // Selected and active at once: the search circle is now the field's
+    // cancel button.
+    await expect(page.getByRole('button', {name: 'Cancel'})).toBeVisible();
     await expect.poll(() => isMinimized(page)).toBe(true);
     await expect(searchHost(page)).toHaveAttribute(
       'data-tab-bar-search-field',
       'active',
     );
     // The tap focused the field itself (iOS raises the keyboard for that).
-    await expect(page.getByRole('textbox', {name: 'Search'})).toBeFocused();
+    await expect(page.getByRole('searchbox', {name: 'Search'})).toBeFocused();
     // The circle holds Home, the tab the search tab was chosen from.
     await expect(circle(page).locator('svg')).toHaveCount(1);
     await waitForRest(searchField(page));
@@ -1596,3 +1598,215 @@ test.describe('More tab', () => {
     await expect(page.getByRole('heading', {name: 'More'})).toBeVisible();
   });
 });
+
+/** uikit/tabBar.ts: the ride above the keyboard. */
+const SEARCH_RISE = {response: 0.274, dampingFraction: 1.056};
+const SEARCH_KEYBOARD_GAP = 8;
+const KEYBOARD = 335;
+
+/**
+ * Replaces `window.visualViewport` before the page loads with one the test
+ * drives (as the search field's own proofs do): `__keyboard(cover)` shrinks
+ * it from the bottom and fires one `resize`, as Mobile Safari does.
+ */
+async function installKeyboard(page: Page) {
+  await page.addInitScript(() => {
+    const viewport = Object.assign(new EventTarget(), {
+      height: window.innerHeight,
+      width: window.innerWidth,
+      offsetTop: 0,
+      offsetLeft: 0,
+      pageTop: 0,
+      pageLeft: 0,
+      scale: 1,
+    });
+    Object.defineProperty(window, 'visualViewport', {
+      configurable: true,
+      get: () => viewport,
+    });
+    (window as unknown as {__keyboard: (cover: number) => void}).__keyboard =
+      cover => {
+        viewport.height = window.innerHeight - cover;
+        viewport.dispatchEvent(new Event('resize'));
+      };
+  });
+}
+
+const keyboard = async (page: Page, cover: number) =>
+  page.evaluate(
+    c => (window as unknown as {__keyboard: (c: number) => void}).__keyboard(c),
+    cover,
+  );
+
+const cancelCircle = (page: Page) =>
+  page.locator('[data-tab-bar-search-cancel]');
+
+test.describe('search tab, active', () => {
+  test('the field rides 8 px above the keyboard on UIKit’s spring, the cancel button with it', async ({
+    page,
+  }, testInfo) => {
+    await installKeyboard(page);
+    const {driver} = await openBar(page, 'search-tab');
+    await tapSearch(page, driver);
+    await expect(searchHost(page)).toHaveAttribute(
+      'data-tab-bar-search-field',
+      'active',
+    );
+    const before = await searchHost(page).boundingBox();
+    if (before == null) {
+      throw new Error('no field host');
+    }
+    await keyboard(page, KEYBOARD);
+    await waitForAnimation(searchHost(page));
+    await holdAnimations(page);
+    const times = Array.from({length: 31}, (_, i) => i * 16.667);
+    const ride = await sampleCurve(searchHost(page), times);
+    const circle = await sampleCurve(cancelCircle(page), times);
+    await releaseAnimations(page, {finish: true});
+    const viewport = page.viewportSize();
+    const after = await searchHost(page).boundingBox();
+    if (viewport == null || after == null) {
+      throw new Error('no viewport');
+    }
+    // At rest its bottom is 8 px above the keyboard's top.
+    expect(after.y + after.height).toBeCloseTo(
+      viewport.height - KEYBOARD - SEARCH_KEYBOARD_GAP,
+      0,
+    );
+    const lift = after.y - before.y;
+    const samples = times.map((t, i) => ({
+      t: +t.toFixed(1),
+      y: ride[i].transform.translateY,
+      circleY: circle[i].transform.translateY,
+      analytic: lift * springStep(SEARCH_RISE, t),
+    }));
+    await writeEvidence(
+      'curves/tabbar-search-ride',
+      {
+        [`${testInfo.project.name}.json`]: JSON.stringify(
+          {lift, samples},
+          null,
+          1,
+        ),
+      },
+      testInfo,
+    );
+    for (const sample of samples) {
+      expect(
+        Math.abs(sample.y - sample.analytic),
+        JSON.stringify(sample),
+      ).toBeLessThan(0.5);
+      // The cancel button rides with it, on the same curve.
+      expect(
+        Math.abs(sample.circleY - sample.y),
+        JSON.stringify(sample),
+      ).toBeLessThan(0.5);
+    }
+    // The cancel button rests 8 px from the screen's edge, level with the field.
+    const cancel = await cancelCircle(page)
+      .locator('> span')
+      .first()
+      .boundingBox();
+    if (cancel == null) {
+      throw new Error('no cancel');
+    }
+    expect(cancel.x + cancel.width).toBeCloseTo(viewport.width - 8, 0);
+    expect(cancel.y + cancel.height / 2).toBeCloseTo(
+      after.y + after.height / 2,
+      0,
+    );
+  });
+
+  test('the cancel button cancels search: back to the tab it came from, the field riding down with the keyboard', async ({
+    page,
+  }) => {
+    await installKeyboard(page);
+    const {driver} = await openBar(page, 'search-tab');
+    await tapSearch(page, driver);
+    await keyboard(page, KEYBOARD);
+    await waitForRest(searchHost(page));
+    const cancel = page.getByRole('button', {name: 'Cancel'});
+    await expect(cancel).toBeVisible();
+    const box = await cancel.boundingBox();
+    if (box == null) {
+      throw new Error('no cancel');
+    }
+    await driver.tap({x: box.x + box.width / 2, y: box.y + box.height / 2});
+    await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+    await expect(searchHost(page)).toHaveAttribute(
+      'data-tab-bar-search-field',
+      'inline',
+    );
+    await keyboard(page, 0);
+    await expect
+      .poll(async () => (await translate(searchHost(page)))[1], {timeout: 3000})
+      .toBeCloseTo(0, 0);
+    // The circle is the bar's search tab again.
+    await expect(tab(page, 'Search')).toBeVisible();
+  });
+});
+
+/** The presented `translate`, px: [x, y]. */
+async function translate(locator: Locator) {
+  return locator.evaluate(element => {
+    const value = getComputedStyle(element).translate;
+    if (value === 'none') {
+      return [0, 0];
+    }
+    const [x, y] = value.split(' ').map(part => parseFloat(part) || 0);
+    return [x ?? 0, y ?? 0];
+  });
+}
+
+test(
+  'storyboard: the search field rides up with the keyboard, its cancel button with it, and back down on cancel',
+  {tag: '@storyboard'},
+  async ({page}, testInfo) => {
+    await installKeyboard(page);
+    const {driver} = await openBar(page, 'search-tab');
+    const viewport = page.viewportSize();
+    if (viewport == null) {
+      throw new Error('no viewport');
+    }
+    const clip = {
+      x: 0,
+      y: viewport.height - KEYBOARD - 90,
+      width: viewport.width,
+      height: KEYBOARD + 90,
+    };
+    const times = Array.from({length: 20}, (_, i) => i * 33.333);
+    await tapSearch(page, driver);
+    await keyboard(page, KEYBOARD);
+    await waitForAnimation(searchHost(page));
+    const {storyboard: rise} = await animationStoryboard(page, {
+      name: 'tabbar-search-ride-up',
+      clip,
+      times,
+      columns: 5,
+      cellScale: 0.5,
+    });
+    await rise.write(testInfo);
+    await releaseAnimations(page, {finish: true});
+    await page.waitForTimeout(800);
+    const cancel = await cancelCircle(page).boundingBox();
+    if (cancel == null) {
+      throw new Error('no cancel');
+    }
+    await driver.tap({
+      x: cancel.x + cancel.width / 2,
+      y: cancel.y + cancel.height / 2,
+    });
+    await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+    await keyboard(page, 0);
+    await waitForAnimation(searchHost(page));
+    const {storyboard: fall} = await animationStoryboard(page, {
+      name: 'tabbar-search-ride-down',
+      clip: {...clip, y: viewport.height - KEYBOARD - 90},
+      times,
+      columns: 5,
+      cellScale: 0.5,
+    });
+    await fall.write(testInfo);
+    await releaseAnimations(page, {finish: true});
+  },
+);

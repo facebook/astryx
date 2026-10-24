@@ -23,7 +23,9 @@ import {
   lensTarget,
   liftScale,
   accessoryBox,
+  searchCancelShift,
   searchFieldBox,
+  searchLift,
   minimizedCenter,
   naturalWidth,
   nearestIndex,
@@ -266,5 +268,19 @@ describe('searchFieldBox', () => {
   it('active, spans the screen but for the cancel button: (8, 330 wide)', () => {
     const box = searchFieldBox(360, true);
     expect({x: 21 + box.start, width: box.width}).toEqual({x: 8, width: 330});
+  });
+});
+
+describe('the active search field', () => {
+  it('moves the search circle 20 pt as it becomes the cancel button: (326 → 346)', () => {
+    expect(searchCancelShift()).toBe(20);
+  });
+
+  it('lifts the field to 8 pt above the keyboard: 798 → 483 over a 335 pt keyboard', () => {
+    // The field's bottom rests at 846 in the bar on an 874 pt screen.
+    expect(searchLift(874, 335, 846)).toBe(483 - 798);
+    // No keyboard, or one too low to reach it: no lift.
+    expect(searchLift(874, 0, 846)).toBe(0);
+    expect(searchLift(874, 10, 846)).toBe(0);
   });
 });

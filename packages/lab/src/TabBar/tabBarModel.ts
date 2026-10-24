@@ -221,3 +221,31 @@ export function searchFieldBox(width: number, isActive: boolean): AccessoryBox {
       width + 2 * outset - searchActive.cancelSize - searchActive.cancelGap,
   };
 }
+
+/**
+ * How far the search circle moves as it becomes the active field's cancel
+ * button: from the minimized circle's place at the bar's trailing end to
+ * `searchActive.inset` from the screen's edge, px toward the trailing side.
+ */
+export function searchCancelShift(): number {
+  const {barInset, barHeight, minimizedSize, searchActive} = tabBar;
+  return barInset + (barHeight - minimizedSize) / 2 - searchActive.inset;
+}
+
+/**
+ * The search field's lift above the keyboard: how far (negative, up) the
+ * field whose bottom rests at `fieldBottom` (viewport px, unlifted) moves
+ * for its bottom to sit `searchKeyboardGap` above a keyboard covering
+ * `inset` px of a `viewportHeight` px layout viewport. A keyboard too low
+ * to reach the field lifts nothing.
+ */
+export function searchLift(
+  viewportHeight: number,
+  inset: number,
+  fieldBottom: number,
+): number {
+  return Math.min(
+    0,
+    viewportHeight - inset - tabBar.searchKeyboardGap - fieldBottom,
+  );
+}

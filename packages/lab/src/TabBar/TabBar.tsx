@@ -77,8 +77,10 @@
  * The field stays mounted (inert while hidden) so that the tap choosing the
  * tab can, in the same commit, activate the field and focus it, which is
  * what raises the keyboard on iOS. Active, its glass widens to span the
- * screen but for the field's cancel button; the field inside rides the
- * keyboard on the host element TabBarSearchContext hands it.
+ * screen but for the search circle, which is now the field's cancel button
+ * (it calls the field handle's `cancel`), and both rise to sit above the
+ * software keyboard (useTabBarSearch.ts); the field draws only its content
+ * inside the host TabBarSearchContext hands it.
  *
  * Accessibility: a `tablist` of `tab` buttons (`aria-selected`), one tab stop
  * with the arrow keys, Home and End moving between tabs and Enter or Space
@@ -239,8 +241,13 @@ export interface TabBarSearchTabProps {
   isActive?: boolean;
   /** Called when the search tab's tap activates the field. */
   onActiveChange?: (isActive: boolean) => void;
-  /** The field's handle: focused by the tap that activates it. */
-  fieldRef?: RefObject<{focus(): void; blur(): void} | null>;
+  /**
+   * The field's handle: focused by the tap that activates it, and cancelled
+   * (`cancel`, when it has one) by the search circle, which is the active
+   * field's cancel button. Without `cancel`, the circle reports
+   * `onActiveChange(false)`.
+   */
+  fieldRef?: RefObject<{focus(): void; blur(): void; cancel?(): void} | null>;
   /**
    * Whether choosing the search tab activates its field at once (UIKit's
    * `automaticallyActivatesSearch`); otherwise the field waits inline.
@@ -441,7 +448,7 @@ const styles = stylex.create({
     position: 'absolute',
     pointerEvents: 'none',
   },
-  searchHostShown: {
+  searchFieldShown: {
     pointerEvents: 'auto',
   },
   searchField: {
@@ -923,6 +930,16 @@ export function TabBar({
     if (search == null) {
       return;
     }
+    // Active, the circle is the field's cancel button.
+    if (isSearchActive) {
+      const field = search.fieldRef?.current;
+      if (field?.cancel != null) {
+        field.cancel();
+      } else {
+        search.onActiveChange?.(false);
+      }
+      return;
+    }
     const activates = search.automaticallyActivates ?? true;
     if (isSearchSelected && (!activates || isSearchActive)) {
       onReselect?.(search.value);
@@ -949,12 +966,15 @@ export function TabBar({
     isSearching: isSearchSelected,
     isEnabled: minimizeBehavior === 'onScrollDown' && isTouch,
   });
+  const searchHostRef = useRef<HTMLDivElement | null>(null);
   const searchMotion = useTabBarSearch({
     capsuleRef,
+    hostRef: searchHostRef,
     isSearching: isSearchSelected,
     isActive: isSearchActive,
+    isTouch,
   });
-  const searchHostRef = useRef<HTMLDivElement | null>(null);
+  const mergedSearchHostRef = useMergedRefs(searchHostRef, searchMotion.host);
   const circleRef = useRef<HTMLButtonElement | null>(null);
   const lens = useTabBarLens({
     capsuleRef,
@@ -1154,14 +1174,18 @@ export function TabBar({
           {search != null ? (
             <button
               type="button"
-              role="tab"
+              // Active, the circle is the field's cancel button, not a tab.
+              role={isSearchActive ? undefined : 'tab'}
               id={`${baseId}-tab-search`}
-              aria-selected={isSearchSelected}
-              aria-label={search.label}
+              aria-selected={isSearchActive ? undefined : isSearchSelected}
+              aria-label={
+                isSearchActive ? t('@astryx.tabBar.cancelSearch') : search.label
+              }
               tabIndex={isSearchSelected ? 0 : -1}
               ref={searchMotion.circle}
-              inert={isSearchSelected}
+              inert={isSearchSelected && !isSearchActive}
               data-tab-bar-search={search.value}
+              data-tab-bar-search-cancel={isSearchActive ? '' : undefined}
               onClick={chooseSearch}
               {...mergeProps(
                 themeProps('tab-bar-item', {
@@ -1183,6 +1207,7 @@ export function TabBar({
                 {...stylex.props(styles.glass, styles.searchGlass)}
               />
               <span
+                ref={searchMotion.searchGlyph}
                 aria-hidden
                 {...stylex.props(
                   styles.icon,
@@ -1194,6 +1219,20 @@ export function TabBar({
                   ),
                 )}>
                 {search.icon}
+              </span>
+              <span
+                ref={searchMotion.cancelGlyph}
+                aria-hidden
+                {...stylex.props(
+                  styles.icon,
+                  styles.box(
+                    SEARCH_ICON_INSET,
+                    SEARCH_ICON_INSET,
+                    ICON_SIZE,
+                    ICON_SIZE,
+                  ),
+                )}>
+                <Icon icon="close" size="lg" />
               </span>
             </button>
           ) : null}
@@ -1320,7 +1359,7 @@ export function TabBar({
         </button>
         {search != null ? (
           <div
-            ref={searchHostRef}
+            ref={mergedSearchHostRef}
             data-tab-bar-search-field={isSearchActive ? 'active' : 'inline'}
             inert={!isSearchSelected}
             {...stylex.props(
@@ -1332,12 +1371,14 @@ export function TabBar({
                 ACCESSORY_HEIGHT,
               ),
               styles.accessoryInline(px(INLINE_FIELD.top)),
-              isSearchSelected && styles.searchHostShown,
             )}>
             <div
               ref={searchMotion.field}
               {...stylex.props(
                 styles.searchField,
+                // Only the field takes touches: its host spans the inline
+                // box, over the place the cancel button rides to.
+                isSearchSelected && styles.searchFieldShown,
                 isSearchActive
                   ? styles.searchFieldBox(
                       ACTIVE_FIELD_SHIFT.start,

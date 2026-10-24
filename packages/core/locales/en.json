@@ -795,6 +795,10 @@
     "defaultMessage": "More",
     "description": "Label of the tab that collects a phone tab bar's sections past the fourth (iOS's More tab), and the name of the list of those sections it shows. One short word."
   },
+  "@astryx.tabBar.cancelSearch": {
+    "defaultMessage": "Cancel",
+    "description": "Name of the button that ends search in a phone tab bar's search tab (iOS's cancel button beside the active search field). One short word."
+  },
   "@astryx.table.label": {
     "defaultMessage": "Table",
     "description": "Fallback screen-reader-only accessible name for a data-table region when the consumer provides none. Noun (\"a table\"), not the verb \"to table\"."
