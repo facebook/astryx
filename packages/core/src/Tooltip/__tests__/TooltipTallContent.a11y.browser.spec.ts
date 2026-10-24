@@ -1,20 +1,23 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file TooltipTallContent.a11y.chromium.spec.ts
- * @input The `Core/Tooltip` TallContent and Default stories in a built
- *   Storybook and real mouse input.
- * @output Real-engine proof that a tooltip taller than the room above and
- *   below its trigger never covers the trigger: it opens beside the trigger
- *   when there is room there, or on the side with more room otherwise, stays
- *   open under a still pointer (WCAG 2.2 1.4.13 Content on Hover or Focus,
- *   persistent), and scrolls its overflow inside a box that stays hoverable.
- * @position Run with `pnpm test:a11y-contract`. Which position option an
- *   engine picks, and whether the box then covers the trigger, is layout only
- *   a real engine produces.
+ * @file TooltipTallContent.a11y.browser.spec.ts
+ * @input The `Core/Tooltip` TallContent, TallContentMovingHost and
+ *   TallContentReplacedTrigger stories in a built Storybook, and real mouse
+ *   and keyboard input.
+ * @output Real-engine proof, in Chromium and WebKit, that a tooltip taller
+ *   than the room above and below its trigger never settles over the trigger:
+ *   it opens beside the trigger when there is room there, or on the side with
+ *   more room otherwise, stays open under a still pointer (WCAG 2.2 1.4.13
+ *   Content on Hover or Focus, persistent), and scrolls its overflow inside a
+ *   box that stays hoverable; and that a tooltip that fits is unchanged.
+ * @position Run with `pnpm test:a11y-contract` (Chromium) and
+ *   `pnpm exec playwright test TooltipTallContent --project webkit`. Which
+ *   position option an engine picks, and where it leaves a box that fits no
+ *   option, is layout only a real engine produces, and the engines differ.
  *
- * SYNC: Fixture lives in /apps/storybook/stories/Tooltip.stories.tsx
- *   (TallContent).
+ * SYNC: Fixtures live in /apps/storybook/stories/Tooltip.stories.tsx
+ *   (TallContent, TallContentMovingHost, TallContentReplacedTrigger).
  */
 
 import {expect, test, type Page} from '@playwright/test';
@@ -131,7 +134,10 @@ async function moveAndSampleFrames(
   page: Page,
   selector: string,
   style: Partial<
-    Record<'marginBlockStart' | 'marginBlockEnd' | 'blockSize', string>
+    Record<
+      'marginBlockEnd' | 'blockSize' | 'position' | 'insetBlockStart',
+      string
+    >
   >,
 ): Promise<Frame[]> {
   return page.evaluate(
@@ -532,6 +538,7 @@ test('a held-open tooltip whose host moves keeps its trigger clear', async ({
 
 test('a trigger that moves in layout while its tooltip is open, without resizing or scrolling, is kept clear', async ({
   page,
+  browserName,
 }) => {
   await page.setViewportSize({width: 1280, height: 720});
   await page.goto(
@@ -568,12 +575,19 @@ test('a trigger that moves in layout while its tooltip is open, without resizing
   // has painted, so at most that first painted frame may show the overlap;
   // the frame after it must not.
   const frames = await moveAndSampleFrames(page, TRIGGER, {
-    marginBlockStart: '-620px',
+    position: 'relative',
+    insetBlockStart: '-310px',
   });
+  // WebKit scrolls the page itself when an open popover's anchor moves (it
+  // does on the base too), so the trigger's move is measured in the document.
   const after = await rect(page, TRIGGER);
-  expect(Math.round(after.top)).toBe(Math.round(before.top) - 310);
+  const scrolled = (await page.evaluate(() => window.scrollY)) - scrollY;
+  expect(Math.round(after.top + scrolled)).toBe(Math.round(before.top) - 310);
+  if (browserName === 'chromium') {
+    // A pure layout move: nothing scrolled.
+    expect(scrolled).toBe(0);
+  }
   expect(after.bottom - after.top).toBe(before.bottom - before.top);
-  expect(await page.evaluate(() => window.scrollY)).toBe(scrollY);
   expectClearFromSecondFrame(frames);
   await expect(page.getByRole('tooltip')).toBeVisible();
   expect(overlaps(await rect(page, TOOLTIP), after)).toBe(false);

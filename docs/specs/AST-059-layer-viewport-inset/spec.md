@@ -52,7 +52,7 @@ review_triggers: [layering, layout, behavior, public-api]
 | End-user impact         | A person who opens a 352px menu from a control near the edge of a panel gets a 352px menu, not a 274px one. A long menu on a phone keeps its labels readable instead of squeezing beside its trigger. A layer never ends under a phone navigation bar the app has declared (FR6). Nothing moves for an app that declares no bar.                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | Builder impact          | `Popover.width` and `DropdownMenu.menuWidth` become ordinary sizes. An app with a floating bar declares it once, as `inset` on the `LayerProvider` it already mounts, beside `toast`; toasts and anchored layers both clear it. Components that compose `useLayer` or `usePopover` inherit the gutter, the caps, and the fallbacks without a record change (FR7).                                                                                                                                                                                                                                                                                                                                                                                                                |
 | Compatibility/readiness | Behavior change, one additive prop. An explicit size near an edge renders at its size instead of shrinking; unwrappable content near an edge flips or slides instead of overflowing its box; prose still wraps beside its trigger (DEC-2). Every anchor-mode layer gains the gutter and caps (FR7). `LayerProvider.inset` defaults to zero on every edge, so an app that declares none renders as before, with or without a provider; an existing `toast.inset` keeps its meaning (DEC-5). Authority: `current`, approved by the owner on 2026-10-03.                                                                                                                                                                                                                            |
-| Review checks           | Reject a second definition of the viewport gutter outside the layer runtime; a `max-inline-size` resolved against the anchor's span; a layer box that can exceed the viewport on either axis; a fallback list authored by a component for an anchor-mode layer; a branch on whether a size was explicit; a slide that continues once the anchor has left the viewport; a `layer` theme target or a theme value standing in for an app's bar; a second place to declare the bar beside `LayerProvider.inset`; a consumer minimum that is not clamped by the runtime's cap; a layer under a default provider that renders differently from one with no provider; any geometry input the runtime measures after paint and then applies; a story that asserts only settled geometry. |
+| Review checks           | Reject a second definition of the viewport gutter outside the layer runtime; a `max-inline-size` resolved against the anchor's span; a layer box that can exceed the viewport on either axis; a fallback list authored by a component for an anchor-mode layer; a branch on whether a size was explicit; a slide that continues once the anchor has left the viewport; a `layer` theme target or a theme value standing in for an app's bar; a second place to declare the bar beside `LayerProvider.inset`; a consumer minimum that is not clamped by the runtime's cap; a layer under a default provider that renders differently from one with no provider; a geometry input read after paint and applied, past FR8's exceptions; a story that asserts only settled geometry. |
 | Governing rules         | [`architecture:layer-runtime`](../../architecture/layer-runtime.md) INV3, INV5 for anchor-mode placement, fallbacks, and direction, INV10 for what `LayerProvider` is; [`spec:AST-003`](../AST-003/spec.md) FR21–FR23 for the reduced behavior where CSS Anchor Positioning is absent; `component:Popover` FR4, ORD4 for Popover's conditional scrolling, which this record leaves in place.                                                                                                                                                                                                                                                                                                                                                                                     |
 
 This table is a review projection; the body below is authoritative.
@@ -182,9 +182,12 @@ the app reaches every layer instead of the components that happen to read it.
   from the edge it meets. A layer that keeps its anchor clear — Tooltip, which
   the hover on its trigger keeps open — never settles over its anchor, and
   no painted frame shows it there except the one FR8 allows when the anchor
-  moves in layout without resizing or scrolling. When the order above would
-  leave its box over the anchor, an above or below
-  layer tries instead beside the anchor on the inline end, then on the inline
+  moves in layout without resizing or scrolling. When the order above leaves
+  its box over the anchor or, while the anchor is in view, past the viewport
+  on the block axis (engines differ in where they leave a box that fits no
+  option: one shifts it over the anchor, another leaves it on its preferred
+  side, partly off-screen), an above or below layer tries instead beside the
+  anchor on the inline end, then on the inline
   start, each at its content's inline size and capped to the viewport, then
   the block side with more room, then the other block side, each sized to the
   room on that side. It scrolls what it cannot show, and only then, so a
@@ -229,22 +232,27 @@ the app reaches every layer instead of the components that happen to read it.
   (FR5) is read before the layer's first paint and thereafter only when the
   anchor's visibility changes, so a layer opened while its anchor is already
   out of view holds from its first frame. For a layer that keeps its anchor
-  clear (FR4), whether its settled box covers its anchor and whether its
-  content overflows the box are read in the same call that shows or remounts
-  it, and again while it is open whenever its size, its content's size, its
+  clear (FR4), whether its settled box covers its anchor or leaves the
+  viewport, and whether its content overflows the box, are read in the same
+  call that shows or remounts it, and again while it is open whenever its size,
+  its content's size, its
   anchor's size, a scroll position or the viewport changes, including after
   the caller replaces the anchor element while the layer stays open; each of
-  those reads lands before the next frame paints. An anchor that moves in layout
-  without resizing or scrolling (content above it grows, a margin changes) is
+  those reads lands before the next frame paints, except that a scroll reads
+  only coverage, because during a scroll event the layer has not yet followed
+  its anchor. An anchor that moves in layout without resizing or scrolling
+  (content above it grows, a margin changes) is
   reported by no observer that runs before paint; the runtime learns it from
   an intersection observer on the anchor, which reports after paint, so on
   that one path at most one painted frame shows the layer over its anchor
-  before the next frame corrects it. The runtime polls nothing. When a
-  declared inset changes while a layer is open, the layer and the declaration
+  before the next frame corrects it; the same report catches a box that a
+  scroll leaves past the viewport, corrected in the next frame. The runtime
+  polls nothing. When a declared inset changes while a layer is open, the layer
+  and the declaration
   change in the same frame.
   Latency between an app measuring its own bar and declaring the result is the
   app's; the runtime renders what is declared, when it is declared. Apart from
-  that one-frame correction, a paint-then-shift is a failure of this
+  those one-frame corrections, a paint-then-shift is a failure of this
   contract, not a quality concern.
 
 ### Platform support
@@ -399,7 +407,8 @@ their stories. Popover is an application of the layer that adds styling
 considerations on top. A gutter defined once cannot drift; a fallback list
 authored once cannot be extended by one component for its own case; a person
 sees the same edge behavior from a menu, a popover, a typeahead, and a
-tooltip.
+tooltip, apart from the anchor-clear order FR4 gives a tooltip, which the
+runtime also authors.
 
 Rejected: a shared constant each component imports while keeping its own fit
 styles — it removes the drift and keeps the ownership problem.

@@ -445,9 +445,16 @@ function toCssLength(value: number | string): string {
 
 /**
  * For a layer that must never settle over its anchor (spec:AST-059 FR4): read
- * where its fallback list settled it and, if its box covers the anchor, switch it to
- * its anchor-clear list; then let it scroll only if its content overflows the
- * box it was given (FR3). The runtime calls this in the same task as every
+ * where its fallback list settled it and, if its box covers the anchor or,
+ * while the anchor is in view, leaves the viewport on the block axis, switch it
+ * to its anchor-clear list; then let it scroll only if its content overflows
+ * the box it was given (FR3). Engines differ in where they leave a box that
+ * fits no option: Chromium shifts it into the viewport, over the anchor;
+ * WebKit keeps it at its preferred position, partly off-screen. Either way the
+ * standard list has failed it. During a scroll event the anchor has moved but
+ * the layer anchored to it not yet, so a scroll reads only for coverage
+ * (`checkViewport` false); the anchor-move observer, which reports after the
+ * frame has painted the scrolled geometry, reads the viewport. The runtime calls this in the same task as every
  * show and remount, and while the layer is open whenever its size, its
  * content's size, its anchor's size, a scroll position or the viewport
  * changes. Each of those reads lands before the next frame paints (FR8). Only
@@ -455,18 +462,30 @@ function toCssLength(value: number | string): string {
  * Once switched, a layer keeps its anchor-clear list until it next opens, so
  * it never jumps back over its trigger while open.
  */
-function keepAnchorClear(layer: HTMLElement, anchor: HTMLElement | null): void {
+function keepAnchorClear(
+  layer: HTMLElement,
+  anchor: HTMLElement | null,
+  checkViewport = true,
+): void {
   if (anchor) {
     const a = anchor.getBoundingClientRect();
     const l = layer.getBoundingClientRect();
+    const hasBox = l.width > 0 && l.height > 0;
     const covers =
-      l.width > 0 &&
-      l.height > 0 &&
+      hasBox &&
       l.left < a.right &&
       a.left < l.right &&
       l.top < a.bottom &&
       a.top < l.bottom;
-    if (covers) {
+    // The viewport's block extent, as the layer's anchor positioning sees it.
+    const viewportBlock = layer.ownerDocument.documentElement.clientHeight;
+    const anchorInView = a.bottom > 0 && a.top < viewportBlock;
+    const leavesViewport =
+      checkViewport &&
+      hasBox &&
+      anchorInView &&
+      (l.top < 0 || l.bottom > viewportBlock);
+    if (covers || leavesViewport) {
       layer.setAttribute(LAYER_CLEARS_ANCHOR_ATTRIBUTE, '');
     }
   }
@@ -567,8 +586,8 @@ function observeAnchorClearance(
   };
   const onScroll = (event: Event) => {
     // The layer's own scrolling moves nothing else.
-    if (event.target !== layer) {
-      reread();
+    if (event.target !== layer && isCurrent()) {
+      keepAnchorClear(layer, anchor, false);
     }
   };
   let observer: ResizeObserver | null = null;

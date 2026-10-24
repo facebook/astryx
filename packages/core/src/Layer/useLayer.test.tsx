@@ -1615,6 +1615,13 @@ describe('a layer that keeps its anchor clear (spec:AST-059 FR4)', () => {
 
   const TRIGGER = rect(300, 400, 30, 100);
 
+  /** Give the document a 720px-tall viewport for the duration of a test. */
+  function viewport720() {
+    return vi
+      .spyOn(document.documentElement, 'clientHeight', 'get')
+      .mockReturnValue(720);
+  }
+
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -1684,6 +1691,46 @@ describe('a layer that keeps its anchor clear (spec:AST-059 FR4)', () => {
     await user.click(container.querySelector('button')!);
     const layerEl = container.querySelector('[popover]') as HTMLElement;
     expect(layerEl).toHaveAttribute('data-astryx-clears-anchor');
+  });
+
+  it('switches to the clear list when the shown layer leaves the viewport on the block axis while its trigger is in view', async () => {
+    const user = userEvent.setup();
+    // Above the trigger, clear of it, but its top past the viewport: where
+    // WebKit leaves a box that fits no option.
+    viewport720();
+    placeBoxes(TRIGGER, rect(-348, 350, 640, 300));
+    const {container} = render(<ClearHarness />);
+    await user.click(container.querySelector('button')!);
+    const layerEl = container.querySelector('[popover]') as HTMLElement;
+    expect(layerEl).toHaveAttribute('data-astryx-clears-anchor');
+  });
+
+  it('keeps the standard list for a layer past the viewport while its trigger is out of view too', async () => {
+    const user = userEvent.setup();
+    // The trigger is above the viewport: the layer holds (FR5), not switches.
+    viewport720();
+    placeBoxes(rect(-80, 400, 30, 100), rect(-200, 350, 100, 200));
+    const {container} = render(<ClearHarness />);
+    await user.click(container.querySelector('button')!);
+    const layerEl = container.querySelector('[popover]') as HTMLElement;
+    expect(layerEl).not.toHaveAttribute('data-astryx-clears-anchor');
+  });
+
+  it('reads only for coverage during a scroll, when the layer has not followed its anchor yet', async () => {
+    const user = userEvent.setup();
+    viewport720();
+    const spy = placeBoxes(TRIGGER, rect(200, 350, 100, 200));
+    const {container} = render(<ClearHarness />);
+    await user.click(container.querySelector('button')!);
+    const layerEl = container.querySelector('[popover]') as HTMLElement;
+    // Mid-scroll: the trigger has moved, the layer still reads where it was,
+    // partly past the viewport, clear of the trigger.
+    spy.mockRestore();
+    placeBoxes(TRIGGER, rect(-40, 350, 100, 200));
+    act(() => {
+      window.dispatchEvent(new Event('scroll'));
+    });
+    expect(layerEl).not.toHaveAttribute('data-astryx-clears-anchor');
   });
 
   it('keeps the standard list when the shown layer sits clear of its trigger, even flush against it', async () => {
