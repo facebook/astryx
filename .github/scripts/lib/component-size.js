@@ -4,9 +4,10 @@
  * @file component-size.js
  * @input A built package's dist directory, a component's dist entry, and the
  *   package's prebuilt stylesheet
- * @output The gzip size of the JavaScript a component's import pulls in
- *   (one minified bundle of every module it reaches, package imports included)
- *   and the gzip size of the stylesheet rules that JavaScript references
+ * @output The gzip size of the JavaScript a component's import loads eagerly
+ *   (the minified entry chunk and the chunks it imports statically, package
+ *   imports included) and the gzip size of the stylesheet rules referenced by
+ *   the modules it can load, import() targets included
  * @position Shared by analyze-pr.js for the PR size report. Sizes are gzip at
  *   the default compression level (spec:AST-080 FR8,
  *   architecture:component-style-authoring INV6).
@@ -46,10 +47,12 @@ function packageStylesheetPath(packageDir) {
   return null;
 }
 
-// Bundle what importing `entry` pulls in: every module it reaches, including
-// modules reached through package imports (other Astryx packages, React,
-// StyleX, third-party libraries), minified for production. Returns the bundle
-// text, or null when the import cannot be bundled.
+// Bundle what importing `entry` loads eagerly: the entry chunk and the chunks
+// it imports statically, including modules reached through package imports
+// (other Astryx packages, React, StyleX, third-party libraries), minified for
+// production. Also returns the modules of every chunk the import can load,
+// import() targets included, for CSS. Returns null when the import cannot be
+// bundled.
 function bundleImportWithInputs(entry, exportName) {
   if (!entry || !fs.existsSync(entry)) return null;
   const os = require('node:os');
@@ -93,24 +96,31 @@ function bundleImportWithInputs(entry, exportName) {
     const entryOutput = Object.keys(outputs).find(
       key => outputs[key].entryPoint !== undefined,
     );
-    const eager = new Set();
-    const pending = [entryOutput];
-    while (pending.length > 0) {
-      const key = pending.pop();
-      if (key === undefined || eager.has(key)) continue;
-      eager.add(key);
-      for (const imported of outputs[key].imports || []) {
-        if (imported.kind === 'import-statement' && !imported.external) {
-          pending.push(imported.path);
+    // Chunks the entry reaches, following only the given import kinds.
+    function reachable(kinds) {
+      const seen = new Set();
+      const pending = [entryOutput];
+      while (pending.length > 0) {
+        const key = pending.pop();
+        if (key === undefined || seen.has(key)) continue;
+        seen.add(key);
+        for (const imported of outputs[key].imports || []) {
+          if (kinds.includes(imported.kind) && !imported.external) {
+            pending.push(imported.path);
+          }
         }
       }
+      return seen;
     }
     let text = '';
-    for (const key of eager) text += byPath.get(key) ?? '';
+    for (const key of reachable(['import-statement'])) {
+      text += byPath.get(key) ?? '';
+    }
     // CSS ships in the package stylesheet whether its module loads eagerly or
-    // through import(), so class names come from every chunk.
+    // through import(), so class names come from every chunk the entry can
+    // load, dynamic imports included; chunks no kept code imports are ignored.
     const inputs = new Set();
-    for (const key of Object.keys(outputs)) {
+    for (const key of reachable(['import-statement', 'dynamic-import'])) {
       for (const input of Object.keys(outputs[key].inputs || {})) {
         inputs.add(path.resolve(workingDir, input));
       }

@@ -565,8 +565,8 @@ function sizeTargets(changedFiles) {
 }
 
 // What each target's import costs in the current tree: the gzip JavaScript it
-// pulls in, transitive modules included, and the gzip CSS of the package
-// stylesheet rules its own package's modules reference (spec:AST-080 FR8,
+// loads eagerly, and the gzip CSS of the package stylesheet rules referenced by
+// its own package's modules it can load, import() targets included (spec:AST-080 FR8,
 // architecture:component-style-authoring INV6).
 function measureSizes(targets) {
   const sizes = {};

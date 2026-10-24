@@ -3,8 +3,8 @@
 /**
  * @file component-size.test.mjs
  * Pins how the PR size report measures one component import: the JavaScript
- * it pulls in transitively (other packages external) and the stylesheet rules
- * that JavaScript references.
+ * it loads eagerly and the stylesheet rules referenced by the modules it can
+ * load.
  */
 
 import fs from 'node:fs';
@@ -140,6 +140,28 @@ describe('component import size', () => {
       path.join(root, 'dist'),
     );
     expect(withLazy.cssGzipBytes).toBeGreaterThan(eagerOnly.cssGzipBytes);
+  });
+
+  it('ignores CSS behind an import() in an export the import does not use', () => {
+    const root = tree({
+      'dist/Menu/index.js':
+        "export function Menu() { return 'xmenu1'; }\nexport function Unused() { return import('./Touch.js'); }\n",
+      'dist/Menu/Touch.js': "export const touch = 'xtouch1';\n",
+    });
+    const sheet = '.xmenu1{color:red}.xtouch1{padding:44px}';
+    const used = measureComponentImport(
+      path.join(root, 'dist/Menu/index.js'),
+      sheet,
+      path.join(root, 'dist'),
+      'Menu',
+    );
+    const menuOnly = measureComponentImport(
+      path.join(root, 'dist/Menu/index.js'),
+      '.xmenu1{color:red}',
+      path.join(root, 'dist'),
+      'Menu',
+    );
+    expect(used.cssGzipBytes).toBe(menuOnly.cssGzipBytes);
   });
 
   it('keeps the @keyframes a kept rule names', () => {

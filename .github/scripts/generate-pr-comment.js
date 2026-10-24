@@ -205,7 +205,7 @@ if (sizeKeys.length > 0) {
     sizeSection += `| ${inline(key)} | ${sizeText(base.importGzipBytes)} | ${sizeText(head.importGzipBytes)} | ${signedSizeText(importDelta)}${jsOver ? ' ⚠️' : ''} | ${sizeText(base.cssGzipBytes)} | ${sizeText(head.cssGzipBytes)} | ${signedSizeText(cssDelta)}${cssOver ? ' ⚠️' : ''} |\n`;
   }
   sizeSection +=
-    '\nSizes are gzip. Import counts every module the import reaches; CSS counts the package stylesheet rules its own package modules reference.\n\n';
+    '\nSizes are gzip. Import counts the JavaScript the import loads eagerly; CSS counts the package stylesheet rules referenced by the modules it can load from its own package, lazily loaded ones included.\n\n';
 }
 
 // Components whose growth passes the touch-only budget.
