@@ -723,6 +723,28 @@ export function Tokenizer<T extends SearchableItem>({
     [layer.id],
   );
 
+  // A finger's tap on a token's control (its remove button) while the
+  // keyboard is down keeps focus out of the field altogether: where the
+  // browser focuses a pressed button (Chrome does, on the tap's mouse
+  // compatibility events), focus entering would expand an `unfocusedInline`
+  // field, remounting the control under the finger, and focus would then drop
+  // to the page with no blur. Cancelling the press's focus, as
+  // InputClearButton does, leaves the field as it was; the tap's click still
+  // removes the token. A tap on the input itself still focuses it.
+  const handleMouseDownCapture = useCallback(
+    (e: React.MouseEvent) => {
+      const target = e.target as Element | null;
+      if (
+        target !== inputRef.current &&
+        target?.closest?.('button') != null &&
+        isTouchPressWithKeyboardDown()
+      ) {
+        e.preventDefault();
+      }
+    },
+    [isTouchPressWithKeyboardDown],
+  );
+
   const handleFocusCapture = useCallback(
     (e: React.FocusEvent) => {
       const comingFromOutside = !isFocusInTokenizer(e.relatedTarget);
@@ -1036,6 +1058,7 @@ export function Tokenizer<T extends SearchableItem>({
       aria-label={label}
       onClick={handleWrapperClick}
       onPointerDownCapture={handlePointerDownCapture}
+      onMouseDownCapture={handleMouseDownCapture}
       onFocusCapture={handleFocusCapture}
       onBlurCapture={handleBlurCapture}
       // Keys on the field's other controls (clear button, tokens) reach a

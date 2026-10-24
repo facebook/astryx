@@ -368,6 +368,43 @@ describe('Tokenizer', () => {
       expect(input).toHaveFocus();
     });
 
+    it('keeps a finger tap on a token’s × from taking focus while the keyboard is down, so an unfocusedInline field stays collapsed', () => {
+      const onChange = vi.fn();
+      const onFocus = vi.fn();
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[users[0], users[1]]}
+          onChange={onChange}
+          onFocus={onFocus}
+          tokenOverflowBehavior="unfocusedInline"
+        />,
+      );
+      const remove = screen.getByRole('button', {name: 'Remove Alice'});
+      fireEvent.pointerDown(remove, {pointerType: 'touch'});
+      // The tap's mouse compatibility press: its default action (Chrome
+      // focusing the pressed button, which would expand the field and
+      // remount the button under the finger) is cancelled.
+      expect(fireEvent.mouseDown(remove)).toBe(false);
+      fireEvent.click(remove);
+      expect(onChange).toHaveBeenCalledWith([users[1]], {
+        item: users[0],
+        type: 'remove',
+      });
+      expect(onFocus).not.toHaveBeenCalled();
+      expect(screen.getByRole('combobox')).not.toHaveFocus();
+    });
+
+    it('still lets a mouse press, and a tap while typing, focus as before', () => {
+      const {input, remove} = renderPair();
+      fireEvent.pointerDown(remove, {pointerType: 'mouse'});
+      expect(fireEvent.mouseDown(remove)).toBe(true);
+      act(() => input.focus());
+      fireEvent.pointerDown(remove, {pointerType: 'touch'});
+      expect(fireEvent.mouseDown(remove)).toBe(true);
+    });
+
     it('lets go of the tapped × before it unmounts, so the field blurs', () => {
       const onBlur = vi.fn();
       render(
