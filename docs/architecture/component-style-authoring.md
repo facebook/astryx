@@ -108,10 +108,11 @@ not evidence of conformance or violation.
   (`spec:AST-080` FR1, FR8). Sizes are gzip at the default compression level,
   and 1 KB is 1,024 bytes; measured as `spec:AST-080` FR8 measures CSS, a
   component's JavaScript size is the gzip size of one bundle holding its
-  import and every module that import reaches. A shared value table,
-  such as a motion or gesture tuning table, ships to a component only the rows
-  that component uses: importing a component does not pull in rows only other
-  components read.
+  import and every module that import reaches. A shared JavaScript value
+  table, such as a gesture or spring tuning table, ships to a component only
+  the rows that component uses: importing a component does not pull in rows
+  only other components read. StyleX variable groups are not value tables;
+  `spec:AST-066` FR3 decides which groups a stylesheet carries.
 
 ## Authoring guidance
 

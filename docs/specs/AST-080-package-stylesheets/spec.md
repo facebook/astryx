@@ -138,8 +138,9 @@ first.
   development builds as in production builds.
 
 - **FR8 — Stylesheet growth is reported and budgeted per component.** Every
-  product loads a package's whole stylesheet (FR1), so CSS a component adds
-  reaches every product, including products that never render it. Every pull
+  product that loads a package's prebuilt stylesheet loads all of it (FR1), so
+  CSS a component adds reaches each of those products, including products that
+  never render it. Every pull
   request that changes a package's styled modules MUST report, base against
   head, the gzip size of each package stylesheet it changes and the gzip CSS
   delta of each component that changed. A feature that runs only on a coarse
@@ -261,15 +262,16 @@ not load stylesheets that dependency modules import.
 **Reference:** `spec:AST-080/DEC-4`
 **Decider:** `cixzhang`, `2026-10-24`
 
-Because one whole stylesheet ships to every product (DEC-3), CSS for a feature
-only touch devices use still costs every desktop product, and nobody sees the
+Because each package's prebuilt stylesheet ships whole (DEC-3) and is the
+default setup (DEC-1), CSS for a feature only touch devices use still costs
+every desktop product on that setup, and nobody sees the
 cost unless each change reports it. A per-component report on every pull
 request makes growth visible, for the JavaScript a component's import pulls in
 as for its CSS. Touch-only work is flagged at 2 KB gzip of JavaScript or 1 KB
 gzip of CSS per component: JavaScript can load lazily, only when a coarse
 pointer needs it, or be justified, and CSS, which stays in the stylesheet, is
-justified. A shared value table ships to a component only the rows it uses, so
-one component's tuning does not ride along with every other import.
+justified. A shared JavaScript value table ships to a component only the rows it
+uses, so one component's tuning does not ride along with every other import.
 
 Rejected: splitting touch-only CSS into a separate stylesheet, because it
 breaks the one-import setup DEC-3 keeps.
