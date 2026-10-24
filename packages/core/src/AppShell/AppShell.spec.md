@@ -73,6 +73,15 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **The banner stays pinned in `auto`.** The `banner` prop's API docs say it
   scrolls away with the page in `auto`; the shipped header, which holds both the
   banner and the top nav, is sticky, so the banner stays pinned (FR6).
+- **A header added after mount is not measured.** In `auto`, the header height
+  is measured only when the height mode is set; a banner or top nav that first
+  renders later is never measured, so the side region sticks at the top edge and
+  its first rows slide under the sticky header.
+- **A raw `content` drawer leaves the toggle pointing at nothing.**
+  `mobileNav.content` accepts raw children; AppShell renders them as given while
+  the auto toggle still renders, so its `aria-controls` names no element and its
+  presses open nothing. WCAG 4.1.2 requires a control's relationships and state
+  to be programmatically correct.
 - **The fill-height main region is not a tab stop while it overflows.** In
   `height="fill"` the main region is a scroll container, but it is never a
   sequential tab stop, so keyboard users reach overflowing content only through
@@ -143,14 +152,14 @@ the only component record in the AppShell root.
 | FR3  | The header region renders only when `topNav` or `banner` is present; it carries `app-shell-header` and `role="banner"`, places `banner` above `topNav`, and is never inside another landmark. The sidenav-only mobile top bar (FR9) also carries `app-shell-header` and takes `role="banner"` only when no header region renders. AppShell renders at most one banner landmark.                                                                                                                                                                                    | Current source and tests             |
 | FR4  | `children` render in one region with `role="main"` and `id="astryx-app-shell-main"`, programmatically focusable so the skip link can move focus to it; programmatic focus on it draws no focus ring. Its padding is `contentPadding`, default `0`. Whether it is a sequential tab stop is keyboard access to a scroll region (`spec:AST-025` FR12).                                                                                                                                                                                                                | Current source and tests             |
 | FR5  | The skip link is the first focusable element in the shell. It links to `#astryx-app-shell-main`, shows the translated `@astryx.appShell.skipToContent` text, is visually hidden until focused, and on activation moves focus to the main region.                                                                                                                                                                                                                                                                                                                   | WCAG 2.4.1; current source and tests |
-| FR6  | `fill` sizes the root to `100dvh` and the inline side region and main region scroll on their own. `auto` gives the root a `100dvh` minimum, makes the header sticky at the block start, keeps the inline side region sticky below the measured header height with its own scrolling, and lets the page scroll. Header height is measured only in `auto`.                                                                                                                                                                                                           | Current source and tests             |
+| FR6  | `fill` sizes the root to `100dvh` and the inline side region and main region scroll on their own. `auto` gives the root a `100dvh` minimum, makes the header sticky at the block start, keeps the inline side region sticky below the measured height of a header present when the shell mounts in `auto`, with its own scrolling, and lets the page scroll. Header height is measured only in `auto`.                                                                                                                                                             | Current source and tests             |
 | FR7  | Variant backgrounds: `wash` paints body background on the frame, nav areas, and content; `surface` paints surface on all three; `section` paints surface on the frame and divides the nav areas from content, and in `auto` the header paints surface itself; `elevated` paints body background on the frame and nav areas and surface on content (FR16 for the corner).                                                                                                                                                                                           | Current source and tests             |
 | FR8  | The mobile layout follows `mobileNav.breakpoint` under `spec:AST-012` FR8 and `architecture:theme-application` INV10; the breakpoint defaults to `md`, and `defaultIsMobile` is ignored when it is `none`.                                                                                                                                                                                                                                                                                                                                                         | `spec:AST-012` FR8; tests            |
 | FR9  | In the mobile layout the side nav leaves the inline region. A present `topNav` renders in TopNav's mobile-bar mode, given the side nav content for its drawer, unless `mobileNav` is `false` or a node. With `sideNav`, no `topNav`, `mobileNav` not `false`, and `hasToggle` not `false`, a mobile top bar renders the side nav in SideNav's top-bar mode in a navigation region named by `@astryx.appShell.mobileNavigation`; the auto toggle beside it renders only while mobile navigation is enabled (FR11), so with a drawer node the top bar has no toggle. | Current source and tests             |
 | FR10 | The auto drawer renders only in the mobile layout and only when `mobileNav` is not `false`, not a node, and has no `content`. Without `topNav` it is SideNav in drawer mode; with `topNav` it is TopNav in drawer mode carrying the side nav content; with a heading-only TopNav the side nav items render exactly once. It stays mounted while closed and, after a close, is not hidden before MobileNav's close delay has elapsed (hidden at once under reduced motion); an open is visible in the commit that carries it.                                       | Current source and tests             |
 | FR11 | The drawer is closed by default and AppShell owns its state unless `mobileNav.isOpen` is defined. Every requested change calls `mobileNav.onOpenChange`. Open and toggle requests do nothing unless mobile navigation is enabled: a nav slot is present, `mobileNav` is not `false`, and `mobileNav` is not a node.                                                                                                                                                                                                                                                | Current source and tests             |
 | FR12 | `mobileNav={false}` renders no drawer and no toggle; in the mobile layout the side nav then renders neither inline nor in a drawer. A node (element or string) renders as given at every width, replaces the auto drawer, and leaves TopNav in its full mode. A config object's `content` replaces the auto drawer in the mobile layout when a nav slot is present. `hasToggle: false` removes the auto toggle.                                                                                                                                                    | Current source and tests             |
-| FR13 | AppShell provides its subtree with: whether the mobile layout applies, whether the drawer is open, one drawer id shared by the drawer's `id` and the toggle's `aria-controls`, open, close, and toggle actions, whether mobile navigation is enabled, and whether auto toggles are enabled (`hasToggle` is not `false`; true at every width unless `hasToggle` is `false`).                                                                                                                                                                                        | Current source and tests             |
+| FR13 | AppShell provides its subtree with: whether the mobile layout applies, whether the drawer is open, one drawer id that the toggle's `aria-controls` names and that the auto drawer, or a MobileNav passed as `content` or as the node, applies as its `id`, open, close, and toggle actions, whether mobile navigation is enabled, and whether auto toggles are enabled (`hasToggle` is not `false`; true at every width unless `hasToggle` is `false`).                                                                                                            | Current source and tests             |
 | FR14 | Main content stays mounted across the breakpoint (`family:layout-regions` FR9); in addition, input values and focus inside `children` survive in both directions.                                                                                                                                                                                                                                                                                                                                                                                                  | Current source and tests             |
 | FR15 | `className`, `style`, and `xstyle` merge onto the root after component styles.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Current source                       |
 | FR16 | With `elevated`, a present `topNav`, and an inline side nav, the content area is a raised surface whose block-start, inline-start corner uses the page radius; otherwise the content wrapper creates no layout box.                                                                                                                                                                                                                                                                                                                                                | Current source and stories           |
@@ -201,8 +210,8 @@ the only component record in the AppShell root.
 - **AR2 — Bypass blocks.** The skip link is reachable with the first Tab and moves
   focus to the main region on activation (WCAG 2.4.1). Its focus indicator uses
   the shared focus-outline treatment.
-- **AR3 — Drawer wiring.** The auto toggle's `aria-controls` names the drawer that
-  opens and its `aria-expanded` reflects the drawer state (FR13). Focus
+- **AR3 — Drawer wiring.** With the auto drawer, or a MobileNav passed as
+  `content`, the auto toggle's `aria-controls` names the drawer that opens and its `aria-expanded` reflects the drawer state (FR13). Focus
   containment and return inside the drawer belong to MobileNav and are
   uncontracted here.
 - **AR4 — Focus continuity.** A breakpoint change does not move focus out of the
@@ -275,16 +284,29 @@ reachability, not a decision that it must stay unthemeable.
 | FR7, FR16           | `AppShell.stories.tsx` and visual baselines                                                  | `elevated` with both navs and with the mobile nav                                   | A changed `elevated` background or missing corner shows in visual review.        | `audit:AppShell/visual`        |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                                                                | Consumer anatomy and current targets                                                | Missing, extra, stale, or multiply assigned mappings fail repository validation. | `audit:AppShell/theming`       |
 
-Read from source, with no focused test or baseline yet: the placement of the
-three targets and other DOM props reaching the root (FR1); `false` and `''`
-slots counting as absent (FR2); `banner` above `topNav` (FR3); the `contentPadding` value
-and its `0` default, and no focus ring on main (FR4); the skip link's visual hiding until focus (FR5); root sizing and region scrolling in each height mode and the sticky side region in `auto` (FR6); the `wash`, `surface`, and fill-height `section`
-backgrounds (FR7); the default `md` breakpoint and `sm` (FR8); the mobile top
-bar's navigation name and its drawer-node clause (FR9); the reduced-motion hold
-(FR10); the `mobileNav.onOpenChange` call and no-op requests while disabled
-(FR11); the `mobileNav={false}`, `content`, and `hasToggle: false` branches and
-full-mode TopNav beside a drawer node (FR12); `hasAutoToggle` (FR13); FR15; PR2; and the skip link's shared focus
-outline (AR2).
+Read from source, with no focused test or baseline yet:
+
+- FR1: the placement of the three targets, other DOM props reaching the root,
+  and the drawer rendering last.
+- FR2: `false` and `''` slots counting as absent, and a slot that renders
+  nothing counting as present.
+- FR3: `banner` above `topNav`.
+- FR4: the `contentPadding` value and its `0` default, and no focus ring on main.
+- FR5: the skip link's visual hiding until focus; AR2: its shared focus outline.
+- FR6: root sizing and region scrolling in each height mode, and the sticky side
+  region in `auto`.
+- FR7: the `wash`, `surface`, and fill-height `section` backgrounds and
+  `section`'s dividers.
+- FR8: the default `md` breakpoint and `sm`.
+- FR9: the `mobileNav={false}` exception, the mobile top bar's navigation name,
+  and the drawer-node clause.
+- FR10: the reduced-motion hold.
+- FR11: controlled `isOpen`, the `mobileNav.onOpenChange` call, and no-op
+  requests while disabled.
+- FR12: the `mobileNav={false}`, string-node, `content`, and `hasToggle: false`
+  branches, and full-mode TopNav beside a drawer node.
+- FR13: the open and close actions and `hasAutoToggle`.
+- FR15, FR16's no-corner branch, and PR2.
 
 ## Decision log
 
