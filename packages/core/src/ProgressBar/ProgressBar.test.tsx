@@ -10,6 +10,7 @@
 import {describe, it, expect, beforeAll} from 'vitest';
 import {render, screen, waitFor} from '@testing-library/react';
 import {ProgressBar} from './ProgressBar';
+import {progress} from '../motion/uikit/progress';
 
 // A labeled mark wraps the tick in a lazily-loaded Tooltip (React.lazy +
 // Suspense). Preload that chunk once so the Tooltip (and its
@@ -891,5 +892,112 @@ describe('ProgressBar theme target names', () => {
     expect(container.querySelector('.astryx-progressbar-track')).toBeNull();
     expect(container.querySelector('.astryx-progressbar-fill')).toBeNull();
     expect(container.querySelector('.astryx-progressbar-mark')).toBeNull();
+  });
+});
+
+/**
+ * The declarations the element's classes carry in rules at the top level
+ * (`media` null) or inside `@media <media>`, as `prop: value`.
+ */
+function rulesOf(el: Element, media: string | null): string[] {
+  const out: string[] = [];
+  const visit = (rules: CSSRuleList, inMedia: string | null) => {
+    for (const rule of Array.from(rules)) {
+      if (rule instanceof CSSMediaRule) {
+        visit(rule.cssRules, rule.conditionText ?? rule.media.mediaText);
+      } else if (rule instanceof CSSStyleRule && inMedia === media) {
+        if (
+          Array.from(el.classList).some(c =>
+            rule.selectorText.includes(`.${c}`),
+          )
+        ) {
+          for (let i = 0; i < rule.style.length; i += 1) {
+            const prop = rule.style[i];
+            out.push(`${prop}: ${rule.style.getPropertyValue(prop)}`);
+          }
+        }
+      }
+    }
+  };
+  for (const sheet of Array.from(document.styleSheets)) {
+    try {
+      visit(sheet.cssRules, null);
+    } catch {
+      // ignore cross-origin sheets
+    }
+  }
+  return out;
+}
+
+const valueOf = (declarations: string[], prop: string) =>
+  declarations
+    .filter(d => d.startsWith(`${prop}:`))
+    .map(d => d.slice(prop.length + 1).trim());
+
+describe('ProgressBar under a finger: UIProgressView', () => {
+  const view = progress.progressView;
+  const fillOf = () =>
+    screen.getByRole('progressbar').firstElementChild as HTMLElement;
+  const durationOf = () =>
+    fillOf().style.getPropertyValue('--_progress-bar-duration');
+
+  it('moves linearly for 1 s per whole track of the change, from the last value', () => {
+    const {rerender} = render(<ProgressBar value={10} label="Upload" />);
+    // Nothing to animate on the first render.
+    expect(durationOf()).toBe('0ms');
+    rerender(<ProgressBar value={60} label="Upload" />);
+    expect(durationOf()).toBe(`${0.5 * view.animatedMsPerProgress}ms`);
+    // A re-render with the same value keeps the running change's duration.
+    rerender(<ProgressBar value={60} label="Upload" />);
+    expect(durationOf()).toBe(`${0.5 * view.animatedMsPerProgress}ms`);
+    // The duration is the model change: 60 → 40 is 0.2 of the track.
+    rerender(<ProgressBar value={40} label="Upload" />);
+    expect(durationOf()).toBe(`${0.2 * view.animatedMsPerProgress}ms`);
+    const coarse = rulesOf(fillOf(), '(pointer: coarse)');
+    expect(valueOf(coarse, 'transition-duration')).toEqual([
+      'var(--_progress-bar-duration,0s)',
+    ]);
+    expect(view.animatedCurveIsLinear).toBe(true);
+    expect(valueOf(coarse, 'transition-timing-function')).toEqual(['linear']);
+    // With a mouse or trackpad the theme's tokens still time it.
+    const fine = rulesOf(fillOf(), null);
+    expect(valueOf(fine, 'transition-duration')[0]).toMatch(/^var\(--/);
+    expect(valueOf(fine, 'transition-timing-function')[0]).toMatch(/^var\(--/);
+  });
+
+  it('never draws narrower than two track heights above zero, and is transparent at zero', () => {
+    const {rerender} = render(<ProgressBar value={0} label="Upload" />);
+    const track = screen.getByRole('progressbar');
+    const trackHeight = Number.parseFloat(
+      valueOf(rulesOf(track, null), 'height')[0],
+    );
+    const minimum = view.minimumFillHeights * trackHeight;
+    const coarse = rulesOf(fillOf(), '(pointer: coarse)');
+    expect(valueOf(coarse, 'transform').join(' ')).toContain(
+      `max(var(--_progress-bar-fill,0%),${minimum}px)`,
+    );
+    // Mirrored in RTL: the fill stops at the same minimum from the right.
+    expect(valueOf(coarse, 'transform').join(' ')).toContain(
+      `calc(100% - ${minimum}px)`,
+    );
+    // At zero the fill is transparent under a finger (UIKit's alpha 0)…
+    expect(view.emptyFillAlpha).toBe(0);
+    expect(valueOf(rulesOf(fillOf(), '(pointer: coarse)'), 'opacity')).toEqual([
+      '0',
+    ]);
+    // …and drawn as soon as there is any progress.
+    rerender(<ProgressBar value={1} label="Upload" />);
+    expect(valueOf(rulesOf(fillOf(), '(pointer: coarse)'), 'opacity')).toEqual(
+      [],
+    );
+  });
+
+  it('keeps its pace under reduced motion, as UIKit does', () => {
+    render(<ProgressBar value={30} label="Upload" />);
+    expect(
+      rulesOf(fillOf(), '(prefers-reduced-motion: reduce)').filter(d =>
+        d.startsWith('transition'),
+      ),
+    ).toEqual([]);
   });
 });

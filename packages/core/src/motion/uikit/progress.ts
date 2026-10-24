@@ -5,9 +5,10 @@
  * @input Nothing; data only
  * @output Exports `progress`: UIActivityIndicatorView's drawing and clock
  *   (eight spokes, a 16-frame 0.8 s cycle, the alpha a spoke steps through
- *   after the bright head reaches it, the medium and large geometry)
+ *   after the bright head reaches it, the medium and large geometry) and
+ *   UIProgressView's fill (minimum width, empty alpha, animated timing)
  * @position The progress domain of the UIKit constants table (motion/uikit);
- *   read by Spinner's touch presentation
+ *   read by the touch presentations of Spinner and ProgressBar
  *
  * UIKit draws the indicator as a plain layer whose `contents` steps through
  * sixteen pre-rendered images (a discrete keyframe animation, evenly spaced,
@@ -21,12 +22,13 @@
  * Lengths are in points (CSS px), durations in ms, alphas in 0..1.
  *
  * SYNC: When modified, update /packages/core/src/Spinner/Spinner.tsx (its
- * keyframes and spoke geometry are literals, which Spinner.test.tsx checks
- * against this file).
+ * keyframes are literals, which Spinner.test.tsx checks against this file)
+ * and /packages/core/src/ProgressBar/ProgressBar.tsx (its minimum fill is a
+ * literal, which ProgressBar.test.tsx checks).
  */
 
 /**
- * UIActivityIndicatorView's values.
+ * UIActivityIndicatorView's and UIProgressView's values.
  * @experimental
  */
 export const progress = {
@@ -185,5 +187,47 @@ export const progress = {
        */
       spokeOuterRadiusPt: 17.5,
     },
+  },
+  progressView: {
+    /**
+     * The track's height in the `.default` style; the fill is as tall.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+     *   iPhone 17 Pro, intrinsic size of UIProgressView(progressViewStyle:
+     *   .default), Oct 23 2026
+     */
+    heightPt: 4,
+    /**
+     * Once progress is above zero the fill is never narrower than this many
+     * track heights (8 pt on the 4 pt track): at 0.005 of a 300 pt track it
+     * is 8 pt wide, at 0.05 it is 15.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+     *   iPhone 17 Pro, the fill image view's frame at progress 0, 0.005,
+     *   0.01, 0.05, 0.5 and 1, Oct 23 2026
+     */
+    minimumFillHeights: 2,
+    /**
+     * At progress 0 the fill is transparent (alpha 0, still at its minimum
+     * width).
+     * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+     *   iPhone 17 Pro, the fill image view's alpha at progress 0, Oct 23 2026
+     */
+    emptyFillAlpha: 0,
+    /**
+     * setProgress(_:animated: true) runs for this long per whole unit of
+     * progress it moves, measured on the model values (0.2 → 0.8 takes
+     * 0.6 s), starting from wherever the fill is drawn when it is retargeted.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+     *   iPhone 17 Pro, UIView animation on the fill's frame (duration,
+     *   beginFromCurrentState) for jumps of 0.6, 0.4 and 0.6, Oct 23 2026
+     */
+    animatedMsPerProgress: 1000,
+    /**
+     * That animation's curve is linear, and Reduce Motion leaves it
+     * unchanged.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+     *   iPhone 17 Pro, the fill's position animation (timing function
+     *   linear), with Reduce Motion off and on, Oct 23 2026
+     */
+    animatedCurveIsLinear: true,
   },
 } as const;
