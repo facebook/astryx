@@ -2,7 +2,8 @@
 
 /**
  * @file scrollbarGutter.ts
- * @input The element a scroll lock pins, plus live layout measurements
+ * @input The element whose width a scroll lock holds, plus live layout
+ *   measurements
  * @output Exports holdScrollbarGutter and the ScrollbarGutterHold it returns
  * @position Internal hook utility; used by useScrollLock and MobileNav so that
  *   locking background scroll does not resize the layout viewport.
@@ -47,8 +48,8 @@ export interface ScrollbarGutterHold {
  * ScrollbarGutterHold.release} on unlock:
  *
  * ```
- * const hold = holdScrollbarGutter(document.body);
- * body.style.position = 'fixed';
+ * const hold = holdScrollbarGutter(document.documentElement);
+ * document.documentElement.style.overflow = 'hidden';
  * hold.settle();
  * ```
  *
