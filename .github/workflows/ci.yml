@@ -1647,6 +1647,16 @@ jobs:
             --project chromium \
             --output reorder-grip-pinch-zoom-output
 
+      # SelectableCard's radio input: cards sharing a name form a native radio
+      # group (one tab stop, arrow keys move and select, wrapping). jsdom has
+      # no native radio-group keyboard, so only a real engine shows it.
+      - name: Run SelectableCard radio-group contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/SelectableCard/__tests__/SelectableCardRadio.a11y.chromium.spec.ts \
+            --project chromium \
+            --output selectable-card-radio-output
+
       # Table merges a consumer min-width with its column floors through CSS
       # max(). jsdom keeps any string, so only a real engine shows whether the
       # emitted declaration parses; an invalid one drops the floors entirely.
