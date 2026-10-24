@@ -36,21 +36,24 @@ import {registerMotionTable} from '../roles';
 
 export const toast = {
   /**
-   * Finger travel toward the edge, since touch-down, before the banner starts
-   * to move with it. The pan itself begins earlier (UIKit's pan hysteresis,
+   * Finger travel since touch-down, toward the edge or back away from it,
+   * before the banner starts to move with it. The pan itself begins earlier (UIKit's pan hysteresis,
    * `UIKIT_GESTURES.pan.hysteresis`), so a quick flick shorter than this
    * still counts; the travel before it never moves the banner, so it does
    * not jump when it starts to follow.
    * @source measured: SpringBoard notification banner, iOS 26.2 simulator,
    *   60 fps recordings of HID drags, banner y per frame against the touch
-   *   stream: slow drags of 20 to 60 pt move it 0.55 × (travel − 14), with
+   *   stream: slow drags of 20 to 70 pt, up or down, move it 0.55 ×
+   *   (travel − 14), with
    *   the display's 1 to 3 frames of lag corrected (17 pt uncorrected), Oct
    *   23 2026
    */
   followFrom: 14,
   /**
-   * How far the banner moves per pixel the finger travels toward the edge
-   * past `followFrom`.
+   * How far the banner moves per pixel the finger travels past `followFrom`,
+   * toward the edge or away from it (away, the banner stretches and springs
+   * back; past ~75 pt it would open its expanded view, which a toast does
+   * not have).
    * @source measured: SpringBoard notification banner, iOS 26.2 simulator,
    *   60 fps recordings of HID drags up to 60 pt toward the edge and 70 pt
    *   away from it, linear (a rubber band fits worse), Oct 23 2026

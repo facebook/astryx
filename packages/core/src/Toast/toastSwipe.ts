@@ -17,12 +17,18 @@
 import {toast} from '../motion/uikit/toast';
 
 /**
- * Where the card sits for a finger that travelled `fingerTravel` toward the
- * edge since touch-down: still until `toast.followFrom`, then at
- * `toast.followRatio` of the finger.
+ * Where the card sits for a finger that travelled `fingerTravel` since
+ * touch-down (positive toward the edge, negative away from it): still until
+ * `toast.followFrom`, then at `toast.followRatio` of the finger, either way.
+ * Away from the edge the card only stretches: a release there always springs
+ * it back (`isDismissRelease`).
  */
 export function followOffset(fingerTravel: number): number {
-  return toast.followRatio * Math.max(0, fingerTravel - toast.followFrom);
+  const past = Math.abs(fingerTravel) - toast.followFrom;
+  if (past <= 0) {
+    return 0;
+  }
+  return Math.sign(fingerTravel) * toast.followRatio * past;
 }
 
 /**

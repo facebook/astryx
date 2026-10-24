@@ -25,7 +25,9 @@
  *   began, a second finger is ignored;
  * - the card stays still for the first `toast.followFrom` px of finger
  *   travel, then follows at `toast.followRatio` of the finger, writing only
- *   its translation (no render, no layout read);
+ *   its translation (no render, no layout read). A drag that turns back away
+ *   from the edge after the swipe took the touch stretches the card that way
+ *   too, as the banner does, and its release always springs it back;
  * - on release, the card dismisses if it is `toast.dismissOffset` out or
  *   the finger was moving toward the edge at `toast.flickVelocity`
  *   (`isDismissRelease`). A dismissal calls `onSwipeExit`, then `dismiss`:

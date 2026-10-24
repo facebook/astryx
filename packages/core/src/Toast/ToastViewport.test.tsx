@@ -1233,6 +1233,37 @@ describe('Toast swipe dismissal', () => {
     });
   });
 
+  it('stretches the card after a drag that turns back away from the edge, then springs it back', () => {
+    // A top toast: the finger goes 6 px up (the swipe takes the touch), then
+    // 74 px back down. The page never gets the moves; the card follows down at
+    // 0.55 of the finger past 14 px, and its release springs it back.
+    const {visualToast, onHide} = renderSwipeToast(SWIPE_TOAST, 'topEnd');
+    const start = strokeStart();
+    const moves: Event[] = [];
+    act(() => {
+      visualToast.dispatchEvent(touchAt('touchstart', 35, start, 100));
+      for (const [time, y] of [
+        [40, 97],
+        [80, 94],
+        [180, 110],
+        [280, 130],
+        [380, 150],
+        [480, 174],
+      ] as const) {
+        const move = touchAt('touchmove', 35, start + time, y);
+        moves.push(move);
+        visualToast.dispatchEvent(move);
+      }
+    });
+    expect(moves.slice(1).every(move => move.defaultPrevented)).toBe(true);
+    expect(cardY(visualToast)).toBeCloseTo(0.55 * (74 - 14), 5);
+    act(() => {
+      visualToast.dispatchEvent(touchAt('touchend', 35, start + 900, 174));
+    });
+    expect(onHide).not.toHaveBeenCalled();
+    expect(cardY(visualToast)).toBe(0);
+  });
+
   it('snaps a slow 20 px drag back', () => {
     const {visualToast, onHide} = renderSwipeToast();
     act(() => {
