@@ -53,6 +53,9 @@ function Rows({title}: {title: string}) {
       {rows.length === 0 ? (
         <ListItem label={`${title} has nothing deeper.`} />
       ) : null}
+      {rows.length === 0 ? (
+        <ListItem label="Done" onClick={() => nav.popToRoot()} />
+      ) : null}
     </List>
   );
 }
@@ -86,7 +89,10 @@ export const Settings: Story = {
   render: () => <SettingsStack />,
 };
 
-/** Opens two levels deep, so the back swipe has somewhere to go. */
+/**
+ * Opens two levels deep, so the back swipe has somewhere to go; Done on the
+ * top screen pops back to the root in one transition.
+ */
 function DeepStack() {
   const [path, setPath] = useState<string[]>(['General', 'About']);
   return (
