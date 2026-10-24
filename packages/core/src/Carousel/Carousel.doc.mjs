@@ -6,13 +6,14 @@ export const docs = {
   name: 'Carousel',
   displayName: 'Carousel',
   category: 'Container',
-  keywords: ['carousel', 'slider', 'scroll', 'gallery', 'filmstrip', 'swiper', 'horizontal', 'overflow', 'snap'],
+  keywords: ['carousel', 'slider', 'scroll', 'gallery', 'filmstrip', 'swiper', 'horizontal', 'overflow', 'snap', 'paging', 'pager', 'pages'],
   usage: {
     description:
       'Carousel scrolls a row of items horizontally when they overflow the available width. Use it for card grids, image galleries, product lists, or any set of items that should be browsable without taking up the full page.',
     bestPractices: [
       {guidance: true, description: 'Enable scroll-snap when each item should land precisely at the start edge, like a gallery or product list.'},
       {guidance: true, description: 'Reach for hasLoop on small, cyclable sets like a photo gallery, where wrapping past the last item back to the first feels natural.'},
+      {guidance: true, description: 'Use hasPaging when each item is a full page, like onboarding screens or a photo strip: one page moves per swipe, flick, arrow key or button, and under a finger on iOS the pages follow the finger and settle like an iOS paging view.'},
       {guidance: true, description: 'Always provide an aria-label that describes what the carousel contains, like "Featured products" or "Team members".'},
       {guidance: true, description: 'Carousel implements the WAI-ARIA APG carousel pattern (https://www.w3.org/WAI/ARIA/apg/patterns/carousel/) without auto-rotation: the region is labelled and carries aria-roledescription="carousel", each item is a group named "Slide N of M", and the scroll container is a tab stop so keyboard users can pan it with the arrow keys.'},
       {guidance: true, description: 'Use a consistent gap and item width so the carousel looks intentional, not like content overflowing by accident.'},
@@ -35,6 +36,7 @@ export const docs = {
     {name: 'hasEdgeFade', type: 'boolean', description: 'Show a gradient edge-fade mask when content overflows, signalling that more items exist off-screen.', default: 'true'},
     {name: 'hasLoop', type: 'boolean', description: 'Wrap-around scrolling: next at the end scrolls to the start, prev at the start scrolls to the end. Buttons stay visible at both edges. Only engages when content overflows.', default: 'false'},
     {name: 'hasSnap', type: 'boolean', description: 'Enable scroll-snap so each child snaps to the start edge.', default: 'false'},
+    {name: 'hasPaging', type: 'boolean', description: 'Show one child at a time: each child fills the width and a swipe, flick, arrow key or button moves exactly one page. Under a finger on iOS the pages follow the finger and settle like an iOS paging scroll view (with hasLoop, past the last page comes the first); elsewhere (a mouse, a trackpad, a finger on Android) the carousel snaps natively one page at a time. hasSnap, hasEdgeFade and padding do not apply.', default: 'false'},
     {name: 'padding', type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10', description: 'Inline padding inside the scroll container, with matching scroll-padding so snap points align to the content edge.'},
     {name: 'aria-label', type: 'string', description: 'Accessible label for the carousel region.', default: "\'Carousel\'"},
     {name: 'ref', type: 'React.Ref<HTMLDivElement>', description: 'Ref forwarded to the root element.'},
@@ -56,7 +58,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-carousel'},
-      {className: 'astryx-carousel-scroller', visualProps: ['gap', 'padding', 'snap', 'edgeFade']},
+      {className: 'astryx-carousel-scroller', visualProps: ['gap', 'padding', 'snap', 'paging', 'edgeFade']},
     ],
   },
 };
@@ -69,6 +71,7 @@ export const docsZh = {
     bestPractices: [
       {guidance: true, description: '当每个项目应精确对齐到起始边缘时启用滚动吸附，例如画廊或产品列表。'},
       {guidance: true, description: '在小型可循环的集合（如照片画廊）上使用 hasLoop，此时从最后一项绕回第一项的滚动更自然。'},
+      {guidance: true, description: '当每个项目是一整页（如引导页或照片条）时使用 hasPaging：每次滑动、轻扫、方向键或按钮只移动一页；在 iOS 上用手指操作时，页面跟随手指移动并像 iOS 分页视图一样停靠。'},
       {guidance: true, description: '始终提供描述轮播内容的 aria-label，例如"精选产品"或"团队成员"。'},
       {guidance: true, description: 'Carousel 实现不含自动轮播的 WAI-ARIA APG carousel 模式（https://www.w3.org/WAI/ARIA/apg/patterns/carousel/）：区域带有标签和 aria-roledescription="carousel"，每个项目是名为“第 N 张，共 M 张”的 group，滚动容器可获得焦点，键盘用户可用方向键平移。'},
       {guidance: true, description: '使用一致的间距和项目宽度，让轮播看起来是有意为之，而不是内容意外溢出。'},
@@ -85,6 +88,7 @@ export const docsZh = {
     hasEdgeFade: '内容溢出时显示渐变边缘遮罩，提示屏幕外还有更多项目。',
     hasLoop: '环绕滚动：在末尾按"下一个"回到开头，在开头按"上一个"跳到末尾。按钮在两端始终可见。仅在内容溢出时生效。',
     hasSnap: '启用滚动吸附，使每个子元素吸附到起始边缘。',
+    hasPaging: '一次显示一个子元素：每个子元素占满宽度，滑动、轻扫、方向键或按钮每次只移动一页。在 iOS 上用手指操作时，页面跟随手指并像 iOS 分页滚动视图一样停靠（配合 hasLoop，最后一页之后是第一页）；其他情况（鼠标、触控板、Android 上的手指）每次原生吸附一页。hasSnap、hasEdgeFade 和 padding 不适用。',
     padding: '滚动容器内的内联内边距，并设置匹配的 scroll-padding，使吸附点与内容边缘对齐。',
     'aria-label': '轮播区域的无障碍标签。',
     handleRef: '命令式句柄，暴露 scrollNext()、scrollPrev()、scrollTo(index)、canScrollNext() 和 canScrollPrev() 以进行编程式滚动控制。',
@@ -100,6 +104,7 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Enable scroll-snap when each item should land precisely at the start edge: gallery, product list.'},
       {guidance: true, description: 'Reach for hasLoop on small cyclable sets (photo gallery) where wrapping past the last item back to the first feels natural.'},
+      {guidance: true, description: 'hasPaging for full-page items (onboarding, photo strip): one page per swipe/flick/key/button; iOS touch pages settle like iOS paging.'},
       {guidance: true, description: 'Always provide an aria-label describing what the carousel contains: "Featured products", "Team members".'},
       {guidance: true, description: 'Use consistent gap + item width so the carousel looks intentional, not like content overflowing by accident.'},
       {guidance: true, description: 'Trust built-in navigation: trackpad users swipe horizontally, mouse users hold Shift + wheel to move through items.'},
@@ -115,6 +120,7 @@ export const docsDense = {
     hasEdgeFade: 'gradient edge-fade mask on overflow',
     hasLoop: 'wrap-around: next at end -> start, prev at start -> end; buttons stay visible; only when overflowing',
     hasSnap: 'scroll-snap; children snap to start edge',
+    hasPaging: 'one full-width page at a time; iOS touch: iOS paging physics (hasLoop wraps forward); else (pointer, Android): native snap per page; hasSnap/hasEdgeFade/padding n/a',
     padding: 'inline padding; scroll-padding keeps snap points on content edge',
     'aria-label': 'accessible label for carousel region',
     handleRef: 'imperative handle: scrollNext/scrollPrev/scrollTo(index)/canScrollNext/canScrollPrev',
