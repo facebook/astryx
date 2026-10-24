@@ -174,6 +174,20 @@ export const UIKIT_GESTURES = {
       unit: 'px',
       source: `${UIKIT_LAB}: UIPanGestureRecognizer _hysteresis 10; x and y began at 10.0, a diagonal at (10.67, 10.67); translation(in:) is 0 at .began`,
     },
+    /**
+     * Travel in a one-way pan's direction from which a pan that opts in
+     * (`claimDistance: 'early'`) cancels its touch's moves before it begins,
+     * under the distance at which WebKit claims a slow drag for scrolling.
+     * Not a UIKit value: it gives an overlay's drag (a toast, a banner) on
+     * the web the outcome UIKit gives it, where a drag that starts on an
+     * overlay never reaches the content behind it.
+     */
+    earlyClaimDistance: {
+      value: 5,
+      unit: 'px',
+      source:
+        'measured: Mobile Safari 26.2, iOS 26.2 simulator, HID drags: cancelling every touchmove from 8 px keeps a scrollable page still; a one-way upward pan over a scrollable page that cancels from 4–5 px keeps the page still and its card follows the finger exactly',
+    },
   },
   swipe: {
     /** Travel along the swipe direction before a swipe is recognized. */
@@ -324,22 +338,12 @@ export const UIKIT_GESTURES = {
         "Android's VelocityTracker and Flutter's fit the last 100 ms (least squares, degree 2); UIKit itself uses currentWeight.",
       measure: 'M-G14: Not a parity value: UIKit uses the two-event filter.',
     },
-    /** For the least-squares alternative: at most this many samples. */
+    /** The tracker keeps at most this many samples (a bound on its buffer). */
     maxSamples: {
       value: 20,
       unit: 'count',
       guess: 'Android VelocityTracker and Flutter VelocityTracker keep 20.',
       measure: 'M-G15: Not a parity value: UIKit uses the two-event filter.',
-    },
-    /**
-     * For the least-squares alternative: a gap this long between samples
-     * separates two motions.
-     */
-    assumeStopped: {
-      value: 40,
-      unit: 'ms',
-      guess: 'Android VelocityTracker and Flutter VelocityTracker use 40 ms.',
-      measure: 'M-G16: Not a parity value: UIKit uses the two-event filter.',
     },
   },
   click: {

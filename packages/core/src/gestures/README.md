@@ -269,17 +269,18 @@ warning, so two writers never fight over the paint. Pass another
   adds to a finger's target at touch-down, for a target that leaves the
   document mid-gesture, is passive too unless a recognizer on that touch can
   claim while it moves.
-- **Early claim.** A one-way pan over content the browser could scroll (an
-  overlay such as a toast or a banner) cancels its touch's moves once the
-  finger has gone 5 px its way (`claimDistance`), before WebKit claims a
-  slow drag at 10–11 px; it still begins at 10 px with UIKit's translation.
-  Safari gives the page no scroll for a touch once one of its moves was
-  cancelled, so from then on the touch is the pan's: a reversal no longer
-  fails it, and it begins whichever way the finger goes. That is UIKit's
-  outcome too, where a drag that starts on an overlay never reaches the
-  content behind it. A `scrollEdge` pan (a sheet over its own content)
-  claims at its begin instead, as UIKit gives a reversed drag to the
-  content.
+- **Early claim (opt-in).** A one-way pan over content the browser could
+  scroll that opts in with `claimDistance: 'early'` (an overlay such as a
+  toast or a banner) cancels its touch's moves once the finger has gone
+  5 px its way (`UIKIT_GESTURES.pan.earlyClaimDistance`), before WebKit
+  claims a slow drag at 10–11 px; it still begins at 10 px with UIKit's
+  translation. Safari gives the page no scroll for a touch once one of its
+  moves was cancelled, so from then on the touch is the pan's: a reversal,
+  a second finger or content that could scroll no longer fails it, and it
+  begins whichever way the finger goes. That is UIKit's outcome too, where
+  a drag that starts on an overlay never reaches the content behind it. It
+  is off by default: a row's swipe or an edge pan over content leaves a
+  wobble to the scroll, as UIKit does.
   Measured in Mobile Safari (iOS 26.2): `touchmove` arrives from the first
   pixel; on a scrollable element WebKit commits to scrolling at 10 to 11 px
   (the last cancelable `touchmove` at 10 px), and cancelling every
@@ -379,12 +380,9 @@ timestamps and no real time.
   a hold before the first move, and never decays: a finger at rest sends no
   events, so a release after a pause reports the last moving value. Feed it
   one sample per event.
-- `lsq2`: least-squares quadratic fit over the last 100 ms (at most 20
-  samples), as Android's and Flutter's trackers do. Smoother; not UIKit.
-- `iosFling`: Flutter's approximation of what an iOS scroll view hands its
-  deceleration (weights 0.6 / 0.35 / 0.05 on the last three pair
-  velocities).
-- `window`: the two-point average over 100 ms that BottomSheet used.
+- `window`: the two-point average over 100 ms that BottomSheet uses on
+  main, for a path that keeps main's behavior (a release off iOS that must
+  stay byte-identical). Not UIKit.
 
 ## Haptics
 
