@@ -400,7 +400,7 @@ describe('BaseTypeahead', () => {
 
   it('runs no search from a click once disabled after a selection (spec:AST-085 FR2)', async () => {
     const user = userEvent.setup();
-    const bootstrap = vi.fn(fruitSource.bootstrap!);
+    const bootstrap = vi.fn(() => fruits.slice(0, 3));
     const field = (isDisabled: boolean) => (
       <BaseTypeahead
         searchSource={{...fruitSource, bootstrap}}
@@ -427,6 +427,34 @@ describe('BaseTypeahead', () => {
     await user.click(input);
     expect(bootstrap).toHaveBeenCalledTimes(calls);
     expect(input).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('opens no list for a search that resolves after the field became disabled (spec:AST-085 FR2)', async () => {
+    const user = userEvent.setup();
+    let resolve: (items: SearchableItem[]) => void = () => {};
+    const source: SearchSource = {
+      search: async () => new Promise(r => (resolve = r)),
+      bootstrap: () => [],
+    };
+    const onOpenChange = vi.fn();
+    const field = (isDisabled: boolean) => (
+      <BaseTypeahead
+        searchSource={source}
+        value={null}
+        onChange={() => {}}
+        onOpenChange={onOpenChange}
+        debounceMs={0}
+        isDisabled={isDisabled}
+      />
+    );
+    const {rerender} = render(field(false));
+    const input = screen.getByRole('combobox');
+    await user.type(input, 'a');
+    rerender(field(true));
+    onOpenChange.mockClear();
+    await act(async () => resolve(fruits));
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+    expect(onOpenChange).not.toHaveBeenCalledWith(true);
   });
 
   it('keeps a disabled Typeahead focusable and inert (spec:AST-085 FR1, FR2, FR6)', async () => {

@@ -1149,14 +1149,25 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   const selectedKey =
     value == null ? null : getKey(value.id, () => results.indexOf(value));
 
-  // A disabled field opens no surface (spec:AST-085 FR2), so becoming
-  // disabled closes an open list.
-  const hidePopover = popover.hide;
+  // Synchronizes pending search work and the browser's top-layer popover (the
+  // list) with isDisabled: a disabled field shows no surface (spec:AST-085
+  // FR2). Becoming disabled drops a queued or in-flight search, so its result
+  // cannot open the list, and hides an open list. It acquires nothing, and a
+  // replay only repeats no-ops.
+  const {hide: hidePopover, isOpen: isPopoverOpen} = popover;
   useEffect(() => {
-    if (isDisabled) {
+    if (!isDisabled) {
+      return;
+    }
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    searchGenRef.current++;
+    setLoading(false);
+    if (isPopoverOpen) {
       hidePopover();
     }
-  }, [isDisabled, hidePopover]);
+  }, [isDisabled, isPopoverOpen, hidePopover, setLoading]);
 
   // While disabled the input keeps only a caller's focus and blur handlers
   // (`spec:AST-085` FR2).
