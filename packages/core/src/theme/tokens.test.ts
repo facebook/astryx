@@ -116,6 +116,24 @@ describe('resolveThemeToken', () => {
   });
 });
 
+describe('the glass surface behind bar buttons', () => {
+  it('is the theme surface at 85 % in both modes and follows a theme surface', () => {
+    expect(
+      resolveThemeToken(null, '--color-background-glass', {mode: 'light'}),
+    ).toBe('rgba(255, 255, 255, 0.85)');
+    expect(
+      resolveThemeToken(null, '--color-background-glass', {mode: 'dark'}),
+    ).toBe('rgba(31, 31, 34, 0.85)');
+    const cream = defineTheme({
+      name: 'cream',
+      tokens: {'--color-background-surface': ['#FFFCF7', '#1c1610']},
+    });
+    expect(
+      resolveThemeToken(cream, '--color-background-glass', {mode: 'dark'}),
+    ).toBe('rgba(28, 22, 16, 0.85)');
+  });
+});
+
 describe('resolveThemeTokens — reference resolution', () => {
   it('resolves a token that references another token to a raw value', () => {
     const theme = defineTheme({

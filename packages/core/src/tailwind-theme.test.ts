@@ -100,3 +100,11 @@ describe('Tailwind theme bridge', () => {
     expect(css).not.toContain('background-color: var(--color-surface);');
   });
 });
+
+describe('Tailwind theme bridge: the bar button capsule', () => {
+  it('maps bg-glass to the glass surface token inline', async () => {
+    const compiler = await compile(`${bridgeCSS}\n@tailwind utilities;`);
+    const css = compiler.build(['bg-glass']);
+    expect(css).toContain('background-color: var(--color-background-glass);');
+  });
+});
