@@ -295,6 +295,9 @@ export class SliderTouchController {
         maximumNumberOfTouches: 1,
         cancelsTouchesInView: false,
         allowedPointerTypes: ['touch', 'pen'],
+        // A held finger never starts a text selection or the callout on the
+        // thumb (the gesture host's lock, restored on the lift).
+        preventsTextSelection: true,
       });
       const removeListener = pan.addListener(current =>
         this.handlePan(owner, current),
@@ -318,6 +321,8 @@ export class SliderTouchController {
       // A touch that travels as far as a thumb's pan needs to begin is a
       // swipe, not a tap (UITapGestureRecognizer would allow 45 pt).
       allowableMovement: UIKIT_GESTURES.pan.hysteresis.value,
+      // Nor does a finger held on the track start a selection.
+      preventsTextSelection: true,
     });
     this.trackTap = tap;
     const removeTapListener = tap.addListener(current => {

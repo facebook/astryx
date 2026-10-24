@@ -785,38 +785,56 @@ test('a finger landing on a coasting thumb stops it where it is', async ({
   expect(await thumb.evaluate(element => element.style.translate)).toBe('');
 });
 
-test('a finger held on a thumb selects no text: the touch control declares Safari’s prefixed user-select and callout', async ({
+test('a finger held on a thumb or on the track starts no selection: the gesture host locks it until the lift', async ({
   page,
 }) => {
-  const {thumb} = await openSlider(page, 'core-slider--touch-tracking', {
-    name: 'Brightness',
-  });
-  // Safari reads only the prefixed forms: without them a thumb held before
-  // it moves selects its row and raises the loupe (iOS 26.2 simulator).
-  // An engine drops a property it does not know from the CSSOM, so this
-  // reads the shipped rule text for the control's classes.
-  const declared = await thumb.evaluate(async element => {
-    const control = element.closest('.astryx-slider-control');
-    if (control == null) {
-      return '';
-    }
-    const classes = [...control.classList].map(name => `.${name}`);
-    const linked = [
-      ...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'),
-    ].map(async link => (await fetch(link.href)).text());
-    const texts = [
-      ...(await Promise.all(linked)),
-      ...[...document.querySelectorAll('style')].map(
-        style => style.textContent ?? '',
-      ),
-    ];
-    const rules = texts.join('\n').match(/[^{}]+\{[^{}]*\}/g) ?? [];
-    return rules
-      .filter(rule => classes.some(name => rule.trimStart().startsWith(name)))
-      .join('\n');
-  });
-  expect(declared).toMatch(/-webkit-user-select:\s*none/);
-  expect(declared).toMatch(/-webkit-touch-callout:\s*none/);
+  const {driver, thumb, center} = await openSlider(
+    page,
+    'core-slider--touch-tracking',
+    {name: 'Brightness'},
+  );
+  const hit = thumb.locator('[data-slider-hit]');
+  const control = thumb.locator(
+    'xpath=ancestor::*[contains(@class, "astryx-slider-control")][1]',
+  );
+  // The lock is inline, on the element the finger holds (Safari reads the
+  // prefixed forms; this engine keeps the standard one in the CSSOM).
+  const lockOf = async (element: Locator) =>
+    element.evaluate(node =>
+      (node as HTMLElement).style.getPropertyValue('user-select'),
+    );
+  const at = await center();
+  const [onThumb] = await playReading(
+    page,
+    driver,
+    tap(at, {holdMs: 600}),
+    [0],
+    async () => {
+      await page.waitForTimeout(300);
+      return lockOf(hit);
+    },
+  );
+  expect(onThumb).toBe('none');
+  await frames(page, 4);
+  expect(await lockOf(hit)).toBe('');
+  const box = await control.boundingBox();
+  if (box == null) {
+    throw new Error('no control');
+  }
+  const onTrack = {x: box.x + box.width * 0.9, y: box.y + box.height / 2};
+  const [held] = await playReading(
+    page,
+    driver,
+    tap(onTrack, {holdMs: 600}),
+    [0],
+    async () => {
+      await page.waitForTimeout(300);
+      return lockOf(control);
+    },
+  );
+  expect(held).toBe('none');
+  await frames(page, 4);
+  expect(await lockOf(control)).toBe('');
 });
 
 test('a finger lifted outside the tracking bounds coasts back to the lift value', async ({

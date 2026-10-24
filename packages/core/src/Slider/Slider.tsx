@@ -209,36 +209,12 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     flexGrow: 1,
-    // Under a finger on iOS only the thumbs take touches (their touch
-    // targets set their own touch-action); the track leaves the page its
-    // scrolling. The gate is the touch presentation resolver's
-    // IOS_TOUCH_STYLE_KEYS, nested as it spells them: elsewhere, Android
-    // included, the whole control takes the finger as it always has.
-    touchAction: {
-      default: 'none',
-      '@media (pointer: coarse)': {
-        default: 'none',
-        '@supports (-webkit-touch-callout: none)': 'manipulation',
-      },
-    },
+    // Under the touch presentation (iOS) the gesture host sets the touch
+    // targets' and the track's touch-action as their recognizers need it
+    // (the track's tap leaves the page its scrolling), and turns text
+    // selection and the callout off where a finger is held.
+    touchAction: 'none',
     userSelect: 'none',
-    // Safari reads only the prefixed forms: without them a finger held on a
-    // thumb starts a text selection (and its loupe) before the drag begins.
-    // A UISlider selects nothing.
-    WebkitUserSelect: {
-      default: null,
-      '@media (pointer: coarse)': {
-        default: null,
-        '@supports (-webkit-touch-callout: none)': 'none',
-      },
-    },
-    WebkitTouchCallout: {
-      default: null,
-      '@media (pointer: coarse)': {
-        default: null,
-        '@supports (-webkit-touch-callout: none)': 'none',
-      },
-    },
     isolation: 'isolate',
   },
   // Every part of the control sits in this box, which fills the control's

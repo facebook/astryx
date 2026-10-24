@@ -440,3 +440,36 @@ test('padding on the control keeps the thumb on the track, the fill and the mark
     TOLERANCE,
   );
 });
+
+// Desktop keeps the pointer model: no touch targets, the control's own
+// touch-action and user-select, and none of the touch presentation's inline
+// styles (the gesture host sets those only on iOS, while a finger is down).
+test('a desktop slider keeps its pointer styles: no touch targets, no inline touch styles', async ({
+  page,
+}) => {
+  await mount(page, 'core-slider--default', 'ltr', 'ltr');
+  const styles = await page.evaluate(() => {
+    const control = document.querySelector<HTMLElement>(
+      '.astryx-slider-control',
+    );
+    const thumb = control?.querySelector<HTMLElement>('[role="slider"]');
+    if (control == null || thumb == null) {
+      throw new Error('missing slider');
+    }
+    const computed = getComputedStyle(control);
+    return {
+      hits: control.querySelectorAll('[data-slider-hit]').length,
+      touchAction: computed.touchAction,
+      userSelect: computed.userSelect,
+      inline: [control, thumb].map(element =>
+        ['touch-action', 'user-select', '-webkit-user-select'].map(name =>
+          element.style.getPropertyValue(name),
+        ),
+      ),
+    };
+  });
+  expect(styles.hits).toBe(0);
+  expect(styles.touchAction).toBe('none');
+  expect(styles.userSelect).toBe('none');
+  expect(styles.inline.flat().filter(Boolean)).toEqual([]);
+});
