@@ -1260,11 +1260,13 @@ describe('DropdownMenuSubMenu drill-in on a phone', () => {
   // wrapper, which is what "shown" means here.
   const h = {hidden: true} as const;
   const isShown = (el: HTMLElement) => el.closest('[hidden]') == null;
+  // Each shown row by its accessible name: a drilled-in view's header shows
+  // its row's label but is named for where it goes ("Back to …").
   const visibleRows = () =>
     screen
       .getAllByRole('menuitem', h)
       .filter(isShown)
-      .map(el => el.textContent);
+      .map(el => el.getAttribute('aria-label') ?? el.textContent);
   const shownRow = (name: string) =>
     screen.getAllByRole('menuitem', {name, ...h}).find(isShown)!;
   const shownMenu = (name: string) =>
@@ -1292,6 +1294,13 @@ describe('DropdownMenuSubMenu drill-in on a phone', () => {
     const drilled = await waitFor(() => shownMenu('Move to'));
     expect(rootMenu).toContainElement(drilled);
     expect(visibleRows()).toEqual(['Back to Actions', 'Folder A', 'Archive']);
+    // UIMenu's header: the row's own label, its chevron turned down.
+    expect(shownRow('Back to Actions').textContent).toBe('Move to');
+    expect(
+      shownRow('Back to Actions').hasAttribute(
+        'data-astryx-menu-submenu-header',
+      ),
+    ).toBe(true);
     // The sibling row is still mounted (its state stays live) but hidden.
     expect(screen.getByRole('menuitem', {name: 'Rename', ...h})).not.toBe(
       undefined,
@@ -2795,7 +2804,7 @@ describe('DropdownMenuSubMenu header and footer', () => {
         labelsMenu().querySelectorAll('[role="menuitem"]'),
       )
         .filter(el => isShown(el as HTMLElement))
-        .map(el => el.textContent);
+        .map(el => el.getAttribute('aria-label') ?? el.textContent);
       expect(viewRows[0]).toBe('Back to Session');
       for (const part of [field(), labelsMenu(), create()]) {
         expect(dialog).toContainElement(part);

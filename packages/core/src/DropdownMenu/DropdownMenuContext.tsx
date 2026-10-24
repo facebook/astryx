@@ -49,9 +49,13 @@ export interface DropdownMenuDrillIn {
    * Show a sub-menu's view in place of the current rows. A view with a header
    * or footer renders into the root's surface host instead of `host`.
    */
-  push: (viewId: string) => void;
-  /** Return to the rows the shown view replaced. */
-  pop: () => void;
+  push: (viewId: string, row?: HTMLElement | null) => void;
+  /**
+   * Return to the rows the shown view replaced. `row` (on push, the row the
+   * view opens from; on pop, the row it returns to) lets the menu animate the
+   * change from that row.
+   */
+  pop: (row?: HTMLElement | null) => void;
 }
 
 export interface DropdownMenuContextValue {

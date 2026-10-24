@@ -6,7 +6,8 @@
  * @output Exports `menu`: UIMenu's touch timing (when a held finger opens a
  *   pull-down button's menu, how far it travels before it can pick a row),
  *   the shape the menu grows out of and collapses into, where it sits over
- *   its button on a phone, and its haptics
+ *   its button on a phone, its haptics, and how a sub-menu opens in place
+ *   (the box's springs, the parent list's scale and drop behind it)
  * @position The menu domain of the UIKit constants table (motion/uikit); its
  *   springs are `springs.menuOpen`, `springs.menuClose` and, under Reduce
  *   Motion, `springs.menuReducedMotion`
@@ -113,4 +114,51 @@ export const menu = {
    *   userInteractionEnded at the lift
    */
   scrubHaptic: 'selection',
+  /**
+   * A sub-menu opening in place (its row tapped on a phone): the menu's box
+   * grows to fit the sub-menu, keeping the edge the menu is anchored by, on
+   * this spring; the sub-menu's header rides from the tapped row to the top
+   * on it, and the parent list shrinks behind on it.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, per-frame frames of the menu's container view, Oct 24
+   *   2026: tapping "More" in a three-row menu moved the container's top
+   *   370 → 363.1 → 348.9 → 333.9 → 321 → 311.2 → 304.4 → 300.1 → 297.6 →
+   *   296.3 → 295.7 → 296 (33 ms steps) while its bottom stayed put and its
+   *   height went 104 → 178: a 0.35 s settle with a 0.3 pt overshoot; the
+   *   presentation springs logged in that window were (0.75, 0.35) ×26,
+   *   (1.0, 0.21) ×13, (0.8, 0.4) and (0.6, 1.0). The spring here is the
+   *   least-squares fit of a single spring to those twelve frames of the
+   *   container's top (residual 1e-4), the motion the eye sees
+   */
+  submenuOpenSpring: {dampingRatio: 0.84, response: 0.415},
+  /**
+   * Back out of a sub-menu (its header tapped): the box shrinks back on this
+   * spring, the header rides down into the parent's row and the parent list
+   * grows back to full size.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, per-frame frames of the menu's container view, Oct 24
+   *   2026: tapping the sub-menu's header moved the container's top 296 →
+   *   370 over about 0.5 s with no overshoot (296, 298.3, 310.7, 325.4,
+   *   338.1, 347.9, 355.0, 360.0, 363.4, 365.7, 367.2, 368.2, 368.8, 369.3,
+   *   369.5, 370 at 33 ms steps); the springs logged were (0.8, 0.49) ×16,
+   *   (1.0, 0.5) ×11, (0.5, 0.6) ×5, (1.0, 0.14) ×2 and (0.8, 0.4) ×2. The
+   *   spring here is the least-squares fit of a single spring to those frames
+   *   (residual 8e-5, the first frame half a frame after the tap)
+   */
+  submenuBackSpring: {dampingRatio: 1, response: 0.385},
+  /**
+   * While a sub-menu shows, the parent list stays behind it at this scale.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, settled frames, Oct 24 2026: the parent list went from
+   *   250 × 104 to 242.5 × 100.9 behind the open sub-menu, and back to
+   *   250 × 104 after the header was tapped
+   */
+  submenuParentScale: 0.97,
+  /**
+   * …and this much lower, in pt.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, settled frames, Oct 24 2026: the scaled parent list sat
+   *   3 pt below where it stood, with its tapped row at opacity 0
+   */
+  submenuParentDropPx: 3,
 } as const;

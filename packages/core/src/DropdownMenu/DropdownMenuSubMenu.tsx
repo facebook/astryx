@@ -34,10 +34,12 @@
  *
  * Drill-in (the phone presentation): the root menu keeps a view stack
  * (useMenuDrillIn) and this row pushes its view onto it; the root shows the
- * view — a Back row named "Back to <parent>", then these rows — in place of
- * its own, portalled into the root's host so the row stays mounted and its
- * rows stay live. Back, Escape and ArrowLeft pop the view and return focus to
- * the row. The list keeps this level's own roving focus, typeahead and press
+ * view — a header row named "Back to <parent>" that shows this row's label
+ * with its chevron turned down, as UIMenu's sub-menu header does, then these
+ * rows — in place of its own, portalled into the root's host so the row stays
+ * mounted and its rows stay live. Back, Escape and ArrowLeft pop the view and
+ * return focus to the row. Under a finger the root animates each push and
+ * pop as UIMenu does (menuDrillInMotion.ts). The list keeps this level's own roving focus, typeahead and press
  * model, so nothing beside the row needs to know.
  *
  * Prior art: legacy internal XDS `XDSDropdownSubMenuItem` (APG menubar-
@@ -244,6 +246,14 @@ const flyoutStyles = stylex.create({
   popoverCustomIntrinsicWidth: (width: string) => ({
     inlineSize: width,
   }),
+});
+
+// A drilled-in view's header turns the row's chevron to point down, as
+// UIMenu's sub-menu header does.
+const headerStyles = stylex.create({
+  chevronDown: {
+    rotate: '90deg',
+  },
 });
 
 // The drilled-in list shows in place of the parent rows, inside the parent's
@@ -717,7 +727,7 @@ export function DropdownMenuSubMenu(
         pendingViewFocusRef.current = options?.focusFirst
           ? 'first'
           : 'container';
-        activeDrillIn.push(viewId);
+        activeDrillIn.push(viewId, triggerRef.current);
         onOpenChange?.(true);
         return;
       }
@@ -739,7 +749,7 @@ export function DropdownMenuSubMenu(
       if (activeDrillIn != null) {
         if (isOnStack) {
           pendingTriggerFocusRef.current = options?.focusTrigger !== false;
-          activeDrillIn.pop();
+          activeDrillIn.pop(triggerRef.current);
           onOpenChange?.(false);
         }
         return;
@@ -1071,16 +1081,26 @@ export function DropdownMenuSubMenu(
     <DropdownMenuContext value={nestedMenuContext}>
       <DropdownMenuSurfaceContext value={rootSurface}>
         {isDrillIn && (
+          // UIMenu's sub-menu header: the row's own label with its chevron
+          // turned to point down, which takes the sub-menu back. Its name
+          // says where it goes.
           <DropdownMenuItem
-            icon={
-              <Icon
-                icon="chevronLeft"
-                size="sm"
-                color="secondary"
-                xstyle={rtlStyles.mirror}
-              />
+            label={stringLabel ?? backLabel}
+            aria-label={backLabel}
+            endContent={
+              // Down is down in either direction: no mirroring here.
+              <span {...stylex.props(triggerStyles.caret)}>
+                <Icon
+                  icon="chevronRight"
+                  size="sm"
+                  color="secondary"
+                  xstyle={headerStyles.chevronDown}
+                  data-astryx-menu-submenu-chevron=""
+                  {...themeProps('dropdown-menu-indicator-icon')}
+                />
+              </span>
             }
-            label={backLabel}
+            data-astryx-menu-submenu-header=""
             hasCloseOnSelect={false}
             onClick={() => close({focusTrigger: true})}
           />

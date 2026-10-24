@@ -6,7 +6,8 @@
  * @file useMenuDrillIn.tsx
  * @input React, StyleX, the shared SSR-safe media-query check
  * @output Exports useMenuDrillIn — the view stack a menu root keeps so its
- *   sub-menus can drill in — and the coarse-pointer query.
+ *   sub-menus can drill in, with an optional transition played around each
+ *   push and pop (MenuDrillInTransition) — and the coarse-pointer query.
  * @position Internal; mounted by DropdownMenu and ContextMenu, read by
  *   DropdownMenuSubMenu through DropdownMenuContext.
  *
@@ -20,7 +21,15 @@
  * when it opens, so a menu never changes shape under a pointer.
  */
 
-import {useCallback, useMemo, useState, type ReactNode} from 'react';
+import {
+  useCallback,
+  useMemo,
+  useState,
+  type ReactNode,
+  useEffect,
+  useRef,
+} from 'react';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
 import type {DropdownMenuDrillIn} from './DropdownMenuContext';
 import {COMPACT_TOUCH_PRESENTATION_QUERY} from '../hooks/useAdaptivePresentation';
@@ -51,6 +60,17 @@ const styles = stylex.create({
   },
 });
 
+/**
+ * What animates a view's change (menuDrillInMotion.ts): `capture` reads the
+ * layout before the stack changes, `play` runs once the new view shows, and
+ * `reset` drops everything when the menu closes.
+ */
+export interface MenuDrillInTransition {
+  capture(kind: 'push' | 'pop', row: HTMLElement | null): void;
+  play(): void;
+  reset(): void;
+}
+
 export interface UseMenuDrillInReturn {
   /** The context value for `DropdownMenuContext.drillIn`. */
   drillIn: DropdownMenuDrillIn;
@@ -68,8 +88,13 @@ export interface UseMenuDrillInReturn {
  *
  * @param isOpen - whether the menu is open; the pointer kind is sampled when it
  *   opens and the stack empties when it closes.
+ * @param transition - animates each push and pop (UIMenu's in-place
+ *   sub-menu); optional.
  */
-export function useMenuDrillIn(isOpen: boolean): UseMenuDrillInReturn {
+export function useMenuDrillIn(
+  isOpen: boolean,
+  transition?: MenuDrillInTransition | null,
+): UseMenuDrillInReturn {
   const [isCompactTouch, setIsCompactTouch] = useState(false);
   const [viewStack, setViewStack] = useState<ReadonlyArray<string>>([]);
   const [host, setHost] = useState<HTMLElement | null>(null);
@@ -86,13 +111,36 @@ export function useMenuDrillIn(isOpen: boolean): UseMenuDrillInReturn {
       setViewStack([]);
     }
   }
+  const transitionRef = useRef(transition);
+  transitionRef.current = transition;
+  // A closed menu keeps nothing of a view's motion.
+  useEffect(() => {
+    if (!isOpen) {
+      transitionRef.current?.reset();
+    }
+  }, [isOpen]);
+  // The new view shows: play from the layout captured before the change.
+  useIsomorphicLayoutEffect(() => {
+    transitionRef.current?.play();
+  }, [viewStack]);
 
-  const push = useCallback((viewId: string) => {
+  const viewStackRef = useRef(viewStack);
+  viewStackRef.current = viewStack;
+  const push = useCallback((viewId: string, row?: HTMLElement | null) => {
+    if (viewStackRef.current.includes(viewId)) {
+      return;
+    }
+    // Read the layout as it stands, before the view replaces it.
+    transitionRef.current?.capture('push', row ?? null);
     setViewStack(stack =>
       stack.includes(viewId) ? stack : [...stack, viewId],
     );
   }, []);
-  const pop = useCallback(() => {
+  const pop = useCallback((row?: HTMLElement | null) => {
+    if (viewStackRef.current.length === 0) {
+      return;
+    }
+    transitionRef.current?.capture('pop', row ?? null);
     setViewStack(stack => (stack.length === 0 ? stack : stack.slice(0, -1)));
   }, []);
 

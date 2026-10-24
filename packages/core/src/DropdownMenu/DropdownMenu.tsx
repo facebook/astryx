@@ -107,6 +107,7 @@ import {
   createMenuSurfaceMotion,
   type MenuSurfaceMotion,
 } from './menuSurfaceMotion';
+import {createMenuDrillInMotion} from './menuDrillInMotion';
 // Loaded on demand: only the bottom-sheet presentation renders the sheet.
 import {
   MenuBottomSheet,
@@ -1731,7 +1732,31 @@ function DropdownMenuPopover({
     : styles.popoverMatchTrigger;
 
   // The drill-in view stack for sub-menus on a phone.
-  const {drillIn, wrapContent} = useMenuDrillIn(isOpen);
+  // UIMenu's in-place sub-menu: the box grows to the drilled-in view, the
+  // parent stays behind as a card, and back reverses it (touch only; the
+  // drill-in itself happens only on a compact touch display).
+  const [drillInMotion] = useState(() =>
+    createMenuDrillInMotion(() => ({
+      surface: contentRef.current,
+      list: listRef.current,
+    })),
+  );
+  useEffect(() => () => drillInMotion.dispose(), [drillInMotion]);
+  // Only a touch presentation plays it; a drill-in under a mouse (an explicit
+  // `presentation="drill-in"`) swaps the view as before.
+  const drillInTransition = useMemo(
+    () => ({
+      capture: (kind: 'push' | 'pop', row: HTMLElement | null) => {
+        if (isTouchPresentationRef.current) {
+          drillInMotion.capture(kind, row);
+        }
+      },
+      play: () => drillInMotion.play(),
+      reset: () => drillInMotion.reset(),
+    }),
+    [drillInMotion],
+  );
+  const {drillIn, wrapContent} = useMenuDrillIn(isOpen, drillInTransition);
   // The surface host is owned through a ref. State keeps only a key that
   // changes whenever a host element attaches, the host included when it
   // moves (a header or footer coming or going), so sub-menus re-render into
