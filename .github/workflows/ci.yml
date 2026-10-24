@@ -1576,6 +1576,17 @@ jobs:
             --project chromium \
             --output table-min-width-output
 
+      # A row the pointer lights in a menu (a resting mouse, a held press
+      # dragged over it) takes focus without matching :focus-visible, and a key
+      # pressed afterwards moves focus with it; jsdom has no focus-visible
+      # heuristic, so only a real engine shows it.
+      - name: Run menu hover focus contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/DropdownMenu/__tests__/MenuHoverFocus.a11y.chromium.spec.ts \
+            --project chromium \
+            --output menu-hover-focus-output
+
       # A CodeBlock diff row's tint has to follow a long line to the end of its
       # scroll width; jsdom has no layout, so only a real engine shows whether
       # the paint stops at the viewport edge when the reader scrolls.
