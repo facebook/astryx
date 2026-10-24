@@ -38,9 +38,10 @@ struct Pixels {
     bytes = data
   }
 
-  /// The pixel at `x`, `y` from the top left, as RGBA components.
+  /// The pixel at `x`, `y` from the top left, as RGBA components. A bitmap
+  /// context stores its top row first.
   func at(_ x: Int, _ y: Int) -> [Int] {
-    let i = ((height - 1 - y) * width + x) * 4
+    let i = (y * width + x) * 4
     return (0..<4).map { Int(bytes[i + $0]) }
   }
 
