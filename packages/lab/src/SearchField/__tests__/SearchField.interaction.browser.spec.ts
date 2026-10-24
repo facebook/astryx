@@ -12,15 +12,17 @@
  *   cancels on the same clock, sliding out at full opacity; a cancel
  *   mid-activation turns around from where the parts are; the activation
  *   keeps advancing every frame through a blocked main thread and does no
- *   Layout or Paint; Reduce Motion keeps the travel; right to left it
- *   narrows from the left; under a mouse every part takes its place at once;
+ *   Layout or Paint; right to left it narrows from the left; under a mouse
+ *   every part takes its place at once;
  *   a theme's search.activationMs role times the activation; in the Lifted
  *   story the results rise with the field and the title fades as UIKit's
  *   does (the story stands in for the navigation bar); all of that in
  *   the iOS idiom (emulated: `CSS.supports` and the `@supports` rules answer
  *   `-webkit-touch-callout`, as only WebKit on iOS does), where the close
- *   button is glass; outside it (an Android finger, Reduce Motion or not)
- *   every part takes its place at once and the close button is plain;
+ *   button is glass; outside it (an Android finger) every part takes its
+ *   place at once and the close button is plain; under reduced motion
+ *   (`design:reduced-motion`) a touch screen, iOS or Android, only
+ *   cross-fades (no part moves or scales) and a mouse changes at once;
  *   storyboards of the activation and the cancel
  * @position Interaction proof for lab SearchField (SearchField.tsx,
  *   searchFieldModel.ts); shape copied from the harness exemplar,
@@ -719,6 +721,59 @@ test('in the iOS idiom the close button is glass', async ({page}) => {
   expect(style.shadow).not.toBe('none');
 });
 
+/**
+ * Every property the field's running animations change, and when the last
+ * opacity change settles, ms after the animations start (reduced-motion
+ * proofs).
+ */
+async function animatedProperties(page: Page) {
+  return page.evaluate(() => {
+    const root = document.querySelector('[role="search"]') as HTMLElement;
+    const SKIP = ['offset', 'computedOffset', 'easing', 'composite'];
+    const animations = root.getAnimations({subtree: true});
+    const startedAt = Math.min(
+      ...animations.map(animation => Number(animation.startTime ?? 0)),
+    );
+    const properties = new Set<string>();
+    let fadeMs = 0;
+    for (const animation of animations) {
+      const effect = animation.effect as KeyframeEffect | null;
+      if (effect == null) {
+        continue;
+      }
+      const frames = effect.getKeyframes();
+      const timing = effect.getComputedTiming();
+      const start =
+        Number(animation.startTime ?? 0) + Number(timing.delay ?? 0);
+      const duration = Number(timing.activeDuration ?? 0);
+      const timeOf = (i: number) =>
+        start + Number(frames[i].computedOffset) * duration;
+      for (const key of Object.keys(frames[0] ?? {})) {
+        if (SKIP.includes(key)) {
+          continue;
+        }
+        const values = new Set(frames.map(frame => String(frame[key])));
+        // A property held at one value does not move anything.
+        if (values.size > 1) {
+          properties.add(key);
+        }
+        if (key === 'opacity') {
+          // When the opacity reaches the value it ends on, for good.
+          const final = String(frames[frames.length - 1].opacity);
+          let settles = timeOf(0);
+          for (let i = 0; i < frames.length; i++) {
+            if (String(frames[i].opacity) !== final) {
+              settles = timeOf(Math.min(i + 1, frames.length - 1));
+            }
+          }
+          fadeMs = Math.max(fadeMs, settles - startedAt);
+        }
+      }
+    }
+    return {properties: [...properties].sort(), fadeMs};
+  });
+}
+
 test.describe(OUTSIDE_IOS, () => {
   /** Opens the field, taps it, and reads what moved and how it looks. */
   async function activate(page: Page) {
@@ -761,18 +816,24 @@ test.describe(OUTSIDE_IOS, () => {
     expect(await translateX(end(page))).toBeCloseTo(0, 1);
   });
 
-  test('with Reduce Motion as well: no animation, the close button keeps its plain fill', async ({
+  test('with Reduce Motion the parts cross-fade to their places: nothing moves or scales, and the close button keeps its plain fill', async ({
     page,
     browserName,
   }) => {
     test.skip(browserName !== 'chromium', 'Android browsers are Chromium');
     await page.emulateMedia({reducedMotion: 'reduce'});
     const state = await activate(page);
-    expect(state.animations).toBe(0);
-    expect(await translateX(end(page))).toBeCloseTo(-NARROWING, 1);
+    // design:reduced-motion DR2: a touch screen cross-fades, opacity only
+    // (from the first presented frame, as every activation starts).
+    await waitForAnimation(end(page));
+    const {properties, fadeMs} = await animatedProperties(page);
+    expect(properties).toEqual(['opacity']);
+    expect(fadeMs).toBeLessThanOrEqual(200);
     expect(state.backdrop).toBe('none');
     expect(state.shadow).toBe('none');
     expect(state.fill).not.toBe('rgba(0, 0, 0, 0)');
+    await waitForRest(end(page));
+    expect(await translateX(end(page))).toBeCloseTo(-NARROWING, 1);
   });
 });
 
@@ -806,33 +867,48 @@ test.describe('with a mouse', () => {
 });
 
 test.describe('with Reduce Motion', () => {
-  test('the field still narrows and the button still slides, with no cross-fade', async ({
+  test('on a touch screen the activation and the cancel only cross-fade: no part moves or scales', async ({
     page,
   }) => {
     await page.emulateMedia({reducedMotion: 'reduce'});
     const {driver, field} = await openField(page);
     await driver.tap(await centerOf(field));
-    await waitForAnimation(end(page), {minProgressMs: 120});
-    const midway = await page.evaluate(() => {
-      const read = (selector: string) => {
-        const element = document.querySelector(selector) as HTMLElement;
-        const style = getComputedStyle(element);
-        return {
-          x: style.translate === 'none' ? 0 : parseFloat(style.translate),
-          opacity: Number(style.opacity),
-        };
-      };
-      return {
-        end: read('[data-search-field-end]'),
-        root: read('[role="search"]'),
-      };
-    });
-    expect(midway.end.x).toBeLessThan(-1);
-    expect(midway.end.x).toBeGreaterThan(-NARROWING + 1);
-    expect(midway.root.opacity).toBe(1);
-    expect(midway.end.opacity).toBe(1);
+    await waitForAnimation(end(page));
+    // design:reduced-motion DR1 and DR2: opacity only, 200 ms or less.
+    const activation = await animatedProperties(page);
+    expect(activation.properties).toEqual(['opacity']);
+    expect(activation.fadeMs).toBeLessThanOrEqual(200);
     await waitForRest(end(page));
     expect(await translateX(end(page))).toBeCloseTo(-NARROWING, 1);
+    await waitForRest(close(page));
+    await driver.tap(await centerOf(close(page)));
+    await waitForAnimation(end(page));
+    const cancel = await animatedProperties(page);
+    expect(cancel.properties).toEqual(['opacity']);
+    expect(cancel.fadeMs).toBeLessThanOrEqual(200);
+    await waitForRest(end(page));
+    expect(Math.abs(await translateX(end(page)))).toBeLessThan(0.5);
+  });
+
+  test.describe('and a mouse', () => {
+    test.use({hasTouch: false, isMobile: false});
+
+    test('a click changes every part at once, with no animation', async ({
+      page,
+    }) => {
+      await page.emulateMedia({reducedMotion: 'reduce'});
+      await openStory(page, storybook(), 'lab-searchfield--default');
+      const field = page.getByRole('searchbox', {name: 'Search'});
+      await expect(field).toBeVisible();
+      await field.click();
+      await expect(root(page)).toHaveAttribute(
+        'data-search-field-active',
+        'true',
+      );
+      // design:reduced-motion DR3.
+      expect((await animatedProperties(page)).properties).toEqual([]);
+      expect(await translateX(end(page))).toBeCloseTo(-NARROWING, 1);
+    });
   });
 });
 

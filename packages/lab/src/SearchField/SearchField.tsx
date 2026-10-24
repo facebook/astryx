@@ -42,11 +42,12 @@
  * The close button cancels: it clears the text, ends editing (the keyboard
  * leaves) and plays the activation back to rest, the button sliding out at
  * the opacity it has, then hiding. Escape does the same. A change of mind
- * mid-flight starts from where every part is. Reduce Motion keeps the
- * travel and adds no cross-fade, as iOS does (`search.reducedMotion`).
- * Anywhere else (an Android finger, a mouse) the parts take their places at
- * once, and the close button is a plain round button instead of glass: the
- * motion and the glass are iOS's idiom.
+ * mid-flight starts from where every part is. Anywhere else (an Android
+ * finger, a mouse) the parts take their places at once, and the close button
+ * is a plain round button instead of glass: the motion and the glass are
+ * iOS's idiom. Under reduced motion it follows `design:reduced-motion`: on a
+ * touch screen, in any idiom, the parts cross-fade to their places (the
+ * animator replaces the travel with a fade); otherwise they change at once.
  *
  * Search with the keyboard's Search key (Enter) calls `onSubmit`; focus and
  * the keyboard stay, as UIKit leaves them to the app. A tap outside ends
@@ -390,9 +391,15 @@ export function SearchField({
   const closeAnimator = useAnimator();
   // UIKit's activation in the iOS idiom (WebKit on iOS or iPadOS under a
   // finger); anywhere else (an Android finger, a mouse) the parts take their
-  // places at once.
+  // places at once. Under reduced motion a touch screen takes the animated
+  // path in any idiom, and the animator turns its travel into a cross-fade
+  // (`design:reduced-motion` DR2); a fine pointer changes at once (DR3).
   const {idiom} = useTouchPresentation();
   const playsUIKit = idiom === 'ios';
+  const animates = useCallback(
+    () => playsUIKit || rootAnimator.animator.reducedMotion() === 'crossfade',
+    [playsUIKit, rootAnimator],
+  );
 
   const setValue = useCallback(
     (next: string) => {
@@ -471,8 +478,9 @@ export function SearchField({
   const isAnimating = useRef(false);
   useLayoutEffect(() => {
     const target = isActive;
-    if (settledRef.current === null || !playsUIKit) {
-      // First layout, or outside the iOS idiom: take the places at once.
+    if (settledRef.current === null || !animates()) {
+      // First layout, or outside the iOS idiom (and not a reduced-motion
+      // cross-fade on a touch screen): take the places at once.
       settledRef.current = target;
       place(poseFor(target, geometry()));
       return;
@@ -492,7 +500,8 @@ export function SearchField({
       // The clock and curve under the field's theme, read as the move starts.
       const timing = activationTiming(rootAnimator.animator.element);
       const duration = timing.seconds * remainingFraction(current, from, to);
-      const options = {reducedMotion: search.reducedMotion};
+      // Under reduced motion the animator plays its cross-fade for these.
+      const options = {};
       const handles = [
         play(
           rootAnimator.animator,
@@ -565,7 +574,7 @@ export function SearchField({
     // the field through the same path.
   }, [
     isActive,
-    playsUIKit,
+    animates,
     geometry,
     place,
     presented,
@@ -777,7 +786,7 @@ SearchField.displayName = 'SearchField';
 function play(
   animator: Animator,
   curves: Partial<Record<'x' | 'y' | 'scaleX' | 'opacity', MotionCurve>>,
-  options: {reducedMotion: 'keep' | 'crossfade' | 'instant'},
+  options: {at?: number},
 ): MotionHandle | null {
   const moving: typeof curves = {};
   for (const [key, curve] of Object.entries(curves) as [
