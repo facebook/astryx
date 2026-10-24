@@ -46,8 +46,9 @@ deciding_specs: [spec:AST-100/DEC-1]
 Astryx components behave predictably when people move between keyboard, pointer,
 touch, pen, and programmatic focus. Essential actions remain perceivable and
 reachable while their controlled state or task context is presented, and newer user
-intent remains authoritative over stale work. This record defines those shared
-interaction invariants, the shared modality state, the boundary between modality and
+intent remains authoritative over stale work, and every gesture reads the same
+release velocity. This record defines those shared interaction invariants, the
+one gesture velocity source, the shared modality state, the boundary between modality and
 component focus ownership, and the evidence required when any of them changes.
 
 It does not define focus-ring appearance, hover paint, press treatment, or new
@@ -149,10 +150,13 @@ work.
 - **INV10 — Gesture velocity has one owner.** In `@astryxdesign/core`, one
   internal velocity tracker owns a gesture's pointer samples and reports
   velocity, and its one release filter, a fixed sample window with a reset to
-  0 after a still contact, is the only lift velocity a component reads
-  (`spec:AST-100`). It is not exported. No component keeps its own sample
+  0 after a still contact, is the only lift velocity a Core component reads
+  (`spec:AST-100`). It is not exported. No Core component keeps its own sample
   buffer, velocity math, or alternative release filter; a component's flick
-  threshold compares the tracker's release velocity.
+  threshold compares the tracker's release velocity. Packages outside Core
+  cannot import the tracker; a gesture there keeps one local tracker with the
+  same release filter, window, and stillness interval, so it reports the same
+  velocity for the same motion.
 
 ## Allowed variation
 
@@ -216,8 +220,10 @@ is asked to carry a new decision.
   behavior, essential-action availability, accepted intent, supersession, pending
   lifetimes, and focus-paint ownership.
 - `architecture:react-component-runtime` owns shared lifecycle and resource
-  mechanisms. This record owns only the cross-cutting modality-path and
-  no-stale-interaction-outcome requirements.
+  mechanisms. This record owns only the cross-cutting modality-path,
+  no-stale-interaction-outcome, and gesture-velocity-source requirements.
+- The Core velocity tracker and its release filter (INV10) — the one source of
+  gesture velocity for Core components; not exported.
 
 ## Deciding specs
 
