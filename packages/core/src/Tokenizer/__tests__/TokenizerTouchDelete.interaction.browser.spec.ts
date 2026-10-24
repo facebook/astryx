@@ -9,8 +9,9 @@
  * @output Proofs that on a touch screen Tokenizer's Delete takes two presses,
  *   as UIKit's search tokens do on iOS 26.2: the first Backspace on the empty
  *   input selects the last token (the accent fill, no change reported), the
- *   second removes it, and typing keeps a selected token; a storyboard of the
- *   three states (a static row: snapshots, no motion)
+ *   second removes it, typing keeps a selected token and leaving the field
+ *   clears the selection (stills of both); a storyboard of the three states
+ *   (a static row: snapshots, no motion)
  * @position Interaction proof for Tokenizer's touch Delete (Tokenizer.tsx);
  *   shape copied from the harness exemplar,
  *   BottomSheetDetent.interaction.browser.spec.ts
@@ -77,7 +78,7 @@ test('the first Delete selects the last token and the second removes it', async 
 
 test('typing with a token selected keeps it and clears the selection', async ({
   page,
-}) => {
+}, testInfo) => {
   const input = await openField(page);
   await page.keyboard.press('Backspace');
   expect((await tokens(page))[1].selected).toBe('true');
@@ -87,6 +88,38 @@ test('typing with a token selected keeps it and clears the selection', async ({
     ['Alice Johnson', null],
     ['Charlie Brown', null],
   ]);
+  await writeEvidence(
+    'stills/tokenizer-touch-delete-typing-keeps',
+    {
+      [`${testInfo.project.name}.png`]: await page
+        .getByRole('group', {name: 'Team Members'})
+        .screenshot(),
+    },
+    testInfo,
+  );
+});
+
+test('leaving the field clears the selection and keeps the token', async ({
+  page,
+}, testInfo) => {
+  const input = await openField(page);
+  await page.keyboard.press('Backspace');
+  expect((await tokens(page))[1].selected).toBe('true');
+  await input.evaluate(element => (element as HTMLInputElement).blur());
+  await expect(input).not.toBeFocused();
+  expect((await tokens(page)).map(t => [t.label, t.selected])).toEqual([
+    ['Alice Johnson', null],
+    ['Charlie Brown', null],
+  ]);
+  await writeEvidence(
+    'stills/tokenizer-touch-delete-leaving-clears',
+    {
+      [`${testInfo.project.name}.png`]: await page
+        .getByRole('group', {name: 'Team Members'})
+        .screenshot(),
+    },
+    testInfo,
+  );
 });
 
 test(
