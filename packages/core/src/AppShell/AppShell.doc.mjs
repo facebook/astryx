@@ -160,7 +160,7 @@ export const docs = {
       name: 'height',
       type: "'fill' | 'auto' | 'adaptive'",
       description:
-        "Height behavior: 'fill' makes the shell fill the viewport (100dvh) with independent scroll containers; 'auto' lets the shell grow with content and uses sticky positioning for nav; 'adaptive' is 'fill' with a mouse or trackpad and 'auto' where the primary pointer is touch, so phones keep the browser's own page behaviors (scroll to top from the status bar, a toolbar that minimizes as you scroll). The root reports which element scrolls in `data-scroll-owner`: `content` (the main region) or `document` (the page).",
+        "Height behavior: 'fill' makes the shell fill the viewport (100dvh) with independent scroll containers; 'auto' lets the shell grow with content and uses sticky positioning for nav; 'adaptive' is 'fill' with a mouse or trackpad and 'auto' where the primary pointer is touch, so phones keep the browser's own page behaviors (scroll to top from the status bar, a toolbar that minimizes as you scroll). The root reports which element scrolls in `data-scroll-owner`: `content` (the main region) or `document` (the page). Under a finger, when the page scrolls, the pinned header paints no background of its own, as an iOS 26 bar does: once the content has moved more than 10px under it, a veil of the header's colour fades in at its top (strongest at the top, gone just below its bottom edge), and it fades out when the content comes back. A scroll the program drives (`scrollTo`, a status-bar tap) switches the veil at once instead of fading it. With a mouse the header stays opaque.",
       default: "'fill'",
     },
     {
@@ -291,7 +291,7 @@ export const docsZh = {
       name: 'height',
       type: "'fill' | 'auto' | 'adaptive'",
       description:
-        "高度行为：'fill' 使外壳填满视口（100dvh），各区域拥有独立的滚动容器；'auto' 使外壳随内容增长，导航使用 sticky 定位；'adaptive' 在使用鼠标或触控板时等同 'fill'，在主要指针为触控的设备上等同 'auto'，让手机保留浏览器自身的页面行为（点按状态栏回到顶部、滚动时工具栏收起）。根元素通过 `data-scroll-owner` 标明滚动的元素：`content`（主内容区）或 `document`（页面）。",
+        "高度行为：'fill' 使外壳填满视口（100dvh），各区域拥有独立的滚动容器；'auto' 使外壳随内容增长，导航使用 sticky 定位；'adaptive' 在使用鼠标或触控板时等同 'fill'，在主要指针为触控的设备上等同 'auto'，让手机保留浏览器自身的页面行为（点按状态栏回到顶部、滚动时工具栏收起）。根元素通过 `data-scroll-owner` 标明滚动的元素：`content`（主内容区）或 `document`（页面）。在页面滚动的触控设备上，固定的页眉不绘制自身背景，如同 iOS 26 的栏：内容移入其下方超过 10px 后，页眉顶部淡入一层与页眉同色的遮罩（顶部最浓，延伸到底边下方不远处消失），内容回到原位时淡出。使用鼠标时页眉保持不透明。",
       default: "'fill'",
     },
     {
@@ -373,7 +373,7 @@ export const docsDense = {
       'mobile nav config: false | ReactNode | config with theme-resolved sm|md|lg|xl|2xl|none breakpoint (exclusive upper edge); none is always non-mobile and ignores defaultIsMobile for the layout; with adaptive height defaultIsMobile also seeds the SSR touch assumption',
     banner: 'slot for system-wide announcements above topNav',
     height:
-      'fill=viewport 100dvh w/ independent scroll; auto=content-driven w/ sticky nav; adaptive=fill w/ mouse, auto on touch (page scroll); root data-scroll-owner=content|document',
+      'fill=viewport 100dvh w/ independent scroll; auto=content-driven w/ sticky nav; adaptive=fill w/ mouse, auto on touch (page scroll); root data-scroll-owner=content|document; iOS touch+page scroll: header has no background, iOS 26 scroll-edge veil fades in past 10px of content under it (elsewhere opaque)',
     variant:
       'nav bg style: wash=wash bg, surface=surface bg, section=dividers, elevated=wash nav w/ elevated surface content+radius',
     contentPadding:
