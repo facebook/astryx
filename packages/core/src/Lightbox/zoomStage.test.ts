@@ -33,6 +33,10 @@ import {
   maxScaleFor,
   overshootScale,
   pannedBy,
+  pinchCloseBackdropAlpha,
+  pinchCloseChromeAlpha,
+  pinchCloseExit,
+  pinchCloses,
   pinchScaleFor,
   rawForDragged,
   releaseTarget,
@@ -495,6 +499,88 @@ describe('the chrome a tap hides (Photos, iOS 26.2)', () => {
     expect(curve.velocity(0.45)).toBeCloseTo(
       (curve.at(0.45 + h) - curve.at(0.45 - h)) / (2 * h),
       3,
+    );
+  });
+});
+
+describe("Photos' pinch to close (iOS 26.2)", () => {
+  it("fades the backdrop by Photos' table, interpolated, and to 0 past it", () => {
+    for (const [scale, alpha] of zoomMedia.pinchClose.backdropAlpha) {
+      expect(pinchCloseBackdropAlpha(scale)).toBeCloseTo(alpha, 9);
+    }
+    expect(pinchCloseBackdropAlpha(1.2)).toBe(1);
+    expect(pinchCloseBackdropAlpha(0.785)).toBeCloseTo((0.81 + 0.76) / 2, 9);
+    expect(pinchCloseBackdropAlpha(0.4)).toBeCloseTo(0.005, 9);
+    expect(pinchCloseBackdropAlpha(0.3)).toBe(0);
+  });
+
+  it("fades the chrome linearly, as Photos' bar measured", () => {
+    // Measured: 0.98 → 0.89, 0.90 → 0.43, 0.85 → 0.12, 0 at 0.83.
+    expect(pinchCloseChromeAlpha(0.98)).toBeCloseTo(0.89, 1);
+    expect(pinchCloseChromeAlpha(0.9)).toBeCloseTo(0.43, 1);
+    expect(pinchCloseChromeAlpha(0.85)).toBeCloseTo(0.12, 1);
+    expect(pinchCloseChromeAlpha(0.83)).toBe(0);
+    expect(pinchCloseChromeAlpha(0.5)).toBe(0);
+    expect(pinchCloseChromeAlpha(1)).toBe(1);
+  });
+
+  // Photos' raw cases (b30g–b30n): the pinch recognizer's scale at the
+  // lift and the smallest it read. Where b30g–b30j's 60 Hz frames missed
+  // the turn of an in-then-out pinch, the smallest is the one b30m–b30n read
+  // after every touch event at the same depth (0.62069, 0.82759), or the
+  // finger scale over Photos' 0.965 start ratio (marked *).
+  const CASES: ReadonlyArray<
+    readonly [name: string, smallest: number, released: number, closes: boolean]
+  > = [
+    ['p090.still (×3)', 0.931, 0.931, true],
+    ['p090.slow', 0.931, 0.931, true],
+    ['p0901.still (×2)', 0.93207, 0.93207, true],
+    ['p0903.still (×2)', 0.93414, 0.93414, true],
+    ['p0904.still (×2)', 0.93517, 0.93517, false],
+    ['p0905.still (×2)', 0.93621, 0.93621, false],
+    ['p0907.still (×2)', 0.93828, 0.93828, false],
+    ['p0909.still (×2)', 0.94034, 0.94034, false],
+    ['p092.still', 0.9517, 0.9517, false],
+    ['p093.still', 0.9621, 0.9621, false],
+    ['p094.still', 0.9724, 0.9724, false],
+    ['p070.moving', 0.7241, 0.7241, true],
+    ['p040.still', 0.4138, 0.4138, true],
+    ['in060.out063', 0.62069, 0.6517, true],
+    ['in060 +0.048 (b30m)', 0.62069, 0.62069 + 0.04965, true],
+    ['in060 +0.049 (b30m)', 0.62069, 0.62069 + 0.05069, false],
+    ['in060.out065', 0.62069, 0.6724, false],
+    ['in060.out067', 0.62069, 0.6931, false],
+    ['in060.out070', 0.62069, 0.7241, false],
+    ['in060.out090.in0895', 0.62069, 0.9259, false],
+    ['in060.out080.in079 (slow)', 0.62069, 0.8172, false],
+    ['in080 +0.048 (b30n)', 0.82759, 0.82759 + 0.04965, true],
+    ['in080 +0.049 (b30n)', 0.82759, 0.82759 + 0.05069, false],
+    ['p080.out083', 0.82759, 0.8586, true],
+    ['p080.out085', 0.82759, 0.8793, false],
+    ['p080.out087', 0.8276, 0.9, false],
+    ['p085.out0855 *', 0.881, 0.8845, true],
+    ['p085.out086 *', 0.881, 0.8897, true],
+    ['p085.out088 (slow) *', 0.881, 0.9103, true],
+  ];
+
+  it.each(CASES)(
+    '%s: smallest %f, released %f, closes %s',
+    (_name, smallest, released, closes) => {
+      expect(pinchCloses(smallest, released)).toBe(closes);
+    },
+  );
+
+  it('with no thumbnail, goes to half the fitted size about its centre', () => {
+    const g = landscape();
+    const exit = pinchCloseExit(g);
+    expect(exit.scale).toBe(0.5);
+    expect(exit.x + (g.fit.width * exit.scale) / 2).toBeCloseTo(
+      g.fit.width / 2,
+      9,
+    );
+    expect(exit.y + (g.fit.height * exit.scale) / 2).toBeCloseTo(
+      g.fit.height / 2,
+      9,
     );
   });
 });

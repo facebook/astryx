@@ -10,7 +10,8 @@
  *   pages like Photos: a UIKit paging scroll view with Photos' 40 pt gap), and the compositor
  *   animator for Photos' drag to dismiss (the backdrop and the controls' layers fade with the drag),
  *   zoomFromSource (UIKit's zoom transition between a source, `sourceFor`, and the photo),
- *   zoomStage's chrome curves (a tap on the photo hides the controls, as Photos' chrome)
+ *   zoomStage's chrome curves (a tap on the photo hides the controls, as Photos' chrome) and
+ *   pinch-close fades (a pinch in from the fitted size closes the viewer)
  * @output Exports Lightbox component, LightboxProps, LightboxMedia
  * @position Core implementation; consumed by index.ts
  *
@@ -23,6 +24,7 @@
  * - /packages/core/src/Lightbox/__tests__/LightboxDismiss.interaction.browser.spec.ts (drag to dismiss proofs)
  * - /packages/core/src/Lightbox/__tests__/LightboxZoomTransition.interaction.browser.spec.ts (zoom transition proofs)
  * - /packages/core/src/Lightbox/__tests__/LightboxChrome.interaction.browser.spec.ts (controls hidden by a tap)
+ * - /packages/core/src/Lightbox/__tests__/LightboxPinchClose.interaction.browser.spec.ts (pinch to close)
  * - /packages/core/src/Lightbox/zoomFromSource.ts (the transition driver)
  * - /packages/core/src/Lightbox/index.ts (exports if types change)
  * - /packages/core/src/Layer/useLayerDismissal.ts (dismissal stack)
@@ -71,6 +73,8 @@ import {
   chromeFadeCurve,
   dismissBackdropAlpha,
   dismissChromeAlpha,
+  pinchCloseBackdropAlpha,
+  pinchCloseChromeAlpha,
 } from './zoomStage';
 /**
  * Media type for lightbox items.
@@ -814,6 +818,23 @@ export function Lightbox({
 
   // The stage, for callbacks that run before this render returns it.
   const stageApiRef = useRef<ZoomStage | null>(null);
+  // A dismissal in progress (a drag down or a pinch in): the backdrop, the
+  // black behind the photo when it shows, and the controls and neighbouring
+  // photos (hidden controls stay hidden).
+  const fadeForDismissal = (backdropAlpha: number, chromeAlpha: number) => {
+    fadedRef.current = true;
+    const {backdrop, chrome} = dismissFades();
+    backdrop?.set({opacity: backdropAlpha});
+    const hidden = chromeHiddenRef.current;
+    for (const animator of chrome) {
+      animator.set({
+        opacity: hidden && isChromeElement(animator.element) ? 0 : chromeAlpha,
+      });
+    }
+    if (immersiveRef.current) {
+      blackoutAnimator()?.set({opacity: backdropAlpha});
+    }
+  };
   const stage = useZoomStage({
     stageRef: isGallery ? pageMediaRef : imageWrapperRef,
     surfaceRef: isGallery ? trackRef : imageWrapperRef,
@@ -868,20 +889,17 @@ export function Lightbox({
     dismiss: {
       isEnabled: isOpen && !isVideo,
       onDrag: travel => {
-        fadedRef.current = true;
-        const {backdrop, chrome} = dismissFades();
-        const backdropAlpha = dismissBackdropAlpha(travel);
-        backdrop?.set({opacity: backdropAlpha});
-        const opacity = dismissChromeAlpha(travel);
-        const hidden = chromeHiddenRef.current;
-        for (const animator of chrome) {
-          animator.set({
-            opacity: hidden && isChromeElement(animator.element) ? 0 : opacity,
-          });
-        }
-        if (immersiveRef.current) {
-          blackoutAnimator()?.set({opacity: backdropAlpha});
-        }
+        fadeForDismissal(
+          dismissBackdropAlpha(travel),
+          dismissChromeAlpha(travel),
+        );
+      },
+      // Photos' pinch to close fades them by the pinch's scale instead.
+      onPinch: scale => {
+        fadeForDismissal(
+          pinchCloseBackdropAlpha(scale),
+          pinchCloseChromeAlpha(scale),
+        );
       },
       target: () => sourceBoxOf(sourceElementFor(index)),
       onRelease: dismisses => {

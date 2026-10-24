@@ -342,13 +342,19 @@ test('past the minimum the zoom gives way, then returns on the eased curve', asy
   const {driver, photo, state} = await openViewer(page);
   const before = await state();
   const centre = {x: 201, y: before.stage.y + before.stage.height / 2};
+  // From zoomed in, as Photos measures it: a pinch that starts at the
+  // fitted size closes the viewer instead (LightboxPinchClose spec).
+  await driver.play(doubleTap(centre));
+  await waitForRest(photo);
+  const zoomed = (await state()).scale;
+  expect(zoomed).toBeGreaterThan(2);
   let shown = 1;
   let pinchScale = 1;
   await driver.play(
     pinch({
       center: centre,
       fromDistance: 300,
-      toDistance: 100,
+      toDistance: 60,
       durationMs: 300,
       restMs: 100,
     }),
@@ -362,9 +368,11 @@ test('past the minimum the zoom gives way, then returns on the eased curve', asy
     },
   );
   // The recognizer's scale is relative to the span when the pinch began
-  // (past its 8 px hysteresis); UIKit's law maps it to the shown zoom.
-  const recognizerScale = pinchScale / (300 - 8);
-  expect(shown).toBeCloseTo(1 / (2 - recognizerScale), 2);
+  // (past its 8 px hysteresis); UIKit's law maps the zoom it asks for
+  // below the minimum to the shown zoom (Photos: 0.751 for 0.668).
+  const raw = zoomed * (pinchScale / (300 - 8));
+  expect(raw).toBeLessThan(1);
+  expect(shown).toBeCloseTo(1 / (2 - raw), 2);
   const [settle] = await waitForAnimation(photo);
   const held = await holdAnimations(page, photo);
   const duration = Math.max(...held.map(a => a.curveEndMs));
@@ -563,6 +571,23 @@ test('a zoomed flick coasts and stops at the far edge', async ({page}) => {
   const mid = {x: 201, y: before.stage.y + before.stage.height / 2};
   await driver.play(doubleTap(mid));
   await waitForAnimation(photo);
+  await waitForRest(photo);
+  // Bring the photo within 160 px of its far edge with a slow drag held
+  // still before the lift (no coast): the flick's own 120 px leave 40 for
+  // the coast, which it reaches at any release velocity the run measures. Under load, Linux WebKit delivers a
+  // flick's moves in bursts, and the release velocity (blended from the
+  // last two samples) came out as low as ~350 px/s.
+  const near = await state();
+  const toEdge =
+    near.fit.x + near.x + near.fit.width * near.scale - near.stage.width;
+  const from = {x: near.stage.width - 20, y: mid.y};
+  await driver.play(
+    drag(
+      from,
+      {x: from.x - (toEdge - 160), y: from.y},
+      {durationMs: 600, restMs: 150},
+    ),
+  );
   await waitForRest(photo);
   const zoomed = await state();
   const script = flick(mid, {

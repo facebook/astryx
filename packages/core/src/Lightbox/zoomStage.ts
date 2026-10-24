@@ -8,8 +8,9 @@
  *   place for a scale (centred where the photo is smaller than the stage,
  *   kept inside it where larger), the rubber band of a drag, the overshoot
  *   of a pinch past a limit, the transform that keeps a point under the
- *   fingers, the eased settle curves (UIScrollView's zoom animation), and
- *   the chrome's fade and the black behind the photo as a tap hides it
+ *   fingers, the eased settle curves (UIScrollView's zoom animation), the
+ *   chrome's fade and the black behind the photo as a tap hides it, and the
+ *   pinch that closes (its fades, its release rule, where it goes)
  * @position Pure math under useZoomStage (Lightbox's touch zoom); no DOM, no
  *   React
  *
@@ -541,4 +542,59 @@ export function chromeBackgroundCurve(
     fadeCurve,
     isHidden ? backgroundHideDelaySeconds : 0,
   );
+}
+
+/**
+ * The backdrop's opacity while a pinch shrinks the photo below the fitted
+ * size (Photos' measured table, interpolated; past its last point it falls
+ * at the last segment's slope to 0).
+ */
+export function pinchCloseBackdropAlpha(scale: number): number {
+  const table = zoomMedia.pinchClose.backdropAlpha;
+  if (scale >= table[0][0]) {
+    return 1;
+  }
+  for (let i = 1; i < table.length; i++) {
+    const [s0, a0] = table[i - 1];
+    const [s1, a1] = table[i];
+    if (scale >= s1) {
+      return a1 + ((a0 - a1) * (scale - s1)) / (s0 - s1);
+    }
+  }
+  const [sa, aa] = table[table.length - 2];
+  const [sb, ab] = table[table.length - 1];
+  return Math.max(0, ab - ((aa - ab) * (sb - scale)) / (sa - sb));
+}
+
+/** The chrome's opacity during the same pinch: linear in the scale. */
+export function pinchCloseChromeAlpha(scale: number): number {
+  return Math.min(
+    1,
+    Math.max(0, 1 - zoomMedia.pinchClose.chromeAlphaPerScale * (1 - scale)),
+  );
+}
+
+/**
+ * Whether a pinch below the fitted size closes the viewer when it ends:
+ * it went below `closeScale` and was not reopened by `reopenScale` from its
+ * smallest scale. Its speed does not count.
+ */
+export function pinchCloses(smallest: number, released: number): boolean {
+  const {closeScale, reopenScale} = zoomMedia.pinchClose;
+  return smallest < closeScale && released - smallest < reopenScale;
+}
+
+/**
+ * Where a pinch-closed photo goes with no thumbnail to return to: half its
+ * fitted size about the fitted box's centre, as the zoom transition's
+ * stand-in for a missing source (motion/zoomTransition.ts, a GUESS that
+ * MEASUREMENTS.md M-ZT3 tracks), fading out on the way.
+ */
+export function pinchCloseExit(geometry: ZoomGeometry): ZoomTransform {
+  const scale = 0.5;
+  return {
+    x: (geometry.fit.width * (1 - scale)) / 2,
+    y: (geometry.fit.height * (1 - scale)) / 2,
+    scale,
+  };
 }

@@ -28,7 +28,10 @@
  *
  * Recognizers on the stage, as UIScrollView arranges its own:
  * - pinch, simultaneous with the pan, so two fingers zoom and move at once
- *   and a finger left down after the pinch keeps panning;
+ *   and a finger left down after the pinch keeps panning. One that starts
+ *   at the fitted size and goes below it is Photos' pinch to close: the
+ *   photo follows the fingers without resistance and the release closes the
+ *   viewer or springs back (a pinch that starts zoomed gives way instead);
  * - pan (one or two fingers), moving a zoomed photo. As UIScrollView's, it
  *   begins only when the photo can move that way: with two fingers down, or
  *   on a zoomed photo not already at its edge on the side the drag heads to;
@@ -85,6 +88,7 @@ import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import type {AnimateOptions, Animator} from '../motion/animator';
 import {decayRestDistance} from '../motion/decay';
 import {pagingReleaseVelocity} from '../motion/paging';
+import type {SpringDescription} from '../motion/spring';
 import {paging} from '../motion/uikit/paging';
 import {zoomMedia} from '../motion/uikit/zoomMedia';
 import {useAnimator} from '../motion/useAnimator';
@@ -100,6 +104,8 @@ import {
   maxScaleFor,
   overshootScale,
   pannedBy,
+  pinchCloseExit,
+  pinchCloses,
   pinchScaleFor,
   rawForDragged,
   releaseTarget,
@@ -164,6 +170,12 @@ export interface ZoomStageDismiss {
   isEnabled: boolean;
   /** Each move of the drag: its downward travel, pt. */
   onDrag: (travel: number) => void;
+  /**
+   * Each move of a pinch that started at the fitted size, below it: the
+   * pinch's scale (1 at the fitted size). It closes the viewer as a drag
+   * does (Photos' pinch to close).
+   */
+  onPinch?: (scale: number) => void;
   /** The release: whether it dismisses (the photo leaves) or springs back. */
   onRelease: (dismisses: boolean) => void;
   /** The dismissed photo has left the stage. */
@@ -220,6 +232,16 @@ interface PinchSession {
   centroid: StagePoint;
   /** Whether the pinch has the photo past the fitted size. */
   isZoomed: boolean;
+  /**
+   * Started at the fitted size with a dismissal on: below that size the
+   * photo follows the fingers without resistance, and the release may close
+   * the viewer (Photos' pinch to close).
+   */
+  readonly closable: boolean;
+  /** The pinch's smallest scale so far (its release rule reads it). */
+  smallest: number;
+  /** Below the fitted size now: the dismissal's fades follow the pinch. */
+  fading: boolean;
 }
 
 interface PanSession {
@@ -380,6 +402,76 @@ export function useZoomStage(options: UseZoomStageOptions): ZoomStage {
     [animator, current, setZoomed],
   );
 
+  /**
+   * A dismissed photo leaves: into its thumbnail when it has one, as Photos
+   * does (the photo's width onto the cell's, centred on it, fading out as
+   * the cell's picture fades in over it), else to `exit`; then the viewer
+   * closes.
+   */
+  const leave = useCallback(
+    (
+      geometry: ZoomGeometry,
+      shown: ZoomTransform,
+      {
+        position,
+        size,
+        velocity,
+        scaleVelocity,
+        exit,
+      }: {
+        position: SpringDescription;
+        size: SpringDescription;
+        velocity: Point;
+        scaleVelocity: number;
+        exit: ZoomTransform;
+      },
+    ) => {
+      leavingRef.current = true;
+      const box = optionsRef.current.dismiss?.target?.() ?? null;
+      let to = exit;
+      let fades = exit.scale !== shown.scale;
+      if (box != null) {
+        const origin = originRef.current;
+        const scale = box.width / geometry.fit.width;
+        to = {
+          x: box.x - origin.x - geometry.fit.x,
+          y:
+            box.y -
+            origin.y -
+            geometry.fit.y +
+            (box.height - geometry.fit.height * scale) / 2,
+          scale,
+        };
+        fades = true;
+      }
+      targetRef.current = to;
+      const moved = animator.animate(
+        {x: to.x, y: to.y},
+        {spring: position, velocity: {x: velocity.x, y: velocity.y}},
+        {crossfadeAs: 'exit'},
+      );
+      // The fade comes second so that under Reduce Motion it owns the
+      // opacity: each exit fades the photo out in place, and the position's
+      // own fade would restore the opacity where the travel lands, showing
+      // the photo there until the viewer closes. The viewer closes once both
+      // have ended (the position's handle settles early when the fade takes
+      // its opacity over).
+      const faded = fades
+        ? animator.animate(
+            {scale: to.scale, opacity: 0},
+            {spring: size, velocity: {scale: scaleVelocity}},
+            {crossfadeAs: 'exit'},
+          ).finished
+        : null;
+      void Promise.all([moved.finished, faded]).then(() => {
+        if (leavingRef.current) {
+          optionsRef.current.dismiss?.onDismissed();
+        }
+      });
+    },
+    [animator],
+  );
+
   /** A zoomed pan's release: UIScrollView's coast, bouncing at the edges. */
   const coast = useCallback(
     (geometry: ZoomGeometry, velocity: Point) => {
@@ -520,6 +612,11 @@ export function useZoomStage(options: UseZoomStageOptions): ZoomStage {
           anchor,
           centroid: anchor,
           isZoomed: isZoomed(geometry, start),
+          closable:
+            optionsRef.current.dismiss?.isEnabled === true &&
+            !isZoomed(geometry, start),
+          smallest: 1,
+          fading: false,
         };
       }
       const session = pinchRef.current;
@@ -529,10 +626,20 @@ export function useZoomStage(options: UseZoomStageOptions): ZoomStage {
       }
       if (pinch.state === 'began' || pinch.state === 'changed') {
         session.centroid = toStage(pinch.focalPoint());
-        const shown = overshootScale(
-          geometry,
-          session.startPinchScale * pinch.scale,
-        );
+        session.smallest = Math.min(session.smallest, pinch.scale);
+        // Below the fitted size, a pinch that started there shrinks the
+        // photo with the fingers (Photos' pinch to close); otherwise the
+        // zoom gives way past its limits.
+        const closing = session.closable && pinch.scale < 1;
+        const shown = closing
+          ? session.start.scale * pinch.scale
+          : overshootScale(geometry, session.startPinchScale * pinch.scale);
+        // The fades follow it below the fitted size, and are put back once
+        // when it returns above.
+        if (closing || session.fading) {
+          session.fading = closing;
+          optionsRef.current.dismiss?.onPinch?.(Math.min(1, pinch.scale));
+        }
         const next = transformKeepingPoint(
           geometry,
           session.start,
@@ -551,6 +658,38 @@ export function useZoomStage(options: UseZoomStageOptions): ZoomStage {
       // Ended (a finger lifted) or cancelled (the browser took the touches).
       pinchRef.current = null;
       const shown = current();
+      // (Reopened past the fitted size, it is a zoom like any other.)
+      if (session.closable && session.smallest < 1 && pinch.scale < 1) {
+        // Photos' pinch to close: the release closes into the thumbnail, or
+        // springs back to the fitted size from rest.
+        const dismiss = optionsRef.current.dismiss;
+        const closes =
+          pinch.state === 'ended' &&
+          dismiss != null &&
+          pinchCloses(session.smallest, pinch.scale);
+        panRef.current = null;
+        dismiss?.onRelease(closes);
+        if (closes) {
+          const pan = recognizers.pan;
+          const moving = pan.state === 'began' || pan.state === 'changed';
+          leave(geometry, shown, {
+            position: zoomMedia.pinchClose.closeSpring,
+            size: zoomMedia.pinchClose.closeSpring,
+            velocity: moving ? pan.velocity() : {x: 0, y: 0},
+            scaleVelocity: pinch.velocity * session.start.scale,
+            exit: pinchCloseExit(geometry),
+          });
+          return;
+        }
+        targetRef.current = IDENTITY;
+        setZoomed(false);
+        animator.animate(
+          {x: 0, y: 0, scale: 1},
+          {spring: zoomMedia.pinchClose.returnSpring},
+          {reducedMotion: 'keep'},
+        );
+        return;
+      }
       const target = releaseTarget(geometry, shown, session.centroid);
       if (target !== shown) {
         // Past a limit: UIKit's eased return, anchored at the last centroid.
@@ -815,61 +954,15 @@ export function useZoomStage(options: UseZoomStageOptions): ZoomStage {
       dismiss?.onRelease(dismisses);
       const shown = current();
       if (dismisses) {
-        leavingRef.current = true;
-        const done = (handle: {finished: Promise<boolean>}) =>
-          void handle.finished.then(() => {
-            if (leavingRef.current) {
-              optionsRef.current.dismiss?.onDismissed();
-            }
-          });
-        const box = dismiss?.target?.() ?? null;
-        if (box != null) {
-          // Into its thumbnail, as Photos does: the photo's width onto the
-          // cell's, centred on it, on the dismissal's springs, fading out as
-          // the cell's picture fades in over it.
-          const origin = originRef.current;
-          const scale = box.width / geometry.fit.width;
-          const to = {
-            x: box.x - origin.x - geometry.fit.x,
-            y:
-              box.y -
-              origin.y -
-              geometry.fit.y +
-              (box.height - geometry.fit.height * scale) / 2,
-            scale,
-          };
-          targetRef.current = to;
-          animator.animate(
-            {scale: to.scale, opacity: 0},
-            {spring: zoomMedia.dismiss.dismissSizeSpring},
-            {crossfadeAs: 'exit'},
-          );
-          done(
-            animator.animate(
-              {x: to.x, y: to.y},
-              {
-                spring: zoomMedia.dismiss.dismissPositionSpring,
-                velocity: {x: velocity.x, y: velocity.y},
-              },
-              {crossfadeAs: 'exit'},
-            ),
-          );
-          return;
-        }
         // No thumbnail to return to: straight on down, on the dismissal's
         // position spring, from the release velocity.
-        const y = dismissExitY(geometry, shown);
-        targetRef.current = {...shown, y};
-        done(
-          animator.animate(
-            {x: shown.x, y},
-            {
-              spring: zoomMedia.dismiss.dismissPositionSpring,
-              velocity: {x: velocity.x, y: velocity.y},
-            },
-            {crossfadeAs: 'exit'},
-          ),
-        );
+        leave(geometry, shown, {
+          position: zoomMedia.dismiss.dismissPositionSpring,
+          size: zoomMedia.dismiss.dismissSizeSpring,
+          velocity,
+          scaleVelocity: 0,
+          exit: {...shown, y: dismissExitY(geometry, shown)},
+        });
         return;
       }
       targetRef.current = IDENTITY;
