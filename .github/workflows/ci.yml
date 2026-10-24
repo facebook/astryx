@@ -3124,6 +3124,39 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+      # DropdownMenuRadioItem owns one menuitemradio row: its checked state,
+      # decorative radio marker, icon, description, end content, disabled
+      # paint, and composition of caller handlers with row activation. The
+      # group owns value propagation; DropdownMenu owns keyboard navigation.
+      - name: Run DropdownMenuRadioItem audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuRadioItem:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output dropdown-menu-radio-item-a11y-report.json \
+            --components DropdownMenuRadioItem \
+            --ready-selector '[role="menu"]' \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/DropdownMenu/__tests__/DropdownMenuRadioItemAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload DropdownMenuRadioItem audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuRadioItem:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: dropdown-menu-radio-item-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            dropdown-menu-radio-item-a11y-report.json
+            dropdown-menu-radio-item-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
       # ContextMenu owns pointer and touch presentations across cursor anchoring,
       # selectable rows, sections, inline triggers, RTL, and narrow viewports.
       # Its audit lane binds the rendered matrix to the exact pull-request head.
