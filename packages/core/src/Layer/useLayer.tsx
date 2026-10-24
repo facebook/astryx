@@ -479,6 +479,69 @@ function keepAnchorClear(layer: HTMLElement, anchor: HTMLElement | null): void {
 }
 
 /**
+ * Call `onMove` when an element moves in layout without changing size or the
+ * page scrolling — a sibling above it grows, a margin changes. Nothing else
+ * reports that: ResizeObserver sees only size. The element is observed by an
+ * IntersectionObserver whose root is the viewport shrunk, through
+ * `rootMargin`, to the element's own rectangle, so any move changes the
+ * intersection ratio and fires the callback, which then re-arms on the new
+ * rectangle. Intersection callbacks run after the frame that moved the
+ * element has painted, so the caller corrects that move in the next frame.
+ * Returns the function that stops observing.
+ */
+function observeMove(element: HTMLElement, onMove: () => void): () => void {
+  const doc = element.ownerDocument;
+  if (typeof IntersectionObserver === 'undefined') {
+    return () => {};
+  }
+  let observer: IntersectionObserver | null = null;
+  const arm = (threshold: number) => {
+    observer?.disconnect();
+    observer = null;
+    const root = doc.documentElement;
+    const rect = element.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      return;
+    }
+    const top = Math.floor(rect.top);
+    const left = Math.floor(rect.left);
+    const right = Math.floor(root.clientWidth - rect.right);
+    const bottom = Math.floor(root.clientHeight - rect.bottom);
+    let isFirst = true;
+    observer = new IntersectionObserver(
+      entries => {
+        const ratio = entries[entries.length - 1]?.intersectionRatio ?? 0;
+        if (isFirst) {
+          isFirst = false;
+          // Partly outside the viewport: watch for any change from the ratio
+          // it has now. Wholly outside: nothing to keep clear of until the
+          // anchor-visibility observation brings it back.
+          if (ratio !== threshold && ratio > 0) {
+            arm(ratio);
+          }
+          return;
+        }
+        if (ratio !== threshold) {
+          onMove();
+          arm(1);
+        }
+      },
+      {
+        root: doc,
+        rootMargin: `${-top}px ${-right}px ${-bottom}px ${-left}px`,
+        threshold,
+      },
+    );
+    observer.observe(element);
+  };
+  arm(1);
+  return () => {
+    observer?.disconnect();
+    observer = null;
+  };
+}
+
+/**
  * Popover operations in flight, per document.
  *
  * The Popover API refuses to show a popover while the document is in the
@@ -1202,12 +1265,14 @@ function useLayerImplementation(
   }, [isOpen, mode, updateAnchorInView]);
 
   // A layer that keeps its anchor clear (FR4) re-reads its geometry while it
-  // is open: content that grows, an anchor that resizes, a scroll or a
-  // viewport resize can each re-settle the standard list over the anchor or
+  // is open: content that grows, an anchor that resizes or moves, a scroll or
+  // a viewport resize can each re-settle the standard list over the anchor or
   // give the layer a scroll range. ResizeObserver callbacks and scroll and
-  // resize events all run before the frame paints, so the switch is never
-  // painted late (FR8). The layer element changes when a moved render call
-  // remounts it, which changes `contextMount`.
+  // resize events run before the frame paints, so those switches are never
+  // painted late; an anchor that moves without resizing is only reported by
+  // an intersection observer, after paint, so that switch lands in the next
+  // frame (FR8). The layer element changes when a moved render call remounts
+  // it, which changes `contextMount`.
   useIsomorphicLayoutEffect(() => {
     if (!keepsAnchorClear || !isOpen || mode !== 'context') {
       return;
@@ -1238,10 +1303,12 @@ function useLayerImplementation(
       }
       observer.observe(anchor);
     }
+    const stopObservingMove = observeMove(anchor, reread);
     view.addEventListener('scroll', onScroll, {capture: true, passive: true});
     view.addEventListener('resize', reread);
     return () => {
       observer?.disconnect();
+      stopObservingMove();
       view.removeEventListener('scroll', onScroll, {capture: true});
       view.removeEventListener('resize', reread);
     };

@@ -1773,6 +1773,59 @@ describe('a layer that keeps its anchor clear (spec:AST-059 FR4)', () => {
     vi.unstubAllGlobals();
   });
 
+  it('re-reads its geometry when its trigger moves in layout without resizing', async () => {
+    const observers: {
+      callback: (entries: {intersectionRatio: number}[]) => void;
+      options: IntersectionObserverInit;
+      disconnected: boolean;
+    }[] = [];
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class {
+        record: (typeof observers)[number];
+        constructor(
+          callback: (entries: {intersectionRatio: number}[]) => void,
+          options: IntersectionObserverInit,
+        ) {
+          this.record = {callback, options, disconnected: false};
+          observers.push(this.record);
+        }
+        observe() {}
+        disconnect() {
+          this.record.disconnected = true;
+        }
+        unobserve() {}
+      },
+    );
+    const user = userEvent.setup();
+    const spy = placeBoxes(TRIGGER, rect(200, 350, 100, 200));
+    const {container, getByText} = render(<ClearHarness />);
+    await user.click(getByText('Trigger'));
+    const layerEl = container.querySelector('[popover]') as HTMLElement;
+    expect(layerEl).not.toHaveAttribute('data-astryx-clears-anchor');
+    // The move observer's root is the viewport shrunk to the trigger's rect.
+    const move = observers.find(o => o.options?.root === document);
+    expect(move?.options.threshold).toBe(1);
+    expect(move?.options.rootMargin).toBe(
+      `-300px ${-(document.documentElement.clientWidth - 500)}px ${-(document.documentElement.clientHeight - 330)}px -400px`,
+    );
+
+    // Its initial report: fully inside its own rect.
+    act(() => move?.callback([{intersectionRatio: 1}]));
+    expect(layerEl).not.toHaveAttribute('data-astryx-clears-anchor');
+
+    // The trigger moves; the standard list now settles over it.
+    spy.mockRestore();
+    placeBoxes(TRIGGER, rect(16, 350, 688, 300));
+    const before = observers.length;
+    act(() => move?.callback([{intersectionRatio: 0.4}]));
+    expect(layerEl).toHaveAttribute('data-astryx-clears-anchor');
+    // Re-armed on the new rect.
+    expect(move?.disconnected).toBe(true);
+    expect(observers.length).toBe(before + 1);
+    vi.unstubAllGlobals();
+  });
+
   it('gives a layer remounted while open by a moved render call the same treatment', async () => {
     function MovingClearHarness({unsafe}: {unsafe: boolean}) {
       const layer = useLayerInternal({
