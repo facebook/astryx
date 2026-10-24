@@ -272,10 +272,10 @@ describe('useSheetGestures', () => {
       const {hook, onDismiss} = setup({snapHeights: () => [200]});
       const t = makeTarget();
       down(hook, 0, 0, t);
-      // 1500 px/s: the finger stops at 150, but the release projects to
-      // 150 + 1500 × 0.114 = 321, nearer gone (400) than the detent (200).
-      stream(hook, t, {from: 0, to: 150, t0: 0, t1: 100});
-      up(hook, 150, 102, t);
+      // 1600 px/s: the finger stops at 160, but the release projects to
+      // 160 + 1600 × 0.1 = 320, nearer gone (400) than the detent (200).
+      stream(hook, t, {from: 0, to: 160, t0: 0, t1: 100});
+      up(hook, 160, 102, t);
       expect(onDismiss).toHaveBeenCalledTimes(1);
     });
 
@@ -334,7 +334,7 @@ describe('useSheetGestures', () => {
       down(hook, 0, 0, t);
       stream(hook, t, {from: 0, to: 60, t0: 0, t1: 20}); // 3000 px/s ...
       up(hook, 60, 400, t); // ... then 380ms of rest, then the lift
-      // Projected 60 + 3000 × 0.114 = 402: gone.
+      // Projected 60 + 3000 × 0.1 = 360, nearest gone (400).
       expect(onDismiss).toHaveBeenCalledTimes(1);
     });
 
@@ -2234,7 +2234,7 @@ describe('useSheetGestures: the release on the compositor', () => {
     down(hook, 0, 0, t);
     // 600 px/s over 100 px: today's rule projects 100 + 0.6 × 499 = 399, past
     // the dismiss line (200 + 0.4 × 200 = 280). UIKit's would land on 200
-    // (100 + 0.114 × 600 = 168).
+    // (100 + 0.1 × 600 = 160).
     stream(hook, t, {from: 0, to: 100, t0: 0, t1: 167});
     act(() =>
       hook.result.current.handleProps.onPointerUp(pointerEvent(100, 169, t)),

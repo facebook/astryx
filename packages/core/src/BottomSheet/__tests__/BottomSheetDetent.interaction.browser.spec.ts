@@ -304,9 +304,10 @@ test('a downward flick lands on the next detent, and from there dismisses', asyn
   page,
 }) => {
   const {driver, sheet, halfTop, handle} = await openSheet(page);
-  // 2000 px/s for 80 ms from the tall detent: 160 + 2000 × 0.114 = 388 px
-  // projected, nearest the half detent (UIKit sends a medium/large sheet
-  // flicked this way from large to medium).
+  // 2000 px/s for 80 ms from the tall detent: a flick, so at least to the
+  // next detent down, the half one, which its projection (160 + 2000 × 0.1
+  // = 360 px) is nearest too (UIKit sends a medium/large sheet flicked this
+  // way from large to medium).
   const fromTall = flick(handle, {
     velocity: {x: 0, y: 2000},
     durationMs: 80,
@@ -316,7 +317,7 @@ test('a downward flick lands on the next detent, and from there dismisses', asyn
   await driver.play(fromTall);
   await waitForRest(sheet);
   expect(await sheetTop(sheet)).toBeCloseTo(halfTop, 0);
-  // The same flick from the half detent projects past halfway to gone.
+  // The same flick from the half detent goes on to the next position: gone.
   await driver.play(
     flick(
       {x: handle.x, y: halfTop + 12},
