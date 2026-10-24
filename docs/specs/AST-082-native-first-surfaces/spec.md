@@ -277,7 +277,8 @@ depends only on runtimes it can maintain.
   and native never imports core outside the portable entry. Until the portable
   entry ships, a native build script may read core at build time through
   `@astryxdesign/core/theme` and `@astryxdesign/core/theme/tokens`, and read
-  core's component documentation as data, to generate native code. The
+  core's component documentation and its built-in icon names as data, to
+  generate native code and to check native coverage in native tests. The
   boundary check lists each such read by name and refuses any other, and no
   native runtime code or generated binding imports core. The portable entry
   is an entry of `@astryxdesign/core` (DEC-8). It makes `react-dom` and StyleX
@@ -461,7 +462,8 @@ Web users install nothing native, native apps load nothing web, and a core
 release never waits on a native platform. Core keeps the core and web contracts;
 `@astryxdesign/native` holds the native platform contracts, the Swift and Kotlin
 bindings, native theme configuration, and native implementations, and reads core
-only through the portable entry (FR16).
+only through the portable entry, apart from the build-time reads FR16 lists
+until that entry ships.
 
 Rejected: native types and implementations inside `@astryxdesign/core`, because
 every web consumer would carry them and core's API would grow with each platform.
