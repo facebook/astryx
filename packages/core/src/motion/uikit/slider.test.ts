@@ -110,6 +110,12 @@ function rms(errors: ReadonlyArray<number>): number {
   );
 }
 
+describe('slider under Reduce Motion', () => {
+  it('keeps no motion of its own under Reduce Motion (design:reduced-motion DR4)', () => {
+    expect(Object.keys(slider)).not.toContain('reducedMotion');
+  });
+});
+
 describe('slider on the experimental surface', () => {
   it('carries the experimental marker, as every table `uikit` re-exports does (AST-017 FR21)', () => {
     const source = fs.readFileSync(

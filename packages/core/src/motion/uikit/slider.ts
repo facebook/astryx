@@ -6,8 +6,9 @@
  * @output Exports `slider`: UISlider's thumb hit target, its tracking rule
  *   (the value follows the pan's translation over the track's length), the
  *   release coast (spring, projection rate and share), the thumb's lift and
- *   drop springs and scale, the end-of-track haptic, and the Reduce Motion
- *   rule
+ *   drop springs and scale, and the end-of-track haptic. It sets no Reduce
+ *   Motion mode of its own: the motion it times follows the animator's
+ *   Reduced Motion policy (`design:reduced-motion`)
  * @position The slider domain of the UIKit constants table (motion/uikit)
  *
  * The reference is UISlider on iOS 26.2: a white capsule thumb (37 × 24 pt,
@@ -154,14 +155,6 @@ export const slider = {
    *   on three entries at the max, one at the min, Oct 23 2026
    */
   endHaptic: 'impactMedium',
-  /**
-   * Reduce Motion: the finger drives the coast and the lift, so they keep
-   * their springs, as UIKit keeps finger-driven releases elsewhere.
-   * @source GUESS — the rule for finger-driven releases; UISlider under
-   *   Reduce Motion is not measured yet
-   * @measure M-SL12
-   */
-  reducedMotion: 'keep',
 } as const;
 
 registerMotionTable('slider', slider);
