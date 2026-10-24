@@ -113,6 +113,118 @@ async function framesFrom(page: Page, from = 0): Promise<Box[]> {
 }
 
 /**
+ * The replacement trigger in the TallContentReplacedTrigger story, once
+ * `openReplacedTrigger` has marked it.
+ */
+const TRIGGER_2 = '[data-test-replacement]';
+
+interface Frame {
+  tooltip: Box;
+  trigger: Box;
+}
+
+/**
+ * Apply `style` to the element `selector` names, then read the tooltip's and
+ * that element's boxes as each of the next eight frames painted them.
+ */
+async function moveAndSampleFrames(
+  page: Page,
+  selector: string,
+  style: Partial<
+    Record<'marginBlockStart' | 'marginBlockEnd' | 'blockSize', string>
+  >,
+): Promise<Frame[]> {
+  return page.evaluate(
+    async ({sel, tip, changes}) => {
+      const box = (el: Element) => {
+        const r = el.getBoundingClientRect();
+        return {top: r.top, bottom: r.bottom, left: r.left, right: r.right};
+      };
+      const el = document.querySelector<HTMLElement>(sel);
+      if (el == null) {
+        throw new Error(`${sel} is not in the document`);
+      }
+      Object.assign(el.style, changes);
+      const frames: {tooltip: Box; trigger: Box}[] = [];
+      // A message posted from a frame callback runs as the first task after
+      // that frame has painted, before the tasks the frame itself queued
+      // (intersection observer callbacks among them), so it reads what the
+      // frame painted.
+      const afterPaint = async () =>
+        new Promise<void>(resolve => {
+          requestAnimationFrame(() => {
+            const channel = new MessageChannel();
+            channel.port1.onmessage = () => resolve();
+            channel.port2.postMessage(null);
+          });
+        });
+      for (let i = 0; i < 8; i++) {
+        await afterPaint();
+        const t = document.querySelector(tip);
+        if (t != null) {
+          frames.push({tooltip: box(t), trigger: box(el)});
+        }
+      }
+      return frames;
+    },
+    {sel: selector, tip: TOOLTIP, changes: style},
+  );
+}
+
+/** At most the first painted frame after a move may show the overlap. */
+function expectClearFromSecondFrame(frames: Frame[]) {
+  expect(frames.length).toBe(8);
+  for (const [i, frame] of frames.entries()) {
+    if (i === 0) {
+      continue;
+    }
+    expect(
+      overlaps(frame.tooltip, frame.trigger),
+      `painted frame ${i + 1} after the move covers the trigger`,
+    ).toBe(false);
+  }
+}
+
+/**
+ * Open the TallContentReplacedTrigger story, whose trigger sits near the
+ * bottom of the viewport where the held-open tooltip fits above it, then
+ * replace the trigger with a new element in the same place. Returns the
+ * replacement's top.
+ */
+async function openReplacedTrigger(page: Page): Promise<number> {
+  await page.setViewportSize({width: 1280, height: 720});
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-tooltip--tall-content-replaced-trigger&viewMode=story`,
+  );
+  await holdMotionStill(page);
+  const first = page.getByRole('button', {name: 'Trigger 1'});
+  await expect(first).toBeVisible();
+  await expect(page.getByRole('tooltip')).toBeVisible();
+  await page.waitForTimeout(200);
+  // It opened above the first trigger, on its standard list.
+  expect(
+    await page.evaluate(sel => {
+      const el = document.querySelector(sel);
+      return el?.hasAttribute('data-astryx-clears-anchor');
+    }, TOOLTIP),
+  ).toBe(false);
+  await page.getByRole('button', {name: 'Replace the trigger'}).click();
+  const second = page.getByRole('button', {name: 'Trigger 2'});
+  await expect(second).toBeVisible();
+  await second.evaluate(el => el.setAttribute('data-test-replacement', ''));
+  await page.waitForTimeout(200);
+  const t = await second.boundingBox();
+  if (t == null) {
+    throw new Error('the replacement trigger has no layout box');
+  }
+  expect(overlaps(await rect(page, TOOLTIP), await rect(page, TRIGGER_2))).toBe(
+    false,
+  );
+  await expect(page.getByRole('tooltip')).toBeVisible();
+  return t.y;
+}
+
+/**
  * Open the TallContent story at a viewport, scroll the trigger's centre to
  * `triggerY`, rest the pointer on the trigger and wait for the tooltip.
  * Returns how many times the tooltip toggled.
@@ -451,16 +563,53 @@ test('a trigger that moves in layout while its tooltip is open, without resizing
   const scrollY = await page.evaluate(() => window.scrollY);
 
   // The same-size trigger moves up to 340px in layout. Nothing resizes or
-  // scrolls; now the tooltip fits neither above nor below it.
-  await page.evaluate(sel => {
-    (document.querySelector(sel) as HTMLElement).style.marginBlockStart =
-      '-620px';
-  }, TRIGGER);
-  await page.waitForTimeout(300);
+  // scrolls; now the tooltip fits neither above nor below it. Only an
+  // intersection observer reports that move, after the frame that shows it
+  // has painted, so at most that first painted frame may show the overlap;
+  // the frame after it must not.
+  const frames = await moveAndSampleFrames(page, TRIGGER, {
+    marginBlockStart: '-620px',
+  });
   const after = await rect(page, TRIGGER);
   expect(Math.round(after.top)).toBe(Math.round(before.top) - 310);
   expect(after.bottom - after.top).toBe(before.bottom - before.top);
   expect(await page.evaluate(() => window.scrollY)).toBe(scrollY);
+  expectClearFromSecondFrame(frames);
   await expect(page.getByRole('tooltip')).toBeVisible();
+  expect(overlaps(await rect(page, TOOLTIP), after)).toBe(false);
+});
+
+test('a held-open tooltip keeps a replaced trigger clear when the replacement moves', async ({
+  page,
+}) => {
+  const top = await openReplacedTrigger(page);
+  const frames = await moveAndSampleFrames(page, TRIGGER_2, {
+    marginBlockEnd: '310px',
+  });
+  const after = await rect(page, TRIGGER_2);
+  expect(Math.round(after.top)).toBe(Math.round(top) - 310);
+  expect(Math.round(after.bottom - after.top)).toBe(32);
+  expectClearFromSecondFrame(frames);
+  expect(overlaps(await rect(page, TOOLTIP), after)).toBe(false);
+});
+
+test('a held-open tooltip keeps a replaced trigger clear when the replacement resizes', async ({
+  page,
+}) => {
+  const top = await openReplacedTrigger(page);
+  // It grows from 32px to 342px tall, upward from its bottom edge: its top
+  // rises by 310px and the tooltip fits neither above nor below it. A ResizeObserver reports that before paint, so no frame shows the
+  // overlap.
+  const frames = await moveAndSampleFrames(page, TRIGGER_2, {
+    blockSize: '342px',
+  });
+  const after = await rect(page, TRIGGER_2);
+  expect(Math.round(after.top)).toBe(Math.round(top) - 310);
+  for (const [i, frame] of frames.entries()) {
+    expect(
+      overlaps(frame.tooltip, frame.trigger),
+      `frame ${i} covers the trigger`,
+    ).toBe(false);
+  }
   expect(overlaps(await rect(page, TOOLTIP), after)).toBe(false);
 });

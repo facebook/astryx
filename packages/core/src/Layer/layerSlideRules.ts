@@ -4,7 +4,8 @@
  * @file layerSlideRules.ts
  * @input A layer's placement and alignment
  * @output The `@position-try` rules for its slide options and their names, and
- *   the beside and fit options of a layer that must never cover its anchor
+ *   the beside and fit options of a layer that must never settle over its
+ *   anchor
  * @position Layer runtime geometry; the slide of spec:AST-059 FR4
  *
  * The slide is a position option whose area spans the whole alignment axis,
@@ -17,9 +18,9 @@
  * gutter on both alignment-axis edges, and the clearance facing the anchor
  * with the gutter on the far edge of the side it lands on.
  *
- * A layer that must never cover its anchor (spec:AST-059 FR4, Tooltip) has a
- * second fallback list, for when its settled box covers its anchor: content
- * taller than the room above and below its trigger. `beside` lands on a side
+ * A layer that must never settle over its anchor (spec:AST-059 FR4, Tooltip)
+ * has a second fallback list, for when its settled box covers its anchor:
+ * content taller than the room above and below its trigger. `beside` lands on a side
  * across the alignment axis, spanning the whole block axis, at the content's
  * own inline size, so it fits only where the layer fits without squeezing.
  * `fit` lands above or below sized to the room on that side, so overflow
@@ -191,8 +192,8 @@ function fitRule(side: 'above' | 'below', roomier: boolean): string {
 }
 
 /**
- * The fallback list of a layer that must never cover its anchor, once its
- * settled box covers it (FR4): beside the trigger on the inline end, then the
+ * The fallback list of a layer that must never settle over its anchor, once
+ * its settled box covers it (FR4): beside the trigger on the inline end, then the
  * inline start, then the preferred block side sized to its room when it is
  * the roomier side, then the opposite side sized to its room. Chromium tries
  * no more than five options, so this replaces the standard list rather than
