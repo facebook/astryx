@@ -17,6 +17,8 @@
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {createAnimator, type Animator} from '../motion/animator';
+import {cubicBezier} from '../motion/bezier';
+import {segmentedControl} from '../motion/uikit';
 import {
   SegmentedSelectionMotion,
   TITLE_SELECTOR,
@@ -86,7 +88,10 @@ function setup(selected: string) {
     now: () => clock,
     prefersReducedMotion: () => reduceMotion,
   });
-  const motion = new SegmentedSelectionMotion(animator, {now: () => clock});
+  const motion = new SegmentedSelectionMotion(animator, {
+    now: () => clock,
+    prefersReducedMotion: () => reduceMotion,
+  });
   motion.attachProxy(proxy);
   paint(segments, selected);
   motion.rememberTitles(track);
@@ -128,6 +133,13 @@ function select(ctx: ReturnType<typeof setup>, from: string, to: string): void {
 }
 
 const xOf = (value: string) => SEGMENTS[value].left - TRACK.left;
+
+/** The proxy carries this segment's surface: hidden on the segment, inline. */
+function expectHidden(segment: HTMLElement): void {
+  expect(segment.style.getPropertyValue('background-color')).toBe(
+    'transparent',
+  );
+}
 
 /** The segment paints its own surface again: nothing inline, the stylesheet's paint. */
 function expectOwnSurface(segment: HTMLElement): void {
@@ -280,17 +292,52 @@ describe('the selection slide', () => {
     expect(ctx.animator.get('x', 5000)).toBeCloseTo(xOf('table'), 6);
   });
 
-  it('Reduced Motion: no travel, the surface is at the destination in the same frame', async () => {
+  it('Reduced Motion: no travel; the surface fades and scales in at the destination on UIKit’s 0.2 s block', async () => {
     reduceMotion = true;
     const ctx = setup('grid');
     select(ctx, 'grid', 'table');
+    // At the destination from the first frame, scaled about its center.
     expect(ctx.animator.get('x')).toBe(xOf('table'));
-    // Handed back before the next frame (a microtask, not a timer).
-    await Promise.resolve();
-    await Promise.resolve();
+    expect(ctx.proxy.style.width).toBe('106px');
+    expect(ctx.proxy.style.transformOrigin).toBe('50% 50%');
+    expectHidden(ctx.segments.table);
+    const {reducedMotion} = segmentedControl;
+    const ease = cubicBezier(reducedMotion.curve);
+    for (const t of [0, 16, 50, 100, 150, 199]) {
+      const p = ease(t / reducedMotion.fadeMs);
+      expect(ctx.animator.get('opacity', clock + t)).toBeCloseTo(p, 4);
+      expect(ctx.animator.get('scaleX', clock + t)).toBeCloseTo(
+        reducedMotion.scaleFrom + (1 - reducedMotion.scaleFrom) * p,
+        4,
+      );
+      expect(ctx.animator.get('scaleY', clock + t)).toBeCloseTo(
+        ctx.animator.get('scaleX', clock + t),
+        6,
+      );
+      // No travel at any point.
+      expect(ctx.animator.get('x', clock + t)).toBe(xOf('table'));
+    }
+    await advance(1000);
     expect(ctx.motion.isSliding).toBe(false);
     expect(ctx.proxy.style.visibility).toBe('hidden');
+    expect(ctx.proxy.style.transformOrigin).toBe('');
     expectOwnSurface(ctx.segments.table);
+  });
+
+  it('Reduced Motion off again: the next change slides at full size and opacity', async () => {
+    reduceMotion = true;
+    const ctx = setup('grid');
+    select(ctx, 'grid', 'table');
+    await advance(50);
+    // Turned off mid-fade: the next change travels, opaque and unscaled.
+    reduceMotion = false;
+    ctx.motion.settle();
+    select(ctx, 'table', 'list');
+    expect(ctx.animator.get('opacity')).toBe(1);
+    expect(ctx.animator.get('scaleY')).toBe(1);
+    expect(ctx.proxy.style.transformOrigin).toBe('');
+    await advance(3000);
+    expect(ctx.animator.get('x')).toBe(xOf('list'));
   });
 });
 
@@ -394,11 +441,10 @@ describe('the title cross-fade', () => {
   });
 
   it('with no slide running, the twin is hidden again as soon as the fade ends', async () => {
-    reduceMotion = true;
     const ctx = setup('grid');
     select(ctx, 'grid', 'table');
-    await Promise.resolve();
-    await Promise.resolve();
+    // The surface handed back before the titles finish (a resize, say).
+    ctx.motion.settle();
     expect(ctx.motion.isSliding).toBe(false);
     for (const r of recorded) {
       r.finish();

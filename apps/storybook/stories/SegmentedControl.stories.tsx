@@ -378,7 +378,7 @@ export const SelectionMotion: Story = {
     docs: {
       description: {
         story:
-          'On iPhone and iPad the selection slides between segments on UIKit’s spring and the titles cross-fade, for taps, arrow keys and programmatic changes alike (the button changes the value from outside). Under Reduce Motion the selection moves without travel; other touch screens and desktops keep the color fade. Segments never change width when the selection moves.',
+          'On iPhone and iPad the selection slides between segments on UIKit’s spring and the titles cross-fade, for taps, arrow keys and programmatic changes alike (the button changes the value from outside). Under Reduce Motion the selection fades and scales in at the new segment instead; other touch screens and desktops keep the color fade. Segments never change width when the selection moves.',
       },
     },
   },

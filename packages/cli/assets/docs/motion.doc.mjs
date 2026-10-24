@@ -210,6 +210,18 @@ const calmTheme = defineTheme({
               '200ms',
             ],
             [
+              'segmentedControl.reducedMotion.curve',
+              '--motion-segmented-control-reduced-motion-curve',
+              'curve',
+              'cubic-bezier(0.25, 0.1, 0.25, 1)',
+            ],
+            [
+              'segmentedControl.reducedMotion.fadeMs',
+              '--motion-segmented-control-reduced-motion-fade-ms',
+              'duration',
+              '200ms',
+            ],
+            [
               'segmentedControl.selectionSpring',
               '--motion-segmented-control-selection-spring',
               'spring',
