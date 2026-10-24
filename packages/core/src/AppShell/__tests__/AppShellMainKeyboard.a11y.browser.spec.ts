@@ -7,7 +7,8 @@
  * @output Browser evidence that the main region of a `fill` shell is reachable
  *   from the keyboard while it scrolls overflowing content (AST-025 FR12): Tab
  *   reaches it when nothing inside is focusable and Page Down then scrolls it;
- *   Tab entry moves on to its first link when there is one; a main region
+ *   Tab entry moves on to its first link when there is one; keyboard focus
+ *   draws the focus ring inset and pointer focus draws none; a main region
  *   that fits stays out of the tab order.
  * @position Cross-browser proof; jsdom has no layout, so AppShell.test.tsx can
  *   only assert the tab stop against mocked geometry.
@@ -106,6 +107,44 @@ test('Tab entry moves on to the first link of an overflowing main region, and Sh
   expect(
     await page.evaluate(() => document.activeElement?.getAttribute('role')),
   ).not.toBe('main');
+});
+
+test('keyboard focus draws the focus ring inside the overflowing main region, and pointer focus draws none', async ({
+  page,
+}) => {
+  await openStory(page, 'long-content');
+  const main = page.getByRole('main');
+  const presses = await tabUntil(
+    page,
+    () => document.activeElement?.getAttribute('role') === 'main',
+  );
+  expect(presses).toBeGreaterThan(0);
+  const ring = await main.evaluate(element => {
+    const style = getComputedStyle(element);
+    return {
+      style: style.outlineStyle,
+      width: Number.parseFloat(style.outlineWidth),
+      offset: Number.parseFloat(style.outlineOffset),
+    };
+  });
+  expect(ring.style).not.toBe('none');
+  expect(ring.width).toBeGreaterThan(0);
+  // Inset by its own width, so the shell's clipping around main cannot cut it.
+  expect(ring.offset).toBeCloseTo(-ring.width, 1);
+
+  // A pointer press inside main focuses it too, without a ring.
+  await openStory(page, 'long-content');
+  const box = await main.boundingBox();
+  if (box == null) {
+    throw new Error('no main box');
+  }
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  expect(
+    await page.evaluate(() => document.activeElement?.getAttribute('role')),
+  ).toBe('main');
+  expect(
+    await main.evaluate(element => getComputedStyle(element).outlineStyle),
+  ).toBe('none');
 });
 
 test('a main region that fits stays out of the tab order', async ({page}) => {
