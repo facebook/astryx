@@ -24,7 +24,12 @@ function touch(
   y: number,
   fingers = 1,
 ): Event {
-  const event = new Event(type, {bubbles: true, cancelable: true});
+  // Touch events are composed: they leave shadow roots, retargeted to the host.
+  const event = new Event(type, {
+    bubbles: true,
+    cancelable: true,
+    composed: true,
+  });
   const point = {clientX: x, clientY: y, identifier: 0, target};
   Object.defineProperty(event, 'touches', {
     value: Array.from({length: fingers}, () => point),
@@ -181,6 +186,22 @@ describe('useScrollLock', () => {
       renderHook(() => useScrollLock(true));
 
       expect(pan(list, 200, 300)).toBe(false);
+    });
+
+    it('lets a pan through when the scroller under the finger is inside a shadow root', () => {
+      const host = document.createElement('div');
+      document.body.append(host);
+      const list = document.createElement('div');
+      list.style.overflowY = 'auto';
+      Object.defineProperty(list, 'clientHeight', {value: 200});
+      Object.defineProperty(list, 'scrollHeight', {value: 600});
+      list.scrollTop = 100;
+      const row = document.createElement('div');
+      list.append(row);
+      host.attachShadow({mode: 'open'}).append(list);
+      renderHook(() => useScrollLock(true));
+
+      expect(pan(row, 300, 200)).toBe(false);
     });
 
     it('never cancels a two-finger gesture, so pinch-zoom keeps working', () => {

@@ -10,8 +10,10 @@
  * @position Core hook; used by Dialog, BottomSheet, Drawer and Lightbox to
  *   prevent background scrolling
  *
- * Holds the page where it is. `overflow: hidden` on the root, claimed through
- * rootScrollStyles, stops wheel, keyboard and scrollbar scrolling. On touch
+ * Holds the page where it is. `overflow: hidden`, claimed through
+ * rootScrollStyles on the element the viewport takes its overflow from (the
+ * root, or `<body>` when its own overflow propagates), stops wheel, keyboard
+ * and scrollbar scrolling. On touch
  * screens a guard also cancels the one-finger pans that would still scroll
  * the page, because iOS Safari before 26.4 scrolls an `overflow: hidden` page
  * under a finger. The page's scroll offset never changes, so there is nothing
@@ -40,7 +42,7 @@ let activeLock: ActiveLock | null = null;
 /**
  * Locks page scroll while `isLocked` is true.
  *
- * The page stays where it is: the root gets `overflow: hidden`, and on touch
+ * The page stays where it is: it gets `overflow: hidden`, and on touch
  * screens a one-finger pan that would reach the page is cancelled, while pans
  * that a scroller inside the overlay can take, and two-finger zoom, go through.
  * The scroll offset never changes, so nothing jumps on lock or unlock.

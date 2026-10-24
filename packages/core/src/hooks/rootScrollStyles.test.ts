@@ -24,6 +24,39 @@ const root = () => document.documentElement.style;
 describe('claimRootScrollStyle', () => {
   afterEach(() => {
     document.documentElement.style.cssText = '';
+    document.body.style.cssText = '';
+  });
+
+  it('leaves a value that an outside writer set while the claim held', () => {
+    // A drawer that writes the root directly opens first...
+    root().overflow = 'clip';
+    const release = claimRootScrollStyle({overflow: 'hidden'});
+    // ...and clears it as it closes, before this claim is released.
+    root().overflow = '';
+
+    release();
+    expect(root().overflow).toBe('');
+  });
+
+  it("claims overflow on the body when the body's own overflow is the one the viewport uses", () => {
+    // A common reset: `body { overflow-x: hidden }` propagates to the viewport
+    // while the root's overflow is visible.
+    document.body.style.overflowX = 'hidden';
+
+    const release = claimRootScrollStyle({overflow: 'hidden'});
+    let bodyWhileHeld: string;
+    let rootWhileHeld: string;
+    try {
+      bodyWhileHeld = document.body.style.overflow;
+      rootWhileHeld = root().overflow;
+    } finally {
+      release();
+    }
+    expect(bodyWhileHeld).toBe('hidden');
+    expect(rootWhileHeld).toBe('');
+
+    expect(document.body.style.overflow).toBe('');
+    expect(document.body.style.overflowX).toBe('hidden');
   });
 
   it('sets the claimed styles and gives the page its own values back', () => {

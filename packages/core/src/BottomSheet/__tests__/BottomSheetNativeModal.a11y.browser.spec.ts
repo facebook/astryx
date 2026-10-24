@@ -218,6 +218,38 @@ test('the flow holds one page scroll lock through a handoff and under a Core Dia
  * carries `inert` and `aria-hidden`. Read together so a close between two
  * reads cannot make a stale attribute look like a regression, or hide one.
  */
+test('the lock keeps the page where it is on a page whose body sets its own overflow', async ({
+  page,
+}) => {
+  await mountScrollable(page);
+  // A common reset: with `html, body { height: 100% }`, the body's own
+  // overflow propagates to the viewport, which a root `overflow` would stop.
+  await page.evaluate(() => {
+    const style = document.createElement('style');
+    style.textContent =
+      'html, body { height: 100%; } body { overflow-x: hidden; }';
+    document.head.append(style);
+    window.scrollTo(0, 300);
+  });
+  const position = async () =>
+    page.evaluate(() => ({
+      scrollY: window.scrollY,
+      spacerTop: Math.round(
+        document.getElementById('spacer')?.getBoundingClientRect().top ?? NaN,
+      ),
+    }));
+  const before = await position();
+  expect(before.scrollY).toBe(300);
+
+  await openFlow(page);
+  expect(await position()).toEqual(before);
+
+  await page.keyboard.press('Escape');
+  await expect(page.locator('dialog[open]')).toHaveCount(0);
+  await page.waitForTimeout(300);
+  expect(await position()).toEqual(before);
+});
+
 async function handoffStep(
   page: Page,
   retainedName: string,
