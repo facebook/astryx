@@ -81,6 +81,11 @@
       "types": "./dist/theme/syntax/index.d.ts",
       "default": "./dist/theme/syntax/index.js"
     },
+    "./List/experimental": {
+      "source": "./src/List/experimental.ts",
+      "types": "./dist/List/experimental.d.ts",
+      "default": "./dist/List/experimental.js"
+    },
     "./DateInput/tokens.stylex": {
       "source": "./src/DateInput/tokens.stylex.ts",
       "types": "./dist/DateInput/tokens.stylex.d.ts",
@@ -808,6 +813,7 @@
   },
   "devDependencies": {
     "@astryxdesign/a11y-spec": "workspace:*",
+    "@astryxdesign/interaction-harness": "workspace:*",
     "@astryxdesign/cli": "workspace:*",
     "@babel/cli": "catalog:",
     "@babel/core": "catalog:",

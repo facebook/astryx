@@ -43,7 +43,7 @@ const UTILITY_DIRS = new Set(['hooks', 'theme', 'utils']);
  * publicly exported. These are shared implementation details
  * consumed by other components via relative imports.
  */
-const INTERNAL_DIRS = new Set(['NavItem']);
+const INTERNAL_DIRS = new Set(['NavItem', 'gestures']);
 
 /**
  * Additional exports that can't be auto-discovered from directory structure.
@@ -91,6 +91,14 @@ const STATIC_EXPORTS = {
     source: './src/theme/syntax/index.ts',
     types: './dist/theme/syntax/index.d.ts',
     default: './dist/theme/syntax/index.js',
+  },
+  // Experimental subpath (spec:AST-017 FR21): outside the stable
+  // compatibility promise and never re-exported from the root or the ordinary
+  // `./List` subpath.
+  './List/experimental': {
+    source: './src/List/experimental.ts',
+    types: './dist/List/experimental.d.ts',
+    default: './dist/List/experimental.js',
   },
   // Cross-directory .stylex modules that swizzled components import. Each is
   // an explicit public subpath so the StyleX compiler can resolve the deep
