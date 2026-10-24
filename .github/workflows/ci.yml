@@ -1607,6 +1607,17 @@ jobs:
             --project chromium \
             --output token-remove-target-output
 
+      # On a phone narrower than the drawer, the drawer must still leave a
+      # strip of the page to tap to close it (it is capped at 85vw). Viewport
+      # units, the backdrop's hit testing and a real tap only exist in a real
+      # engine.
+      - name: Run MobileNav width contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/MobileNav/__tests__/MobileNavWidth.a11y.chromium.spec.ts \
+            --project chromium \
+            --output mobile-nav-width-output
+
       # On a phone-width screen AppShell shows TopNav's compact bar. A long
       # heading must give way so the menu toggle stays inside the bar and the
       # drawer's close button stays inside the drawer; only a real engine lays
