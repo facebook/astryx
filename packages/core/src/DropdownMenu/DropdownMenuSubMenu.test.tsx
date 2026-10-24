@@ -22,6 +22,7 @@ import * as stylex from '@stylexjs/stylex';
 import {DropdownMenu} from './DropdownMenu';
 import {DropdownMenuItem} from './DropdownMenuItem';
 import {DropdownMenuSubMenu} from './DropdownMenuSubMenu';
+import {finger, place, placeRows, rowCenter} from './__tests__/fingerTouch';
 import {warmMenuBottomSheet} from './__tests__/warmMenuBottomSheet';
 import {IconButton} from '../IconButton';
 import {RadioList, RadioListItem} from '../RadioList';
@@ -1075,9 +1076,13 @@ describe('DropdownMenuSubMenu press model', () => {
       hidden: true,
     });
     const rename = screen.getByRole('menuitem', {name: 'Rename', hidden: true});
-    fireEvent.pointerDown(rename, {pointerType: 'touch', pointerId: 1});
-    fireEvent.pointerMove(trigger, {pointerType: 'touch', pointerId: 1});
-    fireEvent.pointerUp(trigger, {pointerType: 'touch', pointerId: 1});
+    // The finger is tracked by the gesture system: touch events over rows
+    // with a layout box.
+    placeRows([rename, trigger]);
+    const contact = finger();
+    contact.down(rename, rowCenter(0));
+    contact.move(rename, rowCenter(1));
+    contact.up(rename, rowCenter(1));
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
     expect(root).toHaveAttribute('aria-expanded', 'true');
   });
@@ -1101,9 +1106,11 @@ describe('DropdownMenuSubMenu press model', () => {
       name: 'Folder A',
       hidden: true,
     });
-    fireEvent.pointerDown(folderA, {pointerType: 'touch', pointerId: 1});
-    fireEvent.pointerMove(folderB, {pointerType: 'touch', pointerId: 1});
-    fireEvent.pointerUp(folderB, {pointerType: 'touch', pointerId: 1});
+    placeRows([folderA, folderB], 300);
+    const contact = finger();
+    contact.down(folderA, rowCenter(0, 300));
+    contact.move(folderA, rowCenter(1, 300));
+    contact.up(folderA, rowCenter(1, 300));
     fireEvent.click(folderA, {detail: 1});
     expect(onMove).toHaveBeenCalledTimes(1);
     expect(onMove).toHaveBeenCalledWith('b');
@@ -1238,6 +1245,34 @@ describe('DropdownMenuSubMenu drill-in on a phone', () => {
 
   afterEach(() => {
     vi.stubGlobal('matchMedia', originalMatchMedia);
+  });
+
+  it('a finger tap on the Back row of a drilled-in view with a header pops it, though that view sits beside the root menu', async () => {
+    stubCompactTouch(true);
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Rename" onClick={() => {}} />
+        <DropdownMenuSubMenu
+          label="Labels"
+          header={<input aria-label="Filter labels" />}>
+          <DropdownMenuItem label="Bug" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const row = screen.getByRole('menuitem', {name: /Labels/, hidden: true});
+    fireEvent.click(row);
+    const back = await screen.findByRole('menuitem', {
+      name: 'Back to Actions',
+      hidden: true,
+    });
+    expect(row).toHaveAttribute('aria-expanded', 'true');
+    place(back, {left: 0, top: 0, width: 200, height: 40});
+    const contact = finger();
+    contact.down(back, {x: 100, y: 20});
+    contact.up(back, {x: 100, y: 20}, 40);
+    await waitFor(() => expect(row).toHaveAttribute('aria-expanded', 'false'));
   });
 
   function PhoneMenu({onMove}: {onMove?: (folder: string) => void} = {}) {

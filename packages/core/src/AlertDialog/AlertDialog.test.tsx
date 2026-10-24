@@ -11,6 +11,7 @@
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {
+  act,
   render,
   screen,
   fireEvent,
@@ -18,6 +19,7 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {alertController} from '../motion/uikit/alert';
 import {AlertDialog} from './AlertDialog';
 import {useImperativeAlertDialog} from './useImperativeAlertDialog';
 
@@ -168,8 +170,9 @@ describe('AlertDialog', () => {
       });
       render(<AlertDialog {...defaultProps} />);
 
+      // The layout reads the width alone. The pointer query only picks the
+      // motion (UIKit's under a finger), never the order or the stacking.
       expect(window.matchMedia).toHaveBeenCalledWith('(max-width: 640px)');
-      expect(window.matchMedia).not.toHaveBeenCalledWith('(pointer: coarse)');
       expect(window.matchMedia).not.toHaveBeenCalledWith('(hover: none)');
       const dialog = screen.getByRole('alertdialog');
       const buttons = within(dialog).getAllByRole('button');
@@ -229,8 +232,9 @@ describe('AlertDialog', () => {
         />,
       );
 
+      // The layout reads the width alone. The pointer query only picks the
+      // motion (UIKit's under a finger), never the order or the stacking.
       expect(window.matchMedia).toHaveBeenCalledWith('(max-width: 640px)');
-      expect(window.matchMedia).not.toHaveBeenCalledWith('(pointer: coarse)');
       expect(window.matchMedia).not.toHaveBeenCalledWith('(hover: none)');
       const dialog = screen.getByRole('alertdialog');
       const buttons = within(dialog).getAllByRole('button');
@@ -263,8 +267,9 @@ describe('AlertDialog', () => {
         />,
       );
 
+      // The layout reads the width alone. The pointer query only picks the
+      // motion (UIKit's under a finger), never the order or the stacking.
       expect(window.matchMedia).toHaveBeenCalledWith('(max-width: 640px)');
-      expect(window.matchMedia).not.toHaveBeenCalledWith('(pointer: coarse)');
       expect(window.matchMedia).not.toHaveBeenCalledWith('(hover: none)');
       const dialog = screen.getByRole('alertdialog');
       const buttons = within(dialog).getAllByRole('button');
@@ -430,6 +435,156 @@ describe('AlertDialog', () => {
         );
       });
     });
+  });
+});
+
+/**
+ * Touch tracking: a finger is tracked across both actions as one group, as
+ * UIKit tracks an alert's actions (measured on iOS 26.2). The tracking hook's
+ * own contract is covered in hooks/useActionGroupTracking.test.tsx; these
+ * cover AlertDialog's wiring of it.
+ */
+describe('AlertDialog touch tracking', () => {
+  let touchClock = 10_000;
+  let touchId = 500;
+
+  function touch(
+    type: 'touchstart' | 'touchmove' | 'touchend',
+    target: Element,
+    point: {x: number; y: number},
+    id: number,
+  ): void {
+    touchClock += 16;
+    const event = new Event(type, {bubbles: true, cancelable: true});
+    const entry = {identifier: id, clientX: point.x, clientY: point.y, target};
+    Object.defineProperty(event, 'changedTouches', {value: [entry]});
+    Object.defineProperty(event, 'touches', {
+      value: type === 'touchend' ? [] : [entry],
+    });
+    Object.defineProperty(event, 'timeStamp', {value: touchClock});
+    target.dispatchEvent(event);
+  }
+
+  function place(element: Element, left: number, top: number): void {
+    const rect = DOMRect.fromRect({x: left, y: top, width: 120, height: 32});
+    element.getBoundingClientRect = () => rect;
+  }
+
+  function renderOpen(props: {isInline?: boolean} = {}) {
+    stubAlertDialogMedia({
+      smallScreen: true,
+      coarsePointer: true,
+      noHover: true,
+    });
+    const onOpenChange = vi.fn();
+    const onAction = vi.fn();
+    render(
+      <AlertDialog
+        isOpen
+        isInline={props.isInline}
+        onOpenChange={onOpenChange}
+        title="Delete item?"
+        description="This cannot be undone."
+        actionLabel="Delete"
+        onAction={onAction}
+      />,
+    );
+    const cancel = screen.getByRole('button', {name: 'Cancel'});
+    const action = screen.getByRole('button', {name: 'Delete'});
+    // Stacked on a narrow screen: the action above Cancel.
+    place(action, 16, 100);
+    place(cancel, 16, 140);
+    return {onOpenChange, onAction, cancel, action};
+  }
+
+  /**
+   * Lets the presentation complete: UIKit drops touches until it does. Lets
+   * the animator report its start (a promise), then moves the clock past the
+   * touch window.
+   */
+  async function completePresentation(): Promise<void> {
+    const presentedAt = performance.now();
+    const clock = vi.spyOn(performance, 'now').mockReturnValue(presentedAt);
+    await act(async () => {});
+    clock.mockReturnValue(
+      presentedAt + alertController.present.ignoresTouchesForMs,
+    );
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it('marks both actions for the tracking and takes them off the document press controller', () => {
+    const {cancel, action} = renderOpen();
+    for (const button of [cancel, action]) {
+      expect(button).toHaveAttribute('data-astryx-alert-action');
+      expect(button).not.toHaveAttribute('data-astryx-pressable');
+    }
+  });
+
+  it('keeps the document press controller in the inline preview, which is not tracked', () => {
+    const {cancel, action} = renderOpen({isInline: true});
+    for (const button of [cancel, action]) {
+      expect(button).toHaveAttribute('data-astryx-pressable');
+    }
+  });
+
+  it('cancels when a finger lands on the action and lifts on Cancel', async () => {
+    const {onOpenChange, onAction, cancel, action} = renderOpen();
+    await completePresentation();
+    const id = touchId++;
+    touch('touchstart', action, {x: 60, y: 116}, id);
+    expect(action).toHaveAttribute('data-astryx-press', 'on');
+    touch('touchmove', action, {x: 60, y: 156}, id);
+    expect(action).not.toHaveAttribute('data-astryx-press');
+    expect(cancel).toHaveAttribute('data-astryx-press', 'on');
+    touch('touchend', action, {x: 60, y: 156}, id);
+    expect(onOpenChange).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(onAction).not.toHaveBeenCalled();
+  });
+
+  it('runs the action when a finger slides from Cancel onto it', async () => {
+    const {onOpenChange, onAction, cancel} = renderOpen();
+    await completePresentation();
+    const id = touchId++;
+    touch('touchstart', cancel, {x: 60, y: 156}, id);
+    touch('touchmove', cancel, {x: 60, y: 116}, id);
+    touch('touchend', cancel, {x: 60, y: 116}, id);
+    expect(onAction).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).not.toHaveBeenCalled();
+  });
+
+  it('drops a touch that lands while the alert is presenting, then tracks once it has', async () => {
+    const {onOpenChange, onAction, cancel} = renderOpen();
+    const early = touchId++;
+    touch('touchstart', cancel, {x: 60, y: 156}, early);
+    expect(cancel).not.toHaveAttribute('data-astryx-press');
+    touch('touchend', cancel, {x: 60, y: 156}, early);
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(onAction).not.toHaveBeenCalled();
+    await completePresentation();
+    const late = touchId++;
+    touch('touchstart', cancel, {x: 60, y: 156}, late);
+    expect(cancel).toHaveAttribute('data-astryx-press', 'on');
+    touch('touchend', cancel, {x: 60, y: 156}, late);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('does not track a touch that starts on the backdrop', async () => {
+    const {onOpenChange, onAction, cancel} = renderOpen();
+    await completePresentation();
+    const dialog = screen.getByRole('alertdialog');
+    const id = touchId++;
+    // A touch on ::backdrop targets the dialog element itself.
+    touch('touchstart', dialog, {x: 60, y: 400}, id);
+    touch('touchmove', dialog, {x: 60, y: 156}, id);
+    expect(cancel).not.toHaveAttribute('data-astryx-press');
+    touch('touchend', dialog, {x: 60, y: 156}, id);
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(onAction).not.toHaveBeenCalled();
   });
 });
 

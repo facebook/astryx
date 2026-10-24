@@ -1038,6 +1038,9 @@ export function DropdownMenuSubMenu(
     menuRef,
     itemSelector: MENU_ITEM_SELECTOR,
     onDismiss: nestedMenuContext.closeMenu,
+    // As the root menu: a finger is tracked as UIMenu's list tracks it.
+    touchTracking: 'uikit',
+    isOpen,
   });
 
   const endAffordance = hasSpinner ? (
