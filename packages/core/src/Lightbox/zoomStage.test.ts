@@ -18,6 +18,8 @@ import {rubberBand} from '../motion/rubberBand';
 import {zoomMedia} from '../motion/uikit/zoomMedia';
 import {
   IDENTITY,
+  chromeBackgroundCurve,
+  chromeFadeCurve,
   dismissBackdropAlpha,
   dismissChromeAlpha,
   dismissCommits,
@@ -26,6 +28,7 @@ import {
   doubleTapScaleFor,
   doubleTapTarget,
   draggedTransform,
+  easedCurve,
   isZoomed,
   maxScaleFor,
   overshootScale,
@@ -411,5 +414,87 @@ describe("Photos' drag to dismiss (iOS 26.2)", () => {
     const exit = dismissExitY(geometry, t);
     expect(geometry.fit.y + exit).toBeGreaterThan(geometry.height);
     expect(exit).toBeGreaterThan(t.y);
+  });
+});
+
+describe('the chrome a tap hides (Photos, iOS 26.2)', () => {
+  // The bars' opacity per frame after a double tap zoomed in (b30
+  // dtap.center), s from the second lift; the frame clock carries the
+  // display's latency, so the fade's start is fitted.
+  const BARS: ReadonlyArray<readonly [number, number]> = [
+    [0.101, 0.9],
+    [0.116, 0.81],
+    [0.133, 0.69],
+    [0.149, 0.56],
+    [0.166, 0.41],
+    [0.216, 0.08],
+    [0.232, 0.03],
+    [0.266, 0],
+  ];
+  // The background's white level in the same frames (1 white, 0 black).
+  const BACKGROUND: ReadonlyArray<readonly [number, number]> = [
+    [0.166, 0.98],
+    [0.216, 0.33],
+    [0.232, 0.1],
+    [0.266, 0],
+  ];
+
+  it("fades the chrome over 0.2 s on easeInEaseOut, Photos' frames within 0.04", () => {
+    const curve = chromeFadeCurve(1, true);
+    expect(curve.duration).toBe(0.2);
+    let best = Infinity;
+    for (let lead = 0; lead <= 0.1; lead += 0.001) {
+      const worst = Math.max(
+        ...BARS.map(([t, v]) => Math.abs(curve.at(Math.max(0, t - lead)) - v)),
+      );
+      best = Math.min(best, worst);
+    }
+    expect(best).toBeLessThan(0.04);
+  });
+
+  it('turns the background black 0.1 s after the chrome starts, over 0.1 s', () => {
+    const fade = chromeFadeCurve(1, true);
+    const black = chromeBackgroundCurve(0, true);
+    expect(black.duration).toBeCloseTo(0.2, 9);
+    expect(black.at(0.1)).toBe(0);
+    expect(black.at(0.15)).toBeCloseTo(0.5, 6);
+    expect(black.at(0.2)).toBe(1);
+    // Against Photos' frames, with the start the chrome's fit found.
+    let best = Infinity;
+    for (let lead = 0; lead <= 0.1; lead += 0.001) {
+      const worst = Math.max(
+        ...BARS.map(([t, v]) => Math.abs(fade.at(Math.max(0, t - lead)) - v)),
+        ...BACKGROUND.map(([t, v]) =>
+          Math.abs(1 - black.at(Math.max(0, t - lead)) - v),
+        ),
+      );
+      best = Math.min(best, worst);
+    }
+    expect(best).toBeLessThan(0.06);
+  });
+
+  it('shows the chrome and clears the black at once, from where they are', () => {
+    const fade = chromeFadeCurve(0.4, false);
+    expect(fade.at(0)).toBe(0.4);
+    expect(fade.at(0.2)).toBe(1);
+    const black = chromeBackgroundCurve(0.7, false);
+    expect(black.duration).toBeCloseTo(0.1, 9);
+    expect(black.at(0)).toBe(0.7);
+    expect(black.at(0.01)).toBeLessThan(0.7);
+    expect(black.at(0.1)).toBe(0);
+  });
+
+  it('eases like Core Animation, with a velocity that matches its slope', () => {
+    const curve = easedCurve(0, 10, 0.5, [0.42, 0, 0.58, 1], 0.2);
+    expect(curve.duration).toBeCloseTo(0.7, 9);
+    expect(curve.at(0.1)).toBe(0);
+    expect(curve.velocity(0.1)).toBe(0);
+    const ease = cubicBezier([0.42, 0, 0.58, 1]);
+    expect(curve.at(0.45)).toBeCloseTo(10 * ease(0.5), 9);
+    const h = 1e-5;
+    expect(curve.velocity(0.45)).toBeCloseTo(
+      (curve.at(0.45 + h) - curve.at(0.45 - h)) / (2 * h),
+      3,
+    );
   });
 });

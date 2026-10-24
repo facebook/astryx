@@ -37,8 +37,9 @@
  *   before the lift does not coast;
  * - double tap: zoom in as Photos does (until the photo fills the stage,
  *   the tapped point brought to the centre), or back to the fitted size;
- * - single tap, which waits for the double tap to fail: a tap that lands
- *   outside the photo is reported (Lightbox closes on it);
+ * - single tap, which waits for the double tap to fail: a tap on the photo
+ *   and one beside it are reported (Lightbox toggles its controls on the
+ *   first and closes on the second);
  * - a zero-duration press beside them all (UIKit's touch-down idiom): a
  *   finger landing on a moving photo stops it where it shows, as a scroll
  *   view stops its deceleration, and a lift with no drag lets it settle. It
@@ -133,8 +134,18 @@ export interface UseZoomStageOptions {
   itemKey: unknown;
   /** The photo became zoomed or returned to the fitted size. */
   onZoomedChange: (isZoomed: boolean) => void;
+  /**
+   * A pinch carried the photo past the fitted size, or back to it, while the
+   * fingers are still down (`onZoomedChange` follows at the lift).
+   */
+  onPinchZoomed?: (isZoomed: boolean) => void;
   /** A single tap landed outside the photo. */
   onTapOutside?: () => void;
+  /**
+   * A single tap landed on the photo, once a double tap could no longer
+   * follow it.
+   */
+  onTapPhoto?: () => void;
   /** A pan began (a release over the backdrop must not close). */
   onDragStart?: () => void;
   /** Drag to dismiss, as Photos has it; none without. */
@@ -207,6 +218,8 @@ interface PinchSession {
   readonly startPinchScale: number;
   readonly anchor: StagePoint;
   centroid: StagePoint;
+  /** Whether the pinch has the photo past the fitted size. */
+  isZoomed: boolean;
 }
 
 interface PanSession {
@@ -506,6 +519,7 @@ export function useZoomStage(options: UseZoomStageOptions): ZoomStage {
           startPinchScale: pinchScaleFor(geometry, start.scale),
           anchor,
           centroid: anchor,
+          isZoomed: isZoomed(geometry, start),
         };
       }
       const session = pinchRef.current;
@@ -519,15 +533,19 @@ export function useZoomStage(options: UseZoomStageOptions): ZoomStage {
           geometry,
           session.startPinchScale * pinch.scale,
         );
-        write(
-          transformKeepingPoint(
-            geometry,
-            session.start,
-            session.anchor,
-            session.centroid,
-            shown,
-          ),
+        const next = transformKeepingPoint(
+          geometry,
+          session.start,
+          session.anchor,
+          session.centroid,
+          shown,
         );
+        write(next);
+        const zoomed = isZoomed(geometry, next);
+        if (zoomed !== session.isZoomed) {
+          session.isZoomed = zoomed;
+          optionsRef.current.onPinchZoomed?.(zoomed);
+        }
         return;
       }
       // Ended (a finger lifted) or cancelled (the browser took the touches).
@@ -734,7 +752,9 @@ export function useZoomStage(options: UseZoomStageOptions): ZoomStage {
         point.x <= geometry.width &&
         point.y >= 0 &&
         point.y <= geometry.height;
-      if (onStage && !onPhoto) {
+      if (onPhoto) {
+        optionsRef.current.onTapPhoto?.();
+      } else if (onStage) {
         optionsRef.current.onTapOutside?.();
       }
     },

@@ -8,7 +8,8 @@
  *   place for a scale (centred where the photo is smaller than the stage,
  *   kept inside it where larger), the rubber band of a drag, the overshoot
  *   of a pinch past a limit, the transform that keeps a point under the
- *   fingers, and the eased settle curves (UIScrollView's zoom animation)
+ *   fingers, the eased settle curves (UIScrollView's zoom animation), and
+ *   the chrome's fade and the black behind the photo as a tap hides it
  * @position Pure math under useZoomStage (Lightbox's touch zoom); no DOM, no
  *   React
  *
@@ -477,4 +478,67 @@ export function dismissExitY(
   shown: ZoomTransform,
 ): number {
   return Math.max(shown.y, geometry.height - geometry.fit.y) + 1;
+}
+
+/**
+ * A timed curve from `from` to `to`: it holds `from` for `delay` s, then
+ * eases over `duration` s on the cubic Bézier `points` (Core Animation's
+ * CABasicAnimation, begun from the current value).
+ */
+export function easedCurve(
+  from: number,
+  to: number,
+  duration: number,
+  points: readonly [number, number, number, number],
+  delay = 0,
+): MotionCurve {
+  const ease = cubicBezier(points);
+  const total = delay + duration;
+  const at = (t: number) => {
+    if (t <= delay) {
+      return from;
+    }
+    if (t >= total) {
+      return to;
+    }
+    return from + (to - from) * ease((t - delay) / duration);
+  };
+  const step = 1e-4;
+  return {
+    duration: total,
+    at,
+    velocity: t => {
+      const a = Math.max(0, t - step);
+      const b = Math.min(total, t + step);
+      return b > a ? (at(b) - at(a)) / (b - a) : 0;
+    },
+  };
+}
+
+/**
+ * The chrome's opacity as it hides or shows, from where it is: Photos'
+ * 0.2 s easeInEaseOut fade.
+ */
+export function chromeFadeCurve(from: number, isHidden: boolean): MotionCurve {
+  const {fadeSeconds, fadeCurve} = zoomMedia.chrome;
+  return easedCurve(from, isHidden ? 0 : 1, fadeSeconds, fadeCurve);
+}
+
+/**
+ * The black behind the photo as the chrome hides (it fades in after a
+ * 0.1 s wait) or shows (it fades out at once), from where it is.
+ */
+export function chromeBackgroundCurve(
+  from: number,
+  isHidden: boolean,
+): MotionCurve {
+  const {backgroundSeconds, backgroundHideDelaySeconds, fadeCurve} =
+    zoomMedia.chrome;
+  return easedCurve(
+    from,
+    isHidden ? 1 : 0,
+    backgroundSeconds,
+    fadeCurve,
+    isHidden ? backgroundHideDelaySeconds : 0,
+  );
 }

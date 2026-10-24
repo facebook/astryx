@@ -681,16 +681,22 @@ test('a tap beside the photo closes the viewer; a tap on it does not', async ({
 }) => {
   const {driver, dialog, state} = await openViewer(page);
   const s = await state();
+  const beside = [
+    {t: 0, fingers: [{id: 0, x: 201, y: s.stage.y + 60}]},
+    {t: 50, fingers: []},
+  ];
+  // A tap on the photo hides the controls (LightboxChrome spec)…
   await driver.play([
     {t: 0, fingers: [{id: 0, x: 201, y: s.stage.y + s.stage.height / 2}]},
     {t: 50, fingers: []},
   ]);
   await page.waitForTimeout(500);
   await expect(dialog).toBeVisible();
-  await driver.play([
-    {t: 0, fingers: [{id: 0, x: 201, y: s.stage.y + 60}]},
-    {t: 50, fingers: []},
-  ]);
+  // …so the first tap beside it brings them back, and the next one closes.
+  await driver.play(beside);
+  await page.waitForTimeout(500);
+  await expect(dialog).toBeVisible();
+  await driver.play(beside);
   await expect(dialog).toBeHidden();
 });
 

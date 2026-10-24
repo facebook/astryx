@@ -8,8 +8,9 @@
  *   law of the return from an overshoot and of `zoom(to:animated:)`, and
  *   Photos' double-tap and maximum zoom, the gap between its pages, and
  *   its drag-to-dismiss (the shrink and fades by travel, the release rule,
- *   the dismissal's and the cancel's springs), and the zoom transition from
- *   a source (its springs and the two portals' fades)
+ *   the dismissal's and the cancel's springs), the zoom transition from
+ *   a source (its springs and the two portals' fades), and the chrome a tap
+ *   or a zoom hides (its fade and the background's turn to black)
  * @position A component domain of the UIKit constants table (motion/uikit);
  *   read by Lightbox's zoom stage (Lightbox/zoomStage.ts)
  *
@@ -268,5 +269,49 @@ export const zoomMedia = {
      *   same drag, tracking behavior 0.92 / 0.34, Oct 24 2026
      */
     dragTrackingSpring: {response: 0.34, dampingRatio: 0.92},
+  },
+  chrome: {
+    /**
+     * Photos hides its bars and controls (the chrome) for a single tap: on
+     * the photo once a double tap can no longer follow (~385 ms after the
+     * lift), beside it at the lift. A zoom hides them too: a double tap as it
+     * zooms in, a pinch as it passes the fitted size (before the lift). The
+     * next tap, and a return to the fitted size, show them. While zoomed the
+     * background stays black and a tap toggles only the chrome; a cancelled
+     * drag to dismiss brings the chrome back and leaves the black. Every
+     * change runs the chrome's opacity on a CABasicAnimation this long, s,
+     * on `fadeCurve`.
+     * @source measured: Photos, iOS 26.2 simulator, iPhone 17 Pro, the
+     *   CAAnimations added at single taps beside a 3000 × 2000 photo and at
+     *   double taps on it (opacity, duration 0.2), with the bars' opacity per
+     *   frame, Oct 24 2026
+     * @source measured: Photos, iOS 26.2 simulator, iPhone 17 Pro, taps on
+     *   the photo at the fitted size and zoomed, pinches past and back to the
+     *   fitted size, and a cancelled drag with the chrome hidden, the chrome
+     *   and the background per frame, Oct 24 2026
+     */
+    fadeSeconds: 0.2,
+    /**
+     * The chrome fade's timing function: easeInEaseOut.
+     * @source measured: Photos, iOS 26.2 simulator, iPhone 17 Pro, the same
+     *   CAAnimations (timing function control points), Oct 24 2026
+     */
+    fadeCurve: [0.42, 0, 0.58, 1],
+    /**
+     * The viewer's background turns black as the chrome hides and back as
+     * it shows, over this long, s, easeInEaseOut (`fadeCurve`).
+     * @source measured: Photos, iOS 26.2 simulator, iPhone 17 Pro, the
+     *   backgroundColor CAAnimations at the same taps (duration 0.1) and the
+     *   background colour per frame, Oct 24 2026
+     */
+    backgroundSeconds: 0.1,
+    /**
+     * Hiding, the background waits this long, s, before it turns; showing,
+     * it turns at once.
+     * @source measured: Photos, iOS 26.2 simulator, iPhone 17 Pro, the
+     *   UIView animation that carries the background (delay 0.1 when the
+     *   chrome hides, 0 when it shows), Oct 24 2026
+     */
+    backgroundHideDelaySeconds: 0.1,
   },
 } as const;
