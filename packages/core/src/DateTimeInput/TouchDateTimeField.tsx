@@ -96,6 +96,7 @@ import {
   type MonthScrollerHandle,
 } from '../DateInput/MonthScroller';
 import {MonthYearWheels} from '../DateInput/MonthYearWheels';
+import {useToggleFade} from '../DateInput/useToggleFade';
 import {
   dateInputTouchGeometry,
   dateInputTouchSizes,
@@ -312,13 +313,12 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-0-5'],
     marginInlineStart: 'auto',
-    transitionProperty: 'opacity, visibility',
+    // Fades on useToggleFade; `visibility` follows the fade out.
+    transitionProperty: 'visibility',
     transitionDuration: monthYearToggleMotion.duration,
-    transitionTimingFunction: monthYearToggleMotion.curve,
   },
   touchHeaderActionsHidden: {
     visibility: 'hidden',
-    opacity: 0,
     pointerEvents: 'none',
   },
   touchArrow: {
@@ -349,8 +349,9 @@ const styles = stylex.create({
     minInlineSize: 0,
   },
   // UIDatePicker's month/year toggle: the calendar fades out as the wheels
-  // fade in, at once, 0.25 s ease-in-ease-out
-  // (motion/uikit/datePicker.ts `calendar.monthYearToggle`).
+  // fade in, at once, 0.25 s ease-in-ease-out on the animator, from the
+  // commit (useToggleFade; motion/uikit/datePicker.ts
+  // `calendar.monthYearToggle`); `visibility` follows the fade out.
   touchDateSurface: {
     gridArea: '1 / 1',
     display: 'flex',
@@ -358,9 +359,8 @@ const styles = stylex.create({
     minInlineSize: 0,
     flexDirection: 'column',
     gap: spacingVars['--spacing-2'],
-    transitionProperty: 'opacity, visibility',
+    transitionProperty: 'visibility',
     transitionDuration: monthYearToggleMotion.duration,
-    transitionTimingFunction: monthYearToggleMotion.curve,
   },
   touchTitleChevronMirror: {
     display: 'inline-flex',
@@ -378,7 +378,6 @@ const styles = stylex.create({
   },
   touchDateSurfaceHidden: {
     visibility: 'hidden',
-    opacity: 0,
     pointerEvents: 'none',
   },
   touchWeekdays: {
@@ -574,6 +573,10 @@ export function TouchDateTimeField({
   );
   const [activePanel, setActivePanel] = useState<TouchDateTimePanel>('date');
   const [isWheelOpen, setIsWheelOpen] = useState(false);
+  // The month/year toggle's fades, on the animator (useToggleFade).
+  const calendarFadeRef = useToggleFade(!isWheelOpen);
+  const wheelsFadeRef = useToggleFade(isWheelOpen);
+  const headerActionsFadeRef = useToggleFade(!isWheelOpen);
   const [draftTime, setDraftTime] = useState<ISOTimeString | undefined>(() =>
     normalizeISOTime(splitDateTime(value).time, hasSeconds),
   );
@@ -952,6 +955,7 @@ export function TouchDateTimeField({
               </span>
             </button>
             <span
+              ref={headerActionsFadeRef}
               inert={isWheelOpen ? true : undefined}
               {...stylex.props(
                 styles.touchHeaderActions,
@@ -1003,6 +1007,7 @@ export function TouchDateTimeField({
 
           <div {...stylex.props(styles.touchDateSurfaceStack)}>
             <div
+              ref={calendarFadeRef}
               data-date-surface="calendar"
               aria-hidden={isWheelOpen ? 'true' : undefined}
               inert={isWheelOpen ? true : undefined}
@@ -1053,6 +1058,7 @@ export function TouchDateTimeField({
             </div>
 
             <div
+              ref={wheelsFadeRef}
               data-date-surface="wheels"
               aria-hidden={!isWheelOpen ? 'true' : undefined}
               inert={!isWheelOpen ? true : undefined}

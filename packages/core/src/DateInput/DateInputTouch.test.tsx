@@ -2093,11 +2093,18 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     const overlay = declarations(source, 'panelOverlay');
     const beneath = declarations(source, 'panelBeneath');
 
-    // The layer fades, both directions — the transition is on the shown
-    // state, so entering and leaving it both animate.
-    expect(overlay).toContain("transitionProperty: 'opacity, visibility'");
+    // The layer fades, both directions, on the animator (useToggleFade), so
+    // the fade starts at the commit; CSS keeps `visibility` following it on
+    // the same clock, and owns no opacity.
+    expect(overlay).toContain("transitionProperty: 'visibility'");
     expect(overlay).toContain('transitionDuration: SWAP_DURATION');
-    expect(declarations(source, 'panelOverlayHidden')).toContain('opacity: 0');
+    expect(
+      declarations(source, 'panelOverlayHidden').some(d =>
+        d.startsWith('opacity'),
+      ),
+    ).toBe(false);
+    expect(source).toContain('ref={wheelsFadeRef}');
+    expect(source).toContain('ref={doneFadeRef}');
 
     // And it is opaque while it does, in the token the sheet paints itself
     // with, so the fade is uniform across the band and the text alike.
@@ -2151,11 +2158,18 @@ describe('DateInput — scroll CSS (definition-level)', () => {
    */
   it('fades the uncovered chrome on the same timing as the layer', () => {
     const source = read('TouchDateField.tsx');
-    for (const name of ['weekdays', 'monthArrows']) {
+    for (const name of ['weekdays', 'monthArrows', 'headerReset']) {
       expect(declarations(source, name)).toContain(
         'transitionDuration: SWAP_DURATION',
       );
-      expect(declarations(source, `${name}Hidden`)).toContain('opacity: 0');
+      expect(
+        declarations(source, `${name}Hidden`).some(d =>
+          d.startsWith('opacity'),
+        ),
+      ).toBe(false);
+    }
+    for (const ref of ['weekdaysFadeRef', 'arrowsFadeRef', 'resetFadeRef']) {
+      expect(source).toContain(`ref={${ref}}`);
     }
   });
 
@@ -2216,11 +2230,11 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     );
     expect(chevron).toContain("transitionProperty: 'transform'");
     expect(chevron).toContain('transitionTimingFunction: SWAP_CURVE');
-    // The arrows, the weekday row, Reset, the layer above and the chevron.
-    expect(styles.match(/transitionTimingFunction: SWAP_CURVE/g)).toHaveLength(
-      5,
-    );
-    expect(styles).not.toContain("transitionTimingFunction: 'linear'");
+    // The fades are the animator's (useToggleFade), not CSS transitions: the
+    // wheels and their Done fade in as the arrows, Reset and the weekday row
+    // fade out; CSS keeps only `visibility` following them.
+    expect(styles).not.toMatch(/transitionProperty: '[^']*opacity/);
+    expect(source.match(/useToggleFade\((!)?isWheelOpen\)/g)).toHaveLength(5);
     const tokens = read('tokens.stylex.ts');
     const toggle = datePicker.calendar.monthYearToggle;
     expect(tokens).toContain(`duration: '${toggle.fadeMs}ms'`);
@@ -2228,6 +2242,9 @@ describe('DateInput — scroll CSS (definition-level)', () => {
       `curve: 'cubic-bezier(${timing.curves.easeInOut.join(', ')})'`,
     );
     expect(tokens).toContain(`chevronTurn: '${toggle.chevronTurnDegrees}deg'`);
+    expect(read('useToggleFade.ts')).toContain(
+      'datePicker.calendar.monthYearToggle.fadeMs',
+    );
   });
 
   /**
@@ -2240,10 +2257,9 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     const styles = source.slice(
       source.indexOf('const styles = stylex.create('),
     );
-    // The arrows, Reset, the weekday row, the layer beneath, the layer
-    // above, and the chevron.
+    // `visibility` on the arrows, Reset, the weekday row, the layer beneath
+    // and the layer above, and the chevron's turn.
     expect(styles.match(/transitionDuration: SWAP_DURATION/g)).toHaveLength(6);
-    // And no leftover hand-rolled timing beside them.
     expect(styles).not.toContain('PANEL_FADE_MS');
     expect(source).toContain(
       'const SWAP_DURATION = monthYearToggleMotion.duration',
@@ -2258,19 +2274,29 @@ describe('DateInput — scroll CSS (definition-level)', () => {
 
   it('cross-fades the DateTimeInput sheet\u2019s month/year toggle on the same clock', () => {
     const source = read('../DateTimeInput/TouchDateTimeField.tsx');
-    for (const object of [
-      'touchDateSurface',
-      'touchHeaderActions',
-      'touchTitleChevron',
+    // The calendar and the wheels cross-fade, and the header's actions fade,
+    // on the animator (useToggleFade); `visibility` follows on the same clock.
+    for (const ref of [
+      'calendarFadeRef',
+      'wheelsFadeRef',
+      'headerActionsFadeRef',
     ]) {
+      expect(source).toContain(`ref={${ref}}`);
+    }
+    for (const object of ['touchDateSurface', 'touchHeaderActions']) {
       const lines = declarations(source, object);
+      expect(lines).toContain("transitionProperty: 'visibility'");
       expect(lines).toContain(
         'transitionDuration: monthYearToggleMotion.duration',
       );
-      expect(lines).toContain(
-        'transitionTimingFunction: monthYearToggleMotion.curve',
-      );
     }
+    const chevron = declarations(source, 'touchTitleChevron');
+    expect(chevron).toContain(
+      'transitionDuration: monthYearToggleMotion.duration',
+    );
+    expect(chevron).toContain(
+      'transitionTimingFunction: monthYearToggleMotion.curve',
+    );
     expect(declarations(source, 'touchTitleChevronOpen')).toContain(
       'transform: `rotate(${monthYearToggleMotion.chevronTurn})`',
     );

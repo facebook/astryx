@@ -9,7 +9,8 @@
  *   `calendar.monthYearToggle`): the wheels fade in on UIKit's 0.25 s
  *   ease-in-ease-out and the title's chevron turns a quarter turn on the same
  *   curve; a second tap mid-fade turns the fade around from where it is; the
- *   fade keeps advancing every frame through a blocked main thread; Reduced
+ *   fade keeps advancing every frame through a blocked main thread, and one
+ *   started in a busy commit plays from its start; Reduced
  *   Motion keeps both; in RTL the chevron points left and turns to point
  *   down; a tapped day takes its selection with no transition; a storyboard
  *   of the toggle
@@ -254,11 +255,8 @@ test('the wheels keep fading in every frame through a blocked main thread', asyn
   await page.waitForTimeout(300);
   await driver.tap(titleAt);
   // The page blocks itself once the fade has run 32 ms: started, and on
-  // screen. This passes on this CSS fade and on an animator-driven one alike:
-  // it guards the fade's compositor path, not WebKit's hand-off (a block in
-  // the frame that hands a new animation to the compositor delays it on
-  // both, as Core Animation starts an animation at its commit). Mobile Safari
-  // on the iOS simulator is the WebKit evidence.
+  // screen. This guards the compositor path once a fade is on screen, which
+  // a CSS fade passes too; the next case is what the animator changes.
   const busy = await blockMainThread(page, 600, {
     during: wheels,
     minProgressMs: 32,
@@ -311,6 +309,61 @@ test('the wheels keep fading in every frame through a blocked main thread', asyn
     description: proof.summary,
   });
   expect(proof.verdict.failures, proof.summary).toEqual([]);
+});
+
+test('a fade started in a busy commit plays from its start', async ({page}) => {
+  await openCalendar(page);
+  await page.evaluate(() => {
+    const panel = document.querySelector<HTMLElement>('[data-panel="wheels"]');
+    const title = document.querySelector<HTMLElement>(
+      '[data-title="month-year"]',
+    );
+    if (panel == null || title == null) {
+      throw new Error('no toggle');
+    }
+    // After React has handled the click (its root listener runs first), the
+    // same task stays busy for 300 ms, as a long render or layout does; the
+    // style read applies the change first, as a measuring layout effect does.
+    window.addEventListener(
+      'click',
+      () => {
+        void getComputedStyle(panel).opacity;
+        const end = performance.now() + 300;
+        while (performance.now() < end) {
+          // Busy.
+        }
+      },
+      {once: true},
+    );
+    const log: [number, number][] = [];
+    (window as unknown as {fade: typeof log}).fade = log;
+    const t0 = performance.now();
+    const tick = () => {
+      log.push([
+        performance.now() - t0,
+        Number(getComputedStyle(panel).opacity),
+      ]);
+      if (performance.now() - t0 < 1200) {
+        requestAnimationFrame(tick);
+      }
+    };
+    requestAnimationFrame(tick);
+    title.click();
+  });
+  await page.waitForTimeout(1300);
+  const fade = await page.evaluate(
+    () => (window as unknown as {fade: [number, number][]}).fade,
+  );
+  // The first frame after the busy task: the animator starts the fade here,
+  // from rest. Chromium and Playwright's WebKit also start a CSS transition
+  // at that frame, so a CSS fade passes here too; Mobile Safari clocks a CSS
+  // transition from the style change and shows it all but done (the iOS
+  // simulator clip of the DateTimeInput toggle is that evidence).
+  const after = fade.filter(([t]) => t >= 290);
+  expect(after[0][1]).toBeLessThan(0.2);
+  const done = after.find(([, opacity]) => opacity >= 0.99);
+  expect(done).toBeDefined();
+  expect((done?.[0] ?? 0) - after[0][0]).toBeGreaterThan(180);
 });
 
 test('Reduced Motion keeps the fade and the turn: neither travels', async ({
