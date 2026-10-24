@@ -2,16 +2,26 @@
 
 /**
  * @file Wheel.test.tsx
- * @input Uses Vitest, Testing Library and the Wheel column
- * @output Proves where a wheel rests when it stops on a row it cannot commit
- * @position Unit coverage for Wheel.tsx's rest rule; the wheels inside the
+ * @input Uses Vitest, Testing Library, the Wheel column and a stubbed
+ *   matchMedia (and CSS.supports, to show the engine does not matter)
+ * @output Proves where today's wheel rests when it stops on a row it cannot
+ *   commit, and which column (and which frame) each primary pointer draws
+ * @position Unit coverage for Wheel.tsx: the switch and today's column
+ *   (PickerWheel.test.tsx covers the touch column); the wheels inside the
  *   DateInput, DateTimeInput and TimeInput sheets are covered by their own
  *   touch suites
  */
 
-import {act, render, screen} from '@testing-library/react';
+import {act, fireEvent, render, screen} from '@testing-library/react';
+import {createRef} from 'react';
 import {afterEach, beforeAll, describe, expect, it, vi} from 'vitest';
-import {nearestEnabledIndex, Wheel, type WheelOption} from './Wheel';
+import {
+  nearestEnabledIndex,
+  Wheel,
+  type WheelHandle,
+  type WheelOption,
+} from './Wheel';
+import {WheelGroup} from './WheelGroup';
 
 const ROW = 28;
 
@@ -176,11 +186,14 @@ describe('Wheel — where it comes to rest', () => {
       );
     });
 
-    it('cross-fades onto it on a touch screen: opacity only, 200 ms', () => {
-      stubReducedMotion('coarse');
+    it('cross-fades onto it after a touch: opacity only, 200 ms', () => {
+      // A touch screen whose primary pointer is fine (a laptop's): today's
+      // column, and a touch release fades (DR2).
+      stubReducedMotion('fine');
       vi.useFakeTimers();
       const {scrollTo, stopOn} = renderWheel(10);
       const scroller = screen.getByRole('listbox', {name: 'Hour'});
+      fireEvent.pointerDown(scroller, {pointerType: 'touch'});
       const animate = vi.fn();
       scroller.animate = animate as HTMLElement['animate'];
       stopOn(7);
@@ -251,5 +264,88 @@ describe('Wheel — where it comes to rest', () => {
       behavior: 'smooth',
     });
     expect(onChange).not.toHaveBeenCalled();
+  });
+});
+
+describe('Wheel — by pointer', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  /**
+   * The pointer and the engine: `(pointer: coarse)` is a finger, and
+   * `-webkit-touch-callout` exists only in WebKit on iOS, which must not
+   * matter.
+   */
+  function stubDevice({ios, coarse}: {ios: boolean; coarse: boolean}) {
+    vi.stubGlobal('CSS', {
+      supports: (condition: string) =>
+        ios && condition.includes('-webkit-touch-callout'),
+    });
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => ({
+        matches: query === '(pointer: coarse)' && coarse,
+        media: query,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      })),
+    );
+  }
+
+  function renderPicker() {
+    const ref = createRef<WheelHandle>();
+    const onChange = vi.fn();
+    const view = render(
+      <WheelGroup>
+        <Wheel
+          ref={ref}
+          label="Hour"
+          options={HOURS}
+          value={12}
+          onChange={onChange}
+        />
+      </WheelGroup>,
+    );
+    return {...view, ref, onChange};
+  }
+
+  it.each([
+    ['iOS WebKit', true],
+    ['Android Chrome', false],
+  ])(
+    'draws the UIPickerView column and band under a finger, on %s',
+    (_, ios) => {
+      stubDevice({ios, coarse: true});
+      const {container} = renderPicker();
+      expect(container.querySelector('[data-wheel]')).not.toBeNull();
+      // One band across the group, none of the column's own.
+      expect(container.querySelectorAll('[data-wheel-band]')).toHaveLength(1);
+    },
+  );
+
+  it.each([
+    ['a mouse', false],
+    ['iOS WebKit with a mouse', true],
+  ])('keeps the scrolling column, with no frame, for %s', (_, ios) => {
+    stubDevice({ios, coarse: false});
+    const {container} = renderPicker();
+    expect(container.querySelector('[data-wheel]')).toBeNull();
+    expect(container.querySelector('[data-wheel-band]')).toBeNull();
+    // Today's column, straight in its container: no group frame around it.
+    expect(
+      screen.getByRole('listbox', {name: 'Hour'}).parentElement?.parentElement,
+    ).toBe(container);
+  });
+
+  it('commits a spin at once under a fine pointer', async () => {
+    stubDevice({ios: false, coarse: false});
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+    const {ref, onChange} = renderPicker();
+    await expect(ref.current?.spinTo(14)).resolves.toBe(true);
+    expect(onChange).toHaveBeenCalledWith(14);
+    // A disabled row is not a place to rest.
+    await expect(ref.current?.spinTo(3)).resolves.toBe(false);
+    expect(onChange).toHaveBeenCalledTimes(1);
   });
 });

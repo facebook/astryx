@@ -1743,7 +1743,8 @@ jobs:
             --output menu-press-shadow-root-output
 
       # A two-finger pinch over an open picker wheel must zoom the page (WCAG
-      # 1.4.4) while one finger still scrolls the wheel. jsdom computes no
+      # 1.4.4) while one finger still turns the wheel (the touch column, which a
+      # finger gets on every engine). jsdom computes no
       # touch-action, so only a real engine shows which gesture the browser
       # keeps.
       - name: Run picker wheel pinch-zoom contract
@@ -1788,9 +1789,10 @@ jobs:
             --output tooltip-hover-bridge-output
 
       # A picker wheel dragged onto a row outside its bounds must come to rest
-      # on the nearest row inside them. The stop comes from native scrolling,
-      # CSS snapping and the browser's end-of-scroll signal, none of which
-      # jsdom has.
+      # on the nearest row inside them. On the touch column (a finger) the stop
+      # comes from real touch input through the gesture system; on today's
+      # column (a mouse) from native scrolling, CSS snapping and the browser's
+      # end-of-scroll signal. jsdom has neither.
       - name: Run picker wheel rest contract
         run: |
           pnpm exec playwright test \
