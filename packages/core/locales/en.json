@@ -491,6 +491,22 @@
     "defaultMessage": "Reorder cancelled, back to position {position, number} of {total, number}",
     "description": "Screen-reader announcement when a reorder in a List is cancelled and the row returns to where it was. `{position}` is that 1-based place, `{total}` the number of rows."
   },
+  "@astryx.list.reorderMoveUp": {
+    "defaultMessage": "Move up",
+    "description": "Item in the menu a List row's reorder handle opens when activated (tapped or clicked) instead of dragged: moves the row up one place."
+  },
+  "@astryx.list.reorderMoveDown": {
+    "defaultMessage": "Move down",
+    "description": "Item in the menu a List row's reorder handle opens when activated instead of dragged: moves the row down one place."
+  },
+  "@astryx.list.reorderMoveToTop": {
+    "defaultMessage": "Move to top",
+    "description": "Item in the menu a List row's reorder handle opens when activated instead of dragged: moves the row to the first place it can take."
+  },
+  "@astryx.list.reorderMoveToBottom": {
+    "defaultMessage": "Move to bottom",
+    "description": "Item in the menu a List row's reorder handle opens when activated instead of dragged: moves the row to the last place it can take."
+  },
   "@astryx.listInput.emptyTitle": {
     "defaultMessage": "No {itemName}s yet",
     "description": "EmptyState title shown inside a lab ListInput when its collection has no records. `{itemName}` is the consumer's singular noun for one record (e.g. \"guest\"); the source appends a literal \"s\" to pluralize it, which only works for regular English plurals. If your language cannot pluralize an interpolated noun this way, rephrase around `{itemName}` instead (e.g. \"No {itemName} added yet\")."

@@ -123,6 +123,12 @@ function rangeOf(
   );
 }
 
+/** A move a handle offers without a drag, and the slot it takes the row to. */
+export interface ReorderMove {
+  readonly kind: 'up' | 'down' | 'top' | 'bottom';
+  readonly to: number;
+}
+
 /** A row's layout top inside the list (transforms ignored). */
 function layoutTop(row: HTMLElement, list: HTMLElement): number {
   const base = row.offsetParent === list ? 0 : list.offsetTop;
@@ -385,21 +391,29 @@ export class ListReorderController {
     }
   }
 
-  /** A handle's long press (a finger's hold, or a mouse at once) moved. */
+  /**
+   * A handle's long press (a finger's hold, or a mouse at once) moved:
+   * `onDrag` runs once the row follows it.
+   */
   recognized(
     handle: HTMLElement | null,
     recognizer: LongPressGestureRecognizer,
+    onDrag?: () => void,
   ): void {
     const state = gestureStateOf(recognizer);
-    if (state != null) {
-      this.gesture(this.rowOf(handle), {state, y: recognizer.location().y});
+    if (state == null) {
+      return;
     }
+    if (state === 'changed') {
+      onDrag?.();
+    }
+    this.gesture(this.rowOf(handle), {state, y: recognizer.location().y});
   }
 
   /** Lets a finger held still on `handle` pick up its row. Returns the detach. */
-  attachTouch(handle: HTMLElement): () => void {
+  attachTouch(handle: HTMLElement, onDrag?: () => void): () => void {
     return attachTouchHold(handle, recognizer =>
-      this.recognized(handle, recognizer),
+      this.recognized(handle, recognizer, onDrag),
     );
   }
 
@@ -902,9 +916,35 @@ export class ListReorderController {
     return list == null || row == null ? null : rowsOf(list).indexOf(row) + 1;
   }
 
-  // --- Moves ------------------------------------------------------------
+  // --- Moves without a drag -------------------------------------------
 
-  /** Moves a row to slot `to`, as its keys do: announced once it lands. */
+  /**
+   * The moves a row's handle offers without a drag (WCAG 2.5.7): up, down,
+   * to the top and to the bottom of its group, each only when it moves the
+   * row. Empty for a row that cannot move.
+   */
+  movesFor(row: HTMLElement | null): ReadonlyArray<ReorderMove> {
+    const list = this.getList();
+    if (row == null || list == null) {
+      return [];
+    }
+    const rows = rowsOf(list);
+    const index = rows.indexOf(row);
+    if (index < 0 || row.hasAttribute(FIXED_ROW_ATTRIBUTE)) {
+      return [];
+    }
+    const {start, end} = rangeOf(rows, index);
+    const moves: ReorderMove[] = [];
+    if (index > start) {
+      moves.push({kind: 'up', to: index - 1}, {kind: 'top', to: start});
+    }
+    if (index < end) {
+      moves.push({kind: 'down', to: index + 1}, {kind: 'bottom', to: end});
+    }
+    return moves;
+  }
+
+  /** Moves a row as its keys would: announced once it lands. */
   moveRow(row: HTMLElement | null, to: number): void {
     const list = this.getList();
     if (row == null || list == null || this.session != null) {

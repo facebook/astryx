@@ -2,14 +2,15 @@
 
 /**
  * @file ListReorder.test.tsx
- * @input List with `onReorder`, ListItem `isReorderDisabled`, the reorder
- *   session itself, Testing Library
+ * @input List with `onReorder`, ListItem `isReorderDisabled` and
+ *   `reorderLabel`, the reorder session itself, Testing Library
  * @output jsdom proofs of a reorderable List: each row gets a named reorder
  *   handle described by the list's instructions, a fixed row gets none and
  *   bounds the others (its end content kept in line), the handle's keys move
  *   its row (arrows, Home, End), Space picks it up and Escape puts it back, a
- *   move is announced once it lands and a declined one as kept, a row of any
- *   tag moves, the handle keeps focus across the commit of a move, modified keys move
+ *   move is announced once it lands and a declined one as kept, activating a
+ *   handle opens only the moves its row can make, a row of any tag moves, the
+ *   handle keeps focus across the commit of a move, modified keys move
  *   nothing, a disabled row's handle stays focusable but inert, and handles
  *   listen for touches on the document only while mounted
  * @position Tests for List/useListReorder.ts and List/ListReorderHandle.tsx
@@ -17,7 +18,15 @@
 
 import {useRef, useState} from 'react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {act, render, renderHook, screen, waitFor} from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  renderHook,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {List} from '../List';
 import {ListItem} from '../ListItem';
@@ -117,6 +126,17 @@ describe('List onReorder', () => {
     expect(
       screen.getByRole('button', {name: 'Reorder item 2'}),
     ).toBeInTheDocument();
+  });
+
+  it('names the handle of a row with a rich label after its reorderLabel', () => {
+    render(
+      <List onReorder={() => {}}>
+        <ListItem label={<strong>Name</strong>} reorderLabel="Name" />
+        <ListItem label={<strong>Owner</strong>} />
+      </List>,
+    );
+    expect(screen.getByRole('button', {name: 'Reorder Name'})).toBeVisible();
+    expect(screen.getByRole('button', {name: 'Reorder item 2'})).toBeVisible();
   });
 
   it('keeps a fixed row in place: no handle, and a marker the drag reads', () => {
@@ -487,6 +507,54 @@ describe('List onReorder', () => {
     screen.getByRole('button', {name: 'Reorder A'}).focus();
     await user.keyboard('{ArrowDown}');
     expect(onReorder).toHaveBeenCalledWith(0, 1);
+  });
+
+  it('opens the moves a row can make when its handle is activated', async () => {
+    const user = userEvent.setup();
+    render(<Reorderable initial={['Inbox', 'Sent', 'Drafts']} />);
+    await user.click(screen.getByRole('button', {name: 'Reorder Inbox'}));
+    // The menu is named by its handle (jsdom never shows the popover).
+    const menu = await screen.findByRole('menu', {
+      name: 'Reorder Inbox',
+      hidden: true,
+    });
+    // The first row cannot go up: only the moves that move it.
+    expect(
+      within(menu)
+        .getAllByRole('menuitem', {hidden: true})
+        .map(item => item.textContent),
+    ).toEqual(['Move down', 'Move to bottom']);
+    fireEvent.click(
+      within(menu).getByRole('menuitem', {
+        name: 'Move to bottom',
+        hidden: true,
+      }),
+    );
+    expect(labels()).toEqual(['Sent', 'Drafts', 'Inbox']);
+    await waitFor(() =>
+      expect(document.body).toHaveTextContent('Position 3 of 3'),
+    );
+  });
+
+  it('offers no moves from a disabled row, nor from a row that cannot move', () => {
+    render(
+      <List onReorder={() => {}}>
+        <ListItem label="Inbox" isDisabled />
+        <ListItem label="Sent" isReorderDisabled />
+        <ListItem label="Drafts" />
+      </List>,
+    );
+    // A screen reader activates a handle with a click, whatever its paint.
+    fireEvent.click(screen.getByRole('button', {name: 'Reorder Inbox'}));
+    // Drafts sits alone below the fixed Sent: no move moves it.
+    fireEvent.click(screen.getByRole('button', {name: 'Reorder Drafts'}));
+    expect(screen.queryAllByRole('menuitem', {hidden: true})).toHaveLength(0);
+    for (const name of ['Reorder Inbox', 'Reorder Drafts']) {
+      expect(screen.getByRole('button', {name})).toHaveAttribute(
+        'aria-expanded',
+        'false',
+      );
+    }
   });
 
   it("keeps a fixed row's end content in the movable rows' column", () => {

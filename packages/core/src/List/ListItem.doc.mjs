@@ -115,6 +115,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'reorderLabel',
+      type: 'string',
+      description:
+        'In a List with onReorder, the text this row\'s reorder handle is named after ("Reorder {reorderLabel}"), for a row whose label is not plain text. Without it such a handle is named after the row\'s place.',
+    },
+    {
       name: 'swipeActions',
       type: '{leading?: ItemSwipeAction[]; trailing?: ItemSwipeAction[]}',
       description:
