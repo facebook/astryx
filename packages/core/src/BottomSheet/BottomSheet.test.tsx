@@ -800,9 +800,10 @@ describe('BottomSheet', () => {
   });
 
   describe('under a finger', () => {
-    // A coarse primary pointer: the sheet opens and closes on UIKit's sheet
-    // spring, played on the travel channel (useSheetGestures present/dismiss).
-    beforeEach(() => {
+    // A finger in iOS's idiom (WebKit on iOS): the sheet opens and closes on
+    // UIKit's sheet spring, played on the travel channel (useSheetGestures
+    // present/dismiss). On Android it keeps today's transitions.
+    function stubFinger({ios}: {ios: boolean}) {
       vi.stubGlobal(
         'matchMedia',
         vi.fn((query: string) => ({
@@ -816,7 +817,45 @@ describe('BottomSheet', () => {
           dispatchEvent: vi.fn(),
         })),
       );
+      vi.stubGlobal('CSS', {
+        supports: (condition: string) =>
+          ios && condition.includes('-webkit-touch-callout'),
+        escape: (value: string) => value,
+      });
+    }
+    beforeEach(() => {
+      stubFinger({ios: true});
       vi.stubGlobal('innerHeight', 800);
+    });
+
+    it("keeps today's entrance and exit on Android: no spring, no hold", async () => {
+      stubFinger({ios: false});
+      const played: Keyframe[][] = [];
+      Object.defineProperty(Element.prototype, 'animate', {
+        configurable: true,
+        writable: true,
+        value: function (this: Element, keyframes: Keyframe[]) {
+          played.push(keyframes);
+          return {cancel: vi.fn(), startTime: 0} as unknown as Animation;
+        },
+      });
+      const {rerender} = render(
+        <BottomSheet isOpen={false} onOpenChange={vi.fn()} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      rerender(
+        <BottomSheet isOpen onOpenChange={vi.fn()} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      await act(async () => {
+        await Promise.resolve();
+      });
+      // No spring on the travel channel and no input hold: the stylesheet's
+      // entrance runs, as today.
+      expect(played.flat().some(frame => frame.translate != null)).toBe(false);
+      expect(document.querySelector('[data-astryx-sheet-hold]')).toBeNull();
     });
 
     function recordAnimate() {

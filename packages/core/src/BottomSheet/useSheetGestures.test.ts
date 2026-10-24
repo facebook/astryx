@@ -2913,17 +2913,9 @@ describe('useSheetGestures: the dim follows the sheet', () => {
 });
 
 describe('useSheetGestures: present and dismiss under a finger', () => {
+  // iOS's idiom: the panel calls present/dismiss only there (BottomSheetPanel).
   function stubMedia({reducedMotion = false}: {reducedMotion?: boolean} = {}) {
-    vi.stubGlobal(
-      'matchMedia',
-      vi.fn((query: string) => ({
-        matches:
-          query.includes('pointer: coarse') ||
-          (reducedMotion && query.includes('prefers-reduced-motion')),
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-      })),
-    );
+    stubIosIdiom({reducedMotion});
   }
   beforeEach(() => {
     stubMedia();
