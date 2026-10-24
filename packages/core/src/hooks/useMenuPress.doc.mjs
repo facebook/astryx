@@ -86,7 +86,7 @@ export const docs = {
       name: 'options.touchOpen',
       type: "'tap' | 'press'",
       description:
-        "How a finger opens the menu from its trigger. 'tap': through the trigger's own click when the finger lifts, or with the finger down after the long-press delay. 'press': at once on press-down, as a mouse press does, for a trigger that is not inside a scrolling region; the press then continues as a drag onto a row, which picks it only when the trigger declares touch-action: none or pinch-zoom. The page is not held still: if the browser takes the press for a scroll or a pinch before the finger reaches the menu, the menu closes again through onDismiss.",
+        "How a finger opens the menu from its trigger. 'tap': through the trigger's own click when the finger lifts, or with the finger down after the long-press delay. 'press': at once on press-down, as a mouse press does, for a trigger that is not inside a scrolling region; the press then continues as a drag onto a row, which picks it only when the trigger declares touch-action: pinch-zoom (never none, which would also block a page pinch-zoom that starts on the trigger). The page is not held still: if the browser takes the press for a scroll or a pinch before the finger reaches the menu, the menu closes again through onDismiss.",
       default: "'tap'",
     },
     {
@@ -174,10 +174,13 @@ export const docsDense = {
       'move highlight (null clears); default = focus w/ preventScroll (not :focus-visible after a pointer press), menu root when no row.',
     'options.onActivate':
       'act on row under release; default = dispatch click w/ release button + modifiers.',
-    'options.onDismiss': 'MOUSE released outside: close. Finger: never called.',
+    'options.onDismiss':
+      "close: a MOUSE released outside, or the browser took a finger's press-open (touchOpen 'press') for a scroll or pinch; a finger released outside: not called.",
     'options.getScroller':
       'element to edge-autoscroll while tracking; default = menu root if it overflows.',
     'options.longPressDelayMs': 'finger hold before open, ms.',
+    'options.touchOpen':
+      "finger open: 'tap' (click on lift, or the long-press hold) or 'press' (on press-down; the trigger declares touch-action: pinch-zoom, never none).",
     'options.isEnabled': 'false = inert.',
   },
   returnDescriptions: {

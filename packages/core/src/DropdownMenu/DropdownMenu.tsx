@@ -460,8 +460,9 @@ interface DropdownMenuBaseProps extends BaseProps {
    * scrolling region (a control in a fixed bar); the press then continues as
    * a drag onto a row, picked on release. If the browser takes the press for
    * a scroll before the finger reaches the menu, the menu closes again, so a
-   * trigger whose drag should pick a row declares `touch-action: none` or
-   * `pinch-zoom`. Ignored by bottom-sheet presentation.
+   * trigger whose drag should pick a row declares `touch-action: pinch-zoom`,
+   * never `none`, which would also block a page pinch-zoom that starts on the
+   * trigger. Ignored by bottom-sheet presentation.
    * @default 'tap'
    */
   touchOpen?: 'tap' | 'press';

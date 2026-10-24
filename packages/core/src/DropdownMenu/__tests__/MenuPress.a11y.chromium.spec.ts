@@ -529,6 +529,69 @@ test.describe('DropdownMenu touchOpen="press" on a phone (Chromium)', () => {
   });
 });
 
+// The recommended trigger `touch-action` for `touchOpen="press"` is
+// `pinch-zoom`: it keeps a one-finger pan from starting on the trigger, so the
+// press can slide onto a row, and still lets a page pinch-zoom that starts on
+// it (`none` would block that too).
+test.describe('DropdownMenu touchOpen="press" trigger and page zoom (Chromium)', () => {
+  // A phone: the viewport meta applies and the page can pinch-zoom.
+  test.use({
+    hasTouch: true,
+    isMobile: true,
+    viewport: {width: 390, height: 844},
+    deviceScaleFactor: 3,
+  });
+
+  const sleep = async (ms: number) =>
+    new Promise(resolve => setTimeout(resolve, ms));
+
+  async function touchPoints(
+    cdp: CDPSession,
+    type: 'touchStart' | 'touchMove' | 'touchEnd',
+    points: {x: number; y: number}[],
+  ) {
+    await cdp.send('Input.dispatchTouchEvent', {
+      type,
+      touchPoints: points.map((point, index) => ({...point, id: index + 1})),
+    });
+  }
+
+  test('the press-open trigger declares touch-action pinch-zoom, so a pinch that starts on it zooms the page', async ({
+    page,
+  }) => {
+    await mount(page, 'core-dropdownmenu--touch-open-press');
+    const trigger = page.locator(TRIGGER);
+    expect(await trigger.evaluate(el => getComputedStyle(el).touchAction)).toBe(
+      'pinch-zoom',
+    );
+    expect(await page.evaluate(() => window.visualViewport?.scale)).toBe(1);
+    const cdp = await page.context().newCDPSession(page);
+    // Two fingers land one after the other, the first on the trigger, and
+    // spread apart, as a person pinches.
+    const first = await center(page, TRIGGER);
+    const second = {x: first.x + 40, y: first.y + 140};
+    const mid = {x: (first.x + second.x) / 2, y: (first.y + second.y) / 2};
+    const at = (p: {x: number; y: number}, k: number) => ({
+      x: mid.x + (p.x - mid.x) * k,
+      y: mid.y + (p.y - mid.y) * k,
+    });
+    await touchPoints(cdp, 'touchStart', [first]);
+    await sleep(30);
+    await touchPoints(cdp, 'touchStart', [first, second]);
+    for (let i = 1; i <= 12; i++) {
+      await sleep(16);
+      const k = 1 + (1.5 * i) / 12;
+      await touchPoints(cdp, 'touchMove', [at(first, k), at(second, k)]);
+    }
+    await sleep(16);
+    await touchPoints(cdp, 'touchEnd', []);
+    await sleep(600);
+    expect(
+      await page.evaluate(() => window.visualViewport?.scale ?? 1),
+    ).toBeGreaterThan(1.2);
+  });
+});
+
 test.describe('Selector press model (Chromium)', () => {
   test('touch: a finger that lands on Apple and lifts on Orange selects Orange; the combobox keeps focus', async ({
     page,

@@ -232,7 +232,8 @@ export interface UseMenuPressOptions {
    * the long-press delay. `'press'`: at once on press-down, as a mouse press
    * does, for a trigger that is not inside a scrolling region; the press then
    * continues as a drag onto a row, which picks it only when the trigger
-   * declares `touch-action: none` or `pinch-zoom`. The page is not held
+   * declares `touch-action: pinch-zoom` (never `none`, which would also block
+   * a page pinch-zoom that starts on the trigger). The page is not held
    * still: if the browser takes the press for a scroll or a pinch before the
    * finger reaches the menu, the menu closes again through `onDismiss`.
    * @default 'tap'
