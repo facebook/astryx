@@ -558,7 +558,8 @@ for (const item of cases) {
       reducedMotion: observed.media.reducedMotion,
       fonts: observed.fonts === 'loaded',
       noHorizontalOverflow: !observed.horizontalOverflow,
-      geometrySettled: settledGeometry.stable && settledGeometry.boxes > 1,
+      // A closed menu leaves only its trigger, one box.
+      geometrySettled: settledGeometry.stable && settledGeometry.boxes >= 1,
       // A nested selection dismisses the whole stack, root menu included.
       rootClosed:
         (item.interaction === 'select') === (observed.rootMenu === null),

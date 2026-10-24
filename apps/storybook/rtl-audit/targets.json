@@ -250,7 +250,7 @@
     },
     "selectors": {
       "overlay": "[data-testid=\"dropdown-menu-submenu-flyout\"]",
-      "overlayRoot": "body"
+      "overlayRoot": "[role=\"menu\"]"
     }
   },
   {
