@@ -183,6 +183,9 @@ then have contradictory winners.
   their values and meaning in every theme, and so do the Tailwind utilities
   that resolve to them (`bg-success`, `text-success`, `border-success`, and the
   warning and error forms); Astryx components use the surface roles instead.
+  Tailwind projects the roles as `text-status-<status>` (the status text role)
+  and `bg-<status>-emphasized` (the strong fills); like every Tailwind key,
+  these alias the tokens and add no CSS variable.
 
 This record does not own:
 
