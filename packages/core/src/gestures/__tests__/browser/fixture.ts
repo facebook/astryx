@@ -82,6 +82,7 @@ document.body.innerHTML = `
       <div style="height: 1200px">sheet content</div>
     </div>
     <div id="passive" style="height: 60px; background: #dfd; touch-action: pan-y pinch-zoom">passive control</div>
+    <div id="slider" style="height: 60px; background: #fdf">slider: a pan that turns selection off</div>
     <div id="card" style="height: 80px; background: #def">card (swipe up)</div>
     <div id="cardLate" style="height: 80px; background: #fed">card, claims only when it begins</div>
     <div style="height: 1600px">page</div>
@@ -167,6 +168,15 @@ host.attach(element('cardLate'), cardLate);
 // press consumer, under pan-y, as a passive switch is.
 const passiveEvent = (state: string) =>
   window.__gestures.push({name: 'passive', state, time: performance.now()});
+host.attach(
+  element('slider'),
+  new PanGestureRecognizer({
+    name: 'slider',
+    direction: 'horizontal',
+    preventsTextSelection: true,
+  }),
+);
+
 host.attachConsumer(element('passive'), {
   touchBegan: () => passiveEvent('began'),
   touchMoved: () => passiveEvent('moved'),

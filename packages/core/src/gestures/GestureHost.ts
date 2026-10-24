@@ -39,6 +39,10 @@
  * - Each element gets the `touch-action` its recognizers leave the browser
  *   (touchAction.ts), set inline when they attach and restored when they
  *   detach.
+ * - While a finger or a pen is down, text selection and the touch callout
+ *   are off on the press-tracked element (attached or delegated) and on the
+ *   elements of recognizers with `preventsTextSelection`, restored when the
+ *   contact ends; a mouse never takes this lock.
  * - Each element with a recognizer that can claim a touch while it moves (a
  *   pan, a swipe, a long press that then drags, a pinch, a rotation) gets a
  *   NON-passive `touchmove` listener that cancels the event only while a
@@ -156,6 +160,13 @@ function claimsWhileMoving(recognizer: GestureRecognizer): boolean {
   );
 }
 
+/** What a held finger must not start on a control or a cell. */
+const SELECTION_LOCK = [
+  '-webkit-touch-callout',
+  '-webkit-user-select',
+  'user-select',
+] as const;
+
 const PASSIVE_CAPTURE = {capture: true, passive: true} as const;
 const ACTIVE_CAPTURE = {capture: true, passive: false} as const;
 
@@ -206,6 +217,16 @@ export class GestureHost {
   private readonly doc: Document;
   private readonly registry = new Map<Element, Registration>();
   private readonly delegated = new Set<DelegatedConsumerType>();
+  /** Elements whose selection a held contact turned off, with what to restore. */
+  private readonly selectionLocks = new Map<
+    Element,
+    {
+      count: number;
+      saved: ReadonlyArray<{name: string; value: string; priority: string}>;
+    }
+  >();
+  /** The elements each contact locked, by host contact id. */
+  private readonly lockedBy = new Map<number, Element[]>();
   /** Touch.identifier → arena id, for live fingers. */
   private readonly touchIds = new Map<number, number>();
   /** Touch.identifier → the element the finger landed on. */
@@ -532,11 +553,13 @@ export class GestureHost {
   ): {
     recognizers: GestureRecognizer[];
     consumer: TouchConsumer | null;
+    consumerElement: Element | null;
     hovers: HoverGestureRecognizer[];
   } {
     const recognizers: GestureRecognizer[] = [];
     const hovers: HoverGestureRecognizer[] = [];
     let consumer: TouchConsumer | null = null;
+    let consumerElement: Element | null = null;
     let hasConsumerOwner = pointerType == null;
     for (
       let node: Node | null = target instanceof Node ? target : null;
@@ -556,18 +579,97 @@ export class GestureHost {
       }
       if (registration?.consumer != null) {
         consumer = registration.consumer;
+        consumerElement = node;
         hasConsumerOwner = true;
         continue;
       }
       for (const type of this.delegated) {
         if (node.hasAttribute(type.attribute)) {
           consumer = type.create(node, pointerType);
+          consumerElement = consumer == null ? null : node;
           hasConsumerOwner = true;
           break;
         }
       }
     }
-    return {recognizers, consumer, hovers};
+    return {recognizers, consumer, consumerElement, hovers};
+  }
+
+  /**
+   * Turn text selection and the touch callout off on the press-tracked
+   * element and on the elements of recognizers that ask, for as long as this
+   * finger or pen is down: a UIKit control or cell never starts a selection
+   * under a held finger. Restored when the contact ends; a mouse never gets
+   * here, so desktop selection is untouched.
+   */
+  private lockSelection(
+    id: number,
+    recognizers: ReadonlyArray<GestureRecognizer>,
+    consumerElement: Element | null,
+  ): void {
+    const elements = new Set<Element>();
+    if (consumerElement != null) {
+      elements.add(consumerElement);
+    }
+    for (const recognizer of recognizers) {
+      if (
+        recognizer.preventsTextSelection &&
+        recognizer.view instanceof Element
+      ) {
+        elements.add(recognizer.view);
+      }
+    }
+    const locked: Element[] = [];
+    for (const element of elements) {
+      const style = styleOf(element);
+      if (style == null) {
+        continue;
+      }
+      locked.push(element);
+      const lock = this.selectionLocks.get(element);
+      if (lock != null) {
+        lock.count += 1;
+        continue;
+      }
+      this.selectionLocks.set(element, {
+        count: 1,
+        saved: SELECTION_LOCK.map(name => ({
+          name,
+          value: style.getPropertyValue(name),
+          priority: style.getPropertyPriority(name),
+        })),
+      });
+      for (const name of SELECTION_LOCK) {
+        style.setProperty(name, 'none');
+      }
+    }
+    if (locked.length > 0) {
+      this.lockedBy.set(id, locked);
+    }
+  }
+
+  /** Undo `lockSelection` for a contact that ended; idempotent. */
+  private unlockSelection(id: number): void {
+    const locked = this.lockedBy.get(id);
+    if (locked == null) {
+      return;
+    }
+    this.lockedBy.delete(id);
+    for (const element of locked) {
+      const lock = this.selectionLocks.get(element);
+      if (lock == null || --lock.count > 0) {
+        continue;
+      }
+      this.selectionLocks.delete(element);
+      const style = styleOf(element);
+      for (const {name, value, priority} of lock.saved) {
+        if (value === '') {
+          style?.removeProperty(name);
+        } else {
+          style?.setProperty(name, value, priority);
+        }
+      }
+    }
   }
 
   // --- Touch events ----------------------------------------------------------
@@ -599,12 +701,16 @@ export class GestureHost {
         stale.push(previous);
       }
       const target = touch.target instanceof Node ? touch.target : event.target;
-      const {recognizers, consumer} = this.participantsAt(target, 'touch');
+      const {recognizers, consumer, consumerElement} = this.participantsAt(
+        target,
+        'touch',
+      );
       if (recognizers.length === 0 && consumer == null) {
         continue;
       }
       const id = this.nextId++;
       this.touchIds.set(touch.identifier, id);
+      this.lockSelection(id, recognizers, consumerElement);
       this.watchTarget(touch.identifier, target);
       this.lastFed.set(id, {x: touch.clientX, y: touch.clientY, time});
       this.pairTouch(id, {x: touch.clientX, y: touch.clientY, target});
@@ -927,6 +1033,7 @@ export class GestureHost {
 
   /** Forget a contact's pairing and echo state. */
   private forgetContact(id: number): void {
+    this.unlockSelection(id);
     this.lastFed.delete(id);
     this.judgedUncancelable.delete(id);
     this.unpairedTouches.delete(id);
@@ -957,7 +1064,7 @@ export class GestureHost {
     if (event.pointerType === 'mouse' && event.button !== 0) {
       return;
     }
-    const {recognizers, consumer} = this.participantsAt(
+    const {recognizers, consumer, consumerElement} = this.participantsAt(
       event.target,
       event.pointerType,
     );
@@ -966,6 +1073,9 @@ export class GestureHost {
     }
     const id = this.nextId++;
     this.pointerIds.set(event.pointerId, id);
+    if (event.pointerType !== 'mouse') {
+      this.lockSelection(id, recognizers, consumerElement);
+    }
     this.arena.began([
       {
         id,
@@ -1027,6 +1137,7 @@ export class GestureHost {
       return;
     }
     this.pointerIds.delete(event.pointerId);
+    this.unlockSelection(id);
     const dispositions = this.arena.ended([
       {id, x: event.clientX, y: event.clientY, time: eventTime(event)},
     ]);
@@ -1050,6 +1161,7 @@ export class GestureHost {
     const id = this.pointerIds.get(event.pointerId);
     if (id != null) {
       this.pointerIds.delete(event.pointerId);
+      this.unlockSelection(id);
       this.arena.cancelled([id], eventTime(event));
     }
   };
@@ -1244,6 +1356,9 @@ export class GestureHost {
   /** The app lost focus: UIKit cancels every touch in flight. */
   private cancelEverything(time: number): void {
     const ids = [...this.pointerIds.values()];
+    for (const id of ids) {
+      this.unlockSelection(id);
+    }
     for (const identifier of [...this.touchIds.keys()]) {
       const id = this.forgetFinger(identifier);
       if (id != null) {
@@ -1285,6 +1400,12 @@ function coalescedHistory(event: PointerEvent): TouchSample[] {
     y: sample.clientY,
     time: eventTime(sample),
   }));
+}
+
+/** An element's inline style, when it has one (HTML and SVG elements). */
+function styleOf(element: Element): CSSStyleDeclaration | null {
+  const style = (element as Partial<ElementCSSInlineStyle>).style;
+  return style instanceof Object ? style : null;
 }
 
 const hosts = new WeakMap<Document, GestureHost>();
