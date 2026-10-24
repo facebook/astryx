@@ -245,10 +245,13 @@ function measureComponentImport(entry, stylesheetText, ownDistDir, exportName) {
   if (bundle === null) return {importGzipBytes: null, cssGzipBytes: null};
   // CSS counts only the rules the component's own package modules reference:
   // classes from modules reached in other packages belong to their stylesheets.
-  const ownDir = path.resolve(ownDistDir || path.dirname(entry)) + path.sep;
+  // Compare real paths: esbuild reports inputs with symlinks resolved.
+  const ownDir =
+    fs.realpathSync(path.resolve(ownDistDir || path.dirname(entry))) + path.sep;
   const classes = new Set();
   for (const input of bundle.inputs) {
-    if (!input.startsWith(ownDir)) continue;
+    if (!fs.existsSync(input) || !fs.realpathSync(input).startsWith(ownDir))
+      continue;
     for (const name of classNamesIn(fs.readFileSync(input, 'utf8')))
       classes.add(name);
   }
