@@ -17,7 +17,7 @@ export const docs = {
     'clear',
   ],
   description:
-    "The search field of a phone app, as on iOS 26: a rounded field with a magnifier that, once tapped, narrows to make room for a glass close button and can rise into its host's bar. Under a finger it activates and cancels on the clock iOS uses; under a mouse its parts take their places at once. Its keyboard shows a Search key and does not autocorrect. Experimental: lands in lab first.",
+    "The search field of a phone app, as on iOS 26: a rounded field with a magnifier that, once tapped, narrows to make room for a glass close button and can rise into its host's bar. On iOS under a finger it activates and cancels on the clock iOS uses, with a glass close button; on other touch screens and with a mouse its parts take their places at once and the close button is plain. Its keyboard shows a Search key and does not autocorrect. Experimental: lands in lab first.",
   components: [
     {
       name: 'SearchField',
