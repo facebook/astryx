@@ -20,23 +20,33 @@ import {cubicBezier, type BezierPoints} from '../motion/bezier';
 import {toast} from '../motion/uikit/toast';
 
 /**
- * Where the card sits for a finger that travelled `fingerTravel` toward the
- * edge since touch-down: still until `toast.followFrom`, then at
- * `toast.followRatio` of the finger.
+ * Where the card sits for a finger that travelled `fingerTravel` since
+ * touch-down (positive toward the edge, negative away from it): still until
+ * `toast.followFrom`, then at `toast.followRatio` of the finger, either way.
+ * Away from the edge the card only stretches: a release there always springs
+ * it back (`isDismissRelease`).
  */
 export function followOffset(fingerTravel: number): number {
-  return toast.followRatio * Math.max(0, fingerTravel - toast.followFrom);
+  const past = Math.abs(fingerTravel) - toast.followFrom;
+  if (past <= 0) {
+    return 0;
+  }
+  return Math.sign(fingerTravel) * toast.followRatio * past;
 }
 
 /**
  * Whether a release dismisses: the card is at least `toast.dismissOffset`
- * out, or the finger was moving toward the edge at `toast.flickVelocity` or
- * faster when it lifted, by the shared release filter (`spec:AST-100`: a
- * finger that rested past the stillness interval before the lift reads no
- * speed).
+ * out, or it is at or past rest toward the edge and the finger was moving
+ * toward the edge at `toast.flickVelocity` or faster when it lifted, by the
+ * shared release filter (`spec:AST-100`: a finger that rested past the
+ * stillness interval before the lift reads no speed). A card stretched away
+ * from the edge always springs back, however fast it is flicked back.
  */
 export function isDismissRelease(offset: number, velocity: number): boolean {
-  return offset >= toast.dismissOffset || velocity >= toast.flickVelocity;
+  return (
+    offset >= toast.dismissOffset ||
+    (offset >= 0 && velocity >= toast.flickVelocity)
+  );
 }
 
 /** How far past its edge a retracting card ends: clear of its shadow. */

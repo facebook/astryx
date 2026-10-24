@@ -2571,6 +2571,63 @@ describe('Toast swipe dismissal under a finger', () => {
     });
   });
 
+  it('stretches the card after a drag that turns back away from the edge, then springs it back', async () => {
+    // A top toast: the finger goes 12 px up (past the 10 px at which the swipe
+    // begins and takes the touch), then 74 px back down past its start. From
+    // the swipe's start the page never gets the moves; the card follows down
+    // at 0.55 of the finger past 14 px, and its release springs it back.
+    const {visualToast, onHide} = await renderSwipeToast(SWIPE_TOAST, 'topEnd');
+    const start = strokeStart();
+    const moves: Event[] = [];
+    act(() => {
+      visualToast.dispatchEvent(touchAt('touchstart', 35, start, 100));
+      for (const [time, y] of [
+        [40, 94],
+        [80, 88],
+        [180, 110],
+        [280, 130],
+        [380, 150],
+        [480, 174],
+      ] as const) {
+        const move = touchAt('touchmove', 35, start + time, y);
+        moves.push(move);
+        visualToast.dispatchEvent(move);
+      }
+    });
+    expect(moves.slice(1).every(move => move.defaultPrevented)).toBe(true);
+    expect(cardY(visualToast)).toBeCloseTo(0.55 * (74 - 14), 5);
+    act(() => {
+      visualToast.dispatchEvent(touchAt('touchend', 35, start + 900, 174));
+    });
+    expect(onHide).not.toHaveBeenCalled();
+    expect(cardY(visualToast)).toBe(0);
+  });
+
+  it('springs a stretched card back even when it is flicked back toward the edge', async () => {
+    // A top toast: the swipe begins 12 px up, then the card is pulled 40 px
+    // down and flicked 20 px back up in 30 ms: the finger is fast toward the
+    // edge, but the card is still below rest.
+    const {visualToast, onHide} = await renderSwipeToast(SWIPE_TOAST, 'topEnd');
+    const start = strokeStart();
+    act(() => {
+      visualToast.dispatchEvent(touchAt('touchstart', 36, start, 100));
+      for (const [time, y] of [
+        [40, 94],
+        [80, 88],
+        [280, 120],
+        [480, 140],
+        [495, 130],
+        [510, 120],
+      ] as const) {
+        visualToast.dispatchEvent(touchAt('touchmove', 36, start + time, y));
+      }
+      visualToast.dispatchEvent(touchAt('touchend', 36, start + 512, 120));
+    });
+    await afterRetract();
+    expect(onHide).not.toHaveBeenCalled();
+    expect(cardY(visualToast)).toBe(0);
+  });
+
   it('snaps a slow 20 px drag back', async () => {
     const {visualToast, onHide} = await renderSwipeToast();
     act(() => {

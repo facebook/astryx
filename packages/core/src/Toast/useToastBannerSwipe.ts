@@ -35,10 +35,14 @@
  *   fails it, so two fingers stay the page's pinch zoom;
  * - the card stays still for the first `toast.followFrom` px of finger
  *   travel, then follows at `toast.followRatio` of the finger, writing only
- *   its translation (no render, no layout read);
- * - on release, the card dismisses if it is `toast.dismissOffset` out or
- *   the finger was moving toward the edge at `toast.flickVelocity`
- *   (`isDismissRelease`): it calls `dismiss`. Otherwise the card springs
+ *   its translation (no render, no layout read). A drag that turns back away
+ *   from the edge after the swipe took the touch stretches the card that way
+ *   too, as the banner does, and its release always springs it back;
+ * - on release, the card dismisses if it is `toast.dismissOffset` out, or
+ *   if it is at or past rest and the finger was moving toward the edge at
+ *   `toast.flickVelocity` when it lifted, by the shared release filter
+ *   (`isDismissRelease`): it calls `dismiss`. A card stretched away from
+ *   the edge always springs back. Otherwise the card springs
  *   back to rest on the compositor, handed its release velocity, on
  *   `springs.settle` (the `spec:AST-094` FR4 role the banner's measured
  *   settle matches);

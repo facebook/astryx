@@ -29,8 +29,7 @@ describe('followOffset', () => {
     expect(followOffset(0)).toBe(0);
     expect(followOffset(toast.followFrom - 0.5)).toBe(0);
     expect(followOffset(toast.followFrom)).toBe(0);
-    // Never pulled back past rest by a finger that moved away from the edge.
-    expect(followOffset(-30)).toBe(0);
+    expect(followOffset(-toast.followFrom)).toBe(0);
   });
 
   it('then follows at the follow ratio, continuously (no jump)', () => {
@@ -46,6 +45,15 @@ describe('followOffset', () => {
 
   it('reproduces the banner: a 60 px drag moves it 0.55 × (60 − 14)', () => {
     expect(followOffset(60)).toBeCloseTo(25.3, 10);
+  });
+
+  it('stretches the card the same way when the finger turns back away from the edge', () => {
+    // The banner's 60 pt pull-down: 0.55 × (60 − 14), away from the edge.
+    expect(followOffset(-60)).toBeCloseTo(-25.3, 10);
+    expect(followOffset(-(toast.followFrom + 0.1))).toBeCloseTo(
+      -0.1 * toast.followRatio,
+      10,
+    );
   });
 });
 
@@ -78,6 +86,17 @@ describe('isDismissRelease', () => {
       expect(isDismissRelease(followOffset(travel), speed)).toBe(dismissed);
     },
   );
+
+  it('springs a card stretched away from the edge back, however it is released', () => {
+    expect(isDismissRelease(followOffset(-80), -400)).toBe(false);
+    expect(isDismissRelease(followOffset(-80), 0)).toBe(false);
+    // Even flicked back toward the edge, a card still past rest the other
+    // way springs back.
+    expect(isDismissRelease(followOffset(-80), toast.flickVelocity)).toBe(
+      false,
+    );
+    expect(isDismissRelease(-0.1, 4 * toast.flickVelocity)).toBe(false);
+  });
 
   it('dismisses at the dismiss offset or the flick velocity, whichever comes first', () => {
     expect(isDismissRelease(toast.dismissOffset, 0)).toBe(true);
