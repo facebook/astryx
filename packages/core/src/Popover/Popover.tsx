@@ -10,9 +10,18 @@
  *
  * For hover-triggered overlays, use HoverCard instead.
  *
+ * `presentation` chooses the surface, with the vocabulary DropdownMenu and
+ * Selector use: the anchored popover (the default), a BottomSheet, or
+ * `adaptive` — a BottomSheet on a compact touch screen and the popover
+ * elsewhere (the shared adaptive presentation policy), which is what iOS does
+ * with a popover unless the app keeps it. The surface is chosen when the
+ * popover opens; whichever is open stays until it closes. The BottomSheet
+ * loads on demand (lazyPopoverBottomSheet.ts).
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Popover/Popover.test.tsx
  * - /packages/core/src/Popover/index.ts
+ * - /packages/core/src/Popover/PopoverPresentation.test.tsx
  * - /apps/storybook/stories/Popover.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/Popover/ (showcase blocks)
  */
@@ -25,6 +34,10 @@ import React, {
   type ReactNode,
 } from 'react';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
+import {
+  useAdaptivePresentation,
+  type AdaptivePresentation,
+} from '../hooks/useAdaptivePresentation';
 import * as stylex from '@stylexjs/stylex';
 import {devWarn} from '../utils/devWarning';
 import type {BaseProps} from '../BaseProps';
@@ -36,6 +49,9 @@ import {clampInlineSize, isIntrinsicInlineSize} from '../Layer/clampInlineSize';
 import {spacingVars} from '../theme/tokens.stylex';
 import {InteractiveRoleContext} from '../InteractiveRoleContext/InteractiveRoleContext';
 import type {SpacingStep} from '../utils/types';
+import {PopoverBottomSheet} from './lazyPopoverBottomSheet';
+import {Button} from '../Button';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Helpers
@@ -57,6 +73,13 @@ function findTriggerButton(el: HTMLElement): HTMLElement | null {
 // =============================================================================
 // Types
 // =============================================================================
+
+/**
+ * The surface a Popover presents its content on: anchored to the trigger, in
+ * a BottomSheet, or adaptive (a BottomSheet on a compact touch screen, the
+ * popover elsewhere).
+ */
+export type PopoverPresentation = AdaptivePresentation;
 
 /**
  * Props passed to render-prop children for explicit trigger wiring.
@@ -247,6 +270,27 @@ export interface PopoverProps extends Pick<
   hasEscapeDismiss?: boolean;
 
   /**
+   * The surface that holds the content. `'popover'` anchors it to the
+   * trigger. `'bottom-sheet'` presents it in a modal BottomSheet, labeled
+   * by `label`. `'adaptive'` presents the BottomSheet on a compact touch
+   * screen (a coarse pointer and a viewport at most 768 px wide: a phone in
+   * portrait, and in landscape only while it stays that narrow) and the
+   * anchored popover elsewhere, which is what iOS does with a popover by
+   * default.
+   *
+   * In a sheet, `placement`, `alignment`, `width`, `xstyle`, `className`,
+   * `style`, `role`, `isModal` and `hasAutoFocus` do not apply (the sheet is
+   * a modal dialog with its own focus handling); `padding` insets the
+   * sheet's content; dismissal follows `hasLightDismiss` and
+   * `hasEscapeDismiss` (a sheet without light dismiss keeps Escape unless
+   * that is off too, and one with neither keeps the hidden fallback close
+   * control of `hasCloseButton` and `closeButtonLabel`). The surface is
+   * chosen when the popover opens and kept until it closes.
+   * @default 'popover'
+   */
+  presentation?: PopoverPresentation;
+
+  /**
    * Test ID for the popover container.
    */
   'data-testid'?: string;
@@ -264,6 +308,22 @@ const styles = stylex.create({
   // don't shift the anchor position and cause popover jitter.
   anchorWrapper: {
     display: 'inline-flex',
+  },
+  // The sheet's fallback close control when it has no other way out: hidden
+  // until it is reached, as the anchored surface's is.
+  sheetFallbackClose: {
+    width: {
+      default: 1,
+      ':focus-within': 'auto',
+    },
+    height: {
+      default: 1,
+      ':focus-within': 'auto',
+    },
+    overflow: {
+      default: 'hidden',
+      ':focus-within': 'visible',
+    },
   },
   // The painted surface is capped to the viewport with the layer runtime's
   // one definition (spec:AST-059 FR2, FR3): the layer box above it caps the
@@ -359,15 +419,21 @@ export function Popover({
   hasAutoFocus,
   hasLightDismiss = true,
   hasEscapeDismiss = true,
+  presentation = 'popover',
   xstyle,
   className,
   style,
   'data-testid': testId,
 }: PopoverProps): ReactElement {
+  const t = useTranslator();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const measurementFrameRef = useRef<number | null>(null);
   const [hasOverflow, setHasOverflow] = useState(false);
   const isControlled = isOpen !== undefined;
+  // The bottom-sheet presentation: the surface it resolves to now, and
+  // whether the sheet is the surface that is open.
+  const resolvedPresentation = useAdaptivePresentation(presentation);
+  const [isSheetOpenState, setIsSheetOpenState] = useState(false);
 
   const handlePopoverShow = useCallback(() => {
     onOpenChange?.(true);
@@ -403,6 +469,28 @@ export function Popover({
     onShow: handlePopoverShow,
     onHide: handlePopoverHide,
   });
+
+  // A controlled popover opens on the surface its presentation resolves to
+  // as it opens, and keeps that surface until it closes: a phone rotated past
+  // the compact width while the sheet is open keeps its sheet.
+  const [controlledSurface, setControlledSurface] = useState<
+    'popover' | 'bottom-sheet' | null
+  >(null);
+  const isSheetOpen = isControlled
+    ? isOpen === true && controlledSurface === 'bottom-sheet'
+    : isSheetOpenState;
+  const isAnySurfaceOpen = popover.isOpen || isSheetOpen;
+  const sheetId = `${popover.id}-sheet`;
+
+  const setSheetOpen = useCallback(
+    (next: boolean) => {
+      if (!isControlled) {
+        setIsSheetOpenState(next);
+      }
+      onOpenChange?.(next);
+    },
+    [isControlled, onOpenChange],
+  );
 
   const measureOverflow = useCallback(() => {
     const surface = popover.contentRef.current;
@@ -493,9 +581,17 @@ export function Popover({
       ) {
         return;
       }
+      // Opening chooses the surface; an open popover closes as a popover.
+      if (
+        isSheetOpen ||
+        (!popover.isOpen && resolvedPresentation === 'bottom-sheet')
+      ) {
+        setSheetOpen(!isSheetOpen);
+        return;
+      }
       popover.toggle();
     },
-    [isEnabled, popover],
+    [isEnabled, isSheetOpen, popover, resolvedPresentation, setSheetOpen],
   );
 
   // Shared handler for keydown events on role="button" elements.
@@ -522,13 +618,10 @@ export function Popover({
         'aria-haspopup',
         popover.triggerProps['aria-haspopup'],
       );
-      button.setAttribute(
-        'aria-expanded',
-        String(popover.triggerProps['aria-expanded']),
-      );
+      button.setAttribute('aria-expanded', String(isAnySurfaceOpen));
       button.setAttribute(
         'aria-controls',
-        popover.triggerProps['aria-controls'],
+        isSheetOpen ? sheetId : popover.triggerProps['aria-controls'],
       );
 
       // Event handlers
@@ -551,7 +644,14 @@ export function Popover({
         }
       };
     },
-    [popover, handleTriggerClick, handleTriggerKeyDown],
+    [
+      popover,
+      isAnySurfaceOpen,
+      isSheetOpen,
+      sheetId,
+      handleTriggerClick,
+      handleTriggerKeyDown,
+    ],
   );
 
   // Sibling mode: attach to external anchorRef
@@ -629,17 +729,33 @@ export function Popover({
     };
   }, [anchorRef, popover, attachTrigger]);
 
-  // Sync controlled state
+  // Sync controlled state: latch the surface as `isOpen` turns on (before
+  // paint), and show or hide the anchored popover, the one surface with an
+  // imperative API. The sheet follows the latch in render (`isSheetOpen`).
   useIsomorphicLayoutEffect(() => {
     if (!isControlled) {
       return;
     }
-    if (isOpen && !popover.isOpen) {
-      popover.show();
-    } else if (!isOpen && popover.isOpen) {
-      popover.hide();
+    if (!isOpen) {
+      if (popover.isOpen) {
+        popover.hide();
+      }
+      if (controlledSurface != null) {
+        // eslint-disable-next-line @eslint-react/set-state-in-effect -- the latch clears as the controlled popover closes
+        setControlledSurface(null);
+      }
+      return;
     }
-  }, [isOpen, isControlled, popover]);
+    const surface =
+      controlledSurface ?? (popover.isOpen ? 'popover' : resolvedPresentation);
+    if (surface !== controlledSurface) {
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- the surface is chosen once, as the controlled popover opens
+      setControlledSurface(surface);
+    }
+    if (surface === 'popover' && !popover.isOpen) {
+      popover.show();
+    }
+  }, [isOpen, isControlled, popover, resolvedPresentation, controlledSurface]);
 
   // Popover's one sizing fact: an explicit width wins over trigger matching.
   // Fit against the viewport is the layer runtime's (spec:AST-059).
@@ -652,16 +768,63 @@ export function Popover({
       );
   const layerXstyle = [popoverSizeXstyle, layerAnimations[placement]];
 
+  // One instance of the content at a time: the sheet holds it while it is
+  // the surface (open, or the one an open would choose, through its exit),
+  // the anchored layer otherwise.
+  const isContentInSheet =
+    isSheetOpen || (resolvedPresentation === 'bottom-sheet' && !popover.isOpen);
+  const anchoredContent = (
+    <div data-testid={isContentInSheet ? undefined : testId}>
+      {isContentInSheet ? null : content}
+    </div>
+  );
+  const sheetPurpose = hasLightDismiss
+    ? 'info'
+    : hasEscapeDismiss
+      ? 'form'
+      : 'required';
+  // The sheet renders once it can be the surface (it then loads), and while
+  // it is the open one. A sheet with no dismissal keeps the anchored
+  // surface's fallback close control, so it can always be closed.
+  const sheet =
+    isSheetOpen || resolvedPresentation === 'bottom-sheet' ? (
+      <PopoverBottomSheet
+        id={sheetId}
+        isOpen={isSheetOpen}
+        onOpenChange={setSheetOpen}
+        label={label ?? ''}
+        height="tall"
+        padding={padding}
+        purpose={sheetPurpose}
+        data-testid={isContentInSheet ? testId : undefined}>
+        {isContentInSheet ? content : null}
+        {isContentInSheet &&
+        sheetPurpose === 'required' &&
+        hasCloseButton !== false ? (
+          <div
+            data-astryx-popover-fallback-close=""
+            {...stylex.props(styles.sheetFallbackClose)}>
+            <Button
+              variant="secondary"
+              label={closeButtonLabel ?? t('@astryx.popover.close')}
+              onClick={() => setSheetOpen(false)}
+            />
+          </div>
+        ) : null}
+      </PopoverBottomSheet>
+    ) : null;
+
   // Sibling mode: render only the popover (no wrapper needed)
   if (anchorRef && children == null) {
     return (
       <>
-        {popover.render(<div data-testid={testId}>{content}</div>, {
+        {popover.render(anchoredContent, {
           placement,
           alignment,
           offset: spacingVars['--spacing-1'],
           xstyle: layerXstyle,
         })}
+        {sheet}
       </>
     );
   }
@@ -675,19 +838,20 @@ export function Popover({
       // The caller renders and owns this trigger element.
       onClick: () => handleTriggerClick(),
       'aria-haspopup': 'dialog',
-      'aria-expanded': popover.isOpen,
-      'aria-controls': popover.id,
+      'aria-expanded': isAnySurfaceOpen,
+      'aria-controls': isSheetOpen ? sheetId : popover.id,
     };
 
     return (
       <>
         {children(triggerProps)}
-        {popover.render(<div data-testid={testId}>{content}</div>, {
+        {popover.render(anchoredContent, {
           placement,
           alignment,
           offset: spacingVars['--spacing-1'],
           xstyle: layerXstyle,
         })}
+        {sheet}
       </>
     );
   }
@@ -700,12 +864,13 @@ export function Popover({
           {children}
         </div>
       </InteractiveRoleContext>
-      {popover.render(<div data-testid={testId}>{content}</div>, {
+      {popover.render(anchoredContent, {
         placement,
         alignment,
         offset: spacingVars['--spacing-1'],
         xstyle: layerXstyle,
       })}
+      {sheet}
     </>
   );
 }
