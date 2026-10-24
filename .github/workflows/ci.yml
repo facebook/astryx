@@ -2042,6 +2042,16 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+      # Under Reduce Motion a layer that opens under a finger fades in, while
+      # under a mouse it still appears at once. Reduce Motion and a coarse
+      # pointer are media queries, which only a real engine resolves.
+      - name: Run layer reduced-motion entrance contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/Layer/__tests__/LayerReducedMotion.a11y.chromium.spec.ts \
+            --project chromium \
+            --output layer-reduced-motion-output
+
       # The accordion contract's header role and name, the page Tab step between
       # headers, the absence of arrow-key focus movement, and the single-expansion
       # sibling collapse are accessibility-tree and real-browser facts that jsdom
