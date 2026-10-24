@@ -4,12 +4,12 @@
 
 /**
  * @file useAdaptivePresentation.ts
- * @input Uses the shared SSR-safe media-query hook
+ * @input Uses React's external-store subscription over window.matchMedia
  * @output Resolves popover/bottom-sheet presentation policy
  * @position Internal overlay policy shared across component families
  */
 
-import {useMediaQuery} from './useMediaQuery';
+import {useCallback, useSyncExternalStore} from 'react';
 
 export type AdaptivePresentation = 'popover' | 'bottom-sheet' | 'adaptive';
 export type ResolvedAdaptivePresentation = Exclude<
@@ -23,11 +23,44 @@ export type ResolvedAdaptivePresentation = Exclude<
 export const COMPACT_TOUCH_PRESENTATION_QUERY =
   '(max-width: 768px) and (pointer: coarse)';
 
+const noSubscription = () => () => {};
+const notCompact = () => false;
+
+/**
+ * Resolve `adaptive` against the compact-touch query. Only an `adaptive`
+ * presentation subscribes to `matchMedia`; a fixed presentation never reads
+ * the query, so it holds no listener for it
+ * (`architecture:react-component-runtime` INV5). SSR-safe: the server
+ * snapshot is "not compact", as `useMediaQuery`'s default is.
+ */
 export function useAdaptivePresentation(
   presentation: AdaptivePresentation,
 ): ResolvedAdaptivePresentation {
-  const isCompactTouch = useMediaQuery(COMPACT_TOUCH_PRESENTATION_QUERY);
-  return presentation === 'adaptive'
+  const isAdaptive = presentation === 'adaptive';
+  const subscribe = useCallback(
+    (onStoreChange: () => void) => {
+      if (!isAdaptive) {
+        return noSubscription();
+      }
+      const mql = window.matchMedia(COMPACT_TOUCH_PRESENTATION_QUERY);
+      mql.addEventListener('change', onStoreChange);
+      return () => mql.removeEventListener('change', onStoreChange);
+    },
+    [isAdaptive],
+  );
+  const getSnapshot = useCallback(
+    () =>
+      isAdaptive
+        ? window.matchMedia(COMPACT_TOUCH_PRESENTATION_QUERY).matches
+        : false,
+    [isAdaptive],
+  );
+  const isCompactTouch = useSyncExternalStore(
+    subscribe,
+    getSnapshot,
+    notCompact,
+  );
+  return isAdaptive
     ? isCompactTouch
       ? 'bottom-sheet'
       : 'popover'

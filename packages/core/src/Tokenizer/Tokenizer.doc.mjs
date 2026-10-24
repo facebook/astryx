@@ -289,6 +289,13 @@ export const docs = {
       type: 'CSSProperties',
       description: 'Inline styles for the visual control box.',
     },
+    {
+      name: 'experimental',
+      type: "{presentation?: 'popover' | 'bottom-sheet' | 'adaptive'}",
+      stability: 'experimental',
+      description:
+        "Experimental options: anything in this object may change or be removed in a patch release, and omitting it keeps the stable behavior. presentation (default 'popover') chooses how the field presents its choices. popover is the inline combobox with its anchored suggestion menu. bottom-sheet replaces it with a trigger showing the selected tokens that opens one tall modal sheet: a search row on top, full-width checkbox rows that keep their place while the sheet is open, a Create row with hasCreate, and a footer with a confirmed Clear all and Done. adaptive uses the bottom sheet on compact touch screens and the popover otherwise, resolved the same way Selector resolves it. In the sheet presentation the trigger is the control (ref, id, aria-* and data-* reach it; with experimental passed, ref also accepts a Ref<HTMLInputElement | HTMLButtonElement>; the exported TokenizerProps interface is unchanged), and renderItem, renderToken, endContent, hasClear, hasEntriesOnFocus, menuWidth, tokenOverflowBehavior and hasAutoFocus have no surface to act on; the field warns once in development when they are passed. For example: <Tokenizer label=\"Tags\" searchSource={tagSource} value={tags} onChange={setTags} hasCreate experimental={{presentation: 'adaptive'}} />.",
+    },
   ],
   theming: {
     targets: [
@@ -628,6 +635,13 @@ export const docsZh = {
       type: 'CSSProperties',
       description: '可视控件框的内联样式。',
     },
+    {
+      name: 'experimental',
+      type: "{presentation?: 'popover' | 'bottom-sheet' | 'adaptive'}",
+      stability: 'experimental',
+      description:
+        "实验性选项：此对象中的任何内容都可能在补丁版本中更改或移除；省略它即保持稳定行为。presentation（默认 'popover'）决定字段如何呈现选项：popover 为内联组合框及其锚定建议菜单；bottom-sheet 改为一个显示已选标记的触发按钮，点按后打开一个高的模态底部面板——顶部为搜索行，下方为整行复选框行（面板打开期间位置保持不变），hasCreate 时有「创建」行，底部为需确认的「全部清除」和「完成」；adaptive 在紧凑触摸屏上使用底部面板，其他情况使用 popover，解析方式与 Selector 相同。在底部面板呈现中，触发按钮即为控件（ref、id、aria-* 和 data-* 都作用于它）；renderItem、renderToken、endContent、hasClear、hasEntriesOnFocus、menuWidth、tokenOverflowBehavior 和 hasAutoFocus 没有作用对象，传入时开发模式下会警告一次。",
+    },
   ],
   theming: {
     targets: [
@@ -825,5 +839,7 @@ export const docsDense = {
       'Icon at input start, before tokens. Icon name, SVG component, or ReactNode.',
     endContent: 'Content at input row end. For buttons, counts, controls.',
     handleRef: 'Imperative handle for focus() and blur() control.',
+    experimental:
+      "Experimental; may change in a patch. presentation: 'popover' (default, inline combobox) | 'bottom-sheet' (trigger + one searchable modal sheet of checkbox rows) | 'adaptive' (sheet on compact touch, else popover).",
   },
 };
