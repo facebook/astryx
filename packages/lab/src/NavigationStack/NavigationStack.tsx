@@ -85,7 +85,11 @@ import {
 import type {Animator} from '@astryxdesign/core/motion/animator';
 import {prefersReducedMotion} from '@astryxdesign/core/motion/reducedMotion';
 import {resolveMotion} from '@astryxdesign/core/motion/resolveMotion';
-import type {SpringDescription} from '@astryxdesign/core/motion/spring';
+import {
+  solveSpring,
+  toSpring,
+  type SpringDescription,
+} from '@astryxdesign/core/motion/spring';
 import {
   navigation,
   springs,
@@ -693,6 +697,9 @@ export function NavigationStack<T>({
   // ---------------------------------------------------------------------------
 
   const runningRef = useRef<{id: number; done: boolean} | null>(null);
+  // The clock the last transition's screens run on (their start time), so
+  // the back chevron keeps time with them.
+  const startedRef = useRef(0);
   // A pop's focus return, waiting for the commit that drops the leaving
   // screen (until then every screen is `inert` and cannot take focus).
   const pendingFocusRef = useRef<{popped: string; revealed: string} | null>(
@@ -772,6 +779,7 @@ export function NavigationStack<T>({
             {at, reducedMotion, crossfadeAs: to === 0 ? 'entrance' : 'exit'},
           ),
         );
+        startedRef.current = at;
       }
       // The bars move with their cards (each screen's bar is part of it in
       // UIKit): the incoming one covers the outgoing title. Under Reduce
@@ -848,28 +856,41 @@ export function NavigationStack<T>({
       }
       const element = containerRef.current;
       const spring = springs.navigationBackButton;
+      const delay =
+        kind === 'pop'
+          ? 0
+          : resolveMotion(
+              element,
+              navigation,
+              prefersReducedMotion()
+                ? 'backChevronReducedMotionDelayMs'
+                : 'backChevronPushDelayMs',
+            );
       if (kind === 'push') {
-        const delay = resolveMotion(
-          element,
-          navigation,
-          prefersReducedMotion()
-            ? 'backChevronReducedMotionDelayMs'
-            : 'backChevronPushDelayMs',
-        );
         backControl.animator.set({opacity: 1});
         backChevron.animator.set({opacity: 0});
-        backChevron.animator.animate(
-          {opacity: 1},
-          {spring},
-          {at: performance.now() + delay, reducedMotion: 'keep'},
-        );
-      } else {
-        backChevron.animator.animate(
-          {opacity: 0},
-          {spring},
-          {at: performance.now(), reducedMotion: 'keep'},
-        );
       }
+      // On the screens' clock, and starting with them: the delay is part of
+      // the curve, so the whole fade is one compositor animation that a busy
+      // main thread cannot hold back (a start in the future would wait for
+      // it in WebKit).
+      const from = kind === 'push' ? 0 : 1;
+      const to = kind === 'push' ? 1 : 0;
+      const fade = solveSpring(toSpring(resolveMotion(element, spring)), {
+        from,
+        to,
+      });
+      const delayS = delay / 1000;
+      backChevron.animator.play(
+        {
+          opacity: {
+            duration: delayS + fade.settleTime(0.001),
+            at: t => (t < delayS ? from : fade.value(t - delayS)),
+            velocity: t => (t < delayS ? 0 : fade.velocity(t - delayS)),
+          },
+        },
+        {at: startedRef.current, reducedMotion: 'keep'},
+      );
     },
     [view.models, backControl.animator, backChevron.animator],
   );
@@ -969,7 +990,6 @@ export function NavigationStack<T>({
         layersOf(top)?.card?.set({x: values.topX});
         layersOf(top)?.bar?.set({x: values.topX});
       }
-      fadeBack('push', under);
       promise = animateProgress(
         0,
         top,
@@ -979,8 +999,8 @@ export function NavigationStack<T>({
         'crossfade',
         'ride',
       );
+      fadeBack('push', under);
     } else if (release != null) {
-      fadeBack('pop', under);
       promise = animateProgress(
         1,
         top,
@@ -990,11 +1010,11 @@ export function NavigationStack<T>({
         'keep',
         'rest',
       );
+      fadeBack('pop', under);
     } else {
       if (!wasRunning) {
         setProgress(0, top, under, 'ride');
       }
-      fadeBack('pop', under);
       promise = animateProgress(
         1,
         top,
@@ -1004,6 +1024,7 @@ export function NavigationStack<T>({
         'crossfade',
         'ride',
       );
+      fadeBack('pop', under);
     }
     void promise.then(finished => {
       if (runningRef.current?.id !== id) {
