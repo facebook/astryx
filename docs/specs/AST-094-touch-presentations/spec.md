@@ -16,7 +16,7 @@ affects_architecture:
     architecture:theme-tokens,
     architecture:theme-authoring-contract,
   ]
-affects_families: [family:buttons, family:overlay-dismissal]
+affects_families: [family:buttons]
 affects_contributing: []
 affects_consumer_docs: []
 ---
@@ -26,11 +26,11 @@ affects_consumer_docs: []
 ## Intent
 
 A person using an Astryx product on a phone or tablet gets controls, sheets,
-menus, lists and navigation that behave the way their device's own apps do:
-the same physics, the same timings, the same gesture thresholds and the same
-feel. This native-feeling touch behavior is the default on every touch device,
-iOS and Android alike, with no opt-in, and its motion keeps running at display
-rate while the page's JavaScript is busy.
+menus, lists and navigation with native-feeling touch behavior: measured
+physics, timings and gesture thresholds instead of desktop motion stretched to
+a finger. This behavior is the default on every touch device, iOS and Android
+alike, with no opt-in, and its motion keeps running at display rate while the
+page's JavaScript is busy.
 
 The behavior comes from one measured table. Its values are measured from UIKit
 on a named reference release, UIKit on iOS 26.2 today; each number names the
@@ -62,8 +62,9 @@ a measured, sourced difference exists.
 
 - **FR1 — One table of measured values.** Every spring, duration,
   deceleration rate, rubber-band coefficient, gesture threshold and haptic
-  moment a touch presentation uses MUST come from one shared table of measured
-  native values. A component MUST NOT carry a number of its own. The same
+  moment a touch presentation uses MUST take its default from one shared table
+  of measured native values; a theme MAY override a motion role (FR4). A
+  component MUST NOT carry a number of its own. The same
   values apply on every touch platform; a platform gets a value of its own only
   where the table records a measured, sourced difference (FR2).
 - **FR2 — Every value has a source.** Each value in the table MUST name its
@@ -94,8 +95,11 @@ a measured, sourced difference exists.
   motion: they stay internal constants from the table and are not public
   concepts (`spec:AST-002` FR3). This adds touch motion roles to the motion
   configuration of `architecture:theme-authoring-contract` and to
-  `architecture:theme-tokens` beside the existing duration and easing tokens,
-  whose rules are unchanged, and departs from the draft `design:motion` DR3
+  `architecture:theme-tokens` beside the existing duration and easing tokens, whose rules are unchanged. It
+  amends `spec:AST-057` for touch presentations: Item's swipe springs and
+  durations become theme motion roles instead of constants in source, and its
+  swipe travel is a transform the recognizer writes (FR9) instead of a custom
+  property on the root (its FR2). It departs from the draft `design:motion` DR3
   wherever the native motion settles with an overshoot or stretches with a
   rubber band.
 
@@ -116,25 +120,21 @@ a measured, sourced difference exists.
   follows.
 - **FR7 — Exits animate as the native counterpart's do.** A touch
   presentation MUST play the exit its UIKit counterpart plays, on every touch
-  platform. A rule that turns exits off by default, or closes at once under
-  reduced motion, does not apply to touch presentations; FR8 governs their
-  reduced-motion form.
-- **FR8 — Reduce Motion substitutes as the native counterpart does.** Under
-  `prefers-reduced-motion: reduce`, a touch presentation MUST do what its
-  UIKit counterpart does with Reduce Motion and Prefer Cross-Fade Transitions
-  on, on every touch platform. For screen transitions, sheets, full-screen
-  modals and alerts that is a cross-fade carrying the same change of state: an
-  entrance lands in place and fades in, an exit fades out in place, and any
-  other move fades through. A navigation push or pop cross-fades over 0.5 s on
-  the ease-in-out curve; a sheet, a full-screen modal or an alert fades on its
-  own presentation spring and drops its travel and scale; menus open and close
-  on the Reduce Motion spring. Some control indicators move at once instead:
-  the segmented control's selection vanishes and reappears at its destination.
-  A presentation MUST NOT jump where its native counterpart fades, nor fade
-  where it moves at once. Motion that follows a finger, such as a throw, MUST
-  keep its motion. The substitutions' durations and springs are theme motion
-  roles (FR4). This is the minimally moving form the draft `design:motion` DR5
-  asks for, for touch presentations.
+  platform. A rule that turns exits off by default does not apply to touch presentations;
+  FR8 governs their reduced-motion form. Each overlay's own record states its
+  exit, since members own their animation (`family:overlay-dismissal` AV6).
+- **FR8 — Reduce Motion cross-fades.** Under `prefers-reduced-motion:
+reduce`, a touch presentation MUST reach each change of state by a
+  cross-fade: it animates `opacity` only, over at most 200 ms, with no travel,
+  no scale and no spring. An entrance lands in place and fades in, an exit
+  fades out in place, and any other move fades through. A fine-pointer
+  presentation MUST change state at once. A drag still follows the finger
+  while it is down; after the lift the presentation reaches its committed
+  state by the cross-fade. A core component MUST NOT keep its motion under
+  reduced motion (no `reducedMotion: 'keep'`). The cross-fade's duration is a
+  theme motion role whose default is at most 200 ms (FR4); a theme MAY shorten
+  it. This is iOS's Reduce Motion with Prefer Cross-Fade Transitions on, and
+  `design:reduced-motion` owns the rule for every presentation.
 
 ### Gestures
 
@@ -149,14 +149,22 @@ a measured, sourced difference exists.
 - **FR10 — A second finger never breaks the first.** A second finger MUST NOT
   cancel or redirect a drag a recognizer has claimed. Page pinch-zoom MUST stay
   the browser's whenever no pinch recognizer claims the fingers and no drag is
-  claimed (WCAG 1.4.4).
+  claimed (WCAG 1.4.4). A menu's press-tracking slide keeps
+  `module:DropdownMenu/useMenuPress` FR4: a second pointer or `pointercancel`
+  ends its gesture with nothing acting, which keeps the page zoomable over an
+  open menu.
 - **FR11 — Two press profiles.** Press feedback MUST follow one of two native
   profiles. A control (UIControl) highlights on touch-down outside scroll
   views, keeps tracking within its expanded bounds (70 pt), turns its highlight
   off and on as the finger drags out and back, and activates on a lift inside.
   A cell (a table or collection cell) highlights 150 ms after touch-down inside
-  a scroll view and drops the highlight when the scroll wins. The 150 ms delay
-  applies only inside scroll views. On every touch platform this amends
+  a scroll view, drops the highlight when the scroll wins, and activates on a
+  lift inside it with no scroll. A control inside a scroll view (an overflow
+  area or the scrolling page) takes the same 150 ms delay before its highlight
+  and then follows its control profile; the 150 ms delay applies only inside
+  scroll views. A control whose own record keeps its press through a drag
+  keeps it: Slider's overlay stays on the dragged thumb (`design:user-states`
+  DR4). On every touch platform this amends
   `design:user-states` DR1 (the pressed overlay during a hold) and DR3 (the
   selected SegmentedControl item's held surface) for touch presentations, the
   press treatment of `family:buttons`, and `module:DropdownMenu/useMenuPress`
@@ -170,10 +178,14 @@ a measured, sourced difference exists.
   touch presentation MUST come from one shared resolver, beside the shared
   modality state of `architecture:interaction-modality`, which this record
   extends. Touch behaviors key on a coarse pointer and are on by default
-  there; layout keys on the available size through the shared breakpoint names
-  (`architecture:public-component-api` INV14), never a parallel breakpoint
-  table; a presentation that depends on both (a sheet instead of a popover)
-  asks for both. Which sizes count as compact is not set (OQ5). A component
+  there; layout keys on the available size through the one compact definition the
+  theme exports, the same on every platform (`spec:AST-012` FR9,
+  `architecture:public-component-api` INV14), and a component never restates
+  its values or keeps a parallel breakpoint table. A presentation asks for
+  exactly the conditions its own record names: one that depends on both (a
+  sheet instead of a popover) asks for both, and the date and time sheet, whose
+  record asks for a coarse pointer with no size condition (`spec:AST-043` FR1),
+  asks for the pointer only. A component
   MUST NOT write its own media query for it. The resolver MUST NOT read
   `matchMedia` during a server render or the hydrating render: those renders
   produce the pointer presentation, and the touch presentation applies after
@@ -250,8 +262,11 @@ a measured, sourced difference exists.
   listeners, observers and timers MUST be acquired only under a coarse pointer
   and only while the presentation is enabled, and released when either stops
   holding (`architecture:react-component-runtime` INV5). No component instance
-  registers its own `document` or `window` listener for touch: one shared owner
-  holds each such listener for every instance (INV7).
+  registers its own `document` or `window` listener for touch: one shared
+  document-owned owner holds each such listener for every instance, and holds
+  it only while at least one instance is enabled under a coarse pointer. This
+  record is the current authority that names that singleton's lifetime (INV5),
+  and a repeated row or cell never fans out its own touch observers (INV7).
 - **FR25 — A moved default keeps a way back.** Turning a touch presentation on
   by default MUST NOT silently change a released default. Where a released
   default moves, such as Selector's `adaptive` presentation policy or a menu's
@@ -287,13 +302,19 @@ a measured, sourced difference exists.
   their defaults; INV3 and the duration and easing tokens are unchanged (FR4).
 - `architecture:interaction-modality`: the shared touch-presentation resolver
   (FR13).
-- `architecture:react-component-runtime` INV5 and INV7 already require FR24;
-  no amendment.
+- `architecture:react-component-runtime`: FR24 names the lifetime of the
+  shared touch-listener singleton that INV5 asks current authority to name;
+  INV5 and INV7 are unchanged.
 - `family:buttons`: the control and cell press profiles (FR11).
-- `family:overlay-dismissal`: exits and their Reduce Motion substitutions in
-  touch presentations (FR7, FR8).
+- Each overlay member's own record (Dialog, BottomSheet, Drawer, Popover, the
+  menus): its touch exit and its Reduce Motion cross-fade (FR7, FR8), since
+  members own their animation (`family:overlay-dismissal` AV6).
+- `spec:AST-057`: Item's swipe springs and durations become theme motion roles,
+  and its swipe travel is a recognizer-written transform (FR4, FR9).
+- `design:reduced-motion` owns the reduced-motion rule FR8 applies.
 - `component:Selector` DEC-1: `adaptive` resolves through the FR13 touch rule
-  instead of the width-and-pointer query, with a restoring option (FR25).
+  (a coarse pointer and the `spec:AST-012` FR9 compact definition) instead of
+  its own width-and-pointer query, with a restoring option (FR25).
 - `module:DropdownMenu/useMenuPress` FR6: menu rows take the cell press
   profile under a finger (FR11).
 - `design:user-states` DR1 and DR3, `spec:AST-025` FR14 and `spec:AST-013` FR3
@@ -305,24 +326,24 @@ a measured, sourced difference exists.
 
 ## Verification
 
-| Contract   | Verification                                                                                                                   | Representative states                                                                                         | Mutation or failure expectation                                                                                        |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| FR1, FR2   | Table check over every domain of the table                                                                                     | every entry; a guess and its measurement task; a platform-specific entry                                      | an unsourced value, an unknown source kind, a guess without a listed measurement, or an unsourced platform split fails |
-| FR3        | Unit tests of the spring, decay, rubber band and projection math against an independent integration and values read from UIKit | under-, critically and overdamped springs; release velocities; both rates; overscroll depths                  | changing a formula or a constant breaks the agreement with UIKit's values                                              |
-| FR4        | Theme unit tests and a browser test of a themed spring                                                                         | no theme (table defaults); a theme writing a spring, a duration and a curve, at its root and in an adaptation | a role that ignores the theme, a literal played in place of a role, or a default that differs from the table fails     |
-| FR5        | Browser proof: an animation keeps advancing frame by frame through a 1 s main-thread block, with no layout or paint per frame  | Chromium phone emulation; WebKit                                                                              | a script-driven or layout-animating implementation freezes or lays out                                                 |
-| FR6        | Unit and browser tests catching an animation mid-flight and retargeting it                                                     | catch at peak velocity; retarget with a new spring                                                            | a layout read, a jump, or a lost velocity fails                                                                        |
-| FR7, FR8   | Component browser tests and storyboards with and without Reduce Motion                                                         | entrance, exit, move                                                                                          | a substitution other than the native one, or a missing exit, fails                                                     |
-| FR9, FR10  | Recognizer unit tests on synthetic streams and browser tests with real touch input                                             | drag, second finger, pinch, page zoom, main-thread block                                                      | a second finger that breaks a drag, or a blocked page pinch, fails                                                     |
-| FR11, FR12 | Press and long-press tests on synthetic streams with explicit timestamps                                                       | inside and outside a scroll view; drag out and back; a menu row under a finger                                | the wrong profile's timing fails                                                                                       |
-| FR13       | Resolver unit tests and a server-render test                                                                                   | coarse and fine pointer; narrow and wide; server render; hydrating render                                     | a component-owned media query diverges; a `matchMedia` read during server or hydrating render fails                    |
-| FR14       | Browser tests of a sheet over a scrolled list                                                                                  | scrolled and at its top                                                                                       | a midway handoff fails                                                                                                 |
-| FR15–FR17  | Recognizer unit tests on synthetic streams with explicit timestamps                                                            | exclusive, simultaneous, require-to-fail, nested; a blocked main thread; a pan at 10 pt per axis              | a wrong winner, a late deadline, or a translation that keeps the hysteresis fails                                      |
-| FR18–FR22  | Browser tests with real touch input                                                                                            | per-axis pans beside native scrolling, page zoom, cancelled touches, clicks after taps, keyboard activation   | a ghost click, a blocked scroll or zoom, or a cancelled unowned touchmove fails                                        |
-| FR23       | Haptics tests on the recorded moments                                                                                          | tap, drag, lift                                                                                               | a haptic outside a native moment fails                                                                                 |
-| FR24       | Resource tests counting listeners, observers and timers                                                                        | fine pointer; coarse pointer enabled and disabled; many instances; unmount                                    | a touch listener on a fine pointer, a per-instance `document` or `window` listener, or a leak fails                    |
-| FR25       | Component tests of each moved default and its restoring prop                                                                   | default; restoring prop set                                                                                   | a moved default without a restoring prop, or a restoring prop that differs from the released behavior, fails           |
-| all        | iOS simulator: the UIKit reference capture and the same gesture in Safari; real iOS Safari and Android Chrome devices          | per component                                                                                                 | an unmatched curve or timing is a parity defect                                                                        |
+| Contract   | Verification                                                                                                                   | Representative states                                                                                         | Mutation or failure expectation                                                                                                                     |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1, FR2   | Table check over every domain of the table                                                                                     | every entry; a guess and its measurement task; a platform-specific entry                                      | an unsourced value, an unknown source kind, a guess without a listed measurement, or an unsourced platform split fails                              |
+| FR3        | Unit tests of the spring, decay, rubber band and projection math against an independent integration and values read from UIKit | under-, critically and overdamped springs; release velocities; both rates; overscroll depths                  | changing a formula or a constant breaks the agreement with UIKit's values                                                                           |
+| FR4        | Theme unit tests and a browser test of a themed spring                                                                         | no theme (table defaults); a theme writing a spring, a duration and a curve, at its root and in an adaptation | a role that ignores the theme, a literal played in place of a role, or a default that differs from the table fails                                  |
+| FR5        | Browser proof: an animation keeps advancing frame by frame through a 1 s main-thread block, with no layout or paint per frame  | Chromium phone emulation; WebKit                                                                              | a script-driven or layout-animating implementation freezes or lays out                                                                              |
+| FR6        | Unit and browser tests catching an animation mid-flight and retargeting it                                                     | catch at peak velocity; retarget with a new spring                                                            | a layout read, a jump, or a lost velocity fails                                                                                                     |
+| FR7, FR8   | Component browser tests and storyboards with and without Reduce Motion                                                         | entrance, exit, move; coarse and fine pointer; a drag and its lift under Reduce Motion                        | a missing exit, any travel, scale or spring under Reduce Motion, an opacity fade over 200 ms, or a fine-pointer animation under Reduce Motion fails |
+| FR9, FR10  | Recognizer unit tests on synthetic streams and browser tests with real touch input                                             | drag, second finger, pinch, page zoom, main-thread block                                                      | a second finger that breaks a drag, or a blocked page pinch, fails                                                                                  |
+| FR11, FR12 | Press and long-press tests on synthetic streams with explicit timestamps                                                       | inside and outside a scroll view; drag out and back; a menu row under a finger                                | the wrong profile's timing fails                                                                                                                    |
+| FR13       | Resolver unit tests and a server-render test                                                                                   | coarse and fine pointer; narrow and wide; server render; hydrating render                                     | a component-owned media query diverges; a `matchMedia` read during server or hydrating render fails                                                 |
+| FR14       | Browser tests of a sheet over a scrolled list                                                                                  | scrolled and at its top                                                                                       | a midway handoff fails                                                                                                                              |
+| FR15–FR17  | Recognizer unit tests on synthetic streams with explicit timestamps                                                            | exclusive, simultaneous, require-to-fail, nested; a blocked main thread; a pan at 10 pt per axis              | a wrong winner, a late deadline, or a translation that keeps the hysteresis fails                                                                   |
+| FR18–FR22  | Browser tests with real touch input                                                                                            | per-axis pans beside native scrolling, page zoom, cancelled touches, clicks after taps, keyboard activation   | a ghost click, a blocked scroll or zoom, or a cancelled unowned touchmove fails                                                                     |
+| FR23       | Haptics tests on the recorded moments                                                                                          | tap, drag, lift                                                                                               | a haptic outside a native moment fails                                                                                                              |
+| FR24       | Resource tests counting listeners, observers and timers                                                                        | fine pointer; coarse pointer enabled and disabled; many instances; unmount                                    | a touch listener on a fine pointer, a per-instance `document` or `window` listener, or a leak fails                                                 |
+| FR25       | Component tests of each moved default and its restoring prop                                                                   | default; restoring prop set                                                                                   | a moved default without a restoring prop, or a restoring prop that differs from the released behavior, fails                                        |
+| all        | iOS simulator: the UIKit reference capture and the same gesture in Safari; real iOS Safari and Android Chrome devices          | per component                                                                                                 | an unmatched curve or timing is a parity defect                                                                                                     |
 
 ## Decision log
 
@@ -375,6 +396,3 @@ release runs as a compositor animation of the measured curve (FR5, FR9).
   module-level experimental subpaths with a current owning record; (b) expose
   the modules only through an owning component's `/experimental` subpath.
   (`owner decision`)
-- **OQ5 — Compact size.** Which available sizes count as compact for a
-  presentation that depends on size (FR13)? The value is set through the
-  shared breakpoint names, not a separate table. (`owner decision`)
