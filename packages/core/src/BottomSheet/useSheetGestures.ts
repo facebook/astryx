@@ -625,8 +625,13 @@ export function useSheetGestures({
     return current;
   }, []);
   // A gesture takes the dim: a release's dim still playing is picked up
-  // where it is, and the host stops easing it.
+  // where it is, and the host stops easing it. Only in iOS's idiom, whose
+  // dimming view follows the sheet frame by frame; everywhere else the host
+  // keeps easing the dim toward each value, as today.
   const beginScrimTracking = useCallback(() => {
+    if (readTouchPresentation().idiom !== 'ios') {
+      return;
+    }
     const current = stopScrimFollow();
     if (current != null) {
       onScrimOpacityRef.current?.(current);

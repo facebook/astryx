@@ -578,6 +578,52 @@ test('the dim keeps its lockstep with the release while the main thread is block
   }
 });
 
+test("on Android the dim keeps today's mapping and the host's easing", async ({
+  page,
+}) => {
+  const {driver, sheet, tallTop, halfTop, handle} = await openSheet(page, {
+    idiom: 'android',
+  });
+  const dialog = page.getByRole('dialog', {name: 'Nearby places'});
+  const viewportHeight = page.viewportSize()?.height ?? 0;
+  // Today's dim: full at the shortest detent, clear 40 % of its height below.
+  const todayDimAt = (top: number) =>
+    Math.min(
+      1,
+      Math.max(0, 1 - (top - halfTop) / (0.4 * (viewportHeight - halfTop))),
+    );
+  const scrimVars = async () =>
+    dialog.evaluate(el => ({
+      opacity: Number(el.style.getPropertyValue('--_sheet-scrim-opacity')),
+      duration: el.style.getPropertyValue('--_sheet-scrim-duration'),
+    }));
+  await driver.play(slowDragTo(handle, Math.round((halfTop - tallTop) * 0.8)));
+  await waitForRest(sheet);
+  const fromHalf = {x: handle.x, y: halfTop + 12};
+  const tracked: {top: number; opacity: number; duration: string}[] = [];
+  await driver.play(
+    drag(
+      fromHalf,
+      {x: fromHalf.x, y: fromHalf.y + 100},
+      {durationMs: 400, hz: 60, restMs: 150},
+    ),
+    {
+      onEvent: async step => {
+        if (step.type === 'touchMove') {
+          await frames(page, 1);
+          tracked.push({top: await sheetTop(sheet), ...(await scrimVars())});
+        }
+      },
+    },
+  );
+  expect(tracked.at(-1)?.top).toBeGreaterThan(halfTop + 90);
+  for (const {top, opacity, duration} of tracked) {
+    expect(opacity).toBeCloseTo(todayDimAt(top), 2);
+    // Never pinned to 0 s: the backdrop keeps easing toward each value.
+    expect(duration).not.toBe('0s');
+  }
+});
+
 test('a downward flick lands on the next detent, and from there dismisses', async ({
   page,
 }) => {
