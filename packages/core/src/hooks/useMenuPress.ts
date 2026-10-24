@@ -23,9 +23,16 @@
  *   release's button and modifier keys.
  * - The browser's stray `click` for a tracked gesture is swallowed at the
  *   window in the capture phase, ahead of React's own listener. It arms at a
- *   tracked release and disarms at the next pointer press or after a short
- *   window; a click with `detail === 0` (a keyboard's or a screen reader's)
- *   always passes.
+ *   tracked release and disarms once it has swallowed that click, or at the
+ *   next pointer press or key press: a browser's click comes after its own
+ *   press, so the first one since the release, with no press between, is the
+ *   release's. A touch's click comes when the browser's tap recognizer sends
+ *   it, which a busy main thread can hold back (and by then a drill-in may
+ *   have put another row under the finger), so after a touch release it waits
+ *   for that one click up to a generous cap; after a mouse or pen release, for
+ *   a short window. The cap keeps a click that never comes (a slide, a page
+ *   that took the touchend) from holding the swallower armed. A click with
+ *   `detail === 0` (a keyboard's or a screen reader's) always passes.
  * - A mouse press on the trigger opens the menu at once; a finger held on the
  *   trigger opens it after the long-press delay. The settle rule decides
  *   whether the opening gesture's release may act (see menuPressGesture.ts).
@@ -71,8 +78,15 @@ const MENU_PRESS_ROOT_SELECTOR = `[${MENU_PRESS_MARKER}]`;
  */
 export const MENU_PRESS_SURFACE_ATTR = 'data-astryx-menu-press-surface';
 
-/** How long after a tracked release the browser's click is still swallowed. */
+/** How long after a tracked mouse or pen release the browser's click is still swallowed. */
 export const MENU_PRESS_STRAY_CLICK_MS = 400;
+/**
+ * How long after a tracked touch release its click is still awaited. A busy
+ * main thread can hold a touch's click past {@link MENU_PRESS_STRAY_CLICK_MS};
+ * a click that never comes (a slide, a page that took the touchend) must not
+ * keep the swallower armed beyond this.
+ */
+export const MENU_PRESS_TOUCH_CLICK_MS = 2000;
 /** How long a finger must rest on the trigger before the menu opens under it. */
 export const MENU_PRESS_LONG_PRESS_MS = 500;
 /** Distance from a scrolling menu's edge within which a resting pointer scrolls. */
@@ -133,7 +147,7 @@ function onWindowClickCapture(event: MouseEvent): void {
   disarmStrayClick();
 }
 
-function armStrayClick(doc: Document): void {
+function armStrayClick(doc: Document, release?: PointerEvent): void {
   const view = doc.defaultView;
   if (view == null) {
     return;
@@ -146,17 +160,27 @@ function armStrayClick(doc: Document): void {
         true,
       );
       swallower.doc.removeEventListener('pointerdown', disarmStrayClick, true);
+      swallower.doc.removeEventListener('keydown', disarmStrayClick, true);
     }
     // The window, capture phase: ahead of React's root listener and of any
     // document listener, so no framework sees the click.
     view.addEventListener('click', onWindowClickCapture, true);
-    // The next press is a new gesture; its click must never be eaten.
+    // The next press is a new gesture; its click must never be eaten. A key
+    // press is another way in, so it ends the wait too.
     doc.addEventListener('pointerdown', disarmStrayClick, true);
+    doc.addEventListener('keydown', disarmStrayClick, true);
     swallower = {doc, isArmed: false, timer: null};
   }
   disarmStrayClick();
   swallower.isArmed = true;
-  swallower.timer = setTimeout(disarmStrayClick, MENU_PRESS_STRAY_CLICK_MS);
+  // A mouse's or a pen's click follows its release at once; a touch's comes
+  // when the tap recognizer sends it, which a busy main thread holds back.
+  swallower.timer = setTimeout(
+    disarmStrayClick,
+    release?.pointerType === 'touch'
+      ? MENU_PRESS_TOUCH_CLICK_MS
+      : MENU_PRESS_STRAY_CLICK_MS,
+  );
 }
 
 /** Test-only: forget an armed swallower between cases. */
@@ -505,7 +529,7 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
         case 'act': {
           // Detach before acting: the activation usually closes the menu.
           endGesture();
-          armStrayClick(doc);
+          armStrayClick(doc, native);
           if (native != null) {
             activate(effect.row, native);
           }
@@ -514,7 +538,7 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
         case 'settle': {
           endGesture();
           if (effect.stray) {
-            armStrayClick(doc);
+            armStrayClick(doc, native);
           }
           if (effect.dismiss) {
             optionsRef.current.onDismiss?.();

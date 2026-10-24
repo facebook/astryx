@@ -143,6 +143,84 @@ test.describe('on a phone (coarse pointer)', () => {
     await page.getByRole('menuitem', {name: 'Folder A'}).tap();
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
+
+  test('a tap that drills in: its click, held back past any window as a busy main thread holds it, never picks the row now under the finger', async ({
+    page,
+  }) => {
+    await mount(page);
+    await page.getByRole('button', {name: 'Actions'}).tap();
+    await expect(page.getByRole('menu', {name: 'Actions'})).toBeVisible();
+    // The browser's click for the next tap is held back: the page takes the
+    // tap's touchend, and the click is sent by hand later, as a phone's tap
+    // recognizer sends it once a busy main thread frees up.
+    await page.evaluate(() => {
+      const held = window as unknown as {
+        __tap?: {id: number; x: number; y: number};
+      };
+      document.addEventListener(
+        'pointerup',
+        event => {
+          if (event.pointerType === 'touch') {
+            held.__tap = {
+              id: event.pointerId,
+              x: event.clientX,
+              y: event.clientY,
+            };
+          }
+        },
+        true,
+      );
+      document.addEventListener(
+        'touchend',
+        event => {
+          event.preventDefault();
+        },
+        {capture: true, passive: false},
+      );
+    });
+    await page.getByRole('menuitem', {name: 'Move to'}).tap();
+    await expect(shownRows(page)).toHaveText([
+      'Back to Actions',
+      'Folder A',
+      'Folder B',
+      'Archive',
+    ]);
+    await page.waitForTimeout(600);
+    const underFinger = await page.evaluate(() => {
+      const {__tap: tap} = window as unknown as {
+        __tap: {id: number; x: number; y: number};
+      };
+      const target = document.elementFromPoint(tap.x, tap.y);
+      const row = target?.closest('[role^="menuitem"]');
+      target?.dispatchEvent(
+        new PointerEvent('click', {
+          bubbles: true,
+          cancelable: true,
+          composed: true,
+          detail: 1,
+          pointerId: tap.id,
+          pointerType: 'touch',
+          clientX: tap.x,
+          clientY: tap.y,
+        }),
+      );
+      return row?.textContent?.trim() ?? null;
+    });
+    // The drill-in put a row of the sub-menu under the finger…
+    expect(underFinger).toBe('Folder A');
+    // …and the tap's own click, however late, picks nothing.
+    await page.waitForTimeout(300);
+    await expect(page.getByRole('button', {name: 'Actions'})).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    await expect(shownRows(page)).toHaveText([
+      'Back to Actions',
+      'Folder A',
+      'Folder B',
+      'Archive',
+    ]);
+  });
 });
 
 test.describe('on a laptop (fine pointer)', () => {
