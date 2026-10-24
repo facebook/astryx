@@ -5,9 +5,8 @@
 /**
  * @file NavigationStack.tsx
  * @input React, StyleX, core's compositor animator and the UIKit table
- *   (`@astryxdesign/core/motion/experimental`), its gesture recognizers
- *   (`@astryxdesign/core/gestures/experimental`), navigationTransition.ts
- *   for the math
+ *   (`@astryxdesign/core/motion/experimental`), navigationTransition.ts for
+ *   the math, NavigationStackTouch.ts for the back swipes (the touch layer)
  * @output Exports NavigationStack (a push/pop navigator with UIKit's
  *   transitions and back gestures), NavigationScreen (one screen: its bar
  *   title, back title, trailing items and content) and useNavigationStack
@@ -72,16 +71,10 @@ import {
   useMemo,
   useRef,
   useState,
-  useSyncExternalStore,
   type ReactElement,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {
-  PanGestureRecognizer,
-  ScreenEdgePanGestureRecognizer,
-  useGestureRecognizer,
-} from '@astryxdesign/core/gestures';
 import type {Animator} from '@astryxdesign/core/motion/animator';
 import {resolveMotion} from '@astryxdesign/core/motion/resolveMotion';
 import {
@@ -89,13 +82,8 @@ import {
   toSpring,
   type SpringDescription,
 } from '@astryxdesign/core/motion/spring';
-import {
-  navigation,
-  springs,
-  UIKIT_GESTURES,
-} from '@astryxdesign/core/motion/uikit';
+import {navigation, springs} from '@astryxdesign/core/motion/uikit';
 import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
-import {useTouchPresentation} from '@astryxdesign/core/utils/touchPresentation';
 import {isRtlElement} from '@astryxdesign/core/hooks';
 import {useTranslator} from '@astryxdesign/core/i18n';
 import {focusOutlineStyles} from '@astryxdesign/core/utils';
@@ -109,26 +97,9 @@ import {
 import {
   layerVelocities,
   layersAt,
-  popVelocity,
   programmaticVelocity,
-  progressFromTravel,
-  shouldFinishPop,
 } from './navigationTransition';
-
-/** Whether the page runs as a home-screen web app never changes while it runs. */
-const subscribeToNothing = () => () => {};
-
-/**
- * The content swipe claims a sideways drag at the pan's own threshold, while
- * the browser can still be told no (it stops asking once its own slop has
- * passed), but moves nothing until UIKit's 27 px: the travel in between is
- * a dead zone.
- */
-const CONTENT_CLAIM_PX = UIKIT_GESTURES.pan.hysteresis.value;
-const CONTENT_DEAD_ZONE_PX = Math.max(
-  0,
-  navigation.contentPopHysteresis - CONTENT_CLAIM_PX,
-);
+import {useBackSwipes, type BackSwipeStack} from './NavigationStackTouch';
 
 // =============================================================================
 // Types
@@ -556,22 +527,6 @@ interface Transition {
   top: string;
   /** The screen under it. */
   under: string | null;
-}
-
-/** A web app opened from the home screen, where no browser back swipe exists. */
-function isStandaloneWebApp(): boolean {
-  return (
-    typeof navigator !== 'undefined' &&
-    (navigator as Navigator & {standalone?: boolean}).standalone === true
-  );
-}
-
-/** Whether a touch starting at client x is in the leading screen-edge band. */
-function startsInEdgeBand(x: number, direction: 'ltr' | 'rtl'): boolean {
-  const band = UIKIT_GESTURES.screenEdgePan.edgeRegion.value;
-  return direction === 'rtl'
-    ? typeof window !== 'undefined' && x >= window.innerWidth - band
-    : x <= band;
 }
 
 /** The stack's writing direction, as core reads it. */
@@ -1152,196 +1107,82 @@ export function NavigationStack<T>({
   // ---------------------------------------------------------------------------
 
   const canPop = depth > 0 && view.leaving == null;
-  const swipeRef = useRef<{
-    start: number;
-    top: string;
-    under: string;
-    /** The pan's last velocities in widths/s, newest last (UIKit averages 3). */
-    velocities: number[];
-  } | null>(null);
-
-  const onSwipe = useCallback(
-    (recognizer: PanGestureRecognizer, deadZone: number) => {
-      const width = cardsRef.current?.clientWidth ?? 0;
-      const direction = writingDirection(containerRef.current);
+  // What the touch layer (NavigationStackTouch.ts) moves: the swipes read
+  // and drive the stack through this, each frame's values from the latest
+  // render.
+  const swipeStackRef = useRef<BackSwipeStack | null>(null);
+  swipeStackRef.current = {
+    width: () => cardsRef.current?.clientWidth ?? 0,
+    direction: () => writingDirection(containerRef.current),
+    screens: () => {
       const top = view.models.at(-1)?.key;
       const under = view.models.at(-2)?.key;
-      if (top == null || under == null) {
+      return top == null || under == null ? null : {top, under};
+    },
+    grab: (top, under) => {
+      // Grab whatever is moving: the top card's presentation value is the
+      // progress to continue from.
+      const width = cardsRef.current?.clientWidth ?? 0;
+      const x = layersOf(top)?.card?.get('x') ?? 0;
+      for (const key of [top, under]) {
+        const layers = layersOf(key);
+        layers?.card?.stop();
+        layers?.dim?.stop();
+        layers?.bar?.stop();
+        layers?.barDim?.stop();
+      }
+      runningRef.current = null;
+      return width > 0 ? Math.abs(x) / width : 0;
+    },
+    setProgress: (p, top, under) => setProgress(p, top, under),
+    progress: () => progressRef.current,
+    release: (top, under, finish, velocity) => {
+      const springBack = (v: number) => {
+        const id = (runningRef.current?.id ?? 0) + 0.5;
+        runningRef.current = {id, done: false};
+        void animateProgress(
+          0,
+          top,
+          under,
+          springs.navigationInteractivePopFinish,
+          v,
+          true,
+          'rest',
+        ).then(finished => {
+          if (runningRef.current?.id === id) {
+            runningRef.current = {id, done: true};
+          }
+          if (finished) {
+            settle(top, 'top');
+            settle(under, 'covered');
+          }
+        });
+      };
+      if (!finish) {
+        springBack(velocity);
         return;
       }
-      switch (recognizer.state) {
-        case 'began': {
-          // Grab whatever is moving: the top card's presentation value is
-          // the progress to continue from.
-          const x = layersOf(top)?.card?.get('x') ?? 0;
-          const start = width > 0 ? Math.abs(x) / width : 0;
-          for (const key of [top, under]) {
-            const layers = layersOf(key);
-            layers?.card?.stop();
-            layers?.dim?.stop();
-            layers?.bar?.stop();
-            layers?.barDim?.stop();
-          }
-          runningRef.current = null;
-          swipeRef.current = {start, top, under, velocities: []};
-          setProgress(start, top, under);
-          break;
+      // Commit the pop; the transition it triggers continues from here at
+      // the finger's speed.
+      const release = {velocity};
+      const before = pathRef.current;
+      releaseRef.current = release;
+      onPathChangeRef.current(before.slice(0, -1));
+      // An app that keeps its path (guarding unsaved edits, say) gets no
+      // pop: by the next frame the release is still waiting, so the cards
+      // spring back where they came from.
+      const win = containerRef.current?.ownerDocument.defaultView;
+      win?.requestAnimationFrame(() => {
+        if (releaseRef.current === release && pathRef.current === before) {
+          releaseRef.current = null;
+          springBack(0);
         }
-        case 'changed': {
-          const swipe = swipeRef.current;
-          if (swipe == null) {
-            return;
-          }
-          swipe.velocities.push(
-            popVelocity(recognizer.velocity().x, width, direction),
-          );
-          const along =
-            (direction === 'rtl' ? -1 : 1) * recognizer.translation().x;
-          const travel = Math.max(0, along - deadZone);
-          setProgress(
-            progressFromTravel(
-              swipe.start,
-              (direction === 'rtl' ? -1 : 1) * travel,
-              width,
-              direction,
-            ),
-            swipe.top,
-            swipe.under,
-          );
-          break;
-        }
-        case 'ended':
-        case 'cancelled': {
-          const swipe = swipeRef.current;
-          swipeRef.current = null;
-          if (swipe == null) {
-            return;
-          }
-          const p = progressRef.current;
-          // UIKit's release velocity: the mean of the pan's last three
-          // velocities, the lift's own update included. A pause keeps it.
-          let v = 0;
-          if (recognizer.state === 'ended') {
-            swipe.velocities.push(
-              popVelocity(recognizer.velocity().x, width, direction),
-            );
-            const recent = swipe.velocities.slice(
-              -navigation.interactivePopVelocitySamples,
-            );
-            v = recent.reduce((sum, value) => sum + value, 0) / recent.length;
-          }
-          const springBack = (velocity: number) => {
-            const id = (runningRef.current?.id ?? 0) + 0.5;
-            runningRef.current = {id, done: false};
-            void animateProgress(
-              0,
-              swipe.top,
-              swipe.under,
-              springs.navigationInteractivePopFinish,
-              velocity,
-              true,
-              'rest',
-            ).then(finished => {
-              if (runningRef.current?.id === id) {
-                runningRef.current = {id, done: true};
-              }
-              if (finished) {
-                settle(swipe.top, 'top');
-                settle(swipe.under, 'covered');
-              }
-            });
-          };
-          if (recognizer.state === 'ended' && shouldFinishPop(p, v)) {
-            // Commit the pop; the transition it triggers continues from here
-            // at the finger's speed.
-            const release = {velocity: v};
-            const before = pathRef.current;
-            releaseRef.current = release;
-            onPathChangeRef.current(before.slice(0, -1));
-            // An app that keeps its path (guarding unsaved edits, say) gets
-            // no pop: by the next frame the release is still waiting, so the
-            // cards spring back where they came from.
-            const win = containerRef.current?.ownerDocument.defaultView;
-            win?.requestAnimationFrame(() => {
-              if (
-                releaseRef.current === release &&
-                pathRef.current === before
-              ) {
-                releaseRef.current = null;
-                springBack(0);
-              }
-            });
-          } else {
-            springBack(v);
-          }
-          break;
-        }
-        default:
-          break;
-      }
+      });
     },
-    [view.models, layersOf, setProgress, animateProgress, settle],
-  );
-
-  // The back swipes are touch behaviour: one model under any finger (a
-  // coarse primary pointer), Android and iOS alike; a mouse goes back with
-  // the bar's button and the browser's history.
-  const isTouch = useTouchPresentation().isTouch;
-  // In a browser tab the screen's leading edge is the browser's own back
-  // swipe (iOS Safari keeps it, AST-094 FR22): the edge swipe only runs in a
-  // home-screen web app, and the content swipe ignores touches that start
-  // in that edge band. Server render and first paint assume a tab.
-  const browserOwnsEdge = useSyncExternalStore(
-    subscribeToNothing,
-    () => !isStandaloneWebApp(),
-    () => true,
-  );
-  const browserOwnsEdgeRef = useRef(browserOwnsEdge);
-  browserOwnsEdgeRef.current = browserOwnsEdge;
-  const edge = useGestureRecognizer(
-    containerRef,
-    () =>
-      new ScreenEdgePanGestureRecognizer({
-        edges: ['leading'],
-        // Published, so app code can relate to it (gestureNamed).
-        name: 'NavigationStack.backSwipe',
-      }),
-    recognizer => onSwipe(recognizer, 0),
-    {
-      isEnabled:
-        isTouch && canPop && isInteractivePopEnabled && !browserOwnsEdge,
-    },
-  );
-  // iOS 26's back swipe from anywhere in the content. It waits for the edge
-  // swipe to fail, which a touch outside the edge band does at once.
-  const content = useGestureRecognizer(
-    cardsRef,
-    () =>
-      new PanGestureRecognizer({
-        name: 'NavigationStack.contentBackSwipe',
-        direction: 'right',
-        hysteresis: CONTENT_CLAIM_PX,
-        maximumNumberOfTouches: 1,
-        // A horizontal scroller under the finger that can still scroll
-        // that way keeps the drag (UIKit's scroll views do).
-        scrollEdge: true,
-        shouldReceiveTouch: (_recognizer, touch) =>
-          !(
-            browserOwnsEdgeRef.current &&
-            startsInEdgeBand(
-              touch.startX,
-              writingDirection(containerRef.current),
-            )
-          ),
-      }).requireToFail(edge),
-    recognizer => onSwipe(recognizer, CONTENT_DEAD_ZONE_PX),
-    {isEnabled: isTouch && canPop && isInteractivePopEnabled},
-  );
-  // The content swipe pops toward the trailing edge: rightward unless RTL.
-  useLayoutEffect(() => {
-    content.direction =
-      writingDirection(containerRef.current) === 'rtl' ? 'left' : 'right';
-  }, [content]);
+  };
+  useBackSwipes(containerRef, cardsRef, swipeStackRef, {
+    isEnabled: canPop && isInteractivePopEnabled,
+  });
 
   // ---------------------------------------------------------------------------
   // Render
