@@ -145,8 +145,11 @@ files are ignored on `main`.
 Boundaries, checked by `pnpm check:package-boundaries`:
 
 - `@astryxdesign/core` never imports this package.
-- This package's source never imports core. It reads core's documentation
-  files as data at build time.
+- No file in this package, in any folder, imports core. Until core's portable
+  entry ships, the check lists the only build-time exceptions: the theme
+  generator in `scripts/` may import `@astryxdesign/core/theme` and
+  `@astryxdesign/core/theme/tokens`, and `scripts/core-docs.mjs` reads core's
+  documentation files as data. Anything else fails the check.
 
 ## Experiment matrix
 
