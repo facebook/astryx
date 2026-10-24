@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-09-10
+approved_at: 2026-10-24
 owners: [cixzhang]
 applies_to:
   [
@@ -25,7 +25,7 @@ verified_by:
     packages/core/src/Selector/Selector.test.tsx,
     packages/core/src/Slider/Slider.test.tsx,
   ]
-deciding_specs: []
+deciding_specs: [spec:AST-100/DEC-1]
 ---
 
 # Interaction modality architecture
@@ -146,6 +146,13 @@ work.
   correction already settled by current component, family, design, theme, or
   objective accessibility authority; that correction uses rendered-pixel evidence
   and its direct owner rather than being recast as interaction reachability.
+- **INV10 — Gesture velocity has one owner.** In `@astryxdesign/core`, one
+  internal velocity tracker owns a gesture's pointer samples and reports
+  velocity, and its one release filter, a fixed sample window with a reset to
+  0 after a still contact, is the only lift velocity a component reads
+  (`spec:AST-100`). It is not exported. No component keeps its own sample
+  buffer, velocity math, or alternative release filter; a component's flick
+  threshold compares the tracker's release velocity.
 
 ## Allowed variation
 
@@ -214,7 +221,8 @@ is asked to carry a new decision.
 
 ## Deciding specs
 
-No separate specification changes this record. The last-input rule was approved as
+`spec:AST-100/DEC-1` decides one release velocity for every gesture (INV10).
+Otherwise no separate specification changes this record. The last-input rule was approved as
 a system architecture decision by `cixzhang` on 2026-08-30. Essential-action
 reachability, newer-intent precedence, and the evidence/scope guard were approved by
 `cixzhang` on 2026-09-10.
@@ -231,6 +239,7 @@ reachability, newer-intent precedence, and the evidence/scope guard were approve
 | INV7       | Rendered-browser affected-state checks across geometry, clipping, scrolling, hit testing, built-in and custom-renderer paths | At an offered interaction point one modality loses every essential path, or evidence substitutes class equality for reachability/perceptibility                              |
 | INV8       | Owner-defined intent order, pending, close, cancellation, disablement, and unmount mutations                                 | Older work changes current content, selection, status or announcement, visibility, focus, or activation after owner-defined supersession                                     |
 | INV9       | Concrete-harm reproduction, representative normal/legacy/no-new-prop paths, and coincident public-delta inventory            | Unsupported or aesthetic preference is treated as harm, unaffected behavior changes, or an API, layout, sizing, default, sticky, or exception delta escapes direct authority |
+| INV10      | Source boundary check over Core and Lab plus tracker and release-filter unit tests                                           | A component with its own sample buffer, velocity math, or release filter; an export of the tracker; a non-zero release after a still pause                                   |
 
 Real-browser evidence is required when the behavior depends on
 `:focus-visible`, pointer capability, touch or pen synthesis, rendered focus

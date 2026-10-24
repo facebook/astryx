@@ -10,7 +10,7 @@ approved_by: cixzhang
 approved_at: 2026-10-24
 phase: accepted
 owners: [cixzhang]
-affects_architecture: []
+affects_architecture: [architecture:interaction-modality]
 affects_families: []
 affects_contributing: []
 affects_consumer_docs: []
@@ -37,7 +37,7 @@ affects_consumer_docs: []
 When a person flicks a sheet, a toast, a row, a page, or a wheel and lifts
 their finger, every Astryx component reads the same speed from that motion, so
 a flick of the same speed does the same thing everywhere, and a finger that
-stopped before lifting never counts as a flick. One velocity tracker in Core
+stopped before lifting never counts as a flick. One velocity source in Core
 owns the samples and the release filter; components decide only what a given
 velocity means for them.
 
@@ -47,55 +47,55 @@ velocity means for them.
   point, its projection, and its settle curve stay with the component and its
   record.
 - Pinch scale velocity and scroll physics the browser owns.
-- Public API: the tracker, its filter values, and every threshold stay
+- Public API: the velocity source, its filter values, and every threshold stay
   internal (`spec:AST-002` FR3).
 - Equivalent internal implementations remain valid when they satisfy this
   contract.
 
 ## Requirements
 
-- **FR1 — One tracker owns the samples.** Core has one velocity tracker. A
-  gesture feeds it the contact's positions with their event timestamps, and it
-  reports velocity in CSS pixels per second on each physical axis. Every Core
-  and Lab component that reads the velocity of a pointer gesture uses it,
-  including a sheet's drag, a toast's swipe, a row swipe, paging, a wheel
-  picker, a navigation pop, and interactive dismiss. No component keeps its own
-  sample buffer or velocity math.
-- **FR2 — One release filter.** The velocity a component reads when the
-  contact lifts comes only from the tracker's release filter: it uses the
-  samples within a fixed window before the newest sample, and reports 0 when
-  the contact stayed still for longer than a fixed stillness interval before
-  lifting. A component reads no other estimate and selects no alternative
-  filter. The window and the stillness interval are internal tuning values.
+- **FR1 — One velocity for every gesture.** Every Core and Lab component that
+  reads the velocity of a pointer gesture, including a sheet's drag, a toast's
+  swipe, a row swipe, paging, a wheel picker, a navigation pop, and interactive
+  dismiss, reports the same velocity, in CSS pixels per second on each physical
+  axis, for the same contact motion. `architecture:interaction-modality` INV10
+  owns the single source of that velocity.
+- **FR2 — A still finger never flicks.** The velocity a component reads when
+  the contact lifts reflects only the motion just before the lift: it is 0
+  when the contact stayed still for longer than a fixed stillness interval
+  before lifting, and motion older than a fixed window before the lift does not
+  change it. Every component reads the same release velocity and none reads
+  another estimate. The window and the stillness interval are internal tuning
+  values.
 - **FR3 — Thresholds sit on top of the one velocity.** A component's flick,
   fling, or commit threshold compares the FR2 velocity, possibly with travel
   or projection the component owns. Thresholds are per-component tuning that
   stays internal (`spec:AST-002` FR3); a component never derives a second
   velocity to compare against.
-- **FR4 — Event-clock timestamps for every pointer.** Samples carry the input
-  event's own timestamp, never the time the handler ran or the wall clock, and
-  the tracker and filter behave the same for touch, pen, and mouse pointers.
-- **FR5 — Direction comes from the caller's axis.** The tracker reports
-  physical x and y. A caller that acts along a logical axis maps the velocity
-  onto that axis after resolving the element's direction with the shared
-  right-to-left check, so a flick toward the inline end means the same in both
-  directions.
+- **FR4 — Event time for every pointer.** The velocity follows the input
+  events' own timestamps, so a handler that runs late does not change it, and
+  the same motion gives the same velocity for touch, pen, and mouse pointers.
+- **FR5 — Direction follows the rendered direction.** A flick toward the
+  logical end moves toward the logical end in both directions
+  (`design:bidirectionality` DR13); a component maps the physical velocity onto
+  its logical axis from the rendered direction
+  (`architecture:internationalization` INV11).
 
 ### Platform support
 
 - Supported feature/engine floor: the package's supported browsers
-  (`spec:AST-013` FR3); pointer events with event timestamps.
+  (`spec:AST-013` FR1, FR3); pointer events with event timestamps.
 - Unsupported behavior: a gesture with fewer than two samples in the window
   has a release velocity of 0.
-- Browser evidence: unit tests over recorded and synthetic sample streams
-  prove FR1–FR5; real-device feel for each component remains that component's
-  evidence.
+- Browser evidence: none required by this record; the unit, source-boundary,
+  and component tests in Verification prove FR1–FR5, and real-device feel for
+  each component remains that component's evidence.
 
 ## Current-state impact
 
-- No velocity tracker exists in Core on `main`. Its first landing meets FR1–FR5:
-  one release filter with the FR2 stillness reset, with no selectable
-  alternative filters.
+- No single velocity source exists in Core on `main`. Its first landing meets
+  FR1–FR5 and `architecture:interaction-modality` INV10: one release filter
+  with the FR2 stillness reset, with no selectable alternative filters.
 - BottomSheet's drag estimates velocity from a two-point window over its
   recent samples with event timestamps. Under FR1 and FR2 it reads the tracker.
 - Item's row swipe compares a speed in pixels per millisecond timed with the
