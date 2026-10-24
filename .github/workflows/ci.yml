@@ -1073,6 +1073,87 @@ jobs:
             pr-meta.json
           retention-days: 1
 
+  # Measures the PR's merge base so the PR comment can show component and
+  # package sizes before and after. It runs beside build-storybook rather than
+  # inside it, so no browser lane waits for the second build; the head sizes
+  # still come from build-storybook's analysis.
+  size-base:
+    needs: [check-scope]
+    if: github.event_name == 'pull_request' && needs.check-scope.result == 'success' && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 50
+
+      - name: Fetch base branch
+        run: git fetch origin ${{ github.base_ref }} --depth=50
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
+
+      # A branch far behind main may have no merge base within the fetched
+      # history even after deepening. The report then keeps Before and Delta
+      # as N/A rather than failing the run.
+      - name: Check out the merge base
+        id: merge-base
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if ! BASE_SHA=$(git merge-base "origin/$BASE_REF" HEAD); then
+            git fetch --deepen=200 origin "$BASE_REF:refs/remotes/origin/$BASE_REF" || true
+            if ! BASE_SHA=$(git merge-base "origin/$BASE_REF" HEAD); then
+              echo "::warning::no merge base within the fetched history; skipping base size measurement"
+              echo "found=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+          git worktree add --detach .size-base "$BASE_SHA"
+          echo "sha=$BASE_SHA" >> "$GITHUB_OUTPUT"
+          echo "found=true" >> "$GITHUB_OUTPUT"
+
+      # Core and its build tooling always build, because the other component
+      # packages depend on them; another package builds only when the PR
+      # changes its source.
+      - name: Build the merge base's component packages
+        if: steps.merge-base.outputs.found == 'true'
+        working-directory: .size-base
+        env:
+          BASE_SHA: ${{ steps.merge-base.outputs.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm -F @astryxdesign/build build
+          pnpm -F @astryxdesign/core build
+          for pkg in lab charts richtext vega; do
+            if git diff --quiet "$BASE_SHA" "$HEAD_SHA" -- "packages/$pkg/src"; then
+              continue
+            fi
+            pnpm -F "@astryxdesign/$pkg" build
+          done
+
+      - name: Measure the merge base
+        if: steps.merge-base.outputs.found == 'true'
+        run: |
+          node .github/scripts/analyze-pr.js \
+            --base origin/${{ github.base_ref }} \
+            --head HEAD \
+            --base-root .size-base \
+            --base-only \
+            --output size-base.json
+
+      - name: Upload base size stats
+        if: steps.merge-base.outputs.found == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: pr-size-base
+          path: size-base.json
+          retention-days: 1
+
   # Typechecks run beside build-storybook instead of before its Storybook
   # build, so the browser checks that wait on the Storybook artifact start
   # ~1.5 minutes sooner. The build and release-check joins require this job,
