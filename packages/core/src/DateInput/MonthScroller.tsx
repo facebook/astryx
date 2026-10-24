@@ -23,6 +23,10 @@
  * scroll, so snap offsets are constant and momentum is never interrupted —
  * which is the failure mode of the usual "append months at the edge" approach.
  *
+ * Under reduced motion (`design:reduced-motion`) a step the arrows, the keys
+ * or Today ask for changes the month without travel: at once with a mouse or
+ * a keyboard, through a short opacity dip on a touch screen.
+ *
  * SYNC: When modified, update:
  * - /packages/core/src/DateInput/TouchDateField.tsx
  * - /packages/core/src/DateTimeInput/TouchDateTimeField.tsx
@@ -55,6 +59,7 @@ import {
   type ISODateString,
   type PlainDate,
   plainDateAddDays,
+  plainDateAddMonths,
   plainDateDayOfWeek,
   plainDateFormat,
   plainDateIsEqual,
@@ -62,6 +67,8 @@ import {
   DATE_FORMAT_MONTH_YEAR,
   DATE_FORMAT_WITH_WEEKDAY,
 } from '../utils';
+import {plainDateDiffDays} from '../utils/plainDate';
+import {reducedMotionFade} from '../motion/reducedMotion';
 import {dateInputTouchSizes, dateInputTouchGeometry} from './tokens.stylex';
 import {useOwnScrollGesture} from './useOwnScrollGesture';
 import {useScrollSettle} from './useScrollSettle';
@@ -266,11 +273,13 @@ const dynamic = stylex.create({
   }),
 });
 
+/** The handle of MonthScroller and of MonthPager, its touch counterpart. */
 export interface MonthScrollerHandle {
   /** Bring a month to rest at the top of the scrollport. */
   scrollToMonth: (monthIndex: number, behavior?: ScrollBehavior) => void;
 }
 
+/** The props of MonthScroller and of MonthPager, its touch counterpart. */
 export interface MonthScrollerProps {
   /** Imperative handle for programmatic navigation (Today, the wheels). */
   handleRef?: React.RefObject<MonthScrollerHandle | null>;
@@ -382,6 +391,22 @@ export function MonthScroller({
     );
   }, [paneSize, initialMonthIndex, minMonthIndex, isRTL]);
 
+  // The Reduced Motion dip of a step on a touch screen, owned here so a
+  // second step or the unmount clears it (architecture:react-component-runtime
+  // INV5).
+  const dipRef = useRef<{animation: Animation; timer: number} | null>(null);
+  const stopDip = useCallback(() => {
+    const dip = dipRef.current;
+    if (dip != null) {
+      window.clearTimeout(dip.timer);
+      dip.animation.cancel();
+      dipRef.current = null;
+    }
+  }, []);
+  // Synchronizes with the dip's timer and animation: neither outlives the
+  // scroller.
+  useEffect(() => stopDip, [stopDip]);
+
   const scrollToMonth = useCallback(
     (monthIndex: number, behavior: ScrollBehavior = 'smooth') => {
       const scroller = scrollerRef.current;
@@ -405,12 +430,34 @@ export function MonthScroller({
         return;
       }
       steeredRowRef.current = row;
-      scroller.scrollTo({
-        left: scrollOffsetForRow(row, paneSize, isRTL),
-        behavior,
-      });
+      const left = scrollOffsetForRow(row, paneSize, isRTL);
+      // design:reduced-motion: under reduced motion the month changes without
+      // travel, at once with a mouse or a keyboard and through an opacity dip
+      // on a touch screen, the scroll landing at the dip (reducedMotionFade).
+      const fade = behavior === 'smooth' ? reducedMotionFade(scroller) : null;
+      if (fade != null) {
+        if (fade.duration === 0) {
+          scroller.scrollTo({left, behavior: 'auto'});
+          return;
+        }
+        // A second step within the dip replaces the first: only its scroll
+        // lands, at its own dip's middle.
+        stopDip();
+        dipRef.current = {
+          animation: scroller.animate(
+            [{opacity: 1}, {opacity: 0}, {opacity: 1}],
+            {duration: fade.duration, easing: fade.easing},
+          ),
+          timer: window.setTimeout(() => {
+            dipRef.current = null;
+            scroller.scrollTo({left, behavior: 'auto'});
+          }, fade.duration / 2),
+        };
+        return;
+      }
+      scroller.scrollTo({left, behavior});
     },
-    [paneSize, minMonthIndex, rowCount, isRTL],
+    [paneSize, minMonthIndex, rowCount, isRTL, stopDip],
   );
 
   // Deliberately un-keyed: it runs after every render, costs a null check, and
@@ -615,7 +662,8 @@ export function MonthScroller({
   }, [paneSize, rowCount, minMonthIndex, isRTL]);
 
   // Move the keyboard focus by whole days and let the scroller follow. Paging
-  // by month is PageUp/PageDown; everything else is the APG grid vocabulary.
+  // by month is PageUp/PageDown (a year with Shift); everything else is the
+  // APG grid vocabulary.
   const moveFocus = useCallback(
     (from: PlainDate, deltaDays: number) => {
       const next = plainDateAddDays(from, deltaDays);
@@ -666,6 +714,19 @@ export function MonthScroller({
           event.preventDefault();
           moveFocus(date, 6 - column);
           break;
+        // A month (a year with Shift), as Calendar does: the same day in the
+        // month before or after, or that month's last day.
+        case 'PageUp':
+        case 'PageDown': {
+          event.preventDefault();
+          const months =
+            (event.key === 'PageDown' ? 1 : -1) * (event.shiftKey ? 12 : 1);
+          moveFocus(
+            date,
+            plainDateDiffDays(date, plainDateAddMonths(date, months)),
+          );
+          break;
+        }
         default:
           break;
       }

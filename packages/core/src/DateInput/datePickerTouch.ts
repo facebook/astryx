@@ -5,7 +5,7 @@
  * @input The date and time pickers' touch-only pieces
  * @output Re-exports what the DateInput, TimeInput and DateTimeInput bottom
  *   sheets use only under a finger: TimeWheels (the time wheels that follow
- *   UIDatePicker)
+ *   UIDatePicker) and MonthPager (the calendar's months paging like it)
  * @position The date and time pickers' touch layer. The sheets import touch
  *   behaviour from here and only here, so a desktop build can replace this one
  *   module.
@@ -17,7 +17,9 @@
  * SYNC: When modified, update:
  * - /packages/core/src/TimeInput/TouchTimeField.tsx
  * - /packages/core/src/DateTimeInput/TouchDateTimeField.tsx
+ * - /packages/core/src/DateInput/TouchDateField.tsx
  */
 
 export {TimeWheels} from '../TimeInput/TimeWheels';
 export type {TimeWheelsProps} from '../TimeInput/TimeWheels';
+export {MonthPager} from './MonthPager';

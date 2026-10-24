@@ -58,6 +58,15 @@ import {picker} from '../motion/uikit';
 import {SWIPE_DISTANCE} from './useOwnScrollGesture';
 import {DRAG_SLOP} from './usePointerDragScroll';
 import {SCROLL_QUIET_MS} from './useScrollSettle';
+import {useCalendarDays} from '../Calendar';
+import type * as CalendarModule from '../Calendar';
+
+// A pass-through spy: each call is one month pane rendering, which the
+// month/year toggle test counts.
+vi.mock('../Calendar', async importOriginal => {
+  const actual = await importOriginal<typeof CalendarModule>();
+  return {...actual, useCalendarDays: vi.fn(actual.useCalendarDays)};
+});
 
 // ---------------------------------------------------------------------------
 // jsdom scaffolding
@@ -137,6 +146,16 @@ function setViewport(kind: 'mobile' | 'desktop'): void {
       ? {pointer: 'coarse', width: 393}
       : {pointer: 'fine', width: 1280},
   );
+}
+
+/**
+ * A touchscreen laptop with the sheet pinned (`presentation="bottom-sheet"`):
+ * the primary pointer is fine, so the calendar is today's native scroller,
+ * and a finger can still swipe it. Under a primary finger the calendar is
+ * MonthPager instead.
+ */
+function stubTouchscreenLaptop(): void {
+  stubMedia({pointer: 'fine', anyPointer: 'coarse', width: 1280});
 }
 
 /**
@@ -858,6 +877,54 @@ describe('DateInput — calendar surface', () => {
     expect(header()).toHaveTextContent('March 2026');
   });
 
+  it('under a finger: names the month at the tap and steps again from it mid-scroll', () => {
+    renderAndOpen(
+      <Controlled initial="2026-03-21" min="2026-01-01" max="2026-12-31" />,
+    );
+    const header = () =>
+      document.querySelector<HTMLElement>('[data-title="month-year"]')!;
+    fireEvent.click(screen.getByRole('button', {name: 'Next month'}));
+    expect(header()).toHaveTextContent('April 2026');
+    fireEvent.click(screen.getByRole('button', {name: 'Next month'}));
+    expect(header()).toHaveTextContent('May 2026');
+    // The window follows the target, so May's pane is mounted already.
+    expect(pane('May 2026')).toBeInTheDocument();
+  });
+
+  it('pages the keyboard focus by month with PageUp/PageDown and by year with Shift, on every pointer', () => {
+    renderAndOpen(
+      <Controlled initial="2026-03-21" min="2025-01-01" max="2026-12-31" />,
+    );
+    const day = within(pane('March 2026')).getByRole('button', {
+      name: /March 21, 2026/,
+    });
+    day.focus();
+    // Today's scroller follows the focus with a native smooth scroll, which
+    // jsdom does not run; the focus itself is what moves on every pointer.
+    fireEvent.keyDown(day, {key: 'PageDown'});
+    expect(document.activeElement).toHaveAttribute('data-date', '2026-04-21');
+    fireEvent.keyDown(document.activeElement!, {key: 'PageUp', shiftKey: true});
+    expect(document.activeElement).toHaveAttribute('data-date', '2025-04-21');
+  });
+
+  it('under a finger: pages the keyboard focus by month with PageUp/PageDown and by year with Shift', () => {
+    renderAndOpen(
+      <Controlled initial="2026-03-21" min="2025-01-01" max="2026-12-31" />,
+    );
+    const header = () =>
+      document.querySelector<HTMLElement>('[data-title="month-year"]')!;
+    const day = within(pane('March 2026')).getByRole('button', {
+      name: /March 21, 2026/,
+    });
+    day.focus();
+    fireEvent.keyDown(day, {key: 'PageDown'});
+    expect(document.activeElement).toHaveAttribute('data-date', '2026-04-21');
+    expect(header()).toHaveTextContent('April 2026');
+    fireEvent.keyDown(document.activeElement!, {key: 'PageUp', shiftKey: true});
+    expect(document.activeElement).toHaveAttribute('data-date', '2025-04-21');
+    expect(header()).toHaveTextContent('April 2025');
+  });
+
   /**
    * A programmatic scroll must not report its own arrival as if the user had
    * scrolled there. Nothing needs the report — whatever asked for the scroll
@@ -870,9 +937,16 @@ describe('DateInput — calendar surface', () => {
    * again — so the month drifted on the way back to the calendar.
    */
   it('does not report a scroll it was told to make', async () => {
+    stubTouchscreenLaptop();
+    expect(matchMedia('(pointer: coarse)').matches).toBe(false);
     await withLayout(async () => {
       render(
-        <Controlled initial="2026-03-21" min="2026-01-01" max="2026-12-31" />,
+        <Controlled
+          initial="2026-03-21"
+          min="2026-01-01"
+          max="2026-12-31"
+          presentation="bottom-sheet"
+        />,
       );
       fireEvent.click(field());
       const header = () =>
@@ -1269,8 +1343,18 @@ describe('DateInput — a rest position between two months', () => {
     scroller.dispatchEvent(touchEvent('touchend'));
   };
 
+  // Rest positions between two months are the native scroller's; under a
+  // primary finger the calendar is MonthPager, which rests only on a month.
   const openCalendar = () => {
-    render(<Controlled initial="2026-03-21" {...FIVE_YEARS} />);
+    stubTouchscreenLaptop();
+    expect(matchMedia('(pointer: coarse)').matches).toBe(false);
+    render(
+      <Controlled
+        initial="2026-03-21"
+        {...FIVE_YEARS}
+        presentation="bottom-sheet"
+      />,
+    );
     fireEvent.click(screen.getByLabelText('Event date'));
     const scroller = document.querySelector<HTMLElement>(
       '[data-scroller="months"]',
@@ -1507,6 +1591,23 @@ describe('DateInput — month/year wheels', () => {
     expect(title()).toHaveTextContent('September 2026');
   });
 
+  it('under a finger: moves the hidden calendar to the wheels\u2019 month without an echo', () => {
+    withLayout(() => {
+      render(<Controlled initial="2026-03-21" {...FIVE_YEARS} />);
+      fireEvent.click(field());
+      openWheels();
+      fireEvent.click(
+        within(screen.getByRole('listbox', {name: 'Month'})).getByText(
+          'January',
+        ),
+      );
+      expect(title()).toHaveTextContent('January 2026');
+      fireEvent.click(title());
+      expect(title()).toHaveTextContent('January 2026');
+      expect(pane('January 2026')).toBeInTheDocument();
+    });
+  });
+
   /**
    * A wheel commit steers the hidden calendar, and the calendar reports the
    * month it lands on. Taking that report back while the wheels are open
@@ -1567,8 +1668,16 @@ describe('DateInput — month/year wheels', () => {
    * which is what the re-snap amounts to.
    */
   it('holds the month when the hidden calendar is re-snapped on reveal', async () => {
+    stubTouchscreenLaptop();
+    expect(matchMedia('(pointer: coarse)').matches).toBe(false);
     await withLayout(async () => {
-      render(<Controlled initial="2026-03-21" {...FIVE_YEARS} />);
+      render(
+        <Controlled
+          initial="2026-03-21"
+          {...FIVE_YEARS}
+          presentation="bottom-sheet"
+        />,
+      );
       fireEvent.click(field());
       openWheels();
       fireEvent.click(
@@ -2025,8 +2134,32 @@ describe('DateInput — nested scrollers keep their own touch gesture', () => {
     ancestor.stop();
   });
 
-  it('keeps a diagonal drag, because a thumb arcs as it swipes', () => {
+  it('under a finger: keeps a drag up to 45° from the sheet', () => {
     renderAndOpen();
+    const scroller = document.querySelector('[data-scroller="months"]')!;
+    const ancestor = watchAncestor();
+    // ~42° off horizontal.
+    swipe(scroller, -80, 72);
+    expect(ancestor.seen).not.toContain('touchmove');
+    ancestor.stop();
+  });
+
+  it('under a finger: gives a drag steeper than 45° to the sheet', () => {
+    renderAndOpen();
+    const scroller = document.querySelector('[data-scroller="months"]')!;
+    const ancestor = watchAncestor();
+    // ~50° off horizontal.
+    swipe(scroller, -60, 72);
+    expect(ancestor.seen).toContain('touchmove');
+    ancestor.stop();
+  });
+
+  it('keeps a diagonal drag, because a thumb arcs as it swipes', () => {
+    stubTouchscreenLaptop();
+    expect(matchMedia('(pointer: coarse)').matches).toBe(false);
+    renderAndOpen(
+      <Controlled initial="2026-03-21" presentation="bottom-sheet" />,
+    );
     const scroller = document.querySelector('[data-scroller="months"]')!;
     const ancestor = watchAncestor();
     // ~50° off horizontal: past the browser's own pan-x cone, still ours.
@@ -2042,7 +2175,11 @@ describe('DateInput — nested scrollers keep their own touch gesture', () => {
    * from 45° to 60° on an iPhone 15 profile.
    */
   it('pages a month itself when the browser refuses to pan a claimed swipe', () => {
-    renderAndOpen();
+    stubTouchscreenLaptop();
+    expect(matchMedia('(pointer: coarse)').matches).toBe(false);
+    renderAndOpen(
+      <Controlled initial="2026-03-21" presentation="bottom-sheet" />,
+    );
     const scroller = document.querySelector('[data-scroller="months"]')!;
 
     const forward = swipe(scroller, -60, 72);
@@ -2440,6 +2577,31 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     expect(source).toContain("touchAction: 'pan-x'");
     // The pane and the scrollport must come from the same expression, or a
     // pane stops being exactly one screen and every snap offset drifts.
+    expect(
+      source.match(/blockSize: dateInputTouchGeometry\.paneBlockSize/g),
+    ).toHaveLength(2);
+  });
+
+  it('under a finger: the month/year toggle leaves the calendar\u2019s days alone', () => {
+    // The toggle re-renders the sheet; nothing the calendar shows changes, so
+    // no month pane may re-render (each formats 42 day labels, which was most
+    // of the toggle's main-thread work on a phone).
+    renderAndOpen();
+    vi.mocked(useCalendarDays).mockClear();
+    fireEvent.click(document.querySelector('[data-title="month-year"]')!);
+    expect(vi.mocked(useCalendarDays)).not.toHaveBeenCalled();
+  });
+
+  it('under a finger: MonthPager pages the months with the shared pager, each pane on its own layer', () => {
+    const source = read('MonthPager.tsx');
+    // UIKit's paging scroll view, not native scroll snapping: iOS gives a
+    // snapping scroller the fast rate bent onto WebKit's own target.
+    expect(source).toContain('usePager(');
+    expect(source).not.toContain('scrollSnapType');
+    // Mobile Safari paints a layer whole before it moves.
+    expect(source).toContain("willChange: 'transform'");
+    // The pane and the viewport must come from the same expression, or a
+    // pane stops being exactly one screen.
     expect(
       source.match(/blockSize: dateInputTouchGeometry\.paneBlockSize/g),
     ).toHaveLength(2);

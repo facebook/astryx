@@ -102,7 +102,7 @@ import {
 import {MonthYearWheels} from '../DateInput/MonthYearWheels';
 import {Wheel, type WheelOption} from '../DateInput/Wheel';
 import {WheelGroup} from '../DateInput/WheelGroup';
-import {TimeWheels} from '../DateInput/datePickerTouch';
+import {MonthPager, TimeWheels} from '../DateInput/datePickerTouch';
 import {minuteIntervalOf} from '../TimeInput/timeWheelRules';
 import {useTouchPresentation} from '../utils/touchPresentation';
 import {
@@ -599,8 +599,10 @@ export function TouchDateTimeField({
   );
   const [activePanel, setActivePanel] = useState<TouchDateTimePanel>('date');
   const [isWheelOpen, setIsWheelOpen] = useState(false);
-  // A finger gets UIDatePicker's time wheels; a mouse keeps today's.
+  // A finger gets UIDatePicker's time wheels and month pager; a mouse keeps
+  // today's columns and native month scroller.
   const {isTouch} = useTouchPresentation();
+  const MonthGrid = isTouch ? MonthPager : MonthScroller;
   const [draftTime, setDraftTime] = useState<ISOTimeString | undefined>(() =>
     normalizeISOTime(splitDateTime(value).time, hasSeconds),
   );
@@ -1168,7 +1170,7 @@ export function TouchDateTimeField({
                   </div>
                 ))}
               </div>
-              <MonthScroller
+              <MonthGrid
                 key={`${minMonthIndex}:${maxMonthIndex}`}
                 handleRef={scrollerHandleRef}
                 minMonthIndex={minMonthIndex}

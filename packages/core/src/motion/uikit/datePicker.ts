@@ -14,9 +14,9 @@
  *   surfaces
  *
  * The inline calendar's month grid is a paging UICollectionView
- * (`isPagingEnabled`, `decelerationRate` 0.998), whose drag, release and
- * settle are UIScrollView paging's, and its wheels are UIPickerView's. This
- * file holds what UIDatePicker adds on top.
+ * (`isPagingEnabled`, `decelerationRate` 0.998): its drag, release and settle
+ * are the paging table's (`paging`), and its wheels are UIPickerView's
+ * (`picker`). This file holds what UIDatePicker adds on top.
  *
  * Every leaf carries one or more `@source` (apple-docs | wwdc | webkit |
  * measured | GUESS); webkit and GUESS values also carry the `@measure` task
@@ -83,8 +83,44 @@ export const datePicker = {
        *   before the lift, Oct 23 2026
        */
       titleFollows: 'nearestPage',
+      /**
+       * A release picks its month by the paging rule and settles on the
+       * paging integrator (`paging.release`, `paging.integrator`): slow
+       * drags released at 30 % and 50 % of a page settle back, at 70 % on
+       * the next month; a drag toward a month past `maximumDate` stays.
+       * @source measured: UIKit lab, iOS 26.2 simulator, `.date` `.inline`,
+       *   the grid's `UICollectionView` (`isPagingEnabled`,
+       *   `decelerationRate` 0.998) read and its offsets logged per frame
+       *   for slow drags released at 30, 50 and 70 % and a drag past the
+       *   last allowed month, Oct 23 2026
+       */
+      release: 'paging',
+      /**
+       * In a sheet, a drag that starts on the grid moves the sheet only when
+       * it is steeper than 45° (vertical travel over horizontal above this
+       * ratio). The grid pages only within its own axis lock
+       * (`paging.panAxisRatio`, 26.6°), so the drags in between move
+       * neither.
+       * @source measured: UIKit lab, iOS 26.2 simulator, `.date` `.inline`
+       *   in a sheet: drags at 20° paged the grid; at 35° and 45° moved
+       *   neither the grid nor the sheet; at 55° and 65° moved the sheet,
+       *   Oct 23 2026
+       */
+      sheetAxisRatio: 1,
     },
     chevron: {
+      /**
+       * A tap on the previous or next chevron names the new month in the
+       * title at the lift, then scrolls the grid one page on
+       * `setContentOffset(_:animated:)`'s curve (`paging.animatedScroll`:
+       * 0.3 s, sinusoidal), starting in the same frame.
+       * @source measured: UIKit lab, iOS 26.2 simulator, `.date` `.inline`,
+       *   a tap on Next: the title changed in the first frame after the
+       *   lift and the offset ran 960 → 1280 on the 0.3 s sinusoid from that
+       *   frame (9.67, 21.33, 80, 160, 240, 298.67, 317.67 pt at 33, 50, 100,
+       *   150, 200, 250, 284 ms), Oct 23 2026
+       */
+      step: 'animatedScroll',
       /**
        * A second tap while the grid is still scrolling names the month after
        * that at once and starts a new 0.3 s sinusoid toward it from where the

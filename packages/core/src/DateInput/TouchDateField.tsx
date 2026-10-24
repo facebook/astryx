@@ -116,7 +116,9 @@ import {chainEventHandlers} from '../utils/chainEventHandlers';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {normalizeDayOfWeek} from '../utils/dateTypes';
+import {MonthPager} from './datePickerTouch';
 import {MonthScroller, type MonthScrollerHandle} from './MonthScroller';
+import {useTouchPresentation} from '../utils/touchPresentation';
 import {MonthYearWheels} from './MonthYearWheels';
 import {
   DEFAULT_MONTH_REACH,
@@ -677,6 +679,10 @@ export function TouchDateField({
     isSheetOpen ? sheetBodyRef : inputRef,
   );
   const [isWheelOpen, setIsWheelOpen] = useState(false);
+  // A finger pages the months like UIDatePicker (MonthPager); a mouse keeps
+  // today's native scroller.
+  const {isTouch} = useTouchPresentation();
+  const MonthGrid = isTouch ? MonthPager : MonthScroller;
   const scrollerHandleRef = useRef<MonthScrollerHandle | null>(null);
   // Pending focus handoff from the clear button; see handleClear.
   const clearFocusTimerRef = useRef<number | null>(null);
@@ -1121,7 +1127,7 @@ export function TouchDateField({
             styles.panelBeneath,
             isWheelOpen && styles.panelBeneathHidden,
           )}>
-          <MonthScroller
+          <MonthGrid
             key={`${minMonthIndex}:${maxMonthIndex}`}
             handleRef={scrollerHandleRef}
             minMonthIndex={minMonthIndex}
