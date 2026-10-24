@@ -172,6 +172,13 @@ export interface LogicalScrollPosition {
   overflows: boolean;
   atStart: boolean;
   atEnd: boolean;
+  /**
+   * The offset's sign contradicts the mapping: negative on an axis the
+   * mapping reads forward, or positive on one it reads reversed. The writing
+   * mode or direction changed without the last full measurement seeing it
+   * (a stylesheet alone, for one), so the mapping is stale.
+   */
+  contradictsMapping: boolean;
 }
 
 /**
@@ -200,15 +207,16 @@ export function measureLogicalScrollPosition(
     return null;
   }
   const isX = mapping[logicalAxis] === 'x';
+  const isReversed = mapping[`${logicalAxis}Reversed`];
+  const offset = isX ? element.scrollLeft : element.scrollTop;
   const maxOffset = isX
     ? element.scrollWidth - element.clientWidth
     : element.scrollHeight - element.clientHeight;
   return {
     overflows: maxOffset > SCROLL_OVERFLOW_TOLERANCE,
-    ...logicalEdges(
-      isX ? element.scrollLeft : element.scrollTop,
-      maxOffset,
-      mapping[`${logicalAxis}Reversed`],
-    ),
+    ...logicalEdges(offset, maxOffset, isReversed),
+    contradictsMapping: isReversed
+      ? offset > SCROLL_OVERFLOW_TOLERANCE
+      : offset < -SCROLL_OVERFLOW_TOLERANCE,
   };
 }

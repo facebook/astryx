@@ -115,9 +115,12 @@ function makeMeasurable(viewport: HTMLElement) {
 
 describe('useScrollableArea', () => {
   let frames: FrameRequestCallback[];
+  // A computed `direction` set by a stylesheet alone: no attribute changes.
+  let stylesheetDirection: string | null;
 
   beforeEach(() => {
     frames = [];
+    stylesheetDirection = null;
     vi.stubGlobal(
       'requestAnimationFrame',
       vi.fn((callback: FrameRequestCallback) => {
@@ -143,6 +146,9 @@ describe('useScrollableArea', () => {
           }
           if (element instanceof HTMLElement && property === 'overflowY') {
             return element.style.overflowY || 'auto';
+          }
+          if (property === 'direction' && stylesheetDirection != null) {
+            return stylesheetDirection;
           }
           return Reflect.get(target, property, target);
         },
@@ -434,6 +440,58 @@ describe('useScrollableArea', () => {
     expect(vi.mocked(window.getComputedStyle).mock.calls).toHaveLength(
       styleReads,
     );
+  });
+
+  it('derives vertical-rl block edges on the scroll path without requesting a frame', () => {
+    render(<Fixture axis="block" />);
+    const viewport = screen.getByTestId('viewport');
+    makeMeasurable(viewport);
+    viewport.style.writingMode = 'vertical-rl';
+    setGeometry(viewport, {scrollWidth: 220});
+    void act(() => viewport.dispatchEvent(new Event('transitionend')));
+    flushFrame();
+    expect(state().block).toEqual({
+      isScrollable: true,
+      atStart: true,
+      atEnd: false,
+    });
+
+    // The block axis runs right to left along x: its end is scrollLeft -120.
+    setGeometry(viewport, {scrollLeft: -120});
+    void act(() => viewport.dispatchEvent(new Event('scroll')));
+    expect(frames).toHaveLength(0);
+    expect(state().block).toEqual({
+      isScrollable: true,
+      atStart: false,
+      atEnd: true,
+    });
+  });
+
+  it('measures fully when a scroll offset contradicts the measured direction', () => {
+    render(<Fixture />);
+    const viewport = screen.getByTestId('viewport');
+    makeMeasurable(viewport);
+    setGeometry(viewport, {scrollWidth: 300});
+    void act(() => viewport.dispatchEvent(new Event('scroll')));
+    flushFrame();
+    expect(state().inline).toEqual({
+      isScrollable: true,
+      atStart: true,
+      atEnd: false,
+    });
+
+    // A stylesheet alone turns the area RTL, so nothing re-measured; the
+    // next scroll reports a negative offset the stored mapping rules out.
+    stylesheetDirection = 'rtl';
+    setGeometry(viewport, {scrollLeft: -200});
+    void act(() => viewport.dispatchEvent(new Event('scroll')));
+    expect(frames).toHaveLength(1);
+    flushFrame();
+    expect(state().inline).toEqual({
+      isScrollable: true,
+      atStart: false,
+      atEnd: true,
+    });
   });
 
   it('normalizes RTL inline offsets to logical edges', () => {

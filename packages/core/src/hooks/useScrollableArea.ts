@@ -301,7 +301,8 @@ export function useScrollableArea({
     // callbacks, when style and layout are normally still clean from the last
     // frame: no computed style is read, no frame is requested, and the edges
     // are current in the frame that moved. Anything a scroll cannot explain
-    // (overflow appearing or going away on a requested axis) schedules the
+    // (overflow appearing or going away on a requested axis, or an offset
+    // whose sign the measured writing direction rules out) schedules the
     // full measurement, as every other invalidation does.
     const onScroll = () => {
       if (!isActive || frame != null) {
@@ -322,7 +323,10 @@ export function useScrollableArea({
         if (position == null) {
           return;
         }
-        if (position.overflows !== measuredOverflow[logicalAxis]) {
+        if (
+          position.overflows !== measuredOverflow[logicalAxis] ||
+          position.contradictsMapping
+        ) {
           scheduleMeasure();
           return;
         }
