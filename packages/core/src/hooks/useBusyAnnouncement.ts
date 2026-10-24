@@ -25,7 +25,11 @@
  */
 
 import {useCallback, useEffect, useRef, type RefObject} from 'react';
-import {useAnnounce, withdrawPendingAnnouncement} from './useAnnounce';
+import {
+  takeJoinedAnnouncement,
+  useAnnounce,
+  withdrawPendingAnnouncement,
+} from './useAnnounce';
 
 const REGION_ATTR = 'data-astryx-modal-busy-region';
 const VISUALLY_HIDDEN_CSS =
@@ -79,8 +83,9 @@ export function useBusyAnnouncement(
   const announce = useAnnounce();
   const hasAnnouncedRef = useRef(false);
   const frameRef = useRef<number | null>(null);
-  // The message this busy start wrote to the shared channel, until it settles.
-  const channelMessageRef = useRef<string | null>(null);
+  // This busy start's share of the shared channel's pending text, until it
+  // settles.
+  const channelMessageRef = useRef<object | null>(null);
   useEffect(() => {
     if (!isBusy) {
       hasAnnouncedRef.current = false;
@@ -100,7 +105,7 @@ export function useBusyAnnouncement(
         announceInModal(dialog, message);
       } else {
         announce(message, 'polite');
-        channelMessageRef.current = message;
+        channelMessageRef.current = takeJoinedAnnouncement();
       }
     });
     frameRef.current = frame;
