@@ -8,7 +8,8 @@
  *   isRtlElement (gallery arrow keys follow the rendered direction), useZoomCore (the zoom
  *   stage for every pointer: keys, a mouse double-click and drag) and useZoomStage (its touch
  *   layer: pinch, double tap and pan on the gesture recognizers), moved by the compositor
- *   animator
+ *   animator, usePager (a gallery pages like Photos: a UIKit paging scroll view with Photos'
+ *   40 pt gap)
  * @output Exports Lightbox component, LightboxProps, LightboxMedia
  * @position Core implementation; consumed by index.ts
  *
@@ -18,6 +19,7 @@
  * - /packages/core/src/Lightbox/useZoomCore.ts (the zoom stage for every pointer)
  * - /packages/core/src/Lightbox/useZoomStage.ts (the touch layer)
  * - /packages/core/src/Lightbox/__tests__/LightboxZoom.interaction.browser.spec.ts (touch zoom proofs)
+ * - /packages/core/src/Lightbox/__tests__/LightboxPaging.interaction.browser.spec.ts (gallery paging proofs)
  * - /packages/core/src/Lightbox/index.ts (exports if types change)
  * - /packages/core/src/Layer/useLayerDismissal.ts (dismissal stack)
  * - /apps/storybook/stories/Lightbox.stories.tsx (storybook stories)
@@ -28,6 +30,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useReducer,
   useRef,
   useState,
   type MouseEvent as ReactMouseEvent,
@@ -55,8 +58,12 @@ import {useTranslator} from '../i18n';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {isRtlElement} from '../hooks/isRtlElement';
 import {useZoomCore} from './useZoomCore';
+import {usePager} from '../hooks/usePager';
+import {UIKIT_TAP} from '../motion/uikit/gestures';
+import {zoomMedia} from '../motion/uikit/zoomMedia';
 import {useZoomStage} from './useZoomStage';
 import {useTouchPresentation} from '../utils/touchPresentation';
+import {isCoarsePointer} from '../gestures/coarsePointer';
 /**
  * Media type for lightbox items.
  */
@@ -196,6 +203,67 @@ const styles = stylex.create({
   imageWrapperZoomTarget: {
     touchAction: 'none',
   },
+  // In a gallery the stage's touches go to the track instead: the pager's
+  // pan manages the stage's own `touch-action`.
+  trackZoomTarget: {
+    touchAction: 'none',
+  },
+  // A gallery's stage is the pager's viewport: it fills the viewer on every
+  // presentation, so its pages have a size of their own.
+  mediaGroupGallery: {
+    alignSelf: 'stretch',
+    flexGrow: 1,
+    minHeight: 0,
+  },
+  imageWrapperGallery: {
+    alignSelf: 'stretch',
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+    position: 'relative',
+  },
+  // Two rows, the photo's and the caption's, that every page shares
+  // (subgrid): the caption row is as tall as the tallest rendered caption,
+  // so every photo centres on the same box, with or without a caption, and
+  // the next photo slides in level with the current one.
+  track: {
+    position: 'absolute',
+    inset: 0,
+    display: 'grid',
+    gridTemplateColumns: '100%',
+    gridTemplateRows: 'minmax(0, 1fr) auto',
+  },
+  // One page per item, the stage's size, at index × (width + gap) (stacked
+  // in the track's one column, offset by its relative inset). Each on its
+  // own layer: through a busy main thread Mobile Safari moves the track but
+  // cannot paint what it had not painted, so a page that slides in must be
+  // painted whole before it moves.
+  page: {
+    position: 'relative',
+    gridColumn: '1',
+    gridRow: '1 / span 2',
+    display: 'grid',
+    gridTemplateColumns: '100%',
+    gridTemplateRows: 'subgrid',
+    minHeight: 0,
+    willChange: 'transform',
+  },
+  // A page's photo box: the zoom stage of the current page, in the photo
+  // row. Its caption sits in the caption row below it, so the viewer's size
+  // never changes with the item.
+  pageMedia: {
+    gridRow: '1',
+    minHeight: 0,
+    minWidth: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  pageCaption: {
+    gridRow: '2',
+    justifySelf: 'center',
+  },
   imageWrapperZoomable: {
     cursor: {
       default: 'zoom-in',
@@ -274,6 +342,12 @@ const styles = stylex.create({
   },
 });
 
+const pageStyles = stylex.create({
+  position: (index: number) => ({
+    insetInlineStart: `calc(${index} * (100% + ${zoomMedia.viewer.pageGap}px))`,
+  }),
+});
+
 /**
  * Pan distance (px) per arrow-key press while zoomed. Offsets move the
  * viewport in the arrow's direction — pressing ArrowRight reveals content to
@@ -349,6 +423,9 @@ export function Lightbox({
   const mergedDialogRef = useMergedRefs(ref, dialogRef);
   const containerRef = useRef<HTMLDivElement>(null);
   const imageWrapperRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  // A gallery's zoom stage: the current page's photo box.
+  const pageMediaRef = useRef<HTMLDivElement>(null);
   const triggerElementRef = useRef<Element | null>(null);
 
   // Index state (controlled + uncontrolled)
@@ -486,6 +563,10 @@ export function Lightbox({
   // the common ancestor; ignore it so releasing a drag doesn't dismiss (the
   // flag is cleared when the next press lands on the photo).
   const didDragRef = useRef(false);
+  // Where the last press on the stage landed: a mouse drag released beside
+  // the photo still fires a click there, which is no click (UIKit's tap
+  // movement limit).
+  const pressRef = useRef<{x: number; y: number} | null>(null);
   const handleBackdropClick = useCallback(
     (e: ReactMouseEvent<HTMLDialogElement>) => {
       if (didDragRef.current) {
@@ -494,9 +575,53 @@ export function Lightbox({
       }
       if (e.target === e.currentTarget || e.target === containerRef.current) {
         handleClose();
+        return;
+      }
+      // A gallery's stage fills the viewer: a click on it beside the media is
+      // a backdrop click too. With zoom on under a coarse pointer, the stage's
+      // own tap handles it (after the double-tap interval); a fine pointer has
+      // no stage tap (spec:AST-094 FR19), so its click closes here.
+      const target = e.target as Element;
+      const stageTaps =
+        hasZoom &&
+        !isVideo &&
+        isCoarsePointer(e.currentTarget.ownerDocument.defaultView);
+      const press = pressRef.current;
+      const dragged =
+        hasZoom &&
+        !isVideo &&
+        press != null &&
+        Math.hypot(e.clientX - press.x, e.clientY - press.y) >
+          UIKIT_TAP.allowableMovement.value;
+      // A click on the photo itself is the photo's (a double-click zooms it).
+      const onPhoto =
+        hasZoom &&
+        !isVideo &&
+        [...e.currentTarget.querySelectorAll('[data-current] img')].some(
+          media => {
+            const r = media.getBoundingClientRect();
+            return (
+              e.clientX >= r.left &&
+              e.clientX <= r.right &&
+              e.clientY >= r.top &&
+              e.clientY <= r.bottom
+            );
+          },
+        );
+      if (
+        isGallery &&
+        !stageTaps &&
+        !dragged &&
+        !onPhoto &&
+        (target === imageWrapperRef.current ||
+          target === trackRef.current ||
+          target.hasAttribute('data-lightbox-page') ||
+          target.hasAttribute('data-lightbox-page-media'))
+      ) {
+        handleClose();
       }
     },
-    [handleClose],
+    [handleClose, hasZoom, isGallery, isVideo],
   );
 
   // Gallery navigation
@@ -527,7 +652,8 @@ export function Lightbox({
     didDragRef.current = true;
   };
   const zoom = useZoomCore({
-    stageRef: imageWrapperRef,
+    stageRef: isGallery ? pageMediaRef : imageWrapperRef,
+    surfaceRef: isGallery ? trackRef : imageWrapperRef,
     isEnabled: isOpen && isZoomTarget,
     itemKey: viewedItem,
     onZoomedChange: next => {
@@ -539,11 +665,62 @@ export function Lightbox({
     onDragStart,
   });
   const stage = useZoomStage(zoom, {
-    stageRef: imageWrapperRef,
+    stageRef: isGallery ? pageMediaRef : imageWrapperRef,
+    surfaceRef: isGallery ? trackRef : imageWrapperRef,
     isEnabled: isOpen && isZoomTarget && isTouch,
     itemKey: viewedItem,
     onTapOutside: handleClose,
     onDragStart,
+  });
+
+  // A gallery pages like Photos: a drag or flick moves between items on a
+  // UIKit paging scroll view's release (one page at most, Photos' 40 pt
+  // gap); the buttons and keys move there on `setContentOffset(animated:)`.
+  // A zoomed photo keeps the drag until its edge, then the pager takes the
+  // next one; the photo left behind returns to the fitted size once the
+  // pager rests (Photos does).
+  // A controlled parent can keep its index after a swipe (refuse it): the
+  // pager goes back to the photo the parent shows. A swipe's report renders
+  // once more so that check runs after the parent has answered.
+  const swipeReportRef = useRef<number | null>(null);
+  const [, renderAfterSwipe] = useReducer((n: number) => n + 1, 0);
+  const pager = usePager({
+    viewportRef: imageWrapperRef,
+    trackRef,
+    count: mediaArray.length,
+    gap: zoomMedia.viewer.pageGap,
+    index,
+    isPanEnabled: isOpen && isGallery,
+    panOptions: {
+      allowedPointerTypes: ['touch', 'pen'],
+      maximumNumberOfTouches: 1,
+    },
+    shouldBeginPan: direction => !stage.isZoomed() || stage.isAtEdge(direction),
+    onIndexChange: (next, reason) => {
+      if (reason === 'drag') {
+        setIndex(next);
+        if (isControlled) {
+          swipeReportRef.current = next;
+          renderAfterSwipe();
+        }
+      }
+    },
+    onSettle: () => {
+      for (const img of trackRef.current?.querySelectorAll<HTMLElement>(
+        '[data-lightbox-page]:not([data-current]) img',
+      ) ?? []) {
+        img.style.translate = '';
+        img.style.scale = '';
+      }
+    },
+  });
+
+  useEffect(() => {
+    const reported = swipeReportRef.current;
+    swipeReportRef.current = null;
+    if (reported != null && index !== reported && pager.index !== index) {
+      pager.goTo(index, {reason: 'controlled'});
+    }
   });
 
   // Keyboard navigation. While zoomed, arrows pan the image (matching common
@@ -602,6 +779,34 @@ export function Lightbox({
   if (!currentItem) {
     return null;
   }
+
+  const renderMedia = (
+    {src, alt, type: kind = 'image'}: LightboxMedia,
+    isCurrent: boolean,
+  ) =>
+    kind === 'video' ? (
+      <video
+        src={src}
+        aria-label={alt}
+        controls
+        autoPlay={isCurrent && hasAutoPlay}
+        preload={isCurrent ? 'auto' : 'metadata'}
+        {...stylex.props(styles.video)}
+      />
+    ) : (
+      <img
+        ref={isCurrent ? stage.contentRef : undefined}
+        src={src}
+        alt={isCurrent ? alt : ''}
+        aria-hidden={isCurrent ? undefined : true}
+        draggable={false}
+        {...stylex.props(styles.image)}
+      />
+    );
+  // The current item and its neighbours; the pager shows one at rest.
+  const pageIndexes = isGallery
+    ? [index - 1, index, index + 1].filter(i => i >= 0 && i < mediaArray.length)
+    : [];
 
   return (
     <dialog
@@ -670,7 +875,8 @@ export function Lightbox({
             <div
               {...stylex.props(
                 styles.mediaGroup,
-                isZoomTarget && isTouch && styles.mediaGroupZoom,
+                isZoomTarget && !isGallery && isTouch && styles.mediaGroupZoom,
+                isGallery && styles.mediaGroupGallery,
               )}>
               <div
                 ref={imageWrapperRef}
@@ -684,36 +890,63 @@ export function Lightbox({
                 }
                 {...stylex.props(
                   styles.imageWrapper,
-                  isZoomTarget && styles.imageWrapperZoomTarget,
-                  isZoomTarget && isTouch && styles.imageWrapperFill,
+                  isGallery && styles.imageWrapperGallery,
+                  isZoomTarget && !isGallery && styles.imageWrapperZoomTarget,
+                  isZoomTarget &&
+                    !isGallery &&
+                    isTouch &&
+                    styles.imageWrapperFill,
                   isZoomTarget && focusOutlineStyles.focusVisible,
                   isZoomTarget && !isZoomed && styles.imageWrapperZoomable,
                   isZoomTarget && isZoomed && styles.imageWrapperZoomed,
                 )}
                 onKeyDown={isZoomTarget ? handleImageKeyDown : undefined}
-                onPointerDown={() => {
+                onPointerDown={e => {
                   didDragRef.current = false;
+                  pressRef.current = {x: e.clientX, y: e.clientY};
                 }}>
-                {isVideo ? (
-                  <video
-                    src={currentItem.src}
-                    aria-label={currentItem.alt}
-                    controls
-                    autoPlay={hasAutoPlay}
-                    {...stylex.props(styles.video)}
-                  />
+                {isGallery ? (
+                  <div
+                    ref={trackRef}
+                    {...stylex.props(
+                      styles.track,
+                      isZoomTarget && styles.trackZoomTarget,
+                    )}>
+                    {pageIndexes.map(i => (
+                      <div
+                        key={i}
+                        data-lightbox-page=""
+                        data-current={i === index ? '' : undefined}
+                        // Only the current page is on screen at rest: the
+                        // others stay out of the tab order and the
+                        // accessibility tree.
+                        inert={i !== index ? true : undefined}
+                        aria-hidden={i !== index ? true : undefined}
+                        {...stylex.props(styles.page, pageStyles.position(i))}>
+                        <div
+                          ref={i === index ? pageMediaRef : undefined}
+                          data-lightbox-page-media=""
+                          {...stylex.props(styles.pageMedia)}>
+                          {renderMedia(mediaArray[i], i === index)}
+                        </div>
+                        {mediaArray[i].caption && (
+                          <div
+                            {...stylex.props(
+                              styles.caption,
+                              styles.pageCaption,
+                            )}>
+                            {mediaArray[i].caption}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 ) : (
-                  <img
-                    ref={stage.contentRef}
-                    src={currentItem.src}
-                    alt={currentItem.alt}
-                    draggable={false}
-                    {...stylex.props(styles.image)}
-                  />
+                  renderMedia(currentItem, true)
                 )}
               </div>
 
-              {currentItem.caption && (
+              {!isGallery && currentItem.caption && (
                 <div {...stylex.props(styles.caption)}>
                   {currentItem.caption}
                 </div>

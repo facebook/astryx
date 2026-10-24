@@ -104,6 +104,57 @@ export const WithZoom: Story = {
   },
 };
 
+/**
+ * A gallery a phone can page through: drag or flick between photos (Photos'
+ * 40 pt gap), pinch or double-tap one to zoom, and drag a zoomed photo to its
+ * edge before the next drag pages.
+ */
+export const GalleryWithZoom: Story = {
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [index, setIndex] = useState(0);
+    return (
+      <>
+        <button onClick={() => setIsOpen(true)}>Open gallery with zoom</button>
+        <Lightbox
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          media={GALLERY_MEDIA}
+          index={index}
+          onIndexChange={setIndex}
+          hasZoom
+        />
+      </>
+    );
+  },
+};
+
+/**
+ * A controlled gallery whose parent keeps its index (it pages only with its
+ * own buttons, say while a change is confirmed): a swipe returns to the
+ * photo the parent shows.
+ */
+export const GalleryKeepsIndex: Story = {
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <>
+        <button onClick={() => setIsOpen(true)}>
+          Open gallery that keeps its photo
+        </button>
+        <Lightbox
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          media={GALLERY_MEDIA}
+          index={0}
+          onIndexChange={() => {}}
+          hasZoom
+        />
+      </>
+    );
+  },
+};
+
 export const WithCaption: Story = {
   render: () => {
     const [isOpen, setIsOpen] = useState(false);
