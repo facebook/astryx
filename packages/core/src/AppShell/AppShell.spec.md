@@ -70,6 +70,9 @@ Consumer migration instructions belong in consumer docs and release notes.
   ordered against unrelated page content rather than inside an isolated shell
   surface. `spec:AST-027` FR2–FR4 require local values inside a surface-owned
   isolation boundary and no page-wide bands.
+- **The banner stays pinned in `auto`.** The `banner` prop's API docs say it
+  scrolls away with the page in `auto`; the shipped header, which holds both the
+  banner and the top nav, is sticky, so the banner stays pinned (FR6).
 - **The fill-height main region is not a tab stop while it overflows.** In
   `height="fill"` the main region is a scroll container, but it is never a
   sequential tab stop, so keyboard users reach overflowing content only through
@@ -264,7 +267,7 @@ reachability, not a decision that it must stay unthemeable.
 | ------------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------ |
 | FR1–FR4, AR1        | `AppShell.test.tsx` slot, landmark, banner, and ref suites                                   | Content only; each slot; mobile top bar with banner                                 | A missing or duplicate landmark, or a nested banner, fails role queries.         | `audit:AppShell/anatomy`       |
 | FR5, AR2            | `AppShell.test.tsx` skip-link and keyboard suites                                            | First Tab; Enter; click; translated text                                            | Losing the href, the focus move, or tab order fails.                             | `audit:AppShell/accessibility` |
-| FR6, PR1            | `AppShell.test.tsx` height-mode suites                                                       | `fill`, `auto`, section header in `auto`                                            | Dropping sticky placement or measuring in `fill` fails.                          | `audit:AppShell/behavior`      |
+| FR6, PR1            | `AppShell.test.tsx` height-mode suites                                                       | `fill`, `auto`, section header in `auto`                                            | Dropping the header's sticky placement or measuring in `fill` fails.             | `audit:AppShell/behavior`      |
 | FR8                 | `AppShell.test.tsx` breakpoint suites                                                        | `lg`, `xl`, `2xl`, explicit `md`, `none`; nearest, root, and built themes; SSR hint | Wrong map, inclusive edge, or `none` entering mobile fails.                      | `audit:AppShell/behavior`      |
 | FR9–FR12            | `AppShell.test.tsx` mobile suites; `MobileNavCloseEdgeCases.test.tsx` AppShell drawer suites | Sidenav only; both navs; heading-only TopNav; custom node                           | A missing toggle, duplicated items, a stale drawer, or an early hide fails.      | `audit:AppShell/behavior`      |
 | FR13, AR3           | `AppShell.test.tsx` keyboard drawer and `useAppShellMobile` suites                           | Outside a shell; inside, closed and open                                            | A wrong id link or stale state fails.                                            | `audit:AppShell/accessibility` |
@@ -273,14 +276,15 @@ reachability, not a decision that it must stay unthemeable.
 | Theming anatomy map | `scripts/check-knowledge.mjs`                                                                | Consumer anatomy and current targets                                                | Missing, extra, stale, or multiply assigned mappings fail repository validation. | `audit:AppShell/theming`       |
 
 Read from source, with no focused test or baseline yet: the placement of the
-three targets (FR1); `banner` above `topNav` (FR3); the `contentPadding` value
-and its `0` default (FR4); the skip link's visual hiding until focus (FR5); root sizing and region scrolling in each height mode (FR6); the `wash`, `surface`, and fill-height `section`
+three targets and other DOM props reaching the root (FR1); `false` and `''`
+slots counting as absent (FR2); `banner` above `topNav` (FR3); the `contentPadding` value
+and its `0` default, and no focus ring on main (FR4); the skip link's visual hiding until focus (FR5); root sizing and region scrolling in each height mode and the sticky side region in `auto` (FR6); the `wash`, `surface`, and fill-height `section`
 backgrounds (FR7); the default `md` breakpoint and `sm` (FR8); the mobile top
 bar's navigation name and its drawer-node clause (FR9); the reduced-motion hold
 (FR10); the `mobileNav.onOpenChange` call and no-op requests while disabled
 (FR11); the `mobileNav={false}`, `content`, and `hasToggle: false` branches and
-full-mode TopNav beside a drawer node (FR12); `hasAutoToggle` (FR13); FR15; and
-PR2.
+full-mode TopNav beside a drawer node (FR12); `hasAutoToggle` (FR13); FR15; PR2; and the skip link's shared focus
+outline (AR2).
 
 ## Decision log
 
