@@ -136,8 +136,10 @@ A theme's local tokens are not generated yet; the generator names each one it
 leaves out.
 
 **Fonts.** A theme's font families are carried as data. Astryx never bundles
-a font: a component uses the first family the app has registered and falls
-back to the system font. To draw a theme's brand face, bundle and register it
+a font: a component walks the theme's family list in order and uses the first
+family the app has registered; a system family in the list (such as
+`-apple-system` or `sans-serif`) is the system font, and a list with no
+registered family falls back to the system font. To draw a theme's brand face, bundle and register it
 in the app. Faces the published themes name (body, heading, code):
 
 | Theme        | Faces to bundle                            |

@@ -40,7 +40,7 @@ export declare function defineTheme(input: {
 }): Promise<DefinedTheme>;
 export declare function renderSwiftTheme(
   theme: DefinedTheme,
-  options?: {source?: string},
+  options?: {source?: string; regenerate?: string},
 ): Promise<string>;
 export declare function publishedThemePackages(): PublishedThemePackage[];
 export declare function renderAll(

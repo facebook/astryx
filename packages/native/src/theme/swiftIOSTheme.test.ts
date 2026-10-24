@@ -153,6 +153,35 @@ describe('swift theme generator: themes (G3, G4, G12)', () => {
     expect(await renderSwiftTheme(theme, {source: 'acme'})).toBe(swift);
   });
 
+  it('imports Astryx in a product theme, with its own regenerate command', async () => {
+    const theme = await defineTheme({name: 'acme-brand', tokens: {}});
+    const regenerate =
+      'node packages/native/scripts/swift-ios-theme.mjs --theme ./src/acme.ts#acmeTheme --out ./Sources/Theme';
+    const product = await renderSwiftTheme(theme, {source: 'acme', regenerate});
+    expect(product).toContain('import Astryx\nimport SwiftUI\n');
+    expect(product).toContain(`Run \`${regenerate}\``);
+    const packaged = await renderSwiftTheme(theme, {source: 'acme'});
+    expect(packaged).not.toContain('import Astryx');
+  });
+
+  it('orders members the same in every locale', async () => {
+    const theme = await defineTheme({name: 'acme-brand', tokens: {}});
+    const before = await renderSwiftTheme(theme);
+    const compare = String.prototype.localeCompare;
+    String.prototype.localeCompare = function (
+      that: string,
+      locales?: string | string[],
+      options?: Intl.CollatorOptions,
+    ) {
+      return compare.call(this, that, locales ?? 'th-TH', options);
+    };
+    try {
+      expect(await renderSwiftTheme(theme)).toBe(before);
+    } finally {
+      String.prototype.localeCompare = compare;
+    }
+  });
+
   it('generates core default and every published theme package', async () => {
     const files = await renderAll(load);
     const names = Object.keys(files).map(f => path.basename(f));
