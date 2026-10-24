@@ -99,16 +99,20 @@ not targeted.
   departs from the draft `spec:AST-090` FR1 (exits off by default) and FR10
   (reduced motion closes at once) for touch presentations (owners: ernestt,
   cixzhang).
-- **FR8 — Reduce Motion substitutes, never jumps.** Under
-  `prefers-reduced-motion: reduce`, a touch presentation MUST behave as its
+- **FR8 — Reduce Motion substitutes as UIKit does.** Under
+  `prefers-reduced-motion: reduce`, a touch presentation MUST do what its
   UIKit counterpart does with Reduce Motion and Prefer Cross-Fade Transitions
-  on: a transition that travels becomes a cross-fade carrying the same change
-  of state. An entrance lands in place and fades in, an exit fades out in
-  place, and any other move fades through. A navigation push or pop
-  cross-fades over 0.5 s on the ease-in-out curve; a sheet, a full-screen
-  modal or an alert fades on its own presentation spring and drops its travel
-  and scale; menus open and close on UIKit's Reduce Motion spring. Motion that
-  follows a finger, such as a throw, MUST keep its motion. **Proposed; pending
+  on. For screen transitions, sheets, full-screen modals and alerts that is a
+  cross-fade carrying the same change of state: an entrance lands in place and
+  fades in, an exit fades out in place, and any other move fades through. A
+  navigation push or pop cross-fades over 0.5 s on the ease-in-out curve; a
+  sheet, a full-screen modal or an alert fades on its own presentation spring
+  and drops its travel and scale; menus open and close on UIKit's Reduce
+  Motion spring. Some control indicators move at once instead: the segmented
+  control's selection vanishes and reappears at its destination. A
+  presentation MUST NOT jump where its UIKit counterpart fades, nor fade where
+  it moves at once. Motion that follows a finger, such as a throw, MUST keep
+  its motion. **Proposed; pending
   owner review:** this is the minimally moving form the draft `design:motion`
   DR5 asks for, for touch presentations (owners: ernestt, cixzhang); the
   alternative is UIKit's Reduce Motion alone, which keeps the slides of
@@ -246,7 +250,7 @@ not targeted.
 | FR4        | Component tests on two themes                                                                                                  | the same touch transition under different motion tokens                                                     | a touch curve that follows a theme token fails                                            |
 | FR5        | Browser proof: an animation keeps advancing frame by frame through a 1 s main-thread block, with no layout or paint per frame  | Chromium phone emulation; WebKit                                                                            | a script-driven or layout-animating implementation freezes or lays out                    |
 | FR6        | Unit and browser tests catching an animation mid-flight and retargeting it                                                     | catch at peak velocity; retarget with a new spring                                                          | a layout read, a jump, or a lost velocity fails                                           |
-| FR7, FR8   | Component browser tests and storyboards with and without Reduce Motion                                                         | entrance, exit, move                                                                                        | an instant jump under Reduce Motion, or a missing exit, fails                             |
+| FR7, FR8   | Component browser tests and storyboards with and without Reduce Motion                                                         | entrance, exit, move                                                                                        | a substitution other than UIKit's, or a missing exit, fails                               |
 | FR9, FR10  | Recognizer unit tests on synthetic streams and browser tests with real touch input                                             | drag, second finger, pinch, page zoom, main-thread block                                                    | a second finger that breaks a drag, or a blocked page pinch, fails                        |
 | FR11, FR12 | Press and long-press tests on synthetic streams with explicit timestamps                                                       | inside and outside a scroll view; drag out and back                                                         | the wrong profile's timing fails                                                          |
 | FR13       | Resolver unit tests                                                                                                            | coarse and fine pointer; narrow and wide                                                                    | a component-owned media query diverges                                                    |
