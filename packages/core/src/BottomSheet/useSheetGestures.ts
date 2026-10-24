@@ -699,12 +699,14 @@ export function useSheetGestures({
     }
   }, [stopScrimFollow]);
   // Plays the dim along the sheet's curve: `offsetAt(t)` is where the sheet
-  // is `t` s after `at`.
+  // is `t` s after `at`. With no `at` it starts from rest, in the caller's
+  // task, so the browser starts it with the sheet's call from rest in that
+  // task: calls from rest in one task, on any animators, share one start.
   const followScrim = useCallback(
     (
       curve: {duration: number; offsetAt: (t: number) => number},
       dimFor: (offset: number) => number,
-      at: number,
+      at?: number,
       touchRelease = false,
     ) => {
       const dialog = sheetElRef.current?.closest('dialog');
@@ -729,7 +731,10 @@ export function useSheetGestures({
       scrim.set({opacity: dim(0)});
       // Under reduced motion the animator fades the dim to its end value
       // (200 ms or less, or at once with a fine pointer; design:reduced-motion).
-      scrim.play({opacity: dimCurve}, {at, touchRelease});
+      scrim.play(
+        {opacity: dimCurve},
+        {...(at == null ? {} : {at}), touchRelease},
+      );
     },
     [stopScrimFollow],
   );
@@ -1628,11 +1633,15 @@ export function useSheetGestures({
       travelBaseRef.current = settledOffset - settledLayoutOffsetRef.current;
       travelLayoutBaseRef.current = settledLayoutOffsetRef.current;
       animator.set({y: distance});
-      const at = performance.now();
+      // From rest, with no start time: the browser starts the entrance when
+      // it commits it, as Core Animation starts it at its transaction's
+      // commit, so a long task after this call delays it instead of skipping
+      // into its curve. The dim, also from rest in this task, shares that
+      // start.
       const handle = animator.animate(
         {y: 0},
         {spring: springs.sheetPresent},
-        {at, crossfade: springs.sheetPresent, crossfadeAs: 'entrance'},
+        {crossfade: springs.sheetPresent, crossfadeAs: 'entrance'},
       );
       const curve = solveSpring(toSpring(springs.sheetPresent), {
         from: distance,
@@ -1646,7 +1655,6 @@ export function useSheetGestures({
           offsetAt: t => 1 - curve.value(t) / distance,
         },
         progress => restingDim * progress,
-        at,
       );
       travelHandleRef.current = handle;
       // A close asked for meanwhile waits on this (see `dismiss`).
@@ -1708,11 +1716,13 @@ export function useSheetGestures({
       scrimAnimatorRef.current?.get('opacity') ??
       dimForHeight(fromOffset, height);
     beginScrimTracking();
-    const at = performance.now();
+    // From rest, with no start time, as the entrance: the browser starts the
+    // exit when it commits it, so a long task after the close delays it
+    // instead of skipping into its curve. The dim shares that start.
     const handle = animator.animate(
       {y: from + distance},
       {spring: springs.sheetDismiss},
-      {at, crossfade: springs.sheetDismiss, crossfadeAs: 'exit'},
+      {crossfade: springs.sheetDismiss, crossfadeAs: 'exit'},
     );
     const curve = solveSpring(toSpring(springs.sheetDismiss), {
       from,
@@ -1725,7 +1735,6 @@ export function useSheetGestures({
         offsetAt: t => (distance > 0 ? (curve.value(t) - from) / distance : 1),
       },
       progress => startingDim * (1 - progress),
-      at,
     );
     travelHandleRef.current = handle;
     void handle.finished.then(finished => {

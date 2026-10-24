@@ -413,9 +413,14 @@ test('the exit starts when the browser commits it, not when it is called', async
     el.dispatchEvent(
       new MouseEvent('click', {bubbles: true, cancelable: true}),
     );
-    // The close commits in a microtask; the frame has not run yet.
+    // The close commits in a microtask. Read in the next animation frame,
+    // once an animator that creates calls from rest a frame late has
+    // created them, but before that frame commits them.
     await Promise.resolve();
     await Promise.resolve();
+    await new Promise<void>(resolve => {
+      requestAnimationFrame(() => resolve());
+    });
     return document
       .getAnimations()
       .filter(a => {

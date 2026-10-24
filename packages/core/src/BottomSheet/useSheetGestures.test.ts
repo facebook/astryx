@@ -3025,11 +3025,15 @@ describe('useSheetGestures: present and dismiss under a finger', () => {
     expect(onScrimTracking.mock.calls).toEqual([[true], [false]]);
   });
 
-  it('dismisses off screen on the sheet spring, for the host to wait on', () => {
+  it('dismisses off screen on the sheet spring, for the host to wait on', async () => {
     const {hook, sheetAnimations, backdrop} = presentedSheet();
     let exit: ReturnType<typeof hook.result.current.dismiss> = null;
     act(() => {
       exit = hook.result.current.dismiss();
+    });
+    // The exit starts from rest; the dim joins its start once known.
+    await act(async () => {
+      await Promise.resolve();
     });
     expect(exit).not.toBeNull();
     expect(hook.result.current.gestureExitRef.current).toBe(exit);
@@ -3209,7 +3213,7 @@ describe('useSheetGestures: present and dismiss under a finger', () => {
       expect(done).toBe(true);
     });
 
-    it('a close during a release leaves from where the sheet is, the dim from where it is', () => {
+    it('a close during a release leaves from where the sheet is, the dim from where it is', async () => {
       const {hook, target, sheetAnimations, backdrop} = presentedSheet({
         snapHeights: () => [200],
       });
@@ -3230,6 +3234,9 @@ describe('useSheetGestures: present and dismiss under a finger', () => {
       const dim = valueAt(releaseDim, 60, opacityOf);
       act(() => {
         hook.result.current.dismiss();
+      });
+      await act(async () => {
+        await Promise.resolve();
       });
       const leave = sheetAnimations.at(-1) as Played;
       expect(valueAt(leave, 0, travelOf)).toBeCloseTo(y, 0);
