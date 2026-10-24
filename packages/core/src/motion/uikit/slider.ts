@@ -11,7 +11,8 @@
  *   drop springs and scale, and the end-of-track haptic. It sets no Reduce
  *   Motion mode of its own: the motion it times follows the animator's
  *   Reduced Motion policy (`design:reduced-motion`)
- * @position The slider domain of the UIKit constants table (motion/uikit)
+ * @position The slider domain of the UIKit constants table (motion/uikit);
+ *   read by Slider's touch presentation (Slider/useSliderTouch.ts)
  *
  * The reference is UISlider on iOS 26.2: a white capsule thumb (37 × 24 pt,
  * a `_UILiquidLensView`) on a 6 pt track. Under a finger the thumb lifts
@@ -44,7 +45,9 @@
  * (`slider.releaseSpring`, `slider.liftSpring`, `slider.dropSpring`); the
  * hit target, tracking gain, projection, scale and haptic are not motion.
  *
- * SYNC: When modified, update /packages/core/src/motion/uikit/slider.test.ts
+ * SYNC: When modified, update:
+ * - /packages/core/src/Slider/useSliderTouch.ts
+ * - /packages/core/src/motion/uikit/slider.test.ts
  * and run `pnpm generate:motion-roles`
  */
 
