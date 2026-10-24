@@ -65,6 +65,12 @@ export interface ItemSwipeLayerProps {
   leading: ItemSwipeAction[];
   trailing: ItemSwipeAction[];
   behavior: ItemSwipeBehavior;
+  /**
+   * The role each panel carries. A grid row (`role="row"`) passes `gridcell`,
+   * so every exposed child of the row is a cell, the panel included; every
+   * other row passes nothing.
+   */
+  panelRole?: 'gridcell';
 }
 
 // =============================================================================
@@ -192,6 +198,7 @@ export default function ItemSwipeLayer({
   leading,
   trailing,
   behavior,
+  panelRole,
 }: ItemSwipeLayerProps) {
   const leadingEntriesRef = useRef<HTMLDivElement | null>(null);
   const trailingEntriesRef = useRef<HTMLDivElement | null>(null);
@@ -250,6 +257,7 @@ export default function ItemSwipeLayer({
     return (
       <div
         key={side}
+        role={panelRole}
         data-swipe-panel={side}
         inert={isLive ? undefined : true}
         aria-hidden={isCommit ? true : undefined}
