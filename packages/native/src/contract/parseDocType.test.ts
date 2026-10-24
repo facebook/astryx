@@ -50,3 +50,48 @@ describe('parseDocType', () => {
     }
   });
 });
+
+describe('parseDocType callbacks and closed number sets', () => {
+  it('keeps the values of a value callback and leaves its DOM event on the web', () => {
+    expect(
+      parseDocType(
+        '(checked: boolean, e: ChangeEvent<HTMLInputElement>) => void',
+      ),
+    ).toEqual({ok: true, type: {kind: 'fn', args: [{kind: 'boolean'}]}});
+    expect(
+      parseDocType('(value: string, event: React.ChangeEvent) => void'),
+    ).toEqual({ok: true, type: {kind: 'fn', args: [{kind: 'string'}]}});
+  });
+
+  it.each([
+    '(e: FocusEvent<HTMLInputElement>) => void',
+    '(event: MouseEvent) => void',
+  ])('keeps the event-only callback %s on the web', type => {
+    expect(parseDocType(type)).toEqual({
+      ok: false,
+      reason: 'callback argument: DOM event',
+      eventOnly: true,
+    });
+  });
+
+  it('refuses an event that is not last', () => {
+    const parsed = parseDocType('(e: MouseEvent, value: string) => void');
+    expect(parsed).toMatchObject({
+      ok: false,
+      reason: 'callback argument: DOM event',
+    });
+    expect(parsed).not.toHaveProperty('eventOnly');
+  });
+
+  it('reads a closed set of numbers', () => {
+    expect(parseDocType('1 | 2 | 3')).toEqual({
+      ok: true,
+      type: {kind: 'numberEnum', values: [1, 2, 3]},
+    });
+    expect(parseDocType('0 | 0.5 | 1')).toEqual({
+      ok: true,
+      type: {kind: 'numberEnum', values: [0, 0.5, 1]},
+    });
+    expect(parseDocType("1 | 'auto'").ok).toBe(false);
+  });
+});

@@ -668,18 +668,27 @@ describe('SideNavHeading headerEndContent', () => {
     expect(screen.getByTestId('end-badge')).toBeInTheDocument();
   });
 
-  it('renders headerEndContent inside the link in isWholeHeadingLink path', () => {
+  it('renders headerEndContent beside the link, not inside it, in isWholeHeadingLink path', () => {
+    const onPress = vi.fn();
     render(
       <SideNavHeading
         heading="My App"
         headingHref="/home"
-        headerEndContent={<span data-testid="end-badge">3</span>}
+        headerEndContent={
+          <button type="button" onClick={onPress}>
+            Create
+          </button>
+        }
       />,
     );
-    const badge = screen.getByTestId('end-badge');
-    expect(badge).toBeInTheDocument();
-    // Badge renders inside the link
-    expect(badge.closest('a')).not.toBeNull();
+    const link = screen.getByRole('link', {name: 'My App'});
+    expect(link).toHaveAttribute('href', '/home');
+    // A control inside a link is invalid and its press would follow the link.
+    const button = screen.getByRole('button', {name: 'Create'});
+    expect(button.closest('a')).toBeNull();
+    expect(link.parentElement).toBe(button.parentElement?.parentElement);
+    fireEvent.click(button);
+    expect(onPress).toHaveBeenCalledTimes(1);
   });
 
   it('renders headerEndContent in isWholeHeadingTrigger path', () => {

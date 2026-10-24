@@ -49,7 +49,10 @@ function iconLines(icons) {
   return [
     ...icons.mapped.map(
       each =>
-        `icons: mapped ${each.source.export} (${each.source.module}) -> ${each.target.export} (${each.target.module}) by ${each.by}`,
+        `icons: mapped ${each.source.export} (${each.source.module}) -> ${each.target.export} (${each.target.module}) by ${each.by}` +
+        (each.dropped && each.dropped.length > 0
+          ? `; dropped ${each.dropped.join(', ')} (size comes from CSS)`
+          : ''),
     ),
     ...icons.kept.map(
       each =>

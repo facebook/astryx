@@ -125,7 +125,7 @@ export function runIntegrationCodemods(
   if (codeEntries.length > 0) {
     const resolvedPath = path.resolve(srcPath);
     const files = fs.existsSync(resolvedPath)
-      ? findSourceFiles(resolvedPath)
+      ? findSourceFiles(resolvedPath, path.resolve(root))
       : [];
     for (const entry of codeEntries) {
       if (apply && writtenFiles.length !== protectionWriteCount) {

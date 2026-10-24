@@ -313,11 +313,13 @@ separate React root under `document.body` and mirrors root theme attributes onto
 it.
 
 ToastViewport uses `popover="manual"` for top-layer promotion. Each open modal
-Dialog supplies its `<dialog>` as an outlet through the private
-`Layer/modalOutlet.ts` registry. A top-layer viewport renders into a host element
+Dialog and each open scrim BottomSheet supplies its `<dialog>` as an outlet
+through the private `Layer/modalOutlet.ts` registry. A BottomSheet releases its
+outlet when it starts closing: its dialog stays modal through the exit
+animation, but inert. A top-layer viewport renders into a host element
 it owns, moves that host into the latest open outlet, returns it to the
-viewport's tree position when no Dialog is open, and enters the top layer again
-after each move. Toasts therefore paint above the Dialog and stay operable inside
+viewport's tree position when no outlet is open, and enters the top layer again
+after each move. Toasts therefore paint above the modal and stay operable inside
 it. Moving the host does not remount the rows, so entries, timers, and focus
 handoff survive. Toast state lives inside the viewport. A viewport rendered with
 `isTopLayer={false}` stays in place.
@@ -393,7 +395,7 @@ Current gaps are observable facts, not current target behavior:
 - Backdrop, manual outside, touch, and swipe paths do not share the existing
   gesture claim or one association model.
 - Toast's root and fallback hosts remain behind the other native modals:
-  Lightbox, MobileNav, and a scrim BottomSheet or BottomSheetSwitcher.
+  Lightbox, MobileNav, and a scrim BottomSheetSwitcher.
 - The reduced browser fallback is not documented as non-equivalent.
 - Existing tests simulate Popover `toggle` and DOM nesting; they do not prove
   native pointer light dismissal, top-layer/modal ordering, real anchor geometry,

@@ -16,13 +16,14 @@
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {
+  act,
   render,
   screen,
   fireEvent,
   waitFor,
   within,
 } from '@testing-library/react';
-import React, {createRef, useState} from 'react';
+import React, {createRef, StrictMode, useState} from 'react';
 import type {
   PowerSearchConfig,
   PowerSearchEditorProps,
@@ -46,7 +47,7 @@ import {
 
 // jsdom implements neither <dialog> open/close nor pointer capture; the sheet
 // needs both. Same stubs BottomSheet's own tests install.
-beforeEach(() => {
+beforeEach(async () => {
   HTMLDialogElement.prototype.showModal = vi.fn(function (
     this: HTMLDialogElement,
   ) {
@@ -88,6 +89,15 @@ beforeEach(() => {
     vi.fn((id: number) => window.clearTimeout(id)),
   );
   window.scrollTo = vi.fn();
+  // The shared page-body live regions outlive a test and clear on a 2s
+  // timer, and a previous test's announcement may still be a frame away;
+  // let it land, then start this test with the regions empty.
+  await new Promise(resolve => setTimeout(resolve, 0));
+  for (const region of document.querySelectorAll(
+    'body > [data-astryx-live-region]',
+  )) {
+    region.textContent = '';
+  }
 });
 
 afterEach(() => {
@@ -447,12 +457,41 @@ function expectBleedRowsOnBodyInset(list: HTMLElement): void {
 }
 
 describe('MobilePowerSearch trigger', () => {
-  it('uses the field label for its single sheet trigger', () => {
+  it('names its single sheet trigger by the field label followed by its visible text', () => {
     setup({label: 'Filter issues'});
-    const button = screen.getByRole('button', {name: 'Filter issues'});
+    const button = screen.getByRole('button', {name: 'Filter issues Filters…'});
     expect(button).toHaveAttribute('aria-haspopup', 'dialog');
     expect(button).toHaveTextContent('Filters…');
     expect(screen.getAllByRole('button')).toHaveLength(1);
+  });
+
+  it("keeps the trigger's visible text inside its accessible name with a custom label and placeholder, and with tokens", () => {
+    // WCAG 2.5.3: a speech-input user says what they see. The name is the
+    // label plus the visible content: the placeholder when empty...
+    const {rerender} = setup({
+      label: 'Search issues',
+      placeholder: 'Search content…',
+    });
+    expect(trigger()).toHaveAccessibleName('Search issues Search content…');
+    expect(trigger().textContent).toBe('Search content…');
+    // ...or the tokens once filters are selected.
+    rerender(
+      <MobilePowerSearch
+        config={config}
+        filters={[openFilter, authorFilter]}
+        onChange={vi.fn()}
+        label="Search issues"
+        placeholder="Search content…"
+      />,
+    );
+    const name = trigger().getAttribute('aria-labelledby')!;
+    expect(name.split(' ')).toHaveLength(2);
+    expect(trigger()).toHaveAccessibleName(
+      /^Search issues .*Status: is.*Open.*Author: is/,
+    );
+    for (const visible of ['Status: is', 'Open', 'Author: is']) {
+      expect(within(field()).getByText(visible)).toBeTruthy();
+    }
   });
 
   it('renders display-only tokens with bold values and no remove controls', () => {
@@ -479,7 +518,7 @@ describe('MobilePowerSearch trigger', () => {
 
   it('wraps tokens without reserving a row for the trigger', () => {
     setup({filters: [openFilter, authorFilter]});
-    const button = screen.getByRole('button', {name: 'Manage filters'});
+    const button = screen.getByRole('button', {name: /^Manage filters/});
     expect(getComputedStyle(button.parentElement!).flexWrap).toBe('wrap');
     expect(getComputedStyle(button).position).toBe('absolute');
   });
@@ -536,6 +575,79 @@ describe('MobilePowerSearch trigger', () => {
       />,
     );
     expect(screen.getByText('1 result')).toBeTruthy();
+  });
+
+  it('announces a result count change through the page channel while closed, and nothing for the count present on mount, under StrictMode', async () => {
+    const pageRegion = () =>
+      document.querySelector('body > [aria-live="polite"]');
+    const {rerender} = render(
+      <StrictMode>
+        <MobilePowerSearch
+          config={config}
+          filters={[]}
+          onChange={vi.fn()}
+          resultCount={12}
+        />
+      </StrictMode>,
+    );
+    // StrictMode mounts, unmounts and remounts effects; a mounted-flag guard
+    // announces the initial count on the replay. The region stays empty.
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 20));
+    });
+    expect(pageRegion()?.textContent ?? '').toBe('');
+    // A real change announces once, with the words shown.
+    rerender(
+      <StrictMode>
+        <MobilePowerSearch
+          config={config}
+          filters={[]}
+          onChange={vi.fn()}
+          resultCount={1}
+        />
+      </StrictMode>,
+    );
+    await waitFor(() => expect(pageRegion()?.textContent).toBe('1 result'));
+    // The same value again is not a new occasion.
+    rerender(
+      <StrictMode>
+        <MobilePowerSearch
+          config={config}
+          filters={[]}
+          onChange={vi.fn()}
+          resultCount={1}
+        />
+      </StrictMode>,
+    );
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 20));
+    });
+    expect(pageRegion()?.textContent).toBe('1 result');
+  });
+
+  it('routes a result count change to the live region inside the open sheet, which stays mounted and empty until then', async () => {
+    const pageRegion = () =>
+      document.querySelector('body > [aria-live="polite"]');
+    const {rerender} = setup({resultCount: 12});
+    openSheet();
+    const region = within(sheet()).getByTestId(
+      'mobile-power-search-sheet-status',
+    );
+    expect(region).toHaveAttribute('role', 'status');
+    expect(region).toHaveAttribute('aria-live', 'polite');
+    expect(region.textContent).toBe('');
+    expect(sheet().contains(region)).toBe(true);
+    rerender(
+      <MobilePowerSearch
+        config={config}
+        filters={[]}
+        onChange={vi.fn()}
+        resultCount={3}
+      />,
+    );
+    await waitFor(() => expect(region.textContent).toBe('3 results'));
+    // The page-body channel, which a native modal hides, is left alone.
+    expect(pageRegion()?.textContent ?? '').toBe('');
   });
 
   it('forwards display-only props to token overrides', () => {
@@ -684,6 +796,38 @@ describe('MobilePowerSearch Filters sheet', () => {
 // =============================================================================
 
 describe('MobilePowerSearch Add filter', () => {
+  it('keeps the sticky header above the rows that scroll under it, without covering the grab handle', () => {
+    setup();
+    openAddFlow();
+    const title = within(sheet()).getByRole('heading', {name: 'Add filter'});
+    // The title sits in the sticky header; the header's parent is the sheet
+    // content wrapper.
+    let header: HTMLElement | null = title;
+    while (header && getComputedStyle(header).position !== 'sticky') {
+      header = header.parentElement;
+    }
+    expect(header).not.toBeNull();
+    const content = header!.parentElement!;
+    // jsdom resolves the injected StyleX rules: the header has a layer above
+    // the List rows (position: relative, z-index auto) that follow it...
+    expect(getComputedStyle(header!).zIndex).toBe('1');
+    // ...scoped to the sheet content, so the panel's grab handle (z-index 1,
+    // outside this wrapper) still paints above the header.
+    const rules: string[] = [];
+    for (const styleSheet of Array.from(document.styleSheets)) {
+      for (const rule of Array.from(styleSheet.cssRules)) {
+        rules.push(rule.cssText);
+      }
+    }
+    const isolated = Array.from(content.classList).some(className =>
+      rules.some(
+        text =>
+          text.includes(`.${className}`) && /isolation:\s*isolate/.test(text),
+      ),
+    );
+    expect(isolated).toBe(true);
+  });
+
   it('opens directly to Add filter when no filters are selected', () => {
     setup();
     openSheet();
@@ -1380,6 +1524,54 @@ describe('MobilePowerSearch content search', () => {
     expect(
       within(sheet()).getByRole('heading', {name: 'Filters'}),
     ).toBeTruthy();
+    // The add is announced inside the sheet the flow is now on, not on the
+    // page body, which assistive technology does not expose under a native
+    // modal dialog.
+    const region = within(sheet()).getByTestId(
+      'mobile-power-search-sheet-status',
+    );
+    await waitFor(() =>
+      expect(region.textContent).toBe('Added "release notes"'),
+    );
+    expect(
+      document.querySelector('body > [aria-live="polite"]')?.textContent ?? '',
+    ).toBe('');
+  });
+
+  it('announces both the add and a result count that follows the filters in the same commit, joined in the sheet region', async () => {
+    // A consumer that derives `resultCount` from `filters` re-renders in the
+    // add's commit, so the count's announcement arrives while the add's is
+    // still a frame away. Neither may drop the other (FR6, once per
+    // occasion; FR9's join for messages that arrive before exposure).
+    function CountFollowsFilters() {
+      const [filters, setFilters] = useState<PowerSearchFilter[]>([openFilter]);
+      return (
+        <MobilePowerSearch
+          config={contentSearchConfig}
+          filters={filters}
+          onChange={next => setFilters([...next])}
+          resultCount={filters.length * 10}
+        />
+      );
+    }
+    render(<CountFollowsFilters />);
+    openSheet();
+    tapRow('Add filter');
+    const input = within(sheet()).getByRole('searchbox', {name: 'Search'});
+    fireEvent.change(input, {target: {value: 'release notes'}});
+    fireEvent.click(
+      within(sheet()).getByRole('button', {name: '"release notes"'}),
+    );
+    await waitFor(() => expect(isSheetOpen()).toBe(true));
+    const region = within(sheet()).getByTestId(
+      'mobile-power-search-sheet-status',
+    );
+    await waitFor(() =>
+      expect(region.textContent).toBe('Added "release notes" 20 results'),
+    );
+    expect(
+      document.querySelector('body > [aria-live="polite"]')?.textContent ?? '',
+    ).toBe('');
   });
 
   it('adds a value suggestion from Enter and announces it', () => {

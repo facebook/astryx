@@ -99,6 +99,7 @@ export const JSON_SUPPORTED = new Set([
   'experimental icon use',
   'experimental icon new-set',
   'experimental icon new-definition',
+  'experimental render',
   'build',
   'swizzle',
   'gap-report',
