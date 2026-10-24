@@ -43,11 +43,35 @@
  * admission. Import it by path from inside the package.
  */
 
-import {useEffect, useRef, type RefObject} from 'react';
+import {useEffect, useRef, useState, type RefObject} from 'react';
 import {useAnnounce} from './useAnnounce';
+import {useIsHydrating} from './useIsHydrating';
+
+const LIVE_CONTAINER =
+  '[role="log"], [role="status"], [role="alert"], [aria-live="polite"], [aria-live="assertive"]';
+
+/** Each child element's rendered text as its own block, joined by spaces. */
+function blockText(element: HTMLElement): string {
+  return Array.from(element.children)
+    .filter(child => child.getAttribute('aria-hidden') !== 'true')
+    .map(child => renderedText(child as HTMLElement))
+    .filter(part => part !== '')
+    .join(' ');
+}
+
+export interface AnnounceRenderedTextOptions {
+  /**
+   * Text present or changed before the document finished loading (or while
+   * hydrating) is not announced; text that appears or changes later is, once
+   * (`spec:AST-086` FR11). Content inside a mounted
+   * live container is left to that container (FR4). Each child element is
+   * read as its own block.
+   */
+  skipFirstRender?: boolean;
+}
 
 /** The rendered text an assistive technology would read from `element`. */
-function renderedText(element: HTMLElement): string {
+export function renderedText(element: HTMLElement): string {
   // Clone so removing the hidden parts cannot disturb what is on screen. The
   // clone is never attached to the document.
   const copy = element.cloneNode(true) as HTMLElement;
@@ -81,9 +105,17 @@ export function useAnnounceRenderedText(
   ref: RefObject<HTMLElement | null>,
   isShown: boolean,
   occasion: string,
+  {skipFirstRender = false}: AnnounceRenderedTextOptions = {},
 ): void {
   const announce = useAnnounce();
   const spokenRef = useRef<string | null>(null);
+  const isHydrating = useIsHydrating();
+  // Captured once: an owner rendered before the document finished loading, or
+  // hydrated from server HTML, is part of the page the person arrived at.
+  const [renderedWithPage] = useState(
+    () => isHydrating || document.readyState !== 'complete',
+  );
+  const isFirstRunRef = useRef(true);
 
   // Deliberately no dependency array. The text lives in the DOM, so there is
   // no React value to depend on that changes when it does — a caller can
@@ -91,15 +123,20 @@ export function useAnnounceRenderedText(
   // one element's text per render is cheap, and the dedupe below makes every
   // render after the first a no-op.
   useEffect(() => {
-    if (!isShown) {
+    const isFirstRun = isFirstRunRef.current;
+    isFirstRunRef.current = false;
+    const element = ref.current;
+    if (!isShown || element?.closest('[hidden], [aria-hidden="true"]')) {
       spokenRef.current = null;
       return;
     }
-    const element = ref.current;
     if (!element) {
       return;
     }
-    const text = renderedText(element);
+    if (skipFirstRender && element.parentElement?.closest(LIVE_CONTAINER)) {
+      return;
+    }
+    const text = skipFirstRender ? blockText(element) : renderedText(element);
     if (text === '') {
       // Nothing readable on screen either, so there is no announcement that
       // would match what the sighted user is seeing.
@@ -110,6 +147,12 @@ export function useAnnounceRenderedText(
       return;
     }
     spokenRef.current = spoken;
+    const isPageLoad =
+      (isFirstRun && renderedWithPage) || document.readyState !== 'complete';
+    if (skipFirstRender && isPageLoad) {
+      // Part of the page the person arrived at: remember it, say nothing.
+      return;
+    }
     announce(text);
   });
 }
