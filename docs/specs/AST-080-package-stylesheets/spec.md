@@ -145,7 +145,10 @@ first.
   delta of each component that changed. A feature that runs only on a coarse
   pointer and adds more than 1 KB gzip of CSS to one component is flagged, and
   its pull request justifies that cost; the CSS stays in the package
-  stylesheet (FR1, FR2). The matching JavaScript report and budget, and the
+  stylesheet (FR1, FR2). Sizes are gzip at the default compression level, and
+  1 KB is 1,024 bytes. A component's CSS delta is the gzip size of the rules its
+  modules contribute to the package stylesheet at head minus the same at base.
+  The matching JavaScript report and budget, and the
   rule that a shared value table ships only the rows a component uses, are
   `architecture:component-style-authoring` INV6.
 
@@ -186,7 +189,10 @@ first.
 - Lab, Rich Text, and Charts document their stylesheet only in their READMEs;
   the styling overview's import table lists only Core (FR6).
 - The pull-request size report measures no stylesheet, so no CSS size or
-  delta is reported, and no touch-only CSS is flagged (FR8).
+  delta is reported, and no touch-only CSS is flagged (FR8). Its JavaScript
+  figure is a component's re-export file rather than what its import pulls in,
+  its before and delta columns are always empty, and nothing flags touch-only
+  JavaScript (`architecture:component-style-authoring` INV6).
 - The `styling-overview`, `getting-started`, and `migration-setup` consumer docs
   change. Package stylesheet rules and class names are otherwise unchanged.
 
@@ -250,7 +256,7 @@ framework.
 Rejected: stylesheets imported by component modules, because some frameworks do
 not load stylesheets that dependency modules import.
 
-### DEC-4 — Stylesheet cost is reported on every change and budgeted for touch-only work
+### DEC-4 — Component size is reported on every change and budgeted for touch-only work
 
 **Reference:** `spec:AST-080/DEC-4`
 **Decider:** `cixzhang`, `2026-10-24`
@@ -258,8 +264,12 @@ not load stylesheets that dependency modules import.
 Because one whole stylesheet ships to every product (DEC-3), CSS for a feature
 only touch devices use still costs every desktop product, and nobody sees the
 cost unless each change reports it. A per-component report on every pull
-request makes growth visible, and a flag at 1 KB gzip for touch-only CSS asks
-for a justification before that cost lands.
+request makes growth visible, for the JavaScript a component's import pulls in
+as for its CSS. Touch-only work is flagged at 2 KB gzip of JavaScript or 1 KB
+gzip of CSS per component: JavaScript can load lazily, only when a coarse
+pointer needs it, or be justified, and CSS, which stays in the stylesheet, is
+justified. A shared value table ships to a component only the rows it uses, so
+one component's tuning does not ride along with every other import.
 
 Rejected: splitting touch-only CSS into a separate stylesheet, because it
 breaks the one-import setup DEC-3 keeps.

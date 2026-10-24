@@ -103,8 +103,12 @@ not evidence of conformance or violation.
   coarse pointer and adds more than 2 KB gzip of JavaScript or 1 KB gzip of CSS
   to one component is flagged. Its pull request either loads that JavaScript
   lazily, only when a coarse pointer needs it, so the component's import does
-  not carry it, or justifies the cost; flagged CSS is justified, because it
-  stays in the package stylesheet (`spec:AST-080` FR1). A shared value table,
+  not carry it, or justifies the cost. For flagged CSS, its pull request
+  justifies the cost, because that CSS stays in the package stylesheet
+  (`spec:AST-080` FR1, FR8). Sizes are gzip at the default compression level,
+  and 1 KB is 1,024 bytes; measured as `spec:AST-080` FR8 measures CSS, a
+  component's JavaScript size is the gzip size of one bundle holding its
+  import and every module that import reaches. A shared value table,
   such as a motion or gesture tuning table, ships to a component only the rows
   that component uses: importing a component does not pull in rows only other
   components read.
@@ -213,8 +217,9 @@ before assigning a verdict.
 
 ## Deciding specs
 
-- `spec:AST-080/DEC-4` — every pull request reports component size, and
-  touch-only JavaScript and CSS over budget is flagged (INV6).
+- `spec:AST-080/DEC-4` — every pull request reports component JavaScript and
+  CSS size; touch-only JavaScript over 2 KB or CSS over 1 KB is flagged, and
+  shared value tables ship only the rows a component uses (INV6).
 
 The icon, theme-token, component-theming, public-API, bidirectionality, and
 RSC owners retain the delegated decisions above.
