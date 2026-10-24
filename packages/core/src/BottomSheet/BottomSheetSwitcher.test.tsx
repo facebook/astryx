@@ -10,6 +10,8 @@
  * update these tests to match the public behavior.
  */
 
+import {readFileSync} from 'node:fs';
+import {join} from 'node:path';
 import {act, fireEvent, render, screen} from '@testing-library/react';
 import {
   StrictMode,
@@ -1741,31 +1743,27 @@ describe('BottomSheetSwitcher', () => {
       expect(getSheetDialog('c')).toHaveAttribute('role', 'alertdialog');
     });
 
-    it('keeps the scrim takeover pin under prefers-reduced-motion: the reduced duration reads the pinned variable', () => {
-      render(<HostFlow initialSheet="details" />);
-      // jsdom evaluates neither @media nor ::backdrop; read the compiled
-      // rules the dialog's scrim class produced. The reduced-motion rule for
-      // the backdrop's transition-duration must defer to the takeover pin
-      // (`--_sheet-scrim-duration: 0s` for one style flush); a literal 0.01s
-      // there would win the cascade and paint a frame with no scrim.
-      const rules: string[] = [];
-      for (const sheet of Array.from(document.styleSheets)) {
-        for (const rule of Array.from(sheet.cssRules)) {
-          rules.push(rule.cssText);
-        }
-      }
-      const reducedBackdropDurations = rules.filter(
-        text =>
-          text.includes('prefers-reduced-motion: reduce') &&
-          text.includes('::backdrop') &&
-          text.includes('transition-duration'),
-      );
-      expect(reducedBackdropDurations.length).toBeGreaterThan(0);
-      for (const text of reducedBackdropDurations) {
-        expect(text).toMatch(
-          /transition-duration:\s*var\(--_sheet-scrim-duration,\s*0?\.01s\)/,
+    it('keeps the scrim takeover pin under reduced motion: each reduced duration reads the pinned variable', () => {
+      // The backdrop's reduced-motion durations must defer to the takeover pin
+      // (`--_sheet-scrim-duration: 0s` for one style flush); a literal there
+      // would win the cascade and paint a frame with no scrim. Read from the
+      // source: StyleX's runtime injection dedupes rules by a key that, for a
+      // media query with `and`, is the query alone, so only the first rule per
+      // query (the panel's) reaches jsdom.
+      const source = readFileSync(join(__dirname, 'BottomSheet.tsx'), 'utf8');
+      const start = source.indexOf("'::backdrop': {");
+      const backdrop = source.slice(start, source.indexOf('\n    },\n', start));
+      const reduced = [
+        ...backdrop.matchAll(
+          /'@media \(prefers-reduced-motion: reduce\)[^']*': \{([^}]*)\}/g,
+        ),
+      ].map(match => match[1]);
+      // design:reduced-motion: a fade on a touch screen, at once otherwise.
+      expect(reduced).toHaveLength(2);
+      for (const block of reduced) {
+        expect(block).toMatch(
+          /transitionDuration:\s*[`']var\(--_sheet-scrim-duration,/,
         );
-        expect(text).not.toMatch(/transition-duration:\s*0?\.01s/);
       }
     });
 

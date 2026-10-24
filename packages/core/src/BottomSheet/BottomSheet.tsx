@@ -59,6 +59,7 @@ import type {BaseProps} from '../BaseProps';
 import type {DialogPurpose} from '../Dialog';
 import type {SpacingStep} from '../utils/types';
 import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
+import {reducedMotionFadeConsts} from '../motion/reducedMotion.stylex';
 import {useDevWarning, useScrollLock} from '../hooks';
 import {mergeProps} from '../utils';
 import {LayerDepthProvider} from '../Layer/LayerDepthContext';
@@ -117,14 +118,20 @@ const styles = stylex.create({
       transitionProperty: 'opacity, display',
       // A switcher hands its one scrim from a fading dialog to the next by
       // pinning this duration for the swap; a standalone sheet never sets it.
+      // Under reduced motion (design:reduced-motion) the scrim fades in
+      // 200 ms on a touch screen (DR2) and changes at once with a fine
+      // pointer (DR3). The switcher's scrim takeover pins the duration to 0s
+      // for one style flush; a literal here would override that pin and paint
+      // a frame with no scrim.
       transitionDuration: `var(--_sheet-scrim-duration, ${durationVars['--duration-medium']})`,
       transitionTimingFunction: easeVars['--ease-standard'],
       transitionBehavior: 'allow-discrete',
-      '@media (prefers-reduced-motion: reduce)': {
-        // The switcher's scrim takeover pins the duration to 0s for one style
-        // flush; a literal here would override that pin and paint a frame
-        // with no scrim under reduced motion.
-        transitionDuration: 'var(--_sheet-scrim-duration, 0.01s)',
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)': {
+        transitionDuration: `var(--_sheet-scrim-duration, ${reducedMotionFadeConsts.duration})`,
+        transitionTimingFunction: reducedMotionFadeConsts.easing,
+      },
+      '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))': {
+        transitionDuration: 'var(--_sheet-scrim-duration, 0s)',
       },
     },
   },

@@ -49,6 +49,8 @@ import {
 } from '../theme/tokens.stylex';
 import {mergeProps, themeProps} from '../utils';
 import {useTouchPresentation} from '../utils/touchPresentation';
+import {reducedMotionFade} from '../motion/reducedMotion';
+import {reducedMotionFadeConsts} from '../motion/reducedMotion.stylex';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {layerTextReset} from '../Layer/layerTextReset.stylex';
 import {layerStructureReset} from '../Layer/layerStructureReset.stylex';
@@ -161,14 +163,36 @@ const styles = stylex.create({
       default: 'translateY(0)',
       '@starting-style': 'translateY(100%)',
     },
-    opacity: 1,
-    transitionProperty: 'transform, opacity',
-    transitionDuration: durationVars['--duration-medium'],
-    transitionTimingFunction: easeVars['--ease-standard'],
-    willChange: 'transform, opacity',
-    '@media (prefers-reduced-motion: reduce)': {
-      transitionDuration: '0.01s',
+    // Under reduced motion (design:reduced-motion) nothing travels: on a
+    // touch screen the sheet fades in where it rests and out where it is, in
+    // 200 ms (DR2); with a fine pointer it appears and leaves at once (DR3).
+    opacity: {
+      default: 1,
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)': {
+        default: 1,
+        '@starting-style': 0,
+      },
     },
+    transitionProperty: {
+      default: 'transform, opacity',
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+        'opacity',
+      '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
+        'none',
+    },
+    transitionDuration: {
+      default: durationVars['--duration-medium'],
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+        reducedMotionFadeConsts.duration,
+      '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
+        '0s',
+    },
+    transitionTimingFunction: {
+      default: easeVars['--ease-standard'],
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+        reducedMotionFadeConsts.easing,
+    },
+    willChange: 'transform, opacity',
   },
   /**
    * The exit is its own motion, not the entrance played backwards.
@@ -189,8 +213,21 @@ const styles = stylex.create({
    * scales the motion scale down (neutral's medium is 300ms against 410ms).
    */
   sheetClosing: {
-    transform: 'translateY(100%)',
-    transitionTimingFunction: 'cubic-bezier(0.3, 0, 0.6, 0.6)',
+    transform: {
+      default: 'translateY(100%)',
+      // Under reduced motion on a touch screen it fades out where it is.
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+        'translateY(0)',
+    },
+    opacity: {
+      default: null,
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)': 0,
+    },
+    transitionTimingFunction: {
+      default: 'cubic-bezier(0.3, 0, 0.6, 0.6)',
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+        reducedMotionFadeConsts.easing,
+    },
   },
   sheetFading: {
     opacity: 0,
@@ -637,9 +674,14 @@ export function BottomSheetPanel({
         isCurrent = false;
       };
     }
+    // Under reduced motion on a touch screen the stylesheet's entrance and
+    // exit are a fade (design:reduced-motion DR2), so they end with opacity.
+    const fade = reducedMotionFade(elementRef.current);
     return waitForTransition(
       elementRef.current,
-      motion === 'fading' ? 'opacity' : 'transform',
+      motion === 'fading' || (fade != null && fade.duration > 0)
+        ? 'opacity'
+        : 'transform',
       complete,
     );
   }, [dismiss, gestureExitRef, motion, springsPresentation]);
