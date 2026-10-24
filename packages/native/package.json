@@ -32,8 +32,7 @@
     "dist",
     "src",
     "apple",
-    "swift-ios-1",
-    "!swift-ios-1/templates",
+    "!apple/Templates",
     "README.md"
   ],
   "exports": {

@@ -3,7 +3,7 @@
 /**
  * @file scripts/swift-ios-theme.mjs
  * @input Core's theme resolver, run over the default theme in light and dark
- * @output swift-ios-1/core/Theme/Generated/DefaultTheme.swift
+ * @output apple/Sources/Astryx/Theme/Generated/DefaultTheme.swift
  * @position Run by `generate:swift-ios`; the Swift output is committed and a
  *   test fails when it drifts from core's tokens
  */
@@ -18,8 +18,9 @@ const PACKAGE_ROOT = path.resolve(
 );
 export const SWIFT_IOS_THEME_FILE = path.join(
   PACKAGE_ROOT,
-  'swift-ios-1',
-  'core',
+  'apple',
+  'Sources',
+  'Astryx',
   'Theme',
   'Generated',
   'DefaultTheme.swift',

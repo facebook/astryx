@@ -2,7 +2,7 @@
 
 import SwiftUI
 import Testing
-@testable import AstryxCore
+@testable import Astryx
 
 @Test func defaultThemeCarriesCoreTokensInBothModes() {
   for tokens in [AstryxTokens.defaultLight, AstryxTokens.defaultDark] {

@@ -2,7 +2,7 @@
 
 import SwiftUI
 import Testing
-@testable import AstryxCore
+@testable import Astryx
 
 @MainActor
 @Test func severalChildrenStackInOneCard() {

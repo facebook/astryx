@@ -2,7 +2,7 @@
 
 import SwiftUI
 import Testing
-@testable import AstryxCore
+@testable import Astryx
 
 // Core's Button keeps a loading button undimmed and focusable, announces
 // Loading, and ignores presses until it finishes.

@@ -3,7 +3,7 @@
 /**
  * @file scripts/swift-ios-strings.mjs
  * @input Core's locale catalogs (`@astryxdesign/core/locales/*.json`)
- * @output swift-ios-1/core/Resources/<locale>.lproj/Localizable.strings
+ * @output apple/Sources/Astryx/Resources/<locale>.lproj/Localizable.strings
  * @position Run by `generate:swift-ios`; the output is committed and a test
  *   fails when it drifts from core's catalogs
  */
@@ -19,8 +19,9 @@ const PACKAGE_ROOT = path.resolve(
 );
 export const SWIFT_IOS_STRINGS_DIR = path.join(
   PACKAGE_ROOT,
-  'swift-ios-1',
-  'core',
+  'apple',
+  'Sources',
+  'Astryx',
   'Resources',
 );
 

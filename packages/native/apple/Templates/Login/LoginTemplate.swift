@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import AstryxCore
+import Astryx
 import SwiftUI
 
 /// The `login` template's state and rules, kept apart from the drawing so

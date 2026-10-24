@@ -2,7 +2,7 @@
 
 import CoreGraphics
 import SwiftUI
-@testable import AstryxCore
+@testable import Astryx
 
 /// RGBA pixels of a view drawn at 1x, with an optional theme, color scheme,
 /// and Dynamic Type size.

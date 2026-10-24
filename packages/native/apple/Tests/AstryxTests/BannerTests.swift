@@ -2,7 +2,7 @@
 
 import SwiftUI
 import Testing
-@testable import AstryxCore
+@testable import Astryx
 
 @Test func bannerStatusesUseSharedIconNamesAndCoreTokens() {
   let style = AstryxStyle(tokens: .defaultLight)

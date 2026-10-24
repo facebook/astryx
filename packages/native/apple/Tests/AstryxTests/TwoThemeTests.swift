@@ -2,7 +2,7 @@
 
 import SwiftUI
 import Testing
-@testable import AstryxCore
+@testable import Astryx
 
 // AST-093 FR4 and FR5: a component renders from two different themes with no
 // value of its own in between. Each test draws a component under core's

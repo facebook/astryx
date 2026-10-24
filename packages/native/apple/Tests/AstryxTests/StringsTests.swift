@@ -2,7 +2,7 @@
 
 import Foundation
 import Testing
-@testable import AstryxCore
+@testable import Astryx
 
 // The loading message comes from core's locale catalogs, so VoiceOver speaks
 // it in the person's language.

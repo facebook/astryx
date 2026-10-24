@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import Testing
-@testable import AstryxCore
+@testable import Astryx
 
 @Test func textColorDefaultsByTypeAsCoreDoes() {
   #expect(AstryxTextType.supporting.defaultColor == .secondary)

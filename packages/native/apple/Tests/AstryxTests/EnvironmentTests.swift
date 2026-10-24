@@ -2,7 +2,7 @@
 
 import SwiftUI
 import Testing
-@testable import AstryxCore
+@testable import Astryx
 
 // AST-082 FR11: components follow Dark Mode and Dynamic Type even without
 // astryxTheme(_:).
