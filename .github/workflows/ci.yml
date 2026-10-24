@@ -2227,7 +2227,24 @@ jobs:
       # jsdom has no compositor, paint or pixels, so only a real engine shows
       # it.
       - name: Run CircularProgress busy main thread contract
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
+          # The helper comes from the base, since an older PR head lacks it.
+          # Exit 1 means out of scope; 0 in scope; 2 unknown, so run.
+          scope=2
+          helper="$(mktemp)"
+          if git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA" \
+            && git show "$BASE_SHA:.github/scripts/pr-scope-touches.sh" > "$helper"; then
+            scope=0
+            bash "$helper" "$BASE_SHA" \
+              '^packages/lab/src/CircularProgress/' || scope=$?
+          fi
+          if [ "$scope" = 1 ]; then
+            echo "CircularProgress is not in PR scope; skipping its busy main thread contract."
+            exit 0
+          fi
           pnpm exec playwright test \
             packages/lab/src/CircularProgress/__tests__/CircularProgressMotion.a11y.chromium.spec.ts \
             --project chromium \

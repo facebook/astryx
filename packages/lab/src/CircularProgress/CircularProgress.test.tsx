@@ -440,6 +440,108 @@ describe('CircularProgress', () => {
     }
   });
 
+  it('stops a running change when the ring turns indeterminate, and the next value starts from rest', () => {
+    const calls: Keyframe[][] = [];
+    let cancelled = 0;
+    const original = Element.prototype.animate;
+    const originalStyle = window.getComputedStyle;
+    Element.prototype.animate = function (
+      this: Element,
+      keyframes: Keyframe[],
+    ) {
+      calls.push(keyframes);
+      // Every change is half way through its time when the next render comes.
+      return {
+        cancel() {
+          cancelled += 1;
+        },
+        playState: 'running',
+        effect: {getComputedTiming: () => ({progress: 0.5})},
+        onfinish: null,
+      } as unknown as Animation;
+    } as typeof Element.prototype.animate;
+    window.getComputedStyle = ((element: Element) => {
+      const real = originalStyle(element);
+      if (element.classList.contains('astryx-circular-progress-fill')) {
+        return {
+          ...real,
+          transitionDuration: '400ms',
+          transitionTimingFunction: 'linear',
+        } as CSSStyleDeclaration;
+      }
+      return real;
+    }) as typeof window.getComputedStyle;
+    try {
+      const {rerender} = render(
+        <CircularProgress value={0} size="md" label="Progress" />,
+      );
+      rerender(<CircularProgress value={80} size="md" label="Progress" />);
+      expect(calls).toHaveLength(4);
+      rerender(
+        <CircularProgress
+          value={80}
+          isIndeterminate
+          size="md"
+          label="Progress"
+        />,
+      );
+      // The four layers' animations stop with the determinate ring.
+      expect(cancelled).toBe(4);
+      calls.length = 0;
+      rerender(<CircularProgress value={30} size="md" label="Progress" />);
+      const cap = calls[2];
+      const angle = (frame: Keyframe) =>
+        Number(/rotate\(([-\d.]+)deg\)/.exec(String(frame.transform))?.[1]);
+      // From 80% at rest (288deg), not from the stopped change's 40%.
+      expect(angle(cap[0])).toBeCloseTo(288, 5);
+    } finally {
+      Element.prototype.animate = original;
+      window.getComputedStyle = originalStyle;
+    }
+  });
+
+  it('shows a new value at once under reduced motion', () => {
+    render(<CircularProgress value={30} size="md" label="Progress" />);
+    const fill = document.querySelector(
+      '.astryx-circular-progress-fill',
+    ) as HTMLElement;
+    const durations: string[] = [];
+    const inReducedMotion = (rule: CSSRule) => {
+      for (let r = rule.parentRule; r != null; r = r.parentRule) {
+        if (
+          r instanceof CSSMediaRule &&
+          (r.conditionText ?? r.media.mediaText).includes(
+            'prefers-reduced-motion: reduce',
+          )
+        ) {
+          return true;
+        }
+      }
+      return false;
+    };
+    const visit = (rules: CSSRuleList) => {
+      for (const rule of Array.from(rules)) {
+        if (rule instanceof CSSMediaRule || rule instanceof CSSSupportsRule) {
+          visit(rule.cssRules);
+        } else if (
+          rule instanceof CSSStyleRule &&
+          Array.from(fill.classList).some(c =>
+            rule.selectorText.includes(`.${c}`),
+          ) &&
+          inReducedMotion(rule) &&
+          rule.style.getPropertyValue('transition-duration') !== ''
+        ) {
+          durations.push(rule.style.getPropertyValue('transition-duration'));
+        }
+      }
+    };
+    for (const sheet of Array.from(document.styleSheets)) {
+      visit(sheet.cssRules);
+    }
+    // The duration a change reads back is 0 s, so nothing animates.
+    expect(durations).toEqual(['0s']);
+  });
+
   it('handles zero max gracefully', () => {
     render(<CircularProgress value={0} max={0} label="Empty" />);
     const progressbar = screen.getByRole('progressbar');
