@@ -9,7 +9,8 @@
  *   stage for every pointer: keys, a mouse double-click and drag) and useZoomStage (its touch
  *   layer: pinch, double tap and pan on the gesture recognizers), moved by the compositor
  *   animator, usePager (a gallery pages like Photos: a UIKit paging scroll view with Photos'
- *   40 pt gap)
+ *   40 pt gap), and the compositor animator for Photos' drag to dismiss (the
+ *   backdrop and the controls' layers fade with the drag)
  * @output Exports Lightbox component, LightboxProps, LightboxMedia
  * @position Core implementation; consumed by index.ts
  *
@@ -64,6 +65,8 @@ import {zoomMedia} from '../motion/uikit/zoomMedia';
 import {useZoomStage} from './useZoomStage';
 import {useTouchPresentation} from '../utils/touchPresentation';
 import {isCoarsePointer} from '../gestures/coarsePointer';
+import {animatorFor, type Animator} from '../motion/animator';
+import {dismissBackdropAlpha, dismissChromeAlpha} from './zoomStage';
 /**
  * Media type for lightbox items.
  */
@@ -150,9 +153,12 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     overflow: 'hidden',
     outline: 'none',
+    // The backdrop dims the page without blurring it, as the modal backdrops
+    // do: a full-viewport backdrop-filter is costly to repaint, and the touch
+    // paths fade the backdrop every frame. The dim is the theme's overlay
+    // colour.
     '::backdrop': {
       backgroundColor: colorVars['--color-overlay'],
-      backdropFilter: 'blur(2px)',
     },
   },
   container: {
@@ -207,6 +213,11 @@ const styles = stylex.create({
   // pan manages the stage's own `touch-action`.
   trackZoomTarget: {
     touchAction: 'none',
+  },
+  // A photo without zoom leaves pinch-zoom to the page but takes one-finger
+  // drags: a drag down dismisses it.
+  imageWrapperDismissTarget: {
+    touchAction: 'pinch-zoom',
   },
   // A gallery's stage is the pager's viewport: it fills the viewer on every
   // presentation, so its pages have a size of their own.
@@ -339,6 +350,19 @@ const styles = stylex.create({
   },
   controlButton: {
     color: colorVars['--color-on-dark'],
+    pointerEvents: 'auto',
+  },
+  // The controls sit in layers over the viewer that pass clicks through. A
+  // drag to dismiss fades the layers, which carry no transition of their own
+  // (a Button's opacity transition would trail the finger).
+  // Above the stage: while a fade writes their opacity they are stacking
+  // contexts of their own, which a gallery's positioned pages (later in tree
+  // order) would otherwise cover, taking the taps meant for the controls.
+  chromeLayer: {
+    position: 'absolute',
+    inset: 0,
+    zIndex: 1,
+    pointerEvents: 'none',
   },
 });
 
@@ -643,6 +667,45 @@ export function Lightbox({
   // arrow keys pan while zoomed. A tap on the dark area around the photo
   // closes, as a click on the backdrop does.
   const isZoomTarget = hasZoom && !isVideo;
+  // The backdrop, the controls and the pages a dismissal faded, to restore
+  // exactly those (a page faded as a neighbour may be the current one when
+  // the viewer opens again).
+  const fadedRef = useRef<Animator[]>([]);
+  // Set when a dismissal has asked the caller to close; the next render
+  // (one more is asked for) reads the caller's answer.
+  const dismissalAnsweredRef = useRef(false);
+  const [, renderAfterDismissal] = useReducer((n: number) => n + 1, 0);
+
+  // Drag to dismiss, as in Photos: the backdrop and, faster, the controls
+  // and the neighbouring photos fade with the drag's travel; a dismissal
+  // fades them out on its spring and closes once the photo has left.
+  const dismissFades = useCallback((): {
+    backdrop: Animator | null;
+    chrome: Animator[];
+  } => {
+    const dialog = dialogRef.current;
+    const container = containerRef.current;
+    if (dialog == null || container == null) {
+      return {backdrop: null, chrome: []};
+    }
+    const chrome: HTMLElement[] = [];
+    for (const element of container.querySelectorAll<HTMLElement>(
+      '[data-lightbox-chrome], [data-lightbox-page]:not([data-current]), [data-lightbox-caption]',
+    )) {
+      if (
+        element.parentElement?.closest(
+          '[data-lightbox-page]:not([data-current])',
+        ) == null
+      ) {
+        chrome.push(element);
+      }
+    }
+    return {
+      backdrop: animatorFor(dialog, {pseudoElement: '::backdrop'}),
+      chrome: chrome.map(element => animatorFor(element)),
+    };
+  }, []);
+
   // The zoom stage for every pointer (the keyboard, a mouse double-click and
   // drag) and, under a finger, its touch layer: one touch model on every
   // touch device (the shared touch resolver), whose pinch and pan give past
@@ -671,6 +734,68 @@ export function Lightbox({
     itemKey: viewedItem,
     onTapOutside: handleClose,
     onDragStart,
+    dismiss: {
+      isEnabled: isOpen && !isVideo,
+      onDrag: travel => {
+        const {backdrop, chrome} = dismissFades();
+        fadedRef.current = backdrop == null ? chrome : [backdrop, ...chrome];
+        backdrop?.set({opacity: dismissBackdropAlpha(travel)});
+        const opacity = dismissChromeAlpha(travel);
+        for (const animator of chrome) {
+          animator.set({opacity});
+        }
+      },
+      onRelease: dismisses => {
+        const {backdrop, chrome} = dismissFades();
+        fadedRef.current = backdrop == null ? chrome : [backdrop, ...chrome];
+        const spring = dismisses
+          ? zoomMedia.dismiss.dismissSizeSpring
+          : zoomMedia.dismiss.cancelSizeSpring;
+        const opacity = dismisses ? 0 : 1;
+        for (const animator of backdrop == null
+          ? chrome
+          : [backdrop, ...chrome]) {
+          animator.animate({opacity}, {spring}, {touchRelease: true});
+        }
+      },
+      onDismissed: () => {
+        handleClose();
+        // A caller may keep the viewer open (the close is its call): the
+        // render after its answer brings the photo, the backdrop and the
+        // controls back rather than leave an open, invisible dialog.
+        dismissalAnsweredRef.current = true;
+        renderAfterDismissal();
+      },
+    },
+  });
+
+  // Opening again after a dismissal: the photo, the backdrop and the
+  // controls are back. Only then: a write promotes the layers, and their
+  // release later would repaint mid-gesture.
+  const stageForOpenRef = useRef(stage);
+  stageForOpenRef.current = stage;
+  const restoreAfterDismissalRef = useRef(() => {});
+  restoreAfterDismissalRef.current = () => {
+    stageForOpenRef.current.reset();
+    const faded = fadedRef.current;
+    fadedRef.current = [];
+    for (const animator of faded) {
+      animator.set({opacity: 1});
+    }
+  };
+  useIsomorphicLayoutEffect(() => {
+    if (isOpen) {
+      restoreAfterDismissalRef.current();
+    }
+  }, [isOpen]);
+  useIsomorphicLayoutEffect(() => {
+    if (!dismissalAnsweredRef.current) {
+      return;
+    }
+    dismissalAnsweredRef.current = false;
+    if (isOpen) {
+      restoreAfterDismissalRef.current();
+    }
   });
 
   // A gallery pages like Photos: a drag or flick moves between items on a
@@ -837,42 +962,45 @@ export function Lightbox({
       <LayerDepthProvider>
         <LayerContentBoundary>
           <div ref={containerRef} {...stylex.props(styles.container)}>
-            {/* Close button */}
-            <IconButton
-              icon={<Icon icon="close" size="sm" color="inherit" />}
-              label={t('@astryx.lightbox.close')}
-              variant="ghost"
-              onClick={handleClose}
-              xstyle={[styles.closeButton, styles.controlButton]}
-            />
+            <div data-lightbox-chrome="" {...stylex.props(styles.chromeLayer)}>
+              {/* Close button */}
+              <IconButton
+                icon={<Icon icon="close" size="sm" color="inherit" />}
+                label={t('@astryx.lightbox.close')}
+                variant="ghost"
+                onClick={handleClose}
+                xstyle={[styles.closeButton, styles.controlButton]}
+              />
 
-            {/* Gallery nav: prev — stays mounted and is disabled at the start of
+              {/* Gallery nav: prev — stays mounted and is disabled at the start of
             the range so pressing/arrowing to the boundary doesn't unmount the
             focused control and drop focus to <body>. */}
-            {isGallery && (
-              <IconButton
-                icon={
-                  <Icon
-                    icon="chevronLeft"
-                    size="sm"
-                    color="inherit"
-                    xstyle={rtlStyles.mirror}
-                  />
-                }
-                label={t('@astryx.lightbox.previous')}
-                variant="ghost"
-                isDisabled={!canPrev}
-                onClick={goToPrev}
-                xstyle={[
-                  styles.navButton,
-                  styles.navPrev,
-                  styles.controlButton,
-                ]}
-              />
-            )}
+              {isGallery && (
+                <IconButton
+                  icon={
+                    <Icon
+                      icon="chevronLeft"
+                      size="sm"
+                      color="inherit"
+                      xstyle={rtlStyles.mirror}
+                    />
+                  }
+                  label={t('@astryx.lightbox.previous')}
+                  variant="ghost"
+                  isDisabled={!canPrev}
+                  onClick={goToPrev}
+                  xstyle={[
+                    styles.navButton,
+                    styles.navPrev,
+                    styles.controlButton,
+                  ]}
+                />
+              )}
+            </div>
 
             {/* Media + caption group (centered together) */}
             <div
+              data-lightbox-media=""
               {...stylex.props(
                 styles.mediaGroup,
                 isZoomTarget && !isGallery && isTouch && styles.mediaGroupZoom,
@@ -896,6 +1024,10 @@ export function Lightbox({
                     !isGallery &&
                     isTouch &&
                     styles.imageWrapperFill,
+                  !isZoomTarget &&
+                    !isVideo &&
+                    !isGallery &&
+                    styles.imageWrapperDismissTarget,
                   isZoomTarget && focusOutlineStyles.focusVisible,
                   isZoomTarget && !isZoomed && styles.imageWrapperZoomable,
                   isZoomTarget && isZoomed && styles.imageWrapperZoomed,
@@ -911,6 +1043,9 @@ export function Lightbox({
                     {...stylex.props(
                       styles.track,
                       isZoomTarget && styles.trackZoomTarget,
+                      !isZoomTarget &&
+                        !isVideo &&
+                        styles.imageWrapperDismissTarget,
                     )}>
                     {pageIndexes.map(i => (
                       <div
@@ -931,6 +1066,7 @@ export function Lightbox({
                         </div>
                         {mediaArray[i].caption && (
                           <div
+                            data-lightbox-caption=""
                             {...stylex.props(
                               styles.caption,
                               styles.pageCaption,
@@ -947,42 +1083,44 @@ export function Lightbox({
               </div>
 
               {!isGallery && currentItem.caption && (
-                <div {...stylex.props(styles.caption)}>
+                <div data-lightbox-caption="" {...stylex.props(styles.caption)}>
                   {currentItem.caption}
                 </div>
               )}
             </div>
 
-            {/* Gallery nav: next — see "prev" above; stays mounted and disabled at
+            <div data-lightbox-chrome="" {...stylex.props(styles.chromeLayer)}>
+              {/* Gallery nav: next — see "prev" above; stays mounted and disabled at
             the end of the range instead of unmounting. */}
-            {isGallery && (
-              <IconButton
-                icon={
-                  <Icon
-                    icon="chevronRight"
-                    size="sm"
-                    color="inherit"
-                    xstyle={rtlStyles.mirror}
-                  />
-                }
-                label={t('@astryx.lightbox.next')}
-                variant="ghost"
-                isDisabled={!canNext}
-                onClick={goToNext}
-                xstyle={[
-                  styles.navButton,
-                  styles.navNext,
-                  styles.controlButton,
-                ]}
-              />
-            )}
+              {isGallery && (
+                <IconButton
+                  icon={
+                    <Icon
+                      icon="chevronRight"
+                      size="sm"
+                      color="inherit"
+                      xstyle={rtlStyles.mirror}
+                    />
+                  }
+                  label={t('@astryx.lightbox.next')}
+                  variant="ghost"
+                  isDisabled={!canNext}
+                  onClick={goToNext}
+                  xstyle={[
+                    styles.navButton,
+                    styles.navNext,
+                    styles.controlButton,
+                  ]}
+                />
+              )}
 
-            {/* Gallery counter */}
-            {isGallery && mediaArray.length > 1 && (
-              <div {...stylex.props(styles.counter)}>
-                {index + 1} / {mediaArray.length}
-              </div>
-            )}
+              {/* Gallery counter */}
+              {isGallery && mediaArray.length > 1 && (
+                <div {...stylex.props(styles.counter)}>
+                  {index + 1} / {mediaArray.length}
+                </div>
+              )}
+            </div>
           </div>
         </LayerContentBoundary>
       </LayerDepthProvider>
