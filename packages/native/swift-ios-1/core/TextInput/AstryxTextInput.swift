@@ -39,7 +39,7 @@ public struct AstryxTextInput: View {
 
   public var body: some View {
     VStack(alignment: .leading, spacing: astryx.space(1)) {
-      AstryxText(label, type: .label)
+      AstryxText(label, type: .label, color: .secondary)
         .accessibilityHidden(true)
       field
         .font(astryx.font(size: "text-body-size", 14, weight: "text-body-weight"))
