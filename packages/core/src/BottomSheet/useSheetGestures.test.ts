@@ -2076,6 +2076,32 @@ describe('useSheetGestures: the release on the compositor', () => {
     await expect(exit?.finished).resolves.toBe(true);
   });
 
+  it('settles a drag dismissal as unfinished when the sheet unmounts mid-exit', async () => {
+    const snapHeights = () => [200];
+    // A host that closes when asked, as the sheet's own host does.
+    const hook = renderHook(() => {
+      const [isOpen, setIsOpen] = useState(true);
+      return useSheetGestures({
+        isOpen,
+        snapHeights,
+        onDismiss: () => setIsOpen(false),
+      });
+    });
+    const t = makeTarget();
+    recordAnimations(t);
+    down(hook, 0, 0, t);
+    stream(hook, t, {from: 0, to: 150, t0: 0, t1: 100}); // 1500 px/s
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(pointerEvent(150, 102, t)),
+    );
+    const exit = hook.result.current.gestureExitRef.current;
+    expect(exit).not.toBeNull();
+    // Unmounted before the spring lands: its timer must not finish it.
+    hook.unmount();
+    vi.advanceTimersByTime(2000);
+    await expect(exit?.finished).resolves.toBe(false);
+  });
+
   it('springs back to the detent when the host keeps a drag-dismissed sheet open', () => {
     // A controlled host that does not close: isOpen stays true.
     const {hook, onDismiss} = setup({snapHeights: () => [200]});

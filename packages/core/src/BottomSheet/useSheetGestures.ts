@@ -753,7 +753,16 @@ export function useSheetGestures({
     },
     [animator, recordSheetHeight],
   );
-  useEffect(() => () => observerRef.current?.disconnect(), []);
+  // Unmount: the size observer, and the sheet's animator. Stopping it settles
+  // any travel still running as unfinished and clears its completion timer,
+  // so nothing completes on an unmounted sheet.
+  useEffect(
+    () => () => {
+      observerRef.current?.disconnect();
+      animator.stop();
+    },
+    [animator],
+  );
 
   // Reset to the tallest detent each time the sheet re-opens.
   useEffect(() => {
@@ -777,6 +786,8 @@ export function useSheetGestures({
       setScrollPreservationInset(0);
       // eslint-disable-next-line @eslint-react/set-state-in-effect -- resets gesture state on controlled reopen
       setSettlingLayoutOffset(null);
+      // The sheet's animator too, the compositor `translate` it moves: back
+      // to rest, with no exit pending.
       gestureExitRef.current = null;
       travelHandleRef.current = null;
       animator.set({y: 0});
@@ -1225,19 +1236,26 @@ export function useSheetGestures({
 
   // A drag-dismissed sheet whose host keeps it open (a controlled `open` that
   // stays true) springs back to where it rests, as a UIKit sheet does when
-  // its dismissal is declined.
+  // its dismissal is declined. This syncs the sheet's animator (the
+  // compositor `translate`) with the declined request; the cleanup stops the
+  // spring it started if the effect runs again or the sheet unmounts.
   const [dismissRequest, setDismissRequest] = useState(0);
   useLayoutEffect(() => {
     if (dismissRequest === 0 || gestureExitRef.current == null || !isOpen) {
       return;
     }
     gestureExitRef.current = null;
-    springTravel(
+    const handle = springTravel(
       settledOffset,
       settledLayoutOffsetRef.current,
       springs.sheetDetent,
     );
-  }, [dismissRequest, isOpen, settledOffset, springTravel]);
+    return () => {
+      if (travelHandleRef.current === handle) {
+        animator.stop(['y']);
+      }
+    };
+  }, [animator, dismissRequest, isOpen, settledOffset, springTravel]);
 
   const beginDrag = useCallback(
     (event: ReactPointerEvent, sheetHeight: number, startCoord?: number) => {
