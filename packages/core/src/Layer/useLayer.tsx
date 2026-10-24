@@ -542,6 +542,56 @@ function observeMove(element: HTMLElement, onMove: () => void): () => void {
 }
 
 /**
+ * Watch an open layer that keeps its anchor clear, and its anchor, for every
+ * change that can re-settle the layer over the anchor or give it a scroll
+ * range (spec:AST-059 FR4, FR8): the layer, its content or the anchor
+ * resizing (ResizeObserver, before paint), a scroll or viewport resize (before
+ * paint), and the anchor moving in layout without resizing (`observeMove`,
+ * after paint). Each calls `keepAnchorClear` for this layer and anchor while
+ * `isCurrent` says they are still the live pair. Returns the function that
+ * removes every observer and listener it added.
+ */
+function observeAnchorClearance(
+  layer: HTMLElement,
+  anchor: HTMLElement,
+  isCurrent: () => boolean,
+): () => void {
+  const view = layer.ownerDocument.defaultView;
+  if (!view) {
+    return () => {};
+  }
+  const reread = () => {
+    if (isCurrent()) {
+      keepAnchorClear(layer, anchor);
+    }
+  };
+  const onScroll = (event: Event) => {
+    // The layer's own scrolling moves nothing else.
+    if (event.target !== layer) {
+      reread();
+    }
+  };
+  let observer: ResizeObserver | null = null;
+  if (typeof ResizeObserver !== 'undefined') {
+    observer = new ResizeObserver(reread);
+    observer.observe(layer);
+    for (const child of Array.from(layer.children)) {
+      observer.observe(child);
+    }
+    observer.observe(anchor);
+  }
+  const stopObservingMove = observeMove(anchor, reread);
+  view.addEventListener('scroll', onScroll, {capture: true, passive: true});
+  view.addEventListener('resize', reread);
+  return () => {
+    observer?.disconnect();
+    stopObservingMove();
+    view.removeEventListener('scroll', onScroll, {capture: true});
+    view.removeEventListener('resize', reread);
+  };
+}
+
+/**
  * Popover operations in flight, per document.
  *
  * The Popover API refuses to show a popover while the document is in the
@@ -1029,12 +1079,11 @@ function useLayerImplementation(
   const showRef = useRef(show);
   showRef.current = show;
 
-  // The anchor element as state, for a layer that keeps its anchor clear: its
-  // open-state geometry observers must follow the element when a caller
-  // replaces its trigger while the layer stays open. Other layers never set
-  // it, so their renders are unchanged.
-  const [clearAnchorElement, setClearAnchorElement] =
-    useState<HTMLElement | null>(null);
+  // The open-state geometry observers of a layer that keeps its anchor clear
+  // (`observeAnchorClearance`), as their teardown. The open-state layout
+  // effect binds them; the trigger callback ref rebinds them when a caller
+  // replaces the trigger element while the layer stays open.
+  const clearObserversRef = useRef<(() => void) | null>(null);
 
   // Stable ref for the trigger element (context mode only).
   const contextRef = useCallback(
@@ -1049,9 +1098,25 @@ function useLayerImplementation(
         addAnchorName(el, anchorId);
       }
 
+      const previous = triggerRef.current;
       triggerRef.current = el;
-      if (keepsAnchorClear) {
-        setClearAnchorElement(el);
+
+      // A trigger replaced while the layer is open (React detaches the old
+      // node with `null`, then attaches the new one): the old trigger's
+      // observers are removed before the new trigger's are added (INV6), and
+      // binding them reads the new trigger's geometry at once.
+      if (keepsAnchorClear && isOpenRef.current && el !== previous) {
+        clearObserversRef.current?.();
+        clearObserversRef.current = null;
+        const layer = popoverRef.current;
+        if (el && layer) {
+          clearObserversRef.current = observeAnchorClearance(
+            layer,
+            el,
+            () => popoverRef.current === layer && triggerRef.current === el,
+          );
+          keepAnchorClear(layer, el);
+        }
       }
     },
     [anchorId, keepsAnchorClear],
@@ -1277,55 +1342,31 @@ function useLayerImplementation(
   // A layer that keeps its anchor clear (FR4) re-reads its geometry while it
   // is open: content that grows, an anchor that resizes or moves, a scroll or
   // a viewport resize can each re-settle the standard list over the anchor or
-  // give the layer a scroll range. ResizeObserver callbacks and scroll and
-  // resize events run before the frame paints, so those switches are never
-  // painted late; an anchor that moves without resizing is only reported by
-  // an intersection observer, after paint, so that switch lands in the next
-  // frame (FR8). The layer element changes when a moved render call remounts
-  // it, which changes `contextMount`; the anchor element changes when a caller
-  // replaces its trigger, which changes `clearAnchorElement`. Either change
-  // disconnects the observers and binds new ones, whose first reports re-read
-  // the geometry.
+  // give the layer a scroll range (`observeAnchorClearance`). The external
+  // systems are those browser observers and listeners; this effect binds them
+  // while the layer is open and removes them when it closes, unmounts or is
+  // remounted by a moved render call (`contextMount`). A trigger replaced while
+  // open is rebound by the trigger callback ref, so no DOM node enters state.
   useIsomorphicLayoutEffect(() => {
     if (!keepsAnchorClear || !isOpen || mode !== 'context') {
       return;
     }
     const layer = popoverRef.current;
-    const anchor = clearAnchorElement;
-    const view = layer?.ownerDocument.defaultView;
-    if (!layer || !anchor || !view) {
+    const anchor = triggerRef.current;
+    if (!layer || !anchor) {
       return;
     }
-    const reread = () => {
-      if (popoverRef.current === layer && triggerRef.current === anchor) {
-        keepAnchorClear(layer, anchor);
-      }
-    };
-    const onScroll = (event: Event) => {
-      // The layer's own scrolling moves nothing else.
-      if (event.target !== layer) {
-        reread();
-      }
-    };
-    let observer: ResizeObserver | null = null;
-    if (typeof ResizeObserver !== 'undefined') {
-      observer = new ResizeObserver(reread);
-      observer.observe(layer);
-      for (const child of Array.from(layer.children)) {
-        observer.observe(child);
-      }
-      observer.observe(anchor);
-    }
-    const stopObservingMove = observeMove(anchor, reread);
-    view.addEventListener('scroll', onScroll, {capture: true, passive: true});
-    view.addEventListener('resize', reread);
+    clearObserversRef.current?.();
+    clearObserversRef.current = observeAnchorClearance(
+      layer,
+      anchor,
+      () => popoverRef.current === layer && triggerRef.current === anchor,
+    );
     return () => {
-      observer?.disconnect();
-      stopObservingMove();
-      view.removeEventListener('scroll', onScroll, {capture: true});
-      view.removeEventListener('resize', reread);
+      clearObserversRef.current?.();
+      clearObserversRef.current = null;
     };
-  }, [keepsAnchorClear, isOpen, mode, contextMount, clearAnchorElement]);
+  }, [keepsAnchorClear, isOpen, mode, contextMount]);
 
   // Render function for context mode
   const renderContext = useCallback(

@@ -1830,6 +1830,7 @@ describe('a layer that keeps its anchor clear (spec:AST-059 FR4)', () => {
   it('moves its open-state observers to a trigger the caller replaces while it is open', async () => {
     const observed: Element[] = [];
     const disconnected: Element[][] = [];
+    const events: string[] = [];
     vi.stubGlobal(
       'ResizeObserver',
       class {
@@ -1837,14 +1838,20 @@ describe('a layer that keeps its anchor clear (spec:AST-059 FR4)', () => {
         observe(target: Element) {
           this.targets.push(target);
           observed.push(target);
+          events.push(`observe ${target.textContent}`);
         }
         disconnect() {
           disconnected.push(this.targets);
+          events.push(
+            `disconnect ${this.targets.map(t => t.textContent).join(',')}`,
+          );
         }
         unobserve() {}
       },
     );
+    let renders = 0;
     function ReplacingHarness({generation}: {generation: number}) {
+      renders += 1;
       const layer = useLayerInternal({
         mode: 'context',
         keepsAnchorClear: true,
@@ -1867,14 +1874,25 @@ describe('a layer that keeps its anchor clear (spec:AST-059 FR4)', () => {
       expect(observed).toContain(getByText('Trigger 1'));
     });
     const first = getByText('Trigger 1');
+    const rendersBefore = renders;
 
     rerender(<ReplacingHarness generation={2} />);
 
     await waitFor(() => {
       expect(observed).toContain(getByText('Trigger 2'));
     });
-    // The observer that watched the first trigger was disconnected.
+    // The observer that watched the first trigger was disconnected, before
+    // the second trigger was observed.
     expect(disconnected.some(targets => targets.includes(first))).toBe(true);
+    const disconnectFirst = events.findIndex(
+      e => e.startsWith('disconnect') && e.includes('Trigger 1'),
+    );
+    const observeSecond = events.indexOf('observe Trigger 2');
+    expect(disconnectFirst).toBeGreaterThanOrEqual(0);
+    expect(disconnectFirst).toBeLessThan(observeSecond);
+    // No DOM node is held in React state: replacing the trigger renders the
+    // hook once, for the caller's own rerender.
+    expect(renders - rendersBefore).toBe(1);
     vi.unstubAllGlobals();
   });
 
