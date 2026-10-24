@@ -90,7 +90,8 @@ validating, and reviewing individual native components while
   - unit tests in its package's test target for parameter mapping, defaults,
     and state changes, built and run on every platform the package supports;
   - parameters named and typed as the generated contract for the component
-    (`spec:AST-082/FR5`), with the contract drift tests passing;
+    (`spec:AST-082/FR5`), with the contract drift tests passing, except for the
+    interim Swift views listed in Current-state impact;
   - accessibility assertions for the label, traits, and value the core
     contract requires, plus a check at the largest Dynamic Type size;
   - a check that the component renders from two different themes with no
@@ -134,6 +135,12 @@ validating, and reviewing individual native components while
   published.
 - No architecture, family, contributing, or consumer-doc record changes.
 - No native component spec exists yet.
+- The first Swift views in `swift-ios-1` (Banner, Button, Card, Heading, Text,
+  and TextInput) take hand-written parameters, including `action` for the
+  contract's `onClick`, until they move to the generated contracts. Until then
+  they are the only native components exempt from FR5's generated-parameter
+  requirement; every other FR5 check applies to them. A new view never takes
+  this exemption.
 
 ## Verification
 

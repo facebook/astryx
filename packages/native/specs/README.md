@@ -8,7 +8,8 @@ which applies [AST-082 (Native-first surfaces)](../../../docs/specs/AST-082-nati
 packages/native/specs/
 ├── TEMPLATE.md      # copy this for a new spec
 └── swift/           # Swift: iOS and macOS
-    └── <Name>.md    # named as the core component, e.g. Button.md
+    ├── <Name>.md    # named as the core component, e.g. Button.md
+    └── library/     # rules every Swift component or build step shares
 ```
 
 Swift comes first. Kotlin and other languages get their own directory when
