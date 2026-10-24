@@ -155,6 +155,15 @@ const styles = stylex.create({
     overflow: 'hidden',
     borderStartEndRadius: 'var(--_field-radius)',
     borderEndEndRadius: 'var(--_field-radius)',
+    // A finger held on a stepper is pressing it, not selecting text: without
+    // these, iOS Safari selects the nearest text (the field's label) after
+    // about half a second and shows its edit menu. `manipulation` keeps
+    // rapid taps from double-tap zooming the page while pans and pinch-zoom
+    // stay the browser's.
+    WebkitTouchCallout: 'none',
+    WebkitUserSelect: 'none',
+    userSelect: 'none',
+    touchAction: 'manipulation',
   },
   numberStepperButton: {
     boxSizing: 'border-box',
