@@ -46,7 +46,7 @@ const firstFile = file => {
   const base = EXTENSIONS.includes(extension)
     ? file.slice(0, -extension.length)
     : file;
-  return [file, ...EXTENSIONS.map(ext => base + ext)].find(isFile) ?? null;
+  return [file, ...EXTENSIONS.map(ext => base + ext)].find(isFile);
 };
 
 /** Workspace packages by name: their directory and `exports`. */
@@ -77,11 +77,11 @@ function readWorkspacePackages(root, workspaceRoots) {
   return packages;
 }
 
-/** A workspace specifier's `source` export (or `src/<subpath>`), else null. */
+/** A workspace specifier's `source` export (or `src/<subpath>`), if any. */
 function workspaceSource(packages, specifier) {
   const match = /^(@[^/]+\/[^/]+|[^./][^/]*)(?:\/(.+))?$/.exec(specifier);
   const pkg = match && packages.get(match[1]);
-  if (!pkg) return null;
+  if (!pkg) return undefined;
   const target = pkg.exports?.[match[2] ? `./${match[2]}` : '.'];
   if (
     target != null &&
@@ -90,7 +90,7 @@ function workspaceSource(packages, specifier) {
   ) {
     return firstFile(path.join(pkg.dir, target.source));
   }
-  return match[2] ? firstFile(path.join(pkg.dir, 'src', match[2])) : null;
+  return match[2] ? firstFile(path.join(pkg.dir, 'src', match[2])) : undefined;
 }
 
 /** Candidate paths for `specifier` from StyleX `aliases` (absolute targets). */
@@ -136,7 +136,7 @@ function resolveFilePath(packages, importPath, sourceFilePath, aliases) {
       // Try the next extension.
     }
   }
-  return null;
+  return undefined;
 }
 
 /**
