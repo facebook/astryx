@@ -57,7 +57,6 @@ import {
   writeEvidence,
   type TouchDriver,
 } from '@astryxdesign/interaction-harness';
-import {emulateIosWebKit} from './iosWebKit';
 
 const storybook = withStorybook(test);
 
@@ -92,16 +91,10 @@ async function openControl(
   groupName = 'View mode',
   {
     direction,
-    idiom = 'ios',
   }: {
     direction?: 'rtl';
-    /** `ios`: the phone is WebKit on iOS; `default`: any other (Android). */
-    idiom?: 'ios' | 'default';
   } = {},
 ): Promise<Control> {
-  if (idiom === 'ios') {
-    await emulateIosWebKit(page);
-  }
   await installLongTaskLog(page);
   if (direction == null) {
     await openStory(page, storybook(), storyId);
@@ -730,49 +723,37 @@ async function holdLensAnimationsAtBirth(page: Page): Promise<void> {
   });
 }
 
-test('Android and other non-iOS touch screens keep today’s presentation: no slide, the tap selects', async ({
-  page,
+test('with a mouse nothing changes: no proxy, the theme’s color transition, and a click selects (touch work costs nothing under a fine pointer)', async ({
+  browser,
 }) => {
-  const control = await openControl(page, undefined, undefined, {
-    idiom: 'default',
+  const context = await browser.newContext({
+    hasTouch: false,
+    isMobile: false,
+    viewport: {width: 1024, height: 768},
   });
-  // No proxy, and the segments keep the theme's color transition.
-  await expect(control.proxy).toHaveCount(0);
-  await expect(control.segment('list')).toHaveCSS(
-    'transition-property',
-    'color, background-color, box-shadow',
-  );
-  await control.tapSegment('table');
-  await expect(control.segment('table')).toHaveAttribute(
-    'aria-checked',
-    'true',
-  );
-  await expect(control.proxy).toHaveCount(0);
-});
-
-test('Android with Reduce Motion keeps today’s values', async ({page}) => {
-  await page.emulateMedia({reducedMotion: 'reduce'});
-  const control = await openControl(page, undefined, undefined, {
-    idiom: 'default',
-  });
-  await expect(control.proxy).toHaveCount(0);
-  // The segment's transition is the theme's duration token, as on main,
-  // whatever Reduce Motion makes of it.
-  const [duration, token] = await control.segment('list').evaluate(element => {
-    const style = getComputedStyle(element);
-    const probe = document.createElement('div');
-    probe.style.transitionDuration = 'var(--duration-fast)';
-    element.append(probe);
-    const expected = getComputedStyle(probe).transitionDuration;
-    probe.remove();
-    return [style.transitionDuration, expected];
-  });
-  expect(duration).toBe(token);
-  await control.tapSegment('table');
-  await expect(control.segment('table')).toHaveAttribute(
-    'aria-checked',
-    'true',
-  );
+  try {
+    const page = await context.newPage();
+    await openStory(page, storybook(), 'core-segmentedcontrol--default');
+    const group = page.getByRole('radiogroup', {
+      name: 'View mode',
+      exact: true,
+    });
+    await expect(group).toBeVisible();
+    const proxy = group.locator('[data-selection-proxy]');
+    await expect(proxy).toHaveCount(0);
+    await expect(group.locator('[data-value="list"]')).toHaveCSS(
+      'transition-property',
+      'color, background-color, box-shadow',
+    );
+    await group.locator('[data-value="table"]').click();
+    await expect(group.locator('[data-value="table"]')).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    await expect(proxy).toHaveCount(0);
+  } finally {
+    await context.close();
+  }
 });
 
 test('a theme retunes the slide through its motion role', async ({page}) => {

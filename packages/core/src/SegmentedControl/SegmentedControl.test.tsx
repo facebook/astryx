@@ -869,25 +869,6 @@ describe('selection motion', () => {
     );
   }
 
-  /**
-   * A finger on WebKit for iOS: the iOS touch idiom, where the slide runs.
-   * The engine is recognized by `-webkit-touch-callout`, which only it
-   * implements.
-   */
-  function mockIosFinger() {
-    const spy = mockCoarsePointer();
-    vi.stubGlobal('CSS', {
-      ...globalThis.CSS,
-      supports: (query: string) => query === '(-webkit-touch-callout: none)',
-    });
-    return {
-      mockRestore() {
-        spy.mockRestore();
-        vi.unstubAllGlobals();
-      },
-    };
-  }
-
   function renderControl(onChange = vi.fn()) {
     return render(
       <SegmentedControl value="grid" onChange={onChange} label="View mode">
@@ -914,18 +895,18 @@ describe('selection motion', () => {
     ).toContain('background-color');
   });
 
-  it('a finger outside iOS (Android) keeps today’s presentation: no proxy, the theme’s transitions', async () => {
+  it('one touch model: a finger on any engine (no iOS check) gets the touch presentation, and a tap still selects', async () => {
     const spy = mockCoarsePointer();
     try {
       const onChange = vi.fn();
       renderControl(onChange);
       expect(
         screen.getByRole('radiogroup').querySelector('[data-selection-proxy]'),
-      ).toBeNull();
+      ).not.toBeNull();
       expect(
         getComputedStyle(screen.getByRole('radio', {name: 'List'}))
           .transitionProperty,
-      ).toContain('background-color');
+      ).toBe('none');
       await userEvent.setup().click(screen.getByRole('radio', {name: 'List'}));
       expect(onChange).toHaveBeenCalledWith('list');
     } finally {
@@ -934,7 +915,7 @@ describe('selection motion', () => {
   });
 
   it('touch presentation: an aria-hidden proxy behind the segments; selection unchanged', async () => {
-    const spy = mockIosFinger();
+    const spy = mockCoarsePointer();
     try {
       const onChange = vi.fn();
       renderControl(onChange);
@@ -950,7 +931,7 @@ describe('selection motion', () => {
   });
 
   it('touch presentation: a value change starts the slide, StrictMode included', () => {
-    const spy = mockIosFinger();
+    const spy = mockCoarsePointer();
     const boxes: Record<string, [number, number]> = {
       grid: [2, 96],
       list: [102, 96],

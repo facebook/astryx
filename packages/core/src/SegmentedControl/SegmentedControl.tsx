@@ -5,7 +5,7 @@
 /**
  * @file SegmentedControl.tsx
  * @input Uses React, StyleX, SegmentedControlContext, useListFocus,
- *   useKeyboardHint, useMotionPresentation (the shared touch presentation),
+ *   useKeyboardHint, useTouchPresentation (the shared touch presentation),
  *   useSegmentedSelectionMotion
  * @output Exports SegmentedControl component and SegmentedControlProps type
  * @position Container wrapper; provides context to SegmentedControlItem
@@ -38,7 +38,7 @@ import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
-import {useMotionPresentation} from '../utils/touchPresentation';
+import {useTouchPresentation} from '../utils/touchPresentation';
 import {useSegmentedSelectionMotion} from './useSegmentedSelectionMotion';
 
 export interface SegmentedControlProps extends Omit<
@@ -146,7 +146,7 @@ const styles = stylex.create({
   // hands the surface back (useSegmentedSelectionMotion). A negative z-index
   // keeps it under every segment's content however the engine composites
   // it: WebKit's overlap test misses segments the moving layer will cover,
-  // so DOM order alone let it paint over their titles mid-slide on iOS.
+  // so DOM order alone let it paint over their titles mid-slide on a phone.
   // Its paint and box are written when a slide starts; at rest it is hidden.
   thumb: {
     position: 'absolute',
@@ -211,9 +211,10 @@ export function SegmentedControl({
   ...rest
 }: SegmentedControlProps) {
   const size = useSize(sizeProp, 'md');
-  // UIKit's motion under a finger (the selection slides on a spring and the
-  // titles cross-fade), the theme's transitions under a mouse.
-  const isTouchPresentation = useMotionPresentation() === 'uikit';
+  // Under a finger, on every touch device (a coarse primary pointer, #8316):
+  // UIKit's motion, the selection sliding on a spring and the titles
+  // cross-fading. Under a mouse, the theme's transitions.
+  const isTouchPresentation = useTouchPresentation().isTouch;
   const trackRef = useRef<HTMLDivElement | null>(null);
   const {thumbRef} = useSegmentedSelectionMotion(
     trackRef,
