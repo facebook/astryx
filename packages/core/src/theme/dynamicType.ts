@@ -178,11 +178,16 @@ export function dynamicTypeCategoryRules(): string[] {
  * `[token, value]` with its value times its curve's scale (1 when no category
  * is set). The caller emits them through its declaration checks.
  *
- * A step never outgrows the step above it. UIKit's smaller styles grow
- * faster than its larger ones, so a theme whose ramp is tighter than UIKit's
- * would see, at the largest accessibility sizes, heading 2 pass heading 1;
- * each step is capped at the next step's scaled size instead, and the cap
- * never lowers a step below its own size, so the theme's sizes at Large stay
+ * A step never outgrows the step above it. UIKit's curves differ: above
+ * Large its smaller styles grow faster than its larger ones (a theme whose
+ * ramp is tighter than UIKit's would see heading 2 pass heading 1 at the
+ * largest accessibility sizes), and below Large Body shrinks faster than
+ * Footnote (supporting text could pass body text). So each step is capped at
+ * the next step's scaled size. When the theme's own step is no larger than
+ * its next one, as in every ramp `typography.scale` generates, that cap is
+ * the theme's own size at Large and binds at every other category; for a
+ * ramp that is out of order (or a next step this theme does not set), the cap
+ * never goes below the step's own size, so the theme's sizes at Large stay
  * exactly its own.
  */
 export function scaledFontSizeEntries(
@@ -195,13 +200,28 @@ export function scaledFontSizeEntries(
       const value = tokens[name];
       const scaled = `calc(${value} * var(${dynamicTypeScaleProperty(FONT_SIZE_STEP_STYLES[name])}, 1))`;
       const next = steps[steps.indexOf(name) + 1];
+      if (next === undefined) {
+        return [name, scaled];
+      }
+      const own = lengthInPx(value);
+      const nextOwn = lengthInPx(tokens[next]);
+      const inOrder = own !== null && nextOwn !== null && own <= nextOwn;
       return [
         name,
-        next === undefined
-          ? scaled
+        inOrder
+          ? `min(${scaled}, var(${next}))`
           : `min(${scaled}, max(var(${next}), ${value}))`,
       ];
     });
+}
+
+/** A `px` or `rem` length in px (16px to the rem); null for anything else. */
+function lengthInPx(value: string | undefined): number | null {
+  const match = /^(-?\d*\.?\d+)(px|rem)$/.exec(value?.trim() ?? '');
+  if (match == null) {
+    return null;
+  }
+  return Number(match[1]) * (match[2] === 'rem' ? 16 : 1);
 }
 
 // =============================================================================

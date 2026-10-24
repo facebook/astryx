@@ -36,6 +36,104 @@ import {textSizeDefaults} from './tokens.stylex';
 
 const STYLES = Object.keys(typography) as DynamicTypeStyle[];
 
+/** A `rem` or `px` length, in px (16px to the rem). */
+function lengthInPx(value: string | undefined): number {
+  const match = /^(-?[\d.]+)(rem|px)$/.exec(value ?? '');
+  if (match == null) {
+    throw new Error(`not a length: ${value}`);
+  }
+  return Number(match[1]) * (match[2] === 'rem' ? 16 : 1);
+}
+
+/**
+ * What the browser computes for the emitted font-size steps at one category,
+ * in px: each expression evaluated (min, max, calc of a length times a
+ * category scale, the next step's variable), from the largest step down.
+ */
+function computedSizes(
+  entries: ReadonlyArray<readonly [string, string]>,
+  category: (typeof TEXT_SIZE_CATEGORIES)[number],
+): number[] {
+  const variables = new Map<string, number>();
+  for (const style of STYLES) {
+    variables.set(
+      dynamicTypeScaleProperty(style),
+      dynamicTypeScale(style, category),
+    );
+  }
+  const evaluate = (source: string): number => {
+    let at = 0;
+    const read = (text: string) => {
+      if (!source.startsWith(text, at)) {
+        throw new Error(`expected "${text}" at ${at} in ${source}`);
+      }
+      at += text.length;
+    };
+    const skipSpaces = () => {
+      while (source[at] === ' ') {
+        at += 1;
+      }
+    };
+    const term = (): number => {
+      skipSpaces();
+      for (const [name, pick] of [
+        ['min(', Math.min],
+        ['max(', Math.max],
+      ] as const) {
+        if (source.startsWith(name, at)) {
+          read(name);
+          const first = term();
+          read(',');
+          const second = term();
+          skipSpaces();
+          read(')');
+          return pick(first, second);
+        }
+      }
+      if (source.startsWith('calc(', at)) {
+        read('calc(');
+        const left = term();
+        skipSpaces();
+        read('*');
+        const right = term();
+        skipSpaces();
+        read(')');
+        return left * right;
+      }
+      if (source.startsWith('var(', at)) {
+        read('var(');
+        const end = source.indexOf(')', at);
+        const [name] = source.slice(at, end).split(',');
+        at = end + 1;
+        const value = variables.get(name.trim());
+        if (value === undefined) {
+          throw new Error(`unset ${name} in ${source}`);
+        }
+        return value;
+      }
+      const match = /^-?[\d.]+(rem|px)/.exec(source.slice(at));
+      if (match == null) {
+        throw new Error(`unexpected input at ${at} in ${source}`);
+      }
+      at += match[0].length;
+      return lengthInPx(match[0]);
+    };
+    const value = term();
+    skipSpaces();
+    if (at !== source.length) {
+      throw new Error(`trailing input at ${at} in ${source}`);
+    }
+    return value;
+  };
+  const sizes: number[] = [];
+  for (let index = entries.length - 1; index >= 0; index -= 1) {
+    const [name, expression] = entries[index];
+    sizes[index] = evaluate(expression);
+    variables.set(name, sizes[index]);
+  }
+  return sizes;
+}
+
 describe('the reader text size category', () => {
   it('has one category per column of the UIKit table, Large fourth', () => {
     for (const style of STYLES) {
@@ -175,34 +273,46 @@ describe('the UIKit curves', () => {
     ]);
   });
 
-  it('keeps the theme hierarchy at every category, and its own sizes at Large', () => {
-    // The neutral phone ramp (base 16, ratio 1.1736), in px: what the emitted
-    // min()/max() chain computes, step by step from the largest down.
-    const steps = Object.keys(
-      FONT_SIZE_STEP_STYLES,
-    ) as (keyof typeof FONT_SIZE_STEP_STYLES)[];
-    const own = steps.map((_, index) => 16 * 1.1736 ** (index - 5));
-    for (const category of TEXT_SIZE_CATEGORIES) {
-      const effective: number[] = [];
-      for (let index = steps.length - 1; index >= 0; index -= 1) {
-        const scaled =
-          own[index] *
-          dynamicTypeScale(FONT_SIZE_STEP_STYLES[steps[index]], category);
-        effective[index] =
-          index === steps.length - 1
-            ? scaled
-            : Math.min(scaled, Math.max(effective[index + 1], own[index]));
-      }
-      for (let index = 1; index < steps.length; index += 1) {
-        expect(effective[index]).toBeGreaterThanOrEqual(effective[index - 1]);
-      }
-      if (category === 'l') {
-        expect(effective).toEqual(own);
+  it('keeps every ramp in order at every category, and its own sizes at Large', () => {
+    // The ramps a theme gets from `typography.scale`: the neutral phone
+    // profile, and the dense, default and airy starting points. A tight ramp
+    // is the hard case: below Large, Body shrinks faster than Footnote (17 to
+    // 14 against 13 to 12 at xs), so supporting text could pass body text.
+    const ramps = [
+      {base: 16, ratio: 1.1736},
+      {base: 12, ratio: 1.125},
+      {base: 14, ratio: 1.2},
+      {base: 16, ratio: 1.25},
+    ];
+    const steps = Object.keys(FONT_SIZE_STEP_STYLES);
+    for (const scale of ramps) {
+      const theme = defineTheme({
+        name: `dt-ramp-${scale.base}-${scale.ratio}`,
+        typography: {dynamicType: true, scale},
+      });
+      const entries = scaledFontSizeEntries(theme.tokens);
+      expect(entries.map(([name]) => name)).toEqual(steps);
+      const own = steps.map(name => lengthInPx(theme.tokens[name]));
+      for (const category of TEXT_SIZE_CATEGORIES) {
+        const sizes = computedSizes(entries, category);
+        const ramp = `${scale.base}/${scale.ratio} at ${category}`;
+        for (let index = 1; index < steps.length; index += 1) {
+          expect(
+            sizes[index],
+            `${steps[index]}, ${ramp}`,
+          ).toBeGreaterThanOrEqual(sizes[index - 1] - 1e-9);
+        }
+        if (category === 'l') {
+          sizes.forEach((size, index) => {
+            expect(size, `${steps[index]}, ${ramp}`).toBeCloseTo(own[index], 9);
+          });
+        }
       }
     }
     // Uncapped, heading 2 (Title 2) would pass heading 1 (Title 1) at AX5.
-    expect(own[7] * dynamicTypeScale('title2', 'ax5')).toBeGreaterThan(
-      own[8] * dynamicTypeScale('title1', 'ax5'),
+    const own = (index: number) => 16 * 1.1736 ** (index - 5);
+    expect(own(7) * dynamicTypeScale('title2', 'ax5')).toBeGreaterThan(
+      own(8) * dynamicTypeScale('title1', 'ax5'),
     );
   });
 });
@@ -258,9 +368,26 @@ describe('a theme that follows the reader text size', () => {
     const block = supportsBlock(generateThemeCSS(theme).component);
     const media = block.slice(block.indexOf('@media '));
     expect(media).toMatch(/^@media [^{]*pointer: coarse[^{]*\{/);
+    // A full ramp in order: each step is capped at the next one's scaled size.
     expect(media).toContain(
-      '--font-size-base: min(calc(1rem * var(--_dynamic-type-body, 1)), max(var(--font-size-lg), 1rem));',
+      '--font-size-base: min(calc(1rem * var(--_dynamic-type-body, 1)), var(--font-size-lg));',
     );
+  });
+
+  it('is a setting of the whole theme, not of an adaptation rule', () => {
+    const theme = defineTheme({
+      name: 'dt-rule-flag',
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'coarse'},
+            // @ts-expect-error a rule's typography cannot turn Dynamic Type on
+            value: {typography: {dynamicType: true}},
+          },
+        ],
+      },
+    });
+    expect(generateThemeCSS(theme).component).not.toContain('--_dynamic-type-');
   });
 
   it('is inherited by a theme that extends it, and can be turned off', () => {
