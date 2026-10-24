@@ -96,6 +96,20 @@ describe('TimeInput presentation', () => {
     expect(screen.getByRole('listbox', {name: 'Minute'})).toBeInTheDocument();
   });
 
+  it('bottom-sheet draws its wheels as one picker, with one band across them', () => {
+    stubPointer(false);
+    render(
+      <TimeInput
+        label="Start"
+        presentation="bottom-sheet"
+        onChange={() => {}}
+      />,
+    );
+    fireEvent.click(screen.getByRole('combobox', {name: 'Start'}));
+    expect(screen.getByRole('listbox', {name: 'Hour'})).toBeInTheDocument();
+    expect(document.querySelectorAll('[data-wheel-band]')).toHaveLength(1);
+  });
+
   it('bottom-sheet: a disabled field stays focusable and inert (AST-085 FR1, FR2)', () => {
     stubPointer(false);
     const onClick = vi.fn();

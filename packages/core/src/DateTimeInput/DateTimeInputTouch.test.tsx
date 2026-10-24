@@ -367,6 +367,18 @@ describe('DateTimeInput touch surface', () => {
     );
   });
 
+  it('draws the time wheels as one picker, with one band across them', () => {
+    withMonthLayout(() => {
+      const {container} = render(
+        <DateTimeInput label="Meeting" onChange={() => {}} />,
+      );
+      openDateSheet();
+      switchToTimePanel();
+      const timePanel = container.querySelector('[data-panel="time"]')!;
+      expect(timePanel.querySelectorAll('[data-wheel-band]')).toHaveLength(1);
+    });
+  });
+
   it('switches between inert date and time panels with the pill control', () => {
     withMonthLayout(() => {
       const {container} = render(
