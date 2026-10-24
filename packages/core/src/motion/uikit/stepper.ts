@@ -4,8 +4,8 @@
  * @file stepper.ts
  * @input Nothing; data only
  * @output Exports `stepper`: UIStepper's tap and autorepeat clocks, its
- *   tracking area, and the timing of its pressed state, as measured on
- *   iOS 26.2
+ *   tracking area, the timing of its pressed state and its shape, as
+ *   measured on iOS 26.2
  * @position The stepper domain of the UIKit constants table (motion/uikit)
  *
  * Every leaf carries one or more `@source` (apple-docs | wwdc | webkit |
@@ -88,6 +88,50 @@ export const stepper = {
      * @source measured: UIKit lab (injected host app), iOS 26.2 sim iPhone 17 Pro, rendered frames of a 60 ms tap and a 1.2 s hold, with and without Reduce Motion, Oct 24 2026
      */
     highlightOutMs: 0,
+  },
+  /**
+   * The control's shape as rendered. Its colours are theme values (fill,
+   * divider, glyphs, the pressed half); UIKit's, for reference: fill light
+   * #EEEEEF / dark #121213, pressed #DADADB, divider and disabled glyph light
+   * #B9B9BC / dark #535356, glyphs black / white.
+   */
+  look: {
+    /**
+     * Width, pt: two halves of 47.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 sim iPhone 17 Pro, drawHierarchy crops at 3x (93–94 × 32 pt) and the halves' accessibility frames (47 × 32 each), Oct 24 2026
+     */
+    widthPt: 94,
+    /**
+     * Height, pt; the same at the largest Dynamic Type size (AX5).
+     * @source measured: UIKit lab (injected host app), iOS 26.2 sim iPhone 17 Pro, drawHierarchy crops at 3x, default and AX5 text sizes, Oct 24 2026
+     */
+    heightPt: 32,
+    /**
+     * Corner radius, pt: a capsule.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 sim iPhone 17 Pro, the crop's edge profile, Oct 24 2026
+     */
+    cornerRadiusPt: 16,
+    /**
+     * The divider between the halves: this wide, pt.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 sim iPhone 17 Pro, drawHierarchy crops at 3x, Oct 24 2026
+     */
+    dividerWidthPt: 1,
+    /**
+     * The divider's height, pt, centred: 4 pt from the top and the bottom.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 sim iPhone 17 Pro, drawHierarchy crops at 3x, Oct 24 2026
+     */
+    dividerHeightPt: 24,
+    /**
+     * The glyphs' length, pt: − is a 13 pt bar, + two crossed ones, each
+     * centred in its half (x 23.5 and 70.5).
+     * @source measured: UIKit lab (injected host app), iOS 26.2 sim iPhone 17 Pro, drawHierarchy crops at 3x, Oct 24 2026
+     */
+    glyphLengthPt: 13,
+    /**
+     * The glyphs' stroke, pt (2.33 under Bold Text, which a page cannot read).
+     * @source measured: UIKit lab (injected host app), iOS 26.2 sim iPhone 17 Pro, drawHierarchy crops at 3x, with and without Bold Text, Oct 24 2026
+     */
+    glyphStrokePt: 1.67,
   },
   /**
    * The haptic UIStepper plays: none, on a tap, during a hold, or when a

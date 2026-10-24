@@ -19,12 +19,26 @@ import {useState} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {NumberInput} from './NumberInput';
 
+interface Box {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+}
+
 // The column sits at x 200–224; + is its top half (y 0–16), − the bottom.
-const RECTS: Record<string, {top: number; bottom: number}> = {
-  column: {top: 0, bottom: 32},
-  increment: {top: 0, bottom: 16},
-  decrement: {top: 16, bottom: 32},
+const COLUMN: Record<string, Box> = {
+  column: {top: 0, bottom: 32, left: 200, right: 224},
+  increment: {top: 0, bottom: 16, left: 200, right: 224},
+  decrement: {top: 16, bottom: 32, left: 200, right: 224},
 };
+// The touch control: a 94 x 32 capsule beside the field, − left, + right.
+const CAPSULE: Record<string, Box> = {
+  column: {top: 0, bottom: 32, left: 300, right: 394},
+  decrement: {top: 0, bottom: 32, left: 300, right: 347},
+  increment: {top: 0, bottom: 32, left: 347, right: 394},
+};
+let RECTS = COLUMN;
 const INCREMENT = {x: 212, y: 8};
 const DECREMENT = {x: 212, y: 24};
 
@@ -38,9 +52,9 @@ function rectOf(element: Element): DOMRect {
             element.querySelector('input') == null
           ? 'column'
           : null;
-  const rect = name == null ? {top: 0, bottom: 0} : RECTS[name];
-  const left = name == null ? 0 : 200;
-  const right = name == null ? 0 : 224;
+  const rect =
+    name == null ? {top: 0, bottom: 0, left: 0, right: 0} : RECTS[name];
+  const {left, right} = rect;
   return {
     x: left,
     y: rect.top,
@@ -158,6 +172,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  RECTS = COLUMN;
   vi.restoreAllMocks();
   vi.useRealTimers();
 });
@@ -304,5 +319,50 @@ describe('NumberInput steppers under a pen and a mouse', () => {
     fireEvent.click(increment, {detail: 1});
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(input).toHaveFocus();
+  });
+});
+
+describe('NumberInput steppers as the touch control', () => {
+  // The touch presentation lays the halves side by side; the half under a
+  // finger is the nearer one, whatever the layout.
+  const MINUS = {x: 312, y: 16};
+  const PLUS = {x: 380, y: 16};
+
+  beforeEach(() => {
+    RECTS = CAPSULE;
+  });
+
+  it('a tap on the left half steps down, on the right half up', () => {
+    const {onChange, increment, decrement} = setup();
+    let id = fingerDown(decrement, MINUS);
+    expect(press(decrement)).toBe('on');
+    expect(press(increment)).toBeNull();
+    touch('touchend', decrement, MINUS, id);
+    expect(onChange).toHaveBeenLastCalledWith(4);
+    id = fingerDown(increment, PLUS);
+    touch('touchend', increment, PLUS, id);
+    expect(onChange).toHaveBeenLastCalledWith(5);
+  });
+
+  it('a slide across the divider carries the paint and the repeat', () => {
+    const {onChange, increment, decrement} = setup();
+    const id = fingerDown(decrement, MINUS);
+    wait(500);
+    expect(onChange).toHaveBeenLastCalledWith(4);
+    touch('touchmove', decrement, PLUS, id);
+    expect(press(decrement)).toBeNull();
+    expect(press(increment)).toBe('on');
+    wait(500);
+    expect(onChange).toHaveBeenLastCalledWith(5);
+    touch('touchend', decrement, PLUS, id);
+  });
+
+  it('a finger just past the capsule’s end is outside it', () => {
+    const {onChange, increment} = setup();
+    const id = fingerDown(increment, PLUS);
+    wait(60);
+    touch('touchmove', increment, {x: 395, y: 16}, id);
+    touch('touchend', increment, {x: 395, y: 16}, id);
+    expect(onChange).not.toHaveBeenCalled();
   });
 });

@@ -336,7 +336,7 @@ export const docs = {
         name: 'Number steppers',
         required: false,
         description:
-          'Optional buttons that increment or decrement by the configured step. On a touch screen a tap steps once when the finger lifts, and a button held down keeps stepping: after half a second, then faster after three seconds, until the finger lifts or slides off.',
+          'Optional buttons that increment or decrement by the configured step. On a touch screen they sit beside the field as one control, − on the left and + on the right, as on iOS (inside an InputGroup they stay in the field). A tap steps once when the finger lifts, and a button held down keeps stepping: after half a second, then faster after three seconds, until the finger lifts or slides off.',
       },
     ],
   },
@@ -641,7 +641,7 @@ export const docsZh = {
         name: 'Number steppers',
         required: false,
         description:
-          'Optional buttons that increment or decrement by the configured step. On a touch screen a tap steps once when the finger lifts, and a button held down keeps stepping: after half a second, then faster after three seconds, until the finger lifts or slides off.',
+          'Optional buttons that increment or decrement by the configured step. On a touch screen they sit beside the field as one control, − on the left and + on the right, as on iOS (inside an InputGroup they stay in the field). A tap steps once when the finger lifts, and a button held down keeps stepping: after half a second, then faster after three seconds, until the finger lifts or slides off.',
       },
     ],
   },
@@ -715,7 +715,7 @@ export const docsDense = {
         name: 'Number steppers',
         required: false,
         description:
-          'Optional buttons that increment or decrement by the configured step. On a touch screen a tap steps once when the finger lifts, and a button held down keeps stepping: after half a second, then faster after three seconds, until the finger lifts or slides off.',
+          'Optional buttons that increment or decrement by the configured step. On a touch screen they sit beside the field as one control, − on the left and + on the right, as on iOS (inside an InputGroup they stay in the field). A tap steps once when the finger lifts, and a button held down keeps stepping: after half a second, then faster after three seconds, until the finger lifts or slides off.',
       },
     ],
   },

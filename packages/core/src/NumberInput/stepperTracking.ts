@@ -4,7 +4,8 @@
  * @file stepperTracking.ts
  * @input The half of a number stepper under a finger over time, and a clock
  * @output Exports StepperTracking (UIStepper's tap and autorepeat rules on
- *   explicit times), repeatInterval and the StepperHalf type
+ *   explicit times), repeatInterval, halfAt (which half a point is on) and
+ *   the StepperHalf type
  * @position Pure half of NumberInput's touch stepper: no DOM. NumberInput
  *   feeds it from the gesture system's PressTracker; tested by
  *   stepperTracking.test.ts with a manual clock
@@ -46,6 +47,30 @@ export interface StepperTrackingOptions {
   step: (half: StepperHalf) => boolean;
   /** The clock timers run on: `performance.now()`, the base of `event.timeStamp`. */
   clock?: GestureClock;
+}
+
+interface Point {
+  readonly x: number;
+  readonly y: number;
+}
+
+/**
+ * The half a point is on: the one whose centre is nearer, so the same rule
+ * serves halves stacked in a column and halves side by side. The increment
+ * half wins a tie; with no centres read, the point is on it.
+ */
+export function halfAt(
+  centers: {readonly increment: Point; readonly decrement: Point} | null,
+  point: Point,
+): StepperHalf {
+  if (centers == null) {
+    return 'increment';
+  }
+  const distance = (center: Point) =>
+    (center.x - point.x) ** 2 + (center.y - point.y) ** 2;
+  return distance(centers.decrement) < distance(centers.increment)
+    ? 'decrement'
+    : 'increment';
 }
 
 /** The interval before the next repeat, once `stepsMade` steps were made. */

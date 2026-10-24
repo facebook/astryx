@@ -14,6 +14,7 @@ import {describe, expect, it} from 'vitest';
 import type {GestureClock} from '../gestures';
 import {stepper} from '../motion/uikit';
 import {
+  halfAt,
   repeatInterval,
   StepperTracking,
   type StepperHalf,
@@ -354,5 +355,26 @@ describe('StepperTracking: a busy main thread and cancellation', () => {
       startedAt + 500,
       startedAt + 1000,
     ]);
+  });
+});
+
+describe('halfAt', () => {
+  it('splits a column at the middle', () => {
+    const column = {increment: {x: 8, y: 8}, decrement: {x: 8, y: 24}};
+    expect(halfAt(column, {x: 8, y: 2})).toBe('increment');
+    expect(halfAt(column, {x: 12, y: 15})).toBe('increment');
+    expect(halfAt(column, {x: 4, y: 17})).toBe('decrement');
+  });
+
+  it('splits the touch control at its divider: − on the left, + on the right', () => {
+    const control = {decrement: {x: 23.5, y: 16}, increment: {x: 70.5, y: 16}};
+    expect(halfAt(control, {x: 1, y: 30})).toBe('decrement');
+    expect(halfAt(control, {x: 46, y: 2})).toBe('decrement');
+    expect(halfAt(control, {x: 48, y: 2})).toBe('increment');
+    expect(halfAt(control, {x: 93, y: 16})).toBe('increment');
+  });
+
+  it('answers the increment half before any layout was read', () => {
+    expect(halfAt(null, {x: 0, y: 0})).toBe('increment');
   });
 });

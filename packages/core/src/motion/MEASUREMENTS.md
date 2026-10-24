@@ -219,8 +219,9 @@ Done (iOS 26.2 simulator, Oct 23–24 2026; in the stepper's own table,
 count-based phases, the cadence across a slide between the halves, leaving
 and re-entering the frame after a repeat, bounds and wraps, the delayed
 delivery inside a scroll view, the tracking area (the frame, no margin), the
-pressed fill (one frame on, one frame off, no animation) and the haptics
-(none). Still open:
+pressed fill (one frame on, one frame off, no animation), the shape (a 94 x 32
+capsule, a 1 x 24 divider, 13 pt glyphs with 1.67 pt strokes; colours are
+theme values) and the haptics (none). Still open:
 
 | ID      | Scene                   | Gesture                                                                                                              | Extract                                                                                             | Method |
 | ------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------ |
