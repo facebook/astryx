@@ -27,6 +27,8 @@
  * - /packages/core/src/motion/MEASUREMENTS.md (measurement tasks)
  */
 
+import {registerMotionTable} from '../roles';
+
 /**
  * UIKit's default spring (see `springs.uikitDefault` for its sources). The
  * guesses below start from it: the system-driven transitions it is believed
@@ -58,6 +60,10 @@ const MENU_OPEN_SPRING = {response: 0.32, dampingRatio: 0.8} as const;
 /** Menus and context menus closing (see `springs.menuClose`). */
 const MENU_CLOSE_SPRING = {response: 0.35, dampingRatio: 0.85} as const;
 
+/**
+ * UIKit's interaction springs, each with its source.
+ * @experimental
+ */
 export const springs = {
   // ---------------------------------------------------------------------
   // Sourced presets
@@ -325,3 +331,7 @@ export const springs = {
    */
   banner: UIKIT_DEFAULT_SPRING,
 } as const;
+
+// Each spring, duration and curve above is a motion role a theme may retune
+// (motion/roles.ts).
+registerMotionTable('springs', springs);

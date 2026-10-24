@@ -111,6 +111,14 @@
  * direct manipulation that UIKit keeps under Reduce Motion). Decays keep their
  * motion: they follow a finger's throw.
  *
+ * Theme: a spring or curve from a motion table (`springs.sheetPresent`,
+ * `scroll.bounce`, the Reduce Motion fade's duration and curve) plays the
+ * value the element's theme sets for that role, or the table's value when it
+ * sets none (resolveMotion.ts). It is read once, when the motion starts, from
+ * the theme scope's computed style: no layout, and the start, the promotion
+ * and the browser-set start time are unchanged. A spring written inline at the
+ * call site is played as given.
+ *
  * A pseudo-element (`options.pseudoElement`, a dialog's `::backdrop`) has no
  * inline style: its end value is held by a static filling animation (after a
  * curve ends, and after `set`) until the next animation replaces it.
@@ -121,6 +129,7 @@
  * SYNC: When modified, update:
  * - /packages/core/src/motion/animator.test.ts
  * - /packages/core/src/motion/__tests__/animator.interaction.browser.spec.ts
+ * - /packages/core/src/motion/resolveMotion.ts (the theme roles it resolves)
  * - /packages/core/src/motion/README.md
  */
 
@@ -132,16 +141,27 @@ import {
   type SpringCurve,
   type SpringDescription,
 } from './spring';
+import {resolveMotion} from './resolveMotion';
 import {scroll} from './uikit/scroll';
 import {timing} from './uikit/timing';
 
-/** A value the animator can drive. */
+/**
+ * A value the animator can drive.
+ * @experimental
+ */
 export type MotionProperty =
   'x' | 'y' | 'rotate' | 'scaleX' | 'scaleY' | 'opacity';
 
-/** Values by property; `scale` sets `scaleX` and `scaleY` together. */
+/**
+ * Values by property; `scale` sets `scaleX` and `scaleY` together.
+ * @experimental
+ */
 export type MotionValues = Partial<Record<MotionProperty | 'scale', number>>;
 
+/**
+ * A spring and the velocity it starts with.
+ * @experimental
+ */
 export interface SpringTransition {
   /** The spring, in any vocabulary of the constants table. */
   spring: SpringDescription;
@@ -153,6 +173,10 @@ export interface SpringTransition {
   velocity?: MotionValues;
 }
 
+/**
+ * A momentum coast: UIScrollView's deceleration, with optional edges.
+ * @experimental
+ */
 export interface DecayOptions {
   /** Per-millisecond velocity factor; UIScrollView's normal rate by default. */
   rate?: number;
@@ -162,6 +186,11 @@ export interface DecayOptions {
   bounce?: SpringDescription;
 }
 
+/**
+ * Options of `animate` and `play`: the spring, a release velocity, the Reduced
+ * Motion handling.
+ * @experimental
+ */
 export interface AnimateOptions {
   /**
    * Start time on the document timeline (ms, `performance.now()` clock).
@@ -195,6 +224,7 @@ export interface AnimateOptions {
  * Times are seconds from the curve's start; the value at `duration` is the
  * end state. Start it at the property's presentation value (`get`) to
  * continue without a jump.
+ * @experimental
  */
 export interface MotionCurve {
   /** Length, s. */
@@ -205,6 +235,10 @@ export interface MotionCurve {
   velocity(t: number): number;
 }
 
+/**
+ * Options of `createAnimator`.
+ * @experimental
+ */
 export interface AnimatorOptions {
   /**
    * Animates a pseudo-element of the element instead (`'::backdrop'` of a
@@ -225,7 +259,10 @@ export interface AnimatorOptions {
   requestFrame?: (callback: () => void) => void;
 }
 
-/** One `animate` / `decay` call's animations. */
+/**
+ * One `animate` / `decay` call's animations.
+ * @experimental
+ */
 export interface MotionHandle {
   /** The properties this call drives. */
   readonly properties: ReadonlyArray<MotionProperty>;
@@ -254,6 +291,10 @@ export interface MotionHandle {
   stop(): void;
 }
 
+/**
+ * A compositor animator bound to one element (see the file header).
+ * @experimental
+ */
 export interface Animator {
   /** The element the animator writes to, if attached. */
   readonly element: HTMLElement | null;
@@ -519,7 +560,16 @@ function defaultNow(): number {
   return typeof performance === 'undefined' ? Date.now() : performance.now();
 }
 
-function defaultPrefersReducedMotion(): boolean {
+/**
+ * Whether the user asked for reduced motion (`prefers-reduced-motion:
+ * reduce`), read at the moment of the call: the preference the animator uses
+ * by default for its Reduce Motion substitution. A component whose UIKit
+ * counterpart does something other than a cross-fade under Reduce Motion
+ * reads it here and picks its own curve. False without a window (server
+ * rendering).
+ * @experimental
+ */
+export function defaultPrefersReducedMotion(): boolean {
   return (
     typeof window !== 'undefined' &&
     typeof window.matchMedia === 'function' &&
@@ -539,6 +589,7 @@ function defaultPrefersReducedMotion(): boolean {
  * const y = animator.get('y', event.timeStamp);
  * animator.stop(['y']);
  * ```
+ * @experimental
  */
 export function createAnimator(
   element: HTMLElement | null,
@@ -1247,7 +1298,9 @@ export function createAnimator(
     if (from === to && velocity === 0) {
       return null;
     }
-    const curve = solveSpring(toSpring(spring), {from, to, velocity});
+    // A table spring takes its theme's value, read once here, at the start.
+    const resolved = resolveMotion(target, spring);
+    const curve = solveSpring(toSpring(resolved), {from, to, velocity});
     const duration = Math.min(
       MAX_DURATION_MS,
       curve.settleTime(SETTLE_THRESHOLD[property]) * 1000,
@@ -1260,7 +1313,7 @@ export function createAnimator(
       speed: t => curve.velocity(t / 1000),
       jumps: [],
       owner,
-      spring,
+      spring: resolved,
     };
   };
 
@@ -1270,7 +1323,7 @@ export function createAnimator(
     stops: ReadonlyArray<{at: number; value: number}>,
     jumps: ReadonlyArray<number> = [],
   ): Segment => {
-    const ease = cubicBezier(timing.curves.easeInOut);
+    const ease = cubicBezier(resolveMotion(target, timing.curves.easeInOut));
     const duration = stops[stops.length - 1].at;
     const at = (t: number) => {
       for (let i = 0; i + 1 < stops.length; i++) {
@@ -1364,7 +1417,7 @@ export function createAnimator(
     let opacity: Segment | null = null;
     let landsAt = 0;
     if (mode === 'crossfade' && fadeSpring == null) {
-      const fade = timing.reducedMotionCrossFadeMs;
+      const fade = resolveMotion(target, timing, 'reducedMotionCrossFadeMs');
       if (entering || leaving) {
         opacity =
           restore == null
@@ -1392,7 +1445,7 @@ export function createAnimator(
         landsAt = fade / 2;
       }
     } else if (mode === 'crossfade' && fadeSpring != null) {
-      const spring = toSpring(fadeSpring);
+      const spring = toSpring(resolveMotion(target, fadeSpring));
       const settle = (curve: SpringCurve) =>
         Math.min(
           MAX_DURATION_MS / 2,
@@ -1677,7 +1730,9 @@ export function createAnimator(
       const velocities = expand(velocity);
       const {owner, finished} = newOwner();
       const rate = decayOptions.rate ?? scroll.decelerationRate.normal;
-      const bounce = toSpring(decayOptions.bounce ?? scroll.bounce);
+      const bounce = toSpring(
+        resolveMotion(target, decayOptions.bounce ?? scroll.bounce),
+      );
       const properties = Object.keys(velocities) as MotionProperty[];
       const group = beginGroup(time, properties, decayOptions.at);
       for (const property of properties) {
