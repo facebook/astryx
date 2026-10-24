@@ -451,6 +451,86 @@ describe('Slider touch presentation (UISlider tracking)', () => {
     expect(onChangeEnd).toHaveBeenCalledTimes(1);
   });
 
+  it('ends a touch silently when the slider unmounts or is disabled mid-drag', () => {
+    stubMatchMedia(true);
+    stubControlGeometry();
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+    for (const end of ['unmount', 'disable'] as const) {
+      const onChange = vi.fn();
+      const onChangeEnd = vi.fn();
+      const view = render(
+        <Slider
+          label="Level"
+          valueDisplay="none"
+          value={50}
+          onChange={onChange}
+          onChangeEnd={onChangeEnd}
+        />,
+      );
+      dragThumb(
+        hitOf(screen.getByRole('slider')),
+        {x: 150, y: 12},
+        {
+          dx: 60,
+          lift: false,
+        },
+      );
+      expect(onChange).toHaveBeenCalled();
+      onChange.mockClear();
+      if (end === 'unmount') {
+        view.unmount();
+      } else {
+        view.rerender(
+          <Slider
+            label="Level"
+            valueDisplay="none"
+            value={50}
+            isDisabled
+            onChange={onChange}
+            onChangeEnd={onChangeEnd}
+          />,
+        );
+        view.unmount();
+      }
+      expect(onChange, end).not.toHaveBeenCalled();
+      expect(onChangeEnd, end).not.toHaveBeenCalled();
+    }
+    expect(
+      errors.mock.calls.filter(call => String(call[0]).includes('flushSync')),
+    ).toEqual([]);
+    errors.mockRestore();
+  });
+
+  it('a slider unmounted mid-coast stops silently', async () => {
+    stubMatchMedia(true);
+    stubControlGeometry();
+    const onChange = vi.fn();
+    const onChangeEnd = vi.fn();
+    const view = render(
+      <Controlled initial={20} onChange={onChange} onChangeEnd={onChangeEnd} />,
+    );
+    dragThumb(
+      hitOf(screen.getByRole('slider')),
+      {x: 60, y: 12},
+      {
+        dx: 80,
+        steps: 5,
+      },
+    );
+    // Two frames into the coast, before it reports (from its fourth frame).
+    await act(async () => {
+      vi.advanceTimersByTime(40);
+    });
+    expect(onChangeEnd).not.toHaveBeenCalled();
+    onChange.mockClear();
+    view.unmount();
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(onChange).not.toHaveBeenCalled();
+    expect(onChangeEnd).not.toHaveBeenCalled();
+  });
+
   it('a release coasts to 0.4 of the momentum projection, then onChangeEnd reports once', async () => {
     stubMatchMedia(true);
     stubControlGeometry();

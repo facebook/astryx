@@ -290,6 +290,9 @@ export class SliderTouchController {
       );
     });
     return () => {
+      // Interactions end silently first, so the cancel the recognizers send
+      // as they detach finds nothing left to report.
+      this.endSilently();
       for (const detach of detachers) {
         detach();
       }
@@ -298,14 +301,40 @@ export class SliderTouchController {
 
   /** Stops every interaction and animation without reporting (unmount). */
   dispose(): void {
-    for (const interaction of this.interactions.values()) {
-      this.stopCoast(interaction);
-    }
-    this.interactions.clear();
+    this.endSilently();
     for (const animator of this.animators.values()) {
       animator.dispose();
     }
     this.animators.clear();
+  }
+
+  /**
+   * Ends every live interaction without a word to the owner: the Slider is
+   * unmounting or stops taking touches, from an Effect cleanup, where
+   * `onChange`, `onChangeEnd` and a synchronous render have no place
+   * (`architecture:react-component-runtime` INV2). A coast stops where it
+   * is and the parts return to the stylesheet, at the value the owner last
+   * rendered.
+   */
+  private endSilently(): void {
+    if (this.interactions.size === 0) {
+      return;
+    }
+    const view = this.getParts()?.control.ownerDocument.defaultView;
+    for (const interaction of this.interactions.values()) {
+      const coast = interaction.coast;
+      if (coast != null) {
+        interaction.coast = null;
+        view?.cancelAnimationFrame(coast.raf);
+        for (const handle of coast.handles) {
+          handle.stop();
+        }
+      }
+      interaction.released = true;
+    }
+    this.interactions.clear();
+    this.mouseOwners.clear();
+    this.handBack();
   }
 
   /**
@@ -860,6 +889,10 @@ export function useSliderTouch({
     controller.setModel(model);
   });
   const {isHorizontal} = model;
+  // Synchronizes the thumbs' touch targets with the document's gesture host:
+  // their PressTrackers and pans attach while the touch presentation is on,
+  // and detach (ending any interaction silently) when it goes off or the
+  // touch targets change.
   useEffect(() => {
     if (!isEnabled) {
       return undefined;
