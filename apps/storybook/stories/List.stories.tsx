@@ -624,8 +624,8 @@ export const AnimatedChangesSwipe: Story = {
       description: {
         story:
           'With `hasAnimatedChanges`, a row swiped away with a removal ' +
-          'action leaves only its gap to close: the rows below slide up ' +
-          'into it on UIKit’s table update spring.',
+          'action collapses in place, its action showing, while the rows ' +
+          'below slide up into its gap on UIKit’s table update spring.',
       },
     },
   },

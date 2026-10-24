@@ -11,16 +11,18 @@
  * @output `useListUpdateMotion`: after every commit that inserts, removes or
  *   reorders rows, the rows that stay slide from where they were to where
  *   they are, and inserted rows fade in once the rows crossing them have
- *   cleared, the way a UIKit table animates its updates; a row crossing rows
- *   that move the other way carries `TRAVELLING_ATTRIBUTE` for its slide
+ *   cleared and removed rows collapse in place, the way a UIKit table
+ *   animates its updates; a row crossing rows that move the other way
+ *   carries `TRAVELLING_ATTRIBUTE` for its slide
  * @position Internal interaction utility for any list root whose direct
  *   children are its rows; List calls it with `hasAnimatedChanges`
  *
  * UIKit's reference (iOS 26.2): a table's insert, delete, move and reload
  * animations and its batch updates all run on one critically damped spring
- * (`list.update.tableSpring`, response 0.3 s). After a delete the rows below
- * start where they were and slide up into the gap; after a swipe-to-delete
- * the swiped row is already off screen and only the rows below move.
+ * (`list.update.tableSpring`, response 0.3 s). A deleted cell collapses: its
+ * height (content, separator and, after a swipe, its action) shrinks to 0
+ * from the bottom while the rows below slide up on the same spring, the next
+ * row's top edge always on its bottom edge.
  *
  * HOW IT RUNS, compositor only. After each commit the rows' layout positions
  * are read once (`offsetTop` inside the list, which ignores transforms) and
@@ -35,8 +37,13 @@
  * labels half a row past its own, then fades in, arriving with them; and a
  * row sliding across rows that move the other way (the less common way, up
  * on a tie) rides above them for its slide with the list's surface behind it
- * (List/ListItem.tsx paints it). A removed row leaves with
- * its commit; nothing is ever written on it. A row moved again mid-motion
+ * (List/ListItem.tsx paints it). A removed row comes back for its exit as
+ * a ghost (`GHOST_ATTRIBUTE`, inert and hidden from assistive tech) at its
+ * place: a clipping box the row's old size whose bottom edge rises with the
+ * next row's top. The box translates up by the row's height while the row
+ * inside translates down by as much, so the content stays put and the clip
+ * closes, compositor only; a ghost below another removed row rides up with
+ * it. The ghost goes once its motion rests. A row moved again mid-motion
  * keeps its velocity, and its curve: a layout shift never changes a running
  * motion's spring (a reorder's drop settles on its own), so the table spring
  * applies to rows at rest. Page content below the list moves by the list's
@@ -54,12 +61,14 @@
  */
 
 import {useRef, type RefObject} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import type {MotionCurve} from '../motion/animator';
 import {resolveMotion} from '../motion/resolveMotion';
 import {solveSpring, toSpring, type SpringCurve} from '../motion/spring';
 import {list} from '../motion/uikit/list';
 import {
+  animateRow,
   contentBelow,
   motionNow,
   motionOf,
@@ -83,6 +92,93 @@ const MIN_MOVE_PX = 0.5;
  * neighbours. Rows here have no background of their own.
  */
 export const TRAVELLING_ATTRIBUTE = 'data-astryx-travelling';
+
+/**
+ * Marks a removed row's ghost: the clipping box its exit collapses in. Not a
+ * row: the rows a commit compares never include it.
+ */
+export const GHOST_ATTRIBUTE = 'data-astryx-leaving';
+
+const ghostStyles = stylex.create({
+  ghost: {
+    position: 'absolute',
+    boxSizing: 'border-box',
+    margin: 0,
+    padding: 0,
+    listStyle: 'none',
+    overflow: 'hidden',
+    pointerEvents: 'none',
+  },
+  // Its inline position is its static one (the list's content box, in
+  // either direction); its block position, the row's old place.
+  box: (top: string, inlineSize: string, blockSize: string) => ({
+    insetBlockStart: top,
+    inlineSize,
+    blockSize,
+  }),
+});
+
+/** A row's place after a commit: its top inside the list and its height. */
+interface Box {
+  readonly top: number;
+  readonly height: number;
+}
+
+/** The rows after a commit, in order, with their boxes and the list's height. */
+interface Layout {
+  readonly rows: ReadonlyArray<HTMLElement>;
+  readonly boxes: ReadonlyMap<HTMLElement, Box>;
+  readonly height: number;
+}
+
+/**
+ * Puts a removed row back for its exit: inside a clipping box at its old
+ * place (`box`, inside the list) spanning the list's content box, so the row
+ * lays out inside it as it did in the list, before `next` (the first row that
+ * followed it and is still there) so the rows around it keep their places in
+ * the list's order. The box is inert and hidden from assistive tech.
+ */
+function ghostOf(
+  element: HTMLElement,
+  row: HTMLElement,
+  box: Box,
+  next: HTMLElement | null,
+  wasLast: boolean,
+): HTMLElement {
+  const doc = element.ownerDocument;
+  const ghost = doc.createElement(
+    element.tagName === 'UL' || element.tagName === 'OL' ? 'li' : 'div',
+  );
+  ghost.setAttribute(GHOST_ATTRIBUTE, '');
+  ghost.setAttribute('aria-hidden', 'true');
+  ghost.inert = true;
+  // Its containing block is the list when the list is positioned, else the
+  // rows' offset parent above it.
+  const style = getComputedStyle(element);
+  const listed = row.offsetParent === element || style.position !== 'static';
+  const top = box.top + (listed ? 0 : element.offsetTop);
+  const width =
+    element.clientWidth -
+    (Number.parseFloat(style.paddingInlineStart) || 0) -
+    (Number.parseFloat(style.paddingInlineEnd) || 0);
+  const props = stylex.props(
+    ghostStyles.ghost,
+    ghostStyles.box(`${top}px`, `${width}px`, `${box.height}px`),
+  );
+  ghost.className = props.className ?? '';
+  for (const [name, value] of Object.entries(props.style ?? {})) {
+    ghost.style.setProperty(name, String(value));
+  }
+  ghost.append(row);
+  if (!wasLast) {
+    // The row keeps the divider a row that is not the last draws.
+    const tail = doc.createElement('span');
+    tail.hidden = true;
+    ghost.append(tail);
+  }
+  element.insertBefore(ghost, next?.parentElement === element ? next : null);
+  return ghost;
+}
 
 /** One row's slide in a commit: where its box was and is, inside the list. */
 interface Slide {
@@ -163,24 +259,21 @@ function fadeIn(
 
 function rowsOf(element: HTMLElement): HTMLElement[] {
   return Array.from(element.children).filter(
-    (child): child is HTMLElement => child instanceof HTMLElement,
+    (child): child is HTMLElement =>
+      child instanceof HTMLElement && !child.hasAttribute(GHOST_ATTRIBUTE),
   );
 }
 
-/** The rows, each row's layout position inside the list, the list's height. */
-function readLayout(element: HTMLElement): {
-  rows: HTMLElement[];
-  places: WeakMap<HTMLElement, number>;
-  height: number;
-} {
+/** The rows, each row's layout box inside the list, the list's height. */
+function readLayout(element: HTMLElement): Layout {
   const rows = rowsOf(element);
-  const places = new WeakMap<HTMLElement, number>();
+  const boxes = new Map<HTMLElement, Box>();
   for (const row of rows) {
     // Inside the list: content above it changing size moves no row.
     const base = row.offsetParent === element ? 0 : element.offsetTop;
-    places.set(row, row.offsetTop - base);
+    boxes.set(row, {top: row.offsetTop - base, height: row.offsetHeight});
   }
-  return {rows, places, height: element.offsetHeight};
+  return {rows, boxes, height: element.offsetHeight};
 }
 
 export function useListUpdateMotion(
@@ -190,23 +283,21 @@ export function useListUpdateMotion(
 ): void {
   const animates = useMotionPresentation() === 'uikit' && enabled;
   /**
-   * Each row's layout position after the previous commit, or after the last
-   * resize of the list since.
+   * The rows and their layout boxes after the previous commit, or after the
+   * last resize of the list since.
    */
-  const placesRef = useRef<WeakMap<HTMLElement, number> | null>(null);
-  /** The list's layout height, kept the same way. */
-  const heightRef = useRef(0);
+  const layoutRef = useRef<Layout | null>(null);
 
   useIsomorphicLayoutEffect(() => {
     const element = listRef.current;
     if (element == null) {
       return;
     }
-    const {rows, places, height} = readLayout(element);
-    const before = placesRef.current;
-    placesRef.current = places;
-    const grew = height - heightRef.current;
-    heightRef.current = height;
+    const layout = readLayout(element);
+    const {rows, boxes, height} = layout;
+    const before = layoutRef.current;
+    layoutRef.current = layout;
+    const grew = height - (before?.height ?? height);
     // The first commit, motion off, or a reorder session that owns the rows:
     // remember where rows are, move nothing.
     if (
@@ -220,8 +311,8 @@ export function useListUpdateMotion(
     const slides: Slide[] = [];
     const entering: HTMLElement[] = [];
     for (const row of rows) {
-      const now = places.get(row) ?? 0;
-      const was = before.get(row);
+      const now = boxes.get(row)?.top ?? 0;
+      const was = before.boxes.get(row)?.top;
       if (was == null) {
         entering.push(row);
       } else if (Math.abs(was - now) >= MIN_MOVE_PX) {
@@ -269,7 +360,11 @@ export function useListUpdateMotion(
         // its band have cleared it.
         const from = presentation(row, 'opacity', at);
         const start = from >= 1 ? 0 : from;
-        const after = clearedAt(places.get(row) ?? 0, row.offsetHeight, slides);
+        const after = clearedAt(
+          boxes.get(row)?.top ?? 0,
+          row.offsetHeight,
+          slides,
+        );
         // From rest it starts with the slides, when the browser commits
         // them; a fade already running continues from the frame on screen.
         void playRow(
@@ -284,6 +379,37 @@ export function useListUpdateMotion(
           }
         });
       }
+    }
+    // Removed rows collapse in place on the slides' spring, the row below
+    // each glued to its bottom edge (UIKit's deleteRows).
+    let removedAbove = 0;
+    for (const [index, row] of before.rows.entries()) {
+      const box = before.boxes.get(row);
+      if (row.isConnected || box == null) {
+        continue;
+      }
+      const next =
+        before.rows.slice(index + 1).find(later => later.isConnected) ?? null;
+      const ghost = ghostOf(
+        element,
+        row,
+        box,
+        next,
+        index === before.rows.length - 1,
+      );
+      const lift = removedAbove;
+      removedAbove += box.height;
+      // From rest, like the slides (springHome): the browser's commit sets
+      // the start of all of them, so the edges meet on every frame.
+      void animateRow(row, {y: box.height}, SPRING, {});
+      void animateRow(
+        ghost,
+        {y: -(box.height + lift)},
+        SPRING,
+        {},
+      ).finished.then(() => {
+        ghost.remove();
+      });
     }
     // What layout moved below the list moves back and comes along.
     if (followingContent === 'moves' && Math.abs(grew) >= MIN_MOVE_PX) {
@@ -308,12 +434,10 @@ export function useListUpdateMotion(
       return;
     }
     return observeResize(element, () => {
-      if (placesRef.current == null) {
+      if (layoutRef.current == null) {
         return;
       }
-      const {places, height} = readLayout(element);
-      placesRef.current = places;
-      heightRef.current = height;
+      layoutRef.current = readLayout(element);
     });
   }, [listRef]);
 }
