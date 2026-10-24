@@ -160,8 +160,11 @@ does.
 Copy over the code of a fence that names no language; both adopt the FR8
 corner cluster that `component:CodeBlock` FR11 places.
 RichText code blocks colour with `component:CodeBlock`'s tokenizer and read the
-same `CodeLanguageProvider` (`component:CodeBlock` FR13), so read and edit paint
-the same languages.
+same `CodeLanguageProvider` through `useCodeLanguages()` (`component:CodeBlock`
+FR13), so read and edit paint the same languages, except fences spelled `c++` or
+`objective-c`: `Markdown` reads a fence by its leading word characters
+(`component:Markdown` FR29), so it paints those as `c` and plain `objective`,
+while RichText keeps the whole word.
 
 ## Verification
 
