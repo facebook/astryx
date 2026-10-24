@@ -17,7 +17,14 @@ import {
   toSpring,
 } from '../motion/spring';
 import {swipeActions} from '../motion/uikit';
-import {commitPoint, resistedTravel, resolveRelease} from './swipeRelease';
+import {
+  commitPoint,
+  defaultCommitPoint,
+  defaultResistedTravel,
+  resistedTravel,
+  resolveDefaultRelease,
+  resolveRelease,
+} from './swipeRelease';
 
 describe('resolveRelease', () => {
   // The UIKit lab's releases (batch 10a: plain table, 402 pt rows, two
@@ -186,5 +193,52 @@ describe('the swipe spring', () => {
       // critically damped branch is documented to land.
       expect(settlingDuration(spring)).toBeCloseTo(0.9235, 3);
     }
+  });
+});
+
+describe("outside iOS: the row's own rule (DEFAULT_SWIPE)", () => {
+  // The Swipe Actions story's trailing side: a 146 px panel on a 370 px row.
+  const reveal = {
+    openWidth: 146,
+    commitAt: defaultCommitPoint(146, 370),
+    behavior: 'reveal' as const,
+  };
+
+  it('commits 48 px past the panel, or at half the row when that is further, and resists past it', () => {
+    expect(reveal.commitAt).toBe(194);
+    expect(defaultCommitPoint(72, 370)).toBe(185);
+    expect(defaultResistedTravel(100, 194)).toBe(100);
+    expect(defaultResistedTravel(294, 194)).toBeCloseTo(229);
+  });
+
+  it('fires past the commit point or on a fling, rests open past half the panel, and closes otherwise', () => {
+    expect(resolveDefaultRelease({...reveal, travel: 194, velocity: 0})).toBe(
+      'perform',
+    );
+    // A fling: 600 px/s after 44 px.
+    expect(resolveDefaultRelease({...reveal, travel: 60, velocity: 600})).toBe(
+      'perform',
+    );
+    expect(resolveDefaultRelease({...reveal, travel: 40, velocity: 900})).toBe(
+      'closed',
+    );
+    expect(resolveDefaultRelease({...reveal, travel: 80, velocity: 0})).toBe(
+      'open',
+    );
+    // A flick back is no flick here: where it is decides.
+    expect(resolveDefaultRelease({...reveal, travel: 80, velocity: -900})).toBe(
+      'open',
+    );
+    expect(resolveDefaultRelease({...reveal, travel: 60, velocity: 0})).toBe(
+      'closed',
+    );
+    expect(
+      resolveDefaultRelease({
+        ...reveal,
+        behavior: 'commit',
+        travel: 120,
+        velocity: 0,
+      }),
+    ).toBe('closed');
   });
 });

@@ -841,21 +841,22 @@ describe('swipeActions', () => {
   };
 
   /**
-   * The travel the row's transforms read, in physical px. The gesture writes
-   * it once per frame, so a frame passes first.
+   * Where a moving part is going: the animator writes each part's resting
+   * value inline (jsdom runs no Web Animations, so that is all it writes).
    */
-  const xOf = (row: HTMLElement) => {
-    void act(() => vi.advanceTimersByTime(16));
-    return parseFloat(
-      row.style.getPropertyValue('--_item-swipe-travel') || '0',
+  const xOf = (element: Element | null) =>
+    parseFloat(
+      (element as HTMLElement | null)?.style.getPropertyValue('translate') ||
+        '0',
     );
-  };
 
-  /** The panel of a side: the out-of-flow child on the root carrying it. */
+  /** The window of a side: the out-of-flow child of the root carrying it. */
   const panelOf = (row: HTMLElement, side: 'leading' | 'trailing') =>
     row.querySelector<HTMLElement>(`[data-swipe-panel="${side}"]`);
-  const entriesOf = (row: HTMLElement, side: 'leading' | 'trailing') =>
+  const trackOf = (row: HTMLElement, side: 'leading' | 'trailing') =>
     panelOf(row, side)?.firstElementChild as HTMLElement;
+  const entriesOf = (row: HTMLElement, side: 'leading' | 'trailing') =>
+    trackOf(row, side)?.firstElementChild as HTMLElement;
 
   /**
    * jsdom lays nothing out: give the row a width and each side's entries a
@@ -1005,17 +1006,50 @@ describe('swipeActions', () => {
     expect(
       screen.getByRole('button', {name: 'Unread'}).closest('[inert]'),
     ).toBe(panel);
-    // Zero width with no padding of its own: a padded box at `width: 0` is
-    // still as wide as its padding and would paint a sliver of the colour.
-    expect(rulesDeclaredFor(panel).some(r => r.includes('padding'))).toBe(
-      false,
-    );
-    // Its width is the travel toward its side, floored at zero; at rest the
-    // travel is unset.
-    expect(
-      rulesDeclaredFor(panel).some(r => r.includes('width: max(0px')),
-    ).toBe(true);
-    expect(row.style.getPropertyValue('--_item-swipe-travel')).toBe('');
+    // The window clips to the row's resting box and takes no touch; the
+    // track that paints sits beside it at rest, so nothing shows.
+    const windowRules = rulesDeclaredFor(panel).join(';');
+    expect(windowRules).toContain('overflow: clip');
+    expect(windowRules).toContain('pointer-events: none');
+    const trackRules = rulesDeclaredFor(trackOf(row, 'leading')).join(';');
+    expect(trackRules).toContain('inset-inline-end: 100%');
+    expect(trackRules).not.toContain('padding');
+    // Nothing moved: the root carries no translation of the swipe's.
+    expect(row.style.getPropertyValue('translate')).toBe('');
+  });
+
+  it('moves only by transforms: the root, and a window, a track and entries that can never drift apart', () => {
+    const {row} = renderRow({
+      leading: [
+        {label: 'Unread', onActivate: vi.fn()},
+        {label: 'Pin', onActivate: vi.fn()},
+      ],
+    });
+    const f = finger(row);
+    f.down(10);
+    f.move(20);
+    f.move(35);
+    f.move(95);
+    // 60 px of swipe toward the leading side (rightward).
+    expect(xOf(row)).toBe(60);
+    // The window stays over the resting box; the track moves with the row;
+    // the entries stay pinned at the outer edge (144 px of entries).
+    expect(xOf(panelOf(row, 'leading'))).toBe(-60);
+    expect(xOf(trackOf(row, 'leading'))).toBe(60);
+    expect(xOf(entriesOf(row, 'leading'))).toBe(144 - 60);
+    // No layout property is ever written.
+    for (const element of [
+      row,
+      panelOf(row, 'leading'),
+      trackOf(row, 'leading'),
+      entriesOf(row, 'leading'),
+    ]) {
+      const style = (element as HTMLElement).style;
+      expect(style.width).toBe('');
+      expect(style.left).toBe('');
+      expect(style.transform).toBe('');
+    }
+    f.up();
   });
 
   it("claims the touch at 8 px, before a browser would scroll it, and moves the row only past UIKit's 25 px, from 0", () => {
@@ -1031,7 +1065,7 @@ describe('swipeActions', () => {
     expect(f.move(20, 12).defaultPrevented).toBe(true);
     // The swipe itself has not begun: the row has not moved.
     expect(f.move(34, 13).defaultPrevented).toBe(true);
-    expect(xOf(row)).toBe(0);
+    expect(row.style.getPropertyValue('translate')).toBe('');
     // 25 px: the swipe begins, at 0 (the threshold's travel is not part of
     // it, as in UIKit).
     expect(f.move(35, 14).defaultPrevented).toBe(true);
@@ -1051,7 +1085,7 @@ describe('swipeActions', () => {
     f.move(35);
     f.move(60);
     expect(xOf(row)).toBe(25);
-    // Back to 10 px short of the touch-down point: the row is home, and
+    // Back to 10 px short of the touch-down point: the row heads home, and
     // stays there rather than counting the threshold the other way.
     f.move(20);
     expect(xOf(row)).toBe(0);
@@ -1082,6 +1116,67 @@ describe('swipeActions', () => {
       expect(xOf(row)).toBe(0);
       expect(f.up().defaultPrevented).toBe(true);
     });
+
+    it("follows the finger one for one, and a release past half the panel settles open on CSS's ease-out over 200 ms", async () => {
+      const {row} = renderRow();
+      const f = finger(row);
+      f.down(10);
+      f.move(20);
+      // No tracking spring: the row is where the finger says, at once.
+      f.move(60);
+      expect(xOf(row)).toBe(50);
+      // Held still, so the release is slow: where it is decides.
+      f.rest();
+      f.up();
+      // Past half the 72 px panel: open. jsdom has no compositor, so the
+      // end state is written at once; the curve's clock is the landing,
+      // 200 ms out (UIKit's spring lands after 0.92 s).
+      expect(xOf(row)).toBe(72);
+      await act(async () => {
+        vi.advanceTimersByTime(150);
+      });
+      expect(panelOf(row, 'leading')).toHaveAttribute('inert');
+      await act(async () => {
+        vi.advanceTimersByTime(80);
+      });
+      expect(panelOf(row, 'leading')).not.toHaveAttribute('inert');
+    });
+
+    it('fires the outermost entry on a fling, as the row always has', async () => {
+      const onActivate = vi.fn();
+      const {row} = renderRow({leading: [{label: 'Unread', onActivate}]});
+      const f = finger(row);
+      f.down(10);
+      f.move(20);
+      f.move(40);
+      f.move(80);
+      f.up({afterMs: 0});
+      await settled();
+      expect(onActivate).toHaveBeenCalledTimes(1);
+    });
+
+    it('settles at once under Reduce Motion, as the row always has', async () => {
+      const matchMedia = window.matchMedia.bind(window);
+      vi.stubGlobal('matchMedia', (query: string) => {
+        const list = matchMedia(query);
+        return query === '(prefers-reduced-motion: reduce)'
+          ? {...list, matches: true}
+          : list;
+      });
+      const {row} = renderRow();
+      const f = finger(row);
+      f.down(10);
+      f.move(20);
+      f.move(60);
+      f.rest();
+      f.up();
+      // Landed in the frame it was released in: no 200 ms clock.
+      await act(async () => {
+        vi.advanceTimersByTime(16);
+      });
+      expect(xOf(row)).toBe(72);
+      expect(panelOf(row, 'leading')).not.toHaveAttribute('inert');
+    });
   });
 
   it('leaves the row as it was when a claimed touch lifts before the swipe begins', async () => {
@@ -1090,7 +1185,7 @@ describe('swipeActions', () => {
     f.down(10);
     f.move(30);
     expect(f.up().defaultPrevented).toBe(true);
-    expect(xOf(row)).toBe(0);
+    expect(row.style.getPropertyValue('translate')).toBe('');
     expect(panelOf(row, 'leading')).toHaveAttribute('inert');
     // An open row stays open, its panel live.
     dragLeading(row, 45);
@@ -1128,7 +1223,7 @@ describe('swipeActions', () => {
     f.down(10, 10);
     expect(f.move(14, 40).defaultPrevented).toBe(false);
     expect(f.move(60, 200).defaultPrevented).toBe(false);
-    expect(xOf(row)).toBe(0);
+    expect(row.style.getPropertyValue('translate')).toBe('');
     expect(f.up().defaultPrevented).toBe(false);
   });
 
@@ -1151,7 +1246,7 @@ describe('swipeActions', () => {
     mouse('pointerdown', 10);
     mouse('pointermove', 60);
     mouse('pointermove', 120);
-    expect(xOf(row)).toBe(0);
+    expect(row.style.getPropertyValue('translate')).toBe('');
     mouse('pointerup', 120);
   });
 
@@ -1163,7 +1258,7 @@ describe('swipeActions', () => {
     f.down(200);
     f.move(180);
     expect(f.move(150).defaultPrevented).toBe(false);
-    expect(xOf(row)).toBe(0);
+    expect(row.style.getPropertyValue('translate')).toBe('');
     f.up();
   });
 
@@ -1179,7 +1274,7 @@ describe('swipeActions', () => {
       first.move(130);
       second.move(30);
       expect(first.move(160).defaultPrevented).toBe(false);
-      expect(xOf(row)).toBe(0);
+      expect(row.style.getPropertyValue('translate')).toBe('');
       first.up();
       second.up();
     });
@@ -1207,7 +1302,7 @@ describe('swipeActions', () => {
       first.move(110, 10, {cancelable: false});
       first.move(130, 10, {cancelable: false});
       first.move(160, 10, {cancelable: false});
-      expect(xOf(row)).toBe(0);
+      expect(row.style.getPropertyValue('translate')).toBe('');
       first.up();
       second.up();
     });
@@ -1267,6 +1362,64 @@ describe('swipeActions', () => {
       expect(panel).toHaveAttribute('inert');
       // The row's own primary never fired.
       expect(onClick).not.toHaveBeenCalled();
+    });
+
+    it('opens on a flick from short of half the panel, and fires nothing', async () => {
+      const onActivate = vi.fn();
+      const {row} = renderRow({leading: [{label: 'Unread', onActivate}]});
+      const f = finger(row);
+      f.down(10);
+      f.move(25);
+      f.move(40);
+      // 12 px of swipe, still moving at about 850 px/s when it lifts: the
+      // release projects far past half the panel.
+      f.move(52);
+      f.up({afterMs: 0});
+      await settled();
+      expect(xOf(row)).toBe(72);
+      expect(onActivate).not.toHaveBeenCalled();
+    });
+
+    it('closes an open row on a flick back, even from past half the panel', async () => {
+      const {row} = renderRow();
+      dragLeading(row, 45);
+      await settled();
+      expect(xOf(row)).toBe(72);
+      const f = finger(row);
+      f.down(150);
+      f.move(140);
+      f.move(125); // 25 px: the swipe begins where the row is
+      f.move(110);
+      f.up({afterMs: 0});
+      await settled();
+      expect(xOf(row)).toBe(0);
+    });
+
+    it('catches a settling row where it is, without a jump', async () => {
+      const {row} = renderRow();
+      const f = finger(row);
+      f.down(10);
+      f.move(25);
+      f.move(40);
+      f.move(55);
+      f.up({afterMs: 0});
+      // A flick: the row is on its way to 72 px. A finger lands 100 ms in.
+      void act(() => vi.advanceTimersByTime(100));
+      const g = finger(row);
+      g.down(150);
+      g.move(160);
+      g.move(175);
+      // The swipe began: the row heads for where it was when the finger
+      // caught it, neither back to 15 nor on to 72.
+      const caught = xOf(row);
+      expect(caught).toBeGreaterThan(15);
+      expect(caught).toBeLessThan(72);
+      g.move(185);
+      expect(xOf(row)).toBeCloseTo(caught + 10, 5);
+      g.rest();
+      g.up();
+      await settled();
+      expect(xOf(row)).toBe(72);
     });
 
     it('holds the row out after a tapped entry with hasRemoval', async () => {
@@ -1351,21 +1504,6 @@ describe('swipeActions', () => {
       expect(xOf(row)).toBe(0);
     });
 
-    it('commits on a fling short of the commit point', async () => {
-      const onActivate = vi.fn();
-      const {row} = renderRow({leading: [{label: 'Unread', onActivate}]});
-      const f = finger(row);
-      f.down(10);
-      f.move(20);
-      f.move(35);
-      f.move(55);
-      // 45 px of swipe, still moving fast when it lifts.
-      f.move(80);
-      f.up({afterMs: 0});
-      await settled();
-      expect(onActivate).toHaveBeenCalledTimes(1);
-    });
-
     it('lays the entries outermost last: at the leading edge the row of entries runs in reverse', () => {
       const {row} = renderRow({
         leading: [
@@ -1389,9 +1527,9 @@ describe('swipeActions', () => {
           r.includes('flex-direction: row-reverse'),
         ),
       ).toBe(false);
-      // The panel wears its outermost entry's colour, so a slide-out fills
+      // The track wears its outermost entry's colour, so a slide-out fills
       // the row with it.
-      const trackClasses = (panelOf(row, 'trailing') as HTMLElement).className;
+      const trackClasses = trackOf(row, 'trailing').className;
       const deleteClasses = (trailing.lastElementChild as HTMLElement)
         .className;
       expect(trackClasses.split(' ').some(c => deleteClasses.includes(c))).toBe(
@@ -1433,7 +1571,7 @@ describe('swipeActions', () => {
       expect(xOf(row)).toBe(0);
     });
 
-    it('commits on a fling short of the commit point', async () => {
+    it('never fires on a flick short of the commit point', async () => {
       const onActivate = vi.fn();
       const {row} = renderRow({
         behavior: 'commit',
@@ -1447,7 +1585,8 @@ describe('swipeActions', () => {
       f.move(80);
       f.up({afterMs: 0});
       await settled();
-      expect(onActivate).toHaveBeenCalledTimes(1);
+      expect(onActivate).not.toHaveBeenCalled();
+      expect(xOf(row)).toBe(0);
     });
 
     it('holds out after a committed entry with hasRemoval', async () => {
@@ -1482,7 +1621,23 @@ describe('swipeActions', () => {
     });
   });
 
-  it('reads the direction logically under RTL: leading is toward the inline end, and the sign rides the root', async () => {
+  it('gives the root back its own translation when the swipe actions go', () => {
+    const {row} = renderRow();
+    const f = finger(row);
+    f.down(10);
+    f.move(20);
+    f.move(35);
+    f.move(65);
+    expect(xOf(row)).toBe(30);
+    f.up();
+    cleanup();
+    render(<Item label="Conversation" data-testid="row" />);
+    expect(screen.getByTestId('row').style.getPropertyValue('translate')).toBe(
+      '',
+    );
+  });
+
+  it('reads the direction logically under RTL: leading is toward the inline end', async () => {
     // jsdom resolves `direction` only on the element that carries `dir`; a
     // browser inherits it down to the row, so resolve that inheritance by
     // hand for this test.
@@ -1520,9 +1675,10 @@ describe('swipeActions', () => {
       f.move(175);
       f.move(155);
       f.move(135);
-      // Physical travel is negative; the transforms multiply by the sign.
+      // Physical travel is negative, and the panel parts mirror it.
       expect(xOf(row)).toBe(-40);
-      expect(row.style.getPropertyValue('--_item-swipe-dir')).toBe('-1');
+      expect(xOf(panelOf(row, 'leading'))).toBe(40);
+      expect(xOf(entriesOf(row, 'leading'))).toBe(-72 + 40);
       f.rest();
       f.up();
       await settled();
@@ -2082,7 +2238,7 @@ describe('swipe actions in a grid row', () => {
         c => c.getAttribute('role') === 'gridcell',
       ),
     ).toBe(true);
-    const entries = panel.firstElementChild as HTMLElement;
+    const entries = panel.firstElementChild?.firstElementChild as HTMLElement;
     Object.defineProperty(entries, 'offsetWidth', {
       configurable: true,
       value: 72,
@@ -2097,7 +2253,7 @@ describe('swipe actions in a grid row', () => {
     await act(async () => {
       vi.advanceTimersByTime(1500);
     });
-    expect(row.style.getPropertyValue('--_item-swipe-travel')).toBe('-72px');
+    expect(row.style.getPropertyValue('translate')).toBe('-72px 0px');
     expect(panel).not.toHaveAttribute('inert');
     const archive = screen.getByRole('button', {name: 'Archive'});
     expect(archive.closest('[role="gridcell"]')).toBe(panel);

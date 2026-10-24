@@ -470,8 +470,8 @@ export const AlignFirstLine: Story = {
 /**
  * Swipe actions, as a mail list uses them: on a touch screen a drag toward
  * the inline start uncovers Archive and Delete (Delete outermost, so a long
- * drag or a fling fires it); a drag toward the inline end uncovers a
- * read/unread toggle. Under `reveal` (the default) the row rests open with
+ * drag fires it; a flick opens the row); a drag toward the inline end
+ * uncovers a read/unread toggle. Under `reveal` (the default) the row rests open with
  * every entry a real button. Every verb is also in the row's own content, so
  * a mouse and a keyboard reach it without the gesture. `List` clips the rows
  * in the inline axis for the slide.

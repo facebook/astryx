@@ -217,7 +217,7 @@ export const docs = {
           name: 'swipeBehavior',
           type: "'reveal' | 'commit'",
           description:
-            'What a swipe does. `reveal` rests the row open with every entry a real button and fires the outermost on a long drag or a fling; `commit` slides the row out and fires the outermost on release, with nothing resting and a presentational panel. `commit` fits one entry per side.',
+            'What a swipe does. `reveal` rests the row open with every entry a real button, and a long drag fires the outermost. On iOS, as in a UIKit list, a fast release goes the way it moves (a flick opens the row, a flick back closes it) and a slow one past half the panel opens it; on other touchscreens (Android) a release past half the panel opens it and a fling fires the outermost, as before. `commit` slides the row out and fires the outermost on a release past the commit point, with nothing resting and a presentational panel. `commit` fits one entry per side. On iOS the row follows the finger on a spring and settles on the same one, from where it is and as fast as it was moving; elsewhere it follows the finger one for one and settles in 200 ms. Both run on the compositor, and a finger that lands on a moving row catches it.',
           default: "'reveal'",
         },
         {
