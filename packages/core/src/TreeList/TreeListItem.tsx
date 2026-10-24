@@ -30,6 +30,7 @@ import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {pressLayerStyles} from '../utils/pressLayer.stylex';
 import {cellPressableProps} from '../utils/selectionHold';
 import {usePressFeedback} from '../hooks/usePressFeedback';
+import {useTreeExpansionMotion} from './useTreeExpansionMotion';
 import {
   hasInteractiveAncestor,
   useClickableContainer,
@@ -259,7 +260,12 @@ const styles = stylex.create({
     width: spacingVars['--spacing-4'],
     height: spacingVars['--spacing-4'],
     fontSize: spacingVars['--spacing-4'],
-    transitionProperty: 'transform',
+    // Under a mouse the turn eases on the theme's tokens; on a touch screen
+    // the expansion turns it on UIKit's spring (useTreeExpansionMotion).
+    transitionProperty: {
+      default: 'transform',
+      '@media (pointer: coarse)': 'none',
+    },
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
   },
@@ -362,8 +368,11 @@ export interface TreeListItemInternalProps {
    * guide element).
    */
   variant: TreeListVariant;
-  /** Pre-rendered children subtree (rendered by the parent recursion) */
-  renderedChildren?: ReactNode;
+  /**
+   * Renders the children subtree (the parent recursion), called while the
+   * row shows its children: expanded, or sliding them away after a collapse.
+   */
+  renderChildren?: () => ReactNode;
   /** 1-based position of this item among its siblings (aria-posinset). */
   posInSet: number;
   /** Number of siblings at this level (aria-setsize). */
@@ -403,12 +412,14 @@ export function TreeListItem({
   onToggle,
   density,
   variant,
-  renderedChildren,
+  renderChildren,
   posInSet,
   setSize,
   isTabbable,
 }: TreeListItemInternalProps) {
   const pressable = usePressFeedback();
+  const {showsChildren, groupRef} = useTreeExpansionMotion(isExpanded);
+  const renderedChildren = showsChildren ? renderChildren?.() : undefined;
   const t = useTranslator();
   const labelId = useId();
   const descriptionId = useId();
@@ -535,6 +546,8 @@ export function TreeListItem({
       // The button/container owns the chevron color (--color-icon-secondary);
       // inheriting keeps that as the single source.
       color="inherit"
+      // The touch presentation turns the glyph with the expansion's spring.
+      data-tree-chevron=""
       xstyle={[
         styles.chevronSvg,
         isExpanded ? styles.chevronExpanded : styles.chevronCollapsed,
@@ -709,8 +722,13 @@ export function TreeListItem({
           <div {...stylex.props(styles.indentedContent)}>{innerContent}</div>
         </div>
       </div>
-      {isExpanded && renderedChildren != null && (
-        <ul role="group" {...stylex.props(styles.childGroup)}>
+      {renderedChildren != null && (
+        <ul
+          ref={groupRef}
+          role="group"
+          // Still sliding away after a collapse: out of reach until it leaves.
+          inert={!isExpanded || undefined}
+          {...stylex.props(styles.childGroup)}>
           {renderedChildren}
         </ul>
       )}
