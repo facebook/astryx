@@ -41,6 +41,14 @@ const PHONE = {
   hasTouch: true,
 } as const;
 
+/** A mouse and a fine pointer: the `:active` path. */
+const DESKTOP = {
+  viewport: {width: 800, height: 600},
+  deviceScaleFactor: 1,
+  isMobile: false,
+  hasTouch: false,
+} as const;
+
 /** Longer than the content-touch delay a press waits before it paints. */
 const HOLD_MS = 300;
 
@@ -64,8 +72,9 @@ async function openRow(
   browser: Browser,
   story: string,
   name: string,
+  device: typeof PHONE | typeof DESKTOP = PHONE,
 ): Promise<Row> {
-  const context = await browser.newContext(PHONE);
+  const context = await browser.newContext(device);
   const page = await context.newPage();
   await page.goto(`${storybook.origin}/iframe.html?id=${story}&viewMode=story`);
   const checkbox = page.getByRole('checkbox', {name});
@@ -191,5 +200,53 @@ test.describe('CheckboxList row press', () => {
     expect(darker(onLabel.box, rest.box)).toBe(true);
     expect(onBox.row).toEqual(onLabel.row);
     expect(onBox.box).toEqual(onLabel.box);
+  });
+
+  test('a mouse press is unchanged: no touch press, and the label and the box paint as on main', async ({
+    browser,
+  }) => {
+    const reads = new Map<'label' | 'box', PressRead>();
+    let rest: {box: RGB; row: RGB} | null = null;
+    for (const where of ['label', 'box'] as const) {
+      const row = await openRow(
+        browser,
+        'core-checkboxlist--default',
+        'SMS',
+        DESKTOP,
+      );
+      try {
+        rest ??= {
+          box: await pixel(row.page, row.boxSample),
+          row: await pixel(row.page, row.rowSample),
+        };
+        const at = row[where];
+        await row.page.mouse.move(at.x, at.y);
+        await row.page.mouse.down();
+        await row.page.waitForTimeout(HOLD_MS);
+        reads.set(where, {
+          surface: await pressedSurface(row.page),
+          box: await pixel(row.page, row.boxSample),
+          row: await pixel(row.page, row.rowSample),
+        });
+        await row.page.mouse.up();
+      } finally {
+        await row.close();
+      }
+    }
+    const onLabel = reads.get('label');
+    const onBox = reads.get('box');
+    if (rest == null || onLabel == null || onBox == null) {
+      throw new Error('the presses were not read');
+    }
+    // The touch press never runs for a mouse.
+    expect(onLabel.surface).toBeNull();
+    expect(onBox.surface).toBeNull();
+    // Mouse hover and `:active` as on main: on the label the row paints and
+    // the box stays blank; on the box the box paints too. This test passes on
+    // main's build with the same pixels.
+    expect(darker(onLabel.row, rest.row)).toBe(true);
+    expect(onLabel.box).toEqual(rest.box);
+    expect(darker(onBox.box, rest.box)).toBe(true);
+    expect(darker(onBox.row, rest.row)).toBe(true);
   });
 });
