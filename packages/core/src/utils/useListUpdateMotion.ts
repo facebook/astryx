@@ -52,6 +52,11 @@
  * still; while it moves, its `translate` makes it the containing block of
  * any `position: fixed` element inside it. With motion off, nothing is read.
  *
+ * Under reduced motion nothing travels (`design:reduced-motion`): every row
+ * motion takes the animator's own Reduced Motion handling, so a removed row
+ * fades out where it is, a new row fades in where it lands, and the rows
+ * that move and the content below cross-fade into place.
+ *
  * It runs in the iOS idiom only (useMotionPresentation: a finger on WebKit
  * for iOS). With an Android finger (Android's list animations are its own)
  * or a mouse (the theme's presentation) nothing moves. A list root that
@@ -418,14 +423,12 @@ export function useListUpdateMotion(
       const lift = removedAbove;
       removedAbove += box.height;
       // From rest, like the slides (springHome): the browser's commit sets
-      // the start of all of them, so the edges meet on every frame.
-      void animateRow(row, {y: box.height}, SPRING, {});
-      void animateRow(
-        ghost,
-        {y: -(box.height + lift)},
-        SPRING,
-        {},
-      ).finished.then(() => {
+      // the start of all of them, so the edges meet on every frame. Under
+      // reduced motion the removed row fades out where it is instead.
+      void animateRow(row, {y: box.height}, SPRING, {crossfadeAs: 'exit'});
+      void animateRow(ghost, {y: -(box.height + lift)}, SPRING, {
+        crossfadeAs: 'exit',
+      }).finished.then(() => {
         ghost.remove();
       });
     }
