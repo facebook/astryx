@@ -364,6 +364,8 @@ describe('resolveThemeTokens and derived status roles', () => {
     expect(
       resolveThemeToken(theme, '--color-text-success', {mode: 'light'}),
     ).toBe('#123456');
+  });
+});
 
 // INV10 governs only the colour tokens Astryx defines. The check reads Astryx's
 // own defaults, never consumer, application, or theme-author variables.
