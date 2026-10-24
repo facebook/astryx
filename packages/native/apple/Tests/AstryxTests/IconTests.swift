@@ -86,6 +86,15 @@ import AppKit
   #expect(Icon.color(for: .inherit, in: tokens) == nil)
 }
 
+@MainActor
+@Test func anInheritIconTakesTheSurroundingForeground() {
+  let red = [255, 0, 0, 255]
+  let inherit = Pixels(Icon(.stop, size: .lg).foregroundStyle(Color(red: 1, green: 0, blue: 0)).fixedSize())
+  #expect(inherit.contains { close($0, red) })
+  let colored = Pixels(Icon(.stop, color: .accent, size: .lg).foregroundStyle(Color(red: 1, green: 0, blue: 0)).fixedSize())
+  #expect(!colored.contains { close($0, red) })
+}
+
 // FR5 accessibility: what the view sets. The rendered accessibility tree is
 // not measured until an app-hosted target exists.
 @MainActor

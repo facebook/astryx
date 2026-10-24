@@ -39,7 +39,7 @@ public struct Icon: View {
           .resizable()
           .scaledToFit()
           .frame(width: side, height: side)
-          .foregroundStyle(tint.map { AnyShapeStyle($0) } ?? AnyShapeStyle(.foreground))
+          .modifier(IconTint(color: tint))
           .modifier(IconAccessibility(label: accessibilityLabel))
           .modifier(IconIdentifier(id: props.base.id))
       } else {
@@ -109,6 +109,20 @@ private struct IconAccessibility: ViewModifier {
       content.accessibilityLabel(label)
     } else {
       content.accessibilityHidden(true)
+    }
+  }
+}
+
+/// A theme color, or no style of its own so the surrounding foreground
+/// reaches the symbol (`inherit`).
+private struct IconTint: ViewModifier {
+  let color: Color?
+
+  func body(content: Content) -> some View {
+    if let color {
+      content.foregroundStyle(color)
+    } else {
+      content
     }
   }
 }
