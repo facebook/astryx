@@ -93,12 +93,19 @@ public struct AstryxButton: View {
     // As core's Button: a loading button stays undimmed and focusable, keeps
     // its label, and says Loading; taps do nothing until it finishes.
     .disabled(isDisabled)
-    .accessibilityLabel(Text(label))
+    .accessibilityLabel(Text(accessibilityText))
+    .accessibilityAddTraits(Self.accessibilityTraits)
     .accessibilityValue(Text(loadingValue ?? ""))
     .onChange(of: isLoading) { _, loading in
       if loading { AccessibilityNotification.Announcement(AstryxStrings.buttonLoading).post() }
     }
   }
+
+  /// The button's accessible name: its label, also while loading.
+  var accessibilityText: String { label }
+
+  /// The traits assistive technology gets: a button.
+  static var accessibilityTraits: AccessibilityTraits { .isButton }
 
   /// What assistive technology reads after the label while loading: core's
   /// catalog message, in the person's language.

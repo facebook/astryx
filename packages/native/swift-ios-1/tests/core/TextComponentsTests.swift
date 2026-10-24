@@ -64,3 +64,8 @@ import Testing
   let field = AstryxTextInput(label: "Email", value: .constant(""))
   #expect(field.accessibilityText == "Email")
 }
+
+@MainActor
+@Test func aHeadingIsAHeader() {
+  #expect(AstryxHeading.accessibilityTraits.contains(.isHeader))
+}
