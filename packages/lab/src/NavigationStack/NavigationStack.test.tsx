@@ -203,7 +203,10 @@ describe('NavigationStack', () => {
     it('shows the title above the content and hides the bar title from assistive technology', () => {
       render(<LargeHarness />);
       const large = screen.getByRole('heading', {level: 1, name: 'Settings'});
-      expect(screenCard('Settings')?.firstElementChild).toBe(large);
+      // First in the screen's scrolling content.
+      expect(screenCard('Settings')?.firstElementChild?.firstElementChild).toBe(
+        large,
+      );
       // The bar's copy of the title is hidden while the large one shows.
       expect(screen.getAllByRole('heading', {name: 'Settings'})).toHaveLength(
         1,
@@ -222,6 +225,112 @@ describe('NavigationStack', () => {
           ),
         {timeout: 3000},
       );
+    });
+  });
+
+  describe('a search field', () => {
+    /** A stand-in for SearchField: shows the lift it is handed. */
+    // A stand-in SearchField: the stack reads its own `isActive` and hands
+    // it `lift`.
+    function ProbeField({lift}: {lift?: number; isActive?: boolean}) {
+      return <input aria-label="Search" data-lift={lift} />;
+    }
+
+    function SearchHarness({ownLift}: {ownLift?: number}) {
+      const [path, setPath] = useState<string[]>(['General']);
+      const [isActive, setIsActive] = useState(false);
+      return (
+        <>
+          <button type="button" onClick={() => setIsActive(value => !value)}>
+            Toggle search
+          </button>
+          <NavigationStack
+            label="Settings"
+            root={
+              <NavigationScreen title="Settings">
+                <Root />
+              </NavigationScreen>
+            }
+            path={path}
+            onPathChange={setPath}
+            getKey={entry => entry}
+            renderScreen={entry => (
+              <NavigationScreen
+                title={entry}
+                titleDisplayMode="large"
+                trailing={<button type="button">Edit</button>}
+                search={<ProbeField lift={ownLift} isActive={isActive} />}>
+                <p>{entry} content</p>
+              </NavigationScreen>
+            )}
+          />
+        </>
+      );
+    }
+
+    it('sits under the large title, above the content, and is handed its lift', () => {
+      render(<SearchHarness />);
+      const field = screen.getByRole('textbox', {name: 'Search'});
+      const scroller = screenCard('General')?.firstElementChild;
+      const [title, wrapper, content] = Array.from(scroller?.children ?? []);
+      expect(title).toBe(
+        screen.getByRole('heading', {level: 1, name: 'General'}),
+      );
+      expect(wrapper).toHaveAttribute('data-navigation-search');
+      expect(wrapper).toContainElement(field);
+      expect(content).toHaveTextContent('General content');
+      expect(field).toHaveAttribute('data-lift', '0');
+    });
+
+    it('pins the field under the bar when it does not hide when scrolling', () => {
+      const {container} = render(
+        <NavigationStack
+          label="Settings"
+          root={
+            <NavigationScreen
+              title="Settings"
+              titleDisplayMode="large"
+              search={<input aria-label="Search" />}
+              hidesSearchWhenScrolling={false}>
+              <p>Rows</p>
+            </NavigationScreen>
+          }
+          path={[]}
+          onPathChange={() => {}}
+          renderScreen={() => <NavigationScreen title="x" />}
+        />,
+      );
+      const wrapper = container.querySelector('[data-navigation-search]');
+      expect(wrapper?.className).toMatch(/searchPinned/);
+    });
+
+    it('keeps a lift the field sets itself', () => {
+      render(<SearchHarness ownLift={5} />);
+      expect(screen.getByRole('textbox', {name: 'Search'})).toHaveAttribute(
+        'data-lift',
+        '5',
+      );
+    });
+
+    it('while active, takes the bar’s items out of reach and hides the titles; a cancel brings them back', () => {
+      render(<SearchHarness />);
+      const back = backButton('Settings') as HTMLElement;
+      const edit = screen.getByRole('button', {name: 'Edit'});
+      fireEvent.click(screen.getByRole('button', {name: 'Toggle search'}));
+
+      expect(back.parentElement).toHaveAttribute('inert');
+      expect(edit.parentElement).toHaveAttribute('inert');
+      expect(
+        screen.queryByRole('heading', {level: 1, name: 'General'}),
+      ).toBeNull();
+      expect(screen.getByRole('textbox', {name: 'Search'})).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', {name: 'Toggle search'}));
+      expect(back.parentElement).not.toHaveAttribute('inert');
+      expect(edit.parentElement).not.toHaveAttribute('inert');
+      expect(
+        screen.getByRole('heading', {level: 1, name: 'General'}),
+      ).toBeInTheDocument();
     });
   });
 

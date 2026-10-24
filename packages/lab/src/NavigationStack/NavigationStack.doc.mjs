@@ -101,6 +101,19 @@ export const docs = {
           default: "'inline'",
         },
         {
+          name: 'search',
+          type: 'ReactElement',
+          description:
+            "A search field under the title, as on iOS: pass a SearchField; the stack follows the field's own `isActive`. While search is active, the field rises into the bar and the bar's back button, titles and items step aside on the field's own clock (under a finger; under a mouse they take their places at once, as the field does); Cancel brings them back. The stack tells the field how far to rise (its `lift`).",
+        },
+        {
+          name: 'hidesSearchWhenScrolling',
+          type: 'boolean',
+          description:
+            'Whether the search field scrolls away with the content; false pins it under the bar.',
+          default: 'true',
+        },
+        {
           name: 'trailing',
           type: 'ReactNode',
           description:
