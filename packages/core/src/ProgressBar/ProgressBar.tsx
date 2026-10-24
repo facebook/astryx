@@ -17,7 +17,7 @@
  * - /packages/cli/assets/templates/blocks/components/ProgressBar/ (showcase blocks)
  */
 
-import {lazy, Suspense, useId} from 'react';
+import {lazy, Suspense, useId, type CSSProperties} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
 import {
@@ -223,22 +223,35 @@ const styles = stylex.create({
     position: 'relative',
     width: '100%',
   },
-  // The semantic rail holds only the fill, which rounds its own corners.
+  // The semantic rail holds only the fill and clips it to the rounded rail:
+  // the determinate fill slides in from the inline-start side and the
+  // indeterminate one overshoots both ends. Marks live outside the track (in
+  // trackContainer), so the clip never cuts a themed tall mark.
   track: {
     width: '100%',
     height: '8px',
     backgroundColor: colorVars['--color-background-muted'],
     borderRadius: radiusVars['--radius-full'],
-  },
-  // The indeterminate fill overshoots the track on both sides and must be
-  // clipped to the visible rail. Marks are suppressed in this mode.
-  trackClipped: {
     overflow: 'hidden',
   },
+  // The determinate fill spans the whole track and slides along it with a
+  // transform, so a value change animates on the compositor and keeps moving
+  // while a script runs; animating `width` would lay out and repaint on the
+  // main thread every frame and stall with it. `--_progress-bar-fill` is the
+  // filled share of the track (set inline); the fill's leading edge sits
+  // exactly there, mirrored in RTL. The layer is declared up front so Safari
+  // has the whole bar painted before it first moves.
   fill: {
+    width: '100%',
     height: '100%',
     borderRadius: radiusVars['--radius-full'],
-    transitionProperty: 'width',
+    transform: {
+      default: 'translateX(calc(var(--_progress-bar-fill, 0%) - 100%))',
+      ':is([dir="rtl"] *)':
+        'translateX(calc(100% - var(--_progress-bar-fill, 0%)))',
+    },
+    willChange: 'transform',
+    transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-medium'],
     transitionTimingFunction: easeVars['--ease-standard'],
   },
@@ -365,6 +378,11 @@ const markOnTrackStyles = stylex.create({
   },
 });
 
+// `CSSProperties` has no index signature for custom properties, so the fill's
+// inline style — which publishes the filled share as the private
+// `--_progress-bar-fill` — needs this augmentation to typecheck.
+type FillStyle = CSSProperties & Record<'--_progress-bar-fill', string>;
+
 function defaultFormatValueLabel(value: number, max: number): string {
   const pct = max > 0 ? Math.round((value / max) * 100) : 0;
   return `${pct}%`;
@@ -444,6 +462,7 @@ export function ProgressBar({
   const showValueLabel = hasValueLabel && !isIndeterminate;
 
   const fillVariant = isDisabled ? 'disabled' : variant;
+  const fillStyle: FillStyle = {'--_progress-bar-fill': `${percentage}%`};
 
   // Marks make no sense without a determinate value, so they are only drawn
   // in determinate mode. Non-finite mark values are dropped; the rest are
@@ -518,7 +537,7 @@ export function ProgressBar({
           aria-valuetext={isIndeterminate ? undefined : valueText}
           {...mergeProps(
             themeProps('progress-bar-track'),
-            stylex.props(styles.track, isIndeterminate && styles.trackClipped),
+            stylex.props(styles.track),
           )}>
           {isIndeterminate ? (
             <div
@@ -536,7 +555,7 @@ export function ProgressBar({
                 themeProps('progress-bar-fill', {variant: fillVariant}),
                 stylex.props(styles.fill, variantStyles[fillVariant]),
               )}
-              style={{width: `${percentage}%`}}
+              style={fillStyle}
             />
           )}
         </div>

@@ -91,6 +91,10 @@ const STRUCTURAL_VARS = new Set([
   // Private counterpart of the public token above: one ancestor Section's
   // padding, propagated down the tree. Structural, never authored by a theme.
   '--_section-padding-propagated',
+  // ProgressBar's filled share of the track, written inline from `value` on
+  // every render and read by the fill's transform. Runtime state, never
+  // authored by a theme.
+  '--_progress-bar-fill',
 ]);
 
 /**
