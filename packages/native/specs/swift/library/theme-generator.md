@@ -9,7 +9,7 @@
 An iOS app built with Astryx shows its own brand, not only core's default: any
 Astryx theme, from a published theme package such as neutral or from the
 product itself, becomes a Swift `AstryxTheme` that `.astryxTheme(.neutral)`
-applies, with the same light and dark values and typeface the web uses. Every
+applies, with the same light and dark values and typeface the web uses. Every shared
 token is a typed Swift member, so a misspelled token fails to compile instead
 of drawing nothing. The generator runs core's own resolver, so Swift never
 re-implements theme logic.
@@ -195,8 +195,9 @@ re-implements theme logic.
 - Core's `resolveThemeTokens` returns shared tokens per mode and no local
   tokens; neutral declares local tokens, stored as `light-dark(…)` strings.
 - Published theme packages: butter, chocolate, gothic, matcha, neutral, stone,
-  y2k (probe is private). Their raw values use `oklch()` and `color-mix()` only
-  outside the G5 groups (shadows, component styles).
+  y2k (probe is private). Their raw values use `oklch()` and `color-mix()` outside the G5 groups
+  (shadows, component styles), and `color-mix()` inside it only in
+  `--color-syntax-added` and `--color-syntax-removed`.
 
 ## Open questions
 
