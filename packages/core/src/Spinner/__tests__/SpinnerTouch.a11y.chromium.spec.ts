@@ -4,14 +4,19 @@
  * @file SpinnerTouch.a11y.chromium.spec.ts
  * @input Built Spinner stories in real Chromium with a coarse (touch) pointer
  *   (CDP screencast and tracing)
- * @output Browser evidence that under a finger the spinner draws UIKit's
- *   activity indicator and runs it on the compositor: the ring gives way to
- *   eight spokes, the head keeps stepping while a script holds the main
- *   thread, nothing paints per frame, every frame of the cycle matches
- *   UIKit's, and reduced motion keeps the pace. Writes a storyboard (contact
- *   sheet + JSON trace) to test-results/spinner-touch/.
- * @position Chromium proof for Spinner's touch presentation; the iOS Safari
- *   side is a simulator recording attached to the pull request.
+ * @output Browser evidence that under a finger on iOS the spinner draws
+ *   UIKit's activity indicator and runs it on the compositor: the ring gives
+ *   way to eight spokes, the head keeps stepping while a script holds the
+ *   main thread, nothing paints per frame, every frame of the cycle matches
+ *   UIKit's, and reduced motion keeps the pace; and that a finger anywhere
+ *   else (Chromium as an Android phone) keeps the ring. Writes a storyboard
+ *   (contact sheet + JSON trace) to test-results/spinner-touch/.
+ * @position Chromium proof for Spinner's touch presentation. The iOS gate is
+ *   `@supports (-webkit-touch-callout: none)` inside the touch query, which
+ *   only WebKit on iOS matches: the iOS tests emulate it in Chromium by
+ *   rewriting those rules to a condition Chromium meets
+ *   (`emulateIosWebKit`); the real iOS Safari side is a simulator recording
+ *   attached to the pull request.
  *
  * SYNC: Keep in step with Spinner.tsx (`spokeFade`, `spokeStyles`) and
  * motion/uikit/progress.ts.
@@ -70,13 +75,52 @@ function expectedWeight(index: number, frame: number): number {
   return weight(framesAgo);
 }
 
-/** The four sizes; every glyph is showing and running. */
+/**
+ * Makes Chromium take the iOS gate: every `@supports (-webkit-touch-callout:
+ * none)` rule (only WebKit on iOS implements the property) is rewritten to a
+ * condition Chromium meets, keeping the touch query inside it, and
+ * `CSS.supports` answers the same for script. Everything else is Chromium's.
+ */
+async function emulateIosWebKit(page: Page) {
+  await page.evaluate(() => {
+    const original = CSS.supports.bind(CSS);
+    CSS.supports = (condition: string, value?: string) =>
+      `${condition}${value ?? ''}`.includes('-webkit-touch-callout') ||
+      (value === undefined ? original(condition) : original(condition, value));
+    const visit = (owner: CSSStyleSheet | CSSGroupingRule) => {
+      const rules = owner.cssRules;
+      for (let i = 0; i < rules.length; i += 1) {
+        const rule = rules[i];
+        if (
+          rule instanceof CSSSupportsRule &&
+          rule.conditionText.includes('-webkit-touch-callout')
+        ) {
+          const inner = Array.from(rule.cssRules, r => r.cssText).join('\n');
+          owner.deleteRule(i);
+          owner.insertRule(`@supports (display: block) {${inner}}`, i);
+        } else if (rule instanceof CSSGroupingRule) {
+          visit(rule);
+        }
+      }
+    };
+    for (const sheet of Array.from(document.styleSheets)) {
+      try {
+        visit(sheet);
+      } catch {
+        // a cross-origin sheet
+      }
+    }
+  });
+}
+
+/** The four sizes, on iOS (emulated); every glyph is showing and running. */
 async function openSizes(page: Page) {
   await page.goto(
     `${storybook.origin}/iframe.html?id=core-spinner--sizes&viewMode=story`,
   );
   const spinners = page.locator('.astryx-spinner');
   await expect(spinners).toHaveCount(4);
+  await emulateIosWebKit(page);
   await page.waitForFunction(
     () =>
       document.getAnimations().filter(a => a.playState === 'running').length >=
@@ -89,7 +133,7 @@ async function openSizes(page: Page) {
 const glyphOf = (page: Page, index: number) =>
   page.locator('.astryx-spinner').nth(index).locator('> span').last();
 
-test('under a finger the ring gives way to UIKit’s eight spokes', async ({
+test('under a finger on iOS the ring gives way to UIKit’s eight spokes', async ({
   page,
 }) => {
   await openSizes(page);
@@ -115,6 +159,38 @@ test('under a finger the ring gives way to UIKit’s eight spokes', async ({
   }
   // The boxes keep their sizes: 14, 20, 24 and 36 px.
   expect(state.spinners.map(s => s.box)).toEqual([14, 20, 24, 36]);
+});
+
+test('a finger outside iOS (Chromium as an Android phone) keeps the ring, turning', async ({
+  page,
+}) => {
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-spinner--sizes&viewMode=story`,
+  );
+  await expect(page.locator('.astryx-spinner')).toHaveCount(4);
+  const state = await page.evaluate(() => ({
+    coarse: matchMedia('(pointer: coarse)').matches,
+    callout: CSS.supports('-webkit-touch-callout', 'none'),
+    spinners: Array.from(document.querySelectorAll('.astryx-spinner')).map(
+      spinner => {
+        const parts = Array.from(spinner.children);
+        const rotor = parts[1];
+        return {
+          visible: parts.map(part => getComputedStyle(part).display),
+          rotor: rotor
+            .getAnimations()
+            .map(a => `${a.playState} ${a.effect?.getTiming().iterations}`),
+        };
+      },
+    ),
+  }));
+  expect(state.coarse).toBe(true);
+  expect(state.callout).toBe(false);
+  for (const spinner of state.spinners) {
+    // Track svg and rotor shown, the iOS glyph hidden: today's ring.
+    expect(spinner.visible).toEqual(['block', 'block', 'none']);
+    expect(spinner.rotor).toEqual(['running Infinity']);
+  }
 });
 
 test('every frame of the cycle matches UIKit’s, and reduced motion keeps the pace', async ({

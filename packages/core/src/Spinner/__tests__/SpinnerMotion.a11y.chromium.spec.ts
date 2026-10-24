@@ -326,7 +326,7 @@ test('reduced motion slows the ring to 3 s per turn, as before, still clockwise 
 }) => {
   await page.emulateMedia({reducedMotion: 'reduce'});
   const spinners = await openSizes(page);
-  const rotor = spinners.first().locator('span[aria-hidden="true"]');
+  const rotor = rotorOf(spinners.first());
   const samples = await rotor.evaluate(element => {
     const [animation] = element.getAnimations();
     animation.pause();

@@ -20,10 +20,17 @@
  *
  * Lengths are in points (CSS px), durations in ms, alphas in 0..1.
  *
+ * The table is registered with the theme's motion roles (motion/roles.ts):
+ * the cycle (`activityIndicator.cycleMs`) is a role a theme may retune; the
+ * frame count, alphas and geometry are drawing, not motion.
+ *
  * SYNC: When modified, update /packages/core/src/Spinner/Spinner.tsx (its
- * keyframes and spoke geometry are literals, which Spinner.test.tsx checks
- * against this file).
+ * keyframes and spoke geometry are literals, and its cycle reads the role's
+ * variable with this file's value as the fallback, which Spinner.test.tsx
+ * checks against this file).
  */
+
+import {registerMotionTable} from '../roles';
 
 /**
  * UIActivityIndicatorView's values.
@@ -187,3 +194,6 @@ export const progress = {
     },
   },
 } as const;
+
+// The cycle above is a motion role a theme may retune (motion/roles.ts).
+registerMotionTable('progress', progress);

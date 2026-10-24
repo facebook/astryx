@@ -234,8 +234,10 @@ const rotation = stylex.keyframes({
 });
 
 /**
- * Under a finger (a coarse primary pointer) the spinner draws UIKit's activity
- * indicator instead of the ring (motion/uikit `progress.activityIndicator`):
+ * Under a finger on iOS (a coarse primary pointer in WebKit on iOS or iPadOS,
+ * the resolver's iOS gate) the spinner draws UIKit's activity indicator
+ * instead of the ring (motion/uikit `progress.activityIndicator`); Android and
+ * other touch screens keep the ring until a Material indicator exists:
  * eight capsule spokes, a bright head that steps clockwise one spoke every
  * 100 ms, a turn every 0.8 s, and the trail fading behind it. UIKit swaps
  * sixteen pre-rendered images; here each spoke steps its own opacity through
@@ -324,9 +326,16 @@ const styles = stylex.create({
   },
   ring: {
     backfaceVisibility: 'hidden',
-    // Under a finger the touch glyph takes the ring's place (see spokeFade).
-    // The query is the touch presentation resolver's TOUCH_QUERY.
-    display: {default: 'block', '@media (pointer: coarse)': 'none'},
+    // Under a finger on iOS the touch glyph takes the ring's place (see
+    // spokeFade). The gate is the touch presentation resolver's
+    // IOS_TOUCH_STYLE_KEYS, nested as it spells them: elsewhere, Android
+    // included, the ring stays (until a Material indicator exists).
+    display: {
+      default: 'block',
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': 'none',
+      },
+    },
     // The track and the rotor share the one grid cell, stacked and centred.
     gridArea: '1 / 1',
     // The frame is the box, read from the same composed var the span is sized
@@ -349,7 +358,12 @@ const styles = stylex.create({
   // The box that turns: it holds the arc's own svg, is exactly the frame's
   // size (so it pivots on the ring's centre), and moves by `transform` alone.
   rotor: {
-    display: {default: 'block', '@media (pointer: coarse)': 'none'},
+    display: {
+      default: 'block',
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': 'none',
+      },
+    },
     gridArea: '1 / 1',
     width: `var(${BOX_SIZE})`,
     height: `var(${BOX_SIZE})`,
@@ -367,9 +381,15 @@ const styles = stylex.create({
     animationName: rotation,
     animationTimingFunction: 'linear',
   },
-  // UIKit's activity indicator, shown in the ring's place under a finger.
+  // UIKit's activity indicator, shown in the ring's place under a finger on
+  // iOS (the resolver's iOS gate, as on `ring`).
   glyph: {
-    display: {default: 'none', '@media (pointer: coarse)': 'block'},
+    display: {
+      default: 'none',
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': 'block',
+      },
+    },
     gridArea: '1 / 1',
     position: 'relative',
     width: `var(${BOX_SIZE})`,
@@ -388,7 +408,10 @@ const styles = stylex.create({
     opacity: 0.275,
     willChange: 'opacity',
     animationName: spokeFade,
-    animationDuration: '800ms',
+    // The cycle is the `progress.activityIndicator.cycleMs` motion role: a
+    // theme that sets it writes the variable; otherwise the table's 0.8 s.
+    animationDuration:
+      'var(--motion-progress-activity-indicator-cycle-ms, 800ms)',
     animationIterationCount: 'infinite',
     animationTimingFunction: 'linear',
   },
