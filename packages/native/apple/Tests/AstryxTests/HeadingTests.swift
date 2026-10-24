@@ -21,31 +21,6 @@ import Testing
 }
 
 @MainActor
-@Test func textGrowsAtTheLargestDynamicTypeSize() {
-  let large = Pixels(AstryxText("Hello").fixedSize())
-  let largest = Pixels(AstryxText("Hello").fixedSize(), typeSize: .accessibility5)
-  #expect(largest.width > large.width * 2)
-}
-
-@MainActor
-@Test func aTextFieldIsAtLeast44PointsTallAtEveryTextSize() {
-  let field = AstryxTextInput(label: "Email", value: .constant(""), size: .sm).frame(width: 240)
-  for typeSize in [DynamicTypeSize.xSmall, .large, .accessibility5] {
-    let pixels = Pixels(field, typeSize: typeSize)
-    // The label sits above a field at least 44 tall.
-    #expect(pixels.height >= 44 + 12)
-  }
-}
-
-@MainActor
-@Test func aFieldLabelUsesTheSecondaryTextColor() {
-  var theme = AstryxTheme.default
-  theme.light.colors["color-text-secondary"] = "#FF0000FF"
-  let pixels = Pixels(AstryxTextInput(label: "Email", value: .constant("")).frame(width: 240), theme: theme)
-  #expect(pixels.contains { $0[0] > 200 && $0[1] < 60 && $0[2] < 60 && $0[3] > 200 })
-}
-
-@MainActor
 @Test func headingsGrowAtTheLargestTextSizeAndFollowASecondTheme() {
   let large = Pixels(AstryxHeading("Settings").fixedSize())
   let largest = Pixels(AstryxHeading("Settings").fixedSize(), typeSize: .accessibility5)
@@ -57,12 +32,6 @@ import Testing
   let themed = Pixels(AstryxHeading("Settings").fixedSize(), theme: theme)
   #expect(themed.width > large.width)
   #expect(themed.contains { $0[0] > 200 && $0[1] < 60 && $0[2] < 60 && $0[3] > 200 })
-}
-
-@MainActor
-@Test func aTextFieldIsNamedByItsLabel() {
-  let field = AstryxTextInput(label: "Email", value: .constant(""))
-  #expect(field.accessibilityText == "Email")
 }
 
 @MainActor

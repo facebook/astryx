@@ -26,7 +26,8 @@ apple/
 │   │   │   └── Generated/ # core's default theme, generated; do not edit
 │   │   ├── Resources/     # core's messages per locale, generated; do not edit
 │   │   ├── Localization/
-│   │   ├── Text/          # AstryxText, AstryxHeading
+│   │   ├── Text/          # AstryxText
+│   │   ├── Heading/       # AstryxHeading
 │   │   ├── Button/        # AstryxButton
 │   │   ├── TextInput/     # AstryxTextInput
 │   │   ├── Card/          # AstryxCard

@@ -1,5 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import SwiftUI
 import Testing
 @testable import Astryx
 
@@ -14,4 +15,11 @@ import Testing
   #expect(AstryxTextSize(rawValue: "xsm") == .xsm)
   #expect(AstryxTextSize.xsm.token == "font-size-xs")
   #expect(AstryxTextSize.sm.token == "font-size-sm")
+}
+
+@MainActor
+@Test func textGrowsAtTheLargestDynamicTypeSize() {
+  let large = Pixels(AstryxText("Hello").fixedSize())
+  let largest = Pixels(AstryxText("Hello").fixedSize(), typeSize: .accessibility5)
+  #expect(largest.width > large.width * 2)
 }
