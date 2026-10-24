@@ -16,11 +16,14 @@
  *
  * - Show: the viewport's one `resize` arrives about `keyboard.showReportLagMs`
  *   after the keyboard started to rise, and later when the main thread was
- *   busy: the report waits for it, and the keyboard then started at about
- *   the last frame the page rendered before the report. The model dates the
- *   show back to the earlier of the two (never more than
- *   `keyboard.showReportLagMaxMs`), so content following the keyboard joins
- *   its spring where the keyboard is.
+ *   busy: the report waits for it, while the keyboard rises on its own
+ *   schedule, `keyboard.focusToShowMs` after the focus. A report that
+ *   follows a gap in the page's frames is dated from the focus that brought
+ *   the keyboard up (no earlier than the last frame before the report),
+ *   however late it is, so content following the keyboard joins its spring
+ *   where the keyboard is by then. Without a focus to date from, it goes
+ *   back to the last frame before the report, at most
+ *   `keyboard.showReportLagMaxMs`.
  * - Hide: the `resize` arrives once the keyboard is down. The keyboard starts
  *   to fall `keyboard.hideAfterBlurMs` after the focused control loses focus
  *   to nothing that brings up a keyboard, so the model starts the hide from
@@ -66,6 +69,8 @@ export interface KeyboardModelOptions {
   showReportLagMs?: number;
   /** The furthest a show is dated back to the frame before its report, ms. */
   showReportLagMaxMs?: number;
+  /** How long after a focus the keyboard starts to rise, ms. */
+  focusToShowMs?: number;
   /** How long after the blur the keyboard starts to fall, ms. */
   hideAfterBlurMs?: number;
   /** When a transition counts as over (the notification duration), ms. */
@@ -119,6 +124,7 @@ export function createKeyboardModel(
   {
     showReportLagMs = keyboard.showReportLagMs,
     showReportLagMaxMs = keyboard.showReportLagMaxMs,
+    focusToShowMs = keyboard.focusToShowMs,
     hideAfterBlurMs = keyboard.hideAfterBlurMs,
     durationMs = timing.keyboardNotificationMs,
   }: KeyboardModelOptions = {},
@@ -136,6 +142,8 @@ export function createKeyboardModel(
   let curve: SpringCurve | null = null;
   // The inset of the last keyboard that was up, for a hide that turns back.
   let shownInset = initialInset;
+  // When a control that brings up a keyboard last gained focus.
+  let focusAt: number | null = null;
 
   // Core Animation cuts the keyboard's spring at the notification duration.
   const presentation = (time: number): number => {
@@ -209,7 +217,13 @@ export function createKeyboardModel(
         // it, so the keyboard started at about the last frame before it).
         let start = time - showReportLagMs;
         if (frameBefore != null && frameBefore < start) {
-          start = Math.max(frameBefore, time - showReportLagMaxMs);
+          // A busy main thread held the report back. The keyboard rose on
+          // UIKit's schedule after the focus that brought it up; without
+          // one, it started at about the last frame before the report.
+          start =
+            focusAt != null && focusAt < time
+              ? Math.min(start, Math.max(frameBefore, focusAt + focusToShowMs))
+              : Math.max(frameBefore, time - showReportLagMaxMs);
         }
         return begin('show', inset, start);
       }
@@ -239,6 +253,7 @@ export function createKeyboardModel(
       return begin('hide', 0, time + hideAfterBlurMs, {predicted: true});
     },
     focused(time) {
+      focusAt = time;
       if (transition.kind !== 'hide' || !transition.predicted) {
         return null;
       }

@@ -62,7 +62,42 @@ describe('createKeyboardModel', () => {
     expect(model.report(INSET, 1000, 960)?.start).toBe(960);
   });
 
-  it('never dates a held-back show further than the longest lag measured', () => {
+  it('dates a show a busy main thread held back from the focus, however late', () => {
+    // A 600 ms block 40 ms after the focus: the keyboard rose on UIKit's
+    // schedule, focusToShowMs after the focus; the report waited 640 ms.
+    const model = createKeyboardModel(0);
+    model.focused(1000);
+    const show = model.report(INSET, 1640, 1040);
+    const start = 1000 + keyboard.focusToShowMs;
+    expect(show?.start).toBe(start);
+    // By the report the keyboard's spring is over: the dock lands at once.
+    expect(1640 - start).toBeGreaterThan(DURATION);
+    expect(model.presentation(1640)).toBe(INSET);
+  });
+
+  it('joins the spring mid-way when the report comes during the rise', () => {
+    // A block that ends while the keyboard is still rising.
+    const model = createKeyboardModel(0);
+    model.focused(1000);
+    const report = 1000 + keyboard.focusToShowMs + 90;
+    const show = model.report(INSET, report, 1040);
+    const start = 1000 + keyboard.focusToShowMs;
+    expect(show?.start).toBe(start);
+    expect(model.presentation(report)).toBeCloseTo(
+      INSET * (1 - remaining(report - start)),
+      6,
+    );
+    expect(model.presentation(report)).toBeGreaterThan(INSET / 2);
+  });
+
+  it('never dates a held-back show before the last frame the page rendered', () => {
+    const model = createKeyboardModel(0);
+    model.focused(1000);
+    // The page kept rendering until 1500: the keyboard had not risen by then.
+    expect(model.report(INSET, 1640, 1500)?.start).toBe(1500);
+  });
+
+  it('never dates a held-back show without a focus further than the longest lag measured', () => {
     const model = createKeyboardModel(0);
     expect(model.report(INSET, 1000, 700)?.start).toBe(
       1000 - keyboard.showReportLagMaxMs,

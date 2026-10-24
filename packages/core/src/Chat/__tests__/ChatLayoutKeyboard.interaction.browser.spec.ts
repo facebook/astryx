@@ -56,6 +56,66 @@ const KEYBOARD = {
 // The cover Mobile Safari reports on an iPhone 17 Pro (keyboard, accessory
 // bar and the floating address bar over a 714 px layout viewport).
 const COVER = 337;
+// How long after the focus UIKit starts the keyboard
+// (motion/uikit/keyboard.ts focusToShowMs).
+const FOCUS_TO_SHOW_MS = 187;
+
+/**
+ * In the page: focuses the composer text, blocks the main thread for
+ * `blockMs` from 40 ms after the focus, then reports the keyboard as Mobile
+ * Safari does once the block ends (late), and reads the dock's presented
+ * position on each of the next `count` frames.
+ */
+async function blockThenReport(
+  editable: Locator,
+  blockMs: number,
+  count = 24,
+): Promise<{focusAt: number; reportAt: number; frames: [number, number][]}> {
+  return editable.evaluate(
+    async (el, [cover, block, n]) => {
+      let dock: HTMLElement | null = el as HTMLElement;
+      while (dock != null && getComputedStyle(dock).position !== 'sticky') {
+        dock = dock.parentElement;
+      }
+      const read = () => {
+        const value = getComputedStyle(dock as HTMLElement).translate;
+        return value === 'none' ? 0 : parseFloat(value.split(' ')[1] ?? '0');
+      };
+      let focusAt = 0;
+      el.addEventListener(
+        'focus',
+        event => {
+          focusAt = event.timeStamp;
+        },
+        {once: true},
+      );
+      (el as HTMLElement).focus({preventScroll: true});
+      await new Promise(resolve => setTimeout(resolve, 40));
+      const until = performance.now() + block;
+      while (performance.now() < until) {
+        // The page's main thread is busy.
+      }
+      (window as unknown as {__keyboard: (c: number) => void}).__keyboard(
+        cover,
+      );
+      const reportAt = performance.now();
+      const frames: [number, number][] = [];
+      await new Promise<void>(resolve => {
+        const tick = (time: number) => {
+          frames.push([time, read()]);
+          if (frames.length < n) {
+            requestAnimationFrame(tick);
+          } else {
+            resolve();
+          }
+        };
+        requestAnimationFrame(tick);
+      });
+      return {focusAt, reportAt, frames};
+    },
+    [COVER, blockMs, count] as const,
+  );
+}
 
 /**
  * Replaces `window.visualViewport` before the page loads with one the test
@@ -338,6 +398,42 @@ test('a tap on the composer text focuses it without scrolling the page', async (
     y: window.scrollY,
   }));
   expect(after).toEqual(before);
+});
+
+test('a 600 ms block 40 ms after the focus: the first frame after it shows the dock where the keyboard is', async ({
+  page,
+}) => {
+  const {editable, lift} = await openChat(page);
+  const {focusAt, reportAt, frames} = await blockThenReport(editable, 600);
+  // UIKit started the keyboard FOCUS_TO_SHOW_MS after the focus; by the
+  // first frame after the report its spring is over, so the dock is there
+  // at once rather than starting its rise half a second late. (A frame the
+  // browser began during the block carries that earlier time.)
+  const after = frames.filter(([time]) => time >= reportAt);
+  expect(after.length).toBeGreaterThan(10);
+  expect(after[0][0] - (focusAt + FOCUS_TO_SHOW_MS)).toBeGreaterThan(400);
+  for (const [, y] of after) {
+    expect(y).toBeCloseTo(-lift, 0);
+  }
+});
+
+test('a block that ends mid-rise: the dock joins the keyboard spring where it is and follows it', async ({
+  page,
+}) => {
+  const {editable, lift} = await openChat(page);
+  const {focusAt, reportAt, frames} = await blockThenReport(editable, 240);
+  const start = focusAt + FOCUS_TO_SHOW_MS;
+  const expected = (time: number) => -lift * springStep(KEYBOARD, time - start);
+  // The first frame after the report is part-way up the spring, not at rest;
+  // every frame shows the dock where the spring is at that frame's time.
+  const first = frames.find(([time]) => time >= reportAt);
+  expect(first?.[1]).toBeLessThan(-lift / 3);
+  for (const [time, y] of frames) {
+    expect(
+      Math.abs(y - expected(time)),
+      JSON.stringify({t: time - start, y, expected: expected(time)}),
+    ).toBeLessThan(2);
+  }
 });
 
 test('the rise keeps advancing every frame while the main thread is blocked', async ({

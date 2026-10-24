@@ -40,10 +40,13 @@ resting bottom, and only while a keyboard is up:
   unknown and the guide holds.
 - Show: one `resize` of the visual viewport, with the final height, about
   `keyboard.showReportLagMs` after the keyboard started to rise. A busy main
-  thread holds the report back; the keyboard then started at about the last
-  frame the page rendered before it, so the guide watches frames from the
-  focus and dates the show back to that frame (never further than
-  `keyboard.showReportLagMaxMs`).
+  thread holds the report back, but UIKit raises the keyboard on its own
+  schedule, `keyboard.focusToShowMs` after the focus: the guide watches frames
+  from the focus and dates a report that follows a gap from the focus (no
+  earlier than the last frame before the report), however late, so the dock
+  joins the spring where the keyboard is by then. Without a focus it goes
+  back to the last frame before the report, at most
+  `keyboard.showReportLagMaxMs`.
 - Hide: the `resize` comes only once the keyboard is down. The keyboard starts
   to fall `keyboard.hideAfterBlurMs` after the focused control blurs to
   something that brings up no keyboard, whether the page blurred it or the

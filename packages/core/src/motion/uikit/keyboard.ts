@@ -36,10 +36,23 @@ export const keyboard = {
    */
   showReportLagMs: 19,
   /**
+   * How long after the field that brings up the keyboard gains focus the
+   * keyboard starts to rise, in ms. UIKit raises it on its own schedule, so
+   * a busy main thread does not delay it; only the page's report waits.
+   * When the report comes late, the guide dates the show from the focus by
+   * this much and joins the keyboard's spring where it is by then.
+   * @source measured: Mobile Safari, iOS 26.2 simulator, iPhone 17 Pro,
+   *   fourteen shows from a tap on ChatLayout's composer: the visual
+   *   viewport's resize came 173 to 241 ms after the focus (median 206),
+   *   less `showReportLagMs`, Oct 24 2026
+   */
+  focusToShowMs: 187,
+  /**
    * The longest lag seen when the page's main thread was busy as the
    * keyboard rose: the resize waits for it, so the keyboard started at
-   * about the last animation frame before the resize. The guide dates a
-   * show back to that frame, but never further than this, in ms.
+   * about the last animation frame before the resize. Without a focus to
+   * date it from, the guide dates a show back to that frame, but never
+   * further than this, in ms.
    * @source measured: Mobile Safari, iOS 26.2 simulator, iPhone 17 Pro,
    *   60 fps recording of ChatLayout's full chat story, the keyboard's top
    *   edge fitted to `springs.keyboard` (rms 0.9 pt): it started 43 ms
