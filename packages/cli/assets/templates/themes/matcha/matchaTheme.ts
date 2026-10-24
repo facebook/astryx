@@ -85,6 +85,12 @@ export const matchaTheme = defineTheme({
       withAlpha(neutral.light[20], '80'),
       withAlpha(neutral.dark[20], 'cc'),
     ],
+    // The modal dim (a dialog, drawer or sheet ::backdrop) keeps the overlay
+    // this theme already dimmed with.
+    '--color-background-backdrop': [
+      withAlpha(neutral.light[20], '80'),
+      withAlpha(neutral.dark[20], 'cc'),
+    ],
     '--color-overlay-hover': [
       withAlpha(neutral.light[20], '0d'),
       withAlpha(neutral.dark[75], '0d'),

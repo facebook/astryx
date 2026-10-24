@@ -109,7 +109,8 @@ const styles = stylex.create({
   },
   scrim: {
     '::backdrop': {
-      backgroundColor: colorVars['--color-overlay'],
+      // The theme's modal dim, one flat colour shared with Dialog and Drawer.
+      backgroundColor: colorVars['--color-background-backdrop'],
       opacity: {
         default: 'var(--_sheet-scrim-opacity, 1)',
         '@starting-style': 0,

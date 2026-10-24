@@ -131,11 +131,11 @@ const styles = stylex.create({
   open: {
     display: 'flex',
   },
-  // ::backdrop is provided by the browser's top layer
+  // ::backdrop is provided by the browser's top layer: the theme's modal dim,
+  // one flat colour (`--color-background-backdrop`), never blurred.
   backdrop: {
     '::backdrop': {
-      backgroundColor: colorVars['--color-overlay'],
-      backdropFilter: 'blur(2px)',
+      backgroundColor: colorVars['--color-background-backdrop'],
       opacity: 0,
       transitionProperty: 'opacity',
       transitionDuration: durationVars['--duration-medium'],

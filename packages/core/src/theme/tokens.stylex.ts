@@ -55,6 +55,13 @@ export const colorDefaults = {
   '--color-background-popover': 'light-dark(#FFFFFF, #28292C)',
   '--color-background-inverted': 'light-dark(#0A1317, #FFFFFF)',
   '--color-background-error-inverted': 'light-dark(#AA071E, #E3193B)',
+  // The dim behind a modal presentation (the ::backdrop of a dialog, drawer,
+  // navigation drawer or bottom sheet): one flat colour, never blurred. The
+  // default is the iOS dimming colour, black at 20 % in light mode and 48 % in
+  // dark mode. --color-overlay stays the scrim that keeps text and icons
+  // legible over media.
+  '--color-background-backdrop':
+    'light-dark(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.48))',
 
   // Status/Sentiment
   '--color-success': 'light-dark(#0D8626, #0D8626)',
