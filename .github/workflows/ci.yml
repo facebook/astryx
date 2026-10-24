@@ -2187,6 +2187,18 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+      # A CircularProgress value change must keep moving while a script holds
+      # the main thread, so its ring turns layers on the compositor and paints
+      # nothing per frame, and at rest it draws what the stroked circle drew.
+      # jsdom has no compositor, paint or pixels, so only a real engine shows
+      # it.
+      - name: Run CircularProgress busy main thread contract
+        run: |
+          pnpm exec playwright test \
+            packages/lab/src/CircularProgress/__tests__/CircularProgressMotion.a11y.chromium.spec.ts \
+            --project chromium \
+            --output circular-progress-motion-output
+
       # A treeitem's computed name and description are accessibility-tree facts
       # jsdom approximates but a browser decides. Run the TreeList row-naming
       # evidence whenever TreeList, its focus hook, or the story changes.
