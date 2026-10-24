@@ -90,7 +90,7 @@ tone coordinates.
 Core components choose semantic roles by surface: strong fills use
 `--color-*-emphasized` with `--color-on-*`, pale surfaces use `--color-*-muted`
 with `--color-on-*-muted`, and status text, icons, and borders on the default
-surfaces use `--color-text-*`. Neutral supplies named palette-stop values for
+surfaces use `--color-text-*`, `--color-icon-*`, and `--color-border-*`. Neutral supplies named palette-stop values for
 those public roles. Component-local Neutral mappings exist only when the theme
 intentionally differs from Core behavior.
 
@@ -222,7 +222,7 @@ stable. The released `--color-success`, `--color-warning`, and `--color-error`
 keep their Neutral values. Under the status-role contract
 (`architecture:theme-tokens` INV11), strong fills use `--color-*-emphasized`
 with their `--color-on-*` content, status text, icons, and borders use
-`--color-text-*`, and pale surfaces use the muted/on-muted pairs.
+`--color-text-*`, `--color-icon-*`, and `--color-border-*`, and pale surfaces use the muted/on-muted pairs.
 Alpha variants derive from the referenced stop rather than duplicating its hex
 value.
 
