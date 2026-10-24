@@ -94,14 +94,44 @@ import Testing
   let swatches = SwiftUI.HStack(spacing: 0) {
     Rectangle().fill(.tint).frame(width: 20, height: 20)
     Rectangle().fill(.primary).frame(width: 20, height: 20)
-    Rectangle().fill(.secondary).frame(width: 20, height: 20)
   }
-  let butter = Pixels(swatches, theme: .butter)
-  #expect(close(butter.at(10, 10), rgba(Theme.butter.light.color.accent)))
-  #expect(close(butter.at(30, 10), rgba(Theme.butter.light.color.textPrimary)))
-  #expect(close(butter.at(50, 10), rgba(Theme.butter.light.color.textSecondary)))
-  let dark = Pixels(swatches, theme: .butter, scheme: .dark)
-  #expect(close(dark.at(10, 10), rgba(Theme.butter.dark.color.accent)))
+  let light = Pixels(swatches, theme: .default)
+  #expect(close(light.at(10, 10), rgba(Theme.default.light.color.accent)))
+  #expect(close(light.at(30, 10), rgba(Theme.default.light.color.textPrimary)))
+  let dark = Pixels(swatches, theme: .default, scheme: .dark)
+  #expect(close(dark.at(10, 10), rgba(astryxStockTint(Theme.default.dark.color.accent))))
+  #expect(close(dark.at(30, 10), rgba(Theme.default.dark.color.textPrimary)))
+}
+
+// Theme environment spec, E2: stock controls draw white on their tint, so a
+// pale accent is not their tint; a single-mode theme sets its subtree's mode.
+
+@Test func aPaleAccentLeavesStockControlsTheSystemTint() {
+  for theme in [Theme.butter, .chocolate, .matcha, .neutral, .stone, .y2k, .gothic] {
+    let accent = theme.dark.color.accent
+    #expect(astryxContrast(.white, accent) < 3)
+    #expect(astryxStockTint(accent) == .accentColor)
+  }
+  for accent in [Theme.default.light.color.accent, Theme.default.dark.color.accent, Theme.butter.light.color.accent] {
+    #expect(astryxContrast(.white, accent) >= 3)
+    #expect(astryxStockTint(accent) == accent)
+  }
+}
+
+@Test func onlyASingleModeThemeSetsItsSubtreesMode() {
+  #expect(Theme.gothic.singleMode == .dark)
+  for theme in [Theme.default, .butter, .neutral, .stone, .y2k] {
+    #expect(theme.singleMode == nil)
+  }
+}
+
+@MainActor
+@Test func gothicInALightAppearanceDrawsStockSurfacesDark() {
+  let surface = Rectangle().fill(.background).frame(width: 20, height: 20)
+  let plain = Pixels(surface, scheme: .light)
+  let gothic = Pixels(surface, theme: .gothic, scheme: .light)
+  let brightness = { (p: [Int]) in p[0] + p[1] + p[2] }
+  #expect(brightness(gothic.at(10, 10)) < brightness(plain.at(10, 10)) / 2)
 }
 
 @MainActor
