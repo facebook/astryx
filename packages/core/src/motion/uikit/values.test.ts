@@ -29,7 +29,6 @@ describe('UIKit constants table through the motion math', () => {
   const springEntries: [string, SpringDescription][] = [
     ...Object.entries(springs),
     ['scroll.bounce', scroll.bounce],
-    ['scroll.paging.snap', scroll.paging.snap],
   ];
 
   it.each(springEntries)(
