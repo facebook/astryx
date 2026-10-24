@@ -421,9 +421,12 @@ const styles = stylex.create({
     zIndex: 1,
   },
   thumbHorizontal: {
-    top: '50%',
+    // Centered by its offset, not by a transform: the touch lift scales the
+    // thumb (`scale`), and CSS applies `transform` inside `scale`, so a
+    // centering translate would grow with it and lift the thumb off the
+    // track. UISlider's lens grows around its center.
+    top: `calc(50% - ${THUMB_SIZE / 2}px)`,
     insetInlineStart: 0,
-    transform: 'translateY(-50%)',
     // The thumb starts at the track's inline start (the right edge under
     // RTL) and travels by its progress along the track minus its own size,
     // so its center lands where `insetPosition` places the fill and the
@@ -446,6 +449,9 @@ const styles = stylex.create({
   }),
   thumbVertical: {
     bottom: 0,
+    // Centered by its offset (see thumbHorizontal): the same in both
+    // directions, since the thumb is symmetric.
+    insetInlineStart: `calc(50% - ${THUMB_SIZE / 2}px)`,
     translate: `0 calc(var(${THUMB_PROGRESS}) * (${THUMB_SIZE}px - 100cqb))`,
   },
   thumbHover: {
@@ -1344,9 +1350,7 @@ export function Slider({ref, ...props}: SliderProps) {
           }),
           stylex.props(
             styles.thumb,
-            isHorizontal
-              ? styles.thumbHorizontal
-              : [styles.thumbVertical, rtlStyles.centerInline('0px')],
+            isHorizontal ? styles.thumbHorizontal : styles.thumbVertical,
             !isDisabled && styles.thumbHover,
             !isDisabled && draggingThumb === thumbIndex && styles.thumbPressed,
             keyboardFocusThumb === thumbIndex &&

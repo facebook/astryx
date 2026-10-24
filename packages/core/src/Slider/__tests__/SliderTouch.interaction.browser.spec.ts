@@ -485,6 +485,68 @@ test('a release coasts on UIKit’s spring to 0.4 of the momentum projection, th
   expect(await thumb.evaluate(element => element.style.translate)).toBe('');
 });
 
+test('the lifted thumb grows around its own center, as UISlider’s lens does', async ({
+  page,
+}) => {
+  // UIKit's lens grows from 24 to 39 pt with its center fixed on the track
+  // (b40). The thumb's centering must not scale with the lift.
+  for (const {storyId, name, args} of [
+    {storyId: 'core-slider--touch-tracking', name: 'Brightness', args: {}},
+    {
+      storyId: 'core-slider--vertical-orientation',
+      name: undefined,
+      args: {valueDisplay: 'none'},
+    },
+  ]) {
+    const {driver, thumb, center} = await openSlider(page, storyId, {
+      name,
+      args,
+    });
+    const rest = await thumb.boundingBox();
+    if (rest == null) {
+      throw new Error('no thumb');
+    }
+    const at = await center();
+    const box = async () => {
+      const b = await thumb.boundingBox();
+      if (b == null) {
+        throw new Error('no thumb');
+      }
+      return b;
+    };
+    const [midLift, lifted] = await playReading(
+      page,
+      driver,
+      tap(at, {holdMs: 700}),
+      [0],
+      async () => {
+        await page.waitForTimeout(60);
+        const mid = await box();
+        await page.waitForTimeout(450);
+        return [mid, await box()] as const;
+      },
+    ).then(readings => readings[0]);
+    for (const [label, b] of [
+      ['mid-lift', midLift],
+      ['lifted', lifted],
+    ] as const) {
+      expect(
+        b.width,
+        `${storyId} ${label}: the thumb is lifted`,
+      ).toBeGreaterThan(rest.width + 2);
+      expect(
+        Math.abs(b.x + b.width / 2 - (rest.x + rest.width / 2)),
+        `${storyId} ${label}: x center`,
+      ).toBeLessThanOrEqual(0.5);
+      expect(
+        Math.abs(b.y + b.height / 2 - (rest.y + rest.height / 2)),
+        `${storyId} ${label}: y center`,
+      ).toBeLessThanOrEqual(0.5);
+    }
+    await page.waitForTimeout(700);
+  }
+});
+
 test('a slow release does not coast: the value stays where the finger left it', async ({
   page,
 }) => {
