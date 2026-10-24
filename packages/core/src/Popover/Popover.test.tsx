@@ -1084,3 +1084,148 @@ describe('Popover', () => {
     expect(screen.getByTestId('popover')).not.toHaveClass('consumer-popover');
   });
 });
+
+describe('Popover touch presentation', () => {
+  interface RecordedAnimation {
+    target: Element;
+    keyframes: Keyframe[];
+    cancelled: boolean;
+  }
+  let recorded: RecordedAnimation[] = [];
+  let isCoarse = true;
+  // Whether the engine is WebKit on iOS (it answers `-webkit-touch-callout`).
+  let isIosEngine = true;
+  const originalMatchMedia = window.matchMedia;
+  const originalCss = Object.getOwnPropertyDescriptor(window, 'CSS');
+  const originalShow = HTMLElement.prototype.showPopover;
+  const originalHide = HTMLElement.prototype.hidePopover;
+
+  beforeAll(() => {
+    // The shared resolver reads the engine for the idiom.
+    Object.defineProperty(window, 'CSS', {
+      configurable: true,
+      value: {
+        supports: (query: string) =>
+          query.includes('-webkit-touch-callout') ? isIosEngine : false,
+      },
+    });
+    // The shared resolver reads the primary pointer; Reduce Motion is off.
+    window.matchMedia = (query: string) => ({
+      matches: query.includes('pointer: coarse') ? isCoarse : false,
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    });
+    // The browser announces a close with `beforetoggle` while the popover is
+    // still shown, then hides it.
+    HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
+      const before = new Event('beforetoggle');
+      Object.defineProperty(before, 'newState', {value: 'closed'});
+      this.dispatchEvent(before);
+      popoverOpenState.set(this, false);
+      const event = new Event('toggle');
+      Object.defineProperty(event, 'newState', {value: 'closed'});
+      this.dispatchEvent(event);
+    });
+    HTMLElement.prototype.animate = function (keyframes) {
+      const animation = {
+        target: this,
+        keyframes: keyframes as Keyframe[],
+        cancelled: false,
+        startTime: null as number | null,
+        finished: new Promise(() => {}),
+        cancel() {
+          this.cancelled = true;
+        },
+      };
+      recorded.push(animation);
+      return animation as unknown as Animation;
+    };
+  });
+
+  afterAll(() => {
+    window.matchMedia = originalMatchMedia;
+    if (originalCss == null) {
+      Reflect.deleteProperty(window, 'CSS');
+    } else {
+      Object.defineProperty(window, 'CSS', originalCss);
+    }
+    HTMLElement.prototype.showPopover = originalShow;
+    HTMLElement.prototype.hidePopover = originalHide;
+    Reflect.deleteProperty(HTMLElement.prototype, 'animate');
+  });
+
+  const open = () => {
+    recorded = [];
+    render(
+      <Popover content={<span>Filters</span>} label="Filters">
+        <button type="button">Filter</button>
+      </Popover>,
+    );
+    fireEvent.click(screen.getByRole('button', {name: 'Filter'}));
+    const layer = screen
+      .getByRole('dialog', {name: 'Filters', hidden: true})
+      .closest<HTMLElement>('[popover]');
+    expect(layer).not.toBeNull();
+    return layer!;
+  };
+
+  it('on iOS, under a finger, grows the popover out of its trigger in place of the layer\u2019s entrance', () => {
+    isCoarse = true;
+    isIosEngine = true;
+    const layer = open();
+    expect(layer.style.getPropertyValue('animation-name')).toBe('none');
+    expect(layer.style.getPropertyValue('transform-origin')).not.toBe('');
+    const scale = recorded.find(
+      animation =>
+        animation.target === layer && 'scale' in animation.keyframes[0],
+    );
+    expect(scale).toBeDefined();
+    expect(String(scale!.keyframes[0].scale).split(' ')[0]).toBe('0.01');
+  });
+
+  it('on iOS, under a finger, shrinks back into its trigger on a copy that outlives the close', () => {
+    isCoarse = true;
+    isIosEngine = true;
+    const layer = open();
+    fireEvent.click(screen.getByRole('button', {name: 'Filter'}));
+    const copy = layer.parentElement!.querySelector<HTMLElement>(
+      '[data-astryx-popover-exit]',
+    );
+    expect(copy).not.toBeNull();
+    expect(copy!.getAttribute('aria-hidden')).toBe('true');
+    expect(copy!.hasAttribute('inert')).toBe(true);
+  });
+
+  it('under a mouse, keeps the layer\u2019s own entrance and plays nothing', () => {
+    isCoarse = false;
+    isIosEngine = true;
+    const layer = open();
+    expect(layer.style.getPropertyValue('animation-name')).toBe('');
+    expect(recorded.filter(animation => animation.target === layer)).toEqual(
+      [],
+    );
+    fireEvent.click(screen.getByRole('button', {name: 'Filter'}));
+    expect(
+      layer.parentElement!.querySelector('[data-astryx-popover-exit]'),
+    ).toBeNull();
+  });
+
+  it('under a finger outside iOS (Android), keeps the layer\u2019s own entrance and closes at once', () => {
+    isCoarse = true;
+    isIosEngine = false;
+    const layer = open();
+    expect(layer.style.getPropertyValue('animation-name')).toBe('');
+    expect(recorded.filter(animation => animation.target === layer)).toEqual(
+      [],
+    );
+    fireEvent.click(screen.getByRole('button', {name: 'Filter'}));
+    expect(
+      layer.parentElement!.querySelector('[data-astryx-popover-exit]'),
+    ).toBeNull();
+  });
+});

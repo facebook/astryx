@@ -282,3 +282,16 @@ display-link and feedback hooks; real HID touches.
 | M-MN5 | five-row menu                                                            | slow drag across the rows and back; drag off the menu and lift; a second finger                                                                         | highlighted row and highlight view per frame; feedback calls                                                                                         | C, H   |
 | M-MN6 | three-row menu                                                           | tap outside; a 500 ms hold outside then lift; a tap outside on another button                                                                           | does the close start at touch-down or touch-up; does the outside tap reach the view under it                                                         | C      |
 | M-MN7 | three-row menu with Reduce Motion on                                     | open and close                                                                                                                                          | what animates instead of the morph                                                                                                                   | A, C   |
+
+## Popovers (UIPopoverPresentationController)
+
+Values the popover reads from its own table (`uikit/popover.ts`); its springs
+are `springs.popoverPresent` and `springs.popoverDismiss`.
+
+Done (iOS 26.2 simulator, Oct 23 2026; in the popover's table): the present
+and dismiss springs, the scale and length a popover below its source grows
+from, and Reduce Motion, with the `.none` adaptation on iPhone.
+
+| ID    | Scene                                                                                                                                    | Gesture                     | Extract                                                                                                                      | Method |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------ |
+| M-PO1 | a popover above its source, one to its left and one to its right; a source near a screen edge so the arrow sits off the popover's centre | present, then a tap outside | which edge stays in place, which length grows from 100 pt, and the point the scale grows out of when the arrow is off centre | A, C   |

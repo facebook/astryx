@@ -1,0 +1,115 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+'use client';
+
+/**
+ * @file usePopoverSurfaceMotion.ts
+ * @input React, the shared touch resolver and popoverSurfaceMotion
+ * @output Exports `usePopoverSurfaceMotion`: the call Popover makes as it
+ *   opens, which presents the popover the UIKit way in the iOS idiom and
+ *   leaves the layer's own entrance to a mouse and to other touch screens
+ * @position Internal to Popover; glue between the component and
+ *   popoverSurfaceMotion.ts
+ *
+ * The decision is taken as the popover opens, from the shared touch resolver's
+ * idiom: in the iOS idiom (WebKit on iOS or iPadOS under a finger) the
+ * popover grows out of its source and, when it closes (its `beforetoggle` to
+ * closed, while it is still shown), shrinks back into it. A mouse, and a
+ * finger outside iOS (Android, which has no such popover), keep the layer's
+ * entrance and the theme's motion tokens (D-01). The motion is created for
+ * the popover element the first time it opens and follows it if the element
+ * is replaced.
+ *
+ * SYNC: When modified, update:
+ * - /packages/core/src/Popover/Popover.tsx
+ * - /packages/core/src/Popover/Popover.test.tsx
+ */
+
+import {useCallback, useEffect, useRef} from 'react';
+import {readTouchPresentation} from '../utils/touchPresentation';
+import {
+  createPopoverSurfaceMotion,
+  type PopoverSurfaceMotion,
+  type PopoverSurfaceRect,
+} from './popoverSurfaceMotion';
+
+function boxOf(element: Element): PopoverSurfaceRect {
+  const rect = element.getBoundingClientRect();
+  return {
+    left: rect.left,
+    top: rect.top,
+    width: rect.width,
+    height: rect.height,
+  };
+}
+
+/**
+ * Returns `present(layer, source)`, to call as the popover opens (right after
+ * the browser shows it, before it paints).
+ */
+export function usePopoverSurfaceMotion(): (
+  layer: HTMLElement | null,
+  source: HTMLElement | null,
+) => void {
+  const motionRef = useRef<{
+    element: HTMLElement;
+    motion: PopoverSurfaceMotion;
+    detach: () => void;
+  } | null>(null);
+  // Whether the presentation in progress is the iOS one.
+  const isIosPresentationRef = useRef(false);
+
+  const motionFor = useCallback((element: HTMLElement) => {
+    const current = motionRef.current;
+    if (current?.element === element) {
+      return current.motion;
+    }
+    current?.detach();
+    const motion = createPopoverSurfaceMotion(element);
+    const handleBeforeToggle = (event: Event) => {
+      if (
+        (event as ToggleEvent).newState === 'closed' &&
+        isIosPresentationRef.current
+      ) {
+        motion.exit();
+      }
+    };
+    element.addEventListener('beforetoggle', handleBeforeToggle);
+    motionRef.current = {
+      element,
+      motion,
+      detach: () => {
+        element.removeEventListener('beforetoggle', handleBeforeToggle);
+        motion.dispose();
+      },
+    };
+    return motion;
+  }, []);
+
+  useEffect(
+    () => () => {
+      motionRef.current?.detach();
+      motionRef.current = null;
+    },
+    [],
+  );
+
+  return useCallback(
+    (layer: HTMLElement | null, source: HTMLElement | null) => {
+      if (layer == null) {
+        return;
+      }
+      const isIos =
+        source != null &&
+        readTouchPresentation(layer.ownerDocument.defaultView).idiom === 'ios';
+      isIosPresentationRef.current = isIos;
+      const motion = motionFor(layer);
+      if (!isIos || source == null) {
+        motion.reset();
+        return;
+      }
+      motion.enter(() => ({surface: boxOf(layer), source: boxOf(source)}));
+    },
+    [motionFor],
+  );
+}

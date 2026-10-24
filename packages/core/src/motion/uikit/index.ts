@@ -30,6 +30,7 @@ export {
   type SourcedGestureConstant,
 } from './gestures';
 export {menu} from './menu';
+export {popover} from './popover';
 export {navigation} from './navigation';
 export {scroll} from './scroll';
 export {springs} from './springs';

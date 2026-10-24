@@ -9,7 +9,7 @@
  *   where the layer stands, for a touch presentation's close to play on, and
  *   `LayerExitBox`
  * @position Layer runtime helper for the touch presentations that animate a
- *   popover out (DropdownMenu's menu)
+ *   popover out (DropdownMenu's menu, Popover)
  *
  * The browser hides a popover the moment it closes (a pick, Escape, its own
  * light dismiss), so a close that has to stay on screen plays on a copy taken
