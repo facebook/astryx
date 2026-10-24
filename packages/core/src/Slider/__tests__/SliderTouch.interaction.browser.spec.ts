@@ -88,6 +88,54 @@ interface Opened {
   length: number;
 }
 
+/**
+ * Makes the engine take the iOS gate (C07's emulation, installed before the
+ * first script runs): `CSS.supports` answers yes for `-webkit-touch-callout`,
+ * which only WebKit on iOS implements and which the touch presentation
+ * resolver reads at its first render. Its rules come with
+ * `rewriteIosSupportsRules`. Real iOS evidence is the simulator's.
+ */
+async function emulateIosWebKit(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const original = CSS.supports.bind(CSS);
+    CSS.supports = (condition: string, value?: string) =>
+      `${condition}${value ?? ''}`.includes('-webkit-touch-callout') ||
+      (value === undefined ? original(condition) : original(condition, value));
+  });
+}
+
+/**
+ * Every `@supports (-webkit-touch-callout: none)` rule, rewritten to a
+ * condition the engine meets, keeping the touch query inside it.
+ */
+async function rewriteIosSupportsRules(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const visit = (owner: CSSStyleSheet | CSSGroupingRule) => {
+      const rules = owner.cssRules;
+      for (let i = 0; i < rules.length; i += 1) {
+        const rule = rules[i];
+        if (
+          rule instanceof CSSSupportsRule &&
+          rule.conditionText.includes('-webkit-touch-callout')
+        ) {
+          const inner = Array.from(rule.cssRules, r => r.cssText).join('\n');
+          owner.deleteRule(i);
+          owner.insertRule(`@supports (display: block) {${inner}}`, i);
+        } else if (rule instanceof CSSGroupingRule) {
+          visit(rule);
+        }
+      }
+    };
+    for (const sheet of Array.from(document.styleSheets)) {
+      try {
+        visit(sheet);
+      } catch {
+        // a cross-origin sheet
+      }
+    }
+  });
+}
+
 async function openSlider(
   page: Page,
   storyId: string,
@@ -95,12 +143,18 @@ async function openSlider(
     name,
     args,
     direction,
+    idiom = 'ios',
   }: {
     name?: string;
     args?: Readonly<Record<string, string>>;
     direction?: 'rtl';
+    /** The engine's idiom: iOS (emulated) or another touch screen, Android's. */
+    idiom?: 'ios' | 'android';
   } = {},
 ): Promise<Opened> {
+  if (idiom === 'ios') {
+    await emulateIosWebKit(page);
+  }
   if (direction == null) {
     await openStory(page, storybook(), storyId, args);
   } else {
@@ -110,14 +164,20 @@ async function openSlider(
     await page.locator('#storybook-root > *').first().waitFor();
     await frames(page, 2);
   }
+  if (idiom === 'ios') {
+    await rewriteIosSupportsRules(page);
+  }
   const driver = await touchDriver(page);
   const thumb =
     name == null
       ? page.getByRole('slider').first()
       : page.getByRole('slider', {name});
   await expect(thumb).toBeVisible();
-  // The touch presentation renders the touch targets after hydration.
-  await expect(thumb.locator('[data-slider-hit]')).toHaveCount(1);
+  // The touch presentation renders the touch targets after hydration, on
+  // iOS only.
+  await expect(thumb.locator('[data-slider-hit]')).toHaveCount(
+    idiom === 'ios' ? 1 : 0,
+  );
   const control = thumb.locator(
     'xpath=ancestor::*[contains(@class, "astryx-slider-control")][1]',
   );
@@ -645,7 +705,9 @@ test('a finger lifted outside the tracking bounds coasts back to the lift value'
 test('coincident range thumbs: the first movement picks the thumb that can follow it', async ({
   page,
 }) => {
+  await emulateIosWebKit(page);
   await openStory(page, storybook(), 'core-slider--touch-tracking');
+  await rewriteIosSupportsRules(page);
   const driver = await touchDriver(page);
   const low = page.getByRole('slider', {name: 'Minimum value'});
   const high = page.getByRole('slider', {name: 'Maximum value'});
@@ -669,7 +731,9 @@ test('coincident range thumbs: the first movement picks the thumb that can follo
 test('a vertical swipe from a thumb scrolls the list; a horizontal one drags it', async ({
   page,
 }) => {
+  await emulateIosWebKit(page);
   await openStory(page, storybook(), 'core-slider--in-scrolling-list');
+  await rewriteIosSupportsRules(page);
   const driver = await touchDriver(page);
   test.skip(
     !driver.drivesNativeGestures,
@@ -805,6 +869,92 @@ test(
     expect(proof.verdict.failures, proof.summary).toEqual([]);
   },
 );
+
+test('Android (no iOS engine): today’s slider takes the finger — a track tap moves the value, a drag follows it, no touch target and no lift', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(
+    browserName !== 'chromium',
+    'Android is Chromium: touch emulation without the iOS engine',
+  );
+  const {driver, thumb, center, value} = await openSlider(
+    page,
+    'core-slider--touch-tracking',
+    {name: 'Brightness', idiom: 'android'},
+  );
+  const control = thumb.locator(
+    'xpath=ancestor::*[contains(@class, "astryx-slider-control")][1]',
+  );
+  expect(
+    await control.evaluate(element => getComputedStyle(element).touchAction),
+  ).toBe('none');
+  const box = await control.boundingBox();
+  if (box == null) {
+    throw new Error('no control');
+  }
+  // A tap on the track moves the thumb to it (Material's slider does too).
+  const start = await value();
+  await driver.play(
+    tap({x: box.x + box.width * 0.85, y: box.y + box.height / 2}),
+  );
+  await frames(page, 4);
+  const tapped = await value();
+  expect(tapped).toBeGreaterThan(start);
+  expect(tapped).toBeGreaterThanOrEqual(80);
+  // A drag follows the finger from the touch, with no lift.
+  const at = await center();
+  const [scaleMid] = await playReading(
+    page,
+    driver,
+    drag(at, {x: at.x - 60, y: at.y}, {durationMs: 300, hz: 60}),
+    [6],
+    async () => thumb.evaluate(element => getComputedStyle(element).scale),
+  );
+  expect(scaleMid).toBe('none');
+  await frames(page, 4);
+  const dragged = await value();
+  expect(dragged).toBeLessThan(tapped);
+  const after = await center();
+  expect(Math.abs(after.x - (at.x - 60))).toBeLessThanOrEqual(3);
+});
+
+test('Android with Reduce Motion: today’s slider, its thumb’s transitions off', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(
+    browserName !== 'chromium',
+    'Android is Chromium: touch emulation without the iOS engine',
+  );
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  const {driver, thumb, value} = await openSlider(
+    page,
+    'core-slider--touch-tracking',
+    {name: 'Brightness', idiom: 'android'},
+  );
+  expect(
+    await thumb.evaluate(
+      element => getComputedStyle(element).transitionDuration,
+    ),
+  ).toBe('0s');
+  const control = thumb.locator(
+    'xpath=ancestor::*[contains(@class, "astryx-slider-control")][1]',
+  );
+  const box = await control.boundingBox();
+  if (box == null) {
+    throw new Error('no control');
+  }
+  const start = await value();
+  await driver.play(
+    tap({x: box.x + box.width * 0.15, y: box.y + box.height / 2}),
+  );
+  await frames(page, 2);
+  expect(await value()).toBeLessThan(start);
+  expect(await thumb.evaluate(element => element.getAnimations().length)).toBe(
+    0,
+  );
+});
 
 test('a drag lays out nothing per move, and the coast neither lays out nor paints', async ({
   page,

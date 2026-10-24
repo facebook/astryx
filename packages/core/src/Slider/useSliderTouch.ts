@@ -11,9 +11,11 @@
  * @output Exports `useSliderTouch` (the React wiring), `SliderTouchController`
  *   (UISlider's touch tracking), `sliderCoastCurve` (the release coast as a
  *   closed-form curve) and `SLIDER_HIT_ATTRIBUTE`
- * @position Internal to Slider: its touch presentation (a finger or a pen on
- *   a device whose primary pointer is coarse). A mouse keeps Slider's own
- *   pointer handlers.
+ * @position Internal to Slider: its touch presentation on iOS (a finger or a
+ *   pen under the touch presentation's iOS idiom). A mouse, and every other
+ *   touch screen (Android's), keeps Slider's own pointer handlers. The coast
+ *   spring is the `slider.releaseSpring` motion role, resolved under the
+ *   thumb's theme.
  *
  * WHAT A FINGER DOES (UISlider, iOS 26.2; values and sources in
  * motion/uikit/slider.ts)
@@ -85,7 +87,8 @@ import {
   type MotionHandle,
 } from '../motion/animator';
 import {projectDistance} from '../motion/projection';
-import {solveSpring, toSpring} from '../motion/spring';
+import {resolveMotion} from '../motion/resolveMotion';
+import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
 import {UIKIT_GESTURES} from '../motion/uikit/gestures';
 import {slider as UIKIT_SLIDER} from '../motion/uikit/slider';
 
@@ -195,14 +198,17 @@ export function sliderCoastCurve({
   velocity,
   lower,
   upper,
+  spring: description = UIKIT_SLIDER.releaseSpring,
 }: {
   from: number;
   to: number;
   velocity: number;
   lower: number;
   upper: number;
+  /** The release spring, as the thumb's theme resolves it. */
+  spring?: SpringDescription;
 }): MotionCurve {
-  const spring = solveSpring(toSpring(UIKIT_SLIDER.releaseSpring), {
+  const spring = solveSpring(toSpring(description), {
     from,
     to,
     velocity,
@@ -577,6 +583,11 @@ export class SliderTouchController {
       velocity: velocityPx,
       lower: (lowerValue - min) * pxPerValue,
       upper: (upperValue - min) * pxPerValue,
+      // A theme may retune the coast (`slider.releaseSpring`).
+      spring: resolveMotion(
+        this.getParts()?.control,
+        UIKIT_SLIDER.releaseSpring,
+      ),
     });
     const moves =
       Math.abs(toPx - fromPx) >= MIN_COAST_PX ||

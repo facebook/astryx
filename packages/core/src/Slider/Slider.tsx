@@ -5,7 +5,7 @@
 /**
  * @file Slider.tsx
  * @input Uses React, useId, useRef, useCallback, useEffect, Field, Tooltip, useTooltip, VisuallyHidden; the touch presentation resolver and useSliderTouch (UISlider's touch tracking)
- * @output Exports Slider and its props; unfilled marks share the track token; modifier-only key presses do not restore the thumb focus ring; a drag belongs to the pointer that started it; the thumbs and the filled range travel by `translate` from a progress custom property in the control's container units, so moving them never lays out (a value tooltip or text display still does); under a finger (coarse primary pointer) only the thumbs' touch targets take touches, tracked as UISlider does, while a mouse keeps the pointer handlers
+ * @output Exports Slider and its props; unfilled marks share the track token; modifier-only key presses do not restore the thumb focus ring; a drag belongs to the pointer that started it; the thumbs and the filled range travel by `translate` from a progress custom property in the control's container units, so moving them never lays out (a value tooltip or text display still does); under a finger on iOS (the touch presentation's iOS idiom) only the thumbs' touch targets take touches, tracked as UISlider does, while a mouse and every other touch screen (Android's) keep the pointer handlers
  * @position Core implementation; consumed by index.ts, tested by Slider.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -206,11 +206,17 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     flexGrow: 1,
-    // Under a finger only the thumbs take touches (their touch targets set
-    // their own touch-action); the track leaves the page its scrolling.
+    // Under a finger on iOS only the thumbs take touches (their touch
+    // targets set their own touch-action); the track leaves the page its
+    // scrolling. The gate is the touch presentation resolver's
+    // IOS_TOUCH_STYLE_KEYS, nested as it spells them: elsewhere, Android
+    // included, the whole control takes the finger as it always has.
     touchAction: {
       default: 'none',
-      '@media (pointer: coarse)': 'manipulation',
+      '@media (pointer: coarse)': {
+        default: 'none',
+        '@supports (-webkit-touch-callout: none)': 'manipulation',
+      },
     },
     userSelect: 'none',
     // Safari reads only the prefixed forms: without them a finger held on a
@@ -218,11 +224,17 @@ const styles = stylex.create({
     // A UISlider selects nothing.
     WebkitUserSelect: {
       default: null,
-      '@media (pointer: coarse)': 'none',
+      '@media (pointer: coarse)': {
+        default: null,
+        '@supports (-webkit-touch-callout: none)': 'none',
+      },
     },
     WebkitTouchCallout: {
       default: null,
-      '@media (pointer: coarse)': 'none',
+      '@media (pointer: coarse)': {
+        default: null,
+        '@supports (-webkit-touch-callout: none)': 'none',
+      },
     },
     isolation: 'isolate',
     // The thumbs and the fill travel in container units of this box
@@ -676,9 +688,14 @@ export function Slider({ref, ...props}: SliderProps) {
   const draggingThumbRef = useRef<number | null>(null);
   const [draggingThumb, setDraggingThumb] = useState<number | null>(null);
 
-  // Under a finger (a coarse primary pointer) the thumbs track touches as
-  // UISlider does (useSliderTouch); a mouse keeps the pointer handlers below.
-  const {isTouch: isTouchPresentation} = useTouchPresentation();
+  // Under a finger on iOS the thumbs track touches as UISlider does
+  // (useSliderTouch); a mouse keeps the pointer handlers below. UISlider's
+  // tracking is the iOS idiom: Android's Material slider moves the thumb to a
+  // tap on the track and has no momentum, so every other touch screen keeps
+  // the pointer handlers too.
+  const touchPresentation = useTouchPresentation();
+  const isTouchPresentation =
+    touchPresentation.isTouch && touchPresentation.idiom === 'ios';
   const hasTouchTargets = isTouchPresentation && !isDisabled;
 
   // A thumb is a div[role="slider"], and `handlePointerDown` focuses it from

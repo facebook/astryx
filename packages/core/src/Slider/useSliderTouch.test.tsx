@@ -100,7 +100,16 @@ function dragThumb(
   return t;
 }
 
-function stubMatchMedia(coarse: boolean) {
+/**
+ * A coarse or fine primary pointer, on iOS's engine (the only one with
+ * `-webkit-touch-callout`, the touch presentation's iOS gate) or another
+ * (Android).
+ */
+function stubMatchMedia(coarse: boolean, engine: 'ios' | 'other' = 'ios') {
+  vi.stubGlobal('CSS', {
+    supports: (condition: string) =>
+      engine === 'ios' && condition.includes('-webkit-touch-callout'),
+  });
   vi.stubGlobal(
     'matchMedia',
     vi.fn((query: string) => ({
@@ -262,6 +271,26 @@ describe('Slider touch presentation (UISlider tracking)', () => {
       expect(hit).not.toBeNull();
       expect(hit).toHaveAttribute('aria-hidden', 'true');
     }
+  });
+
+  it('keeps today’s slider on a touch screen that is not iOS: no touch targets, a finger on the track moves the value', () => {
+    stubMatchMedia(true, 'other');
+    stubControlGeometry();
+    const onChange = vi.fn();
+    render(<Controlled initial={50} onChange={onChange} />);
+    expect(hitOf(screen.getByRole('slider'))).toBeNull();
+    const control = document.querySelector(
+      '.astryx-slider-control',
+    ) as HTMLElement;
+    fireEvent.pointerDown(control, {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: 280,
+      clientY: 12,
+    });
+    fireEvent.pointerUp(control, {pointerId: 1, pointerType: 'touch'});
+    expect(onChange).toHaveBeenCalled();
+    expect(onChange.mock.lastCall?.[0]).toBeGreaterThan(50);
   });
 
   it('ignores a finger on the track, while a mouse still moves the value there', () => {
