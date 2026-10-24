@@ -4,19 +4,30 @@
 
 /**
  * @file AlertDialog.tsx
- * @input Uses React, StyleX, Dialog, Layout, Heading, Text, Button
+ * @input Uses React, StyleX, Dialog, Layout, Heading, Text, Button, and its
+ *   touch layer (AlertDialogTouch)
  * @output Exports AlertDialog component, AlertDialogProps type
  * @position Core implementation; consumed by index.ts, tested by AlertDialog.test.tsx
  *
+ * Under a finger or a pen the two actions are tracked as one group, as UIKit tracks an
+ * alert's actions: the action under the finger highlights at once, the
+ * highlight follows the finger from one action to the other, and lifting runs
+ * the action under the finger (none when it is off both). Tracking spans the
+ * whole surface, so a touch that lands on the message can still slide onto an
+ * action. A mouse, the keyboard and assistive technology keep the buttons'
+ * own click.
+ *
  * SYNC: When modified, update these files to stay in sync:
+ * - /packages/core/src/AlertDialog/AlertDialogTouch.ts (the touch layer)
  * - /packages/core/src/AlertDialog/AlertDialog.doc.mjs (props table, features, examples)
  * - /packages/core/src/AlertDialog/AlertDialog.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/AlertDialog/index.ts (exports if types change)
+ * - /packages/core/src/AlertDialog/__tests__/AlertDialog.interaction.browser.spec.ts (touch tracking)
  * - /apps/storybook/stories/AlertDialog.stories.tsx (storybook stories)
  * - /packages/cli/assets/templates/blocks/components/AlertDialog/ (showcase blocks)
  */
 
-import React, {useId, useCallback} from 'react';
+import React, {useId, useCallback, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Dialog} from '../Dialog';
 import {Layout} from '../Layout/Layout';
@@ -31,10 +42,27 @@ import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 import {useMediaQuery} from '../hooks';
+import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useAlertDialogTouch} from './AlertDialogTouch';
 
 const SMALL_SCREEN_QUERY = '(max-width: 640px)';
 
+/** Marks the actions the touch tracking hit-tests. */
+const ACTION_ATTRIBUTE = 'data-astryx-alert-action';
+
 const styles = stylex.create({
+  // The action tracking claims a touch on the surface the moment it lands, as
+  // a long press does: the browser may pinch-zoom there but never pans (Chrome
+  // on Android cancels a pointer it pans, which would cancel the group's
+  // touch), and a double tap zooms nothing. A long alert's content keeps its
+  // pan (see `isBodyScrollable`). While a finger or a pen is down, the gesture
+  // host's selection lock keeps it from starting a text selection or opening
+  // the callout (useActionGroupTracking); a mouse keeps selecting text, which
+  // is why the host's permanent long-press styles stay off
+  // (`manageStyle: false`).
+  trackingSurface: {
+    touchAction: 'pinch-zoom',
+  },
   action: {
     maxWidth: '100%',
     minWidth: 0,
@@ -170,6 +198,27 @@ export function AlertDialog({
     onOpenChange(false);
   }, [onOpenChange]);
 
+  // A finger is tracked across both actions as one group (UIKit's alert
+  // tracking, in the touch layer); the backdrop, where a touch targets the
+  // dialog itself, is not part of it. Each action opts out of its own press
+  // tracking while the group owns its touches, and runs through its own click
+  // at the lift.
+  const surfaceRef = useRef<HTMLDialogElement>(null);
+  const mergedRef = useMergedRefs(ref, surfaceRef);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const {isTracking, isBodyScrollable} = useAlertDialogTouch(surfaceRef, {
+    isOpen,
+    isInline: isInline === true,
+    itemSelector: `[${ACTION_ATTRIBUTE}]`,
+    bodyRef,
+  });
+  const actionTrackingProps = {
+    [ACTION_ATTRIBUTE]: '',
+    // Overrides Button's own marker for the document press controller, which
+    // would otherwise paint (and un-paint) the same attribute on its own clock.
+    'data-astryx-pressable': isTracking ? undefined : '',
+  };
+
   const buttonActionStyle = [
     styles.action,
     isSmallScreen && styles.stackedAction,
@@ -181,6 +230,7 @@ export function AlertDialog({
       label={cancelLabel}
       onClick={handleCancel}
       xstyle={buttonActionStyle}
+      {...actionTrackingProps}
       // Dialog focuses [data-autofocus] itself after showModal(), because
       // React's autoFocus runs during commit while the dialog is invisible.
       // Cancel is least destructive, so it remains the autofocus target even
@@ -196,13 +246,14 @@ export function AlertDialog({
       onClick={onAction}
       isLoading={isActionLoading}
       xstyle={buttonActionStyle}
+      {...actionTrackingProps}
     />
   );
 
   return (
     <Dialog
       {...rest}
-      ref={ref}
+      ref={mergedRef}
       isOpen={isOpen}
       isInline={isInline}
       onOpenChange={onOpenChange}
@@ -217,11 +268,13 @@ export function AlertDialog({
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
       {...mergeProps(themeProps('alert-dialog'), {className, style})}
-      xstyle={xstyle}
+      xstyle={[isTracking && styles.trackingSurface, xstyle]}
       data-testid={testId}>
       <Layout
         content={
-          <LayoutContent>
+          <LayoutContent
+            ref={bodyRef}
+            xstyle={isTracking && !isBodyScrollable && styles.trackingSurface}>
             <Heading level={2} id={titleId}>
               {title}
             </Heading>
