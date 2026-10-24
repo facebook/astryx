@@ -7,6 +7,7 @@ import {Button} from '@astryxdesign/core/Button';
 import {IconButton} from '@astryxdesign/core/IconButton';
 import {InputGroup, InputGroupText} from '@astryxdesign/core/InputGroup';
 import {MultiSelector} from '@astryxdesign/core/MultiSelector';
+import {Popover} from '@astryxdesign/core/Popover';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
 
 const meta: Meta<typeof MultiSelector> = {
@@ -870,6 +871,98 @@ export const CreateFromQuery: Story = {
         hasSearch
         hasCreate
         triggerDisplay="badges"
+        isDefaultOpen
+      />
+    );
+  },
+};
+
+export const PanelFooter: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>(['bug']);
+    const [managed, setManaged] = useState(0);
+    return (
+      <>
+        <MultiSelector
+          label="Labels"
+          options={[
+            {value: 'bug', label: 'Bug'},
+            {value: 'feature', label: 'Feature'},
+            {value: 'docs', label: 'Docs'},
+            {value: 'design', label: 'Design review'},
+            {value: 'p0', label: 'P0'},
+            {value: 'p1', label: 'P1'},
+            {value: 'p2', label: 'P2'},
+            {value: 'later', label: 'Later'},
+          ]}
+          value={value}
+          onChange={setValue}
+          hasSearch
+          triggerDisplay="badges"
+          footer={
+            <Button
+              label="Manage labels"
+              variant="ghost"
+              onClick={() => setManaged(count => count + 1)}
+            />
+          }
+          isDefaultOpen
+        />
+        <output data-testid="manage-count">{managed}</output>
+      </>
+    );
+  },
+};
+
+export const PanelFooterWithoutSearch: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>([]);
+    return (
+      <MultiSelector
+        label="Labels"
+        options={[
+          {value: 'bug', label: 'Bug'},
+          {value: 'feature', label: 'Feature'},
+          {value: 'docs', label: 'Docs'},
+        ]}
+        value={value}
+        onChange={setValue}
+        footer={<Button label="Manage labels" variant="ghost" />}
+      />
+    );
+  },
+};
+
+/**
+ * A footer control that opens a popover of its own: Tab inside that popover
+ * stays in it, past its last control too, and the picker panel stays open.
+ */
+export const PanelFooterWithPopover: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>([]);
+    return (
+      <MultiSelector
+        label="Labels"
+        options={[
+          {value: 'bug', label: 'Bug'},
+          {value: 'feature', label: 'Feature'},
+          {value: 'docs', label: 'Docs'},
+        ]}
+        value={value}
+        onChange={setValue}
+        hasSearch
+        footer={
+          <Popover
+            label="Label filters"
+            content={
+              <>
+                <Button label="Apply" variant="ghost" />
+                <Button label="Reset" variant="ghost" />
+              </>
+            }>
+            <Button label="Filters" variant="ghost" />
+          </Popover>
+        }
         isDefaultOpen
       />
     );

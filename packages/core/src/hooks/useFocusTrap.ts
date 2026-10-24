@@ -16,10 +16,44 @@
  * - /packages/core/src/hooks/index.ts
  */
 
-import {useCallback, useEffect, useRef} from 'react';
+import {useCallback, useEffect, useRef, type RefObject} from 'react';
 
 import {FOCUSABLE_SELECTOR} from './focusableSelector';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
+
+// The containers of the focus traps currently active. Tab belongs to the
+// innermost trap that holds focus: a trap nested in another's container (a
+// popover opened from a control inside a dialog) owns the key while focus is
+// inside it, though the outer trap's document listener was installed first
+// and runs first.
+const activeTrapContainers = new Set<RefObject<HTMLElement | null>>();
+
+/**
+ * Whether focus sits inside another active trap nested in `container`, which
+ * then handles Tab itself.
+ */
+function isFocusInNestedTrap(
+  container: HTMLElement,
+  own: RefObject<HTMLElement | null>,
+): boolean {
+  const active = container.ownerDocument.activeElement;
+  if (active == null) {
+    return false;
+  }
+  for (const ref of activeTrapContainers) {
+    const nested = ref.current;
+    if (
+      ref !== own &&
+      nested != null &&
+      nested !== container &&
+      container.contains(nested) &&
+      nested.contains(active)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
 
 // Escape-dismissible focus traps currently mounted. This is the whole state
 // behind `hasActiveFocusTrapEscape`, which predates the shared stack and must
@@ -92,9 +126,10 @@ function isVisiblyFocusable(el: HTMLElement): boolean {
 /**
  * Get all focusable elements within a container.
  *
- * Exported for menus that place their own Tab stops inside a trapped layer
- * (DropdownMenu's header and footer), so they judge reachability exactly as
- * the trap does. Not re-exported from the package's `hooks` entry.
+ * Exported for layers that place their own Tab stops inside a trapped layer
+ * (DropdownMenu's header and footer, MultiSelector's footer), so they judge
+ * reachability exactly as the trap does. Not re-exported from the package's
+ * `hooks` entry.
  */
 export function getFocusableElements(container: HTMLElement): HTMLElement[] {
   return Array.from(
@@ -392,6 +427,7 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
     if (!isActive) {
       return;
     }
+    activeTrapContainers.add(containerRef);
 
     const handleKeyDown = (event: KeyboardEvent) => {
       const container = containerRef.current;
@@ -400,6 +436,11 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
       }
 
       if (event.key === 'Tab') {
+        // A trap nested inside this one, holding focus, wraps the key in its
+        // own cycle; this trap stays out of it.
+        if (isFocusInNestedTrap(container, containerRef)) {
+          return;
+        }
         // Mark that keyboard navigation is happening
         isKeyboardNavigationRef.current = true;
 
@@ -456,6 +497,7 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
     document.addEventListener('keydown', handleKeyDown);
 
     return () => {
+      activeTrapContainers.delete(containerRef);
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isActive, onEscape]);
