@@ -699,11 +699,15 @@ export function useSheetGestures({
   // Set while a drag-dismissed sheet is carried off screen by its release
   // spring (see SheetGestureExit).
   const gestureExitRef = useRef<SheetGestureExit | null>(null);
+  // The mounted sheet, as state: the dialog-level touch listeners (see
+  // `drawnSheetRect`) attach once it is in the DOM.
+  const [sheetNode, setSheetNode] = useState<HTMLElement | null>(null);
   const sheetRef = useCallback(
     (node: HTMLElement | null) => {
       observerRef.current?.disconnect();
       observerRef.current = null;
       sheetElRef.current = node;
+      setSheetNode(node);
       animator.attach(node);
       if (!node || typeof ResizeObserver === 'undefined') {
         if (node) {
@@ -1564,6 +1568,178 @@ export function useSheetGestures({
     endDragRef.current = endDrag;
     measureHeightRef.current = measureHeight;
   });
+
+  // A finger on the drawn sheet during a release. WebKit (iOS Safari 26.2)
+  // hit-tests an element that a compositor animation is moving at its
+  // un-animated position, and reports that rect too, so a touch on the moving
+  // sheet lands on whatever sat there when the release began: the scrim, or
+  // content the sheet has left. While a release travels, a touch on the
+  // dialog is mapped through the sheet's drawn rect instead (its layout box,
+  // its resting transform and the animator's current travel, never a rect
+  // read): inside, it catches the sheet at touch-down and is never a scrim
+  // tap; outside, it is left alone.
+  const drawnSheetRect = useCallback(() => {
+    const sheet = sheetElRef.current;
+    if (sheet == null) {
+      return null;
+    }
+    // offsetTop/offsetLeft ignore transforms, in every engine.
+    let top = 0;
+    let left = 0;
+    for (
+      let node: HTMLElement | null = sheet;
+      node != null;
+      node = node.offsetParent as HTMLElement | null
+    ) {
+      top += node.offsetTop;
+      left += node.offsetLeft;
+    }
+    const resting = getComputedStyle(sheet).transform;
+    const restingY =
+      resting !== '' && resting !== 'none'
+        ? new DOMMatrixReadOnly(resting).m42
+        : 0;
+    const drawnTop = top + restingY + animator.get('y');
+    return {
+      top: drawnTop,
+      bottom: drawnTop + sheet.offsetHeight,
+      left,
+      right: left + sheet.offsetWidth,
+    };
+  }, [animator]);
+  const caughtTouchRef = useRef<number | null>(null);
+  const suppressClickUntilRef = useRef(-Infinity);
+  useEffect(() => {
+    const dialog = sheetNode?.closest('dialog');
+    if (!isOpen || dialog == null) {
+      return;
+    }
+    const asPointer = (touch: Touch, timeStamp: number) =>
+      ({
+        syntheticTouch: true,
+        pointerId: touch.identifier,
+        clientY: touch.clientY,
+        timeStamp,
+        currentTarget: sheetNode,
+        setPointerCapture: () => {},
+        releasePointerCapture: () => {},
+      }) as unknown as ReactPointerEvent;
+    const find = (list: TouchList, id: number): Touch | null => {
+      for (let i = 0; i < list.length; i++) {
+        if (list[i].identifier === id) {
+          return list[i];
+        }
+      }
+      return null;
+    };
+    const onDrawnSheet = (x: number, y: number) => {
+      const rect = drawnSheetRect();
+      return (
+        rect != null &&
+        y >= rect.top &&
+        y <= rect.bottom &&
+        x >= rect.left &&
+        x <= rect.right
+      );
+    };
+    const onTouchStart = (event: TouchEvent) => {
+      const touch = event.changedTouches[0] as Touch | undefined;
+      if (
+        travelHandleRef.current == null ||
+        event.touches.length !== 1 ||
+        touch == null ||
+        !onDrawnSheet(touch.clientX, touch.clientY)
+      ) {
+        return;
+      }
+      // The sheet's: not the stale target's (handle, body or scrim).
+      event.stopPropagation();
+      caughtTouchRef.current = touch.identifier;
+      suppressClickUntilRef.current = Infinity;
+      beginDragRef.current(
+        asPointer(touch, event.timeStamp),
+        measureHeightRef.current(),
+      );
+    };
+    const onTouchMove = (event: TouchEvent) => {
+      const id = caughtTouchRef.current;
+      const touch = id == null ? null : find(event.changedTouches, id);
+      if (touch == null) {
+        return;
+      }
+      event.stopPropagation();
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+      pointerMoveRef.current(asPointer(touch, event.timeStamp));
+    };
+    const onTouchEnd = (event: TouchEvent) => {
+      const id = caughtTouchRef.current;
+      const touch = id == null ? null : find(event.changedTouches, id);
+      if (touch == null) {
+        return;
+      }
+      event.stopPropagation();
+      caughtTouchRef.current = null;
+      // A tap's click follows the lift, on the stale target: not a scrim tap.
+      suppressClickUntilRef.current = performance.now() + 700;
+      if (event.type === 'touchcancel') {
+        cancelDragRef.current();
+      } else {
+        endDragRef.current(asPointer(touch, event.timeStamp));
+      }
+    };
+    // The same finger's pointer events belong to the touch above, never to
+    // the stale target's handlers.
+    const onPointer = (event: PointerEvent) => {
+      if (
+        event.pointerType === 'touch' &&
+        (caughtTouchRef.current != null ||
+          (event.type === 'pointerdown' &&
+            travelHandleRef.current != null &&
+            onDrawnSheet(event.clientX, event.clientY)))
+      ) {
+        event.stopPropagation();
+      }
+    };
+    const onClick = (event: MouseEvent) => {
+      if (performance.now() <= suppressClickUntilRef.current) {
+        suppressClickUntilRef.current = -Infinity;
+        event.stopPropagation();
+        event.preventDefault();
+      }
+    };
+    const touchTypes = ['touchstart', 'touchmove', 'touchend', 'touchcancel'];
+    const touchHandlers = [onTouchStart, onTouchMove, onTouchEnd, onTouchEnd];
+    const pointerTypes = [
+      'pointerdown',
+      'pointermove',
+      'pointerup',
+      'pointercancel',
+    ];
+    touchTypes.forEach((type, i) =>
+      dialog.addEventListener(type, touchHandlers[i] as EventListener, {
+        capture: true,
+        passive: type !== 'touchmove',
+      }),
+    );
+    pointerTypes.forEach(type =>
+      dialog.addEventListener(type, onPointer as EventListener, true),
+    );
+    dialog.addEventListener('click', onClick, true);
+    return () => {
+      touchTypes.forEach((type, i) =>
+        dialog.removeEventListener(type, touchHandlers[i] as EventListener, {
+          capture: true,
+        }),
+      );
+      pointerTypes.forEach(type =>
+        dialog.removeEventListener(type, onPointer as EventListener, true),
+      );
+      dialog.removeEventListener('click', onClick, true);
+      caughtTouchRef.current = null;
+    };
+  }, [drawnSheetRect, isOpen, sheetNode]);
 
   const bodyRef = useCallback((node: HTMLElement | null) => {
     // `timeStamp` is the touch event's own: when the finger was there, on the

@@ -2087,3 +2087,165 @@ describe('useSheetGestures: the release on the compositor', () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('useSheetGestures: a finger on the drawn sheet during a release', () => {
+  // WebKit (iOS Safari 26.2) hit-tests an element a compositor animation is
+  // moving at its un-animated position: a touch on the moving sheet arrives
+  // on whatever sat there when the release began (here, the dialog: the
+  // scrim). The hook maps it through the sheet's drawn rect instead.
+  beforeEach(() => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => ({
+        matches: query.includes('pointer: coarse'),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    );
+  });
+
+  interface Played {
+    keyframes: Keyframe[];
+    options: KeyframeAnimationOptions;
+    cancel: ReturnType<typeof vi.fn>;
+  }
+  function recordAnimations(el: HTMLElement): Played[] {
+    const played: Played[] = [];
+    el.animate = vi.fn((keyframes, options) => {
+      const cancel = vi.fn();
+      played.push({
+        keyframes: keyframes as Keyframe[],
+        options: options as KeyframeAnimationOptions,
+        cancel,
+      });
+      return {cancel, startTime: 0} as unknown as Animation;
+    });
+    return played;
+  }
+  function travelAt(animation: Played, ms: number): number {
+    const duration = animation.options.duration as number;
+    const frames = animation.keyframes.map(frame => ({
+      t: (frame.offset as number) * duration,
+      v: Number.parseFloat(String(frame.translate).split(' ')[1]),
+    }));
+    for (let i = 1; i < frames.length; i++) {
+      if (ms <= frames[i].t) {
+        const a = frames[i - 1];
+        const b = frames[i];
+        return a.v + ((b.v - a.v) * (ms - a.t)) / (b.t - a.t);
+      }
+    }
+    return frames[frames.length - 1].v;
+  }
+  function touchOnDialog(
+    dialog: HTMLElement,
+    type: string,
+    y: number,
+    id = 7,
+  ): Event {
+    const ev = new Event(type, {bubbles: true, cancelable: true});
+    const point = {identifier: id, clientX: 100, clientY: y};
+    Object.defineProperty(ev, 'changedTouches', {value: [point]});
+    Object.defineProperty(ev, 'touches', {
+      value: type === 'touchend' || type === 'touchcancel' ? [] : [point],
+    });
+    dialog.dispatchEvent(ev);
+    return ev;
+  }
+  /** A 400px sheet whose layout box starts 300px down, in a modal dialog, released toward its 200px stop. */
+  function releasing() {
+    const {hook} = setup({
+      snapHeights: () => [200],
+      onScrimOpacity: vi.fn(),
+    });
+    const dialog = document.createElement('dialog');
+    const target = makeTarget();
+    for (const [key, value] of Object.entries({
+      offsetTop: 300,
+      offsetLeft: 0,
+      offsetWidth: 400,
+      offsetHeight: 400,
+      offsetParent: null,
+    })) {
+      Object.defineProperty(target, key, {value, configurable: true});
+    }
+    dialog.appendChild(target);
+    document.body.appendChild(dialog);
+    const sheetAnimations = recordAnimations(target);
+    recordAnimations(dialog);
+    act(() => hook.result.current.sheetRef(target));
+    down(hook, 0, 0, target);
+    stream(hook, target, {from: 0, to: 290, t0: 0, t1: 600});
+    restAt(hook, 290, 650, target);
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(
+        pointerEvent(290, 800, target),
+      ),
+    );
+    const release = sheetAnimations.at(-1) as Played;
+    act(() => {
+      vi.advanceTimersByTime(60);
+    });
+    // Where the sheet is drawn 60 ms into its release.
+    const y = travelAt(release, 60);
+    return {hook, dialog, target, release, y, drawnTop: 300 + y};
+  }
+
+  it('catches the sheet at touch-down when the touch lands on the scrim inside the drawn sheet', () => {
+    const {hook, dialog, release, y, drawnTop} = releasing();
+    expect(hook.result.current.settledOffset).toBe(200);
+    act(() => {
+      touchOnDialog(dialog, 'touchstart', drawnTop + 20);
+    });
+    // Caught where it is drawn: the release is abandoned in place.
+    expect(release.cancel).toHaveBeenCalled();
+    expect(hook.result.current.activeOffsetRef.current).toBeCloseTo(y, 0);
+    // The finger drives it from there.
+    act(() => {
+      touchOnDialog(dialog, 'touchmove', drawnTop + 40);
+    });
+    expect(hook.result.current.activeOffsetRef.current).toBeCloseTo(y + 20, 0);
+    act(() => {
+      touchOnDialog(dialog, 'touchend', drawnTop + 40);
+    });
+    // The tap's click on the stale target is not a scrim tap.
+    const click = new MouseEvent('click', {bubbles: true, cancelable: true});
+    const onClick = vi.fn();
+    document.addEventListener('click', onClick);
+    dialog.dispatchEvent(click);
+    document.removeEventListener('click', onClick);
+    expect(click.defaultPrevented).toBe(true);
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it('leaves a touch above the drawn sheet to the scrim', () => {
+    const {hook, dialog, release, drawnTop} = releasing();
+    act(() => {
+      touchOnDialog(dialog, 'touchstart', drawnTop - 30);
+      touchOnDialog(dialog, 'touchend', drawnTop - 30);
+    });
+    expect(release.cancel).not.toHaveBeenCalled();
+    const click = new MouseEvent('click', {bubbles: true, cancelable: true});
+    dialog.dispatchEvent(click);
+    expect(click.defaultPrevented).toBe(false);
+    expect(hook.result.current.settledOffset).toBe(200);
+  });
+
+  it('leaves touches alone when nothing travels', () => {
+    const {hook} = setup({snapHeights: () => [200]});
+    const dialog = document.createElement('dialog');
+    const target = makeTarget();
+    Object.defineProperty(target, 'offsetHeight', {value: 400});
+    dialog.appendChild(target);
+    document.body.appendChild(dialog);
+    act(() => hook.result.current.sheetRef(target));
+    act(() => {
+      touchOnDialog(dialog, 'touchstart', 10);
+      touchOnDialog(dialog, 'touchend', 10);
+    });
+    const click = new MouseEvent('click', {bubbles: true, cancelable: true});
+    dialog.dispatchEvent(click);
+    expect(click.defaultPrevented).toBe(false);
+    expect(hook.result.current.activeOffsetRef.current).toBe(0);
+  });
+});

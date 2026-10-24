@@ -455,6 +455,73 @@ test('a finger catches the settling sheet where it is', async ({page}) => {
   expect(tops[tops.length - 1]).toBeCloseTo(pressed - 40, -1);
 });
 
+test('a finger on the drawn sheet catches it even when the hit test lands on the scrim, as WebKit does', async ({
+  page,
+}) => {
+  // iOS Safari 26.2 hit-tests an element a compositor animation is moving at
+  // its un-animated position: a touch on the moving sheet arrives on the
+  // scrim (or content the sheet has left). Mimicked here by dispatching the
+  // touch to the dialog itself, at a point on the drawn sheet.
+  const {driver, sheet, tallTop, halfTop, handle} = await openSheet(page);
+  const canTouch = await page.evaluate(() => {
+    try {
+      void new Touch({identifier: 1, target: document.body});
+      return true;
+    } catch {
+      return false;
+    }
+  });
+  test.skip(!canTouch, 'this engine cannot construct touch events');
+  const fire = async (type: string, y: number) =>
+    sheet.evaluate(
+      (element, {kind, clientY}) => {
+        const dialog = element.closest('dialog') as HTMLDialogElement;
+        const touch = new Touch({
+          identifier: 77,
+          target: dialog,
+          clientX: 200,
+          clientY,
+        });
+        dialog.dispatchEvent(
+          new TouchEvent(kind, {
+            bubbles: true,
+            cancelable: true,
+            touches: kind === 'touchend' ? [] : [touch],
+            changedTouches: [touch],
+          }),
+        );
+        if (kind === 'touchend') {
+          dialog.dispatchEvent(
+            new MouseEvent('click', {bubbles: true, cancelable: true}),
+          );
+        }
+      },
+      {kind: type, clientY: y},
+    );
+  await driver.play(slowDragTo(handle, Math.round((halfTop - tallTop) * 0.66)));
+  await waitForAnimation(sheet, {minProgressMs: 40});
+  // How far the settle moves in a frame right now, then where it is.
+  const before = await sheetTop(sheet);
+  await frames(page, 1);
+  const drawn = await sheetTop(sheet);
+  const perFrame = Math.abs(drawn - before);
+  await fire('touchstart', drawn + 20);
+  await frames(page, 1);
+  const pressed = await sheetTop(sheet);
+  await page.waitForTimeout(80);
+  const held = await sheetTop(sheet);
+  // Caught where it was drawn (within the frame or two the settle moved
+  // between the read and the press), and it stays there while held.
+  expect(Math.abs(pressed - drawn)).toBeLessThanOrEqual(2 * perFrame + 1);
+  expect(Math.abs(held - pressed)).toBeLessThan(0.5);
+  // The lift settles it from there, and the tap's click on the dialog is not
+  // a scrim tap: the sheet stays open.
+  await fire('touchend', pressed + 20);
+  await waitForRest(sheet);
+  await expect(sheet).toBeVisible();
+  expect(await sheet.evaluate(el => el.closest('dialog')?.open)).toBe(true);
+});
+
 test('the settle keeps advancing every frame while the main thread is blocked', async ({
   page,
   browserName,
