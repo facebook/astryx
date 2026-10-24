@@ -75,7 +75,11 @@ import {useFocusReturnVisibility} from '../hooks/useFocusReturnVisibility';
 import {focusForLastInput} from '../utils/focusReturn';
 import {useMenuOverflow} from './useMenuOverflow';
 import {MenuRegionsContext} from './menuRegionsContext';
-import {moveRegionsTab} from './menuRegionStops';
+import {
+  focusRegionControl,
+  moveRegionsTab,
+  tabbablesIn,
+} from './menuRegionStops';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {useMenuDrillIn} from './useMenuDrillIn';
 import {resolveMenuWidth} from './menuWidth';
@@ -98,7 +102,7 @@ import {
   durationVars,
   easeVars,
 } from '../theme/tokens.stylex';
-import {isRenderable, mergeProps, rtlStyles} from '../utils';
+import {isImeKeyEvent, isRenderable, mergeProps, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {
@@ -122,6 +126,49 @@ const MENU_TRIGGER_OPEN_BACKGROUND = `linear-gradient(${colorVars['--color-overl
 // reads that from the DOM, so no state mirrors which view shows.
 const STEPS_ASIDE_FOR_VIEW =
   ':has(~ * > [data-astryx-submenu-regions="view"]:not([hidden]))';
+
+// A single-line text field in the header works as a combobox's input whose
+// list is the menu: ArrowDown moves on to the rows. Fields whose arrows mean
+// something of their own (a number, a range, a multi-line text) keep them.
+const TEXT_ENTRY_TYPES = new Set([
+  'text',
+  'search',
+  'email',
+  'url',
+  'tel',
+  'password',
+]);
+
+// The roles a single-line text field may carry and still be plain text entry.
+const TEXT_ENTRY_ROLES = new Set(['', 'textbox', 'searchbox']);
+
+function isTextEntryField(
+  element: EventTarget | null,
+): element is HTMLInputElement {
+  return (
+    element instanceof HTMLInputElement &&
+    TEXT_ENTRY_TYPES.has(
+      (element.getAttribute('type') ?? 'text').trim().toLowerCase(),
+    ) &&
+    // A field with a role of its own keeps its arrows: a combobox for its
+    // list, a spinbutton (NumberInput's text input) to step its value.
+    TEXT_ENTRY_ROLES.has((element.getAttribute('role') ?? '').trim()) &&
+    // So does an input with a list of its own (a datalist).
+    !element.hasAttribute('list')
+  );
+}
+
+/** An unmodified arrow press outside an IME composition. */
+function isPlainArrow(e: React.KeyboardEvent, key: string): boolean {
+  return (
+    e.key === key &&
+    !e.altKey &&
+    !e.ctrlKey &&
+    !e.metaKey &&
+    !e.shiftKey &&
+    !isImeKeyEvent(e.nativeEvent)
+  );
+}
 
 const styles = stylex.create({
   triggerOpen: {
@@ -939,6 +986,9 @@ function DropdownMenuPopover({
   } = useFocusReturnVisibility();
   const contentRef = useRef<HTMLDivElement | null>(null);
   const headerRef = useRef<HTMLDivElement | null>(null);
+  // The header field ArrowDown last left for the rows in this open; ArrowUp
+  // on the first row returns there.
+  const arrowFieldRef = useRef<HTMLInputElement | null>(null);
   const footerRef = useRef<HTMLDivElement | null>(null);
   const hasRegions = useMemo(
     () => isRenderable(header) || isRenderable(footer),
@@ -1056,6 +1106,8 @@ function DropdownMenuPopover({
 
   const handleLayerShow = useCallback(() => {
     acceptedOpenRef.current = true;
+    // A field an earlier open handed on from is not the way this one came.
+    arrowFieldRef.current = null;
     resetFocusReturn();
     if (renderTrigger != null) {
       setTriggerName(readAccessibleName(buttonRef.current));
@@ -1264,6 +1316,29 @@ function DropdownMenuPopover({
         closeMenu();
         return;
       }
+      // ArrowUp on the first row returns the way it came, to the header
+      // text field ArrowDown left for the rows in this open, instead of
+      // wrapping to the last row. Until a field has, the first row wraps as
+      // before, so ArrowUp never lands in a field whose arrows mean
+      // something else (a time field steps on them, with no role to say so).
+      if (isPlainArrow(e, 'ArrowUp') && hasRegions) {
+        const firstRow = getMenuItems().find(
+          item =>
+            item.getAttribute('aria-disabled') !== 'true' &&
+            !item.hasAttribute('disabled'),
+        );
+        const field = arrowFieldRef.current;
+        if (
+          firstRow != null &&
+          field != null &&
+          document.activeElement === firstRow &&
+          tabbablesIn(headerRef.current).includes(field) &&
+          focusRegionControl(field)
+        ) {
+          e.preventDefault();
+          return;
+        }
+      }
       // Type-to-focus next; if it consumed a printable key, stop here.
       if (typeahead.onKeyDown(e)) {
         e.preventDefault();
@@ -1278,17 +1353,32 @@ function DropdownMenuPopover({
       ownsEvent,
       hasRegions,
       moveDialogTab,
+      getMenuItems,
     ],
   );
 
   // Tab from a header or footer control moves through the same dialog cycle.
+  // ArrowDown in a text field of the header moves on to the first row, as
+  // from a combobox's input to its list; the field keeps every other key.
   const handleRegionKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
       if (e.key === 'Tab') {
         moveDialogTab(e);
+        return;
+      }
+      // A field that already acted on the key keeps it.
+      if (
+        !e.defaultPrevented &&
+        isPlainArrow(e, 'ArrowDown') &&
+        isTextEntryField(e.target) &&
+        headerRef.current?.contains(e.target) === true &&
+        focusFirst()
+      ) {
+        e.preventDefault();
+        arrowFieldRef.current = e.target;
       }
     },
-    [moveDialogTab],
+    [moveDialogTab, focusFirst],
   );
 
   const openAndFocus = useCallback(
