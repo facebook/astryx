@@ -374,6 +374,48 @@ const calmTheme = defineTheme({
               '0.5s 0',
             ],
             [
+              'switchControl.lift',
+              '--motion-switch-control-lift',
+              'spring',
+              '0.23s 0.45',
+            ],
+            [
+              'switchControl.minimumLiftMs',
+              '--motion-switch-control-minimum-lift-ms',
+              'duration',
+              '235ms',
+            ],
+            [
+              'switchControl.settle',
+              '--motion-switch-control-settle',
+              'spring',
+              '0.5s 0.3',
+            ],
+            [
+              'switchControl.tracking',
+              '--motion-switch-control-tracking',
+              'spring',
+              '0.36s 0',
+            ],
+            [
+              'switchControl.travel',
+              '--motion-switch-control-travel',
+              'spring',
+              '0.3s 0',
+            ],
+            [
+              'switchControl.wellOff',
+              '--motion-switch-control-well-off',
+              'spring',
+              '0.4s 0',
+            ],
+            [
+              'switchControl.wellOn',
+              '--motion-switch-control-well-on',
+              'spring',
+              '0.68s 0',
+            ],
+            [
               'timing.curves.caDefault',
               '--motion-timing-curves-ca-default',
               'curve',
