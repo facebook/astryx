@@ -2,7 +2,7 @@
 
 /**
  * @file SliderGeometry.a11y.chromium.spec.ts
- * @input Built Slider stories in real Chromium, under LTR, RTL and mixed-direction regions
+ * @input Built Slider stories in real Chromium, under LTR, RTL and mixed-direction regions, and vertical
  * @output Browser evidence that thumbs and fills sit where their values put them and never leave the control, and that a drag of a slider displaying no value lays out nothing per move
  * @position Slider geometry proof; jsdom computes neither container units nor translate, so placement is checked here
  */
@@ -184,6 +184,82 @@ for (const region of REGIONS) {
 // Moving the thumbs and the fill is a translate in container units, so a
 // drag of a slider that displays no value lays out nothing per move; a
 // value tooltip or text display still lays out as its text changes.
+interface VerticalGeometry {
+  control: {top: number; bottom: number};
+  thumb: {top: number; bottom: number; center: number};
+  fill: {top: number; bottom: number} | null;
+}
+
+async function measureVertical(page: Page): Promise<VerticalGeometry> {
+  return page.evaluate(() => {
+    const control = document.querySelector<HTMLElement>(
+      '.astryx-slider-control',
+    );
+    const thumbEl = control?.querySelector<HTMLElement>('[role="slider"]');
+    if (!control || !thumbEl) {
+      throw new Error('missing slider control or thumb');
+    }
+    const c = control.getBoundingClientRect();
+    const t = thumbEl.getBoundingClientRect();
+    const bar = Array.from(
+      control.querySelectorAll<HTMLElement>('[style*="--_slider-fill-end"]'),
+    ).at(-1);
+    let fill: {top: number; bottom: number} | null = null;
+    if (bar) {
+      let top = -Infinity;
+      let bottom = Infinity;
+      for (
+        let node: HTMLElement | null = bar;
+        node && node !== control;
+        node = node.parentElement
+      ) {
+        const r = node.getBoundingClientRect();
+        top = Math.max(top, r.top);
+        bottom = Math.min(bottom, r.bottom);
+      }
+      fill = bottom > top ? {top, bottom} : {top: bottom, bottom};
+    }
+    return {
+      control: {top: c.top, bottom: c.bottom},
+      thumb: {top: t.top, bottom: t.bottom, center: (t.top + t.bottom) / 2},
+      fill,
+    };
+  });
+}
+
+test("a vertical slider's thumb stays inside the control and its fill follows the value", async ({
+  page,
+}) => {
+  await mount(page, 'core-slider--vertical-orientation', 'ltr', 'ltr');
+  const thumb = page.getByRole('slider');
+  await thumb.focus();
+
+  // At the minimum the thumb sits flush with the bottom edge, inside it
+  // (#5050: half of it used to hang below the control).
+  await page.keyboard.press('Home');
+  let g = await measureVertical(page);
+  expect(Math.abs(g.thumb.bottom - g.control.bottom)).toBeLessThanOrEqual(
+    TOLERANCE,
+  );
+  expect(g.thumb.top).toBeGreaterThanOrEqual(g.control.top - TOLERANCE);
+
+  // At the maximum it sits flush with the top edge.
+  await page.keyboard.press('End');
+  g = await measureVertical(page);
+  expect(Math.abs(g.thumb.top - g.control.top)).toBeLessThanOrEqual(TOLERANCE);
+  expect(g.thumb.bottom).toBeLessThanOrEqual(g.control.bottom + TOLERANCE);
+
+  // The fill runs from the bottom edge up to the thumb's center.
+  const fill = g.fill;
+  if (fill == null) {
+    throw new Error('missing fill');
+  }
+  expect(Math.abs(fill.bottom - g.control.bottom)).toBeLessThanOrEqual(
+    TOLERANCE,
+  );
+  expect(Math.abs(fill.top - g.thumb.center)).toBeLessThanOrEqual(TOLERANCE);
+});
+
 test('a drag lays out nothing per move when no value is displayed', async ({
   page,
 }) => {
