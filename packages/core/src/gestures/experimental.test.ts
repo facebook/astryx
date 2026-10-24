@@ -37,6 +37,10 @@ const NAMES = [
   'IOS_SUPPORTS_QUERY',
   'IOS_TOUCH_STYLE_KEYS',
   'playHaptic',
+  'PUBLISHED_GESTURES',
+  'gestureNamed',
+  'addGestureDelegate',
+  'useGestureDelegate',
 ] as const;
 
 describe('@astryxdesign/core/gestures/experimental', () => {

@@ -4,7 +4,9 @@
  * @file GestureRecognizer.ts
  * @input Touches delivered by a GestureArena
  * @output Exports GestureRecognizer, the base every recognizer extends
- *   (UIGestureRecognizer), and its options and listener types
+ *   (UIGestureRecognizer), its options and listener types, and the
+ *   GestureDelegate and GestureMatcher types for delegates that code other
+ *   than a recognizer's owner registers with the arena
  * @position Core of packages/core/src/gestures: subclasses interpret touches
  *   and request state changes; the arena decides whether a change is allowed
  *   (require-to-fail, exclusivity, should-begin) and applies it
@@ -78,6 +80,47 @@ export interface GestureRecognizerOptions<R = GestureRecognizer> {
     other: GestureRecognizer,
   ) => boolean;
 }
+
+/**
+ * UIKit's UIGestureRecognizerDelegate, for a recognizer someone else owns (a
+ * component's internal pan, matched by its published name). Registered with
+ * the arena against a matcher, it is additive: the owner's own delegate
+ * still runs, any `false` from `shouldBegin` or `shouldReceiveTouch` vetoes,
+ * and any `true` from a relationship applies.
+ * @experimental
+ */
+export interface GestureDelegate {
+  /** gestureRecognizerShouldBegin: return false to make it fail instead. */
+  shouldBegin?: (recognizer: GestureRecognizer) => boolean;
+  /** gestureRecognizer(_:shouldReceive:): return false to keep the touch from it. */
+  shouldReceiveTouch?: (
+    recognizer: GestureRecognizer,
+    touch: GestureTouch,
+  ) => boolean;
+  /** gestureRecognizer(_:shouldRecognizeSimultaneouslyWith:). */
+  shouldRecognizeSimultaneously?: (
+    recognizer: GestureRecognizer,
+    other: GestureRecognizer,
+  ) => boolean;
+  /** gestureRecognizer(_:shouldRequireFailureOf:): it waits for `other` to fail. */
+  shouldRequireFailureOf?: (
+    recognizer: GestureRecognizer,
+    other: GestureRecognizer,
+  ) => boolean;
+  /** gestureRecognizer(_:shouldBeRequiredToFailBy:): `other` waits for it to fail. */
+  shouldBeRequiredToFailBy?: (
+    recognizer: GestureRecognizer,
+    other: GestureRecognizer,
+  ) => boolean;
+}
+
+/**
+ * Picks the recognizers a delegate applies to (see `gestureNamed`).
+ * @experimental
+ */
+export type GestureMatcher = (recognizer: GestureRecognizer) => boolean;
+
+const NO_DELEGATES: ReadonlyArray<GestureDelegate> = [];
 
 /** @experimental */
 export type GestureListener<R> = (recognizer: R) => void;
@@ -299,7 +342,15 @@ export abstract class GestureRecognizer {
     return (
       this.failureRequirements.has(other) ||
       this.options.shouldRequireFailureOf?.(this, other) === true ||
-      other.options.shouldBeRequiredToFailBy?.(other, this) === true
+      other.options.shouldBeRequiredToFailBy?.(other, this) === true ||
+      this.outsideDelegates().some(
+        delegate => delegate.shouldRequireFailureOf?.(this, other) === true,
+      ) ||
+      other
+        .outsideDelegates()
+        .some(
+          delegate => delegate.shouldBeRequiredToFailBy?.(other, this) === true,
+        )
     );
   }
 
@@ -308,13 +359,33 @@ export abstract class GestureRecognizer {
     return (
       this.simultaneousWith.has(other) ||
       this.options.shouldRecognizeSimultaneously?.(this, other) === true ||
-      other.options.shouldRecognizeSimultaneously?.(other, this) === true
+      other.options.shouldRecognizeSimultaneously?.(other, this) === true ||
+      this.outsideDelegates().some(
+        delegate =>
+          delegate.shouldRecognizeSimultaneously?.(this, other) === true,
+      ) ||
+      other
+        .outsideDelegates()
+        .some(
+          delegate =>
+            delegate.shouldRecognizeSimultaneously?.(other, this) === true,
+        )
     );
   }
 
-  /** @internal The delegate's should-begin answer. */
+  /** @internal The delegates' should-begin answer: every one must agree. */
   shouldBegin(): boolean {
-    return this.options.shouldBegin?.(this) ?? true;
+    return (
+      (this.options.shouldBegin?.(this) ?? true) &&
+      this.outsideDelegates().every(
+        delegate => delegate.shouldBegin?.(this) ?? true,
+      )
+    );
+  }
+
+  /** The delegates registered with the arena for this recognizer. */
+  private outsideDelegates(): ReadonlyArray<GestureDelegate> {
+    return this.arena?.delegatesFor(this) ?? NO_DELEGATES;
   }
 
   /** UIKit's `canPrevent(_:)`: whether recognizing fails `other`. */
@@ -430,7 +501,12 @@ export abstract class GestureRecognizer {
         }
       }
     }
-    return this.options.shouldReceiveTouch?.(this, touch) ?? true;
+    return (
+      (this.options.shouldReceiveTouch?.(this, touch) ?? true) &&
+      this.outsideDelegates().every(
+        delegate => delegate.shouldReceiveTouch?.(this, touch) ?? true,
+      )
+    );
   }
 
   /**

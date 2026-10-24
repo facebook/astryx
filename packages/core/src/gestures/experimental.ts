@@ -90,5 +90,18 @@ export {
 } from '../utils/touchPresentation';
 export type {TouchIdiom, TouchPresentation} from '../utils/touchPresentation';
 
+export {
+  PUBLISHED_GESTURES,
+  addGestureDelegate,
+  gestureNamed,
+  useGestureDelegate,
+} from './gestureDelegates';
+export type {
+  GestureScope,
+  PublishedGestureName,
+  UseGestureDelegateOptions,
+} from './gestureDelegates';
+export type {GestureDelegate, GestureMatcher} from './GestureRecognizer';
+
 export {playHaptic} from './haptics';
 export type {HapticFeedbackKind} from '../motion/uikit';

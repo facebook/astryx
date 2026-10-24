@@ -3805,6 +3805,11 @@
       "aliases": []
     },
     {
+      "name": "hook-use-gesture-delegate",
+      "path": "hooks/use-gesture-delegate",
+      "aliases": []
+    },
+    {
       "name": "hook-use-gesture-recognizer",
       "path": "hooks/use-gesture-recognizer",
       "aliases": []

@@ -30,7 +30,9 @@ export {
   isTransitionAllowed,
 } from './GestureRecognizer';
 export type {
+  GestureDelegate,
   GestureListener,
+  GestureMatcher,
   GestureRecognizerOptions,
   GestureTransitionListener,
   NativeTouchBehavior,
@@ -52,6 +54,17 @@ export type {
 } from './PanGestureRecognizer';
 export {PinchGestureRecognizer} from './PinchGestureRecognizer';
 export type {PinchGestureRecognizerOptions} from './PinchGestureRecognizer';
+export {
+  PUBLISHED_GESTURES,
+  addGestureDelegate,
+  gestureNamed,
+  useGestureDelegate,
+} from './gestureDelegates';
+export type {
+  GestureScope,
+  PublishedGestureName,
+  UseGestureDelegateOptions,
+} from './gestureDelegates';
 export {paintPress, readPressPaint} from './pressPaint';
 export type {PaintPressOptions, PressPaint} from './pressPaint';
 export {PRESS_PROFILES, PressTracker} from './PressTracker';

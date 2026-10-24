@@ -127,6 +127,33 @@ single.requireToFail(double);
 innerPan.requireToFail(edgePan);
 ```
 
+## Relating to a component's recognizers
+
+Components publish their main recognizers under stable names,
+`Component.role` (`PUBLISHED_GESTURES`): `NavigationStack.backSwipe`,
+`NavigationStack.contentBackSwipe`, `Item.swipe`, `Lightbox.dismissPan`,
+`Lightbox.zoomPan`, `Lightbox.zoomPinch`, `Carousel.pager`, `Toast.swipe`
+and `BottomSheet.drag`. Code outside a component relates to them the way a
+UIKit app uses a recognizer's `name` and its own delegate:
+
+- From your own recognizer, with its delegate options and a matcher:
+  `shouldRequireFailureOf: (_, other) => gestureNamed('BottomSheet.drag',
+{containing: canvasRef})(other)` makes a canvas pan inside a sheet wait
+  for the sheet's drag (and get the drags it fails on);
+  `shouldBeRequiredToFailBy` makes the sheet's drag wait for yours;
+  `shouldRecognizeSimultaneously` lets both run.
+- On a recognizer you do not own, with `addGestureDelegate(document, match,
+delegate)` or `useGestureDelegate(match, delegate)`: a veto through
+  `shouldBegin` or `shouldReceiveTouch` (no back swipe while a form has
+  unsaved changes), or a relationship between two components' recognizers.
+  These add to the component's own delegate, which still runs: any `false`
+  veto wins, any `true` relationship applies.
+
+`gestureNamed(name, {within, containing})` picks instances by the element
+their recognizer is attached to (elements or refs), and is evaluated when a
+touch asks, so nothing needs redoing when a component remounts. Code that
+declares nothing changes nothing.
+
 ## Touches in the view: `PressTracker`
 
 A pressable control's view-level touch handling, with `UIControl`
