@@ -24,7 +24,12 @@
 
 import React, {useMemo, useCallback, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, spacingVars, radiusVars} from '../theme/tokens.stylex';
+import {
+  colorVars,
+  spacingVars,
+  radiusVars,
+  shadowVars,
+} from '../theme/tokens.stylex';
 import {SegmentedControlContext} from './SegmentedControlContext';
 import {useListFocus} from '../hooks/useListFocus';
 import {useKeyboardHint} from '../hooks/useKeyboardHint';
@@ -165,6 +170,18 @@ const styles = stylex.create({
     // included (Highlight), so the UA must not remap it again.
     forcedColorAdjust: 'none',
   },
+  // The lifted lens's shadow (proposed; pending owner review): the theme's
+  // high elevation, its opacity driven with the lift on the compositor.
+  lensShadow: {
+    position: 'absolute',
+    inset: 0,
+    borderRadius: 'inherit',
+    boxShadow: shadowVars['--shadow-high'],
+    opacity: 0,
+    pointerEvents: 'none',
+    // A shadow is decoration: forced colors drop it, as they drop others.
+    forcedColorAdjust: 'auto',
+  },
 });
 
 const sizeStyles = stylex.create({
@@ -218,7 +235,7 @@ export function SegmentedControl({
   // titles cross-fade), the theme's transitions under a mouse.
   const isTouchPresentation = useMotionPresentation() === 'uikit';
   const trackRef = useRef<HTMLDivElement | null>(null);
-  const {thumbRef, motion} = useSegmentedSelectionMotion(
+  const {thumbRef, shadowRef, motion} = useSegmentedSelectionMotion(
     trackRef,
     value,
     isTouchPresentation,
@@ -375,8 +392,13 @@ export function SegmentedControl({
             ref={thumbRef}
             aria-hidden="true"
             data-selection-proxy=""
-            {...stylex.props(styles.thumb)}
-          />
+            {...stylex.props(styles.thumb)}>
+            <span
+              ref={shadowRef}
+              data-lens-shadow=""
+              {...stylex.props(styles.lensShadow)}
+            />
+          </span>
         )}
         {children}
         {hint.hintElement}

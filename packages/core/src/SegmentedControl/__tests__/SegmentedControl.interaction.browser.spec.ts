@@ -71,6 +71,8 @@ const SLIDE = {response: 0.4, dampingFraction: 0.85} as const;
 const LIFT = {response: 0.25, dampingFraction: 1} as const;
 const LIFT_GROWTH = {width: 24, height: 16} as const;
 const TAP_LIFT_HANG_MS = 230;
+/** UIScrollView's content-touch delay (motion/uikit, the press timing). */
+const CONTENT_TOUCH_DELAY_MS = 150;
 /** How far past the end segments the lens follows a finger. */
 const DRAG_OVERSHOOT = 11;
 /** UIKit's title cross-fade. */
@@ -279,7 +281,8 @@ test('a tap slides the selected surface to the new segment on UIKit’s spring, 
   await waitForAnimation(control.proxy);
   await freezeTimers(page);
   const held = await holdAnimations(page, control.proxy);
-  expect(held.map(a => a.easing)).toEqual(['linear', 'linear']);
+  // Baked curves: the lens's translate and scale, and its shadow's opacity.
+  expect(held.map(a => a.easing)).toEqual(['linear', 'linear', 'linear']);
   const samples = await sampleProxy(
     control.proxy,
     timeline(TAP_LIFT_HANG_MS - 20),
@@ -380,9 +383,12 @@ test('the titles cross-fade over 200 ms on Core Animation’s default curve', as
   await waitForAnimation(title);
   const held = await holdAnimations(page, control.group);
   // The two titles that change rendering, each with its twin (the slide's
-  // own animations are on translate and scale).
-  const fades = held.filter(a => a.keyframes.some(k => 'opacity' in k));
+  // own animations are on translate and scale; the lens's shadow fades on a
+  // baked, linear-timed curve of its own).
+  const opacity = held.filter(a => a.keyframes.some(k => 'opacity' in k));
+  const fades = opacity.filter(a => a.easing !== 'linear');
   expect(fades.length).toBe(4);
+  expect(opacity.length - fades.length).toBe(1);
   for (const fade of fades) {
     expect(fade.durationMs).toBe(TITLE_FADE_MS);
     // CSS defines `ease` as exactly this curve; WebKit serializes it by name.
@@ -1269,6 +1275,150 @@ test('the track keeps vertical scrolling and takes horizontal drags', async ({
 }) => {
   const control = await openControl(page);
   await expect(control.group).toHaveCSS('touch-action', 'pan-y pinch-zoom');
+});
+
+/** Makes the story page scroll: the control sits in a scroller. */
+async function makePageScroll(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const spacer = document.createElement('div');
+    spacer.style.height = '2000px';
+    document.body.append(spacer);
+  });
+}
+
+/** Records whether each `touchmove` was cancelled (read after every listener). */
+async function recordTouchMoves(page: Page): Promise<() => Promise<boolean[]>> {
+  await page.evaluate(() => {
+    const moves: boolean[] = [];
+    (window as unknown as {__moves: boolean[]}).__moves = moves;
+    window.addEventListener(
+      'touchmove',
+      event => {
+        moves.push(event.defaultPrevented);
+      },
+      {passive: true},
+    );
+  });
+  return async () =>
+    page.evaluate(() => (window as unknown as {__moves: boolean[]}).__moves);
+}
+
+/** Records, on the page's clock, each time the proxy is shown or hidden. */
+async function recordProxyVisibility(
+  control: Control,
+): Promise<() => Promise<{visible: boolean; at: number}[]>> {
+  await control.proxy.evaluate(element => {
+    const changes: {visible: boolean; at: number}[] = [];
+    (window as unknown as {__proxy: typeof changes}).__proxy = changes;
+    new MutationObserver(() => {
+      const visible = getComputedStyle(element).visibility === 'visible';
+      if (changes.at(-1)?.visible !== visible) {
+        changes.push({visible, at: performance.timeOrigin + performance.now()});
+      }
+    }).observe(element, {attributes: true, attributeFilter: ['style']});
+  });
+  return async () =>
+    control.proxy.evaluate(
+      () =>
+        (window as unknown as {__proxy: {visible: boolean; at: number}[]})
+          .__proxy,
+    );
+}
+
+test('a vertical drag that starts on the control scrolls the page and lifts nothing', async ({
+  page,
+}) => {
+  const control = await openControl(page);
+  await makePageScroll(page);
+  const selections = await recordSelections(control.group);
+  const moves = await recordTouchMoves(page);
+  const shown = await recordProxyVisibility(control);
+  const start = await clientCenter(control, 'grid');
+  await control.driver.play(
+    touchDrag(start, {x: start.x + 4, y: start.y - 140}, {durationMs: 300}),
+  );
+  // The page kept every move: nothing cancelled them...
+  const cancelled = await moves();
+  expect(cancelled.length).toBeGreaterThan(0);
+  expect(cancelled.some(Boolean)).toBe(false);
+  if (control.driver.engine === 'chromium') {
+    // ...and Chromium scrolled it natively.
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(60);
+  }
+  // A flick inside a scroller presses nothing: no lift, no change.
+  await page.waitForTimeout(300);
+  expect(await shown()).toEqual([]);
+  expect(await selections()).toEqual([]);
+});
+
+test('inside a scrolling page, a held press lifts after UIScrollView’s content-touch delay', async ({
+  page,
+}) => {
+  const control = await openControl(page);
+  await makePageScroll(page);
+  const shown = await recordProxyVisibility(control);
+  const at = await clientCenter(control, 'grid');
+  const played = await control.driver.play(touchTap(at, {holdMs: 600}));
+  const down = played.find(event => event.type === 'touchStart');
+  const [lifted] = await shown();
+  expect(lifted?.visible).toBe(true);
+  // UIScrollView.delaysContentTouches: 150 ms before a control sees the touch.
+  expect(lifted.at - (down?.dispatchedAt ?? 0)).toBeGreaterThanOrEqual(
+    CONTENT_TOUCH_DELAY_MS - 20,
+  );
+  await expect(control.proxy).toHaveCSS('visibility', 'hidden', {
+    timeout: 3000,
+  });
+});
+
+test('the lifted lens casts the theme’s high shadow, its opacity riding the lift', async ({
+  page,
+}) => {
+  const control = await openControl(page);
+  const shadow = control.proxy.locator('[data-lens-shadow]');
+  await expect(shadow).toHaveCSS('opacity', '0');
+  const at = await clientCenter(control, 'grid');
+  const playing = control.driver.play(touchTap(at, {holdMs: 800}));
+  await waitForAnimation(shadow);
+  await installTimerGate(page);
+  await freezeTimers(page);
+  await holdAnimations(page, shadow);
+  const samples = await shadow.evaluate((element, ts) => {
+    const held =
+      (window as unknown as {__harnessHeld?: Animation[]}).__harnessHeld ?? [];
+    return ts.map(t => {
+      for (const animation of held) {
+        const end = Number(animation.effect?.getComputedTiming().endTime ?? 0);
+        animation.currentTime = Math.min(t, end - 0.5);
+      }
+      const style = getComputedStyle(element);
+      return {t, opacity: Number(style.opacity), shadow: style.boxShadow};
+    });
+  }, timeline(400));
+  await releaseAnimations(page);
+  await thawTimers(page);
+  // The theme's elevation, not a value of our own...
+  const token = await page.evaluate(() => {
+    const probe = document.createElement('div');
+    probe.style.boxShadow = 'var(--shadow-high)';
+    document.body.append(probe);
+    const value = getComputedStyle(probe).boxShadow;
+    probe.remove();
+    return value;
+  });
+  expect(samples[0].shadow).toBe(token);
+  expect(token).not.toBe('none');
+  // ...faded in on the lift spring.
+  for (const sample of samples) {
+    expect(Math.abs(sample.opacity - springStep(LIFT, sample.t))).toBeLessThan(
+      0.02,
+    );
+  }
+  await playing;
+  await expect(control.proxy).toHaveCSS('visibility', 'hidden', {
+    timeout: 3000,
+  });
+  await expect(shadow).toHaveCSS('opacity', '0');
 });
 
 test('a busy main thread cannot hold the lens up: a tap’s lift comes down on time', async ({

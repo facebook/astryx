@@ -43,7 +43,12 @@
  * UNDER A FINGER (useSegmentedTouchTracking.ts reports the touch)
  *
  * - Landing on the selected segment lifts the lens in place: its size grows
- *   by `segmentedControl.liftGrowth` on `liftSpring`.
+ *   by `segmentedControl.liftGrowth` on `liftSpring`, and a layer inside the
+ *   proxy casts the theme's elevation shadow (`--shadow-high`), its opacity
+ *   following the lift on the same spring, so the raised lens reads as
+ *   raised over any page. (UIKit's lens is glass; that material is an open
+ *   owner decision.) Inside a scroller the press waits the content-touch
+ *   delay, as UIScrollView delays a control's touches.
  * - Dragging from there carries it: its center chases the finger on
  *   `trackingSpring`, no further than `dragOvershoot` past the end segments.
  * - Letting go commits the segment nearest the finger: the lens springs
@@ -305,8 +310,9 @@ function timedCurve(
 
 /**
  * A tap's lift as one curve: from `from` (with `velocity`) up toward `peak`
- * on the lift spring, then from wherever that is at `hang` s back down to 1
- * on the same spring, keeping its velocity.
+ * on the lift spring, then from wherever that is at `hang` s back down to
+ * `rest` on the same spring, keeping its velocity. The lens's scale rests at
+ * 1; its shadow's opacity rests at 0.
  */
 function liftThenDown(
   liftSpring: SpringDescription,
@@ -314,12 +320,13 @@ function liftThenDown(
   peak: number,
   velocity: number,
   hang: number,
+  rest = 1,
 ): MotionCurve {
   const spring = toSpring(liftSpring);
   const up = solveSpring(spring, {from, to: peak, velocity});
   const down = solveSpring(spring, {
     from: up.value(hang),
-    to: 1,
+    to: rest,
     velocity: up.velocity(hang),
   });
   // Settled to a ten-thousandth of the lens's size: under 0.02 px.
@@ -327,9 +334,9 @@ function liftThenDown(
   const duration = hang + tail;
   return {
     duration,
-    // Exactly the resting size at the end, so the hand-back is exact.
+    // Exactly the resting value at the end, so the hand-back is exact.
     at: t =>
-      t >= duration ? 1 : t <= hang ? up.value(t) : down.value(t - hang),
+      t >= duration ? rest : t <= hang ? up.value(t) : down.value(t - hang),
     velocity: t =>
       t >= duration ? 0 : t <= hang ? up.velocity(t) : down.velocity(t - hang),
   };
@@ -372,6 +379,8 @@ function nearestEnabled(
 export interface SegmentedSelectionMotionOptions {
   /** The animator's clock (ms, document timeline); `performance.now()` by default. */
   readonly now?: () => number;
+  /** Drives the lifted lens's shadow layer (its opacity); one is created by default. */
+  readonly shadowAnimator?: Animator;
   /** The Reduced Motion preference; `prefers-reduced-motion` by default. */
   readonly prefersReducedMotion?: () => boolean;
 }
@@ -410,6 +419,8 @@ export class SegmentedSelectionMotion {
 
   private readonly now: () => number;
   private readonly prefersReducedMotion: () => boolean;
+  /** The lens's shadow layer: its opacity follows the lift. */
+  private readonly shadow: Animator;
 
   constructor(
     private readonly animator: Animator = createAnimator(null),
@@ -418,7 +429,14 @@ export class SegmentedSelectionMotion {
     this.now = options.now ?? defaultNow;
     this.prefersReducedMotion =
       options.prefersReducedMotion ?? defaultPrefersReducedMotion;
+    this.shadow =
+      options.shadowAnimator ?? createAnimator(null, {initial: {opacity: 0}});
   }
+
+  /** Callback ref for the lens's shadow layer (inside the proxy); stable. */
+  readonly attachShadow = (element: HTMLElement | null): void => {
+    this.shadow.attach(element);
+  };
 
   /** Callback ref for the proxy element; stable. */
   readonly attachProxy = (element: HTMLElement | null): void => {
@@ -516,8 +534,17 @@ export class SegmentedSelectionMotion {
     );
   }
 
-  /** A finger landed at `clientX` (a touch, in client px). */
+  /** A finger landed at `clientX` and the press is on at once. */
   press(track: HTMLElement, clientX: number): void {
+    this.begin(track, clientX);
+    this.lift();
+  }
+
+  /**
+   * A finger landed at `clientX` (a touch, in client px): what it landed on,
+   * and the track's geometry, read once.
+   */
+  begin(track: HTMLElement, clientX: number): void {
     const segments = segmentsOf(track);
     const boxOf = boxesIn(track);
     const boxes = new Map(segments.map(segment => [segment, boxOf(segment)]));
@@ -531,27 +558,55 @@ export class SegmentedSelectionMotion {
     const carriesLens =
       origin != null && origin.getAttribute('aria-checked') === 'true';
     this.touch = {toTrackX, boxes, origin, carriesLens};
-    if (!carriesLens || origin == null || this.prefersReducedMotion()) {
+  }
+
+  /**
+   * The press is on: at touch-down, or once a scroller's content-touch
+   * delay has run out. Lifts the lens when the finger is on the selected
+   * segment, casting the theme's elevation shadow.
+   */
+  lift(): void {
+    const touch = this.touch;
+    if (
+      touch == null ||
+      !touch.carriesLens ||
+      touch.origin == null ||
+      this.isLifted ||
+      this.prefersReducedMotion()
+    ) {
       return;
     }
-    const box = boxes.get(origin) as Box;
+    const box = touch.boxes.get(touch.origin) as Box;
     if (!isLaidOut(box)) {
       return;
     }
-    const at = this.carry(origin, box, null, origin);
+    const at = this.carry(touch.origin, box, null, touch.origin);
     this.isLifted = true;
     this.track(
       this.animator.animate(lifted(box), this.springFrom(lifted(box), 'lift'), {
         at,
       }),
     );
+    this.track(
+      this.shadow.animate(
+        {opacity: 1},
+        {spring: segmentedControl.liftSpring},
+        {at},
+      ),
+    );
   }
 
   /** The finger moved to `clientX`. Only a lens it carries follows. */
   drag(clientX: number): void {
     const touch = this.touch;
+    if (touch == null || !touch.carriesLens) {
+      return;
+    }
+    // A drag that starts before the press is on (a scroller's delay) lifts
+    // the lens as it takes the touch.
+    this.lift();
     const carried = this.carried;
-    if (touch == null || !touch.carriesLens || carried == null) {
+    if (carried == null) {
       return;
     }
     const centers = [...touch.boxes.values()].map(center);
@@ -621,7 +676,7 @@ export class SegmentedSelectionMotion {
       touch.origin == null ||
       !this.isLifted
     ) {
-      // Nothing was lifted (Reduce Motion): nothing to put back.
+      // Nothing was lifted: nothing to put back.
       return;
     }
     const box = touch.boxes.get(touch.origin) as Box;
@@ -638,6 +693,8 @@ export class SegmentedSelectionMotion {
     this.carried = null;
     this.running.clear();
     this.animator.stop();
+    this.shadow.stop();
+    this.shadow.set({opacity: 0});
     showSurface(carried.hidden);
     if (this.proxy != null) {
       this.proxy.style.visibility = 'hidden';
@@ -797,6 +854,13 @@ export class SegmentedSelectionMotion {
         {reducedMotion: 'instant', at},
       ),
     );
+    this.track(
+      this.shadow.animate(
+        {opacity: 0},
+        {spring: segmentedControl.liftSpring},
+        {reducedMotion: 'instant', at},
+      ),
+    );
   }
 
   /** A tap's slide: travels on the slide spring, lifted for a moment. */
@@ -859,6 +923,22 @@ export class SegmentedSelectionMotion {
         {at},
       ),
     );
+    // The shadow rises and falls with the lift, on the same clock.
+    this.track(
+      this.shadow.play(
+        {
+          opacity: liftThenDown(
+            liftSpring,
+            this.shadow.get('opacity'),
+            1,
+            this.shadow.getVelocity('opacity'),
+            hang,
+            0,
+          ),
+        },
+        {at},
+      ),
+    );
   }
 
   /**
@@ -875,6 +955,8 @@ export class SegmentedSelectionMotion {
     this.isLifted = false;
     this.carry(segment, box, box, paint);
     this.velocity = {};
+    // No lift, so no elevation.
+    this.shadow.set({opacity: 0});
     const {reducedMotion} = segmentedControl;
     const fadeMs = resolveMotion(proxy, reducedMotion, 'fadeMs');
     const curve = resolveMotion(proxy, reducedMotion.curve);
@@ -902,6 +984,13 @@ export class SegmentedSelectionMotion {
       this.animator.animate(
         {scaleX: 1, scaleY: 1},
         this.springFrom({scaleX: 1, scaleY: 1}, 'lift'),
+        {reducedMotion: 'instant'},
+      ),
+    );
+    this.track(
+      this.shadow.animate(
+        {opacity: 0},
+        {spring: segmentedControl.liftSpring},
         {reducedMotion: 'instant'},
       ),
     );
@@ -1014,6 +1103,8 @@ export class SegmentedSelectionMotion {
 export interface UseSegmentedSelectionMotionResult {
   /** Callback ref for the proxy that carries the selected surface; stable. */
   readonly thumbRef: (element: HTMLElement | null) => void;
+  /** Callback ref for the lens's shadow layer inside the proxy; stable. */
+  readonly shadowRef: (element: HTMLElement | null) => void;
   /** The controller, for the touch tracking that drives the lens. */
   readonly motion: SegmentedSelectionMotion;
 }
@@ -1063,5 +1154,5 @@ export function useSegmentedSelectionMotion(
 
   useEffect(() => () => motion.stop(), [motion]);
 
-  return {thumbRef: motion.attachProxy, motion};
+  return {thumbRef: motion.attachProxy, shadowRef: motion.attachShadow, motion};
 }

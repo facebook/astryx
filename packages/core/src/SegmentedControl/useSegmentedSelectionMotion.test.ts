@@ -89,14 +89,23 @@ function setup(selected: string) {
     now: () => clock,
     prefersReducedMotion: () => reduceMotion,
   });
+  const shadowAnimator: Animator = createAnimator(null, {
+    now: () => clock,
+    prefersReducedMotion: () => reduceMotion,
+    initial: {opacity: 0},
+  });
   const motion = new SegmentedSelectionMotion(animator, {
     now: () => clock,
     prefersReducedMotion: () => reduceMotion,
+    shadowAnimator,
   });
+  const shadow = document.createElement('span');
+  proxy.append(shadow);
   motion.attachProxy(proxy);
+  motion.attachShadow(shadow);
   paint(segments, selected);
   motion.rememberTitles(track);
-  return {track, proxy, segments, animator, motion};
+  return {track, proxy, shadow, segments, animator, shadowAnimator, motion};
 }
 
 /**
@@ -506,6 +515,60 @@ describe('under a finger', () => {
     expect(ctx.animator.get('scaleX')).toBe(1);
     expect(ctx.motion.isSliding).toBe(false);
     expectOwnSurface(ctx.segments.grid);
+  });
+
+  it('the lifted lens casts its shadow with the lift and drops it at the lift of the finger', async () => {
+    const ctx = setup('grid');
+    expect(ctx.shadowAnimator.get('opacity')).toBe(0);
+    ctx.motion.press(ctx.track, clientCenterOf('grid'));
+    const lift = solveSpring(toSpring(segmentedControl.liftSpring), {
+      from: 0,
+      to: 1,
+      velocity: 0,
+    });
+    // The opacity rides the lift spring, on the lens's clock.
+    expect(ctx.shadowAnimator.get('opacity', 1050)).toBeCloseTo(
+      lift.value(0.05),
+      6,
+    );
+    await advance(1000);
+    expect(ctx.shadowAnimator.get('opacity')).toBeCloseTo(1, 6);
+    ctx.motion.release(clientCenterOf('grid'));
+    await advance(2000);
+    expect(ctx.shadowAnimator.get('opacity')).toBe(0);
+    expect(ctx.motion.isSliding).toBe(false);
+  });
+
+  it('a tap’s shadow rises and falls with its lift', async () => {
+    const ctx = setup('grid');
+    ctx.motion.press(ctx.track, clientCenterOf('table'));
+    ctx.motion.release(clientCenterOf('table'));
+    select(ctx, 'grid', 'table');
+    await advance(segmentedControl.tapLiftHangMs - 10);
+    expect(ctx.shadowAnimator.get('opacity')).toBeGreaterThan(0.9);
+    await advance(2000);
+    expect(ctx.shadowAnimator.get('opacity')).toBe(0);
+  });
+
+  it('a press waits to lift until it is on (a scroller’s delay), and a drag lifts it then', async () => {
+    const ctx = setup('grid');
+    ctx.motion.begin(ctx.track, clientCenterOf('grid'));
+    expect(ctx.motion.isSliding).toBe(false);
+    ctx.motion.drag(clientCenterOf('list'));
+    expect(ctx.motion.isSliding).toBe(true);
+    await advance(1000);
+    expect(ctx.animator.get('scaleX')).toBeCloseTo(120 / 96, 6);
+    expect(ctx.shadowAnimator.get('opacity')).toBeCloseTo(1, 6);
+    expect(ctx.motion.release(clientCenterOf('list'))).toBe('list');
+  });
+
+  it('a press cancelled before it is on leaves everything as it was', () => {
+    const ctx = setup('grid');
+    ctx.motion.begin(ctx.track, clientCenterOf('grid'));
+    ctx.motion.cancel();
+    expect(ctx.motion.isSliding).toBe(false);
+    ctx.motion.lift();
+    expect(ctx.motion.isSliding).toBe(false);
   });
 
   it('never commits a disabled segment', () => {
