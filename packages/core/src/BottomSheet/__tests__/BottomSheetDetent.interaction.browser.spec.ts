@@ -14,7 +14,8 @@
  *   advancing every frame through a blocked main thread; it does no Layout or
  *   Paint per frame; storyboards of the drag, the settle and a flick. Outside
  *   iOS's idiom (a finger on Android) a release keeps today's rule and the
- *   theme's timing, and Reduce Motion's.
+ *   theme's timing. Under reduced motion a touch release cross-fades in place
+ *   in 200 ms or less (design:reduced-motion DR2).
  * @position The exemplar for `*.interaction.browser.spec.ts`: component lanes
  *   copy this shape. Each test names the instrument it uses from
  *   @astryxdesign/interaction-harness, so the evidence layer is explicit.
@@ -768,17 +769,48 @@ test("outside iOS the flick UIKit lands on half dismisses, by today's rule (a fi
   await expect(page.getByRole('dialog', {name: 'Nearby places'})).toBeHidden();
 });
 
-test("under Reduce Motion a finger on Android takes the stylesheet's reduced timing", async ({
-  page,
-}) => {
-  await page.emulateMedia({reducedMotion: 'reduce'});
-  const {driver, sheet, tallTop, halfTop, handle} = await openSheet(page, {
-    idiom: 'android',
+/** Each animation running on the sheet: the properties it changes and its duration (ms). */
+async function runningMotion(
+  sheet: Locator,
+): Promise<{properties: string[]; ms: number}[]> {
+  return sheet.evaluate(el =>
+    el.getAnimations().map(animation => {
+      const frames =
+        (animation.effect as KeyframeEffect | null)?.getKeyframes() ?? [];
+      const first = (frames[0] ?? {}) as Record<string, unknown>;
+      const properties = new Set<string>();
+      for (const frame of frames) {
+        for (const [key, value] of Object.entries(frame)) {
+          const timing = ['offset', 'computedOffset', 'easing', 'composite'];
+          if (!timing.includes(key) && String(value) !== String(first[key])) {
+            properties.add(key);
+          }
+        }
+      }
+      return {
+        properties: [...properties],
+        ms: Number(animation.effect?.getComputedTiming().duration ?? 0),
+      };
+    }),
+  );
+}
+
+for (const idiom of ['ios', 'android'] as const) {
+  test(`under reduced motion a touch release cross-fades in place, 200 ms or less (${idiom}; design:reduced-motion DR2)`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({reducedMotion: 'reduce'});
+    const {driver, sheet, tallTop, halfTop, handle} = await openSheet(page, {
+      idiom,
+    });
+    await driver.play(
+      slowDragTo(handle, Math.round((halfTop - tallTop) * 0.66)),
+    );
+    // A fade, and nothing that outlasts the record's 200 ms: no spring.
+    const motion = await runningMotion(sheet);
+    expect(motion.some(m => m.properties.includes('opacity'))).toBe(true);
+    expect(motion.every(m => m.ms - END_HOLD_MS <= 200.5)).toBe(true);
+    await waitForRest(sheet);
+    expect(await sheetTop(sheet)).toBeCloseTo(halfTop, 0);
   });
-  await driver.play(slowDragTo(handle, Math.round((halfTop - tallTop) * 0.66)));
-  // Today's Reduce Motion rule (0.01 s), not UIKit's springs.
-  const settle = await runningDurations(sheet);
-  expect(settle.every(ms => ms - END_HOLD_MS <= 20)).toBe(true);
-  await waitForRest(sheet);
-  expect(await sheetTop(sheet)).toBeCloseTo(halfTop, 0);
-});
+}

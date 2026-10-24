@@ -17,8 +17,9 @@
  * Either way the curve plays on the compositor, through the same animator.
  *
  * The theme timing is read from the element's computed transition when a
- * drag begins, before the drag turns transitions off, so a theme, a Reduced
- * Motion rule or a caller's `transition` all keep meaning what they did.
+ * drag begins, before the drag turns transitions off, so a theme or a
+ * caller's `transition` keeps meaning what it did. Under reduced motion the
+ * animator replaces either curve (design:reduced-motion).
  *
  * SYNC: When modified, update /packages/core/src/BottomSheet/useSheetGestures.ts
  */

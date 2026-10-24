@@ -13,6 +13,48 @@ import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {act, renderHook} from '@testing-library/react';
 import {useState} from 'react';
 import {END_HOLD_MS} from '../motion/animator';
+/** The properties a played animation changes over its keyframes. */
+function changedProperties(animation: {keyframes: Keyframe[]}): string[] {
+  const first = (animation.keyframes[0] ?? {}) as Record<string, unknown>;
+  const changed = new Set<string>();
+  for (const frame of animation.keyframes) {
+    for (const [key, value] of Object.entries(frame)) {
+      if (key !== 'offset' && key !== 'easing' && key !== 'composite') {
+        if (String(value) !== String(first[key])) {
+          changed.add(key);
+        }
+      }
+    }
+  }
+  return [...changed];
+}
+
+/** When a played animation stops changing, in ms after its start. */
+function settledMs(animation: {
+  keyframes: Keyframe[];
+  options: KeyframeAnimationOptions;
+}): number {
+  const frames = animation.keyframes as Record<string, unknown>[];
+  const last = frames[frames.length - 1];
+  const same = (a: Record<string, unknown>, b: Record<string, unknown>) =>
+    Object.keys({...a, ...b}).every(
+      key =>
+        key === 'offset' ||
+        key === 'easing' ||
+        key === 'composite' ||
+        String(a[key]) === String(b[key]),
+    );
+  let i = frames.length - 1;
+  while (i > 0 && same(frames[i - 1], last)) {
+    i -= 1;
+  }
+  const offset =
+    typeof frames[i].offset === 'number'
+      ? (frames[i].offset as number)
+      : i / Math.max(1, frames.length - 1);
+  return offset * (animation.options.duration as number);
+}
+
 import {solveSpring, toSpring} from '../motion/spring';
 import {sheet, springs} from '../motion/uikit';
 import {
@@ -2120,23 +2162,9 @@ describe('useSheetGestures: the release on the compositor', () => {
     expect(hook.result.current.settledOffset).toBe(0);
   });
 
-  it('keeps the release springs under Reduce Motion, as UIKit does', () => {
-    // Reduce Motion (with or without Prefer Cross-Fade) leaves a UIKit
-    // sheet's drag releases unchanged: same springs, same dismissal.
+  it('cross-fades a release under reduced motion: no spring, 200 ms or less (design:reduced-motion DR2)', () => {
     stubPointer({coarse: true, reducedMotion: true});
-    const snapHeights = () => [200];
-    const onDismiss = vi.fn();
-    const hook = renderHook(() => {
-      const [isOpen, setIsOpen] = useState(true);
-      return useSheetGestures({
-        isOpen,
-        snapHeights,
-        onDismiss: () => {
-          onDismiss();
-          setIsOpen(false);
-        },
-      });
-    });
+    const {hook} = setup({snapHeights: () => [200]});
     const t = makeTarget();
     const played = recordAnimations(t);
     down(hook, 0, 0, t);
@@ -2145,22 +2173,42 @@ describe('useSheetGestures: the release on the compositor', () => {
       hook.result.current.handleProps.onPointerUp(pointerEvent(60, 102, t)),
     );
     expect(hook.result.current.settledOffset).toBe(200);
-    expect(played).toHaveLength(1);
-    const curve = solveSpring(toSpring(springs.sheetDetent), {
-      from: 60,
-      to: 200,
-      velocity: 600,
-    });
-    expect(travelAt(played[0], 100)).toBeCloseTo(curve.value(0.1), 1);
-    land();
-    // A drag dismissal leaves on its release spring too.
-    down(hook, 200, 1000, t);
-    stream(hook, t, {from: 200, to: 350, t0: 1000, t1: 1100});
-    act(() =>
-      hook.result.current.handleProps.onPointerUp(pointerEvent(350, 1102, t)),
+    // The sheet fades; nothing runs longer than the record's 200 ms.
+    expect(played.some(a => changedProperties(a).includes('opacity'))).toBe(
+      true,
     );
-    expect(onDismiss).toHaveBeenCalledTimes(1);
+    for (const animation of played) {
+      expect(settledMs(animation)).toBeLessThanOrEqual(200.5);
+    }
+  });
+
+  it('fades a drag-dismissed sheet out in place under reduced motion', () => {
+    stubPointer({coarse: true, reducedMotion: true});
+    const snapHeights = () => [200];
+    const hook = renderHook(() => {
+      const [isOpen, setIsOpen] = useState(true);
+      return useSheetGestures({
+        isOpen,
+        snapHeights,
+        onDismiss: () => setIsOpen(false),
+      });
+    });
+    const t = makeTarget();
+    const played = recordAnimations(t);
+    down(hook, 0, 0, t);
+    stream(hook, t, {from: 0, to: 150, t0: 0, t1: 100});
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(pointerEvent(150, 102, t)),
+    );
     expect(hook.result.current.gestureExitRef.current).not.toBeNull();
+    const fade = played.find(a => changedProperties(a).includes('opacity'));
+    expect(fade).toBeDefined();
+    // Fades out where it is, within 200 ms.
+    expect(Number((fade as Played).keyframes[0].opacity)).toBeCloseTo(1, 2);
+    expect(settledMs(fade as Played)).toBeLessThanOrEqual(200.5);
+    for (const animation of played) {
+      expect(settledMs(animation)).toBeLessThanOrEqual(200.5);
+    }
   });
 
   it('keeps the theme timing under a mouse, without the velocity hand-off', () => {
@@ -2264,21 +2312,118 @@ describe('useSheetGestures: the release on the compositor', () => {
     );
   });
 
-  it("takes the stylesheet's reduced timing under Reduce Motion on Android", () => {
+  it('cross-fades a touch release on Android under reduced motion, 200 ms or less (DR2)', () => {
     stubAndroidFinger({reducedMotion: true});
     const {hook} = setup({snapHeights: () => [200]});
     const t = makeTarget();
-    // Today's Reduce Motion rule turns the sheet's transitions off.
-    t.style.transitionProperty = 'none';
+    t.style.transitionProperty = 'transform';
+    t.style.transitionDuration = '410ms';
+    t.style.transitionTimingFunction = 'ease';
     const played = recordAnimations(t);
     down(hook, 0, 0, t);
     stream(hook, t, {from: 0, to: 60, t0: 0, t1: 300});
     act(() =>
       hook.result.current.handleProps.onPointerUp(pointerEvent(60, 302, t)),
     );
-    // No spring and no curve: the sheet goes to the detent at once.
-    expect(played).toHaveLength(0);
     expect(hook.result.current.settledOffset).toBe(200);
+    expect(played.some(a => changedProperties(a).includes('opacity'))).toBe(
+      true,
+    );
+    for (const animation of played) {
+      expect(settledMs(animation)).toBeLessThanOrEqual(200.5);
+    }
+  });
+
+  it('lands a mouse release at once under reduced motion (DR3)', () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => ({
+        matches: query.includes('prefers-reduced-motion'),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    );
+    const {hook} = setup({snapHeights: () => [200]});
+    const t = makeTarget();
+    t.style.transitionProperty = 'transform';
+    t.style.transitionDuration = '410ms';
+    t.style.transitionTimingFunction = 'ease';
+    const played = recordAnimations(t);
+    down(hook, 0, 0, t);
+    stream(hook, t, {from: 0, to: 60, t0: 0, t1: 300});
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(pointerEvent(60, 302, t)),
+    );
+    expect(hook.result.current.settledOffset).toBe(200);
+    // Nothing animates: every played value holds still.
+    for (const animation of played) {
+      expect(changedProperties(animation)).toEqual([]);
+    }
+  });
+
+  it('fades a touch release under reduced motion with a fine primary pointer too (DR2)', () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => ({
+        matches: query.includes('prefers-reduced-motion'),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    );
+    const {hook} = setup({snapHeights: () => [200]});
+    // A finger on the sheet's scroller, scrolled to the top: its pull-down
+    // drags the sheet, through the touch path.
+    const el = makeTarget();
+    Object.defineProperty(el, 'scrollTop', {value: 0, writable: true});
+    Object.defineProperty(el, 'clientHeight', {value: 200});
+    Object.defineProperty(el, 'scrollHeight', {value: 800});
+    document.body.appendChild(el);
+    act(() => hook.result.current.sheetRef(el));
+    act(() => hook.result.current.bodyProps.ref(el));
+    el.style.transitionProperty = 'transform';
+    el.style.transitionDuration = '410ms';
+    el.style.transitionTimingFunction = 'ease';
+    const played = recordAnimations(el);
+    const fire = (type: string, y: number, timeStamp: number) => {
+      const event = new Event(type, {bubbles: true, cancelable: true});
+      Object.defineProperty(event, 'timeStamp', {value: timeStamp});
+      // jsdom lacks TouchEvent; attach the fields the handler reads.
+      Object.defineProperty(event, 'changedTouches', {
+        value: [{identifier: 1, clientX: 0, clientY: y}],
+      });
+      Object.defineProperty(event, 'touches', {
+        value:
+          type === 'touchend' ? [] : [{identifier: 1, clientX: 0, clientY: y}],
+      });
+      el.dispatchEvent(event);
+    };
+    // 150 px down, then still before the lift (on the page clock): it
+    // settles on the 200 px detent.
+    const t0 = performance.now();
+    act(() => fire('touchstart', 0, t0));
+    for (const [y, dt] of [
+      [75, 100],
+      [150, 200],
+    ]) {
+      act(() => {
+        vi.advanceTimersByTime(100);
+        fire('touchmove', y, t0 + dt);
+      });
+    }
+    expect(hook.result.current.isDragging).toBe(true);
+    act(() => {
+      vi.advanceTimersByTime(150);
+      fire('touchend', 150, t0 + 350);
+    });
+    expect(hook.result.current.settledOffset).toBe(200);
+    // The release fades, though the primary pointer is fine: a finger
+    // started it.
+    expect(played.some(a => changedProperties(a).includes('opacity'))).toBe(
+      true,
+    );
+    for (const animation of played) {
+      expect(settledMs(animation)).toBeLessThanOrEqual(200.5);
+    }
   });
 
   it('leaves a drag-dismissed sheet to the host exit under a mouse, from where it was', () => {

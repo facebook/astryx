@@ -74,10 +74,10 @@
  * intentionally not exported.
  *
  * SSR-safe: no window/document access at module scope; all measurement
- * happens inside handlers. Reduce Motion leaves a UIKit sheet's drag
- * releases as they are (its cross-fades replace programmatic presentations
- * only), so under prefers-reduced-motion a release under a finger keeps its
- * spring; under a mouse it follows the theme's reduced transition.
+ * happens inside handlers. Under prefers-reduced-motion every release and
+ * spring-back follows design:reduced-motion: the animator's own cross-fade
+ * replaces the travel (opacity only, 200 ms or less after a touch release or
+ * on a touch screen; at once with a mouse).
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/BottomSheet/useSheetGestures.test.ts
@@ -967,6 +967,11 @@ export function useSheetGestures({
     [animator],
   );
 
+  // Whether a finger drives the current or last drag, so its release, and a
+  // spring-back after it, fade under reduced motion whatever the primary
+  // pointer (design:reduced-motion DR2).
+  const dragTouchRef = useRef(false);
+
   // Moves the sheet to `offset` on the travel channel, holding the layout
   // split it is rendered with (`layoutOffset`) until it lands; landing a
   // settle reconciles the layout, and the host folds the travel into its new
@@ -980,21 +985,24 @@ export function useSheetGestures({
       layoutOffset: number,
       spring: SpringDescription,
       velocity?: number,
+      crossfadeAs?: 'exit',
     ): MotionHandle => {
       const to = offset - layoutOffset - travelBaseRef.current;
       const motion = releaseMotionRef.current;
+      // Under reduced motion the animator's own cross-fade replaces the
+      // travel (design:reduced-motion). A finger started it, so it fades
+      // whatever the primary pointer (DR2).
+      const touchRelease = dragTouchRef.current;
       const handle =
         motion.kind === 'theme'
           ? animator.play(
               {y: themeCurve(animator.get('y'), to, motion)},
-              // The theme's own reduced timing is already in the curve.
-              {reducedMotion: 'keep'},
+              {crossfadeAs, touchRelease},
             )
           : animator.animate(
               {y: to},
               {spring, velocity: velocity == null ? undefined : {y: velocity}},
-              // UIKit keeps a sheet's release under Reduce Motion.
-              {reducedMotion: 'keep'},
+              {crossfadeAs, touchRelease},
             );
       travelHandleRef.current = handle;
       void handle.finished.then(finished => {
@@ -1177,6 +1185,7 @@ export function useSheetGestures({
             baseLayoutOffset,
             release.spring,
             velocity,
+            'exit',
           );
           const base = travelBaseRef.current;
           gestureExitRef.current = {
@@ -1265,6 +1274,7 @@ export function useSheetGestures({
       }
       const target = event.currentTarget as HTMLElement;
       const syntheticTouch = isSyntheticTouch(event);
+      dragTouchRef.current = syntheticTouch || event.pointerType === 'touch';
       // Never capture for a touch drag. The id came from `Touch.identifier`,
       // which on iOS names a live pointer: the capture succeeds, WebKit takes
       // it straight back for its own gesture handling, and the
@@ -2026,7 +2036,7 @@ export function useSheetGestures({
 
   // Subscribed, not memoized: the preference can change while a sheet is open,
   // and it turns the sheet's CSS transitions off (the theme's motion under a
-  // mouse). A release under a finger keeps UIKit's spring either way.
+  // mouse); the animator's own cross-fade replaces a release's travel.
   const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
 
   const reconcileScrollPreservationInset = useCallback(
