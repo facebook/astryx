@@ -26,6 +26,7 @@ import {
   getPositionTryFallbacks,
   getSelfAlignment,
 } from './useLayer';
+import {getAnchorClearFallbacks} from './layerSlideRules';
 import {typeScaleVars} from '../theme/tokens.stylex';
 import type {
   LayerPlacement,
@@ -1569,5 +1570,158 @@ describe('wasJustDismissed (light dismiss vs. the trigger click, #5004)', () => 
     fireEvent.click(trigger);
 
     expect(getByTestId('state')).toHaveTextContent('closed');
+  });
+});
+
+describe('a layer that keeps its anchor clear (spec:AST-059 FR4)', () => {
+  function ClearHarness({placement}: {placement?: LayerPlacement}) {
+    const layer = useLayerInternal({mode: 'context', keepsAnchorClear: true});
+    return (
+      <>
+        <button type="button" ref={layer.ref} onClick={layer.show}>
+          Trigger
+        </button>
+        <button type="button" onClick={layer.hide}>
+          Hide
+        </button>
+        {layer.render(<span>Layer content</span>, {placement})}
+      </>
+    );
+  }
+
+  function rect(top: number, left: number, height: number, width: number) {
+    return {
+      top,
+      left,
+      height,
+      width,
+      bottom: top + height,
+      right: left + width,
+      x: left,
+      y: top,
+      toJSON: () => ({}),
+    } as DOMRect;
+  }
+
+  /** Lay out the trigger and the layer at the given boxes. */
+  function placeBoxes(trigger: DOMRect, layer: DOMRect) {
+    return vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function (this: HTMLElement) {
+        return this.hasAttribute('popover') ? layer : trigger;
+      });
+  }
+
+  const TRIGGER = rect(300, 400, 30, 100);
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('lists beside the trigger first, then the roomier block side sized to its room, then the other side', () => {
+    expect(getAnchorClearFallbacks('above')).toBe(
+      '--astryx-layer-beside-end, --astryx-layer-beside-start, --astryx-layer-fit-above-roomier, --astryx-layer-fit-below',
+    );
+    expect(getAnchorClearFallbacks('below')).toBe(
+      '--astryx-layer-beside-end, --astryx-layer-beside-start, --astryx-layer-fit-below-roomier, --astryx-layer-fit-above',
+    );
+    // Side placements already slide along the block axis at full height.
+    expect(getAnchorClearFallbacks('start')).toBe('');
+    expect(getAnchorClearFallbacks('end')).toBe('');
+    // Chromium tries no more than five options.
+    for (const placement of ['above', 'below'] as const) {
+      expect(
+        getAnchorClearFallbacks(placement).split(', ').length,
+      ).toBeLessThanOrEqual(5);
+    }
+  });
+
+  it('installs the beside and fit rules and the switch to the clear list', async () => {
+    const user = userEvent.setup();
+    const {container} = render(<ClearHarness />);
+    await user.click(container.querySelector('button')!);
+    const css =
+      document.getElementById('astryx-layer-slide-rules')?.textContent ?? '';
+    // Beside: an inline side spanning the block axis, at the content's own
+    // inline size so a content-sized layer cannot squeeze into a sliver.
+    expect(css).toContain(
+      '@position-try --astryx-layer-beside-end{position-area:self-inline-end span-all;margin-inline-start:var(--_astryx-layer-clearance, 0px);',
+    );
+    expect(css).toMatch(
+      /@position-try --astryx-layer-beside-start\{[^}]*inline-size:max-content;\}/,
+    );
+    // Fit: sized to the room on its side; the roomier variant is never less
+    // than half of the room the trigger leaves on the block axis.
+    expect(css).toMatch(
+      /@position-try --astryx-layer-fit-below\{position-area:self-block-end span-all;[^}]*block-size:calc\(100% - var\(--_astryx-layer-clearance, 0px\) - /,
+    );
+    expect(css).toMatch(
+      /@position-try --astryx-layer-fit-above-roomier\{position-area:self-block-start span-all;[^}]*block-size:max\(calc\(100% - [^}]*anchor-size\(block\)[^}]*100dvb/,
+    );
+    expect(css).toContain(
+      '[data-astryx-clears-anchor]{--_astryx-layer-try-fallbacks:var(--_astryx-layer-clear-fallbacks);}',
+    );
+  });
+
+  it('carries the clear list beside the standard one, which it uses until the switch', async () => {
+    const user = userEvent.setup();
+    const {container} = render(<ClearHarness placement="below" />);
+    await user.click(container.querySelector('button')!);
+    const layerEl = container.querySelector('[popover]') as HTMLElement;
+    expect(layerEl.style.positionTryFallbacks).toBe(
+      `var(--_astryx-layer-try-fallbacks, ${getPositionTryFallbacks('below', 'center')})`,
+    );
+    expect(
+      layerEl.style.getPropertyValue('--_astryx-layer-clear-fallbacks'),
+    ).toBe(getAnchorClearFallbacks('below'));
+  });
+
+  it('switches to the clear list when the shown layer covers its trigger', async () => {
+    const user = userEvent.setup();
+    placeBoxes(TRIGGER, rect(16, 350, 688, 300));
+    const {container} = render(<ClearHarness />);
+    await user.click(container.querySelector('button')!);
+    const layerEl = container.querySelector('[popover]') as HTMLElement;
+    expect(layerEl).toHaveAttribute('data-astryx-clears-anchor');
+  });
+
+  it('keeps the standard list when the shown layer sits clear of its trigger, even flush against it', async () => {
+    const user = userEvent.setup();
+    // Directly above the trigger, its bottom edge on the trigger's top edge.
+    placeBoxes(TRIGGER, rect(200, 350, 100, 200));
+    const {container} = render(<ClearHarness />);
+    await user.click(container.querySelector('button')!);
+    const layerEl = container.querySelector('[popover]') as HTMLElement;
+    expect(layerEl).not.toHaveAttribute('data-astryx-clears-anchor');
+  });
+
+  it('starts every show from the standard list', async () => {
+    const user = userEvent.setup();
+    const spy = placeBoxes(TRIGGER, rect(16, 350, 688, 300));
+    const {container, getByText} = render(<ClearHarness />);
+    await user.click(getByText('Trigger'));
+    const layerEl = container.querySelector('[popover]') as HTMLElement;
+    expect(layerEl).toHaveAttribute('data-astryx-clears-anchor');
+
+    await user.click(getByText('Hide'));
+    spy.mockRestore();
+    placeBoxes(TRIGGER, rect(200, 350, 100, 200));
+    await user.click(getByText('Trigger'));
+    expect(layerEl).not.toHaveAttribute('data-astryx-clears-anchor');
+  });
+
+  it('leaves a standard layer on the standard list alone', async () => {
+    const user = userEvent.setup();
+    placeBoxes(TRIGGER, rect(16, 350, 688, 300));
+    const {container} = render(<ContextLayerHarness />);
+    await user.click(container.querySelector('button')!);
+    const layerEl = container.querySelector('[popover]') as HTMLElement;
+    expect(layerEl).not.toHaveAttribute('data-astryx-clears-anchor');
+    expect(layerEl.style.positionTryFallbacks).toBe(
+      getPositionTryFallbacks('above', 'center'),
+    );
+    expect(
+      layerEl.style.getPropertyValue('--_astryx-layer-clear-fallbacks'),
+    ).toBe('');
   });
 });

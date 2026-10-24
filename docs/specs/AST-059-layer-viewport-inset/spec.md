@@ -178,8 +178,16 @@ the app reaches every layer instead of the components that happen to read it.
   layer the same distance from the opposite edge (the size cap still
   subtracts each edge's own gutter). Content taller than either side can hold
   is capped to the viewport and shifted into it, keeping its anchor clearance
-  from the edge it meets. The runtime authors this order; a component passes no
-  fallbacks of its own to an anchor-mode layer.
+  from the edge it meets. A layer that keeps its anchor clear — Tooltip, which
+  the hover on its trigger keeps open — never settles over its anchor: when
+  the order above would leave its box over the anchor, an above or below
+  layer tries instead beside the anchor on the inline end, then on the inline
+  start, each at its content's inline size and capped to the viewport, then
+  the block side with more room, then the other block side, each sized to the
+  room on that side; the layer scrolls what it cannot show (FR3). Chromium
+  tries no more than five position options, so this is a second list that
+  replaces the first, not an extension of it. The runtime authors both orders;
+  a component passes no fallbacks of its own to an anchor-mode layer.
 - **FR5 — An off-screen anchor holds.** A layer whose anchor has left the
   viewport does not slide. It keeps the position the flips give it and its
   size until the anchor returns (DEC-3).
@@ -211,11 +219,14 @@ the app reaches every layer instead of the components that happen to read it.
   this record — the gutter, the caps, the declared inset, the fallback order —
   is resolved by the browser's style and layout in the same frame as the
   render that produced it; the runtime measures nothing after paint to apply
-  them. The one observation the runtime makes, whether the anchor is in view
-  (FR5), is read before the layer's first paint and thereafter only when the
+  them. The runtime makes two observations. Whether the anchor is in view
+  (FR5) is read before the layer's first paint and thereafter only when the
   anchor's visibility changes, so a layer opened while its anchor is already
-  out of view holds from its first frame. When a declared inset changes while
-  a layer is open, the layer and the declaration change in the same frame.
+  out of view holds from its first frame. For a layer that keeps its anchor
+  clear (FR4), whether its settled box covers its anchor is read in the same
+  call that shows it, so the switch to its second list lands before any frame
+  paints. When a declared inset changes while a layer is open, the layer and
+  the declaration change in the same frame.
   Latency between an app measuring its own bar and declaring the result is the
   app's; the runtime renders what is declared, when it is declared. A
   paint-then-shift is a failure of this contract, not a quality concern.
@@ -316,7 +327,8 @@ When this ships:
   TopNav menus, and the date inputs render through anchor mode or
   `usePopover` and receive FR1–FR5 with no change of their own. A layer that
   fits is unchanged; one that would overflow the viewport is capped, flipped,
-  or slid.
+  or slid. Tooltip also keeps its anchor clear (FR4) and scrolls content
+  taller than the room it is given (FR3).
 - `ToastViewport` positions itself at the provider's inset on each edge; its
   own `inset` keeps its meaning as the per-edge override (FR6, DEC-5).
 
@@ -339,6 +351,7 @@ for any row.
 | FR2           | Stories "explicit size near an edge (352px)", "content-sized, fits beside the trigger", "content-sized, does not fit beside the trigger", "neither side fits" at both viewports; clamp strings in Popover and DropdownMenu suites   | 352px end-aligned on a trigger 45px from the edge; a short content-sized layer; an unbreakable run wider than a phone; a 1000px layer on a phone, where the cap is 358px                                   | A layer narrower than `min(asked, cap)`, a layer box wider than the cap at any viewport, or `100%` of the anchor span in a cap                                                                          |
 | FR3           | Story "taller than the viewport" at both viewports; the runtime's viewport-fit style on every anchor-mode layer                                                                                                                     | Content 2000px tall                                                                                                                                                                                        | The layer box's block size exceeds the viewport minus gutters                                                                                                                                           |
 | FR4           | Stories "content-sized, does not fit beside the trigger", "trigger near an edge flips", "neither side fits", "trigger near the bottom flips above", "wide layer, trigger near the bottom" at both viewports                         | A flip to end alignment at content size and at an explicit size; a 1000px layer slid inside the gutters where it fits; a block flip with room only above; a block flip when the inline axis is also capped | A layer squeezed into the span, a flipped edge off the trigger's edge, a layer outside the gutters on either axis, or a layer left on the side with no room                                             |
+| FR4, Tooltip  | The `TooltipTallContent` real-Chromium suite at 1280×720 and 390×700; the runtime's anchor-clear unit suite                                                                                                                         | A 60-line tooltip on a mid-page trigger (opens beside it); on a phone with the trigger in the upper or lower half (opens on the roomier block side); a short tooltip that fits above                       | The tooltip covers its trigger in any frame, closes under a resting pointer, leaves the viewport, does not scroll its overflow, or a tooltip that fits moves                                            |
 | FR5           | Stories "anchor leaves the viewport" and "anchor already off-screen when the layer opens"; the runtime's anchor-visibility unit suite                                                                                               | Horizontal scroll carries the trigger out of view while the layer is open, then back; a layer opened with its anchor already off-screen                                                                    | The layer slides toward the viewport edge after the anchor is gone, changes size, does not return with its anchor, or opens pinned to the edge                                                          |
 | FR6           | Stories "app-declared inset (floating bar)" and "layer portaled out of its JSX position"; `LayerProvider` and `ToastViewport` unit suites                                                                                           | An 80px bar declared as `inset={{blockEnd: 80}}`; a toast under the same provider; a `toast.inset` override; no provider; a layer hosted outside the paragraph it was rendered in                          | A layer or toast ends under the bar, an unset edge moves anything, a `toast.inset` edge stops overriding, no-provider geometry differs from the default provider's, or a portaled layer loses the inset |
 | FR8           | Every story above (first frame compared with settled); stories "inset changes while the layer is open", "layer opens in the frame the inset arrives", "inset measured by the app", "anchor already off-screen when the layer opens" | The provider's inset changes 80→160 with the layer open; a layer mounted open in the provider's first commit; a bar the app measures before paint and declares; an off-screen anchor at open               | The first frame's rectangle differs from the settled one, or the first frame after a declaration change is not already at the new geometry                                                              |
