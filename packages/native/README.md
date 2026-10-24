@@ -155,10 +155,13 @@ Boundaries, checked by `pnpm check:package-boundaries`:
 - The check reads source text in every folder except `node_modules`, `dist`,
   `.build`, and `.swiftpm`. It flags any other module specifier that names
   core (`import`, `require`, `require.resolve`, `import.meta.resolve`, or a
-  relative path into `packages/core`). It also flags a string or
-  `path.join` segment pair that points at `@astryxdesign/core` or
-  `packages/core`, and any other read rooted at `core-docs.mjs`'s `CORE_ROOT`.
-  It does not follow paths computed in other ways.
+  relative path into `packages/core`). It also flags a path to core's package,
+  written as adjacent string segments (`'@astryxdesign', 'core'`,
+  `'node_modules', '@astryxdesign/core'`, `'packages', 'core'`) or inside one
+  string (`node_modules/@astryxdesign/core`, `packages/core`). In
+  `scripts/core-docs.mjs` it allows exactly one such path, the `CORE_ROOT`
+  definition, and only the listed reads under `CORE_ROOT`. It does not follow
+  paths computed in other ways.
 
 ## Experiment matrix
 

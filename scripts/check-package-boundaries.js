@@ -15,7 +15,9 @@
  * is allowed (AST-082 FR16): two theme entries imported by build scripts,
  * core's locale catalogs imported by the Swift strings generator, and core's
  * component documentation and built-in icon names read as data by one loader.
- * Any other import or read of core fails.
+ * Any other import of core fails, as does any other path to core's package
+ * that CORE_PACKAGE_PATH recognizes. The check reads source text; it does not
+ * follow paths computed in other ways.
  */
 
 const fs = require('node:fs');
@@ -35,12 +37,12 @@ const NATIVE_SKIPPED_DIRECTORIES = new Set([
   '.build',
   '.swiftpm',
 ]);
-// A path built to core's package: its installed copy
-// (path.join(..., '@astryxdesign', 'core') or a node_modules/@astryxdesign/core
-// string) or its workspace source (path.join(..., 'packages', 'core') or a
-// packages/core string).
+// A path built to core's package, as adjacent string segments or inside one
+// string: its installed copy ('@astryxdesign', 'core'; 'node_modules',
+// '@astryxdesign/core'; or node_modules/@astryxdesign/core) or its workspace
+// source ('packages', 'core'; or packages/core).
 const CORE_PACKAGE_PATH =
-  /['"](?:@astryxdesign|packages)['"]\s*,\s*['"]core['"]|['"`][^'"`]*(?:node_modules\/@astryxdesign|\bpackages)\/core\b/;
+  /['"](?:@astryxdesign|packages)['"]\s*,\s*['"]core['"]|['"]node_modules['"]\s*,\s*['"]@astryxdesign\/core\b|['"`][^'"`]*(?:node_modules\/@astryxdesign|\bpackages)\/core\b/g;
 
 /**
  * The interim exceptions to AST-082 FR16: build-time reads of core that
@@ -92,6 +94,10 @@ const NATIVE_CORE_EXCEPTIONS = Object.freeze({
 // after CORE_ROOT, with whitespace collapsed before matching.
 const CORE_ROOT_READ =
   /\bpath\.(?:join|resolve)\(\s*CORE_ROOT\s*,\s*([^)]*?)\s*,?\s*\)/g;
+
+function corePackagePaths(content) {
+  return (content.match(CORE_PACKAGE_PATH) ?? []).length;
+}
 
 function walk(dir, extensions, skipped, visit) {
   for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
@@ -197,7 +203,7 @@ function checkNativeFile(root, filePath, violations) {
 
   const {data} = NATIVE_CORE_EXCEPTIONS;
   if (relPath !== data.reader) {
-    if (CORE_PACKAGE_PATH.test(content) || /\bCORE_ROOT\b/.test(content)) {
+    if (corePackagePaths(content) > 0 || /\bCORE_ROOT\b/.test(content)) {
       violations.push({
         file: relPath,
         message: `@astryxdesign/native reads core's package as data only through ${data.reader}.`,
@@ -206,8 +212,18 @@ function checkNativeFile(root, filePath, violations) {
     return;
   }
 
-  // In the reader, every use of CORE_ROOT beyond its definition must be one
-  // of the listed reads.
+  // The reader roots core at one place, its CORE_ROOT definition, so a second
+  // root cannot read around the listed reads.
+  if (corePackagePaths(content) > 1) {
+    violations.push({
+      file: relPath,
+      message:
+        'The data reader may build one path to core, its CORE_ROOT; every read must go through CORE_ROOT.',
+    });
+  }
+
+  // Every use of CORE_ROOT beyond its definition must be one of the listed
+  // reads.
   let reads = 0;
   for (const match of content.matchAll(CORE_ROOT_READ)) {
     const read = match[1].replace(/\s+/g, ' ');

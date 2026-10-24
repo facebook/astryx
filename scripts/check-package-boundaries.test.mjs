@@ -185,6 +185,35 @@ describe('package boundaries', () => {
     }
   });
 
+  it('catch a second data reader that joins node_modules and @astryxdesign/core', () => {
+    const root = tree({
+      'packages/native/scripts/icons.mjs':
+        "const core = path.join(PACKAGE_ROOT, 'node_modules', '@astryxdesign/core');\n",
+    });
+    expect(files(findViolations(root))).toEqual([
+      'packages/native/scripts/icons.mjs',
+    ]);
+  });
+
+  it('allow the data reader exactly one path to core, its CORE_ROOT', () => {
+    const coreRoot =
+      "export const CORE_ROOT = path.join(PACKAGE_ROOT, 'node_modules', '@astryxdesign', 'core');";
+    for (const secondRoot of [
+      "const other = path.join(PACKAGE_ROOT, 'node_modules', '@astryxdesign', 'core');",
+      "fs.readFileSync('node_modules/@astryxdesign/core/dist/index.js');",
+      "const other = path.join(PACKAGE_ROOT, 'node_modules', '@astryxdesign/core');",
+    ]) {
+      const root = tree({
+        'packages/native/scripts/core-docs.mjs': [coreRoot, secondRoot].join(
+          '\n',
+        ),
+      });
+      expect(files(findViolations(root)), secondRoot).toEqual([
+        'packages/native/scripts/core-docs.mjs',
+      ]);
+    }
+  });
+
   it('catch resolve calls and paths to the core workspace', () => {
     const root = tree({
       'packages/native/scripts/a.mjs':
