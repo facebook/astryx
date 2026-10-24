@@ -231,6 +231,86 @@ test('a hide the viewport never confirms puts the dock back on the keyboard', as
   expect(await dockY(dock)).toBeCloseTo(-lift, 0);
 });
 
+test('Reduce Motion: the dock still rides the keyboard spring', async ({
+  page,
+}) => {
+  // The iOS keyboard keeps sliding under Reduce Motion, so content that
+  // follows it slides with it instead of cross-fading.
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  const {dock, lift} = await openChat(page);
+  await showKeyboard(page);
+  await waitForAnimation(dock);
+  const held = await holdAnimations(page, dock);
+  const curveEnd = Math.max(...held.map(a => a.curveEndMs));
+  const samples = curveOf(
+    await sampleCurve(dock, timeline(curveEnd)),
+    'translateY',
+  );
+  await releaseAnimations(page);
+  const result = compareCurve(
+    samples,
+    t => -lift * springStep(KEYBOARD, t),
+    0.5,
+  );
+  expect(result.maxError, JSON.stringify(result.worst)).toBeLessThanOrEqual(
+    0.5,
+  );
+  // No cross-fade stands in for the travel.
+  const opacity = await dock.evaluate(el =>
+    el
+      .getAnimations()
+      .some(a =>
+        (a.effect as KeyframeEffect)
+          .getKeyframes()
+          .some(k => k.opacity != null),
+      ),
+  );
+  expect(opacity).toBe(false);
+});
+
+test('focus returning mid-hide turns the dock back up without a jump', async ({
+  page,
+}) => {
+  const {dock, editable, lift} = await openChat(page);
+  await editable.focus();
+  await showKeyboard(page);
+  await waitForRest(dock);
+  // In the page, so no round trip sits between the steps: blur, let the
+  // hide run 150 ms, focus again, and read the dock's presented position on
+  // every frame throughout.
+  const ys = await editable.evaluate(async el => {
+    let dock: HTMLElement | null = el as HTMLElement;
+    while (dock != null && getComputedStyle(dock).position !== 'sticky') {
+      dock = dock.parentElement;
+    }
+    const read = () => {
+      const value = getComputedStyle(dock as HTMLElement).translate;
+      return value === 'none' ? 0 : parseFloat(value.split(' ')[1] ?? '0');
+    };
+    const out: number[] = [];
+    const until = performance.now() + 900;
+    const sample = () => {
+      out.push(read());
+      if (performance.now() < until) {
+        requestAnimationFrame(sample);
+      }
+    };
+    requestAnimationFrame(sample);
+    (el as HTMLElement).blur();
+    await new Promise(resolve => setTimeout(resolve, 150));
+    (el as HTMLElement).focus();
+    await new Promise(resolve => setTimeout(resolve, 800));
+    return out;
+  });
+  // It went down, came back to the keyboard, and never jumped: no frame
+  // moved further than the hide's own fastest frame (about 51 px).
+  expect(Math.max(...ys)).toBeGreaterThan(-lift + 5);
+  for (let i = 1; i < ys.length; i += 1) {
+    expect(Math.abs(ys[i] - ys[i - 1]), JSON.stringify(ys)).toBeLessThan(80);
+  }
+  expect(ys.at(-1)).toBeCloseTo(-lift, 0);
+});
+
 test('a tap on the composer text focuses it without scrolling the page', async ({
   page,
 }) => {
