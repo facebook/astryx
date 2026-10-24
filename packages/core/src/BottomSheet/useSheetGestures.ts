@@ -674,6 +674,7 @@ export function useSheetGestures({
       curve: {duration: number; offsetAt: (t: number) => number},
       dimFor: (offset: number) => number,
       at: number,
+      touchRelease = false,
     ) => {
       const dialog = sheetElRef.current?.closest('dialog');
       if (!isScrimTrackingRef.current || dialog == null) {
@@ -693,7 +694,11 @@ export function useSheetGestures({
       };
       const scrim = createAnimator(dialog, {pseudoElement: '::backdrop'});
       scrimAnimatorRef.current = scrim;
-      scrim.play({opacity: dimCurve}, {at});
+      // Starts from the dim on screen, so a reduced-motion fade does too.
+      scrim.set({opacity: dim(0)});
+      // Under reduced motion the animator fades the dim to its end value
+      // (200 ms or less, or at once with a fine pointer; design:reduced-motion).
+      scrim.play({opacity: dimCurve}, {at, touchRelease});
     },
     [stopScrimFollow],
   );
@@ -1139,6 +1144,7 @@ export function useSheetGestures({
             {duration: curve.duration, offsetAt: t => base + curve.at(t)},
             dimFor,
             at,
+            touchRelease,
           );
         }
       } else {
@@ -1171,6 +1177,7 @@ export function useSheetGestures({
             },
             dimFor,
             at,
+            touchRelease,
           );
         }
       }

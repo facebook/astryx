@@ -2807,8 +2807,7 @@ describe('useSheetGestures: the dim follows the sheet', () => {
     );
   });
 
-  it('keeps the dim in lockstep with the release under Reduce Motion', () => {
-    // UIKit keeps drag releases (and so their dim) under Reduce Motion.
+  it('fades the dim to its end with the release under reduced motion, 200 ms or less', () => {
     vi.stubGlobal(
       'matchMedia',
       vi.fn((query: string) => ({
@@ -2825,7 +2824,7 @@ describe('useSheetGestures: the dim follows the sheet', () => {
       onScrimTracking: vi.fn(),
     });
     const {dialog, target} = inDialog();
-    const sheetAnimations = recordAnimations(target);
+    recordAnimations(target);
     const backdrop = recordAnimations(dialog);
     down(hook, 0, 0, target);
     stream(hook, target, {from: 0, to: 290, t0: 0, t1: 600});
@@ -2836,14 +2835,11 @@ describe('useSheetGestures: the dim follows the sheet', () => {
       ),
     );
     expect(hook.result.current.settledOffset).toBe(200);
-    const sheetAnimation = sheetAnimations.at(-1) as Played;
     const dim = backdrop.at(-1) as Played;
-    // The sheet still travels (no cross-fade), and the dim rides it.
-    expect(valueAt(sheetAnimation, 0, travelOf)).toBeCloseTo(290, 0);
-    for (const ms of [0, 16, 50, 100, 200, 300]) {
-      const offset = valueAt(sheetAnimation, ms, travelOf);
-      expect(valueAt(dim, ms, opacityOf)).toBeCloseTo(dimAt(offset), 2);
-    }
+    // From the dim where the finger left it to the detent's, within 200 ms.
+    expect(valueAt(dim, 0, opacityOf)).toBeCloseTo(dimAt(290), 2);
+    expect(settledMs(dim)).toBeLessThanOrEqual(200.5);
+    expect(valueAt(dim, 200, opacityOf)).toBeCloseTo(dimAt(200), 2);
   });
 
   it.each([
