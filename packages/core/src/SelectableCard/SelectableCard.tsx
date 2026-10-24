@@ -4,7 +4,8 @@
 
 /**
  * @file SelectableCard.tsx
- * @input Uses Card, useClickableContainer, StyleX
+ * @input Uses Card, useClickableContainer, StyleX, the selection mark's
+ *   touch timing (Indicator/selectionMotion.stylex.ts)
  * @output Exports SelectableCard component and SelectableCardProps
  * @position Interactive card for toggle selection
  *
@@ -43,6 +44,7 @@ import type {Elevation, SizeValue, SpacingStep} from '../utils/types';
 import {mergeProps} from '../utils';
 import {Card} from '../Card/Card';
 import type {CardVariant} from '../Card/Card';
+import {selectionMotionConsts} from '../Indicator/selectionMotion.stylex';
 import {useClickableContainer} from '../hooks/useClickableContainer';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
@@ -61,6 +63,9 @@ import {useMergedRefs} from '../hooks/useMergedRefs';
 // `::after` that paints it. See interactionOverlay.stylex.ts.
 const pressedOverlayColor = 'var(--_press-paint)';
 
+/** How long the selection mark takes to change under a finger: one frame. */
+const MARK_CHANGE = `${selectionMotionConsts.markChangeMs}ms`;
+
 const styles = stylex.create({
   interactive: {
     // Declared here, on the element that carries the `astryx-selectable-card`
@@ -73,7 +78,15 @@ const styles = stylex.create({
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     transitionProperty: 'box-shadow, border-color',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      // Under a finger the selection mark (the inset ring and the border)
+      // changes in the frame the selection lands, as iOS's selection marks
+      // do (motion/uikit/selection.ts). The ring cannot interpolate with the
+      // card's resting shadow, so a fade would split it from the border. A
+      // mouse keeps the theme's duration.
+      '@media (pointer: coarse)': MARK_CHANGE,
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   // Hover and pressed overlay. Hover is guarded by @media (hover: hover) so
