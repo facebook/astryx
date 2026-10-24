@@ -1599,3 +1599,218 @@ describe('pressed state', () => {
     expect(declaresPressedOverlay(thumb)).toBe(false);
   });
 });
+
+describe('coincident range thumbs', () => {
+  // A 200 px control: the thumbs travel from 10 px (value 0) to 190 px
+  // (value 100), so value = (x - 10) / 1.8.
+  function mockGroupRect() {
+    screen.getByRole('group').getBoundingClientRect = () => ({
+      left: 0,
+      top: 0,
+      right: 200,
+      bottom: 20,
+      width: 200,
+      height: 20,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    });
+  }
+
+  function ControlledRange({
+    initial,
+    onChange,
+  }: {
+    initial: [number, number];
+    onChange: (value: [number, number]) => void;
+  }) {
+    const [value, setValue] = useState<[number, number]>(initial);
+    return (
+      <Slider
+        label="Price"
+        value={value}
+        min={0}
+        max={100}
+        onChange={(next: [number, number]) => {
+          onChange(next);
+          setValue(next);
+        }}
+      />
+    );
+  }
+
+  it('drags the lower thumb when a drag from two thumbs at the maximum goes toward the minimum', () => {
+    const onChange = vi.fn();
+    render(<ControlledRange initial={[100, 100]} onChange={onChange} />);
+    mockGroupRect();
+    const [start, end] = screen.getAllByRole('slider');
+
+    // The press lands on the upper thumb, the one painted on top.
+    fireEvent.pointerDown(end, {clientX: 190, clientY: 10, pointerId: 1});
+    fireEvent.pointerMove(end, {clientX: 100, clientY: 10, pointerId: 1});
+
+    expect(onChange).toHaveBeenLastCalledWith([50, 100]);
+    expect(start).toHaveAttribute('aria-valuenow', '50');
+    expect(end).toHaveAttribute('aria-valuenow', '100');
+  });
+
+  it('hands the drag, its focus and its pressed paint to the thumb the first movement picks', () => {
+    const onChange = vi.fn();
+    render(<ControlledRange initial={[50, 50]} onChange={onChange} />);
+    mockGroupRect();
+    const [start, end] = screen.getAllByRole('slider');
+
+    fireEvent.pointerDown(end, {clientX: 100, clientY: 10, pointerId: 1});
+    // On the shared value nothing says which way the drag goes yet: the
+    // pressed thumb keeps the press and nothing moves.
+    expect(declaresPressedOverlay(end)).toBe(true);
+    expect(onChange).toHaveBeenLastCalledWith([50, 50]);
+
+    fireEvent.pointerMove(end, {clientX: 64, clientY: 10, pointerId: 1});
+    expect(onChange).toHaveBeenLastCalledWith([30, 50]);
+    expect(declaresPressedOverlay(start)).toBe(true);
+    expect(declaresPressedOverlay(end)).toBe(false);
+    expect(document.activeElement).toBe(start);
+
+    // The drag stays with that thumb, even back past the other one's value.
+    fireEvent.pointerMove(end, {clientX: 154, clientY: 10, pointerId: 1});
+    expect(onChange).toHaveBeenLastCalledWith([50, 50]);
+    fireEvent.pointerUp(end, {clientX: 154, clientY: 10, pointerId: 1});
+    expect(declaresPressedOverlay(start)).toBe(false);
+  });
+
+  it('commits a press beside the shared value to no thumb until the pointer moves', () => {
+    const onChange = vi.fn();
+    const {unmount} = render(
+      <ControlledRange initial={[80, 80]} onChange={onChange} />,
+    );
+    mockGroupRect();
+    let [, end] = screen.getAllByRole('slider');
+    // A press on the thumbs a little below their value (79), dragged toward
+    // the maximum: the upper thumb follows.
+    fireEvent.pointerDown(end, {clientX: 152, clientY: 10, pointerId: 1});
+    expect(onChange).toHaveBeenLastCalledWith([80, 80]);
+    fireEvent.pointerMove(end, {clientX: 172, clientY: 10, pointerId: 1});
+    expect(onChange).toHaveBeenLastCalledWith([80, 90]);
+    fireEvent.pointerUp(end, {clientX: 172, clientY: 10, pointerId: 1});
+    unmount();
+
+    // A press a little above it (81), dragged toward the minimum: the lower
+    // thumb follows.
+    render(<ControlledRange initial={[80, 80]} onChange={onChange} />);
+    mockGroupRect();
+    const [start, upper] = screen.getAllByRole('slider');
+    end = upper;
+    fireEvent.pointerDown(end, {clientX: 156, clientY: 10, pointerId: 1});
+    expect(onChange).toHaveBeenLastCalledWith([80, 80]);
+    fireEvent.pointerMove(end, {clientX: 64, clientY: 10, pointerId: 1});
+    expect(onChange).toHaveBeenLastCalledWith([30, 80]);
+    expect(start).toHaveAttribute('aria-valuenow', '30');
+  });
+
+  it('picks the thumb by the mirrored direction under RTL', () => {
+    const onChange = vi.fn();
+    const realGetComputedStyle = window.getComputedStyle;
+    // Under RTL the inline start is the right edge: value = (190 - x) / 1.8.
+    const asRtl = () => {
+      const group = screen.getByRole('group');
+      return vi
+        .spyOn(window, 'getComputedStyle')
+        .mockImplementation((el: Element, pseudo?: string | null) =>
+          el === group
+            ? ({direction: 'rtl'} as CSSStyleDeclaration)
+            : realGetComputedStyle(el, pseudo ?? undefined),
+        );
+    };
+    const {unmount} = render(
+      <ControlledRange initial={[50, 50]} onChange={onChange} />,
+    );
+    mockGroupRect();
+    let spy = asRtl();
+    let [, end] = screen.getAllByRole('slider');
+    // Leftward is toward the maximum: the upper thumb follows.
+    fireEvent.pointerDown(end, {clientX: 100, clientY: 10, pointerId: 1});
+    fireEvent.pointerMove(end, {clientX: 46, clientY: 10, pointerId: 1});
+    expect(onChange).toHaveBeenLastCalledWith([50, 80]);
+    fireEvent.pointerUp(end, {clientX: 46, clientY: 10, pointerId: 1});
+    spy.mockRestore();
+    unmount();
+
+    // Rightward is toward the minimum: the lower thumb follows.
+    render(<ControlledRange initial={[50, 50]} onChange={onChange} />);
+    mockGroupRect();
+    spy = asRtl();
+    const [start, upper] = screen.getAllByRole('slider');
+    end = upper;
+    fireEvent.pointerDown(end, {clientX: 100, clientY: 10, pointerId: 1});
+    fireEvent.pointerMove(end, {clientX: 154, clientY: 10, pointerId: 1});
+    expect(onChange).toHaveBeenLastCalledWith([20, 50]);
+    expect(document.activeElement).toBe(start);
+    spy.mockRestore();
+  });
+
+  it('closes the value tooltip of the thumb a drag was handed away from', () => {
+    render(<ControlledRange initial={[50, 50]} onChange={vi.fn()} />);
+    mockGroupRect();
+    const [start, end] = screen.getAllByRole('slider');
+    const tipOf = (thumb: HTMLElement) =>
+      document.getElementById(
+        (thumb.getAttribute('aria-describedby') ?? '')
+          .split(' ')
+          .find(
+            id =>
+              document.getElementById(id)?.getAttribute('role') === 'tooltip',
+          ) ?? '',
+      );
+    fireEvent.pointerDown(end, {clientX: 100, clientY: 10, pointerId: 1});
+    fireEvent.pointerMove(end, {clientX: 64, clientY: 10, pointerId: 1});
+    fireEvent.pointerUp(end, {clientX: 64, clientY: 10, pointerId: 1});
+    expect(document.activeElement).toBe(start);
+    expect(tipOf(end)).not.toHaveAttribute('popover-open');
+  });
+
+  it('moves the upper thumb for a track press above the shared value', () => {
+    const onChange = vi.fn();
+    render(<ControlledRange initial={[50, 50]} onChange={onChange} />);
+    mockGroupRect();
+    const [, end] = screen.getAllByRole('slider');
+
+    fireEvent.pointerDown(screen.getByRole('group'), {
+      clientX: 154,
+      clientY: 10,
+      pointerId: 1,
+    });
+
+    expect(onChange).toHaveBeenLastCalledWith([50, 80]);
+    expect(declaresPressedOverlay(end)).toBe(true);
+    expect(document.activeElement).toBe(end);
+  });
+
+  it('moves the lower thumb for a track press below the shared value', () => {
+    const onChange = vi.fn();
+    render(<ControlledRange initial={[50, 50]} onChange={onChange} />);
+    mockGroupRect();
+    const [start] = screen.getAllByRole('slider');
+
+    fireEvent.pointerDown(screen.getByRole('group'), {
+      clientX: 46,
+      clientY: 10,
+      pointerId: 1,
+    });
+
+    expect(onChange).toHaveBeenLastCalledWith([20, 50]);
+    expect(document.activeElement).toBe(start);
+  });
+
+  it('still drags the upper thumb from two thumbs at the minimum toward the maximum', () => {
+    const onChange = vi.fn();
+    render(<ControlledRange initial={[0, 0]} onChange={onChange} />);
+    mockGroupRect();
+    const [, end] = screen.getAllByRole('slider');
+
+    fireEvent.pointerDown(end, {clientX: 10, clientY: 10, pointerId: 1});
+    fireEvent.pointerMove(end, {clientX: 100, clientY: 10, pointerId: 1});
+
+    expect(onChange).toHaveBeenLastCalledWith([0, 50]);
+  });
+});
