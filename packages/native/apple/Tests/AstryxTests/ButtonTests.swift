@@ -58,3 +58,15 @@ import Testing
   #expect(AstryxButton(label: "Save", isLoading: true) {}.accessibilityText == "Save")
   #expect(AstryxButton.accessibilityTraits.contains(.isButton))
 }
+
+@Test func buttonIconsUseSharedNamesAndTheTheme() {
+  #expect(AstryxStyle(tokens: .defaultLight).icon("search") == "magnifyingglass")
+  #expect(AstryxStyle(tokens: .defaultLight, icons: ["search": "sparkle.magnifyingglass"]).icon("search") == "sparkle.magnifyingglass")
+}
+
+@MainActor
+@Test func aButtonDrawsItsSharedIcon() {
+  let plain = Pixels(AstryxButton(label: "Find") {}.fixedSize())
+  let withIcon = Pixels(AstryxButton(label: "Find", icon: "search") {}.fixedSize())
+  #expect(withIcon.width > plain.width)
+}

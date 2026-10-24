@@ -141,14 +141,6 @@ extension Color {
   }
 }
 
-/// iOS's default SF Symbol for each shared icon name these components use.
-let astryxDefaultIcons: [String: String] = [
-  "info": "info.circle.fill",
-  "warning": "exclamationmark.triangle.fill",
-  "error": "exclamationmark.circle.fill",
-  "success": "checkmark.circle.fill",
-]
-
 /// A font from a CSS family stack: the first system family or installed font.
 func astryxFont(families: [String], size: CGFloat, weight: Font.Weight) -> Font {
   for family in families {

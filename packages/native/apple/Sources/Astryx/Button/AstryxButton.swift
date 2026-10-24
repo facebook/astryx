@@ -41,7 +41,8 @@ public struct AstryxButton: View {
   @Environment(\.astryx) private var astryx
 
   /// - Parameters:
-  ///   - icon: an SF Symbol name shown before the label.
+  ///   - icon: a shared icon name, such as `"search"`, shown before the
+  ///     label; the theme's symbol for it, else the platform default.
   ///   - fillsWidth: the button takes the whole width it is offered, as
   ///     core's `width="100%"` does.
   public init(
@@ -69,8 +70,8 @@ public struct AstryxButton: View {
       // The label keeps its place while loading so the width holds; the
       // spinner draws over it.
       HStack(spacing: astryx.space(2)) {
-        if let icon {
-          Image(systemName: icon)
+        if let icon, let symbol = astryx.icon(icon) {
+          Image(systemName: symbol)
         }
         Text(label).lineLimit(1)
       }

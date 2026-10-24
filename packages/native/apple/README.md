@@ -45,11 +45,16 @@ apple/
 - **`Sources/Astryx/<Name>/`** holds one folder per component, named as in
   `packages/core/src/<Name>/`. A component's parameters use core's prop names
   and values (`variant: .primary`, `size: .lg`, `isLoading`), so code reads
-  the same across web and native, with three exceptions, the interim shape
+  the same across web and native, with six exceptions, the interim shape
   AST-093 FR5 exempts until the components move onto the generated contracts:
-  `AstryxButton` takes `action` where core has `onClick`, `AstryxTextInput`
-  takes a `Binding` where core has `value` and `onChange`, and
-  `AstryxHeading`'s `level` is optional where core requires it.
+  - `AstryxButton` takes `action` where core has `onClick`.
+  - `AstryxButton` takes `fillsWidth` where core has `width="100%"`.
+  - `AstryxButton` takes `icon` as a shared icon name (`"search"`), which the
+    generated `ButtonProps` does not carry yet.
+  - `AstryxTextInput` takes a `Binding` where core has `value` and `onChange`.
+  - `AstryxHeading`'s `level` is optional where core requires it.
+  - `AstryxCard` takes `padding` as a whole spacing step, so it cannot spell
+    core's `0.5` and `1.5` steps.
 - **`Templates/`** holds one folder per page template, named after the
   `astryx template` id. Templates are clone-only, as on the web: you copy a
   template's folder into your app and own it from then on. They are a
