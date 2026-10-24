@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-10-21
+approved_at: 2026-10-24
 phase: accepted
 owners: [cixzhang]
 affects_architecture:
@@ -241,7 +241,10 @@ depends only on runtimes it can maintain.
   that version's controls and materials. A capability newer than the running OS
   degrades to the closest earlier platform equivalent or to durable intent, never
   to a broken or blank state. Touch targets meet the platform minimum, and text
-  follows the platform's text-size setting. A native platform is supported only
+  follows the platform's text-size setting. When a component chooses between
+  presentations by screen size, compact is `spec:AST-012` FR9 in points or
+  density-independent pixels, not the platform's size classes; the platform's
+  own control still presents the chosen surface. A native platform is supported only
   when it meets the FR12 criteria on its oldest and newest supported OS versions.
 - **FR12 — Approaches are compared on one scorecard.** Every candidate way of
   building a native platform is measured the same way. Candidates include
@@ -350,8 +353,9 @@ depends only on runtimes it can maintain.
   core contract: an icon is decorative unless it carries a label.
 
 - **FR18 — The theme definition has a portable part and a web part.** The
-  portable entry exports `PortableTheme`: a theme's name, tokens, and theme-local
-  tokens, each resolvable without CSS to a concrete value per color mode, such as
+  portable entry exports `PortableTheme`: a theme's name, tokens, theme-local
+  tokens, and the compact definition of `spec:AST-012` FR9 (the effective `md`
+  width point and the 500 height edge), each resolvable without CSS to a concrete value per color mode, such as
   a color, a length in density-independent units, a number, or a font name. The
   web part holds what only the web compiles or renders: component overrides keyed
   by web theme targets, icon and indicator registries of React elements,

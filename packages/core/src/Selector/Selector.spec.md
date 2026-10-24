@@ -57,6 +57,14 @@ connection between the closed trigger and its selection surface.
   stable-default change, so it ships as `[breaking]` in a scheduled minor under
   `spec:AST-017`; callers that need the anchored popover on every device pass
   `popover`.
+- `adaptive`'s compact test becomes `spec:AST-012` FR9 (width below the
+  effective `md` point or height below 500) in place of the shipped
+  `(max-width: 768px)` query: a coarse-pointer screen exactly 768 pixels wide
+  opens the popover, and a coarse-pointer screen at least 768 wide but under
+  500 tall opens the bottom sheet. Both surfaces keep selection working, so no
+  caller must change source and the change is not breaking under
+  `spec:AST-017` FR1; `popover` and `bottom-sheet` pin one surface. It is
+  pending until the shared resolver conforms; FR4 describes the shipped query.
 - `hasClear` changes the value contract to include `null`; that distinction is
   already part of the public type.
 - `isReadOnly` is additive and defaults to `false`. It preserves the selected
@@ -145,7 +153,7 @@ These requirements describe shipped behavior on current `main`.
 | FR1 | Selecting an enabled option updates the one selected value, closes the active presentation, and returns the trigger to its stable closed state.                                                                                                                                                                                                                                                                                                                                        | Consumer docs and selection interaction tests                             |
 | FR2 | Without explicit placement, a non-search popover aligns the selected row over the trigger and clamps it to the viewport. Search popovers and explicit placement use normal Layer positioning.                                                                                                                                                                                                                                                                                          | Consumer docs, implementation, and geometry tests                         |
 | FR3 | An option whose resolved selection indicator draws no content reserves no mark-column space. Visible selected or themed replacement indicators remain in layout at `indicatorPosition`; the resulting state-dependent label position or available width is intentional, and row content keeps its existing overflow behavior.                                                                                                                                                          | `itemMarkColumn`, focused indicator tests, and Chromium evidence stories  |
-| FR4 | `popover` uses an anchored Popover. `bottom-sheet` uses a modal BottomSheet. `adaptive` resolves to the modal bottom sheet on coarse-pointer screens that are compact under `spec:AST-012` FR9 and Popover otherwise.                                                                                                                                                                                                                                                                  | Presentation controller and adaptive-presentation tests                   |
+| FR4 | `popover` uses an anchored Popover. `bottom-sheet` uses a modal BottomSheet. `adaptive` resolves to the modal bottom sheet on compact coarse-pointer screens and Popover otherwise.                                                                                                                                                                                                                                                                                                    | Presentation controller and adaptive-presentation tests                   |
 | FR5 | While `isLoading` is true, the trigger exposes busy state and the listbox suppresses empty and no-results output.                                                                                                                                                                                                                                                                                                                                                                      | Loading, empty-state, and announcement tests                              |
 | FR6 | While `isReadOnly` is true, the selected value remains focusable and form-submittable, while the selection surface, clear action, disclosure indicator, and every value-change path are unavailable.                                                                                                                                                                                                                                                                                   | Read-only interaction, form, and accessibility tests                      |
 | FR7 | The listbox carries `data-astryx-menu-press` and follows `module:DropdownMenu/useMenuPress` FR1–FR3, FR5 and AR2: the option under a pointer's release is the one selected, the highlight follows a held pointer through `aria-activedescendant` while DOM focus stays on the combobox, a mouse released outside closes the list and a finger leaves it open, and the browser's stray click never selects. Trigger opening, arrow clamping and closed-trigger typeahead are unchanged. | `module:DropdownMenu/useMenuPress`; `Selector.test.tsx` press model suite |
@@ -356,7 +364,7 @@ FR3 implements the system decision owned by `spec:AST-004/DEC-1`.
 An omitted `presentation` resolves `adaptive` (FR4): the modal bottom sheet on
 compact coarse-pointer screens and the anchored popover elsewhere, so
 fine-pointer and large-screen output matches `popover`. `adaptive` keeps its
-compact-and-pointer test, compact as `spec:AST-012` FR9 defines it; a pointer-only test belongs to `spec:AST-043` OQ1.
+width-and-pointer query; a pointer-only test belongs to `spec:AST-043` OQ1.
 Rejected: keeping `popover` as the default, because a phone then gets a
 pointer-sized anchored list unless the caller opts in.
 

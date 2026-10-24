@@ -151,7 +151,8 @@ guidance owns the process used to propose and test APIs.
   presentation by screen size uses the theme's compact definition: width below
   the effective `md` point or height below 500, with the same numbers on every
   platform (`spec:AST-012` FR9). It keeps no compact numbers of its own, as
-  INV14 keeps no parallel breakpoint table.
+  INV14 keeps no parallel breakpoint table. A layout width the caller picks,
+  such as AppShell's `mobileNav.breakpoint`, follows INV14 instead.
 
 This record applies to stable public packages. Lab components are not stable
 public promises until promotion.
