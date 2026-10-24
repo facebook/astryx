@@ -4,7 +4,9 @@
 
 /**
  * @file ProgressBar.tsx
- * @input Uses React, useId, stylex, color/spacing/radius/transition tokens
+ * @input Uses React (useId, useState), stylex, color/spacing/radius/transition
+ *   tokens, the UIKit progress table's values and motion roles (motion/uikit,
+ *   read as CSS variables with the table's values as fallbacks)
  * @output Exports ProgressBar component, ProgressBarProps, ProgressBarVariant types
  * @position Core implementation; consumed by index.ts
  *
@@ -17,7 +19,7 @@
  * - /packages/cli/assets/templates/blocks/components/ProgressBar/ (showcase blocks)
  */
 
-import {lazy, Suspense, useId} from 'react';
+import {lazy, Suspense, useId, useState, type CSSProperties} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
 import {
@@ -223,24 +225,77 @@ const styles = stylex.create({
     position: 'relative',
     width: '100%',
   },
-  // The semantic rail holds only the fill, which rounds its own corners.
+  // The semantic rail holds only the fill and clips it to the rounded rail:
+  // the determinate fill slides in from the inline-start side and the
+  // indeterminate one overshoots both ends. Marks live outside the track (in
+  // trackContainer), so the clip never cuts a themed tall mark.
   track: {
     width: '100%',
     height: '8px',
     backgroundColor: colorVars['--color-background-muted'],
     borderRadius: radiusVars['--radius-full'],
-  },
-  // The indeterminate fill overshoots the track on both sides and must be
-  // clipped to the visible rail. Marks are suppressed in this mode.
-  trackClipped: {
     overflow: 'hidden',
   },
+  // The determinate fill spans the whole track and slides along it with a
+  // transform, so a value change animates on the compositor and keeps moving
+  // while a script runs; animating `width` would lay out and repaint on the
+  // main thread every frame and stall with it. `--_progress-bar-fill` is the
+  // filled share of the track (set inline); the fill's leading edge sits
+  // exactly there, mirrored in RTL. The layer is declared up front so Safari
+  // has the whole bar painted before it first moves.
+  //
+  // Under a finger on iOS (the touch presentation resolver's iOS gate,
+  // IOS_TOUCH_STYLE_KEYS nested as it spells them) the fill moves the way
+  // UIProgressView's setProgress(_:animated: true) does (motion/uikit
+  // `progress.progressView`): linearly, for the whole-track duration times
+  // the share of the track the value moved (`--_progress-bar-change`, set
+  // from the previous value; the duration is the
+  // `progress.progressView.wholeTrackMs` motion role, 1 s by default),
+  // starting from wherever it is drawn; it never draws narrower than two
+  // track heights once above zero (16px on the 8px track), and is
+  // transparent at zero (`fillEmpty`). Reduce Motion leaves it unchanged, as
+  // on iOS. Android and other touch screens keep the theme's timing until a
+  // Material variant exists.
   fill: {
+    width: '100%',
     height: '100%',
     borderRadius: radiusVars['--radius-full'],
-    transitionProperty: 'width',
-    transitionDuration: durationVars['--duration-medium'],
-    transitionTimingFunction: easeVars['--ease-standard'],
+    transform: {
+      default: 'translateX(calc(var(--_progress-bar-fill, 0%) - 100%))',
+      ':is([dir="rtl"] *)':
+        'translateX(calc(100% - var(--_progress-bar-fill, 0%)))',
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': {
+          default:
+            'translateX(calc(max(var(--_progress-bar-fill, 0%), 16px) - 100%))',
+          ':is([dir="rtl"] *)':
+            'translateX(min(calc(100% - var(--_progress-bar-fill, 0%)), calc(100% - 16px)))',
+        },
+      },
+    },
+    willChange: 'transform',
+    transitionProperty: 'transform',
+    transitionDuration: {
+      default: durationVars['--duration-medium'],
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)':
+          'calc(var(--_progress-bar-change, 0) * var(--motion-progress-progress-view-whole-track-ms, 1000ms))',
+      },
+    },
+    transitionTimingFunction: {
+      default: easeVars['--ease-standard'],
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': 'linear',
+      },
+    },
+  },
+  fillEmpty: {
+    opacity: {
+      default: null,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': 0,
+      },
+    },
   },
   indeterminateFill: {
     height: '100%',
@@ -365,6 +420,12 @@ const markOnTrackStyles = stylex.create({
   },
 });
 
+// `CSSProperties` has no index signature for custom properties, so the fill's
+// inline style — which publishes the filled share as the private
+// `--_progress-bar-fill` — needs this augmentation to typecheck.
+type FillStyle = CSSProperties &
+  Record<'--_progress-bar-fill' | '--_progress-bar-change', string>;
+
 function defaultFormatValueLabel(value: number, max: number): string {
   const pct = max > 0 ? Math.round((value / max) * 100) : 0;
   return `${pct}%`;
@@ -444,6 +505,26 @@ export function ProgressBar({
   const showValueLabel = hasValueLabel && !isIndeterminate;
 
   const fillVariant = isDisabled ? 'disabled' : variant;
+  // The touch fill's duration comes from how far the value moved since the
+  // last one (the model change, as UIKit measures it), held until the next
+  // change so a re-render with the same value does not touch it. This is the
+  // one thing ProgressBar remembers: the previous value, for timing only; what
+  // it draws still follows from the props alone.
+  // eslint-disable-next-line @astryx/presentational-component -- UIProgressView times a change by its size, which needs the previous value (proposed exception)
+  const [motion, setMotion] = useState({percentage, change: 0});
+  // The share of the track the value moved (0–1); CSS multiplies it by the
+  // whole-track duration role.
+  const change =
+    motion.percentage === percentage
+      ? motion.change
+      : Math.abs(percentage - motion.percentage) / 100;
+  if (motion.percentage !== percentage) {
+    setMotion({percentage, change});
+  }
+  const fillStyle: FillStyle = {
+    '--_progress-bar-fill': `${percentage}%`,
+    '--_progress-bar-change': String(change),
+  };
 
   // Marks make no sense without a determinate value, so they are only drawn
   // in determinate mode. Non-finite mark values are dropped; the rest are
@@ -518,7 +599,7 @@ export function ProgressBar({
           aria-valuetext={isIndeterminate ? undefined : valueText}
           {...mergeProps(
             themeProps('progress-bar-track'),
-            stylex.props(styles.track, isIndeterminate && styles.trackClipped),
+            stylex.props(styles.track),
           )}>
           {isIndeterminate ? (
             <div
@@ -534,9 +615,13 @@ export function ProgressBar({
             <div
               {...mergeProps(
                 themeProps('progress-bar-fill', {variant: fillVariant}),
-                stylex.props(styles.fill, variantStyles[fillVariant]),
+                stylex.props(
+                  styles.fill,
+                  percentage === 0 && styles.fillEmpty,
+                  variantStyles[fillVariant],
+                ),
               )}
-              style={{width: `${percentage}%`}}
+              style={fillStyle}
             />
           )}
         </div>
