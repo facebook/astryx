@@ -11,13 +11,21 @@ export default function CodeBlockBashCommand() {
       <CodeBlock
         code="npm install @astryxdesign/core"
         language="bash"
-        hasCopyButton
+        hasLanguageLabel={false}
         style={{width: '100%'}}
       />
       <CodeBlock
         code="yarn add @astryxdesign/theme-neutral"
         language="bash"
-        hasCopyButton
+        hasLanguageLabel={false}
+        style={{width: '100%'}}
+      />
+      <CodeBlock
+        code={
+          'npx astryx upgrade --from 0.6.0 --apply --include "src/**/*.tsx"\nnpm run build'
+        }
+        language="bash"
+        hasLanguageLabel={false}
         style={{width: '100%'}}
       />
     </VStack>
