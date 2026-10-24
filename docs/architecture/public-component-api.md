@@ -149,14 +149,17 @@ guidance owns the process used to propose and test APIs.
   No public prop accepts StyleX styles for an element that cannot also take a
   class name and inline styles, following `spec:AST-071/DEC-1`.
 - **INV16 — A caller's presentation choice wins over touch defaults.** A stable
-  component whose presentation or behavior changes under a coarse pointer, such
-  as a sheet in place of a popover or touch tracking in an open list, takes one
-  `presentation` prop, and a value of it, such as `presentation="popover"`,
-  keeps the surface the component presents with a fine pointer on every device.
-  Touch behavior is the component's default where it serves touch users, and a
-  caller's explicit choice always wins over that default. Every internal touch
-  mode the component switches is reachable by callers through a public prop or
-  value; no touch mode is hard-coded beyond a caller's reach. Thresholds and
+  component that, under a coarse pointer, presents a different surface, such as
+  a sheet in place of a popover, or switches how an open surface follows input,
+  such as touch tracking in an open list, takes one `presentation` prop, and a
+  value of it, such as `presentation="popover"`, keeps the surface and input
+  mode the component uses with a fine pointer on every device. Touch behavior
+  is the component's default where it serves touch users, and a caller's
+  explicit choice always wins over that default. Every internal touch mode of
+  that kind is reachable by callers through a public prop or value; none is
+  hard-coded beyond a caller's reach. Touch styling, such as press paint or a
+  text-size floor, and touch-only behavior that its own record defines, such as
+  a row swipe or a tooltip's touch trigger, follow those records. Thresholds and
   tuning values inside a mode stay internal (`spec:AST-002` FR3). INV4 lets the
   component derive the default; INV16 keeps the caller able to override it.
   When a touch default changes a released component's behavior, that
@@ -185,9 +188,9 @@ public promises until promotion.
   defect does not by itself require consumer-doc changes.
 - A new prop includes the admission argument from `spec:AST-002/DEC-1`; it does
   not get accepted only because it solves one callsite.
-- Adding a touch presentation, touch mode, or touch default to a stable
-  component checks INV16: a `presentation` value keeps the fine-pointer surface,
-  and every touch mode the component switches is reachable by callers.
+- Adding a touch presentation or a touch input mode for an open surface to a
+  stable component checks INV16: a `presentation` value keeps the fine-pointer
+  surface and mode, and every such touch mode is reachable by callers.
 - A new public semantic CSS custom property includes the same admission argument
   and shows why the target's guaranteed CSS property set cannot express the
   caller-owned need. Its detailed contract and evidence stay in the owning

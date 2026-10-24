@@ -178,7 +178,7 @@ one removal merged ahead of the decision to allow it.
   option that restores the old default, which is the migration. When the new default is
   touch behavior on a component whose presentation changes under a coarse pointer, that
   restoring input is the component's `presentation` value that keeps its previous
-  surface (`architecture:public-component-api` INV16). A change to documented
+  surface and input mode (`architecture:public-component-api` INV16). A change to documented
   interaction or accessibility behavior made for accessibility conformance is
   classified under FR53.
 - **FR4 — Preserved old usage is nonbreaking.** A rename or replacement is
@@ -823,11 +823,7 @@ Public lifecycle classification remains in force with these operational effects:
   `docs` command and machine-readable schemas stay contractual;
 - exact-main release comparison rejects unclassified deltas; and
 - a surface other than a component is classified by its own record's compatibility
-  contract, and the release process here applies to the result;
-- Selector, MultiSelector, DropdownMenu, its submenus, MoreMenu, ContextMenu, and the
-  date and time inputs take `presentation`, so a touch default on any of them already
-  has its restoring value; another component that gains a touch presentation adds
-  `presentation` with it (FR3).
+  contract, and the release process here applies to the result.
 
 Main declares the next planned version, and Changeset admission uses that declaration
 to refuse `[breaking]` work on a patch plan. Pull-request lint does not compare the
