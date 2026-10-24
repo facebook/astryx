@@ -20,7 +20,9 @@ public struct AstryxCard<Content: View>: View {
       cornerRadius: astryx.size("radius-container", 12),
       style: .continuous
     )
-    content
+    // Several child views stack in one card, top to bottom with no gap of
+    // their own, as children flow inside core's Card.
+    VStack(alignment: .leading, spacing: 0) { content }
       .padding(astryx.space(padding))
       .frame(maxWidth: .infinity, alignment: .leading)
       .background(shape.fill(astryx.color("color-background-card")))
