@@ -1187,6 +1187,22 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         run: pnpm -F @astryxdesign/a11y-spec typecheck
 
+      # The canary-only @astryxdesign/native is outside the root build, and
+      # Vitest neither typechecks its source nor loads every platform's types.
+      # Its build emits one declaration file per type-resolution condition
+      # (ios, android, macos, windows, shared); the last step checks them all.
+      - name: Typecheck native
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        run: pnpm -F @astryxdesign/native typecheck
+
+      - name: Build native platform types
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        run: pnpm -F @astryxdesign/native build
+
+      - name: Typecheck native platform types
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        run: pnpm -F @astryxdesign/native typecheck:types
+
   # Sandbox preview build — the single slowest piece of PR CI (~4min), run as
   # its own job so it overlaps build-storybook instead of serializing after it.
   # PR-only: merge_group runs never deploy previews, and docsite-only PRs skip
