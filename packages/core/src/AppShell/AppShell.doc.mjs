@@ -96,7 +96,7 @@ export const docs = {
         name: 'Main content',
         required: true,
         description:
-          'children, rendered in the main landmark. Scrolls internally when height is fill, and with the page when it is auto.',
+          'children, rendered in the main landmark. Scrolls internally when height is fill, and with the page when it is auto. With adaptive it scrolls internally with a mouse or trackpad and with the page on a touch device.',
       },
       {
         name: 'Mobile nav drawer',
@@ -158,9 +158,9 @@ export const docs = {
     },
     {
       name: 'height',
-      type: "'fill' | 'auto'",
+      type: "'fill' | 'auto' | 'adaptive'",
       description:
-        "Height behavior: 'fill' makes the shell fill the viewport (100dvh) with independent scroll containers; 'auto' lets the shell grow with content and uses sticky positioning for nav.",
+        "Height behavior: 'fill' makes the shell fill the viewport (100dvh) with independent scroll containers; 'auto' lets the shell grow with content and uses sticky positioning for nav; 'adaptive' is 'fill' with a mouse or trackpad and 'auto' where the primary pointer is touch, so phones keep the browser's own page behaviors (scroll to top from the status bar, a toolbar that minimizes as you scroll). The root reports which element scrolls in `data-scroll-owner`: `content` (the main region) or `document` (the page).",
       default: "'fill'",
     },
     {
@@ -289,9 +289,9 @@ export const docsZh = {
     },
     {
       name: 'height',
-      type: "'fill' | 'auto'",
+      type: "'fill' | 'auto' | 'adaptive'",
       description:
-        "高度行为：'fill' 使外壳填满视口（100dvh），各区域拥有独立的滚动容器；'auto' 使外壳随内容增长，导航使用 sticky 定位。",
+        "高度行为：'fill' 使外壳填满视口（100dvh），各区域拥有独立的滚动容器；'auto' 使外壳随内容增长，导航使用 sticky 定位；'adaptive' 在使用鼠标或触控板时等同 'fill'，在主要指针为触控的设备上等同 'auto'，让手机保留浏览器自身的页面行为（点按状态栏回到顶部、滚动时工具栏收起）。根元素通过 `data-scroll-owner` 标明滚动的元素：`content`（主内容区）或 `document`（页面）。",
       default: "'fill'",
     },
     {
@@ -373,7 +373,7 @@ export const docsDense = {
       'mobile nav config: false | ReactNode | config with theme-resolved sm|md|lg|xl|2xl|none breakpoint (exclusive upper edge); none is always non-mobile and ignores defaultIsMobile',
     banner: 'slot for system-wide announcements above topNav',
     height:
-      'fill=viewport 100dvh w/ independent scroll; auto=content-driven w/ sticky nav',
+      'fill=viewport 100dvh w/ independent scroll; auto=content-driven w/ sticky nav; adaptive=fill w/ mouse, auto on touch (page scroll); root data-scroll-owner=content|document',
     variant:
       'nav bg style: wash=wash bg, surface=surface bg, section=dividers, elevated=wash nav w/ elevated surface content+radius',
     contentPadding:
