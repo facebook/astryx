@@ -12,14 +12,18 @@
  * FR16): core never imports @astryxdesign/native, and no file anywhere in
  * packages/native/ imports core outside the portable entry. Until core ships
  * that entry, NATIVE_CORE_EXCEPTIONS names each build-time read of core that
- * is allowed; any other import of core, or any other file that reads core's
- * package as data, fails.
+ * is allowed (AST-082 FR16): two theme entries imported by build scripts, and
+ * core's component documentation and built-in icon names read as data by one
+ * loader. Any other import or read of core fails.
  */
 
 const fs = require('node:fs');
 const path = require('node:path');
 
-const IMPORT_SPECIFIER = /\b(?:from|import|require)\s*\(?\s*['"]([^'"]+)['"]/g;
+// Static and dynamic imports, require, require.resolve, and
+// import.meta.resolve.
+const IMPORT_SPECIFIER =
+  /\b(?:from|import|require|require\.resolve|import\.meta\.resolve)\s*\(?\s*['"]([^'"]+)['"]/g;
 const CORE_SOURCE = /\.(ts|tsx)$/;
 const NATIVE_SOURCE = /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs)$/;
 // Installed dependencies, build output, and Swift build state hold no native
@@ -30,10 +34,12 @@ const NATIVE_SKIPPED_DIRECTORIES = new Set([
   '.build',
   '.swiftpm',
 ]);
-// A path built to core's installed package, such as
-// path.join(..., 'node_modules', '@astryxdesign', 'core').
+// A path built to core's package: its installed copy
+// (path.join(..., '@astryxdesign', 'core') or a node_modules/@astryxdesign/core
+// string) or its workspace source (path.join(..., 'packages', 'core') or a
+// packages/core string).
 const CORE_PACKAGE_PATH =
-  /['"]@astryxdesign['"]\s*,\s*['"]core['"]|['"`][^'"`]*node_modules\/@astryxdesign\/core\b/;
+  /['"](?:@astryxdesign|packages)['"]\s*,\s*['"]core['"]|['"`][^'"`]*(?:node_modules\/@astryxdesign|\bpackages)\/core\b/;
 
 /**
  * The interim exceptions to AST-082 FR16: build-time reads of core that
@@ -52,10 +58,28 @@ const NATIVE_CORE_EXCEPTIONS = Object.freeze({
       ]),
     }),
   ]),
-  // The contract generator and its tests read core's component documentation
-  // and icon registry as data, through this one loader.
-  dataReaders: Object.freeze(['packages/native/scripts/core-docs.mjs']),
+  // Core's files that native reads as data, each by name, through one loader
+  // that roots every read at its CORE_ROOT.
+  data: Object.freeze({
+    reader: 'packages/native/scripts/core-docs.mjs',
+    reads: Object.freeze([
+      // A component's documentation, the source of the native contracts.
+      Object.freeze({
+        name: 'component documentation',
+        path: /^'src', `\$\{\w+\}\.doc\.mjs`$/,
+      }),
+      // Core's built-in icon names, for the native icon coverage test (FR17).
+      Object.freeze({
+        name: 'built-in icon names',
+        path: /^'src', 'Icon', 'globalIconRegistry\.tsx'$/,
+      }),
+    ]),
+  }),
 });
+// A path the data reader builds from its CORE_ROOT; the group is everything
+// after CORE_ROOT, with whitespace collapsed before matching.
+const CORE_ROOT_READ =
+  /\bpath\.(?:join|resolve)\(\s*CORE_ROOT\s*,\s*([^)]*?)\s*,?\s*\)/g;
 
 function walk(dir, extensions, skipped, visit) {
   for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
@@ -150,14 +174,39 @@ function checkNativeFile(root, filePath, violations) {
     }
   }
 
-  if (
-    CORE_PACKAGE_PATH.test(content) &&
-    !NATIVE_CORE_EXCEPTIONS.dataReaders.includes(relPath)
-  ) {
+  // A declaration file runs nothing, so it reads nothing.
+  if (/\.d\.[cm]?ts$/.test(relPath)) return;
+
+  const {data} = NATIVE_CORE_EXCEPTIONS;
+  if (relPath !== data.reader) {
+    if (CORE_PACKAGE_PATH.test(content) || /\bCORE_ROOT\b/.test(content)) {
+      violations.push({
+        file: relPath,
+        message: `@astryxdesign/native reads core's package as data only through ${data.reader}.`,
+      });
+    }
+    return;
+  }
+
+  // In the reader, every use of CORE_ROOT beyond its definition must be one
+  // of the listed reads.
+  let reads = 0;
+  for (const match of content.matchAll(CORE_ROOT_READ)) {
+    const read = match[1].replace(/\s+/g, ' ');
+    reads++;
+    if (!data.reads.some(listed => listed.path.test(read))) {
+      violations.push({
+        file: relPath,
+        message: `@astryxdesign/native reads an unlisted file of core (CORE_ROOT, ${read}); listed reads: ${data.reads.map(listed => listed.name).join(', ')}.`,
+      });
+    }
+  }
+  const uses = (content.match(/\bCORE_ROOT\b/g) ?? []).length;
+  if (uses - 1 > reads) {
     violations.push({
       file: relPath,
       message:
-        "@astryxdesign/native reads core's package as data only through a listed loader (scripts/core-docs.mjs).",
+        'CORE_ROOT is used outside path.join(CORE_ROOT, ...); every read of core must be a listed read.',
     });
   }
 }

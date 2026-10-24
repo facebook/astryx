@@ -99,7 +99,7 @@ describe('package boundaries', () => {
   });
 
   it("allow reading core's package as data only through the listed loader", () => {
-    const reader = [
+    const loader = [
       'export const CORE_ROOT = path.join(',
       '  PACKAGE_ROOT,',
       "  'node_modules',",
@@ -108,17 +108,83 @@ describe('package boundaries', () => {
       ');',
     ].join('\n');
     const root = tree({
-      'packages/native/scripts/core-docs.mjs': reader,
-      'packages/native/swift-ios-1/scripts/tokens.mjs': reader,
+      'packages/native/scripts/core-docs.mjs': loader,
+      'packages/native/scripts/core-docs.d.mts':
+        'export declare const CORE_ROOT: string;\n',
+      'packages/native/swift-ios-1/scripts/tokens.mjs': loader,
       'packages/native/src/read.ts':
         "readFileSync('node_modules/@astryxdesign/core/src/Button/Button.doc.mjs');\n",
+      'packages/native/scripts/icons.mjs':
+        "import {CORE_ROOT} from './core-docs.mjs';\n",
     });
     expect(files(findViolations(root)).sort()).toEqual([
+      'packages/native/scripts/icons.mjs',
       'packages/native/src/read.ts',
       'packages/native/swift-ios-1/scripts/tokens.mjs',
     ]);
-    expect(NATIVE_CORE_EXCEPTIONS.dataReaders).toEqual([
+    expect(NATIVE_CORE_EXCEPTIONS.data.reader).toBe(
       'packages/native/scripts/core-docs.mjs',
+    );
+  });
+
+  it('allow the loader only its listed reads: component docs and icon names', () => {
+    const loader = reads =>
+      [
+        "export const CORE_ROOT = path.join(PACKAGE_ROOT, 'node_modules', '@astryxdesign', 'core');",
+        ...reads,
+      ].join('\n');
+    const listed = [
+      "const file = path.join(CORE_ROOT, 'src', `${relative}.doc.mjs`);",
+      'const source = fs.readFileSync(',
+      "  path.join(CORE_ROOT, 'src', 'Icon', 'globalIconRegistry.tsx'),",
+      "  'utf8',",
+      ');',
+    ];
+    expect(
+      findViolations(
+        tree({'packages/native/scripts/core-docs.mjs': loader(listed)}),
+      ),
+    ).toEqual([]);
+    expect(NATIVE_CORE_EXCEPTIONS.data.reads.map(read => read.name)).toEqual([
+      'component documentation',
+      'built-in icon names',
+    ]);
+
+    for (const unlisted of [
+      "path.join(CORE_ROOT, 'src', 'Button', 'Button.tsx');",
+      "path.join(CORE_ROOT, 'dist', 'index.js');",
+      'fs.readdirSync(CORE_ROOT);',
+    ]) {
+      const violations = findViolations(
+        tree({
+          'packages/native/scripts/core-docs.mjs': loader([
+            ...listed,
+            unlisted,
+          ]),
+        }),
+      );
+      expect(files(violations), unlisted).toEqual([
+        'packages/native/scripts/core-docs.mjs',
+      ]);
+    }
+  });
+
+  it('catch resolve calls and paths to the core workspace', () => {
+    const root = tree({
+      'packages/native/scripts/a.mjs':
+        "const entry = require.resolve('@astryxdesign/core/Button');\n",
+      'packages/native/scripts/b.mjs':
+        "const url = import.meta.resolve('@astryxdesign/core');\n",
+      'packages/native/scripts/c.mjs':
+        "const src = path.join(REPO, 'packages', 'core', 'src');\n",
+      'packages/native/scripts/d.mjs':
+        "const src = path.join(REPO, 'packages/core/src');\n",
+    });
+    expect(files(findViolations(root)).sort()).toEqual([
+      'packages/native/scripts/a.mjs',
+      'packages/native/scripts/b.mjs',
+      'packages/native/scripts/c.mjs',
+      'packages/native/scripts/d.mjs',
     ]);
   });
 
