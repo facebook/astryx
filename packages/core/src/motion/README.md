@@ -18,6 +18,8 @@ from the package entry point; components import it by path.
 | `uikit/navigation.ts`                            | UINavigationController: push velocity, parallax, dimming, transition clock, interactive pop finish rule.                                                             |
 | `uikit/keyboard.ts`                              | The software keyboard as a page sees it: Mobile Safari's late viewport report on a show, and when a hide starts after a blur.                                        |
 | `uikit/gestures.ts`                              | Gesture recognizer thresholds, the velocity filter and the haptic stand-ins, as typed entries the gesture system reads.                                              |
+| `roles.ts`                                       | Motion roles: each spring, duration and curve of a registered table, named by its path, and its CSS variable.                                                        |
+| `resolveMotion.ts`                               | A role's value under an element's theme, read once when a motion starts.                                                                                             |
 | `MEASUREMENTS.md`                                | The UIKit reference captures each unconfirmed value still needs.                                                                                                     |
 | `spring.ts`                                      | Closed-form damped spring, every Apple parameterization, settling duration, a spring chasing a moving target.                                                        |
 | `decay.ts`                                       | UIScrollView's momentum coast.                                                                                                                                       |
@@ -25,12 +27,38 @@ from the package entry point; components import it by path.
 | `projection.ts`                                  | Release targets: the rest point nearest the projected coast; paging.                                                                                                 |
 | `bezier.ts`                                      | Cubic-bézier timing functions (Core Animation's named curves).                                                                                                       |
 | `animator.ts`                                    | Compositor animator: springs, decays and any closed-form curve compiled to Web Animations, read back analytically.                                                   |
+| `experimental.ts`                                | The experimental public subpath (`@astryxdesign/core/motion/experimental`).                                                                                          |
 | `useAnimator.ts`                                 | React wrapper that never re-renders per frame.                                                                                                                       |
 | `__tests__/animator.interaction.browser.spec.ts` | Browser proofs on the interaction harness (Chromium and WebKit): busy main thread, end state through a block, no Layout / Paint, seeked curves, a dialog's backdrop. |
 
 Component-specific values (a sheet's detents, a switch's geometry, a context
 menu's timeline) live in a domain file per component, `uikit/<component>.ts`,
 under the same rules.
+
+## Theme
+
+Every spring, duration (a key ending in `Ms`) and curve of a table that calls
+`registerMotionTable` is a motion role named by its path, such as
+`springs.sheetPresent` or `timing.curves.easeInOut`. A theme retunes a role
+with `defineTheme({motion: {springs, durations, curves}})`, which writes the
+role's CSS variable (`--motion-springs-sheet-present: 0.6s 0.1`) only for the
+roles it sets; the table's value stays the default. The animator resolves each
+table spring and curve it is handed when the motion starts; code that times
+something itself calls `resolveMotion(element, timing.press, 'highlightOutMs')`.
+Gesture thresholds and the timings that decide who gets a touch are not roles
+(`exclude`). `pnpm generate:motion-roles` regenerates the role table in the
+motion docs.
+
+## Experimental subpath
+
+`@astryxdesign/core/motion/experimental` exposes this foundation to lab
+components, outside the stable compatibility promise (`spec:AST-017` FR21): it
+may change or be removed in a patch release, it is never re-exported from the
+package root or an ordinary subpath, and every declaration it exposes carries
+`@experimental`. It exports `createAnimator`, `animatorFor`, `useAnimator`,
+`toSpring`, `solveSpring`, `rubberBand`, `rubberBandInverse`, `cubicBezier`,
+`prefersReducedMotion`, `resolveMotion` and the table as the read-only `uikit` namespace. The
+gestures have their own, `@astryxdesign/core/gestures/experimental`.
 
 ## Animator
 
@@ -94,15 +122,20 @@ await handle.finished; // true if it ran to the end, false if interrupted
   frame before the block). Everything the call starts shares that start
   (`handle.started`); a retarget keeps an explicit one, and `{at}` puts
   several animators on one clock.
-- Reduced Motion (`prefers-reduced-motion: reduce`): travel becomes UIKit's
-  cross-fade (Reduce Motion with Prefer Cross-Fade Transitions). An entrance
-  lands and fades in, an exit fades out then moves, any other move dips (fade
-  out, move, fade in), over `timing.reducedMotionCrossFadeMs` (a navigation
-  push or pop) or on the spring passed as `{crossfade}` (a sheet, a modal or
-  an alert fades on its presentation spring). `{crossfadeAs: 'entrance'}` or
-  `'exit'` gives a slide that changes no opacity its direction.
-  `{reducedMotion: 'keep'}` keeps the motion (direct manipulation), `'instant'`
-  jumps.
+- Reduced Motion (`prefers-reduced-motion: reduce`, design:reduced-motion):
+  every `animate` and `play` is replaced and nothing moves, scales or
+  springs. On a coarse primary pointer, or for a call started by a touch
+  drag's release (`{touchRelease: true}`), it is an opacity-only cross-fade
+  of `timing.reducedMotionCrossFadeMs` (200 ms): an entrance lands and fades
+  in, an exit fades out then lands, an opacity change fades, any other move
+  dips (fade out, land, fade in). Travel lands with a plain style write while
+  the element is transparent, never as an animated transform. On any other
+  pointer it completes at once.
+  `{crossfadeAs: 'entrance'}` or `'exit'` gives a slide that changes no
+  opacity its direction. No option or theme value lengthens the fade or keeps
+  travel. For motion the animator does not drive, `reducedMotionFade()`
+  answers the same policy, and `reducedMotion.stylex.ts` holds its CSS
+  constants and the two media queries a StyleX transition spells.
 - `animatorFor(element)` returns the one animator for an element, so code
   that animates it from several places (a swipe on x, a removal on y)
   composes in one `translate` track.
@@ -168,6 +201,8 @@ Chromium and WebKit on the phone profile.
   end.
 - A dialog's `::backdrop` follows the curve when seeked and holds its end
   state.
+- A theme that retunes `springs.sheetPresent` changes the curve the engine
+  plays for an element in its scope, and only there.
 
 ```
 pnpm test:interaction packages/core/src/motion

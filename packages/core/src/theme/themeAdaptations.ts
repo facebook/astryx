@@ -3,7 +3,8 @@
 /**
  * @file themeAdaptations.ts
  * @input Ordered environment-conditioned theme value rules from defineTheme
- * @output Validated breakpoint metadata and resolved CSS-first rule layers
+ * @output Validated breakpoint metadata, the compact definition, and resolved
+ *   CSS-first rule layers
  * @position Theme system core; consumed by defineTheme, AppShell, and the CSS compiler
  *
  * Adaptations are deliberately closed and ordered. Width points are fixed names,
@@ -26,6 +27,7 @@
 import type {ComponentStyleMap, TokenName, TokenValue} from './defineTheme';
 import type {TypographyConfig, TypographyRole} from './types';
 import type {MotionScaleConfig} from './expandMotionScale';
+import {hasMotionScale, type MotionConfig} from './expandMotionRoles';
 import type {RadiusScaleConfig} from './expandRadiusScale';
 import type {ColorScaleConfig} from './expandColorScale';
 import {resolveThemeValues, type ThemeValuesInput} from './resolveThemeValues';
@@ -54,6 +56,47 @@ export const DEFAULT_WIDTH_BREAKPOINTS: Readonly<WidthBreakpoints> =
     '2xl': 1536,
   });
 
+/**
+ * When a screen is compact, for a component that chooses a presentation by
+ * screen size (`spec:AST-012` FR9): width below the theme's effective `md`
+ * point, or height below 500. The numbers are the same on every platform (CSS
+ * pixels on the web, points on iOS, density-independent pixels on Android).
+ */
+export interface CompactDefinition {
+  /** Compact below this viewport width: the effective `md` point. */
+  readonly widthBelow: number;
+  /** Compact below this viewport height. */
+  readonly heightBelow: number;
+  /** The definition as a media query list, without the `@media` keyword. */
+  readonly query: string;
+  /** Compact and a coarse primary pointer, without the `@media` keyword. */
+  readonly coarsePointerQuery: string;
+}
+
+/** The viewport height below which a screen is compact (`spec:AST-012` FR9). */
+const COMPACT_HEIGHT_BELOW = 500;
+
+/**
+ * The compact definition for a theme's width points (`spec:AST-012` FR9).
+ * Pass a theme's effective width breakpoints; omit them for the defaults.
+ */
+export function compactDefinition(
+  points: Readonly<Pick<WidthBreakpoints, 'md'>> = DEFAULT_WIDTH_BREAKPOINTS,
+): CompactDefinition {
+  const width = `(width < ${points.md}px)`;
+  const height = `(height < ${COMPACT_HEIGHT_BELOW}px)`;
+  return Object.freeze({
+    widthBelow: points.md,
+    heightBelow: COMPACT_HEIGHT_BELOW,
+    query: `${width}, ${height}`,
+    coarsePointerQuery: `${width} and (pointer: coarse), ${height} and (pointer: coarse)`,
+  });
+}
+
+/** The compact definition at the default width points. */
+export const DEFAULT_COMPACT_DEFINITION: CompactDefinition =
+  compactDefinition();
+
 /** Inclusive lower and exclusive upper edges for one width condition. */
 export interface ThemeAdaptationWidthCondition {
   /** Match at and above this named point. */
@@ -72,6 +115,13 @@ export interface ThemeAdaptationCondition {
   contrast?: 'more' | 'less' | 'no-preference';
   /** User reduced-motion preference. */
   motion?: 'reduce' | 'no-preference';
+  /**
+   * The platform's web engine: `ios` is iOS and iPadOS WebKit (every browser
+   * there), detected with `@supports (-webkit-touch-callout: none)`; `other`
+   * is everything else. Pair `ios` with `pointer: 'coarse'` for a touch
+   * profile, such as touch motion tuned per platform.
+   */
+  platform?: 'ios' | 'other';
 }
 
 /** Typography overrides inside an adaptation rule. */
@@ -91,8 +141,11 @@ export interface ThemeAdaptationValue {
   color?: Partial<ColorScaleConfig>;
   /** Radius axis overrides, completed from root metadata. */
   radius?: Partial<RadiusScaleConfig>;
-  /** Motion axis overrides, completed from root metadata. */
-  motion?: Partial<MotionScaleConfig>;
+  /**
+   * Motion axis overrides: a duration scale completed from root metadata,
+   * and motion roles (springs, durations, curves) written as given.
+   */
+  motion?: MotionConfig;
   /** Portable semantic-token writes. */
   tokens?: Partial<Record<TokenName, TokenValue>>;
   /** Replacements for exact theme-local names enrolled by the root lineage. */
@@ -143,6 +196,8 @@ export interface ResolvedThemeAdaptationRule {
   when: ThemeAdaptationCondition;
   /** CSS media-query prelude without the `@media` keyword. */
   query: string;
+  /** CSS @supports prelude without the keyword, for a platform condition. */
+  supports?: string;
   /** Concrete portable token writes produced by this rule. */
   tokens: Record<string, string>;
   /** Concrete theme-local token writes produced by this rule. */
@@ -204,6 +259,7 @@ const CONDITION_AXES = [
   'pointer',
   'contrast',
   'motion',
+  'platform',
 ] as const satisfies ReadonlyArray<keyof ThemeAdaptationCondition>;
 type UnhandledConditionAxis = Exclude<
   keyof ThemeAdaptationCondition,
@@ -336,6 +392,13 @@ function normalizeCondition(
     condition.motion !== 'no-preference'
   ) {
     throw new Error(`${path}.motion must be 'reduce' or 'no-preference'.`);
+  }
+  if (
+    condition.platform !== undefined &&
+    condition.platform !== 'ios' &&
+    condition.platform !== 'other'
+  ) {
+    throw new Error(`${path}.platform must be 'ios' or 'other'.`);
   }
 
   return condition;
@@ -577,7 +640,14 @@ function valueToThemeInput(
       ? completeRadius(axes.radius, value.radius, `${path}.radius`)
       : undefined,
     motion: value.motion
-      ? completeMotion(axes.motion, value.motion, `${path}.motion`)
+      ? {
+          ...(hasMotionScale(value.motion)
+            ? completeMotion(axes.motion, value.motion, `${path}.motion`)
+            : {}),
+          springs: value.motion.springs,
+          durations: value.motion.durations,
+          curves: value.motion.curves,
+        }
       : undefined,
     tokens: value.tokens,
     components: value.components,
@@ -639,9 +709,26 @@ function mediaQueryForCondition(
   }
 
   if (parts.length === 0) {
+    if (condition.platform !== undefined) {
+      // The platform condition alone is an @supports block (supportsForCondition).
+      return 'all';
+    }
     throw new Error(`${path} must contain at least one concrete condition.`);
   }
   return parts.join(' and ');
+}
+
+/** iOS and iPadOS WebKit: the one engine with the touch-callout property. */
+const IOS_SUPPORTS = '(-webkit-touch-callout: none)';
+
+/** The @supports prelude (without the keyword) for a platform condition. */
+function supportsForCondition(
+  condition: ThemeAdaptationCondition,
+): string | undefined {
+  if (condition.platform === undefined) {
+    return undefined;
+  }
+  return condition.platform === 'ios' ? IOS_SUPPORTS : `not ${IOS_SUPPORTS}`;
 }
 
 type PointerEnvironment =
@@ -649,27 +736,32 @@ type PointerEnvironment =
 type ContrastEnvironment =
   NonNullable<ThemeAdaptationCondition['contrast']> | 'custom';
 type MotionEnvironment = NonNullable<ThemeAdaptationCondition['motion']>;
+type PlatformEnvironment = NonNullable<ThemeAdaptationCondition['platform']>;
 
 interface AdaptationEnvironment {
   width: number;
   pointer: PointerEnvironment;
   contrast: ContrastEnvironment;
   motion: MotionEnvironment;
+  platform: PlatformEnvironment;
 }
 
 const ENVIRONMENT_VALUES = {
   pointer: ['coarse', 'fine', 'none'],
   contrast: ['more', 'less', 'no-preference', 'custom'],
   motion: ['reduce', 'no-preference'],
+  platform: ['ios', 'other'],
 } as const satisfies {
   pointer: ReadonlyArray<PointerEnvironment>;
   contrast: ReadonlyArray<ContrastEnvironment>;
   motion: ReadonlyArray<MotionEnvironment>;
+  platform: ReadonlyArray<PlatformEnvironment>;
 };
 type EnvironmentTypes = {
   pointer: PointerEnvironment;
   contrast: ContrastEnvironment;
   motion: MotionEnvironment;
+  platform: PlatformEnvironment;
 };
 const COMPLETE_ENVIRONMENT_VALUES: {
   [Axis in keyof EnvironmentTypes]: Exclude<
@@ -712,6 +804,12 @@ function conditionMatchesEnvironment(
   ) {
     return false;
   }
+  if (
+    condition.platform !== undefined &&
+    condition.platform !== environment.platform
+  ) {
+    return false;
+  }
   return true;
 }
 
@@ -751,8 +849,16 @@ function assertNoReachableTokenCycles(
   for (const width of widthEnvironments) {
     for (const pointer of COMPLETE_ENVIRONMENT_VALUES.pointer) {
       for (const contrast of COMPLETE_ENVIRONMENT_VALUES.contrast) {
-        for (const motion of COMPLETE_ENVIRONMENT_VALUES.motion) {
-          const environment = {width, pointer, contrast, motion};
+        for (const environment of COMPLETE_ENVIRONMENT_VALUES.motion.flatMap(
+          motion =>
+            COMPLETE_ENVIRONMENT_VALUES.platform.map(platform => ({
+              width,
+              pointer,
+              contrast,
+              motion,
+              platform,
+            })),
+        )) {
           const matchingRuleIndexes = tokenRuleIndexes.filter(index =>
             conditionMatchesEnvironment(rules[index].when, points, environment),
           );
@@ -989,6 +1095,9 @@ export function resolveThemeAdaptationRules(
         rule.when,
         adaptations.widthBreakpoints,
       ),
+      ...(supportsForCondition(rule.when) !== undefined
+        ? {supports: supportsForCondition(rule.when)}
+        : {}),
       tokens: resolved.tokens,
       localTokens,
       components: input.typography?.scale

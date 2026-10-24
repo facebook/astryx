@@ -95,21 +95,34 @@
  * - a tap-driven start can show its first moving frame two to four frames
  *   into the curve (simulator, not yet confirmed on a device).
  *
- * Reduced Motion (law M5): with `prefers-reduced-motion: reduce`, UIKit's
- * Reduce Motion with Prefer Cross-Fade Transitions replaces travel with a
- * cross-fade. An `animate` or `play` that moves something (x, y, rotate,
- * scale) by default (`reducedMotion: 'crossfade'`):
- * - entering (opacity rises in the same call, or `crossfadeAs: 'entrance'`):
- *   jumps to the new place and fades in;
- * - leaving (opacity falls, or `crossfadeAs: 'exit'`): fades out in place,
- *   then jumps;
- * - otherwise: dips (fades out, jumps at the midpoint, fades back in).
- * The fade runs `timing.reducedMotionCrossFadeMs` on `timing.curves.easeInOut`
- * (a navigation push or pop), or on the spring given as `crossfade` (a sheet,
- * a full-screen modal or an alert fades on its presentation spring).
- * `'instant'` jumps without a fade; `'keep'` plays the motion unchanged (for
- * direct manipulation that UIKit keeps under Reduce Motion). Decays keep their
- * motion: they follow a finger's throw.
+ * Reduced Motion (design:reduced-motion): with `prefers-reduced-motion:
+ * reduce`, every `animate` and `play` (travel or opacity, on a spring or any
+ * curve) is replaced, and nothing moves, scales or springs:
+ * - on a coarse primary pointer (DR2), or for a call started by a touch
+ *   drag's release on any pointer (`touchRelease`, DR3), it becomes an
+ *   opacity-only cross-fade of `timing.reducedMotionCrossFadeMs` (200 ms)
+ *   on `timing.curves.easeInOut`:
+ *   - entering (opacity rises in the same call, or `crossfadeAs:
+ *     'entrance'`): lands in its new place at once and fades in;
+ *   - leaving (opacity falls, or `crossfadeAs: 'exit'`): fades out in place,
+ *     then lands;
+ *   - an opacity change alone: fades to its value;
+ *   - otherwise: dips (fades out, lands, fades back in);
+ *   travel lands with a plain style write while the element is transparent,
+ *   never as an animated transform; a busy main thread only keeps it
+ *   transparent longer, and a dip fades back in from the landing;
+ * - on any other primary pointer (DR3) it completes at once.
+ * No call option and no theme value lengthens the fade or keeps travel (DR4):
+ * the fade's length is not a theme role. Decays keep their motion: they
+ * follow a finger's throw.
+ *
+ * Theme: a spring or curve from a motion table (`springs.sheetPresent`,
+ * `scroll.bounce`, the Reduce Motion fade's duration and curve) plays the
+ * value the element's theme sets for that role, or the table's value when it
+ * sets none (resolveMotion.ts). It is read once, when the motion starts, from
+ * the theme scope's computed style: no layout, and the start, the promotion
+ * and the browser-set start time are unchanged. A spring written inline at the
+ * call site is played as given.
  *
  * A pseudo-element (`options.pseudoElement`, a dialog's `::backdrop`) has no
  * inline style: its end value is held by a static filling animation (after a
@@ -121,27 +134,34 @@
  * SYNC: When modified, update:
  * - /packages/core/src/motion/animator.test.ts
  * - /packages/core/src/motion/__tests__/animator.interaction.browser.spec.ts
+ * - /packages/core/src/motion/resolveMotion.ts (the theme roles it resolves)
  * - /packages/core/src/motion/README.md
  */
 
 import {cubicBezier} from './bezier';
 import {solveDecay} from './decay';
-import {
-  solveSpring,
-  toSpring,
-  type SpringCurve,
-  type SpringDescription,
-} from './spring';
+import {solveSpring, toSpring, type SpringDescription} from './spring';
+import {resolveMotion} from './resolveMotion';
 import {scroll} from './uikit/scroll';
 import {timing} from './uikit/timing';
 
-/** A value the animator can drive. */
+/**
+ * A value the animator can drive.
+ * @experimental
+ */
 export type MotionProperty =
   'x' | 'y' | 'rotate' | 'scaleX' | 'scaleY' | 'opacity';
 
-/** Values by property; `scale` sets `scaleX` and `scaleY` together. */
+/**
+ * Values by property; `scale` sets `scaleX` and `scaleY` together.
+ * @experimental
+ */
 export type MotionValues = Partial<Record<MotionProperty | 'scale', number>>;
 
+/**
+ * A spring and the velocity it starts with.
+ * @experimental
+ */
 export interface SpringTransition {
   /** The spring, in any vocabulary of the constants table. */
   spring: SpringDescription;
@@ -153,6 +173,10 @@ export interface SpringTransition {
   velocity?: MotionValues;
 }
 
+/**
+ * A momentum coast: UIScrollView's deceleration, with optional edges.
+ * @experimental
+ */
 export interface DecayOptions {
   /** Per-millisecond velocity factor; UIScrollView's normal rate by default. */
   rate?: number;
@@ -162,6 +186,11 @@ export interface DecayOptions {
   bounce?: SpringDescription;
 }
 
+/**
+ * Options of `animate` and `play`: the spring, a release velocity, the Reduced
+ * Motion handling.
+ * @experimental
+ */
 export interface AnimateOptions {
   /**
    * Start time on the document timeline (ms, `performance.now()` clock).
@@ -169,15 +198,14 @@ export interface AnimateOptions {
    * animations on one clock.
    */
   at?: number;
-  /** Reduced Motion substitution; see the file header. */
-  reducedMotion?: 'crossfade' | 'instant' | 'keep';
   /**
-   * The substituted cross-fade's curve. By default a timed fade
-   * (`timing.reducedMotionCrossFadeMs` on easeInOut: UIKit's navigation
-   * cross-fade); with a spring the fade follows it, as UIKit fades a sheet, a
-   * full-screen modal or an alert on the presentation's own spring.
+   * The call starts from the release of a touch drag (a sheet let go, a swipe
+   * back released). Under Reduced Motion it then cross-fades whatever the
+   * primary pointer, where another call on a fine primary pointer completes
+   * at once (design:reduced-motion DR3). The gesture host knows; nothing is
+   * inferred from the last pointer.
    */
-  crossfade?: SpringDescription;
+  touchRelease?: boolean;
   /**
    * Which way the substituted cross-fade goes when the call's own opacity
    * does not say (a sheet slides in or out without fading): `'entrance'`
@@ -195,6 +223,7 @@ export interface AnimateOptions {
  * Times are seconds from the curve's start; the value at `duration` is the
  * end state. Start it at the property's presentation value (`get`) to
  * continue without a jump.
+ * @experimental
  */
 export interface MotionCurve {
   /** Length, s. */
@@ -205,6 +234,10 @@ export interface MotionCurve {
   velocity(t: number): number;
 }
 
+/**
+ * Options of `createAnimator`.
+ * @experimental
+ */
 export interface AnimatorOptions {
   /**
    * Animates a pseudo-element of the element instead (`'::backdrop'` of a
@@ -219,13 +252,22 @@ export interface AnimatorOptions {
   /** The Reduced Motion preference; `prefers-reduced-motion` by default. */
   prefersReducedMotion?: () => boolean;
   /**
+   * Whether the primary pointer is coarse; `(pointer: coarse)` by default.
+   * Under Reduced Motion a coarse pointer cross-fades and any other completes
+   * at once.
+   */
+  isCoarsePointer?: () => boolean;
+  /**
    * Runs a callback in the next animation frame; `requestAnimationFrame` by
    * default. A call from rest reads the start the browser gave it there.
    */
   requestFrame?: (callback: () => void) => void;
 }
 
-/** One `animate` / `decay` call's animations. */
+/**
+ * One `animate` / `decay` call's animations.
+ * @experimental
+ */
 export interface MotionHandle {
   /** The properties this call drives. */
   readonly properties: ReadonlyArray<MotionProperty>;
@@ -254,7 +296,21 @@ export interface MotionHandle {
   stop(): void;
 }
 
+/**
+ * A compositor animator bound to one element (see the file header).
+ * @experimental
+ */
 export interface Animator {
+  /**
+   * What Reduced Motion makes of a call on this element right now:
+   * `'off'` (motion plays), `'crossfade'` (an opacity-only fade: a coarse
+   * pointer, or `touchRelease`) or `'instant'` (any other pointer). For
+   * feedback that has no fade of its own (a press lift, a lens chasing the
+   * finger): skip it unless `'off'`.
+   */
+  reducedMotion(options?: {
+    touchRelease?: boolean;
+  }): 'off' | 'crossfade' | 'instant';
   /** The element the animator writes to, if attached. */
   readonly element: HTMLElement | null;
   /**
@@ -364,6 +420,31 @@ interface HandleState {
   resolve: (finished: boolean) => void;
   settled: boolean;
   timer: ReturnType<typeof setTimeout> | null;
+}
+
+/**
+ * Reduced Motion travel that lands with a plain style write while the
+ * element is fully transparent (never an animated transform), then, in a
+ * dip, the fade back in.
+ */
+interface Landing {
+  readonly owner: HandleState;
+  /** ms after the call's start. */
+  readonly at: number;
+  readonly values: Map<MotionProperty, number>;
+  /** The fade back in that follows the landing (a dip). */
+  fadeIn: {readonly to: number; readonly ms: number} | null;
+  /** The opacity written with the landing (an exit by role). */
+  restore: number | null;
+  timer: ReturnType<typeof setTimeout> | null;
+}
+
+/** What Reduced Motion makes of a call: its segments, and any landing. */
+interface ReducedPlan {
+  readonly next: Partial<Record<MotionProperty, Segment | null>>;
+  /** Values that stay where they are until the landing writes them. */
+  readonly holds: Partial<Record<MotionProperty, number>>;
+  readonly landing: Omit<Landing, 'owner' | 'timer'> | null;
 }
 
 const PROPERTIES: ReadonlyArray<MotionProperty> = [
@@ -519,11 +600,29 @@ function defaultNow(): number {
   return typeof performance === 'undefined' ? Date.now() : performance.now();
 }
 
-function defaultPrefersReducedMotion(): boolean {
+/**
+ * Whether the user asked for reduced motion (`prefers-reduced-motion:
+ * reduce`), read at the moment of the call: the preference the animator uses
+ * by default for its Reduce Motion substitution. A component whose UIKit
+ * counterpart does something other than a cross-fade under Reduce Motion
+ * reads it here and picks its own curve. False without a window (server
+ * rendering).
+ * @experimental
+ */
+export function defaultPrefersReducedMotion(): boolean {
   return (
     typeof window !== 'undefined' &&
     typeof window.matchMedia === 'function' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+}
+
+/** Whether the primary pointer is coarse: `(pointer: coarse)`. */
+export function defaultIsCoarsePointer(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(pointer: coarse)').matches
   );
 }
 
@@ -539,6 +638,7 @@ function defaultPrefersReducedMotion(): boolean {
  * const y = animator.get('y', event.timeStamp);
  * animator.stop(['y']);
  * ```
+ * @experimental
  */
 export function createAnimator(
   element: HTMLElement | null,
@@ -555,6 +655,7 @@ export function createAnimator(
   const pseudoElement = options.pseudoElement;
   const prefersReducedMotion =
     options.prefersReducedMotion ?? defaultPrefersReducedMotion;
+  const isCoarsePointer = options.isCoarsePointer ?? defaultIsCoarsePointer;
   const resting: Record<MotionProperty, number> = {
     ...IDENTITY,
     ...expand(options.initial ?? {}),
@@ -1152,6 +1253,7 @@ export function createAnimator(
   const lastSpring = new WeakMap<HandleState, SpringDescription>();
 
   const interrupt = (property: MotionProperty, time: number) => {
+    cancelLanding(property);
     const segment = segments.get(property);
     if (segment == null) {
       return;
@@ -1247,7 +1349,9 @@ export function createAnimator(
     if (from === to && velocity === 0) {
       return null;
     }
-    const curve = solveSpring(toSpring(spring), {from, to, velocity});
+    // A table spring takes its theme's value, read once here, at the start.
+    const resolved = resolveMotion(target, spring);
+    const curve = solveSpring(toSpring(resolved), {from, to, velocity});
     const duration = Math.min(
       MAX_DURATION_MS,
       curve.settleTime(SETTLE_THRESHOLD[property]) * 1000,
@@ -1260,7 +1364,7 @@ export function createAnimator(
       speed: t => curve.velocity(t / 1000),
       jumps: [],
       owner,
-      spring,
+      spring: resolved,
     };
   };
 
@@ -1270,7 +1374,7 @@ export function createAnimator(
     stops: ReadonlyArray<{at: number; value: number}>,
     jumps: ReadonlyArray<number> = [],
   ): Segment => {
-    const ease = cubicBezier(timing.curves.easeInOut);
+    const ease = cubicBezier(resolveMotion(target, timing.curves.easeInOut));
     const duration = stops[stops.length - 1].at;
     const at = (t: number) => {
       for (let i = 0; i + 1 < stops.length; i++) {
@@ -1299,23 +1403,6 @@ export function createAnimator(
     };
   };
 
-  const jumpSegment = (
-    owner: HandleState,
-    start: number,
-    from: number,
-    to: number,
-    after: number,
-  ): Segment => ({
-    start,
-    duration: after,
-    target: to,
-    at: t => (t < after ? from : to),
-    speed: () => 0,
-    jumps: [after],
-    steps: true,
-    owner,
-  });
-
   // -- the animator -----------------------------------------------------------
 
   const commit = (changed: Iterable<MotionProperty>, time: number) => {
@@ -1328,26 +1415,132 @@ export function createAnimator(
     }
   };
 
+  /** Reduced Motion landings still waiting for the element to be transparent. */
+  const landings = new Set<Landing>();
+
+  /** A later write to `property` takes it from any landing; opacity ends it. */
+  const cancelLanding = (property: MotionProperty) => {
+    for (const landing of landings) {
+      if (property === 'opacity') {
+        endLanding(landing);
+      } else {
+        landing.values.delete(property);
+      }
+    }
+  };
+
+  const endLanding = (landing: Landing) => {
+    if (landing.timer != null) {
+      clearTimeout(landing.timer);
+    }
+    landings.delete(landing);
+  };
+
+  /** Arms a landing from the call's start (the browser's, for a call from rest). */
+  const scheduleLanding = (
+    owner: HandleState,
+    started: Promise<number>,
+    plan: NonNullable<ReducedPlan['landing']>,
+  ) => {
+    const landing: Landing = {...plan, owner, timer: null};
+    landings.add(landing);
+    // The handle settles when the landing (and its fade back in) is done.
+    if (owner.timer != null) {
+      clearTimeout(owner.timer);
+      owner.timer = null;
+    }
+    void started.then(start => {
+      if (!landings.has(landing)) {
+        return;
+      }
+      landing.timer = setTimeout(
+        () => land(landing),
+        Math.max(0, start + landing.at - now()),
+      );
+    });
+  };
+
   /**
-   * Reduced Motion: travel becomes UIKit's cross-fade (see the file header).
-   * Returns each property's new segment, or null to put it in place at once.
+   * Writes the travel while the element is transparent: a plain style write,
+   * never an animation. A busy main thread only keeps it transparent longer.
+   * In a dip the fade back in starts from here.
    */
-  const crossfade = (
+  const land = (landing: Landing) => {
+    landings.delete(landing);
+    landing.timer = null;
+    const time = now();
+    const changed: MotionProperty[] = [];
+    for (const [property, value] of landing.values) {
+      segments.delete(property);
+      resting[property] = value;
+      changed.push(property);
+    }
+    let end = time;
+    if (landing.fadeIn != null) {
+      segments.set(
+        'opacity',
+        fadeSegment(landing.owner, time, [
+          {at: 0, value: valueAt('opacity', time)},
+          {at: landing.fadeIn.ms, value: landing.fadeIn.to},
+        ]),
+      );
+      changed.push('opacity');
+      end = time + landing.fadeIn.ms;
+    } else if (landing.restore != null) {
+      segments.delete('opacity');
+      resting.opacity = landing.restore;
+      changed.push('opacity');
+    }
+    commit(changed, time);
+    const {owner} = landing;
+    if (owner.settled) {
+      return;
+    }
+    if (end <= time) {
+      settle(owner, true);
+    } else {
+      owner.timer = setTimeout(
+        () => {
+          owner.timer = null;
+          settle(owner, true);
+        },
+        Math.max(0, end - now()),
+      );
+    }
+  };
+
+  /**
+   * Reduced Motion (see the file header): with `fade`, an opacity-only
+   * cross-fade whose travel lands while the element is transparent; without,
+   * everything at once.
+   */
+  const reducedMotion = (
     owner: HandleState,
     time: number,
     targets: Partial<Record<MotionProperty, number>>,
     properties: MotionProperty[],
-    mode: 'crossfade' | 'instant',
-    fadeSpring?: SpringDescription,
+    fade: boolean,
     role?: 'entrance' | 'exit',
-  ): Partial<Record<MotionProperty, Segment | null>> => {
+  ): ReducedPlan => {
     const next: Partial<Record<MotionProperty, Segment | null>> = {};
+    const holds: Partial<Record<MotionProperty, number>> = {};
+    if (!fade) {
+      for (const property of properties) {
+        next[property] = null;
+      }
+      return {next, holds, landing: null};
+    }
     const opacityNow = valueAt('opacity', time);
-    const opacityTo = targets.opacity ?? opacityNow;
+    // A fade the call does not name keeps going where it was heading.
+    const opacityTo = targets.opacity ?? finalValue('opacity');
+    const travel = properties.filter(
+      property =>
+        TRAVEL.includes(property) &&
+        Math.abs((targets[property] as number) - valueAt(property, time)) >
+          1e-9,
+    );
     let entering = opacityTo > opacityNow + 1e-6;
     let leaving = opacityTo < opacityNow - 1e-6;
-    // The fade runs fadeFrom -> fadeTo; an exit by role then returns the
-    // opacity to its value (`restore`) when the travel lands.
     let fadeFrom = opacityNow;
     let fadeTo = opacityTo;
     let restore: number | null = null;
@@ -1359,103 +1552,72 @@ export function createAnimator(
       fadeTo = 0;
       restore = opacityTo;
     }
-    // The fade, and when the travel lands (ms after `time`): at once for an
-    // entrance, after the fade out for an exit, at the bottom of a dip.
-    let opacity: Segment | null = null;
-    let landsAt = 0;
-    if (mode === 'crossfade' && fadeSpring == null) {
-      const fade = timing.reducedMotionCrossFadeMs;
-      if (entering || leaving) {
-        opacity =
-          restore == null
-            ? fadeSegment(owner, time, [
-                {at: 0, value: fadeFrom},
-                {at: fade, value: fadeTo},
-              ])
-            : fadeSegment(
-                owner,
-                time,
-                [
-                  {at: 0, value: fadeFrom},
-                  {at: fade, value: fadeTo},
-                  {at: fade, value: restore},
-                ],
-                [fade],
-              );
-        landsAt = entering ? 0 : fade;
-      } else {
-        opacity = fadeSegment(owner, time, [
-          {at: 0, value: opacityNow},
-          {at: fade / 2, value: 0},
-          {at: fade, value: opacityTo},
-        ]);
-        landsAt = fade / 2;
-      }
-    } else if (mode === 'crossfade' && fadeSpring != null) {
-      const spring = toSpring(fadeSpring);
-      const settle = (curve: SpringCurve) =>
-        Math.min(
-          MAX_DURATION_MS / 2,
-          curve.settleTime(SETTLE_THRESHOLD.opacity) * 1000,
-        );
-      if (entering || leaving) {
-        const curve = solveSpring(spring, {from: fadeFrom, to: fadeTo});
-        const duration = settle(curve);
-        const end = restore ?? fadeTo;
-        opacity = {
-          start: time,
-          duration,
-          target: end,
-          at: t =>
-            restore != null && t >= duration ? restore : curve.value(t / 1000),
-          speed: t =>
-            restore != null && t >= duration ? 0 : curve.velocity(t / 1000),
-          jumps: restore != null ? [duration] : [],
-          owner,
-        };
-        landsAt = entering ? 0 : duration;
-      } else {
-        const out = solveSpring(spring, {from: opacityNow, to: 0});
-        const back = solveSpring(spring, {from: 0, to: opacityTo});
-        const half = settle(out);
-        opacity = {
-          start: time,
-          duration: half + settle(back),
-          target: opacityTo,
-          at: t =>
-            t < half ? out.value(t / 1000) : back.value((t - half) / 1000),
-          speed: t =>
-            t < half
-              ? out.velocity(t / 1000)
-              : back.velocity((t - half) / 1000),
-          jumps: [],
-          owner,
-        };
-        landsAt = half;
-      }
-    }
+    // Not a theme role: no theme lengthens it (design:reduced-motion DR4).
+    const ms = timing.reducedMotionCrossFadeMs;
     for (const property of properties) {
-      if (!TRAVEL.includes(property)) {
-        continue;
+      if (TRAVEL.includes(property)) {
+        next[property] = null;
       }
-      next[property] =
-        landsAt === 0
-          ? null // in place at once
-          : jumpSegment(
-              owner,
-              time,
-              valueAt(property, time),
-              targets[property] as number,
-              landsAt,
-            );
     }
-    next.opacity = opacity;
-    return next;
+    const landsLater = (at: number, fadeIn: Landing['fadeIn']) => {
+      const values = new Map<MotionProperty, number>();
+      for (const property of travel) {
+        holds[property] = valueAt(property, time);
+        values.set(property, targets[property] as number);
+      }
+      return {at, values, fadeIn, restore};
+    };
+    if (entering) {
+      // Lands at once (the travel is null above) and fades in.
+      next.opacity = fadeSegment(owner, time, [
+        {at: 0, value: fadeFrom},
+        {at: ms, value: fadeTo},
+      ]);
+      return {next, holds, landing: null};
+    }
+    if (leaving) {
+      // Fades out in place, then lands.
+      next.opacity = fadeSegment(owner, time, [
+        {at: 0, value: fadeFrom},
+        {at: ms, value: fadeTo},
+      ]);
+      return {
+        next,
+        holds,
+        landing:
+          travel.length > 0 || restore != null ? landsLater(ms, null) : null,
+      };
+    }
+    if (travel.length > 0) {
+      // A dip: fades out, lands while transparent, fades back in.
+      next.opacity = fadeSegment(owner, time, [
+        {at: 0, value: opacityNow},
+        {at: ms / 2, value: 0},
+      ]);
+      return {
+        next,
+        holds,
+        landing: landsLater(ms / 2, {to: opacityTo, ms: ms / 2}),
+      };
+    }
+    if ('opacity' in targets) {
+      next.opacity = null;
+    }
+    return {next, holds, landing: null};
   };
 
   const animator: Animator = {
     get element() {
       return target;
+    },
+
+    reducedMotion(reducedOptions = {}) {
+      if (!prefersReducedMotion()) {
+        return 'off';
+      }
+      return isCoarsePointer() || reducedOptions.touchRelease === true
+        ? 'crossfade'
+        : 'instant';
     },
 
     attach(next) {
@@ -1524,29 +1686,19 @@ export function createAnimator(
       const {owner, finished} = newOwner();
       lastSpring.set(owner, transition.spring);
       const properties = Object.keys(targets) as MotionProperty[];
-      const mode = animateOptions.reducedMotion ?? 'crossfade';
-      const travels = properties.filter(
-        p =>
-          TRAVEL.includes(p) &&
-          Math.abs((targets[p] as number) - valueAt(p, time)) > 1e-9,
-      );
-      const reduce =
-        mode !== 'keep' && travels.length > 0 && prefersReducedMotion();
       const next: Partial<Record<MotionProperty, Segment | null>> = {};
+      let plan: ReducedPlan | null = null;
 
-      if (reduce) {
-        Object.assign(
-          next,
-          crossfade(
-            owner,
-            time,
-            targets,
-            properties,
-            mode === 'instant' ? 'instant' : 'crossfade',
-            animateOptions.crossfade,
-            animateOptions.crossfadeAs,
-          ),
+      if (prefersReducedMotion()) {
+        plan = reducedMotion(
+          owner,
+          time,
+          targets,
+          properties,
+          isCoarsePointer() || animateOptions.touchRelease === true,
+          animateOptions.crossfadeAs,
         );
+        Object.assign(next, plan.next);
       } else {
         for (const property of properties) {
           const velocity = velocities[property] ?? velocityAt(property, time);
@@ -1574,14 +1726,23 @@ export function createAnimator(
         interrupt(property, time);
         changed.push(property);
         if (segment == null) {
+          // Read before the segment goes: valueAt falls back to resting.
+          const value =
+            plan?.holds[property] ??
+            targets[property] ??
+            valueAt(property, time);
           segments.delete(property);
-          resting[property] = targets[property] ?? valueAt(property, time);
+          resting[property] = value;
         } else {
           segments.set(property, segment);
         }
       }
       commitCall(group, owner, changed, time);
-      return makeHandle(owner, changed, finished, time, group);
+      const handle = makeHandle(owner, changed, finished, time, group);
+      if (plan?.landing != null) {
+        scheduleLanding(owner, handle.started, plan.landing);
+      }
+      return handle;
     },
 
     play(curves, playOptions = {}) {
@@ -1611,25 +1772,19 @@ export function createAnimator(
         const curve = byProperty[property] as MotionCurve;
         targets[property] = curve.at(curve.duration);
       }
-      const mode = playOptions.reducedMotion ?? 'crossfade';
-      const travels = properties.some(
-        p =>
-          TRAVEL.includes(p) &&
-          ((byProperty[p] as MotionCurve).duration > 0 ||
-            Math.abs((targets[p] as number) - valueAt(p, time)) > 1e-9),
-      );
-      const next: Partial<Record<MotionProperty, Segment | null>> =
-        mode !== 'keep' && travels && prefersReducedMotion()
-          ? crossfade(
-              owner,
-              time,
-              targets,
-              properties,
-              mode === 'instant' ? 'instant' : 'crossfade',
-              playOptions.crossfade,
-              playOptions.crossfadeAs,
-            )
-          : {};
+      const plan = prefersReducedMotion()
+        ? reducedMotion(
+            owner,
+            time,
+            targets,
+            properties,
+            isCoarsePointer() || playOptions.touchRelease === true,
+            playOptions.crossfadeAs,
+          )
+        : null;
+      const next: Partial<Record<MotionProperty, Segment | null>> = {
+        ...plan?.next,
+      };
       for (const property of properties) {
         if (property in next) {
           continue;
@@ -1661,14 +1816,23 @@ export function createAnimator(
         interrupt(property, time);
         changed.push(property);
         if (segment == null) {
+          // Read before the segment goes: valueAt falls back to resting.
+          const value =
+            plan?.holds[property] ??
+            targets[property] ??
+            valueAt(property, time);
           segments.delete(property);
-          resting[property] = targets[property] ?? valueAt(property, time);
+          resting[property] = value;
         } else {
           segments.set(property, segment);
         }
       }
       commitCall(group, owner, changed, time);
-      return makeHandle(owner, changed, finished, time, group);
+      const handle = makeHandle(owner, changed, finished, time, group);
+      if (plan?.landing != null) {
+        scheduleLanding(owner, handle.started, plan.landing);
+      }
+      return handle;
     },
 
     decay(velocity, decayOptions = {}) {
@@ -1677,7 +1841,9 @@ export function createAnimator(
       const velocities = expand(velocity);
       const {owner, finished} = newOwner();
       const rate = decayOptions.rate ?? scroll.decelerationRate.normal;
-      const bounce = toSpring(decayOptions.bounce ?? scroll.bounce);
+      const bounce = toSpring(
+        resolveMotion(target, decayOptions.bounce ?? scroll.bounce),
+      );
       const properties = Object.keys(velocities) as MotionProperty[];
       const group = beginGroup(time, properties, decayOptions.at);
       for (const property of properties) {
@@ -1776,6 +1942,7 @@ export function createAnimator(
       const list = properties == null ? PROPERTIES : expandList(properties);
       const changed: MotionProperty[] = [];
       for (const property of list) {
+        cancelLanding(property);
         if (!segments.has(property)) {
           continue;
         }
@@ -1873,7 +2040,10 @@ export function createAnimator(
               end = Math.max(end, segment.start + segment.duration);
             }
           }
-          if (end <= time) {
+          if (landings.size > 0) {
+            // A Reduced Motion landing is still to come.
+            setTimeout(check, 16);
+          } else if (end <= time) {
             resolve();
           } else {
             // A retarget or a later start moves the end: look again then.
@@ -1885,6 +2055,9 @@ export function createAnimator(
     },
 
     dispose() {
+      for (const landing of [...landings]) {
+        endLanding(landing);
+      }
       const time = now();
       for (const property of PROPERTIES) {
         interrupt(property, time);

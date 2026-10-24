@@ -1569,6 +1569,24 @@ describe('NumberInput', () => {
       ).toBeInTheDocument();
     });
 
+    it('focuses the field inside the tap that clears it, without scrolling', () => {
+      // iOS Safari brings up its keyboard only for a focus made while
+      // handling the touch.
+      const onChange = vi.fn();
+      const focusSpy = vi.spyOn(HTMLElement.prototype, 'focus');
+      render(
+        <NumberInput label="Qty" value={5} onChange={onChange} hasClear />,
+      );
+      const input = screen.getByRole('spinbutton');
+      fireEvent.click(screen.getByRole('button', {name: 'Clear Qty'}), {
+        detail: 1,
+      });
+      expect(onChange).toHaveBeenCalledWith(null);
+      expect(document.activeElement).toBe(input);
+      expect(focusSpy).toHaveBeenLastCalledWith({preventScroll: true});
+      focusSpy.mockRestore();
+    });
+
     it('does not show clear button when value is null', () => {
       render(
         <NumberInput label="Qty" value={null} onChange={() => {}} hasClear />,

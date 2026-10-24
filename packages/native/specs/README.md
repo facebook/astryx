@@ -12,7 +12,7 @@ packages/native/
 │   ├── TEMPLATE.md            # copy this for a new component spec
 │   └── swift/                 # rules shared by every Swift component
 │       └── library/           # rules every Swift component or build step shares
-└── swift-ios-1/core/
+└── apple/Sources/Astryx/
     └── <Name>/                # one folder per component, named as core's
         ├── Astryx<Name>.swift
         └── <Name>.spec.md     # the component's spec, e.g. Button.spec.md
@@ -40,7 +40,7 @@ the same everywhere. A native spec never renames or changes it.
 ## Adding a spec
 
 1. Copy `TEMPLATE.md` to the component's folder as `<Name>.spec.md`, for
-   Swift `swift-ios-1/core/<Name>/<Name>.spec.md`.
+   Swift `apple/Sources/Astryx/<Name>/<Name>.spec.md`.
 2. Fill every section. Write "None" rather than deleting one.
 3. Open a pull request that changes only files under `packages/native/`. A spec
    can land on its own or with the component it describes.
