@@ -337,6 +337,18 @@ const TARGETS = [
       'isFullBleed strip/label geometry incl. clamp far side, and the real ' +
       'LayoutHeader paddingBlockEnd -> TabList isFullBleed dock (#2622)',
   },
+  {
+    component: 'Typeahead',
+    story: 'core-typeahead--incremental-results',
+    guards:
+      'local matches show at once while busy; server rows only append; the highlighted option and its id stay; Enter selects it (spec:AST-092)',
+  },
+  {
+    component: 'Typeahead',
+    story: 'core-typeahead--incremental-results-above-field',
+    guards:
+      'a popup above the field keeps its shown rows in place on screen while server rows append (spec:AST-092 FR6)',
+  },
 ];
 
 const CONTENT_TYPES = {

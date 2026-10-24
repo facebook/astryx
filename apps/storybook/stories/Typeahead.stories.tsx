@@ -2,6 +2,7 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
+import {expect, userEvent, waitFor, within} from 'storybook/test';
 import {Typeahead} from '@astryxdesign/core/Typeahead';
 import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
@@ -323,6 +324,167 @@ export const Loading: Story = {
     );
   },
   name: 'Loading (async source)',
+};
+
+/**
+ * People the page already has, and a directory server that answers later.
+ * The source shows its local matches through `context.update` at once and
+ * returns the server answer with the shown rows first and new rows after
+ * them, so the list changes once per keystroke and never moves under the
+ * pointer or the highlight (spec:AST-092).
+ */
+const localPeople: SearchableItem[] = [
+  {id: 'u1', label: 'Bea Lin'},
+  {id: 'u2', label: 'Ben Ortiz'},
+  {id: 'u3', label: 'Benita Ruiz'},
+  {id: 'u4', label: 'Bo Park'},
+];
+const directoryPeople: SearchableItem[] = [
+  ...localPeople,
+  {id: 'u7', label: 'Ben Shah'},
+  {id: 'u8', label: 'Bennett Cole'},
+  {id: 'u9', label: 'Bea Novak'},
+];
+
+function matchPeople(people: SearchableItem[], query: string) {
+  const lower = query.toLowerCase();
+  return people.filter(person =>
+    person.label
+      .toLowerCase()
+      .split(' ')
+      .some(word => word.startsWith(lower)),
+  );
+}
+
+let pendingDirectoryRequest: {
+  timer: ReturnType<typeof setTimeout>;
+  reject: (reason: Error) => void;
+} | null = null;
+const incrementalPeopleSource: SearchSource = {
+  bootstrap: () => localPeople,
+  cancel() {
+    // Settle the cancelled search so the field stops being busy.
+    if (pendingDirectoryRequest != null) {
+      clearTimeout(pendingDirectoryRequest.timer);
+      pendingDirectoryRequest.reject(new Error('cancelled'));
+      pendingDirectoryRequest = null;
+    }
+  },
+  async search(query, context) {
+    const local = matchPeople(localPeople, query);
+    context?.update(local);
+    return await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        pendingDirectoryRequest = null;
+        const shown = new Set(local.map(person => person.id));
+        const added = matchPeople(directoryPeople, query).filter(
+          person => !shown.has(person.id),
+        );
+        resolve([...local, ...added]);
+      }, 800);
+      pendingDirectoryRequest = {timer, reject};
+    });
+  },
+};
+
+export const IncrementalResults: Story = {
+  render: () => {
+    const [value, setValue] = useState<SearchableItem | null>(null);
+    return (
+      <Typeahead
+        label="Assign to"
+        placeholder="Search people"
+        searchSource={incrementalPeopleSource}
+        value={value}
+        onChange={setValue}
+        debounceMs={0}
+      />
+    );
+  },
+  name: 'Incremental results (local first, server appended)',
+  play: async ({canvasElement}) => {
+    const canvas = within(canvasElement);
+    const input = canvas.getByRole('combobox', {name: 'Assign to'});
+    const page = within(document.body);
+    const labels = () =>
+      page.queryAllByRole('option').map(option => option.textContent);
+
+    await userEvent.type(input, 'ben');
+    // One change for the keystroke: the local matches, while still busy.
+    await waitFor(() => expect(labels()).toEqual(['Ben Ortiz', 'Benita Ruiz']));
+    await expect(input).toHaveAttribute('aria-busy', 'true');
+
+    await userEvent.keyboard('{ArrowDown}');
+    const activeId = input.getAttribute('aria-activedescendant');
+    await expect(activeId).not.toBeNull();
+
+    // The server answer only appends; the shown rows and highlight stay put.
+    await waitFor(() => expect(input).not.toHaveAttribute('aria-busy'), {
+      timeout: 3000,
+    });
+    await expect(labels()).toEqual([
+      'Ben Ortiz',
+      'Benita Ruiz',
+      'Ben Shah',
+      'Bennett Cole',
+    ]);
+    await expect(input).toHaveAttribute(
+      'aria-activedescendant',
+      activeId ?? '',
+    );
+
+    await userEvent.keyboard('{Enter}');
+    // The selected person shows as the field's value.
+    await expect(await canvas.findByText('Benita Ruiz')).toBeInTheDocument();
+  },
+};
+
+/**
+ * The same source with the field near the bottom of the viewport, so the
+ * popup opens above it. Appended server rows scroll inside the popup; the
+ * rows already shown keep their place on screen (spec:AST-092 FR6).
+ */
+export const IncrementalResultsAboveField: Story = {
+  render: () => {
+    const [value, setValue] = useState<SearchableItem | null>(null);
+    return (
+      <div style={{paddingBlockStart: 'calc(100vh - 140px)'}}>
+        <Typeahead
+          label="Assign to"
+          placeholder="Search people"
+          searchSource={incrementalPeopleSource}
+          value={value}
+          onChange={setValue}
+          debounceMs={0}
+        />
+      </div>
+    );
+  },
+  name: 'Incremental results above the field',
+  play: async ({canvasElement}) => {
+    const canvas = within(canvasElement);
+    const input = canvas.getByRole('combobox', {name: 'Assign to'});
+    const page = within(document.body);
+
+    await userEvent.type(input, 'ben');
+    await waitFor(() => expect(page.queryAllByRole('option')).toHaveLength(2));
+    const [first] = page.getAllByRole('option');
+    const firstTop = first.getBoundingClientRect().top;
+    await expect(first.getBoundingClientRect().bottom).toBeLessThanOrEqual(
+      input.getBoundingClientRect().top,
+    );
+
+    await waitFor(() => expect(input).not.toHaveAttribute('aria-busy'), {
+      timeout: 3000,
+    });
+    await expect(page.getAllByRole('option')).toHaveLength(4);
+    // The shown rows did not move; the appended ones are reached by scrolling.
+    await expect(
+      Math.abs(
+        page.getAllByRole('option')[0].getBoundingClientRect().top - firstTop,
+      ),
+    ).toBeLessThan(1);
+  },
 };
 
 /**
