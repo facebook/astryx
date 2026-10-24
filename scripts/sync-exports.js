@@ -43,7 +43,7 @@ const UTILITY_DIRS = new Set(['hooks', 'theme', 'utils']);
  * publicly exported. These are shared implementation details
  * consumed by other components via relative imports.
  */
-const INTERNAL_DIRS = new Set(['NavItem']);
+const INTERNAL_DIRS = new Set(['NavItem', 'gestures']);
 
 /**
  * Additional exports that can't be auto-discovered from directory structure.
@@ -71,6 +71,19 @@ const STATIC_EXPORTS = {
     source: './src/naming.ts',
     types: './dist/naming.d.ts',
     default: './dist/naming.js',
+  },
+  // Experimental subpaths (spec:AST-017 FR21): outside the stable
+  // compatibility promise and never re-exported from the root or an ordinary
+  // subpath.
+  './motion/experimental': {
+    source: './src/motion/experimental.ts',
+    types: './dist/motion/experimental.d.ts',
+    default: './dist/motion/experimental.js',
+  },
+  './gestures/experimental': {
+    source: './src/gestures/experimental.ts',
+    types: './dist/gestures/experimental.d.ts',
+    default: './dist/gestures/experimental.js',
   },
   './theme/tokens': {
     source: './src/theme/tokens.ts',
