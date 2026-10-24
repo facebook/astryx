@@ -46,6 +46,8 @@
  *
  * SYNC: When modified, update:
  * - /packages/lab/src/RefreshControl/useRefreshControl.test.tsx
+ * - /packages/lab/src/RefreshControl/RefreshControl.tsx
+ * - /packages/lab/src/RefreshControl/RefreshControl.doc.mjs
  */
 
 import {
