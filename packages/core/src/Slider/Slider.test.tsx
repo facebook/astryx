@@ -19,6 +19,7 @@ import {
 } from '../__tests__/pressState';
 import * as stylex from '@stylexjs/stylex';
 import {Slider} from './Slider';
+import {FormLayout} from '../FormLayout';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {
   __resetInteractionModalityForTest,
@@ -1412,6 +1413,33 @@ describe('one pointer per drag', () => {
 
     // The slider answers the next press.
     fireEvent.pointerDown(track, {clientX: 28, clientY: 10, pointerId: 3});
+    expect(thumb).toHaveAttribute('aria-valuenow', '10');
+  });
+
+  it('ends the drag when its control node is replaced mid-drag and the capture is lost', () => {
+    // A FormLayout direction change re-renders the field in another layout,
+    // replacing the control node while the drag holds it. The browser then
+    // fires lostpointercapture at the document, not at the removed node.
+    const onChangeEnd = vi.fn();
+    function InLayout({direction}: {direction: 'vertical' | 'horizontal'}) {
+      return (
+        <FormLayout direction={direction}>
+          <ControlledSlider id="Volume" onChangeEnd={onChangeEnd} />
+        </FormLayout>
+      );
+    }
+    const {rerender} = render(<InLayout direction="vertical" />);
+    const before = trackOf(screen.getByRole('slider'));
+    fireEvent.pointerDown(before, {clientX: 136, clientY: 10, pointerId: 1});
+
+    rerender(<InLayout direction="horizontal" />);
+    fireEvent.lostPointerCapture(document, {pointerId: 1});
+    expect(onChangeEnd).toHaveBeenCalledOnce();
+
+    // The slider answers the next press on whichever node it renders now.
+    const thumb = screen.getByRole('slider');
+    const after = trackOf(thumb);
+    fireEvent.pointerDown(after, {clientX: 28, clientY: 10, pointerId: 3});
     expect(thumb).toHaveAttribute('aria-valuenow', '10');
   });
 

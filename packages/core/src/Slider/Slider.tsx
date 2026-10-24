@@ -833,16 +833,19 @@ export function Slider({ref, ...props}: SliderProps) {
 
   // A capture lost without an up or a cancel (the browser releases it, or
   // script does) still ends the drag, so the slider never stays held by a
-  // pointer that is gone and keeps answering new presses.
+  // pointer that is gone and keeps answering new presses. The listener sits
+  // on the document, where lostpointercapture bubbles to and where the browser
+  // fires it when the captured node is removed, so a control node replaced
+  // before or during a drag (a FormLayout direction change) is still covered.
   useEffect(() => {
-    const track = trackRef.current;
-    if (track == null) {
+    const doc = trackRef.current?.ownerDocument;
+    if (doc == null) {
       return;
     }
     const onLostCapture = (event: globalThis.PointerEvent) =>
       endDrag(event.pointerId);
-    track.addEventListener('lostpointercapture', onLostCapture);
-    return () => track.removeEventListener('lostpointercapture', onLostCapture);
+    doc.addEventListener('lostpointercapture', onLostCapture);
+    return () => doc.removeEventListener('lostpointercapture', onLostCapture);
   }, [endDrag]);
 
   // Keyboard handler
