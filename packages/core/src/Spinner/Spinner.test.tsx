@@ -317,12 +317,17 @@ describe('Spinner ring', () => {
       );
       // No viewBox: one user unit is one px, so the attributes below mean px.
       // They are the no-stylesheet fallback; CSS sizes the frame from the box.
+      // The track's are zero, so without a stylesheet the arc alone fills
+      // the box rather than sitting beside a second disc.
       const frame = diameter + border * 2;
-      for (const svg of rings()) {
+      const [track, arc] = rings();
+      for (const svg of [track, arc]) {
         expect(svg.getAttribute('viewBox')).toBeNull();
-        expect(Number(svg.getAttribute('width'))).toBe(frame);
-        expect(Number(svg.getAttribute('height'))).toBe(frame);
       }
+      expect(Number(arc.getAttribute('width'))).toBe(frame);
+      expect(Number(arc.getAttribute('height'))).toBe(frame);
+      expect(Number(track.getAttribute('width'))).toBe(0);
+      expect(Number(track.getAttribute('height'))).toBe(0);
       for (const c of [circles().track, circles().arc]) {
         expect(c.getAttribute('cx')).toBe('50%');
         expect(c.getAttribute('cy')).toBe('50%');
@@ -427,7 +432,7 @@ describe('Spinner ring', () => {
   // `transform`, a property the browser animates without the main thread.
   // A `stroke-dashoffset` (or any other paint) animation would repaint the arc
   // on the main thread every frame and stop for as long as a script runs —
-  // the browser proof (Spinner.interaction.browser.spec.ts) holds the frames.
+  // the browser proof (__tests__/SpinnerMotion.a11y.chromium.spec.ts) holds the frames.
   it('turns the arc by rotating the rotor, with nothing else animated', () => {
     render(<Spinner data-testid="spinner" />);
     const css = injectedCss();

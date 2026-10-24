@@ -582,9 +582,12 @@ export function Spinner({
           height: `var(${BOX_SIZE}, ${frameSize}px)`,
         },
       )}>
+      {/* The track is zero-sized by attribute: with no stylesheet the rotor's
+          arc alone fills the box (the two svgs would otherwise sit side by
+          side, two discs); `ring` sizes both to the box. */}
       <svg
-        width={frameSize}
-        height={frameSize}
+        width={0}
+        height={0}
         aria-hidden="true"
         {...stylex.props(styles.ring)}>
         <circle
