@@ -26,19 +26,16 @@ const withAlpha = (color: string, alpha: string): string => `${color}${alpha}`;
  */
 const INPUT_STATUS_VARS = {
   'status:success': {
-    '--color-status-foreground-success': lightDark(
-      green.light[55],
-      green.dark[70],
-    ),
+    '--color-border-success': lightDark(green.light[55], green.dark[70]),
+    '--color-icon-success': lightDark(green.light[55], green.dark[70]),
   },
   'status:warning': {
-    '--color-status-foreground-warning': lightDark(
-      yellow.light[55],
-      yellow.dark[70],
-    ),
+    '--color-border-warning': lightDark(yellow.light[55], yellow.dark[70]),
+    '--color-icon-warning': lightDark(yellow.light[55], yellow.dark[70]),
   },
   'status:error': {
-    '--color-status-foreground-error': lightDark(red.light[60], red.dark[70]),
+    '--color-border-error': lightDark(red.light[60], red.dark[70]),
+    '--color-icon-error': lightDark(red.light[60], red.dark[70]),
   },
 } as const;
 
@@ -198,21 +195,18 @@ export const stoneTheme = defineTheme({
     '--color-on-error': [neutral.light[100], neutral.dark[10]],
     '--color-on-warning': [neutral.light[100], neutral.dark[10]],
 
-    '--color-info': [neutral.light[15], neutral.dark[95]],
-    '--color-info-muted': [
-      withAlpha(neutral.light[15], '14'),
-      withAlpha(neutral.dark[95], '20'),
-    ],
+    '--color-info-emphasized': [blue.light[40], blue.dark[70]],
+    '--color-info-muted': [blue.light[90], blue.dark[25]],
     '--color-on-info': [neutral.light[100], neutral.dark[15]],
 
-    '--color-status-foreground-info': [blue.light[30], blue.dark[90]],
-    '--color-status-foreground-success': [green.light[30], green.dark[90]],
-    '--color-status-foreground-warning': [yellow.light[30], yellow.dark[90]],
-    '--color-status-foreground-error': [red.light[30], red.dark[90]],
+    '--color-text-info': [blue.light[30], blue.dark[90]],
+    '--color-text-success': [green.light[30], green.dark[90]],
+    '--color-text-warning': [yellow.light[30], yellow.dark[90]],
+    '--color-text-error': [red.light[30], red.dark[90]],
     '--color-on-info-muted': [blue.light[30], blue.dark[90]],
-    '--color-on-success-muted': [green.light[30], green.dark[90]],
-    '--color-on-warning-muted': [yellow.light[30], yellow.dark[90]],
-    '--color-on-error-muted': [red.light[30], red.dark[90]],
+    '--color-on-success-muted': [green.light[30], green.dark[25]],
+    '--color-on-warning-muted': [yellow.light[30], yellow.dark[25]],
+    '--color-on-error-muted': [red.light[30], red.dark[25]],
 
     // Icon
     '--color-icon-accent': [neutral.light[15], neutral.dark[95]],
@@ -227,11 +221,11 @@ export const stoneTheme = defineTheme({
 
     // Status / sentiment
     '--color-success': [green.light[30], green.dark[80]],
-    '--color-success-muted': [green.light[90], green.dark[35]],
+    '--color-success-muted': [green.light[90], green.dark[80]],
     '--color-error': [red.light[30], red.dark[80]],
-    '--color-error-muted': [red.light[90], red.dark[35]],
+    '--color-error-muted': [red.light[90], red.dark[80]],
     '--color-warning': [yellow.light[30], yellow.dark[80]],
-    '--color-warning-muted': [yellow.light[90], yellow.dark[35]],
+    '--color-warning-muted': [yellow.light[90], yellow.dark[80]],
 
     // Border
     '--color-border': [neutral.light[90], withAlpha(neutral.dark[95], '1a')],

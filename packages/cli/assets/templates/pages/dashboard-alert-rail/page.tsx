@@ -94,9 +94,9 @@ interface WindowSeries {
 }
 
 const STATUS_STROKE: Record<HealthStatus, string> = {
-  healthy: 'var(--color-status-foreground-success)',
-  warning: 'var(--color-status-foreground-warning)',
-  critical: 'var(--color-status-foreground-error)',
+  healthy: 'var(--color-text-success)',
+  warning: 'var(--color-text-warning)',
+  critical: 'var(--color-text-error)',
 };
 
 const STATUS_DOT: Record<HealthStatus, StatusDotVariant> = {

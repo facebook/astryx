@@ -56,13 +56,12 @@ export const colorDefaults = {
   '--color-background-inverted': 'light-dark(#0A1317, #FFFFFF)',
   '--color-background-error-inverted': 'light-dark(#AA071E, #E3193B)',
 
-  // Status/Sentiment
+  // Status/Sentiment. The base success/warning/error tokens are released and
+  // keep their values; Astryx components use the surface roles below
+  // (architecture:theme-tokens INV11).
   '--color-success': 'light-dark(#0D8626, #0D8626)',
   '--color-success-muted': 'light-dark(#0B991F33, #0B991F3F)',
   '--color-on-success': 'light-dark(#FFFFFF, #FFFFFF)',
-  '--color-info': 'var(--color-accent)',
-  '--color-info-muted': 'var(--color-accent-muted)',
-  '--color-on-info': 'var(--color-on-accent)',
   '--color-error': 'light-dark(#E3193B, #F5394F)',
   '--color-error-muted': 'light-dark(#E3193B33, #F5394F3F)',
   '--color-on-error': 'light-dark(#FFFFFF, #FFFFFF)',
@@ -70,15 +69,35 @@ export const colorDefaults = {
   '--color-warning-muted': 'light-dark(#E2A40033, #E2A4003F)',
   '--color-on-warning': 'light-dark(#0A1317, #0A1317)',
 
-  // Status foregrounds — semantic text and matching icons on plain surfaces.
-  // Muted status surfaces use their dedicated --color-on-*-muted pairing.
-  '--color-status-foreground-info': 'var(--color-text-blue)',
-  '--color-status-foreground-success': 'var(--color-text-green)',
-  '--color-status-foreground-warning': 'var(--color-text-yellow)',
-  '--color-status-foreground-error': 'var(--color-text-red)',
+  // Strong status fills, paired with --color-on-<status> at 4.5:1 or more.
+  // Dark Info and Error are deeper than the accent and base error, which miss
+  // 4.5:1 under white content.
+  '--color-info-emphasized': 'light-dark(#0064E0, #0064E0)',
+  '--color-on-info': 'var(--color-on-accent)',
+  '--color-success-emphasized': 'var(--color-success)',
+  '--color-warning-emphasized': 'var(--color-warning)',
+  '--color-error-emphasized': 'light-dark(#E3193B, #E3193B)',
 
-  // Content on pale semantic surfaces. These are intentionally distinct from
-  // both the plain-surface foregrounds and the content on strong fills.
+  // Pale status fills (Info is new; the others are the released muted tokens).
+  '--color-info-muted': 'var(--color-accent-muted)',
+
+  // Status text on the default page and card surfaces, 4.5:1 or more.
+  '--color-text-info': 'var(--color-text-blue)',
+  '--color-text-success': 'var(--color-text-green)',
+  '--color-text-warning': 'var(--color-text-yellow)',
+  '--color-text-error': 'var(--color-text-red)',
+
+  // Status icons and borders on those surfaces follow the text role.
+  '--color-icon-info': 'var(--color-text-info)',
+  '--color-icon-success': 'var(--color-text-success)',
+  '--color-icon-warning': 'var(--color-text-warning)',
+  '--color-icon-error': 'var(--color-text-error)',
+  '--color-border-info': 'var(--color-text-info)',
+  '--color-border-success': 'var(--color-text-success)',
+  '--color-border-warning': 'var(--color-text-warning)',
+  '--color-border-error': 'var(--color-text-error)',
+
+  // Content on pale status fills.
   '--color-on-info-muted': 'var(--color-text-blue)',
   '--color-on-success-muted': 'var(--color-text-green)',
   '--color-on-warning-muted': 'var(--color-text-yellow)',

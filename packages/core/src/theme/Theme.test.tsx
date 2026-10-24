@@ -218,7 +218,7 @@ describe('Theme', () => {
       name: 'status-role-outer',
       tokens: {
         '--color-accent': '#0074E2',
-        '--color-info': '#0074E2',
+        '--color-info-emphasized': '#0074E2',
       },
     });
     const inner = defineTheme({
@@ -238,7 +238,7 @@ describe('Theme', () => {
       'style[data-astryx-theme="status-role-inner"]',
     )?.textContent;
     expect(innerCss).toContain('--color-accent: #A000C8;');
-    expect(innerCss).toContain('--color-info: var(--color-accent);');
+    expect(innerCss).toContain('--color-info-emphasized: var(--color-accent);');
   });
 
   // =========================================================================

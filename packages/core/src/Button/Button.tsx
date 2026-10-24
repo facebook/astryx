@@ -233,12 +233,15 @@ const variants = stylex.create({
     color: colorVars['--color-text-primary'],
   },
   destructive: {
-    backgroundColor: colorVars['--color-error'],
+    backgroundColor: colorVars['--color-error-emphasized'],
     color: colorVars['--color-on-error'],
     // The ring matches the variant it rings: an accent-colored outline on a
     // red button reads as another control's focus. Only the color differs —
     // width, style and offset come from the shared outline.
-    outlineColor: {default: null, ':focus-visible': colorVars['--color-error']},
+    outlineColor: {
+      default: null,
+      ':focus-visible': colorVars['--color-error-emphasized'],
+    },
   },
 });
 

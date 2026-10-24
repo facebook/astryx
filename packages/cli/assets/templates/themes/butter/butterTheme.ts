@@ -107,16 +107,22 @@ const SECONDARY_COMPLEX_SELECTOR = {
     SECONDARY_BUTTON[':hover'],
 } as const;
 
-/** Preserve Butter's reviewed status rims and glyphs in input status scopes. */
+/**
+ * Butter's bright status rims and glyphs in input status scopes. Light mode
+ * uses mid-ramp stops so a rim reaches 3:1 on the field (theme-tokens INV11).
+ */
 const INPUT_STATUS_VARS = {
   'status:success': {
-    '--color-status-foreground-success': green.light[70],
+    '--color-border-success': lightDark(green.light[55], green.light[70]),
+    '--color-icon-success': lightDark(green.light[55], green.light[70]),
   },
   'status:warning': {
-    '--color-status-foreground-warning': yellow.light[80],
+    '--color-border-warning': lightDark(yellow.light[55], yellow.light[80]),
+    '--color-icon-warning': lightDark(yellow.light[55], yellow.light[80]),
   },
   'status:error': {
-    '--color-status-foreground-error': red.light[60],
+    '--color-border-error': red.light[60],
+    '--color-icon-error': red.light[60],
   },
 } as const;
 
@@ -200,14 +206,14 @@ export const butterTheme = defineTheme({
     '--color-on-error': [red.light[95], red.dark[15]],
     '--color-on-warning': [yellow.light[95], yellow.dark[15]],
 
-    '--color-info': 'var(--color-accent)',
+    '--color-info-emphasized': 'var(--color-accent)',
     '--color-info-muted': 'var(--color-accent-muted)',
     '--color-on-info': 'var(--color-on-accent)',
 
-    '--color-status-foreground-info': [accent.light[40], yellow.dark[90]],
-    '--color-status-foreground-success': [green.light[25], green.dark[80]],
-    '--color-status-foreground-warning': [yellow.light[25], yellow.dark[85]],
-    '--color-status-foreground-error': [red.light[25], red.dark[80]],
+    '--color-text-info': [accent.light[40], yellow.dark[90]],
+    '--color-text-success': [green.light[25], green.dark[80]],
+    '--color-text-warning': [yellow.light[25], yellow.dark[85]],
+    '--color-text-error': [red.light[25], red.dark[80]],
     '--color-on-info-muted': [neutral.light[15], neutral.dark[90]],
     '--color-on-success-muted': [green.light[25], green.dark[80]],
     '--color-on-warning-muted': [yellow.light[25], yellow.dark[85]],

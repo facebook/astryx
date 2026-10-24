@@ -23,16 +23,21 @@ import {matchaTheme} from '../packages/themes/matcha/src/matchaTheme.ts';
 import {neutralTheme} from '../packages/themes/neutral/src/neutralTheme.ts';
 import {stoneTheme} from '../packages/themes/stone/src/stoneTheme.ts';
 import {y2kTheme} from '../packages/themes/y2k/src/y2kTheme.ts';
+import {withEmittedTokens} from './lib/theme-emitted-tokens.mjs';
 
-const THEMES = {
-  butter: butterTheme,
-  chocolate: chocolateTheme,
-  gothic: gothicTheme,
-  matcha: matchaTheme,
-  neutral: neutralTheme,
-  stone: stoneTheme,
-  y2k: y2kTheme,
-};
+// Each theme as its generated CSS sets it, so status roles it leaves to theme
+// generation (architecture:theme-compilation INV17) resolve too.
+const THEMES = Object.fromEntries(
+  Object.entries({
+    butter: butterTheme,
+    chocolate: chocolateTheme,
+    gothic: gothicTheme,
+    matcha: matchaTheme,
+    neutral: neutralTheme,
+    stone: stoneTheme,
+    y2k: y2kTheme,
+  }).map(([name, theme]) => [name, withEmittedTokens(theme)]),
+);
 
 const MODES = ['light', 'dark'];
 /** WCAG 2.1 AA, normal-size text. */
@@ -142,19 +147,19 @@ function surfaceOf(theme, modeIndex) {
 
 const CORE_SEMANTIC_BADGE = {
   info: {
-    backgroundColor: 'var(--color-info)',
+    backgroundColor: 'var(--color-info-emphasized)',
     color: 'var(--color-on-info)',
   },
   success: {
-    backgroundColor: 'var(--color-success)',
+    backgroundColor: 'var(--color-success-emphasized)',
     color: 'var(--color-on-success)',
   },
   warning: {
-    backgroundColor: 'var(--color-warning)',
+    backgroundColor: 'var(--color-warning-emphasized)',
     color: 'var(--color-on-warning)',
   },
   error: {
-    backgroundColor: 'var(--color-error)',
+    backgroundColor: 'var(--color-error-emphasized)',
     color: 'var(--color-on-error)',
   },
 };

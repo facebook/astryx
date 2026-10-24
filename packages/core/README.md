@@ -170,8 +170,9 @@ Some useful mappings:
 | `text-primary` / `text-secondary`                         | `--color-text-primary` / `--color-text-secondary` |
 | `bg-surface` / `bg-card` / `bg-body`                      | `--color-background-surface` / `card` / `body`    |
 | `border-border` / `border-strong`                         | `--color-border` / `--color-border-emphasized`    |
-| `bg-success` / `bg-error` / `bg-warning`                  | Strong status fill tokens                         |
-| `text-status-info` / `success` / `warning` / `error`      | Plain-surface status foreground tokens            |
+| `bg-success` / `text-error` / `text-warning`              | Released base status tokens (unchanged)           |
+| `bg-success-emphasized` / `error` / `warning`             | Strong status fills (`--color-*-emphasized`)      |
+| `text-status-info` / `success` / `warning` / `error`      | Status text on the page (`--color-text-*`)        |
 | `bg-blue-subtle` / `border-blue-ring` / `text-blue-vivid` | Hue palette (×10 hues)                            |
 | `rounded-sm` / `rounded-md` / `rounded-lg`                | `--radius-inner` / `element` / `container`        |
 | `shadow-sm` / `shadow-md` / `shadow-lg`                   | `--shadow-low` / `med` / `high`                   |

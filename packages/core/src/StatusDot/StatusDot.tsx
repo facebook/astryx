@@ -43,6 +43,15 @@ const DOT_SIZE = 8;
  */
 const styles = stylex.create({
   base: {
+    // Forced colors replace status fills with Canvas; this boundary keeps the
+    // fill's shape visible (architecture:theme-tokens INV11).
+    outlineWidth: {default: null, '@media (forced-colors: active)': '1px'},
+    outlineStyle: {default: null, '@media (forced-colors: active)': 'solid'},
+    outlineColor: {
+      default: null,
+      '@media (forced-colors: active)': 'CanvasText',
+    },
+    outlineOffset: {default: null, '@media (forced-colors: active)': '-1px'},
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -87,19 +96,19 @@ const styles = stylex.create({
  */
 const variants = stylex.create({
   success: {
-    backgroundColor: colorVars['--color-success'],
+    backgroundColor: colorVars['--color-success-emphasized'],
     color: colorVars['--color-on-success'],
   },
   warning: {
-    backgroundColor: colorVars['--color-warning'],
+    backgroundColor: colorVars['--color-warning-emphasized'],
     color: colorVars['--color-on-warning'],
   },
   error: {
-    backgroundColor: colorVars['--color-error'],
+    backgroundColor: colorVars['--color-error-emphasized'],
     color: colorVars['--color-on-error'],
   },
   accent: {
-    backgroundColor: colorVars['--color-info'],
+    backgroundColor: colorVars['--color-info-emphasized'],
     color: colorVars['--color-on-info'],
   },
   neutral: {

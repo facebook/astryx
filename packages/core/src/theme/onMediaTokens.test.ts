@@ -146,7 +146,7 @@ describe('generateOnMediaCSS', () => {
     expect(css).toContain('[data-astryx-media="dark"]');
     expect(css).toContain('color-scheme: dark');
     expect(css).toContain('var(--color-on-dark)');
-    expect(css).not.toContain('--color-info: var(--color-accent);');
+    expect(css).not.toContain('--color-info-emphasized: var(--color-accent);');
   });
 
   it('emits light media rules', () => {
@@ -161,20 +161,22 @@ describe('generateOnMediaCSS', () => {
       name: 'status-role-media',
       tokens: {
         '--color-accent': '#0074E2',
-        '--color-info': '#6D9CFE',
+        '--color-info-emphasized': '#6D9CFE',
       },
       onDark: {tokens: {'--color-accent': '#FFFFFF'}},
     });
     const concreteCss = generateOnMediaCSS(concrete);
 
     expect(concreteCss).toContain('--color-accent: #FFFFFF;');
-    expect(concreteCss).not.toContain('--color-info: var(--color-accent);');
+    expect(concreteCss).not.toContain(
+      '--color-info-emphasized: var(--color-accent);',
+    );
 
     const canonical = defineTheme({
       name: 'status-role-media-alias',
       tokens: {
         '--color-accent': '#0074E2',
-        '--color-info': 'var(--color-accent)',
+        '--color-info-emphasized': 'var(--color-accent)',
       },
       onDark: {
         tokens: {
@@ -186,7 +188,9 @@ describe('generateOnMediaCSS', () => {
     const canonicalCss = generateOnMediaCSS(canonical);
 
     expect(canonicalCss).toContain('--color-accent: #FFFFFF;');
-    expect(canonicalCss).toContain('--color-info: var(--color-accent);');
+    expect(canonicalCss).toContain(
+      '--color-info-emphasized: var(--color-accent);',
+    );
   });
 
   it.each([
@@ -199,7 +203,7 @@ describe('generateOnMediaCSS', () => {
       name: 'status-role-media-equivalent-alias',
       tokens: {
         '--color-accent': '#0074E2',
-        '--color-info': info,
+        '--color-info-emphasized': info,
       },
       onDark: {
         tokens: {
@@ -210,7 +214,7 @@ describe('generateOnMediaCSS', () => {
     });
 
     expect(generateOnMediaCSS(theme)).toContain(
-      '--color-info: var(--color-accent);',
+      '--color-info-emphasized: var(--color-accent);',
     );
   });
 
@@ -221,7 +225,7 @@ describe('generateOnMediaCSS', () => {
         rules: [
           {
             when: {contrast: 'more'},
-            value: {tokens: {'--color-info': '#123456'}},
+            value: {tokens: {'--color-info-emphasized': '#123456'}},
           },
         ],
       },
@@ -235,10 +239,12 @@ describe('generateOnMediaCSS', () => {
     const css = generateOnMediaCSS(theme);
 
     expect(css).toContain('--color-accent: #FFFFFF;');
-    expect(css).toContain('--color-info: var(--color-accent);');
-    expect(css).toContain('--color-info: inherit;');
-    expect(css.lastIndexOf('--color-info: inherit;')).toBeGreaterThan(
-      css.lastIndexOf('--color-info: var(--color-accent);'),
+    expect(css).toContain('--color-info-emphasized: var(--color-accent);');
+    expect(css).toContain('--color-info-emphasized: inherit;');
+    expect(
+      css.lastIndexOf('--color-info-emphasized: inherit;'),
+    ).toBeGreaterThan(
+      css.lastIndexOf('--color-info-emphasized: var(--color-accent);'),
     );
   });
 
@@ -250,7 +256,9 @@ describe('generateOnMediaCSS', () => {
         rules: [
           {
             when: {contrast: 'more'},
-            value: {tokens: {'--color-info': 'var(--color-text-purple)'}},
+            value: {
+              tokens: {'--color-info-emphasized': 'var(--color-text-purple)'},
+            },
           },
         ],
       },
@@ -264,8 +272,10 @@ describe('generateOnMediaCSS', () => {
     });
     const css = generateOnMediaCSS(theme);
 
-    expect(css).toContain('--color-info: inherit;');
-    expect(css).not.toContain('--color-info: var(--color-text-purple);');
+    expect(css).toContain('--color-info-emphasized: inherit;');
+    expect(css).not.toContain(
+      '--color-info-emphasized: var(--color-text-purple);',
+    );
   });
 
   it('avoids a descendant-local cycle while replaying an adaptation role', () => {
@@ -276,12 +286,12 @@ describe('generateOnMediaCSS', () => {
           {
             when: {contrast: 'more'},
             value: {
-              tokens: {'--color-info': 'var(--color-text-blue)'},
+              tokens: {'--color-info-emphasized': 'var(--color-text-blue)'},
             },
           },
         ],
       },
-      onDark: {tokens: {'--color-text-blue': 'var(--color-info)'}},
+      onDark: {tokens: {'--color-text-blue': 'var(--color-info-emphasized)'}},
     });
     const css = generateOnMediaCSS(theme);
     const darkBlocks = Array.from(
@@ -291,8 +301,12 @@ describe('generateOnMediaCSS', () => {
 
     expect(darkBlocks.length).toBeGreaterThan(0);
     for (const block of darkBlocks) {
-      expect(block).not.toContain('--color-info: var(--color-accent);');
-      expect(block).not.toContain('--color-info: var(--color-text-blue);');
+      expect(block).not.toContain(
+        '--color-info-emphasized: var(--color-accent);',
+      );
+      expect(block).not.toContain(
+        '--color-info-emphasized: var(--color-text-blue);',
+      );
     }
   });
 
@@ -305,7 +319,7 @@ describe('generateOnMediaCSS', () => {
             when: {contrast: 'more'},
             value: {
               tokens: {
-                '--color-info': 'var(--color-on-info-muted)',
+                '--color-info-emphasized': 'var(--color-on-info-muted)',
                 '--color-on-info-muted': 'var(--color-text-green)',
               },
             },
@@ -315,7 +329,7 @@ describe('generateOnMediaCSS', () => {
       onDark: {
         tokens: {
           '--color-text-blue': '#ffffff',
-          '--color-text-green': 'var(--color-info)',
+          '--color-text-green': 'var(--color-info-emphasized)',
         },
       },
     });

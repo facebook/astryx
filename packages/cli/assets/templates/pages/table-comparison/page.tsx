@@ -970,18 +970,18 @@ function uptimeStatus(value: number): {
 } {
   if (value >= 99.95) {
     return {
-      color: colorVars['--color-status-foreground-success'],
+      color: colorVars['--color-text-success'],
       status: 'Operational',
     };
   }
   if (value >= 99) {
     return {
-      color: colorVars['--color-status-foreground-warning'],
+      color: colorVars['--color-text-warning'],
       status: 'Degraded',
     };
   }
   return {
-    color: colorVars['--color-status-foreground-error'],
+    color: colorVars['--color-text-error'],
     status: 'Outage',
   };
 }

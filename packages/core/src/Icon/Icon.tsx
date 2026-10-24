@@ -74,16 +74,16 @@ const colorStyles = stylex.create({
     color: colorVars['--color-accent'],
   },
   info: {
-    color: colorVars['--color-status-foreground-info'],
+    color: colorVars['--color-icon-info'],
   },
   success: {
-    color: colorVars['--color-status-foreground-success'],
+    color: colorVars['--color-icon-success'],
   },
   error: {
-    color: colorVars['--color-status-foreground-error'],
+    color: colorVars['--color-icon-error'],
   },
   warning: {
-    color: colorVars['--color-status-foreground-warning'],
+    color: colorVars['--color-icon-warning'],
   },
   inherit: {
     color: 'inherit',

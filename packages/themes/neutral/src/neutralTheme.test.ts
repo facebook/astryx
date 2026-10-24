@@ -74,7 +74,8 @@ describe('neutral theme palette mappings', () => {
         neutralPalettes.neutral.light[10],
         neutralPalettes.neutral.dark[95],
       ),
-      '--color-info': 'var(--astryx-theme-neutral-color-status-fill-accent)',
+      '--color-info-emphasized':
+        'var(--astryx-theme-neutral-color-status-fill-accent)',
       '--color-info-muted': lightDark(
         neutralPalettes.blue.light[85],
         `${neutralPalettes.blue.dark[75]}3D`,
@@ -83,31 +84,38 @@ describe('neutral theme palette mappings', () => {
         neutralPalettes.neutral.light[100],
         neutralPalettes.neutral.dark[5],
       ),
+      // Released base tokens keep their values; strong fills are -emphasized.
       '--color-success': lightDark(
-        neutralPalettes.green.light[45],
-        neutralPalettes.green.dark[65],
+        neutralPalettes.green.light[25],
+        neutralPalettes.green.light[80],
       ),
       '--color-warning': lightDark(
+        neutralPalettes.yellow.light[25],
         neutralPalettes.yellow.light[85],
-        neutralPalettes.yellow.dark[85],
       ),
       '--color-error': lightDark(
-        neutralPalettes.red.light[50],
-        neutralPalettes.red.dark[65],
+        neutralPalettes.red.light[25],
+        neutralPalettes.red.dark[85],
       ),
-      '--color-status-foreground-info': lightDark(
+      '--color-success-emphasized':
+        'var(--astryx-theme-neutral-color-status-fill-success)',
+      '--color-warning-emphasized':
+        'var(--astryx-theme-neutral-color-status-fill-warning)',
+      '--color-error-emphasized':
+        'var(--astryx-theme-neutral-color-status-fill-error)',
+      '--color-text-info': lightDark(
         neutralPalettes.blue.light[45],
         neutralPalettes.blue.dark[80],
       ),
-      '--color-status-foreground-success': lightDark(
+      '--color-text-success': lightDark(
         neutralPalettes.green.light[45],
         neutralPalettes.green.light[75],
       ),
-      '--color-status-foreground-warning': lightDark(
+      '--color-text-warning': lightDark(
         neutralPalettes.yellow.light[45],
         neutralPalettes.yellow.light[80],
       ),
-      '--color-status-foreground-error': lightDark(
+      '--color-text-error': lightDark(
         neutralPalettes.red.light[45],
         neutralPalettes.red.dark[80],
       ),
@@ -328,19 +336,19 @@ describe('neutral syntax contrast', () => {
 describe('neutral semantic status roles', () => {
   it('keeps public plain-surface and on-muted roles on reviewed palette stops', () => {
     expect(neutralTheme.tokens).toMatchObject({
-      '--color-status-foreground-info': lightDark(
+      '--color-text-info': lightDark(
         neutralPalettes.blue.light[45],
         neutralPalettes.blue.dark[80],
       ),
-      '--color-status-foreground-success': lightDark(
+      '--color-text-success': lightDark(
         neutralPalettes.green.light[45],
         neutralPalettes.green.light[75],
       ),
-      '--color-status-foreground-warning': lightDark(
+      '--color-text-warning': lightDark(
         neutralPalettes.yellow.light[45],
         neutralPalettes.yellow.light[80],
       ),
-      '--color-status-foreground-error': lightDark(
+      '--color-text-error': lightDark(
         neutralPalettes.red.light[45],
         neutralPalettes.red.dark[80],
       ),
@@ -399,19 +407,27 @@ describe('neutral semantic status roles', () => {
 
   it('uses public semantic roles on plain and pale surfaces while preserving fill roles', () => {
     expect(neutralTheme.tokens).toMatchObject({
-      '--color-info': 'var(--astryx-theme-neutral-color-status-fill-accent)',
+      '--color-info-emphasized':
+        'var(--astryx-theme-neutral-color-status-fill-accent)',
+      // Released base tokens keep their values; strong fills are -emphasized.
       '--color-success': lightDark(
-        neutralPalettes.green.light[45],
-        neutralPalettes.green.dark[65],
+        neutralPalettes.green.light[25],
+        neutralPalettes.green.light[80],
       ),
       '--color-warning': lightDark(
+        neutralPalettes.yellow.light[25],
         neutralPalettes.yellow.light[85],
-        neutralPalettes.yellow.dark[85],
       ),
       '--color-error': lightDark(
-        neutralPalettes.red.light[50],
-        neutralPalettes.red.dark[65],
+        neutralPalettes.red.light[25],
+        neutralPalettes.red.dark[85],
       ),
+      '--color-success-emphasized':
+        'var(--astryx-theme-neutral-color-status-fill-success)',
+      '--color-warning-emphasized':
+        'var(--astryx-theme-neutral-color-status-fill-warning)',
+      '--color-error-emphasized':
+        'var(--astryx-theme-neutral-color-status-fill-error)',
     });
     expect(neutralTheme.components).not.toHaveProperty('icon');
     expect(neutralTheme.components).not.toHaveProperty('text-input');

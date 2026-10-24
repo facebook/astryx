@@ -20,6 +20,7 @@ import {Banner, type BannerStatus} from './Banner';
 import {defineTheme, generateThemeCSS} from '../theme';
 import {registerIcons, resetIcons} from '../Icon';
 import {InternationalizationProvider} from '../i18n';
+import {getForcedColorsRules} from '../__tests__/forcedColors';
 
 describe('Banner', () => {
   afterEach(() => {
@@ -843,5 +844,17 @@ describe('Banner', () => {
       });
       expect(button).toHaveAccessibleDescription('Schließen');
     });
+  });
+});
+
+// jsdom cannot emulate forced colors, so this asserts the compiled rule the
+// status fill relies on (architecture:theme-tokens INV11): the fill becomes
+// Canvas, and a CanvasText boundary keeps its shape.
+describe('Banner forced colors', () => {
+  it('keeps a visible boundary on the status fill', () => {
+    render(<Banner status="error" title="Upload failed" />);
+    const css = getForcedColorsRules();
+    expect(css).toContain('outline-style: solid;');
+    expect(css).toContain('outline-color: canvastext;');
   });
 });

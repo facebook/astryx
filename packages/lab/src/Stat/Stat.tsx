@@ -116,10 +116,10 @@ const sizeStyles = stylex.create({
  */
 const sentimentStyles = stylex.create({
   positive: {
-    color: colorVars['--color-status-foreground-success'],
+    color: colorVars['--color-text-success'],
   },
   negative: {
-    color: colorVars['--color-status-foreground-error'],
+    color: colorVars['--color-text-error'],
   },
   neutral: {
     color: colorVars['--color-text-secondary'],

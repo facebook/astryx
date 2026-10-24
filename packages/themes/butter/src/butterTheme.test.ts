@@ -59,7 +59,7 @@ describe('butter touch + narrow type pin', () => {
 });
 
 describe('butter input status roles', () => {
-  it('keeps bright per-input status rims on the foreground roles', () => {
+  it('keeps bright per-input status rims and glyphs on the border and icon roles', () => {
     const inputs = [
       'text-input',
       'text-area',
@@ -76,13 +76,16 @@ describe('butter input status roles', () => {
     for (const input of inputs) {
       const component = butterTheme.components![input];
       expect(component['status:success']).toMatchObject({
-        '--color-status-foreground-success': green.light[70],
+        '--color-border-success': `light-dark(${green.light[55]}, ${green.light[70]})`,
+        '--color-icon-success': `light-dark(${green.light[55]}, ${green.light[70]})`,
       });
       expect(component['status:warning']).toMatchObject({
-        '--color-status-foreground-warning': yellow.light[80],
+        '--color-border-warning': `light-dark(${yellow.light[55]}, ${yellow.light[80]})`,
+        '--color-icon-warning': `light-dark(${yellow.light[55]}, ${yellow.light[80]})`,
       });
       expect(component['status:error']).toMatchObject({
-        '--color-status-foreground-error': red.light[60],
+        '--color-border-error': red.light[60],
+        '--color-icon-error': red.light[60],
       });
     }
   });

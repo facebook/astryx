@@ -25,13 +25,13 @@ describe('defineTheme', () => {
     const theme = defineTheme({
       name: 'custom',
       tokens: {
-        '--color-accent': '#FF0000',
+        '--color-accent': '#CC0000',
       },
     });
-    expect(theme.tokens['--color-accent']).toBe('#FF0000');
-    expect(theme.tokens['--color-info']).toBeUndefined();
+    expect(theme.tokens['--color-accent']).toBe('#CC0000');
+    expect(theme.tokens['--color-info-emphasized']).toBeUndefined();
     expect(generateThemeTestCSS(theme)).toContain(
-      '--color-info: var(--color-accent);',
+      '--color-info-emphasized: var(--color-accent);',
     );
     // Unrelated defaults remain owned by StyleX rather than copied into every
     // theme scope.
@@ -43,47 +43,45 @@ describe('defineTheme', () => {
       name: 'custom-info',
       tokens: {
         '--color-accent': '#FF0000',
-        '--color-info': '#0066CC',
+        '--color-info-emphasized': '#0066CC',
       },
     });
 
-    expect(theme.tokens['--color-info']).toBe('#0066CC');
+    expect(theme.tokens['--color-info-emphasized']).toBe('#0066CC');
   });
 
   it('does not generate a status alias that would create a token cycle', () => {
     const theme = defineTheme({
       name: 'parent-role-reference',
-      tokens: {'--color-accent': 'var(--color-info)'},
+      tokens: {'--color-accent': 'var(--color-info-emphasized)'},
     });
     const css = generateThemeRules(theme).join('\n');
 
-    expect(css).toContain('--color-accent: var(--color-info);');
-    expect(css).not.toContain('--color-info: var(--color-accent);');
+    expect(css).toContain('--color-accent: var(--color-info-emphasized);');
+    expect(css).not.toContain('--color-info-emphasized: var(--color-accent);');
   });
 
   it('checks the complete generated alias graph for cycles', () => {
     const theme = defineTheme({
       name: 'generated-role-cycle',
       tokens: {
-        '--color-accent': 'var(--color-status-foreground-info)',
-        '--color-text-blue': 'var(--color-info)',
+        '--color-accent': 'var(--color-text-info)',
+        '--color-text-blue': 'var(--color-info-emphasized)',
       },
     });
     const css = generateThemeRules(theme).join('\n');
 
-    expect(css).toContain('--color-info: var(--color-accent);');
-    expect(css).not.toContain(
-      '--color-status-foreground-info: var(--color-text-blue);',
-    );
+    expect(css).toContain('--color-info-emphasized: var(--color-accent);');
+    expect(css).not.toContain('--color-text-info: var(--color-text-blue);');
   });
 
   it('includes theme-local references in generated alias cycle checks', () => {
     const css = generateThemeRules({
       tokens: {'--color-accent': 'var(--local-info-loop)'},
-      localTokens: {'--local-info-loop': 'var(--color-info)'},
+      localTokens: {'--local-info-loop': 'var(--color-info-emphasized)'},
     }).join('\n');
 
-    expect(css).not.toContain('--color-info: var(--color-accent);');
+    expect(css).not.toContain('--color-info-emphasized: var(--color-accent);');
   });
 
   it.each([null, 16, false])(
@@ -114,13 +112,25 @@ describe('defineTheme', () => {
   });
 
   it.each([
-    ['uppercase VAR()', 'VAR(--color-info)', undefined],
-    ['mixed-case var()', 'vAr(--color-info)', undefined],
-    ['escaped identifier', 'var(--\\63 olor-info)', undefined],
-    ['escaped function name', 'v\\61r(--color-info)', undefined],
-    ['escaped leading hyphens', 'var(\\2d\\2d color-info)', undefined],
-    ['comment-separated identifier', 'var(/*ok*/ --color-info)', undefined],
-    ['non-ASCII local token', 'var(--品牌)', {'--品牌': 'var(--color-info)'}],
+    ['uppercase VAR()', 'VAR(--color-info-emphasized)', undefined],
+    ['mixed-case var()', 'vAr(--color-info-emphasized)', undefined],
+    ['escaped identifier', 'var(--\\63 olor-info-emphasized)', undefined],
+    ['escaped function name', 'v\\61r(--color-info-emphasized)', undefined],
+    [
+      'escaped leading hyphens',
+      'var(\\2d\\2d color-info-emphasized)',
+      undefined,
+    ],
+    [
+      'comment-separated identifier',
+      'var(/*ok*/ --color-info-emphasized)',
+      undefined,
+    ],
+    [
+      'non-ASCII local token',
+      'var(--品牌)',
+      {'--品牌': 'var(--color-info-emphasized)'},
+    ],
   ])(
     'recognizes %s while checking generated alias cycles',
     (_, accent, localTokens) => {
@@ -129,25 +139,27 @@ describe('defineTheme', () => {
         localTokens,
       }).join('\n');
 
-      expect(css).not.toContain('--color-info: var(--color-accent);');
+      expect(css).not.toContain(
+        '--color-info-emphasized: var(--color-accent);',
+      );
     },
   );
 
   it('canonicalizes escaped declaration keys while checking cycles', () => {
     const css = generateThemeRules({
       tokens: {'--color-accent': 'var(--\\62 rand)'},
-      localTokens: {'--\\62 rand': 'var(--color-info)'},
+      localTokens: {'--\\62 rand': 'var(--color-info-emphasized)'},
     }).join('\n');
 
-    expect(css).not.toContain('--color-info: var(--color-accent);');
+    expect(css).not.toContain('--color-info-emphasized: var(--color-accent);');
   });
 
   it('ignores var() text inside CSS comments', () => {
     const css = generateThemeRules({
-      tokens: {'--color-accent': '#123456 /* var(--color-info) */'},
+      tokens: {'--color-accent': '#123456 /* var(--color-info-emphasized) */'},
     }).join('\n');
 
-    expect(css).toContain('--color-info: var(--color-accent);');
+    expect(css).toContain('--color-info-emphasized: var(--color-accent);');
   });
 
   it.each([
@@ -156,39 +168,47 @@ describe('defineTheme', () => {
   ])('canonicalizes an %s declaration key exactly once', (_, localToken) => {
     const css = generateThemeRules({
       tokens: {'--color-accent': `var(${localToken})`},
-      localTokens: {[localToken]: 'var(--color-info)'},
+      localTokens: {[localToken]: 'var(--color-info-emphasized)'},
     }).join('\n');
 
-    expect(css).not.toContain('--color-info: var(--color-accent);');
+    expect(css).not.toContain('--color-info-emphasized: var(--color-accent);');
   });
 
   it.each([
-    ['CRLF-preprocessed escape', 'v\\61\r\nr(--color-info)', undefined],
-    ['surrogate escape', 'var(--\\d800)', {'--�': 'var(--color-info)'}],
-    ['NUL replacement', 'var(--\0)', {'--�': 'var(--color-info)'}],
+    [
+      'CRLF-preprocessed escape',
+      'v\\61\r\nr(--color-info-emphasized)',
+      undefined,
+    ],
+    [
+      'surrogate escape',
+      'var(--\\d800)',
+      {'--�': 'var(--color-info-emphasized)'},
+    ],
+    ['NUL replacement', 'var(--\0)', {'--�': 'var(--color-info-emphasized)'}],
   ])('uses browser preprocessing for %s', (_, accent, localTokens) => {
     const css = generateThemeRules({
       tokens: {'--color-accent': accent},
       localTokens,
     }).join('\n');
 
-    expect(css).not.toContain('--color-info: var(--color-accent);');
+    expect(css).not.toContain('--color-info-emphasized: var(--color-accent);');
   });
 
-  it.each(['var (--color-info)', 'var/**/(--color-info)'])(
-    'does not treat non-function text as a reference: %s',
-    accent => {
-      const css = generateThemeRules({tokens: {'--color-accent': accent}}).join(
-        '\n',
-      );
-      expect(css).toContain('--color-info: var(--color-accent);');
-    },
-  );
+  it.each([
+    'var (--color-info-emphasized)',
+    'var/**/(--color-info-emphasized)',
+  ])('does not treat non-function text as a reference: %s', accent => {
+    const css = generateThemeRules({tokens: {'--color-accent': accent}}).join(
+      '\n',
+    );
+    expect(css).toContain('--color-info-emphasized: var(--color-accent);');
+  });
 
   it.each([
-    'var(--color-text-red, #var(--color-info))',
-    '1var(--color-info)',
-    '@var(--color-info)',
+    'var(--color-text-red, #var(--color-info-emphasized))',
+    '1var(--color-info-emphasized)',
+    '@var(--color-info-emphasized)',
   ])(
     'does not create references inside non-function CSS tokens: %s',
     accent => {
@@ -199,18 +219,18 @@ describe('defineTheme', () => {
         },
       }).join('\n');
 
-      expect(css).toContain('--color-info: var(--color-accent);');
+      expect(css).toContain('--color-info-emphasized: var(--color-accent);');
     },
   );
 
   it('does not let unquoted URL contents hide a following var() reference', () => {
     const css = generateThemeRules({
       tokens: {
-        '--color-accent': 'url(/*) var(--color-info) /* */',
+        '--color-accent': 'url(/*) var(--color-info-emphasized) /* */',
       },
     }).join('\n');
 
-    expect(css).not.toContain('--color-info: var(--color-accent);');
+    expect(css).not.toContain('--color-info-emphasized: var(--color-accent);');
   });
 
   it('ignores pre-existing unrelated legacy cycles', () => {
@@ -222,7 +242,7 @@ describe('defineTheme', () => {
       },
     }).join('\n');
 
-    expect(css).toContain('--color-info: var(--color-accent);');
+    expect(css).toContain('--color-info-emphasized: var(--color-accent);');
   });
 
   it('handles long runs of adjacent comments without recursion', () => {
@@ -279,22 +299,43 @@ describe('defineTheme', () => {
     });
     const css = generateThemeTestCSS(theme);
 
-    expect(theme.tokens['--color-info']).toBeUndefined();
+    expect(theme.tokens['--color-info-emphasized']).toBeUndefined();
     for (const declaration of [
-      '--color-info: var(--color-accent);',
-      '--color-info-muted: var(--color-accent-muted);',
       '--color-on-info: var(--color-on-accent);',
-      '--color-status-foreground-info: var(--color-text-blue);',
-      '--color-status-foreground-success: var(--color-text-green);',
-      '--color-status-foreground-warning: var(--color-text-yellow);',
-      '--color-status-foreground-error: var(--color-text-red);',
-      '--color-on-info-muted: var(--color-text-blue);',
+      '--color-text-success: var(--color-text-green);',
+      '--color-text-warning: var(--color-text-yellow);',
+      '--color-text-error: var(--color-text-red);',
       '--color-on-success-muted: var(--color-text-green);',
       '--color-on-warning-muted: var(--color-text-yellow);',
       '--color-on-error-muted: var(--color-text-red);',
     ]) {
       expect(css).toContain(declaration);
     }
+    // INV17: an Info source that is not a hue (this accent is near-black)
+    // derives concrete Info roles from the blue hue instead of aliasing it.
+    for (const role of [
+      '--color-info-emphasized',
+      '--color-info-muted',
+      '--color-text-info',
+      '--color-on-info-muted',
+    ]) {
+      expect(css).toMatch(new RegExp(`${role}: light-dark\\(#`));
+    }
+    for (const role of ['icon', 'border']) {
+      expect(css).toContain(`--color-${role}-info: var(--color-text-info);`);
+    }
+  });
+
+  it('derives a strong fill that carries its content when the source does not (INV17)', () => {
+    const theme = defineTheme({
+      name: 'bright-accent',
+      tokens: {'--color-accent': '#FF0000'},
+    });
+    const css = generateThemeTestCSS(theme);
+    expect(css).not.toContain('--color-info-emphasized: var(--color-accent);');
+    expect(css).toMatch(
+      /--color-info-emphasized: light-dark\(#[0-9A-F]{6}, #[0-9A-F]{6}\)/,
+    );
   });
 
   it('converts [light, dark] tuples to light-dark()', () => {
@@ -732,10 +773,10 @@ describe('typography.scale', () => {
       name: 'combo',
       typography: {scale: {base: 16, ratio: 1.25}},
       tokens: {
-        '--color-accent': '#FF0000',
+        '--color-accent': '#CC0000',
       },
     });
-    expect(theme.tokens['--color-accent']).toBe('#FF0000');
+    expect(theme.tokens['--color-accent']).toBe('#CC0000');
     expect(theme.tokens['--text-heading-4-size']).toBe('var(--font-size-base)');
     expect(theme.tokens['--font-size-base']).toBe('1rem');
   });
@@ -872,10 +913,10 @@ describe('radius', () => {
       typography: {scale: {base: 16, ratio: 1.25}},
       radius: {base: 4, multiplier: 1},
       tokens: {
-        '--color-accent': '#FF0000',
+        '--color-accent': '#CC0000',
       },
     });
-    expect(theme.tokens['--color-accent']).toBe('#FF0000');
+    expect(theme.tokens['--color-accent']).toBe('#CC0000');
     expect(theme.tokens['--text-heading-4-size']).toBe('var(--font-size-base)');
     expect(theme.tokens['--radius-element']).toBe('8px');
   });

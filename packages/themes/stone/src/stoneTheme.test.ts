@@ -61,7 +61,7 @@ describe('stone touch + narrow type pin', () => {
 });
 
 describe('stone input status roles', () => {
-  it('keeps soft per-input status rims on the foreground roles', () => {
+  it('keeps soft per-input status rims and glyphs on the border and icon roles', () => {
     const inputs = [
       'text-input',
       'text-area',
@@ -78,13 +78,16 @@ describe('stone input status roles', () => {
     for (const input of inputs) {
       const component = stoneTheme.components![input];
       expect(component['status:success']).toMatchObject({
-        '--color-status-foreground-success': `light-dark(${green.light[55]}, ${green.dark[70]})`,
+        '--color-border-success': `light-dark(${green.light[55]}, ${green.dark[70]})`,
+        '--color-icon-success': `light-dark(${green.light[55]}, ${green.dark[70]})`,
       });
       expect(component['status:warning']).toMatchObject({
-        '--color-status-foreground-warning': `light-dark(${yellow.light[55]}, ${yellow.dark[70]})`,
+        '--color-border-warning': `light-dark(${yellow.light[55]}, ${yellow.dark[70]})`,
+        '--color-icon-warning': `light-dark(${yellow.light[55]}, ${yellow.dark[70]})`,
       });
       expect(component['status:error']).toMatchObject({
-        '--color-status-foreground-error': `light-dark(${red.light[60]}, ${red.dark[70]})`,
+        '--color-border-error': `light-dark(${red.light[60]}, ${red.dark[70]})`,
+        '--color-icon-error': `light-dark(${red.light[60]}, ${red.dark[70]})`,
       });
     }
   });
@@ -200,10 +203,12 @@ describe('stone palette mapping', () => {
     }
 
     expect(stoneTheme.components?.['text-input']?.['status:success']).toEqual({
-      '--color-status-foreground-success': `light-dark(${green.light[55]}, ${green.dark[70]})`,
+      '--color-border-success': `light-dark(${green.light[55]}, ${green.dark[70]})`,
+      '--color-icon-success': `light-dark(${green.light[55]}, ${green.dark[70]})`,
     });
     expect(stoneTheme.components?.['text-input']?.['status:warning']).toEqual({
-      '--color-status-foreground-warning': `light-dark(${yellow.light[55]}, ${yellow.dark[70]})`,
+      '--color-border-warning': `light-dark(${yellow.light[55]}, ${yellow.dark[70]})`,
+      '--color-icon-warning': `light-dark(${yellow.light[55]}, ${yellow.dark[70]})`,
     });
   });
 });

@@ -351,10 +351,10 @@ const chevronTheme = defineTheme({
   components: {
     'tree-list-chevron': {
       base: {
-        color: 'var(--color-status-foreground-info)',
+        color: 'var(--color-text-info)',
       },
       'state:expanded': {
-        color: 'var(--color-status-foreground-success)',
+        color: 'var(--color-text-success)',
       },
     },
   },

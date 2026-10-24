@@ -235,10 +235,10 @@ const styles = stylex.create({
   levelDebug: {color: colorVars['--color-text-disabled']},
   // Plain-surface warning/error labels use the dedicated foreground roles.
   levelWarn: {
-    color: colorVars['--color-status-foreground-warning'],
+    color: colorVars['--color-text-warning'],
   },
   levelError: {
-    color: colorVars['--color-status-foreground-error'],
+    color: colorVars['--color-text-error'],
   },
   levelInfoTerminal: {color: TERM.text},
   levelDebugTerminal: {color: TERM.textDim},

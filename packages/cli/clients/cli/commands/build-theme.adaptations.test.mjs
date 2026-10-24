@@ -112,7 +112,7 @@ describe('theme build adaptations', () => {
           {
             when: {contrast: 'more'},
             value: {
-              tokens: {'--color-status-foreground-success': '#123456'},
+              tokens: {'--color-text-success': '#123456'},
             },
           },
           {
@@ -137,14 +137,11 @@ describe('theme build adaptations', () => {
       path.join(themesDir, 'status-aliases.css'),
       'utf8',
     );
-    const infoAlias = '--color-info: var(--color-accent);';
-    const adaptationAlias =
-      '--color-status-foreground-success: var(--color-text-green);';
-    const authoredRole = '--color-status-foreground-success: #123456;';
+    const infoAlias = '--color-info-emphasized: var(--color-accent);';
+    const adaptationAlias = '--color-text-success: var(--color-text-green);';
+    const authoredRole = '--color-text-success: #123456;';
     expect(css).toContain('--color-on-info: var(--color-on-accent);');
-    expect(css).toContain(
-      '--color-status-foreground-info: var(--color-text-blue);',
-    );
+    expect(css).toContain('--color-text-info: var(--color-text-blue);');
     expect(css).toContain('--color-on-info-muted: var(--color-text-blue);');
     expect(css.split(infoAlias).length - 1).toBeGreaterThanOrEqual(2);
     expect(css).toContain(adaptationAlias);

@@ -34,6 +34,7 @@ import {
 } from './themeAdaptations';
 import {parseStyleKey} from '../utils/parseStyleKey';
 import {getDerivedVars} from './derivedVarRegistry';
+import {deriveStatusRoleTokens} from './statusRoleDerivation';
 import {cssVar, classPrefix, dataAttrNamespace} from '../naming';
 import {
   analyzeDeclarationValue,
@@ -475,17 +476,29 @@ function joinDeclarations(
 const SCOPED_STATUS_ROLE_DEFAULTS: ReadonlyArray<
   readonly [role: string, source: string]
 > = [
-  ['--color-info', '--color-accent'],
+  ['--color-info-emphasized', '--color-accent'],
+  ['--color-success-emphasized', '--color-success'],
+  ['--color-warning-emphasized', '--color-warning'],
+  ['--color-error-emphasized', '--color-error'],
   ['--color-info-muted', '--color-accent-muted'],
   ['--color-on-info', '--color-on-accent'],
-  ['--color-status-foreground-info', '--color-text-blue'],
-  ['--color-status-foreground-success', '--color-text-green'],
-  ['--color-status-foreground-warning', '--color-text-yellow'],
-  ['--color-status-foreground-error', '--color-text-red'],
+  ['--color-text-info', '--color-text-blue'],
+  ['--color-text-success', '--color-text-green'],
+  ['--color-text-warning', '--color-text-yellow'],
+  ['--color-text-error', '--color-text-red'],
   ['--color-on-info-muted', '--color-text-blue'],
   ['--color-on-success-muted', '--color-text-green'],
   ['--color-on-warning-muted', '--color-text-yellow'],
   ['--color-on-error-muted', '--color-text-red'],
+  // Icon and border roles follow the text role, set or derived (INV17).
+  ['--color-icon-info', '--color-text-info'],
+  ['--color-icon-success', '--color-text-success'],
+  ['--color-icon-warning', '--color-text-warning'],
+  ['--color-icon-error', '--color-text-error'],
+  ['--color-border-info', '--color-text-info'],
+  ['--color-border-success', '--color-text-success'],
+  ['--color-border-warning', '--color-text-warning'],
+  ['--color-border-error', '--color-text-error'],
 ];
 
 const SCOPED_STATUS_ROLE_SOURCES = new Map(SCOPED_STATUS_ROLE_DEFAULTS);
@@ -701,8 +714,18 @@ function generatedScopedStatusRoleDefaults(
   localTokens: Record<string, string> = {},
   rules: ReadonlyArray<ResolvedThemeAdaptationRule> = [],
 ): [string, string][] {
-  const entries: [string, string][] = [];
-  const authoredRoot = createTokenCascade(tokens, localTokens).values;
+  // INV17: roles a theme leaves unset while setting their status source are
+  // computed against the theme's own surfaces first; the aliases below then
+  // treat them as present, so icon and border roles follow a derived text role.
+  const entries: [string, string][] = deriveStatusRoleTokens(
+    tokens,
+    localTokens,
+  );
+  const authoredRoot = createTokenCascade(
+    tokens,
+    Object.fromEntries(entries),
+    localTokens,
+  ).values;
   const states = reachableAdaptationMatchSets(rules).map(indexes => ({
     indexes,
     values: effectiveAdaptationTokenValues(
@@ -868,7 +891,7 @@ function generatedMediaStatusRoleDefaults(
     if (
       authoredMedia[role] !== undefined ||
       authoredMedia[source] === undefined ||
-      (role === '--color-info' &&
+      (role === '--color-info-emphasized' &&
         source === '--color-accent' &&
         authoredMedia['--color-on-accent'] === undefined) ||
       (rootRole !== undefined && !tokenValueIsAliasOf(rootRole, source))

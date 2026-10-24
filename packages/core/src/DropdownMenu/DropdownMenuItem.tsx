@@ -92,9 +92,9 @@ const menuItemStyles = stylex.create({
     // neutral overlay from `root` so the hover state matches every other menu
     // item. The semantic status foreground covers the label, description, icon,
     // and any bare text on a plain surface.
-    color: colorVars['--color-status-foreground-error'],
-    '--_item-label-color': colorVars['--color-status-foreground-error'],
-    '--_item-description-color': colorVars['--color-status-foreground-error'],
+    color: colorVars['--color-text-error'],
+    '--_item-label-color': colorVars['--color-text-error'],
+    '--_item-description-color': colorVars['--color-text-error'],
   },
 });
 

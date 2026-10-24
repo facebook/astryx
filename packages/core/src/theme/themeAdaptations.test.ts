@@ -271,7 +271,7 @@ describe('rule order and writes', () => {
         rules: [
           {
             when: {contrast: 'more'},
-            value: {tokens: {'--color-info': '#123456'}},
+            value: {tokens: {'--color-info-emphasized': '#123456'}},
           },
           {
             when: {pointer: 'coarse'},
@@ -286,10 +286,14 @@ describe('rule order and writes', () => {
 
     // The root alias follows source-only adaptation writes through var(), but
     // no media alias is generated from the unpaired default accent collapse.
-    expect(count(component, '--color-info: var(--color-accent);')).toBe(1);
-    expect(component).toContain('--color-info: #123456;');
+    expect(
+      count(component, '--color-info-emphasized: var(--color-accent);'),
+    ).toBe(1);
+    expect(component).toContain('--color-info-emphasized: #123456;');
     expect(adaptationCss).toContain('--color-accent: #abcdef;');
-    expect(adaptationCss).not.toContain('--color-info: var(--color-accent);');
+    expect(adaptationCss).not.toContain(
+      '--color-info-emphasized: var(--color-accent);',
+    );
   });
 
   it('replays authored status roles after overlapping adaptation and media aliases', () => {
@@ -299,7 +303,7 @@ describe('rule order and writes', () => {
         rules: [
           {
             when: {contrast: 'more'},
-            value: {tokens: {'--color-info': '#123456'}},
+            value: {tokens: {'--color-info-emphasized': '#123456'}},
           },
           {
             when: {pointer: 'coarse'},
@@ -310,8 +314,8 @@ describe('rule order and writes', () => {
       onDark: {tokens: {'--color-accent': '#ffffff'}},
     });
     const css = generateThemeCSS(theme).component;
-    const alias = '--color-info: var(--color-accent);';
-    const authored = '--color-info: #123456;';
+    const alias = '--color-info-emphasized: var(--color-accent);';
+    const authored = '--color-info-emphasized: #123456;';
 
     // The adaptation-only source keeps its alias where that condition matches.
     // Default media accent collapses are intentionally not propagated without
@@ -330,7 +334,7 @@ describe('rule order and writes', () => {
         rules: [
           {
             when: {contrast: 'more'},
-            value: {tokens: {'--color-accent': 'var(--color-info)'}},
+            value: {tokens: {'--color-accent': 'var(--color-info-emphasized)'}},
           },
         ],
       },
@@ -338,8 +342,10 @@ describe('rule order and writes', () => {
     const rootCss = generateThemeRules(theme).join('\n');
     const fullCss = generateThemeCSS(theme).component;
 
-    expect(fullCss).toContain('--color-accent: var(--color-info);');
-    expect(rootCss).not.toContain('--color-info: var(--color-accent);');
+    expect(fullCss).toContain('--color-accent: var(--color-info-emphasized);');
+    expect(rootCss).not.toContain(
+      '--color-info-emphasized: var(--color-accent);',
+    );
   });
 
   it('checks generated aliases across overlapping adaptation rules', () => {
@@ -351,29 +357,29 @@ describe('rule order and writes', () => {
             when: {contrast: 'more'},
             value: {
               tokens: {
-                '--color-accent': 'var(--color-status-foreground-info)',
+                '--color-accent': 'var(--color-text-info)',
               },
             },
           },
           {
             when: {pointer: 'coarse'},
-            value: {tokens: {'--color-text-blue': 'var(--color-info)'}},
+            value: {
+              tokens: {'--color-text-blue': 'var(--color-info-emphasized)'},
+            },
           },
         ],
       },
     });
     const css = generateAdaptationCSS(theme).component;
 
-    expect(css).toContain('--color-info: var(--color-accent);');
-    expect(css).not.toContain(
-      '--color-status-foreground-info: var(--color-text-blue);',
-    );
+    expect(css).toContain('--color-info-emphasized: var(--color-accent);');
+    expect(css).not.toContain('--color-text-info: var(--color-text-blue);');
   });
 
   it('keeps aliases across mutually exclusive adaptation conditions', () => {
     const theme = defineTheme({
       name: 'mutually-exclusive-status-references',
-      tokens: {'--color-accent': '#0099ff'},
+      tokens: {'--color-accent': '#0066cc'},
       adaptations: {
         rules: [
           {
@@ -384,26 +390,28 @@ describe('rule order and writes', () => {
           },
           {
             when: {pointer: 'fine'},
-            value: {tokens: {'--color-text-blue': 'var(--color-info)'}},
+            value: {
+              tokens: {'--color-text-blue': 'var(--color-info-emphasized)'},
+            },
           },
         ],
       },
     });
 
     expect(generateThemeCSS(theme).component).toContain(
-      '--color-info: var(--color-accent);',
+      '--color-info-emphasized: var(--color-accent);',
     );
   });
 
   it('keeps an alias when a later matching rule repairs the cycle', () => {
     const theme = defineTheme({
       name: 'repaired-status-reference',
-      tokens: {'--color-accent': '#0099ff'},
+      tokens: {'--color-accent': '#0066cc'},
       adaptations: {
         rules: [
           {
             when: {pointer: 'coarse'},
-            value: {tokens: {'--color-accent': 'var(--color-info)'}},
+            value: {tokens: {'--color-accent': 'var(--color-info-emphasized)'}},
           },
           {
             when: {pointer: 'coarse'},
@@ -414,7 +422,7 @@ describe('rule order and writes', () => {
     });
 
     expect(generateThemeCSS(theme).component).toContain(
-      '--color-info: var(--color-accent);',
+      '--color-info-emphasized: var(--color-accent);',
     );
   });
 
@@ -426,7 +434,7 @@ describe('rule order and writes', () => {
           {
             when: {pointer: 'coarse'},
             value: {
-              tokens: {'--color-info': 'var(--color-on-info)'},
+              tokens: {'--color-info-emphasized': 'var(--color-on-info)'},
             },
           },
           {
@@ -434,7 +442,7 @@ describe('rule order and writes', () => {
             value: {
               tokens: {
                 '--color-accent': '#123456',
-                '--color-on-accent': 'var(--color-info)',
+                '--color-on-accent': 'var(--color-info-emphasized)',
               },
             },
           },
@@ -449,14 +457,14 @@ describe('rule order and writes', () => {
   it('preserves important declarations while modeling later repairs', () => {
     const theme = defineTheme({
       name: 'important-status-reference',
-      tokens: {'--color-accent': '#0099ff'},
+      tokens: {'--color-accent': '#0066cc'},
       adaptations: {
         rules: [
           {
             when: {pointer: 'coarse'},
             value: {
               tokens: {
-                '--color-accent': 'var(--color-info) !important',
+                '--color-accent': 'var(--color-info-emphasized) !important',
               },
             },
           },
@@ -469,20 +477,22 @@ describe('rule order and writes', () => {
     });
     const rootCss = generateThemeRules(theme).join('\n');
 
-    expect(rootCss).not.toContain('--color-info: var(--color-accent);');
+    expect(rootCss).not.toContain(
+      '--color-info-emphasized: var(--color-accent);',
+    );
   });
 
   it('does not treat an escaped bang as declaration priority', () => {
     const theme = defineTheme({
       name: 'escaped-bang-status-reference',
-      tokens: {'--color-accent': '#0099ff'},
+      tokens: {'--color-accent': '#0066cc'},
       adaptations: {
         rules: [
           {
             when: {pointer: 'coarse'},
             value: {
               tokens: {
-                '--color-accent': 'var(--color-info) \\!important',
+                '--color-accent': 'var(--color-info-emphasized) \\!important',
               },
             },
           },
@@ -495,13 +505,13 @@ describe('rule order and writes', () => {
     });
     const rootCss = generateThemeRules(theme).join('\n');
 
-    expect(rootCss).toContain('--color-info: var(--color-accent);');
+    expect(rootCss).toContain('--color-info-emphasized: var(--color-accent);');
   });
 
   it('does not treat an important() function as declaration priority', () => {
     const theme = defineTheme({
       name: 'important-function-status-reference',
-      tokens: {'--color-accent': '#0099ff'},
+      tokens: {'--color-accent': '#0066cc'},
       adaptations: {
         rules: [
           {
@@ -510,26 +520,26 @@ describe('rule order and writes', () => {
           },
           {
             when: {pointer: 'coarse'},
-            value: {tokens: {'--color-accent': 'var(--color-info)'}},
+            value: {tokens: {'--color-accent': 'var(--color-info-emphasized)'}},
           },
         ],
       },
     });
 
     expect(generateThemeRules(theme).join('\n')).not.toContain(
-      '--color-info: var(--color-accent);',
+      '--color-info-emphasized: var(--color-accent);',
     );
   });
 
   it('does not model a dropped declaration as a cycle repair', () => {
     const theme = defineTheme({
       name: 'dropped-status-repair',
-      tokens: {'--color-accent': '#0099ff'},
+      tokens: {'--color-accent': '#0066cc'},
       adaptations: {
         rules: [
           {
             when: {pointer: 'coarse'},
-            value: {tokens: {'--color-accent': 'var(--color-info)'}},
+            value: {tokens: {'--color-accent': 'var(--color-info-emphasized)'}},
           },
           {
             when: {pointer: 'coarse'},
@@ -541,7 +551,9 @@ describe('rule order and writes', () => {
     const warnings: string[] = [];
     const rootCss = generateThemeRules(theme, warnings).join('\n');
 
-    expect(rootCss).not.toContain('--color-info: var(--color-accent);');
+    expect(rootCss).not.toContain(
+      '--color-info-emphasized: var(--color-accent);',
+    );
     expect(generateAdaptationCSS(theme, warnings).component).not.toContain(
       '--color-accent: #abcdef;',
     );
@@ -551,20 +563,21 @@ describe('rule order and writes', () => {
   it('keeps a root alias when a matching rule overwrites that alias', () => {
     const theme = defineTheme({
       name: 'overwritten-root-status-alias',
-      tokens: {'--color-accent': '#0099ff'},
+      tokens: {'--color-accent': '#0066cc'},
       adaptations: {
         rules: [
           {
             when: {pointer: 'coarse'},
-            value: {tokens: {'--color-info': '#123456'}},
+            value: {tokens: {'--color-info-emphasized': '#123456'}},
           },
         ],
       },
     });
-    theme.__adaptationRules![0].tokens['--color-info'] = 'var(--color-info)';
+    theme.__adaptationRules![0].tokens['--color-info-emphasized'] =
+      'var(--color-info-emphasized)';
 
     expect(generateThemeRules(theme).join('\n')).toContain(
-      '--color-info: var(--color-accent);',
+      '--color-info-emphasized: var(--color-accent);',
     );
   });
 
@@ -575,11 +588,11 @@ describe('rule order and writes', () => {
     });
 
     expect(generateThemeCSS(theme).component).toContain(
-      '--color-info: var(--color-accent);',
+      '--color-info-emphasized: var(--color-accent);',
     );
-    theme.tokens['--color-accent'] = 'var(--color-info)';
+    theme.tokens['--color-accent'] = 'var(--color-info-emphasized)';
     expect(generateThemeCSS(theme).component).not.toContain(
-      '--color-info: var(--color-accent);',
+      '--color-info-emphasized: var(--color-accent);',
     );
   });
 
@@ -623,7 +636,7 @@ describe('rule order and writes', () => {
     const css = generateAdaptationCSS(theme).component;
 
     expect(css).toContain('--color-accent: #abcdef;');
-    expect(css).toContain('--color-info: var(--color-accent);');
+    expect(css).toContain('--color-info-emphasized: var(--color-accent);');
   });
 
   it('lets explicit values beat generated values within one rule', () => {

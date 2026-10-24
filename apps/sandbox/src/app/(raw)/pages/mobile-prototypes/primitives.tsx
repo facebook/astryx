@@ -764,7 +764,7 @@ export function BottomSheetMenu({
                 a.variant === 'destructive' && a.icon != null ? (
                   <span
                     style={{
-                      color: 'var(--color-status-foreground-error)',
+                      color: 'var(--color-text-error)',
                       display: 'inline-flex',
                     }}>
                     {a.icon}
@@ -779,7 +779,7 @@ export function BottomSheetMenu({
               }}
               label={
                 a.variant === 'destructive' ? (
-                  <span style={{color: 'var(--color-status-foreground-error)'}}>
+                  <span style={{color: 'var(--color-text-error)'}}>
                     {a.label}
                   </span>
                 ) : (

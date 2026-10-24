@@ -58,11 +58,11 @@
 }
 
 .report-color-positive {
-  color: var(--color-status-foreground-success);
+  color: var(--color-text-success);
 }
 
 .report-color-negative {
-  color: var(--color-status-foreground-error);
+  color: var(--color-text-error);
 }
 
 .report-color-neutral {
@@ -70,11 +70,11 @@
 }
 
 .report-color-warning {
-  color: var(--color-status-foreground-warning);
+  color: var(--color-text-warning);
 }
 
 .report-color-info {
-  color: var(--color-status-foreground-info);
+  color: var(--color-text-info);
 }
 
 /* === PromptDetailCard === */

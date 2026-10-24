@@ -67,7 +67,7 @@
 
   /* --- Interactive --- */
   --color-accent-bg: var(--color-accent);
-  --color-info: var(--color-info);
+  --color-info-emphasized: var(--color-info-emphasized);
   --color-info-muted: var(--color-info-muted);
   --color-on-info: var(--color-on-info);
   --color-accent-muted: var(--color-accent-muted);
@@ -87,10 +87,17 @@
   --color-warning: var(--color-warning);
   --color-warning-muted: var(--color-warning-muted);
   --color-on-warning: var(--color-on-warning);
-  --color-status-info: var(--color-status-foreground-info);
-  --color-status-success: var(--color-status-foreground-success);
-  --color-status-warning: var(--color-status-foreground-warning);
-  --color-status-error: var(--color-status-foreground-error);
+  /* Surface-specific status roles (architecture:theme-tokens INV11). The
+   * released bg-/text-/border-success keys above keep resolving to the base
+   * tokens. text-status-* reads the status text role; icons and borders use
+   * the same colour by default. */
+  --color-success-emphasized: var(--color-success-emphasized);
+  --color-warning-emphasized: var(--color-warning-emphasized);
+  --color-error-emphasized: var(--color-error-emphasized);
+  --color-status-info: var(--color-text-info);
+  --color-status-success: var(--color-text-success);
+  --color-status-warning: var(--color-text-warning);
+  --color-status-error: var(--color-text-error);
   --color-on-info-muted: var(--color-on-info-muted);
   --color-on-success-muted: var(--color-on-success-muted);
   --color-on-warning-muted: var(--color-on-warning-muted);

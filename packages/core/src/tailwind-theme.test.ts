@@ -27,7 +27,7 @@ const sameNameColorTokens = [
   '--color-overlay-hover',
   '--color-overlay-pressed',
   '--color-tint-hover',
-  '--color-info',
+  '--color-info-emphasized',
   '--color-info-muted',
   '--color-on-info',
   '--color-success',
@@ -39,6 +39,9 @@ const sameNameColorTokens = [
   '--color-warning',
   '--color-warning-muted',
   '--color-on-warning',
+  '--color-success-emphasized',
+  '--color-warning-emphasized',
+  '--color-error-emphasized',
   '--color-on-info-muted',
   '--color-on-success-muted',
   '--color-on-warning-muted',
@@ -108,10 +111,10 @@ describe('Tailwind theme bridge', () => {
     const css = await compileBridge();
 
     expect(css).toContain('background-color: var(--color-background-surface);');
-    expect(css).toContain('color: var(--color-status-foreground-info);');
-    expect(css).toContain('color: var(--color-status-foreground-success);');
-    expect(css).toContain('color: var(--color-status-foreground-warning);');
-    expect(css).toContain('color: var(--color-status-foreground-error);');
+    expect(css).toContain('color: var(--color-text-info);');
+    expect(css).toContain('color: var(--color-text-success);');
+    expect(css).toContain('color: var(--color-text-warning);');
+    expect(css).toContain('color: var(--color-text-error);');
     expect(css).not.toContain('background-color: var(--color-surface);');
   });
 });
