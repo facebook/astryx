@@ -122,3 +122,39 @@ export const Pushed: Story = {
   name: 'Pushed two levels',
   render: () => <DeepStack />,
 };
+
+/** The root with a large title (as in Settings): it scrolls with the rows and hands over to the bar. */
+function LargeTitleStack() {
+  const [path, setPath] = useState<string[]>([]);
+  return (
+    <div style={{height: '100vh'}}>
+      <NavigationStack
+        label="Settings"
+        root={
+          <NavigationScreen title="Settings" titleDisplayMode="large">
+            <Rows title="Settings" />
+            <List>
+              {Array.from({length: 24}, (_, i) => (
+                <ListItem key={i} label={`Setting ${i + 1}`} />
+              ))}
+            </List>
+          </NavigationScreen>
+        }
+        path={path}
+        onPathChange={setPath}
+        getKey={entry => entry}
+        renderScreen={entry => (
+          <NavigationScreen title={entry}>
+            <Rows title={entry} />
+          </NavigationScreen>
+        )}
+        data-testid="navigation-stack"
+      />
+    </div>
+  );
+}
+
+export const LargeTitle: Story = {
+  name: 'Large title',
+  render: () => <LargeTitleStack />,
+};

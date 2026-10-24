@@ -32,6 +32,7 @@ import {
   markElement,
   openStory,
   releaseAnimations,
+  sampleRects,
   startScreencast,
   touchDriver,
   touchStoryboard,
@@ -67,7 +68,7 @@ interface Stack {
  */
 async function openStack(
   page: Page,
-  story: 'settings' | 'pushed',
+  story: 'settings' | 'pushed' | 'large-title',
   {
     standalone = false,
     idiom = 'ios',
@@ -597,6 +598,239 @@ test.describe('with Reduce Motion', () => {
     expect(midway.opacity).toBeLessThan(1);
     expect(await translateX(top)).toBe(0);
   });
+});
+
+test('a large title scrolls under the bar, which then shows the title; scrolling back hides it again', async ({
+  page,
+}) => {
+  await openStack(page, 'large-title');
+  const rootCard = card(page, 'root');
+  const barText = page.locator('[data-navigation-bar="root"] h2 > span');
+  await expect(
+    page.getByRole('heading', {level: 1, name: 'Settings'}),
+  ).toBeVisible();
+  // The text's offset inside the bar title, which the rise moves.
+  const read = async () =>
+    barText.evaluate(element => ({
+      opacity: Number(getComputedStyle(element).opacity),
+      top:
+        element.getBoundingClientRect().top -
+        (element.parentElement as HTMLElement).getBoundingClientRect().top,
+    }));
+  const hidden = await read();
+  expect(hidden.opacity).toBe(0);
+
+  // Scrolled under the bar (the scroll itself is the browser's): the bar's
+  // title rises into place as it fades in.
+  await rootCard.evaluate(element => element.scrollTo({top: 300}));
+  await expect
+    .poll(async () => (await read()).opacity, {timeout: 3000})
+    .toBe(1);
+  // It rose 15 px into place (navigation.inlineTitleRise).
+  expect(hidden.top - (await read()).top).toBeCloseTo(15, 0);
+  await expect(barText.locator('..')).not.toHaveAttribute('aria-hidden');
+
+  await rootCard.evaluate(element => element.scrollTo({top: 0}));
+  await expect
+    .poll(async () => (await read()).opacity, {timeout: 3000})
+    .toBe(0);
+  await expect(barText.locator('..')).toHaveAttribute('aria-hidden', 'true');
+});
+
+test('a pushed large title rides in with its screen', async ({page}) => {
+  const {driver} = await openStack(page, 'large-title');
+  await driver.tap(await rowCenter(page, 'General'));
+  const top = card(page, 'screen-General');
+  await waitForAnimation(top);
+  await waitForRest(top);
+  // The pushed screen here is inline; the root's large title stays with the
+  // root card, under it and to the left.
+  const rootTitle = page.getByRole('heading', {level: 1, name: 'Settings'});
+  const box = await rootTitle.boundingBox();
+  const rootBox = await card(page, 'root').boundingBox();
+  expect(box && rootBox && Math.abs(box.x - rootBox.x)).toBeLessThan(2);
+});
+
+/**
+ * Mean luminance (0–255) of a CSS-px box in each screencast frame, decoded
+ * in a scratch page (like trackMarker).
+ */
+async function boxLuminance(
+  page: Page,
+  frames: Awaited<
+    ReturnType<Awaited<ReturnType<typeof startScreencast>>['stop']>
+  >,
+  box: {x: number; y: number; width: number; height: number},
+): Promise<{t: number; luminance: number}[]> {
+  const scratch = await page.context().newPage();
+  try {
+    const out: {t: number; luminance: number}[] = [];
+    for (let i = 0; i < frames.length; i += 12) {
+      const batch = frames.slice(i, i + 12);
+      const values = await scratch.evaluate(
+        async ({items, rect}) => {
+          const results: number[] = [];
+          for (const item of items) {
+            const blob = await (
+              await fetch(`data:image/${item.format};base64,${item.data}`)
+            ).blob();
+            const bitmap = await createImageBitmap(blob);
+            const scale = bitmap.width / item.viewportWidth;
+            const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+            const context = canvas.getContext('2d');
+            if (context == null) {
+              throw new Error('no 2d context');
+            }
+            context.drawImage(bitmap, 0, 0);
+            const {data} = context.getImageData(
+              Math.round(rect.x * scale),
+              Math.round(rect.y * scale),
+              Math.max(1, Math.round(rect.width * scale)),
+              Math.max(1, Math.round(rect.height * scale)),
+            );
+            let sum = 0;
+            for (let o = 0; o < data.length; o += 4) {
+              sum +=
+                0.2126 * data[o] + 0.7152 * data[o + 1] + 0.0722 * data[o + 2];
+            }
+            results.push(sum / (data.length / 4));
+          }
+          return results;
+        },
+        {items: batch, rect: box},
+      );
+      batch.forEach((frame, k) => out.push({t: frame.t, luminance: values[k]}));
+    }
+    return out;
+  } finally {
+    await scratch.close();
+  }
+}
+
+test('a back swipe carries the large titles: each rides its own screen', async ({
+  page,
+}) => {
+  const {driver, width, left} = await openStack(page, 'large-title');
+  await driver.tap(await rowCenter(page, 'General'));
+  const top = card(page, 'screen-General');
+  await waitForAnimation(top);
+  await waitForRest(top);
+  const rootTitle = page.getByRole('heading', {level: 1, name: 'Settings'});
+  const topTitle = page.locator('[data-navigation-bar="screen-General"] h2');
+  const read = async () => {
+    const [rootBox, rootCardBox, topBox, topCardBox] = await Promise.all([
+      rootTitle.boundingBox(),
+      card(page, 'root').boundingBox(),
+      topTitle.boundingBox(),
+      top.boundingBox(),
+    ]);
+    return {
+      root: (rootBox?.x ?? NaN) - (rootCardBox?.x ?? NaN),
+      top: (topBox?.x ?? NaN) - (topCardBox?.x ?? NaN),
+      p: (topCardBox?.x ?? 0) / width,
+    };
+  };
+  const rest = await read();
+  const samples: Awaited<ReturnType<typeof read>>[] = [];
+  // A slow sideways drag in the content (iOS 26's back swipe), released
+  // short of half so it springs back.
+  await driver.play(
+    drag(
+      {x: left + 80, y: 420},
+      {x: left + 80 + width * 0.3, y: 420},
+      {durationMs: 1500, hz: 60},
+    ),
+    {
+      onEvent: async () => {
+        samples.push(await read());
+      },
+    },
+  );
+  const moving = samples.filter(sample => sample.p > 0.05);
+  expect(moving.length).toBeGreaterThan(5);
+  for (const sample of moving) {
+    const at = JSON.stringify({sample, rest});
+    // The root's large title rides the root card (its parallax), the pushed
+    // screen's title rides the top card.
+    expect(Math.abs(sample.root - rest.root), at).toBeLessThan(1.5);
+    expect(Math.abs(sample.top - rest.top), at).toBeLessThan(1.5);
+  }
+  await waitForRest(top);
+});
+
+test('under Reduce Motion the bar title cross-fades in place, without the rise', async ({
+  page,
+}) => {
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  await openStack(page, 'large-title');
+  const barText = page.locator('[data-navigation-bar="root"] h2 > span');
+  await card(page, 'root').evaluate(element => element.scrollTo({top: 300}));
+  const samples = await sampleRects(barText, 900);
+  await expect
+    .poll(async () =>
+      barText.evaluate(e => Number(getComputedStyle(e).opacity)),
+    )
+    .toBe(1);
+  // Where the shown title rests (hidden, it sits 15 px lower for the rise).
+  const rest = await barText.boundingBox();
+  const fading = samples.filter(
+    sample => sample.opacity > 0.05 && sample.opacity < 0.95,
+  );
+  // A fade, not a jump…
+  expect(fading.length, JSON.stringify(samples)).toBeGreaterThan(2);
+  // …in place: every visible frame is already at the resting position.
+  for (const sample of samples.filter(item => item.opacity > 0.05)) {
+    expect(
+      Math.abs((sample.box?.y ?? NaN) - (rest?.y ?? NaN)),
+      JSON.stringify(samples),
+    ).toBeLessThan(0.5);
+  }
+});
+
+test('the bar title’s handover keeps running while the main thread is blocked', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(
+    browserName !== 'chromium',
+    'screencast frame evidence is Chromium-only in Playwright (WebKit: the iOS simulator rig)',
+  );
+  await openStack(page, 'large-title');
+  const barText = page.locator('[data-navigation-bar="root"] h2 > span');
+  const box = await barText.boundingBox();
+  expect(box).not.toBeNull();
+  const cast = await startScreencast(page);
+  await card(page, 'root').evaluate(element => element.scrollTo({top: 300}));
+  const [fade] = await waitForAnimation(barText, {minProgressMs: 16});
+  const block = await blockMainThread(page, 600);
+  await page.waitForTimeout(150);
+  const frames = await cast.stop();
+  // The title's box covers its rest place and the 15 px it rises from.
+  const region = {
+    x: box?.x ?? 0,
+    y: (box?.y ?? 0) - 2,
+    width: box?.width ?? 0,
+    height: (box?.height ?? 0) + 19,
+  };
+  const series = await boxLuminance(page, frames, region);
+  // Frames keep coming while blocked, and the title keeps changing (fading
+  // in and rising) on them until it is nearly at rest.
+  const end = Math.min(block.to, fade.from + 350);
+  const during = series.filter(item => item.t >= block.from && item.t <= end);
+  const expected = Math.floor((end - block.from) / 16.7);
+  expect(expected).toBeGreaterThan(5);
+  expect(during.length, JSON.stringify(during)).toBeGreaterThanOrEqual(
+    expected - 2,
+  );
+  let changed = 0;
+  for (let i = 1; i < during.length; i += 1) {
+    if (Math.abs(during[i].luminance - during[i - 1].luminance) > 0.05) {
+      changed += 1;
+    }
+  }
+  expect(changed, JSON.stringify(during)).toBeGreaterThanOrEqual(
+    during.length - 4,
+  );
 });
 
 test('storyboard: a push', {tag: '@storyboard'}, async ({page}, testInfo) => {

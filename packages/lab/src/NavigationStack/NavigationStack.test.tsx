@@ -169,6 +169,54 @@ describe('NavigationStack', () => {
     expect(screen.getByRole('button', {name: 'Privacy'})).toBeInTheDocument();
   });
 
+  describe('a large title', () => {
+    function LargeHarness() {
+      const [path, setPath] = useState<string[]>([]);
+      return (
+        <NavigationStack
+          label="Settings"
+          root={
+            <NavigationScreen title="Settings" titleDisplayMode="large">
+              <Root />
+            </NavigationScreen>
+          }
+          path={path}
+          onPathChange={setPath}
+          getKey={entry => entry}
+          renderScreen={entry => (
+            <NavigationScreen title={entry} titleDisplayMode="large">
+              <Detail entry={entry} />
+            </NavigationScreen>
+          )}
+        />
+      );
+    }
+
+    it('shows the title above the content and hides the bar title from assistive technology', () => {
+      render(<LargeHarness />);
+      const large = screen.getByRole('heading', {level: 1, name: 'Settings'});
+      expect(screenCard('Settings')?.firstElementChild).toBe(large);
+      // The bar's copy of the title is hidden while the large one shows.
+      expect(screen.getAllByRole('heading', {name: 'Settings'})).toHaveLength(
+        1,
+      );
+    });
+
+    it('moves focus to the pushed screen’s large title', async () => {
+      render(<LargeHarness />);
+      const general = screen.getByRole('button', {name: 'General'});
+      general.focus();
+      fireEvent.click(general);
+      await waitFor(
+        () =>
+          expect(document.activeElement).toBe(
+            screen.getByRole('heading', {level: 1, name: 'General'}),
+          ),
+        {timeout: 3000},
+      );
+    });
+  });
+
   it('keeps covered screens beyond the one underneath out of rendering', () => {
     render(<Harness initial={['General', 'General › About']} />);
     // Root, General (under the top) and About (top) are mounted; the root,

@@ -94,6 +94,13 @@ export const docs = {
             'What Back reads on the screen pushed on top of this one. Defaults to title.',
         },
         {
+          name: 'titleDisplayMode',
+          type: "'large' | 'inline'",
+          description:
+            "How the title shows. 'large' puts it above the content in a large bold type, scrolling with the content; once it has scrolled under the bar, the bar shows the title instead. Use it for a top-level screen, as iOS does.",
+          default: "'inline'",
+        },
+        {
           name: 'trailing',
           type: 'ReactNode',
           description:
