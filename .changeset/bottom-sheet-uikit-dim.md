@@ -2,6 +2,6 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] On iOS, a BottomSheet's scrim follows the sheet the way an iOS sheet's dim does. Dragged below its shortest detent, the dim thins in a straight line with the sheet's position and clears only when the sheet reaches the bottom of the screen; it used to clear halfway there. It follows the finger at once instead of easing 300 ms behind. When the sheet settles or is flung away, the dim rides the same spring frame for frame, on the compositor. Elsewhere (a finger on Android, a mouse) the dim is unchanged. A peek detent's lighter scrim is unchanged.
+[fix] On iOS, a BottomSheet's scrim follows the sheet the way an iOS sheet's dim does. Dragged below its shortest detent, the dim thins in a straight line with the sheet's position and clears only when the sheet reaches the bottom of the screen; it used to clear 40 % of the shortest detent's height below it. A standalone sheet's dim follows the finger at once instead of easing behind it over the theme's medium duration (410 ms by default). When the sheet settles or is flung away, the dim rides the same spring frame for frame, on the compositor. Elsewhere (a finger on Android, a mouse) the dim is unchanged. A peek detent's lighter scrim is unchanged.
 
 @vjeux

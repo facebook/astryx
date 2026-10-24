@@ -2692,6 +2692,50 @@ describe('useSheetGestures: the dim follows the sheet', () => {
     expect(valueAt(dim, 0, opacityOf)).toBeCloseTo(dimAt(290), 2);
   });
 
+  it('hands the dim back unpinned when the sheet closes during a release, writing nothing over the close', () => {
+    const onScrimOpacity = vi.fn();
+    const onScrimTracking = vi.fn();
+    const snapHeights = () => [200];
+    const hook = renderHook(
+      ({isOpen}: {isOpen: boolean}) =>
+        useSheetGestures({
+          isOpen,
+          snapHeights,
+          onDismiss: vi.fn(),
+          onScrimOpacity,
+          onScrimTracking,
+        }),
+      {initialProps: {isOpen: true}},
+    );
+    const {dialog, target} = inDialog();
+    recordAnimations(target);
+    const backdrop = recordAnimations(dialog);
+    down(hook, 0, 0, target);
+    stream(hook, target, {from: 0, to: 290, t0: 0, t1: 600});
+    restAt(hook, 290, 650, target);
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(
+        pointerEvent(290, 800, target),
+      ),
+    );
+    const dim = backdrop.at(-1) as Played;
+    expect(onScrimTracking).toHaveBeenLastCalledWith(true);
+    // Closed (Escape, back, isOpen false) before the spring lands.
+    act(() => {
+      vi.advanceTimersByTime(60);
+    });
+    const writes = onScrimOpacity.mock.calls.length;
+    hook.rerender({isOpen: false});
+    // At once: the release's dim stops and the host's easing is back.
+    expect(onScrimTracking).toHaveBeenLastCalledWith(false);
+    expect(dim.cancel).toHaveBeenCalled();
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    // The landing writes nothing over the host's close.
+    expect(onScrimOpacity.mock.calls.length).toBe(writes);
+  });
+
   it('lets a finger catch the dim where it is', () => {
     const onScrimOpacity = vi.fn();
     const {hook} = setup({
