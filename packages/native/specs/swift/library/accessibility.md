@@ -8,8 +8,8 @@
 ## Summary
 
 A VoiceOver user hears the same name, role, state, and messages from an Astryx
-component on iPhone as a screen-reader user hears on the web: an error banner
-is spoken as an error, and a message that appears is announced once. People
+component on iPhone as a screen-reader user hears on the web: a message that
+appears is announced once, and one already on screen when it opens is not. People
 who turn on Reduce Motion, Reduce Transparency, Bold Text, Button Shapes, or
 Differentiate Without Color get components that honor each setting.
 
@@ -25,11 +25,15 @@ Differentiate Without Color get components that honor each setting.
 - **X2 — Disabled controls stay reachable (AST-085).** A disabled control stays
   in the VoiceOver order and is read as dimmed. When the contract gives a
   reason, it is the control's `accessibilityHint`.
-- **X3 — Status is spoken (AST-086).** A status (info, warning, error, success)
-  is part of the spoken label, never only an icon or a color. A message that
-  appears after its screen has loaded is announced once with
-  `AccessibilityNotification.Announcement`; errors are announced at high
-  priority. Re-rendering the same message does not announce it again.
+- **X3 — Announcements follow AST-086.** A component AST-086 FR11 covers
+  announces its own message with `AccessibilityNotification.Announcement` once
+  when it appears or its words change after its screen has loaded, and not
+  when it is present as the screen loads; errors are announced at high
+  priority (FR5), and re-rendering the same message does not announce it again
+  (FR6). Banner, FieldStatus, and a grouped field's status keep their own
+  rules, as FR11 says: Banner's status is visual only and the Banner never
+  announces itself; the app announces an outcome when it happens
+  (`component:Banner` FR8).
 - **X4 — Icons are decorative unless labeled (AST-082 FR17).** An icon is
   hidden from VoiceOver unless it carries a label. An icon-only control
   requires a label.
@@ -47,30 +51,23 @@ Differentiate Without Color get components that honor each setting.
   - Button Shapes: controls drawn without a visible edge show one.
 - **X7 — Targets are at least 44 by 44 points,** even when the drawn control is
   smaller.
-- **X8 — Library words are localized.** Words the library adds for
-  accessibility ("Error", "Loading", "Dimmed" reasons) come from the package's
-  own String Catalog.
 
 ## Acceptance checks
 
-| Requirement | Check                                                                                                                                                                                                                            |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| X1          | Unit tests assert each component's label, traits, and value in every state its contract names.                                                                                                                                   |
-| X2          | A test disables a focused control and finds it still focused, read as dimmed, with its reason as the hint.                                                                                                                       |
-| X3          | A test shows a banner after load and observes exactly one announcement, at high priority for an error; a second render of the same banner announces nothing.                                                                     |
-| X4, X5      | A UI test runs `performAccessibilityAudit()` on a screen of every component at the default and largest text sizes, with no failures.                                                                                             |
-| X6          | Captures under Reduce Motion show no movement; under Reduce Transparency, opaque surfaces; under Differentiate Without Color, every status shows its icon and word; under Button Shapes, every borderless control shows an edge. |
-| X7          | The audit's hit-region check passes for every control.                                                                                                                                                                           |
-| X8          | Switching the locale changes the library's spoken words.                                                                                                                                                                         |
+| Requirement | Check                                                                                                                                                                                                                                                           |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| X1          | Unit tests assert each component's label, traits, and value in every state its contract names.                                                                                                                                                                  |
+| X2          | A test disables a focused control and finds it still focused, read as dimmed, with its reason as the hint.                                                                                                                                                      |
+| X3          | A test shows a covered component's message after load and observes exactly one announcement, at high priority for an error; a second render announces nothing; the same message present at load announces nothing; a Banner shown after load announces nothing. |
+| X4, X5      | A UI test runs `performAccessibilityAudit()` on a screen of every component at the default and largest text sizes, with no failures.                                                                                                                            |
+| X6          | Captures under Reduce Motion show no movement; under Reduce Transparency, opaque surfaces; under Differentiate Without Color, every status shows its icon and word; under Button Shapes, every borderless control shows an edge.                                |
+| X7          | The audit's hit-region check passes for every control.                                                                                                                                                                                                          |
 
 ## Current state
 
-- The Banner view hides its status icon and combines its children, so
-  VoiceOver reads the title with no "Error" or "Warning", and nothing is
-  announced when a banner appears.
-- The Heading view sets the heading trait and level, and the TextInput view
-  uses its visible label as the field's name.
-- No component has accessibility tests or an audit.
+- On `main`, the Swift package `packages/native/apple` holds generated props,
+  the wire, and the logic host, and no SwiftUI views.
+- No Swift component has accessibility tests or an audit.
 
 ## Open questions
 
