@@ -4,11 +4,22 @@
 
 /**
  * @file Wheel.tsx
- * @input Option list, selected value, change callback
- * @output Exports Wheel — a snap-scrolling picker column
- * @position Internal component; consumed by MonthYearWheels.tsx
+ * @input Option list, selected value, change callback; under a finger also
+ *   looping, a rest rule and a ref for programmatic turns
+ * @output Exports Wheel — one picker column — ScrollWheel (today's column),
+ *   and the shared types of wheelOptions.ts
+ * @position Internal component; consumed by MonthYearWheels.tsx,
+ *   TouchTimeField.tsx and TouchDateTimeField.tsx
  *
- * A wheel is a scroll container, not a custom gesture surface. Momentum,
+ * Wheel picks its column by the primary pointer (useTouchPresentation): one
+ * touch model on every touch device, iOS and Android alike. Under a finger
+ * it is UIPickerView's wheel: PickerWheel.tsx, the touch layer, imported
+ * here alone. Under a mouse or other fine pointer it is the snap-scrolling
+ * column below, today's Astryx wheel. A wheel draws only on a sheet, so a caller who
+ * pins the fine surface (`presentation="popover"` on its input) gets no
+ * sheet and no wheel (architecture:public-component-api INV16).
+ *
+ * The scrolling column is a scroll container, not a custom gesture surface. Momentum,
  * rubber-banding, and the settle animation are the platform's; all this adds
  * is `scroll-snap-align: center` on each option, half a viewport of padding at
  * each end so the first and last option can reach the middle, and a commit
@@ -32,13 +43,22 @@
  * the scroll-driven decoration.
  *
  * SYNC: When modified, update:
+ * - /packages/core/src/DateInput/PickerWheel.tsx (the touch column)
+ * - /packages/core/src/DateInput/wheelOptions.ts
  * - /packages/core/src/DateInput/TouchDateField.tsx
  * - /packages/core/src/DateTimeInput/TouchDateTimeField.tsx
  * - /packages/core/src/DateInput/DateInput.doc.mjs
  * - /packages/core/src/DateInput/DateInputTouch.test.tsx
  */
 
-import {useCallback, useEffect, useId, useRef, useState} from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -50,10 +70,21 @@ import {
 } from '../theme/tokens.stylex';
 import {focusOutlineStyles} from '../utils';
 import {reducedMotionFade} from '../motion/reducedMotion';
+import {useTouchPresentation} from '../utils/touchPresentation';
+import {PickerWheel} from './PickerWheel';
 import {dateInputTouchSizes, dateInputTouchGeometry} from './tokens.stylex';
 import {useOwnScrollGesture} from './useOwnScrollGesture';
 import {usePointerDragScroll} from './usePointerDragScroll';
 import {useScrollSettle} from './useScrollSettle';
+import {nearestEnabledIndex, type WheelProps} from './wheelOptions';
+
+export {
+  nearestEnabledIndex,
+  type WheelHandle,
+  type WheelOption,
+  type WheelProps,
+  type WheelSpinOptions,
+} from './wheelOptions';
 
 const ITEM_BLOCK_SIZE = dateInputTouchSizes.wheelItemSize;
 
@@ -210,76 +241,9 @@ const styles = stylex.create({
   },
 });
 
-export interface WheelOption {
-  /** Stable numeric identity of the row (a month 1-12, or a year). */
-  value: number;
-  /** Row text. */
-  label: string;
-  /**
-   * Rows outside min/max stay visible but cannot be committed: a wheel that
-   * stops on one travels on to the nearest enabled row.
-   */
-  isDisabled?: boolean;
-}
-
-export interface WheelProps {
-  /** Accessible name for the column, e.g. "Month". */
-  label: string;
-  /** Rows, top to bottom. */
-  options: ReadonlyArray<WheelOption>;
-  /** Committed value; must match one option's `value`. */
-  value: number;
-  /** Fired when the wheel comes to rest on a different, enabled row. */
-  onChange: (value: number) => void;
-  /**
-   * False while the wheel is hidden — scroll offsets of a display:none
-   * scroller are meaningless, so listeners and the initial scroll wait.
-   */
-  isActive?: boolean;
-}
-
 /**
- * The enabled row nearest `index`: `index` itself when it is enabled,
- * otherwise the closest enabled row on either side. A tie goes to the side of
- * `towardIndex` (the committed row), and a wheel with no enabled row stays on
- * `towardIndex`.
- *
- * @example
- * ```
- * // Hours 0-23 with 09:00-17:00 bounds: stopping on 7 rests on 9.
- * nearestEnabledIndex(hourOptions, 7, 10); // 9
- * ```
- */
-export function nearestEnabledIndex(
-  options: ReadonlyArray<WheelOption>,
-  index: number,
-  towardIndex: number,
-): number {
-  const isEnabled = (i: number) =>
-    i >= 0 && i < options.length && !options[i].isDisabled;
-  if (isEnabled(index)) {
-    return index;
-  }
-  for (let distance = 1; distance < options.length; distance++) {
-    const below = index - distance;
-    const above = index + distance;
-    const isBelowEnabled = isEnabled(below);
-    const isAboveEnabled = isEnabled(above);
-    if (isBelowEnabled && isAboveEnabled) {
-      return towardIndex < index ? below : above;
-    }
-    if (isBelowEnabled) {
-      return below;
-    }
-    if (isAboveEnabled) {
-      return above;
-    }
-  }
-  return towardIndex;
-}
-
-/**
- * One snap-scrolling picker column.
+ * One picker column: UIPickerView's wheel under a finger, today's
+ * snap-scrolling column under a fine pointer.
  *
  * @example
  * ```
@@ -291,7 +255,69 @@ export function nearestEnabledIndex(
  * />
  * ```
  */
-export function Wheel({
+export function Wheel(props: WheelProps) {
+  // One touch model on every touch device: a finger gets UIPickerView's
+  // wheel, a fine pointer today's column.
+  const {isTouch} = useTouchPresentation();
+  return isTouch ? <PickerWheel {...props} /> : <TodayWheel {...props} />;
+}
+
+Wheel.displayName = 'Wheel';
+
+/**
+ * The scrolling column with the handle the touch wheel offers: `spinTo`
+ * commits its row at once, and the new value scrolls the column there as any
+ * new value does. `isLooping` and `resolveRest` are the touch wheel's alone.
+ */
+function TodayWheel({
+  ref,
+  label,
+  options,
+  value,
+  onChange,
+  isActive,
+}: WheelProps) {
+  useImperativeHandle(
+    ref,
+    () => ({
+      spinTo: async index => {
+        const option = options[index];
+        if (option == null || option.isDisabled) {
+          return false;
+        }
+        if (option.value !== value) {
+          onChange(option.value);
+        }
+        return true;
+      },
+    }),
+    [options, value, onChange],
+  );
+  return (
+    <ScrollWheel
+      label={label}
+      options={options}
+      value={value}
+      onChange={onChange}
+      isActive={isActive}
+    />
+  );
+}
+
+/**
+ * One snap-scrolling picker column: today's wheel, under a fine pointer.
+ *
+ * @example
+ * ```
+ * <ScrollWheel
+ *   label="Month"
+ *   options={monthOptions}
+ *   value={month}
+ *   onChange={setMonth}
+ * />
+ * ```
+ */
+export function ScrollWheel({
   label,
   options,
   value,
@@ -563,4 +589,4 @@ export function Wheel({
   );
 }
 
-Wheel.displayName = 'Wheel';
+ScrollWheel.displayName = 'ScrollWheel';
