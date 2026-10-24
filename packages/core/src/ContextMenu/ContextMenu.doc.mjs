@@ -160,7 +160,7 @@ export const docs = {
   usage: {
     anatomy,
     description:
-      'A right-click context menu that appears at the cursor position. Use to provide contextual actions for specific elements or regions without cluttering the UI with visible buttons. On iPhone and iPad a held finger opens it with iOS timing: the trigger starts to grow at 150 ms, and the menu opens at 735 ms, or as soon as the finger lifts after 400 ms. On other touch screens, Android included, a finger held for 500 ms opens it under the finger.',
+      'A right-click context menu that appears at the cursor position. Use to provide contextual actions for specific elements or regions without cluttering the UI with visible buttons. On iPhone and iPad a held finger opens it with iOS timing: the trigger starts to grow at 150 ms, and the menu opens at 735 ms, or as soon as the finger lifts after 400 ms. A block trigger then lifts out of the page, as on iOS: a copy of it grows about 13% over a tinted backdrop, and the menu sits beside it, below when it fits and above otherwise. On other touch screens, Android included, a finger held for 500 ms opens it under the finger.',
     bestPractices: [
       {
         guidance: true,
@@ -190,7 +190,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Leave a little room around a block trigger: on iOS a held finger grows it from its center, by about 6%, until the menu closes.',
+          'Leave a little room around a block trigger: on iOS a held finger grows it from its center, by about 6%, and its lifted copy is about 13% larger while the menu is open.',
       },
       {
         guidance: false,
@@ -229,7 +229,7 @@ export const docs = {
 export const docsZh = {
   usage: {
     description:
-      '右键点击时在光标位置出现的上下文菜单。用于为特定元素或区域提供上下文操作，而不使 UI 杂乱。在 iPhone 和 iPad 上，按住手指即可打开，时序与 iOS 相同：150 毫秒时触发区域开始放大，735 毫秒时菜单打开；若手指在 400 毫秒后抬起，菜单在抬起时立即打开。在其他触摸屏（包括 Android）上，按住 500 毫秒后菜单在手指处打开。',
+      '右键点击时在光标位置出现的上下文菜单。用于为特定元素或区域提供上下文操作，而不使 UI 杂乱。在 iPhone 和 iPad 上，按住手指即可打开，时序与 iOS 相同：150 毫秒时触发区域开始放大，735 毫秒时菜单打开；若手指在 400 毫秒后抬起，菜单在抬起时立即打开。随后块级触发区域会像 iOS 一样从页面中浮起：它的副本在着色背景上放大约 13%，菜单位于其旁边，空间足够时在下方，否则在上方。在其他触摸屏（包括 Android）上，按住 500 毫秒后菜单在手指处打开。',
     bestPractices: [
       {guidance: true, description: '保持菜单项简洁和面向操作。'},
       {guidance: true, description: '有很多项时使用分组和分隔线。'},
@@ -270,7 +270,7 @@ export const docsDense = {
   usage: {
     anatomy,
     description:
-      'A right-click context menu that appears at the cursor position. Use to provide contextual actions for specific elements or regions. Touch on iOS: a held finger opens it at 735 ms, or on a lift after 400 ms; the trigger grows from 150 ms. Other touch screens: 500 ms, under the finger.',
+      'A right-click context menu that appears at the cursor position. Use to provide contextual actions for specific elements or regions. Touch on iOS: a held finger opens it at 735 ms, or on a lift after 400 ms; the trigger grows from 150 ms, then a block trigger lifts (about 13%) over a tint with the menu below or above it. Other touch screens: 500 ms, under the finger.',
     bestPractices: [
       {guidance: true, description: 'Keep items concise and action-oriented.'},
       {
@@ -294,7 +294,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Leave room around a block trigger: on iOS a held finger grows it about 6%.',
+          'Leave room around a block trigger: on iOS a held finger grows it about 6%, its lifted copy about 13%.',
       },
       {
         guidance: false,

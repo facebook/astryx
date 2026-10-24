@@ -6,8 +6,9 @@
  * @file contextMenuPressFeedback.ts
  * @input The press feedback's curve (contextMenuPressCurve.ts), the
  *   context-menu constants, the compositor animator, the trigger element
- * @output Exports useContextMenuPressFeedback (start, fail, release, driven
- *   by ContextMenu's press recognizer)
+ * @output Exports useContextMenuPressFeedback (start, fail, release, hold,
+ *   and end when the lifted copy takes over; driven by ContextMenu's press
+ *   recognizer)
  * @position The press feedback of ContextMenu's touch invocation
  *   (contextMenuPress.ts decides; this shows it)
  *
@@ -67,6 +68,11 @@ export interface ContextMenuPressFeedback {
    * box, so a trigger still growing would carry the open menu with it.
    */
   hold(): void;
+  /**
+   * The lifted preview takes over: the trigger returns to its size at once
+   * (it is hidden while its preview is up).
+   */
+  end(): void;
 }
 
 /**
@@ -179,5 +185,15 @@ export function useContextMenuPressFeedback(
     }
   }, []);
 
-  return {start, fail, release, hold};
+  const end = useCallback(() => {
+    const animator = animatorRef.current;
+    if (animator == null || !isGrownRef.current) {
+      return;
+    }
+    isGrownRef.current = false;
+    animator.set({scale: 1});
+    animator.element?.style.removeProperty('scale');
+  }, []);
+
+  return {start, fail, release, hold, end};
 }

@@ -5,9 +5,11 @@
  * @file ContextMenu.tsx
  * @input Uses React, StyleX, useLayer, shared layer dismissal, BottomSheet,
  *   useListFocus, the shared menu-presentation resolver, the gesture
- *   foundation (ContextMenuPressRecognizer), the touch idiom
- *   (useTouchIdiom) and the UIKit constants table
- * @output Exports ContextMenu with cursor-popover and touch-sheet presentations
+ *   foundation (ContextMenuPressRecognizer), the lift presentation
+ *   (useContextMenuLift), the touch idiom (useTouchIdiom) and the UIKit
+ *   constants table
+ * @output Exports ContextMenu with cursor-popover, touch-lift and touch-sheet
+ *   presentations
  * @position Core implementation; consumed by index.ts
  *
  * Right-click context menu positioned at the cursor. The cursor point is
@@ -21,10 +23,14 @@
  * On touch in the iOS idiom (WebKit on iOS or iPadOS under a finger) the
  * trigger behaves like UIKit's UIContextMenuInteraction: a finger held still
  * commits the menu at UIKit's moment (`contextMenu.press.commitMs`), with
- * the press feedback, and the page stays put while that menu is up. Every
- * other finger (Android included) keeps today's long press: the menu at
- * 500 ms under the finger, no feedback, no haptic. Both run on the same
- * recognizer, so a press that opened the menu sends no click anywhere.
+ * the press feedback, and the page stays put while that menu is up. When the
+ * menu shows, a block trigger lifts as UIKit's preview does
+ * (ContextMenuLift.tsx) and the menu sits beside the lifted copy
+ * (`contextMenu.lift`); an inline trigger keeps the menu at the finger.
+ * Every other finger (Android included) keeps today's long press: the menu
+ * at 500 ms under the finger, no feedback, no haptic, no lift. Both run on
+ * the same recognizer, so a press that opened the menu sends no click
+ * anywhere.
  *
  * Supports two content modes with a single keyboard/focus path:
  * - **Data-driven**: pass `items` array (converted to components internally)
@@ -41,6 +47,7 @@
  * - /packages/core/src/ContextMenu/ContextMenu.test.tsx
  * - /packages/core/src/ContextMenu/contextMenuPress.ts (touch timeline)
  * - /packages/core/src/ContextMenu/contextMenuPressFeedback.ts (press feedback)
+ * - /packages/core/src/ContextMenu/ContextMenuLift.tsx (lift presentation)
  * - /packages/core/src/ContextMenu/index.ts
  * - /apps/storybook/stories/ContextMenu.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/ContextMenu/ (showcase blocks)
@@ -56,6 +63,7 @@ import React, {
   useState,
   Suspense,
 } from 'react';
+import {flushSync} from 'react-dom';
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Button} from '../Button';
@@ -88,6 +96,12 @@ import {playHaptic, useGestureRecognizer} from '../gestures';
 import {contextMenu} from '../motion/uikit';
 import {ContextMenuPressRecognizer} from './contextMenuPress';
 import {useContextMenuPressFeedback} from './contextMenuPressFeedback';
+import {
+  playMenuEntrance,
+  useContextMenuLift,
+  type ContextMenuLiftResult,
+} from './ContextMenuLift';
+import {menuPlacement, type MenuPlacement} from './contextMenuLiftGeometry';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {
   colorVars,
@@ -638,6 +652,39 @@ export function ContextMenu({
     [triggerScale],
   );
 
+  // Opens the menu beside a lifted preview: the cursor anchor becomes the
+  // preview's box (in the trigger's coordinates; the trigger is back at its
+  // size, under the preview), the layer places the menu against it, and the
+  // menu's content enters from a blur.
+  const openLifted = useCallback(
+    ({source, lifted}: ContextMenuLiftResult) => {
+      const x = lifted.x - source.x;
+      const y = lifted.y - source.y;
+      positionRef.current = {x, y};
+      const anchorEl = cursorAnchorRef.current;
+      if (anchorEl) {
+        anchorEl.style.left = `${x}px`;
+        anchorEl.style.top = `${y}px`;
+        anchorEl.style.width = `${lifted.width}px`;
+        anchorEl.style.height = `${lifted.height}px`;
+        anchorEl.style.removeProperty('transform-origin');
+        anchorEl.style.removeProperty('scale');
+        anchorEl.style.removeProperty('translate');
+      }
+      triggerFocusRef.current =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : triggerRef.current;
+      layer.show();
+      const menu = listRef.current?.closest<HTMLElement>('[popover]');
+      if (menu != null) {
+        playMenuEntrance(menu);
+      }
+      requestAnimationFrame(() => focusFirst());
+    },
+    [layer, focusFirst, listRef],
+  );
+
   const handleContextMenu = useCallback(
     (e: React.MouseEvent) => {
       if (isDisabled) {
@@ -688,6 +735,17 @@ export function ContextMenu({
   const isIosIdiom = idiom === 'ios';
   const isIosIdiomRef = useRef(isIosIdiom);
   isIosIdiomRef.current = isIosIdiom;
+  // The lift presentation (ContextMenuLift.tsx): when the menu shows under a
+  // finger, the trigger's preview lifts above a tinted backdrop and the menu
+  // sits beside it.
+  const liftPresentation = useContextMenuLift(triggerRef, {
+    onBackdropTap: closeMenu,
+  });
+  const liftRef = useRef(liftPresentation);
+  liftRef.current = liftPresentation;
+  const [liftPlacement, setLiftPlacement] = useState<MenuPlacement | null>(
+    null,
+  );
   const pressRecognizer = useGestureRecognizer(
     triggerRef,
     () =>
@@ -703,12 +761,41 @@ export function ContextMenu({
       const open = () => {
         // The press feedback has grown the trigger from its center, and the
         // cursor anchor inside it moves with that scale: stop the growth where
-        // it is, then place the anchor under the finger (openAtLocalPoint
-        // cancels the scale at the anchor).
+        // it is.
         pressFeedbackRef.current.hold();
-        const local = toTriggerLocal(recognizer.press ?? recognizer.location());
         hasPressOpenedRef.current = true;
         setIsTouchOpen(true);
+        // UIKit's presentation (the iOS idiom): the preview lifts and the
+        // menu sits beside it. Elsewhere the menu opens under the finger.
+        const lifted =
+          usesBottomSheet || triggerAs === 'span' || !isIosIdiomRef.current
+            ? null
+            : liftRef.current.lift();
+        if (lifted != null) {
+          pressFeedbackRef.current.end();
+          // The menu's side depends on its height: place it below, show it,
+          // measure it, and move it above in the same task if it does not fit.
+          const below = menuPlacement(lifted.lifted, 0, lifted.viewport);
+          flushSync(() => {
+            setLiftPlacement(below);
+          });
+          openLifted(lifted);
+          const menuHeight = listRef.current?.offsetHeight ?? 0;
+          const placement = menuPlacement(
+            lifted.lifted,
+            menuHeight,
+            lifted.viewport,
+          );
+          if (placement.side !== below.side) {
+            flushSync(() => {
+              setLiftPlacement(placement);
+            });
+          }
+          return;
+        }
+        // Otherwise the menu opens under the finger (openAtLocalPoint cancels
+        // the trigger's scale at the anchor).
+        const local = toTriggerLocal(recognizer.press ?? recognizer.location());
         openAtLocalPoint(local.x, local.y, triggerRef.current);
       };
       switch (recognizer.state) {
@@ -763,6 +850,11 @@ export function ContextMenu({
     if (wasOpenRef.current && !isOpen) {
       setIsTouchOpen(false);
       pressFeedbackRef.current.release();
+      liftRef.current.drop();
+      setLiftPlacement(null);
+      const anchorEl = cursorAnchorRef.current;
+      anchorEl?.style.removeProperty('width');
+      anchorEl?.style.removeProperty('height');
     }
     wasOpenRef.current = isOpen;
   }, [isOpen]);
@@ -934,12 +1026,25 @@ export function ContextMenu({
           </LazyMenuBottomSheet>
         </Suspense>
       ) : (
-        layer.render(<LayerDepthProvider>{renderedMenu}</LayerDepthProvider>, {
-          placement: 'below',
-          alignment: 'start',
-          xstyle: [popoverXstyle, layerAnimations.below],
-        })
+        layer.render(
+          <LayerDepthProvider>{renderedMenu}</LayerDepthProvider>,
+          liftPlacement != null
+            ? {
+                placement: liftPlacement.side,
+                alignment: liftPlacement.alignment,
+                offset: contextMenu.lift.menuGap,
+                xstyle: [popoverXstyle],
+              }
+            : {
+                placement: 'below',
+                alignment: 'start',
+                xstyle: [popoverXstyle, layerAnimations.below],
+              },
+        )
       )}
+      {usesBottomSheet || triggerAs === 'span' || !isIosIdiom
+        ? null
+        : liftPresentation.layer}
     </>
   );
 }
