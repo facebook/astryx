@@ -1,0 +1,239 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+'use client';
+
+/**
+ * @file useAlertMotion.ts
+ * @input Whether the alert is open, whether it runs UIKit's motion, the
+ *   motion animator and the alert entries of the UIKit constants table
+ * @output Exports useAlertMotion and AlertMotion: when the Dialog is
+ *   presented (it stays open while the alert leaves), the callback ref that
+ *   puts the animators on the dialog, and whether a touch may act right now
+ * @position Internal hook of AlertDialog; the touch presentation's motion
+ *
+ * UIKit's alert motion (measured on iOS 26.2; numbers in
+ * motion/uikit/alert.ts and springs.alertPresent / alertDismiss):
+ *
+ * - presenting, the alert scales from 1.2 to 1 and fades in, and the dimming
+ *   fades in, all on one critically damped spring (0.404 s); nothing moves
+ *   from the opener;
+ * - dismissing, the alert and the dimming only fade out, on the same spring;
+ * - touches during either transition are ignored: input comes back when the
+ *   presentation completes (counted from when the browser started it,
+ *   `handle.started`), and none is delivered while the alert leaves;
+ * - under Reduce Motion the scale is dropped and the fades keep their spring
+ *   (the animator's `crossfade` option).
+ *
+ * Both run on the compositor through the motion animator: the alert is the
+ * dialog element itself (`scale`, `opacity`), the dimming is its `::backdrop`
+ * (`opacity`), one start time for both: the browser's, at the commit that
+ * first shows the dialog. The dialog stays open while it
+ * leaves, so focus returns to the opener, the page scroll unlocks and the
+ * close event fires when it is hidden; Escape keeps reaching it until then.
+ * Reopening it mid-exit fades it back from where it is; unmounting removes it
+ * at once; if the exit never reports its end (animations disabled) the
+ * dialog closes anyway once its duration and a frame budget have passed.
+ *
+ * When `isEnabled` is false (a mouse presentation, the inline preview)
+ * nothing here acts: the Dialog opens and closes with the theme's motion.
+ *
+ * SYNC: When modified, update useAlertMotion.test.tsx and
+ * __tests__/AlertDialog.motion.interaction.browser.spec.ts
+ */
+
+import {useCallback, useEffect, useRef, useState} from 'react';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
+import {
+  createAnimator,
+  type Animator,
+  type MotionHandle,
+} from '../motion/animator';
+import {alertController, springs} from '../motion/uikit';
+
+/** A dialog that misses its exit's end still closes this long after it. */
+const EXIT_BACKSTOP_MS = 100;
+
+type Status = 'hidden' | 'open' | 'leaving';
+
+export interface AlertMotionOptions {
+  /** The caller's open state. */
+  isOpen: boolean;
+  /** Run UIKit's alert motion (a touch presentation). */
+  isEnabled: boolean;
+}
+
+export interface AlertMotion {
+  /** Whether the Dialog is open: true while the alert is shown or leaving. */
+  readonly isPresented: boolean;
+  /** True while the motion drives the dialog (its theme entrance is off). */
+  readonly isDriving: boolean;
+  /** Callback ref for the dialog element. */
+  readonly ref: (element: HTMLElement | null) => void;
+  /** Whether a touch landing now may act (false during the transitions). */
+  readonly acceptsTouches: () => boolean;
+}
+
+export function useAlertMotion({
+  isOpen,
+  isEnabled,
+}: AlertMotionOptions): AlertMotion {
+  // The open state the Dialog sees: the alert stays presented while it
+  // leaves. Adjusted while rendering, so the Dialog never commits a close
+  // the exit has not finished.
+  const [isLeaving, setIsLeaving] = useState(false);
+  const [lastIsOpen, setLastIsOpen] = useState(isOpen);
+  if (lastIsOpen !== isOpen) {
+    setLastIsOpen(isOpen);
+    setIsLeaving(!isOpen && isEnabled);
+  }
+  const isPresented = isOpen || isLeaving;
+
+  const [animators] = useState(() => ({
+    panel: createAnimator(null),
+    backdrop: createAnimator(null, {pseudoElement: '::backdrop'}),
+  }));
+  const isEnabledRef = useRef(isEnabled);
+  isEnabledRef.current = isEnabled;
+
+  // The animators hold the dialog only while the motion drives it, so a mouse
+  // presentation keeps its own styles untouched. The callback is stable: a
+  // caller's changing ref must not re-attach them on every render.
+  const elementRef = useRef<HTMLElement | null>(null);
+  const ref = useCallback(
+    (node: HTMLElement | null) => {
+      elementRef.current = node;
+      const target = isEnabledRef.current ? node : null;
+      animators.panel.attach(target);
+      animators.backdrop.attach(target);
+    },
+    [animators],
+  );
+  useIsomorphicLayoutEffect(() => {
+    const {panel, backdrop} = animators;
+    if (isEnabled) {
+      panel.attach(elementRef.current);
+      backdrop.attach(elementRef.current);
+      return;
+    }
+    // A finger gave way to a mouse: the theme's styles show again.
+    if (panel.element != null) {
+      panel.set({opacity: 1, scale: 1});
+      backdrop.set({opacity: 1});
+    }
+    panel.attach(null);
+    backdrop.attach(null);
+  }, [animators, isEnabled]);
+
+  // Starts hidden even when mounted open, so a first render that is already
+  // open presents like any other opening.
+  const statusRef = useRef<Status>('hidden');
+  const transitionEndsAtRef = useRef(0);
+  // The exit in flight: only its own end may hide the dialog.
+  const exitRef = useRef<MotionHandle | null>(null);
+  // The presentation in flight: only its own start times the touch window.
+  const presentRef = useRef<MotionHandle | null>(null);
+  const acceptsTouches = useCallback(
+    () =>
+      !isEnabledRef.current ||
+      (statusRef.current === 'open' &&
+        performance.now() >= transitionEndsAtRef.current),
+    [],
+  );
+
+  useEffect(() => {
+    const was = statusRef.current;
+    const now: Status = !isPresented ? 'hidden' : isOpen ? 'open' : 'leaving';
+    statusRef.current = now;
+    if (!isEnabled || was === now) {
+      return;
+    }
+    const {panel, backdrop} = animators;
+    if (now === 'open' && was === 'hidden') {
+      // The Dialog opened its modal in this same flush (its effect runs
+      // first), and nothing has painted it yet. The alert starts at its
+      // starting values and moves from rest with no start time: the browser
+      // starts it at the commit that first shows it, as Core Animation starts
+      // an animation at its transaction's commit, and the animator promotes
+      // it in this task, so Mobile Safari runs it on the compositor from that
+      // first frame through a busy main thread (measured on iOS 26.2).
+      transitionEndsAtRef.current = Number.POSITIVE_INFINITY;
+      panel.set({opacity: 0, scale: alertController.present.scaleFrom});
+      backdrop.set({opacity: 0});
+      const handle = present(panel, backdrop);
+      presentRef.current = handle;
+      // Touches come back when the presentation completes, counted from
+      // when the browser actually started it.
+      void handle.started.then(start => {
+        if (presentRef.current === handle && statusRef.current === 'open') {
+          transitionEndsAtRef.current =
+            start + alertController.present.ignoresTouchesForMs;
+        }
+      });
+      return;
+    }
+    presentRef.current = null;
+    if (now === 'open' && was === 'leaving') {
+      // Reopened mid-exit: fade back from where it is.
+      exitRef.current = null;
+      const at = performance.now();
+      transitionEndsAtRef.current =
+        at + alertController.present.ignoresTouchesForMs;
+      panel.animate({opacity: 1}, {spring: springs.alertPresent}, {at});
+      backdrop.animate({opacity: 1}, {spring: springs.alertPresent}, {at});
+      return;
+    }
+    if (now === 'leaving') {
+      const at = performance.now();
+      transitionEndsAtRef.current = Number.POSITIVE_INFINITY;
+      const handle = panel.animate(
+        {opacity: 0},
+        {spring: springs.alertDismiss},
+        {at},
+      );
+      backdrop.animate({opacity: 0}, {spring: springs.alertDismiss}, {at});
+      exitRef.current = handle;
+      void handle.finished.then(isDone => {
+        if (isDone && exitRef.current === handle) {
+          exitRef.current = null;
+          setIsLeaving(false);
+        }
+      });
+      return;
+    }
+    // Hidden: the exit ended and the Dialog closed its modal.
+    exitRef.current = null;
+  }, [animators, isEnabled, isOpen, isPresented]);
+
+  // An exit whose end is never reported (animations disabled, a detached
+  // element) still hides the dialog once its duration has passed. Unmounting
+  // mid-exit removes the dialog at once; React detaches the animators
+  // through the ref.
+  useEffect(() => {
+    if (!isLeaving) {
+      return;
+    }
+    const backstop = setTimeout(() => {
+      exitRef.current = null;
+      setIsLeaving(false);
+    }, alertController.dismiss.durationMs + EXIT_BACKSTOP_MS);
+    return () => clearTimeout(backstop);
+  }, [isLeaving]);
+
+  return {isPresented, isDriving: isEnabled, ref, acceptsTouches};
+}
+
+function present(panel: Animator, backdrop: Animator): MotionHandle {
+  // From rest and with no `at` (a frame's timestamp is stale after a busy
+  // main thread): the browser starts both at the frame that commits them, one
+  // start for the alert and its dimming, as Core Animation starts an
+  // animation at its transaction's commit. Under Reduce Motion the scale
+  // lands at once and the fade keeps the presentation spring (`crossfade`),
+  // as UIKit's alert does.
+  const handle = panel.animate(
+    {opacity: 1, scale: 1},
+    {spring: springs.alertPresent},
+    {crossfade: springs.alertPresent},
+  );
+  backdrop.animate({opacity: 1}, {spring: springs.alertPresent});
+  return handle;
+}
