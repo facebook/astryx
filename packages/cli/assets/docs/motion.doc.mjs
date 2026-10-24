@@ -190,6 +190,30 @@ const calmTheme = defineTheme({
               'duration',
               '350ms',
             ],
+            [
+              'refreshControl.endMs',
+              '--motion-refresh-control-end-ms',
+              'duration',
+              '300ms',
+            ],
+            [
+              'refreshControl.exitMs',
+              '--motion-refresh-control-exit-ms',
+              'duration',
+              '300ms',
+            ],
+            [
+              'refreshControl.spinMs',
+              '--motion-refresh-control-spin-ms',
+              'duration',
+              '1000ms',
+            ],
+            [
+              'refreshControl.triggerTurnSpring',
+              '--motion-refresh-control-trigger-turn-spring',
+              'spring',
+              '2.3416s 0',
+            ],
             ['scroll.bounce', '--motion-scroll-bounce', 'spring', '0.5s 0'],
             [
               'scroll.paging.snap',
