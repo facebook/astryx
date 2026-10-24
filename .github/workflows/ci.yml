@@ -1513,6 +1513,17 @@ jobs:
             --project chromium \
             --output empty-state-announcement-output
 
+      # A finger on a NumberInput stepper steps the value without focusing the
+      # field, so a phone's on-screen keyboard does not slide up with every
+      # tap, while a mouse click still focuses it. Where focus goes after a
+      # real touch is engine behavior jsdom cannot show.
+      - name: Run NumberInput stepper focus contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/NumberInput/__tests__/NumberInput.stepper-focus.a11y.chromium.spec.ts \
+            --project chromium \
+            --output number-input-stepper-focus-output
+
       # A disabled MultiSelector trigger keeps focus when it is disabled while
       # focused. jsdom never moves focus off a newly disabled element, so only
       # a real engine shows the loss this guards against.
