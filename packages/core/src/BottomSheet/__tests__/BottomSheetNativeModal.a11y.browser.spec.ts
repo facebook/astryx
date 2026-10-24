@@ -8,7 +8,7 @@
  *   dialog: the flow's one page scroll lock (the shared hook, as Dialog)
  *   holding while two sheet dialogs are open through a handoff and under a
  *   Core Dialog opened from a step, never released between steps nor when
- *   that Dialog closes, and the page's offset restored after the exit; Tab landing inside the entering sheet's dialog
+ *   that Dialog closes, and the page never moving; Tab landing inside the entering sheet's dialog
  *   as soon as both dialogs are open and on Tab stops for as long as the
  *   retained dialog is open beneath it (its fade included), never the page
  *   once the handoff is done, by the browser's own containment, with the
@@ -71,35 +71,32 @@ async function mountScrollable(page: Page, story = 'hug-content') {
 }
 
 /**
- * The shared lock's pin on <body>, and the page's offset as the lock sees
- * it: while pinned, `scrollY` reads 0 and the saved offset is `top`; after
- * release, `scrollY` is the restored offset. `scrollEvents` counts window
- * scroll events since `resetScrollCounter`: a lock released and re-acquired
- * between steps restores the offset and pins again, which fires one.
+ * The shared lock's hold on the page (`overflow: hidden` on the root) and the
+ * page's offset, which the lock never changes. `scrollEvents` counts window
+ * scroll events since `resetScrollCounter`: any movement of the page while
+ * the flow is open fires one.
  */
 async function lockState(page: Page): Promise<{
-  position: string;
-  top: string;
+  overflow: string;
   scrollY: number;
   scrollEvents: number;
 }> {
   return page.evaluate(() => ({
-    position: document.body.style.position,
-    top: document.body.style.top,
+    overflow: document.documentElement.style.overflow,
     scrollY: window.scrollY,
     scrollEvents: (window as {__scrollEvents?: number}).__scrollEvents ?? 0,
   }));
 }
 
 /**
- * Zero the counter once the events already owed have arrived: the spacer
- * scroll in `mountScrollable` and the lock's own pin (300 → 0) each fire one
- * window `scroll` event, and WebKit delivers them late on a cold run.
+ * Zero the counter once the event already owed has arrived: the spacer
+ * scroll in `mountScrollable` fires one window `scroll` event, and WebKit
+ * delivers it late on a cold run.
  */
 async function resetScrollCounter(page: Page) {
   await page
     .waitForFunction(
-      () => ((window as {__scrollEvents?: number}).__scrollEvents ?? 0) >= 2,
+      () => ((window as {__scrollEvents?: number}).__scrollEvents ?? 0) >= 1,
       undefined,
       {timeout: 3000},
     )
@@ -152,67 +149,63 @@ async function openFlow(page: Page) {
   await page.waitForTimeout(500);
 }
 
-test('the flow holds one page scroll lock through a handoff and under a Core Dialog opened from a step, never released between steps, and restores the offset after the exit', async ({
+test('the flow holds one page scroll lock through a handoff and under a Core Dialog opened from a step, never released between steps, and never moves the page', async ({
   page,
   browserName,
 }) => {
   await mountScrollable(page, 'dialog-from-step');
   await openFlow(page);
   let state = await lockState(page);
-  expect(state.position).toBe('fixed');
-  expect(state.top).toBe('-300px');
+  expect(state.overflow).toBe('hidden');
+  expect(state.scrollY).toBe(300);
   await resetScrollCounter(page);
 
   await page.getByRole('button', {name: 'Continue', exact: true}).click();
   await expect(page.locator('dialog[open]')).toHaveCount(2);
   state = await lockState(page);
-  expect(state.position).toBe('fixed');
-  expect(state.top).toBe('-300px');
-  // Wheel and finger over the backdrop with both dialogs open: the pinned
+  expect(state.overflow).toBe('hidden');
+  // Wheel and finger over the backdrop with both dialogs open: the locked
   // page does not move.
   await wheelDown(page);
   await touchScrollDown(page, browserName);
   state = await lockState(page);
-  expect(state.position).toBe('fixed');
-  expect(state.top).toBe('-300px');
-  expect(state.scrollY).toBe(0);
+  expect(state.overflow).toBe('hidden');
+  expect(state.scrollY).toBe(300);
   await expect(page.locator('dialog[open]')).toHaveCount(1, {timeout: 3000});
-  // One lock for the flow: the handoff released nothing, so the page never
-  // scrolled back and forth between steps.
+  // One lock for the flow: the handoff released nothing, and the page never
+  // moved between steps.
   state = await lockState(page);
-  expect(state.position).toBe('fixed');
+  expect(state.overflow).toBe('hidden');
   expect(state.scrollEvents).toBe(0);
 
   // A Core Dialog opened from the step, as a builder would, takes the same
   // shared lock a second time; closing it must give back only its own hold,
-  // leaving the flow's pin in place with the saved offset untouched.
+  // leaving the flow's lock in place and the page where it was.
   await page.getByRole('button', {name: 'Reset', exact: true}).click();
   const resetDialog = page.getByRole('dialog', {name: 'Reset frequency?'});
   await expect(resetDialog).toBeVisible();
   await wheelDown(page);
   state = await lockState(page);
-  expect(state.position).toBe('fixed');
-  expect(state.top).toBe('-300px');
-  expect(state.scrollY).toBe(0);
+  expect(state.overflow).toBe('hidden');
+  expect(state.scrollY).toBe(300);
   await page.getByRole('button', {name: 'Keep', exact: true}).click();
   await expect(resetDialog).toBeHidden();
   await page.waitForTimeout(400);
   state = await lockState(page);
-  expect(state.position).toBe('fixed');
-  expect(state.top).toBe('-300px');
-  expect(state.scrollY).toBe(0);
+  expect(state.overflow).toBe('hidden');
+  expect(state.scrollY).toBe(300);
   expect(state.scrollEvents).toBe(0);
   await wheelDown(page);
-  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  expect(await page.evaluate(() => window.scrollY)).toBe(300);
   // The Dialog returned focus into the step, so Escape closes the flow.
   await expect(page.locator('dialog[open]')).toHaveCount(1);
 
   await page.keyboard.press('Escape');
   await expect(page.locator('dialog[open]')).toHaveCount(0, {timeout: 3000});
   state = await lockState(page);
-  expect(state.position).toBe('');
-  expect(state.top).toBe('');
+  expect(state.overflow).toBe('');
   expect(state.scrollY).toBe(300);
+  expect(state.scrollEvents).toBe(0);
   // The page scrolls again.
   await wheelDown(page);
   expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
