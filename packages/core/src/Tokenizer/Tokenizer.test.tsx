@@ -398,6 +398,44 @@ describe('Tokenizer', () => {
       });
     });
 
+    it('forgets the selection when its token leaves, so the same item comes back unselected', () => {
+      stubPointer(true);
+      function Harness() {
+        const [items, setItems] = useState([users[0], users[1]]);
+        return (
+          <>
+            <Tokenizer
+              label="Members"
+              searchSource={userSource}
+              value={items}
+              onChange={setItems}
+            />
+            <button
+              type="button"
+              onClick={() => setItems([users[0], users[1]])}>
+              Add Bob back
+            </button>
+          </>
+        );
+      }
+      render(<Harness />);
+      const input = screen.getByRole('combobox');
+      act(() => input.focus());
+      fireEvent.keyDown(input, {key: 'Backspace'});
+      expect(tokenNamed('Bob')).toHaveAttribute('data-selected', 'true');
+      // Removed with its ×, then added back.
+      fireEvent.click(screen.getByRole('button', {name: 'Remove Bob'}));
+      fireEvent.click(screen.getByRole('button', {name: 'Add Bob back'}));
+      expect(tokenNamed('Bob')).not.toHaveAttribute('data-selected');
+      act(() => input.focus());
+      fireEvent.keyDown(input, {key: 'Backspace'});
+      // One Delete selects it again; it does not remove it.
+      expect(
+        screen.getByRole('button', {name: 'Remove Bob'}),
+      ).toBeInTheDocument();
+      expect(tokenNamed('Bob')).toHaveAttribute('data-selected', 'true');
+    });
+
     it('keeps the selected token when another key is typed', () => {
       stubPointer(true);
       const onChange = vi.fn();

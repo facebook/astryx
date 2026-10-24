@@ -1009,6 +1009,13 @@ export function Tokenizer<T extends SearchableItem>({
   // A selection only lives while it names a current token.
   const selectedItem =
     selectedId == null ? null : (value.find(v => v.id === selectedId) ?? null);
+  // When the selected token leaves (its ×, Clear all, or the app's own
+  // change), the selection goes with it, so the same item added back later
+  // starts unselected instead of going on the next Delete. (Adjusted while
+  // rendering, as React recommends for state derived from props.)
+  if (selectedId != null && selectedItem == null) {
+    setSelectedId(null);
+  }
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (
