@@ -59,10 +59,10 @@ export const docs = {
       description: 'Helper text under the label, linked to the group.',
     },
     {
-      name: 'name',
+      name: 'htmlName',
       type: 'string',
       description:
-        "The native inputs' shared name, which groups the radios. Defaults to a generated one.",
+        "The native inputs' shared name, which groups the radios (as `htmlName` on RadioList). Defaults to a generated one.",
     },
     {
       name: 'isDisabled',
@@ -82,14 +82,26 @@ export const docs = {
       name: 'children',
       type: 'ReactNode',
       description:
-        'SelectableCardGroupItem cards. Each takes a `value` and the SelectableCard props other than isSelected, onChange, inputType and name.',
+        'SelectableCardGroupItem cards. Each takes a `value` and the SelectableCard props other than isSelected, onChange, inputType and htmlName.',
       required: true,
     },
     {
-      name: 'xstyle',
+      name: 'containerXstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
+        'StyleX styles for the Field box around the label, description and cards (margins, positioning, sizing). The group composes Field, so it takes no root xstyle, className or style.',
+    },
+    {
+      name: 'containerClassName',
+      type: 'string',
+      description:
+        'Class name for the Field box. Same targeting as containerXstyle.',
+    },
+    {
+      name: 'containerStyle',
+      type: 'CSSProperties',
+      description:
+        'Inline styles for the Field box. Same targeting as containerXstyle.',
     },
   ],
   theming: {
@@ -173,9 +185,10 @@ export const docsZh = {
       description: '标签下方的辅助文字，并与组关联。',
     },
     {
-      name: 'name',
+      name: 'htmlName',
       type: 'string',
-      description: '原生输入共享的 name，用于将单选按钮分组。默认自动生成。',
+      description:
+        '原生输入共享的 name，用于将单选按钮分组（与 RadioList 的 `htmlName` 相同）。默认自动生成。',
     },
     {
       name: 'isDisabled',
@@ -193,14 +206,24 @@ export const docsZh = {
       name: 'children',
       type: 'ReactNode',
       description:
-        'SelectableCardGroupItem 卡片。每张卡片接受一个 `value`，以及除 isSelected、onChange、inputType 和 name 之外的 SelectableCard 属性。',
+        'SelectableCardGroupItem 卡片。每张卡片接受一个 `value`，以及除 isSelected、onChange、inputType 和 htmlName 之外的 SelectableCard 属性。',
       required: true,
     },
     {
-      name: 'xstyle',
+      name: 'containerXstyle',
       type: 'StyleXStyles',
       description:
-        '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
+        '作用于标签、描述和卡片外层 Field 容器的 StyleX 样式（外边距、定位、尺寸）。该组由 Field 组成，因此不接受根级 xstyle、className 或 style。',
+    },
+    {
+      name: 'containerClassName',
+      type: 'string',
+      description: 'Field 容器的类名，作用范围与 containerXstyle 相同。',
+    },
+    {
+      name: 'containerStyle',
+      type: 'CSSProperties',
+      description: 'Field 容器的内联样式，作用范围与 containerXstyle 相同。',
     },
   ],
   theming: {
@@ -208,6 +231,31 @@ export const docsZh = {
       {
         className: 'astryx-selectable-card-group',
         visualProps: ['orientation', 'selectionMode'],
+      },
+    ],
+  },
+  usage: {
+    description:
+      '用于在少数以卡片呈现的丰富选项中做选择：套餐、外观、布局。单选为用户提供他们预期的单选按钮组键盘操作和位置播报；当可以同时开启多张卡片时，使用 `multiple`。',
+    bestPractices: [
+      {
+        guidance: true,
+        description:
+          '为每张卡片提供一个说明其选项的 `label`；它就是读屏软件读出的单选按钮或复选框名称。',
+      },
+      {
+        guidance: true,
+        description:
+          '当产品有合理的默认值时，让单选从一个值开始，这样 Tab 停靠点会落在它上面。',
+      },
+      {
+        guidance: false,
+        description:
+          '在卡片内放置按钮或链接；整张卡片都是单选按钮或复选框的目标。',
+      },
+      {
+        guidance: false,
+        description: '用于导航或操作；这些场景请使用 ClickableCard。',
       },
     ],
   },

@@ -134,4 +134,64 @@ describe('SelectableCardGroup', () => {
     ).toThrow(/inside a SelectableCardGroup/);
     spy.mockRestore();
   });
+
+  it('a disabled group submits nothing with its form, and keeps its grouping', () => {
+    const {container} = render(
+      <form>
+        <Single initial="Pro" isDisabled />
+      </form>,
+    );
+    const form = container.querySelector('form');
+    if (form == null) {
+      throw new Error('no form');
+    }
+    expect([...new FormData(form).keys()]).toEqual([]);
+    const names = new Set(
+      screen.getAllByRole('radio').map(r => r.getAttribute('name')),
+    );
+    expect(names.size).toBe(1);
+  });
+
+  it('an enabled group submits its choice under htmlName', () => {
+    const {container} = render(
+      <form>
+        <SelectableCardGroup
+          label="Plan"
+          htmlName="plan"
+          value="Pro"
+          onChange={() => {}}>
+          {PLANS.map(plan => (
+            <SelectableCardGroupItem key={plan} value={plan} label={plan}>
+              {plan}
+            </SelectableCardGroupItem>
+          ))}
+        </SelectableCardGroup>
+      </form>,
+    );
+    const form = container.querySelector('form');
+    if (form == null) {
+      throw new Error('no form');
+    }
+    expect([...new FormData(form).entries()]).toEqual([['plan', 'on']]);
+  });
+
+  it('styles the Field box through container props, not the group', () => {
+    render(
+      <SelectableCardGroup
+        label="Plan"
+        value={null}
+        onChange={() => {}}
+        containerClassName="field-box"
+        containerStyle={{marginTop: 7}}>
+        <SelectableCardGroupItem value="Basic" label="Basic">
+          Basic
+        </SelectableCardGroupItem>
+      </SelectableCardGroup>,
+    );
+    const group = screen.getByRole('radiogroup', {name: 'Plan'});
+    expect(group).not.toHaveClass('field-box');
+    const box = group.closest('.field-box');
+    expect(box).not.toBeNull();
+    expect((box as HTMLElement).style.marginTop).toBe('7px');
+  });
 });

@@ -31,9 +31,8 @@ import {
   type Ref,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import type {BaseProps} from '@astryxdesign/core';
-import {Field} from '@astryxdesign/core/Field';
+import {Field, type FieldContainerStyleProps} from '@astryxdesign/core/Field';
 import {
   SelectableCard,
   type SelectableCardProps,
@@ -79,7 +78,13 @@ interface MultipleSelection {
   onChange: (value: string[]) => void;
 }
 
-export type SelectableCardGroupProps = Omit<BaseProps, 'onChange'> &
+// It composes Field: root styling goes to the Field box through `container*`
+// (input-fields FR10), not onto the group.
+export type SelectableCardGroupProps = Omit<
+  BaseProps,
+  'onChange' | 'xstyle' | 'className' | 'style'
+> &
+  FieldContainerStyleProps &
   (SingleSelection | MultipleSelection) & {
     /** Ref forwarded to the group element (role radiogroup or group). */
     ref?: Ref<HTMLDivElement>;
@@ -90,10 +95,10 @@ export type SelectableCardGroupProps = Omit<BaseProps, 'onChange'> &
     /** Helper text under the label, linked to the group. */
     description?: string;
     /**
-     * The native inputs' shared `name`, which groups the radios. Defaults to
-     * a generated one.
+     * The native inputs' shared `name`, which groups the radios, as
+     * `htmlName` on RadioList. Defaults to a generated one.
      */
-    name?: string;
+    htmlName?: string;
     /** Disables every card; they stay focusable and announce disabled. */
     isDisabled?: boolean;
     /**
@@ -106,7 +111,7 @@ export type SelectableCardGroupProps = Omit<BaseProps, 'onChange'> &
 
 export interface SelectableCardGroupItemProps extends Omit<
   SelectableCardProps,
-  'isSelected' | 'onChange' | 'inputType' | 'name'
+  'isSelected' | 'onChange' | 'inputType' | 'htmlName'
 > {
   /** The value this card stands for in the group's `value`. */
   value: string;
@@ -151,13 +156,13 @@ export function SelectableCardGroup(props: SelectableCardGroupProps) {
     label,
     isLabelHidden,
     description,
-    name: nameProp,
+    htmlName,
     isDisabled = false,
     orientation = 'horizontal',
     children,
-    xstyle,
-    className,
-    style,
+    containerXstyle,
+    containerClassName,
+    containerStyle,
     selectionMode: _selectionMode,
     value: _value,
     onChange: _onChange,
@@ -167,7 +172,18 @@ export function SelectableCardGroup(props: SelectableCardGroupProps) {
   const inputID = useId();
   const descriptionID = useId();
   const generatedName = useId();
-  const name = nameProp ?? generatedName;
+  const name = htmlName ?? generatedName;
+  // An untyped caller's root styling never reaches the group element.
+  const {
+    xstyle: _xstyle,
+    className: _className,
+    style: _style,
+    ...groupProps
+  } = rest as typeof rest & {
+    xstyle?: unknown;
+    className?: unknown;
+    style?: unknown;
+  };
   const isMultiple = props.selectionMode === 'multiple';
 
   const context = useMemo<GroupContextValue>(() => {
@@ -209,9 +225,12 @@ export function SelectableCardGroup(props: SelectableCardGroupProps) {
       labelID={labelID}
       isGroupLabel
       descriptionID={description ? descriptionID : undefined}
-      isDisabled={isDisabled}>
+      isDisabled={isDisabled}
+      xstyle={containerXstyle}
+      className={containerClassName}
+      style={containerStyle}>
       <div
-        {...rest}
+        {...groupProps}
         ref={ref}
         role={isMultiple ? 'group' : 'radiogroup'}
         aria-labelledby={labelID}
@@ -225,10 +244,7 @@ export function SelectableCardGroup(props: SelectableCardGroupProps) {
           stylex.props(
             styles.group,
             orientation === 'vertical' && styles.vertical,
-            xstyle as StyleXStyles,
           ),
-          className,
-          style,
         )}>
         <SelectableCardGroupContext.Provider value={context}>
           {children}
@@ -259,7 +275,7 @@ export function SelectableCardGroupItem({
     <SelectableCard
       {...props}
       inputType={group.inputType}
-      name={group.name}
+      htmlName={group.name}
       isSelected={group.isSelected(value)}
       isDisabled={group.isDisabled || isDisabled}
       onChange={isSelected => group.change(value, isSelected)}

@@ -22,7 +22,7 @@ function Plans({onChange}: {onChange?: (value: string) => void}) {
           key={plan}
           label={plan}
           inputType="radio"
-          name="plan"
+          htmlName="plan"
           isSelected={value === plan}
           onChange={() => {
             setValue(plan);
@@ -63,7 +63,7 @@ describe('SelectableCard inputType="radio"', () => {
       <SelectableCard
         label="Basic"
         inputType="radio"
-        name="plan"
+        htmlName="plan"
         isSelected
         onChange={onChange}>
         Basic
@@ -80,7 +80,7 @@ describe('SelectableCard inputType="radio"', () => {
       <SelectableCard
         label="Pro"
         inputType="radio"
-        name="plan"
+        htmlName="plan"
         isSelected={false}
         onChange={onChange}>
         Pro
@@ -97,7 +97,7 @@ describe('SelectableCard inputType="radio"', () => {
       <SelectableCard
         label="Team"
         inputType="radio"
-        name="plan"
+        htmlName="plan"
         isSelected={false}
         isDisabled
         onChange={onChange}>

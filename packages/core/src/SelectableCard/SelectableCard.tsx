@@ -24,7 +24,7 @@
  * role, label, and checked state — the card surface itself has no role/tabIndex.
  * Space toggles it natively; Enter is wired up as an additional toggle key.
  * With inputType="radio" the input is a radio: the card selects and never
- * deselects itself, and cards sharing a `name` form one native radio group.
+ * deselects itself, and cards sharing an `htmlName` form one native radio group.
  *
  * For static display, use Card.
  * For navigation or action cards, use ClickableCard.
@@ -286,7 +286,7 @@ export interface SelectableCardProps extends Omit<BaseProps, 'onChange'> {
   /**
    * The native control inside the card. `checkbox` toggles. `radio` makes the
    * card one choice of a set: it selects and never deselects itself. Give the
-   * set's cards one `name` so the browser groups them: one tab stop, arrow
+   * set's cards one `htmlName` so the browser groups them: one tab stop, arrow
    * keys move and select, and the position ("2 of 3") is spoken. Put them in
    * an element with role="radiogroup" and an accessible name.
    * @default 'checkbox'
@@ -294,9 +294,11 @@ export interface SelectableCardProps extends Omit<BaseProps, 'onChange'> {
   inputType?: 'checkbox' | 'radio';
 
   /**
-   * The native input's `name`. Radio cards that share it form one group.
+   * The native input's `name`, as on RadioList and CheckboxInput. Radio cards
+   * that share it form one group. A disabled card is detached from its form,
+   * so it submits nothing.
    */
-  name?: string;
+  htmlName?: string;
 
   /**
    * Set to true to disable the card.
@@ -355,7 +357,7 @@ export interface SelectableCardProps extends Omit<BaseProps, 'onChange'> {
  * @compositionHint Use for multi-select or single-select card groups.
  * Manage selection state externally — use a Set for multi-select
  * or a single value for a single choice, where each card takes
- * inputType="radio" and the set's shared `name`.
+ * inputType="radio" and the set's shared `htmlName`.
  * For navigation/action cards, use ClickableCard instead.
  *
  * @example
@@ -373,7 +375,7 @@ export function SelectableCard({
   isSelected,
   onChange,
   inputType = 'checkbox',
-  name,
+  htmlName,
   onClick: onClickProp,
   onMouseUp: onMouseUpProp,
   isDisabled = false,
@@ -494,7 +496,11 @@ export function SelectableCard({
       <input
         ref={interactiveRef}
         type={isRadio ? 'radio' : 'checkbox'}
-        name={name}
+        name={htmlName}
+        // Detached from its form while disabled, so it neither submits nor
+        // blocks submission (spec:AST-085 FR3); the name keeps the radio
+        // grouping.
+        form={isDisabled ? '' : undefined}
         checked={isSelected}
         aria-label={label}
         aria-disabled={isDisabled ? 'true' : undefined}

@@ -108,7 +108,7 @@ export const RadioInput: Story = {
             key={plan.id}
             label={plan.name}
             inputType="radio"
-            name="plan"
+            htmlName="plan"
             isSelected={selected === plan.id}
             onChange={() => setSelected(plan.id)}
             width={200}>
@@ -129,7 +129,7 @@ export const RadioInput: Story = {
     docs: {
       description: {
         story:
-          'A single choice with radio semantics: each card takes inputType="radio" and the set\'s name, inside a named radiogroup. The set is one tab stop, the arrow keys move and select, and a click never deselects.',
+          'A single choice with radio semantics: each card takes inputType="radio" and the set\'s htmlName, inside a named radiogroup. The set is one tab stop, the arrow keys move and select, and a click never deselects.',
       },
     },
   },
