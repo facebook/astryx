@@ -9,15 +9,9 @@ public enum AstryxBannerStatus: String, CaseIterable, Sendable {
   case error
   case success
 
-  /// The SF Symbol core's icon defaults map this status to.
-  var symbol: String {
-    switch self {
-    case .info: "info.circle.fill"
-    case .warning: "exclamationmark.triangle.fill"
-    case .error: "exclamationmark.circle.fill"
-    case .success: "checkmark.circle.fill"
-    }
-  }
+  /// The shared icon name for this status (AST-082 FR17), drawn as the
+  /// theme's or the platform's symbol for it.
+  var iconName: String { rawValue }
 
   var groundToken: String {
     switch self {
@@ -55,9 +49,13 @@ public struct AstryxBanner: View {
 
   public var body: some View {
     HStack(alignment: .firstTextBaseline, spacing: astryx.space(2)) {
-      Image(systemName: status.symbol)
-        .foregroundStyle(astryx.color(status.iconToken))
-        .accessibilityHidden(true)
+      if let symbol = astryx.icon(status.iconName) {
+        // Sized with the title so it grows with Dynamic Type.
+        Image(systemName: symbol)
+          .font(astryx.font(size: "text-body-size", 14, weight: "text-body-weight"))
+          .foregroundStyle(astryx.color(status.iconToken))
+          .accessibilityHidden(true)
+      }
       VStack(alignment: .leading, spacing: astryx.space(1)) {
         AstryxText(title, weight: .semibold)
         if let description {

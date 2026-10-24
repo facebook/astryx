@@ -100,7 +100,8 @@ public struct AstryxHeading: View {
         astryx.font(
           size: "text-heading-\(level)-size",
           20,
-          weight: "text-heading-\(level)-weight"
+          weight: "text-heading-\(level)-weight",
+          family: "font-family-heading"
         )
       )
       .foregroundStyle(astryx.color("color-text-primary"))
@@ -108,7 +109,7 @@ public struct AstryxHeading: View {
       .accessibilityHeading(headingLevel)
   }
 
-  private var headingLevel: AccessibilityHeadingLevel {
+  var headingLevel: AccessibilityHeadingLevel {
     switch level {
     case 1: .h1
     case 2: .h2
