@@ -12,9 +12,10 @@
  * FR16): core never imports @astryxdesign/native, and no file anywhere in
  * packages/native/ imports core outside the portable entry. Until core ships
  * that entry, NATIVE_CORE_EXCEPTIONS names each build-time read of core that
- * is allowed (AST-082 FR16): two theme entries imported by build scripts, and
- * core's component documentation and built-in icon names read as data by one
- * loader. Any other import or read of core fails.
+ * is allowed (AST-082 FR16): two theme entries imported by build scripts,
+ * core's locale catalogs imported by the Swift strings generator, and core's
+ * component documentation and built-in icon names read as data by one loader.
+ * Any other import or read of core fails.
  */
 
 const fs = require('node:fs');
@@ -47,14 +48,25 @@ const CORE_PACKAGE_PATH =
  * portable entry ships. Adding one is a reviewed change to this list.
  */
 const NATIVE_CORE_EXCEPTIONS = Object.freeze({
-  // The Swift theme generator resolves a theme's tokens through core's theme
-  // entries, at build time only (native theme generator spec, G2).
+  // Imports of core by build scripts, each scoped to a folder or one file.
   imports: Object.freeze([
+    // The Swift theme generator resolves a theme's tokens through core's theme
+    // entries (native theme generator spec, G2).
     Object.freeze({
+      name: 'theme entries',
       directory: 'packages/native/scripts',
       specifiers: Object.freeze([
         '@astryxdesign/core/theme',
         '@astryxdesign/core/theme/tokens',
+      ]),
+    }),
+    // The Swift strings generator reads core's locale catalogs, through core's
+    // public ./locales/*.json export.
+    Object.freeze({
+      name: "core's locale catalogs",
+      file: 'packages/native/scripts/swift-ios-strings.mjs',
+      specifiers: Object.freeze([
+        /^@astryxdesign\/core\/locales\/[\w-]+\.json$/,
       ]),
     }),
   ]),
@@ -114,8 +126,14 @@ function resolveSpecifier(root, filePath, specifier) {
 function isAllowedNativeImport(relPath, specifier) {
   return NATIVE_CORE_EXCEPTIONS.imports.some(
     exception =>
-      relPath.startsWith(`${exception.directory}/`) &&
-      exception.specifiers.includes(specifier),
+      (exception.file
+        ? relPath === exception.file
+        : relPath.startsWith(`${exception.directory}/`)) &&
+      exception.specifiers.some(allowed =>
+        typeof allowed === 'string'
+          ? allowed === specifier
+          : allowed.test(specifier),
+      ),
   );
 }
 

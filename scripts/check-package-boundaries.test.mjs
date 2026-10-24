@@ -87,14 +87,30 @@ describe('package boundaries', () => {
     expect(files(findViolations(root))).toEqual([
       'packages/native/src/theme/theme.ts',
     ]);
-    expect(NATIVE_CORE_EXCEPTIONS.imports).toEqual([
-      {
-        directory: 'packages/native/scripts',
-        specifiers: [
-          '@astryxdesign/core/theme',
-          '@astryxdesign/core/theme/tokens',
-        ],
-      },
+    expect(NATIVE_CORE_EXCEPTIONS.imports.map(listed => listed.name)).toEqual([
+      'theme entries',
+      "core's locale catalogs",
+    ]);
+  });
+
+  it("allow core's locale catalogs only in the Swift strings generator", () => {
+    const read =
+      "const dir = path.dirname(require.resolve('@astryxdesign/core/locales/en.json'));\n";
+    const root = tree({
+      'packages/native/scripts/swift-ios-strings.mjs': read,
+      'packages/native/scripts/swift-ios-theme.mjs': read,
+      'packages/native/swift-ios-1/scripts/strings.mjs': read,
+    });
+    expect(files(findViolations(root)).sort()).toEqual([
+      'packages/native/scripts/swift-ios-theme.mjs',
+      'packages/native/swift-ios-1/scripts/strings.mjs',
+    ]);
+    const other = tree({
+      'packages/native/scripts/swift-ios-strings.mjs':
+        "import messages from '@astryxdesign/core/locales/en.generated.js';\n",
+    });
+    expect(files(findViolations(other))).toEqual([
+      'packages/native/scripts/swift-ios-strings.mjs',
     ]);
   });
 
