@@ -51,3 +51,10 @@ import Testing
   #expect(largest.width > large.width)
   #expect(largest.height > large.height)
 }
+
+@MainActor
+@Test func aButtonIsNamedByItsLabelAndIsAButton() {
+  #expect(AstryxButton(label: "Save") {}.accessibilityText == "Save")
+  #expect(AstryxButton(label: "Save", isLoading: true) {}.accessibilityText == "Save")
+  #expect(AstryxButton.accessibilityTraits.contains(.isButton))
+}

@@ -105,9 +105,12 @@ public struct AstryxHeading: View {
         )
       )
       .foregroundStyle(astryx.color("color-text-primary"))
-      .accessibilityAddTraits(.isHeader)
+      .accessibilityAddTraits(Self.accessibilityTraits)
       .accessibilityHeading(headingLevel)
   }
+
+  /// The traits assistive technology gets: a header.
+  static var accessibilityTraits: AccessibilityTraits { .isHeader }
 
   var headingLevel: AccessibilityHeadingLevel {
     switch level {
