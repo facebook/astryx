@@ -5,7 +5,7 @@
 /**
  * @file Slider.tsx
  * @input Uses React, useId, useRef, useCallback, useEffect, Field, Tooltip, useTooltip, VisuallyHidden
- * @output Exports Slider and its props; unfilled marks share the track token; modifier-only key presses do not restore the thumb focus ring; a drag belongs to the pointer that started it
+ * @output Exports Slider and its props; unfilled marks share the track token; modifier-only key presses do not restore the thumb focus ring; a drag belongs to the pointer that started it; two coincident range thumbs separate toward the press or the first movement
  * @position Core implementation; consumed by index.ts, tested by Slider.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -665,6 +665,11 @@ export function Slider({ref, ...props}: SliderProps) {
     [isRange, values],
   );
 
+  // Set while a drag holds two coincident thumbs at their shared value and
+  // no movement has said which way it goes; the first value off it picks
+  // the thumb that can travel that way (see handlePointerMove).
+  const coincidentDragRef = useRef<number | null>(null);
+
   const updateValue = useCallback(
     (thumbIndex: number, newVal: number, snap = true) => {
       if (isDisabled) {
@@ -772,10 +777,22 @@ export function Slider({ref, ...props}: SliderProps) {
         pressedThumb == null || thumbs == null
           ? -1
           : Array.from(thumbs).indexOf(pressedThumb);
-      // A direct thumb press owns that thumb even when range values coincide.
-      // Track and mark presses still choose the nearest value.
-      const thumbIndex =
+      // A direct thumb press owns that thumb; track and mark presses choose
+      // the nearest value. Two thumbs on one value are the exception: only
+      // one of them can travel toward the press, so the side of the press
+      // picks it, and a press on the shared value itself keeps the pressed
+      // thumb until the first movement picks a side.
+      const isCoincident = isRange && values[0] === values[1];
+      let thumbIndex =
         pressedThumbIndex >= 0 ? pressedThumbIndex : getClosestThumb(newVal);
+      coincidentDragRef.current = null;
+      if (isCoincident) {
+        if (newVal === values[0]) {
+          coincidentDragRef.current = values[0];
+        } else {
+          thumbIndex = newVal > values[0] ? 1 : 0;
+        }
+      }
       draggingThumbRef.current = thumbIndex;
       setDraggingThumb(thumbIndex);
       updateValue(thumbIndex, newVal);
@@ -793,7 +810,14 @@ export function Slider({ref, ...props}: SliderProps) {
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
       }
     },
-    [isDisabled, getValueFromPosition, getClosestThumb, updateValue],
+    [
+      isDisabled,
+      isRange,
+      values,
+      getValueFromPosition,
+      getClosestThumb,
+      updateValue,
+    ],
   );
 
   const handlePointerMove = useCallback(
@@ -806,6 +830,24 @@ export function Slider({ref, ...props}: SliderProps) {
         return;
       }
       const newVal = getValueFromPosition(e.clientX, e.clientY);
+      const shared = coincidentDragRef.current;
+      if (shared !== null) {
+        if (newVal === shared) {
+          return;
+        }
+        // The first movement off the shared value hands the drag to the
+        // thumb that can travel that way, with its focus and pressed paint.
+        coincidentDragRef.current = null;
+        const thumbIndex = newVal > shared ? 1 : 0;
+        if (thumbIndex !== draggingThumbRef.current) {
+          draggingThumbRef.current = thumbIndex;
+          setDraggingThumb(thumbIndex);
+          const thumbs =
+            trackRef.current?.querySelectorAll<HTMLElement>('[role="slider"]');
+          thumbs?.[thumbIndex]?.focus();
+          setKeyboardFocusThumb(null);
+        }
+      }
       updateValue(draggingThumbRef.current, newVal);
     },
     [isDisabled, getValueFromPosition, updateValue],
@@ -819,6 +861,7 @@ export function Slider({ref, ...props}: SliderProps) {
       ) {
         draggingThumbRef.current = null;
         dragPointerRef.current = null;
+        coincidentDragRef.current = null;
         setDraggingThumb(null);
         fireChangeEnd();
       }
