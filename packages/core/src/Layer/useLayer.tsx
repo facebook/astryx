@@ -37,7 +37,11 @@ import {layerViewportInset} from './layerViewportInset.stylex';
 import {layerInsetProperties} from './layerInset';
 import {
   LAYER_CLEARANCE_PROPERTY,
+  LAYER_CLEARS_ANCHOR_ATTRIBUTE,
+  LAYER_CLEAR_FALLBACKS_PROPERTY,
+  LAYER_TRY_FALLBACKS_PROPERTY,
   ensureSlideRules,
+  getAnchorClearFallbacks,
   slideRuleName,
 } from './layerSlideRules';
 import {useLayerContext} from './LayerContext';
@@ -416,11 +420,56 @@ interface InternalLayerFields {
   wasJustDismissed: () => boolean;
 }
 
+/**
+ * Context-mode options a core component may pass through `useLayerInternal`;
+ * not part of the public `useLayer` options.
+ */
+interface InternalContextLayerOptions extends ContextLayerOptions {
+  /**
+   * The layer must never cover its anchor (spec:AST-059 FR4). When the
+   * standard fallback list settles it over its anchor, it switches to its
+   * anchor-clear list: beside the trigger, then the roomier block side sized
+   * to its room. For a hover-summoned layer, which the hover on its trigger
+   * keeps open.
+   */
+  keepsAnchorClear?: boolean;
+}
+
 type InternalContextLayerReturn = ContextLayerReturn & InternalLayerFields;
 type InternalFixedLayerReturn = FixedLayerReturn & InternalLayerFields;
 
 function toCssLength(value: number | string): string {
   return typeof value === 'number' ? `${value}px` : value;
+}
+
+/**
+ * For a layer that must never cover its anchor (spec:AST-059 FR4): read where
+ * the standard fallback list settled the just-shown layer and, if its box
+ * covers the anchor, switch it to its anchor-clear list. This runs inside
+ * `show()`, right after `showPopover()`, so the read and the switch land in
+ * the same task as the show and the first frame painted is the settled one
+ * (FR8). Only a box that overlaps the anchor counts; a layer flush against it
+ * does not.
+ */
+function clearAnchorIfCovered(
+  layer: HTMLElement,
+  anchor: HTMLElement | null,
+): void {
+  if (!anchor) {
+    return;
+  }
+  const a = anchor.getBoundingClientRect();
+  const l = layer.getBoundingClientRect();
+  const covers =
+    l.width > 0 &&
+    l.height > 0 &&
+    l.left < a.right &&
+    a.left < l.right &&
+    l.top < a.bottom &&
+    a.top < l.bottom;
+  if (covers) {
+    layer.setAttribute(LAYER_CLEARS_ANCHOR_ATTRIBUTE, '');
+  }
 }
 
 /**
@@ -691,10 +740,12 @@ export function useKeepLayerOpenProps(
  * ```
  */
 function useLayerImplementation(
-  options: ContextLayerOptions | FixedLayerOptions,
+  options: InternalContextLayerOptions | FixedLayerOptions,
 ): InternalContextLayerReturn | InternalFixedLayerReturn {
   const {mode, onShow, onHide, lightDismiss = false} = options;
   const lazyMount = mode === 'context' ? (options.lazyMount ?? false) : false;
+  const keepsAnchorClear =
+    mode === 'context' ? (options.keepsAnchorClear ?? false) : false;
   const id = useId();
   const anchorId = `--astryx-layer-${id.replace(/:/g, '')}`;
 
@@ -855,13 +906,18 @@ function useLayerImplementation(
         });
         return;
       }
+      popover.removeAttribute(LAYER_CLEARS_ANCHOR_ATTRIBUTE);
       showPopoverElement(popover);
+      if (keepsAnchorClear) {
+        clearAnchorIfCovered(popover, triggerRef.current);
+      }
       isOpenRef.current = true;
       setIsOpen(true);
       onShow?.();
     }
   }, [
     onShow,
+    keepsAnchorClear,
     requestContextMount,
     showPopoverElement,
     isCurrentContextPopover,
@@ -1162,6 +1218,16 @@ function useLayerImplementation(
       } = props || {};
 
       // CSS anchor positioning (dynamic, not in StyleX)
+      const standardFallbacks = getPositionTryFallbacks(placement, alignment);
+      // A layer that keeps its anchor clear carries a second list; `show()`
+      // switches to it when the standard list settles over the anchor (FR4).
+      const clearFallbacks =
+        keepsAnchorClear && positioning === 'anchor'
+          ? getAnchorClearFallbacks(placement)
+          : '';
+      const clearFallbacksProperty: Record<string, string> = clearFallbacks
+        ? {[LAYER_CLEAR_FALLBACKS_PROPERTY]: clearFallbacks}
+        : {};
       const anchorStyle: React.CSSProperties =
         positioning === 'custom'
           ? // Consumer authors its own position styles via `style` — keep
@@ -1170,10 +1236,9 @@ function useLayerImplementation(
           : {
               positionAnchor: anchorId,
               positionArea: getPositionArea(placement, alignment),
-              positionTryFallbacks: getPositionTryFallbacks(
-                placement,
-                alignment,
-              ),
+              positionTryFallbacks: clearFallbacks
+                ? `var(${LAYER_TRY_FALLBACKS_PROPERTY}, ${standardFallbacks})`
+                : standardFallbacks,
               ...getSelfAlignment(placement, alignment, isAnchorInView),
             };
 
@@ -1234,6 +1299,7 @@ function useLayerImplementation(
             ...stylexResult.style,
             ...anchorStyle,
             ...clearanceProperty,
+            ...clearFallbacksProperty,
             ...layerInsetProperties(declaredInset),
             ...contextMount.portalStyle,
             ...extraStyle,
@@ -1259,6 +1325,7 @@ function useLayerImplementation(
       declaredInset,
       id,
       isAnchorInView,
+      keepsAnchorClear,
       lightDismiss,
       popoverRefCallback,
       sentinelRefCallback,
@@ -1358,15 +1425,18 @@ export function useLayer(
   }, [internalLayer]);
 }
 
-/** @internal Shared with usePopover; not exported from the package barrel. */
+/**
+ * @internal Shared with usePopover and useTooltip; not exported from the
+ * package barrel.
+ */
 export function useLayerInternal(
-  options: ContextLayerOptions,
+  options: InternalContextLayerOptions,
 ): InternalContextLayerReturn;
 export function useLayerInternal(
   options: FixedLayerOptions,
 ): InternalFixedLayerReturn;
 export function useLayerInternal(
-  options: ContextLayerOptions | FixedLayerOptions,
+  options: InternalContextLayerOptions | FixedLayerOptions,
 ): InternalContextLayerReturn | InternalFixedLayerReturn {
   return useLayerImplementation(options);
 }

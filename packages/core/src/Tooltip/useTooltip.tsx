@@ -21,7 +21,7 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
-  useLayer,
+  useLayerInternal,
   type ContextRenderProps,
   type LayerAlignment,
   type LayerPlacement,
@@ -59,6 +59,11 @@ const styles = stylex.create({
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
+    // Content taller than the room the layer gives it scrolls inside the
+    // surface, which stays hoverable so the pointer can move in and scroll
+    // (spec:AST-059 FR3). Content that fits never scrolls.
+    overflowY: 'auto',
+    overscrollBehavior: 'contain',
   },
   // Position-based margin styles
   // Content wrapper for padding
@@ -279,10 +284,14 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
     onHide,
   } = options;
 
-  const layer = useLayer({
+  // A tooltip stays open while its trigger is hovered, so it must never cover
+  // the trigger: content taller than the room above and below opens beside
+  // it, or on the roomier side capped to that room (spec:AST-059 FR4).
+  const layer = useLayerInternal({
     mode: 'context',
     onShow,
     onHide,
+    keepsAnchorClear: true,
   });
   const {
     ref: layerRef,

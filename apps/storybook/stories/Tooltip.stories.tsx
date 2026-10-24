@@ -163,6 +163,41 @@ export const LongContent: Story = {
   },
 };
 
+/** Sixty lines: taller than the room above or below a mid-page trigger. */
+const TALL_LINES = Array.from(
+  {length: 60},
+  (_, i) => `Line ${i + 1} of a tooltip taller than the space around it`,
+);
+
+/**
+ * Content taller than the room above and below its trigger. The page is two
+ * and a half viewports tall so the trigger can be scrolled to any height.
+ */
+export const TallContent: Story = {
+  parameters: {layout: 'fullscreen'},
+  args: {
+    placement: 'above',
+    content: (
+      <div>
+        {TALL_LINES.map(line => (
+          <div key={line}>{line}</div>
+        ))}
+      </div>
+    ),
+    children: <Button label="Hover for details">Hover for details</Button>,
+  },
+  render: args => (
+    <div
+      style={{
+        minHeight: '250vh',
+        display: 'grid',
+        placeItems: 'center',
+      }}>
+      <Tooltip {...args} />
+    </div>
+  ),
+};
+
 export const MultipleTooltips: Story = {
   render: () => (
     <div style={{padding: 100}}>
