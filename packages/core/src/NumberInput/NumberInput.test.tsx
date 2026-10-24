@@ -2314,7 +2314,7 @@ describe('NumberInput stepping', () => {
       warnSpy.mockRestore();
     });
 
-    it('steps the value and returns focus to the input', () => {
+    it('steps the value and moves focus to the input on a mouse click', () => {
       const onChange = vi.fn();
       render(
         <NumberInput
@@ -2325,14 +2325,123 @@ describe('NumberInput stepping', () => {
         />,
       );
       const input = screen.getByRole('spinbutton');
+      const increment = screen.getByRole('button', {
+        name: 'Increment Quantity',
+      });
+      const decrement = screen.getByRole('button', {
+        name: 'Decrement Quantity',
+      });
 
-      fireEvent.click(screen.getByRole('button', {name: 'Increment Quantity'}));
+      fireEvent.pointerDown(increment, {pointerType: 'mouse'});
+      fireEvent.click(increment, {detail: 1});
       expect(onChange).toHaveBeenLastCalledWith(6);
       expect(input).toHaveFocus();
 
-      fireEvent.click(screen.getByRole('button', {name: 'Decrement Quantity'}));
+      fireEvent.pointerDown(decrement, {pointerType: 'mouse'});
+      fireEvent.click(decrement, {detail: 1});
       expect(onChange).toHaveBeenLastCalledWith(4);
       expect(input).toHaveFocus();
+    });
+
+    // UIStepper never becomes first responder, and focusing the field on a
+    // phone brings up the on-screen keyboard.
+    it.each(['touch', 'pen'])(
+      'steps the value without focusing the input on a %s tap',
+      pointerType => {
+        const onChange = vi.fn();
+        render(
+          <NumberInput
+            label="Quantity"
+            value={5}
+            onChange={onChange}
+            hasNumberSteppers
+          />,
+        );
+        const input = screen.getByRole('spinbutton');
+        const increment = screen.getByRole('button', {
+          name: 'Increment Quantity',
+        });
+        const decrement = screen.getByRole('button', {
+          name: 'Decrement Quantity',
+        });
+
+        fireEvent.pointerDown(increment, {pointerType});
+        fireEvent.click(increment, {detail: 1});
+        expect(onChange).toHaveBeenLastCalledWith(6);
+        expect(input).not.toHaveFocus();
+
+        fireEvent.pointerDown(decrement, {pointerType});
+        fireEvent.click(decrement, {detail: 1});
+        expect(onChange).toHaveBeenLastCalledWith(4);
+        expect(input).not.toHaveFocus();
+      },
+    );
+
+    it('steps without focusing the input when activated with no pointer', () => {
+      // Assistive technology activates a button with a click of detail 0 and
+      // no pointer press before it.
+      const onChange = vi.fn();
+      render(
+        <NumberInput
+          label="Quantity"
+          value={5}
+          onChange={onChange}
+          hasNumberSteppers
+        />,
+      );
+      fireEvent.click(screen.getByRole('button', {name: 'Increment Quantity'}));
+      expect(onChange).toHaveBeenLastCalledWith(6);
+      expect(screen.getByRole('spinbutton')).not.toHaveFocus();
+    });
+
+    it('keeps an editing field focused and steps from its draft on a tap', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <NumberInput
+          label="Quantity"
+          value={2}
+          onChange={onChange}
+          hasNumberSteppers
+        />,
+      );
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.clear(input);
+      await user.type(input, '7.5');
+      const increment = screen.getByRole('button', {
+        name: 'Increment Quantity',
+      });
+
+      const pointerDown = fireEvent.pointerDown(increment, {
+        pointerType: 'touch',
+      });
+      fireEvent.click(increment, {detail: 1});
+
+      // The press is default-prevented, so focus never leaves the field.
+      expect(pointerDown).toBe(false);
+      expect(onChange).toHaveBeenLastCalledWith(8);
+      expect(input).toHaveFocus();
+    });
+
+    it('does nothing for a tap on the stepper at its bound', () => {
+      const onChange = vi.fn();
+      render(
+        <NumberInput
+          label="Quantity"
+          value={10}
+          max={10}
+          onChange={onChange}
+          hasNumberSteppers
+        />,
+      );
+      const increment = screen.getByRole('button', {
+        name: 'Increment Quantity',
+      });
+      fireEvent.pointerDown(increment, {pointerType: 'touch'});
+      fireEvent.click(increment, {detail: 1});
+      expect(onChange).not.toHaveBeenCalled();
+      expect(screen.getByRole('spinbutton')).not.toHaveFocus();
     });
 
     it('disables only the stepper at the reached boundary', () => {

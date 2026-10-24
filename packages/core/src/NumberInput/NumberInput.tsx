@@ -882,6 +882,42 @@ export function NumberInput({
   const canIncrement = getNextValue(1) !== valueForStepping;
   const canDecrement = getNextValue(-1) !== valueForStepping;
 
+  // The kind of pointer that pressed a stepper, read when its click lands.
+  const stepperPointerTypeRef = useRef<string | null>(null);
+
+  const handleStepperPointerDown = (
+    event: React.PointerEvent<HTMLButtonElement>,
+  ) => {
+    // The stepper never takes focus: an editing field stays focused.
+    event.preventDefault();
+    stepperPointerTypeRef.current = event.pointerType;
+  };
+
+  const pressStepper = (
+    direction: StepDirection,
+    event: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    const pointerType = stepperPointerTypeRef.current;
+    stepperPointerTypeRef.current = null;
+    // An aria-disabled stepper does nothing, as a natively disabled one did
+    // (spec:AST-085 FR2).
+    if (
+      isDisabled ||
+      isReadOnly ||
+      (direction === 1 ? !canIncrement : !canDecrement)
+    ) {
+      return;
+    }
+    // A mouse click moves focus to the field, so the arrow keys and the wheel
+    // keep stepping. A finger, a pen or assistive technology steps the value
+    // without moving focus: on a phone, focusing the field would bring up the
+    // on-screen keyboard, which a stepper never does.
+    if (pointerType === 'mouse' && event.detail > 0) {
+      inputRef.current?.focus();
+    }
+    stepValue(direction);
+  };
+
   // Handle clear button click
   const handleClear = useCallback(
     (e?: React.MouseEvent<HTMLButtonElement>) => {
@@ -1028,16 +1064,8 @@ export function NumberInput({
               isDisabled || isReadOnly || !canIncrement || undefined
             }
             aria-label={t('@astryx.numberInput.incrementLabel', {label})}
-            onPointerDown={event => event.preventDefault()}
-            onClick={() => {
-              // An aria-disabled stepper does nothing, as a natively disabled
-              // one did (spec:AST-085 FR2).
-              if (isDisabled || isReadOnly || !canIncrement) {
-                return;
-              }
-              inputRef.current?.focus();
-              stepValue(1);
-            }}
+            onPointerDown={handleStepperPointerDown}
+            onClick={event => pressStepper(1, event)}
             {...stylex.props(
               styles.numberStepperButton,
               interactionOverlayStyles.backgroundImage,
@@ -1059,16 +1087,8 @@ export function NumberInput({
               isDisabled || isReadOnly || !canDecrement || undefined
             }
             aria-label={t('@astryx.numberInput.decrementLabel', {label})}
-            onPointerDown={event => event.preventDefault()}
-            onClick={() => {
-              // An aria-disabled stepper does nothing, as a natively disabled
-              // one did (spec:AST-085 FR2).
-              if (isDisabled || isReadOnly || !canDecrement) {
-                return;
-              }
-              inputRef.current?.focus();
-              stepValue(-1);
-            }}
+            onPointerDown={handleStepperPointerDown}
+            onClick={event => pressStepper(-1, event)}
             {...stylex.props(
               styles.numberStepperButton,
               interactionOverlayStyles.backgroundImage,
