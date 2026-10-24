@@ -384,6 +384,13 @@ describe('build-css astryx.css', () => {
       expect(curves).toEqual([points]);
     });
 
+    it('promotes a held row\'s layer for the deselect that follows', () => {
+      const held = layerLines('[data-astryx-press="held"]');
+      expect(held.some(line => /will-change:\s*opacity/.test(line))).toBe(
+        true,
+      );
+    });
+
     it('shows the layer at once on the on arm, over its resting opacity of 0', () => {
       const on = layerLines('[data-astryx-press="on"]');
       const shown = on.find(line => /\{opacity:1;?\}/.test(line));

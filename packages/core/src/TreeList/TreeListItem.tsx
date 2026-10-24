@@ -28,6 +28,7 @@ import {
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {pressLayerStyles} from '../utils/pressLayer.stylex';
+import {cellPressableProps} from '../utils/selectionHold';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {
   hasInteractiveAncestor,
@@ -666,7 +667,7 @@ export function TreeListItem({
       <div {...stylex.props(styles.rowWrapper)}>
         <div
           {...(isInteractive || (hasChildren && onClick == null)
-            ? pressable
+            ? {...pressable, ...cellPressableProps}
             : undefined)}
           {...mergeProps(
             themeProps('tree-list-item', {
