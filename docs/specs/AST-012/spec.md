@@ -172,7 +172,11 @@ A breakpoint map alone emits no CSS. Only rules with adaptation values do.
   by screen size uses it, including the web touch presentation resolver,
   Selector's `adaptive` presentation, and `@astryxdesign/native`; none keeps
   size numbers of its own. A resolver that also needs a coarse pointer ANDs
-  that with compact.
+  that with compact. Compact governs only the choice of a presentation, such as
+  a sheet in place of a popover; a layout width a caller picks, such as
+  AppShell's `mobileNav.breakpoint` (FR8), is not compact. Theme `adaptations`
+  stay web-only (`spec:AST-082` FR18); native reads the compact numbers from
+  the portable theme.
 - **IR1 — Normalize and reject atomically.** One path validates width breakpoints,
   named condition fields, width ranges, theme extension, enrolled local-token
   names, and concrete expanded values for both `defineTheme` and
@@ -236,13 +240,14 @@ Its value resolver, explicit-value preservation, CSS generation/build parity, an
 extension metadata remain useful implementation evidence.
 
 The theme exports no compact definition, and `when` has no `height` field.
-Selector's `adaptive` presentation and DropdownMenu's compact-touch decisions use
-`(max-width: 768px) and (pointer: coarse)`: a coarse-pointer screen exactly 768
+Selector's, MultiSelector's, ContextMenu's, and DropdownMenu's `adaptive`
+presentation (MoreMenu forwards to DropdownMenu) and DropdownMenu's compact-touch
+sub-menu decisions use `(max-width: 768px) and (pointer: coarse)`, and the
+ContextMenu and MoreMenu consumer docs describe it as "768px and below": a coarse-pointer screen exactly 768
 pixels wide counts as compact, and a landscape phone at least 768 pixels wide
 but under 500 tall does not. Under FR9 the first opens the popover and the
 second the bottom sheet; the release note for that change names `presentation`
-as the way to keep a surface. `@astryxdesign/native` has no compact resolver
-yet; it adopts FR9 when it gains one.
+as the way to keep a surface. `PortableTheme` carries no compact definition, and `@astryxdesign/native` has no compact resolver yet; it adopts FR9 when it gains one.
 
 ## Verification
 
