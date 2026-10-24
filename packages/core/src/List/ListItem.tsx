@@ -36,7 +36,12 @@ import {ListContext, type ListMarker} from './ListContext';
 import {CheckboxInput} from '../CheckboxInput';
 import {mergeProps} from '../utils';
 import {Item} from '../Item';
-import type {ItemAlign, ItemSwipeActions, ItemSwipeBehavior} from '../Item';
+import type {
+  ItemAlign,
+  ItemControlProps,
+  ItemSwipeActions,
+  ItemSwipeBehavior,
+} from '../Item';
 import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
@@ -141,6 +146,12 @@ export interface ListItemProps extends BaseProps<HTMLLIElement> {
    * @default 'reveal'
    */
   swipeBehavior?: ItemSwipeBehavior;
+
+  /**
+   * Attributes for the control the row renders for `onClick` or `href`,
+   * passed through to `Item` unchanged. See `Item.controlProps`.
+   */
+  controlProps?: ItemControlProps;
 }
 
 // =============================================================================

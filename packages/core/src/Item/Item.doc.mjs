@@ -166,6 +166,18 @@ export const docs = {
             'Link URL. Makes the item a link via an invisible anchor element. A row whose root is already a link component (see `as`) carries the address on that root instead, and no invisible anchor is rendered.',
         },
         {
+          name: 'role',
+          type: 'string',
+          description:
+            "The row's ARIA role, on the root. With a role a parent owns keyboard access: the label sits in a plain span, no invisible button or anchor is rendered, and `onClick` goes on the root. `role=\"row\"` (a grid) is the exception: the row renders its parts as `gridcell`s (the marker, the start content, the label with its description, the end content, each swipe panel) and keeps its own control in the label cell, which `controlProps` reaches with the grid's roving `tabIndex` and marks; `isSelected` is the row's `aria-selected`; `swipeActions` stays available.",
+        },
+        {
+          name: 'controlProps',
+          type: 'ItemControlProps',
+          description:
+            "Attributes spread on the control the row renders for `onClick` or `href` (the invisible button or anchor the label sits in), the element keyboard focus lands on: a disclosure's `aria-expanded`, `aria-haspopup` and `aria-controls`, a toggle's `aria-pressed`, a name of its own through `aria-label` or `aria-labelledby`, a host's `data-*` marks, `onKeyDown`, a composite's roving `tabIndex`. Every other prop keeps landing on the root. A disabled row keeps its own `tabIndex={-1}` and `aria-disabled` on the control. Where the root is the link (`as` is a link component, with or without a `role`) these land on the root after the row's other props, so on an attribute named in both places the `controlProps` value is written, and an invisible button the row still nests inside that root for `onClick` takes none of them. A row given no `controlProps` renders what it did before the prop existed. Ignored with a development warning where the row renders no control: a row with a `role` other than `row` on a plain root, or one with an `interactiveRef`, a link root included. `ListItem` passes it through unchanged. Accepts HTML attributes except `role`, `onClick`, `className`, `style`, `children`, `dangerouslySetInnerHTML`, `hidden`, `inert` and `aria-hidden`.",
+        },
+        {
           name: 'target',
           type: "'_blank' | '_self'",
           description:
@@ -205,7 +217,7 @@ export const docs = {
           name: 'swipeBehavior',
           type: "'reveal' | 'commit'",
           description:
-            'What a swipe does. `reveal` rests the row open with every entry a real button and fires the outermost on a long drag or a fling; `commit` slides the row out and fires the outermost on release, with nothing resting and a presentational panel. `commit` fits one entry per side.',
+            'What a swipe does. `reveal` rests the row open with every entry a real button, and a long drag fires the outermost. On iOS, as in a UIKit list, a fast release goes the way it moves (a flick opens the row, a flick back closes it) and a slow one past half the panel opens it; on other touchscreens (Android) a release past half the panel opens it and a fling fires the outermost, as before. `commit` slides the row out and fires the outermost on a release past the commit point, with nothing resting and a presentational panel. `commit` fits one entry per side. On iOS the row follows the finger on a spring and settles on the same one, from where it is and as fast as it was moving; elsewhere it follows the finger one for one and settles in 200 ms. Both run on the compositor, and a finger that lands on a moving row catches it.',
           default: "'reveal'",
         },
         {
@@ -255,6 +267,11 @@ export const docs = {
         guidance: true,
         description:
           'Give a swipe action a second home in the row (a menu or a button in endContent): the swipe is a touch accelerator, and a verb reachable only by swipe is unreachable by keyboard and by mouse.',
+      },
+      {
+        guidance: true,
+        description:
+          'Put a state or relation a screen reader must read with the row (aria-expanded, aria-haspopup, aria-controls, aria-pressed) in controlProps, so it lands on the control that takes focus; an aria-* attribute on the row itself lands on the root, where it is invalid or unread.',
       },
       {
         guidance: false,
