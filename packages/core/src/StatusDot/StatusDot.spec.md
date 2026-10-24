@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-10-24
+approved_at: 2026-10-25
 owners: [cixzhang]
 review_triggers: [public-api, behavior, layout, theming, accessibility]
 verified_by:
@@ -31,15 +31,15 @@ system_specs: [spec:AST-009]
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                                                     |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | A fixed 8px status dot with a required theme-extensible `variant` and a required `label`, plus optional `isPulsing`, `tooltip`, and `icon`.                                  |
-| Behavior                | The dot is a non-focusable image named by `label`; a renderable `icon` paints inside it in the variant's ink and is hidden from assistive technology.                        |
-| End-user impact         | Screen-reader users hear the status without hover; sighted users see a color signal, optionally pulsing and optionally carrying a non-color mark.                            |
-| Builder impact          | None; the record describes shipped behavior.                                                                                                                                 |
-| Compatibility/readiness | Released behavior recorded as current; no API, default, or output changes. Two implementation gaps are listed under Current-state impact.                                    |
-| Review checks           | Reject a dot without an accessible name, a dot that adds its own tab stop, an icon exposed to assistive technology, a pulse that ignores reduced motion, or a second target. |
-| Governing rules         | `architecture:component-theming-surface/INV2,INV6,INV14`; `architecture:public-component-api/INV5,INV6,INV8`.                                                                |
+| Area                    | Contract                                                                                                                                                                                       |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | A fixed 8px status dot with a required theme-extensible `variant` and a required `label`, plus optional `isPulsing`, `tooltip`, and `icon`.                                                    |
+| Behavior                | The dot is a non-focusable image named by `label`; a renderable `icon` paints inside it in the variant's ink and is hidden from assistive technology.                                          |
+| End-user impact         | Screen-reader users hear the status without hover; sighted users see a color signal, optionally pulsing and optionally carrying a non-color mark.                                              |
+| Builder impact          | None; the record describes shipped behavior.                                                                                                                                                   |
+| Compatibility/readiness | Released behavior recorded as current; no API, default, or output changes. Two implementation gaps are listed under Current-state impact.                                                      |
+| Review checks           | Reject a dot without an accessible name, a dot without a tooltip that adds its own tab stop, an icon exposed to assistive technology, a pulse that ignores reduced motion, or a second target. |
+| Governing rules         | `architecture:component-theming-surface/INV2,INV6,INV14`; `architecture:public-component-api/INV5,INV6,INV8`.                                                                                  |
 
 This table is a review projection; the body below is authoritative.
 
@@ -145,8 +145,10 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **AR1 — Name without hover.** The dot exposes `role="img"` with `label` as its
   accessible name for every variant, with or without a tooltip or icon; a caller
   `role` or `aria-label` replaces them (FR6).
-- **AR2 — No tab stop of its own.** StatusDot adds no tab stop; it is a static
-  image. A caller `tabIndex` passes through (FR6).
+- **AR2 — Tab stop.** A dot without a tooltip is a static image and adds no
+  tab stop of its own. For a dot with a tooltip, FR5 governs: the tooltip is
+  reachable from the keyboard, and today the dot adds no tab stop, which is the
+  FR5 gap. A caller `tabIndex` passes through (FR6).
 - **AR3 — Decorative icon.** The icon wrapper is `aria-hidden`, so the label
   alone names the status.
 - **AR4 — Color is not the only carrier.** The accessible name carries the
@@ -184,16 +186,16 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Verification map
 
-| Contract            | Verification                                                           | Representative states                | Mutation or failure expectation                                                                                                                                            | Audit section             |
-| ------------------- | ---------------------------------------------------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
-| FR1, FR6            | `StatusDot.test.tsx` render, ref, test-id, and target suites           | Every tone                           | Removing the dot, a lost ref or test id, or a second target fails. Gap: the 8px size test asserts presence only; size is verified in `StatusDot.stories.tsx` in a browser. | `audit:StatusDot/anatomy` |
-| FR2                 | `StatusDot.test.tsx` variant-ink suite; `extensibleAxes.test.ts`       | Warning plate and ink; map wiring    | Swapping the warning ink or dropping `variant` reflection fails. Gap: other tones' paint and the unthemed fallback have no automated check.                                | `audit:StatusDot/theming` |
-| FR3, AR5            | `StatusDot.stories.tsx` in a browser, with and without reduced motion  | Resting and pulsing                  | Gap: the pulsing unit tests assert presence only; a missing pulse or reduced-motion rule is visible only in the rendered fixture.                                          | `audit:StatusDot/motion`  |
-| FR4, AR3            | `StatusDot.test.tsx` custom-icon suite                                 | Icon, falsy values                   | Exposing the icon or rendering a wrapper for a falsy value fails.                                                                                                          | `audit:StatusDot/anatomy` |
-| FR5, AR1, AR2       | `StatusDot.test.tsx` tooltip, focusability, and accessible-name suites | Every tone, with and without tooltip | A missing name, a tab stop, or a name that depends on the tooltip fails.                                                                                                   | `audit:StatusDot/a11y`    |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                                          | Canonical anatomy and current target | Missing, extra, prefixed, stale, or alias-backed mappings fail repository validation.                                                                                      | `audit:StatusDot/theming` |
-| AR4, PR1            | Source review; `StatusDot.stories.tsx`                                 | Plain dot, dot with icon             | Gap: no automated check covers the non-color mark guidance or fails if StatusDot adds its own listener, observer, or timer.                                                | `audit:StatusDot/a11y`    |
-| AR1, AR3            | Accessibility-tree evidence (`spec:AST-009` FR3)                       | Every tone, with icon and tooltip    | Gap: no accessibility-tree check proves the image role and name or the hidden icon; the unit tests query the DOM.                                                          | `audit:StatusDot/a11y`    |
+| Contract            | Verification                                                          | Representative states                | Mutation or failure expectation                                                                                                                                                                                                     | Audit section             |
+| ------------------- | --------------------------------------------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| FR1, FR6            | `StatusDot.test.tsx` render, ref, test-id, and target suites          | Every tone                           | Removing the dot, a lost ref or test id, or a second target fails. Gap: the 8px size test asserts presence only, and no test fails if the styling order (ORD1) changes; size is visible in `StatusDot.stories.tsx`.                 | `audit:StatusDot/anatomy` |
+| FR2                 | `StatusDot.test.tsx` variant-ink suite; `extensibleAxes.test.ts`      | Warning plate and ink; map wiring    | Swapping the warning ink or dropping `variant` reflection fails. Gap: other tones' paint and the unthemed fallback have no automated check.                                                                                         | `audit:StatusDot/theming` |
+| FR3, AR5            | `StatusDot.stories.tsx` in a browser, with and without reduced motion | Resting and pulsing                  | Gap: the pulsing unit tests assert presence only; a missing pulse or reduced-motion rule is visible only in the rendered fixture.                                                                                                   | `audit:StatusDot/motion`  |
+| FR4, AR3            | `StatusDot.test.tsx` custom-icon suite                                | Icon, falsy values                   | Exposing the icon or rendering a wrapper for a falsy value fails.                                                                                                                                                                   | `audit:StatusDot/anatomy` |
+| FR5, AR1, AR2       | `StatusDot.test.tsx` focusability and accessible-name suites          | Every tone, with and without tooltip | A missing name, a tab stop, or a name that depends on the tooltip fails. Gap: the tooltip test asserts only that the dot renders, so dropping the Tooltip wrap passes, and no test covers a caller `role` or `aria-label` override. | `audit:StatusDot/a11y`    |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                         | Canonical anatomy and current target | Missing, extra, prefixed, stale, or alias-backed mappings fail repository validation.                                                                                                                                               | `audit:StatusDot/theming` |
+| AR4, PR1            | Source review; `StatusDot.stories.tsx`                                | Plain dot, dot with icon             | Gap: no automated check covers the non-color mark guidance or fails if StatusDot adds its own listener, observer, or timer.                                                                                                         | `audit:StatusDot/a11y`    |
+| AR1, AR3            | Accessibility-tree evidence (`spec:AST-009` FR3)                      | Every tone, with icon and tooltip    | Gap: no accessibility-tree check proves the image role and name or the hidden icon; the unit tests query the DOM.                                                                                                                   | `audit:StatusDot/a11y`    |
 
 ## Decision log
 
