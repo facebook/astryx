@@ -5,18 +5,23 @@
 /**
  * @file hooks.ts
  * @input Uses untransformed DOM layout geometry from the Selector's outer
- *   anchor, listbox, and selected option
+ *   anchor, listbox, and selected option; useAnnounce and the translator for
+ *   result counts
  * @output Hooks for Selector: useSelectedItemOffset, and useCombobox (public,
- *   exported from the Selector entry point; also used by CommandPalette)
+ *   exported from the Selector entry point; also used by CommandPalette, and
+ *   by products for a combobox over a text field they render, spec:AST-075)
  * @position Selector hooks; used by Selector.tsx and CommandPalette
  *
  * SYNC: When useCombobox's options or return change, update:
  * - /packages/core/src/Selector/useCombobox.doc.mjs
  */
 
-import {useCallback, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {useHighlightedOptionScroll} from '../hooks/useHighlightedOptionScroll';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
+import {useTranslator} from '../i18n';
+import {isImeKeyEvent} from '../utils/ime';
 import type {RefObject} from 'react';
 import type {SelectorOptionData} from './types';
 
@@ -158,8 +163,24 @@ export function useSelectedItemOffset({
 // useCombobox - Keyboard navigation and selection
 // =============================================================================
 
-interface UseComboboxOptions {
-  selectableItems: SelectorOptionData[];
+/**
+ * What useCombobox reads from an option: its value, and whether it can be
+ * picked. Any option type that carries these works; Selector's
+ * `SelectorOptionData` is the default.
+ */
+interface ComboboxOption {
+  value: string;
+  disabled?: boolean;
+}
+
+/**
+ * The text field a caller renders and keeps focused (spec:AST-075): a
+ * single-line `input`, or a multi-line `textarea` or contenteditable element.
+ */
+type ComboboxField = 'input' | 'textarea' | 'contenteditable';
+
+interface UseComboboxOptions<T extends ComboboxOption> {
+  selectableItems: ReadonlyArray<T>;
   value?: string;
   isDisabled?: boolean;
   isOpen: boolean;
@@ -182,16 +203,73 @@ interface UseComboboxOptions {
    */
   onSearchSeed?: (char: string) => void;
   listboxId: string;
+  /**
+   * The text field `getFieldProps` wires: one the caller renders and keeps
+   * focused while a person picks from the list (spec:AST-075). It decides the
+   * field's role and whether ArrowDown shows a hidden list. `onKeyDown` keeps
+   * its own key model and ignores it.
+   */
+  field?: ComboboxField;
+  /**
+   * The query the current options answer. When it changes to a non-empty value
+   * while the list is shown, the number of options, or that there are none, is
+   * announced politely through the shared announcer (spec:AST-075 FR7).
+   */
+  query?: string;
 }
 
-interface UseComboboxResult {
+/** Spread onto the caller's field. */
+interface ComboboxFieldProps {
+  role?: 'combobox';
+  'aria-autocomplete': 'list';
+  'aria-expanded'?: boolean;
+  'aria-controls'?: string;
+  'aria-activedescendant'?: string;
+  onKeyDown: (event: React.KeyboardEvent) => void;
+}
+
+/** Spread onto the caller's listbox, which the caller names. */
+interface ComboboxListboxProps {
+  id: string;
+  role: 'listbox';
+  onMouseDown: (event: React.MouseEvent) => void;
+}
+
+/** Spread onto the caller's option at one index. */
+interface ComboboxOptionProps {
+  id: string;
+  role: 'option';
+  'aria-selected': boolean;
+  'aria-disabled'?: true;
+  onMouseMove: () => void;
+  onClick: () => void;
+}
+
+/** The caller's own handlers for its field, run after the hook's. */
+interface ComboboxFieldHandlers {
+  // Method syntax keeps the parameter bivariant, so a handler typed for its
+  // own element (an input, a textarea, a contenteditable element) is accepted.
+  onKeyDown?(event: React.KeyboardEvent): void;
+}
+
+interface UseComboboxResult<T extends ComboboxOption> {
   highlightedIndex: number;
   setHighlightedIndex: (index: number) => void;
   getItemId: (index: number) => string;
   onTriggerClick: () => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
-  onItemSelect: (item: SelectorOptionData) => void;
-  onItemMouseEnter: (item: SelectorOptionData, index: number) => void;
+  // Method syntax keeps a result built over a richer option type assignable
+  // to `ReturnType<typeof useCombobox>`, the name released callers use.
+  onItemSelect(item: T): void;
+  onItemMouseEnter(item: T, index: number): void;
+  getFieldProps: (props?: ComboboxFieldHandlers) => ComboboxFieldProps;
+  getListboxProps: () => ComboboxListboxProps;
+  getOptionProps: (index: number) => ComboboxOptionProps;
+}
+
+/** Whether a key is chorded with a modifier, such as Shift+Enter. */
+function hasModifier(e: React.KeyboardEvent): boolean {
+  return e.altKey || e.ctrlKey || e.metaKey || e.shiftKey;
 }
 
 /**
@@ -201,8 +279,13 @@ interface UseComboboxResult {
  * `useTypeahead` hook and run it ahead of this handler (see Selector). That
  * keeps matching consistent with the other collections and leaves consumers
  * whose own input already filters the items (CommandPalette) untouched.
+ *
+ * For a text field the caller renders (spec:AST-075), `getFieldProps`,
+ * `getListboxProps` and `getOptionProps` carry the combobox semantics, the
+ * field's keys and the pointer model, while the caller keeps the field, the
+ * rows and where the list renders.
  */
-export function useCombobox({
+export function useCombobox<T extends ComboboxOption = SelectorOptionData>({
   selectableItems,
   value,
   isDisabled = false,
@@ -214,7 +297,9 @@ export function useCombobox({
   onClear,
   onSearchSeed,
   listboxId,
-}: UseComboboxOptions): UseComboboxResult {
+  field = 'input',
+  query,
+}: UseComboboxOptions<T>): UseComboboxResult<T> {
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
 
   const getItemId = useCallback(
@@ -238,7 +323,7 @@ export function useCombobox({
   }, [onClose]);
 
   const selectItem = useCallback(
-    (item: SelectorOptionData) => {
+    (item: T) => {
       if (item.disabled) {
         return;
       }
@@ -273,7 +358,7 @@ export function useCombobox({
   });
 
   const onItemMouseEnter = useCallback(
-    (item: SelectorOptionData, index: number) => {
+    (item: T, index: number) => {
       if (!item.disabled) {
         highlightOnHover(index);
       }
@@ -434,6 +519,196 @@ export function useCombobox({
     ],
   );
 
+  // ---------------------------------------------------------------------------
+  // A field the caller renders (spec:AST-075). Focus never leaves it: the
+  // active option is named through aria-activedescendant, and the field keeps
+  // every key the list does not need.
+  // ---------------------------------------------------------------------------
+
+  // The listbox renders only while it has options; an open list with none
+  // shows the caller's empty state instead, which is not a listbox.
+  const isListboxShown = isOpen && selectableItems.length > 0;
+  const activeDescendant =
+    isListboxShown &&
+    highlightedIndex >= 0 &&
+    highlightedIndex < selectableItems.length
+      ? getItemId(highlightedIndex)
+      : undefined;
+
+  const onFieldKeyDown = useCallback(
+    (e: React.KeyboardEvent): void => {
+      // A chord is the field's own command, such as Shift+Enter, except
+      // Escape: whatever modifier is held, it hides a shown list first, so an
+      // enclosing layer never closes on the same press. An input method
+      // composing text owns every key, Escape included, until it commits or
+      // cancels.
+      if (
+        isDisabled ||
+        isImeKeyEvent(e.nativeEvent) ||
+        (hasModifier(e) && e.key !== 'Escape')
+      ) {
+        return;
+      }
+      const enabledIndices = getEnabledIndices();
+      // A multi-line field whose open list has no options renders no listbox
+      // and reports itself collapsed, so it keeps every key, as when hidden.
+      if (!isOpen || (field !== 'input' && !isListboxShown)) {
+        // A single-line field has no caret work for ArrowDown, so it shows the
+        // hidden list; a multi-line field keeps its arrows for the caret.
+        if (
+          e.key === 'ArrowDown' &&
+          field === 'input' &&
+          selectableItems.length > 0 &&
+          onOpen() !== false
+        ) {
+          e.preventDefault();
+          setHighlightedIndex(enabledIndices[0] ?? -1);
+        }
+        return;
+      }
+      switch (e.key) {
+        case 'ArrowDown':
+        case 'ArrowUp': {
+          // The list keeps the arrows even with nothing to move to, so they
+          // never move the caret under an open list.
+          e.preventDefault();
+          if (enabledIndices.length === 0) {
+            break;
+          }
+          // Wraps at either end, as the typeahead input does; with nothing
+          // active, ArrowDown starts at the first option and ArrowUp at the
+          // last.
+          const count = enabledIndices.length;
+          const position = enabledIndices.indexOf(highlightedIndex);
+          const next =
+            e.key === 'ArrowDown'
+              ? (position + 1) % count
+              : position < 0
+                ? count - 1
+                : (position - 1 + count) % count;
+          setHighlightedIndex(enabledIndices[next]);
+          break;
+        }
+        case 'Enter': {
+          // Only a pick stops the field's own Enter (a send, a newline).
+          const item =
+            highlightedIndex >= 0 ? selectableItems[highlightedIndex] : null;
+          if (item != null && !item.disabled) {
+            e.preventDefault();
+            selectItem(item);
+          }
+          break;
+        }
+        case 'Escape':
+          // Claimed, so an enclosing layer stays open on this press.
+          e.preventDefault();
+          closeAndReset();
+          break;
+        default:
+          // Every other key reaches the field unchanged. Home and End stay
+          // with the caret until their behavior is decided (AST-075 OQ2).
+          break;
+      }
+    },
+    [
+      isDisabled,
+      getEnabledIndices,
+      isOpen,
+      field,
+      isListboxShown,
+      selectableItems,
+      onOpen,
+      highlightedIndex,
+      selectItem,
+      closeAndReset,
+    ],
+  );
+
+  const getFieldProps = useCallback(
+    (props: ComboboxFieldHandlers = {}): ComboboxFieldProps => {
+      return {
+        // A textarea admits no explicit role and no aria-expanded; it stays a
+        // textbox that names its list and active option.
+        ...(field === 'textarea'
+          ? {}
+          : {role: 'combobox' as const, 'aria-expanded': isListboxShown}),
+        'aria-autocomplete': 'list',
+        'aria-controls': isListboxShown ? listboxId : undefined,
+        'aria-activedescendant': activeDescendant,
+        onKeyDown: event => {
+          onFieldKeyDown(event);
+          if (!event.defaultPrevented) {
+            props.onKeyDown?.(event);
+          }
+        },
+      };
+    },
+    [field, isListboxShown, listboxId, activeDescendant, onFieldKeyDown],
+  );
+
+  const getListboxProps = useCallback(
+    (): ComboboxListboxProps => ({
+      id: listboxId,
+      role: 'listbox',
+      // A press anywhere in the list keeps focus in the field (FR6).
+      onMouseDown: event => event.preventDefault(),
+    }),
+    [listboxId],
+  );
+
+  const getOptionProps = useCallback(
+    (index: number): ComboboxOptionProps => {
+      const item = selectableItems[index];
+      const isOptionDisabled = item?.disabled === true;
+      return {
+        id: getItemId(index),
+        role: 'option',
+        'aria-selected': index === highlightedIndex,
+        ...(isOptionDisabled ? {'aria-disabled': true as const} : {}),
+        onMouseMove: () => {
+          if (item != null && !isOptionDisabled && index !== highlightedIndex) {
+            highlightOnHover(index);
+          }
+        },
+        onClick: () => {
+          if (item != null) {
+            selectItem(item);
+          }
+        },
+      };
+    },
+    [
+      selectableItems,
+      getItemId,
+      highlightedIndex,
+      highlightOnHover,
+      selectItem,
+    ],
+  );
+
+  // The result count for each new query, spoken through the one shared live
+  // region rather than one per field (FR7). The first query a field mounts
+  // with is not new, so it is not announced.
+  const announce = useAnnounce();
+  const t = useTranslator();
+  const announcedQueryRef = useRef(query);
+  const optionCount = selectableItems.length;
+  useEffect(() => {
+    if (query == null || query === '') {
+      announcedQueryRef.current = query;
+      return;
+    }
+    if (!isOpen || announcedQueryRef.current === query) {
+      return;
+    }
+    announcedQueryRef.current = query;
+    announce(
+      optionCount > 0
+        ? t('@astryx.combobox.resultCount', {count: optionCount})
+        : t('@astryx.combobox.noResults'),
+    );
+  }, [query, isOpen, optionCount, announce, t]);
+
   return {
     highlightedIndex,
     setHighlightedIndex,
@@ -442,5 +717,8 @@ export function useCombobox({
     onKeyDown,
     onItemSelect: selectItem,
     onItemMouseEnter,
+    getFieldProps,
+    getListboxProps,
+    getOptionProps,
   };
 }
