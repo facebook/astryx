@@ -623,7 +623,7 @@ test('the dim keeps its lockstep with the release while the main thread is block
   }
 });
 
-test("on Android the dim keeps today's mapping and the host's easing", async ({
+test('on Android the dim follows the sheet too, pinned (one touch model)', async ({
   page,
 }) => {
   const {driver, sheet, tallTop, halfTop, handle} = await openSheet(page, {
@@ -631,12 +631,10 @@ test("on Android the dim keeps today's mapping and the host's easing", async ({
   });
   const dialog = page.getByRole('dialog', {name: 'Nearby places'});
   const viewportHeight = page.viewportSize()?.height ?? 0;
-  // Today's dim: full at the shortest detent, clear 40 % of its height below.
-  const todayDimAt = (top: number) =>
-    Math.min(
-      1,
-      Math.max(0, 1 - (top - halfTop) / (0.4 * (viewportHeight - halfTop))),
-    );
+  // UIKit's dim: full at the shortest detent, clear at the bottom of the
+  // screen, linear between.
+  const uikitDimAt = (top: number) =>
+    Math.min(1, Math.max(0, 1 - (top - halfTop) / (viewportHeight - halfTop)));
   const scrimVars = async () =>
     dialog.evaluate(el => ({
       opacity: Number(el.style.getPropertyValue('--_sheet-scrim-opacity')),
@@ -663,9 +661,9 @@ test("on Android the dim keeps today's mapping and the host's easing", async ({
   );
   expect(tracked.at(-1)?.top).toBeGreaterThan(halfTop + 90);
   for (const {top, opacity, duration} of tracked) {
-    expect(opacity).toBeCloseTo(todayDimAt(top), 2);
-    // Never pinned to 0 s: the backdrop keeps easing toward each value.
-    expect(duration).not.toBe('0s');
+    expect(opacity).toBeCloseTo(uikitDimAt(top), 1);
+    // Pinned to 0 s: the dim moves with the finger, not behind it.
+    expect(duration).toBe('0s');
   }
 });
 

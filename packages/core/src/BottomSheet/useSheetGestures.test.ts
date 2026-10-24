@@ -2562,8 +2562,8 @@ describe('useSheetGestures: the release on the compositor', () => {
 });
 
 describe('useSheetGestures: the dim follows the sheet', () => {
-  // A finger in iOS's idiom: the release runs on UIKit's springs and the dim
-  // follows the sheet (releaseMotion.ts); outside it, today's dim.
+  // A finger: the release runs on UIKit's springs and the dim follows the
+  // sheet (releaseMotion.ts); under a mouse, today's dim.
   beforeEach(() => stubIosIdiom());
 
   interface Played {
@@ -2842,10 +2842,41 @@ describe('useSheetGestures: the dim follows the sheet', () => {
     expect(valueAt(dim, 200, opacityOf)).toBeCloseTo(dimAt(200), 2);
   });
 
-  it.each([
-    ['a mouse', {coarse: false}],
-    ['a finger on Android', {coarse: true}],
-  ])(
+  it('follows the sheet under a finger on Android too (one touch model)', () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => ({
+        matches: query.includes('pointer: coarse'),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    );
+    vi.stubGlobal('CSS', {supports: () => false, escape: (v: string) => v});
+    const onScrimTracking = vi.fn();
+    const {hook} = setup({
+      snapHeights: () => [200],
+      onScrimOpacity: vi.fn(),
+      onScrimTracking,
+    });
+    const {dialog, target} = inDialog();
+    recordAnimations(target);
+    const backdrop = recordAnimations(dialog);
+    down(hook, 0, 0, target);
+    stream(hook, target, {from: 0, to: 290, t0: 0, t1: 600});
+    restAt(hook, 290, 650, target);
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(
+        pointerEvent(290, 800, target),
+      ),
+    );
+    // Pinned, and the release's dim played on the backdrop, as on iOS.
+    expect(onScrimTracking).toHaveBeenCalledWith(true);
+    const dim = backdrop.at(-1) as Played;
+    expect(dim.options.pseudoElement).toBe('::backdrop');
+    expect(valueAt(dim, 0, opacityOf)).toBeCloseTo(dimAt(290), 2);
+  });
+
+  it.each([['a mouse', {coarse: false}]])(
     "keeps today's dim under %s: the host eases it, clear 40 %% below the shortest detent",
     (_, {coarse}) => {
       vi.stubGlobal(

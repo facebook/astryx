@@ -767,7 +767,7 @@ describe('BottomSheet', () => {
     });
 
     it('pins the scrim easing while a drag moves the dim, and hands it back when the sheet lands', async () => {
-      // iOS's idiom: a finger in WebKit on iOS (useSheetGestures.ts).
+      // A finger, on any touch device (useSheetGestures.ts).
       vi.stubGlobal(
         'matchMedia',
         vi.fn((query: string) => ({
