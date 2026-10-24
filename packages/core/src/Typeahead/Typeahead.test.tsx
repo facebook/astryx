@@ -1613,6 +1613,86 @@ describe('BaseTypeahead popover after selection', () => {
 });
 
 describe('Typeahead edit mode', () => {
+  // iOS raises the software keyboard only for a focus made while the browser
+  // still dispatches the person's tap, so the focus must not wait for a frame.
+  it.each([
+    ['the token', () => screen.getByText(fruits[0].label)],
+    [
+      'the field around it',
+      () => screen.getByText(fruits[0].label).closest('div')!,
+    ],
+  ])(
+    'focuses the input with the label selected inside the tap on %s',
+    (_name, target) => {
+      const onChangeQuery = vi.fn();
+      render(
+        <Typeahead
+          label="Fruit"
+          searchSource={fruitSource}
+          value={fruits[0]}
+          onChange={vi.fn()}
+          onChangeQuery={onChangeQuery}
+        />,
+      );
+      const input = screen.getByRole<HTMLInputElement>('combobox');
+      // The event the browser is dispatching when focus() runs.
+      const focusedDuring: (string | undefined)[] = [];
+      // An own property: some test setups make `focus` an accessor on the
+      // prototype, which a plain assignment cannot shadow.
+      const focus = HTMLElement.prototype.focus;
+      Object.defineProperty(input, 'focus', {
+        configurable: true,
+        value(options?: FocusOptions) {
+          focusedDuring.push(window.event?.type);
+          focus.call(input, options);
+        },
+      });
+
+      fireEvent.click(target());
+
+      // No frame has run: the focus, the text and its selection are all in
+      // place by the time the tap's own dispatch returns.
+      expect(input).toHaveFocus();
+      expect(input.value).toBe(fruits[0].label);
+      expect(input.selectionStart).toBe(0);
+      expect(input.selectionEnd).toBe(fruits[0].label.length);
+      expect(focusedDuring.length).toBeGreaterThan(0);
+      expect(focusedDuring.every(type => type === 'click')).toBe(true);
+      expect(onChangeQuery).toHaveBeenLastCalledWith(fruits[0].label);
+    },
+  );
+
+  // The base sees the label as its query by the time the focus lands, so a
+  // hasEntriesOnFocus field searches the label instead of opening its
+  // bootstrap entries, and Enter cannot commit a bootstrap item.
+  it('with hasEntriesOnFocus, editing the value searches its label instead of opening the bootstrap entries', async () => {
+    const onChange = vi.fn();
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[3]}
+        onChange={onChange}
+        hasEntriesOnFocus
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole<HTMLInputElement>('combobox');
+
+    fireEvent.click(screen.getByText(fruits[3].label));
+
+    expect(input).toHaveFocus();
+    expect(input.value).toBe(fruits[3].label);
+    // Let any bootstrap or search settle (debounceMs is 0).
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 20));
+    });
+
+    // Apple is the first bootstrap entry, which the label does not match.
+    fireEvent.keyDown(input, {key: 'Enter'});
+    expect(onChange).not.toHaveBeenCalledWith(fruits[0]);
+  });
+
   it('enters edit mode on token container click', () => {
     const onChange = vi.fn();
     render(
