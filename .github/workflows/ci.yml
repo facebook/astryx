@@ -732,8 +732,9 @@ jobs:
   # @astryxdesign/native (AST-082) build and test only on macOS. They are
   # coverage inside the shared surface (AST-030 FR11), so `test` joins
   # test-native-swift. A Linux job first decides whether the change touches
-  # Swift under packages/native; only then does test-native-swift take a macOS
-  # runner, and otherwise it passes on Linux without work.
+  # Swift under packages/native or the lane's own script; only then does
+  # test-native-swift take a macOS runner, and otherwise it passes on Linux
+  # without work.
   native-swift-scope:
     needs: [check-scope]
     if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
@@ -772,7 +773,7 @@ jobs:
             && git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA" \
             && git show "$BASE_SHA:.github/scripts/pr-scope-touches.sh" > "$helper"; then
             scope=0
-            bash "$helper" "$BASE_SHA" '^packages/native/.*(\.swift|/Package\.swift)$' || scope=$?
+            bash "$helper" "$BASE_SHA" '^packages/native/.*(\.swift|/Package\.swift)$|^\.github/scripts/native-swift\.sh$' || scope=$?
           fi
           if [ "$scope" = 1 ]; then
             echo 'No native Swift change; nothing to build.'
@@ -802,44 +803,11 @@ jobs:
       - uses: actions/checkout@v7
         if: needs.native-swift-scope.outputs.applies == 'true'
 
-      # One package per directory that holds a Package.swift, such as apple/
-      # (generated contracts) and each versioned swift-ios-<n>/. A package that
-      # supports macOS builds and tests there; every package builds for the iOS
-      # Simulator, and an iOS-only package runs its tests there. A package
-      # without a test target only builds.
+      # The steps live in native-swift.sh, which is in the native Swift scope,
+      # so a change to them runs on its own pull request.
       - name: Build and test each native Swift package
         if: needs.native-swift-scope.outputs.applies == 'true'
-        run: |
-          set -euo pipefail
-          xcodebuild -version
-          packages=$(find packages/native -name Package.swift -not -path '*/.build/*' -not -path '*/node_modules/*' -exec dirname {} \; | sort)
-          if [ -z "$packages" ]; then
-            echo 'No Swift package found under packages/native.'
-            exit 1
-          fi
-          for package in $packages; do
-            echo "::group::$package"
-            (
-              cd "$package"
-              swift package dump-package > "$RUNNER_TEMP/package.json"
-              read -r macos tests < <(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(any(p["platformName"]=="macos" for p in d.get("platforms",[])) or not d.get("platforms"), any(t["type"]=="test" for t in d["targets"]))' "$RUNNER_TEMP/package.json")
-              # Xcode names the whole-package scheme <name>-Package when a
-              # package has several products, and after its product otherwise.
-              xcodebuild -list -json > "$RUNNER_TEMP/schemes.json"
-              scheme=$(python3 -c 'import json,sys; s=json.load(open(sys.argv[1]))["workspace"]["schemes"]; print(next((x for x in s if x.endswith("-Package")), s[0]))' "$RUNNER_TEMP/schemes.json")
-              if [ "$macos" = True ] && [ "$tests" = True ]; then
-                swift test
-              elif [ "$macos" = True ]; then
-                swift build
-              fi
-              if [ "$macos" != True ] && [ "$tests" = True ]; then
-                xcodebuild test -scheme "$scheme" -destination 'platform=iOS Simulator,name=iPhone 16' -quiet
-              else
-                xcodebuild build -scheme "$scheme" -destination 'generic/platform=iOS Simulator' -quiet
-              fi
-            )
-            echo '::endgroup::'
-          done
+        run: bash .github/scripts/native-swift.sh
 
   # Public registry contract. Generation proves schema, dependency, route-lock,
   # alias, and release-gating invariants; the final step drives every canonical

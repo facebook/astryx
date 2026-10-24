@@ -5,8 +5,8 @@
  *
  * The Swift packages of @astryxdesign/native build only on macOS. They join
  * the `test` owner (AST-030 FR11), but a macOS runner is requested only when
- * a Linux job finds a Swift change under packages/native, so no other pull
- * request waits for one.
+ * a Linux job finds a Swift change under packages/native, or a change to the
+ * lane's own script, so no other pull request waits for one.
  */
 
 import fs from 'node:fs';
@@ -62,6 +62,30 @@ describe('native Swift routing', () => {
     );
     // Only "out of scope" (exit 1) skips; unknown (2) runs the Swift work.
     expect(decide).toContain('if [ "$scope" = 1 ]; then');
+  });
+
+  it('keeps its own steps in scope, so changing them runs them', () => {
+    expect(step(swift, 'Build and test each native Swift package').run).toBe(
+      'bash .github/scripts/native-swift.sh',
+    );
+    const decide = step(scope, 'Decide whether native Swift changed').run;
+    const pattern = new RegExp(
+      decide.match(/bash "\$helper" "\$BASE_SHA" '([^']+)'/)[1],
+    );
+    for (const touched of [
+      '.github/scripts/native-swift.sh',
+      'packages/native/apple/Package.swift',
+      'packages/native/swift-ios-1/core/Button/AstryxButton.swift',
+    ]) {
+      expect(pattern.test(touched), touched).toBe(true);
+    }
+    for (const untouched of [
+      '.github/workflows/ci.yml',
+      'packages/native/src/index.ts',
+      'packages/core/src/Button/Button.tsx',
+    ]) {
+      expect(pattern.test(untouched), untouched).toBe(false);
+    }
   });
 
   it('skips the Swift work on docsite-only and tooling-only changes', () => {
