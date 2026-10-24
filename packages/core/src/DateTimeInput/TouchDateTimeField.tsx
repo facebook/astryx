@@ -93,6 +93,8 @@ import {
   DATE_FORMAT_WEEKDAY_ONLY,
   plainDateFormat,
   plainDateFromISO,
+  plainDateIsEqual,
+  plainDateToISO,
   plainDateToday,
   type PlainDate,
 } from '../utils/plainDate';
@@ -121,6 +123,7 @@ import {
 import {
   DEFAULT_MONTH_REACH,
   clampIndex,
+  dateInMonth,
   fromMonthIndex,
   monthIndexOf,
 } from '../DateInput/monthGeometry';
@@ -985,6 +988,39 @@ export function TouchDateTimeField({
     [clampTimeForDate, fireChange, optimisticValue, timeForWheels],
   );
 
+  // Turning the month or year wheel moves the calendar. Under a finger it
+  // also moves a chosen date with it, keeping its day and the time
+  // (UIDatePicker's inline calendar:
+  // datePicker.calendar.monthYearWheels.changesDate), clamped to the month
+  // and the bounds. A date a custom constraint refuses stays.
+  const handleWheelChange = useCallback(
+    (next: number) => {
+      setMonthIndex(next);
+      scrollerHandleRef.current?.scrollToMonth(next, 'auto');
+      // Only UIDatePicker's wheels move the date; today's move the calendar.
+      if (!isTouch || selectedDate == null) {
+        return;
+      }
+      const moved = dateInMonth(
+        selectedDate,
+        next,
+        parseValidISODate(calendarMin),
+        parseValidISODate(calendarMax),
+      );
+      if (!plainDateIsEqual(moved, selectedDate) && !isDateDisabled(moved)) {
+        handleDateSelect(plainDateToISO(moved));
+      }
+    },
+    [
+      isTouch,
+      selectedDate,
+      calendarMin,
+      calendarMax,
+      isDateDisabled,
+      handleDateSelect,
+    ],
+  );
+
   const commitWheelTime = useCallback(
     (rawTime: ISOTimeString) => {
       const nextTime = clampTimeForDate(valueParts.date, rawTime);
@@ -1396,10 +1432,7 @@ export function TouchDateTimeField({
                 monthIndex={monthIndex}
                 minMonthIndex={minMonthIndex}
                 maxMonthIndex={maxMonthIndex}
-                onChange={next => {
-                  setMonthIndex(next);
-                  scrollerHandleRef.current?.scrollToMonth(next, 'auto');
-                }}
+                onChange={handleWheelChange}
                 monthLabel={t('@astryx.dateInput.monthWheel')}
                 yearLabel={t('@astryx.dateInput.yearWheel')}
                 isActive={activePanel === 'date' && isWheelOpen}
