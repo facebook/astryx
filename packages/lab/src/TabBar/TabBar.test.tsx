@@ -7,14 +7,15 @@
  *   tablist of tabs with one selected, the roving tab stop and arrow keys,
  *   choosing a tab (onChange) and choosing the selected one again
  *   (onReselect), badges in the tab's name and drawn without animation, the
- *   lens over the selected tab only, and the stable theme classes
+ *   lens over the selected tab only, the stable theme classes, and when
+ *   the bar minimizes on scroll and expands again
  * @position Testing; the motion is proven in real engines by
  *   __tests__/TabBar.interaction.browser.spec.ts
  */
 
-import {describe, expect, it, vi} from 'vitest';
+import {afterEach, describe, expect, it, vi} from 'vitest';
 import {useState} from 'react';
-import {fireEvent, render, screen} from '@testing-library/react';
+import {act, fireEvent, render, screen} from '@testing-library/react';
 import {TabBar, TabBarItem, type TabBarProps} from './TabBar';
 
 function Glyph({name}: {name: string}) {
@@ -225,5 +226,131 @@ describe('TabBar', () => {
     );
     expect(screen.getAllByRole('tab')).toHaveLength(1);
     expect(screen.queryByText('stray')).toBeNull();
+  });
+});
+
+describe('TabBar minimize on scroll', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    Object.defineProperty(window, 'scrollY', {value: 0, configurable: true});
+  });
+
+  /** A touch screen: the touch presentation applies. */
+  function touchScreen() {
+    vi.spyOn(window, 'matchMedia').mockImplementation(
+      query =>
+        ({
+          matches: query === '(pointer: coarse)',
+          media: query,
+          onchange: null,
+          addListener: () => {},
+          removeListener: () => {},
+          addEventListener: () => {},
+          removeEventListener: () => {},
+          dispatchEvent: () => false,
+        }) as MediaQueryList,
+    );
+  }
+
+  function scrollTo(y: number) {
+    Object.defineProperty(window, 'scrollY', {value: y, configurable: true});
+    act(() => {
+      window.dispatchEvent(new Event('scroll'));
+    });
+  }
+
+  /** A finger dragging the page through `ys`. */
+  function dragPage(ys: number[]) {
+    act(() => {
+      window.dispatchEvent(new Event('touchstart'));
+      window.dispatchEvent(new Event('touchmove'));
+    });
+    for (const y of ys) {
+      scrollTo(y);
+    }
+    act(() => {
+      window.dispatchEvent(new Event('touchend'));
+    });
+  }
+
+  const isMinimized = () =>
+    screen.getByRole('tablist').hasAttribute('data-tab-bar-minimized');
+
+  it('never minimizes by default', () => {
+    touchScreen();
+    render(<Bar />);
+    dragPage([40, 80, 160]);
+    expect(isMinimized()).toBe(false);
+  });
+
+  it('minimizes 66 px into a downward scroll, not before', () => {
+    touchScreen();
+    render(<Bar minimizeBehavior="onScrollDown" />);
+    // The page restored to 300 by a script: not the person's scroll.
+    scrollTo(300);
+    dragPage([320, 365]);
+    expect(isMinimized()).toBe(false);
+    dragPage([366]);
+    expect(isMinimized()).toBe(true);
+  });
+
+  it('stays minimized while scrolling back up mid-page, and expands at the top', () => {
+    touchScreen();
+    render(<Bar minimizeBehavior="onScrollDown" />);
+    dragPage([100]);
+    expect(isMinimized()).toBe(true);
+    dragPage([60, 20]);
+    expect(isMinimized()).toBe(true);
+    dragPage([0]);
+    expect(isMinimized()).toBe(false);
+  });
+
+  it('stays minimized when a script scrolls the page to the top', () => {
+    touchScreen();
+    render(<Bar minimizeBehavior="onScrollDown" />);
+    dragPage([200]);
+    expect(isMinimized()).toBe(true);
+    // Long after the finger: not the person's scroll.
+    vi.spyOn(performance, 'now').mockReturnValue(performance.now() + 10_000);
+    scrollTo(0);
+    expect(isMinimized()).toBe(true);
+  });
+
+  it('expands on a tap on the circle, keeping the selection', () => {
+    touchScreen();
+    const onChange = vi.fn();
+    render(
+      <Bar
+        minimizeBehavior="onScrollDown"
+        initial="browse"
+        onChange={onChange}
+      />,
+    );
+    dragPage([200]);
+    const circle = document.querySelector('[data-tab-bar-circle]');
+    expect(circle?.querySelector('[data-testid="icon-browse"]')).not.toBeNull();
+    fireEvent.click(circle as Element);
+    expect(isMinimized()).toBe(false);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByRole('tab', {name: 'Browse'})).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+  });
+
+  it('expands when a tab receives focus', () => {
+    touchScreen();
+    render(<Bar minimizeBehavior="onScrollDown" />);
+    dragPage([200]);
+    act(() => {
+      screen.getByRole('tab', {name: 'Home'}).focus();
+    });
+    expect(isMinimized()).toBe(false);
+  });
+
+  it('stays expanded under a mouse', () => {
+    render(<Bar minimizeBehavior="onScrollDown" />);
+    dragPage([200]);
+    expect(isMinimized()).toBe(false);
   });
 });

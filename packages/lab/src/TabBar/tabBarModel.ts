@@ -7,8 +7,9 @@
  * @output Exports the TabBar's pure geometry: the items' shared width and
  *   their centres in the capsule, the capsule's natural width, the item a
  *   lift commits, the lens's target under a finger (rubber-banded past the
- *   ends), the lifted lens's scale, and the counter-transform that keeps the
- *   selected copy of the items still inside a moving lens
+ *   ends), the lifted lens's scale, the counter-transform that keeps the
+ *   selected copy of the items still inside a moving lens, and where the
+ *   minimized circle sits
  * @position Math of the lab TabBar (TabBar.tsx); no DOM, no React
  *
  * Coordinates are the capsule's own, in px, before its flex scale: x from
@@ -145,4 +146,13 @@ export function copyTransform(
   scaleY: number,
 ): {x: number; scaleX: number; scaleY: number} {
   return {x: -x / scaleX, scaleX: 1 / scaleX, scaleY: 1 / scaleY};
+}
+
+/**
+ * The minimized circle's centre in a capsule `width` px wide: concentric with
+ * the capsule's leading cap.
+ */
+export function minimizedCenter(width: number, isRtl = false): number {
+  const half = tabBar.barHeight / 2;
+  return isRtl ? width - half : half;
 }

@@ -95,6 +95,7 @@ import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
 import {tabBarItemMarker} from './tabBar.stylex';
 import {itemWidthCss, naturalWidth} from './tabBarModel';
 import {useTabBarLens} from './useTabBarLens';
+import {useTabBarMinimize} from './useTabBarMinimize';
 
 const {tabBar} = uikit;
 
@@ -140,6 +141,14 @@ export interface TabBarProps extends Omit<
   onReselect?: (value: string) => void;
   /** Names the tab bar for assistive technology. */
   label?: string;
+  /**
+   * Whether scrolling the page down collapses the bar into a circle holding
+   * the selected tab's icon (UIKit's `tabBarMinimizeBehavior`): reaching the
+   * top of the page, a tap on the circle or focus on a tab expands it. Under
+   * a finger only; a mouse-driven bar stays expanded.
+   * @default 'never'
+   */
+  minimizeBehavior?: 'never' | 'onScrollDown';
   /** The tabs: `TabBarItem` elements, in order. */
   children: ReactNode;
 }
@@ -246,16 +255,81 @@ const styles = stylex.create({
     minWidth: 0,
     containerType: 'inline-size',
     pointerEvents: 'auto',
-    borderRadius: radiusVars['--radius-full'],
-    backgroundColor: `color-mix(in srgb, ${colorVars['--color-background-popover']} 78%, transparent)`,
-    backdropFilter: 'blur(16px) saturate(180%)',
-    boxShadow: shadowVars['--shadow-med'],
     touchAction: 'manipulation',
     userSelect: 'none',
     WebkitTapHighlightColor: 'transparent',
     WebkitTouchCallout: 'none',
   },
   capsuleSize: (height: string, maxWidth: string) => ({height, maxWidth}),
+  // Minimized, only the circle takes touches; the page gets the rest.
+  capsuleMinimized: {
+    pointerEvents: 'none',
+  },
+  // The capsule's glass, in three pieces that can contract into a circle
+  // without distorting its round ends (useTabBarMinimize.ts).
+  platter: (half: string) => ({
+    position: 'absolute',
+    inset: 0,
+    pointerEvents: 'none',
+    transformOrigin: {
+      default: `${half} ${half}`,
+      ':is([dir="rtl"] *)': `calc(100% - ${half}) ${half}`,
+    },
+  }),
+  glass: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    backgroundColor: `color-mix(in srgb, ${colorVars['--color-background-popover']} 78%, transparent)`,
+    backdropFilter: 'blur(16px) saturate(180%)',
+    boxShadow: shadowVars['--shadow-med'],
+  },
+  // Each piece keeps its shadow off the pieces it meets.
+  platterStart: (half: string) => ({
+    insetInlineStart: 0,
+    width: half,
+    borderStartStartRadius: half,
+    borderEndStartRadius: half,
+    clipPath: {
+      default: 'inset(-32px 0 -32px -32px)',
+      ':is([dir="rtl"] *)': 'inset(-32px -32px -32px 0)',
+    },
+  }),
+  platterMiddle: (half: string) => ({
+    insetInlineStart: half,
+    insetInlineEnd: half,
+    clipPath: 'inset(-32px 0)',
+    transformOrigin: {
+      default: 'left center',
+      ':is([dir="rtl"] *)': 'right center',
+    },
+  }),
+  platterEnd: (half: string) => ({
+    insetInlineEnd: 0,
+    width: half,
+    borderStartEndRadius: half,
+    borderEndEndRadius: half,
+    clipPath: {
+      default: 'inset(-32px -32px -32px 0)',
+      ':is([dir="rtl"] *)': 'inset(-32px 0 -32px -32px)',
+    },
+  }),
+  circle: {
+    position: 'absolute',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radiusVars['--radius-full'],
+    color: colorVars['--color-accent'],
+    pointerEvents: 'none',
+  },
+  circleActive: {
+    pointerEvents: 'auto',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
+  },
   item: {
     position: 'absolute',
     top: 0,
@@ -447,6 +521,10 @@ const ITEM_HEIGHT = px(tabBar.itemHeight);
 const ICON_START = `calc(50% - ${px(tabBar.iconSize / 2)})`;
 const ICON_TOP = px(tabBar.iconCenterY - tabBar.iconSize / 2);
 const ICON_SIZE = px(tabBar.iconSize);
+const HALF_BAR = px(tabBar.barHeight / 2);
+const CIRCLE_INSET = px((tabBar.barHeight - tabBar.minimizedSize) / 2);
+const CIRCLE_SIZE = px(tabBar.minimizedSize);
+const CIRCLE_ICON_INSET = px((tabBar.minimizedSize - tabBar.iconSize) / 2);
 const LABEL_TOP = px(tabBar.labelTop);
 const LABEL_HEIGHT = px(tabBar.labelSize * 1.2);
 const LABEL_SIZE = px(tabBar.labelSize);
@@ -503,6 +581,7 @@ export function TabBar({
   onChange,
   onReselect,
   label,
+  minimizeBehavior = 'never',
   children,
   xstyle,
   className,
@@ -532,14 +611,22 @@ export function TabBar({
     },
     [value, onChange, onReselect],
   );
+  const minimize = useTabBarMinimize({
+    capsuleRef,
+    count,
+    isEnabled: minimizeBehavior === 'onScrollDown' && isTouch,
+  });
   const lens = useTabBarLens({
     capsuleRef,
     count,
     selectedIndex,
     isTouch,
+    isMinimized: minimize.isMinimized,
     onLift: index => choose(items[index]),
   });
   const mergedCapsuleRef = useMergedRefs(capsuleRef, listRef, lens.capsule);
+  const {isMinimized, expand} = minimize;
+  const selectedItem = selectedIndex >= 0 ? items[selectedIndex] : null;
 
   const restIndex = Math.max(selectedIndex, 0);
   const capsuleInset = px(tabBar.itemInset);
@@ -564,18 +651,43 @@ export function TabBar({
         role="tablist"
         aria-label={label}
         aria-orientation="horizontal"
+        data-tab-bar-minimized={isMinimized ? '' : undefined}
         onKeyDown={handleKeyDown}
-        onFocus={handleFocus}
+        onFocus={event => {
+          handleFocus(event);
+          if (isMinimized) {
+            expand();
+          }
+        }}
+        onClick={isMinimized ? expand : undefined}
         {...stylex.props(
           styles.capsule,
           styles.capsuleSize(px(tabBar.barHeight), px(naturalWidth(count))),
+          isMinimized && styles.capsuleMinimized,
         )}>
+        <div
+          ref={minimize.platter}
+          aria-hidden
+          data-tab-bar-platter=""
+          {...stylex.props(styles.platter(HALF_BAR))}>
+          <div {...stylex.props(styles.glass, styles.platterStart(HALF_BAR))} />
+          <div
+            ref={minimize.platterMiddle}
+            {...stylex.props(styles.glass, styles.platterMiddle(HALF_BAR))}
+          />
+          <div
+            ref={minimize.platterEnd}
+            data-tab-bar-platter-end=""
+            {...stylex.props(styles.glass, styles.platterEnd(HALF_BAR))}
+          />
+        </div>
         {items.map((item, index) => {
           const isSelected = index === selectedIndex;
           const {start, width, itemStart} = column(index, count);
           return (
             <button
               key={item.value}
+              ref={minimize.item(index)}
               type="button"
               role="tab"
               id={`${baseId}-tab-${index}`}
@@ -671,7 +783,7 @@ export function TabBar({
             </div>
           </div>
         ) : null}
-        <div aria-hidden {...stylex.props(styles.badges)}>
+        <div ref={minimize.badges} aria-hidden {...stylex.props(styles.badges)}>
           {items.map((item, index) =>
             hasBadge(item.badge) ? (
               <span
@@ -691,6 +803,30 @@ export function TabBar({
               </span>
             ) : null,
           )}
+        </div>
+        <div
+          ref={minimize.circleIcon}
+          aria-hidden
+          data-tab-bar-circle=""
+          {...stylex.props(
+            styles.circle,
+            styles.box(CIRCLE_INSET, CIRCLE_INSET, CIRCLE_SIZE, CIRCLE_SIZE),
+            isMinimized && styles.circleActive,
+          )}>
+          {selectedItem != null ? (
+            <span
+              {...stylex.props(
+                styles.icon,
+                styles.box(
+                  CIRCLE_ICON_INSET,
+                  CIRCLE_ICON_INSET,
+                  ICON_SIZE,
+                  ICON_SIZE,
+                ),
+              )}>
+              {selectedItem.selectedIcon ?? selectedItem.icon}
+            </span>
+          ) : null}
         </div>
       </div>
     </div>

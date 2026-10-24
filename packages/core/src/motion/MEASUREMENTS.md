@@ -265,3 +265,12 @@ fades in, with Prefer Cross-Fade Transitions on or off.
 | M-CM4 | Reduce Motion press feedback    | Probe app with Reduce Motion on: long press, then dismiss                                                                   | press feedback, lift and dismiss animations under Reduce Motion                                                                                                                           | A, B   |
 | M-CM5 | Commit haptic stand-in          | An Android device: `navigator.vibrate` patterns against the platform's HapticFeedbackConstants for the context-click moment | the pattern that matches; not a UIKit parity value (as M-G18)                                                                                                                             | H      |
 | M-CM6 | Press thresholds                | Probe app: repeated long presses at random vsync phases                                                                     | from touch receipt and from the HID timestamp, the tick before and the tick at the press observer's began and at the click commit; the intersection pins the 150 ms and 400 ms thresholds | C      |
+
+## Tab bar (UITabBarController)
+
+Values the tab bar reads from its own table (`uikit/tabBar.ts`); everything
+else in it is measured.
+
+| ID    | What                 | App and gesture                                                                                                                    | Extract                                                                                                                          | Method |
+| ----- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| M-TB1 | Minimize glass morph | Stock UITabBarController with `.onScrollDown` over a long list: scroll down past the trigger, then back to the top; tap the circle | what the screen shows between the bar and the circle (60 fps video): the platter's outline, the items' opacity or blur, the lens | B      |
