@@ -49,7 +49,7 @@ export const docs = {
       name: 'options.onTriggerPress',
       type: '(pointerType: MenuPressPointerType) => boolean',
       description:
-        'A mouse pressed the trigger, or a finger rested on it for the long-press delay: open the menu under the held pointer and return whether it opened. Return false when the press closed an open menu instead.',
+        "A mouse pressed the trigger, a finger did with touchOpen 'press', or a finger rested on it for the long-press delay: open the menu under the held pointer and return whether it opened. Return false when the press closed an open menu instead.",
     },
     {
       name: 'options.onHighlight',
@@ -67,7 +67,7 @@ export const docs = {
       name: 'options.onDismiss',
       type: '() => void',
       description:
-        'A MOUSE was released outside the menu with nothing acting: close it. A finger released outside leaves the menu open, so this is never called then.',
+        "Close the menu: a MOUSE was released outside it with nothing acting, or the browser took a finger's press-open (touchOpen 'press') for a scroll or a pinch before the finger reached the menu. A finger released outside leaves the menu open, so this is never called then.",
     },
     {
       name: 'options.getScroller',
@@ -79,8 +79,15 @@ export const docs = {
       name: 'options.longPressDelayMs',
       type: 'number',
       description:
-        'How long a finger must rest on the trigger before the menu opens under it.',
-      default: '500',
+        'How long a finger must rest on the trigger before the menu opens under it: UIKit\u2019s delay for a pull-down button. Inside a scrolling region the scroll view\u2019s content-touch delay (150 ms) comes first. A tap released sooner opens the menu through the trigger\u2019s click.',
+      default: '150',
+    },
+    {
+      name: 'options.touchOpen',
+      type: "'tap' | 'press'",
+      description:
+        "How a finger opens the menu from its trigger. 'tap': through the trigger's own click when the finger lifts, or with the finger down after the long-press delay. 'press': at once on press-down, as a mouse press does, for a trigger that is not inside a scrolling region; the press then continues as a drag onto a row, which picks it only when the trigger declares touch-action: none or pinch-zoom. The page is not held still: if the browser takes the press for a scroll or a pinch before the finger reaches the menu, the menu closes again through onDismiss.",
+      default: "'tap'",
     },
     {
       name: 'options.isEnabled',
@@ -113,6 +120,12 @@ export const docs = {
       type: '() => void',
       description:
         'End the gesture in flight with nothing acting, for when the menu closes under it.',
+    },
+    {
+      name: 'continueGesture',
+      type: "(pointer: {pointerId: number; pointerType: 'mouse' | 'touch' | 'pen'; x: number; y: number; time: number}) => void",
+      description:
+        'Continue a pointer that went down elsewhere (a context menu\u2019s long press) into the menu that just opened under it. It is tracked as the opening press: a finger picks only after it travels 10 px from the first sample after this call, as in UIMenu; a mouse follows the settle rule. Ignored while another gesture is live.',
     },
   ],
   usage: {
@@ -170,7 +183,8 @@ export const docsDense = {
     'options.onDismiss': 'MOUSE released outside: close. Finger: never called.',
     'options.getScroller':
       'element to edge-autoscroll while tracking; default = menu root if it overflows.',
-    'options.longPressDelayMs': 'finger hold before open, ms.',
+    'options.longPressDelayMs':
+      'finger hold before open, ms (150, UIKit; +150 inside a scroller).',
     'options.isEnabled': 'false = inert.',
   },
   returnDescriptions: {
