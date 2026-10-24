@@ -63,6 +63,8 @@ import Testing
   #expect(environment.astryx.isBoldText == false)
   environment.legibilityWeight = .bold
   #expect(environment.astryx.isBoldText)
+}
+
 // Theme generator spec D4 and theme environment spec E1: with Increase
 // Contrast on, borders use the emphasized border color.
 
