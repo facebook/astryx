@@ -1606,6 +1606,16 @@ jobs:
             --project chromium \
             --output menu-header-footer-output
 
+      # A card's press overlay paints a finger's press only if its arms win
+      # the cascade of the layered stylesheet Storybook builds, which jsdom
+      # does not model; the real engine shows the pixels under a held touch.
+      - name: Run card press overlay contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/__tests__/CardPress.a11y.chromium.spec.ts \
+            --project chromium \
+            --output card-press-output
+
       # A menu inside a shadow root must act on the row under a released
       # pointer; at the document level a real engine resolves that point to
       # the shadow host, which jsdom cannot show.
