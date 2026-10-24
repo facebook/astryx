@@ -25,15 +25,24 @@
  * closes. The native `cancel` event still handles the dismissals the browser
  * starts itself, such as the Android back gesture.
  *
+ * Closing works like a UIKit dismissal: nothing takes input until the
+ * slide-out has finished (UIKit ignores touches for the whole transition, on
+ * the presenting view and on the one leaving). The native dialog stays open,
+ * and so keeps the page inert, until the slide-out ends, and the drawer panel
+ * is `inert` meanwhile, so a tap on the leaving drawer does nothing either.
+ * Not the dialog itself: an inert modal dialog stops blocking the page in
+ * Chromium. The scrim fades out over the whole slide-out.
+ *
  * Focus RESTORATION is not delegated to the browser. The drawer captures the
  * element that opened it and refocuses it once the native dialog has closed,
- * mirroring Dialog: the implicit `<dialog>` restore has been observed dropping
- * focus to `<body>`. The close itself is deferred past the slide-out, and the
- * restore has to follow it. Until close() runs the rest of the document is
- * inert and focus() on the opener is silently dropped.
+ * at the end of the slide-out, mirroring Dialog: the implicit `<dialog>`
+ * restore has been observed dropping focus to `<body>`. The order is
+ * load-bearing: until close() runs the rest of the document is inert and
+ * focus() on the opener is silently dropped.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/MobileNav/index.ts (exports if types change)
+ * - /packages/core/src/AppShell/AppShell.tsx (MAX_EXIT_MS: Activity hold)
  * - /packages/core/src/Layer/useLayerDismissal.ts (dismissal stack)
  * - /packages/core/src/hooks/scrollbarGutter.ts (shared scroll-lock gutter)
  * - /packages/cli/assets/templates/blocks/components/MobileNav/ (showcase blocks)
@@ -114,19 +123,11 @@ const styles = stylex.create({
     outline: 'none',
     // Native <dialog> uses display:none when closed.
     // Open state applied via isOpen prop to avoid :where([open]) specificity issues.
-    // `display` participates in the transition with allow-discrete so it flips
-    // to none only after the slide-out finishes. That also keeps the dialog
-    // rendered until close() has actually run: an open modal dialog that isn't
-    // rendered still blocks the whole document, and a browser that fails to
-    // un-block it on close leaves the page inert with no error (#4290).
-    // Deliberately not shortened under reduced motion: `display` is discrete,
-    // so a long hold animates nothing — it is only the window the close has to
-    // land inside. The visible transitions (the drawer's transform and the
-    // backdrop's opacity) are the ones that respect the preference.
+    // While the drawer slides out, `isExiting` keeps `open` applied until the
+    // close() at its end, so the dialog is never an open modal that isn't
+    // rendered: a browser that fails to un-block such a dialog on close
+    // leaves the page inert with no error (#4290).
     display: 'none',
-    transitionProperty: 'display',
-    transitionDuration: durationVars['--duration-medium'],
-    transitionBehavior: 'allow-discrete',
   },
   open: {
     display: 'flex',
@@ -261,19 +262,20 @@ const dynamicStyles = stylex.create({
 // =============================================================================
 
 /**
- * Longest the drawer will wait before closing, however long the hold is.
+ * Longest the drawer slides out for, in ms, however long its transition is.
+ * The slide-out runs for the theme's `--duration-medium` (410 ms by default;
+ * the default scale's `--duration-medium-max` is 545 ms); a theme that sets a
+ * longer one has its slide-out cut here, so the page is never held longer.
  *
- * Exported so `AppShell` can defer hiding this drawer's `Activity` boundary
- * by at least this long too (`ACTIVITY_HIDE_BUFFER_MS` in AppShell.tsx) —
- * otherwise Activity's `display: none !important` lands before this delay's
- * own scheduled `dialog.close()` has a chance to run (#5701).
+ * Exported so `AppShell` keeps this drawer's `Activity` boundary visible for
+ * at least this long after a close (`ACTIVITY_HIDE_BUFFER_MS` in
+ * AppShell.tsx): Activity's `display: none !important` would otherwise cut
+ * the slide-out off and close the dialog early (#5701).
  */
-export const MAX_CLOSE_DELAY_MS = 250;
-/** Fraction of the hold to close at, so the close never lands on its boundary. */
-const CLOSE_WITHIN_HOLD = 0.6;
+export const MAX_EXIT_MS = 550;
 
 /**
- * Shortest duration in a `transition-duration` list, in ms; null if unreadable.
+ * Longest duration in a `transition-duration` list, in ms; null if unreadable.
  *
  * Browsers serialise computed `<time>` values in seconds — an authored `410ms`
  * reads back as `"0.41s"` and a list as `"0.41s, 0.12s"` — so the seconds branch
@@ -283,7 +285,7 @@ const CLOSE_WITHIN_HOLD = 0.6;
  *
  * @internal Exported for unit tests.
  */
-export function parseShortestDurationMs(value: string): number | null {
+export function parseLongestDurationMs(value: string): number | null {
   const durations = value
     .split(',')
     .map(part => {
@@ -300,36 +302,31 @@ export function parseShortestDurationMs(value: string): number | null {
     })
     .filter((ms): ms is number => ms !== null);
 
-  return durations.length ? Math.min(...durations) : null;
+  return durations.length ? Math.max(...durations) : null;
 }
 
 /**
- * How long to wait before closing the native dialog.
+ * How long the slide-out that has just started runs, in ms: the native dialog
+ * closes when it ends.
  *
- * The drawer is only rendered for as long as its `display` transition runs, and
- * closing an unrendered modal dialog is what leaves the page inert (#4290). So
- * the close has to land inside that hold. The hold is `--duration-medium`,
- * which themes rewrite — the shipped y2k theme sets it to exactly 250ms — so
- * read the hold in effect rather than assuming it.
+ * The duration is the drawer's `--duration-medium` transition, which themes
+ * rewrite, so it is read rather than assumed. Under reduced motion the drawer
+ * and scrim move in 0.01 s, so the dialog closes on the next macrotask.
  */
-function resolveCloseDelay(dialog: HTMLDialogElement): number {
-  // Reduced motion makes the close sooner; it must not make the hold shorter.
-  // Shrinking both leaves no slack — one slow frame between the commit and this
-  // macrotask and the drawer has already stopped being rendered.
-  const cap = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    ? 0
-    : MAX_CLOSE_DELAY_MS;
-
-  const hold = parseShortestDurationMs(
-    window.getComputedStyle(dialog).transitionDuration,
-  );
-
-  // The hold is unreadable — an unresolved var() outside a real browser.
-  if (hold === null) {
-    return cap;
+function resolveExitDuration(drawer: HTMLElement | null): number {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    return 0;
   }
-
-  return hold <= 0 ? 0 : Math.min(cap, hold * CLOSE_WITHIN_HOLD);
+  const duration =
+    drawer == null
+      ? null
+      : parseLongestDurationMs(
+          window.getComputedStyle(drawer).transitionDuration,
+        );
+  // Unreadable: an unresolved var() outside a real browser.
+  return duration === null
+    ? MAX_EXIT_MS
+    : Math.min(MAX_EXIT_MS, Math.max(0, duration));
 }
 
 /**
@@ -340,8 +337,8 @@ function resolveCloseDelay(dialog: HTMLDialogElement): number {
  * drawer does it explicitly, as Dialog does. The order is load-bearing: while
  * the modal dialog holds the top layer the rest of the document is inert and
  * focus() on the opener is silently dropped. So the restore rides on the close
- * itself, wherever that happens (the delayed timer, or the unmount teardown),
- * not on the `isOpen` flip that only schedules it.
+ * itself, wherever that happens (the end of the slide-out, or the unmount
+ * teardown), not on the `isOpen` flip that starts the slide-out.
  *
  * Focus is left alone when there was no real opener (activeElement was <body>)
  * or the opener has since left the DOM: focusing <body> would blur whatever a
@@ -491,29 +488,36 @@ export function MobileNav({
   );
 
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const exitTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
   // Element that was focused when the drawer opened; focus goes back to it
   // once the native dialog has closed (see closeAndRestoreFocus).
   const triggerElementRef = useRef<HTMLElement | null>(null);
 
-  // Keeps the dialog rendered from the commit that closes it until the delayed
-  // `close()` below has run. The `display` transition on the dialog is meant to
-  // do this, but a browser that does not hold a discrete `display` transition
-  // (WebKit) drops the dialog to `display: none` at once while it is still an
-  // open modal: nothing is visible, yet the whole page stays inert until the
-  // timer fires. Set during render, so it is already true in the commit that
-  // closes. The drawer's transform and the backdrop stay keyed to `isOpen`, so
-  // the slide-out is unchanged.
-  const [isCloseHeld, setIsCloseHeld] = useState(false);
+  // True from the commit that closes the drawer until its slide-out has run
+  // and the native dialog has closed. It keeps the dialog rendered
+  // (`styles.open`) for that whole time, so close() never runs on an open
+  // modal that isn't rendered (#4290); a `display` transition cannot be relied
+  // on for that (WebKit drops a discrete `display` transition at once). Set
+  // during render, so it is already true in the commit that closes. The
+  // drawer's transform and the scrim stay keyed to `isOpen`, so the slide-out
+  // starts in that same commit.
+  const [isExiting, setIsExiting] = useState(false);
   const [wasOpen, setWasOpen] = useState(isOpen);
   if (wasOpen !== isOpen) {
     setWasOpen(isOpen);
-    setIsCloseHeld(!isOpen);
+    setIsExiting(!isOpen);
   }
   const gutterRef = useRef<ScrollbarGutterHold | null>(null);
+  const isScrollLockedRef = useRef(false);
 
-  // Gives back the gutter held open in place of the hidden scrollbar.
-  const releaseGutter = useCallback(() => {
+  // Lets the page scroll again and gives back the gutter held open in place
+  // of the hidden scrollbar. Runs when the native dialog closes.
+  const releaseScrollLock = useCallback(() => {
+    if (isScrollLockedRef.current) {
+      document.documentElement.style.overflow = '';
+      isScrollLockedRef.current = false;
+    }
     if (gutterRef.current) {
       gutterRef.current.release();
       gutterRef.current = null;
@@ -527,10 +531,10 @@ export function MobileNav({
   // Resolve which edge the drawer slides from. Deliberately its own effect,
   // declared before the open/close effect below so the trigger is still the
   // active element when `side='auto'` reads it. Keeping it out of that effect
-  // is what stops a `side` change during a close from re-arming the delay: the
-  // CSS hold runs from the commit that started the slide-out and does not
-  // restart, so a fresh full delay could land after the drawer had already
-  // stopped being rendered — #4290 again.
+  // is what stops a `side` change during a close from re-arming the exit
+  // timer: the slide-out runs from the commit that started it and does not
+  // restart, so a fresh full timer would hold the page longer than the
+  // slide-out.
   useEffect(() => {
     if (!isOpen) {
       return;
@@ -552,8 +556,8 @@ export function MobileNav({
     }
   }, [isOpen, side]);
 
-  // Open/close the dialog via showModal()/close()
-  // close() is delayed so the slide-out transition can play.
+  // Open the dialog via showModal(); close it via close() once the slide-out
+  // has run.
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) {
@@ -567,63 +571,83 @@ export function MobileNav({
 
       if (!dialog.open) {
         // Capture the opener before showModal() pulls focus into the top
-        // layer. Only on the transition into open: a reopen while the delayed
-        // close is still pending finds the dialog open, and must keep the
-        // original opener rather than whatever is focused inside the drawer.
+        // layer. Only on the transition into open: a reopen during the
+        // slide-out finds the dialog still open, and must keep the original
+        // opener.
         triggerElementRef.current =
           document.activeElement as HTMLElement | null;
         dialog.showModal();
+      } else if (drawerRef.current?.inert) {
+        // Reopened during the slide-out: the dialog never closed, but the
+        // inert drawer dropped focus. Put focus back where showModal() puts
+        // it.
+        drawerRef.current.inert = false;
+        drawerRef.current.focus();
       }
       // Prevent background scrolling and iOS pull-to-refresh.
       // overflow: clip avoids creating a scroll container (unlike hidden),
       // so there's no scroll bounce and no need to save/restore scroll position.
       document.documentElement.style.overflow = 'clip';
+      isScrollLockedRef.current = true;
       gutterRef.current.settle();
     } else if (dialog.open) {
-      document.documentElement.style.overflow = '';
-      releaseGutter();
-
-      closeTimeoutRef.current = setTimeout(() => {
+      // The slide-out has started. Like a UIKit dismissal, nothing takes
+      // input until it ends: the page stays behind the modal dialog, and the
+      // inert drawer takes no taps or focus either. A tap beside it lands on
+      // the dialog's backdrop, which only asks to close again.
+      const drawer = drawerRef.current;
+      if (drawer) {
+        drawer.inert = true;
+      }
+      exitTimeoutRef.current = setTimeout(() => {
+        exitTimeoutRef.current = null;
+        if (drawer) {
+          drawer.inert = false;
+        }
         closeAndRestoreFocus(dialog, triggerElementRef);
-        setIsCloseHeld(false);
-      }, resolveCloseDelay(dialog));
+        releaseScrollLock();
+        setIsExiting(false);
+      }, resolveExitDuration(drawer));
     } else {
-      // Nothing is open, so there is no close to hold the dialog for, and no
-      // close timer is left to release the hold.
-      setIsCloseHeld(false);
+      // Nothing is open, so there is no slide-out to hold the dialog for, and
+      // no exit timer is left to release the hold.
+      setIsExiting(false);
     }
 
     return () => {
-      if (closeTimeoutRef.current) {
-        clearTimeout(closeTimeoutRef.current);
-        closeTimeoutRef.current = null;
+      if (exitTimeoutRef.current) {
+        clearTimeout(exitTimeoutRef.current);
+        exitTimeoutRef.current = null;
       }
-      document.documentElement.style.overflow = '';
-      releaseGutter();
     };
-  }, [isOpen, releaseGutter]);
+  }, [isOpen, releaseScrollLock]);
 
   // Close the native dialog on unmount if it's still open. Inside AppShell the
-  // drawer is mounted in an <Activity> that switches to mode="hidden" when the
-  // drawer closes; React then runs effect cleanups (with a stale isOpen)
-  // instead of re-running the effect with isOpen=false, so the close branch
-  // above never fires. If we leave the <dialog> `open` here, showModal() is
-  // skipped on the next open (the dialog is already open in the hidden tree)
-  // and the drawer can never be re-opened — see MobileNavReopen.test.tsx.
-  // This must be a separate unmount-only effect: putting it in the open/close
-  // effect above would close the dialog on every isOpen flip and cut off the
-  // delayed slide-out close.
+  // drawer is mounted in an <Activity> that switches to mode="hidden" after
+  // the drawer closes; React then runs effect cleanups (with a stale isOpen)
+  // instead of re-running the effect with isOpen=false, so the close at the
+  // end of the slide-out never runs if Activity hides the drawer first. If we
+  // leave the <dialog> `open` here, showModal() is skipped on the next open
+  // (the dialog is already open in the hidden tree) and the drawer can never
+  // be re-opened — see MobileNavReopen.test.tsx. This must be a separate
+  // unmount-only effect: putting it in the open/close effect above would
+  // close the dialog on every isOpen flip and cut the slide-out off.
   //
-  // Inside AppShell this teardown is the only close the drawer ever gets, so
+  // Inside AppShell this teardown can be the only close the drawer gets, so
   // it is also where focus goes back to the toggle.
   useEffect(() => {
     const dialog = dialogRef.current;
+    const drawer = drawerRef.current;
     return () => {
+      if (drawer) {
+        drawer.inert = false;
+      }
       if (dialog?.open) {
         closeAndRestoreFocus(dialog, triggerElementRef);
       }
+      releaseScrollLock();
     };
-  }, []);
+  }, [releaseScrollLock]);
 
   const {shouldDismissOnCloseRequest} = useLayerDismissal({
     isActive: isOpen,
@@ -674,7 +698,7 @@ export function MobileNav({
           layerStructureReset.reset,
           styles.dialog,
           overlayPaddingReset.reset,
-          (isOpen || isCloseHeld) && styles.open,
+          (isOpen || isExiting) && styles.open,
           styles.backdrop,
           isOpen && styles.backdropOpen,
           xstyle,
@@ -696,6 +720,7 @@ export function MobileNav({
         <LayerContentBoundary>
           {/* Drawer panel — tabIndex so showModal() focuses the drawer, not the close button */}
           <div
+            ref={drawerRef}
             tabIndex={-1}
             {...stylex.props(
               styles.drawer,
