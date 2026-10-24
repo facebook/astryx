@@ -15,6 +15,7 @@
 
 import {describe, expect, it} from 'vitest';
 import {projectDistance} from '../projection';
+import {listMotionRoles, motionRole, motionRoleOf} from '../roles';
 import {solveSpring, toSpring} from '../spring';
 import {UIKIT_GESTURES} from './gestures';
 import {slider} from './slider';
@@ -106,6 +107,26 @@ function rms(errors: ReadonlyArray<number>): number {
     errors.reduce((sum, error) => sum + error * error, 0) / errors.length,
   );
 }
+
+describe('slider motion roles', () => {
+  it('registers its three springs, and nothing else, as roles a theme may retune', () => {
+    const ids = listMotionRoles()
+      .map(role => role.id)
+      .filter(id => id.startsWith('slider.'));
+    expect(ids).toEqual([
+      'slider.dropSpring',
+      'slider.liftSpring',
+      'slider.releaseSpring',
+    ]);
+    expect(motionRole('slider.releaseSpring')).toMatchObject({
+      kind: 'spring',
+      variable: '--motion-slider-release-spring',
+      value: slider.releaseSpring,
+    });
+    // The animator resolves a role from the very object it is handed.
+    expect(motionRoleOf(slider.liftSpring)?.id).toBe('slider.liftSpring');
+  });
+});
 
 describe('slider (UISlider) constants against UIKit', () => {
   it('the touch target is the thumb grown by its hit insets', () => {

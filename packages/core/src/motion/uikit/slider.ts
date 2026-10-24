@@ -37,8 +37,15 @@
  * `@measure` task that will confirm or replace them. uikit.test.ts enforces
  * both.
  *
+ * The three springs are motion roles a theme may retune
+ * (`slider.releaseSpring`, `slider.liftSpring`, `slider.dropSpring`); the
+ * hit target, tracking gain, projection, scale and haptic are not motion.
+ *
  * SYNC: When modified, update /packages/core/src/motion/uikit/slider.test.ts
+ * and run `pnpm generate:motion-roles`
  */
+
+import {registerMotionTable} from '../roles';
 
 export const slider = {
   /**
@@ -149,3 +156,5 @@ export const slider = {
    */
   reducedMotion: 'keep',
 } as const;
+
+registerMotionTable('slider', slider);
