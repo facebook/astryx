@@ -208,7 +208,7 @@ export const doc = {
     {
       type: 'prose',
       text:
-        'Some changes a codemod can find but not make. upgrade reports them apart from failures, so a script can keep the rest of the run. ' +
+        'Some changes a codemod can find but not make. upgrade lists them in the result, so a script can keep the rest of the run and act on each. ' +
         'Code a codemod can identify but cannot migrate safely is a manual migration: upgrade lists each place with its file, line, ' +
         'the codemod and what to change, finishes the run, and exits 0. With --json they are in `manualActions`, and `complete` stays true. ' +
         'A generated file that must be rebuilt is listed in `regenerate` with the command that rebuilds it, such as `astryx theme build`: a protected generated file a codemod still needs to change ' +

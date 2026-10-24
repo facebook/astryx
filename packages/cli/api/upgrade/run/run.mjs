@@ -198,7 +198,8 @@ function summarizeRegenerate(protectedFiles, outcomes) {
  * header, `linguist-generated`, ...) is a protected file that still requires a
  * change, so it is listed in `protectedFiles` with the declaration that
  * protects it (spec:AST-040 FR6), and the command the codemod names is one of
- * its `commands`. A reported file nothing protects stays only in `regenerate`.
+ * its `commands`. A reported file nothing protects gets no row here: it is a
+ * codemod error (`regenerationErrors`) and stays in `regenerate`.
  * @param {import('../_adapter.mjs').CodemodOutcomeRecord[]} outcomes
  * @param {{classify: (file: string) => import('../../../foundation/fs/file-protection.mjs').FileProtection[]}} protection
  * @param {string} cwd

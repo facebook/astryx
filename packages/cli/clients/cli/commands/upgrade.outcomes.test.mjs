@@ -2,9 +2,11 @@
 
 /**
  * @file `astryx upgrade` end to end: generated files to rebuild are listed in
- * `regenerate` with their commands and keep the run incomplete
- * (ERR_CODEMOD_PROTECTED, as for a protected file), a declared regeneration
- * clears them, and a real codemod failure keeps its ERR_CODEMOD_FAILED error.
+ * `regenerate` with their commands. A file the project protects keeps the run
+ * incomplete (ERR_CODEMOD_PROTECTED, as for any protected file); one nothing
+ * protects stays a codemod error (ERR_CODEMOD_FAILED). A declared
+ * regeneration clears them, and a real codemod failure keeps its
+ * ERR_CODEMOD_FAILED error.
  * Manual migrations are covered at the API level in
  * `api/upgrade/run/outcomes.test.mjs`.
  */
@@ -314,7 +316,7 @@ describe('a real failure beside them', () => {
     });
   });
 
-  it('with a file to regenerate, returns the incomplete receipt as for a protected file', () => {
+  it('with a protected file to regenerate, returns the incomplete receipt as for a protected file', () => {
     seedFailing();
     write('src/theme.css', STALE_THEME);
 
