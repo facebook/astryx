@@ -394,8 +394,12 @@ depends only on runtimes it can maintain.
   `DefinedTheme` are unchanged for web callers.
 - The `theme` and `cli` consumer docs and every component's documentation gain
   platform marking when the first native contract ships.
-- `@astryxdesign/native` does not exist yet, and `@astryxdesign/core` has no
-  portable entry yet. Core peer-depends on `react-dom` and StyleX, and its theme entry includes
+- `@astryxdesign/native` ships on the canary channel with the FR19 wire: the
+  generated node and action types, the logic core and bridge, and a Swift logic
+  host. Its Swift binding decodes FR4 open string sets as closed sets, so a node
+  whose open-set prop carries a theme-added name, such as a Button `variant`,
+  renders as unsupported instead of drawing the component's base look.
+- `@astryxdesign/core` has no portable entry yet. Core peer-depends on `react-dom` and StyleX, and its theme entry includes
   the web theme compiler.
 - Built-in icon names are defined beside the web icon registry, which maps them to
   React elements; the portable entry carries the names only when it ships.
