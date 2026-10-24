@@ -20,6 +20,7 @@ import {
   useId,
   useMemo,
   useOptimistic,
+  useState,
   useTransition,
   useEffect,
   useRef,
@@ -393,6 +394,9 @@ const styles = stylex.create({
     inset: 0,
     borderRadius: 'inherit',
     pointerEvents: 'none',
+    // Its own compositing layer from the start, so its colour fade runs off
+    // the main thread (iOS Safari otherwise animates it on the main thread).
+    willChange: {default: null, [TOUCH]: 'opacity'},
     backgroundColor: {
       default: colorVars['--color-accent'],
       '@media (forced-colors: active)': 'Highlight',
@@ -720,6 +724,10 @@ export function Switch({
   const thumbRef = useRef<HTMLDivElement>(null);
   const glassRef = useRef<HTMLSpanElement>(null);
   const onLayerRef = useRef<HTMLSpanElement>(null);
+  // Once mounted, the touch presentation's animator owns the on layer's
+  // opacity; its class keeps the value it mounted with, so a toggle never
+  // changes the faded property's base under a running fade.
+  const [isOnAtMount] = useState(isOn);
   const touchParts = useMemo<SwitchTouchParts>(
     () => ({
       surface: surfaceRef,
@@ -813,7 +821,7 @@ export function Switch({
           ref={onLayerRef}
           {...stylex.props(
             styles.trackOnLayer,
-            !isOn && styles.trackOnLayerOff,
+            !isOnAtMount && styles.trackOnLayerOff,
           )}
         />
         <span

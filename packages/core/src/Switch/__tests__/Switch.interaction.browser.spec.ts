@@ -50,6 +50,7 @@ import {
   waitForRest,
   withStorybook,
   writeEvidence,
+  type CastFrame,
   type TouchDriver,
 } from '@astryxdesign/interaction-harness';
 import {SWITCH_CLAIMS_HELD_TOUCH} from '../switchTouchClaim';
@@ -764,6 +765,68 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
     expect(held.at(-1)!.box!.x - held[0].box!.x).toBeGreaterThanOrEqual(8);
   });
 
+  test('P10 · the track colour keeps fading in while the main thread is blocked', async ({
+    page,
+    browserName,
+  }, testInfo) => {
+    test.skip(
+      browserName !== 'chromium',
+      'screencast frame evidence is Chromium-only in Playwright (WebKit: the iOS simulator rig)',
+    );
+    const {driver, input, onLayer, center} = await openSwitch(page);
+    // Hide the thumb (its animations still run) so the whole track shows
+    // its colour.
+    await page.addStyleTag({
+      content:
+        '#storybook-root .astryx-switch > span:not(:first-child) { visibility: hidden }',
+    });
+    const box = await page
+      .locator('#storybook-root .astryx-switch')
+      .first()
+      .boundingBox();
+    if (box == null) {
+      throw new Error('no track');
+    }
+    const cast = await startScreencast(page);
+    await driver.play(tap(center, {holdMs: 50}));
+    await expect(input).toBeChecked();
+    await waitForAnimation(onLayer, {minProgressMs: 16});
+    const block = await blockMainThread(page, 700);
+    await page.waitForTimeout(150);
+    const castFrames = await cast.stop();
+    const luma = await sampleLuma(page, castFrames, {
+      x: box.x + 4,
+      y: box.y + 4,
+      width: box.width - 8,
+      height: box.height - 8,
+    });
+    await writeEvidence(
+      'busy-main-thread/switch-track-colour',
+      {
+        [`${testInfo.project.name}.json`]: JSON.stringify(
+          {
+            block,
+            frames: luma.map(f => ({
+              t: +(f.t - block.from).toFixed(1),
+              luma: +f.luma.toFixed(1),
+            })),
+          },
+          null,
+          1,
+        ),
+      },
+      testInfo,
+    );
+    const off = luma[0].luma;
+    const on = luma.at(-1)!.luma;
+    const held = luma.filter(
+      f => f.t >= block.from + 20 && f.t <= block.to - 20,
+    );
+    expect(held.length).toBeGreaterThan(20);
+    // Most of the fade happened while the main thread was held.
+    expect(held[0].luma - held.at(-1)!.luma).toBeGreaterThan(0.5 * (off - on));
+  });
+
   test('P10 · the toggle does no Layout or Paint per frame', async ({
     page,
     browserName,
@@ -851,6 +914,67 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
     },
   );
 });
+
+/**
+ * The mean luma of a box (CSS px) in each screencast frame, decoded in a
+ * scratch page like the harness's marker tracking.
+ */
+async function sampleLuma(
+  page: Page,
+  frames: ReadonlyArray<CastFrame>,
+  region: {x: number; y: number; width: number; height: number},
+): Promise<{t: number; luma: number}[]> {
+  const scratch = await page.context().newPage();
+  try {
+    const out: {t: number; luma: number}[] = [];
+    for (let i = 0; i < frames.length; i += 12) {
+      const batch = frames.slice(i, i + 12);
+      const values = await scratch.evaluate(
+        async ({items, box}) => {
+          const result: number[] = [];
+          for (const item of items) {
+            const blob = await (
+              await fetch(`data:image/${item.format};base64,${item.data}`)
+            ).blob();
+            const bitmap = await createImageBitmap(blob);
+            const scale = bitmap.width / item.viewportWidth;
+            const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+            const context = canvas.getContext('2d');
+            if (context == null) {
+              throw new Error('no 2d context');
+            }
+            context.drawImage(bitmap, 0, 0);
+            const {data} = context.getImageData(
+              Math.round(box.x * scale),
+              Math.round(box.y * scale),
+              Math.max(1, Math.round(box.width * scale)),
+              Math.max(1, Math.round(box.height * scale)),
+            );
+            let sum = 0;
+            for (let o = 0; o < data.length; o += 4) {
+              sum +=
+                0.2126 * data[o] + 0.7152 * data[o + 1] + 0.0722 * data[o + 2];
+            }
+            result.push(sum / (data.length / 4));
+          }
+          return result;
+        },
+        {
+          items: batch.map(f => ({
+            data: f.data,
+            format: f.format,
+            viewportWidth: f.viewportWidth,
+          })),
+          box: region,
+        },
+      );
+      values.forEach((luma, k) => out.push({t: batch[k].t, luma}));
+    }
+    return out;
+  } finally {
+    await scratch.close();
+  }
+}
 
 /** The track with room for the lifted lens around it. */
 async function clipAround(track: Locator) {

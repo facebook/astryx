@@ -48,6 +48,10 @@
  *   (the lift spring until the settle may start, then the settle spring from
  *   that state), so the settle starts on time on the compositor even if the
  *   main thread is busy.
+ * - The track's on layer is composited from the start (`will-change` under a
+ *   coarse pointer, Switch.tsx) and, once attached, its opacity is the
+ *   animator's alone: iOS Safari otherwise ran its fade on the main thread,
+ *   so a busy main thread froze the track colour while the thumb moved.
  * - Reduce Motion changes nothing here: UISwitch keeps its lift and springs
  *   (it drops only the lens's squash and stretch, which this does not draw).
  *
@@ -267,6 +271,9 @@ export class SwitchTouchController {
     this.on = createAnimator(elements.on, {
       initial: {opacity: this.isOn ? 1 : 0},
     });
+    // The on layer's class holds the value it mounted with; from here its
+    // opacity is the animator's.
+    this.on.set({opacity: this.isOn ? 1 : 0});
 
     const host = getGestureHost(elements.surface.ownerDocument);
     this.detachers = SWITCH_CLAIMS_HELD_TOUCH
