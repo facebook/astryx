@@ -82,6 +82,34 @@ describe('component import size', () => {
     expect(rulesForClasses(css, new Set())).toBe('');
   });
 
+  it('counts CSS only for classes the component package modules reference', () => {
+    const root = tree({
+      'packages/lab/dist/Tip/index.js':
+        "export {Button} from '../../../core/dist/Button.js';\nexport const Tip = () => 'xtip1';\n",
+      'packages/core/dist/Button.js': "export const Button = () => 'xbtn9';\n",
+      'packages/lab/dist/lab.css':
+        '.xtip1{color:red}.xbtn9{color:blue;padding:4px;margin:2px}',
+    });
+    const css = fs.readFileSync(
+      path.join(root, 'packages/lab/dist/lab.css'),
+      'utf8',
+    );
+    const own = measureComponentImport(
+      path.join(root, 'packages/lab/dist/Tip/index.js'),
+      css,
+      path.join(root, 'packages/lab/dist'),
+    );
+    const onlyTip = measureComponentImport(
+      path.join(root, 'packages/lab/dist/Tip/index.js'),
+      '.xtip1{color:red}',
+      path.join(root, 'packages/lab/dist'),
+    );
+    expect(own.cssGzipBytes).toBe(onlyTip.cssGzipBytes);
+    expect(
+      bundleImport(path.join(root, 'packages/lab/dist/Tip/index.js')),
+    ).toContain('xbtn9');
+  });
+
   it('keeps the @keyframes a kept rule names', () => {
     const css =
       '@layer astryx-base{.xspin2{animation-name:xrot1}.xother9{animation-name:xrot9}@keyframes xrot1{from{opacity:0}to{opacity:1}}@keyframes xrot9{to{opacity:1}}}';

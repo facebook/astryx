@@ -50,11 +50,14 @@ function packageStylesheetPath(packageDir) {
 // modules reached through package imports (other Astryx packages, React,
 // StyleX, third-party libraries), minified for production. Returns the bundle
 // text, or null when the import cannot be bundled.
-function bundleImport(entry) {
+function bundleImportWithInputs(entry) {
   if (!entry || !fs.existsSync(entry)) return null;
   try {
     const esbuild = require('esbuild');
+    const workingDir = process.cwd();
     const result = esbuild.buildSync({
+      absWorkingDir: workingDir,
+      metafile: true,
       stdin: {
         contents: `export * from ${JSON.stringify(path.resolve(entry))};`,
         resolveDir: path.dirname(path.resolve(entry)),
@@ -69,10 +72,19 @@ function bundleImport(entry) {
       write: false,
       logLevel: 'silent',
     });
-    return result.outputFiles[0].text;
+    return {
+      text: result.outputFiles[0].text,
+      inputs: Object.keys(result.metafile.inputs)
+        .filter(input => input !== '<stdin>')
+        .map(input => path.resolve(workingDir, input)),
+    };
   } catch {
     return null;
   }
+}
+
+function bundleImport(entry) {
+  return bundleImportWithInputs(entry)?.text ?? null;
 }
 
 // StyleX atomic class names the bundle references.
@@ -187,14 +199,21 @@ function rulesForClasses(css, classes) {
  * Measure one component import: gzip JavaScript it pulls in and gzip CSS of
  * the stylesheet rules that JavaScript references. Null where unmeasurable.
  */
-function measureComponentImport(entry, stylesheetText) {
-  const js = bundleImport(entry);
-  if (js === null) return {importGzipBytes: null, cssGzipBytes: null};
-  const css = stylesheetText
-    ? rulesForClasses(stylesheetText, classNamesIn(js))
-    : null;
+function measureComponentImport(entry, stylesheetText, ownDistDir) {
+  const bundle = bundleImportWithInputs(entry);
+  if (bundle === null) return {importGzipBytes: null, cssGzipBytes: null};
+  // CSS counts only the rules the component's own package modules reference:
+  // classes from modules reached in other packages belong to their stylesheets.
+  const ownDir = path.resolve(ownDistDir || path.dirname(entry)) + path.sep;
+  const classes = new Set();
+  for (const input of bundle.inputs) {
+    if (!input.startsWith(ownDir)) continue;
+    for (const name of classNamesIn(fs.readFileSync(input, 'utf8')))
+      classes.add(name);
+  }
+  const css = stylesheetText ? rulesForClasses(stylesheetText, classes) : null;
   return {
-    importGzipBytes: gzipBytes(js),
+    importGzipBytes: gzipBytes(bundle.text),
     cssGzipBytes: css === null ? null : gzipBytes(css),
   };
 }

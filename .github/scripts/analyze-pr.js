@@ -515,12 +515,13 @@ function packageStylesheet(pkg) {
 }
 
 // The dist module a component's import resolves to: `dist/<Name>/index.js` in
-// a nested package, `dist/<Name>.js` in a flat one.
+// a nested package (or `dist/<Name>/<Name>.js` when the folder has no index),
+// `dist/<Name>.js` in a flat one.
 function componentImportEntry(pkg, componentName) {
   const dist = path.join(process.cwd(), pkgDist(pkg));
-  return pkg.layout === 'flat'
-    ? path.join(dist, `${componentName}.js`)
-    : path.join(dist, componentName, 'index.js');
+  if (pkg.layout === 'flat') return path.join(dist, `${componentName}.js`);
+  const index = path.join(dist, componentName, 'index.js');
+  return fs.existsSync(index) ? index : path.join(dist, componentName, `${componentName}.js`);
 }
 
 // Get component stats
@@ -541,6 +542,7 @@ function getComponentStats(pkg, componentName) {
   const importSize = measureComponentImport(
     componentImportEntry(pkg, componentName),
     packageStylesheet(pkg),
+    path.join(process.cwd(), pkgDist(pkg)),
   );
 
   return {
