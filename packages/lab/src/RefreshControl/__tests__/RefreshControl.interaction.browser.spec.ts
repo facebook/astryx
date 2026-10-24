@@ -930,6 +930,133 @@ test('the spin does no Layout or Paint per step', async ({
   expect(trace.paint, JSON.stringify(trace.counts)).toBe(0);
 });
 
+test('at the trigger the gradient cross-fades in, the two sets summing to UIKit\u2019s alpha', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', 'Chromium screenshot proof');
+  const {driver, content, start} = await openRefresh(page, undefined, {
+    refreshMs: '8000',
+  });
+  await driver.play(slowPull(start, 300, 200));
+  await expect.poll(() => isBusy(content)).toBe(true);
+  await page.waitForTimeout(1200);
+  const glyph = content.locator(':scope > div > span').first();
+  // Hold the glyph at the gradient spring's midpoint (g = 0.5 at 0.755 s of
+  // its 4 s), the trigger turn finished and the spin mid-step 0.
+  const held = await glyph.evaluate(element => {
+    const kinds: string[] = [];
+    for (const animation of element.getAnimations({subtree: true})) {
+      animation.pause();
+      const timing = animation.effect?.getTiming();
+      if ((animation.effect as KeyframeEffect).target === element) {
+        animation.finish();
+        kinds.push('turn');
+      } else if (timing?.iterations === Infinity) {
+        animation.currentTime = 62;
+        kinds.push('spin');
+      } else {
+        animation.currentTime = 755;
+        kinds.push('spring');
+      }
+    }
+    return {
+      kinds,
+      fill: getComputedStyle(element.querySelector('svg') as Element).fill,
+    };
+  });
+  expect(held.kinds.filter(k => k === 'spring')).toHaveLength(2);
+  expect(held.kinds.filter(k => k === 'spin')).toHaveLength(8);
+  const shot = await glyph.screenshot();
+  const fill = (held.fill.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+  const alphas = await page.evaluate(
+    async ({png, color}) => {
+      const bitmap = await createImageBitmap(
+        await (await fetch(`data:image/png;base64,${png}`)).blob(),
+      );
+      const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+      const context = canvas.getContext('2d');
+      if (context == null) {
+        throw new Error('no 2d context');
+      }
+      context.drawImage(bitmap, 0, 0);
+      const {data, width} = context.getImageData(
+        0,
+        0,
+        bitmap.width,
+        bitmap.height,
+      );
+      const scale = bitmap.width / 30;
+      const c = bitmap.width / 2;
+      const out: number[] = [];
+      for (let p = 0; p < 8; p += 1) {
+        const a = (p * Math.PI) / 4;
+        const x = Math.round(c + 10 * scale * Math.sin(a));
+        const y = Math.round(c - 10 * scale * Math.cos(a));
+        let sum = 0;
+        let n = 0;
+        for (let dy = -1; dy <= 1; dy += 1) {
+          for (let dx = -1; dx <= 1; dx += 1) {
+            const i = ((y + dy) * width + (x + dx)) * 4;
+            sum += data[i] + data[i + 1] + data[i + 2];
+            n += 3;
+          }
+        }
+        const level = sum / n;
+        const ink = (color[0] + color[1] + color[2]) / 3;
+        // The page is white: level = 255 - alpha * (255 - ink).
+        out.push((255 - level) / (255 - ink));
+      }
+      return out;
+    },
+    {png: shot.toString('base64'), color: fill},
+  );
+  // The revealed spokes at 1 - g plus the stepping spoke at g times its
+  // instance's alpha (spoke p holds instance p at step 0): plus-lighter's
+  // sum, where normal blending would take away (1 - g) g a.
+  const g = 0.5;
+  alphas.forEach((alpha, p) => {
+    const instance = 0.08 * p;
+    const sum = 1 - g + g * instance;
+    expect(
+      Math.abs(alpha - sum),
+      `spoke ${p}: ${alpha.toFixed(3)}`,
+    ).toBeLessThan(0.03);
+  });
+  // The brightest spoke shows the sum, not normal blending's 0.64.
+  expect(alphas[7]).toBeGreaterThan(0.74);
+});
+
+test('reduced motion leaves the drawing as it is (UIKit\u2019s reduced-motion refresh is unmeasured)', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', 'Chromium proof');
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  const {driver, content, start} = await openRefresh(page, undefined, {
+    refreshMs: '8000',
+  });
+  await driver.play(slowPull(start, 300, 200));
+  await expect.poll(() => isBusy(content)).toBe(true);
+  const glyph = content.locator(':scope > div > span').first();
+  const timings = await glyph.evaluate(element =>
+    element
+      .getAnimations({subtree: true})
+      .filter(a => (a.effect as KeyframeEffect).target !== element)
+      .map(a => ({
+        duration: Number(a.effect?.getTiming().duration),
+        iterations: Number(a.effect?.getTiming().iterations),
+        state: a.playState,
+      })),
+  );
+  // The gradient's two 4 s springs and the eight 8 s spin iterations, running.
+  expect(timings.filter(t => t.duration === 4000)).toHaveLength(2);
+  expect(
+    timings.filter(t => t.duration === 8000 && t.iterations === Infinity),
+  ).toHaveLength(8);
+  expect(timings.every(t => t.state === 'running')).toBe(true);
+});
+
 test(
   'storyboard: the spin, one turn of the gradient',
   {tag: '@storyboard'},
