@@ -333,6 +333,17 @@ export {
   type MobilePowerSearchProps,
 } from './MobilePowerSearch';
 
+// TabBar — the iOS 26 floating tab bar: a capsule of tabs with a selection
+// lens on UIKit's springs (core's experimental motion subpath), badges and a
+// reselect signal.
+export {
+  TabBar,
+  TabBarItem,
+  type TabBarAccessoryPlacement,
+  type TabBarItemProps,
+  type TabBarProps,
+} from './TabBar';
+
 // RichTextEditor (RFC facebook/astryx#3899) moved out of @astryxdesign/lab into
 // its own package, @astryxdesign/richtext. Import it from there:
 //   import {RichTextEditor, RichTextView} from '@astryxdesign/richtext';
