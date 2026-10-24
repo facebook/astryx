@@ -3,7 +3,7 @@
   "type": "search",
   "data": {
     "query": "experimental",
-    "matchCount": 7,
+    "matchCount": 8,
     "results": [
       {
         "domain": "hook",
@@ -17,6 +17,21 @@
         "mentions": [
           "@astryxdesign/core/motion/experimental",
           "Experimental: this hook and everything exported from `@astryxdesign/core/motion/experimental` are outside the stable compatibility promise and may change or be removed in a patch release.",
+          "keyword \"experimental\""
+        ]
+      },
+      {
+        "domain": "hook",
+        "name": "useKeyboardLayoutGuide",
+        "package": "@astryxdesign/core",
+        "score": "<text>",
+        "reason": "<text>",
+        "description": "<text>",
+        "import": "@astryxdesign/core/keyboard/experimental",
+        "command": "astryx hook useKeyboardLayoutGuide",
+        "mentions": [
+          "@astryxdesign/core/keyboard/experimental",
+          "Experimental: this hook and everything exported from `@astryxdesign/core/keyboard/experimental` are outside the stable compatibility promise and may change or be removed in a patch release.",
           "keyword \"experimental\""
         ]
       },

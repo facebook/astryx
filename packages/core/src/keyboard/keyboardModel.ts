@@ -45,12 +45,16 @@ import {keyboard as androidKeyboard} from '../motion/android';
 import {cubicBezier} from '../motion/bezier';
 import {solveSpring, toSpring} from '../motion/spring';
 
-/** Which browser's keyboard reports the model reads. */
+/**
+ * Which browser's keyboard reports the model reads.
+ * @experimental
+ */
 export type KeyboardProfile = 'webkit' | 'chromium';
 
 /**
  * An eased slide: the curve a transition plays instead of UIKit's keyboard
  * spring (Android's keyboard).
+ * @experimental
  */
 export interface KeyboardCurve {
   /** Length, ms. */
@@ -61,10 +65,16 @@ export interface KeyboardCurve {
   readonly durationKey: 'showMs' | 'hideMs';
 }
 
-/** How the keyboard's cover changes. */
+/**
+ * How the keyboard's cover changes.
+ * @experimental
+ */
 export type KeyboardTransitionKind = 'show' | 'hide' | 'change';
 
-/** One change of the keyboard's cover, as the guide reports it. */
+/**
+ * One change of the keyboard's cover, as the guide reports it.
+ * @experimental
+ */
 export interface KeyboardTransition {
   readonly kind: KeyboardTransitionKind;
   /** Inset presented at `start`, CSS px. */

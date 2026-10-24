@@ -2,8 +2,11 @@
 
 The web's `UIKeyboardLayoutGuide`: where the software keyboard covers the
 layout viewport, and when and how it moves, so touch presentations can keep
-content above it. It is internal to `@astryxdesign/core`: components import it
-from `../keyboard`, and nothing here is exported from the package entry.
+content above it. Core components import it from `../keyboard`. Lab
+components import `getKeyboardLayoutGuide`, `useKeyboardLayoutGuide` and the
+`KeyboardLayoutGuide` / `KeyboardTransition` types from the experimental
+subpath `@astryxdesign/core/keyboard/experimental` (spec:AST-017 FR21: outside
+the stable promise, never re-exported from the package root).
 
 ## Using it from a component
 
@@ -15,6 +18,9 @@ const unsubscribe = guide.subscribe(t => {
 // A field that keeps itself above the keyboard:
 const unregister = guide.overlayWhileFocused(field);
 ```
+
+In React, `useKeyboardLayoutGuide(onTransition, {overlayFor: fieldRef})`
+(the experimental subpath) does both while the component is mounted.
 
 Each transition is `{kind, from, to, start, velocity, animated, predicted,
 curve}`: insets in CSS px, `start` on the document timeline (in the past for a
@@ -96,12 +102,14 @@ resting bottom, and only while a keyboard is up:
 
 ## Files
 
-| File                     | What it holds                                                                              |
-| ------------------------ | ------------------------------------------------------------------------------------------ |
-| `keyboardModel.ts`       | The clock-free core: transitions from viewport reports and focus changes.                  |
-| `keyboardLayoutGuide.ts` | One guide per window: the listeners, the frame watch, the verification timer, the overlay. |
-| `rideKeyboard.ts`        | Moves an element with the keyboard on its spring (iOS) or its curve (Chrome).              |
-| `index.ts`               | Entry point.                                                                               |
+| File                        | What it holds                                                                              |
+| --------------------------- | ------------------------------------------------------------------------------------------ |
+| `keyboardModel.ts`          | The clock-free core: transitions from viewport reports and focus changes.                  |
+| `keyboardLayoutGuide.ts`    | One guide per window: the listeners, the frame watch, the verification timer, the overlay. |
+| `rideKeyboard.ts`           | Moves an element with the keyboard on its spring (iOS) or its curve (Chrome).              |
+| `useKeyboardLayoutGuide.ts` | The guide and a transition listener for a React component.                                 |
+| `experimental.ts`           | The `@astryxdesign/core/keyboard/experimental` subpath.                                    |
+| `index.ts`                  | Entry point.                                                                               |
 
 The timing constants live in `../motion/uikit/keyboard.ts`, the spring in
 `springs.keyboard`, the duration in `timing.keyboardNotificationMs`.

@@ -85,6 +85,11 @@ const STATIC_EXPORTS = {
     types: './dist/gestures/experimental.d.ts',
     default: './dist/gestures/experimental.js',
   },
+  './keyboard/experimental': {
+    source: './src/keyboard/experimental.ts',
+    types: './dist/keyboard/experimental.d.ts',
+    default: './dist/keyboard/experimental.js',
+  },
   './theme/tokens': {
     source: './src/theme/tokens.ts',
     types: './dist/theme/tokens.d.ts',

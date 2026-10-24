@@ -39,6 +39,7 @@ import type {KeyboardTransition} from './keyboardModel';
  * ```
  * guide.subscribe(t => rideKeyboard(dock.animator, {y: -lift(t.to)}, t));
  * ```
+ * @experimental
  */
 export function rideKeyboard(
   animator: Animator,
