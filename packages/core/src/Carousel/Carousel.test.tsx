@@ -2,7 +2,7 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {createRef} from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {act, render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Carousel, type CarouselHandle} from './Carousel';
 
@@ -43,12 +43,70 @@ describe('Carousel', () => {
       </Carousel>,
     );
     // APG carousel pattern: each slide container is role=group with
-    // aria-roledescription="slide" and an "N of M" accessible name.
-    const slides = screen.getAllByRole('group');
+    // aria-roledescription="slide" and an "N of M" accessible name. (The
+    // scroll area around them is a group too, named like the carousel.)
+    const slides = screen.getAllByRole('group', {name: /^Slide /});
     expect(slides).toHaveLength(3);
     slides.forEach((slide, i) => {
       expect(slide).toHaveAttribute('aria-roledescription', 'slide');
       expect(slide).toHaveAccessibleName(`Slide ${i + 1} of 3`);
+    });
+  });
+
+  describe('scroll area (spec:AST-025 FR12)', () => {
+    function getScroller() {
+      return screen.getByRole('group', {name: 'Photos'});
+    }
+
+    function setOverflow(el: HTMLElement, overflowing: boolean) {
+      Object.defineProperty(el, 'scrollWidth', {
+        value: overflowing ? 500 : 200,
+        configurable: true,
+      });
+      Object.defineProperty(el, 'clientWidth', {
+        value: 200,
+        configurable: true,
+      });
+      fireEvent.scroll(el);
+    }
+
+    it('is a group named like the carousel', () => {
+      render(
+        <Carousel aria-label="Photos">
+          <div>One</div>
+          <div>Two</div>
+        </Carousel>,
+      );
+      const scroller = getScroller();
+      expect(scroller).toHaveAttribute('role', 'group');
+      expect(scroller).toHaveAccessibleName('Photos');
+      // It is the region's scroll container, not a slide.
+      expect(scroller).not.toHaveAttribute('aria-roledescription');
+      expect(scroller.parentElement).toBe(
+        screen.getByRole('region', {name: 'Photos'}),
+      );
+    });
+
+    it('takes a tab stop only while its content overflows', () => {
+      render(
+        <Carousel aria-label="Photos">
+          <div>One</div>
+          <div>Two</div>
+        </Carousel>,
+      );
+      const scroller = getScroller();
+      // Fitting: out of the tab order, still focusable from script (FR2).
+      setOverflow(scroller, false);
+      expect(scroller).toHaveAttribute('tabindex', '-1');
+      act(() => scroller.focus());
+      expect(scroller).toHaveFocus();
+      act(() => scroller.blur());
+      // Overflowing: a tab stop.
+      setOverflow(scroller, true);
+      expect(scroller).toHaveAttribute('tabindex', '0');
+      // Fitting again: leaves the tab order.
+      setOverflow(scroller, false);
+      expect(scroller).toHaveAttribute('tabindex', '-1');
     });
   });
 
