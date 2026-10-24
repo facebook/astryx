@@ -213,6 +213,17 @@ const styles = stylex.create({
       '@media (pointer: coarse)': 'manipulation',
     },
     userSelect: 'none',
+    // Safari reads only the prefixed forms: without them a finger held on a
+    // thumb starts a text selection (and its loupe) before the drag begins.
+    // A UISlider selects nothing.
+    WebkitUserSelect: {
+      default: null,
+      '@media (pointer: coarse)': 'none',
+    },
+    WebkitTouchCallout: {
+      default: null,
+      '@media (pointer: coarse)': 'none',
+    },
     isolation: 'isolate',
     // The thumbs and the fill travel in container units of this box
     // (`cqi` / `cqb`). Its size never depends on its content: the parts are
