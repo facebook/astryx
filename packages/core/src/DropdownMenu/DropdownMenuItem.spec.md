@@ -31,7 +31,7 @@ architecture:
     architecture:interaction-modality,
   ]
 contributing: []
-system_specs: [spec:AST-020, spec:AST-029]
+system_specs: [spec:AST-013, spec:AST-020, spec:AST-029]
 ---
 
 # DropdownMenuItem component contract
@@ -115,7 +115,7 @@ intentional decision.
 | FR6 | Ref, supported host attributes and handlers, `className`, `style`, and `xstyle` MUST reach or compose on the row root without replacing owned role, tab stop, disabled behavior, destination handling, or activation order.                          | `architecture:public-component-api/INV5–INV9`; focused tests     | verify                                                       |
 | FR7 | Disabled menu rows remain inert. Whether the menu keyboard model should visit them is unresolved at the shared owner and MUST NOT be changed by a component-local audit.                                                                             | WAI-ARIA menu pattern; parent `component:DropdownMenu/OQ1`       | human API decision                                           |
 | FR8 | Keyboard focus MUST remain perceivable, including in forced-colors mode. The current background-only treatment is an objective gap; a remediation must preserve modality and row-content visibility without inventing new ordinary-theme appearance. | WCAG 2.2 SC 1.4.11 and 2.4.7; current rendered behavior          | objective gap; owner must confirm the shared visual boundary |
-| FR9 | Hover focus MUST NOT show the keyboard focus indicator: the row the mouse rests on takes focus without matching `:focus-visible`, after a pointer or a keyboard open, and a key pressed afterwards moves focus with it.                              | `architecture:interaction-modality` INV1; browser tests          | Proposed; verified in jsdom and Chromium; owner review       |
+| FR9 | Focus that follows the pointer onto a row MUST follow the last input (`architecture:interaction-modality` INV1): after a pointer press the row MUST NOT match `:focus-visible`, and a key press afterwards moves focus with the indicator.           | `architecture:interaction-modality` INV1; browser tests          | Proposed; verified in jsdom and Chromium; owner review       |
 
 ### Allowed variation
 
@@ -136,7 +136,7 @@ intentional decision.
 | Destination            | One anchor root preserves safe destination and browser activation behavior.         | Target, rel, router provider, and content.   |
 | Destructive            | Error-role paint applies to label, icon, and description without changing behavior. | Other row content remains consumer-authored. |
 | Keyboard focus         | Parent focus lands on the row and remains visible.                                  | Exact theme-owned paint may vary.            |
-| Pointer hover          | Focus follows the mouse onto the row without `:focus-visible`.                      | A key press afterwards shows it.             |
+| Pointer hover          | After a pointer press, focus follows the mouse without `:focus-visible`.            | After a key press, the indicator shows.      |
 | RTL / narrow viewport  | Logical insets and start alignment follow direction without horizontal overflow.    | Menu placement remains parent-owned.         |
 
 ### Transformation and precedence order
@@ -184,6 +184,16 @@ No new component-local visual decision is settled by this draft.
 - `architecture:interaction-modality` and DropdownMenu own parent keyboard behavior.
 - `spec:AST-020` supplies WCAG/APG adoption and evidence-layer boundaries.
 - `spec:AST-029` keeps this observational draft separate from the audit receipt.
+- `spec:AST-013` reduced fallback for FR9: the row is focused with the
+  `focusVisible` focus option, which Chrome and Edge honor from 145, Firefox
+  from 104 and Safari from 18.4, so every full-support browser does. A browser
+  in the reduced-fallback tier without it ignores the option, and focus that
+  follows the pointer may match `:focus-visible` there, so a style keyed on it
+  can paint under the mouse. The row's own `:focus` paint, the menu's task,
+  focus order, keyboard behavior and state are unchanged (FR7, FR8). Evidence:
+  browser compatibility data and the capability case in
+  `MenuHoverFocus.a11y.chromium.spec.ts`. Owner: this record's owners. Review
+  when the reduced-fallback tier reaches those versions.
 
 ## Verification map
 
@@ -193,7 +203,7 @@ No new component-local visual decision is settled by this draft.
 | FR5, FR8, AR4    | theming-target tests; exact-head Neutral/Butter/RTL/narrow/focus/hover frames | default, destructive, disabled, focus, hover               | Target/state reflection disappears, paint is absent, or focus becomes unobservable                                    | `audit:DropdownMenuItem/§2,§5`    |
 | FR6              | root/ref/handler tests; lint and typecheck                                    | ref, host attributes, class/style/xstyle, pointer handlers | An accepted input is dropped or overrides component-owned semantics                                                   | `audit:DropdownMenuItem/§3`       |
 | RTL / responsive | source-hashed verified-N/A receipt plus exact-head browser frames             | LTR, RTL, 320px                                            | Physical direction leaks into the row or narrow layout overflows                                                      | `audit:DropdownMenuItem/§9,§10`   |
-| FR9              | `MenuHoverFocus.a11y.chromium.spec.ts`; hover test                            | pointer open, keyboard open, then a key                    | Hover focus matching `:focus-visible`, or a key press after it that does not, fails                                   | `audit:DropdownMenuItem/§1,§4,§6` |
+| FR9              | `MenuHoverFocus.a11y.chromium.spec.ts`; hover tests                           | pointer open, keyboard open, held press, then a key        | Hover focus after a pointer press matching `:focus-visible`, or after a key press not matching it, fails              | `audit:DropdownMenuItem/§1,§4,§6` |
 
 ## Decision log
 

@@ -5,11 +5,13 @@
  * @input The `Core/DropdownMenu` Default, LabCheckboxItems, LabRadioGroup and
  *   Submenu stories and the `Core/ContextMenu` Default story in a built
  *   Storybook, with real mouse and keyboard input.
- * @output Real-engine evidence that a row the pointer lights (a resting mouse,
- *   or a held press dragged over it) takes focus without matching
- *   `:focus-visible` (`architecture:interaction-modality` INV1), after a
- *   pointer open or a keyboard open, and that an arrow key afterwards moves
- *   focus to a row that does match it.
+ * @output Real-engine evidence that focus the pointer moves onto a row (a
+ *   resting mouse, or a held press dragged over it) follows the last input
+ *   (`architecture:interaction-modality` INV1): after a pointer press the row
+ *   does not match `:focus-visible`, an arrow key afterwards moves focus to a
+ *   row that does, and after a keyboard open the indicator stays. A first case
+ *   checks that the browser running them honors `FocusOptions.focusVisible`
+ *   and records its version.
  * @position Run with `pnpm test:a11y-contract`; jsdom has no `:focus-visible`
  *   heuristic, so only a real engine shows whether hover focus would paint a
  *   keyboard-only focus style.
@@ -57,6 +59,42 @@ async function hover(page: Page, row: Locator) {
   await expect(row).toBeFocused();
 }
 
+test('the browser running these cases honors FocusOptions.focusVisible', async ({
+  page,
+  browser,
+  browserName,
+}) => {
+  test.info().annotations.push({
+    type: 'browser',
+    description: `${browserName} ${browser.version()}`,
+  });
+  const markup =
+    '<button id="key">Key</button><div id="row" tabindex="-1">Row</div>';
+  // After a key press, a plain focus() inherits :focus-visible...
+  await page.setContent(markup);
+  await page.keyboard.press('Tab');
+  await expect(page.locator('#key')).toBeFocused();
+  const plain = await page.locator('#row').evaluate((row: HTMLElement) => {
+    row.focus();
+    return row.matches(':focus-visible');
+  });
+  expect(plain).toBe(true);
+  // ...and the option keeps it from matching. Chrome and Edge from 145,
+  // Firefox from 104 and Safari from 18.4 honor it; an older engine ignores
+  // it, and the cases below would then fail for that reason alone.
+  await page.setContent(markup);
+  await page.keyboard.press('Tab');
+  await expect(page.locator('#key')).toBeFocused();
+  const withOption = await page.locator('#row').evaluate((row: HTMLElement) => {
+    row.focus({focusVisible: false});
+    return row.matches(':focus-visible');
+  });
+  expect(
+    withOption,
+    `${browserName} ${browser.version()} ignores FocusOptions.focusVisible`,
+  ).toBe(false);
+});
+
 test('after a pointer open, rows the mouse rests on take focus without :focus-visible, and ArrowDown afterwards gets it', async ({
   page,
 }) => {
@@ -79,12 +117,11 @@ test('after a pointer open, rows the mouse rests on take focus without :focus-vi
   expect(await matchesFocusVisible(del)).toBe(true);
 });
 
-test('after a keyboard open, a row the mouse moves to takes focus without :focus-visible, and the keyboard gets it back', async ({
+test('after a keyboard open, a row the mouse moves to keeps the indicator: no pointer press changed the last input', async ({
   page,
 }) => {
   await gotoStory(page, 'core-dropdownmenu--default');
-  const trigger = page.getByRole('button', {name: 'Actions'});
-  await trigger.focus();
+  await page.getByRole('button', {name: 'Actions'}).focus();
   await page.keyboard.press('ArrowDown');
   const menu = page.getByRole('menu');
   const edit = menu.getByRole('menuitem', {name: 'Edit'});
@@ -93,48 +130,45 @@ test('after a keyboard open, a row the mouse moves to takes focus without :focus
 
   const del = menu.getByRole('menuitem', {name: 'Delete'});
   await hover(page, del);
-  expect(await matchesFocusVisible(del)).toBe(false);
-
-  await page.keyboard.press('ArrowUp');
-  const duplicate = menu.getByRole('menuitem', {name: 'Duplicate'});
-  await expect(duplicate).toBeFocused();
-  expect(await matchesFocusVisible(duplicate)).toBe(true);
+  expect(await matchesFocusVisible(del)).toBe(true);
 });
 
-test('checkbox, radio and sub-menu rows the mouse rests on take focus without :focus-visible', async ({
+test('checkbox, radio and sub-menu rows the mouse rests on take focus without :focus-visible after a pointer open', async ({
   page,
 }) => {
-  // The checkbox story opens its own menu on load (its play function clicks
-  // the trigger), so it is not clicked again.
   const cases = [
     {
       story: 'core-dropdownmenu--lab-checkbox-items',
-      opensItself: true,
       button: 'View',
       role: 'menuitemcheckbox',
       name: 'Show drafts',
     },
     {
       story: 'core-dropdownmenu--lab-radio-group',
-      opensItself: false,
       button: 'Sort',
       role: 'menuitemradio',
       name: 'Oldest',
     },
     {
       story: 'core-dropdownmenu--submenu',
-      opensItself: false,
       button: 'Actions',
       role: 'menuitem',
       name: 'Move to',
     },
   ] as const;
-  for (const {story, opensItself, button, role, name} of cases) {
+  for (const {story, button, role, name} of cases) {
     await gotoStory(page, story);
-    if (!opensItself) {
-      await page.getByRole('button', {name: button}).click();
+    const trigger = page.getByRole('button', {name: button});
+    await expect(trigger).toBeVisible();
+    // A story may open its own menu on load; close it, so the open below is
+    // a pointer press.
+    const menu = page.getByRole('menu').first();
+    if (await menu.isVisible()) {
+      await page.keyboard.press('Escape');
+      await expect(menu).toBeHidden();
     }
-    const row = page.getByRole('menu').first().getByRole(role, {name});
+    await trigger.click();
+    const row = menu.getByRole(role, {name});
     await expect(row).toBeVisible();
     await hover(page, row);
     expect(await matchesFocusVisible(row), `${role} "${name}"`).toBe(false);

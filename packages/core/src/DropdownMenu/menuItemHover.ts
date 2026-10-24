@@ -11,8 +11,9 @@
  * highlight source. Mouse hover moves focus onto the pointed-at item so the
  * one focus highlight follows the pointer — instead of a separate `:hover`
  * background leaving the keyboard-focused item highlighted at the same time.
- * That focus is the mouse's, never the keyboard's: it never matches
- * `:focus-visible` (`architecture:interaction-modality` INV1).
+ * That focus follows the last input (`architecture:interaction-modality` INV1):
+ * after a pointer press it does not match `:focus-visible`, so a keyboard-only
+ * focus style does not paint on the row under the mouse.
  *
  * SYNC: When modified, update the item components that use it:
  * - /packages/core/src/DropdownMenu/DropdownMenuItem.tsx
@@ -22,6 +23,7 @@
  */
 
 import type {PointerEvent} from 'react';
+import {focusForLastInput} from '../utils/focusReturn';
 
 /**
  * Move focus to a menu item as the pointer moves over it, so hover and
@@ -41,10 +43,13 @@ export function focusMenuItemOnHover(
     // stationary pointer, whose next pointerenter focuses it again — a
     // runaway auto-scroll loop. Keyboard navigation scrolls via its own
     // highlight handling; hover must never scroll.
-    // focusVisible false: a plain focus() inherits :focus-visible from the
-    // element focused before it (the menu after a pointer open, the row a key
-    // reached), so every keyboard-only focus style would paint on the row
-    // under the mouse. A key pressed afterwards moves focus with it again.
-    el.focus({preventScroll: true, focusVisible: false});
+    // A plain focus() inherits :focus-visible from the element focused before
+    // it (the menu after a pointer open), so after a pointer press it is moved
+    // with the browser's focusVisible option instead. After a key press the
+    // keyboard is the last input and the indicator stays. A browser without
+    // the option (Chrome and Edge before 145, Safari before 18.4) ignores it:
+    // the reduced fallback component:DropdownMenuItem records (spec:AST-013).
+    // The menu's press model activates the modality tracking this reads.
+    focusForLastInput(el, {preventScroll: true});
   }
 }
