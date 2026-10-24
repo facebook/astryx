@@ -34,6 +34,7 @@ import {resolveLayerPortalTarget} from './layerHost';
 import {layerTextReset} from './layerTextReset.stylex';
 import {layerStructureReset} from './layerStructureReset.stylex';
 import {layerViewportInset} from './layerViewportInset.stylex';
+import {useLayerKeyboardClearance} from './LayerTouch';
 import {layerInsetProperties} from './layerInset';
 import {
   LAYER_CLEARANCE_PROPERTY,
@@ -717,6 +718,9 @@ function useLayerImplementation(
   const layerContext = useLayerContext();
   const declaredInset = layerContext?.inset;
   const popoverRef = useRef<HTMLElement | null>(null);
+  // Whether the open layer renders in anchor positioning, as its last render
+  // asked: the software keyboard caps only anchored layers (FR9).
+  const isAnchoredRef = useRef(false);
   // The DOM element on which the current logical open state was applied.
   // A portal target change replaces the popover element; retaining the old
   // reference lets the ref callback recognize and reopen its replacement.
@@ -1140,6 +1144,14 @@ function useLayerImplementation(
     return () => observer.disconnect();
   }, [isOpen, mode, updateAnchorInView]);
 
+  // An anchored layer that would run under the software keyboard keeps its
+  // block-start edge and ends clear of the keyboard (FR9, FR10).
+  useLayerKeyboardClearance(
+    isOpen && mode === 'context',
+    popoverRef,
+    isAnchoredRef,
+  );
+
   // Render function for context mode
   const renderContext = useCallback(
     (children: ReactNode, props?: ContextRenderProps) => {
@@ -1166,6 +1178,7 @@ function useLayerImplementation(
         onMouseEnter,
         onMouseLeave,
       } = props || {};
+      isAnchoredRef.current = positioning === 'anchor';
 
       // CSS anchor positioning (dynamic, not in StyleX)
       const anchorStyle: React.CSSProperties =

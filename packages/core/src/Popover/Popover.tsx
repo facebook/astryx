@@ -16,7 +16,9 @@
  * the way a UIKit popover is: it grows out of its anchor on UIKit's present
  * spring and shrinks back into it on the dismiss spring
  * (popoverSurfaceMotion.ts). A fine primary pointer keeps the layer's own
- * entrance and the theme's motion tokens (spec:AST-094 FR31).
+ * entrance and the theme's motion tokens (spec:AST-094 FR31). Like every
+ * anchored layer, a popover that would run under the software keyboard
+ * shrinks to stay above it (the layer runtime, spec:AST-059 FR9).
  *
  * For hover-triggered overlays, use HoverCard instead.
  *

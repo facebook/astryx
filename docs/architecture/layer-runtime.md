@@ -35,6 +35,7 @@ verified_by:
     packages/core/src/Layer/layerDismissalInvariants.test.tsx,
     packages/core/src/Layer/layerExitCopy.test.ts,
     packages/core/src/Layer/__tests__/layerExitCopy.interaction.browser.spec.ts,
+    packages/core/src/Layer/useLayerKeyboardClearance.test.tsx,
     packages/core/src/Popover/Popover.test.tsx,
     packages/core/src/DropdownMenu/DropdownMenu.test.tsx,
     packages/core/src/ContextMenu/ContextMenu.test.tsx,
@@ -388,15 +389,18 @@ layers use Layer rendering without joining Escape/platform dismissal.
   provider; the inset reaches them as a context value each layer carries on
   itself, never by resolving placement through the provider, and a layer with
   no provider renders as one under a provider with the default inset.
-- **INV11 — One viewport gutter.** The gutter, the viewport caps, and the
+- **INV11 — One viewport gutter.** The gutter, the viewport caps (the
+  software keyboard's cap included, `spec:AST-059` FR9), and the
   app-declared inset have one definition in the runtime; every anchor-mode layer
   inherits them, the layer box never exceeds the caps, the toast viewport reads
   the same inset, no consumer defines its own, no size is capped to the span
   beside the trigger, and a consumer minimum is clamped by the runtime's cap.
 - **INV12 — The first frame is the settled frame.** No input to a layer's
-  viewport geometry is measured after paint and then applied; the one runtime
-  observation, anchor visibility, is read before first paint. A layer never
-  paints at a geometry it is about to correct.
+  viewport geometry is measured after paint and then applied; the runtime's
+  observations, anchor visibility and the layer's box under a software
+  keyboard, are read before first paint, the keyboard's cap again only when
+  the keyboard moves. A layer never paints at a geometry it is about to
+  correct.
 - **INV13 — One exit copy per closing layer.** A layer's close plays on at most
   one exit copy, made by `placeLayerExitCopy`: drawn where the layer was drawn,
   inert, hidden from assistive technology, without ids, form names, or form
@@ -457,6 +461,9 @@ be updated only as that work ships.
   entry/return, and controlled close behavior.
 - A browser fallback change updates public `useLayer` and Popover docs and tests
   for both the native path and actual fallback.
+- A keyboard-cap change verifies the cap's timing (a rising keyboard once it
+  has arrived, a falling one at once, a press held until its click), a layer
+  opened with the keyboard up, and the layers it leaves alone.
 - An exit-copy change verifies the copy's reach and accessibility, its top-layer
   show (from script and by light dismiss), the refused show's wait, its place
   mid-entrance, and that a layer keeps one copy, in jsdom and in Chromium and
@@ -480,6 +487,9 @@ be updated only as that work ships.
 - `Layer/gestureCounter.ts` owns physical pointer/key gesture identity.
 - `Layer/layerExitCopy.ts` owns the exit copy a touch presentation's close plays
   on.
+- `Layer/useLayerKeyboardClearance.ts`, through `Layer/LayerTouch.ts`, owns the
+  software keyboard's cap on an open anchor-mode layer, read from the keyboard
+  module's one height.
 - `Layer/layerStack.ts`, `Layer/useLayerDismissal.ts`, and
   `Layer/LayerDepthContext.tsx` own current registration, presence, ordering, and
   Escape/platform routing.
@@ -528,6 +538,7 @@ this current architecture record.
 | INV1, INV2 | `useLayer.test.tsx` and `layerHost.test.ts`                                                                                                                 | Invalid DOM, stale host, lost theme/writing context, or portal mistaken for top-layer promotion                                                                                                               |
 | INV3–INV5  | `useLayer.test.tsx` and `anchorName.test.ts`                                                                                                                | A mode leaks geometry, RTL resolves from the wrong context, fallback clips, or a sibling anchor is lost                                                                                                       |
 | INV11      | `layerViewportInset.test.ts`, `useLayer.test.tsx`, and the `Core/Layer` viewport-inset stories under the story play guard at a desktop and a phone viewport | A second gutter definition, a `100%`-of-span cap, a layer narrower than its explicit size, a layer box wider than the viewport, a layer inside the gutter, or a layer that slides toward an off-screen anchor |
+| INV11      | `useLayerKeyboardClearance.test.tsx` and Popover's keyboard browser proofs                                                                                  | An anchored layer that ends under the software keyboard, or a cap that changes while the keyboard rises                                                                                                       |
 | INV12      | The `Core/Layer` viewport-inset stories' first-frame comparison, and `useLayer.test.tsx`'s synchronous anchor read                                          | A layer whose first painted rectangle differs from its settled one                                                                                                                                            |
 | INV13      | `layerExitCopy.test.ts` and `layerExitCopy.interaction.browser.spec.ts`                                                                                     | A copy with an id, a form name, a form owner, or pointer reach; a copy off the layer's drawn box; a copy outside the top layer; a second copy for one layer                                                   |
 | INV6, INV7 | `useLayer.test.tsx`, `Popover.test.tsx`, `DropdownMenu.test.tsx`, and `useMenuHover.test.tsx`                                                               | Duplicate close callback or the same press/re-hover reopens a surface                                                                                                                                         |
