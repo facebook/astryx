@@ -10,14 +10,18 @@
  * @position Internal Toast gesture unit; attached to the Toast card root
  *
  * A release toward the edge dismisses when it travelled past
- * max(40% of the card's height, 48 px), or when it was a flick: faster than
- * 1.2 px/ms on average, at any travel, timed by the input events themselves.
+ * max(40% of the card's height, 48 px), or when it was a flick: the finger
+ * moving toward the edge faster than 1.2 px/ms when it lifted, at any travel,
+ * by the shared release-velocity estimate every gesture reads
+ * (gestures/VelocityTracker, fed the input events' own timestamps and read
+ * at the lift's, so a finger that rested before lifting reads no speed).
  * Without that, a one-line toast (40% of which is below the 48 px floor)
  * could only be dragged away, never flicked.
  */
 
 import {useCallback, useEffect, useRef} from 'react';
 import type {PointerEvent as ReactPointerEvent, RefObject} from 'react';
+import {VelocityTracker} from '../gestures/VelocityTracker';
 
 const DRAG_PROMOTION_SLOP = 8;
 const SWIPE_DISMISS_RATIO = 0.4;
@@ -50,7 +54,8 @@ interface GestureState {
   pointerId: number;
   startX: number;
   startY: number;
-  startTime: number;
+  /** The shared release-velocity estimate, fed every point of the gesture. */
+  tracker: VelocityTracker;
   direction: ToastGestureDirection;
   intent: 'pending' | 'vertical' | 'opposite';
   pausedTimer: boolean;
@@ -141,12 +146,14 @@ export function useToastGesture({
         pauseTimer();
       }
       const surfaceSize = Math.max(root.getBoundingClientRect().height, 1);
+      const tracker = new VelocityTracker();
+      tracker.add(point.clientX, point.clientY, point.time);
       gestureRef.current = {
         source: point.source,
         pointerId: point.pointerId,
         startX: point.clientX,
         startY: point.clientY,
-        startTime: point.time,
+        tracker,
         direction,
         intent: 'pending',
         pausedTimer,
@@ -184,6 +191,7 @@ export function useToastGesture({
       ) {
         return;
       }
+      state.tracker.add(point.clientX, point.clientY, point.time);
       const deltaX = point.clientX - state.startX;
       const deltaY = point.clientY - state.startY;
       const absX = Math.abs(deltaX);
@@ -243,12 +251,15 @@ export function useToastGesture({
         0,
         (point.clientY - state.startY) * state.direction,
       );
-      const elapsed = Math.max(1, point.time - state.startTime);
-      // A flick needs no minimum travel of its own: the swipe already had to
-      // pass the slop toward the edge to begin.
+      // Toward the edge, px/ms, read at the lift's own time: a finger that
+      // rested longer than the stillness interval before lifting reads no
+      // speed (AST-100 FR2). A flick needs no minimum travel of its own: the
+      // swipe already had to pass the slop toward the edge to begin.
+      const velocity =
+        (state.tracker.velocity(point.time).y * state.direction) / 1000;
       const isDismissed =
         state.intent === 'vertical' &&
-        (travel >= state.dismissThreshold || travel / elapsed > FLICK_VELOCITY);
+        (travel >= state.dismissThreshold || velocity > FLICK_VELOCITY);
 
       gestureRef.current = null;
       root.style.removeProperty('transition-duration');

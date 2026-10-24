@@ -498,7 +498,7 @@ export const MobileSwipeToDismiss: StoryObj = {
   render: () => (
     <MobileCanvas
       title="Swipe dismissal"
-      description="Swipe is an enhancement only; the surface fades as it approaches the edge, and the visible close button remains the simple alternative.">
+      description="Swipe is an enhancement only. Under a finger, as with iOS notification banners, the card follows the finger after a short distance at about half its speed, a quick flick dismisses it, and it leaves by sliding past its edge; with a pen on a desktop the surface fades as it approaches the edge. The visible close button remains the simple alternative.">
       <ToastViewport position="topEnd" isTopLayer={false} maxVisible={2}>
         <MockCard>
           <Text type="supporting" color="secondary">
@@ -532,6 +532,43 @@ export const MobileSwipeToDismiss: StoryObj = {
         ...mobileStoryParameters.docs.story,
         description:
           'Interactive vertical edge swipe-to-dismiss example using real ToastViewport behavior. The vertical axis intentionally matches the Toast placement and motion model: top Toasts leave upward and bottom Toasts leave downward. A non-passive touchmove handoff claims only dominant travel toward that edge; opposite-direction and horizontal page scrolling remain available. Pen is supported as direct-contact input, while mouse drag is excluded to avoid conflicting with desktop selection; the close button and F6 keyboard access remain available.',
+      },
+    },
+  },
+};
+
+export const MobileTimedToast: StoryObj = {
+  name: 'Mobile situations / Timed toast',
+  render: () => (
+    <MobileCanvas
+      title="Timed dismissal"
+      description="A toast that leaves on its own after three seconds. Under a finger it slides past its edge, as iOS notification banners leave; with a mouse it fades.">
+      <ToastViewport position="topEnd" isTopLayer={false} maxVisible={2}>
+        <MockCard>
+          <Text type="supporting" color="secondary">
+            Show the toast and wait: it dismisses itself after three seconds,
+            the way any timed toast leaves.
+          </Text>
+          <ToastReplayControls
+            items={[
+              {
+                key: 'mobile-timed',
+                body: 'I leave after three seconds',
+                autoHideDuration: 3000,
+              },
+            ]}
+          />
+        </MockCard>
+      </ToastViewport>
+    </MobileCanvas>
+  ),
+  parameters: {
+    ...mobileStoryParameters,
+    docs: {
+      story: {
+        ...mobileStoryParameters.docs.story,
+        description:
+          'A timed toast at the top that dismisses itself after three seconds. Under a finger it slides past its edge, as iOS notification banners leave; with a mouse it fades.',
       },
     },
   },

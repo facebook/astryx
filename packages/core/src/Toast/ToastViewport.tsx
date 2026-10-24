@@ -39,7 +39,13 @@ import {
 } from '../Layer/modalOutlet';
 import {ToastSurface} from './Toast';
 import {ToastContext, type ToastContextValue} from './ToastContext';
-import type {ToastEntry, ToastPosition, ToastDismissReason} from './types';
+import type {
+  ToastEntry,
+  ToastPosition,
+  ToastDismissReason,
+  ToastPresentation,
+} from './types';
+import {useTouchPresentation} from '../utils/touchPresentation';
 import {useTranslator} from '../i18n';
 import {layerInsetProperties} from '../Layer/layerInset';
 import type {LayerInset} from '../Layer/LayerContext';
@@ -212,6 +218,15 @@ export interface ToastViewportProps {
    * @default true
    */
   isTopLayer?: boolean;
+  /**
+   * How every toast in this viewport follows a swipe and leaves. `adaptive`:
+   * under a finger the swipe and the exit follow iOS notification banners,
+   * and with a fine pointer Toast's own swipe and fade. `toast` keeps
+   * Toast's own swipe and fade on every device; `notification` uses the notification banner
+   * on every device.
+   * @default 'adaptive'
+   */
+  presentation?: ToastPresentation;
   children?: React.ReactNode;
 }
 
@@ -235,6 +250,7 @@ const withoutId =
 interface ToastRowProps {
   entry: ToastEntry;
   isExiting: boolean;
+  presentation: ToastPresentation;
   /** Top-anchored stacks grow downward and flip the row's drift and gap. */
   isReversed: boolean;
   onExited: (id: string) => void;
@@ -258,6 +274,7 @@ interface ToastRowProps {
 function ToastRow({
   entry,
   isExiting,
+  presentation,
   isReversed,
   onExited,
   onDismiss,
@@ -267,6 +284,16 @@ function ToastRow({
   const isAutoHide = o.isAutoHide ?? (type === 'error' ? false : true);
   const dur = o.autoHideDuration ?? 5000;
   const [isSettled, setIsSettled] = useState(false);
+  // In the notification presentation a leaving card retracts past its edge,
+  // outside the row: the row does not clip it, and it collapses only once the
+  // retract (or its Reduce Motion cross-fade) has ended, so an app's dismiss
+  // shows the whole exit before the row unmounts.
+  const [isRetracting, setIsRetracting] = useState(false);
+  const [isRetracted, setIsRetracted] = useState(false);
+  const {isTouch} = useTouchPresentation();
+  const isNotification =
+    presentation === 'notification' || (presentation === 'adaptive' && isTouch);
+  const isCollapsing = isExiting && (!isNotification || isRetracted);
 
   return (
     <div
@@ -275,7 +302,7 @@ function ToastRow({
         styles.toastWrapper,
         isReversed ? styles.toastWrapperFromTop : styles.toastWrapperFromBottom,
         isReversed ? styles.toastWrapperGapReversed : styles.toastWrapperGap,
-        isExiting && styles.toastWrapperExiting,
+        isCollapsing && styles.toastWrapperExiting,
       )}
       onTransitionEnd={(e: React.TransitionEvent) => {
         // `grid-template-rows` is not private to this wrapper — any descendant
@@ -288,7 +315,10 @@ function ToastRow({
           return;
         }
         if (isExiting) {
-          onExited(entry.id);
+          // Holding open for the retract: not the collapse yet.
+          if (isCollapsing) {
+            onExited(entry.id);
+          }
           return;
         }
         // The row is fully open now. Release only the paint clip; the wrapper
@@ -299,7 +329,8 @@ function ToastRow({
       <div
         {...stylex.props(
           styles.toastWrapperInner,
-          isSettled && !isExiting && styles.toastWrapperInnerSettled,
+          ((isSettled && !isExiting) || isRetracting) &&
+            styles.toastWrapperInnerSettled,
         )}>
         <ToastSurface
           type={type}
@@ -310,6 +341,9 @@ function ToastRow({
           isExiting={isExiting}
           gestureDirection={isReversed ? -1 : 1}
           onDismiss={reason => onDismiss(entry.id, reason)}
+          onRetract={() => setIsRetracting(true)}
+          onRetractEnd={() => setIsRetracted(true)}
+          presentation={presentation}
           renderContent={o.renderContent}
         />
       </div>
@@ -336,6 +370,7 @@ export function ToastViewport({
   inset,
   layerInset,
   isTopLayer = true,
+  presentation = 'adaptive',
   children,
 }: ToastViewportProps) {
   const t = useTranslator();
@@ -699,6 +734,7 @@ export function ToastViewport({
             key={entry.id}
             entry={entry}
             isExiting={exitingIds.has(entry.id)}
+            presentation={presentation}
             isReversed={isReversed}
             onExited={handleExited}
             onDismiss={removeToast}

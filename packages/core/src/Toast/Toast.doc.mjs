@@ -86,6 +86,13 @@ export const docs = {
       required: true,
     },
     {
+      name: 'presentation',
+      type: "'adaptive' | 'toast' | 'notification'",
+      description:
+        "How a toast follows a swipe and leaves, on ToastViewport (every toast it shows) or a standalone Toast. 'adaptive': under a finger (a coarse primary pointer) the swipe follows iOS notification banners and every dismissal slides the card past its edge; with a fine pointer, Toast's own swipe and fade. 'toast' keeps Toast's own swipe and fade on every device; 'notification' uses the notification banner on every device.",
+      default: "'adaptive'",
+    },
+    {
       name: 'renderContent',
       type: '(toast: ToastContentRenderProps) => ReactNode',
       description:
@@ -131,7 +138,7 @@ export const docs = {
 
   usage: {
     description:
-      'Toast shows a brief, non-blocking notification to confirm an action or present temporary information. Use it for scenarios where the user needs feedback but not a decision, such as saving, deleting, or changing a status.\n\nFor production use, prefer the `useToast()` hook; it handles positioning, stacking, auto-dismiss, and deduplication via `ToastViewport`. Toasts stay within viewport and safe-area gutters, wrap long message content, and enter, exit, or swipe-dismiss toward their configured top or bottom edge. The vertical swipe uses the same spatial model as placement motion: top Toasts leave upward and bottom Toasts leave downward. Swipe waits for dominant edge-directed intent before cancelling native touch movement and reports the existing manual dismissal reason. Pen is supported as direct-contact input; mouse drag is excluded to avoid conflicting with desktop text selection, where the visible close control remains available. Set `isAutoHide: false` explicitly when an action or message must remain available. The `Toast` component renders the visual toast element inline and is useful for previews, documentation, and static showcases where the viewport lifecycle is not needed.',
+      'Toast shows a brief, non-blocking notification to confirm an action or present temporary information. Use it for scenarios where the user needs feedback but not a decision, such as saving, deleting, or changing a status.\n\nFor production use, prefer the `useToast()` hook; it handles positioning, stacking, auto-dismiss, and deduplication via `ToastViewport`. Toasts stay within viewport and safe-area gutters, wrap long message content, and enter, exit, or swipe-dismiss toward their configured top or bottom edge. The vertical swipe uses the same spatial model as placement motion: top Toasts leave upward and bottom Toasts leave downward. Under a finger, on every touch device, as with iOS notification banners, the card starts to follow the finger after a short distance and at about half its speed; a quick flick dismisses it, a release short of dismissing springs it back, and however a toast is dismissed (a swipe, the close button, the timeout) the card leaves by sliding past its edge. With a fine pointer (a pen, or a touch on a device driven by a mouse or trackpad), the card follows 1:1 and fades as it nears the edge, and leaves by fading out. Under reduced motion nothing slides, springs or drifts: on a touch screen the toast fades in place, and with a mouse or keyboard it appears and leaves at once. Swipe waits for dominant edge-directed intent before cancelling native touch movement and reports the existing manual dismissal reason. Pen is supported as direct-contact input; mouse drag is excluded to avoid conflicting with desktop text selection, where the visible close control remains available. Set `isAutoHide: false` explicitly when an action or message must remain available. The `Toast` component renders the visual toast element inline and is useful for previews, documentation, and static showcases where the viewport lifecycle is not needed.',
     bestPractices: [
       {
         guidance: true,
@@ -328,6 +335,7 @@ export const docsDense = {
     uniqueID: 'unique id for dedup',
     collisionBehavior: 'behavior when matching uniqueID exists',
     onHide: 'callback when toast removed',
-    renderContent: 'custom inner layout; receives content, resolved settings + dismiss callback; no injected fallback control',
+    renderContent:
+      'custom inner layout; receives content, resolved settings + dismiss callback; no injected fallback control',
   },
 };
