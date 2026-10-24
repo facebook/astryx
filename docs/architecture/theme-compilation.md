@@ -362,6 +362,10 @@ tiers.
 
 ## Known conformance and verification gaps
 
+Generated status roles (INV16) and derived status defaults (INV17) are
+accepted but not yet shipped. Their verification rows describe implementation
+acceptance, not existing enforcement.
+
 Declaration-boundary enforcement and the warnings-array collector in INV13–INV14
 are accepted but not yet shipped. Their verification obligations above describe
 implementation acceptance, not existing enforcement.
