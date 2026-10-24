@@ -4,35 +4,30 @@
 
 /**
  * @file scrollLockTouchGuard.ts
- * @input Touch events on the document while a scroll lock holds the page
- * @output installScrollLockTouchGuard, which cancels a one-finger pan whose
- *   scroll would reach the page; isPanAbsorbedBeforePage, the scroller walk it
- *   decides with
- * @position Internal hook utility; used by useScrollLock.
+ * @input The node under a finger and the pan's direction, while a scroll lock
+ *   holds the page
+ * @output isPanAbsorbedBeforePage, the scroll lock's decision for the gesture
+ *   host's page-scroll hold
+ * @position Internal hook utility; used by useScrollLock, through
+ *   GestureHost.holdPageScroll (the host owns the touch listeners).
  *
  * `overflow: hidden` on the root stops wheel, keyboard and scrollbar scrolling,
  * but iOS Safari before 26.4 still scrolls such a page under a finger: on iOS
  * 26.2 a drag on a scrim, on a dialog's header, or on an `overflow: auto` body
- * whose content fits each scrolls the page behind the overlay. The guard
- * cancels exactly those pans. It walks the scrollers under the finger once per
- * touch: a scroller that can move in the pan's direction, or one at its edge
+ * whose content fits each scrolls the page behind the overlay. The lock
+ * cancels exactly those pans through the gesture host. This walk decides each
+ * one: a scroller that can move in the pan's direction, or one at its edge
  * that contains its own overscroll, takes the pan, and the move goes through;
- * a pan that would reach the page is cancelled. Two-finger gestures always go
- * through, so pinch-zoom keeps working.
+ * a pan that would reach the page is cancelled.
  */
+
+import {parentAcrossShadow} from '../gestures/nativeScroll';
+import {isRtlElement} from './isRtlElement';
 
 const SCROLLABLE = new Set(['auto', 'scroll']);
 
 /** Overflow at or below this many px is a box that fits, not a scroller. */
 const EDGE_TOLERANCE = 1;
-
-function parentAcrossShadow(node: Node): Node | null {
-  const parent = node.parentNode;
-  if (parent == null) {
-    return null;
-  }
-  return parent instanceof ShadowRoot ? parent.host : parent;
-}
 
 function canMoveY(element: Element, dy: number, range: number): boolean {
   // A finger moving down drags the content down: scrollTop decreases.
@@ -103,7 +98,7 @@ export function isPanAbsorbedBeforePage(
     }
     const canMove = isVertical
       ? canMoveY(node, dy, range)
-      : canMoveX(node, dx, range, style.direction === 'rtl');
+      : canMoveX(node, dx, range, isRtlElement(node as HTMLElement));
     if (canMove) {
       return true;
     }
@@ -115,62 +110,4 @@ export function isPanAbsorbedBeforePage(
     }
   }
   return false;
-}
-
-/**
- * Cancels one-finger pans that would scroll the page, until the returned
- * function removes the guard.
- */
-export function installScrollLockTouchGuard(): () => void {
-  if (typeof document === 'undefined') {
-    return () => {};
-  }
-  let startX = 0;
-  let startY = 0;
-  let verdict: 'pass' | 'cancel' | null = null;
-
-  const onTouchStart = (event: TouchEvent) => {
-    verdict = null;
-    const touch = event.touches[0];
-    if (event.touches.length === 1 && touch != null) {
-      startX = touch.clientX;
-      startY = touch.clientY;
-    }
-  };
-
-  const onTouchMove = (event: TouchEvent) => {
-    const touch = event.touches[0];
-    // A second finger is a pinch: zooming the page stays available.
-    if (event.touches.length !== 1 || touch == null) {
-      return;
-    }
-    if (verdict == null) {
-      const dx = touch.clientX - startX;
-      const dy = touch.clientY - startY;
-      if (dx === 0 && dy === 0) {
-        return;
-      }
-      // The browser picks the scroller once per gesture; so does the guard.
-      // A document listener sees a touch inside a shadow root retargeted to
-      // its host, so the walk starts from the innermost node of the path.
-      const origin = event.composedPath()[0] ?? event.target;
-      verdict = isPanAbsorbedBeforePage(origin, dx, dy) ? 'pass' : 'cancel';
-    }
-    if (verdict === 'cancel' && event.cancelable) {
-      event.preventDefault();
-    }
-  };
-
-  document.addEventListener('touchstart', onTouchStart, {
-    capture: true,
-    passive: true,
-  });
-  document.addEventListener('touchmove', onTouchMove, {
-    capture: true,
-    passive: false,
-  });
-  return () => {
-    document.removeEventListener('touchstart', onTouchStart, {capture: true});
-    document.removeEventListener('touchmove', onTouchMove, {capture: true});
-  };
 }

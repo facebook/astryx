@@ -204,6 +204,38 @@ describe('useScrollLock', () => {
       expect(pan(row, 300, 200)).toBe(false);
     });
 
+    it('judges a swipe after a small slop, so a first wobble does not cancel a horizontal scroll', () => {
+      const strip = document.createElement('div');
+      strip.style.overflowX = 'auto';
+      Object.defineProperty(strip, 'clientWidth', {value: 200});
+      Object.defineProperty(strip, 'scrollWidth', {value: 600});
+      strip.scrollLeft = 100;
+      document.body.append(strip);
+      renderHook(() => useScrollLock(true));
+
+      touch(strip, 'touchstart', 100, 300);
+      const wobble = new Event('touchmove', {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+      });
+      const point = (x: number, y: number) => [
+        {clientX: x, clientY: y, identifier: 0, target: strip},
+      ];
+      Object.defineProperty(wobble, 'touches', {value: point(102, 302)});
+      strip.dispatchEvent(wobble);
+      const swipe = new Event('touchmove', {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+      });
+      Object.defineProperty(swipe, 'touches', {value: point(80, 303)});
+      strip.dispatchEvent(swipe);
+
+      expect(wobble.defaultPrevented).toBe(false);
+      expect(swipe.defaultPrevented).toBe(false);
+    });
+
     it('never cancels a two-finger gesture, so pinch-zoom keeps working', () => {
       const scrim = document.createElement('div');
       document.body.append(scrim);
