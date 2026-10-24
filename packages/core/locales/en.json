@@ -2019,6 +2019,10 @@
     "defaultMessage": "Resolved by {name}",
     "description": "Tooltip of the Resolved text on a comment thread in a lab Comments panel. `name` is the person who resolved it."
   },
+  "@astryx.comments.errorAnnouncement": {
+    "defaultMessage": "{title} {description}",
+    "description": "Screen-reader announcement for an error Banner in a lab Comments panel that has a title and a description, read once when the Banner appears. `title` is the Banner's title (for example `Couldn't send this comment.`) and `description` its description (for example `Retrying didn't work.`). Reorder or punctuate as the language needs."
+  },
   "@astryx.comments.retryFailed": {
     "defaultMessage": "Retrying didn't work.",
     "description": "Error shown on a comment in a lab Comments panel that failed to post when retrying it failed too."
