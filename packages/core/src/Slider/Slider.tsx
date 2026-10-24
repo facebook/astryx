@@ -68,6 +68,7 @@ import {
   type SliderTouchParts,
 } from './useSliderTouch';
 
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Types
@@ -742,6 +743,9 @@ export function Slider({ref, ...props}: SliderProps) {
   const isTouchPresentation =
     touchPresentation.isTouch && touchPresentation.idiom === 'ios';
   const hasTouchTargets = isTouchPresentation && !isDisabled;
+  // Whether the touch presentation takes touches (useSliderTouch): the
+  // pointer handlers then leave a finger or a pen to it.
+  const touchLiveRef = useRef(false);
 
   // A thumb is a div[role="slider"], and `handlePointerDown` focuses it from
   // script after preventDefault — which Chromium treats as focus-visible, so
@@ -973,7 +977,7 @@ export function Slider({ref, ...props}: SliderProps) {
       // A finger or a pen under the touch presentation belongs to the
       // touch presentation: the thumbs' touch targets take a drag, and a tap
       // on the track sets the value when it lifts (useSliderTouch).
-      if (isTouchPresentation && e.pointerType !== 'mouse') {
+      if (touchLiveRef.current && e.pointerType !== 'mouse') {
         return;
       }
       e.preventDefault();
@@ -1035,14 +1039,7 @@ export function Slider({ref, ...props}: SliderProps) {
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
       }
     },
-    [
-      isDisabled,
-      isTouchPresentation,
-      getValueFromPosition,
-      getClosestThumb,
-      updateValue,
-      endDrag,
-    ],
+    [isDisabled, getValueFromPosition, getClosestThumb, updateValue, endDrag],
   );
 
   const handlePointerMove = useCallback(
@@ -1130,7 +1127,7 @@ export function Slider({ref, ...props}: SliderProps) {
     },
     thumbFor: value => getClosestThumb(value),
   };
-  useSliderTouch({
+  const isTouchLive = useSliderTouch({
     isEnabled: hasTouchTargets,
     model: touchModel,
     thumbCount: values.length,
@@ -1151,6 +1148,9 @@ export function Slider({ref, ...props}: SliderProps) {
         fill: fillRef.current,
       };
     },
+  });
+  useIsomorphicLayoutEffect(() => {
+    touchLiveRef.current = isTouchLive;
   });
 
   // Keyboard handler

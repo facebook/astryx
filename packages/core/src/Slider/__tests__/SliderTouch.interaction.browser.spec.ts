@@ -183,6 +183,16 @@ async function openSlider(
   const control = thumb.locator(
     'xpath=ancestor::*[contains(@class, "astryx-slider-control")][1]',
   );
+  if (idiom === 'ios') {
+    // The touch presentation is live once its controller has loaded (on
+    // demand) and attached: the gesture host then gives the track the
+    // touch-action its tap needs.
+    await expect
+      .poll(async () =>
+        control.evaluate(element => (element as HTMLElement).style.touchAction),
+      )
+      .toBe('manipulation');
+  }
   const length = await control.evaluate(element =>
     parseFloat(getComputedStyle(element).width),
   );

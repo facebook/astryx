@@ -16,8 +16,14 @@
  *   parity is motion/uikit/slider.test.ts.
  */
 
-import {act, fireEvent, render, screen} from '@testing-library/react';
-import {useState} from 'react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  type RenderResult,
+} from '@testing-library/react';
+import {useState, type ReactElement} from 'react';
 import {
   afterEach,
   beforeEach,
@@ -288,14 +294,26 @@ afterEach(() => {
   document.documentElement.removeAttribute('dir');
 });
 
+/**
+ * Renders, then flushes the effects that attach the touch presentation to the
+ * thumbs.
+ */
+async function renderTouch(ui: ReactElement): Promise<RenderResult> {
+  const view = render(ui);
+  await act(async () => {
+    await Promise.resolve();
+  });
+  return view;
+}
+
 describe('Slider touch presentation (UISlider tracking)', () => {
-  it('renders the thumbs’ touch targets only under a coarse primary pointer', () => {
+  it('renders the thumbs’ touch targets only under a coarse primary pointer', async () => {
     stubMatchMedia(false);
-    const {unmount} = render(<Controlled initial={50} />);
+    const {unmount} = await renderTouch(<Controlled initial={50} />);
     expect(hitOf(screen.getByRole('slider'))).toBeNull();
     unmount();
     stubMatchMedia(true);
-    render(<Controlled initial={[20, 80]} />);
+    await renderTouch(<Controlled initial={[20, 80]} />);
     const thumbs = screen.getAllByRole('slider');
     for (const thumb of thumbs) {
       const hit = hitOf(thumb);
@@ -304,11 +322,11 @@ describe('Slider touch presentation (UISlider tracking)', () => {
     }
   });
 
-  it('keeps today’s slider on a touch screen that is not iOS: no touch targets, a finger on the track moves the value', () => {
+  it('keeps today’s slider on a touch screen that is not iOS: no touch targets, a finger on the track moves the value', async () => {
     stubMatchMedia(true, 'other');
     stubControlGeometry();
     const onChange = vi.fn();
-    render(<Controlled initial={50} onChange={onChange} />);
+    await renderTouch(<Controlled initial={50} onChange={onChange} />);
     expect(hitOf(screen.getByRole('slider'))).toBeNull();
     const control = document.querySelector(
       '.astryx-slider-control',
@@ -324,11 +342,11 @@ describe('Slider touch presentation (UISlider tracking)', () => {
     expect(onChange.mock.lastCall?.[0]).toBeGreaterThan(50);
   });
 
-  it('ignores a finger on the track, while a mouse still moves the value there', () => {
+  it('ignores a finger on the track, while a mouse still moves the value there', async () => {
     stubMatchMedia(true);
     stubControlGeometry();
     const onChange = vi.fn();
-    render(<Controlled initial={50} onChange={onChange} />);
+    await renderTouch(<Controlled initial={50} onChange={onChange} />);
     const control = document.querySelector(
       '.astryx-slider-control',
     ) as HTMLElement;
@@ -356,12 +374,12 @@ describe('Slider touch presentation (UISlider tracking)', () => {
     {name: 'right to left', dir: 'rtl', dx: -70, expected: 50 + 20},
   ])(
     '$name: the value moves by the travel past the 10 px threshold over the track length',
-    ({dir, dx, expected}) => {
+    async ({dir, dx, expected}) => {
       stubMatchMedia(true);
       stubControlGeometry();
       document.documentElement.setAttribute('dir', dir);
       const onChange = vi.fn();
-      render(<Controlled initial={50} onChange={onChange} />);
+      await renderTouch(<Controlled initial={50} onChange={onChange} />);
       const thumb = screen.getByRole('slider');
       dragThumb(hitOf(thumb), {x: 150, y: 12}, {dx, lift: false});
       // (70 − 10) px of 300 px is 20 % of the range.
@@ -371,10 +389,10 @@ describe('Slider touch presentation (UISlider tracking)', () => {
     },
   );
 
-  it('vertical: an upward drag raises the value', () => {
+  it('vertical: an upward drag raises the value', async () => {
     stubMatchMedia(true);
     stubControlGeometry(true);
-    render(<Controlled initial={50} orientation="vertical" />);
+    await renderTouch(<Controlled initial={50} orientation="vertical" />);
     const thumb = screen.getByRole('slider');
     const control = document.querySelector(
       '.astryx-slider-control',
@@ -390,10 +408,10 @@ describe('Slider touch presentation (UISlider tracking)', () => {
     );
   });
 
-  it('coincident range thumbs: the first movement picks the thumb that can follow it', () => {
+  it('coincident range thumbs: the first movement picks the thumb that can follow it', async () => {
     stubMatchMedia(true);
     stubControlGeometry();
-    render(<Controlled initial={[40, 40]} />);
+    await renderTouch(<Controlled initial={[40, 40]} />);
     const [low, high] = screen.getAllByRole('slider');
     // The thumb on top (the second) takes the finger; dragging toward min
     // moves the first.
@@ -402,10 +420,10 @@ describe('Slider touch presentation (UISlider tracking)', () => {
     expect(high).toHaveAttribute('aria-valuenow', '40');
   });
 
-  it('vetoes an ancestor pan along the travel for a touch on a thumb, not one across it', () => {
+  it('vetoes an ancestor pan along the travel for a touch on a thumb, not one across it', async () => {
     stubMatchMedia(true);
     stubControlGeometry();
-    const {container} = render(<Controlled initial={50} />);
+    const {container} = await renderTouch(<Controlled initial={50} />);
     const host = getGestureHost(document);
     // It would begin first (4 px against the thumb's 10 px) if not vetoed.
     const along = new PanGestureRecognizer({
@@ -430,12 +448,12 @@ describe('Slider touch presentation (UISlider tracking)', () => {
     detachAcross();
   });
 
-  it('a tap on the thumb changes nothing and reports one onChangeEnd', () => {
+  it('a tap on the thumb changes nothing and reports one onChangeEnd', async () => {
     stubMatchMedia(true);
     stubControlGeometry();
     const onChange = vi.fn();
     const onChangeEnd = vi.fn();
-    render(
+    await renderTouch(
       <Controlled initial={50} onChange={onChange} onChangeEnd={onChangeEnd} />,
     );
     const hit = hitOf(screen.getByRole('slider'));
@@ -450,11 +468,11 @@ describe('Slider touch presentation (UISlider tracking)', () => {
     expect(onChangeEnd).toHaveBeenCalledWith(50);
   });
 
-  it('fires onChangeEnd once, from the end of the touch, never again on a later render', () => {
+  it('fires onChangeEnd once, from the end of the touch, never again on a later render', async () => {
     stubMatchMedia(true);
     stubControlGeometry();
     const onChangeEnd = vi.fn();
-    const {rerender} = render(
+    const {rerender} = await renderTouch(
       <Slider
         label="Level"
         valueDisplay="none"
@@ -487,7 +505,7 @@ describe('Slider touch presentation (UISlider tracking)', () => {
     stubControlGeometry();
     const onChange = vi.fn();
     const onChangeEnd = vi.fn();
-    render(
+    await renderTouch(
       <Controlled initial={50} onChange={onChange} onChangeEnd={onChangeEnd} />,
     );
     const control = document.querySelector(
@@ -515,7 +533,7 @@ describe('Slider touch presentation (UISlider tracking)', () => {
     stubMatchMedia(true);
     stubControlGeometry();
     const onChange = vi.fn();
-    render(<Controlled initial={50} onChange={onChange} />);
+    await renderTouch(<Controlled initial={50} onChange={onChange} />);
     const control = document.querySelector(
       '.astryx-slider-control',
     ) as HTMLElement;
@@ -531,11 +549,11 @@ describe('Slider touch presentation (UISlider tracking)', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it('takes a pen on a thumb as it takes a finger, and ignores a pen on the track', () => {
+  it('takes a pen on a thumb as it takes a finger, and ignores a pen on the track', async () => {
     stubMatchMedia(true);
     stubControlGeometry();
     const onChange = vi.fn();
-    render(<Controlled initial={50} onChange={onChange} />);
+    await renderTouch(<Controlled initial={50} onChange={onChange} />);
     const control = document.querySelector(
       '.astryx-slider-control',
     ) as HTMLElement;
@@ -555,14 +573,14 @@ describe('Slider touch presentation (UISlider tracking)', () => {
     pen('pointerup', hit, 210, 12, t + 200);
   });
 
-  it('ends a touch silently when the slider unmounts or is disabled mid-drag', () => {
+  it('ends a touch silently when the slider unmounts or is disabled mid-drag', async () => {
     stubMatchMedia(true);
     stubControlGeometry();
     const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
     for (const end of ['unmount', 'disable'] as const) {
       const onChange = vi.fn();
       const onChangeEnd = vi.fn();
-      const view = render(
+      const view = await renderTouch(
         <Slider
           label="Level"
           valueDisplay="none"
@@ -610,7 +628,7 @@ describe('Slider touch presentation (UISlider tracking)', () => {
     stubControlGeometry();
     const onChange = vi.fn();
     const onChangeEnd = vi.fn();
-    const view = render(
+    const view = await renderTouch(
       <Controlled initial={20} onChange={onChange} onChangeEnd={onChangeEnd} />,
     );
     dragThumb(
@@ -654,7 +672,7 @@ describe('Slider touch presentation (UISlider tracking)', () => {
     });
     const onChange = vi.fn();
     const onChangeEnd = vi.fn();
-    render(
+    await renderTouch(
       <Controlled initial={20} onChange={onChange} onChangeEnd={onChangeEnd} />,
     );
     const thumb = screen.getByRole('slider');
