@@ -117,6 +117,7 @@ import {
 } from './releaseMotion';
 import {
   DEFAULT_DISMISS_OVERSHOOT_RATIO,
+  limitOvershoot,
   resolveDefaultRelease,
   resolveSheetRelease,
 } from './sheetRelease';
@@ -998,6 +999,20 @@ export function useSheetGestures({
       // travel (design:reduced-motion). A finger started it, so it fades
       // whatever the primary pointer (DR2).
       const touchRelease = dragTouchRef.current;
+      // Thrown up onto the tallest detent, the 80 % damped spring overshoots
+      // above it; the sheet extends only its reserve below the screen, so
+      // the hand-off is capped to keep the page from showing under it.
+      const handed = velocity ?? animator.getVelocity('y');
+      const v =
+        motion.kind === 'uikit' && offset === 0
+          ? limitOvershoot(
+              spring,
+              animator.get('y'),
+              to,
+              handed,
+              offscreenBlockEndInsetRef.current,
+            )
+          : handed;
       const handle =
         motion.kind === 'theme'
           ? animator.play(
@@ -1006,7 +1021,7 @@ export function useSheetGestures({
             )
           : animator.animate(
               {y: to},
-              {spring, velocity: velocity == null ? undefined : {y: velocity}},
+              {spring, velocity: {y: v}},
               {crossfadeAs, touchRelease},
             );
       travelHandleRef.current = handle;
