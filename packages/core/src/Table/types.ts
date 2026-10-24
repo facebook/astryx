@@ -16,12 +16,14 @@ import type {
   ComponentType,
   HTMLAttributes,
   Ref,
+  RefObject,
   TdHTMLAttributes,
   ThHTMLAttributes,
   ReactNode,
 } from 'react';
 import type {StyleXStyles} from '../theme/types';
 import type {BaseProps} from '../BaseProps';
+import type {TableVirtualizationCapability} from './plugins/virtualization/useTableVirtualization';
 import type {TableFilterFieldRef} from './plugins/filtering/useTableFiltering';
 
 // =============================================================================
@@ -446,9 +448,43 @@ export type TableContextActions =
  * `contextMenuActions` in `transformHeaderCell` / `transformBodyCell`
  * (aggregated into one menu per header cell / row).
  */
+/** Immutable semantic state shared by row, cell and wrapper transforms. */
+export interface TableRenderContext {
+  readonly mode: 'data' | 'children';
+  readonly rowModel: 'flat' | 'tree' | 'grouped' | 'detail' | 'custom';
+  readonly canActivate: boolean;
+  readonly canLoad: boolean;
+  readonly logicalRowCount: number;
+  readonly headerRowCount: number;
+  readonly viewport: RefObject<HTMLDivElement | null>;
+  readonly blockViewport?: RefObject<HTMLDivElement | null>;
+}
+
+export interface TableRowContext {
+  readonly key: string | number | undefined;
+  readonly identityStatus: 'valid' | 'missing' | 'invalid' | 'duplicate';
+  readonly kind: 'product' | 'synthetic' | 'unknown';
+  readonly logicalIndex: number;
+  readonly logicalRowCount: number;
+  readonly headerRowCount: number;
+  readonly render: TableRenderContext;
+}
+
+export interface TablePluginRenderState {
+  subscribe(onChange: () => void): () => void;
+  getSnapshot(): Readonly<{isLoading: boolean}>;
+  getServerSnapshot(): Readonly<{isLoading: boolean}>;
+}
+
 export interface TablePlugin<
   T extends Record<string, unknown> = Record<string, unknown>,
 > {
+  /** Structural compatibility declaration; absent body modifiers are not flat-admitted. */
+  readonly rowModel?: TableRenderContext['rowModel'];
+  /** Whole-row action owner, independent from ordinary non-owning handlers. */
+  readonly wholeRowOwner?: 'activation' | 'expansion' | 'navigation';
+  /** Observable loading state consumed before parent sections are constructed. */
+  readonly renderState?: TablePluginRenderState;
   /**
    * Transform the column definitions before rendering.
    * Runs before any element-level transforms. Use to filter, reorder,
@@ -476,6 +512,7 @@ export interface TablePlugin<
     props: BodyRowRenderProps,
     item: T,
     index: number,
+    context?: TableRowContext,
   ) => BodyRowRenderProps;
   /**
    * Transform each body `<td>` props.
@@ -489,6 +526,7 @@ export interface TablePlugin<
     item: T,
     columnIndex: number,
     columns: ReadonlyArray<TableColumn<T>>,
+    context?: TableRowContext,
   ) => BodyCellRenderProps;
   /**
    * Transform the scroll-wrapper region — the `<div>` wrapping the `<table>`
@@ -498,6 +536,7 @@ export interface TablePlugin<
    */
   transformScrollWrapper?: (
     props: ScrollWrapperRenderProps,
+    context?: TableRenderContext,
   ) => ScrollWrapperRenderProps;
   /** Wrap the table output in context providers */
   transformTableContext?: (children: ReactNode) => ReactNode;
@@ -558,6 +597,8 @@ export interface BaseTableProps<
   T extends Record<string, unknown>,
 > extends BaseProps<HTMLTableElement> {
   ref?: React.Ref<HTMLTableElement>;
+  /** Geometry-only, fixed-height capability; Styled Table owns its coordinated viewport. */
+  virtualization?: TableVirtualizationCapability;
   /** Array of data items to render as rows */
   data?: T[];
   /** Column definitions. If omitted, auto-generated from data keys. */

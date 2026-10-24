@@ -332,6 +332,7 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
 
   return useMemo(
     (): TablePlugin<T> => ({
+      rowModel: 'flat',
       transformHeaderCell(
         props: HeaderCellRenderProps,
         column: TableColumn<T>,

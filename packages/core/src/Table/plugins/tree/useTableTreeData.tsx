@@ -539,6 +539,7 @@ export function useTableTreeData<T extends Record<string, unknown>>(
     };
 
     return {
+      rowModel: 'tree',
       transformTableContext(children: ReactNode) {
         return <TreeStoreContext value={store}>{children}</TreeStoreContext>;
       },

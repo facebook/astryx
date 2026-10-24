@@ -48,10 +48,11 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars} from '../../../theme/tokens.stylex';
 import {CheckboxInput} from '../../../CheckboxInput';
 import {mergeRefs} from '../../../utils';
 import type {TablePlugin, TableColumn, BodyRowRenderProps} from '../../types';
+import {setRowSelection} from '../../tableRowState';
+import {registerFixedHeightColumn} from '../../tableColumnAdmission';
 import {pixel} from '../../columnUtils';
 import {useTranslator} from '../../../i18n';
 
@@ -152,31 +153,7 @@ function applyRowSelectionStyle(
   isSelected: boolean,
   hasRowHighlight: boolean,
 ): void {
-  if (isSelected) {
-    el.setAttribute('aria-selected', 'true');
-  } else {
-    el.removeAttribute('aria-selected');
-  }
-  // Written on every pass, not just when painting: the flag can flip while a
-  // row is already selected, and the wash has to come back off.
-  const wash = isSelected && hasRowHighlight ? selectedBgColor : '';
-  if (el.style.backgroundColor !== wash) {
-    el.style.backgroundColor = wash;
-  }
-  // A pinned column paints its own opaque background over the row, so the
-  // wash alone stops at the freeze line. Publishing it as the row overlay is
-  // what lets useTableStickyColumns replay it on those cells — the same
-  // contract TableRow honours for striping and hover.
-  const currentOverlay = el.style.getPropertyValue(ROW_OVERLAY_VAR);
-  if (wash === '') {
-    if (currentOverlay !== '') {
-      el.style.removeProperty(ROW_OVERLAY_VAR);
-    }
-  } else {
-    if (currentOverlay !== wash) {
-      el.style.setProperty(ROW_OVERLAY_VAR, wash);
-    }
-  }
+  setRowSelection(el,isSelected,hasRowHighlight);
 }
 
 // =============================================================================
@@ -320,15 +297,6 @@ function SelectionCellContentInner<T extends Record<string, unknown>>({
 // Styles
 // =============================================================================
 
-const selectedBgColor = colorVars['--color-accent-muted'];
-
-/**
- * The row's current fill, republished for pinned cells to read. Declared as a
- * literal rather than imported because StyleX needs the same name as a static
- * key on the reading side, so there is no one constant both ends can share.
- */
-const ROW_OVERLAY_VAR = '--table-row-overlay';
-
 const selectionColumnStyles = stylex.create({
   center: {
     display: 'flex',
@@ -389,6 +357,7 @@ export function useTableSelection<T extends Record<string, unknown>>(
 
   return useMemo(
     (): TablePlugin<T> => ({
+      rowModel: 'flat',
       transformTableContext(children: ReactNode) {
         return (
           <SelectionStoreContext value={store}>
@@ -398,6 +367,7 @@ export function useTableSelection<T extends Record<string, unknown>>(
       },
 
       transformColumns(columns: TableColumn<T>[]) {
+        registerFixedHeightColumn(selectionColumn);
         return [selectionColumn, ...columns];
       },
 

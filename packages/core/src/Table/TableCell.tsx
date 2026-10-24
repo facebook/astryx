@@ -66,6 +66,18 @@ export interface TableCellProps extends BaseProps<HTMLTableCellElement> {
   contextMenuActions?: TableContextActions;
 }
 
+const activeCueStyles = stylex.create({
+  cell: {
+    boxShadow: {
+      default: null,
+      ':first-child':
+        'inset var(--table-row-active-cue-width, 0px) 0 0 0 var(--color-accent)',
+      ':first-child:is([dir="rtl"] *)':
+        'inset calc(-1 * var(--table-row-active-cue-width, 0px)) 0 0 0 var(--color-accent)',
+    },
+  },
+});
+
 const densityStyles = stylex.create({
   compact: {
     paddingBlock: spacingVars['--spacing-1'],
@@ -152,7 +164,12 @@ const dividerRowStyles = stylex.create({
       // Scoped to tableRowMarker so only the parent <tr> is checked —
       // without the scope, <tbody> (also a :last-child) would match
       // and suppress borders on every row.
-      [stylex.when.ancestor(':last-child', tableRowMarker)]: '0',
+      [stylex.when.ancestor(
+        ':last-child:not([data-table-final-row="false"])',
+        tableRowMarker,
+      )]: '0',
+      [stylex.when.ancestor('[data-table-final-row="true"]', tableRowMarker)]:
+        '0',
     },
     borderBottomStyle: 'solid',
     borderBottomColor: colorVars['--color-border'],
@@ -216,6 +233,7 @@ export function TableCell({
   // padding included — opens the menu. Otherwise padding lives on the `<td>`.
   const cellStyles: StyleXStyles[] = ctx
     ? [
+        activeCueStyles.cell,
         hasContextMenu
           ? densityTextStyles[ctx.density]
           : densityStyles[ctx.density],
