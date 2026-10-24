@@ -1535,6 +1535,16 @@ jobs:
             --project chromium \
             --output table-min-width-output
 
+      # A popover anchored on a viewport rectangle sits beside it as beside a
+      # trigger, takes no pointer and returns focus; only a real engine lays
+      # it out with CSS anchor positioning and the native popover focus model.
+      - name: Run Popover anchor rectangle contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/Popover/PopoverAnchorRect.a11y.chromium.spec.ts \
+            --project chromium \
+            --output popover-anchor-rect-output
+
       # A CodeBlock diff row's tint has to follow a long line to the end of its
       # scroll width; jsdom has no layout, so only a real engine shows whether
       # the paint stops at the viewport edge when the reader scrolls.
