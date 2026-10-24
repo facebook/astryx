@@ -212,3 +212,43 @@ test('the small size centres Copy on its own first line', async ({page}) => {
   const one = await centres(page);
   expect(Math.abs(one.button - one.line)).toBeLessThanOrEqual(1);
 });
+
+test('caller controls join Copy in the corner and never cover code', async ({
+  page,
+}) => {
+  await page.setViewportSize({width: 600, height: 400});
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-codeblock--end-content-headerless&viewMode=story`,
+  );
+  const action = page.getByRole('button', {name: 'Run in terminal'});
+  await expect(action).toBeVisible();
+  const viewport = await box(page.getByRole('group', {name: 'Code'}));
+  const run = await box(action);
+  const copy = await box(copyButton(page));
+  for (const control of [run, copy]) {
+    const inline =
+      Math.min(control.x + control.width, viewport.x + viewport.width) -
+      Math.max(control.x, viewport.x);
+    expect(inline).toBeLessThanOrEqual(0);
+  }
+  // Caller controls come first, then Copy, at the inline end.
+  expect(run.x).toBeLessThan(copy.x);
+  expect(Math.abs(run.y - copy.y)).toBeLessThanOrEqual(1);
+});
+
+test('with a header, caller controls sit before Copy in the header', async ({
+  page,
+}) => {
+  await page.setViewportSize({width: 600, height: 400});
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-codeblock--end-content&viewMode=story`,
+  );
+  const header = page.locator('.astryx-code-block-header');
+  await expect(header).toBeVisible();
+  await expect(
+    header.getByRole('button', {name: 'Run in terminal'}),
+  ).toBeVisible();
+  const run = await box(page.getByRole('button', {name: 'Run in terminal'}));
+  const copy = await box(copyButton(page));
+  expect(run.x).toBeLessThan(copy.x);
+});
