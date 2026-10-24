@@ -2732,6 +2732,84 @@ describe('useSheetGestures: the dim follows the sheet', () => {
     expect(caught).toBeCloseTo(expected, 1);
   });
 
+  it("lands a release onto the peek on the peek's lighter scrim, in lockstep", () => {
+    // A 400px sheet with a 300px stop and an 80px peek: offsets [0, 100, 320].
+    // The dim is full down to the 100 stop, thins to the peek's floor (0.3)
+    // at 320, and stays there.
+    const {hook} = setup({
+      snapHeights: () => [300, 80],
+      onScrimOpacity: vi.fn(),
+      onScrimTracking: vi.fn(),
+    });
+    const {dialog, target} = inDialog();
+    const sheetAnimations = recordAnimations(target);
+    const backdrop = recordAnimations(dialog);
+    down(hook, 0, 0, target);
+    stream(hook, target, {from: 0, to: 300, t0: 0, t1: 600});
+    restAt(hook, 300, 650, target);
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(
+        pointerEvent(300, 800, target),
+      ),
+    );
+    expect(hook.result.current.settledOffset).toBe(320);
+    const peekDim = (offset: number) =>
+      offset <= 100
+        ? 1
+        : offset >= 320
+          ? 0.3
+          : 1 - (0.7 * (offset - 100)) / 220;
+    const sheetAnimation = sheetAnimations.at(-1) as Played;
+    const dim = backdrop.at(-1) as Played;
+    for (const ms of [0, 16, 50, 100, 200, 300]) {
+      const offset = valueAt(sheetAnimation, ms, travelOf);
+      expect(valueAt(dim, ms, opacityOf)).toBeCloseTo(peekDim(offset), 2);
+    }
+    expect(valueAt(dim, dim.options.duration as number, opacityOf)).toBeCloseTo(
+      0.3,
+      2,
+    );
+  });
+
+  it('keeps the dim in lockstep with the release under Reduce Motion', () => {
+    // UIKit keeps drag releases (and so their dim) under Reduce Motion.
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => ({
+        matches:
+          query.includes('pointer: coarse') ||
+          query.includes('prefers-reduced-motion'),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    );
+    const {hook} = setup({
+      snapHeights: () => [200],
+      onScrimOpacity: vi.fn(),
+      onScrimTracking: vi.fn(),
+    });
+    const {dialog, target} = inDialog();
+    const sheetAnimations = recordAnimations(target);
+    const backdrop = recordAnimations(dialog);
+    down(hook, 0, 0, target);
+    stream(hook, target, {from: 0, to: 290, t0: 0, t1: 600});
+    restAt(hook, 290, 650, target);
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(
+        pointerEvent(290, 800, target),
+      ),
+    );
+    expect(hook.result.current.settledOffset).toBe(200);
+    const sheetAnimation = sheetAnimations.at(-1) as Played;
+    const dim = backdrop.at(-1) as Played;
+    // The sheet still travels (no cross-fade), and the dim rides it.
+    expect(valueAt(sheetAnimation, 0, travelOf)).toBeCloseTo(290, 0);
+    for (const ms of [0, 16, 50, 100, 200, 300]) {
+      const offset = valueAt(sheetAnimation, ms, travelOf);
+      expect(valueAt(dim, ms, opacityOf)).toBeCloseTo(dimAt(offset), 2);
+    }
+  });
+
   it("hands a drag dismissal's dim to the host's exit under a mouse", () => {
     vi.stubGlobal(
       'matchMedia',
