@@ -159,7 +159,9 @@ then have contradictory winners.
   for Core's own defaults in light and dark mode, so Core's dark strong Info and
   Error fills are deeper than its accent and base error colours, which fall
   below 4.5:1 under white content. Components select the role from the surface
-  instead of using one colour for every job.
+  instead of using one colour for every job. The generated token
+  documentation describes each status role in one line: the surface it serves
+  and the token it pairs with.
 
   In forced-colors mode the browser's system colours replace every status role:
   status text, icons, and content on a fill render in `CanvasText`, and fills
