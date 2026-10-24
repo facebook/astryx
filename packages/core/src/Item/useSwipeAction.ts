@@ -4,7 +4,9 @@
 
 /**
  * @file useSwipeAction.ts
- * @input Pointer events on a row's root; the root element to translate
+ * @input The row root (the element that translates); the swipe panels,
+ *   whose parent the gesture attaches to; the gesture foundation's
+ *   PanGestureRecognizer; the UIKit constants table and swipeRelease.ts
  * @output Exports useSwipeAction — the gesture behind Item's `swipeActions`
  * @position Internal to Item, through ItemSwipeLayer (the only module that
  *   imports it, loaded on demand); tested through Item.test.tsx
@@ -17,26 +19,24 @@
  * row springs back, or holds out when the entry has `hasRemoval`. A release
  * short of the threshold springs back under both.
  *
- * Touch only, by pointer type rather than by breakpoint: a mouse has the
- * row's own controls and a keyboard has the verb already; the gesture is an
- * accelerator for a verb the row exposes elsewhere, never the only way to
- * reach one.
+ * Touch only (the recognizer's pointer types), by pointer type rather than by
+ * breakpoint: a mouse has the row's own controls and a keyboard has the verb
+ * already; the gesture is an accelerator for a verb the row exposes
+ * elsewhere, never the only way to reach one.
  *
- * The axis is decided once, at 10 px of travel: a drag more vertical than
- * horizontal belongs to the scroller and is never claimed. The claim is told
- * to the browser: `touch-action: pan-y` is not enough on iOS Safari, whose
- * scroller takes any drag with a vertical component as a pan (a 4:1 drag got
- * `pointercancel` 40 px in; the same drag after a one-second hold, which
- * fails the native pan, ran to the end), so a non-passive `touchmove`
- * listener cancels the default while the row owns the drag, which is the one
- * signal WebKit honours. Before the axis is decided, and for a drag the
- * scroller got, nothing is cancelled.
- *
- * A pinch is the browser's: the root's `touch-action` keeps `pinch-zoom`, and
- * a second finger that lands anywhere before the axis is decided turns the
- * touch into a pinch, so the row lets it go and cancels nothing. A finger
- * that is not the first one down never starts a drag. Once the row owns a
- * drag, a second finger does not break it.
+ * The pan is the gesture foundation's, published as `Item.swipe` so an app
+ * can relate its own recognizers to it. It claims the touch after 8 px of
+ * sideways travel (a drag more vertical than horizontal belongs to the
+ * scroller and fails it), toward a side with entries or on a resting row: a
+ * browser commits to scrolling a touch at about 10 px, so the row must claim
+ * before that. In the iOS idiom (`useTouchIdiom`) the swipe itself begins
+ * where UIKit's does, after 25 px, from 0, and in between nothing moves;
+ * everywhere else (Android, any finger outside iOS) the row keeps today's
+ * feel and moves from the touch-down. The foundation tells the browser
+ * (`touch-action: pan-y pinch-zoom`, `touchmove` cancelled only while the pan
+ * owns the touch, the click the browser synthesizes swallowed) and leaves a
+ * pinch to the page: a second finger before the claim fails the pan, after it
+ * is ignored.
  *
  * The drag's travel is one custom property written on the root, coalesced to
  * one write per frame; the root's transform reads it and the panels'
@@ -48,18 +48,18 @@
  *
  * Directions are logical: `leading` is a drag toward the inline end and
  * `trailing` a drag toward the inline start, read against the root's computed
- * `direction` at the touch and written beside the travel as a sign the
- * transforms multiply by, so under `dir="rtl"` the finger, the uncovered edge
- * and the panel's logical inset agree.
+ * `direction` when the touch is claimed and written beside the travel as a
+ * sign the transforms multiply by, so under `dir="rtl"` the finger, the
+ * uncovered edge and the panel's logical inset agree.
  */
 
 import {useCallback, useEffect, useRef, useState} from 'react';
-import type {
-  PointerEvent as ReactPointerEvent,
-  KeyboardEvent as ReactKeyboardEvent,
-  MouseEvent as ReactMouseEvent,
-} from 'react';
+import type {KeyboardEvent as ReactKeyboardEvent} from 'react';
+import {PanGestureRecognizer, useGestureRecognizer} from '../gestures';
 import {isRtlElement} from '../hooks/isRtlElement';
+import {swipeActions as SWIPE} from '../motion/uikit';
+import type {TouchIdiom} from '../utils/touchPresentation';
+import {commitPoint, resistedTravel} from './swipeRelease';
 
 /** The travel, in physical px, written on the row root during a drag. */
 export const SWIPE_TRAVEL_PROPERTY = '--_item-swipe-travel';
@@ -68,24 +68,13 @@ export const SWIPE_DIRECTION_PROPERTY = '--_item-swipe-dir';
 /** The clock a settle runs on; `0s` while the finger drives the row. */
 export const SWIPE_DURATION_PROPERTY = '--_item-swipe-duration';
 
-/** Travel before the axis is decided. */
-const AXIS_LOCK_PX = 10;
-/** The commit point: this far past the side's panel, or this fraction of the row, whichever is greater. */
-const COMMIT_PAST_PANEL_PX = 48;
-const COMMIT_FRACTION = 0.5;
 /** Under `reveal`, a release this far into the panel rests the row open. */
 const REST_FRACTION = 0.5;
-/** Travel past the commit point moves the row this much per pixel of finger. */
-const OVERSHOOT_RESISTANCE = 0.35;
-/** A release at this speed commits from FLING_MIN_PX, short of the commit point. */
-const FLING_VELOCITY_PX_PER_MS = 0.6;
+/** A release at this speed (px/s) commits from FLING_MIN_PX, short of the commit point. */
+const FLING_VELOCITY = 600;
 const FLING_MIN_PX = 44;
-/** How far past the row's edge a slide-out travels. */
-const SLIDE_OUT_OVERSHOOT_PX = 24;
 /** The slide-out after a commit, and the spring back after a release. */
 export const SWIPE_SETTLE_MS = 200;
-/** A click the browser synthesizes after a swipe is not a tap on the row. */
-const CLICK_SUPPRESS_MS = 400;
 
 export type SwipeSide = 'leading' | 'trailing';
 export type SwipeBehavior = 'reveal' | 'commit';
@@ -110,8 +99,6 @@ export interface SwipeState {
 }
 
 export interface UseSwipeActionOptions {
-  /** Off: the handlers do nothing and no row moves. */
-  isEnabled: boolean;
   behavior: SwipeBehavior;
   /** Which sides have entries. A drag toward a side without any is not claimed. */
   sides: {leading: boolean; trailing: boolean};
@@ -124,22 +111,24 @@ export interface UseSwipeActionOptions {
   fireOutermost: (side: SwipeSide) => boolean;
   /** Skip the slide and spring animations. */
   isReducedMotion?: boolean;
-  /** The row root: the gesture's target and the element that translates. */
+  /**
+   * Whose idiom the swipe follows (`useTouchIdiom()`): `ios` begins it after
+   * UIKit's 25 px; `default` (Android, any finger outside iOS) moves the row
+   * from the touch-down, as it always has.
+   */
+  idiom?: TouchIdiom;
+  /** The row root: the element that translates. */
   rootRef: React.RefObject<HTMLElement | null>;
-}
-
-export interface SwipeHandlers {
-  onPointerDown: (event: ReactPointerEvent) => void;
-  onPointerMove: (event: ReactPointerEvent) => void;
-  onPointerUp: (event: ReactPointerEvent) => void;
-  onPointerCancel: (event: ReactPointerEvent) => void;
-  onClickCapture: (event: ReactMouseEvent) => void;
-  onKeyDown: (event: ReactKeyboardEvent) => void;
 }
 
 export interface UseSwipeActionResult {
   state: SwipeState;
-  handlers: SwipeHandlers;
+  /**
+   * For each panel: a panel is a child of the row root, and its ref is set
+   * before this hook's layout effects run (a ref on the root itself is set
+   * after them), so the gesture attaches to the root through it.
+   */
+  panelRef: (element: HTMLElement | null) => void;
   /**
    * A resting panel's entry was tapped: fire it, then hold the row out
    * (`hasRemoval`) or close.
@@ -147,28 +136,25 @@ export interface UseSwipeActionResult {
   activateEntry: (fire: () => boolean) => void;
   /** Close a resting row. */
   close: () => void;
-  /** Whether a click arriving now is the one the browser synthesized after a drag. */
-  shouldSuppressClick: () => boolean;
+  /** Escape closes a resting row with focus inside it. */
+  onKeyDown: (event: ReactKeyboardEvent) => void;
 }
 
 interface DragState {
-  pointerId: number;
-  startX: number;
-  startY: number;
-  /** The travel the row already had when the finger landed (a resting row). */
-  baseTravel: number;
-  /** null until the axis is decided; false once it went to the scroller. */
-  claimed: boolean | null;
   side: SwipeSide;
+  inlineSign: 1 | -1;
   panelWidth: number;
   commitPx: number;
-  lastX: number;
-  lastTime: number;
-  prevX: number;
-  prevTime: number;
+  /** The state the row had when the touch was claimed, for a swipe that never began. */
+  previous: SwipeState;
+  /** Past UIKit's threshold: the row follows the finger. */
+  started: boolean;
+  /** Which way the finger crossed the threshold: +1 toward the side, -1 away. */
+  startSign: number;
+  /** The travel the row already had when the touch was claimed (a resting row). */
+  baseTravel: number;
   /** Logical travel toward the side, before resistance. */
   travel: number;
-  inlineSign: 1 | -1;
 }
 
 const IDLE_STATE: SwipeState = {isArmed: false, phase: 'idle', side: 'leading'};
@@ -176,10 +162,6 @@ const IDLE_STATE: SwipeState = {isArmed: false, phase: 'idle', side: 'leading'};
 /** The logical sign of a side: +1 toward the inline end, -1 toward the start. */
 function signOf(side: SwipeSide): number {
   return side === 'trailing' ? -1 : 1;
-}
-
-function now(): number {
-  return typeof performance === 'undefined' ? Date.now() : performance.now();
 }
 
 /**
@@ -202,39 +184,40 @@ function focusRowContent(root: HTMLElement): void {
 }
 
 export function useSwipeAction({
-  isEnabled,
   behavior,
   sides,
   measurePanel,
   fireOutermost,
+  idiom = 'default',
   isReducedMotion = false,
   rootRef,
 }: UseSwipeActionOptions): UseSwipeActionResult {
   const dragRef = useRef<DragState | null>(null);
   const travelRef = useRef(0);
   const inlineSignRef = useRef<1 | -1>(1);
-  const suppressClickUntilRef = useRef(0);
   const settleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const frameRef = useRef<number | null>(null);
   const pendingRef = useRef<number | null>(null);
-  /** Removes the document listener that watches for a pinch's second finger. */
-  const stopPinchWatchRef = useRef<(() => void) | null>(null);
+  /** The root as the gesture finds it: the parent of a panel. */
+  const gestureRootRef = useRef<HTMLElement | null>(null);
   const [state, setState] = useState<SwipeState>(IDLE_STATE);
   const stateRef = useRef(state);
   stateRef.current = state;
 
-  // The latest callbacks, read by handlers and timers that outlive a render.
+  // The latest callbacks, read by listeners and timers that outlive a render.
   const measurePanelRef = useRef(measurePanel);
   const fireOutermostRef = useRef(fireOutermost);
   const sidesRef = useRef(sides);
   const behaviorRef = useRef(behavior);
   const reducedMotionRef = useRef(isReducedMotion);
+  const idiomRef = useRef(idiom);
   useEffect(() => {
     measurePanelRef.current = measurePanel;
     fireOutermostRef.current = fireOutermost;
     sidesRef.current = sides;
     behaviorRef.current = behavior;
     reducedMotionRef.current = isReducedMotion;
+    idiomRef.current = idiom;
   });
 
   useEffect(
@@ -245,47 +228,15 @@ export function useSwipeAction({
       if (frameRef.current != null) {
         cancelAnimationFrame(frameRef.current);
       }
-      stopPinchWatchRef.current?.();
-      stopPinchWatchRef.current = null;
     },
     [],
   );
 
-  const stopWatchingForPinch = useCallback(() => {
-    stopPinchWatchRef.current?.();
-    stopPinchWatchRef.current = null;
+  const panelRef = useCallback((element: HTMLElement | null) => {
+    if (element?.parentElement != null) {
+      gestureRootRef.current = element.parentElement;
+    }
   }, []);
-
-  /**
-   * Until the axis is decided, a second finger anywhere on the page makes
-   * the touch a pinch: the row gives it up and cancels nothing, so the
-   * browser zooms. The finger can land off the row, so the document listens.
-   */
-  const watchForPinch = useCallback(
-    (drag: DragState) => {
-      stopWatchingForPinch();
-      const onAnyPointerDown = (event: PointerEvent) => {
-        if (
-          event.pointerType === 'touch' &&
-          event.pointerId !== drag.pointerId &&
-          drag.claimed === null
-        ) {
-          drag.claimed = false;
-          stopWatchingForPinch();
-        }
-      };
-      document.addEventListener('pointerdown', onAnyPointerDown, {
-        capture: true,
-        passive: true,
-      });
-      stopPinchWatchRef.current = () => {
-        document.removeEventListener('pointerdown', onAnyPointerDown, {
-          capture: true,
-        });
-      };
-    },
-    [stopWatchingForPinch],
-  );
 
   /** Write the travel (physical px) the transforms read. */
   const writeTravel = useCallback(
@@ -389,16 +340,22 @@ export function useSwipeAction({
     [cancelPendingPaint, clearInlineProperties, writeDuration, writeTravel],
   );
 
+  /** How far out a row goes when an entry fires and the row leaves (physical px). */
+  const outTravel = useCallback(
+    (side: SwipeSide, inlineSign: 1 | -1) =>
+      signOf(side) *
+      inlineSign *
+      ((rootRef.current?.clientWidth ?? 0) + SWIPE.slideOutOvershoot),
+    [rootRef],
+  );
+
   /**
    * The outermost entry fires. Under both models the row first travels to
    * its slide-out, fires, then holds out (`hasRemoval`) or springs back.
    */
   const slideOutAndFire = useCallback(
     (side: SwipeSide, inlineSign: 1 | -1) => {
-      const root = rootRef.current;
-      const width = root?.clientWidth ?? 0;
-      const out = signOf(side) * inlineSign * (width + SLIDE_OUT_OVERSHOOT_PX);
-      settle(side, out, 'held', () => {
+      settle(side, outTravel(side, inlineSign), 'held', () => {
         const holdsOut = fireOutermostRef.current(side);
         if (holdsOut) {
           return false;
@@ -407,7 +364,7 @@ export function useSwipeAction({
         return true;
       });
     },
-    [rootRef, settle],
+    [outTravel, settle],
   );
 
   const close = useCallback(() => {
@@ -445,25 +402,6 @@ export function useSwipeAction({
     };
   }, [close, rootRef, state.phase]);
 
-  // The browser's half of the claim (see the header). React's own touch
-  // listeners are passive, so this one is attached by hand; it is removed
-  // with the element.
-  useEffect(() => {
-    const root = rootRef.current;
-    if (root == null || !isEnabled) {
-      return undefined;
-    }
-    const onTouchMove = (event: TouchEvent) => {
-      if (dragRef.current?.claimed === true && event.cancelable) {
-        event.preventDefault();
-      }
-    };
-    root.addEventListener('touchmove', onTouchMove, {passive: false});
-    return () => {
-      root.removeEventListener('touchmove', onTouchMove);
-    };
-  }, [isEnabled, rootRef]);
-
   const activateEntry = useCallback(
     (fire: () => boolean) => {
       const current = stateRef.current;
@@ -476,226 +414,174 @@ export function useSwipeAction({
       }
       const holdsOut = fire();
       if (holdsOut) {
-        const width = root?.clientWidth ?? 0;
-        const out =
-          signOf(current.side) *
-          inlineSignRef.current *
-          (width + SLIDE_OUT_OVERSHOOT_PX);
-        settle(current.side, out, 'held');
+        settle(
+          current.side,
+          outTravel(current.side, inlineSignRef.current),
+          'held',
+        );
       } else {
         settle(current.side, 0, 'idle');
       }
     },
-    [rootRef, settle],
+    [outTravel, rootRef, settle],
   );
 
-  const onPointerDown = useCallback(
-    (event: ReactPointerEvent) => {
-      const current = stateRef.current;
-      const inFlight = dragRef.current;
-      if (inFlight != null) {
-        // A second finger before the axis is decided: a pinch, not a swipe.
-        if (
-          event.pointerType === 'touch' &&
-          event.pointerId !== inFlight.pointerId &&
-          inFlight.claimed === null
-        ) {
-          inFlight.claimed = false;
-          stopWatchingForPinch();
-        }
+  // ---------------------------------------------------------------------------
+  // The pan
+
+  /** The side a drag from a closed row uncovers: toward the inline end is leading. */
+  const sideFor = (dx: number, inlineSign: 1 | -1): SwipeSide =>
+    dx * inlineSign > 0 ? 'leading' : 'trailing';
+
+  const begin = (pan: PanGestureRecognizer) => {
+    const current = stateRef.current;
+    const inlineSign: 1 | -1 = isRtlElement(rootRef.current) ? -1 : 1;
+    inlineSignRef.current = inlineSign;
+    // From rest, the drag continues the open side (closing it or going
+    // further); from closed, the drag's direction names the side.
+    const side =
+      current.phase === 'resting'
+        ? current.side
+        : sideFor(pan.totalTranslation().x, inlineSign);
+    const panelWidth = measurePanelRef.current(side);
+    dragRef.current = {
+      // Logical: the physical travel through the inline sign.
+      baseTravel: Math.max(0, travelRef.current * inlineSign * signOf(side)),
+      commitPx: commitPoint(panelWidth, rootRef.current?.clientWidth ?? 0),
+      inlineSign,
+      panelWidth,
+      previous: current,
+      side,
+      started: false,
+      startSign: 1,
+      travel: 0,
+    };
+    track(pan);
+  };
+
+  const track = (pan: PanGestureRecognizer) => {
+    const drag = dragRef.current;
+    if (drag == null) {
+      return;
+    }
+    const sign = signOf(drag.side);
+    // The finger's travel toward the side since it landed.
+    const along = pan.totalTranslation().x * drag.inlineSign * sign;
+    // UIKit's dead zone on iOS; none elsewhere, where the row has always
+    // moved from the touch-down.
+    const threshold = idiomRef.current === 'ios' ? SWIPE.hysteresis : 0;
+    if (!drag.started) {
+      if (Math.abs(along) < threshold) {
         return;
       }
-      if (
-        !isEnabled ||
-        event.pointerType !== 'touch' ||
-        // Another finger is already down: this one is part of a pinch.
-        event.isPrimary === false ||
-        current.phase === 'settling' ||
-        current.phase === 'held'
-      ) {
-        return;
+      drag.started = true;
+      drag.startSign = Math.sign(along);
+      rootRef.current?.style.setProperty(
+        SWIPE_DIRECTION_PROPERTY,
+        String(drag.inlineSign),
+      );
+      writeDuration(0);
+      setState({isArmed: false, phase: 'dragging', side: drag.side});
+    }
+    // The threshold's travel is not part of the swipe, as in UIKit: the
+    // swipe counts from where the finger crossed it.
+    const swipe = along - drag.startSign * threshold;
+    const raw = Math.max(0, drag.baseTravel + swipe);
+    const isArmed = raw >= drag.commitPx;
+    if (isArmed !== drag.travel >= drag.commitPx) {
+      setState({isArmed, phase: 'dragging', side: drag.side});
+    }
+    drag.travel = raw;
+    paintOnNextFrame(
+      sign * drag.inlineSign * resistedTravel(raw, drag.commitPx),
+    );
+  };
+
+  const release = (pan: PanGestureRecognizer) => {
+    const drag = dragRef.current;
+    dragRef.current = null;
+    if (drag == null) {
+      return;
+    }
+    if (!drag.started) {
+      // A claimed touch that never became a swipe: the row carries on.
+      setState(drag.previous);
+      return;
+    }
+    const {side, inlineSign} = drag;
+    const velocity = pan.velocity().x * signOf(side) * inlineSign;
+    const flung = velocity >= FLING_VELOCITY && drag.travel >= FLING_MIN_PX;
+    if (drag.travel >= drag.commitPx || flung) {
+      slideOutAndFire(side, inlineSign);
+      return;
+    }
+    if (
+      behaviorRef.current === 'reveal' &&
+      drag.travel >= drag.panelWidth * REST_FRACTION
+    ) {
+      settle(side, signOf(side) * inlineSign * drag.panelWidth, 'resting');
+      return;
+    }
+    settle(side, 0, 'idle');
+  };
+
+  const cancel = () => {
+    const drag = dragRef.current;
+    dragRef.current = null;
+    if (drag == null) {
+      return;
+    }
+    if (!drag.started) {
+      setState(drag.previous);
+      return;
+    }
+    settle(drag.side, 0, 'idle');
+  };
+
+  useGestureRecognizer(
+    gestureRootRef,
+    () =>
+      new PanGestureRecognizer({
+        allowedPointerTypes: ['touch'],
+        direction: 'horizontal',
+        hysteresis: SWIPE.claim,
+        maximumNumberOfTouches: 1,
+        name: 'Item.swipe',
+        shouldBegin: pan => {
+          const current = stateRef.current;
+          if (current.phase === 'settling' || current.phase === 'held') {
+            return false;
+          }
+          if (current.phase === 'resting') {
+            return true;
+          }
+          const inlineSign: 1 | -1 = isRtlElement(rootRef.current) ? -1 : 1;
+          return sidesRef.current[
+            sideFor(pan.totalTranslation().x, inlineSign)
+          ];
+        },
+      }),
+    pan => {
+      switch (pan.state) {
+        case 'began':
+          begin(pan);
+          break;
+        case 'changed':
+          track(pan);
+          break;
+        case 'ended':
+          release(pan);
+          break;
+        case 'cancelled':
+          cancel();
+          break;
+        case 'possible':
+        case 'failed':
+          break;
       }
-      const root = rootRef.current;
-      const inlineSign: 1 | -1 = isRtlElement(root) ? -1 : 1;
-      inlineSignRef.current = inlineSign;
-      const startTime = now();
-      const drag: DragState = {
-        // Logical: the physical travel through the inline sign.
-        baseTravel: travelRef.current * inlineSign,
-        claimed: null,
-        commitPx: 0,
-        inlineSign,
-        lastTime: startTime,
-        lastX: event.clientX,
-        panelWidth: 0,
-        pointerId: event.pointerId,
-        prevTime: startTime,
-        prevX: event.clientX,
-        side: current.phase === 'resting' ? current.side : 'leading',
-        startX: event.clientX,
-        startY: event.clientY,
-        travel: 0,
-      };
-      dragRef.current = drag;
-      watchForPinch(drag);
     },
-    [isEnabled, rootRef, stopWatchingForPinch, watchForPinch],
   );
 
-  const onPointerMove = useCallback(
-    (event: ReactPointerEvent) => {
-      const drag = dragRef.current;
-      if (
-        drag == null ||
-        drag.pointerId !== event.pointerId ||
-        drag.claimed === false
-      ) {
-        return;
-      }
-      // Logical travel: positive toward the inline end.
-      const deltaX = (event.clientX - drag.startX) * drag.inlineSign;
-      const deltaY = event.clientY - drag.startY;
-      if (drag.claimed === null) {
-        if (Math.max(Math.abs(deltaX), Math.abs(deltaY)) < AXIS_LOCK_PX) {
-          return;
-        }
-        // The axis is decided now, whichever way: a later finger is the
-        // swipe's to ignore or the scroller's to use.
-        stopWatchingForPinch();
-        // More horizontal than vertical is the row's, the rest the scroller's.
-        if (Math.abs(deltaX) <= Math.abs(deltaY)) {
-          drag.claimed = false;
-          return;
-        }
-        const resting = stateRef.current.phase === 'resting';
-        // From rest, the drag continues the open side (closing it or going
-        // further); from closed, the drag's direction names the side.
-        const side: SwipeSide = resting
-          ? drag.side
-          : deltaX > 0
-            ? 'leading'
-            : 'trailing';
-        if (!sidesRef.current[side]) {
-          drag.claimed = false;
-          return;
-        }
-        drag.claimed = true;
-        drag.side = side;
-        drag.panelWidth = measurePanelRef.current(side);
-        const width = rootRef.current?.clientWidth ?? 0;
-        drag.commitPx = Math.max(
-          drag.panelWidth + COMMIT_PAST_PANEL_PX,
-          width * COMMIT_FRACTION,
-        );
-        if (rootRef.current != null) {
-          rootRef.current.style.setProperty(
-            SWIPE_DIRECTION_PROPERTY,
-            String(drag.inlineSign),
-          );
-        }
-        writeDuration(0);
-        setState({isArmed: false, phase: 'dragging', side});
-        try {
-          rootRef.current?.setPointerCapture(event.pointerId);
-        } catch {
-          // Pointer capture is a nicety (keeps the drag when the finger
-          // leaves the row); a platform without it still drags.
-        }
-      }
-      const sign = signOf(drag.side);
-      // Travel toward the side, counted from where the row already was.
-      const raw = Math.max(0, deltaX * sign + drag.baseTravel * sign);
-      const offset =
-        raw <= drag.commitPx
-          ? raw
-          : drag.commitPx + (raw - drag.commitPx) * OVERSHOOT_RESISTANCE;
-      const isArmed = raw >= drag.commitPx;
-      if (isArmed !== drag.travel >= drag.commitPx) {
-        setState({isArmed, phase: 'dragging', side: drag.side});
-      }
-      drag.travel = raw;
-      drag.prevX = drag.lastX;
-      drag.prevTime = drag.lastTime;
-      drag.lastX = event.clientX;
-      drag.lastTime = now();
-      paintOnNextFrame(sign * drag.inlineSign * offset);
-    },
-    [paintOnNextFrame, rootRef, stopWatchingForPinch, writeDuration],
-  );
-
-  const endGesture = useCallback(
-    (event: ReactPointerEvent, cancelled: boolean) => {
-      const drag = dragRef.current;
-      if (drag == null || drag.pointerId !== event.pointerId) {
-        return;
-      }
-      dragRef.current = null;
-      stopWatchingForPinch();
-      if (drag.claimed !== true) {
-        return;
-      }
-      suppressClickUntilRef.current = now() + CLICK_SUPPRESS_MS;
-      try {
-        rootRef.current?.releasePointerCapture(event.pointerId);
-      } catch {
-        // See setPointerCapture above.
-      }
-      const {side, inlineSign} = drag;
-      const restTravel = signOf(side) * inlineSign * drag.panelWidth;
-      if (cancelled) {
-        settle(side, 0, 'idle');
-        return;
-      }
-      const elapsed = Math.max(1, drag.lastTime - drag.prevTime);
-      const velocity =
-        (signOf(side) * inlineSign * (drag.lastX - drag.prevX)) / elapsed;
-      const flung =
-        velocity >= FLING_VELOCITY_PX_PER_MS && drag.travel >= FLING_MIN_PX;
-      if (drag.travel >= drag.commitPx || flung) {
-        slideOutAndFire(side, inlineSign);
-        return;
-      }
-      if (
-        behaviorRef.current === 'reveal' &&
-        drag.travel >= drag.panelWidth * REST_FRACTION
-      ) {
-        settle(side, restTravel, 'resting');
-        return;
-      }
-      settle(side, 0, 'idle');
-    },
-    [rootRef, settle, slideOutAndFire, stopWatchingForPinch],
-  );
-
-  const onPointerUp = useCallback(
-    (event: ReactPointerEvent) => endGesture(event, false),
-    [endGesture],
-  );
-  const onPointerCancel = useCallback(
-    (event: ReactPointerEvent) => endGesture(event, true),
-    [endGesture],
-  );
-  const shouldSuppressClick = useCallback(
-    () => now() < suppressClickUntilRef.current,
-    [],
-  );
-  const onClickCapture = useCallback(
-    (event: ReactMouseEvent) => {
-      // A tap on a resting panel's entry is a tap, however soon after the
-      // drag that opened it; the synthesized click lands on the row's content.
-      if (
-        !shouldSuppressClick() ||
-        (event.target instanceof Element &&
-          event.target.closest('[data-swipe-panel]') != null)
-      ) {
-        return;
-      }
-      suppressClickUntilRef.current = 0;
-      event.preventDefault();
-      event.stopPropagation();
-    },
-    [shouldSuppressClick],
-  );
   const onKeyDown = useCallback(
     (event: ReactKeyboardEvent) => {
       if (event.key === 'Escape' && stateRef.current.phase === 'resting') {
@@ -706,18 +592,5 @@ export function useSwipeAction({
     [close],
   );
 
-  return {
-    activateEntry,
-    close,
-    handlers: {
-      onClickCapture,
-      onKeyDown,
-      onPointerCancel,
-      onPointerDown,
-      onPointerMove,
-      onPointerUp,
-    },
-    shouldSuppressClick,
-    state,
-  };
+  return {activateEntry, close, onKeyDown, panelRef, state};
 }

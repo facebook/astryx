@@ -11,10 +11,10 @@
  * The swipe actions live in ItemSwipeLayer, reached only through a dynamic
  * import when `swipeActions` is set: this module imports nothing of the
  * gesture, so a row without swipe actions ships none of it. The root here
- * still carries the swipe styles and forwards its events into the bridge the
- * layer fills, so a swipeable row keeps the DOM and the event model it had
- * when the gesture was imported here (Item.source-build.test.mjs pins the
- * import graph).
+ * still carries the swipe styles and forwards its key events into the bridge
+ * the layer fills; the layer attaches the gesture to the root itself, so a
+ * swipeable row keeps the DOM it had when the gesture was imported here
+ * (Item.source-build.test.mjs pins the import graph).
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Item/Item.doc.mjs
@@ -952,8 +952,8 @@ export function Item({
     hasSwipe ? swipeRootRef : undefined,
   );
 
-  // The row's own primary, which the click the browser synthesizes after a
-  // drag must not fire.
+  // The row's own primary. The click the browser synthesizes after a swipe
+  // never reaches it: the gesture system swallows it.
   const primaryOnClick = isDelegate
     ? delegatedOnClick
     : hasParentRole
@@ -961,35 +961,15 @@ export function Item({
       : isInteractive
         ? handleContainerClick
         : undefined;
-  const rootOnClick =
-    hasSwipe && primaryOnClick != null
-      ? (event: React.MouseEvent<HTMLElement>) => {
-          if (swipeBridgeRef.current?.shouldSuppressClick() === true) {
-            return;
-          }
-          primaryOnClick(event);
-        }
-      : primaryOnClick;
 
-  // The gesture's handlers, forwarded from the root into the bridge the swipe
-  // layer fills: the root keeps the event model it had before the split — React's
-  // own pointer, click-capture and key events on the row's root — while the
-  // gesture itself lives in the lazily loaded layer. Until the layer has
-  // mounted the bridge is empty and each forwarder does nothing.
+  // Escape on a resting row, forwarded from the root into the bridge the swipe
+  // layer fills: React's own key event on the row's root, so the row keeps the
+  // event model it had before the split. Until the layer has mounted the
+  // bridge is empty and the forwarder does nothing.
   const swipeHandlers = hasSwipe
     ? {
-        onPointerDown: (event: React.PointerEvent) =>
-          swipeBridgeRef.current?.handlers.onPointerDown(event),
-        onPointerMove: (event: React.PointerEvent) =>
-          swipeBridgeRef.current?.handlers.onPointerMove(event),
-        onPointerUp: (event: React.PointerEvent) =>
-          swipeBridgeRef.current?.handlers.onPointerUp(event),
-        onPointerCancel: (event: React.PointerEvent) =>
-          swipeBridgeRef.current?.handlers.onPointerCancel(event),
-        onClickCapture: (event: React.MouseEvent) =>
-          swipeBridgeRef.current?.handlers.onClickCapture(event),
         onKeyDown: (event: React.KeyboardEvent) =>
-          swipeBridgeRef.current?.handlers.onKeyDown(event),
+          swipeBridgeRef.current?.onKeyDown(event),
       }
     : undefined;
 
@@ -1050,7 +1030,7 @@ export function Item({
         style,
       )}
       role={role}
-      onClick={rootOnClick}>
+      onClick={primaryOnClick}>
       <ItemDescriptionContext
         value={hasRenderableDescription ? descriptionID : null}>
         {innerContent}

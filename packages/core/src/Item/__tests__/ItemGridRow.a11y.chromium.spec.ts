@@ -212,9 +212,10 @@ test('a swipe on a grid row rests open on a gridcell of buttons, axe stays clean
   const cdp = await page.context().newCDPSession(page);
   const at = async (x: number, type: 'touchStart' | 'touchMove') =>
     cdp.send('Input.dispatchTouchEvent', {touchPoints: [{x, y}], type});
-  // Toward the inline start, past half the panel, slowly: rests open.
+  // Toward the inline start, past half the panel, slowly: rests open. The
+  // swipe begins after 25 px and is the travel past them.
   await at(startX, 'touchStart');
-  for (const dx of [6, 14, 28, 44, 60]) {
+  for (const dx of [6, 14, 28, 50, 70, 90]) {
     await at(startX - dx, 'touchMove');
     await page.waitForTimeout(40);
   }

@@ -9,7 +9,7 @@
  * SYNC: When modified, update this header
  */
 
-import {describe, it, expect, vi} from 'vitest';
+import {beforeAll, describe, it, expect, vi} from 'vitest';
 import {cleanup, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {rulesDeclaredFor} from '../__tests__/pressState';
@@ -1013,6 +1013,13 @@ describe('List', () => {
 });
 
 describe('List and swipe actions', () => {
+  // A row's swipe panels arrive with a lazily loaded module; load it first,
+  // so a test waits on the import (however long a cold one takes) rather
+  // than on waitFor's one second.
+  beforeAll(async () => {
+    await import('../Item/ItemSwipeLayer');
+  });
+
   it('clips the rows in the inline axis with clip, never hidden, so a row dragged aside paints no further than the list', () => {
     render(
       <List>
