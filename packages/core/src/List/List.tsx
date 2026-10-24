@@ -58,7 +58,8 @@ export interface ListProps extends BaseProps<
   density?: ListDensity;
 
   /**
-   * Whether to show dividers between list items.
+   * Whether to show dividers between list items. A touch press hides the
+   * dividers on either side of the pressed row until the finger lifts.
    * @default false
    */
   hasDividers?: boolean;
