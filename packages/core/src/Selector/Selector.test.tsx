@@ -5044,6 +5044,85 @@ describe('Selector press model', () => {
     }
   });
 
+  it("the opening press calls a caller's onClick once, with the press, before the list opens", () => {
+    const expandedAtClick: (string | null)[] = [];
+    const onClick = vi.fn((event: React.MouseEvent<HTMLElement>) => {
+      expandedAtClick.push(
+        `${event.type}:${screen.getByRole('combobox').getAttribute('aria-expanded')}`,
+      );
+    });
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        onChange={() => {}}
+        onClick={onClick}
+      />,
+    );
+    const trigger = screen.getByRole('combobox');
+    fireEvent.pointerDown(trigger, mouse);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(expandedAtClick).toEqual(['pointerdown:false']);
+    // The gesture's own click is spent: the caller hears the press once.
+    fireEvent.pointerUp(trigger, mouse);
+    fireEvent.click(trigger, {detail: 1});
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('a press that closes a searchable list clears its highlight, as a click does', () => {
+    vi.useFakeTimers();
+    try {
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      const trigger = screen.getByRole('button', {name: 'Fruit'});
+      fireEvent.pointerDown(trigger, mouse);
+      fireEvent.pointerUp(trigger, mouse);
+      fireEvent.click(trigger, {detail: 1});
+      act(() => {
+        vi.advanceTimersByTime(0);
+      });
+      const search = screen.getByRole('combobox', h);
+      fireEvent.keyDown(search, {key: 'ArrowDown'});
+      expect(search).toHaveAttribute('aria-activedescendant');
+
+      // A press on the trigger closes the list.
+      fireEvent.pointerDown(trigger, mouse);
+      fireEvent.pointerUp(trigger, mouse);
+      fireEvent.click(trigger, {detail: 1});
+      act(() => {
+        vi.advanceTimersByTime(0);
+      });
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+      // It reopens with nothing highlighted, so Enter commits nothing.
+      fireEvent.pointerDown(trigger, mouse);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      expect(screen.getByRole('combobox', h)).not.toHaveAttribute(
+        'aria-activedescendant',
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a press on the padding around the trigger opens the list at its click, not on press-down', () => {
+    render(<Selector label="Fruit" options={OPTIONS} onChange={() => {}} />);
+    const trigger = screen.getByRole('combobox');
+    const control = trigger.parentElement!;
+    fireEvent.pointerDown(control, mouse);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.pointerUp(control, mouse);
+    fireEvent.click(control, {detail: 1});
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
   it('with presentation="bottom-sheet" the press opens nothing and the click opens the sheet, as before', async () => {
     render(
       <Selector

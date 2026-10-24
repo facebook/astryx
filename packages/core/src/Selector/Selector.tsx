@@ -607,7 +607,9 @@ interface SelectorPropsBase<
   /**
    * Click handler on the trigger button. It runs before the selector toggles
    * its surface (the press then reaches the control box), and calling
-   * `preventDefault()` does not keep the surface closed.
+   * `preventDefault()` does not keep the surface closed. When a mouse press
+   * on the trigger opens the list, it runs once, with that press's event,
+   * before the list opens; the gesture's own click does not reach it.
    */
   onClick?: React.MouseEventHandler<HTMLElement>;
 
@@ -1411,6 +1413,7 @@ export function Selector<T extends SelectorOptionType>(
   // so the opening release would land outside it and dismiss it. A finger
   // keeps its tap: a held finger opens nothing here.
   const pressActedRef = useRef(false);
+  const onClickProp = rest.onClick;
   // The opening gesture, while the mouse that pressed the trigger is still
   // down: where it pressed, the row the list placed under that point, and
   // whether the highlight has since visited another row.
@@ -1428,6 +1431,8 @@ export function Selector<T extends SelectorOptionType>(
     overlayRowIndex: number;
     /** Whether the highlight has visited another row since the open. */
     leftPressRow: boolean;
+    /** The press itself, handed to a caller's `onClick` when it opens the list. */
+    event: React.PointerEvent<HTMLElement>;
   } | null>(null);
   const handleTriggerPress = useCallback(
     (pointerType: MenuPressPointerType): boolean => {
@@ -1444,6 +1449,10 @@ export function Selector<T extends SelectorOptionType>(
       pressActedRef.current = true;
       if (surface.isOpen) {
         openingPressRef.current = null;
+        // Close as a click does (`closeAndReset`): a searchable list sets no
+        // highlight on open, so a kept one would come back with the next
+        // open and Enter would commit it.
+        setHighlightedIndex(-1);
         surface.hide();
         return false;
       }
@@ -1452,6 +1461,13 @@ export function Selector<T extends SelectorOptionType>(
       // focused BEFORE the press as the element to hand focus back to.
       // Focusing the trigger first gives it the state a click-open has.
       triggerRef.current?.focus({preventScroll: true});
+      // A caller's `onClick` runs before the selector toggles its surface.
+      // This press is that toggle, and the gesture's own click is spent (the
+      // press model swallows it), so the press is what the caller hears.
+      const press = openingPressRef.current;
+      if (press != null) {
+        onClickProp?.(press.event);
+      }
       const didOpen = surface.show();
       if (!didOpen) {
         openingPressRef.current = null;
@@ -1487,6 +1503,7 @@ export function Selector<T extends SelectorOptionType>(
       isEffectivelyReadOnly,
       optimisticValue,
       popover.id,
+      onClickProp,
       setHighlightedIndex,
       shouldOverlaySelectedItem,
       surface,
@@ -1507,6 +1524,7 @@ export function Selector<T extends SelectorOptionType>(
         pressRowIndex: PRESS_ROW_UNRESOLVED,
         overlayRowIndex: -1,
         leftPressRow: false,
+        event,
       };
       const doc = event.currentTarget.ownerDocument;
       const onPressEnd = () => {
