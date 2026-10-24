@@ -18,6 +18,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {createAnimator, type Animator} from '../motion/animator';
 import {cubicBezier} from '../motion/bezier';
+import {solveSpring, toSpring} from '../motion/spring';
 import {segmentedControl} from '../motion/uikit';
 import {
   SegmentedSelectionMotion,
@@ -132,7 +133,9 @@ function select(ctx: ReturnType<typeof setup>, from: string, to: string): void {
   ctx.motion.select(ctx.track, from, to);
 }
 
-const xOf = (value: string) => SEGMENTS[value].left - TRACK.left;
+/** A segment's center in the track's padding-box coordinates. */
+const centerOf = (value: string) =>
+  SEGMENTS[value].left - TRACK.left + SEGMENTS[value].width / 2;
 
 /** The proxy carries this segment's surface: hidden on the segment, inline. */
 function expectHidden(segment: HTMLElement): void {
@@ -204,13 +207,18 @@ describe('the selection slide', () => {
     const ctx = setup('grid');
     select(ctx, 'grid', 'table');
     await advance(80);
-    const xBefore = ctx.animator.get('x');
+    // The proxy scales around its center: x is the center's offset from the
+    // destination's center.
+    const centerBefore = centerOf('table') + ctx.animator.get('x');
     const vBefore = ctx.animator.getVelocity('x');
     const widthBefore = ctx.animator.get('scaleX') * 106;
     expect(vBefore).toBeGreaterThan(500);
     select(ctx, 'table', 'list');
     // No jump and no lost velocity at the retarget.
-    expect(ctx.animator.get('x')).toBeCloseTo(xBefore, 6);
+    expect(centerOf('list') + ctx.animator.get('x')).toBeCloseTo(
+      centerBefore,
+      6,
+    );
     expect(ctx.animator.getVelocity('x')).toBeCloseTo(vBefore, 3);
     expect(ctx.animator.get('scaleX') * 100).toBeCloseTo(widthBefore, 6);
     // The proxy now carries the new destination's surface and size; the
@@ -223,7 +231,7 @@ describe('the selection slide', () => {
       'transparent',
     );
     await advance(3000);
-    expect(ctx.animator.get('x')).toBe(xOf('list'));
+    expect(ctx.animator.get('x')).toBe(0);
     expect(ctx.motion.isSliding).toBe(false);
     expectOwnSurface(ctx.segments.list);
   });
@@ -247,7 +255,10 @@ describe('the selection slide', () => {
     select(ctx, 'table', 'list');
     expect(ctx.motion.isSliding).toBe(true);
     expect(ctx.proxy.style.visibility).toBe('visible');
-    expect(ctx.animator.get('x', clock)).toBe(xOf('table'));
+    expect(ctx.animator.get('x', clock)).toBeCloseTo(
+      centerOf('table') - centerOf('list'),
+      6,
+    );
     expect(ctx.proxy.style.translate).not.toBe('');
   });
 
@@ -289,38 +300,21 @@ describe('the selection slide', () => {
     }
     select(ctx, 'grid', 'table');
     expect(ctx.proxy.style.width).toBe('106px');
-    expect(ctx.animator.get('x', 5000)).toBeCloseTo(xOf('table'), 6);
+    expect(ctx.animator.get('x', 5000)).toBeCloseTo(0, 6);
   });
 
   it('Reduced Motion: no travel; the surface fades and scales in at the destination on UIKit’s 0.2 s block', async () => {
     reduceMotion = true;
     const ctx = setup('grid');
     select(ctx, 'grid', 'table');
-    // At the destination from the first frame, scaled about its center.
-    expect(ctx.animator.get('x')).toBe(xOf('table'));
+    // At the destination from the first frame (centered there).
+    expect(ctx.animator.get('x')).toBe(0);
     expect(ctx.proxy.style.width).toBe('106px');
-    expect(ctx.proxy.style.transformOrigin).toBe('50% 50%');
     expectHidden(ctx.segments.table);
-    const {reducedMotion} = segmentedControl;
-    const ease = cubicBezier(reducedMotion.curve);
-    for (const t of [0, 16, 50, 100, 150, 199]) {
-      const p = ease(t / reducedMotion.fadeMs);
-      expect(ctx.animator.get('opacity', clock + t)).toBeCloseTo(p, 4);
-      expect(ctx.animator.get('scaleX', clock + t)).toBeCloseTo(
-        reducedMotion.scaleFrom + (1 - reducedMotion.scaleFrom) * p,
-        4,
-      );
-      expect(ctx.animator.get('scaleY', clock + t)).toBeCloseTo(
-        ctx.animator.get('scaleX', clock + t),
-        6,
-      );
-      // No travel at any point.
-      expect(ctx.animator.get('x', clock + t)).toBe(xOf('table'));
-    }
+    expectReducedMotionFade(ctx);
     await advance(1000);
     expect(ctx.motion.isSliding).toBe(false);
     expect(ctx.proxy.style.visibility).toBe('hidden');
-    expect(ctx.proxy.style.transformOrigin).toBe('');
     expectOwnSurface(ctx.segments.table);
   });
 
@@ -335,9 +329,220 @@ describe('the selection slide', () => {
     select(ctx, 'table', 'list');
     expect(ctx.animator.get('opacity')).toBe(1);
     expect(ctx.animator.get('scaleY')).toBe(1);
-    expect(ctx.proxy.style.transformOrigin).toBe('');
     await advance(3000);
-    expect(ctx.animator.get('x')).toBe(xOf('list'));
+    expect(ctx.animator.get('x')).toBe(0);
+    expect(ctx.motion.isSliding).toBe(false);
+  });
+});
+
+/**
+ * The Reduce Motion fade from `clock`: opacity from 0 and a uniform scale
+ * from `reducedMotion.scaleFrom` on one curve, with no travel.
+ */
+function expectReducedMotionFade(ctx: ReturnType<typeof setup>): void {
+  const {reducedMotion} = segmentedControl;
+  const ease = cubicBezier(reducedMotion.curve);
+  for (const t of [0, 16, 50, 100, 150, 199]) {
+    const p = ease(t / reducedMotion.fadeMs);
+    expect(ctx.animator.get('opacity', clock + t)).toBeCloseTo(p, 4);
+    expect(ctx.animator.get('scaleX', clock + t)).toBeCloseTo(
+      reducedMotion.scaleFrom + (1 - reducedMotion.scaleFrom) * p,
+      4,
+    );
+    expect(ctx.animator.get('scaleY', clock + t)).toBeCloseTo(
+      ctx.animator.get('scaleX', clock + t),
+      6,
+    );
+    expect(ctx.animator.get('x', clock + t)).toBe(0);
+  }
+}
+
+/** Client x of a segment's center (the track starts at client x 10). */
+const clientCenterOf = (value: string) =>
+  SEGMENTS[value].left + SEGMENTS[value].width / 2;
+
+describe('under a finger', () => {
+  it('landing on the selected segment lifts the lens in place, by UIKit’s additive growth on the lift spring', () => {
+    const ctx = setup('grid');
+    ctx.motion.press(ctx.track, clientCenterOf('grid'));
+    expect(ctx.motion.isSliding).toBe(true);
+    expect(ctx.proxy.style.width).toBe('96px');
+    expectHidden(ctx.segments.grid);
+    const lift = solveSpring(toSpring(segmentedControl.liftSpring), {
+      from: 96,
+      to: 96 + 24,
+      velocity: 0,
+    });
+    for (const t of [16, 50, 100, 200]) {
+      expect(ctx.animator.get('scaleX', 1000 + t) * 96).toBeCloseTo(
+        lift.value(t / 1000),
+        6,
+      );
+    }
+    // Centered: the position does not move.
+    expect(ctx.animator.get('x', 1100)).toBe(0);
+    expect(ctx.animator.get('scaleY', 3000) * 27).toBeCloseTo(27 + 16, 6);
+  });
+
+  it('a held lens stays lifted until the finger lets go, then comes down and hands back', async () => {
+    const ctx = setup('grid');
+    ctx.motion.press(ctx.track, clientCenterOf('grid'));
+    await advance(2000);
+    expect(ctx.motion.isSliding).toBe(true);
+    expect(ctx.animator.get('scaleX')).toBeCloseTo(120 / 96, 6);
+    expect(ctx.motion.release(clientCenterOf('grid'))).toBeNull();
+    await advance(2000);
+    expect(ctx.motion.isSliding).toBe(false);
+    expectOwnSurface(ctx.segments.grid);
+  });
+
+  it('landing on another segment leaves the lens alone', () => {
+    const ctx = setup('grid');
+    ctx.motion.press(ctx.track, clientCenterOf('table'));
+    ctx.motion.drag(clientCenterOf('list'));
+    expect(ctx.motion.isSliding).toBe(false);
+    expect(ctx.proxy.style.visibility).toBe('');
+  });
+
+  it('a drag carries the lens on the tracking spring, no further than 11 pt past the end segments', async () => {
+    const ctx = setup('grid');
+    ctx.motion.press(ctx.track, clientCenterOf('grid'));
+    ctx.motion.drag(clientCenterOf('list'));
+    const chase = solveSpring(toSpring(segmentedControl.trackingSpring), {
+      from: 0,
+      to: centerOf('list') - centerOf('grid'),
+      velocity: 0,
+    });
+    expect(ctx.animator.get('x', 1050)).toBeCloseTo(chase.value(0.05), 6);
+    await advance(1000);
+    expect(ctx.animator.get('x')).toBeCloseTo(
+      centerOf('list') - centerOf('grid'),
+      6,
+    );
+    // Far past the last segment: clamped.
+    ctx.motion.drag(500);
+    await advance(1000);
+    expect(ctx.animator.get('x')).toBeCloseTo(
+      centerOf('table') + segmentedControl.dragOvershoot - centerOf('grid'),
+      6,
+    );
+    // Still lifted throughout.
+    expect(ctx.animator.get('scaleX')).toBeCloseTo(120 / 96, 6);
+  });
+
+  it('letting go commits the segment nearest the finger: 40 % of the way stays, 60 % moves', async () => {
+    const forty = setup('grid');
+    const at = (p: number) =>
+      clientCenterOf('grid') +
+      (clientCenterOf('list') - clientCenterOf('grid')) * p;
+    forty.motion.press(forty.track, clientCenterOf('grid'));
+    forty.motion.drag(at(0.4));
+    await advance(500);
+    expect(forty.motion.release(at(0.4))).toBeNull();
+    await advance(3000);
+    expect(forty.animator.get('x')).toBe(0);
+    expect(forty.motion.isSliding).toBe(false);
+    expectOwnSurface(forty.segments.grid);
+    document.body.innerHTML = '';
+    document.head.innerHTML = '';
+
+    const sixty = setup('grid');
+    sixty.motion.press(sixty.track, clientCenterOf('grid'));
+    sixty.motion.drag(at(0.6));
+    await advance(500);
+    const centerAtLift = centerOf('grid') + sixty.animator.get('x');
+    expect(sixty.motion.release(at(0.6))).toBe('list');
+    // The lens re-bases onto the destination without a jump, then springs
+    // there on the slide spring while it comes down on the lift spring.
+    expect(centerOf('list') + sixty.animator.get('x')).toBeCloseTo(
+      centerAtLift,
+      6,
+    );
+    expect(sixty.proxy.style.width).toBe('100px');
+    // Until the new value comes back, the old selection's paint is carried.
+    expectHidden(sixty.segments.grid);
+    select(sixty, 'grid', 'list');
+    expectHidden(sixty.segments.list);
+    expect(sixty.segments.grid.style.getPropertyValue('background-color')).toBe(
+      '',
+    );
+    await advance(3000);
+    expect(sixty.animator.get('x')).toBe(0);
+    expect(sixty.animator.get('scaleX')).toBe(1);
+    expect(sixty.motion.isSliding).toBe(false);
+    expectOwnSurface(sixty.segments.list);
+  });
+
+  it('a tap on another segment slides there lifted, coming down after the hang', async () => {
+    const ctx = setup('grid');
+    ctx.motion.press(ctx.track, clientCenterOf('table'));
+    expect(ctx.motion.release(clientCenterOf('table'))).toBe('table');
+    select(ctx, 'grid', 'table');
+    const travel = solveSpring(toSpring(segmentedControl.selectionSpring), {
+      from: centerOf('grid') - centerOf('table'),
+      to: 0,
+      velocity: 0,
+    });
+    expect(ctx.animator.get('x', 1100)).toBeCloseTo(travel.value(0.1), 6);
+    // Lifted toward the destination's lifted size...
+    await advance(segmentedControl.tapLiftHangMs - 10);
+    expect(ctx.animator.get('scaleX') * 106).toBeGreaterThan(106 + 12);
+    // ...then down again while still travelling.
+    await advance(30);
+    await advance(2000);
+    expect(ctx.animator.get('scaleX')).toBe(1);
+    expect(ctx.motion.isSliding).toBe(false);
+    expectOwnSurface(ctx.segments.table);
+  });
+
+  it('a cancelled touch puts the lens back', async () => {
+    const ctx = setup('grid');
+    ctx.motion.press(ctx.track, clientCenterOf('grid'));
+    ctx.motion.drag(clientCenterOf('table'));
+    await advance(200);
+    ctx.motion.cancel();
+    await advance(3000);
+    expect(ctx.animator.get('x')).toBe(0);
+    expect(ctx.animator.get('scaleX')).toBe(1);
+    expect(ctx.motion.isSliding).toBe(false);
+    expectOwnSurface(ctx.segments.grid);
+  });
+
+  it('never commits a disabled segment', () => {
+    const ctx = setup('grid');
+    ctx.segments.table.setAttribute('aria-disabled', 'true');
+    ctx.motion.press(ctx.track, clientCenterOf('table'));
+    expect(ctx.motion.release(clientCenterOf('table'))).toBeNull();
+  });
+
+  it('Reduced Motion: no lift, no chase; the drag commits at the lift and the lens fades and scales in there', async () => {
+    reduceMotion = true;
+    const ctx = setup('grid');
+    ctx.motion.press(ctx.track, clientCenterOf('grid'));
+    expect(ctx.motion.isSliding).toBe(false);
+    // The lens stays parked on the selected segment while the finger moves.
+    ctx.motion.drag(clientCenterOf('list'));
+    ctx.motion.drag(clientCenterOf('table'));
+    expect(ctx.motion.isSliding).toBe(false);
+    expectOwnSurface(ctx.segments.grid);
+    // The segment under the finger at the lift is committed...
+    expect(ctx.motion.release(clientCenterOf('table'))).toBe('table');
+    // ...and the lens appears there with UIKit's fade and scale-in.
+    expect(ctx.proxy.style.width).toBe('106px');
+    expectReducedMotionFade(ctx);
+    select(ctx, 'grid', 'table');
+    expectHidden(ctx.segments.table);
+    await advance(1000);
+    expect(ctx.motion.isSliding).toBe(false);
+    expectOwnSurface(ctx.segments.table);
+  });
+
+  it('Reduced Motion: a hold and a lift on the selected segment change nothing', () => {
+    reduceMotion = true;
+    const ctx = setup('grid');
+    ctx.motion.press(ctx.track, clientCenterOf('grid'));
+    expect(ctx.motion.release(clientCenterOf('grid'))).toBeNull();
+    expect(ctx.motion.isSliding).toBe(false);
   });
 });
 

@@ -5,8 +5,9 @@
  * @input vitest, the segmented-control domain of the UIKit constants table,
  *   the spring solver, and samples of UIKit's own selection slide
  * @output Holds `segmentedControl.selectionSpring` to UISegmentedControl's
- *   measured slide (position per frame, iOS 26.2 simulator), and checks the
- *   title cross-fade's clock and curve
+ *   measured slide (position per frame, iOS 26.2 simulator), the lift spring
+ *   and growth to the measured hold and tap lifts (bounds per frame), and
+ *   checks the title cross-fade's clock and curve
  * @position Testing; parity of the segmented-control constants (law P4,
  *   unit layer). The browser layer is
  *   SegmentedControl/__tests__/SegmentedControl.interaction.browser.spec.ts.
@@ -171,6 +172,100 @@ describe('motion roles', () => {
     } finally {
       element.remove();
     }
+  });
+});
+
+/**
+ * The lens's bounds per frame (pt), from the same captures: holding the
+ * selected 96 × 27 segment (ms from touch-down) and a tap slide (width =
+ * frame width ÷ the stretch transform, ms from touch-up).
+ */
+const MEASURED_LIFT = {
+  hold: [
+    [12, 96.62, 26.82],
+    [45, 101.45, 30.12],
+    [78, 108.42, 34.84],
+    [112, 113.51, 38.32],
+    [145, 116.59, 40.47],
+    [178, 118.28, 41.67],
+    [212, 119.15, 42.32],
+    [245, 119.53, 42.69],
+    [278, 120, 43],
+  ],
+  tap: [
+    [3, 96.0],
+    [36, 100.33],
+    [70, 107.46],
+    [103, 112.83],
+    [136, 116.14],
+    [170, 118.0],
+    [203, 119.0],
+    [236, 119.5],
+    [270, 114.84],
+    [303, 107.91],
+    [336, 102.78],
+    [370, 99.63],
+    [403, 97.88],
+    [436, 96.94],
+    [470, 96.47],
+  ],
+} as const;
+
+describe('the lift', () => {
+  const lift = toSpring(segmentedControl.liftSpring);
+  const growth = segmentedControl.liftGrowth;
+
+  it('reproduces the measured hold: +24 × +16 pt on the lift spring', () => {
+    const width = solveSpring(lift, {
+      from: 96,
+      to: 96 + growth.width,
+      velocity: 0,
+    });
+    const height = solveSpring(lift, {
+      from: 27,
+      to: 27 + growth.height,
+      velocity: 0,
+    });
+    let best = Infinity;
+    for (let offset = -15; offset <= 15; offset += 0.5) {
+      let worst = 0;
+      for (const [t, w, h] of MEASURED_LIFT.hold) {
+        const s = Math.max(0, t + offset) / 1000;
+        worst = Math.max(
+          worst,
+          Math.abs(width.value(s) - w),
+          Math.abs(height.value(s) - h),
+        );
+      }
+      best = Math.min(best, worst);
+    }
+    // Within 0.75 pt at every frame (the width and height share one start).
+    expect(best).toBeLessThan(0.75);
+  });
+
+  it('reproduces a tap: lifted from the start, down again after the hang', () => {
+    const hang = segmentedControl.tapLiftHangMs / 1000;
+    const up = solveSpring(lift, {
+      from: 96,
+      to: 96 + growth.width,
+      velocity: 0,
+    });
+    const down = solveSpring(lift, {
+      from: up.value(hang),
+      to: 96,
+      velocity: up.velocity(hang),
+    });
+    let best = Infinity;
+    for (let offset = -15; offset <= 15; offset += 0.5) {
+      let worst = 0;
+      for (const [t, w] of MEASURED_LIFT.tap) {
+        const s = Math.max(0, t + offset) / 1000;
+        const model = s <= hang ? up.value(s) : down.value(s - hang);
+        worst = Math.max(worst, Math.abs(model - w));
+      }
+      best = Math.min(best, worst);
+    }
+    expect(best).toBeLessThan(0.75);
   });
 });
 

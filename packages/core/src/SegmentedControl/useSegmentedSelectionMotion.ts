@@ -8,9 +8,10 @@
  *   presentation applies; the motion animator (motion/animator.ts) and the
  *   UIKit constants table (motion/uikit, `segmentedControl`)
  * @output Exports `useSegmentedSelectionMotion` (the React wiring) and
- *   `SegmentedSelectionMotion` (the controller): the selection slide and the
- *   segment titles' cross-fade of SegmentedControl's touch presentation, plus
- *   the selectors that find a segment and its title layers
+ *   `SegmentedSelectionMotion` (the controller): the selection slide, the
+ *   lens a finger lifts, drags and lets go of, and the segment titles'
+ *   cross-fade of SegmentedControl's touch presentation, plus the selectors
+ *   that find a segment and its title layers
  * @position Internal to SegmentedControl; used by SegmentedControl.tsx, whose
  *   items render the title layers (SegmentedControlItem.tsx)
  *
@@ -35,7 +36,22 @@
  * is the destination's, so it lands at scale 1 and hands the surface back to
  * the segment pixel for pixel. A change mid-flight starts from the proxy's
  * presented position and width with their velocities (the animator evaluates
- * its curves; the DOM is never read for it).
+ * its curves; the DOM is never read for it). The proxy scales around its
+ * center, so its position (the center) and its size run on separate springs,
+ * as UIKit's lens position and bounds do.
+ *
+ * UNDER A FINGER (useSegmentedTouchTracking.ts reports the touch)
+ *
+ * - Landing on the selected segment lifts the lens in place: its size grows
+ *   by `segmentedControl.liftGrowth` on `liftSpring`.
+ * - Dragging from there carries it: its center chases the finger on
+ *   `trackingSpring`, no further than `dragOvershoot` past the end segments.
+ * - Letting go commits the segment nearest the finger: the lens springs
+ *   there on `selectionSpring` and comes back down on `liftSpring`.
+ * - A touch that lands on another segment leaves the lens alone until the
+ *   finger lifts; then it slides there like any change, lifted for the first
+ *   `tapLiftHangMs` of the travel.
+ * - A cancelled touch (the page took it to scroll) puts the lens back.
  *
  * The title cross-fade runs on opacity: each title has an aria-hidden twin
  * (a width sizer at rest). The visible title always shows the segment's
@@ -47,14 +63,16 @@
  * the only main-thread work of a selection change is its first frame and the
  * hand-back's.
  *
- * Reduced Motion: UIKit drops the slide (`segmentedControl.reducedMotion`):
- * the surface jumps to the destination and fades and scales in place there
- * (opacity from 0, scale from 0.88, centered) on the block's clock and
- * curve. The titles still cross-fade, as UIKit's do.
+ * Reduced Motion: UIKit drops the slide and the lift
+ * (`segmentedControl.reducedMotion`): no lift, no chase, and when the
+ * selection changes the lens jumps to the new segment and fades and scales
+ * in place there (opacity from 0, scale from 0.88, about its center) on the
+ * block's clock and curve. The titles still cross-fade, as UIKit's do.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/SegmentedControl/SegmentedControl.tsx
  * - /packages/core/src/SegmentedControl/SegmentedControlItem.tsx (title layers)
+ * - /packages/core/src/SegmentedControl/useSegmentedTouchTracking.ts
  * - /packages/core/src/SegmentedControl/useSegmentedSelectionMotion.test.ts
  * - /packages/core/src/SegmentedControl/__tests__/SegmentedControl.interaction.browser.spec.ts
  */
@@ -65,9 +83,12 @@ import {
   type Animator,
   type MotionCurve,
   type MotionHandle,
+  type MotionValues,
+  type SpringTransition,
 } from '../motion/animator';
 import {cubicBezier} from '../motion/bezier';
 import {resolveMotion} from '../motion/resolveMotion';
+import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
 import {segmentedControl} from '../motion/uikit';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {observeResize} from '../utils/sharedResizeObserver';
@@ -143,12 +164,31 @@ interface Box {
   readonly height: number;
 }
 
-interface Slide {
-  readonly handle: MotionHandle;
-  /** The segment whose surface the proxy carries (hidden on the segment). */
-  readonly destination: HTMLElement;
-  /** The proxy's layout width: the destination's, so it lands at scale 1. */
-  readonly width: number;
+interface Carried {
+  /** The segment the proxy is bound for: it lands there at rest. */
+  readonly segment: HTMLElement;
+  /**
+   * The proxy's layout box: the segment's, so it lands at translate 0
+   * from the segment and scale 1, the segment's own size.
+   */
+  readonly box: Box;
+  /**
+   * The segment whose surface the proxy shows, hidden there meanwhile: the
+   * selected one. A touch moves the proxy before the new value comes back,
+   * so until then this is still the old selection.
+   */
+  hidden: HTMLElement;
+}
+
+/** A finger's touch, from landing to letting go. */
+interface Touch {
+  /** The track's geometry when the finger landed (read once). */
+  readonly toTrackX: (clientX: number) => number;
+  readonly boxes: ReadonlyMap<HTMLElement, Box>;
+  /** The segment the finger landed on, if any. */
+  readonly origin: HTMLElement | null;
+  /** Whether it landed on the selected segment (it carries the lens). */
+  readonly carriesLens: boolean;
 }
 
 interface TitleFade {
@@ -213,23 +253,24 @@ function boxesIn(track: HTMLElement): (element: HTMLElement) => Box {
   };
 }
 
-export interface SegmentedSelectionMotionOptions {
-  /** The animator's clock (ms, document timeline); `performance.now()` by default. */
-  readonly now?: () => number;
-  /** The Reduced Motion preference; `prefers-reduced-motion` by default. */
-  readonly prefersReducedMotion?: () => boolean;
+function segmentsOf(track: HTMLElement): HTMLElement[] {
+  return Array.from(track.querySelectorAll<HTMLElement>(SEGMENT_SELECTOR));
 }
 
-function defaultNow(): number {
-  return typeof performance === 'undefined' ? Date.now() : performance.now();
+function isLaidOut(box: Box): boolean {
+  return box.width > 0 && box.height > 0;
 }
 
-function defaultPrefersReducedMotion(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  );
+function center(box: Box): number {
+  return box.x + box.width / 2;
+}
+
+/** The scale that lifts a lens resting on `box` (UIKit adds, not scales). */
+function lifted(box: Box): MotionValues {
+  return {
+    scaleX: (box.width + segmentedControl.liftGrowth.width) / box.width,
+    scaleY: (box.height + segmentedControl.liftGrowth.height) / box.height,
+  };
 }
 
 /**
@@ -263,12 +304,107 @@ function timedCurve(
 }
 
 /**
+ * A tap's lift as one curve: from `from` (with `velocity`) up toward `peak`
+ * on the lift spring, then from wherever that is at `hang` s back down to 1
+ * on the same spring, keeping its velocity.
+ */
+function liftThenDown(
+  liftSpring: SpringDescription,
+  from: number,
+  peak: number,
+  velocity: number,
+  hang: number,
+): MotionCurve {
+  const spring = toSpring(liftSpring);
+  const up = solveSpring(spring, {from, to: peak, velocity});
+  const down = solveSpring(spring, {
+    from: up.value(hang),
+    to: 1,
+    velocity: up.velocity(hang),
+  });
+  // Settled to a ten-thousandth of the lens's size: under 0.02 px.
+  const tail = Math.min(down.settleTime(1e-4), 4);
+  const duration = hang + tail;
+  return {
+    duration,
+    // Exactly the resting size at the end, so the hand-back is exact.
+    at: t =>
+      t >= duration ? 1 : t <= hang ? up.value(t) : down.value(t - hang),
+    velocity: t =>
+      t >= duration ? 0 : t <= hang ? up.velocity(t) : down.velocity(t - hang),
+  };
+}
+
+/** Maps a client x to the track's padding-box x, read once per touch. */
+function trackXIn(track: HTMLElement): (clientX: number) => number {
+  const rect = track.getBoundingClientRect();
+  const scale =
+    track.offsetWidth > 0 && rect.width > 0
+      ? rect.width / track.offsetWidth
+      : 1;
+  return clientX => (clientX - rect.left) / scale - track.clientLeft;
+}
+
+/** The enabled segment whose center is nearest `x`, or null. */
+function nearestEnabled(
+  boxes: ReadonlyMap<HTMLElement, Box>,
+  x: number,
+): HTMLElement | null {
+  let best: HTMLElement | null = null;
+  let distance = Infinity;
+  for (const [segment, box] of boxes) {
+    const d = Math.abs(center(box) - x);
+    if (d < distance) {
+      distance = d;
+      best = segment;
+    }
+  }
+  if (
+    best != null &&
+    (best.hasAttribute('disabled') ||
+      best.getAttribute('aria-disabled') === 'true')
+  ) {
+    return null;
+  }
+  return best;
+}
+
+export interface SegmentedSelectionMotionOptions {
+  /** The animator's clock (ms, document timeline); `performance.now()` by default. */
+  readonly now?: () => number;
+  /** The Reduced Motion preference; `prefers-reduced-motion` by default. */
+  readonly prefersReducedMotion?: () => boolean;
+}
+
+function defaultNow(): number {
+  return typeof performance === 'undefined' ? Date.now() : performance.now();
+}
+
+function defaultPrefersReducedMotion(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+}
+
+/**
  * The selection motion of one SegmentedControl. Lives outside React's render
  * cycle: nothing here sets state, so a slide never re-renders anything.
  */
 export class SegmentedSelectionMotion {
   private proxy: HTMLElement | null = null;
-  private slide: Slide | null = null;
+  private carried: Carried | null = null;
+  /** The motions the hand-back waits for. */
+  private readonly running = new Set<MotionHandle>();
+  /** A finger holds the lens up. */
+  private isLifted = false;
+  private touch: Touch | null = null;
+  /**
+   * The value a touch already moved the lens to: the selection change that
+   * follows (the controlled value coming back) only cross-fades the titles.
+   */
+  private committed: string | null = null;
   private readonly fades = new Map<HTMLElement, TitleFade>();
   private readonly renderings = new WeakMap<HTMLElement, TitleRendering>();
 
@@ -295,7 +431,7 @@ export class SegmentedSelectionMotion {
 
   /** True while the proxy carries the selected surface. */
   get isSliding(): boolean {
-    return this.slide != null;
+    return this.carried != null;
   }
 
   /**
@@ -319,9 +455,7 @@ export class SegmentedSelectionMotion {
 
   /** The selection moved from `from` to `to`; the DOM already shows `to`. */
   select(track: HTMLElement, from: string, to: string): void {
-    const segments = Array.from(
-      track.querySelectorAll<HTMLElement>(SEGMENT_SELECTOR),
-    );
+    const segments = segmentsOf(track);
     const find = (value: string) =>
       segments.find(segment => segment.dataset.value === value) ?? null;
     const origin = find(from);
@@ -331,21 +465,182 @@ export class SegmentedSelectionMotion {
         this.crossFadeTitle(segment);
       }
     }
-    this.slideSurface(track, origin, destination);
+    if (this.committed === to) {
+      // A touch moved the lens there already; the new selection now paints
+      // the surface the proxy carries.
+      this.committed = null;
+      const carried = this.carried;
+      if (
+        carried != null &&
+        carried.segment === destination &&
+        this.proxy != null
+      ) {
+        if (carried.hidden !== destination) {
+          showSurface(carried.hidden);
+          copySurface(destination, this.proxy);
+          hideSurface(destination);
+          carried.hidden = destination;
+        }
+      }
+      return;
+    }
+    this.committed = null;
+    if (destination == null) {
+      // Nothing is selected any more: no surface to carry.
+      this.settle();
+      return;
+    }
+    if (this.carried == null && origin == null) {
+      // Nothing was selected: there is no surface to slide from.
+      return;
+    }
+    const boxOf = boxesIn(track);
+    const to_ = boxOf(destination);
+    if (!isLaidOut(to_)) {
+      this.settle();
+      return;
+    }
+    if (this.prefersReducedMotion()) {
+      this.fadeInAt(destination, to_, destination);
+      return;
+    }
+    const from_ = this.carried == null ? boxOf(origin as HTMLElement) : null;
+    const at = this.carry(destination, to_, from_, destination);
+    // A programmatic or keyboard change: the whole box on the slide spring.
+    this.track(
+      this.animator.animate(
+        {x: 0, scaleX: 1, scaleY: 1},
+        this.springFrom({x: 0, scaleX: 1, scaleY: 1}, 'selection'),
+        {at},
+      ),
+    );
+  }
+
+  /** A finger landed at `clientX` (a touch, in client px). */
+  press(track: HTMLElement, clientX: number): void {
+    const segments = segmentsOf(track);
+    const boxOf = boxesIn(track);
+    const boxes = new Map(segments.map(segment => [segment, boxOf(segment)]));
+    const toTrackX = trackXIn(track);
+    const x = toTrackX(clientX);
+    const origin =
+      segments.find(segment => {
+        const box = boxes.get(segment) as Box;
+        return x >= box.x && x < box.x + box.width;
+      }) ?? null;
+    const carriesLens =
+      origin != null && origin.getAttribute('aria-checked') === 'true';
+    this.touch = {toTrackX, boxes, origin, carriesLens};
+    if (!carriesLens || origin == null || this.prefersReducedMotion()) {
+      return;
+    }
+    const box = boxes.get(origin) as Box;
+    if (!isLaidOut(box)) {
+      return;
+    }
+    const at = this.carry(origin, box, null, origin);
+    this.isLifted = true;
+    this.track(
+      this.animator.animate(lifted(box), this.springFrom(lifted(box), 'lift'), {
+        at,
+      }),
+    );
+  }
+
+  /** The finger moved to `clientX`. Only a lens it carries follows. */
+  drag(clientX: number): void {
+    const touch = this.touch;
+    const carried = this.carried;
+    if (touch == null || !touch.carriesLens || carried == null) {
+      return;
+    }
+    const centers = [...touch.boxes.values()].map(center);
+    const reach = segmentedControl.dragOvershoot;
+    const target = Math.min(
+      Math.max(touch.toTrackX(clientX), Math.min(...centers) - reach),
+      Math.max(...centers) + reach,
+    );
+    // The center chases the finger; the size stays lifted.
+    this.track(
+      this.animator.animate(
+        {x: target - center(carried.box)},
+        this.springFrom({x: target - center(carried.box)}, 'tracking'),
+      ),
+    );
+  }
+
+  /**
+   * The finger let go at `clientX`. Moves the lens to the segment nearest
+   * the finger and returns that segment's value when it is not the selected
+   * one (the caller commits it), else null.
+   */
+  release(clientX: number): string | null {
+    const touch = this.touch;
+    this.touch = null;
+    if (touch == null) {
+      return null;
+    }
+    const x = touch.toTrackX(clientX);
+    const target = nearestEnabled(touch.boxes, x);
+    const selected =
+      [...touch.boxes.keys()].find(
+        segment => segment.getAttribute('aria-checked') === 'true',
+      ) ?? null;
+    const destination = target ?? selected;
+    if (destination == null) {
+      this.unlift();
+      return null;
+    }
+    const box = touch.boxes.get(destination) as Box;
+    const value =
+      destination !== selected ? (destination.dataset.value ?? null) : null;
+    if (touch.carriesLens && this.isLifted) {
+      // The lifted lens settles on the segment and comes down.
+      this.moveLensTo(destination, box, selected ?? destination);
+    } else if (value != null && selected != null) {
+      // A tap or a drag that started elsewhere: the lens slides from the
+      // selected segment, lifted for the first part of the way.
+      this.slideLifted(
+        destination,
+        box,
+        touch.boxes.get(selected) as Box,
+        selected,
+      );
+    }
+    this.committed = value;
+    return value;
+  }
+
+  /** The touch was taken away (the page scrolled): the lens goes back. */
+  cancel(): void {
+    const touch = this.touch;
+    this.touch = null;
+    if (
+      touch == null ||
+      !touch.carriesLens ||
+      touch.origin == null ||
+      !this.isLifted
+    ) {
+      // Nothing was lifted (Reduce Motion): nothing to put back.
+      return;
+    }
+    const box = touch.boxes.get(touch.origin) as Box;
+    this.moveLensTo(touch.origin, box, touch.origin);
   }
 
   /** Hands the surface back to its segment now and hides the proxy. */
   settle(): void {
-    const slide = this.slide;
-    if (slide == null) {
+    this.isLifted = false;
+    const carried = this.carried;
+    if (carried == null) {
       return;
     }
-    this.slide = null;
+    this.carried = null;
+    this.running.clear();
     this.animator.stop();
-    showSurface(slide.destination);
+    showSurface(carried.hidden);
     if (this.proxy != null) {
       this.proxy.style.visibility = 'hidden';
-      this.proxy.style.removeProperty('transform-origin');
     }
     // Fades that finished during the slide restyle their twins now, in the
     // same frame as the hand-back.
@@ -362,129 +657,262 @@ export class SegmentedSelectionMotion {
    * nothing; the animator keeps its element until the proxy's ref detaches it.
    */
   stop(): void {
+    this.touch = null;
+    this.committed = null;
     this.settle();
     for (const fade of [...this.fades.values()]) {
       this.endFade(fade);
     }
   }
 
-  private slideSurface(
-    track: HTMLElement,
-    origin: HTMLElement | null,
-    destination: HTMLElement | null,
-  ): void {
+  /**
+   * Binds the proxy for `segment` with `box` as its layout box, showing
+   * `paint`'s surface (the selected segment's), keeping what is on screen:
+   * from `from` (a segment's resting box) when nothing was carried, else
+   * from the presented geometry, re-based onto the new box with the
+   * velocities it had.
+   */
+  private carry(
+    segment: HTMLElement,
+    box: Box,
+    from: Box | null,
+    paint: HTMLElement,
+  ): number | undefined {
     const proxy = this.proxy;
     if (proxy == null) {
-      return;
+      return undefined;
     }
-    const current = this.slide;
-    if (destination == null) {
-      // Nothing is selected any more: no surface to carry.
-      this.settle();
-      return;
+    const previous = this.carried;
+    let start: MotionValues;
+    // Motion already on screen continues from this instant; a start from
+    // rest waits for the browser to commit it (the animator's rule).
+    let at: number | undefined;
+    this.velocity = {};
+    if (previous != null) {
+      at = this.now();
+      const presented = this.presented(previous.box, at);
+      start = {
+        x: presented.center - center(box),
+        scaleX: presented.width / box.width,
+        scaleY: presented.height / box.height,
+      };
+      this.velocity = {
+        x: this.animator.getVelocity('x', at),
+        scaleX:
+          (this.animator.getVelocity('scaleX', at) * previous.box.width) /
+          box.width,
+        scaleY:
+          (this.animator.getVelocity('scaleY', at) * previous.box.height) /
+          box.height,
+      };
+    } else {
+      const origin = from ?? box;
+      start = {
+        x: center(origin) - center(box),
+        scaleX: origin.width / box.width,
+        scaleY: origin.height / box.height,
+      };
     }
-    if (current == null && origin == null) {
-      // Nothing was selected: there is no surface to slide from.
-      return;
+    if (previous?.hidden !== paint) {
+      if (previous != null) {
+        showSurface(previous.hidden);
+      }
+      copySurface(paint, proxy);
+      hideSurface(paint);
     }
-    const boxOf = boxesIn(track);
-    const to = boxOf(destination);
-    if (to.width <= 0 || to.height <= 0) {
-      // Not laid out (hidden, collapsed): nothing to show moving.
+    // The layout box sits on the segment's box, so the proxy rests at
+    // translate 0 and scale 1; `x` is its center's offset from the box's.
+    proxy.style.left = `${box.x}px`;
+    proxy.style.top = `${box.y}px`;
+    proxy.style.width = `${box.width}px`;
+    proxy.style.height = `${box.height}px`;
+    proxy.style.visibility = 'visible';
+    this.carried = {segment, box, hidden: paint};
+    // Opaque, whatever a Reduce Motion fade left.
+    this.animator.set({...start, opacity: 1});
+    return at;
+  }
+
+  /** Velocities captured by the last `carry`, in the new box's units. */
+  private velocity: Partial<Record<'x' | 'scaleX' | 'scaleY', number>> = {};
+
+  /** A spring transition that keeps the captured velocities of `values`. */
+  private springFrom(
+    values: MotionValues,
+    kind: 'selection' | 'lift' | 'tracking',
+  ): SpringTransition {
+    const spring =
+      kind === 'selection'
+        ? segmentedControl.selectionSpring
+        : kind === 'lift'
+          ? segmentedControl.liftSpring
+          : segmentedControl.trackingSpring;
+    const velocity: Record<string, number> = {};
+    for (const key of Object.keys(values) as (keyof typeof this.velocity)[]) {
+      const v = this.velocity[key];
+      if (v != null && v !== 0) {
+        velocity[key] = v;
+      }
+    }
+    // A captured velocity is spent by the first call that drives its channel.
+    this.velocity = Object.fromEntries(
+      Object.entries(this.velocity).filter(([key]) => !(key in values)),
+    );
+    return Object.keys(velocity).length > 0 ? {spring, velocity} : {spring};
+  }
+
+  /** The proxy's presented center and size, from the animator. */
+  private presented(
+    box: Box,
+    at: number,
+  ): {center: number; width: number; height: number} {
+    return {
+      center: center(box) + this.animator.get('x', at),
+      width: box.width * this.animator.get('scaleX', at),
+      height: box.height * this.animator.get('scaleY', at),
+    };
+  }
+
+  /** A lifted lens settles on `segment` and comes down. */
+  private moveLensTo(segment: HTMLElement, box: Box, paint: HTMLElement): void {
+    this.isLifted = false;
+    if (!isLaidOut(box)) {
       this.settle();
       return;
     }
     if (this.prefersReducedMotion()) {
-      this.fadeIn(proxy, destination, to);
+      this.fadeInAt(segment, box, this.carried?.hidden ?? paint);
       return;
     }
-    let x: number;
-    let width: number;
-    let velocityX = 0;
-    let velocityWidth = 0;
-    // A slide from rest starts when the browser commits it; one that
-    // continues a slide on screen starts now, from the frame on screen.
-    let at: number | undefined;
-    if (current != null) {
-      // Mid-flight: from what is on screen, with its velocity.
-      at = this.now();
-      x = this.animator.get('x', at);
-      width = current.width * this.animator.get('scaleX', at);
-      velocityX = this.animator.getVelocity('x', at);
-      velocityWidth = current.width * this.animator.getVelocity('scaleX', at);
-      if (current.destination !== destination) {
-        showSurface(current.destination);
-      }
-    } else {
-      const from = boxOf(origin as HTMLElement);
-      x = from.x;
-      width = from.width;
-    }
-    copySurface(destination, proxy);
-    hideSurface(destination);
-    proxy.style.top = `${to.y}px`;
-    proxy.style.width = `${to.width}px`;
-    proxy.style.height = `${to.height}px`;
-    proxy.style.visibility = 'visible';
-    proxy.style.removeProperty('transform-origin');
-    this.animator.set({x, scaleX: width / to.width, scaleY: 1, opacity: 1});
-    const handle = this.animator.animate(
-      {x: to.x, scaleX: 1},
-      {
-        spring: segmentedControl.selectionSpring,
-        velocity: {x: velocityX, scaleX: velocityWidth / to.width},
-      },
-      {at},
+    const at = this.carry(segment, box, null, this.carried?.hidden ?? paint);
+    this.track(
+      this.animator.animate({x: 0}, this.springFrom({x: 0}, 'selection'), {
+        at,
+      }),
     );
-    this.carry(handle, destination, to.width);
+    this.track(
+      this.animator.animate(
+        {scaleX: 1, scaleY: 1},
+        this.springFrom({scaleX: 1, scaleY: 1}, 'lift'),
+        {reducedMotion: 'instant', at},
+      ),
+    );
+  }
+
+  /** A tap's slide: travels on the slide spring, lifted for a moment. */
+  private slideLifted(
+    segment: HTMLElement,
+    box: Box,
+    from: Box,
+    paint: HTMLElement,
+  ): void {
+    if (!isLaidOut(box)) {
+      this.settle();
+      return;
+    }
+    if (this.prefersReducedMotion()) {
+      this.fadeInAt(segment, box, this.carried?.hidden ?? paint);
+      return;
+    }
+    const at = this.carry(
+      segment,
+      box,
+      this.carried == null ? from : null,
+      this.carried?.hidden ?? paint,
+    );
+    this.track(
+      this.animator.animate({x: 0}, this.springFrom({x: 0}, 'selection'), {
+        at,
+      }),
+    );
+    // Up on the lift spring and, after the hang, back down on it: one curve
+    // known in advance, so the compositor brings the lens down on time even
+    // while the main thread is busy.
+    const peak = lifted(box);
+    // The lift's spring and hang as the control's theme sets them (motion
+    // roles), UIKit's by default: the curve is baked here, so it resolves
+    // them itself.
+    const liftSpring = resolveMotion(this.proxy, segmentedControl.liftSpring);
+    const hang =
+      resolveMotion(this.proxy, segmentedControl, 'tapLiftHangMs') / 1000;
+    const velocityX = this.velocity.scaleX ?? 0;
+    const velocityY = this.velocity.scaleY ?? 0;
+    this.velocity = {};
+    this.track(
+      this.animator.play(
+        {
+          scaleX: liftThenDown(
+            liftSpring,
+            this.animator.get('scaleX'),
+            peak.scaleX as number,
+            velocityX,
+            hang,
+          ),
+          scaleY: liftThenDown(
+            liftSpring,
+            this.animator.get('scaleY'),
+            peak.scaleY as number,
+            velocityY,
+            hang,
+          ),
+        },
+        {at},
+      ),
+    );
   }
 
   /**
-   * Reduce Motion, as UIKit does it: no travel. The surface jumps to the
-   * destination and fades and scales in place there, its opacity from 0 and
-   * its scale from `reducedMotion.scaleFrom` (centered), on the clock and
-   * curve the control's theme sets (UIKit's 0.2 s block by default).
+   * Reduce Motion, as UIKit does it: no travel. The lens jumps to `segment`
+   * and fades and scales in place there, its opacity from 0 and its scale
+   * from `reducedMotion.scaleFrom` (about its center), on the clock and curve
+   * the control's theme sets (UIKit's 0.2 s block by default).
    */
-  private fadeIn(proxy: HTMLElement, destination: HTMLElement, to: Box): void {
-    const current = this.slide;
-    if (current != null && current.destination !== destination) {
-      showSurface(current.destination);
+  private fadeInAt(segment: HTMLElement, box: Box, paint: HTMLElement): void {
+    const proxy = this.proxy;
+    if (proxy == null) {
+      return;
     }
-    copySurface(destination, proxy);
-    hideSurface(destination);
-    proxy.style.top = `${to.y}px`;
-    proxy.style.width = `${to.width}px`;
-    proxy.style.height = `${to.height}px`;
-    proxy.style.visibility = 'visible';
-    // Scaled about its center, as UIKit's lens is, so it grows in place.
-    proxy.style.transformOrigin = '50% 50%';
+    this.isLifted = false;
+    this.carry(segment, box, box, paint);
+    this.velocity = {};
     const {reducedMotion} = segmentedControl;
     const fadeMs = resolveMotion(proxy, reducedMotion, 'fadeMs');
     const curve = resolveMotion(proxy, reducedMotion.curve);
     const from = reducedMotion.scaleFrom;
-    this.animator.set({x: to.x, scaleX: from, scaleY: from, opacity: 0});
-    const handle = this.animator.play(
-      {
-        opacity: timedCurve(0, 1, fadeMs, curve),
-        scaleX: timedCurve(from, 1, fadeMs, curve),
-        scaleY: timedCurve(from, 1, fadeMs, curve),
-      },
-      // This is the Reduce Motion substitution itself: play it as given.
-      {reducedMotion: 'keep'},
+    this.animator.set({x: 0, scaleX: from, scaleY: from, opacity: 0});
+    this.track(
+      this.animator.play(
+        {
+          opacity: timedCurve(0, 1, fadeMs, curve),
+          scaleX: timedCurve(from, 1, fadeMs, curve),
+          scaleY: timedCurve(from, 1, fadeMs, curve),
+        },
+        // This is the Reduce Motion substitution itself: play it as given.
+        {reducedMotion: 'keep'},
+      ),
     );
-    this.carry(handle, destination, to.width);
   }
 
-  /** The proxy now carries `destination`'s surface until `handle` lands. */
-  private carry(
-    handle: MotionHandle,
-    destination: HTMLElement,
-    width: number,
-  ): void {
-    const slide: Slide = {handle, destination, width};
-    this.slide = slide;
-    void handle.finished.then(finished => {
-      if (finished && this.slide === slide) {
+  private unlift(): void {
+    this.isLifted = false;
+    if (this.carried == null) {
+      return;
+    }
+    this.track(
+      this.animator.animate(
+        {scaleX: 1, scaleY: 1},
+        this.springFrom({scaleX: 1, scaleY: 1}, 'lift'),
+        {reducedMotion: 'instant'},
+      ),
+    );
+  }
+
+  /** Waits for `handle`; the surface goes back when nothing is left. */
+  private track(handle: MotionHandle): void {
+    this.running.add(handle);
+    void handle.finished.then(() => {
+      this.running.delete(handle);
+      if (this.running.size === 0 && !this.isLifted && this.touch == null) {
         this.settle();
       }
     });
@@ -558,7 +986,7 @@ export class SegmentedSelectionMotion {
         // Mid-slide, leave the twin at opacity 0 (it is invisible and no
         // wider than the title) until the hand-back: no style or layout work
         // while the surface is still travelling.
-        if (this.slide != null) {
+        if (this.carried != null) {
           fade.done = true;
         } else {
           this.endFade(fade);
@@ -586,6 +1014,8 @@ export class SegmentedSelectionMotion {
 export interface UseSegmentedSelectionMotionResult {
   /** Callback ref for the proxy that carries the selected surface; stable. */
   readonly thumbRef: (element: HTMLElement | null) => void;
+  /** The controller, for the touch tracking that drives the lens. */
+  readonly motion: SegmentedSelectionMotion;
 }
 
 /**
@@ -633,5 +1063,5 @@ export function useSegmentedSelectionMotion(
 
   useEffect(() => () => motion.stop(), [motion]);
 
-  return {thumbRef: motion.attachProxy};
+  return {thumbRef: motion.attachProxy, motion};
 }

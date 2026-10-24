@@ -1026,7 +1026,8 @@ describe('selection motion', () => {
       // Web Animations, so the animator writes the landing value inline).
       expect(proxy.style.visibility).toBe('visible');
       expect(proxy.style.width).toBe('96px');
-      expect(proxy.style.translate).toMatch(/^102px/);
+      // The landing: centered on the destination at its own size.
+      expect(proxy.style.translate).toMatch(/^0px/);
     } finally {
       rects.mockRestore();
       spy.mockRestore();

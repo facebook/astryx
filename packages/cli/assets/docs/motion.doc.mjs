@@ -210,6 +210,12 @@ const calmTheme = defineTheme({
               '200ms',
             ],
             [
+              'segmentedControl.liftSpring',
+              '--motion-segmented-control-lift-spring',
+              'spring',
+              '0.25s 0',
+            ],
+            [
               'segmentedControl.reducedMotion.curve',
               '--motion-segmented-control-reduced-motion-curve',
               'curve',
@@ -226,6 +232,18 @@ const calmTheme = defineTheme({
               '--motion-segmented-control-selection-spring',
               'spring',
               '0.4s 0.15',
+            ],
+            [
+              'segmentedControl.tapLiftHangMs',
+              '--motion-segmented-control-tap-lift-hang-ms',
+              'duration',
+              '230ms',
+            ],
+            [
+              'segmentedControl.trackingSpring',
+              '--motion-segmented-control-tracking-spring',
+              'spring',
+              '0.15s 0.14',
             ],
             [
               'springs.actionSheetDismiss',

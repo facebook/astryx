@@ -6,7 +6,7 @@
  * @file SegmentedControl.tsx
  * @input Uses React, StyleX, SegmentedControlContext, useListFocus,
  *   useKeyboardHint, useMotionPresentation (the shared touch presentation),
- *   useSegmentedSelectionMotion
+ *   useSegmentedSelectionMotion, useSegmentedTouchTracking
  * @output Exports SegmentedControl component and SegmentedControlProps type
  * @position Container wrapper; provides context to SegmentedControlItem
  *   children. In the touch presentation it also renders the proxy that carries
@@ -18,6 +18,7 @@
  * - /packages/core/src/SegmentedControl/index.ts
  * - /packages/core/src/SegmentedControl/SegmentedControl.test.tsx
  * - /packages/core/src/SegmentedControl/useSegmentedSelectionMotion.ts
+ * - /packages/core/src/SegmentedControl/useSegmentedTouchTracking.ts
  * - /packages/cli/assets/templates/blocks/components/SegmentedControl/ (showcase blocks)
  */
 
@@ -40,6 +41,7 @@ import {themeProps} from '../utils/themeProps';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useMotionPresentation} from '../utils/touchPresentation';
 import {useSegmentedSelectionMotion} from './useSegmentedSelectionMotion';
+import {useSegmentedTouchTracking} from './useSegmentedTouchTracking';
 
 export interface SegmentedControlProps extends Omit<
   BaseProps<HTMLDivElement>,
@@ -155,7 +157,8 @@ const styles = stylex.create({
     // eslint-disable-next-line @astryx/no-physical-properties -- intentional: the proxy is placed by a physical translate measured from client rects (useSegmentedSelectionMotion), in both directions; a logical anchor would start it at the right edge under RTL.
     left: 0,
     boxSizing: 'border-box',
-    transformOrigin: '0 0',
+    // Scales around its center: the lens's position and size are separate.
+    transformOrigin: '50% 50%',
     pointerEvents: 'none',
     visibility: 'hidden',
     // It carries a copy of an already resolved surface, forced colors
@@ -215,10 +218,22 @@ export function SegmentedControl({
   // titles cross-fade), the theme's transitions under a mouse.
   const isTouchPresentation = useMotionPresentation() === 'uikit';
   const trackRef = useRef<HTMLDivElement | null>(null);
-  const {thumbRef} = useSegmentedSelectionMotion(
+  const {thumbRef, motion} = useSegmentedSelectionMotion(
     trackRef,
     value,
     isTouchPresentation,
+  );
+  // Under a finger the control tracks the touch itself and commits the
+  // segment nearest the finger at the lift.
+  useSegmentedTouchTracking(
+    trackRef,
+    motion,
+    isTouchPresentation && !isDisabled,
+    next => {
+      if (next !== value) {
+        onChange(next);
+      }
+    },
   );
 
   // Disabled-reason tooltip. Applies to the whole-group disabled state. Disabled
