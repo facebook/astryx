@@ -4,7 +4,8 @@
  * @file pressFeedback.ts
  * @input The press state machine (pressGesture.ts) and the document's pointer,
  *   scroll and visibility events
- * @output Exports PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE, pressableProps and
+ * @output Exports PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE, pressableProps, the
+ *   list row's press profile (CELL_PRESS_PROFILE, cellPressableProps) and
  *   installPressFeedback
  * @position The DOM half of the touch press model: one delegated controller
  *   per document that writes `data-astryx-press` on the nearest pressable surface.
@@ -60,6 +61,21 @@ export const pressableProps: {readonly [PRESSABLE_ATTRIBUTE]: ''} = {
 };
 
 /**
+ * The press profile a list row carries in its {@link PRESSABLE_ATTRIBUTE}
+ * marker: rows paint the press on the cell layer (interactionOverlay.stylex.ts
+ * `cell`) and release on the cell's clock; a selection hold finds rows by it.
+ */
+export const CELL_PRESS_PROFILE = 'cell';
+
+/**
+ * Spread on a list row's pressable element after the press feedback hook's
+ * props: the marker carries the cell profile.
+ */
+export const cellPressableProps: {
+  readonly [PRESSABLE_ATTRIBUTE]: typeof CELL_PRESS_PROFILE;
+} = {[PRESSABLE_ATTRIBUTE]: CELL_PRESS_PROFILE};
+
+/**
  * How long after a touch a scroll can still be that finger's momentum.
  *
  * iOS momentum runs for a second or two after the lift; past this window a
@@ -107,7 +123,20 @@ const TIMER_EVENT = {
   onset: 'onset',
 } as const;
 
+/**
+ * A press state the controller did not write is its owner's: a selection
+ * hold's `held` (selectionHold.ts) keeps a row selected through a navigation
+ * push, so neither a new press nor a release's end overwrites or clears it.
+ */
+function ownedElsewhere(element: HTMLElement): boolean {
+  const value = element.getAttribute(PRESSED_ATTRIBUTE);
+  return value != null && value !== 'on' && value !== 'fading';
+}
+
 function paintElement(element: HTMLElement, paint: PressPaint): void {
+  if (ownedElsewhere(element)) {
+    return;
+  }
   if (paint === 'none') {
     element.removeAttribute(PRESSED_ATTRIBUTE);
     return;
@@ -241,7 +270,9 @@ function finish(): void {
     return;
   }
   clearTimer();
-  live.element.removeAttribute(PRESSED_ATTRIBUTE);
+  if (!ownedElsewhere(live.element)) {
+    live.element.removeAttribute(PRESSED_ATTRIBUTE);
+  }
   live = null;
 }
 

@@ -4,15 +4,22 @@
  * @file list.ts
  * @input `timing` (the press clocks the touch press model measured)
  * @output Exports `list`: the clocks and curves of UITableView and
- *   UICollectionView list cells (the cell highlight's release)
+ *   UICollectionView list cells (the cell highlight's release, the selected
+ *   cell's deselect inside a navigation pop)
  * @position The list domain of the UIKit constants table (motion/uikit);
  *   read by utils/interactionOverlay.stylex.ts (the row press layer)
- *   through its build-time mirror
+ *   through its build-time mirror, and by utils/selectionHold.ts (a row
+ *   kept selected through a navigation push)
  *
  * Every leaf carries one or more `@source`; GUESS values also carry the
  * `@measure` task that will confirm or replace them (MEASUREMENTS.md, M-LI
  * rows). uikit.test.ts enforces both. Durations are in ms; curves are
  * cubic-bézier control points [x1, y1, x2, y2].
+ *
+ * The deselect's clock and curve are motion roles a theme may retune
+ * (motion/roles.ts: `list.deselect.navigationPopMs`,
+ * `list.deselect.navigationPopCurve`); the highlight's release is not (see
+ * the registration below).
  *
  * SYNC: When modified, update:
  * - /packages/core/src/motion/MEASUREMENTS.md
@@ -20,6 +27,7 @@
  *   mirrors the cell release; interactionOverlay.cell.test.ts checks it)
  */
 
+import {registerMotionTable} from '../roles';
 import {timing} from './timing';
 
 export const list = {
@@ -45,4 +53,41 @@ export const list = {
      */
     releaseCurve: [0, 0, 0.2, 1],
   },
+  deselect: {
+    /**
+     * A row selected for a push is deselected when the pop starts (the back
+     * button, or the edge swipe beginning): its background and its
+     * separators fade over this long, linearly, inside the navigation
+     * transition, so an interactive pop scrubs them with its progress.
+     * List rows follow the background only: their dividers are borders,
+     * which have no compositor-only fade, so they come back in the
+     * deselect's first frame (List/ListItem.tsx) instead of fading in.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 sim iPhone
+     *   17 Pro, cell hooks + CAAnimation dump (setSelected:NO animated:YES at
+     *   the pop's start; backgroundColor and separator opacity
+     *   CABasicAnimations, 0.35 s linear, inside the transition), Oct 23 2026
+     */
+    navigationPopMs: 350,
+    /**
+     * The deselect's pacing inside the pop: linear in the transition's time
+     * (cubic-bézier (0, 0, 1, 1)).
+     * @source measured: UIKit lab (injected host app), iOS 26.2 sim iPhone
+     *   17 Pro, CAAnimation dump (linear timing function), Oct 23 2026
+     */
+    navigationPopCurve: [0, 0, 1, 1],
+  },
 } as const;
+
+/**
+ * Registers the list table's motion roles: each spring, duration and curve
+ * above is a role a theme may retune (motion/roles.ts), but for the cell
+ * highlight's release, whose clock is the touch press model's
+ * (`timing.press.highlightOutMs`, a role of its own) and which the press
+ * layer reads at build time (utils/interactionOverlay.stylex.ts
+ * `cellPressConsts`), where no theme variable reaches it. Idempotent; the
+ * list's touch modules call it before their first motion, so a page that
+ * never animates a list ships no list roles.
+ */
+export function registerListTable(): void {
+  registerMotionTable('list', list, {exclude: ['highlight']});
+}

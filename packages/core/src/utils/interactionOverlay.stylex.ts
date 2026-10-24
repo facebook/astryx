@@ -80,7 +80,8 @@
  * clock), hooks/usePressFeedback.doc.mjs, the components that paint the touch
  * press off an ancestor scope or a pseudo-element (Switch, Tab,
  * CheckboxInput, RadioListItem, ClickableCard, SelectableCard, Thumbnail)
- * and scripts/build-css.test.mjs.
+ * selectionHold.ts (the held state on the row layer) and
+ * scripts/build-css.test.mjs.
  */
 
 import * as stylex from '@stylexjs/stylex';
@@ -142,6 +143,11 @@ const COARSE = '@media (pointer: coarse)';
 const PRESSED_ON = '[data-astryx-press="on"]';
 /** Written by the touch press controller for the release's exit. */
 const PRESSED_FADING = '[data-astryx-press="fading"]';
+/**
+ * Written by a selection hold (selectionHold.ts) on the row it keeps
+ * selected through a navigation push; the controller never overwrites it.
+ */
+const PRESSED_HELD = '[data-astryx-press="held"]';
 
 const PRESS_ALPHA = pressVars['--astryx-press-alpha'];
 
@@ -377,7 +383,9 @@ export const interactionOverlayStyles = stylex.create({
    * the layer above the row's background (a selected fill) and below its
    * content. A row's own `::before` from `xstyle` merges with the layer
    * property by property and is hidden at rest: decorate with `::after` or a
-   * child.
+   * child. A selection hold (selectionHold.ts) writes `held` on the row it
+   * keeps selected through a navigation push: the layer shows at full
+   * strength, and the hold's own Web Animations move it from there.
    *
    * Under a finger only (a coarse primary pointer): a fine pointer keeps the
    * variant exactly, with no layer, no stacking context and its own touch
@@ -404,10 +412,12 @@ export const interactionOverlayStyles = stylex.create({
       borderRadius: 'inherit',
       pointerEvents: 'none',
       backgroundColor: colorVars['--color-overlay-pressed'],
-      // On at once while the press is believed; nothing transitions it.
+      // On at once while the press is believed, and while a selection hold
+      // keeps the row selected (its own animations move it from there);
+      // nothing transitions it.
       opacity: {
         default: 0,
-        [ENABLED]: {default: null, [PRESSED_ON]: 1},
+        [ENABLED]: {default: null, [PRESSED_ON]: 1, [PRESSED_HELD]: 1},
       },
       animationName: {
         default: null,
@@ -419,6 +429,11 @@ export const interactionOverlayStyles = stylex.create({
         [PRESSED_FADING]: cellPressConsts.cellReleaseEase,
       },
       animationFillMode: {default: null, [PRESSED_FADING]: 'both'},
+      // The motion foundation's animator promotes the layer it animates (a
+      // held row's deselect) through this variable on the row, so the
+      // animation has its own compositing layer: iOS Safari keeps a script
+      // animation running through a busy main thread only on a layer.
+      willChange: 'var(--astryx-motion-will-change-before, auto)',
     },
   },
 });

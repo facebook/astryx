@@ -29,7 +29,7 @@ export {
   type HapticFeedbackKind,
   type SourcedGestureConstant,
 } from './gestures';
-export {list} from './list';
+export {list, registerListTable} from './list';
 export {navigation, registerNavigationTable} from './navigation';
 export {registerScrollTable, scroll} from './scroll';
 export {registerSpringsTable, springs} from './springs';
