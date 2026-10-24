@@ -34,3 +34,24 @@ import Testing
   #expect(Theme.default.light.font.familyBody.first == "-apple-system")
   #expect(Theme.default.light.font.familyHeading.isEmpty == false)
 }
+
+// Theme generator spec D4 and theme environment spec E1: with Increase
+// Contrast on, borders use the emphasized border color.
+
+@Test func increaseContrastEmphasizesBorders() {
+  for scheme in [ColorScheme.light, .dark] {
+    let mode = scheme == .dark ? Theme.default.dark : Theme.default.light
+    let standard = astryxTokens(.default, scheme: scheme, contrast: .standard)
+    let increased = astryxTokens(.default, scheme: scheme, contrast: .increased)
+    #expect(standard.color.border == mode.color.border)
+    #expect(increased.color.border == mode.color.borderEmphasized)
+    #expect(increased.color.textPrimary == mode.color.textPrimary)
+  }
+}
+
+@Test func theStyleCardsDrawWithFollowsContrast() {
+  var environment = EnvironmentValues()
+  #expect(environment.astryx.color("color-border") == Theme.default.light.color.border)
+  environment.astryxTheme = .neutral
+  #expect(environment.astryx.color("color-border") == Theme.neutral.light.color.border)
+}
