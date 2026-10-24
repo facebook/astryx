@@ -187,7 +187,13 @@ not targeted.
   non-passive listener on its element. A `touchmove` of a touch no recognizer
   owns MUST NOT be cancelled. A recognizer that competes with native scrolling
   MUST decide within 10 px of travel, before the browser commits to the
-  scroll.
+  scroll. Only an element with a recognizer that must claim mid-gesture
+  registers that blocking listener; an element whose recognizers decide only
+  at the lift keeps its listeners passive. Known limit: a native scroll that
+  starts on an element with a blocking listener waits for a free main thread
+  in iOS Safari and Chromium. That is never worse than UIKit, whose scrolling
+  stops on a busy main thread, and a passive listener, or one added at
+  `touchstart`, would hand diagonal drags to the scroll.
 - **FR20 — The browser can take a touch.** `pointercancel`, an uncancelable
   `touchmove`, or a native scroll under the touch MUST count as the browser
   taking the touch: possible recognizers that share it fail, active ones are
