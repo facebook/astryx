@@ -306,4 +306,55 @@ describe('Theme', () => {
     expect(injected).toContain('@layer reset, astryx-base, astryx-theme;');
     expect(injected).not.toContain(':root {');
   });
+  it('writes no text size category outside iOS WebKit', () => {
+    render(
+      <Theme theme={testTheme}>
+        <span>web</span>
+      </Theme>,
+    );
+    expect(document.documentElement.hasAttribute('data-astryx-text-size')).toBe(
+      false,
+    );
+    expect(document.querySelector('[data-astryx-text-size-probe]')).toBeNull();
+  });
+
+  it('keeps <html data-astryx-text-size> on the iOS reader text size, from the root Theme only', () => {
+    vi.stubGlobal('CSS', {supports: vi.fn(() => true)});
+    const real = window.getComputedStyle.bind(window);
+    const computed = vi
+      .spyOn(window, 'getComputedStyle')
+      .mockImplementation(element =>
+        element instanceof HTMLElement &&
+        element.hasAttribute('data-astryx-text-size-probe')
+          ? ({fontSize: '33px'} as CSSStyleDeclaration)
+          : real(element),
+      );
+    try {
+      const {unmount} = render(
+        <Theme theme={testTheme}>
+          <Theme theme={altTheme}>
+            <span>nested</span>
+          </Theme>
+        </Theme>,
+      );
+      // Body at 33px is the second accessibility size.
+      expect(
+        document.documentElement.getAttribute('data-astryx-text-size'),
+      ).toBe('ax2');
+      expect(
+        document.querySelectorAll('[data-astryx-text-size-probe]'),
+      ).toHaveLength(1);
+
+      unmount();
+      expect(
+        document.documentElement.hasAttribute('data-astryx-text-size'),
+      ).toBe(false);
+      expect(
+        document.querySelector('[data-astryx-text-size-probe]'),
+      ).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+      computed.mockRestore();
+    }
+  });
 });

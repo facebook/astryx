@@ -13,6 +13,9 @@
  * comes from here, with its source next to it. Components never carry their
  * own numbers.
  *
+ * The text side of the table is `typography`: each UIKit text style's point
+ * size at every Dynamic Type category, read by the theme layer.
+ *
  * SYNC: When a domain file is added, re-export it here and list it in
  * /packages/core/src/motion/README.md.
  */
@@ -32,3 +35,4 @@ export {navigation} from './navigation';
 export {scroll} from './scroll';
 export {springs} from './springs';
 export {timing} from './timing';
+export {typography} from './typography';

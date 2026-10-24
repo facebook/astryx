@@ -2,7 +2,8 @@
 
 /**
  * @file `astryx docs typography/type-scale`: line height, semantic type scale,
- * display text, headings and text components, and custom type scales.
+ * display text, headings and text components, custom type scales, and the
+ * reader's text size on iOS.
  */
 
 /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
@@ -14,13 +15,15 @@ export const docs = {
   placement: {parent: 'namespace:typography', slot: 'guides', order: 20},
   category: 'foundations',
   description:
-    'Line height, semantic type scale tokens, display text, Heading and Text components, and custom type scales via defineTheme.',
+    'Line height, semantic type scale tokens, display text, Heading and Text components, custom type scales via defineTheme, and following the reader\'s text size on iOS.',
   keywords: [
     'line height',
     'leading',
     'defineTheme',
     'base',
     'ratio',
+    'dynamic type',
+    'text size',
   ],
 
   sections: [
@@ -138,6 +141,34 @@ const denseTheme = defineTheme({
   name: 'dense',
   typography: {
     scale: { base: 12, ratio: 1.125 },          // compact / data-dense UI
+  },
+});`,
+        },
+      ],
+    },
+    {
+      id: 'dynamic-type',
+      title: "Following the reader's text size on iOS",
+      content: [
+        {
+          type: 'prose',
+          text: "On iPhone and iPad, readers pick a text size in Settings (Display & Text Size, then Larger Text), and native apps grow or shrink their text with it. Set `typography.dynamicType: true` and Safari on iOS does the same for the theme: every font size follows the reader's choice on the curve of the iOS text style it plays, so body text scales like Body, `heading-1` like Title 1 and display text like Large Title. At the default size every font size is the theme's own. Spacing, radius and the root font size never change, line heights keep their ratios, and other browsers are unaffected.",
+        },
+        {
+          type: 'prose',
+          text: "The root `Theme` writes the reader's category on `<html data-astryx-text-size>` on iOS (`xs`, `s`, `m`, `l` for the default, `xl`, `xxl`, `xxxl`, then `ax1` to `ax5` for the accessibility sizes), whether or not the theme follows it, so a layout can react to the accessibility sizes with `[data-astryx-text-size^=\"ax\"]`. Fixed-height controls such as `Button` and the text inputs keep their height, so their labels can overflow at the accessibility sizes.",
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: "Following the reader's text size",
+          code: `import {defineTheme} from '@astryxdesign/core/theme';
+
+const readableTheme = defineTheme({
+  name: 'readable',
+  typography: {
+    scale: { base: 16, ratio: 1.2 },
+    dynamicType: true,                          // iOS text size
   },
 });`,
         },

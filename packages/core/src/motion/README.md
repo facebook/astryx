@@ -16,6 +16,7 @@ point; components import it by path.
 | `uikit/timing.ts`     | Non-spring clocks and curves: press highlight, Core Animation's named curves, keyboard, Reduced Motion cross-fade.      |
 | `uikit/navigation.ts` | UINavigationController: push velocity, parallax, dimming, transition clock, interactive pop finish rule.                |
 | `uikit/gestures.ts`   | Gesture recognizer thresholds, the velocity filter and the haptic stand-ins, as typed entries the gesture system reads. |
+| `uikit/typography.ts` | Dynamic Type: each UIKit text style's point size at every content size category, xSmall to AX5.                         |
 | `MEASUREMENTS.md`     | The UIKit reference captures each unconfirmed value still needs.                                                        |
 
 Component-specific values (a sheet's detents, a switch's geometry, a context

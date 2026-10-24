@@ -73,6 +73,19 @@ export interface TypographyConfig {
   heading?: TypographyRole;
   /** Code/monospace font configuration */
   code?: TypographyRole;
+  /**
+   * Follow the reader's text size on iOS (Dynamic Type). When true, Safari on
+   * iPhone and iPad scales the theme's font sizes with the size the reader
+   * picked in Settings, each step on the curve of the iOS text style it plays
+   * (body text like Body, h1 like Title 1, display text like Large Title).
+   * At the default size every font size is the theme's own; spacing, radius
+   * and the root font size never change. Other browsers are unaffected.
+   *
+   * Astryx's fixed-height controls (Button, the text inputs) keep their
+   * height, so at the accessibility sizes their labels can overflow.
+   * @default false
+   */
+  dynamicType?: boolean;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
