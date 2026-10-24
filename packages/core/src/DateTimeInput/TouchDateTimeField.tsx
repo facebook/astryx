@@ -99,6 +99,7 @@ import {MonthYearWheels} from '../DateInput/MonthYearWheels';
 import {
   dateInputTouchGeometry,
   dateInputTouchSizes,
+  monthYearToggleMotion,
 } from '../DateInput/tokens.stylex';
 import {
   DEFAULT_MONTH_REACH,
@@ -311,6 +312,9 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-0-5'],
     marginInlineStart: 'auto',
+    transitionProperty: 'opacity, visibility',
+    transitionDuration: monthYearToggleMotion.duration,
+    transitionTimingFunction: monthYearToggleMotion.curve,
   },
   touchHeaderActionsHidden: {
     visibility: 'hidden',
@@ -344,6 +348,9 @@ const styles = stylex.create({
     inlineSize: '100%',
     minInlineSize: 0,
   },
+  // UIDatePicker's month/year toggle: the calendar fades out as the wheels
+  // fade in, at once, 0.25 s ease-in-ease-out
+  // (motion/uikit/datePicker.ts `calendar.monthYearToggle`).
   touchDateSurface: {
     gridArea: '1 / 1',
     display: 'flex',
@@ -351,6 +358,23 @@ const styles = stylex.create({
     minInlineSize: 0,
     flexDirection: 'column',
     gap: spacingVars['--spacing-2'],
+    transitionProperty: 'opacity, visibility',
+    transitionDuration: monthYearToggleMotion.duration,
+    transitionTimingFunction: monthYearToggleMotion.curve,
+  },
+  touchTitleChevronMirror: {
+    display: 'inline-flex',
+    flexShrink: 0,
+  },
+  touchTitleChevron: {
+    display: 'inline-flex',
+    flexShrink: 0,
+    transitionProperty: 'transform',
+    transitionDuration: monthYearToggleMotion.duration,
+    transitionTimingFunction: monthYearToggleMotion.curve,
+  },
+  touchTitleChevronOpen: {
+    transform: `rotate(${monthYearToggleMotion.chevronTurn})`,
   },
   touchDateSurfaceHidden: {
     visibility: 'hidden',
@@ -911,7 +935,21 @@ export function TouchDateTimeField({
               <span {...stylex.props(styles.touchTitleText)}>
                 {monthYearLabel}
               </span>
-              <Icon icon="chevronDown" size="sm" color="secondary" />
+              <span
+                {...stylex.props(
+                  styles.touchTitleChevronMirror,
+                  rtlStyles.mirror,
+                )}>
+                <Icon
+                  icon="chevronRight"
+                  size="sm"
+                  color="secondary"
+                  xstyle={[
+                    styles.touchTitleChevron,
+                    isWheelOpen && styles.touchTitleChevronOpen,
+                  ]}
+                />
+              </span>
             </button>
             <span
               inert={isWheelOpen ? true : undefined}

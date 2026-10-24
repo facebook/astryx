@@ -60,7 +60,6 @@ import {
   radiusVars,
   fontWeightVars,
   typeScaleVars,
-  durationVars,
   borderVars,
 } from '../theme/tokens.stylex';
 import {focusOutlineStyles} from '../utils';
@@ -176,8 +175,9 @@ const styles = stylex.create({
     borderStyle: 'solid',
     borderColor: 'transparent',
     backgroundColor: 'transparent',
-    transitionProperty: 'background-color, color, border-color',
-    transitionDuration: durationVars['--duration-fast'],
+    // No transition: a tapped day takes its style in the frame of the lift
+    // and the old one loses it, as UIDatePicker's do
+    // (datePicker.calendar.selection.tapAnimates).
   },
   puckHoverable: {
     // Two guards, for two different failure modes.

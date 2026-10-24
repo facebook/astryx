@@ -42,7 +42,7 @@ import {useState} from 'react';
 import type {ISODateString} from '../utils';
 import {InputGroup} from '../InputGroup';
 import {InternationalizationProvider} from '../i18n';
-import {picker} from '../motion/uikit';
+import {datePicker, picker, timing} from '../motion/uikit';
 import {DateInput} from './DateInput';
 import {
   toMonthIndex,
@@ -2199,7 +2199,13 @@ describe('DateInput — scroll CSS (definition-level)', () => {
    * The title chevron is the exception and keeps the token: it rotates, and
    * rotation is travel.
    */
-  it('fades linearly, and eases only the thing that travels', () => {
+  /**
+   * UIDatePicker's month/year toggle: every fade and the chevron's quarter
+   * turn on `UIView.animate`'s default ease-in-ease-out, 0.25 s
+   * (motion/uikit/datePicker.ts `calendar.monthYearToggle`). StyleX inlines
+   * only literals, so the tokens repeat the table; they must stay it.
+   */
+  it('fades and turns on UIDatePicker\u2019s toggle clock, from the table', () => {
     const source = read('TouchDateField.tsx');
     const styles = source.slice(
       source.indexOf('const styles = stylex.create('),
@@ -2209,25 +2215,25 @@ describe('DateInput — scroll CSS (definition-level)', () => {
       styles.indexOf('  titleChevronOpen: {'),
     );
     expect(chevron).toContain("transitionProperty: 'transform'");
-    expect(chevron).toContain(
-      "transitionTimingFunction: easeVars['--ease-standard']",
+    expect(chevron).toContain('transitionTimingFunction: SWAP_CURVE');
+    // The arrows, the weekday row, Reset, the layer above and the chevron.
+    expect(styles.match(/transitionTimingFunction: SWAP_CURVE/g)).toHaveLength(
+      5,
     );
-    // The chevron is the only eased transition; every fade is linear.
-    expect(
-      styles.match(/transitionTimingFunction: easeVars\['--ease-standard'\]/g),
-    ).toHaveLength(1);
-    expect(styles.match(/transitionTimingFunction: 'linear'/g)).toHaveLength(4);
+    expect(styles).not.toContain("transitionTimingFunction: 'linear'");
+    const tokens = read('tokens.stylex.ts');
+    const toggle = datePicker.calendar.monthYearToggle;
+    expect(tokens).toContain(`duration: '${toggle.fadeMs}ms'`);
+    expect(tokens).toContain(
+      `curve: 'cubic-bezier(${timing.curves.easeInOut.join(', ')})'`,
+    );
+    expect(tokens).toContain(`chevronTurn: '${toggle.chevronTurnDegrees}deg'`);
   });
 
   /**
    * Everything in the swap runs for the same time, so it reads as one change
-   * rather than several. The chevron included — it used to run
-   * `--duration-medium` against a 220ms swap and was still turning well after
-   * the wheels had settled.
-   *
-   * A token rather than a literal, so a consumer's motion scale carries: the
-   * Storybook theme resolves `--duration-fast` to 125ms, not the default
-   * 175ms, and the swap follows it without knowing.
+   * rather than several, the chevron included: UIKit's 0.25 s from the UIKit
+   * constants table (physics stays the table's, not a theme's motion scale).
    */
   it('runs the whole swap on one duration', () => {
     const source = read('TouchDateField.tsx');
@@ -2240,8 +2246,47 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     // And no leftover hand-rolled timing beside them.
     expect(styles).not.toContain('PANEL_FADE_MS');
     expect(source).toContain(
-      "const SWAP_DURATION = durationVars['--duration-fast']",
+      'const SWAP_DURATION = monthYearToggleMotion.duration',
     );
+  });
+
+  it('selects a tapped day at once, as UIDatePicker does', () => {
+    // datePicker.calendar.selection.tapAnimates: no animation on a tap.
+    const puck = declarations(read('MonthScroller.tsx'), 'puck');
+    expect(puck.some(line => line.startsWith('transition'))).toBe(false);
+  });
+
+  it('cross-fades the DateTimeInput sheet\u2019s month/year toggle on the same clock', () => {
+    const source = read('../DateTimeInput/TouchDateTimeField.tsx');
+    for (const object of [
+      'touchDateSurface',
+      'touchHeaderActions',
+      'touchTitleChevron',
+    ]) {
+      const lines = declarations(source, object);
+      expect(lines).toContain(
+        'transitionDuration: monthYearToggleMotion.duration',
+      );
+      expect(lines).toContain(
+        'transitionTimingFunction: monthYearToggleMotion.curve',
+      );
+    }
+    expect(declarations(source, 'touchTitleChevronOpen')).toContain(
+      'transform: `rotate(${monthYearToggleMotion.chevronTurn})`',
+    );
+  });
+
+  it('keeps the toggle\u2019s fades and turn under Reduced Motion: neither travels', () => {
+    for (const file of [
+      'TouchDateField.tsx',
+      '../DateTimeInput/TouchDateTimeField.tsx',
+    ]) {
+      const source = read(file);
+      const styles = source.slice(
+        source.indexOf('const styles = stylex.create('),
+      );
+      expect(styles).not.toContain('prefers-reduced-motion');
+    }
   });
 
   it('keeps the virtual keyboard down on the touch field', () => {
