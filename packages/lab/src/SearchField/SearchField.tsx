@@ -4,10 +4,10 @@
 
 /**
  * @file SearchField.tsx
- * @input React, StyleX, core's theme tokens, Icon, the touch presentation
- *   resolver, the compositor animator and the UIKit search table
- *   (`@astryxdesign/core/motion/experimental`), searchFieldModel.ts for the
- *   math
+ * @input React, StyleX, core's theme tokens, Icon, the UIKit search table
+ *   (`@astryxdesign/core/motion/experimental`) and its touch layer,
+ *   SearchFieldTouch.ts (the animator, the touch resolver and
+ *   searchFieldModel.ts's math)
  * @output Exports SearchField (the phone search field of iOS 26's
  *   UISearchController: a field that activates into its host's bar with a
  *   glass close button) and the SearchFieldHandle type
@@ -57,14 +57,14 @@
  * `label`; the clear and close buttons are named by `clearLabel` and
  * `cancelLabel`. The close button is in the tab order only while active.
  *
- * SYNC: When modified, update SearchField.doc.mjs, SearchField.test.tsx,
+ * SYNC: When modified, update SearchFieldTouch.ts, SearchField.doc.mjs,
+ * SearchField.test.tsx,
  * searchFieldModel.ts and __tests__/SearchField.interaction.browser.spec.ts.
  */
 
 import {
   useCallback,
   useImperativeHandle,
-  useLayoutEffect,
   useRef,
   useState,
   type ChangeEvent,
@@ -77,14 +77,7 @@ import type {BaseProps} from '@astryxdesign/core';
 import {Icon} from '@astryxdesign/core/Icon';
 import {useMergedRefs} from '@astryxdesign/core/hooks';
 import {useTranslator} from '@astryxdesign/core/i18n';
-import {useTouchPresentation} from '@astryxdesign/core/gestures/experimental';
-import {
-  uikit,
-  useAnimator,
-  type Animator,
-  type MotionCurve,
-  type MotionHandle,
-} from '@astryxdesign/core/motion/experimental';
+import {uikit} from '@astryxdesign/core/motion/experimental';
 import {
   colorVars,
   radiusVars,
@@ -92,16 +85,7 @@ import {
   textSizeVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {mergeProps, themeProps} from '@astryxdesign/core/utils';
-import {onPresentedFrame} from '../presentedFrame';
-import {
-  activationTiming,
-  easedCurve,
-  heldCurve,
-  poseFor,
-  remainingFraction,
-  type SearchFieldGeometry,
-  type SearchFieldPose,
-} from './searchFieldModel';
+import {useSearchFieldMotion} from './SearchFieldTouch';
 
 const {search} = uikit;
 
@@ -384,16 +368,10 @@ export function SearchField({
   const resolvedCancelLabel = cancelLabel ?? t('@astryx.searchField.cancel');
   const resolvedClearLabel = clearLabel ?? t('@astryx.searchField.clear');
   const fieldRef = useRef<HTMLDivElement>(null);
-  const rootAnimator = useAnimator();
-  const middleAnimator = useAnimator();
-  const endAnimator = useAnimator();
-  const closeAnimator = useAnimator();
-  // UIKit's activation under a finger (a coarse primary pointer, on every
-  // touch device); under a mouse or a trackpad the parts take their places
-  // at once. Reduced motion is the animator's: under a finger it turns the
-  // travel into a cross-fade (`design:reduced-motion` DR2).
-  const {isTouch} = useTouchPresentation();
-  const animates = useCallback(() => isTouch, [isTouch]);
+  // The touch layer (SearchFieldTouch.ts): the parts' poses, and UIKit's
+  // activation under a finger.
+  const motion = useSearchFieldMotion({fieldRef, isActive, lift});
+  const fieldHeight = search.stacked.fieldHeight;
 
   const setValue = useCallback(
     (next: string) => {
@@ -426,173 +404,6 @@ export function SearchField({
     }),
     [],
   );
-
-  // ---------------------------------------------------------------------------
-  // Motion
-  // ---------------------------------------------------------------------------
-
-  const fieldHeight = search.stacked.fieldHeight;
-  const geometry = useCallback((): SearchFieldGeometry => {
-    const field = fieldRef.current;
-    return {
-      restWidth: field?.getBoundingClientRect().width ?? 0,
-      height: fieldHeight,
-      lift,
-      isRtl:
-        field != null &&
-        field.ownerDocument.defaultView?.getComputedStyle(field).direction ===
-          'rtl',
-    };
-  }, [fieldHeight, lift]);
-
-  const presented = useCallback(
-    (): SearchFieldPose => ({
-      y: rootAnimator.animator.get('y'),
-      middleScale: middleAnimator.animator.get('scaleX'),
-      endX: endAnimator.animator.get('x'),
-      closeX: closeAnimator.animator.get('x'),
-      closeOpacity: closeAnimator.animator.get('opacity'),
-    }),
-    [rootAnimator, middleAnimator, endAnimator, closeAnimator],
-  );
-
-  const place = useCallback(
-    (pose: SearchFieldPose) => {
-      rootAnimator.animator.set({y: pose.y});
-      middleAnimator.animator.set({scaleX: pose.middleScale});
-      endAnimator.animator.set({x: pose.endX});
-      closeAnimator.animator.set({x: pose.closeX, opacity: pose.closeOpacity});
-    },
-    [rootAnimator, middleAnimator, endAnimator, closeAnimator],
-  );
-
-  // The state the parts last settled toward (null before the first
-  // layout), and whether a move is still playing.
-  const settledRef = useRef<boolean | null>(null);
-  const isAnimating = useRef(false);
-  useLayoutEffect(() => {
-    const target = isActive;
-    if (settledRef.current === null || !animates()) {
-      // First layout, or a mouse or trackpad: take the places at once.
-      settledRef.current = target;
-      place(poseFor(target, geometry()));
-      return;
-    }
-    if (settledRef.current === target && !isAnimating.current) {
-      place(poseFor(target, geometry()));
-      return;
-    }
-    settledRef.current = target;
-    isAnimating.current = true;
-    let cancelled = false;
-    const run = () => {
-      const shape = geometry();
-      const to = poseFor(target, shape);
-      const from = poseFor(!target, shape);
-      const current = presented();
-      // The clock and curve under the field's theme, read as the move starts.
-      const timing = activationTiming(rootAnimator.animator.element);
-      const duration = timing.seconds * remainingFraction(current, from, to);
-      // Under reduced motion the animator plays its cross-fade for these.
-      const options = {};
-      const handles = [
-        play(
-          rootAnimator.animator,
-          {y: easedCurve(current.y, to.y, duration, timing.ease)},
-          options,
-        ),
-        play(
-          middleAnimator.animator,
-          {
-            scaleX: easedCurve(
-              current.middleScale,
-              to.middleScale,
-              duration,
-              timing.ease,
-            ),
-          },
-          options,
-        ),
-        play(
-          endAnimator.animator,
-          {x: easedCurve(current.endX, to.endX, duration, timing.ease)},
-          options,
-        ),
-        play(
-          closeAnimator.animator,
-          {
-            x: easedCurve(current.closeX, to.closeX, duration, timing.ease),
-            // Cancel slides the close button out at the opacity it has and
-            // removes it at the end, as UIKit does.
-            opacity: target
-              ? easedCurve(
-                  current.closeOpacity,
-                  to.closeOpacity,
-                  duration,
-                  timing.ease,
-                )
-              : heldCurve(current.closeOpacity, to.closeOpacity, duration),
-          },
-          options,
-        ),
-      ];
-      const playing = handles.filter(
-        (handle): handle is MotionHandle => handle != null,
-      );
-      void Promise.all(playing.map(handle => handle.finished)).then(results => {
-        if (cancelled || !results.every(Boolean)) {
-          return;
-        }
-        isAnimating.current = false;
-      });
-    };
-    // The move starts on the first frame the page presents after this
-    // commit, fresh (onPresentedFrame): Mobile Safari brings the keyboard up
-    // with no frame for ~150 ms after the focus, and a motion created before
-    // that stall would jump a third of the way when frames resume. A host
-    // that moves with the field (a navigation bar) starts through the same
-    // helper, so both start on the same frame.
-    const win = rootAnimator.animator.element?.ownerDocument.defaultView;
-    let cancelStart = () => {};
-    if (win == null) {
-      run();
-    } else {
-      cancelStart = onPresentedFrame(win, run);
-    }
-    return () => {
-      cancelled = true;
-      cancelStart();
-    };
-    // `geometry` changes with `lift`; a lift change while settled re-places
-    // the field through the same path.
-  }, [
-    isActive,
-    animates,
-    geometry,
-    place,
-    presented,
-    rootAnimator,
-    middleAnimator,
-    endAnimator,
-    closeAnimator,
-  ]);
-
-  // A resize while settled (the window turning, a host relaying out) moves
-  // the narrowed end to the new width at once.
-  useLayoutEffect(() => {
-    const field = fieldRef.current;
-    const Observer = field?.ownerDocument.defaultView?.ResizeObserver;
-    if (field == null || Observer == null) {
-      return;
-    }
-    const observer = new Observer(() => {
-      if (!isAnimating.current && settledRef.current !== null) {
-        place(poseFor(settledRef.current, geometry()));
-      }
-    });
-    observer.observe(field);
-    return () => observer.disconnect();
-  }, [geometry, place]);
 
   // ---------------------------------------------------------------------------
   // Events
@@ -675,7 +486,7 @@ export function SearchField({
   return (
     <div
       {...rest}
-      ref={useMergedRefs(ref, rootAnimator.ref, rootRef)}
+      ref={useMergedRefs(ref, motion.rootRef, rootRef)}
       role="search"
       data-search-field-active={isActive || undefined}
       {...mergeProps(
@@ -693,7 +504,7 @@ export function SearchField({
         {...stylex.props(styles.field, styles.fieldHeight(px(fieldHeight)))}>
         <span aria-hidden {...stylex.props(styles.piece, styles.start(cap))} />
         <span
-          ref={middleAnimator.ref}
+          ref={motion.middleRef}
           aria-hidden
           data-search-field-middle=""
           {...stylex.props(styles.piece, styles.middle(cap))}
@@ -722,7 +533,7 @@ export function SearchField({
           {...stylex.props(styles.input, styles.inputEnd(px(inputEnd)))}
         />
         <div
-          ref={endAnimator.ref}
+          ref={motion.endRef}
           data-search-field-end=""
           {...stylex.props(styles.end)}>
           <span aria-hidden {...stylex.props(styles.endCap(cap))} />
@@ -742,7 +553,7 @@ export function SearchField({
         </div>
       </div>
       <button
-        ref={closeAnimator.ref}
+        ref={motion.closeRef}
         type="button"
         aria-label={resolvedCancelLabel}
         tabIndex={isActive ? undefined : -1}
@@ -764,36 +575,3 @@ export function SearchField({
 }
 
 SearchField.displayName = 'SearchField';
-
-// =============================================================================
-// Helpers
-// =============================================================================
-
-/**
- * Plays the given curves. A curve that does not move is put in place instead
- * (`set`), which also ends whatever that property was still playing (a
- * cancel's held opacity that a re-activation keeps at 1 would otherwise drop
- * to 0 when the cancel's clock ends); an animation with no visible change
- * would also run on the main thread in Chromium.
- */
-function play(
-  animator: Animator,
-  curves: Partial<Record<'x' | 'y' | 'scaleX' | 'opacity', MotionCurve>>,
-  options: {at?: number},
-): MotionHandle | null {
-  const moving: typeof curves = {};
-  for (const [key, curve] of Object.entries(curves) as [
-    keyof typeof curves,
-    MotionCurve,
-  ][]) {
-    if (Math.abs(curve.at(curve.duration) - curve.at(0)) > 1e-6) {
-      moving[key] = curve;
-    } else {
-      animator.set({[key]: curve.at(0)});
-    }
-  }
-  if (Object.keys(moving).length === 0) {
-    return null;
-  }
-  return animator.play(moving, options);
-}
