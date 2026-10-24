@@ -1732,6 +1732,16 @@ jobs:
             --project chromium \
             --output card-press-output
 
+      # Under reduced motion Button must not scale and its and the cards'
+      # state changes must be immediate with a mouse and a short cross-fade on
+      # a touch screen; jsdom resolves neither media queries nor transitions.
+      - name: Run reduced-motion press contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/__tests__/ReducedMotionPress.a11y.chromium.spec.ts \
+            --project chromium \
+            --output reduced-motion-press-output
+
       # A menu inside a shadow root must act on the row under a released
       # pointer; at the document level a real engine resolves that point to
       # the shadow host, which jsdom cannot show.

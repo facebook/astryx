@@ -106,13 +106,33 @@ const styles = stylex.create({
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
-    transitionProperty:
-      'background-image, background-color, color, opacity, transform',
+    transitionProperty: {
+      default: 'background-image, background-color, color, opacity, transform',
+      // Under reduced motion nothing scales, so nothing transitions transform.
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+        'background-image, background-color, color, opacity',
+      '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
+        'none',
+    },
     transitionDuration: {
       default: durationVars['--duration-fast'],
-      '@media (prefers-reduced-motion: reduce)': '0s',
+      // Reduced motion (design:reduced-motion, motion/reducedMotion.ts): with
+      // a fine primary pointer the change is immediate (DR3); on a touch
+      // screen it is the policy's cross-fade, whatever the theme sets (DR2,
+      // DR4).
+      '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
+        '0s',
+      // The cross-fade's values are reducedMotionFadeConsts'
+      // (motion/reducedMotion.stylex.ts), spelled out because that module is
+      // internal and a swizzled component imports only exported paths;
+      // motion/reducedMotionValues.test.ts holds them equal.
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)': '200ms',
     },
-    transitionTimingFunction: easeVars['--ease-standard'],
+    transitionTimingFunction: {
+      default: easeVars['--ease-standard'],
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+        'cubic-bezier(0.42, 0, 0.58, 1)',
+    },
   },
   pressable: {
     transform: {
@@ -123,8 +143,20 @@ const styles = stylex.create({
       ':active:where(:not(:disabled,[aria-disabled="true"]))': {
         default: 'scale(0.98)',
         '@media (pointer: coarse)': 'scale(1)',
+        // Reduced motion: a press never scales the button
+        // (design:reduced-motion DR1); the overlay alone shows it.
+        '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+          'scale(1)',
+        '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
+          'scale(1)',
       },
-      '[data-astryx-press="on"]': 'scale(0.98)',
+      '[data-astryx-press="on"]': {
+        default: 'scale(0.98)',
+        '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+          'scale(1)',
+        '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
+          'scale(1)',
+      },
     },
   },
   inactive: {

@@ -120,8 +120,25 @@ const styles = stylex.create({
         [PRESSED_ON]: 'none',
         [PRESSED_FADING]: 'none',
       },
-      transitionDuration: durationVars['--duration-fast'],
-      transitionTimingFunction: easeVars['--ease-standard'],
+      transitionDuration: {
+        default: durationVars['--duration-fast'],
+        // Reduced motion (design:reduced-motion): with a fine primary pointer
+        // the change is immediate (DR3); on a touch screen it stays a
+        // cross-fade of 200 ms or less, whatever the theme sets (DR2, DR4).
+        '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
+          '0s',
+        // The cross-fade's values are reducedMotionFadeConsts'
+        // (motion/reducedMotion.stylex.ts), spelled out because that module is
+        // internal and a swizzled component imports only exported paths;
+        // motion/reducedMotionValues.test.ts holds them equal.
+        '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+          '200ms',
+      },
+      transitionTimingFunction: {
+        default: easeVars['--ease-standard'],
+        '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+          'cubic-bezier(0.42, 0, 0.58, 1)',
+      },
       // While the controller paints, the colour yields to the image: a
       // touchscreen beside a fine pointer still matches `:active` under a
       // finger, and the press would otherwise paint twice.
@@ -162,8 +179,21 @@ const styles = stylex.create({
     paddingBlockStart: `calc(var(--container-padding-block-start) - ${borderVars['--border-width']})`,
     paddingBlockEnd: `calc(var(--container-padding-block-end) - ${borderVars['--border-width']})`,
     transitionProperty: 'border-color',
-    transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easeVars['--ease-standard'],
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      // Reduced motion (design:reduced-motion, motion/reducedMotion.ts): with
+      // a fine primary pointer the change is immediate (DR3); on a touch
+      // screen it is the policy's cross-fade, whatever the theme sets (DR2,
+      // DR4).
+      '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
+        '0s',
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)': '200ms',
+    },
+    transitionTimingFunction: {
+      default: easeVars['--ease-standard'],
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+        'cubic-bezier(0.42, 0, 0.58, 1)',
+    },
   },
   // Emphasize the bordered variant's border on hover. Guarded by
   // @media (hover: hover) so touch devices don't get a stuck hover state.
