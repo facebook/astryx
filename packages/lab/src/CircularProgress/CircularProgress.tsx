@@ -28,6 +28,7 @@ import {
   typeScaleVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {mergeProps} from '@astryxdesign/core/utils';
+import {useMediaQuery} from '@astryxdesign/core/hooks';
 import type {BaseProps} from '@astryxdesign/core';
 import {themeProps} from '@astryxdesign/core/utils';
 
@@ -751,6 +752,10 @@ export function CircularProgress({
   // the arc's start in another. Without script it rests as a quarter turn.
   const spinRef = useRef<HTMLSpanElement | null>(null);
   const tailRef = useRef<HTMLSpanElement | null>(null);
+  // The loops read their durations when they start, and reduced motion
+  // changes those durations: a change of the preference while the ring is
+  // shown restarts them on the new clocks.
+  const isReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
   useLayoutEffect(() => {
     if (!isIndeterminate) {
       return;
@@ -801,7 +806,7 @@ export function CircularProgress({
         animation.cancel();
       }
     };
-  }, [isIndeterminate]);
+  }, [isIndeterminate, isReducedMotion]);
   const turns = fillTurns(isIndeterminate ? 0.25 : percentage);
   // One half of the ring's stroke, from 6 o'clock clockwise to 12 (the left
   // half) before its layer turns; butt ends, the caps are drawn apart.

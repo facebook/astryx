@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {act, render, screen} from '@testing-library/react';
 import {CircularProgress} from './CircularProgress';
 
 describe('CircularProgress', () => {
@@ -606,6 +606,68 @@ describe('CircularProgress', () => {
   });
 
   describe('indeterminate mode', () => {
+    it('restarts its loops on the new clocks when reduced motion changes while shown', () => {
+      let started = 0;
+      let cancelled = 0;
+      let reduce = false;
+      const listeners = new Set<() => void>();
+      const original = Element.prototype.animate;
+      const originalStyle = window.getComputedStyle;
+      const originalMatchMedia = window.matchMedia;
+      Element.prototype.animate = function () {
+        started += 1;
+        return {
+          cancel() {
+            cancelled += 1;
+          },
+          playState: 'running',
+          effect: {getComputedTiming: () => ({progress: 0})},
+          onfinish: null,
+        } as unknown as Animation;
+      } as typeof Element.prototype.animate;
+      window.getComputedStyle = ((element: Element) => {
+        const real = originalStyle(element);
+        return {
+          ...real,
+          animationDuration: reduce ? '3s' : '1.5s',
+        } as CSSStyleDeclaration;
+      }) as typeof window.getComputedStyle;
+      window.matchMedia = ((query: string) => ({
+        get matches() {
+          return query.includes('prefers-reduced-motion') && reduce;
+        },
+        media: query,
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: (_: string, listener: () => void) => {
+          listeners.add(listener);
+        },
+        removeEventListener: (_: string, listener: () => void) => {
+          listeners.delete(listener);
+        },
+        dispatchEvent: () => false,
+      })) as unknown as typeof window.matchMedia;
+      try {
+        render(<CircularProgress isIndeterminate size="md" label="Loading" />);
+        // spin, tail, right, left, cap, start
+        expect(started).toBe(6);
+        act(() => {
+          reduce = true;
+          for (const listener of listeners) {
+            listener();
+          }
+        });
+        // The six loops stop and start again, reading the new durations.
+        expect(cancelled).toBe(6);
+        expect(started).toBe(12);
+      } finally {
+        Element.prototype.animate = original;
+        window.getComputedStyle = originalStyle;
+        window.matchMedia = originalMatchMedia;
+      }
+    });
+
     it('steps the left half at once each time the breathing arc crosses half', () => {
       const calls: {target: Element; keyframes: Keyframe[]}[] = [];
       const original = Element.prototype.animate;
