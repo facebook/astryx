@@ -334,7 +334,7 @@ describe('resolveSheetRelease', () => {
   });
 });
 
-describe("resolveDefaultRelease (outside iOS: today's rule)", () => {
+describe("resolveDefaultRelease (under a mouse: today's rule)", () => {
   const base = {
     detents: [0, 300],
     shortestDetentHeight: 340,

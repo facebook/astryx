@@ -134,8 +134,8 @@ interface SheetDetents {
   peekOffset: number | null;
 }
 
-// Where a release is judged, and how it moves, follows the idiom
-// (releaseMotion.ts, sheetRelease.ts). In iOS's it is UIKit's, and a sheet
+// Where a release is judged, and how it moves, follows the pointer
+// (releaseMotion.ts, sheetRelease.ts). Under a finger it is UIKit's, and a sheet
 // released at rest dismisses once it is more than halfway from its shortest
 // detent to gone; everywhere else today's rule dismisses past
 // DEFAULT_DISMISS_OVERSHOOT_RATIO of that height. Either way that line is
@@ -150,7 +150,7 @@ function restingDismissOffset(
     shortestDetentHeight * (isUIKit ? 0.5 : DEFAULT_DISMISS_OVERSHOOT_RATIO)
   );
 }
-// Outside iOS's idiom the release speed is today's: the finger's speed over
+// Under a mouse the release speed is today's: the pointer's speed over
 // its last stretch, not between its last two samples (one slow sample before
 // the lift must not cancel a throw), and none after a pause before the lift.
 const VELOCITY_WINDOW_MS = 100;
@@ -655,7 +655,7 @@ export function useSheetGestures({
     // The finger's positions on the timestamps their events carry, for the
     // release velocity (the gesture foundation's estimator, UIKit's filter).
     tracker: VelocityTracker;
-    // Today's estimator, outside iOS's idiom: the samples of the last
+    // Today's estimator, under a mouse: the samples of the last
     // VELOCITY_WINDOW_MS, the speed over them (px/ms) and the last move's time.
     samples: {t: number; y: number}[];
     windowVelocity: number;
@@ -919,7 +919,7 @@ export function useSheetGestures({
         restingDismissOffset(
           maxOffset,
           shortestDetentHeight,
-          readTouchPresentation().idiom === 'ios',
+          readTouchPresentation().isTouch,
         ),
         peekOffset,
       ),
@@ -1148,7 +1148,7 @@ export function useSheetGestures({
       );
       // Gone: the top of the sheet at the bottom of the screen.
       const dismissedOffset = maxOffset + shortestDetentHeight;
-      // UIKit's rule in iOS's idiom; today's everywhere else (sheetRelease.ts).
+      // UIKit's rule under a finger; today's under a mouse (sheetRelease.ts).
       const release = isUIKit
         ? resolveSheetRelease({
             detents: offsets,
@@ -1511,7 +1511,7 @@ export function useSheetGestures({
         state.tracker.add(0, event.clientY, event.timeStamp);
       }
       const velocity = state.tracker.velocity().y;
-      // Today's inputs, for a release outside iOS's idiom.
+      // Today's inputs, for a release under a mouse.
       const today = {
         direction: delta === 0 ? 0 : delta > 0 ? 1 : -1,
         travel: Math.abs(delta),

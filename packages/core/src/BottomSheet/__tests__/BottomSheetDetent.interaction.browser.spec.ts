@@ -12,9 +12,9 @@
  *   velocity (critically damped below `sheet.release.fastSpeed`, 80 % damped
  *   above); a finger catches the settling sheet where it is; the settle keeps
  *   advancing every frame through a blocked main thread; it does no Layout or
- *   Paint per frame; storyboards of the drag, the settle and a flick. Outside
- *   iOS's idiom (a finger on Android) a release keeps today's rule and the
- *   theme's timing. Under reduced motion a touch release cross-fades in place
+ *   Paint per frame; storyboards of the drag, the settle and a flick. A finger
+ *   on Android gets the same (one touch model, AST-094); a mouse keeps today's
+ *   rule and the theme's timing (unit tests). Under reduced motion a touch release cross-fades in place
  *   in 200 ms or less (design:reduced-motion DR2).
  * @position The exemplar for `*.interaction.browser.spec.ts`: component lanes
  *   copy this shape. Each test names the instrument it uses from
@@ -24,9 +24,9 @@
  * runs (the motion foundation's animator; its resting position is the
  * element's `transform`), so curves are sampled from both (`sampleTravel`).
  *
- * UIKit's release belongs to iOS's idiom (WebKit on iOS under a finger), so
- * the UIKit cases run under `emulateIosWebKit`; the Android cases run without
- * it, as Chromium answers on its own.
+ * UIKit's release belongs to every finger (one touch model), so most cases
+ * run under `emulateIosWebKit` and the Android cases without it, to show the
+ * same behavior without WebKit on iOS.
  */
 
 import {expect, test, type Locator, type Page} from '@playwright/test';
@@ -739,34 +739,36 @@ async function runningDurations(sheet: Locator): Promise<number[]> {
   );
 }
 
-test("outside iOS a finger keeps today's rule and the theme's timing (a finger on Android)", async ({
+test("a finger on Android takes UIKit's release too, not the theme's timing (one touch model)", async ({
   page,
 }) => {
   const {driver, sheet, tallTop, halfTop, handle} = await openSheet(page, {
     idiom: 'android',
   });
   const theme = await themeDurationMs(sheet);
-  expect(theme).toBeGreaterThan(100);
-  // Two thirds of the way to half, resting before the lift: today's rule
-  // reads no speed after the rest and lands on half, on the theme's curve.
+  // Two thirds of the way to half, resting before the lift: UIKit's rule
+  // lands on half, on the critically damped spring, not the theme's curve.
   await driver.play(slowDragTo(handle, Math.round((halfTop - tallTop) * 0.66)));
   const settle = await runningDurations(sheet);
   expect(settle).toHaveLength(1);
-  expect(Math.abs(settle[0] - END_HOLD_MS - theme)).toBeLessThan(5);
+  expect(Math.abs(settle[0] - END_HOLD_MS - theme)).toBeGreaterThan(5);
   await waitForRest(sheet);
   expect(await sheetTop(sheet)).toBeCloseTo(halfTop, 0);
 });
 
-test("outside iOS the flick UIKit lands on half dismisses, by today's rule (a finger on Android)", async ({
+test('a flick from tall lands on half on Android too (one touch model)', async ({
   page,
 }) => {
-  const {driver, handle} = await openSheet(page, {idiom: 'android'});
-  // 2000 px/s for 80 ms from tall: UIKit projects 160 + 228 px, onto half;
-  // today's rule projects 160 + 2 × 499 px, past the dismiss line.
+  const {driver, sheet, halfTop, handle} = await openSheet(page, {
+    idiom: 'android',
+  });
+  // 2000 px/s for 80 ms from tall: a flick, at least to the next detent
+  // down, which its projection (160 + 200 px) is nearest too.
   await driver.play(
     flick(handle, {velocity: {x: 0, y: 2000}, durationMs: 80, hz: 120}),
   );
-  await expect(page.getByRole('dialog', {name: 'Nearby places'})).toBeHidden();
+  await waitForRest(sheet);
+  expect(await sheetTop(sheet)).toBeCloseTo(halfTop, 0);
 });
 
 /** Each animation running on the sheet: the properties it changes and its duration (ms). */

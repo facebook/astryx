@@ -5,12 +5,12 @@
  * @input The UIKit constants table (`sheet.release`, the sheet springs) and
  *   the motion foundation's snap-point projection
  * @output Exports resolveSheetRelease, which says where a released sheet goes
- *   and on which spring in iOS's idiom; resolveDefaultRelease, today's rule
+ *   and on which spring under a finger; resolveDefaultRelease, today's rule
  *   everywhere else; and the SheetRelease type
  * @position Internal to BottomSheet; pure (no DOM, no React). Called by
  *   useSheetGestures when a drag ends.
  *
- * In iOS's idiom (WebKit on iOS under a finger, `readTouchPresentation`), a
+ * Under a finger (a coarse primary pointer, `readTouchPresentation`), a
  * released sheet goes where UISheetPresentationController sends it. The
  * dismissed position (the sheet fully below the screen) counts as one of the
  * positions.
@@ -158,7 +158,7 @@ const DEFAULT_PROJECTION_MIN_TRAVEL = 48; // px traveled during the gesture
 export const DEFAULT_DISMISS_OVERSHOOT_RATIO = 0.4;
 
 /**
- * Where a sheet released outside iOS's idiom (a finger on Android, a mouse)
+ * Where a sheet released under a mouse
  * settles: today's rule. A downward release projected past the dismiss line
  * (`DEFAULT_DISMISS_OVERSHOOT_RATIO` of the shortest detent's height below
  * it) dismisses; any other settles on the detent nearest its projection in

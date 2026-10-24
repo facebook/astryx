@@ -9,11 +9,11 @@
  * @position Internal to BottomSheet; read once per gesture by
  *   useSheetGestures
  *
- * In iOS's idiom (WebKit on iOS under a finger, `readTouchPresentation`) the
- * sheet moves the way a UIKit sheet does: its release runs on UIKit's
- * springs, handed the finger's velocity. Everywhere else (a mouse, a finger
- * on Android) it keeps the theme's motion: the duration and easing its
- * stylesheet gives `transform`, as today, until a Material variant exists.
+ * Under a finger (a coarse primary pointer, `readTouchPresentation`; one
+ * touch model on every touch device, iOS and Android alike) the sheet moves
+ * the way a UIKit sheet does: its release runs on UIKit's springs, handed the
+ * finger's velocity. Under a mouse it keeps the theme's motion: the duration
+ * and easing its stylesheet gives `transform`, as today.
  * Either way the curve plays on the compositor, through the same animator.
  *
  * The theme timing is read from the element's computed transition when a
@@ -95,13 +95,13 @@ function parseEasing(value: string): ((progress: number) => number) | null {
 }
 
 /**
- * The timing a release of `element` runs on: UIKit's in iOS's idiom, else
+ * The timing a release of `element` runs on: UIKit's under a finger, else
  * the duration and easing its stylesheet transitions `transform` with. An
  * easing it cannot read (`steps()`) plays linearly over that duration; no
  * element or no readable duration settles at once.
  */
 export function readReleaseMotion(element: HTMLElement | null): ReleaseMotion {
-  if (readTouchPresentation().idiom === 'ios') {
+  if (readTouchPresentation().isTouch) {
     return UIKIT;
   }
   if (element == null || typeof getComputedStyle !== 'function') {

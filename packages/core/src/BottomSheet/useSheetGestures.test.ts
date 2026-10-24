@@ -123,10 +123,9 @@ afterEach(() => {
 });
 
 /**
- * iOS's idiom: a coarse primary pointer in an engine that supports
- * `-webkit-touch-callout` (WebKit on iOS). Releases take UIKit's rule and
- * springs there and today's everywhere else, a finger on Android included
- * (releaseMotion.ts, sheetRelease.ts).
+ * A finger: a coarse primary pointer, here in WebKit on iOS. Every touch
+ * device takes UIKit's rule and springs (one touch model, AST-094); a mouse
+ * keeps today's (releaseMotion.ts, sheetRelease.ts).
  */
 function stubIosIdiom({reducedMotion = false}: {reducedMotion?: boolean} = {}) {
   vi.stubGlobal(
@@ -302,7 +301,7 @@ describe('useSheetGestures', () => {
     expect(hook.result.current.settledOffset).toBe(0);
   });
 
-  describe("release projection in iOS's idiom (UIKit's rule)", () => {
+  describe("release projection under a finger (UIKit's rule)", () => {
     beforeEach(() => stubIosIdiom());
 
     // A release is judged where the sheet would be after
@@ -405,8 +404,8 @@ describe('useSheetGestures', () => {
     });
   });
 
-  describe("release projection outside iOS's idiom (today's rule)", () => {
-    // Under a mouse or a finger on Android, a release is judged where the
+  describe("release projection under a mouse (today's rule)", () => {
+    // Under a mouse, a release is judged where the
     // sheet would coast to at the finger's speed (0.998 per ms), in the
     // drag's direction, as today.
     it('dismisses on a medium throw released short of the dismiss line', () => {
@@ -503,7 +502,7 @@ describe('useSheetGestures', () => {
     expect(onDismiss).not.toHaveBeenCalled();
   });
 
-  it("projects a fast short nudge onto the next detent in iOS's idiom", () => {
+  it('projects a fast short nudge onto the next detent under a finger', () => {
     stubIosIdiom();
     const {hook, onDismiss} = setup({snapHeights: () => [200]});
     const t = makeTarget();
@@ -649,7 +648,7 @@ describe('useSheetGestures', () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
-  it("uses the visible shortest detent height for the halfway line in iOS's idiom", () => {
+  it('uses the visible shortest detent height for the halfway line under a finger', () => {
     stubIosIdiom();
     const {hook, onDismiss} = setup({
       snapHeights: () => [200],
@@ -1928,7 +1927,7 @@ describe('useSheetGestures', () => {
 });
 
 describe('useSheetGestures: the release on the compositor', () => {
-  // A finger in iOS's idiom: releases run on UIKit's springs
+  // A finger: releases run on UIKit's springs
   // (releaseMotion.ts). A mouse keeps the theme's timing.
   function stubPointer({
     coarse,
@@ -2256,7 +2255,7 @@ describe('useSheetGestures: the release on the compositor', () => {
     expect(travel(t)).toBe(200);
   });
 
-  /** A finger on Android: coarse, in an engine without `-webkit-touch-callout`. */
+  /** A finger on Android: coarse, in an engine without `-webkit-touch-callout`. One touch model: it gets what a finger on iOS gets. */
   function stubAndroidFinger({reducedMotion = false} = {}) {
     vi.stubGlobal(
       'matchMedia',
@@ -2271,7 +2270,7 @@ describe('useSheetGestures: the release on the compositor', () => {
     vi.stubGlobal('CSS', {supports: () => false, escape: (v: string) => v});
   }
 
-  it("keeps today's rule and the theme timing under a finger on Android", () => {
+  it("takes UIKit's rule and spring under a finger on Android too (one touch model)", () => {
     stubAndroidFinger();
     const {hook, onDismiss} = setup({snapHeights: () => [200]});
     const t = makeTarget();
@@ -2280,36 +2279,22 @@ describe('useSheetGestures: the release on the compositor', () => {
     t.style.transitionTimingFunction = 'cubic-bezier(0.24, 1, 0.4, 1)';
     const played = recordAnimations(t);
     down(hook, 0, 0, t);
-    // 600 px/s over 100 px: today's rule projects 100 + 0.6 × 499 = 399, past
-    // the dismiss line (200 + 0.4 × 200 = 280). UIKit's would land on 200
-    // (100 + 0.1 × 600 = 160).
+    // 600 px/s over 100 px: UIKit's rule lands on 200 (100 + 0.1 × 600 =
+    // 160), where today's would project past the dismiss line.
     stream(hook, t, {from: 0, to: 100, t0: 0, t1: 167});
     act(() =>
       hook.result.current.handleProps.onPointerUp(pointerEvent(100, 169, t)),
     );
-    expect(onDismiss).toHaveBeenCalledTimes(1);
-    // The host's exit runs from where the sheet is; no release spring.
-    expect(played).toHaveLength(0);
-
-    // A slow drag settles on the theme's 410 ms curve, not a spring.
-    const second = setup({snapHeights: () => [200]});
-    const t2 = makeTarget();
-    t2.style.transitionProperty = 'transform';
-    t2.style.transitionDuration = '410ms';
-    t2.style.transitionTimingFunction = 'cubic-bezier(0.24, 1, 0.4, 1)';
-    const played2 = recordAnimations(t2);
-    down(second.hook, 0, 0, t2);
-    stream(second.hook, t2, {from: 0, to: 60, t0: 0, t1: 300});
-    act(() =>
-      second.hook.result.current.handleProps.onPointerUp(
-        pointerEvent(60, 302, t2),
-      ),
-    );
-    expect(played2).toHaveLength(1);
-    expect((played2[0].options.duration as number) - END_HOLD_MS).toBeCloseTo(
-      410,
-      0,
-    );
+    expect(onDismiss).not.toHaveBeenCalled();
+    expect(hook.result.current.settledOffset).toBe(200);
+    // On the slow-release spring, not the theme's 410 ms curve.
+    expect(played).toHaveLength(1);
+    const curve = solveSpring(toSpring(springs.sheetDetent), {
+      from: 100,
+      to: 200,
+      velocity: 600,
+    });
+    expect(travelAt(played[0], 100)).toBeCloseTo(curve.value(0.1), 0);
   });
 
   it('cross-fades a touch release on Android under reduced motion, 200 ms or less (DR2)', () => {
@@ -2321,9 +2306,10 @@ describe('useSheetGestures: the release on the compositor', () => {
     t.style.transitionTimingFunction = 'ease';
     const played = recordAnimations(t);
     down(hook, 0, 0, t);
-    stream(hook, t, {from: 0, to: 60, t0: 0, t1: 300});
+    // 500 px/s to 150 px: UIKit's rule lands on 200 (150 + 0.1 × 500).
+    stream(hook, t, {from: 0, to: 150, t0: 0, t1: 300});
     act(() =>
-      hook.result.current.handleProps.onPointerUp(pointerEvent(60, 302, t)),
+      hook.result.current.handleProps.onPointerUp(pointerEvent(150, 302, t)),
     );
     expect(hook.result.current.settledOffset).toBe(200);
     expect(played.some(a => changedProperties(a).includes('opacity'))).toBe(

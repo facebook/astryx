@@ -3,7 +3,7 @@
 /**
  * @file releaseMotion.test.ts
  * @input vitest, jsdom, readReleaseMotion and themeCurve
- * @output Which timing a sheet's release runs on: UIKit's in iOS's idiom,
+ * @output Which timing a sheet's release runs on: UIKit's under a finger,
  *   the stylesheet's transform transition under a mouse or a finger on
  *   Android (lists, keywords, transitions turned off, unreadable values);
  *   the theme curve's values
@@ -13,7 +13,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {readReleaseMotion, themeCurve} from './releaseMotion';
 
-/** A finger or a mouse; with `ios`, in WebKit on iOS (iOS's idiom). */
+/** A finger or a mouse; with `ios`, in WebKit on iOS (which changes nothing: one touch model). */
 function pointer(coarse: boolean, {ios = false}: {ios?: boolean} = {}) {
   vi.stubGlobal(
     'matchMedia',
@@ -45,18 +45,17 @@ beforeEach(() => pointer(false));
 afterEach(() => vi.unstubAllGlobals());
 
 describe('readReleaseMotion', () => {
-  it("runs on UIKit springs under a finger in iOS's idiom", () => {
+  it('runs on UIKit springs under a finger', () => {
     pointer(true, {ios: true});
     expect(readReleaseMotion(sheet(THEME))).toEqual({kind: 'uikit'});
   });
 
-  it('keeps the theme timing under a finger outside iOS (Android)', () => {
+  it('runs on UIKit springs under a finger on Android too (one touch model)', () => {
     pointer(true);
-    const motion = readReleaseMotion(sheet(THEME));
-    expect(motion).toMatchObject({kind: 'theme', durationMs: 410});
+    expect(readReleaseMotion(sheet(THEME))).toEqual({kind: 'uikit'});
   });
 
-  it("keeps the theme timing under a mouse in WebKit on iOS's engine", () => {
+  it("keeps the theme timing under a mouse, in WebKit on iOS's engine too", () => {
     pointer(false, {ios: true});
     expect(readReleaseMotion(sheet(THEME))).toMatchObject({kind: 'theme'});
   });
