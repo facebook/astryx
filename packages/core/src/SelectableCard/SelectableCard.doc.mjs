@@ -22,7 +22,7 @@ export const docs = {
   },
   props: [
     {name: 'label', type: 'string', description: 'Accessibility label.', required: true},
-    {name: 'isSelected', type: 'boolean', description: 'Controlled selection state.', required: true},
+    {name: 'isSelected', type: 'boolean', description: 'Controlled selection state. Under a coarse pointer the selection ring and border change in one frame; with a mouse they fade over the theme’s fast duration.', required: true},
     {name: 'onChange', type: '(isSelected: boolean) => void', description: 'Called when toggled.', required: true},
     {name: 'isDisabled', type: 'boolean', description: 'Disables the card.', default: 'false'},
     {name: 'children', type: 'ReactNode', description: 'Card content.'},
