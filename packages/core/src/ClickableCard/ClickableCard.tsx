@@ -47,7 +47,7 @@ import type {BaseProps} from '../BaseProps';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
-import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {pressLayerStyles} from '../utils/pressLayer.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
@@ -56,11 +56,10 @@ import {disabledInteractionProps} from '../utils/disabledInteraction';
 // Styles — only the interactive layer, Card handles everything else
 // =============================================================================
 
-// The touch press's paint, declared by the shared overlay styles on the
-// element the controller writes to (`pressedAlpha`) at the press's strength,
-// 1 while on and 1 → 0 over the release, and inherited resolved by the
-// `::after` that paints it. See interactionOverlay.stylex.ts.
-const pressedOverlayColor = 'var(--_press-paint)';
+/** Written by the press controller while it paints a press. */
+const PRESSED_ON = '[data-astryx-press="on"]';
+/** Written by the press controller for the press's release. */
+const PRESSED_FADING = '[data-astryx-press="fading"]';
 
 const styles = stylex.create({
   interactive: {
@@ -74,16 +73,19 @@ const styles = stylex.create({
   },
   // Hover and pressed overlay. Hover is guarded by @media (hover: hover) so
   // touch devices don't show a stuck hover state; the press has two arms,
-  // `:active` for a mouse and `data-astryx-press` for a finger.
+  // `:active` for a mouse and `data-astryx-press` for the press controller.
   overlay: {
-    // The `::after` layer paints whatever `--_press-overlay` says, and the
-    // interaction arms set that variable on the element itself. Setting the
-    // pseudo-element's colour from compound keys (`:active::after`) would
-    // leave the touch arms unable to outrank the mouse arm: a pseudo-element
-    // key carries the highest generated priority, and the `data-astryx-press`
-    // attribute the touch press model writes must win over `:active`, which
-    // still matches under a finger (see interactionOverlay.stylex.ts). Same
-    // enabled guard as the shared overlay utility.
+    // The `::after` layer paints the hover and mouse states as its colour,
+    // `--_press-overlay`, which their arms set on the element itself (same
+    // enabled guard as the shared overlay utility). The press the controller
+    // paints (a finger's, and on a touch-first device a mouse's or a key's)
+    // is the same layer's image, from `pressLayerStyles.controlOver`, which
+    // also releases it on the compositor (the `::after`'s opacity). Every arm
+    // of that press is a plain property of the `::after`, which outranks the
+    // layer's own defaults in a layered stylesheet and a flat one alike. A
+    // custom property's attribute arm does not: a layered build emits the
+    // property's default outside the priority layers its attribute arms land
+    // in, and the default wins.
     '--_press-overlay': {
       default: 'transparent',
       ':where(:not(:disabled,[aria-disabled="true"]))': {
@@ -98,32 +100,32 @@ const styles = stylex.create({
             colorVars['--color-overlay-hover'],
           ':active': colorVars['--color-overlay-pressed'],
         },
-        // The touch arms paint through the press's strength, which the
-        // card's `pressedAlpha` arms own: 1 on the first frame of a believed
-        // press, then 1 → 0 over the release. The `::after` inherits the
-        // resolved colour and repaints with it on every frame of the fade.
-        '[data-astryx-press="on"]': pressedOverlayColor,
-        '[data-astryx-press="fading"]': pressedOverlayColor,
       },
-    },
-    // A believed touch press paints on the first frame, and the release is the
-    // strength's own animation, so neither may pass through the layer's colour
-    // transition (it would fade the onset in, and drag behind the release).
-    // The mouse states keep the fast fade.
-    '--_press-overlay-transition': {
-      default: durationVars['--duration-fast'],
-      '[data-astryx-press="on"]': '0s',
-      '[data-astryx-press="fading"]': '0s',
     },
     '::after': {
       content: '""',
       position: 'absolute',
       inset: 0,
       pointerEvents: 'none',
-      transitionProperty: 'background-color',
-      transitionDuration: 'var(--_press-overlay-transition)',
+      // A press the controller paints shows on its first frame and fades on
+      // its own release, so the colour it replaces drops out at once rather
+      // than crossfading: no transition while it paints. The mouse states
+      // keep the fast fade.
+      transitionProperty: {
+        default: 'background-color',
+        [PRESSED_ON]: 'none',
+        [PRESSED_FADING]: 'none',
+      },
+      transitionDuration: durationVars['--duration-fast'],
       transitionTimingFunction: easeVars['--ease-standard'],
-      backgroundColor: 'var(--_press-overlay)',
+      // While the controller paints, the colour yields to the image: a
+      // touchscreen beside a fine pointer still matches `:active` under a
+      // finger, and the press would otherwise paint twice.
+      backgroundColor: {
+        default: 'var(--_press-overlay)',
+        [PRESSED_ON]: 'transparent',
+        [PRESSED_FADING]: 'transparent',
+      },
     },
   },
   // Borderless variants (everything except `default`): drop the transparent
@@ -357,9 +359,9 @@ export function ClickableCard({
           styles.interactive,
           hasBorder ? styles.bordered : styles.borderless,
           !isDisabled && styles.overlay,
-          // The touch press's strength and release, on the element the
-          // controller writes to; the `::after` above paints off it.
-          !isDisabled && interactionOverlayStyles.pressedAlpha,
+          // The press the controller writes, painted on the `::after` above
+          // and released on the compositor.
+          !isDisabled && pressLayerStyles.controlOver,
           !isDisabled && hasBorder && styles.borderedHoverOnPointer,
           isDisabled && styles.disabled,
           xstyleProp,

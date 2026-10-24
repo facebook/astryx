@@ -38,7 +38,7 @@ export const docs = {
     {
       name: 'hasDividers',
       type: 'boolean',
-      description: 'Show dividers between items.',
+      description: 'Show dividers between items. A touch press hides the dividers on either side of the pressed row until the finger lifts.',
       default: 'false',
     },
     {
