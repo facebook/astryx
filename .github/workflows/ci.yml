@@ -1413,18 +1413,19 @@ jobs:
       # the PR head does not have, and would fail with "No tests found". The
       # wrapper, sourced into every later step, drops such files from
       # `pnpm exec playwright test` with a notice and passes a step left with
-      # none. It comes from the base, since an older PR head lacks it.
+      # none. It comes from the merge commit these steps come from (an older PR
+      # head lacks it, and the PR's recorded base can lag main).
       - name: Skip contract specs the PR head predates
         if: github.event_name == 'pull_request'
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          WORKFLOW_SHA: ${{ github.sha }}
         run: |
           wrapper="$RUNNER_TEMP/skip-absent-specs.sh"
-          if git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA" \
-            && git show "$BASE_SHA:.github/scripts/skip-absent-specs.sh" > "$wrapper"; then
+          if git fetch --quiet --no-tags --depth=1 origin "$WORKFLOW_SHA" \
+            && git show "$WORKFLOW_SHA:.github/scripts/skip-absent-specs.sh" > "$wrapper"; then
             echo "BASH_ENV=$wrapper" >> "$GITHUB_ENV"
           else
-            echo "::warning::Could not load the spec wrapper from the base; contract steps run unwrapped."
+            echo "::warning::Could not load the spec wrapper from the merge commit; contract steps run unwrapped."
           fi
 
       # Dependencies are installed later, together with the Playwright browser,

@@ -310,18 +310,19 @@ describe('ci.yml pr-a11y steps against an older PR head', () => {
     expect(run.slice(0, promise)).toContain(`if [ -e ${spec} ]; then`);
   });
 
-  it("sources the base's absent-spec wrapper before every Playwright step", () => {
+  it("sources the merge commit's absent-spec wrapper before every Playwright step", () => {
     const index = steps.findIndex(
       step => step.name === 'Skip contract specs the PR head predates',
     );
     expect(index).toBeGreaterThan(-1);
     const wrapper = steps[index];
     expect(wrapper.if).toBe("github.event_name == 'pull_request'");
-    expect(wrapper.env.BASE_SHA).toBe(
-      '${{ github.event.pull_request.base.sha }}',
-    );
+    // The merge commit the steps come from, not the PR's recorded base, which
+    // can lag main and predate the wrapper.
+    expect(wrapper.env.WORKFLOW_SHA).toBe('${{ github.sha }}');
+    expect(wrapper.env.BASE_SHA).toBeUndefined();
     expect(wrapper.run).toContain(
-      'git show "$BASE_SHA:.github/scripts/skip-absent-specs.sh" > "$wrapper"',
+      'git show "$WORKFLOW_SHA:.github/scripts/skip-absent-specs.sh" > "$wrapper"',
     );
     expect(wrapper.run).toContain('echo "BASH_ENV=$wrapper" >> "$GITHUB_ENV"');
     expect(

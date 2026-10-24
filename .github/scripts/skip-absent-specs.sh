@@ -15,8 +15,9 @@
 # routing tests keep main's steps pointing at spec files that exist, so only an
 # older head skips anything; rebasing it runs the new contract.
 #
-# Like pr-scope-touches.sh, the job loads this from BASE_SHA, since an older
-# PR head does not have it either.
+# The job loads this from the merge commit (github.sha) its steps come from,
+# since an older PR head does not have it and the PR's recorded base can lag
+# main.
 
 pnpm() {
   if [ "${1-}" = exec ] && [ "${2-}" = playwright ] && [ "${3-}" = test ]; then
