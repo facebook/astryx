@@ -30,11 +30,36 @@
  * - A change while the keyboard is up (a field that brings up the number
  *   pad) jumps: UIKit posts it with a zero duration.
  *
+ * Chrome (the `chromium` profile) reports the keyboard at the start of its
+ * slide, once per change, whether through the visual viewport or the
+ * VirtualKeyboard API: a transition starts at its report, plays the Android
+ * table's curve (`androidKeyboard`), nothing is dated back or predicted, and a
+ * second report while one plays (Chrome's accessory bar, then the keyboard)
+ * continues from where the first one is.
+ *
  * SYNC: When modified, update /packages/core/src/keyboard/README.md
  */
 
 import {keyboard, springs, timing} from '../motion/uikit';
-import {solveSpring, toSpring, type SpringCurve} from '../motion/spring';
+import {keyboard as androidKeyboard} from '../motion/android';
+import {cubicBezier} from '../motion/bezier';
+import {solveSpring, toSpring} from '../motion/spring';
+
+/** Which browser's keyboard reports the model reads. */
+export type KeyboardProfile = 'webkit' | 'chromium';
+
+/**
+ * An eased slide: the curve a transition plays instead of UIKit's keyboard
+ * spring (Android's keyboard).
+ */
+export interface KeyboardCurve {
+  /** Length, ms. */
+  readonly durationMs: number;
+  /** Cubic-bézier control points. */
+  readonly points: readonly [number, number, number, number];
+  /** Which of the Android table's durations it is, for a theme to retune. */
+  readonly durationKey: 'showMs' | 'hideMs';
+}
 
 /** How the keyboard's cover changes. */
 export type KeyboardTransitionKind = 'show' | 'hide' | 'change';
@@ -58,6 +83,11 @@ export interface KeyboardTransition {
   readonly animated: boolean;
   /** True until the visual viewport confirms a transition the guide inferred. */
   readonly predicted: boolean;
+  /**
+   * The eased curve the keyboard slides on (Android), or null when it moves
+   * on UIKit's keyboard spring (`springs.keyboard`).
+   */
+  readonly curve: KeyboardCurve | null;
 }
 
 /** Timing of the keyboard as the page sees it; the UIKit table's by default. */
@@ -70,6 +100,8 @@ export interface KeyboardModelOptions {
   hideAfterBlurMs?: number;
   /** When a transition counts as over (the notification duration), ms. */
   durationMs?: number;
+  /** Mobile Safari's reports (`webkit`, the default) or Chrome's. */
+  profile?: KeyboardProfile;
 }
 
 /** The guide's clock-free core: inputs carry their own times. */
@@ -110,6 +142,12 @@ export interface KeyboardModel {
 
 const EPSILON = 0.5;
 
+/** The inset and its velocity, seconds after a transition's start. */
+interface InsetCurve {
+  value(t: number): number;
+  velocity(t: number): number;
+}
+
 /**
  * Creates the guide's core. Tests drive it with explicit times; the window's
  * guide feeds it events.
@@ -121,9 +159,12 @@ export function createKeyboardModel(
     showReportLagMaxMs = keyboard.showReportLagMaxMs,
     hideAfterBlurMs = keyboard.hideAfterBlurMs,
     durationMs = timing.keyboardNotificationMs,
+    profile = 'webkit',
   }: KeyboardModelOptions = {},
 ): KeyboardModel {
   const spring = toSpring(springs.keyboard);
+  const chromium = profile === 'chromium';
+  const ease = cubicBezier(androidKeyboard.curve);
   let transition: KeyboardTransition = {
     kind: 'change',
     from: initialInset,
@@ -132,8 +173,42 @@ export function createKeyboardModel(
     velocity: 0,
     animated: false,
     predicted: false,
+    curve: null,
   };
-  let curve: SpringCurve | null = null;
+  // The inset over seconds since the transition's start.
+  let curve: InsetCurve | null = null;
+  // An eased slide's value and velocity (Chromium).
+  const easedCurve = (
+    from: number,
+    to: number,
+    slide: KeyboardCurve,
+  ): InsetCurve => {
+    const span = slide.durationMs / 1000;
+    const value = (t: number) =>
+      from + (to - from) * ease(Math.min(1, Math.max(0, t / span)));
+    return {
+      value,
+      velocity: (t: number) => {
+        if (t >= span) {
+          return 0;
+        }
+        const a = Math.max(0, t - 0.001);
+        const b = Math.min(span, t + 0.001);
+        return (value(b) - value(a)) / (b - a);
+      },
+    };
+  };
+  const slideFor = (kind: KeyboardTransitionKind): KeyboardCurve => {
+    const durationKey = kind === 'hide' ? 'hideMs' : 'showMs';
+    return {
+      durationMs: androidKeyboard[durationKey],
+      points: androidKeyboard.curve,
+      durationKey,
+    };
+  };
+  // How long the current transition moves for.
+  const lengthOf = () =>
+    transition.curve != null ? transition.curve.durationMs : durationMs;
   // The inset of the last keyboard that was up, for a hide that turns back.
   let shownInset = initialInset;
 
@@ -142,7 +217,7 @@ export function createKeyboardModel(
     if (time <= transition.start) {
       return transition.from;
     }
-    if (curve == null || time >= transition.start + durationMs) {
+    if (curve == null || time >= transition.start + lengthOf()) {
       return transition.to;
     }
     return curve.value((time - transition.start) / 1000);
@@ -151,13 +226,13 @@ export function createKeyboardModel(
     if (time <= transition.start) {
       return transition.velocity;
     }
-    if (curve == null || time >= transition.start + durationMs) {
+    if (curve == null || time >= transition.start + lengthOf()) {
       return 0;
     }
     return curve.velocity((time - transition.start) / 1000);
   };
   const moving = (time: number): boolean =>
-    transition.animated && time < transition.start + durationMs;
+    transition.animated && time < transition.start + lengthOf();
 
   const begin = (
     kind: KeyboardTransitionKind,
@@ -169,10 +244,22 @@ export function createKeyboardModel(
     const at = Math.max(start, transition.start);
     const from = presentation(at);
     const v = animated ? velocity(at) : 0;
-    transition = {kind, from, to, start: at, velocity: v, animated, predicted};
+    const slide = chromium && animated ? slideFor(kind) : null;
+    transition = {
+      kind,
+      from,
+      to,
+      start: at,
+      velocity: v,
+      animated,
+      predicted,
+      curve: slide,
+    };
     curve =
       animated && Math.abs(to - from) + Math.abs(v) > 0
-        ? solveSpring(spring, {from, to, velocity: v})
+        ? slide != null
+          ? easedCurve(from, to, slide)
+          : solveSpring(spring, {from, to, velocity: v})
         : null;
     if (to > EPSILON) {
       shownInset = to;
@@ -202,6 +289,15 @@ export function createKeyboardModel(
       const target = transition.to;
       if (Math.abs(inset - target) < EPSILON) {
         return confirm();
+      }
+      if (chromium) {
+        // Chrome reports at the start of the slide: from now, continuing
+        // from wherever a slide still under way has the inset.
+        return begin(
+          inset <= EPSILON ? 'hide' : target <= EPSILON ? 'show' : 'change',
+          inset,
+          time,
+        );
       }
       if (target <= EPSILON) {
         // The keyboard came up: Safari reports it after it started to move,
@@ -233,7 +329,8 @@ export function createKeyboardModel(
       return begin('change', inset, time, {animated: false});
     },
     blurred(time) {
-      if (transition.to <= EPSILON) {
+      // Chrome reports a hide at its start: nothing to predict.
+      if (chromium || transition.to <= EPSILON) {
         return null;
       }
       return begin('hide', 0, time + hideAfterBlurMs, {predicted: true});

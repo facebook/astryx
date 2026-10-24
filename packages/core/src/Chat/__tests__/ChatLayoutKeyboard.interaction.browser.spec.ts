@@ -26,6 +26,7 @@ import {
   busyWindowProof,
   castStoryboard,
   compareCurve,
+  cubicBezier,
   countBetween,
   curveOf,
   holdAnimations,
@@ -47,6 +48,13 @@ import {
 
 const storybook = withStorybook(test);
 
+// Android's keyboard slide (motion/android/keyboard.ts).
+const ANDROID_KEYBOARD = {
+  showMs: 285,
+  hideMs: 250,
+  curve: [0.2, 0, 0, 1] as [number, number, number, number],
+};
+
 // UIKit's keyboard spring (motion/uikit springs.keyboard): mass 1,
 // stiffness 555.0265, damping 47.118 — critically damped, response 2π/√k.
 const KEYBOARD = {
@@ -64,6 +72,16 @@ const COVER = 337;
  */
 async function installKeyboard(page: Page) {
   await page.addInitScript(() => {
+    // Mobile Safari: no VirtualKeyboard API, and the one browser that knows
+    // -webkit-touch-callout (the guide's iOS profile).
+    Object.defineProperty(navigator, 'virtualKeyboard', {
+      configurable: true,
+      value: undefined,
+    });
+    const supports = CSS.supports.bind(CSS);
+    CSS.supports = (property: string, value?: string) =>
+      property === '-webkit-touch-callout' ||
+      (value === undefined ? supports(property) : supports(property, value));
     const viewport = Object.assign(new EventTarget(), {
       height: window.innerHeight,
       width: window.innerWidth,
@@ -85,6 +103,30 @@ async function installKeyboard(page: Page) {
   });
 }
 
+/**
+ * Chrome on Android: the VirtualKeyboard API, stood in for since a headless
+ * browser has no keyboard. `__androidKeyboard(height)` reports a show or hide
+ * the way Chrome does while the page overlays the keyboard.
+ */
+async function installAndroidKeyboard(page: Page) {
+  await page.addInitScript(() => {
+    const keyboard = Object.assign(new EventTarget(), {
+      overlaysContent: false,
+      boundingRect: new DOMRect(0, 0, 0, 0),
+    });
+    Object.defineProperty(navigator, 'virtualKeyboard', {
+      configurable: true,
+      value: keyboard,
+    });
+    (
+      window as unknown as {__androidKeyboard: (height: number) => void}
+    ).__androidKeyboard = height => {
+      keyboard.boundingRect = new DOMRect(0, 24, window.innerWidth, height);
+      keyboard.dispatchEvent(new Event('geometrychange'));
+    };
+  });
+}
+
 interface Chat {
   dock: Locator;
   messages: Locator;
@@ -96,8 +138,15 @@ interface Chat {
   lift: number;
 }
 
-async function openChat(page: Page): Promise<Chat> {
-  await installKeyboard(page);
+async function openChat(
+  page: Page,
+  {android = false}: {android?: boolean} = {},
+): Promise<Chat> {
+  if (android) {
+    await installAndroidKeyboard(page);
+  } else {
+    await installKeyboard(page);
+  }
   await openStory(page, storybook(), 'core-chatlayout--full-ai-chat');
   const editable = page.locator('[contenteditable="true"]').first();
   await expect(editable).toBeVisible();
@@ -316,6 +365,101 @@ test('focus returning mid-hide turns the dock back up without a jump', async ({
     ).toBeLessThan(FASTEST * Math.max(1000 / 60, t1 - t0));
   }
   expect(ys.at(-1)?.[1]).toBeCloseTo(-lift, 0);
+});
+
+test('On Chrome the composer overlays the keyboard while it has focus, and restores on blur', async ({
+  page,
+}) => {
+  const {editable} = await openChat(page, {android: true});
+  const overlay = async () =>
+    page.evaluate(
+      () =>
+        (navigator as unknown as {virtualKeyboard: {overlaysContent: boolean}})
+          .virtualKeyboard.overlaysContent,
+    );
+  expect(await overlay()).toBe(false);
+  const driver = await touchDriver(page);
+  const box = await editable.boundingBox();
+  if (box == null) {
+    throw new Error('no editable');
+  }
+  await driver.tap({x: box.x + 24, y: box.y + box.height / 2});
+  await expect(editable).toBeFocused();
+  expect(await overlay()).toBe(true);
+  await editable.evaluate(el => (el as HTMLElement).blur());
+  expect(await overlay()).toBe(false);
+});
+
+test('On Chrome the dock slides on the Android keyboard curve from the report', async ({
+  page,
+}) => {
+  const {dock, editable, lift} = await openChat(page, {android: true});
+  await editable.focus();
+  // Lifted against Chrome's 312 px keyboard instead of Safari's cover.
+  const androidLift = lift - COVER + 312;
+  await page.evaluate(() =>
+    (
+      window as unknown as {__androidKeyboard: (height: number) => void}
+    ).__androidKeyboard(312),
+  );
+  await waitForAnimation(dock);
+  const held = await holdAnimations(page, dock);
+  const curveEnd = Math.max(...held.map(a => a.curveEndMs));
+  const samples = curveOf(
+    await sampleCurve(dock, timeline(curveEnd)),
+    'translateY',
+  );
+  await releaseAnimations(page);
+  const ease = cubicBezier(...ANDROID_KEYBOARD.curve);
+  const result = compareCurve(
+    samples,
+    t => -androidLift * ease(Math.min(1, t / ANDROID_KEYBOARD.showMs)),
+    0.5,
+  );
+  expect(result.maxError, JSON.stringify(result.worst)).toBeLessThanOrEqual(
+    0.5,
+  );
+  expect(curveEnd).toBeCloseTo(ANDROID_KEYBOARD.showMs, -1);
+});
+
+test('On Chrome the dock rides down on the Android hide curve when the keyboard hides', async ({
+  page,
+}) => {
+  const {dock, editable, lift} = await openChat(page, {android: true});
+  await editable.focus();
+  const androidLift = lift - COVER + 312;
+  const report = async (height: number) =>
+    page.evaluate(
+      h =>
+        (
+          window as unknown as {__androidKeyboard: (height: number) => void}
+        ).__androidKeyboard(h),
+      height,
+    );
+  await report(312);
+  await waitForRest(dock);
+  expect(await dockY(dock)).toBeCloseTo(-androidLift, 0);
+  // Back hides the keyboard and keeps focus; Chrome reports it as it starts.
+  await report(0);
+  await waitForAnimation(dock);
+  const held = await holdAnimations(page, dock);
+  const curveEnd = Math.max(...held.map(a => a.curveEndMs));
+  const samples = curveOf(
+    await sampleCurve(dock, timeline(curveEnd)),
+    'translateY',
+  );
+  await releaseAnimations(page);
+  const ease = cubicBezier(...ANDROID_KEYBOARD.curve);
+  const result = compareCurve(
+    samples,
+    t => -androidLift * (1 - ease(Math.min(1, t / ANDROID_KEYBOARD.hideMs))),
+    0.5,
+  );
+  expect(result.maxError, JSON.stringify(result.worst)).toBeLessThanOrEqual(
+    0.5,
+  );
+  expect(curveEnd).toBeCloseTo(ANDROID_KEYBOARD.hideMs, -1);
+  await expect(editable).toBeFocused();
 });
 
 test('a tap on the composer text focuses it without scrolling the page', async ({

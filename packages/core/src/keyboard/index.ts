@@ -4,6 +4,7 @@
  * @file index.ts
  * @input keyboardLayoutGuide.ts and keyboardModel.ts
  * @output Re-exports the keyboard layout guide: getKeyboardLayoutGuide,
+ *   keyboardProfileOf, rideKeyboard,
  *   measureKeyboardInset, bringsUpKeyboard, createKeyboardModel and their
  *   types
  * @position Entry of the keyboard module. Internal to core: components
@@ -16,13 +17,17 @@
 export {
   bringsUpKeyboard,
   getKeyboardLayoutGuide,
+  keyboardProfileOf,
   measureKeyboardInset,
   type KeyboardLayoutGuide,
 } from './keyboardLayoutGuide';
+export {rideKeyboard} from './rideKeyboard';
 export {
   createKeyboardModel,
   type KeyboardModel,
+  type KeyboardCurve,
   type KeyboardModelOptions,
+  type KeyboardProfile,
   type KeyboardTransition,
   type KeyboardTransitionKind,
 } from './keyboardModel';

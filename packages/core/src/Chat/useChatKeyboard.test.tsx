@@ -68,10 +68,19 @@ describe('ChatLayout and the software keyboard', () => {
       configurable: true,
       value: viewport,
     });
+    // Mobile Safari's reports (keyboard/keyboardModel.ts): iOS is the browser
+    // that supports -webkit-touch-callout.
+    Object.defineProperty(window, 'CSS', {
+      configurable: true,
+      value: {
+        supports: (property: string) => property === '-webkit-touch-callout',
+      },
+    });
   });
 
   afterEach(() => {
     Reflect.deleteProperty(window, 'visualViewport');
+    Reflect.deleteProperty(window, 'CSS');
   });
 
   it('lifts the dock by the keyboard over it and makes room after the messages', () => {

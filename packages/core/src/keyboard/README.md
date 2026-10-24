@@ -10,22 +10,32 @@ from `../keyboard`, and nothing here is exported from the package entry.
 ```ts
 const guide = getKeyboardLayoutGuide(window);
 const unsubscribe = guide.subscribe(t => {
-  animator.animate(
-    {y: -lift(t.to)},
-    {spring: springs.keyboard},
-    {at: t.start, reducedMotion: 'keep'},
-  );
+  rideKeyboard(animator, {y: -lift(t.to)}, t);
 });
+// A field that keeps itself above the keyboard:
+const unregister = guide.overlayWhileFocused(field);
 ```
 
-Each transition is `{kind, from, to, start, velocity, animated, predicted}`:
-insets in CSS px, `start` on the document timeline (in the past for a show
-Safari reported late, slightly ahead for a hide that starts after a blur).
-Move your own elements on the compositor with the animator, from `start`, on
-`springs.keyboard`. Content that follows the keyboard mirrors it, and Reduce
-Motion leaves the iOS keyboard's motion as it is, so keep the motion
-(`reducedMotion: 'keep'`). `presentation(time)` gives the inset at any time,
-for something that appears while the keyboard moves.
+Each transition is `{kind, from, to, start, velocity, animated, predicted,
+curve}`: insets in CSS px, `start` on the document timeline (in the past for a
+show Safari reported late, slightly ahead for a hide that starts after a
+blur), and `curve` the eased slide on Chrome (null for UIKit's spring).
+`rideKeyboard` moves your element on the compositor from `start` on the
+keyboard's own motion: `springs.keyboard` on iOS, the Android table's curve
+(`motion/android/keyboard.ts`) on Chrome, both theme roles. Content that
+follows the keyboard mirrors it, and Reduce Motion leaves the keyboard's
+motion as it is, so the motion stays (`reducedMotion: 'keep'`).
+`presentation(time)` gives the inset at any time, for something that appears
+while the keyboard moves.
+
+`overlayWhileFocused(element)` is for a field that moves itself above the
+keyboard. While focus is in it, the guide sets
+`navigator.virtualKeyboard.overlaysContent` (Chrome; Safari has no such API),
+so Chrome neither resizes nor pans the page for the keyboard. It sets the
+flag at the touch on the field or the focus it gets, and only if the page had
+not set it. It restores only what it set (and only if it is still set) when
+focus leaves every registered field, when the field unregisters, and on
+`pagehide`.
 
 For an element docked at the bottom, rise by the part of the cover over its
 resting bottom, and only while a keyboard is up:
@@ -56,6 +66,28 @@ resting bottom, and only while a keyboard is up:
   keeps its own content above the keyboard focuses its field with
   `preventScroll` from a claimed tap (ChatLayout's composer does).
 
+## What the page sees (Chrome 124 with Gboard, Android 15)
+
+- By default (`resizes-visual`) the visual viewport changes in steps, each at
+  the start of the keyboard's slide: an `<input>` brings Chrome's accessory
+  bar first (811 → 763), then the keyboard 120 ms later (→ 451); a
+  contenteditable gets one step. A hide is reported as it starts. About 120
+  ms after the step, Chrome pans the visual viewport over about 185 ms to
+  reveal a covered field, even after `focus({preventScroll: true})`.
+- While the page overlays the keyboard, nothing resizes or pans: one
+  `geometrychange` at the start of the slide carries the keyboard's height
+  (its `y` is wrong in Chrome 124 and is not read), and another at the start
+  of the hide. Chrome also fires transient visual viewport resizes then
+  (811 → 1123 → 811), which the guide ignores.
+- Back hides the keyboard and keeps focus: a hide nobody predicted.
+- When focus moves from one field to another through something that brings
+  up no keyboard (a popover's container), Chrome reports the keyboard gone
+  and back within about 50 ms (451 → 811 → 451). A hide reported while a field
+  that gained focus less than 150 ms ago still has it waits for the move to
+  settle.
+- Gboard slides on AOSP's IME curve: show 285 ms, hide 250 ms
+  (`motion/android/keyboard.ts`).
+
 ## Consumers
 
 - ChatLayout (`Chat/useChatKeyboard.ts`): the dock rides the keyboard, the
@@ -64,11 +96,12 @@ resting bottom, and only while a keyboard is up:
 
 ## Files
 
-| File                     | What it holds                                                                 |
-| ------------------------ | ----------------------------------------------------------------------------- |
-| `keyboardModel.ts`       | The clock-free core: transitions from viewport reports and focus changes.     |
-| `keyboardLayoutGuide.ts` | One guide per window: the listeners, the frame watch, the verification timer. |
-| `index.ts`               | Entry point.                                                                  |
+| File                     | What it holds                                                                              |
+| ------------------------ | ------------------------------------------------------------------------------------------ |
+| `keyboardModel.ts`       | The clock-free core: transitions from viewport reports and focus changes.                  |
+| `keyboardLayoutGuide.ts` | One guide per window: the listeners, the frame watch, the verification timer, the overlay. |
+| `rideKeyboard.ts`        | Moves an element with the keyboard on its spring (iOS) or its curve (Chrome).              |
+| `index.ts`               | Entry point.                                                                               |
 
 The timing constants live in `../motion/uikit/keyboard.ts`, the spring in
 `springs.keyboard`, the duration in `timing.keyboardNotificationMs`.

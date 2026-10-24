@@ -4,8 +4,8 @@
 
 /**
  * @file useChatKeyboard.ts
- * @input React refs, the keyboard layout guide, the animator, the gesture
- *   system's tap recognizer, `springs.keyboard`
+ * @input React refs, the keyboard layout guide and rideKeyboard, the
+ *   animator, the gesture system's tap recognizer
  * @output Exports useChatKeyboard: the refs ChatLayout puts on its dock,
  *   message area, keyboard spacer and composer region so the composer rides
  *   the software keyboard
@@ -17,10 +17,14 @@
  * newest message stays there. ChatLayout does the same:
  *
  * - The dock (blur layer, scroll button, composer) moves by the part of the
- *   keyboard that covers it, on the compositor (`translate`), on
- *   `springs.keyboard` from the start time the keyboard layout guide gives,
- *   so it is where the keyboard is from its first frame. Reduce Motion
+ *   keyboard that covers it, on the compositor (`translate`), on the
+ *   keyboard's own motion (UIKit's keyboard spring on iOS, Android's slide
+ *   on Chrome; rideKeyboard) from the start time the keyboard layout guide
+ *   gives, so it is where the keyboard is from its first frame. Reduce Motion
  *   leaves the keyboard's motion as it is, so the dock keeps its motion too.
+ * - On Chrome the composer overlays the keyboard while it has focus
+ *   (`overlayWhileFocused`): Chrome then neither resizes nor pans the page
+ *   for the keyboard, and the dock does the moving.
  * - A spacer after the messages takes the same height, once per keyboard
  *   change, so the newest message can scroll above the lifted composer. A
  *   transcript at its newest message is scrolled to the new end in the same
@@ -42,11 +46,11 @@
 
 import {useRef, type RefObject} from 'react';
 import {useAnimator} from '../motion/useAnimator';
-import {springs} from '../motion/uikit';
 import {TapGestureRecognizer, useGestureRecognizer} from '../gestures';
 import {
   bringsUpKeyboard,
   getKeyboardLayoutGuide,
+  rideKeyboard,
   type KeyboardTransition,
 } from '../keyboard';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
@@ -157,12 +161,7 @@ export function useChatKeyboard({
         transition.to > 0
           ? Math.max(0, bottom - (win.innerHeight - transition.to))
           : 0;
-      const timing = {at: transition.start, reducedMotion: 'keep'} as const;
-      if (transition.animated) {
-        dock.animator.animate({y: -lift}, {spring: springs.keyboard}, timing);
-      } else {
-        dock.animator.set({y: -lift});
-      }
+      rideKeyboard(dock.animator, {y: -lift}, transition);
 
       const spacer = spacerRef.current;
       const scroller = scrollRef.current;
@@ -191,11 +190,7 @@ export function useChatKeyboard({
       // The content just moved by `moved`; hold it where it was and let it
       // follow the keyboard's spring from there.
       messages.animator.set({y: messages.animator.get('y') + moved});
-      if (transition.animated) {
-        messages.animator.animate({y: 0}, {spring: springs.keyboard}, timing);
-      } else {
-        messages.animator.set({y: 0});
-      }
+      rideKeyboard(messages.animator, {y: 0}, transition);
     };
     const guide = getKeyboardLayoutGuide(win);
     const unsubscribe = guide.subscribe(follow);
@@ -211,6 +206,15 @@ export function useChatKeyboard({
     }
     return unsubscribe;
   }, [rootRef, scrollRef, isSelfScrolling, dock.animator, messages.animator]);
+
+  useIsomorphicLayoutEffect(() => {
+    const composer = composerRef.current;
+    const win = composer?.ownerDocument.defaultView;
+    if (composer == null || win == null) {
+      return undefined;
+    }
+    return getKeyboardLayoutGuide(win).overlayWhileFocused(composer);
+  }, []);
 
   useGestureRecognizer(
     composerRef,

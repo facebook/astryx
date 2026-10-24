@@ -6,13 +6,16 @@
  * @output Tests the keyboard layout guide's core: a show dated back to the
  *   keyboard's start, a hide predicted from the blur and confirmed late, the
  *   zero-duration change, focus that comes back, verification of a wrong
- *   prediction, and continuity when one transition interrupts another
+ *   prediction, and continuity when one transition interrupts another; on
+ *   Chrome, transitions from their reports on Android's curve
  * @position Unit tests for keyboard/keyboardModel.ts
  */
 
 import {describe, expect, it} from 'vitest';
 import {createKeyboardModel} from './keyboardModel';
 import {keyboard, springs, timing} from '../motion/uikit';
+import {keyboard as androidKeyboard} from '../motion/android';
+import {cubicBezier} from '../motion/bezier';
 import {naturalFrequency, toSpring} from '../motion/spring';
 
 const OMEGA = naturalFrequency(toSpring(springs.keyboard));
@@ -213,5 +216,50 @@ describe('createKeyboardModel', () => {
     model.blurred(3000);
     const show = model.report(INSET, 3000);
     expect(show?.start).toBe(3000 + keyboard.hideAfterBlurMs);
+  });
+});
+
+describe('createKeyboardModel on Chrome', () => {
+  const ease = cubicBezier(androidKeyboard.curve);
+  const chrome = () => createKeyboardModel(0, {profile: 'chromium'});
+
+  it('starts a show at its report and slides on Android’s curve', () => {
+    const model = chrome();
+    const show = model.report(312, 1000);
+    expect(show).toMatchObject({kind: 'show', from: 0, to: 312, start: 1000});
+    expect(show?.curve).toMatchObject({
+      durationMs: androidKeyboard.showMs,
+      points: androidKeyboard.curve,
+    });
+    const half = androidKeyboard.showMs / 2;
+    expect(model.presentation(1000 + half)).toBeCloseTo(312 * ease(0.5), 6);
+    expect(model.presentation(1000 + androidKeyboard.showMs)).toBe(312);
+  });
+
+  it('continues a second report from where the first slide is', () => {
+    // Chrome's accessory bar first, the keyboard 117 ms later.
+    const model = chrome();
+    model.report(48, 1000);
+    const at = model.presentation(1117);
+    const second = model.report(360, 1117);
+    expect(second).toMatchObject({kind: 'change', to: 360, start: 1117});
+    expect(second?.animated).toBe(true);
+    expect(second?.from).toBeCloseTo(at, 6);
+  });
+
+  it('starts a hide at its report, on the hide duration, and predicts nothing from a blur', () => {
+    const model = chrome();
+    model.report(312, 1000);
+    expect(model.blurred(2000)).toBeNull();
+    expect(model.inset).toBe(312);
+    const hide = model.report(0, 2010);
+    expect(hide).toMatchObject({kind: 'hide', to: 0, start: 2010});
+    expect(hide?.curve?.durationMs).toBe(androidKeyboard.hideMs);
+    expect(model.presentation(2010 + androidKeyboard.hideMs)).toBe(0);
+  });
+
+  it('keeps UIKit’s spring on Safari', () => {
+    const model = createKeyboardModel(0);
+    expect(model.report(INSET, 1000)?.curve).toBeNull();
   });
 });
