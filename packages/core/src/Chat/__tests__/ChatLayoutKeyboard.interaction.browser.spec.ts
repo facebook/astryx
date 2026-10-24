@@ -287,10 +287,10 @@ test('focus returning mid-hide turns the dock back up without a jump', async ({
       const value = getComputedStyle(dock as HTMLElement).translate;
       return value === 'none' ? 0 : parseFloat(value.split(' ')[1] ?? '0');
     };
-    const out: number[] = [];
+    const out: [number, number][] = [];
     const until = performance.now() + 900;
-    const sample = () => {
-      out.push(read());
+    const sample = (time: number) => {
+      out.push([time, read()]);
       if (performance.now() < until) {
         requestAnimationFrame(sample);
       }
@@ -302,13 +302,20 @@ test('focus returning mid-hide turns the dock back up without a jump', async ({
     await new Promise(resolve => setTimeout(resolve, 800));
     return out;
   });
-  // It went down, came back to the keyboard, and never jumped: no frame
-  // moved further than the hide's own fastest frame (about 51 px).
-  expect(Math.max(...ys)).toBeGreaterThan(-lift + 5);
+  // It went down, came back to the keyboard, and never jumped: nothing
+  // moved faster than the hide's own fastest frame (about 51 px in 16.7 ms),
+  // judged per elapsed time, so a frame the browser drops is no jump.
+  const FASTEST = 80 / (1000 / 60);
+  expect(Math.max(...ys.map(([, y]) => y))).toBeGreaterThan(-lift + 5);
   for (let i = 1; i < ys.length; i += 1) {
-    expect(Math.abs(ys[i] - ys[i - 1]), JSON.stringify(ys)).toBeLessThan(80);
+    const [t0, y0] = ys[i - 1];
+    const [t1, y1] = ys[i];
+    expect(
+      Math.abs(y1 - y0),
+      JSON.stringify(ys.map(([t, y]) => [Math.round(t), Math.round(y)])),
+    ).toBeLessThan(FASTEST * Math.max(1000 / 60, t1 - t0));
   }
-  expect(ys.at(-1)).toBeCloseTo(-lift, 0);
+  expect(ys.at(-1)?.[1]).toBeCloseTo(-lift, 0);
 });
 
 test('a tap on the composer text focuses it without scrolling the page', async ({
@@ -421,8 +428,20 @@ test('the rise does no Layout or Paint per frame', async ({
   // its end (about 480 ms) hands the layers back, which lays out once. A
   // window that followed the late timer under load would take that in.
   const during = countBetween(trace, rise.from + 150, rise.from + 400);
-  expect(during.Layout ?? 0, JSON.stringify(during)).toBe(0);
-  expect(during.Paint ?? 0, JSON.stringify(during)).toBe(0);
+  // On failure, every rendering event of the rise and the long tasks, in ms
+  // after the report.
+  const detail = JSON.stringify({
+    during,
+    events: trace.events
+      .filter(e => e.t >= rise.from - 20 && e.t <= rise.from + 500)
+      .map(e => `${e.name}@${Math.round(e.t - rise.from)}`),
+    longTasks: trace.longTasks.map(
+      task =>
+        `${Math.round(task.start - rise.from)}+${Math.round(task.durationMs)}`,
+    ),
+  });
+  expect(during.Layout ?? 0, detail).toBe(0);
+  expect(during.Paint ?? 0, detail).toBe(0);
 });
 
 test(
