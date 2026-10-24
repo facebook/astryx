@@ -1575,6 +1575,17 @@ jobs:
             --project chromium \
             --output menu-press-shadow-root-output
 
+      # A two-finger pinch over an open picker wheel must zoom the page (WCAG
+      # 1.4.4) while one finger still scrolls the wheel. jsdom computes no
+      # touch-action, so only a real engine shows which gesture the browser
+      # keeps.
+      - name: Run picker wheel pinch-zoom contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/DateInput/__tests__/WheelPinchZoom.a11y.chromium.spec.ts \
+            --project chromium \
+            --output wheel-pinch-zoom-output
+
       # A sub-menu with a header or footer is a modal dialog beside the root's
       # menu, outside every role="menu" element. Its Tab order, a header radio
       # group the browser moves focus in after the pointer leaves, the
