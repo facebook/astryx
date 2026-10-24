@@ -844,35 +844,50 @@ describe('swipeActions', () => {
     });
   };
 
-  /**
-   * The travel the row's transforms read, in physical px. The gesture writes
-   * it once per frame, so a frame passes first.
-   */
-  const xOf = (row: HTMLElement) => {
-    void act(() => vi.advanceTimersByTime(16));
-    return parseFloat(
-      row.style.getPropertyValue('--_item-swipe-travel') || '0',
-    );
+  /** Answer `prefers-reduced-motion: reduce` on top of the page's other answers. */
+  const reduceMotion = () => {
+    const matchMedia = window.matchMedia.bind(window);
+    vi.stubGlobal('matchMedia', (query: string) => {
+      const list = matchMedia(query);
+      return query === '(prefers-reduced-motion: reduce)'
+        ? {...list, matches: true}
+        : list;
+    });
   };
 
-  /** The panel of a side: the out-of-flow child on the root carrying it. */
+  /**
+   * Where a moving part is going: the animator writes each part's resting
+   * value inline (jsdom runs no Web Animations, so that is all it writes).
+   */
+  const xOf = (element: Element | null) =>
+    parseFloat(
+      (element as HTMLElement | null)?.style.getPropertyValue('translate') ||
+        '0',
+    );
+
+  /** The window of a side: the out-of-flow child of the root carrying it. */
   const panelOf = (row: HTMLElement, side: 'leading' | 'trailing') =>
     row.querySelector<HTMLElement>(`[data-swipe-panel="${side}"]`);
-  const entriesOf = (row: HTMLElement, side: 'leading' | 'trailing') =>
+  const trackOf = (row: HTMLElement, side: 'leading' | 'trailing') =>
     panelOf(row, side)?.firstElementChild as HTMLElement;
+  /** A side's entries: the track's children, each its own moving element. */
+  const entriesOf = (row: HTMLElement, side: 'leading' | 'trailing') =>
+    Array.from(trackOf(row, side)?.children ?? []) as HTMLElement[];
 
   /**
-   * jsdom lays nothing out: give the row a width and each side's entries a
-   * natural width of 72 px per entry, as the real panel measures them.
+   * jsdom lays nothing out: give the row a width and each entry a natural
+   * width of 72 px, as the real panel measures them.
    */
   function layOut(row: HTMLElement) {
     Object.defineProperty(row, 'clientWidth', {configurable: true, value: 300});
     for (const side of ['leading', 'trailing'] as const) {
-      const entries = panelOf(row, side) == null ? null : entriesOf(row, side);
-      if (entries != null) {
-        Object.defineProperty(entries, 'offsetWidth', {
+      if (panelOf(row, side) == null) {
+        continue;
+      }
+      for (const entry of entriesOf(row, side)) {
+        Object.defineProperty(entry, 'offsetWidth', {
           configurable: true,
-          value: 72 * entries.childElementCount,
+          value: 72,
         });
       }
     }
@@ -897,7 +912,7 @@ describe('swipeActions', () => {
     behavior?: 'reveal' | 'commit';
     onClick?: () => void;
   } = {}) {
-    render(
+    const {unmount} = render(
       <Item
         label="Conversation"
         onClick={onClick}
@@ -908,7 +923,7 @@ describe('swipeActions', () => {
     );
     const row = screen.getByTestId('row');
     layOut(row);
-    return {row, onClick};
+    return {row, onClick, unmount};
   }
 
   /**
@@ -1009,17 +1024,51 @@ describe('swipeActions', () => {
     expect(
       screen.getByRole('button', {name: 'Unread'}).closest('[inert]'),
     ).toBe(panel);
-    // Zero width with no padding of its own: a padded box at `width: 0` is
-    // still as wide as its padding and would paint a sliver of the colour.
-    expect(rulesDeclaredFor(panel).some(r => r.includes('padding'))).toBe(
-      false,
-    );
-    // Its width is the travel toward its side, floored at zero; at rest the
-    // travel is unset.
-    expect(
-      rulesDeclaredFor(panel).some(r => r.includes('width: max(0px')),
-    ).toBe(true);
-    expect(row.style.getPropertyValue('--_item-swipe-travel')).toBe('');
+    // The window clips to the row's resting box and takes no touch; the
+    // track that paints sits beside it at rest, so nothing shows.
+    const windowRules = rulesDeclaredFor(panel).join(';');
+    expect(windowRules).toContain('overflow: clip');
+    expect(windowRules).toContain('pointer-events: none');
+    const trackRules = rulesDeclaredFor(trackOf(row, 'leading')).join(';');
+    expect(trackRules).toContain('inset-inline-end: 100%');
+    expect(trackRules).not.toContain('padding');
+    // Nothing moved: the root carries no translation of the swipe's.
+    expect(row.style.getPropertyValue('translate')).toBe('');
+  });
+
+  it('moves only by transforms: the root, and a window, a track and entries that can never drift apart', () => {
+    const {row} = renderRow({
+      leading: [
+        {label: 'Unread', onActivate: vi.fn()},
+        {label: 'Pin', onActivate: vi.fn()},
+      ],
+    });
+    const f = finger(row);
+    f.down(10);
+    f.move(20);
+    f.move(35);
+    f.move(95);
+    // 60 px of swipe toward the leading side (rightward).
+    expect(xOf(row)).toBe(60);
+    // The window stays over the resting box; the track moves with the row;
+    // every entry stays pinned at the outer edge (144 px of entries), as one
+    // block with no wrapper.
+    expect(xOf(panelOf(row, 'leading'))).toBe(-60);
+    expect(xOf(trackOf(row, 'leading'))).toBe(60);
+    expect(entriesOf(row, 'leading').map(xOf)).toEqual([144 - 60, 144 - 60]);
+    // No layout property is ever written.
+    for (const element of [
+      row,
+      panelOf(row, 'leading'),
+      trackOf(row, 'leading'),
+      ...entriesOf(row, 'leading'),
+    ]) {
+      const style = (element as HTMLElement).style;
+      expect(style.width).toBe('');
+      expect(style.left).toBe('');
+      expect(style.transform).toBe('');
+    }
+    f.up();
   });
 
   it("claims the touch at 8 px, before a browser would scroll it, and moves the row only past UIKit's 25 px, from 0", () => {
@@ -1035,7 +1084,7 @@ describe('swipeActions', () => {
     expect(f.move(20, 12).defaultPrevented).toBe(true);
     // The swipe itself has not begun: the row has not moved.
     expect(f.move(34, 13).defaultPrevented).toBe(true);
-    expect(xOf(row)).toBe(0);
+    expect(row.style.getPropertyValue('translate')).toBe('');
     // 25 px: the swipe begins, at 0 (the threshold's travel is not part of
     // it, as in UIKit).
     expect(f.move(35, 14).defaultPrevented).toBe(true);
@@ -1055,7 +1104,7 @@ describe('swipeActions', () => {
     f.move(35);
     f.move(60);
     expect(xOf(row)).toBe(25);
-    // Back to 10 px short of the touch-down point: the row is home, and
+    // Back to 10 px short of the touch-down point: the row heads home, and
     // stays there rather than counting the threshold the other way.
     f.move(20);
     expect(xOf(row)).toBe(0);
@@ -1092,7 +1141,7 @@ describe('swipeActions', () => {
     f.down(10);
     f.move(30);
     expect(f.up().defaultPrevented).toBe(true);
-    expect(xOf(row)).toBe(0);
+    expect(row.style.getPropertyValue('translate')).toBe('');
     expect(panelOf(row, 'leading')).toHaveAttribute('inert');
     // An open row stays open, its panel live.
     dragLeading(row, 45);
@@ -1130,7 +1179,7 @@ describe('swipeActions', () => {
     f.down(10, 10);
     expect(f.move(14, 40).defaultPrevented).toBe(false);
     expect(f.move(60, 200).defaultPrevented).toBe(false);
-    expect(xOf(row)).toBe(0);
+    expect(row.style.getPropertyValue('translate')).toBe('');
     expect(f.up().defaultPrevented).toBe(false);
   });
 
@@ -1153,7 +1202,7 @@ describe('swipeActions', () => {
     mouse('pointerdown', 10);
     mouse('pointermove', 60);
     mouse('pointermove', 120);
-    expect(xOf(row)).toBe(0);
+    expect(row.style.getPropertyValue('translate')).toBe('');
     mouse('pointerup', 120);
   });
 
@@ -1165,7 +1214,7 @@ describe('swipeActions', () => {
     f.down(200);
     f.move(180);
     expect(f.move(150).defaultPrevented).toBe(false);
-    expect(xOf(row)).toBe(0);
+    expect(row.style.getPropertyValue('translate')).toBe('');
     f.up();
   });
 
@@ -1181,7 +1230,7 @@ describe('swipeActions', () => {
       first.move(130);
       second.move(30);
       expect(first.move(160).defaultPrevented).toBe(false);
-      expect(xOf(row)).toBe(0);
+      expect(row.style.getPropertyValue('translate')).toBe('');
       first.up();
       second.up();
     });
@@ -1209,7 +1258,7 @@ describe('swipeActions', () => {
       first.move(110, 10, {cancelable: false});
       first.move(130, 10, {cancelable: false});
       first.move(160, 10, {cancelable: false});
-      expect(xOf(row)).toBe(0);
+      expect(row.style.getPropertyValue('translate')).toBe('');
       first.up();
       second.up();
     });
@@ -1273,6 +1322,64 @@ describe('swipeActions', () => {
       expect(onClick).not.toHaveBeenCalled();
     });
 
+    it('opens on a flick from short of half the panel, and fires nothing', async () => {
+      const onActivate = vi.fn();
+      const {row} = renderRow({leading: [{label: 'Unread', onActivate}]});
+      const f = finger(row);
+      f.down(10);
+      f.move(25);
+      f.move(40);
+      // 12 px of swipe, still moving at about 850 px/s when it lifts: the
+      // release projects far past half the panel.
+      f.move(52);
+      f.up({afterMs: 0});
+      await settled();
+      expect(xOf(row)).toBe(72);
+      expect(onActivate).not.toHaveBeenCalled();
+    });
+
+    it('closes an open row on a flick back, even from past half the panel', async () => {
+      const {row} = renderRow();
+      dragLeading(row, 45);
+      await settled();
+      expect(xOf(row)).toBe(72);
+      const f = finger(row);
+      f.down(150);
+      f.move(140);
+      f.move(125); // 25 px: the swipe begins where the row is
+      f.move(110);
+      f.up({afterMs: 0});
+      await settled();
+      expect(xOf(row)).toBe(0);
+    });
+
+    it('catches a settling row where it is, without a jump', async () => {
+      const {row} = renderRow();
+      const f = finger(row);
+      f.down(10);
+      f.move(25);
+      f.move(40);
+      f.move(55);
+      f.up({afterMs: 0});
+      // A flick: the row is on its way to 72 px. A finger lands 100 ms in.
+      void act(() => vi.advanceTimersByTime(100));
+      const g = finger(row);
+      g.down(150);
+      g.move(160);
+      g.move(175);
+      // The swipe began: the row heads for where it was when the finger
+      // caught it, neither back to 15 nor on to 72.
+      const caught = xOf(row);
+      expect(caught).toBeGreaterThan(15);
+      expect(caught).toBeLessThan(72);
+      g.move(185);
+      expect(xOf(row)).toBeCloseTo(caught + 10, 5);
+      g.rest();
+      g.up();
+      await settled();
+      expect(xOf(row)).toBe(72);
+    });
+
     it('holds the row out after a tapped entry with hasRemoval', async () => {
       const onActivate = vi.fn();
       const {row} = renderRow({
@@ -1319,6 +1426,24 @@ describe('swipeActions', () => {
       // The trailing panel is out of sight behind the row: nothing in it
       // takes focus or reaches assistive technology.
       expect(panelOf(row, 'trailing')).toHaveAttribute('inert');
+    });
+
+    it('cross-fades a release under Reduce Motion instead of springing: it lands when the fade is over', async () => {
+      // design:reduced-motion DR2 governs where UIKit keeps its spring: the
+      // finger's own drag is direct manipulation, what its release starts
+      // cross-fades.
+      reduceMotion();
+      const {row} = renderRow();
+      dragLeading(row, 45);
+      await act(async () => {
+        vi.advanceTimersByTime(16);
+      });
+      expect(panelOf(row, 'leading')).toHaveAttribute('inert');
+      await act(async () => {
+        vi.advanceTimersByTime(534);
+      });
+      expect(xOf(row)).toBe(72);
+      expect(panelOf(row, 'leading')).not.toHaveAttribute('inert');
     });
 
     it('closes a resting row on a pointer outside it, and on Escape with focus inside', async () => {
@@ -1371,19 +1496,190 @@ describe('swipeActions', () => {
       expect(xOf(row)).toBe(0);
     });
 
-    it('commits on a fling short of the commit point', async () => {
-      const onActivate = vi.fn();
-      const {row} = renderRow({leading: [{label: 'Unread', onActivate}]});
+    it("fires the outermost entry once the row's content has left its box, long before the slide-out comes to rest", async () => {
+      const outer = vi.fn();
+      const {row} = renderRow({
+        leading: [
+          {label: 'Unread', onActivate: vi.fn()},
+          {label: 'Pin', onActivate: outer},
+        ],
+      });
+      // Released held still just past the commit point (192), inside the
+      // 300 px row: nothing has fired yet.
+      dragLeading(row, 200);
+      expect(outer).not.toHaveBeenCalled();
+      // UIKit calls the handler at the lift; the row fires once its content
+      // has left its box (300 px), about a third of a second into a
+      // slide-out whose tail toward 324 px lasts another 0.7 s.
+      await act(async () => {
+        vi.advanceTimersByTime(450);
+      });
+      expect(outer).toHaveBeenCalledTimes(1);
+    });
+
+    it("fires a slide-out the browser starts late once the row's content has left its box, timed from that start", async () => {
+      // Like a browser on a busy page: an animation starts only when a frame
+      // commits it, and until then the row is where it was on screen.
+      const pending: {commit: (at: number) => void}[] = [];
+      HTMLElement.prototype.animate = function () {
+        let start: number | null = null;
+        let cancelled = false;
+        let resolveReady: () => void = () => {};
+        let rejectReady: (error: Error) => void = () => {};
+        const ready = new Promise<void>((resolve, reject) => {
+          resolveReady = resolve;
+          rejectReady = reject;
+        });
+        const animation = {
+          get startTime() {
+            return start;
+          },
+          set startTime(value: number | null) {
+            start = value;
+            resolveReady();
+          },
+          get playState() {
+            return cancelled ? 'idle' : 'running';
+          },
+          ready,
+          commit(at: number) {
+            if (!cancelled && start == null) {
+              start = at;
+            }
+            resolveReady();
+          },
+          cancel() {
+            cancelled = true;
+            rejectReady(new Error('AbortError'));
+          },
+        };
+        pending.push(animation);
+        return animation as unknown as Animation;
+      };
+      try {
+        const outer = vi.fn();
+        const {row} = renderRow({
+          leading: [
+            {label: 'Unread', onActivate: vi.fn()},
+            {label: 'Pin', onActivate: outer},
+          ],
+        });
+        // Released held still past the commit point: the slide-out starts
+        // from rest, and no frame has started it yet.
+        dragLeading(row, 200);
+        await act(async () => {
+          vi.advanceTimersByTime(600);
+        });
+        expect(outer).not.toHaveBeenCalled();
+        // The browser starts it now; it fires once the row's content has left
+        // its box, a third of a second later.
+        const at = performance.now();
+        for (const animation of pending) {
+          animation.commit(at);
+        }
+        await act(async () => {
+          vi.advanceTimersByTime(450);
+        });
+        expect(outer).toHaveBeenCalledTimes(1);
+      } finally {
+        Reflect.deleteProperty(HTMLElement.prototype, 'animate');
+      }
+    });
+
+    it("drops a slide-out's pending fire when the row leaves, after a second slide-out replaced the first", async () => {
+      const outer = vi.fn();
+      const {row, unmount} = renderRow({
+        leading: [
+          {label: 'Unread', onActivate: vi.fn()},
+          {label: 'Pin', onActivate: outer},
+        ],
+      });
+      // When each slide-out's fire is due.
+      const due: number[] = [];
+      const schedule = window.setTimeout;
+      vi.spyOn(window, 'setTimeout').mockImplementation(((
+        callback: TimerHandler,
+        delay?: number,
+        ...rest: unknown[]
+      ) => {
+        if (typeof callback === 'function' && callback.name === 'fireIfStill') {
+          due.push(performance.now() + (delay ?? 0));
+        }
+        return schedule(callback, delay, ...rest);
+      }) as typeof window.setTimeout);
+      dragLeading(row, 200);
+      await act(async () => {});
+      // A finger catches the sliding row, pulls it back in, and flings it
+      // out past the commit point again before the first fire is due.
+      const f = finger(row, 2);
+      f.down(150);
+      f.move(140);
+      f.move(110);
+      f.move(80);
+      f.move(400);
+      f.up();
+      // Each fire is timed from its slide-out's start, read when it resolves.
+      await act(async () => {});
+      expect(due).toHaveLength(2);
+      expect(due[0]).toBeLessThan(due[1]);
+      // The first comes due (the catch cancelled it); then the row leaves
+      // while the second is pending.
+      await act(async () => {
+        vi.advanceTimersByTime(due[0] - performance.now() + 1);
+      });
+      unmount();
+      await act(async () => {
+        vi.advanceTimersByTime(3000);
+      });
+      expect(outer).not.toHaveBeenCalled();
+    });
+
+    it("fires at once when the release is already past the row's edge", () => {
+      const outer = vi.fn();
+      const {row} = renderRow({leading: [{label: 'Pin', onActivate: outer}]});
+      // 72 px panel, commit point 150: 640 px of swipe resist to 321.5 px,
+      // past the 300 px row, and the row is there when the finger lifts.
       const f = finger(row);
       f.down(10);
       f.move(20);
       f.move(35);
-      f.move(55);
-      // 45 px of swipe, still moving fast when it lifts.
-      f.move(80);
-      f.up({afterMs: 0});
-      await settled();
-      expect(onActivate).toHaveBeenCalledTimes(1);
+      f.move(35 + 320);
+      f.move(35 + 640);
+      f.rest(1200);
+      expect(xOf(row)).toBeGreaterThan(300);
+      f.up();
+      expect(outer).toHaveBeenCalledTimes(1);
+    });
+
+    it("a disabled outermost entry's fill beside it takes the disabled entry's look", () => {
+      const {row} = renderRow({
+        trailing: [
+          {label: 'Archive', onActivate: vi.fn()},
+          {
+            label: 'Delete',
+            onActivate: vi.fn(),
+            variant: 'destructive',
+            isDisabled: true,
+          },
+        ],
+      });
+      // The disabled entry is its colour at half strength, and so is the
+      // fill painted beside it (its own pseudo-element, which the entry's
+      // opacity covers): never the full colour of a verb that cannot fire.
+      const [, outer] = entriesOf(row, 'trailing');
+      const rules = rulesDeclaredFor(outer);
+      expect(rules.some(r => r.includes('opacity: 0.5'))).toBe(true);
+      expect(
+        rules.some(
+          r => r.includes('::after') && r.includes('background-color: inherit'),
+        ),
+      ).toBe(true);
+      // The track paints only the surface the entries sit on.
+      expect(
+        rulesDeclaredFor(trackOf(row, 'trailing')).some(r =>
+          r.includes('::before'),
+        ),
+      ).toBe(false);
     });
 
     it('lays the entries outermost last: at the leading edge the row of entries runs in reverse', () => {
@@ -1397,8 +1693,8 @@ describe('swipeActions', () => {
           {label: 'Delete', onActivate: vi.fn(), variant: 'destructive'},
         ],
       });
-      const leading = entriesOf(row, 'leading');
-      const trailing = entriesOf(row, 'trailing');
+      const leading = trackOf(row, 'leading');
+      const trailing = trackOf(row, 'trailing');
       expect(
         rulesDeclaredFor(leading).some(r =>
           r.includes('flex-direction: row-reverse'),
@@ -1409,9 +1705,17 @@ describe('swipeActions', () => {
           r.includes('flex-direction: row-reverse'),
         ),
       ).toBe(false);
-      // The panel wears its outermost entry's colour, so a slide-out fills
-      // the row with it.
-      const trackClasses = (panelOf(row, 'trailing') as HTMLElement).className;
+      // The outermost entry's colour is painted beside it out to the outer
+      // edge (a pseudo-element, no element), so a slide-out fills the row
+      // with it; the other entries carry none.
+      const outerFill = (entry: HTMLElement) =>
+        rulesDeclaredFor(entry).some(
+          r => r.includes('::after') && r.includes('background-color: inherit'),
+        );
+      expect(outerFill(entriesOf(row, 'trailing')[1])).toBe(true);
+      expect(outerFill(entriesOf(row, 'trailing')[0])).toBe(false);
+      expect(outerFill(entriesOf(row, 'leading')[1])).toBe(true);
+      const trackClasses = trackOf(row, 'trailing').className;
       const deleteClasses = (trailing.lastElementChild as HTMLElement)
         .className;
       expect(trackClasses.split(' ').some(c => deleteClasses.includes(c))).toBe(
@@ -1453,7 +1757,7 @@ describe('swipeActions', () => {
       expect(xOf(row)).toBe(0);
     });
 
-    it('commits on a fling short of the commit point', async () => {
+    it('never fires on a flick short of the commit point', async () => {
       const onActivate = vi.fn();
       const {row} = renderRow({
         behavior: 'commit',
@@ -1467,7 +1771,8 @@ describe('swipeActions', () => {
       f.move(80);
       f.up({afterMs: 0});
       await settled();
-      expect(onActivate).toHaveBeenCalledTimes(1);
+      expect(onActivate).not.toHaveBeenCalled();
+      expect(xOf(row)).toBe(0);
     });
 
     it('holds out after a committed entry with hasRemoval', async () => {
@@ -1502,7 +1807,23 @@ describe('swipeActions', () => {
     });
   });
 
-  it('reads the direction logically under RTL: leading is toward the inline end, and the sign rides the root', async () => {
+  it('gives the root back its own translation when the swipe actions go', () => {
+    const {row} = renderRow();
+    const f = finger(row);
+    f.down(10);
+    f.move(20);
+    f.move(35);
+    f.move(65);
+    expect(xOf(row)).toBe(30);
+    f.up();
+    cleanup();
+    render(<Item label="Conversation" data-testid="row" />);
+    expect(screen.getByTestId('row').style.getPropertyValue('translate')).toBe(
+      '',
+    );
+  });
+
+  it('reads the direction logically under RTL: leading is toward the inline end', async () => {
     // jsdom resolves `direction` only on the element that carries `dir`; a
     // browser inherits it down to the row, so resolve that inheritance by
     // hand for this test.
@@ -1540,9 +1861,10 @@ describe('swipeActions', () => {
       f.move(175);
       f.move(155);
       f.move(135);
-      // Physical travel is negative; the transforms multiply by the sign.
+      // Physical travel is negative, and the panel parts mirror it.
       expect(xOf(row)).toBe(-40);
-      expect(row.style.getPropertyValue('--_item-swipe-dir')).toBe('-1');
+      expect(xOf(panelOf(row, 'leading'))).toBe(40);
+      expect(xOf(entriesOf(row, 'leading')[0])).toBe(-72 + 40);
       f.rest();
       f.up();
       await settled();

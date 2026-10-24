@@ -62,7 +62,7 @@ async function openStory(page: Page) {
     const w = window as unknown as {__maxTravel: number};
     w.__maxTravel = 0;
     const tick = () => {
-      const travel = Math.abs(new DOMMatrix(getComputedStyle(el).transform).e);
+      const travel = Math.abs(parseFloat(getComputedStyle(el).translate) || 0);
       w.__maxTravel = Math.max(w.__maxTravel, travel);
       requestAnimationFrame(tick);
     };
