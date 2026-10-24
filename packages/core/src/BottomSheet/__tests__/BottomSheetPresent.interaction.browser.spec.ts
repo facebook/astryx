@@ -477,3 +477,28 @@ test('on Android the sheet opens on the spring too, holding input (one touch mod
   await page.mouse.click(viewport.width / 2, restTop / 2);
   await expect(dialog).not.toHaveAttribute('open');
 });
+
+test.describe('with a mouse', () => {
+  test.use({isMobile: false, hasTouch: false});
+
+  test('under reduced motion with a mouse the sheet opens and closes at once (design:reduced-motion DR3)', async ({
+    page,
+  }) => {
+    await page.emulateMedia({reducedMotion: 'reduce'});
+    await openStory(page, storybook(), 'core-bottomsheet--snap-points');
+    const dialog = page.locator('dialog[aria-label="Nearby places"]');
+    const sheet = dialog.locator('.astryx-bottom-sheet').first();
+    await page.getByRole('button', {name: 'Open nearby places'}).click();
+    await expect(sheet).toBeVisible();
+    // Nothing animates, the scrim included: the stylesheet's reduced-motion
+    // arm for a fine pointer turns every transition off.
+    const running = await dialog.evaluate(el =>
+      el
+        .getAnimations({subtree: true})
+        .map(a => Number(a.effect?.getComputedTiming().duration ?? 0)),
+    );
+    expect(running.every(ms => ms === 0)).toBe(true);
+    await page.keyboard.press('Escape');
+    await expect(dialog).not.toHaveAttribute('open');
+  });
+});
