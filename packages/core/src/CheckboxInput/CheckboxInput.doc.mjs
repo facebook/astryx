@@ -151,6 +151,22 @@ export const docs = {
       },
       {className: 'astryx-checkbox-label'},
     ],
+    vars: [
+      {
+        name: '--_indicator-hover',
+        description:
+          "Whether a hover-capable pointer hovers the checkbox row: 1 while it does, 0 otherwise. Set on the row and inherited by a theme indicator that paints its own hover (one marked with indicatorPressScope), because an ancestor selector on core's scope marker does not match from another package.",
+        default: '0',
+        private: true,
+      },
+      {
+        name: '--_indicator-press-fill',
+        description:
+          "The mouse press fill for a theme indicator that paints its own press: the pressed overlay token while a mouse holds `:active` on the row, transparent otherwise. A finger's press reaches it as `--_press-paint-image`. Set on the row and inherited by the indicator.",
+        default: 'transparent',
+        private: true,
+      },
+    ],
   },
   usage: {
     accessibility: [
@@ -389,6 +405,22 @@ export const docsZh = {
         states: ['checked', 'disabled'],
       },
       {className: 'astryx-checkbox-label'},
+    ],
+    vars: [
+      {
+        name: '--_indicator-hover',
+        description:
+          '支持悬停的指针是否悬停在复选框行上：悬停时为 1，否则为 0。设置在行上，由自行绘制悬停效果的主题指示器（标有 indicatorPressScope）继承，因为核心作用域标记的祖先选择器在其他包中无法匹配。',
+        default: '0',
+        private: true,
+      },
+      {
+        name: '--_indicator-press-fill',
+        description:
+          '自行绘制按下效果的主题指示器所用的鼠标按下填充色：鼠标在行上保持 `:active` 时为按下叠加层令牌，否则为透明。手指的按下以 `--_press-paint-image` 传递给它。设置在行上，由指示器继承。',
+        default: 'transparent',
+        private: true,
+      },
     ],
   },
 };

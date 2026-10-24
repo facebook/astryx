@@ -44,7 +44,10 @@ import type {InputStatus} from '../Field/types';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
 import {mergeProps, rtlStyles} from '../utils';
-import {indicatorScope} from '../Indicator/indicator.markers.stylex';
+import {
+  indicatorPressScope,
+  indicatorScope,
+} from '../Indicator/indicator.markers.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {useTranslator} from '../i18n';
 import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
@@ -71,6 +74,27 @@ const styles = stylex.create({
   containerLabelHidden: {
     gap: 0,
   },
+  // Hands the row's hover and mouse press to a theme indicator that paints
+  // them itself (indicatorPressScope), as inherited private properties: an
+  // indicator built in another package can't name this component's scope
+  // marker in its own ancestor selectors. The touch press already reaches it
+  // the same way (`--_press-paint-image`, interactionOverlayStyles).
+  indicatorStateVars: {
+    '--_indicator-hover': {
+      default: '0',
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        default: '0',
+        '@media (hover: hover)': '1',
+      },
+    },
+    '--_indicator-press-fill': {
+      default: 'transparent',
+      ':active': {
+        default: colorVars['--color-overlay-pressed'],
+        '@media (pointer: coarse)': 'transparent',
+      },
+    },
+  },
   checkboxWrapper: {
     position: 'relative',
     display: 'flex',
@@ -87,7 +111,15 @@ const styles = stylex.create({
   // reads off the same scope marker as the hover tint.
   indicatorPressOverlay: {
     '::after': {
-      content: '""',
+      // Off when the resolved indicator paints its own press (a shape this
+      // rounded square would tint past, such as a circle).
+      content: {
+        default: '""',
+        [stylex.when.descendant(
+          '[data-astryx-indicator-press="self"]',
+          indicatorPressScope,
+        )]: 'none',
+      },
       position: 'absolute',
       inset: 0,
       borderRadius: radiusVars['--radius-inner'],
@@ -443,6 +475,7 @@ export function CheckboxInput({
           // Hover and focus reach the checkbox visual through this ancestor
           // marker rather than props, so the whole row drives it.
           !isDisabled && indicatorScope,
+          !isDisabled && styles.indicatorStateVars,
           // The touch press's strength and release live on the row the
           // controller writes to; the layer over the checkbox box inherits
           // and paints it.
