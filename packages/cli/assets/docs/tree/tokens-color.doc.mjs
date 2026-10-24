@@ -155,6 +155,11 @@ export const docs = {
               "#E3193B"
             ],
             [
+              "--color-background-backdrop",
+              "rgba(0, 0, 0, 0.2)",
+              "rgba(0, 0, 0, 0.48)"
+            ],
+            [
               "--color-success",
               "#0D8626",
               "#0D8626"

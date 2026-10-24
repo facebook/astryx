@@ -120,6 +120,9 @@ export const gothicTheme = defineTheme({
     '--color-background-surface': neutral.dark[10],
     '--color-background-body': neutral.dark[10],
     '--color-overlay': withAlpha(neutral.dark[10], 'cc'),
+    // The modal dim (a dialog, drawer or sheet ::backdrop) keeps the overlay
+    // this theme already dimmed with.
+    '--color-background-backdrop': withAlpha(neutral.dark[10], 'cc'),
     '--color-overlay-hover': withAlpha(neutral.dark[95], '0d'),
     '--color-overlay-pressed': withAlpha(neutral.dark[95], '1a'),
     '--color-background-muted': neutral.dark[20],

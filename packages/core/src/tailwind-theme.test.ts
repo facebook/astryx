@@ -68,6 +68,7 @@ async function compileBridge(): Promise<string> {
       token => `rounded-${suffix(token, '--radius-')}`,
     ),
     'bg-surface',
+    'bg-backdrop',
   ]);
 }
 
@@ -98,5 +99,9 @@ describe('Tailwind theme bridge', () => {
 
     expect(css).toContain('background-color: var(--color-background-surface);');
     expect(css).not.toContain('background-color: var(--color-surface);');
+    expect(css).toContain(
+      'background-color: var(--color-background-backdrop);',
+    );
+    expect(css).not.toContain('background-color: var(--color-backdrop);');
   });
 });

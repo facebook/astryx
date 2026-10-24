@@ -4,8 +4,12 @@
 /**
  * @file ContextMenu.tsx
  * @input Uses React, StyleX, useLayer, shared layer dismissal, BottomSheet,
- *   useListFocus, and the shared menu-presentation resolver
- * @output Exports ContextMenu with cursor-popover and touch-sheet presentations
+ *   useListFocus, the shared menu-presentation resolver, the gesture
+ *   foundation (ContextMenuPressRecognizer), the lift presentation
+ *   (useContextMenuLift), the touch idiom (useTouchIdiom) and the UIKit
+ *   constants table
+ * @output Exports ContextMenu with cursor-popover, touch-lift and touch-sheet
+ *   presentations
  * @position Core implementation; consumed by index.ts
  *
  * Right-click context menu positioned at the cursor. The cursor point is
@@ -15,6 +19,18 @@
  * the content on scroll and auto-flips at viewport edges, while still appearing
  * under the cursor.
  * Reuses DropdownMenu item rendering and keyboard navigation.
+ *
+ * On touch in the iOS idiom (WebKit on iOS or iPadOS under a finger) the
+ * trigger behaves like UIKit's UIContextMenuInteraction: a finger held still
+ * commits the menu at UIKit's moment (`contextMenu.press.commitMs`), with
+ * the press feedback, and the page stays put while that menu is up. When the
+ * menu shows, a block trigger lifts as UIKit's preview does
+ * (ContextMenuLift.tsx) and the menu sits beside the lifted copy
+ * (`contextMenu.lift`); an inline trigger keeps the menu at the finger.
+ * Every other finger (Android included) keeps today's long press: the menu
+ * at 500 ms under the finger, no feedback, no haptic, no lift. Both run on
+ * the same recognizer, so a press that opened the menu sends no click
+ * anywhere.
  *
  * Supports two content modes with a single keyboard/focus path:
  * - **Data-driven**: pass `items` array (converted to components internally)
@@ -29,6 +45,9 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/ContextMenu/ContextMenu.doc.mjs
  * - /packages/core/src/ContextMenu/ContextMenu.test.tsx
+ * - /packages/core/src/ContextMenu/contextMenuPress.ts (touch timeline)
+ * - /packages/core/src/ContextMenu/contextMenuPressFeedback.ts (press feedback)
+ * - /packages/core/src/ContextMenu/ContextMenuLift.tsx (lift presentation)
  * - /packages/core/src/ContextMenu/index.ts
  * - /apps/storybook/stories/ContextMenu.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/ContextMenu/ (showcase blocks)
@@ -44,6 +63,7 @@ import React, {
   useState,
   Suspense,
 } from 'react';
+import {flushSync} from 'react-dom';
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Button} from '../Button';
@@ -70,7 +90,17 @@ import {useMenuDrillIn} from '../DropdownMenu/useMenuDrillIn';
 import {useListFocus} from '../hooks/useListFocus';
 import {useMenuPress} from '../hooks/useMenuPress';
 import {useTypeahead} from '../hooks/useTypeahead';
-import {useLongPress} from '../hooks/useLongPress';
+import {useScrollLock} from '../hooks/useScrollLock';
+import {useTouchIdiom} from '../utils/touchPresentation';
+import {playHaptic, useGestureRecognizer} from '../gestures';
+import {contextMenu} from '../motion/uikit';
+import {ContextMenuPressRecognizer} from './contextMenuPress';
+import {useContextMenuPressFeedback} from './contextMenuPressFeedback';
+import {
+  useContextMenuLift,
+  type ContextMenuLiftResult,
+} from './ContextMenuLift';
+import {menuPlacement, type MenuPlacement} from './contextMenuLiftGeometry';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {
   colorVars,
@@ -317,10 +347,6 @@ export function ContextMenu({
   xstyle,
   triggerXstyle,
   onContextMenu: onContextMenuProp,
-  onTouchStart: onTouchStartProp,
-  onTouchMove: onTouchMoveProp,
-  onTouchEnd: onTouchEndProp,
-  onTouchCancel: onTouchCancelProp,
   'data-testid': testId,
   ...rest
 }: ContextMenuProps) {
@@ -537,16 +563,48 @@ export function ContextMenu({
   // trigger (rather than storing viewport coordinates on the menu itself) is
   // what makes the menu context-relative: it scrolls with the content and the
   // browser auto-flips it against the viewport edges via CSS anchor positioning.
+  // How much the press feedback has scaled a block trigger (from its center):
+  // its bounding rect is the scaled box, its offset size the unscaled one.
+  const triggerScale = useCallback(
+    (rect: DOMRect): {x: number; y: number} => {
+      const trigger = triggerRef.current;
+      if (trigger == null || triggerAs === 'span') {
+        return {x: 1, y: 1};
+      }
+      return {
+        x: trigger.offsetWidth > 0 ? rect.width / trigger.offsetWidth : 1,
+        y: trigger.offsetHeight > 0 ? rect.height / trigger.offsetHeight : 1,
+      };
+    },
+    [triggerAs],
+  );
+
   const openAtLocalPoint = useCallback(
     (localX: number, localY: number, focusEl: HTMLElement | null) => {
       const rect = triggerRef.current?.getBoundingClientRect();
-      const x = rect ? keepAnchorInside(localX, rect.width) : localX;
-      const y = rect ? keepAnchorInside(localY, rect.height) : localY;
+      const scale = rect ? triggerScale(rect) : {x: 1, y: 1};
+      const x = rect ? keepAnchorInside(localX, rect.width / scale.x) : localX;
+      const y = rect ? keepAnchorInside(localY, rect.height / scale.y) : localY;
       positionRef.current = {x, y};
       const anchorEl = cursorAnchorRef.current;
       if (anchorEl) {
         anchorEl.style.left = `${x}px`;
         anchorEl.style.top = `${y}px`;
+        // A trigger the press feedback has grown (from its center) would
+        // carry the anchor with it, and engines differ on whether anchor
+        // positioning follows transforms. Cancel the scale at the anchor, so
+        // its box is the same either way: where the point is on screen.
+        if (rect != null && (scale.x !== 1 || scale.y !== 1)) {
+          const centerX = rect.width / scale.x / 2;
+          const centerY = rect.height / scale.y / 2;
+          anchorEl.style.transformOrigin = '0 0';
+          anchorEl.style.scale = `${1 / scale.x} ${1 / scale.y}`;
+          anchorEl.style.translate = `${(x - centerX) * (1 / scale.x - 1)}px ${(y - centerY) * (1 / scale.y - 1)}px`;
+        } else {
+          anchorEl.style.removeProperty('transform-origin');
+          anchorEl.style.removeProperty('scale');
+          anchorEl.style.removeProperty('translate');
+        }
       }
       // Remember the element focused before opening so we can restore it on
       // close (Escape or outside-click), instead of dropping focus to <body>.
@@ -561,7 +619,7 @@ export function ContextMenu({
         requestAnimationFrame(() => focusFirst());
       }
     },
-    [layer, focusFirst, updateOpenState, usesBottomSheet],
+    [layer, focusFirst, updateOpenState, usesBottomSheet, triggerScale],
   );
 
   // The box the cursor anchor's offsets are measured from: the trigger, which
@@ -569,6 +627,56 @@ export function ContextMenu({
   const getAnchorBaseRect = useCallback(
     (): DOMRect | undefined => triggerRef.current?.getBoundingClientRect(),
     [],
+  );
+
+  // A client point in the trigger's own coordinates, where the cursor anchor
+  // lives: its offset from the trigger's box as laid out, before the press
+  // feedback's scale (from its center), kept inside that box.
+  const toTriggerLocal = useCallback(
+    (point: {x: number; y: number}): {x: number; y: number} => {
+      const rect = triggerRef.current?.getBoundingClientRect();
+      if (rect == null) {
+        return point;
+      }
+      const scale = triggerScale(rect);
+      const width = rect.width / scale.x;
+      const height = rect.height / scale.y;
+      const left = rect.left + (rect.width - width) / 2;
+      const top = rect.top + (rect.height - height) / 2;
+      return {
+        x: Math.min(Math.max(point.x - left, 0), width),
+        y: Math.min(Math.max(point.y - top, 0), height),
+      };
+    },
+    [triggerScale],
+  );
+
+  // Opens the menu beside a lifted preview: the cursor anchor becomes the
+  // preview's box (in the trigger's coordinates; the trigger is back at its
+  // size, under the preview), and the layer places the menu against it.
+  const openLifted = useCallback(
+    ({source, lifted}: ContextMenuLiftResult) => {
+      const x = lifted.x - source.x;
+      const y = lifted.y - source.y;
+      positionRef.current = {x, y};
+      const anchorEl = cursorAnchorRef.current;
+      if (anchorEl) {
+        anchorEl.style.left = `${x}px`;
+        anchorEl.style.top = `${y}px`;
+        anchorEl.style.width = `${lifted.width}px`;
+        anchorEl.style.height = `${lifted.height}px`;
+        anchorEl.style.removeProperty('transform-origin');
+        anchorEl.style.removeProperty('scale');
+        anchorEl.style.removeProperty('translate');
+      }
+      triggerFocusRef.current =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : triggerRef.current;
+      layer.show();
+      requestAnimationFrame(() => focusFirst());
+    },
+    [layer, focusFirst],
   );
 
   const handleContextMenu = useCallback(
@@ -594,69 +702,180 @@ export function ContextMenu({
     [isDisabled, openAtLocalPoint, getAnchorBaseRect],
   );
 
-  // Touch long-press invocation (menus-8). iOS Safari never synthesizes a
-  // `contextmenu` event on long-press, so a context menu is otherwise
-  // unreachable on touch. Open the menu at the touch point once the press is
-  // held long enough (see useLongPress for timer/move-cancel/cleanup logic).
-  // The hook also returns the imperative start/moveTo/cancel API the menu press
-  // model drives; only its four touch handlers belong on the trigger element.
-  const {
-    onTouchStart: handleLongPressTouchStart,
-    onTouchMove: handleLongPressTouchMove,
-    onTouchEnd: handleLongPressTouchEnd,
-    onTouchCancel: handleLongPressTouchCancel,
-  } = useLongPress({
-    disabled: isDisabled,
-    onLongPress: useCallback(
-      (point: {x: number; y: number}) => {
-        const rect = getAnchorBaseRect();
-        openAtLocalPoint(
-          rect ? point.x - rect.left : point.x,
-          rect ? point.y - rect.top : point.y,
-          triggerRef.current,
-        );
-      },
-      [openAtLocalPoint, getAnchorBaseRect],
-    ),
+  // Touch invocation (menus-8): UIContextMenuInteraction's long press. iOS
+  // Safari never fires `contextmenu` for a held finger, so the trigger runs
+  // its own recognizer on UIKit's timeline (contextMenu.press; the states are
+  // described in contextMenuPress.ts). At the commit the haptic plays and the
+  // recognizer claims the finger (the page stops scrolling under it, and its
+  // lift sends no click and no compatibility mouse events). The menu opens
+  // where the finger landed: at `menuDisplayMs` if it is still down, or at
+  // the lift. A lift before the commit, a second finger, a scroll, or a drift
+  // past the tolerance before the menu shows gets no menu.
+  const [isTouchOpen, setIsTouchOpen] = useState(false);
+  // Whether the press in flight has opened its menu.
+  const hasPressOpenedRef = useRef(false);
+  // The press feedback (contextMenuPressFeedback.ts): the trigger grows from
+  // the onset, springs back if the press fails, and stays grown while the
+  // menu it opened is up. Not shown on an inline trigger.
+  const pressFeedback = useContextMenuPressFeedback(
+    triggerRef,
+    triggerAs !== 'span',
+  );
+  const pressFeedbackRef = useRef(pressFeedback);
+  pressFeedbackRef.current = pressFeedback;
+  // UIKit's timeline, feedback and haptic belong to the iOS idiom; every
+  // other finger keeps today's long press (contextMenuPress.ts).
+  const idiom = useTouchIdiom();
+  const isIosIdiom = idiom === 'ios';
+  const isIosIdiomRef = useRef(isIosIdiom);
+  isIosIdiomRef.current = isIosIdiom;
+  // The lift presentation (ContextMenuLift.tsx): when the menu shows under a
+  // finger, the trigger's preview lifts above a tinted backdrop and the menu
+  // sits beside it.
+  const liftPresentation = useContextMenuLift(triggerRef, {
+    onBackdropTap: closeMenu,
   });
+  const liftRef = useRef(liftPresentation);
+  liftRef.current = liftPresentation;
+  const [liftPlacement, setLiftPlacement] = useState<MenuPlacement | null>(
+    null,
+  );
+  const pressRecognizer = useGestureRecognizer(
+    triggerRef,
+    () =>
+      new ContextMenuPressRecognizer({
+        idiom: () => (isIosIdiomRef.current ? 'ios' : 'default'),
+        onPressStart: recognizer => {
+          if (isIosIdiomRef.current && recognizer.press != null) {
+            pressFeedbackRef.current.start(recognizer.press.time);
+          }
+        },
+      }),
+    recognizer => {
+      const open = () => {
+        // The press feedback has grown the trigger from its center, and the
+        // cursor anchor inside it moves with that scale: stop the growth where
+        // it is.
+        pressFeedbackRef.current.hold();
+        hasPressOpenedRef.current = true;
+        setIsTouchOpen(true);
+        // UIKit's presentation (the iOS idiom): the preview lifts and the
+        // menu sits beside it. Elsewhere the menu opens under the finger.
+        const lifted =
+          usesBottomSheet || triggerAs === 'span' || !isIosIdiomRef.current
+            ? null
+            : liftRef.current.lift();
+        if (lifted != null) {
+          pressFeedbackRef.current.end();
+          // The menu's side depends on its height: place it below, show it,
+          // measure it, and move it above in the same task if it does not fit.
+          const below = menuPlacement(lifted.lifted, 0, lifted.viewport);
+          flushSync(() => {
+            setLiftPlacement(below);
+          });
+          openLifted(lifted);
+          const menuHeight = listRef.current?.offsetHeight ?? 0;
+          const placement = menuPlacement(
+            lifted.lifted,
+            menuHeight,
+            lifted.viewport,
+          );
+          if (placement.side !== below.side) {
+            flushSync(() => {
+              setLiftPlacement(placement);
+            });
+          }
+          // Its glass grows out of the finger, now that its frame is known.
+          const list = listRef.current;
+          if (list != null) {
+            liftRef.current.morphMenu(
+              list,
+              recognizer.press ?? recognizer.location(),
+            );
+          }
+          return;
+        }
+        // Otherwise the menu opens under the finger (openAtLocalPoint cancels
+        // the trigger's scale at the anchor).
+        const local = toTriggerLocal(recognizer.press ?? recognizer.location());
+        openAtLocalPoint(local.x, local.y, triggerRef.current);
+      };
+      switch (recognizer.state) {
+        case 'began':
+          hasPressOpenedRef.current = false;
+          // The click haptic, where a vibration motor is the only haptic.
+          // iOS Safari can play none here: no tap lands at the commit. Off
+          // outside the iOS idiom, as today's long press is.
+          if (isIosIdiomRef.current) {
+            playHaptic(contextMenu.commitHaptic);
+          }
+          break;
+        case 'changed':
+          if (recognizer.isMenuDue && !hasPressOpenedRef.current) {
+            open();
+          }
+          break;
+        case 'ended':
+          if (!hasPressOpenedRef.current) {
+            open();
+          }
+          break;
+        case 'possible':
+        case 'failed':
+        case 'cancelled':
+          // A press that ends with no menu: the transition listener below.
+          break;
+      }
+    },
+    {isEnabled: !isDisabled},
+  );
+  useEffect(
+    () =>
+      pressRecognizer.addTransitionListener((recognizer, from, to) => {
+        // A press that ends with no menu: the feedback springs back.
+        const isFailure = from === 'possible' && to === 'failed';
+        const isCancel = to === 'cancelled' && !hasPressOpenedRef.current;
+        if ((isFailure || isCancel) && recognizer.press != null) {
+          pressFeedbackRef.current.fail(recognizer.clockTime);
+        }
+      }),
+    [pressRecognizer],
+  );
 
-  // ContextMenu owns invocation and long-press cleanup. Consumer handlers are
-  // notified too, but preventing their default does not cancel component-owned
-  // behavior that the public API does not promise as cancelable.
+  // The page stays put while a menu a finger opened is up, as it does under
+  // UIKit's context menu (the iOS idiom). A sheet locks the page itself.
+  useScrollLock(isOpen && isTouchOpen && isIosIdiom && !usesBottomSheet);
+  // A popover reports itself open a task after the press asked (its toggle
+  // event), so only an open → closed change ends the touch-opened menu.
+  const wasOpenRef = useRef(isOpen);
+  useEffect(() => {
+    if (wasOpenRef.current && !isOpen) {
+      setIsTouchOpen(false);
+      pressFeedbackRef.current.release();
+      liftRef.current.drop();
+      setLiftPlacement(null);
+      const anchorEl = cursorAnchorRef.current;
+      anchorEl?.style.removeProperty('width');
+      anchorEl?.style.removeProperty('height');
+    }
+    wasOpenRef.current = isOpen;
+  }, [isOpen]);
+
+  // ContextMenu owns invocation. Consumer handlers are notified too, but
+  // preventing their default does not cancel component-owned behavior that
+  // the public API does not promise as cancelable.
   const handleTriggerContextMenu = useCallback(
     (event: React.MouseEvent<HTMLElement>) => {
-      handleContextMenu(event);
+      if (pressRecognizer.numberOfTouches > 0) {
+        // The browser's own long-press menu (Android Chrome) for a finger the
+        // recognizer is timing: the recognizer decides, not this event.
+        event.preventDefault();
+      } else {
+        handleContextMenu(event);
+      }
       onContextMenuProp?.(event);
     },
-    [handleContextMenu, onContextMenuProp],
-  );
-  const handleTriggerTouchStart = useCallback(
-    (event: React.TouchEvent<HTMLElement>) => {
-      handleLongPressTouchStart(event);
-      onTouchStartProp?.(event);
-    },
-    [handleLongPressTouchStart, onTouchStartProp],
-  );
-  const handleTriggerTouchMove = useCallback(
-    (event: React.TouchEvent<HTMLElement>) => {
-      handleLongPressTouchMove(event);
-      onTouchMoveProp?.(event);
-    },
-    [handleLongPressTouchMove, onTouchMoveProp],
-  );
-  const handleTriggerTouchEnd = useCallback(
-    (event: React.TouchEvent<HTMLElement>) => {
-      handleLongPressTouchEnd();
-      onTouchEndProp?.(event);
-    },
-    [handleLongPressTouchEnd, onTouchEndProp],
-  );
-  const handleTriggerTouchCancel = useCallback(
-    (event: React.TouchEvent<HTMLElement>) => {
-      handleLongPressTouchCancel();
-      onTouchCancelProp?.(event);
-    },
-    [handleLongPressTouchCancel, onTouchCancelProp],
+    [handleContextMenu, onContextMenuProp, pressRecognizer],
   );
 
   const popoverXstyle = menuWidth
@@ -777,10 +996,6 @@ export function ContextMenu({
         ref={useMergedRefs(ref, triggerRef)}
         {...triggerProps}
         onContextMenu={handleTriggerContextMenu}
-        onTouchStart={handleTriggerTouchStart}
-        onTouchMove={handleTriggerTouchMove}
-        onTouchEnd={handleTriggerTouchEnd}
-        onTouchCancel={handleTriggerTouchCancel}
         data-testid={testId}
         {...stylex.props(
           styles.trigger,
@@ -813,12 +1028,25 @@ export function ContextMenu({
           </LazyMenuBottomSheet>
         </Suspense>
       ) : (
-        layer.render(<LayerDepthProvider>{renderedMenu}</LayerDepthProvider>, {
-          placement: 'below',
-          alignment: 'start',
-          xstyle: [popoverXstyle, layerAnimations.below],
-        })
+        layer.render(
+          <LayerDepthProvider>{renderedMenu}</LayerDepthProvider>,
+          liftPlacement != null
+            ? {
+                placement: liftPlacement.side,
+                alignment: liftPlacement.alignment,
+                offset: contextMenu.lift.menuGap,
+                xstyle: [popoverXstyle],
+              }
+            : {
+                placement: 'below',
+                alignment: 'start',
+                xstyle: [popoverXstyle, layerAnimations.below],
+              },
+        )
       )}
+      {usesBottomSheet || triggerAs === 'span' || !isIosIdiom
+        ? null
+        : liftPresentation.layer}
     </>
   );
 }
