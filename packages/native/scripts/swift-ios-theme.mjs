@@ -39,7 +39,7 @@ const REGENERATE = 'pnpm -F @astryxdesign/native generate:swift-ios';
 // G5: the token groups Swift keeps. Everything else (shadows, motion, layout
 // breakpoints) stays out until a component needs it.
 const KEEP =
-  /^--(color-|spacing-|radius-|size-element-|border-width$|font-size-|font-weight-|font-family-|text-(heading-\d|display-\d|body|large|label|supporting|code)-)/;
+  /^--(color-|spacing-|radius-|size-element-|border-width$|font-size-|font-weight-|font-family-|text-(heading-\d|display-\d|body|large|label|supporting|code)-|shadow-(low|med|high)$)/;
 const REM = 16;
 
 // Words Swift reserves as identifiers. A member or theme name that equals one
@@ -102,6 +102,9 @@ export function swiftMember(token) {
   }
   if ((m = /^text-(.+)-(size|weight|leading)$/.exec(name))) {
     return {group: 'font', member: `${camel(m[1].split('-'))}.${m[2]}`};
+  }
+  if ((m = /^shadow-(.+)$/.exec(name))) {
+    return {group: 'shadow', member: camel(m[1].split('-'))};
   }
   return null;
 }
@@ -187,6 +190,38 @@ export function toHexColor(value) {
     const byte = c => hex2(Math.round(c * 255 * 1e6) / 1e6);
     return `#${byte(channel(h + 1 / 3))}${byte(channel(h))}${byte(channel(h - 1 / 3))}${byte(alpha)}`;
   }
+  m =
+    /^oklch\(\s*([\d.]+%?)\s+([\d.]+%?)\s+(-?[\d.]+)(?:deg)?(?:\s*\/\s*([\d.]+%?))?\s*\)$/i.exec(
+      v,
+    );
+  if (m) {
+    // Exact OKLCH → OKLab → linear sRGB → sRGB, clipped to the sRGB gamut,
+    // then each channel rounded to the nearest of 256 steps, halves up (G7).
+    const part = (text, percentOf) =>
+      text.endsWith('%')
+        ? (parseFloat(text) / 100) * percentOf
+        : parseFloat(text);
+    const L = part(m[1], 1);
+    const C = part(m[2], 0.4);
+    const hue = (parseFloat(m[3]) * Math.PI) / 180;
+    const a = C * Math.cos(hue);
+    const b = C * Math.sin(hue);
+    const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+    const mm = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+    const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3;
+    const linear = [
+      4.0767416621 * l - 3.3077115913 * mm + 0.2309699292 * s,
+      -1.2684380046 * l + 2.6097574011 * mm - 0.3413193965 * s,
+      -0.0041960863 * l - 0.7034186147 * mm + 1.707614701 * s,
+    ];
+    const encode = c => {
+      const x = Math.min(1, Math.max(0, c));
+      return x <= 0.0031308 ? 12.92 * x : 1.055 * x ** (1 / 2.4) - 0.055;
+    };
+    const alpha = m[4] === undefined ? 1 : part(m[4], 1);
+    const byte = c => hex2(Math.round(c * 255 * 1e6) / 1e6);
+    return `#${linear.map(c => byte(encode(c))).join('')}${byte(alpha)}`;
+  }
   return NAMED_COLORS[v.toLowerCase()] ?? null;
 }
 
@@ -208,6 +243,51 @@ export function valueForMode(value, mode) {
     }
   }
   return value;
+}
+
+/** Splits a CSS list at its top-level commas. */
+function splitTopLevel(value) {
+  const parts = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < value.length; i++) {
+    const c = value[i];
+    if (c === '(') depth++;
+    else if (c === ')') depth--;
+    else if (c === ',' && depth === 0) {
+      parts.push(value.slice(start, i));
+      start = i + 1;
+    }
+  }
+  parts.push(value.slice(start));
+  return parts.map(part => part.trim());
+}
+
+/**
+ * A CSS `box-shadow` list as shadow layers in one mode, or null (G7). A drop
+ * layer is `x y blur color` with no spread; an inset layer is a ring,
+ * `inset 0 0 0 <width> color`. A `light-dark()` color is taken per mode. Any
+ * other layer has no exact SwiftUI form, so the list is null.
+ */
+export function toShadow(value, mode) {
+  const layers = [];
+  for (const layer of splitTopLevel(value.trim())) {
+    const m =
+      /^(inset\s+)?(\S+)\s+(\S+)\s+(\S+)(?:\s+(\S+))?\s+((?:light-dark|rgba?|hsla?|oklch)\(.*\)|#[0-9A-Fa-f]+|[a-z]+)$/s.exec(
+        layer,
+      );
+    if (!m) return null;
+    const [x, y, blur] = [m[2], m[3], m[4]].map(toPoints);
+    const spread = m[5] == null ? 0 : toPoints(m[5]);
+    const color = toHexColor(valueForMode(m[6], mode));
+    if (x == null || y == null || blur == null || spread == null || !color) {
+      return null;
+    }
+    const isInset = m[1] != null;
+    if (isInset ? x !== 0 || y !== 0 || blur !== 0 : spread !== 0) return null;
+    layers.push({x, y, blur, spread, isInset, color});
+  }
+  return layers.length ? layers : null;
 }
 
 /** A CSS length or unitless number as points, or null. */
@@ -239,6 +319,7 @@ const GROUP_TYPES = {
   radius: 'CGFloat',
   size: 'CGFloat',
   font: null, // per member: [String] for families, CGFloat otherwise
+  shadow: '[ShadowLayer]',
 };
 const GROUP_STRUCTS = {
   color: 'ColorTokens',
@@ -246,6 +327,7 @@ const GROUP_STRUCTS = {
   radius: 'RadiusTokens',
   size: 'SizeTokens',
   font: 'FontTokens',
+  shadow: 'ShadowTokens',
 };
 const GROUPS = Object.keys(GROUP_STRUCTS);
 
@@ -306,8 +388,8 @@ async function resolveMode(theme, mode) {
     resolveThemeTokens(theme === CORE_DEFAULTS ? null : theme, {mode}),
   )) {
     if (!KEEP.test(token) || typeof value !== 'string') continue;
-    value = valueForMode(value, mode);
     const {group, member} = swiftMember(token);
+    if (group !== 'shadow') value = valueForMode(value, mode);
     const fail = kind => {
       throw new Error(
         `${theme.name} ${mode}: ${token} is not a ${kind} Swift can read: ${value}`,
@@ -315,6 +397,8 @@ async function resolveMode(theme, mode) {
     };
     let typed;
     if (group === 'color') typed = toHexColor(value) ?? fail('color');
+    else if (group === 'shadow')
+      typed = toShadow(value, mode) ?? fail('shadow');
     else if (isFamily(token)) typed = toFamilies(value) ?? fail('font family');
     else typed = toPoints(value) ?? fail('size');
     out[token] = {group, member, value: typed};
@@ -510,7 +594,7 @@ export function renderTokenTypes(surface) {
       .map(m => `    self.${m.member} = ${m.member}`)
       .join('\n');
     const lookupType =
-      group === 'color' ? 'Color' : group === 'font' ? null : 'CGFloat';
+      group === 'font' ? null : (GROUP_TYPES[group] ?? 'CGFloat');
     const lookup =
       lookupType === null
         ? `  /// A size, weight, or line-height token by its CSS name, for code that
@@ -573,6 +657,28 @@ ${GROUPS.map(g => `    self.${g} = ${g}`).join('\n')}
   }
 }
 
+/// One layer of a theme's shadow, as CSS \`box-shadow\` draws it: a drop
+/// shadow (an offset and a blur), or an inset ring \`spread\` points wide.
+public struct ShadowLayer: Equatable, Sendable {
+  public var x: CGFloat
+  public var y: CGFloat
+  public var blur: CGFloat
+  public var spread: CGFloat
+  public var isInset: Bool
+  public var color: Color
+
+  public init(
+    x: CGFloat, y: CGFloat, blur: CGFloat, spread: CGFloat = 0, isInset: Bool = false, color: Color
+  ) {
+    self.x = x
+    self.y = y
+    self.blur = blur
+    self.spread = spread
+    self.isInset = isInset
+    self.color = color
+  }
+}
+
 ${structs}
 `;
 }
@@ -581,6 +687,13 @@ function swiftValue(type, value) {
   if (type === 'Color') return `Color(astryxRGBA: 0x${value.slice(1)})`;
   if (type === '[String]')
     return `[${value.map(v => JSON.stringify(v)).join(', ')}]`;
+  if (type === '[ShadowLayer]')
+    return `[${value
+      .map(
+        l =>
+          `ShadowLayer(x: ${swiftNumber(l.x)}, y: ${swiftNumber(l.y)}, blur: ${swiftNumber(l.blur)}${l.isInset ? `, spread: ${swiftNumber(l.spread)}, isInset: true` : ''}, color: ${swiftValue('Color', l.color)})`,
+      )
+      .join(', ')}]`;
   return swiftNumber(value);
 }
 

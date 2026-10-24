@@ -6,7 +6,7 @@ import Testing
 
 @MainActor
 @Test func severalChildrenStackInOneCard() {
-  let card = Astryx.Card(padding: 0) {
+  let card = Astryx.Card(padding: .v0) {
     Color(astryxHex: "#FF0000FF").frame(width: 80, height: 40)
     Color(astryxHex: "#0000FFFF").frame(width: 80, height: 40)
   }
@@ -16,4 +16,69 @@ import Testing
   #expect(pixels.height >= 80)
   #expect(close(pixels.at(40, 20), rgba("#FF0000FF")))
   #expect(close(pixels.at(40, 60), rgba("#0000FFFF")))
+}
+
+// Swift component API spec, A2 and A3: Card takes core's Card props, and its
+// props initializer takes the children as wire nodes.
+
+@MainActor
+@Test func bothInitializersBuildTheSameProps() {
+  let labeled = Astryx.Card(padding: .v0_5, variant: .muted, elevation: .low) { Color.clear }
+  let fromProps = Astryx.Card(CardProps(padding: .v0_5, variant: .muted, elevation: .low), children: []) { _ in }
+  #expect(labeled.props.padding == fromProps.props.padding)
+  #expect(labeled.props.variant == fromProps.props.variant)
+  #expect(labeled.props.elevation == fromProps.props.elevation)
+}
+
+@Test func everyVariantDrawsCoresGroundAndOnlyDefaultHasABorder() {
+  let color = Theme.default.light.color
+  #expect(Astryx.Card<Color>.ground(.default, color) == color.backgroundCard)
+  #expect(Astryx.Card<Color>.ground(.transparent, color) == .clear)
+  #expect(Astryx.Card<Color>.ground(.muted, color) == color.backgroundMuted)
+  #expect(Astryx.Card<Color>.ground(.teal, color) == color.backgroundTeal)
+}
+
+@Test func elevationReadsTheThemesShadows() {
+  let shadow = Theme.neutral.light.shadow
+  #expect(Astryx.Card<Color>.shadow(.none, shadow).isEmpty)
+  #expect(Astryx.Card<Color>.shadow(.low, shadow) == shadow.low)
+  #expect(Astryx.Card<Color>.shadow(.high, shadow) == shadow.high)
+  // Neutral's shadows end with a ring, as its CSS does.
+  #expect(shadow.low.last?.isInset == true)
+}
+
+@MainActor
+@Test func paddingHalfStepsAreCoresSpacingTokens() {
+  let child = Color(astryxHex: "#FF0000FF").frame(width: 20, height: 20)
+  let half = Pixels(Astryx.Card(padding: .v0_5) { child }.fixedSize())
+  let four = Pixels(Astryx.Card(padding: .v4) { child }.fixedSize())
+  #expect(four.height > half.height)
+}
+
+@MainActor
+@Test func anElevatedCardDrawsAShadowBelowIt() {
+  let flat = Pixels(Astryx.Card(elevation: Astryx.CardElevation.none) { Color.clear.frame(width: 40, height: 40) }.frame(width: 80).padding(20))
+  let raised = Pixels(Astryx.Card(elevation: .high) { Color.clear.frame(width: 40, height: 40) }.frame(width: 80).padding(20))
+  let below = (raised.width / 2, raised.height - 12)
+  #expect(raised.at(below.0, below.1)[3] > flat.at(below.0, below.1)[3])
+}
+
+@MainActor
+@Test func aTransparentCardDrawsNoGroundAndNoBorder() {
+  let card = Pixels(Astryx.Card(variant: .transparent) { Color.clear.frame(width: 40, height: 40) }.frame(width: 80))
+  #expect(card.contains { $0[3] > 0 } == false)
+}
+
+@MainActor
+@Test func aCardFromWireNodesDrawsItsChildren() {
+  let json = """
+    {"component":"Card","key":"c","props":{"padding":0,"children":[
+      {"component":"Text","key":"t","props":{"children":"Hello"}}]}}
+    """
+  let node = try? JSONDecoder().decode(AstryxNode.self, from: Data(json.utf8))
+  #expect(node != nil)
+  if let node {
+    let pixels = Pixels(AstryxNodeView(node) { _ in }.frame(width: 120))
+    #expect(pixels.height > 10)
+  }
 }

@@ -214,6 +214,11 @@ extension Theme {
         size: FontSizeTokens(base: 14, lg: 17, s2xl: 24, s2xs: 8, s3xl: 29, s3xs: 7, s4xl: 35, s4xs: 6, s5xl: 42, sm: 12, xl: 20, xs: 10),
         supporting: TypeStyleTokens(size: 12, weight: 400, leading: 1.6667),
         weight: FontWeightTokens(bold: 700, medium: 500, normal: 400, semibold: 600)
+      ),
+      shadow: ShadowTokens(
+        high: [ShadowLayer(x: 0, y: 4, blur: 6, color: Color(astryxRGBA: 0x0000001A)), ShadowLayer(x: 0, y: 12, blur: 24, color: Color(astryxRGBA: 0x00000026)), ShadowLayer(x: 0, y: 0, blur: 0, spread: 1, isInset: true, color: Color(astryxRGBA: 0x00000000))],
+        low: [ShadowLayer(x: 0, y: 2, blur: 4, color: Color(astryxRGBA: 0x0000000D)), ShadowLayer(x: 0, y: 4, blur: 8, color: Color(astryxRGBA: 0x0000001A)), ShadowLayer(x: 0, y: 0, blur: 0, spread: 1, isInset: true, color: Color(astryxRGBA: 0x00000000))],
+        med: [ShadowLayer(x: 0, y: 2, blur: 4, color: Color(astryxRGBA: 0x0000000D)), ShadowLayer(x: 0, y: 4, blur: 12, color: Color(astryxRGBA: 0x0000001A)), ShadowLayer(x: 0, y: 0, blur: 0, spread: 1, isInset: true, color: Color(astryxRGBA: 0x00000000))]
       )
     ),
     dark: Tokens(
@@ -423,6 +428,11 @@ extension Theme {
         size: FontSizeTokens(base: 14, lg: 17, s2xl: 24, s2xs: 8, s3xl: 29, s3xs: 7, s4xl: 35, s4xs: 6, s5xl: 42, sm: 12, xl: 20, xs: 10),
         supporting: TypeStyleTokens(size: 12, weight: 400, leading: 1.6667),
         weight: FontWeightTokens(bold: 700, medium: 500, normal: 400, semibold: 600)
+      ),
+      shadow: ShadowTokens(
+        high: [ShadowLayer(x: 0, y: 4, blur: 6, color: Color(astryxRGBA: 0x00000080)), ShadowLayer(x: 0, y: 12, blur: 24, color: Color(astryxRGBA: 0x000000B3)), ShadowLayer(x: 0, y: 0, blur: 0, spread: 1, isInset: true, color: Color(astryxRGBA: 0xFFFFFF26))],
+        low: [ShadowLayer(x: 0, y: 2, blur: 4, color: Color(astryxRGBA: 0x00000040)), ShadowLayer(x: 0, y: 4, blur: 8, color: Color(astryxRGBA: 0x00000066)), ShadowLayer(x: 0, y: 0, blur: 0, spread: 1, isInset: true, color: Color(astryxRGBA: 0xFFFFFF14))],
+        med: [ShadowLayer(x: 0, y: 2, blur: 4, color: Color(astryxRGBA: 0x00000059)), ShadowLayer(x: 0, y: 4, blur: 12, color: Color(astryxRGBA: 0x00000080)), ShadowLayer(x: 0, y: 0, blur: 0, spread: 1, isInset: true, color: Color(astryxRGBA: 0xFFFFFF1F))]
       )
     )
   )

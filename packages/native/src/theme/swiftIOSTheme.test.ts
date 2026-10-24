@@ -18,6 +18,7 @@ import {
   toHexColor,
   toPoints,
   renderTokenTypes,
+  toShadow,
   tokenSurface,
   valueForMode,
 } from '../../scripts/swift-ios-theme.mjs';
@@ -107,7 +108,11 @@ describe('swift theme generator: values (G7)', () => {
     expect(toHexColor('#fff')).toBe('#FFFFFFFF');
     expect(toHexColor('rgba(5, 54, 89, 0.1)')).toBe('#0536591A');
     expect(toHexColor('transparent')).toBe('#00000000');
-    expect(toHexColor('oklch(0 0 0 / 5%)')).toBeNull();
+    expect(toHexColor('oklch(0 0 0 / 5%)')).toBe('#0000000D');
+    expect(toHexColor('oklch(1 0 0 / 8%)')).toBe('#FFFFFF14');
+    expect(toHexColor('oklch(0.5 0 0)')).toBe('#636363FF');
+    expect(toHexColor('oklch(50% 0 0)')).toBe('#636363FF');
+    expect(toHexColor('color-mix(in srgb, red, blue)')).toBeNull();
     expect(toHexColor('light-dark(#000, #fff)')).toBeNull();
     expect(toHexColor('hsl(0 100% 50%)')).toBe('#FF0000FF');
     expect(toHexColor('hsl(210 100% 50%)')).toBe('#0080FFFF');
@@ -122,6 +127,23 @@ describe('swift theme generator: values (G7)', () => {
       'sans-serif',
     ]);
     expect(toFamilies('var(--font-family-body)')).toBeNull();
+  });
+
+  it('reads box-shadow lists as drop layers and inset rings (G7)', () => {
+    const neutralLow =
+      '0 2px 4px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 25%)), 0 4px 8px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 40%)), inset 0 0 0 1px light-dark(transparent, oklch(1 0 0 / 8%))';
+    expect(toShadow(neutralLow, 'light')).toEqual([
+      {x: 0, y: 2, blur: 4, spread: 0, isInset: false, color: '#0000000D'},
+      {x: 0, y: 4, blur: 8, spread: 0, isInset: false, color: '#0000001A'},
+      {x: 0, y: 0, blur: 0, spread: 1, isInset: true, color: '#00000000'},
+    ]);
+    expect(toShadow(neutralLow, 'dark')?.[2]?.color).toBe('#FFFFFF14');
+    expect(toShadow('0 2px 4px #4a35200D', 'light')).toEqual([
+      {x: 0, y: 2, blur: 4, spread: 0, isInset: false, color: '#4A35200D'},
+    ]);
+    // No exact SwiftUI form: a drop spread, or a blurred or offset inset.
+    expect(toShadow('0 2px 4px 1px #000', 'light')).toBeNull();
+    expect(toShadow('inset 0 1px 2px #000', 'light')).toBeNull();
   });
 
   it('takes light-dark() per mode (G1)', async () => {
@@ -143,10 +165,10 @@ describe('swift theme generator: values (G7)', () => {
   it('fails on a value Swift cannot read, naming theme, mode, token, and value', async () => {
     const theme = await defineTheme({
       name: 'acme-brand',
-      tokens: {'--color-accent': 'oklch(0.6 0.2 250)'},
+      tokens: {'--color-accent': 'color-mix(in srgb, red, blue)'},
     });
     await expect(renderSwiftTheme(theme)).rejects.toThrow(
-      'acme-brand light: --color-accent is not a color Swift can read: oklch(0.6 0.2 250)',
+      'acme-brand light: --color-accent is not a color Swift can read: color-mix(in srgb, red, blue)',
     );
   });
 });

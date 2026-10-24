@@ -214,6 +214,11 @@ extension Theme {
         size: FontSizeTokens(base: 14, lg: 18, s2xl: 27, s2xs: 7, s3xl: 34, s3xs: 6, s4xl: 43, s4xs: 5, s5xl: 53, sm: 11, xl: 22, xs: 9),
         supporting: TypeStyleTokens(size: 12, weight: 400, leading: 1.4545),
         weight: FontWeightTokens(bold: 700, medium: 500, normal: 400, semibold: 600)
+      ),
+      shadow: ShadowTokens(
+        high: [ShadowLayer(x: 0, y: 4, blur: 6, color: Color(astryxRGBA: 0x1D1C111A)), ShadowLayer(x: 0, y: 12, blur: 24, color: Color(astryxRGBA: 0x1D1C1126))],
+        low: [ShadowLayer(x: 0, y: 2, blur: 4, color: Color(astryxRGBA: 0x1D1C110D)), ShadowLayer(x: 0, y: 4, blur: 8, color: Color(astryxRGBA: 0x1D1C111A))],
+        med: [ShadowLayer(x: 0, y: 2, blur: 4, color: Color(astryxRGBA: 0x1D1C110D)), ShadowLayer(x: 0, y: 4, blur: 12, color: Color(astryxRGBA: 0x1D1C111A))]
       )
     ),
     dark: Tokens(
@@ -423,6 +428,11 @@ extension Theme {
         size: FontSizeTokens(base: 14, lg: 18, s2xl: 27, s2xs: 7, s3xl: 34, s3xs: 6, s4xl: 43, s4xs: 5, s5xl: 53, sm: 11, xl: 22, xs: 9),
         supporting: TypeStyleTokens(size: 12, weight: 400, leading: 1.4545),
         weight: FontWeightTokens(bold: 700, medium: 500, normal: 400, semibold: 600)
+      ),
+      shadow: ShadowTokens(
+        high: [ShadowLayer(x: 0, y: 4, blur: 6, color: Color(astryxRGBA: 0x1D1C111A)), ShadowLayer(x: 0, y: 12, blur: 24, color: Color(astryxRGBA: 0x1D1C1126))],
+        low: [ShadowLayer(x: 0, y: 2, blur: 4, color: Color(astryxRGBA: 0x1D1C110D)), ShadowLayer(x: 0, y: 4, blur: 8, color: Color(astryxRGBA: 0x1D1C111A))],
+        med: [ShadowLayer(x: 0, y: 2, blur: 4, color: Color(astryxRGBA: 0x1D1C110D)), ShadowLayer(x: 0, y: 4, blur: 12, color: Color(astryxRGBA: 0x1D1C111A))]
       )
     )
   )

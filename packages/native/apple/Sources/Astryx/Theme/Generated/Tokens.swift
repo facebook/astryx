@@ -11,19 +11,44 @@ public struct Tokens: Equatable, Sendable {
   public var radius: RadiusTokens
   public var size: SizeTokens
   public var font: FontTokens
+  public var shadow: ShadowTokens
 
   public init(
     color: ColorTokens,
     space: SpaceTokens,
     radius: RadiusTokens,
     size: SizeTokens,
-    font: FontTokens
+    font: FontTokens,
+    shadow: ShadowTokens
   ) {
     self.color = color
     self.space = space
     self.radius = radius
     self.size = size
     self.font = font
+    self.shadow = shadow
+  }
+}
+
+/// One layer of a theme's shadow, as CSS `box-shadow` draws it: a drop
+/// shadow (an offset and a blur), or an inset ring `spread` points wide.
+public struct ShadowLayer: Equatable, Sendable {
+  public var x: CGFloat
+  public var y: CGFloat
+  public var blur: CGFloat
+  public var spread: CGFloat
+  public var isInset: Bool
+  public var color: Color
+
+  public init(
+    x: CGFloat, y: CGFloat, blur: CGFloat, spread: CGFloat = 0, isInset: Bool = false, color: Color
+  ) {
+    self.x = x
+    self.y = y
+    self.blur = blur
+    self.spread = spread
+    self.isInset = isInset
+    self.color = color
   }
 }
 
@@ -1258,5 +1283,36 @@ public struct FontWeightTokens: Equatable, Sendable {
     self.medium = medium
     self.normal = normal
     self.semibold = semibold
+  }
+}
+
+/// The theme's `shadow` tokens, one typed member per token.
+public struct ShadowTokens: Equatable, Sendable {
+  /// `--shadow-high`
+  public var high: [ShadowLayer]
+  /// `--shadow-low`
+  public var low: [ShadowLayer]
+  /// `--shadow-med`
+  public var med: [ShadowLayer]
+
+  public init(
+    high: [ShadowLayer],
+    low: [ShadowLayer],
+    med: [ShadowLayer]
+  ) {
+    self.high = high
+    self.low = low
+    self.med = med
+  }
+
+  /// A token by its CSS name, for code that only has the name. Components
+  /// read the typed members instead.
+  func value(named token: String) -> [ShadowLayer]? {
+    switch token {
+    case "shadow-high": high
+    case "shadow-low": low
+    case "shadow-med": med
+    default: nil
+    }
   }
 }
