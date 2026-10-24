@@ -5,8 +5,8 @@
  * @input A built package's dist directory, a component's dist entry, and the
  *   package's prebuilt stylesheet
  * @output The gzip size of the JavaScript a component's import pulls in
- *   (transitive, minified, other packages external) and the gzip size of the
- *   stylesheet rules that JavaScript references
+ *   (one minified bundle of every module it reaches, package imports included)
+ *   and the gzip size of the stylesheet rules that JavaScript references
  * @position Shared by analyze-pr.js for the PR size report. Sizes are gzip at
  *   the default compression level (spec:AST-080 FR8,
  *   architecture:component-style-authoring INV6).
@@ -46,9 +46,10 @@ function packageStylesheetPath(packageDir) {
   return null;
 }
 
-// Bundle what importing `entry` pulls in: every module it reaches inside its
-// package, minified, with every bare-specifier import (React, StyleX, other
-// Astryx packages) left external. Returns the bundle text, or null.
+// Bundle what importing `entry` pulls in: every module it reaches, including
+// modules reached through package imports (other Astryx packages, React,
+// StyleX, third-party libraries), minified for production. Returns the bundle
+// text, or null when the import cannot be bundled.
 function bundleImport(entry) {
   if (!entry || !fs.existsSync(entry)) return null;
   try {
@@ -63,7 +64,7 @@ function bundleImport(entry) {
       minify: true,
       format: 'esm',
       platform: 'browser',
-      packages: 'external',
+      define: {'process.env.NODE_ENV': '"production"'},
       loader: {'.css': 'empty'},
       write: false,
       logLevel: 'silent',
@@ -144,16 +145,25 @@ function parseBlocks(css) {
 }
 
 // The stylesheet rules whose selectors name one of `classes`, inside the
-// at-rules that wrap them.
+// at-rules that wrap them, plus the @keyframes those rules name.
 function rulesForClasses(css, classes) {
   if (!css || classes.size === 0) return '';
   const classPattern = /\.([A-Za-z_][\w-]*)/g;
-  function keep(nodes) {
+  const tree = parseBlocks(css);
+  function keep(nodes, keyframes) {
     let out = '';
     for (const node of nodes) {
       if (node.children) {
-        if (/^@keyframes\b/.test(node.prelude)) continue;
-        const inner = keep(node.children);
+        const name = /^@(?:-webkit-)?keyframes\s+([\w-]+)/.exec(
+          node.prelude,
+        )?.[1];
+        if (name !== undefined) {
+          if (keyframes.has(name)) {
+            out += `${node.prelude}{${node.children.map(child => `${child.prelude}{${child.body ?? ''}}`).join('')}}`;
+          }
+          continue;
+        }
+        const inner = keep(node.children, keyframes);
         if (inner) out += `${node.prelude}{${inner}}`;
       } else if (node.body !== undefined) {
         const names = [...node.prelude.matchAll(classPattern)].map(m => m[1]);
@@ -164,7 +174,13 @@ function rulesForClasses(css, classes) {
     }
     return out;
   }
-  return keep(parseBlocks(css));
+  const rules = keep(tree, new Set());
+  // Keyframes a kept rule names through `animation` or `animation-name`.
+  const named = new Set();
+  for (const match of rules.matchAll(/animation(?:-name)?\s*:\s*([^;}]+)/g)) {
+    for (const token of match[1].split(/[\s,]+/)) if (token) named.add(token);
+  }
+  return named.size === 0 ? rules : keep(tree, named);
 }
 
 /**

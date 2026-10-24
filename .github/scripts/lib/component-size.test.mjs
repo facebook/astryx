@@ -39,20 +39,30 @@ afterEach(() => {
 });
 
 describe('component import size', () => {
-  it('bundles modules the import reaches and leaves other packages external', () => {
+  it('bundles every module the import reaches, package imports included', () => {
     const root = tree({
       'dist/Card/index.js': "export {Card} from './Card.js';\n",
       'dist/Card/Card.js':
-        "import {jsx} from 'react/jsx-runtime';\nimport {helper} from '../shared/helper.js';\nexport function Card() { return jsx('div', {className: 'xcard1 ' + helper()}); }\n",
+        "import {sheet} from 'fake-sheet';\nimport {helper} from '../shared/helper.js';\nexport function Card() { return sheet('xcard1 ' + helper()); }\n",
       'dist/shared/helper.js':
         "export function helper() { return 'xhelp22'; }\n",
       'dist/Other/index.js': "export const unrelated = 'xother9';\n",
+      'node_modules/fake-sheet/package.json': JSON.stringify({
+        name: 'fake-sheet',
+        main: 'index.js',
+      }),
+      'node_modules/fake-sheet/index.js':
+        "export function sheet(name) { return 'xsheet7 ' + name + ' PACKAGE_CODE_MARKER'; }\n",
     });
     const js = bundleImport(path.join(root, 'dist/Card/index.js'));
     expect(js).toContain('xhelp22');
-    expect(js).toContain('react/jsx-runtime');
+    expect(js).toContain('PACKAGE_CODE_MARKER');
     expect(js).not.toContain('xother9');
-    expect([...classNamesIn(js)].sort()).toEqual(['xcard1', 'xhelp22']);
+    expect([...classNamesIn(js)].sort()).toEqual([
+      'xcard1',
+      'xhelp22',
+      'xsheet7',
+    ]);
   });
 
   it('keeps only the rules whose selectors name a referenced class, with their at-rules', () => {
@@ -70,6 +80,14 @@ describe('component import size', () => {
       '@layer astryx-base{.xcard1{color:red}@media (pointer: coarse){.xcard1:active{opacity:.5}}}',
     );
     expect(rulesForClasses(css, new Set())).toBe('');
+  });
+
+  it('keeps the @keyframes a kept rule names', () => {
+    const css =
+      '@layer astryx-base{.xspin2{animation-name:xrot1}.xother9{animation-name:xrot9}@keyframes xrot1{from{opacity:0}to{opacity:1}}@keyframes xrot9{to{opacity:1}}}';
+    expect(rulesForClasses(css, new Set(['xspin2']))).toBe(
+      '@layer astryx-base{.xspin2{animation-name:xrot1}@keyframes xrot1{from{opacity:0}to{opacity:1}}}',
+    );
   });
 
   it('measures gzip JavaScript and CSS, and null for a missing entry', () => {
