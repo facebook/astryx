@@ -65,15 +65,18 @@ field, or a popover.
   viewport height minus the visual viewport height, in CSS pixels, and 0 when
   no keyboard is shown. A page pan or a visual-viewport offset is a pan to put
   back (FR4), never a smaller keyboard.
-- **FR3 — A public keyboard height.** The module sets
-  `--astryx-keyboard-inset` on the document root to the FR2 height, as a CSS
-  length, `0px` when no keyboard is shown. Layout that must stay above the
-  keyboard uses it in CSS, such as padding, `bottom`, or a maximum height, so
-  layout is correct with no animation running: the chat composer, a search
-  field placed at the bottom, and tab bar search position from it, Popover caps
-  its height with it, and a fully expanded sheet extends its own scroll range
-  by it. Apps may read the same value. An animation that rides the keyboard is
-  optional and layers on top of that layout.
+- **FR3 — The hook is the only source of the keyboard height.** The module's
+  hook returns the FR2 height, and that is the only way the height reaches
+  layout. Inside Core the module holds it in an internal StyleX variable that
+  Core does not export, and each consumer applies the hook's value through a
+  StyleX functional style on its own element, such as a bottom offset, a
+  padding, or a maximum height, so layout is correct with no animation running:
+  the chat composer, a search field placed at the bottom, and tab bar search
+  position from it, Popover caps its height with it, and a fully expanded sheet
+  extends its own scroll range by it. No consumer reads a global CSS variable
+  for it, and no public CSS custom property, export, or prop exposes it. An
+  animation that rides the keyboard is optional and layers on top of that
+  layout.
 - **FR4 — Focus never pans the page.** Every route into a text-entry control
   inside a surface that uses the module, including a tap, the keyboard's
   previous and next buttons, Tab, and programmatic focus, delivers focus
@@ -93,10 +96,10 @@ field, or a popover.
   detects that from the platform's viewport and keyboard capabilities, never
   from the user agent (`spec:AST-013` FR6). Where the platform exposes its own
   keyboard geometry API (the Android path, FR8), the module neither measures
-  nor claims focus, and `--astryx-keyboard-inset` stays `0px`.
+  nor claims focus, and the hook's height stays 0.
 - **FR7 — Top-level documents only.** Inside an iframe the frame's visual
   viewport does not change when the keyboard opens, so the module reports
-  `0px` there and changes nothing. Behavior and evidence for this record come
+  0 there and changes nothing. Behavior and evidence for this record come
   from a top-level document.
 - **FR8 — Android follows the app's viewport setting.** On Android the
   documented path is the app's viewport setting
@@ -111,7 +114,7 @@ field, or a popover.
   (`spec:AST-013` FR3). FR2–FR5 apply to Safari on iOS, in the browser and as a
   home-screen app; FR8 applies to Chrome on Android.
 - Unsupported behavior: with no on-screen keyboard, or no visual-viewport
-  support, the module reports `0px` and does nothing. During server render it
+  support, the hook reports 0 and does nothing. During server render it
   renders nothing and reads no viewport.
 - Browser evidence: DOM and visual-viewport tests prove FR1–FR7 in a top-level
   document. Physical-device passes are recommended `spec:AST-009` follow-up
@@ -122,27 +125,27 @@ field, or a popover.
 - BottomSheet's internal keyboard hook implements FR2, FR4, and FR5 for a
   fully expanded Tall sheet on iOS, detects iOS from the user agent, and writes
   a private inset on the sheet body. Under this record it becomes the shared
-  module: FR6 replaces the user-agent check, FR3 makes the height public on the
-  document root, and BottomSheet consumes the module (`component:BottomSheet`).
+  module: FR6 replaces the user-agent check, FR3 holds the height in an internal
+  StyleX variable that consumers apply through functional styles, and
+  BottomSheet consumes the module (`component:BottomSheet`).
 - No other component on `main` measures the keyboard. A component that later
   responds to the keyboard does so through the module (FR1).
-- No public CSS value exposes the keyboard height today (FR3).
-- The consumer documentation gains `--astryx-keyboard-inset` and the Android
-  viewport setting (FR3, FR8).
+- No public API exposes the keyboard height, and FR3 keeps it that way.
+- The consumer documentation gains the Android viewport setting (FR8).
 
 ## Verification
 
-| Contract | Verification                                                                   | Representative states                                                                                                                   | Mutation or failure expectation                                                                                   |
-| -------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| FR1      | Import and source boundary check over Core and Lab                             | each listed consumer; a new keyboard-aware component                                                                                    | A component with its own keyboard measurement or visual-viewport keyboard listener                                |
-| FR2      | Module tests driving visual-viewport resize and scroll events                  | keyboard shown; hidden; page panned with the keyboard shown; offset without a keyboard                                                  | A pan that lowers the reported height, or a height when no keyboard is shown                                      |
-| FR3      | Module and consumer tests reading the root custom property and computed layout | keyboard shown and hidden; composer, bottom search field, tab bar search, Popover, Tall sheet; no animation running                     | A missing or stale value, a consumer that positions without it, or layout that is only correct after an animation |
-| FR4      | Focus-route tests with document scroll spies                                   | tap, previous and next buttons, Tab, programmatic focus, Done then tap, app resume while scroll-locked                                  | A route that scrolls the document, or a slipped scroll left in place                                              |
-| FR5      | Surface move tests                                                             | sheet drag between heights, drag to dismiss, close, with a focused field                                                                | The field stays focused after a move starts, or content jumps on the first frame                                  |
-| FR6      | Capability tests with the user agent varied                                    | visual viewport shrinking with a fixed layout viewport; platform keyboard geometry API present; neither                                 | Behavior that changes with the user agent alone, or measurement where the platform geometry API applies           |
-| FR7      | Tests in an iframe and in a top-level document                                 | the same keyboard event sequence in both                                                                                                | A non-zero value or a claimed focus inside an iframe                                                              |
-| FR8      | Consumer-doc check                                                             | the documented viewport setting and its effect                                                                                          | Astryx setting the viewport meta, or the setting missing from the docs                                            |
-| FR2–FR5  | Recommended `spec:AST-009` follow-up: physical devices in a top-level document | iPhone Safari with the toolbar expanded and collapsed; iPhone home-screen app; Android Chrome with `interactive-widget=resizes-content` | The page lurches, the field ends under the keyboard, or the surface does not follow the keyboard                  |
+| Contract | Verification                                                                                 | Representative states                                                                                                                   | Mutation or failure expectation                                                                                                                                                                  |
+| -------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| FR1      | Import and source boundary check over Core and Lab                                           | each listed consumer; a new keyboard-aware component                                                                                    | A component with its own keyboard measurement or visual-viewport keyboard listener                                                                                                               |
+| FR2      | Module tests driving visual-viewport resize and scroll events                                | keyboard shown; hidden; page panned with the keyboard shown; offset without a keyboard                                                  | A pan that lowers the reported height, or a height when no keyboard is shown                                                                                                                     |
+| FR3      | Module and consumer tests of the hook value and computed layout, plus a public-surface check | keyboard shown and hidden; composer, bottom search field, tab bar search, Popover, Tall sheet; no animation running                     | A consumer that positions without the hook value or reads a global CSS variable, layout that is only correct after an animation, or a public CSS custom property, export, or prop for the height |
+| FR4      | Focus-route tests with document scroll spies                                                 | tap, previous and next buttons, Tab, programmatic focus, Done then tap, app resume while scroll-locked                                  | A route that scrolls the document, or a slipped scroll left in place                                                                                                                             |
+| FR5      | Surface move tests                                                                           | sheet drag between heights, drag to dismiss, close, with a focused field                                                                | The field stays focused after a move starts, or content jumps on the first frame                                                                                                                 |
+| FR6      | Capability tests with the user agent varied                                                  | visual viewport shrinking with a fixed layout viewport; platform keyboard geometry API present; neither                                 | Behavior that changes with the user agent alone, or measurement where the platform geometry API applies                                                                                          |
+| FR7      | Tests in an iframe and in a top-level document                                               | the same keyboard event sequence in both                                                                                                | A non-zero value or a claimed focus inside an iframe                                                                                                                                             |
+| FR8      | Consumer-doc check                                                                           | the documented viewport setting and its effect                                                                                          | Astryx setting the viewport meta, or the setting missing from the docs                                                                                                                           |
+| FR2–FR5  | Recommended `spec:AST-009` follow-up: physical devices in a top-level document               | iPhone Safari with the toolbar expanded and collapsed; iPhone home-screen app; Android Chrome with `interactive-widget=resizes-content` | The page lurches, the field ends under the keyboard, or the surface does not follow the keyboard                                                                                                 |
 
 ## Decision log
 
@@ -154,14 +157,19 @@ field, or a popover.
 BottomSheet's keyboard hook already keeps a fixed surface still on every focus
 route and measures the keyboard so a page pan cannot shrink it, which are the
 two failures that leave a field under the keyboard. Making it the one module
-every keyboard-aware surface uses, with the height exposed as a CSS value,
-keeps layout correct with no animation and keeps components from drifting into
-separate measurements. Animation stays optional polish on top.
+every keyboard-aware surface uses keeps components from drifting into
+separate measurements. Applying the hook's height through StyleX functional
+styles keeps layout correct with no animation and keeps the shared API
+constrained: the height stays internal to Core, and an app that later needs it
+gets a deliberate public-API decision rather than a variable it came to rely on.
+Animation stays optional polish on top.
 
-Rejected: each component measuring the keyboard and predicting its motion on
-its own, which pans with any unclaimed focus route and diverges between
-components.
+Rejected: each component measuring the keyboard and predicting its motion on its own, which pans with any unclaimed focus route and diverges; a public CSS custom property for the height, which a hook-derived value does not need.
 
 ## Open questions
 
-None.
+- **OQ1 — Do physical-device passes gate merge?** (`human-design`) Today they
+  are recommended `spec:AST-009` follow-up evidence and DOM and visual-viewport
+  tests gate. Options: keep them non-gating, as `spec:AST-009` provides; or
+  make an iPhone and an Android pass in a top-level document a merge
+  requirement for this record's implementation.
