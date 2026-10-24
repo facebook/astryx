@@ -32,7 +32,10 @@
  * SYNC: When modified, update:
  * - /packages/core/src/motion/MEASUREMENTS.md (measurement tasks)
  * - /packages/core/src/motion/paging.ts and paging.test.ts
+ * - /packages/cli/assets/docs/motion.doc.mjs (`pnpm generate:motion-roles`)
  */
+
+import {registerMotionTable} from '../roles';
 
 export const paging = {
   integrator: {
@@ -77,6 +80,16 @@ export const paging = {
      */
     restSpeed: 0.05,
   },
+  /**
+   * The integrator above as a spring, in UIKit's vocabulary: the motion role
+   * a theme retunes (`--motion-paging-settle`). With no theme value the
+   * settle runs the integrator itself, which this spring follows to 1.5 pt.
+   * @source measured: UIKit lab, iOS 26.2 simulator, the integrator's pull
+   *   0.000284858 per ms² and friction 0.970815 per ms: a natural frequency
+   *   of 16.88 rad/s (response 0.3723 s) and a damping ratio of 0.8775
+   *   (2026-10-24)
+   */
+  settle: {response: 0.3723, dampingRatio: 0.8775},
   release: {
     /**
      * Released slower than `advanceSpeed`, the scroll view settles on the
@@ -160,21 +173,22 @@ export const paging = {
   panAxisRatio: 2,
   animatedScroll: {
     /**
-     * `setContentOffset(_:animated:)` duration, the same for one page and
-     * for five (the motion a page control's tap starts).
+     * `setContentOffset(_:animated:)` duration in milliseconds, the same for
+     * one page and for five (the motion a page control's tap starts).
      * @source measured: UIKit lab, iOS 26.2 simulator,
      *   `_contentOffsetAnimationDuration` read as 0.3, and five animated
      *   moves of 1 to 5 pages lasting 0.30 s each (2026-10-23)
      */
-    duration: 0.3,
+    durationMs: 300,
     /**
-     * Its curve: sinusoidal ease-in-out, x = from + (to − from) · (1 − cos πu) ÷ 2
-     * for u = t ÷ duration.
+     * Its curve: sinusoidal ease-in-out, x = from + (to − from) · (1 − cos πu)
+     * ÷ 2 for u = t ÷ duration, written as the cubic bézier that matches it
+     * to 0.02 % of the distance (0.09 pt over a 402 pt page).
      * @source measured: UIKit lab, iOS 26.2 simulator, the five moves fit
      *   the sinusoid to 0.14–0.51 pt RMS (a 2010 pt move to 0.20 pt);
      *   easeInEaseOut (0.42, 0, 0.58, 1) misses by 7.7 pt (2026-10-23)
      */
-    curve: 'sineInOut',
+    curve: [0.364212, 0, 0.635788, 1],
   },
   /**
    * Past the first or last page the content follows the finger through the
@@ -187,3 +201,11 @@ export const paging = {
    */
   rubberBandDimension: 'pageWidth',
 } as const;
+
+// The settle spring and setContentOffset's duration and curve are motion
+// roles a theme may retune (motion/roles.ts). The catch and the release's
+// stillness window decide who holds the touch and what speed it carries,
+// not how anything moves.
+registerMotionTable('paging', paging, {
+  exclude: ['catchStopMs', 'release.stillnessMs'],
+});

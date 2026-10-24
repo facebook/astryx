@@ -26,6 +26,7 @@
  */
 
 import type {MotionCurve} from './animator';
+import {cubicBezier, type BezierPoints} from './bezier';
 import {paging} from './uikit/paging';
 
 /**
@@ -198,33 +199,35 @@ export function solvePaging({
 }
 
 /**
- * `setContentOffset(_:animated:)`: `paging.animatedScroll.duration` on a
- * sinusoidal ease-in-out, whatever the distance. UIKit starts it from the
- * current offset and drops any velocity, as here.
+ * `setContentOffset(_:animated:)`: `paging.animatedScroll.durationMs` on its
+ * curve (the sinusoidal ease-in-out as a cubic bézier), whatever the
+ * distance. UIKit starts it from the current offset and drops any velocity,
+ * as here. A theme's duration and curve (resolveMotion) replace the table's.
  */
 export function solveAnimatedPageScroll({
   from,
   to,
+  durationMs = paging.animatedScroll.durationMs,
+  curve = paging.animatedScroll.curve,
 }: {
   from: number;
   to: number;
+  durationMs?: number;
+  curve?: BezierPoints;
 }): MotionCurve {
-  const {duration} = paging.animatedScroll;
+  const duration = durationMs / 1000;
   const distance = to - from;
+  const ease = cubicBezier(curve);
+  const progress = (t: number) => ease(Math.min(1, Math.max(0, t / duration)));
   return {
     duration,
-    at: t => {
-      const u = Math.min(1, Math.max(0, t / duration));
-      return from + (distance * (1 - Math.cos(Math.PI * u))) / 2;
-    },
+    at: t => from + distance * progress(t),
     velocity: t => {
       if (t <= 0 || t >= duration) {
         return 0;
       }
-      return (
-        ((distance * Math.PI) / (2 * duration)) *
-        Math.sin((Math.PI * t) / duration)
-      );
+      const h = Math.min(1e-4, t / 2, (duration - t) / 2);
+      return (distance * (progress(t + h) - progress(t - h))) / (2 * h);
     },
   };
 }
