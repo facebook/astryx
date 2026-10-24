@@ -194,14 +194,14 @@ export const docs = {
       name: 'items',
       type: 'DropdownMenuOption[]',
       description:
-        'Array of menu entries. Each entry is one of: an action item `{label, onClick?, href?, target?, rel?, icon?, description?, endContent?, isDisabled?, variant?, hasCloseOnSelect?, id?}` (`href` makes the row a real link, so a modified click keeps the browser\'s meaning; variant `"destructive"` renders it in the error color; `endContent` holds trailing content such as a keyboard-shortcut hint; `id` is the row\'s stable React key, needed only when the array reorders or filters), a divider `{type: "divider"}`, or a section `{type: "section", title?, id?, items: [...action items]}`.',
+        'Array of menu entries. Each entry is one of: an action item `{label, onClick?, href?, target?, rel?, icon?, description?, endContent?, isDisabled?, variant?, hasCloseOnSelect?, id?, items?, header?, footer?}` (nested `items` make the row a sub-menu, which the bottom sheet reads from the current array while it shows, and `header` and `footer` then sit above and below that sub-menu\'s rows, as on `DropdownMenuSubMenu`, and keep the row a sub-menu while `items` is empty; in the bottom sheet a level with either shows neither of the menu\'s own; `href` makes the row a real link, so a modified click keeps the browser\'s meaning; variant `"destructive"` renders it in the error color; `endContent` holds trailing content such as a keyboard-shortcut hint; `id` is the row\'s stable React key, needed when the array reorders, filters or grows, and in the bottom sheet for a row with nested `items` whose label another row at its level shares or changes while its level shows), a divider `{type: "divider"}`, or a section `{type: "section", title?, id?, items: [...action items]}`.',
       required: true,
     },
     {
       name: 'presentation',
       type: "'popover' | 'bottom-sheet' | 'adaptive'",
       description:
-        "Presentation surface for data-driven items. 'popover' stays anchored, 'bottom-sheet' always renders the actions in a modal BottomSheet, and 'adaptive' uses a BottomSheet on compact coarse-pointer layouts while remaining anchored elsewhere. Compound children currently support popover only.",
+        "Presentation surface for data-driven items. 'popover' stays anchored, 'bottom-sheet' always renders the actions in a modal BottomSheet, and 'adaptive' uses a BottomSheet on compact coarse-pointer layouts while remaining anchored elsewhere. On a phone, a 'bottom-sheet' of plain actions (no sub-menus, links, rich labels, header or footer) presents the way iOS 26 presents an action sheet: a centered alert-style card with Cancel last, which a tap outside dismisses. Compound children currently support popover only.",
       default: "'popover'",
     },
     {
@@ -254,6 +254,13 @@ export const docs = {
       default: "'start'",
     },
     {
+      name: 'touchOpen',
+      type: "'tap' | 'press'",
+      description:
+        "How a finger opens the popover menu from its trigger. 'tap' opens it through the trigger's click when the finger lifts, or with the finger still down after a long press. 'press' opens it on the finger's press-down, as a mouse press does, for a trigger that is not inside a scrolling region (a control in a fixed bar); the press then continues as a drag onto a row, picked on release. If the browser takes the press for a scroll before the finger reaches the menu, the menu closes again, so a trigger whose drag should pick a row declares touch-action: none or pinch-zoom. Ignored by the bottom-sheet presentation.",
+      default: "'tap'",
+    },
+    {
       name: 'onClick',
       type: '() => void',
       description:
@@ -277,7 +284,7 @@ export const docs = {
   usage: {
     anatomy,
     description:
-      'A dropdown menu that displays a list of actionable items in a popup triggered by a button. Use to present action options as a next step in a process, or to offer contextual actions without cluttering the interface. Like the menus of macOS and iOS, the row under the pointer when it is released is the row that acts, the highlight follows a held mouse or finger, a mouse opens it on press and can drag straight into it, and a finger held on the trigger opens it with the finger down.',
+      'A dropdown menu that displays a list of actionable items in a popup triggered by a button. Use to present action options as a next step in a process, or to offer contextual actions without cluttering the interface. Like the menus of macOS and iOS, the row under the pointer when it is released is the row that acts, the highlight follows a held mouse or finger, a mouse opens it on press and can drag straight into it, and a finger held on the trigger opens it with the finger down. Under a finger it behaves like UIMenu on iOS: a finger resting on the trigger for 150 ms opens the menu, the finger that opened it picks a row only once it has moved 10 px (so the row that appears under it is never picked by accident), the menu grows out of its trigger and collapses back into it on UIKit\u2019s springs, and a pan that starts outside it dismisses it as the page scrolls. On a phone the popover menu sits over its trigger as UIMenu does: centered on it, top-aligned with it (bottom-aligned when the trigger is in the lower half of the viewport), 8 px from the viewport\u2019s sides.',
     bestPractices: [
       {
         guidance: true,

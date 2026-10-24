@@ -28,6 +28,7 @@ import {DropdownMenuSubMenu} from '../DropdownMenu/DropdownMenuSubMenu';
 import {Divider} from '../Divider';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
 import {warmMenuBottomSheet} from '../DropdownMenu/__tests__/warmMenuBottomSheet';
+import {COMPACT_TOUCH_PRESENTATION_QUERY} from '../hooks/useAdaptivePresentation';
 
 // The touch sheet is loaded lazily; resolve its modules once up front, so
 // ContextMenu's own lazy sheet renders within the cases' waitFor.
@@ -295,6 +296,45 @@ describe('ContextMenu', () => {
     );
   });
 
+  it('keeps a data item with a header and empty items a plain row, as ContextMenu shows no sub-menu regions', async () => {
+    const user = userEvent.setup();
+    const onLabels = vi.fn();
+    const items = [
+      {label: 'Rename', onClick: () => {}},
+      {
+        label: 'Labels',
+        header: <input aria-label="Filter labels" />,
+        items: [],
+        onClick: onLabels,
+      },
+    ];
+    const {unmount} = render(
+      <ContextMenu label="Row actions" items={items}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    expect(
+      screen.getByRole('menuitem', {name: 'Labels', hidden: true}),
+    ).not.toHaveAttribute('aria-haspopup');
+    unmount();
+
+    render(
+      <ContextMenu
+        presentation="bottom-sheet"
+        label="Row actions"
+        items={items}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    await user.click(await screen.findByRole('button', {name: 'Labels'}));
+    expect(onLabels).toHaveBeenCalledOnce();
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+  });
+
   it('keeps only the top content padding in a menu BottomSheet', () => {
     const source = readFileSync(
       'packages/core/src/DropdownMenu/MenuBottomSheet.tsx',
@@ -309,7 +349,7 @@ describe('ContextMenu', () => {
     vi.stubGlobal(
       'matchMedia',
       vi.fn().mockImplementation((query: string) => ({
-        matches: query === '(max-width: 768px) and (pointer: coarse)',
+        matches: query === COMPACT_TOUCH_PRESENTATION_QUERY,
         media: query,
         onchange: null,
         addEventListener: vi.fn(),

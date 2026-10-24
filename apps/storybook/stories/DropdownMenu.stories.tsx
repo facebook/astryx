@@ -1402,6 +1402,44 @@ export const CustomTrigger: Story = {
   },
 };
 
+// A control in a fixed bar owns its touch: no pan starts on it, so a finger
+// can press it and drag straight onto a row.
+const touchOpenStyles = stylex.create({
+  ownsTouch: {
+    touchAction: 'pinch-zoom',
+  },
+});
+
+export const TouchOpenPress: Story = {
+  name: 'Opens on a finger press (touchOpen)',
+  render: () => (
+    <DropdownMenu
+      button={{label: 'Spaces', xstyle: touchOpenStyles.ownsTouch}}
+      touchOpen="press">
+      <DropdownMenuItem
+        label="Personal"
+        onClick={() => console.log('Personal clicked')}
+      />
+      <DropdownMenuItem
+        label="Design system"
+        onClick={() => console.log('Design system clicked')}
+      />
+      <DropdownMenuItem
+        label="Infrastructure"
+        onClick={() => console.log('Infrastructure clicked')}
+      />
+    </DropdownMenu>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'With `touchOpen="press"` a finger opens the menu on its press-down, as a mouse press does, instead of on the tap that lifts. The press continues as a drag onto a row, picked on release, because this trigger declares `touch-action: pinch-zoom` and no pan starts on it. Use it for a trigger outside any scrolling region; if the browser takes a press for a scroll before the finger reaches the menu, the menu closes again.',
+      },
+    },
+  },
+};
+
 export const LinkRows: Story = {
   name: 'Rows that navigate (href)',
   render: () => (
@@ -1650,6 +1688,68 @@ export const SubMenuHeaderChoice: Story = {
           </DropdownMenuSubMenu>
         </DropdownMenu>
         <output data-testid="match">{match}</output>
+      </div>
+    );
+  },
+};
+
+/**
+ * The same Labels level in the action sheet: the sheet is already a dialog,
+ * so the level shows its own filter field and "Create" button above and below
+ * its actions, in place of the menu's own, and the field filters them live.
+ */
+export const SubMenuHeaderAndFooterActionSheet: Story = {
+  name: 'Submenu / header and footer, action sheet',
+  render: () => {
+    const [query, setQuery] = useState('');
+    const [created, setCreated] = useState(0);
+    const [last, setLast] = useState('');
+    const visible = LABELS.filter(label =>
+      label.toLowerCase().includes(query.trim().toLowerCase()),
+    );
+    return (
+      <div data-testid="submenu-regions-sheet-fixture" style={{padding: 16}}>
+        <DropdownMenu
+          button={{label: 'Session'}}
+          presentation="bottom-sheet"
+          items={[
+            {
+              label: 'Rename',
+              icon: PencilIcon,
+              onClick: () => setLast('Rename'),
+            },
+            {
+              label: 'Labels',
+              header: (
+                <TextInput
+                  label="Filter labels"
+                  isLabelHidden
+                  placeholder="Filter labels"
+                  value={query}
+                  onChange={setQuery}
+                />
+              ),
+              footer: (
+                <Button
+                  label="Create label"
+                  variant="ghost"
+                  onClick={() => setCreated(count => count + 1)}
+                />
+              ),
+              items: visible.map(label => ({
+                label,
+                onClick: () => setLast(label),
+              })),
+            },
+            {
+              label: 'Delete',
+              icon: TrashIcon,
+              onClick: () => setLast('Delete'),
+            },
+          ]}
+        />
+        <output data-testid="last">{last}</output>
+        <output data-testid="created">{created}</output>
       </div>
     );
   },
