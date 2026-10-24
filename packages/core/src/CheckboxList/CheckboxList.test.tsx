@@ -26,11 +26,15 @@ import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {List} from '../List/List';
 import {CheckboxInput} from '../CheckboxInput/CheckboxInput';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
+import {checkboxRowPressScope} from '../CheckboxInput/checkboxRowPress.markers.stylex';
 import {
-  declaresPressPaint,
   hasPressedArm,
-  hasReleaseFade,
+  readsPressStrength,
+  rulesDeclaredFor,
+  showsLayerPress,
 } from '../__tests__/pressState';
+import {readIndicatorPressLayer} from '../__tests__/indicatorPressLayer';
+import {cellPressConsts} from '../utils/interactionOverlay.stylex';
 
 // FieldStatus announces status messages through the persistent useAnnounce
 // singletons; remove them between tests so role/aria-live queries in this
@@ -1167,6 +1171,7 @@ describe('CheckboxListItem ARIA props', () => {
 });
 
 describe('CheckboxListItem press surface', () => {
+  const rowScopeClass = stylex.props(checkboxRowPressScope).className ?? '';
   const hoverScopeClass = stylex.props(indicatorScope).className ?? '';
 
   /** The row's checkbox: its indicator wrapper and the control around it. */
@@ -1289,15 +1294,20 @@ describe('CheckboxListItem press surface', () => {
       expect(row).toHaveAttribute('data-astryx-pressable');
       expect(row.querySelectorAll('[data-astryx-pressable]')).toHaveLength(0);
       expect(control).not.toHaveAttribute('data-astryx-pressable');
-      // The row declares the press paint at the press's strength and runs
-      // the release. It hands its box that paint through its own press
-      // paint, set only while the row itself is pressed under a coarse
-      // pointer, and the box reads nothing else (an outer row, a pressed
-      // ancestor, a pen on a fine-pointer page).
-      expect(declaresPressPaint(row)).toBe(true);
-      expect(hasReleaseFade(row)).toBe(true);
-      expect(declaresRowPressPaint(row)).toBe(true);
-      expect(readsRowPressPaint(wrapper)).toBe(true);
+      // The row carries the row press scope, so the layer over the box
+      // paints the row's press at full strength and releases it by its own
+      // opacity on the row's deselect clock, beside the row's own press
+      // layer, both on the compositor.
+      expect(classesOf(row)).toContain(rowScopeClass);
+      expect(readIndicatorPressLayer(wrapper, rowScopeClass)).toEqual({
+        paintsOn: true,
+        paintsFading: true,
+        releases: true,
+        releaseMs: [cellPressConsts.cellReleaseMs],
+        fillsBoth: true,
+      });
+      expect(readsPressStrength(wrapper)).toBe(false);
+      expect(showsLayerPress(row)).toBe(true);
       // A mouse's press and hover stay the checkbox's own.
       expect(classesOf(control)).toContain(hoverScopeClass);
       expect(classesOf(row)).not.toContain(hoverScopeClass);
@@ -1318,7 +1328,7 @@ describe('CheckboxListItem press surface', () => {
     const row = rowOf('Accept terms');
     expect(row).toHaveAttribute('data-astryx-pressable');
     expect(row.querySelectorAll('[data-astryx-pressable]')).toHaveLength(0);
-    expect(declaresPressPaint(row)).toBe(true);
+    expect(classesOf(row)).toContain(rowScopeClass);
   });
 
   it('leaves a row that does not respond to presses out of it', () => {

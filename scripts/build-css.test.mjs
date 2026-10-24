@@ -372,22 +372,57 @@ describe('build-css astryx.css', () => {
       );
       expect(formulas).toHaveLength(1);
       // Every overlay variant, the cards' `--_press-overlay`, and the
-      // ancestor-scoped paints (switch, the checkbox and radio overlays, tab)
-      // read it back: twelve lines today, fewer than the arms because StyleX
-      // deduplicates identical rules. A regex that stopped matching would
-      // fall well below this floor.
+      // ancestor-scoped paints (switch, tab) read it back: eight lines today,
+      // fewer than the arms because StyleX deduplicates identical rules. The
+      // checkbox and radio overlays paint on their own layer instead (below).
+      // A regex that stopped matching would fall well below this floor.
       const paints = lines().filter(
         line =>
           /\[data-astryx-press="(?:on|fading)"\]/.test(line) &&
           line.includes('var(--_press-paint'),
       );
-      expect(paints.length).toBeGreaterThanOrEqual(10);
+      expect(paints.length).toBeGreaterThanOrEqual(7);
       // Not the hover strength: under a finger there is no hover to land on,
       // and a paint that stepped there would still have to step off.
       const arms = lines().filter(line =>
         /\[data-astryx-press="(?:on|fading)"\]/.test(line),
       );
       expect(arms.some(line => line.includes('--color-overlay-hover'))).toBe(
+        false,
+      );
+    });
+
+    it('paints the checkbox and radio press on their own layer and releases it by opacity', () => {
+      // The layer over a checkbox box or a radio circle (its owner's
+      // `::after`) answers a press its ancestor holds: the pressed token at
+      // full strength on the on and fading arms, and an opacity animation on
+      // the fading arm, on a control's clock (250 ms) for a standalone
+      // checkbox and a cell's (200 ms) in a row. It reads no strength.
+      const layer = lines().filter(
+        line =>
+          /:where\(\.[\w-]+\[data-astryx-press="(?:on|fading)"\] \*\)/.test(
+            line,
+          ) && line.includes('::after{'),
+      );
+      const painted = arm =>
+        layer.some(
+          line =>
+            line.includes(`[data-astryx-press="${arm}"]`) &&
+            line.includes(
+              '::after{background-image:linear-gradient(var(--color-overlay-pressed)',
+            ),
+        );
+      expect(painted('on')).toBe(true);
+      expect(painted('fading')).toBe(true);
+      expect(layer.some(line => /::after\{animation-name:/.test(line))).toBe(
+        true,
+      );
+      const durations = layer.flatMap(line => {
+        const match = line.match(/::after\{animation-duration:(\d+)ms\}/);
+        return match == null ? [] : [Number(match[1])];
+      });
+      expect(new Set(durations)).toEqual(new Set([200, 250]));
+      expect(layer.some(line => line.includes('var(--_press-paint'))).toBe(
         false,
       );
     });

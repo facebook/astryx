@@ -27,6 +27,7 @@ import type {BaseProps} from '../BaseProps';
 import {CheckboxInput} from '../CheckboxInput/CheckboxInput';
 import type {CheckboxInputProps} from '../CheckboxInput/CheckboxInput';
 import {CheckboxRowPressContext} from '../CheckboxInput/CheckboxRowPressContext';
+import {checkboxRowPressScope} from '../CheckboxInput/checkboxRowPress.markers.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {ListItem} from '../List/ListItem';
 import {ListContext} from '../List/ListContext';
@@ -355,6 +356,9 @@ export function CheckboxListItem({
         [
           // The row's own press paint, which the layer over its box reads.
           rowOwnsPress && styles.rowPressPaint,
+          // The layer over the box reads the row's touch press through
+          // this ancestor marker.
+          rowOwnsPress && checkboxRowPressScope,
           resolvedChecked === true &&
             !effectiveDisabled &&
             !effectiveReadOnly &&

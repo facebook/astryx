@@ -16,10 +16,15 @@ import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
+  declaresPressPaint,
   hasPressedArm,
   hasReleaseFade,
   readsPressStrength,
 } from '../__tests__/pressState';
+import {readIndicatorPressLayer} from '../__tests__/indicatorPressLayer';
+import * as stylex from '@stylexjs/stylex';
+import {indicatorScope} from '../Indicator/indicator.markers.stylex';
+import {pressConsts} from '../utils/interactionOverlay.stylex';
 import {CheckboxInput} from './CheckboxInput';
 import {Theme} from '../theme/Theme';
 import {defineTheme} from '../theme/defineTheme';
@@ -927,21 +932,36 @@ describe('pressed state', () => {
     expect(readsPressStrength(wrapper, '[data-astryx-press="on"]')).toBe(false);
   });
 
-  it('fades the touch press out from the row, with the overlay reading its strength', () => {
+  it('paints the touch press on its own layer over the box and releases it on a control’s clock', () => {
     const {container} = render(
       <CheckboxInput label="Accept terms" value={false} onChange={() => {}} />,
     );
     const box = container.querySelector('.astryx-checkbox-indicator');
     const wrapper = box?.parentElement?.parentElement;
-    const row = box?.closest('[data-astryx-pressable]');
-    if (wrapper == null || row == null) {
-      throw new Error('the checkbox has no pressable row or indicator wrapper');
+    const control = box?.closest('[data-astryx-pressable]');
+    if (wrapper == null || control == null) {
+      throw new Error(
+        'the checkbox has no pressable control or indicator wrapper',
+      );
     }
-    // The controller writes the row; the row owns the strength and its
-    // release, and the owner-drawn layer over the indicator paints the pressed
-    // token at that strength on both touch arms.
-    expect(hasReleaseFade(row)).toBe(true);
-    expect(readsPressStrength(wrapper, '[data-astryx-press="on"]')).toBe(true);
-    expect(readsPressStrength(wrapper)).toBe(true);
+    // The controller writes the control; the layer over the box paints the
+    // pressed token at full strength and fades by its own opacity on
+    // UIButton's release, on the compositor.
+    const layer = readIndicatorPressLayer(
+      wrapper,
+      stylex.props(indicatorScope).className ?? '',
+    );
+    expect(layer).toEqual({
+      paintsOn: true,
+      paintsFading: true,
+      releases: true,
+      releaseMs: [pressConsts.controlReleaseMs],
+      fillsBoth: true,
+    });
+    // Nothing carries a press strength any more, so no main-thread release
+    // runs on the control.
+    expect(declaresPressPaint(control)).toBe(false);
+    expect(hasReleaseFade(control)).toBe(false);
+    expect(readsPressStrength(wrapper)).toBe(false);
   });
 });

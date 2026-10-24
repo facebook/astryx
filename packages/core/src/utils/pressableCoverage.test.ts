@@ -70,6 +70,8 @@ const source = new Map(
 // a bare attribute selector or inside `:is(…)`.
 const PRESS_ARM =
   /':active|'(?::is\()?\[data-astryx-press=|interactionOverlayStyles\./;
+// The trailing comma is what the formatter writes when a call wraps over
+// several lines.
 const ANCESTOR_ARM =
   /stylex\.when\.ancestor\(\s*'(?::active|\[data-astryx-press=[^)]*)',\s*(\w+)\s*,?\s*\)/g;
 
