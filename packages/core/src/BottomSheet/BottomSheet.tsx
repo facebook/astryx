@@ -62,6 +62,7 @@ import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import {useDevWarning, useScrollLock} from '../hooks';
 import {mergeProps} from '../utils';
 import {LayerDepthProvider} from '../Layer/LayerDepthContext';
+import {ModalAnnounceProvider} from '../hooks/useAnnounce';
 import {useModalOutlet} from '../Layer/modalOutlet';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
 import {focusForLastInput} from '../utils/focusReturn';
@@ -497,7 +498,9 @@ function StandaloneBottomSheet({
           onScrimOpacity={handleScrimOpacity}
           onElementChange={handlePanelElementChange}
           onMotionComplete={handleMotionComplete}>
-          <LayerDepthProvider>{children}</LayerDepthProvider>
+          <ModalAnnounceProvider dialogRef={dialogRef}>
+            <LayerDepthProvider>{children}</LayerDepthProvider>
+          </ModalAnnounceProvider>
         </BottomSheetPanel>
       </div>
       <BottomSheetEdgeTint />
@@ -805,7 +808,9 @@ function SwitcherBottomSheetItem({
               fresh ownership scope so a nested BottomSheet is standalone unless
               it establishes a nested BottomSheetSwitcher of its own. */}
           <BottomSheetSwitcherContext value={null}>
-            <LayerDepthProvider>{children}</LayerDepthProvider>
+            <ModalAnnounceProvider dialogRef={dialogRef}>
+              <LayerDepthProvider>{children}</LayerDepthProvider>
+            </ModalAnnounceProvider>
           </BottomSheetSwitcherContext>
         </BottomSheetPanel>
       </div>
