@@ -108,6 +108,13 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'isReorderDisabled',
+      type: 'boolean',
+      description:
+        'In a List with onReorder, this row has no reorder handle and keeps its place: other rows cannot be dragged or moved past it, so it splits the list into groups that each reorder on their own. No effect elsewhere.',
+      default: 'false',
+    },
+    {
       name: 'swipeActions',
       type: '{leading?: ItemSwipeAction[]; trailing?: ItemSwipeAction[]}',
       description:
@@ -223,6 +230,8 @@ export const docsDense = {
   propDescriptions: {
     align:
       "Start/end content alignment, passed to Item: 'center' (default), 'start', or 'first-line' (centered on the label's first line).",
+    isReorderDisabled:
+      'In a List with onReorder: no reorder handle; the row keeps its place and bounds the rows around it.',
     label:
       'Primary content. String auto-truncates; ReactNode renders as given.',
     description: 'Secondary text below label.',
