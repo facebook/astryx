@@ -90,7 +90,12 @@ const fadeIn = stylex.keyframes({
 });
 
 const animationBase = {
-  animationDuration: durationVars['--duration-fast-max'],
+  animationDuration: {
+    default: durationVars['--duration-fast-max'],
+    // The cross-fade is 200 ms or less, whatever the theme's duration
+    // (design:reduced-motion DR2).
+    '@media (prefers-reduced-motion: reduce) and (pointer: coarse)': `min(${durationVars['--duration-fast-max']}, 200ms)`,
+  },
   animationTimingFunction: easeVars['--ease-standard'],
   animationFillMode: 'backwards' as const,
 };
@@ -104,9 +109,10 @@ const animationBase = {
  * Each entry disables its keyframe animation under
  * `prefers-reduced-motion: reduce` so the layer appears instantly instead of
  * translating/scaling in (infra-6). Under a finger (the primary pointer is
- * coarse) it fades in instead, with no travel and no scale: on a touch screen
- * Reduce Motion replaces motion with a cross-fade rather than a jump, as iOS
- * does for its menus, popovers and tips.
+ * coarse) it fades in instead, opacity only and in 200 ms or less: on a touch
+ * screen Reduce Motion replaces motion with a cross-fade rather than a jump
+ * (design:reduced-motion DR2, DR3), as iOS does for its menus, popovers and
+ * tips.
  */
 export const layerAnimations = stylex.create({
   below: {
