@@ -4,6 +4,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import * as React from 'react';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
 import {Stack} from '@astryxdesign/core/Stack';
+import {Badge} from '@astryxdesign/core/Badge';
 import {Heading, Text} from '@astryxdesign/core/Text';
 import {neutralTheme} from '@astryxdesign/theme-neutral';
 
@@ -57,6 +58,10 @@ export const DynamicType: StoryObj = {
             Body text follows the size the reader picked in Settings.
           </Text>
           <Text type="supporting">Supporting text and timestamps</Text>
+          <Stack direction="horizontal" gap={2} data-testid="badges">
+            <Badge label="Ready" />
+            <Badge variant="success" label="Shipped" />
+          </Stack>
         </Stack>
       </Theme>
     );

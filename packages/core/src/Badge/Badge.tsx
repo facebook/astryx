@@ -37,7 +37,12 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacingVars['--spacing-1'],
-    height: spacingVars['--spacing-5'],
+    // The theme's height, but never shorter than one line of the badge's own
+    // text: when the reader's text size grows (iOS Dynamic Type) the label
+    // grows and the pill grows with it, instead of the label spilling out of
+    // a fixed box. At the default size the line fits the height, so nothing
+    // moves.
+    height: `max(${spacingVars['--spacing-5']}, 1lh)`,
     paddingBlock: 0,
     paddingInline: spacingVars['--spacing-2'],
     borderRadius: radiusVars['--radius-full'],
@@ -46,7 +51,7 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-supporting-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     whiteSpace: 'nowrap',
-    // A badge is one line by construction — fixed height, `nowrap` — so a
+    // A badge is one line by construction — one line tall, `nowrap` — so a
     // label wider than the space available has to go somewhere. Without these
     // it went *outside* its container: `nowrap` with nothing to clip it
     // neither wraps nor truncates, it just escapes, and lands on whatever sits

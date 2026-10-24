@@ -1,5 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import type * as React from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {Badge} from '@astryxdesign/core/Badge';
 
@@ -155,4 +156,35 @@ export const LongLabels: Story = {
       },
     },
   },
+};
+
+// A badge is one line of its own text tall at least. When the text grows, as
+// it does on iOS when a theme follows the reader's text size, the pill grows
+// with the label instead of letting it spill out. Here the supporting text
+// size is raised on a wrapper to stand in for a larger reader setting.
+export const LargerText: Story = {
+  name: 'Larger text',
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
+      {['default', '1.25rem', '2.5rem'].map(size => {
+        const row: React.CSSProperties & {'--text-supporting-size'?: string} = {
+          display: 'flex',
+          gap: 8,
+          alignItems: 'center',
+          ...(size === 'default' ? null : {'--text-supporting-size': size}),
+        };
+        return (
+          <div key={size} data-testid={`badge-row-${size}`} style={row}>
+            <Badge label="Ready" />
+            <Badge variant="success" label="Shipped" />
+            <Badge
+              variant="warning"
+              icon={<span aria-hidden="true">⚠</span>}
+              label="Review"
+            />
+          </div>
+        );
+      })}
+    </div>
+  ),
 };
