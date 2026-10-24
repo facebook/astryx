@@ -32,8 +32,10 @@
 import {
   createContext,
   use,
+  useCallback,
   useMemo,
   useRef,
+  useState,
   type ReactNode,
   type RefObject,
 } from 'react';
@@ -79,6 +81,13 @@ const styles = stylex.create({
 interface WheelGroupContextValue {
   /** The group's element: its centre is every column's vanishing point. */
   readonly groupRef: RefObject<HTMLDivElement | null>;
+  /**
+   * Whether the element is attached. A Wheel's own layout effects run
+   * before the group's ref is attached, so this flips once it is and the
+   * Wheel re-places its vanishing point (the element itself stays out of
+   * React state).
+   */
+  readonly isMounted: boolean;
 }
 
 const WheelGroupContext = createContext<WheelGroupContextValue | null>(null);
@@ -108,7 +117,12 @@ export interface WheelGroupProps {
  */
 export function WheelGroup({children}: WheelGroupProps) {
   const groupRef = useRef<HTMLDivElement | null>(null);
-  const value = useMemo(() => ({groupRef}), []);
+  const [isMounted, setIsMounted] = useState(false);
+  const attachGroup = useCallback((node: HTMLDivElement | null) => {
+    groupRef.current = node;
+    setIsMounted(node != null);
+  }, []);
+  const value = useMemo(() => ({groupRef, isMounted}), [isMounted]);
   // The frame is the touch column's alone.
   const {isTouch} = useTouchPresentation();
   if (!isTouch) {
@@ -117,7 +131,7 @@ export function WheelGroup({children}: WheelGroupProps) {
   return (
     <WheelGroupContext value={value}>
       <div
-        ref={groupRef}
+        ref={attachGroup}
         data-wheel-band=""
         {...stylex.props(styles.group, styles.band)}>
         {children}

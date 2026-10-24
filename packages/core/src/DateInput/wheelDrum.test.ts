@@ -193,15 +193,16 @@ describe('a baked motion', () => {
     }
   });
 
-  it('translates the band strip with the offset, folding a looping strip', () => {
-    expect(stripTranslation(992, MINUTES)).toBe(-992);
-    expect(stripTranslation(992, LOOPING)).toBe(-(992 + 1920));
-    expect(stripTranslation(-32, LOOPING)).toBe(-(1888 + 1920));
+  it('translates the band strip with the offset itself, past either end of a looping wheel', () => {
+    expect(stripTranslation(992)).toBe(-992);
+    // A looping spin from minute 58 across the seam to 03 moves the strip
+    // straight on: its rows sit at their positions past the end (60 → 00).
     const spin = spinCurve(58 * 32, 63 * 32);
-    const frames = stripKeyframes(sampleCurve(spin), spin.duration, LOOPING);
-    const steps = frames.filter(
-      (frame, i) => i > 0 && frame.offset === frames[i - 1].offset,
-    );
-    expect(steps.length).toBe(1);
+    const frames = stripKeyframes(sampleCurve(spin), spin.duration);
+    expect(frames[0].transform).toBe('translateY(-1856px)');
+    expect(frames.at(-1)!.transform).toBe('translateY(-2016px)');
+    for (let i = 1; i < frames.length; i++) {
+      expect(frames[i].offset).toBeGreaterThanOrEqual(frames[i - 1].offset);
+    }
   });
 });
