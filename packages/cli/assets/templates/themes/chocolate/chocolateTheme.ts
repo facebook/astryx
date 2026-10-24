@@ -108,6 +108,9 @@ export const chocolateTheme = defineTheme({
     '--color-background-surface': ['#FFFCF7', '#1c1610'],
     '--color-background-body': ['#FFFCF7', '#141010'],
     '--color-overlay': ['#4a352080', '#140e0aCC'],
+    // The modal dim (a dialog, drawer or sheet ::backdrop) keeps the overlay
+    // this theme already dimmed with.
+    '--color-background-backdrop': ['#4a352080', '#140e0aCC'],
     '--color-overlay-hover': ['#4a35200D', '#EDE4D40D'],
     '--color-overlay-pressed': ['#4a35201A', '#EDE4D41A'],
     '--color-background-muted': ['#EDE4D4', '#2a2018'],

@@ -64,6 +64,7 @@
   --color-muted: var(--color-background-muted);
   --color-inverted: var(--color-background-inverted);
   --color-overlay: var(--color-overlay);
+  --color-backdrop: var(--color-background-backdrop);
 
   /* --- Interactive --- */
   --color-accent-bg: var(--color-accent);

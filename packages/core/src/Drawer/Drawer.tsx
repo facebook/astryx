@@ -196,11 +196,11 @@ const styles = stylex.create({
       },
     },
   },
-  // Scrim via the browser's ::backdrop pseudo-element (top layer).
+  // Scrim via the browser's ::backdrop pseudo-element (top layer): the
+  // theme's modal dim, one flat colour (`--color-background-backdrop`), never blurred.
   scrim: {
     '::backdrop': {
-      backgroundColor: colorVars['--color-overlay'],
-      backdropFilter: 'blur(2px)',
+      backgroundColor: colorVars['--color-background-backdrop'],
       opacity: 0,
       transitionProperty: 'opacity',
       transitionDuration: durationVars['--duration-medium'],
