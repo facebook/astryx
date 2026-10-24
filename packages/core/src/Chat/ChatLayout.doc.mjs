@@ -6,7 +6,7 @@ export const docs = {
   name: 'ChatLayout',
   subComponentOf: 'Chat',
   displayName: 'Chat Layout',
-  description: 'Layout shell for full chat interfaces. Messages flow in normal page flow, composer is fixed to the bottom with a frosted glass dock. Set density (compact/balanced/spacious) to control spacing, message max-width, and blur layer sizing. Includes built-in auto-scroll, a "New messages" scroll-to-bottom button, and a frosted glass blur layer behind the composer. By default the layout root is the scroll container; pass scrollRef to delegate scrolling to a parent element or the document body. On a phone the composer rides on top of the software keyboard, in step with it, and a conversation at its newest message stays there; tapping the composer focuses it without scrolling the page.',
+  description: 'Layout shell for full chat interfaces. Messages flow in normal page flow, composer is fixed to the bottom with a frosted glass dock. Set density (compact/balanced/spacious) to control spacing, message max-width, and blur layer sizing. Includes built-in auto-scroll, a "New messages" scroll-to-bottom button, and a frosted glass blur layer behind the composer. By default the layout root is the scroll container; pass scrollRef to delegate scrolling to a parent element or the document body. On a phone the composer rides on top of the software keyboard, in step with it, and a conversation at its newest message stays there; tapping the composer\u2019s text focuses it without scrolling the page.',
   props: [
     {
       name: 'children',
@@ -117,7 +117,7 @@ export const docs = {
 export const docsZh = {
   name: 'ChatLayout',
   displayName: 'Chat Layout',
-  description: '完整聊天界面的布局外壳。消息在页面中自然流动，编写器固定在底部，带有毛玻璃效果。通过 density 属性控制密度。在手机上，编写器随软键盘同步上移并停在键盘上方，停留在最新消息的对话保持在最新消息；轻点编写器会聚焦它而不滚动页面。',
+  description: '完整聊天界面的布局外壳。消息在页面中自然流动，编写器固定在底部，带有毛玻璃效果。通过 density 属性控制密度。在手机上，编写器随软键盘同步上移并停在键盘上方，停留在最新消息的对话保持在最新消息；轻点编写器的文本会聚焦它而不滚动页面。',
   propDescriptions: {
     children: '消息内容，通常是 ChatMessageList。在页面中自然流动。',
     composer: '编写器元素，通常是 ChatComposer。固定在底部，带有毛玻璃底座。',

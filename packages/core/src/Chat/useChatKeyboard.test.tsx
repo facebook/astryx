@@ -6,7 +6,9 @@
  * @output Tests ChatLayout's keyboard behavior in jsdom: the dock lifts by
  *   the keyboard's cover and makes room after the messages, a transcript at
  *   its newest message stays there, the dock comes down when the composer's
- *   text blurs, nothing moves without a keyboard
+ *   text blurs, nothing moves without a keyboard; which touches the composer
+ *   claims (unfocused contenteditable text, never a token's control or a
+ *   text control)
  * @position Unit tests for Chat/useChatKeyboard.ts (motion and the tap claim
  *   are proven in Mobile Safari; see the pull request evidence)
  */
@@ -14,6 +16,7 @@
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import {act, render, screen} from '@testing-library/react';
 import {ChatLayout} from './ChatLayout';
+import {editableToClaim} from './useChatKeyboard';
 
 type FakeViewport = EventTarget & {
   height: number;
@@ -142,5 +145,52 @@ describe('ChatLayout and the software keyboard', () => {
     report(window.innerHeight);
     expect(dockOf(container).style.translate).toBe('');
     expect(spacerOf(container).style.height).toBe('');
+  });
+});
+
+describe('the taps the composer claims', () => {
+  // jsdom has no isContentEditable: the nearest contenteditable decides.
+  beforeEach(() => {
+    Object.defineProperty(HTMLElement.prototype, 'isContentEditable', {
+      configurable: true,
+      get(this: HTMLElement) {
+        const host = this.closest('[contenteditable]');
+        return host != null && host.getAttribute('contenteditable') !== 'false';
+      },
+    });
+  });
+
+  afterEach(() => {
+    Reflect.deleteProperty(HTMLElement.prototype, 'isContentEditable');
+    document.body.innerHTML = '';
+  });
+
+  it('claims a touch on unfocused contenteditable text', () => {
+    document.body.innerHTML =
+      '<div contenteditable="true" id="editor"><p><span id="word">Hello</span></p></div>';
+    expect(editableToClaim(document.getElementById('word'))).toBe(
+      document.getElementById('editor'),
+    );
+  });
+
+  it('leaves a control inside a token its own tap', () => {
+    document.body.innerHTML =
+      '<div contenteditable="true"><p>Hi <span contenteditable="false" data-astryx-token=""><button id="remove">×</button><span id="label">@Ada</span></span></p></div>';
+    expect(editableToClaim(document.getElementById('remove'))).toBeNull();
+    expect(editableToClaim(document.getElementById('label'))).toBeNull();
+  });
+
+  it('leaves a text control to put its own caret under the finger', () => {
+    document.body.innerHTML =
+      '<textarea id="draft">A long draft</textarea><input id="line" value="One line">';
+    expect(editableToClaim(document.getElementById('draft'))).toBeNull();
+    expect(editableToClaim(document.getElementById('line'))).toBeNull();
+  });
+
+  it('claims nothing that already has focus', () => {
+    document.body.innerHTML =
+      '<div contenteditable="true" id="editor"><p id="text">Hello</p></div>';
+    document.getElementById('editor')!.focus();
+    expect(editableToClaim(document.getElementById('text'))).toBeNull();
   });
 });

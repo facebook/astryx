@@ -77,11 +77,19 @@ export interface UseChatKeyboardResult {
 // A transcript within this many px of its end counts as at its newest message.
 const AT_END_SLOP = 2;
 
+// Controls inside the composer's text (a token's button or link, an island
+// that is not editable) keep their own taps, as ChatComposer's click-to-focus
+// leaves them.
+const OWN_TAPS =
+  '[contenteditable="false"], button, a, [role="button"], [data-astryx-token]';
+
 /**
- * The editable a touch landed in, when tapping it would bring up the
- * keyboard and it does not have focus yet.
+ * The contenteditable text a touch landed in, when tapping it would bring up
+ * the keyboard and it does not have focus yet. A text control (`<textarea>`,
+ * `<input>`) is never claimed: the browser puts its caret under the finger.
+ * Exported for its tests.
  */
-function editableToClaim(target: unknown): HTMLElement | null {
+export function editableToClaim(target: unknown): HTMLElement | null {
   let node = target as Node | null;
   if (node != null && node.nodeType !== 1) {
     node = node.parentNode;
@@ -91,9 +99,13 @@ function editableToClaim(target: unknown): HTMLElement | null {
     return null;
   }
   const editable = element.closest<HTMLElement>(
-    '[contenteditable]:not([contenteditable="false"]), textarea, input',
+    '[contenteditable]:not([contenteditable="false"])',
   );
   if (editable == null || !bringsUpKeyboard(editable)) {
+    return null;
+  }
+  const own = element.closest(OWN_TAPS);
+  if (own != null && editable.contains(own)) {
     return null;
   }
   const active = editable.ownerDocument.activeElement;
