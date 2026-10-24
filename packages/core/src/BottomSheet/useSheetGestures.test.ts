@@ -2913,7 +2913,8 @@ describe('useSheetGestures: the dim follows the sheet', () => {
 });
 
 describe('useSheetGestures: present and dismiss under a finger', () => {
-  // iOS's idiom: the panel calls present/dismiss only there (BottomSheetPanel).
+  // A finger, on any touch device: the panel calls present/dismiss under one
+  // (BottomSheetPanel).
   function stubMedia({reducedMotion = false}: {reducedMotion?: boolean} = {}) {
     stubIosIdiom({reducedMotion});
   }
