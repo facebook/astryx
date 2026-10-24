@@ -48,6 +48,7 @@ import {
   spacingVars,
 } from '../theme/tokens.stylex';
 import {mergeProps, themeProps} from '../utils';
+import {useTouchPresentation} from '../utils/touchPresentation';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {layerTextReset} from '../Layer/layerTextReset.stylex';
 import {layerStructureReset} from '../Layer/layerStructureReset.stylex';
@@ -80,7 +81,9 @@ const HEIGHT_BUDGETS = {
 export type BottomSheetHeight = keyof typeof HEIGHT_BUDGETS;
 export type {BottomSheetSnapPoint};
 
-// SYNC: must match OVERSCROLL_MAX in useSheetGestures.ts.
+// How far the surface extends below the viewport, so a release that carries
+// the sheet past fully open (the 0.8-damped spring overshoots) never shows a
+// gap under it.
 const OVERSCROLL_PADDING = 48;
 const MOBILE_KEYBOARD_BOTTOM_CLEARANCE = 48;
 const TRANSITION_BACKSTOP_BUFFER_MS = 50;
@@ -191,6 +194,12 @@ const styles = stylex.create({
   },
   sheetFading: {
     opacity: 0,
+  },
+  // Under a finger the standalone sheet opens and closes on UIKit's spring
+  // (useSheetGestures `present` / `dismiss`), on the compositor: the
+  // stylesheet's entrance and exit transforms must not also run.
+  sheetSprung: {
+    transitionProperty: 'opacity',
   },
   sheetInactive: {
     pointerEvents: 'none',
@@ -311,6 +320,16 @@ interface BottomSheetPanelProps extends BaseProps<HTMLDivElement> {
   isPageScrollLocked?: boolean;
   onDismiss: () => void;
   onScrimOpacity: (opacity: number) => void;
+  /** Given by a host whose scrim is the dialog's ::backdrop; see useSheetGestures. */
+  onScrimTracking?: (tracking: boolean) => void;
+  /**
+   * Under a finger, the sheet opens and closes on UIKit's sheet spring
+   * (useSheetGestures `present` / `dismiss`) instead of the stylesheet's
+   * entrance and exit. Set by the standalone sheet.
+   */
+  hasSpringPresentation?: boolean;
+  /** See useSheetGestures: true while the sheet presents under a finger. */
+  onPresentingChange?: (presenting: boolean) => void;
   onElementChange?: (element: HTMLDivElement | null) => void;
   onMotionStart?: (motion: BottomSheetPanelMotion) => void;
   onMotionComplete?: (motion: BottomSheetPanelMotion) => void;
@@ -442,6 +461,9 @@ export function BottomSheetPanel({
   isPageScrollLocked = false,
   onDismiss,
   onScrimOpacity,
+  onScrimTracking,
+  hasSpringPresentation = false,
+  onPresentingChange,
   onElementChange,
   onMotionStart,
   onMotionComplete,
@@ -477,6 +499,9 @@ export function BottomSheetPanel({
   const isClosing = state.kind === 'exiting';
   const isFading = isRetained && state.motion === 'fading';
   const alignmentOffset = isRetained ? state.alignmentOffset : 0;
+  // Under a finger the standalone sheet opens and closes on UIKit's spring.
+  const {isTouch} = useTouchPresentation();
+  const springsPresentation = hasSpringPresentation && isTouch;
 
   // Everything derived from the snap points keys off their identity, not the
   // array's: the resolver's identity is the hook's signal that the stops
@@ -522,7 +547,10 @@ export function BottomSheetPanel({
     scrollPreservationInset,
     settlingLayoutOffset,
     settledLayoutOffset,
-    completeScrollAreaSettle,
+    gestureExitRef,
+    resetTravel,
+    present,
+    dismiss,
   } = useSheetGestures({
     isOpen: isInteractive,
     canDismiss: isSwipeDismissAllowed,
@@ -530,6 +558,8 @@ export function BottomSheetPanel({
     onDismiss,
     snapHeights,
     onScrimOpacity,
+    onScrimTracking,
+    onPresentingChange,
   });
 
   const {getViewportProps, getContentProps} = useScrollableArea({
@@ -579,32 +609,50 @@ export function BottomSheetPanel({
       pendingMotionCompleteRef.current = motion;
       return;
     }
-    return waitForTransition(
-      elementRef.current,
-      motion === 'fading' ? 'opacity' : 'transform',
-      () => {
-        if (startedMotionRef.current === motion) {
-          onMotionCompleteRef.current?.(motion);
-        } else {
-          pendingMotionCompleteRef.current = motion;
+    const complete = () => {
+      if (startedMotionRef.current === motion) {
+        onMotionCompleteRef.current?.(motion);
+      } else {
+        pendingMotionCompleteRef.current = motion;
+      }
+    };
+    // A sheet dismissed by a drag leaves on its release spring (the gesture
+    // hook carries it off screen), not on the exit transition: its exit is
+    // over when that spring lands. Under a finger any other close leaves on
+    // UIKit's dismiss spring the same way.
+    const gestureExit =
+      motion === 'exiting'
+        ? (gestureExitRef.current ?? (springsPresentation ? dismiss() : null))
+        : null;
+    if (gestureExit != null) {
+      let isCurrent = true;
+      void gestureExit.finished.then(() => {
+        if (isCurrent) {
+          complete();
         }
-      },
-    );
-  }, [motion]);
-  // The snap is transform-only; the layout height reconciles when it lands.
-  // waitForTransition — the same helper the motion states use — resolves that
-  // even when no `transitionend` is coming: inline or computed
-  // `transition: none`, a zero duration, and a timer backstop otherwise.
-  useLayoutEffect(() => {
-    if (settlingLayoutOffset == null) {
-      return;
+      });
+      return () => {
+        isCurrent = false;
+      };
     }
     return waitForTransition(
       elementRef.current,
-      'transform',
-      completeScrollAreaSettle,
+      motion === 'fading' ? 'opacity' : 'transform',
+      complete,
     );
-  }, [completeScrollAreaSettle, settlingLayoutOffset]);
+  }, [dismiss, gestureExitRef, motion, springsPresentation]);
+  // Under a finger the sheet arrives on UIKit's present spring. From an
+  // effect, so the dim is taken over before the host shows the dialog (a
+  // child's effects run before its host's).
+  const wasPresentedRef = useRef(false);
+  useEffect(() => {
+    const opens =
+      state.kind === 'open' && !state.entering && !wasPresentedRef.current;
+    wasPresentedRef.current = state.kind !== 'hidden';
+    if (opens && springsPresentation) {
+      present();
+    }
+  }, [present, springsPresentation, state]);
   useEffect(() => {
     if (motion == null) {
       return;
@@ -681,22 +729,30 @@ export function BottomSheetPanel({
       ? retainedTransform
       : undefined;
   const consumerTransform = style?.transform;
-  // The transform is written to the element here, not rendered through the
-  // style prop. A drag writes it straight to the element once per input
-  // sample (useSheetGestures) and renders nothing in between, so React never
-  // sees those writes; rendered through the prop, the resting value would be
-  // skipped as "unchanged" when the drag ends and the sheet would stay where
-  // the finger left it. Written after every commit instead, outside a drag,
-  // the resting value lands in the same style update as the restored
-  // transition, so a settle or a dismissal animates from the live position.
+  // The resting transform is written to the element here, after every
+  // commit, not rendered through the style prop: the gesture hook moves the
+  // sheet on the separate `translate` channel (a drag once per input sample,
+  // a release on its spring), and the new resting value is written once that
+  // travel is over, in the same commit as the layout reconcile, with the
+  // travel folded into it (resetTravel). While a release spring runs, the
+  // previous resting transform stays: the travel is measured from it. A
+  // drag-dismissed sheet keeps it through its exit too, which also holds off
+  // the closing style's transform, since the release spring carries it out.
   useLayoutEffect(() => {
     if (isDragging || consumerTransform != null) {
       return;
     }
     const element = elementRef.current;
-    if (element != null) {
-      element.style.transform = sheetTransform ?? '';
+    if (element == null || settlingLayoutOffset != null) {
+      return;
     }
+    const gestureExit = gestureExitRef.current;
+    if (gestureExit != null) {
+      element.style.transform = gestureExit.transform;
+      return;
+    }
+    element.style.transform = sheetTransform ?? '';
+    resetTravel();
   });
   const gestureStyle = {
     transition: contentProps.style.transition,
@@ -719,6 +775,7 @@ export function BottomSheetPanel({
           height === 'hug' ? styles.hugHeight : styles.budget,
           isClosing && styles.sheetClosing,
           isFading && styles.sheetFading,
+          springsPresentation && styles.sheetSprung,
           isInactive && styles.sheetInactive,
           xstyle,
         ),
