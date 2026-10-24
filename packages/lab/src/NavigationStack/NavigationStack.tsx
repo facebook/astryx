@@ -71,6 +71,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactElement,
   type ReactNode,
 } from 'react';
@@ -92,6 +93,7 @@ import {
 } from '@astryxdesign/core/motion/uikit';
 import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
 import {useTranslator} from '@astryxdesign/core/i18n';
+import {focusOutlineStyles} from '@astryxdesign/core/utils';
 import {Icon} from '@astryxdesign/core/Icon';
 import {
   colorVars,
@@ -107,6 +109,9 @@ import {
   progressFromTravel,
   shouldFinishPop,
 } from './navigationTransition';
+
+/** Whether the page runs as a home-screen web app never changes while it runs. */
+const subscribeToNothing = () => () => {};
 
 /**
  * The content swipe claims a sideways drag at the pan's own threshold, while
@@ -255,7 +260,6 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
-    outline: 'none',
   },
   barTrailing: {
     display: 'flex',
@@ -298,7 +302,6 @@ const styles = stylex.create({
     inset: 0,
     backgroundColor: colorVars['--color-background-body'],
     overflowY: 'auto',
-    overscrollBehavior: 'contain',
     outline: 'none',
     // The card scrolls vertically; a sideways drag is the back swipe's. A
     // horizontal scroller inside the content is its own scroll container
@@ -307,6 +310,11 @@ const styles = stylex.create({
   },
   cardHidden: {
     contentVisibility: 'hidden',
+  },
+  // Only while it overflows: a screen with nothing to scroll lets a scroll
+  // chain on, as any other element does.
+  cardOverflowing: {
+    overscrollBehaviorY: 'contain',
   },
   dim: {
     position: 'absolute',
@@ -367,6 +375,25 @@ function CardLayer({
 }) {
   const card = useAnimator();
   const dim = useAnimator();
+  const cardElementRef = useRef<HTMLDivElement | null>(null);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+  // Watches the card and its content for a size change: whether the card can
+  // scroll decides whether it contains its overscroll.
+  useLayoutEffect(() => {
+    const element = cardElementRef.current;
+    if (element == null || typeof ResizeObserver === 'undefined') {
+      return undefined;
+    }
+    const measure = () =>
+      setIsOverflowing(element.scrollHeight > element.clientHeight + 1);
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    if (element.firstElementChild != null) {
+      observer.observe(element.firstElementChild);
+    }
+    measure();
+    return () => observer.disconnect();
+  }, []);
   useLayoutEffect(() => {
     const entry = registry.get(model.key) ?? {};
     entry.card = card.animator;
@@ -378,6 +405,7 @@ function CardLayer({
   const cardRef = useCallback(
     (element: HTMLDivElement | null) => {
       card.ref(element);
+      cardElementRef.current = element;
       const entry = registry.get(model.key) ?? {};
       entry.cardElement = element;
       registry.set(model.key, entry);
@@ -390,7 +418,11 @@ function CardLayer({
       data-navigation-screen={model.key}
       data-navigation-top={isTop || undefined}
       inert={isCovered || undefined}
-      {...stylex.props(styles.card, isHidden && styles.cardHidden)}>
+      {...stylex.props(
+        styles.card,
+        isOverflowing && styles.cardOverflowing,
+        isHidden && styles.cardHidden,
+      )}>
       {model.element.props.children}
       <div
         ref={dim.ref}
@@ -437,7 +469,10 @@ function BarLayer({
       inert={isCovered || undefined}
       {...stylex.props(styles.barLayer, isCovered && styles.barLayerCovered)}>
       <div {...stylex.props(styles.barLeading)} />
-      <h2 ref={titleRef} tabIndex={-1} {...stylex.props(styles.barTitle)}>
+      <h2
+        ref={titleRef}
+        tabIndex={-1}
+        {...stylex.props(styles.barTitle, focusOutlineStyles.focusVisible)}>
         {props.title}
       </h2>
       <div {...stylex.props(styles.barTrailing)}>{props.trailing}</div>
@@ -579,6 +614,9 @@ export function NavigationStack<T>({
   // The last control activated inside the stack: what a push it starts came
   // from.
   const lastActivationRef = useRef<{target: Element; at: number} | null>(null);
+  // How the person last interacted: the focus a transition moves keeps that
+  // modality (interaction-modality INV1), so a tap draws no focus ring.
+  const modalityRef = useRef<'keyboard' | 'pointer'>('keyboard');
   // A pending push source handed to push(): applied to the new top.
   const pendingSourceRef = useRef<Element | null | undefined>(undefined);
   // An interactive release in flight: the pop it commits continues from the
@@ -643,8 +681,10 @@ export function NavigationStack<T>({
   const topKey = view.leaving
     ? view.leaving.key
     : (view.models.at(-1)?.key ?? 'root');
+  // While a pop runs, the screen it reveals; otherwise the one under the top
+  // (a finished pop's `transition.under` is the new top itself).
   const underKey =
-    view.transition.kind !== 'none'
+    view.leaving != null
       ? view.transition.under
       : (view.models.at(-2)?.key ?? null);
 
@@ -653,6 +693,11 @@ export function NavigationStack<T>({
   // ---------------------------------------------------------------------------
 
   const runningRef = useRef<{id: number; done: boolean} | null>(null);
+  // A pop's focus return, waiting for the commit that drops the leaving
+  // screen (until then every screen is `inert` and cannot take focus).
+  const pendingFocusRef = useRef<{popped: string; revealed: string} | null>(
+    null,
+  );
   const progressRef = useRef(0);
   // The back button's platter and chevron (one for the stack).
   const backControl = useAnimator();
@@ -853,7 +898,7 @@ export function NavigationStack<T>({
   );
 
   const focusAfter = useCallback(
-    (kind: 'push' | 'pop', key: string) => {
+    (kind: 'push' | 'pop', key: string, revealed?: string) => {
       const container = containerRef.current;
       if (container == null) {
         return;
@@ -868,15 +913,23 @@ export function NavigationStack<T>({
       ) {
         return;
       }
+      // After pointer input the browser's focus option keeps the element from
+      // matching `:focus-visible` (iOS Safari otherwise rings a programmatic
+      // focus after a tap).
+      const focusOptions: FocusOptions & {focusVisible?: boolean} = {
+        preventScroll: true,
+        ...(modalityRef.current === 'pointer' ? {focusVisible: false} : null),
+      };
       if (kind === 'pop') {
         const source = sourcesRef.current.get(key);
         sourcesRef.current.delete(key);
         if (source instanceof HTMLElement && source.isConnected) {
-          source.focus({preventScroll: true});
+          source.focus(focusOptions);
           return;
         }
       }
-      layersOf(key)?.titleElement?.focus({preventScroll: true});
+      // Else the screen now on top: the one pushed, or the one revealed.
+      layersOf(revealed ?? key)?.titleElement?.focus(focusOptions);
     },
     [layersOf],
   );
@@ -900,10 +953,21 @@ export function NavigationStack<T>({
     runningRef.current = {id, done: false};
     const release = releaseRef.current;
     releaseRef.current = null;
+    pendingFocusRef.current = null;
     let promise: Promise<boolean>;
     if (transition.kind === 'push') {
       if (!wasRunning) {
         setProgress(1, top, under);
+      } else {
+        // The covered screen continues from where it is; the new one (just
+        // mounted, at rest) starts off screen as any push does.
+        const values = layersAt(
+          1,
+          cardsRef.current?.clientWidth ?? 0,
+          writingDirection(containerRef.current),
+        );
+        layersOf(top)?.card?.set({x: values.topX});
+        layersOf(top)?.bar?.set({x: values.topX});
       }
       fadeBack('push', under);
       promise = animateProgress(
@@ -955,7 +1019,7 @@ export function NavigationStack<T>({
         );
         if (under != null) {
           settle(under, 'top');
-          focusAfter('pop', top);
+          pendingFocusRef.current = {popped: top, revealed: under};
         }
       } else {
         if (under != null) {
@@ -967,6 +1031,16 @@ export function NavigationStack<T>({
     });
     // Only a new transition restarts this; the layers are driven imperatively.
   }, [view.transition.id]);
+
+  // The pop's focus return, after the commit that dropped the leaving screen
+  // (the DOM's focus, the system this effect drives).
+  useLayoutEffect(() => {
+    const pending = pendingFocusRef.current;
+    if (view.leaving == null && pending != null) {
+      pendingFocusRef.current = null;
+      focusAfter('pop', pending.popped, pending.revealed);
+    }
+  }, [view.leaving, focusAfter]);
 
   // ---------------------------------------------------------------------------
   // API
@@ -1031,9 +1105,25 @@ export function NavigationStack<T>({
     };
     container.addEventListener('click', remember, true);
     container.addEventListener('keydown', remember, true);
+    // The page's last input, wherever it happened (a push may come from a
+    // control outside the stack).
+    const doc = container.ownerDocument;
+    const onPointer = () => {
+      modalityRef.current = 'pointer';
+    };
+    const onKey = (event: KeyboardEvent) => {
+      // A modifier held for a click is not navigation.
+      if (!event.metaKey && !event.altKey && !event.ctrlKey) {
+        modalityRef.current = 'keyboard';
+      }
+    };
+    doc.addEventListener('pointerdown', onPointer, true);
+    doc.addEventListener('keydown', onKey, true);
     return () => {
       container.removeEventListener('click', remember, true);
       container.removeEventListener('keydown', remember, true);
+      doc.removeEventListener('pointerdown', onPointer, true);
+      doc.removeEventListener('keydown', onKey, true);
     };
   }, []);
 
@@ -1120,12 +1210,7 @@ export function NavigationStack<T>({
             );
             v = recent.reduce((sum, value) => sum + value, 0) / recent.length;
           }
-          if (recognizer.state === 'ended' && shouldFinishPop(p, v)) {
-            // Commit the pop; the transition it triggers continues from here
-            // at the finger's speed.
-            releaseRef.current = {velocity: v};
-            onPathChangeRef.current(pathRef.current.slice(0, -1));
-          } else {
+          const springBack = (velocity: number) => {
             const id = (runningRef.current?.id ?? 0) + 0.5;
             runningRef.current = {id, done: false};
             void animateProgress(
@@ -1133,7 +1218,7 @@ export function NavigationStack<T>({
               swipe.top,
               swipe.under,
               springs.navigationInteractivePopFinish,
-              v,
+              velocity,
               'keep',
               'rest',
             ).then(finished => {
@@ -1145,6 +1230,29 @@ export function NavigationStack<T>({
                 settle(swipe.under, 'covered');
               }
             });
+          };
+          if (recognizer.state === 'ended' && shouldFinishPop(p, v)) {
+            // Commit the pop; the transition it triggers continues from here
+            // at the finger's speed.
+            const release = {velocity: v};
+            const before = pathRef.current;
+            releaseRef.current = release;
+            onPathChangeRef.current(before.slice(0, -1));
+            // An app that keeps its path (guarding unsaved edits, say) gets
+            // no pop: by the next frame the release is still waiting, so the
+            // cards spring back where they came from.
+            const win = containerRef.current?.ownerDocument.defaultView;
+            win?.requestAnimationFrame(() => {
+              if (
+                releaseRef.current === release &&
+                pathRef.current === before
+              ) {
+                releaseRef.current = null;
+                springBack(0);
+              }
+            });
+          } else {
+            springBack(v);
           }
           break;
         }
@@ -1162,13 +1270,13 @@ export function NavigationStack<T>({
   // swipe (iOS Safari keeps it, AST-094 FR22): the edge swipe only runs in a
   // home-screen web app, and the content swipe ignores touches that start
   // in that edge band. Server render and first paint assume a tab.
-  const [browserOwnsEdge, setBrowserOwnsEdge] = useState(true);
-  const browserOwnsEdgeRef = useRef(true);
-  useEffect(() => {
-    const owns = !isStandaloneWebApp();
-    browserOwnsEdgeRef.current = owns;
-    setBrowserOwnsEdge(owns);
-  }, []);
+  const browserOwnsEdge = useSyncExternalStore(
+    subscribeToNothing,
+    () => !isStandaloneWebApp(),
+    () => true,
+  );
+  const browserOwnsEdgeRef = useRef(browserOwnsEdge);
+  browserOwnsEdgeRef.current = browserOwnsEdge;
   const edge = useGestureRecognizer(
     containerRef,
     () =>
@@ -1192,6 +1300,9 @@ export function NavigationStack<T>({
         direction: 'right',
         hysteresis: CONTENT_CLAIM_PX,
         maximumNumberOfTouches: 1,
+        // A horizontal scroller under the finger that can still scroll
+        // that way keeps the drag (UIKit's scroll views do).
+        scrollEdge: true,
         shouldReceiveTouch: (_recognizer, touch) =>
           !(
             browserOwnsEdgeRef.current &&
@@ -1219,9 +1330,10 @@ export function NavigationStack<T>({
       return null;
     }
     const previous = rendered[index - 1]?.element.props;
+    // An empty title names nothing: the catalog's "Back" covers that too.
     return (
-      previous?.backTitle ??
-      previous?.title ??
+      previous?.backTitle ||
+      previous?.title ||
       t('@astryx.navigationStack.back')
     );
   };

@@ -55,16 +55,18 @@ function Detail({entry}: {entry: string}) {
 function Harness({
   initial = [],
   backTitle,
+  rootTitle = 'Settings',
 }: {
   initial?: string[];
   backTitle?: string;
+  rootTitle?: string;
 }) {
   const [path, setPath] = useState<string[]>(initial);
   return (
     <NavigationStack
       label="Settings"
       root={
-        <NavigationScreen title="Settings" backTitle={backTitle}>
+        <NavigationScreen title={rootTitle} backTitle={backTitle}>
           <Root />
         </NavigationScreen>
       }
@@ -153,6 +155,11 @@ describe('NavigationStack', () => {
     expect(screen.getByRole('button', {name: 'All settings'})).toHaveAttribute(
       'data-navigation-back',
     );
+  });
+
+  it('names Back with the catalog’s “Back” when the previous screen’s title is empty', () => {
+    render(<Harness initial={['General']} rootTitle="" />);
+    expect(backButton('Back')).toBeDefined();
   });
 
   it('pops several screens back to the root at once', async () => {
