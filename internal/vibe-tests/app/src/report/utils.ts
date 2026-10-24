@@ -1,6 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import type {UniversalDimension, UniversalScore} from './types';
+import type {
+  A11yCoverage,
+  UniversalAggregate,
+  UniversalComparison,
+  UniversalDimension,
+  UniversalScore,
+} from './types';
 
 /** The 5 code-analysis dimensions (always present). */
 export const CODE_DIMENSIONS: UniversalDimension[] = [
@@ -25,6 +31,58 @@ export const DIMENSION_LABELS: Record<UniversalDimension, string> = {
   maintainability: 'Maintainability',
   design: 'Design',
 };
+
+/**
+ * How much of the accessibility score runtime axe data backs (issue #4145),
+ * across every prompt map passed: 'mixed' when only some prompts have it.
+ * Older results have no a11y metrics and read as static-only.
+ */
+export function a11yCoverage(
+  ...byPrompts: Array<Record<string, UniversalScore> | undefined>
+): A11yCoverage {
+  const scores = byPrompts.flatMap(byPrompt => Object.values(byPrompt ?? {}));
+  const runtime = scores.filter(
+    s => s.accessibility?.metrics?.runtime === true,
+  ).length;
+  const basis =
+    runtime === 0 ? 'static' : runtime === scores.length ? 'runtime' : 'mixed';
+  return {basis, runtime, total: scores.length};
+}
+
+/**
+ * Coverage behind a dimension score card, which shows its delta against the
+ * baseline: the baseline's prompts count too, so a runtime-backed score
+ * compared with a hygiene-only baseline reads as mixed, as in CompareView.
+ */
+export function a11yCoverageVsBaseline(
+  universal: UniversalAggregate,
+  comparison: UniversalComparison | undefined,
+): A11yCoverage {
+  return a11yCoverage(universal.byPrompt, comparison?.baseline.byPrompt);
+}
+
+/**
+ * Dimension label that is honest about what backs the accessibility score:
+ * without runtime axe data the static scan only measures raw-HTML footgun
+ * avoidance, so it is labeled as hygiene rather than accessibility, and
+ * partial runtime coverage says how partial it is.
+ */
+export function dimensionLabel(
+  dim: UniversalDimension,
+  coverage: A11yCoverage,
+): string {
+  if (dim === 'accessibility') {
+    switch (coverage.basis) {
+      case 'runtime':
+        return 'Accessibility (runtime + hygiene)';
+      case 'mixed':
+        return `Accessibility (mixed: ${coverage.runtime}/${coverage.total} runtime)`;
+      default:
+        return 'A11y Hygiene (composition)';
+    }
+  }
+  return DIMENSION_LABELS[dim];
+}
 
 export function scoreToStatusVariant(
   score: number,
