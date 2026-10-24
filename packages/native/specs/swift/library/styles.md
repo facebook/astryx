@@ -19,9 +19,11 @@ so a theme change reaches both.
 
 - **Y1 — Astryx looks as SwiftUI styles.** For each component whose core
   contract matches a SwiftUI control whose style protocol accepts a custom
-  conformance, Astryx ships a conformance to that control's style protocol, reached as `.astryx` (or `.astryx<Component>` where one protocol styles
-  more than one component, Y3) with only the component's core visual props as
-  parameters. Each style reads the theme from the
+  conformance, Astryx ships a conformance to that control's style protocol, with only the component's core visual props as parameters. A protocol that
+  styles one component reaches it as `.astryx` (`ButtonStyle`, `LabelStyle`,
+  `MenuStyle`, `GroupBoxStyle`, `LabeledContentStyle`, `ControlGroupStyle`);
+  one that styles several reaches each as `.astryx<Component>` (`.astryxSwitch`,
+  `.astryxCheckbox`, `.astryxProgressBar`, `.astryxSpinner`). Each style reads the theme from the
   environment. The component's view is the SwiftUI control with that style,
   plus the contract's behavior props. Astryx declares no style protocol of its
   own.
@@ -36,7 +38,7 @@ so a theme change reaches both.
   | `ButtonStyle`         | `.astryx(variant:size:elevation:)`          | Button, IconButton; also SwiftUI's own `Link`, `NavigationLink`, and `ShareLink`, which SwiftUI styles with `ButtonStyle` |
   | `ToggleStyle`         | `.astryxSwitch`; `.astryxCheckbox` on macOS | Switch; CheckboxInput                                                                                                     |
   | `ProgressViewStyle`   | `.astryxProgressBar`; `.astryxSpinner`      | ProgressBar (determinate or not); Spinner                                                                                 |
-  | `LabelStyle`          | `.astryx`                                   | the icon-and-label layout of Button, Badge, and DropdownMenu items                                                        |
+  | `LabelStyle`          | `.astryx`                                   | the icon-and-label layout of Button and Badge                                                                             |
   | `MenuStyle`           | `.astryx`                                   | DropdownMenu trigger (menu contents stay system)                                                                          |
   | `GroupBoxStyle`       | `.astryx`                                   | Card                                                                                                                      |
   | `LabeledContentStyle` | `.astryx`                                   | Field: a label beside or above its control                                                                                |
@@ -61,13 +63,13 @@ so a theme change reaches both.
 
 ## Acceptance checks
 
-| Requirement | Check                                                                                                                                                                                                                                                                                  |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Y1          | A compile test applies every Y3 style to its SwiftUI control through its Y3 member; a source check finds no public protocol declared by Astryx whose name ends in `Style`.                                                                                                             |
-| Y1          | A capture test draws `SwiftUI.Button("x") {}.buttonStyle(.astryx(variant: .primary))` and `Button("x", variant: .primary) {}` identically in two themes, light and dark. `Link`, `NavigationLink`, and `ShareLink` with `.buttonStyle(.astryx(variant: .primary))` draw the same look. |
-| Y2          | A source check finds no style parameter that is not a core visual prop of its component.                                                                                                                                                                                               |
-| Y3          | Each component in the Y3 table has its style; Selector and TextInput inside a theme draw the theme's tint.                                                                                                                                                                             |
-| Y5          | Accessibility assertions for a styled stock control equal those for the same unstyled stock control. A `Toggle` with `.astryxSwitch` reads as a toggle with its value and flips on a tap and on VoiceOver's default action.                                                            |
+| Requirement | Check                                                                                                                                                                                                                                                                                          |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Y1          | A compile test applies every Y3 style to its SwiftUI control through its Y3 member; a source check finds no public protocol declared by Astryx whose name ends in `Style`.                                                                                                                     |
+| Y1          | A capture test draws `SwiftUI.Button("x") {}.buttonStyle(.astryx(variant: .primary))` and `Button("x", variant: .primary) {}` identically in two themes, light and dark. `SwiftUI.Link`, `NavigationLink`, and `ShareLink` with `.buttonStyle(.astryx(variant: .primary))` draw the same look. |
+| Y2          | A source check finds no style parameter that is not a core visual prop of its component.                                                                                                                                                                                                       |
+| Y3          | Each component in the Y3 table has its style; Selector and TextInput inside a theme draw the theme's tint.                                                                                                                                                                                     |
+| Y5          | Accessibility assertions for a styled stock control equal those for the same unstyled stock control. A `Toggle` with `.astryxSwitch` reads as a toggle with its value and flips on a tap and on VoiceOver's default action.                                                                    |
 
 ## Current state
 
