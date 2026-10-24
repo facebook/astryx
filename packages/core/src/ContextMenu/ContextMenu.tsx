@@ -418,10 +418,14 @@ export function ContextMenu({
     lightDismiss: false,
   });
 
+  // The lift's exit, set once the lift presentation exists below: a lifted
+  // menu shrinks back into the finger, so it takes its picture before hiding.
+  const dismissLiftedMenuRef = useRef<() => void>(() => {});
   const closeMenu = useCallback(() => {
     if (usesBottomSheet) {
       updateOpenState(false);
     } else {
+      dismissLiftedMenuRef.current();
       layer.hide();
     }
   }, [layer, updateOpenState, usesBottomSheet]);
@@ -737,6 +741,12 @@ export function ContextMenu({
   });
   const liftRef = useRef(liftPresentation);
   liftRef.current = liftPresentation;
+  dismissLiftedMenuRef.current = () => {
+    const list = listRef.current;
+    if (list != null) {
+      liftPresentation.dismissMenu(list);
+    }
+  };
   const [liftPlacement, setLiftPlacement] = useState<MenuPlacement | null>(
     null,
   );

@@ -278,5 +278,52 @@ export const contextMenu = {
      *   Oct 23 2026: 0.823 → 1, fit (0.30, 0.80), rms 0.0001
      */
     morphContentScale: 0.823,
+    /**
+     * When the menu closes, its glass shrinks back into the finger: to a blob
+     * this size (pt) at the press point, its centre on `morphSpring`.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+     *   iPhone 17 Pro, the morph container and menu view per frame after
+     *   willEnd, the card held in the middle and at the left edge, Oct 23
+     *   2026: it ends 58.4 × 48 at the press point; centre, width and
+     *   height together come within 0.58–0.67 pt rms (3.2 pt at worst)
+     */
+    exitEnd: {width: 58.4, height: 48},
+    /**
+     * The closing glass's width spring.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+     *   iPhone 17 Pro, the morph container and menu view per frame after
+     *   willEnd, the card held in the middle and at the left edge, Oct 23
+     *   2026: the width fits (0.2575, 0.85)
+     */
+    exitWidthSpring: {response: 0.2575, dampingRatio: 0.85},
+    /**
+     * The closing glass's height spring.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+     *   iPhone 17 Pro, the morph container and menu view per frame after
+     *   willEnd, the card held in the middle and at the left edge, Oct 23
+     *   2026: the height fits (0.2825, 0.82)
+     */
+    exitHeightSpring: {response: 0.2825, dampingRatio: 0.82},
+    /**
+     * The closing content's scale, relative to its size, reached on
+     * `morphSpring` as it fades and blurs out (the glass fades on
+     * `springs.contextMenuDismiss`, as the menu view does).
+     * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+     *   iPhone 17 Pro, the morph container and menu view per frame after
+     *   willEnd, the card held in the middle and at the left edge, Oct 23
+     *   2026: the outgoing view's scale 0.99 → 0.82 and blur → 4;
+     *   the menu view's opacity 1 → 0 fits (0.35, 0.85)
+     */
+    exitContentScale: 0.82,
+    /**
+     * The copy's shadow fades out on this spring as the copy returns to its
+     * place on `morphSpring`.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+     *   iPhone 17 Pro, the morph container and menu view per frame after
+     *   willEnd, the card held in the middle and at the left edge, Oct 23
+     *   2026: the platter shadow 0.30 → 0 fits (0.265, 0.84); the
+     *   preview's width 226 → 200 fits (0.30, 0.80), rms 0.0007 pt
+     */
+    shadowExitSpring: {response: 0.265, dampingRatio: 0.84},
   },
 } as const;

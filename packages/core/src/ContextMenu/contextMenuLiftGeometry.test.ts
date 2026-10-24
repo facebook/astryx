@@ -17,9 +17,11 @@ import {contextMenu, springs} from '../motion/uikit';
 import {
   liftedBox,
   liftScale,
+  menuExit,
   menuMorph,
   menuPlacement,
 } from './contextMenuLiftGeometry';
+import {UIKIT_EXIT_CASES} from './__tests__/uikitExitFrames';
 import {UIKIT_MORPH_CASES} from './__tests__/uikitMorphFrames';
 import {
   UIKIT_LIFT_FRAMES,
@@ -211,6 +213,87 @@ describe('menuMorph against UIKit’s glass (iOS 26.2, 3-action menu)', () => {
       fade: 0,
     });
     expect(morph.at(morph.duration)).toMatchObject({
+      centerX: menu.x + menu.width / 2,
+      centerY: menu.y + menu.height / 2,
+      width: menu.width,
+      height: menu.height,
+      contentScale: 1,
+      fade: 1,
+    });
+  });
+});
+
+describe('the exit against UIKit’s dismissal (iOS 26.2, 3-action menu)', () => {
+  for (const [name, uikit] of Object.entries(UIKIT_EXIT_CASES)) {
+    const where = name === 'middle' ? 'in the middle' : 'at the left edge';
+    it(`shrinks the glass back into the press point, held ${where} (rms < 0.75 pt)`, () => {
+      const exit = menuExit(uikit.menu, uikit.press);
+      const errors = uikit.frames.flatMap(([ms, x, y, width, height]) => {
+        const m = exit.at((ms - uikit.startMs) / 1000);
+        return [
+          m.centerX - x,
+          m.centerY - y,
+          m.width - width,
+          m.height - height,
+        ].map(Math.abs);
+      });
+      const rms = Math.sqrt(
+        errors.reduce((sum, e) => sum + e * e, 0) / errors.length,
+      );
+      expect(rms).toBeLessThan(0.75);
+      expect(Math.max(...errors)).toBeLessThan(3.5);
+    });
+
+    it(`returns the copy on morphSpring, held ${where} (rms < 0.05 pt)`, () => {
+      const curve = solveSpring(toSpring(contextMenu.lift.morphSpring), {
+        from: 226,
+        to: 200,
+      });
+      const errors = uikit.frames.flatMap(([ms, , , , , copyWidth]) =>
+        copyWidth == null
+          ? []
+          : [
+              Math.abs(
+                curve.value((ms - uikit.copyStartMs) / 1000) - copyWidth,
+              ),
+            ],
+      );
+      const rms = Math.sqrt(
+        errors.reduce((sum, e) => sum + e * e, 0) / errors.length,
+      );
+      expect(rms).toBeLessThan(0.05);
+    });
+  }
+});
+
+describe('menuExit retargets a close during the entrance', () => {
+  const menu = {x: 76, y: 400, width: 250, height: 146};
+  const press = {x: 201, y: 377};
+  const from = {
+    centerX: 180,
+    centerY: 420,
+    width: 120,
+    height: 70,
+    contentScale: 0.9,
+    fade: 0.6,
+  };
+
+  it('starts where the entrance stands and ends where an exit from the frame does', () => {
+    const exit = menuExit(menu, press, {from});
+    expect(exit.at(0)).toEqual(from);
+    const end = exit.at(exit.duration);
+    const plain = menuExit(menu, press).at(exit.duration);
+    expect(end.centerX).toBeCloseTo(plain.centerX, 6);
+    expect(end.centerY).toBeCloseTo(plain.centerY, 6);
+    expect(end.width).toBeCloseTo(plain.width, 6);
+    expect(end.height).toBeCloseTo(plain.height, 6);
+    expect(end.contentScale).toBeCloseTo(plain.contentScale, 6);
+    expect(end.fade).toBe(0);
+  });
+
+  it('is the plain exit when nothing is in flight', () => {
+    const plain = menuExit(menu, press);
+    expect(plain.at(0)).toEqual({
       centerX: menu.x + menu.width / 2,
       centerY: menu.y + menu.height / 2,
       width: menu.width,

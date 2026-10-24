@@ -15,11 +15,17 @@
  *   frame; the menu's glass grows out of the finger with its content
  *   following from a blur, then settles as the menu itself, also at the
  *   right edge and at the bottom, and keeps growing through a blocked main
- *   thread (its content's clip: the iOS simulator recording); under Reduce Motion it grows without overshoot; a
- *   close mid-morph ends it at once; closing returns the copy and clears the
- *   backdrop; the copy keeps growing on every frame through a blocked main
- *   thread; under Reduce Motion the card does not grow and the copy lifts on
- *   a critically damped spring; a storyboard of the lift
+ *   thread (its content's clip: the iOS simulator recording); under Reduce
+ *   Motion it grows without overshoot; a close mid-morph retargets from where
+ *   the glass is (within 2 px); closing shrinks the menu back into the finger
+ *   as its glass fades and returns the copy on the morph spring, also when an
+ *   action is picked; a press during the exit lands on the fading dim and
+ *   opens nothing, and the layer keeps it until it lifts, even past the
+ *   exit's end; the copy keeps growing, and returning, on every frame through
+ *   a blocked main thread; under Reduce Motion the card does not grow, the
+ *   copy lifts on a critically damped spring and the exit runs without
+ *   overshoot; closing clears the backdrop; storyboards of the lift and of
+ *   the exit
  * @position Interaction specs of packages/core/src/ContextMenu, beside
  *   ContextMenuLongPress.interaction.browser.spec.ts (the press timeline)
  */
@@ -425,6 +431,94 @@ test('the menu’s glass grows out of the finger, its content following from a b
   expect(settled.opacity, detail).toBe('1');
 });
 
+test('closing shrinks the menu back into the finger as its glass fades, and returns the copy on the morph spring', async ({
+  page,
+}) => {
+  const story = await openLiftStory(page);
+  await liftAndSettle(page, story);
+  // The menu's frame as laid out (its popover's box).
+  const menuBox = await page.evaluate(() => {
+    const r = document
+      .querySelector('[role="menu"]')
+      ?.closest('[popover]')
+      ?.getBoundingClientRect();
+    return r == null
+      ? null
+      : {x: r.x + r.width / 2, y: r.y + r.height / 2, width: r.width};
+  });
+  await page.keyboard.press('Escape');
+  await holdAnimations(page);
+  const read = async (t: number) => {
+    await seekAnimations(page, t);
+    return page.evaluate(() => {
+      const glass = document.querySelector(
+        '[data-astryx-context-menu-glass="exit"]',
+      );
+      const content = document.querySelector('[data-astryx-context-menu-exit]');
+      const copy = document.querySelector('[data-astryx-context-menu-preview]');
+      const box = glass?.getBoundingClientRect();
+      const scale = copy == null ? 'none' : getComputedStyle(copy).scale;
+      return {
+        glass:
+          box == null || glass == null
+            ? null
+            : {
+                x: box.x + box.width / 2,
+                y: box.y + box.height / 2,
+                width: box.width,
+                opacity: Number(getComputedStyle(glass).opacity),
+              },
+        contentOpacity:
+          content == null ? null : Number(getComputedStyle(content).opacity),
+        copyScale: scale === 'none' ? 1 : Number.parseFloat(scale),
+      };
+    });
+  };
+  const start = await read(0);
+  const middle = await read(120);
+  await releaseAnimations(page);
+  await page.waitForTimeout(900);
+  const after = await page.evaluate(() => ({
+    exit:
+      document.querySelector('[data-astryx-context-menu-exit]') != null ||
+      document.querySelector('[data-astryx-context-menu-glass]') != null,
+    layerOpen:
+      document
+        .querySelector('[data-astryx-context-menu-lift]')
+        ?.matches(':popover-open') ?? false,
+  }));
+  const returning = solveSpring(toSpring(contextMenu.lift.morphSpring), {
+    from: 1.13,
+    to: 1,
+  });
+  const detail = JSON.stringify({
+    menuBox,
+    center: story.center,
+    start,
+    middle,
+    after,
+  });
+  // It starts as the menu, glass and content opaque.
+  expect(start.glass?.x, detail).toBeCloseTo(menuBox?.x ?? NaN, 0);
+  expect(start.glass?.y, detail).toBeCloseTo(menuBox?.y ?? NaN, 0);
+  expect(start.glass?.width, detail).toBeCloseTo(menuBox?.width ?? NaN, 0);
+  expect(start.contentOpacity, detail).toBeCloseTo(1, 2);
+  // Partway, smaller, nearer the finger, fading.
+  expect(middle.glass?.width ?? Infinity, detail).toBeLessThan(
+    (menuBox?.width ?? 0) * 0.8,
+  );
+  expect(
+    Math.abs((middle.glass?.y ?? NaN) - story.center.y),
+    detail,
+  ).toBeLessThan(Math.abs((menuBox?.y ?? NaN) - story.center.y));
+  expect(middle.glass?.opacity ?? 1, detail).toBeLessThan(1);
+  expect(middle.contentOpacity ?? 1, detail).toBeLessThan(0.5);
+  expect(middle.copyScale, detail).toBeCloseTo(returning.value(0.12), 2);
+  // Done: the copies are gone and the lift layer hides.
+  expect(after.exit, detail).toBe(false);
+  expect(after.layerOpen, detail).toBe(false);
+});
+
 test('closing returns the copy to the card and clears the backdrop', async ({
   page,
 }) => {
@@ -808,33 +902,275 @@ test('under Reduce Motion the glass grows on a critically damped spring, never p
   ).toBe(true);
 });
 
-test('a close during the morph ends it at once: the glass goes, the menu keeps no borrowed style, and the copy returns', async ({
+test('a close during the morph shrinks back from where the glass is: no jump to the menu’s full size, and nothing borrowed is left', async ({
   page,
 }) => {
   const story = await openLiftStory(page);
   // The finger lifts just after the menu shows (it stays open).
   await story.driver.play(tap(story.center, {holdMs: menuDisplayMs + 40}));
   await expect(page.locator('[data-astryx-context-menu-glass]')).toBeAttached();
-  const mid = await readMorph(page);
-  await page.keyboard.press('Escape');
+  // In one task: the glass's width as the close comes, the close (Escape on
+  // the menu), and the width the exit's glass starts from.
+  const {entrance, exitStart} = await page.evaluate(() => {
+    const width = (selector: string) =>
+      document.querySelector(selector)?.getBoundingClientRect().width ?? null;
+    const before = width('[data-astryx-context-menu-glass]');
+    const menu = document.querySelector('[role="menu"]');
+    const full = (menu as HTMLElement | null)?.offsetWidth ?? null;
+    menu?.dispatchEvent(
+      new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}),
+    );
+    return {
+      entrance: {glass: before, menu: full},
+      exitStart: width('[data-astryx-context-menu-glass="exit"]'),
+    };
+  });
   await expect(page.getByRole('menu', {name: 'Photo actions'})).toBeHidden();
-  const closed = await page.evaluate(() => ({
-    glass: document.querySelectorAll('[data-astryx-context-menu-glass]').length,
-    style: document.querySelector('[role="menu"]')?.getAttribute('style') ?? '',
-  }));
   await page.waitForTimeout(900);
+  const after = await page.evaluate(() => ({
+    glass: document.querySelectorAll('[data-astryx-context-menu-glass]').length,
+    exit: document.querySelectorAll('[data-astryx-context-menu-exit]').length,
+    style: document.querySelector('[role="menu"]')?.getAttribute('style') ?? '',
+    layerOpen:
+      document
+        .querySelector('[data-astryx-context-menu-lift]')
+        ?.matches(':popover-open') ?? false,
+  }));
+  const detail = JSON.stringify({entrance, exitStart, after});
+  // Mid-morph the glass is still smaller than the menu; the exit retargets
+  // from it (as UIKit's springs do), not from the menu's full width.
+  expect(entrance.glass ?? Infinity, detail).toBeLessThan(
+    (entrance.menu ?? 0) - 10,
+  );
+  expect(
+    Math.abs((exitStart ?? 0) - (entrance.glass ?? 0)),
+    detail,
+  ).toBeLessThan(2);
+  expect(after, detail).toEqual({
+    glass: 0,
+    exit: 0,
+    style: expect.not.stringMatching(
+      /background|box-shadow|overflow|clip-path/u,
+    ) as unknown as string,
+    layerOpen: false,
+  });
+});
+
+test('a press during the exit lands on the fading dim and, held past the exit’s end, still reaches nothing: nothing opens, and the layer waits for the lift', async ({
+  page,
+}) => {
+  const story = await openLiftStory(page);
+  await liftAndSettle(page, story);
+  await page.evaluate(() => {
+    const w = window as unknown as {__cardEvents: string[]};
+    w.__cardEvents = [];
+    const card = document.querySelector('[data-testid="touch-context-menu"]');
+    for (const type of ['touchstart', 'pointerdown', 'click']) {
+      card?.addEventListener(type, () => w.__cardEvents.push(type), {
+        capture: true,
+        passive: true,
+      });
+    }
+  });
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(80);
+  const during = await page.evaluate(
+    () =>
+      document.querySelector('[data-astryx-context-menu-glass="exit"]') != null,
+  );
+  // A new finger held on the card while the copy is still on its way back,
+  // and on well past the exit's end: the layer stays up (bare) under it.
+  const holdMs = menuDisplayMs + 200;
+  const playing = story.driver.play(tap(story.center, {holdMs}));
+  await page.waitForTimeout(holdMs - 150);
+  const heldPastExit = await readLift(page);
+  await playing;
+  await page.waitForTimeout(600);
   const after = await readLift(page);
-  const detail = JSON.stringify({mid, closed, after});
-  // Still mid-morph when it closed: the glass smaller than the menu.
-  expect(mid.glass?.width ?? Infinity, detail).toBeLessThan(
-    (mid.menu?.width ?? 0) - 1,
+  const cardEvents = await page.evaluate(
+    () => (window as unknown as {__cardEvents: string[]}).__cardEvents,
   );
-  expect(closed.glass, detail).toBe(0);
-  expect(closed.style, detail).not.toMatch(
-    /background|box-shadow|overflow|clip-path/u,
-  );
+  const detail = JSON.stringify({during, heldPastExit, after, cardEvents});
+  expect(during, detail).toBe(true);
+  expect(heldPastExit.layerOpen, detail).toBe(true);
+  expect(heldPastExit.preview, detail).toBeNull();
+  expect(cardEvents, detail).toEqual([]);
+  await expect(page.getByRole('menu', {name: 'Photo actions'})).toBeHidden();
   expect(after.preview, detail).toBeNull();
   expect(after.layerOpen, detail).toBe(false);
+});
+
+test('picking an action closes the menu the same way: it shrinks back into the finger and the copy returns', async ({
+  page,
+}) => {
+  const story = await openLiftStory(page);
+  await liftAndSettle(page, story);
+  await page.evaluate(() => {
+    const w = window as unknown as {__picked: string[]};
+    w.__picked = [];
+    document.addEventListener(
+      'click',
+      event => {
+        const row = (event.target as Element).closest('[role="menuitem"]');
+        if (row != null) {
+          w.__picked.push(row.textContent ?? '');
+        }
+      },
+      {capture: true},
+    );
+  });
+  const share = await page.getByRole('menuitem', {name: 'Share'}).boundingBox();
+  if (share == null) {
+    throw new Error('no Share row');
+  }
+  await story.driver.play(
+    tap({x: share.x + share.width / 2, y: share.y + share.height / 2}),
+  );
+  const exiting = await page.evaluate(() => ({
+    glass:
+      document.querySelector('[data-astryx-context-menu-glass="exit"]') != null,
+    content: document.querySelector('[data-astryx-context-menu-exit]') != null,
+  }));
+  await expect(page.getByRole('menu', {name: 'Photo actions'})).toBeHidden();
+  await page.waitForTimeout(900);
+  const after = await readLift(page);
+  const picked = await page.evaluate(
+    () => (window as unknown as {__picked: string[]}).__picked,
+  );
+  const detail = JSON.stringify({exiting, after, picked});
+  expect(picked, detail).toEqual(['Share']);
+  expect(exiting, detail).toEqual({glass: true, content: true});
+  expect(after.preview, detail).toBeNull();
+  expect(after.layerOpen, detail).toBe(false);
+});
+
+test('the copy keeps returning on every frame while the main thread is blocked during the exit', async ({
+  page,
+  browserName,
+}, testInfo) => {
+  test.skip(
+    browserName !== 'chromium',
+    'Linux WebKit’s compositor stalls with its main thread (no frames for most of a block); iOS Safari keeps it moving: the simulator recording',
+  );
+  const story = await openLiftStory(page);
+  await liftAndSettle(page, story);
+  await markSelector(page, '[data-astryx-context-menu-preview]');
+  // Blocked from 30 ms after the close, while the copy returns.
+  await page.evaluate(() => {
+    addEventListener(
+      'keydown',
+      () => {
+        setTimeout(() => {
+          const from = performance.timeOrigin + performance.now();
+          const end = performance.now() + 300;
+          while (performance.now() < end) {
+            // Held: no task, frame or event runs.
+          }
+          (window as unknown as {__busy: BusyWindow}).__busy = {
+            from,
+            to: performance.timeOrigin + performance.now(),
+          };
+        }, 30);
+      },
+      {once: true, capture: true},
+    );
+  });
+  const cast = await startScreencast(page);
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(900);
+  const castFrames = await cast.stop();
+  const block = await page.evaluate(
+    () => (window as unknown as {__busy: BusyWindow}).__busy,
+  );
+  const tracked = await trackMarker(page, castFrames);
+  const proof = busyWindowProof(tracked, block, {
+    axis: 'width',
+    settledWithin: 1,
+  });
+  await writeEvidence(
+    'busy-main-thread/contextmenu-exit',
+    {
+      [`${testInfo.project.name}.json`]: JSON.stringify(
+        {
+          block,
+          proof,
+          frames: tracked.map(f => ({
+            t: +(f.t - block.from).toFixed(1),
+            w: f.box?.width ?? null,
+          })),
+        },
+        null,
+        1,
+      ),
+    },
+    testInfo,
+  );
+  const film = await castStoryboard(page, castFrames, {
+    name: 'contextmenu-exit-busy-main-thread',
+    zero: block.from,
+    from: block.from - 40,
+    to: block.to + 40,
+    columns: 8,
+    cellScale: 0.35,
+    data: t => ({w: tracked.find(f => f.t === t)?.box?.width ?? -1}),
+  });
+  await film.write(testInfo, {block});
+  expect(proof.medianFrameMs).toBeLessThan(20);
+  expect(proof.frames).toBeGreaterThanOrEqual(proof.expectedFrames - 2);
+  expect(proof.monotonic).toBe(true);
+  expect(proof.longestStallMs).toBeLessThan(4 * (1000 / 60) + 4);
+  expect((proof.first ?? 0) - (proof.last ?? 0)).toBeGreaterThanOrEqual(8);
+});
+
+test('under Reduce Motion the exit runs on critically damped springs: the glass never shrinks past its end, the copy never past the card', async ({
+  page,
+}) => {
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  const story = await openLiftStory(page);
+  await liftAndSettle(page, story);
+  await page.keyboard.press('Escape');
+  await expect(
+    page.locator('[data-astryx-context-menu-glass="exit"]'),
+  ).toBeAttached();
+  await page.waitForTimeout(32);
+  await holdAnimations(page);
+  const samples: {glass: number; copy: number}[] = [];
+  for (const t of timeline(600)) {
+    await seekAnimations(page, t);
+    samples.push(
+      await page.evaluate(() => {
+        const glass = document.querySelector(
+          '[data-astryx-context-menu-glass="exit"]',
+        );
+        const copy = document.querySelector(
+          '[data-astryx-context-menu-preview]',
+        );
+        const scale = copy == null ? 'none' : getComputedStyle(copy).scale;
+        return {
+          glass: glass?.getBoundingClientRect().width ?? Number.NaN,
+          copy: scale === 'none' ? 1 : Number.parseFloat(scale),
+        };
+      }),
+    );
+  }
+  await releaseAnimations(page);
+  const detail = JSON.stringify(samples);
+  const {exitEnd} = contextMenu.lift;
+  const glass = samples.map(s => s.glass).filter(Number.isFinite);
+  const copy = samples.map(s => s.copy);
+  expect(Math.min(...glass), detail).toBeGreaterThanOrEqual(
+    exitEnd.width - 0.5,
+  );
+  expect(
+    glass.every((w, i) => i === 0 || w <= glass[i - 1] + 0.05),
+    detail,
+  ).toBe(true);
+  expect(Math.min(...copy), detail).toBeGreaterThanOrEqual(1 - 1e-3);
+  expect(
+    copy.every((v, i) => i === 0 || v <= copy[i - 1] + 1e-4),
+    detail,
+  ).toBe(true);
+  expect(copy.at(-1), detail).toBeCloseTo(1, 2);
 });
 
 test(
@@ -880,5 +1216,49 @@ test(
     await storyboard.write(testInfo);
     const widths = storyboard.frames.map(f => Number(f.data.width));
     expect(widths.at(-1)).toBeCloseTo(226, 0);
+  },
+);
+
+test(
+  'storyboard: the exit, from the close',
+  {tag: '@storyboard'},
+  async ({page}, testInfo) => {
+    const story = await openLiftStory(page);
+    await liftAndSettle(page, story);
+    await page.keyboard.press('Escape');
+    const viewport = page.viewportSize();
+    const {storyboard} = await animationStoryboard(page, {
+      name: 'contextmenu-exit',
+      clip: {
+        x: 0,
+        y: Math.max(0, story.center.y - 120),
+        width: viewport?.width ?? 402,
+        height: 400,
+      },
+      times: timeline(450, 1000 / 30),
+      measure: async () =>
+        page.evaluate(() => {
+          const glass = document.querySelector(
+            '[data-astryx-context-menu-glass="exit"]',
+          );
+          const copy = document.querySelector(
+            '[data-astryx-context-menu-preview]',
+          );
+          return {
+            glass: glass?.getBoundingClientRect().width.toFixed(1) ?? '-',
+            copy: copy?.getBoundingClientRect().width.toFixed(1) ?? '-',
+          };
+        }),
+      columns: 5,
+      cellScale: 0.5,
+    });
+    await releaseAnimations(page);
+    await storyboard.write(testInfo);
+    // Until the copies are cleared away, at the end.
+    const copies = storyboard.frames
+      .map(f => Number(f.data.copy))
+      .filter(Number.isFinite);
+    expect(copies[0]).toBeCloseTo(226, 0);
+    expect(copies.at(-1)).toBeCloseTo(200, 0);
   },
 );
