@@ -8,6 +8,8 @@
  *   curve of a table that calls `registerMotionTable`, with its CSS variable
  *   and its measured default. The tables stay the one source of the values.
  *
+ * The doc is written Prettier-formatted, so `prettier --check` agrees.
+ *
  * Run: node scripts/generate-motion-roles.mjs
  * CI:  `node scripts/generate-motion-roles.mjs --check` fails on drift.
  */
@@ -15,6 +17,7 @@ import {readFileSync, readdirSync, writeFileSync} from 'node:fs';
 import {dirname, join, relative, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {build} from 'esbuild';
+import * as prettier from 'prettier';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const CORE_SRC = resolve(ROOT, 'packages/core/src');
@@ -89,7 +92,10 @@ if (start < 0 || end < start) {
 }
 const lineStart = text.lastIndexOf('\n', start) + 1;
 const indent = text.slice(lineStart, start);
-const next = `${text.slice(0, start)}${START}\n${render(rows, indent)}\n${indent}${text.slice(end)}`;
+const next = await prettier.format(
+  `${text.slice(0, start)}${START}\n${render(rows, indent)}\n${indent}${text.slice(end)}`,
+  {...(await prettier.resolveConfig(DOC)), filepath: DOC},
+);
 
 if (check) {
   if (next !== text) {
