@@ -100,6 +100,7 @@ import {
   type UIEvent as ReactUIEvent,
 } from 'react';
 import {VelocityTracker} from '../gestures/VelocityTracker';
+import {playHaptic} from '../gestures/haptics';
 import {readTouchPresentation} from './sheetTouch';
 import {useMediaQuery} from '../hooks';
 import {
@@ -196,22 +197,6 @@ const CONTENT_END_HANDOFF_SLOP = 4;
 // 8px is the conventional tap slop, a shade over iOS's own recognizer, and
 // well under what a real pull covers in its first frames.
 const DRAG_PROMOTION_SLOP = 8;
-
-// Short haptic tick on detent settle where supported. iOS Safari doesn't
-// expose navigator.vibrate, so this is a no-op there; skipped under
-// reduced-motion.
-function hapticTick(): void {
-  if (
-    typeof navigator === 'undefined' ||
-    typeof navigator.vibrate !== 'function'
-  ) {
-    return;
-  }
-  if (prefersReducedMotion()) {
-    return;
-  }
-  navigator.vibrate(8);
-}
 
 // Pull a value toward the nearest of `targets` when within MAGNET_RANGE, easing
 // the last stretch so the surface settles crisply onto a detent while dragging.
@@ -485,13 +470,6 @@ export interface UseSheetGesturesResult {
    * and at the peek, which keep the sheet's full height (see peekOffsetFor).
    */
   settledLayoutOffset: number;
-}
-
-function prefersReducedMotion(): boolean {
-  if (typeof window === 'undefined' || !window.matchMedia) {
-    return false;
-  }
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 /**
@@ -1230,7 +1208,8 @@ export function useSheetGestures({
         scrimOpacityForOffset(target, offsets, dismissOffset, peekOffset),
       );
       if (target !== baseOffset) {
-        hapticTick();
+        // A short tick where the platform vibrates (gestures/haptics.ts).
+        playHaptic('impactLight');
       }
     },
     [
