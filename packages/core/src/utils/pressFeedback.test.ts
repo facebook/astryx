@@ -13,6 +13,7 @@
 
 import * as stylex from '@stylexjs/stylex';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {button} from '../motion/uikit/button';
 import {
   durationToMs,
   hasReleaseFade,
@@ -551,7 +552,7 @@ describe('a phone or tablet paints a mouse or Space press itself', () => {
     expect(button.getAttribute(PRESSED_ATTRIBUTE)).toBe('on');
     key(button, 'keyup');
     expect(button.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
-    vi.advanceTimersByTime(PRESS_FADE_MS);
+    vi.advanceTimersByTime(PRESS_PROFILES.control.releaseMs);
     expect(button.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
   });
 
@@ -656,7 +657,7 @@ describe('a phone or tablet paints a mouse or Space press itself', () => {
     key(button, 'keydown');
     button.dispatchEvent(new FocusEvent('blur'));
     expect(button.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
-    vi.advanceTimersByTime(PRESS_FADE_MS);
+    vi.advanceTimersByTime(PRESS_PROFILES.control.releaseMs);
     expect(button.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
   });
 
@@ -852,8 +853,14 @@ describe('the release fades: the arms the controller writes to', () => {
     );
   });
 
-  it("the machine's clock is the stylesheet's constant: one number", () => {
+  it("each profile's clock is the stylesheet's constant: one number each", () => {
     expect(PRESS_FADE_MS).toBe(pressConsts.releaseMs);
+    expect(PRESS_PROFILES.cell.releaseMs).toBe(pressConsts.releaseMs);
+    expect(pressConsts.controlReleaseMs).toBe(button.highlight.releaseMs);
+    expect(pressConsts.controlReleaseEase).toBe(
+      `cubic-bezier(${button.highlight.releaseCurve.join(', ')})`,
+    );
+    expect(PRESS_PROFILES.control.releaseMs).toBe(pressConsts.controlReleaseMs);
     expect(hasReleaseFade(surface(interactionOverlayStyles.pressedAlpha))).toBe(
       true,
     );
@@ -912,6 +919,20 @@ describe('the release fades: the arms the controller writes to', () => {
   });
 });
 
+/** `matchMedia` on a device whose primary pointer is coarse. */
+function coarsePointer(query: string): MediaQueryList {
+  return {
+    matches: /\(\s*pointer\s*:\s*coarse\s*\)/.test(query),
+    media: query,
+    onchange: null,
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    dispatchEvent: () => false,
+  } as MediaQueryList;
+}
+
 /** Make `element` a scroller with content to scroll, as jsdom lays out nothing. */
 function makeScroller(element: HTMLElement): void {
   element.style.overflowY = 'auto';
@@ -951,13 +972,34 @@ describe('a control is tracked like UIControl', () => {
     expect(control.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
   });
 
-  it('fades at the lift on its profile’s clock', () => {
+  it('fades at the lift on its profile’s clock under a coarse primary pointer', () => {
+    vi.stubGlobal('matchMedia', coarsePointer);
+    try {
+      expect(window.matchMedia('(pointer: coarse)').matches).toBe(true);
+      const control = pressable('button');
+      document.body.appendChild(control);
+      press(control, 'pointerdown', 10, 10);
+      press(control, 'pointerup', 10, 10);
+      expect(control.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
+      vi.advanceTimersByTime(PRESS_PROFILES.control.releaseMs - 1);
+      expect(control.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
+      vi.advanceTimersByTime(1);
+      expect(control.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('with a fine primary pointer, a finger’s release keeps the deselect clock it always had', () => {
+    // A touch screen beside a mouse (the desktop rule, `spec:AST-017`
+    // FR59/DEC-25): the release is the stylesheet's deselect clock, not UIButton's.
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
     const control = pressable('button');
     document.body.appendChild(control);
     press(control, 'pointerdown', 10, 10);
     press(control, 'pointerup', 10, 10);
     expect(control.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
-    vi.advanceTimersByTime(PRESS_PROFILES.control.releaseMs - 1);
+    vi.advanceTimersByTime(PRESS_FADE_MS - 1);
     expect(control.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
     vi.advanceTimersByTime(1);
     expect(control.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
@@ -1095,7 +1137,11 @@ describe('listeners exist only while a press is live', () => {
 });
 
 describe('the release clocks the browser specs read', () => {
-  it('a control releases in 200 ms (ButtonPress.interaction.browser.spec.ts RELEASE_MS)', () => {
-    expect(PRESS_PROFILES.control.releaseMs).toBe(200);
+  it('a control releases in 250 ms (ButtonPress.interaction.browser.spec.ts RELEASE_MS)', () => {
+    expect(PRESS_PROFILES.control.releaseMs).toBe(250);
+  });
+
+  it('a fine primary pointer keeps 200 ms (ButtonPressRelease.interaction.browser.spec.ts DESELECT_MS)', () => {
+    expect(PRESS_FADE_MS).toBe(200);
   });
 });

@@ -25,7 +25,7 @@ export const docs = {
       name: 'options.profile',
       type: "'control' | 'cell'",
       description:
-        "How a finger's press is tracked and released, after UIKit. `control` (a button, a card, a switch): highlights in the frame the finger lands, or after UIScrollView's 150 ms content-touch delay inside a scroller, and fades at the lift. `cell` (a list row): waits for that delay wherever it is, is cancelled by 10 px of travel, and releases on the deselect clock. A scroll that takes the touch cancels either with no fade and no click.",
+        "How a finger's press is tracked and released, after UIKit. `control` (a button, a card, a switch): highlights in the frame the finger lands, or after UIScrollView's 150 ms content-touch delay inside a scroller, and fades at the lift, over UIButton's 250 ms (ease-in-out) under a coarse primary pointer and over 200 ms with any other, as before. Under reduced motion the release is an opacity cross-fade of 200 ms or less on a touch screen and immediate otherwise. `cell` (a list row): waits for that delay wherever it is, is cancelled by 10 px of travel, and releases on the deselect clock. A scroll that takes the touch cancels either with no fade and no click.",
       required: false,
       default: "'control'",
     },
@@ -78,7 +78,7 @@ export const docs = {
 /** @type {import('@astryxdesign/cli/authoring').HookTranslationDoc} */
 export const docsDense = {
   description:
-    "Marks an element as a pressable surface of the touch press model, tracked like a UIKit control (highlight as the finger lands, 150 ms inside a scroller, fade at the lift) or cell (150 ms, cancelled by 10 px of travel, deselect release), and installs the shared document controller; on a coarse primary pointer it also paints mouse, trackpad and Space-key presses at once. Returns the data-astryx-pressable marker to spread; compose one of interactionOverlayStyles on the same element to paint.",
+    "Marks an element as a pressable surface of the touch press model, tracked like a UIKit control (highlight as the finger lands, 150 ms inside a scroller, 250 ms release under a coarse primary pointer) or cell (150 ms, cancelled by 10 px of travel, deselect release), and installs the shared document controller; on a coarse primary pointer it also paints mouse, trackpad and Space-key presses at once. Returns the data-astryx-pressable marker to spread; compose one of interactionOverlayStyles on the same element to paint.",
   paramDescriptions: {
     options: 'optional config.',
     'options.profile':

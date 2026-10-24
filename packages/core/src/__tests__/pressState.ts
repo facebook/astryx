@@ -6,7 +6,9 @@
  *   the press machine's release clock (utils/pressGesture.ts)
  * @output Exports rulesDeclaredFor, rulesWithSelector, hasPressedArm,
  *   declaresPressedOverlay, readsPressStrength, afterPaintsPress,
- *   pressArmsShadowedByDefault and hasReleaseFade test helpers
+ *   pressArmsShadowedByDefault, hasReleaseFade, showsLayerPress,
+ *   layerOnlyWhilePressed, releasesOnLayer and keepsPressOutsideCoarse test
+ *   helpers
  * @position Shared test helper for asserting a control paints a pressed state
  *
  * jsdom does not compute `:active` (there is no real pointer), so a component
@@ -24,13 +26,27 @@
  * SYNC: When modified, update this header.
  */
 
-import {PRESS_FADE_MS} from '../utils/pressGesture';
+import {button} from '../motion/uikit/button';
+import {list} from '../motion/uikit/list';
 
 const PRESSED_TOKEN = '--color-overlay-pressed';
 const PRESS_STRENGTH = '--astryx-press-alpha';
 /** The press's paint at its strength, declared once by the shared styles. */
 const PRESS_PAINT = '--_press-paint';
 const FADING_ARM = '[data-astryx-press="fading"]';
+const ON_ARM = '[data-astryx-press="on"]';
+/** The marker's value for a surface whose press is a cell's. */
+const CELL_ARM = '[data-astryx-pressable="cell"]';
+
+const selectorOf = (rule: string) => rule.slice(0, rule.indexOf('{'));
+const onPseudoElement = (rule: string) => selectorOf(rule).includes('::');
+const durationsOf = (rules: string[]) =>
+  rules.flatMap(rule => {
+    const match = rule.match(/animation-duration:\s*([^;}]+)/);
+    return match == null ? [] : [durationToMs(match[1])];
+  });
+const runsAnimation = (rule: string) => /animation-name:\s*(?!none)/.test(rule);
+const stopsAnimation = (rule: string) => /animation-name:\s*none\b/.test(rule);
 
 function walk(
   list: CSSRuleList,
@@ -50,7 +66,22 @@ function walk(
 interface RuleFilter {
   /** Skip rules inside an `@media` whose condition matches. */
   outsideMedia?: RegExp;
+  /** Keep only rules inside an `@media` whose condition matches. */
+  insideMedia?: RegExp;
 }
+
+/** A coarse primary pointer's `@media` condition. */
+const COARSE_MEDIA = /\(pointer: coarse\)/;
+/** A Reduce Motion `@media` condition. */
+const REDUCED_MEDIA = /prefers-reduced-motion/;
+/**
+ * Rules for a coarse primary pointer (inside its `@media`), or for any other
+ * (outside it), Reduce Motion's arms left out of both.
+ */
+const UNDER = {
+  coarse: {insideMedia: COARSE_MEDIA, outsideMedia: REDUCED_MEDIA},
+  fine: {outsideMedia: /prefers-reduced-motion|\(pointer: coarse\)/},
+} as const satisfies Record<string, RuleFilter>;
 
 /**
  * Every injected style rule (rules nested in `@media` included) whose selector
@@ -77,6 +108,9 @@ export function rulesDeclaredFor(
         return;
       }
       if (filter.outsideMedia?.test(conditions) === true) {
+        return;
+      }
+      if (filter.insideMedia != null && !filter.insideMedia.test(conditions)) {
         return;
       }
       const selector = rule.selectorText;
@@ -153,8 +187,125 @@ export function afterPaintsPress(el: Element, arm = FADING_ARM): boolean {
   );
   return (
     rules.some(rule =>
-      /background-image:\s*var\(--_press-paint-image\)/.test(rule),
+      /background-image:[^;}]*(--_press-paint-image|--color-overlay-pressed)/.test(
+        rule,
+      ),
     ) && rules.some(rule => /background-color:\s*transparent/.test(rule))
+  );
+}
+
+/**
+ * Does the element paint the press on its `::before` compositor layer: the
+ * pressed token, on a layer that exists only while a press does (see
+ * {@link layerOnlyWhilePressed}), shown at once (opacity 1, no animation) on
+ * the on arm?
+ */
+export function showsLayerPress(el: Element): boolean {
+  const layer = rulesDeclaredFor(el).filter(rule =>
+    selectorOf(rule).includes('::before'),
+  );
+  const on = layer.filter(rule => selectorOf(rule).includes(ON_ARM));
+  return (
+    layer.some(rule =>
+      /background-color:[^;}]*--color-overlay-pressed/.test(rule),
+    ) &&
+    layerOnlyWhilePressed(el, '::before') &&
+    on.some(rule => /opacity:\s*1\b/.test(rule)) &&
+    !on.some(runsAnimation)
+  );
+}
+
+/**
+ * Under a coarse primary pointer, does every declaration of the element's
+ * press layer on `pseudo`, and its `isolation`, apply only while a press is
+ * on or fading? At rest the element then has no layer and is no stacking
+ * context, and a caller's own `pseudo` keeps its styles.
+ */
+export function layerOnlyWhilePressed(
+  el: Element,
+  pseudo: '::before' | '::after',
+): boolean {
+  const declarations = (rule: string) => rule.slice(rule.indexOf('{'));
+  const layer = rulesDeclaredFor(el, {insideMedia: COARSE_MEDIA}).filter(
+    rule =>
+      selectorOf(rule).includes(pseudo) ||
+      /(^|[{;\s])isolation:/.test(declarations(rule)),
+  );
+  const onPressArm = (rule: string) =>
+    selectorOf(rule).includes(ON_ARM) || selectorOf(rule).includes(FADING_ARM);
+  return layer.length > 0 && layer.every(onPressArm);
+}
+
+/**
+ * Does the element release the press on a compositor layer: an opacity
+ * keyframe animation on `pseudo`'s fading arm, for exactly `releaseMs` and
+ * filled both ways, with no release animation left on the element itself
+ * wherever the layer releases (the strength's own, a main-thread animation,
+ * is dropped)? A layer that exists only under a coarse primary pointer
+ * passes when the element's own release stops there too.
+ */
+export function releasesOnLayer(
+  el: Element,
+  pseudo: '::before' | '::after',
+  releaseMs: number,
+): boolean {
+  const fading = rulesWithSelector(el, FADING_ARM, {
+    outsideMedia: REDUCED_MEDIA,
+  });
+  const layer = fading.filter(rule => selectorOf(rule).includes(pseudo));
+  const durations = durationsOf(layer);
+  const layerReleases =
+    layer.some(runsAnimation) &&
+    layer.some(rule => /animation-fill-mode:\s*both/.test(rule)) &&
+    durations.length === 1 &&
+    durations[0] === releaseMs;
+  if (!layerReleases) {
+    return false;
+  }
+  const own = (rules: string[]) => rules.filter(rule => !onPseudoElement(rule));
+  if (!own(fading).some(runsAnimation)) {
+    return true;
+  }
+  // The element keeps its own release for a fine pointer: the layer's
+  // release must run only under a coarse one, where the element's stops.
+  const animates = (rules: string[]) =>
+    rules.filter(rule => rule.slice(rule.indexOf('{')).includes('animation-'));
+  const coarseLayer = rulesWithSelector(el, FADING_ARM, UNDER.coarse).filter(
+    rule => selectorOf(rule).includes(pseudo),
+  );
+  return (
+    animates(coarseLayer).length === animates(layer).length &&
+    own(rulesWithSelector(el, FADING_ARM, UNDER.coarse)).some(stopsAnimation)
+  );
+}
+
+/**
+ * Does the element, under any pointer but a coarse primary one, keep the
+ * press it always had (the desktop rule): nothing animates `pseudo`, a
+ * `::before` (the press's own layer; a card's `::after` is the card's box)
+ * is not created at all, no `isolation`, and the strength's release runs on
+ * the element on the deselect clock?
+ */
+export function keepsPressOutsideCoarse(
+  el: Element,
+  pseudo: '::before' | '::after',
+): boolean {
+  const fine = rulesDeclaredFor(el, UNDER.fine);
+  const layer = fine.filter(rule => selectorOf(rule).includes(pseudo));
+  const fading = rulesWithSelector(el, FADING_ARM, UNDER.fine).filter(
+    rule => !onPseudoElement(rule),
+  );
+  const clock = durationsOf(fading);
+  return (
+    (pseudo === '::after' ||
+      !layer.some(rule =>
+        /(^|[{;\s])content:/.test(rule.slice(rule.indexOf('{'))),
+      )) &&
+    !layer.some(rule => /animation-(name|duration):/.test(rule)) &&
+    !fine.some(rule => /isolation:\s*isolate/.test(rule)) &&
+    fading.some(runsAnimation) &&
+    clock.length === 1 &&
+    clock[0] === list.highlight.releaseMs
   );
 }
 
@@ -207,31 +358,60 @@ export function durationToMs(value: string): number {
 }
 
 /**
- * Does the element run the release animation on the fading arm, for exactly
- * the machine's release clock ({@link PRESS_FADE_MS}), with no animation on
- * the on arm (the onset is instant)? Asserted on the element the controller
- * writes to — the one that composes `pressedAlpha` or an overlay variant — not
- * on a descendant that merely reads the strength.
+ * Does the element run the release animation on the fading arm, on the clock
+ * its press profile has under a coarse primary pointer (a control's,
+ * UIButton's highlight release; a cell's deselect when the marker says
+ * `cell`), and on the deselect clock it always had under any other pointer
+ * (the desktop rule), with no animation on the on arm (the onset is
+ * instant)? Asserted on the element the controller writes to — the one that
+ * composes `pressedAlpha` or an overlay variant — not on a descendant that
+ * merely reads the strength. A surface on a compositor press layer releases
+ * there instead: its layer's release must run on the clock its marker names
+ * (see {@link releasesOnLayer}).
  */
 export function hasReleaseFade(el: Element): boolean {
-  // The element's own release without Reduce Motion: a layer of its own (a
-  // row's `::before`, a card's `::after`) runs its clock separately, and the
-  // Reduce Motion arms are checked in pressPaintReducedMotion.test.ts.
-  const fading = rulesWithSelector(el, FADING_ARM, {
-    outsideMedia: /prefers-reduced-motion/,
-  }).filter(rule => !rule.slice(0, rule.indexOf('{')).includes('::'));
-  const durations = fading.flatMap(rule => {
-    const match = rule.match(/animation-duration:\s*([^;}]+)/);
-    return match == null ? [] : [durationToMs(match[1])];
-  });
-  const named = fading.some(rule => /animation-name:\s*(?!none)/.test(rule));
-  const onArmAnimates = rulesWithSelector(el, '[data-astryx-press="on"]').some(
-    rule => rule.includes('animation'),
+  // The release without Reduce Motion; its Reduce Motion arms are checked in
+  // pressPaintReducedMotion.test.ts and scripts/build-css.test.mjs.
+  const own = (rules: string[]) => rules.filter(rule => !onPseudoElement(rule));
+  const onArmAnimates = own(rulesWithSelector(el, ON_ARM)).some(rule =>
+    rule.includes('animation'),
   );
+  if (onArmAnimates) {
+    return false;
+  }
+  const profileMs =
+    el.getAttribute('data-astryx-pressable') === 'cell'
+      ? list.highlight.releaseMs
+      : button.highlight.releaseMs;
+  const fine = own(rulesWithSelector(el, FADING_ARM, UNDER.fine));
+  if (!fine.some(runsAnimation)) {
+    // A surface whose layer runs every release (a list row).
+    return (
+      releasesOnLayer(el, '::before', profileMs) ||
+      releasesOnLayer(el, '::after', profileMs)
+    );
+  }
+  // Any other pointer than a coarse primary one: the deselect clock, one
+  // number, as it always was.
+  const fineClock = durationsOf(fine);
+  if (fineClock.length !== 1 || fineClock[0] !== list.highlight.releaseMs) {
+    return false;
+  }
+  const coarse = own(rulesWithSelector(el, FADING_ARM, UNDER.coarse));
+  if (coarse.some(stopsAnimation)) {
+    // Under a coarse primary pointer the surface's own layer releases.
+    return (
+      releasesOnLayer(el, '::before', profileMs) ||
+      releasesOnLayer(el, '::after', profileMs)
+    );
+  }
+  const isCell = (rule: string) => selectorOf(rule).includes(CELL_ARM);
+  const control = durationsOf(coarse.filter(rule => !isCell(rule)));
+  const cell = durationsOf(coarse.filter(isCell));
   return (
-    named &&
-    durations.length === 1 &&
-    durations[0] === PRESS_FADE_MS &&
-    !onArmAnimates
+    control.length === 1 &&
+    control[0] === button.highlight.releaseMs &&
+    cell.length === 1 &&
+    cell[0] === list.highlight.releaseMs
   );
 }

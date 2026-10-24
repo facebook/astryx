@@ -70,6 +70,7 @@ import {
   PRESS_ONSET_MS,
   pressGestureStep,
 } from './pressGesture';
+import {pressConsts} from './interactionOverlay.stylex';
 import {TOUCH_QUERY} from './touchPresentation';
 
 /**
@@ -125,8 +126,15 @@ export const cellPressableProps: {
  * control, {@link CELL_PRESS_PROFILE} for a row.
  */
 export const PRESS_PROFILES = {
-  /** UIControl: highlighted in the frame the finger lands, outside scrollers. */
-  control: {highlightDelay: 'inScrollers', releaseMs: PRESS_FADE_MS},
+  /**
+   * UIControl: highlighted in the frame the finger lands, outside scrollers,
+   * and released on UIButton's clock (the stylesheet's own constant) under
+   * a coarse primary pointer (see `releaseMsOf`).
+   */
+  control: {
+    highlightDelay: 'inScrollers',
+    releaseMs: pressConsts.controlReleaseMs,
+  },
   /** A table or collection cell: always inside a scroll view, so it waits. */
   cell: {highlightDelay: 'always', releaseMs: PRESS_FADE_MS},
 } as const satisfies Readonly<Record<string, PressProfile>>;
@@ -486,6 +494,17 @@ function takeOver(other: Slot, element: HTMLElement): void {
 }
 
 /**
+ * The release's clock for a press on a surface of `profile`: the profile's
+ * own under a coarse primary pointer, and the deselect clock it always had
+ * with any other pointer (a finger on a touch screen beside a mouse), as the
+ * stylesheet's release arms are (the desktop rule, `spec:AST-017` FR59/DEC-25).
+ */
+function releaseMsOf(profile: PressProfile): number {
+  // The same coarse gate the stylesheet's release arms use.
+  return stylesheetDroppedActive() ? profile.releaseMs : PRESS_FADE_MS;
+}
+
+/**
  * Whether presses with a mouse or a key are the controller's to paint here.
  * Asked at each such press: rendering a pressable never queries the pointer,
  * so a layout that must not depend on it stays independent.
@@ -536,7 +555,7 @@ function pressButton(
     element,
     gesture: idlePressGesture(),
     pointerId,
-    releaseMs: profileOf(element).releaseMs,
+    releaseMs: releaseMsOf(profileOf(element)),
     timer: null,
   };
   holdKey(pointerId == null);
@@ -609,7 +628,7 @@ function onPointerDown(event: PointerEvent): void {
     element,
     gesture: idlePressGesture(),
     pointerId: event.pointerId,
-    releaseMs: profile.releaseMs,
+    releaseMs: releaseMsOf(profile),
     timer: null,
   };
   apply(

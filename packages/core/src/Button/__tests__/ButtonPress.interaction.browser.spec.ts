@@ -42,7 +42,7 @@ const storybook = withStorybook(test);
  * utils/pressFeedback.ts, which this runner cannot import (it compiles
  * StyleX). pressFeedback.test.ts holds the two equal.
  */
-const RELEASE_MS = 200;
+const RELEASE_MS = 250;
 const CONTENT_TOUCH_DELAY_MS = scroll.delaysContentTouchesMs;
 /** Long enough that a press in a scroller is believed. */
 const HOLD_MS = 400;

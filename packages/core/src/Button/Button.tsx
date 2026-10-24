@@ -710,6 +710,9 @@ export function Button({
     sizeStyles[size],
     isIconOnly && styles.iconOnly,
     interactionOverlayStyles.backgroundImage,
+    // The press the controller writes, on a layer under the label whose
+    // release runs on the compositor (UIButton's highlight release).
+    interactionOverlayStyles.control,
     buttonDisabled && styles.inactive,
     isTrueDisabled && styles.disabled,
     useAriaDisabled && styles.ariaDisabled,
