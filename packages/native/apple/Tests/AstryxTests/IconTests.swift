@@ -43,7 +43,7 @@ import AppKit
 }
 
 @MainActor
-@Test func bothInitializersBuildTheSameProps() {
+@Test func iconInitializersBuildTheSameProps() {
   let labeled = Icon(.success, color: .success, size: .lg, label: "Completed").props
   let fromProps = Icon(IconProps(icon: .success, color: .success, size: .lg, label: "Completed")).props
   #expect(labeled.icon == fromProps.icon)
