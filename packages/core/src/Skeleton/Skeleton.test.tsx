@@ -142,7 +142,10 @@ describe('under a finger', () => {
     const classes = Array.from(screen.getByTestId('sk').classList);
     const stops = classes.some(cls =>
       new RegExp(
-        `@media[^{]*\\(pointer: coarse\\)[^{]*\\{\\s*\\.${cls}\\b[^{]*\\{[^}]*animation-name:\\s*none`,
+        // Anchored to the coarse rule itself: StyleX compiles the reduced
+        // motion rule to "(prefers-reduced-motion: reduce) and (not (pointer:
+        // coarse))", which an unanchored pattern would also match.
+        `@media \\(pointer: coarse\\)[^{]*\\{\\s*\\.${cls}\\b[^{]*\\{[^}]*animation-name:\\s*none`,
       ).test(css),
     );
     expect(stops).toBe(true);
