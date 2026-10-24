@@ -597,7 +597,9 @@ test('captures built-in hover, focus, pressed, and open states', async ({
   for (const baseScenario of BUILTIN_INTERACTION_CASES) {
     const {errors} = await loadScenario(page, baseScenario);
     const trigger = page.getByRole('combobox', {name: 'Selected medium'});
-    const owner = page.locator('[data-testid="rtl-trigger"]');
+    // The control box paints the field ring and hover overlay; the trigger
+    // button inside it receives `data-testid` and focus.
+    const owner = page.locator('.astryx-complex-selector', {has: trigger});
 
     const captureInteraction = async (
       state: string,
