@@ -153,6 +153,16 @@ export const OverflowStop: Story = {
   },
 };
 
+// No title and no language label, so there is no header and Copy floats in
+// the corner. The first line is longer than the block, so it must end before
+// the button rather than run under it.
+export const CopyClearance: Story = {
+  args: {
+    code: 'pnpm --filter @astryxdesign/core exec vitest run src/CodeBlock --reporter=verbose --coverage\nexit 0',
+    width: '360px',
+  },
+};
+
 export const JSON: Story = {
   args: {
     code: `{

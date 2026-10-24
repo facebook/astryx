@@ -31,6 +31,7 @@ import {
   borderVars,
   durationVars,
   easeVars,
+  sizeVars,
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import {useClipboard} from '../hooks/useClipboard';
@@ -126,6 +127,15 @@ const styles = stylex.create({
   // shrink and scroll; 0 lets the root's bound reach it.
   viewport: {
     minHeight: 0,
+  },
+  // With no header, Copy sits in its own inline-end column beside the code
+  // viewport rather than over it, so no line, scrolled or wrapped, runs under
+  // the button. The column is as wide as its content; the single row still
+  // lets a root sized from outside bound the viewport.
+  rootCorner: {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0, 1fr) auto',
+    gridTemplateRows: 'minmax(0, 1fr)',
   },
   headerRow: {
     display: 'flex',
@@ -392,10 +402,19 @@ const styles = stylex.create({
     // reaches it via the `code-block-copy-button` target on the Button.
     color: 'var(--color-syntax-comment)',
   },
-  copyButtonAbsolute: {
-    position: 'absolute',
-    top: spacingVars['--spacing-2'],
-    insetInlineEnd: spacingVars['--spacing-2'],
+  // Centred on the first line of code: a one-line block reads as one row with
+  // even space above and below, and a block that grows keeps the button where
+  // it was. The first line's centre is the code's block padding plus half its
+  // line box (font size × leading for the block's size).
+  copyButtonCorner: {
+    alignSelf: 'start',
+    marginInline: spacingVars['--spacing-2'],
+  },
+  copyButtonCornerMd: {
+    marginBlockStart: `calc(${spacingVars['--spacing-3']} + ${typeScaleVars['--text-code-size']} * ${typeScaleVars['--text-code-leading']} / 2 - ${sizeVars['--size-element-sm']} / 2)`,
+  },
+  copyButtonCornerSm: {
+    marginBlockStart: `calc(${spacingVars['--spacing-3']} + ${typeScaleVars['--text-supporting-size']} * ${typeScaleVars['--text-code-leading']} / 2 - ${sizeVars['--size-element-sm']} / 2)`,
   },
 });
 
@@ -1019,7 +1038,14 @@ export function CodeBlock({
         e.stopPropagation();
         void handleCopy();
       }}
-      xstyle={[styles.copyButton, !showHeader && styles.copyButtonAbsolute]}
+      xstyle={[
+        styles.copyButton,
+        !showHeader && styles.copyButtonCorner,
+        !showHeader &&
+          (size === 'sm'
+            ? styles.copyButtonCornerSm
+            : styles.copyButtonCornerMd),
+      ]}
       {...themeProps('code-block-copy-button')}
     />
   ) : null;
@@ -1133,6 +1159,7 @@ export function CodeBlock({
         themeProps('code-block', {size, language, container}),
         stylex.props(
           styles.root,
+          hasCopyButton && !showHeader && styles.rootCorner,
           dynamicStyles.width(widthProp),
           containerStyles[container],
           xstyle,

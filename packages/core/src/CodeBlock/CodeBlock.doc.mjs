@@ -230,7 +230,7 @@ export const docs = {
         name: 'Header Bar',
         required: false,
         description:
-          'Shows the title, visible language label, and copy button when a header is present. A title or visible language label creates the header; the copy button alone floats at the top-end of a headerless block.',
+          'Shows the title, visible language label, and copy button when a header is present. A title or visible language label creates the header; in a headerless block the copy button sits in its own column beside the code, centred on the first line, and never covers it.',
       },
       {
         name: 'Header Title',
