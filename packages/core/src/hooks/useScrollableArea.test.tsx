@@ -396,7 +396,9 @@ describe('useScrollableArea', () => {
     void act(() => viewport.dispatchEvent(new Event('scroll')));
     flushFrame();
 
-    setGeometry(viewport, {clientWidth: 0, clientHeight: 0, scrollLeft: 200});
+    // At offset 0 a zero-size box would report the start edge, so this step
+    // fails if the zero-size guard is removed.
+    setGeometry(viewport, {clientWidth: 0, clientHeight: 0, scrollLeft: 0});
     void act(() => viewport.dispatchEvent(new Event('scroll')));
     flushFrame();
     expect(state().inline).toEqual({
