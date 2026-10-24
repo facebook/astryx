@@ -6,7 +6,7 @@ export const docs = {
   name: 'ChatLayout',
   subComponentOf: 'Chat',
   displayName: 'Chat Layout',
-  description: 'Layout shell for full chat interfaces. Messages flow in normal page flow, composer is fixed to the bottom with a frosted glass dock. Set density (compact/balanced/spacious) to control spacing, message max-width, and blur layer sizing. Includes built-in auto-scroll, a "New messages" scroll-to-bottom button, and a frosted glass blur layer behind the composer. By default the layout root is the scroll container; pass scrollRef to delegate scrolling to a parent element or the document body. On a phone the composer rides on top of the software keyboard, in step with it, and a conversation at its newest message stays there; tapping the composer\u2019s text focuses it without scrolling the page.',
+  description: 'Layout shell for full chat interfaces. Messages flow in normal page flow, composer is fixed to the bottom with a frosted glass dock. Set density (compact/balanced/spacious) to control spacing, message max-width, and blur layer sizing. Includes built-in auto-scroll, a "New messages" scroll-to-bottom button, and a frosted glass blur layer behind the composer. By default the layout root is the scroll container; pass scrollRef to delegate scrolling to a parent element or the document body. On a phone the composer rides on top of the software keyboard, in step with it, and a conversation at its newest message stays there; tapping the composer\u2019s text focuses it without scrolling the page, and dragging the conversation down to the composer dismisses the keyboard (keyboardDismissMode).',
   props: [
     {
       name: 'children',
@@ -58,6 +58,12 @@ export const docs = {
       type: "'compact' | 'balanced' | 'spacious'",
       description: 'Visual density: controls dock padding, message-area max-width and inline padding, and the height of the frosted glass blur layer.',
       default: "'balanced'",
+    },
+    {
+      name: 'keyboardDismissMode',
+      type: "'none' | 'onDrag' | 'interactive'",
+      description: "How a drag on the transcript dismisses the software keyboard: 'interactive' when the finger reaches the composer (as in Messages; the keyboard leaves on its own rather than following the finger), 'onDrag' as soon as the transcript starts to scroll, 'none' leaves it up. Only while a software keyboard is up.",
+      default: "'interactive'",
     },
   ],
   usage: {
@@ -117,7 +123,7 @@ export const docs = {
 export const docsZh = {
   name: 'ChatLayout',
   displayName: 'Chat Layout',
-  description: '完整聊天界面的布局外壳。消息在页面中自然流动，编写器固定在底部，带有毛玻璃效果。通过 density 属性控制密度。在手机上，编写器随软键盘同步上移并停在键盘上方，停留在最新消息的对话保持在最新消息；轻点编写器的文本会聚焦它而不滚动页面。',
+  description: '完整聊天界面的布局外壳。消息在页面中自然流动，编写器固定在底部，带有毛玻璃效果。通过 density 属性控制密度。在手机上，编写器随软键盘同步上移并停在键盘上方，停留在最新消息的对话保持在最新消息；轻点编写器的文本会聚焦它而不滚动页面，把对话向下拖到编写器会收起键盘（keyboardDismissMode，默认 interactive）。',
   propDescriptions: {
     children: '消息内容，通常是 ChatMessageList。在页面中自然流动。',
     composer: '编写器元素，通常是 ChatComposer。固定在底部，带有毛玻璃底座。',
@@ -125,13 +131,15 @@ export const docsZh = {
     scrollButton: '编写器上方的滚动到底部按钮。默认使用 ChatLayoutScrollButton。传入 null 隐藏。',
     scrollRef: '外部滚动容器引用。提供时，自动滚动和滚动到底部将目标指向此元素。',
     density: '视觉密度：控制底座内边距、消息区最大宽度和毛玻璃层高度。',
+    keyboardDismissMode:
+      "在对话上拖动如何收起软键盘：'interactive'（默认）在手指到达编写器时收起（如 Messages；键盘自行离开，而不是跟随手指），'onDrag' 在对话开始滚动时即收起，'none' 保持键盘。只在软键盘弹出时生效。",
   },
 };
 
 export const docsDense = {
   name: 'ChatLayout',
   displayName: 'Chat Layout',
-  description: 'layout shell for full chat; msgs in page flow, composer fixed bottom w/ frosted glass dock; density prop (default balanced); scrollRef delegates to parent/body; on phones the composer rides the software keyboard, transcript stays at newest msg, tap focuses w/o page scroll',
+  description: 'layout shell for full chat; msgs in page flow, composer fixed bottom w/ frosted glass dock; density prop (default balanced); scrollRef delegates to parent/body; on phones the composer rides the software keyboard, transcript stays at newest msg, tap focuses w/o page scroll, drag to composer dismisses keyboard (keyboardDismissMode)',
   usage: {
     bestPractices: [
       {guidance: true, description: 'Pass ChatMessageList as children and ChatComposer as composer prop for complete chat.'},

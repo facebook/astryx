@@ -78,6 +78,23 @@ ends (ChatLayout does). Under Reduce Motion nothing travels with the keyboard
 and moves at once otherwise. `presentation(time)` gives the height presented
 at any time, for something that appears while the keyboard moves.
 
+## Dismissing the keyboard from a drag
+
+`observeKeyboardDismiss(scroller, {mode, dismissPadding})` is UIScrollView's
+`keyboardDismissMode` for drags that start on `scroller`, default `none`:
+
+- `onDrag` blurs the focused editable when the browser takes the touch to
+  scroll (`pointercancel` for the touch's pointer).
+- `interactive` blurs it when the finger reaches the keyboard's top edge, less
+  `dismissPadding` (the height of a bar on the keyboard). UIKit's keyboard
+  follows the finger; a page cannot move it, so it leaves on its own and
+  pulling back cannot cancel.
+
+Only a touch that starts above that line and outside the focused editable,
+while a software keyboard is up (the keyboard module's height), is followed (a
+hardware keyboard leaves the focus alone), and every listener is passive. The blur hands the hide to the guide,
+which starts it at the blur.
+
 ## What the page sees (Mobile Safari, iOS 26.2)
 
 - Show: one `resize` of the visual viewport, with the final height, about
@@ -100,6 +117,9 @@ at any time, for something that appears while the keyboard moves.
 - Safari reveals a focused field by scrolling the whole page, so a layout that
   keeps its own content above the keyboard focuses its field with
   `preventScroll` (a claimed tap, or `refuseFocusReveal`).
+- During a drag that scrolls, the page gets `pointercancel` when the scroll
+  takes the touch, then `touchmove` (not cancelable) on every move, also while
+  the finger is over the keyboard.
 
 ## Consumers
 
@@ -107,7 +127,9 @@ at any time, for something that appears while the keyboard moves.
 - ChatLayout (`Chat/useChatKeyboard.ts`): the dock and the spacer after the
   messages are laid out from `useKeyboardHeight`; the guide's ride moves the
   dock, and a transcript at its newest message, with the keyboard; a tap on the
-  composer's text focuses it without Safari's reveal.
+  composer's text focuses it without Safari's reveal; and a drag on the
+  transcript dismisses the keyboard (`keyboardDismissMode`, default
+  `interactive` with the composer as the bar on the keyboard).
 
 ## Files
 
@@ -116,6 +138,7 @@ at any time, for something that appears while the keyboard moves.
 | `useMobileKeyboard.ts`   | The keyboard module: the height, its listeners, the focus routes, BottomSheet's hook.      |
 | `keyboardModel.ts`       | The clock-free core of the guide: transitions from keyboard reports and focus changes.     |
 | `keyboardLayoutGuide.ts` | One guide per window, fed by the keyboard module: the frame watch, the verification timer. |
+| `keyboardDismiss.ts`     | `keyboardDismissMode` for a scroller: dismissing the keyboard from a drag.                 |
 | `index.ts`               | Entry point.                                                                               |
 
 The timing constants live in `../motion/uikit/keyboard.ts`, the spring in

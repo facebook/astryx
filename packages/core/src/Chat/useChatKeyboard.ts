@@ -5,8 +5,8 @@
 /**
  * @file useChatKeyboard.ts
  * @input React refs, the keyboard module (useKeyboardHeight,
- *   claimTapFocus), the keyboard layout guide, the animator,
- *   `springs.keyboard` (registerSpringsTable)
+ *   claimTapFocus), the keyboard layout guide, observeKeyboardDismiss, the
+ *   animator, `springs.keyboard` (registerSpringsTable)
  * @output Exports useChatKeyboard: the lift ChatLayout lays its dock and
  *   keyboard spacer out with, and the refs it puts on its dock, message area
  *   and composer region so the composer rides the software keyboard
@@ -29,6 +29,15 @@
  *   catches up once the ride ends, with the translate handed back in the
  *   same frame. Under Reduce Motion nothing travels (design:reduced-motion):
  *   the animator cross-fades on a touch screen and moves at once otherwise.
+ *   A layout that shrinks waits until no finger is scrolling the transcript:
+ *   shrinking mid-scroll (a drag that dismissed the keyboard) would put the
+ *   end of the messages inside the scrollport until the scroll caught up,
+ *   which Safari puts off while the finger is down, and the sticky dock
+ *   would leave the bottom to sit at that end.
+ * - A drag on the transcript dismisses the keyboard as `keyboardDismissMode`
+ *   says (keyboard/keyboardDismiss.ts). `interactive`, Messages' mode, is
+ *   triggered where the finger reaches the composer: the composer is the
+ *   bar on the keyboard, so its height is the dismiss padding.
  * - A tap on the composer's text while it is not focused focuses it without
  *   Safari's reveal (`preventScroll`), which would otherwise scroll the
  *   whole page up to show a field that the keyboard is about to cover, and
@@ -50,7 +59,9 @@ import {
   claimTapFocus,
   getKeyboardLayoutGuide,
   getMobileKeyboardHeight,
+  observeKeyboardDismiss,
   useKeyboardHeight,
+  type KeyboardDismissMode,
   type KeyboardTransition,
 } from '../keyboard';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
@@ -65,6 +76,8 @@ export interface UseChatKeyboardOptions {
    * than an outer scroller (a fixed dock at the layout viewport's bottom).
    */
   isSelfScrolling: boolean;
+  /** How a drag on the transcript dismisses the keyboard. */
+  keyboardDismissMode: KeyboardDismissMode;
 }
 
 export interface UseChatKeyboardResult {
@@ -85,6 +98,9 @@ export interface UseChatKeyboardResult {
 
 // A transcript within this many px of its end counts as at its newest message.
 const AT_END_SLOP = 2;
+// How long the transcript must stay still after the finger lifts before a
+// layout that waited for the scroll to end shrinks.
+const SCROLL_SETTLE_MS = 150;
 
 // The lift the layout shows: a store the ride's end and keyboard reports
 // write, and render reads.
@@ -166,7 +182,12 @@ function focusAtPoint(editable: HTMLElement, x: number, y: number) {
  *
  * @example
  * ```
- * const keyboard = useChatKeyboard({rootRef, scrollRef, isSelfScrolling});
+ * const keyboard = useChatKeyboard({
+ *   rootRef,
+ *   scrollRef,
+ *   isSelfScrolling,
+ *   keyboardDismissMode: 'interactive',
+ * });
  * <div ref={keyboard.messagesRef}>…</div>
  * <div ref={keyboard.spacerRef} aria-hidden {...stylex.props(styles.spacer(keyboard.lift))} />
  * <div ref={keyboard.dockRef} {...stylex.props(styles.dock(keyboard.lift))}>
@@ -178,6 +199,7 @@ export function useChatKeyboard({
   rootRef,
   scrollRef,
   isSelfScrolling,
+  keyboardDismissMode,
 }: UseChatKeyboardOptions): UseChatKeyboardResult {
   const dock = useAnimator();
   const messages = useAnimator();
@@ -236,6 +258,31 @@ export function useChatKeyboard({
           AT_END_SLOP
       );
     };
+    // Fingers on the transcript, and a scroll that has not settled since the
+    // last one lifted: a shrinking layout waits for both.
+    let touches = 0;
+    let settled = true;
+    let settleTimer: ReturnType<typeof setTimeout> | undefined;
+    const settle = () => {
+      settled = false;
+      clearTimeout(settleTimer);
+      settleTimer = setTimeout(() => {
+        settled = true;
+        commit();
+      }, SCROLL_SETTLE_MS);
+    };
+    const onTouches = (event: TouchEvent) => {
+      touches = event.touches.length;
+      if (touches === 0) {
+        settle();
+      }
+    };
+    const onScroll = () => {
+      if (touches === 0 && !settled) {
+        settle();
+      }
+    };
+
     // The layout takes the keyboard height's lift once no ride is under way.
     const commit = () => {
       if (ridingRef.current) {
@@ -243,6 +290,9 @@ export function useChatKeyboard({
       }
       const next = liftFor(getMobileKeyboardHeight(win));
       if (Math.abs(next - liftRef.current) < 0.5) {
+        return;
+      }
+      if (next < liftRef.current && (touches > 0 || !settled)) {
         return;
       }
       atEndRef.current = isAtEnd();
@@ -310,6 +360,16 @@ export function useChatKeyboard({
         })
         .catch(() => undefined);
     };
+    const passive = {passive: true} as const;
+    root.addEventListener('touchstart', onTouches, passive);
+    root.addEventListener('touchend', onTouches, passive);
+    root.addEventListener('touchcancel', onTouches, passive);
+    const scrollTarget: EventTarget | null = isSelfScrolling
+      ? root
+      : scrollRef.current === root.ownerDocument.documentElement
+        ? win
+        : scrollRef.current;
+    scrollTarget?.addEventListener('scroll', onScroll, passive);
     const guide = getKeyboardLayoutGuide(win);
     const unsubscribe = guide.subscribe(follow);
     // Mounted under a keyboard that is already up: take its place at once.
@@ -317,6 +377,11 @@ export function useChatKeyboard({
     return () => {
       unsubscribe();
       ridingRef.current = false;
+      clearTimeout(settleTimer);
+      root.removeEventListener('touchstart', onTouches);
+      root.removeEventListener('touchend', onTouches);
+      root.removeEventListener('touchcancel', onTouches);
+      scrollTarget?.removeEventListener('scroll', onScroll);
     };
   }, [
     rootRef,
@@ -372,6 +437,26 @@ export function useChatKeyboard({
       messages.animator.set({y: messagesTarget + shifted});
     }
   }, [lift, scrollRef, dock.animator, messages.animator]);
+
+  useIsomorphicLayoutEffect(() => {
+    const root = rootRef.current;
+    const win = root?.ownerDocument.defaultView;
+    if (root == null || win == null) {
+      return undefined;
+    }
+    return observeKeyboardDismiss(root, {
+      mode: keyboardDismissMode,
+      // From the keyboard's top edge up to the composer's.
+      dismissPadding: () => {
+        const composer = composerRef.current;
+        return composer == null
+          ? 0
+          : win.innerHeight -
+              getMobileKeyboardHeight(win) -
+              composer.getBoundingClientRect().top;
+      },
+    });
+  }, [rootRef, keyboardDismissMode]);
 
   // A tap on the composer's text that would bring up the keyboard is the
   // keyboard module's tap route (spec:AST-099 FR4): focused here without

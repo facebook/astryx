@@ -6,7 +6,8 @@
  * @output Tests ChatLayout's keyboard behavior in jsdom: the dock lifts by
  *   the keyboard's cover and makes room after the messages, a transcript at
  *   its newest message stays there, the dock comes down when the composer's
- *   text blurs, nothing moves without a keyboard; which touches the composer
+ *   text blurs, nothing moves without a keyboard, a hide under a scrolling
+ *   finger keeps the room until the scroll ends; which touches the composer
  *   claims (unfocused contenteditable text, never a token's control or a
  *   text control)
  * @position Unit tests for Chat/useChatKeyboard.ts (motion and the tap claim
@@ -183,6 +184,50 @@ describe('ChatLayout and the software keyboard', () => {
     report(window.innerHeight);
     await settle();
     expect(layoutLift(dockOf(container))).toBe(0);
+    expect(layoutLift(spacerOf(container))).toBe(0);
+    expect(dockOf(container).style.translate).toBe('');
+  });
+
+  it('keeps the room after the messages until a scrolling finger lifts and the scroll ends', async () => {
+    const {container} = renderLayout();
+    const layout = screen.getByTestId('layout');
+    const field = screen.getByRole('textbox', {name: 'Message'});
+    act(() => field.focus());
+    report(window.innerHeight - 300);
+    await settle();
+    // A finger over the conversation, as a TouchEvent carries it.
+    const touch = {identifier: 0, clientX: 100, clientY: 100};
+    const finger = (type: string, count: number) => {
+      const event = new Event(type, {bubbles: true});
+      Object.assign(event, {
+        touches: count === 0 ? [] : [touch],
+        changedTouches: [touch],
+      });
+      act(() => {
+        layout.dispatchEvent(event);
+      });
+    };
+    const wait = async (ms: number) =>
+      act(async () => {
+        await new Promise(resolve => setTimeout(resolve, ms));
+      });
+    finger('touchstart', 1);
+    // The drag dismisses the keyboard: the dock rides down on top of the
+    // layout, which keeps its room while the finger scrolls, even once the
+    // keyboard is reported gone.
+    act(() => field.blur());
+    await settle();
+    report(window.innerHeight);
+    await wait(50);
+    expect(dockOf(container).style.translate).toBe('0px 300px');
+    expect(layoutLift(spacerOf(container))).toBe(300);
+    finger('touchend', 0);
+    act(() => {
+      layout.dispatchEvent(new Event('scroll'));
+    });
+    await wait(100);
+    expect(layoutLift(spacerOf(container))).toBe(300);
+    await wait(200);
     expect(layoutLift(spacerOf(container))).toBe(0);
     expect(dockOf(container).style.translate).toBe('');
   });
