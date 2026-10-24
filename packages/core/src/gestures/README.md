@@ -276,6 +276,13 @@ scrollers under the finger. This is the sheet over its own list:
 touch and each scroller, scroll chaining stopped by `overscroll-behavior`,
 and RTL `scrollLeft` ranges.
 
+A gesture that takes over an edge of the page itself (a pull to refresh on
+the document) changes the root's `overscroll-behavior-y` through
+`claimRootScrollStyle` (`../hooks/rootScrollStyles.ts`), never by writing
+the style: each property keeps a claim stack, so a scroll lock and a pull
+compose. `isScrollLockActive` and `subscribeScrollLock` tell such a gesture
+to stand down while a lock holds the page.
+
 ### Multiple fingers
 
 A second finger never breaks a one-finger pan that is already moving: the

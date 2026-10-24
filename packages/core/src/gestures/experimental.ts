@@ -92,3 +92,10 @@ export type {TouchIdiom, TouchPresentation} from '../utils/touchPresentation';
 
 export {playHaptic} from './haptics';
 export type {HapticFeedbackKind} from '../motion/uikit';
+
+export {
+  claimRootScrollStyle,
+  isScrollLockActive,
+  subscribeScrollLock,
+} from '../hooks/rootScrollStyles';
+export type {RootScrollStyle} from '../hooks/rootScrollStyles';

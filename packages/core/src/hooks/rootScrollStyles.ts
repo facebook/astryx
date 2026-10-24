@@ -13,11 +13,18 @@
  *   page's top-edge bounce off) claims the root's styles here, so no caller
  *   overwrites a value another one still needs.
  *
+ * Lab components reach claimRootScrollStyle, isScrollLockActive and
+ * subscribeScrollLock through `@astryxdesign/core/gestures/experimental`.
+ *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/useScrollLock.ts
+ * - /packages/core/src/gestures/experimental.ts (exports it)
  */
 
-/** The root scroll styles a caller can hold. */
+/**
+ * The root scroll styles a caller can hold.
+ * @experimental
+ */
 export interface RootScrollStyle {
   /** `hidden` or `clip` stops wheel, keyboard and scrollbar scrolling of the page. */
   overflow?: 'hidden' | 'clip';
@@ -72,6 +79,7 @@ function applyTopClaim(property: RootScrollProperty): void {
  * // later
  * release();
  * ```
+ * @experimental
  */
 export function claimRootScrollStyle(claim: RootScrollStyle): () => void {
   if (typeof document === 'undefined') {
@@ -113,7 +121,10 @@ export function claimRootScrollStyle(claim: RootScrollStyle): () => void {
 let lockCount = 0;
 const lockListeners = new Set<(isActive: boolean) => void>();
 
-/** Whether a scroll lock (useScrollLock) currently holds the page. */
+/**
+ * Whether a scroll lock (useScrollLock) currently holds the page.
+ * @experimental
+ */
 export function isScrollLockActive(): boolean {
   return lockCount > 0;
 }
@@ -122,6 +133,7 @@ export function isScrollLockActive(): boolean {
  * Calls `listener` with the new state each time the page becomes locked or
  * free; a second lock taken while one holds is not a change. Returns the
  * unsubscribe function.
+ * @experimental
  */
 export function subscribeScrollLock(
   listener: (isActive: boolean) => void,
