@@ -731,6 +731,55 @@ describe('ContextMenu outside dismissal', () => {
     expect(onOpenChange).not.toHaveBeenCalledWith(false);
   });
 
+  it('an open menu holds no document lift listener until a finger presses outside, and drops it with that lift', () => {
+    const live = new Set<EventListenerOrEventListenerObject>();
+    const isLift = (type: string) =>
+      type === 'pointerup' || type === 'pointercancel';
+    const addSpy = vi
+      .spyOn(document, 'addEventListener')
+      .mockImplementation(function (this: Document, type, listener, options) {
+        if (listener != null && isLift(type)) {
+          live.add(listener);
+        }
+        EventTarget.prototype.addEventListener.call(
+          this,
+          type,
+          listener,
+          options,
+        );
+      });
+    const removeSpy = vi
+      .spyOn(document, 'removeEventListener')
+      .mockImplementation(function (this: Document, type, listener, options) {
+        if (listener != null && isLift(type)) {
+          live.delete(listener);
+        }
+        EventTarget.prototype.removeEventListener.call(
+          this,
+          type,
+          listener,
+          options,
+        );
+      });
+    try {
+      const onOpenChange = vi.fn<(isOpen: boolean) => void>();
+      const {trigger, outside} = renderMenu(onOpenChange);
+      const atRest = new Set(live);
+      fireEvent.contextMenu(trigger, {clientX: 50, clientY: 15, detail: 1});
+      expect(onOpenChange).toHaveBeenLastCalledWith(true);
+      // Open, with no press in flight: nothing follows a lift.
+      expect(live).toEqual(atRest);
+      fireEvent.pointerDown(outside, finger(5));
+      expect(live.size).toBeGreaterThan(atRest.size);
+      lift(outside, 5);
+      expect(onOpenChange).toHaveBeenLastCalledWith(false);
+      expect(live).toEqual(atRest);
+    } finally {
+      addSpy.mockRestore();
+      removeSpy.mockRestore();
+    }
+  });
+
   it('a tap outside closes the menu; a scroll that starts outside leaves it open', () => {
     const onOpenChange = vi.fn<(isOpen: boolean) => void>();
     const {trigger, outside} = renderMenu(onOpenChange);

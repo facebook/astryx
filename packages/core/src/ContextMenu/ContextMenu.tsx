@@ -494,9 +494,45 @@ export function ContextMenu({
       return;
     }
     const outsidePresses = outsidePressesRef.current;
+    // A finger's or a pen's lift is followed only while such a press is live:
+    // the document's pointerup and pointercancel listeners come on with the
+    // first one and off once none is left (`architecture:react-component-runtime`
+    // INV5), so an open menu with no press in flight holds none.
+    let isFollowingLifts = false;
+    const stopFollowingLifts = () => {
+      if (isFollowingLifts) {
+        isFollowingLifts = false;
+        document.removeEventListener('pointerup', handlePointerUp, true);
+        document.removeEventListener(
+          'pointercancel',
+          handlePointerCancel,
+          true,
+        );
+      }
+    };
+    function handlePointerUp(e: PointerEvent) {
+      const wasOutside = outsidePresses.delete(e.pointerId);
+      if (outsidePresses.size === 0) {
+        stopFollowingLifts();
+      }
+      if (wasOutside) {
+        closeMenuRef.current();
+      }
+    }
+    function handlePointerCancel(e: PointerEvent) {
+      outsidePresses.delete(e.pointerId);
+      if (outsidePresses.size === 0) {
+        stopFollowingLifts();
+      }
+    }
     const pressOutside = (e: PointerEvent) => {
       if (e.pointerType === 'touch' || e.pointerType === 'pen') {
         outsidePresses.add(e.pointerId);
+        if (!isFollowingLifts) {
+          isFollowingLifts = true;
+          document.addEventListener('pointerup', handlePointerUp, true);
+          document.addEventListener('pointercancel', handlePointerCancel, true);
+        }
         return;
       }
       closeMenuRef.current();
@@ -538,24 +574,16 @@ export function ContextMenu({
         pressOutside(e as PointerEvent);
       }
     };
-    const handlePointerUp = (e: PointerEvent) => {
-      if (outsidePresses.delete(e.pointerId)) {
-        closeMenuRef.current();
-      }
-    };
-    const handlePointerCancel = (e: PointerEvent) => {
-      outsidePresses.delete(e.pointerId);
-    };
     for (const [, hostBelow] of levels) {
       hostBelow?.addEventListener('pointerdown', handleUnjudgedPointerDown);
     }
     for (const [root, handlePointerDown] of pressListeners) {
       root.addEventListener('pointerdown', handlePointerDown, true);
     }
-    document.addEventListener('pointerup', handlePointerUp, true);
-    document.addEventListener('pointercancel', handlePointerCancel, true);
     return () => {
       outsidePresses.clear();
+      document.removeEventListener('pointerup', handlePointerUp, true);
+      document.removeEventListener('pointercancel', handlePointerCancel, true);
       for (const [, hostBelow] of levels) {
         hostBelow?.removeEventListener(
           'pointerdown',
@@ -565,8 +593,6 @@ export function ContextMenu({
       for (const [root, handlePointerDown] of pressListeners) {
         root.removeEventListener('pointerdown', handlePointerDown, true);
       }
-      document.removeEventListener('pointerup', handlePointerUp, true);
-      document.removeEventListener('pointercancel', handlePointerCancel, true);
     };
   }, [isOpen, listRef, usesBottomSheet]);
 

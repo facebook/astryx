@@ -257,8 +257,9 @@ independent:
 - native dialogs handle backdrop clicks locally;
 - ContextMenu uses local outside `pointerdown`, `pointerup` and
   `pointercancel` listeners: a mouse press closes it at once, a finger's or a
-  pen's on a lift that was not cancelled. Inside shadow roots its
-  `pointerdown` listeners also sit on each root and host around the menu,
+  pen's on a lift that was not cancelled; the `pointerup` and `pointercancel`
+  listeners are attached only while such a press is live. Inside shadow roots
+  its `pointerdown` listeners also sit on each root and host around the menu,
   which alone see where a press landed;
 - Tooltip and HoverCard use hover/focus loss plus a touch-only outside listener;
 - sheets own scrim and swipe behavior; and
