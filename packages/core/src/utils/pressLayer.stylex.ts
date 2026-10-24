@@ -36,9 +36,14 @@
  * isolate` keeps the layer above the element's background (a selected fill)
  * and below its content.
  *
+ * HELD. A selection hold (selectionHold.ts) writes `[data-astryx-press="held"]`
+ * on the row it keeps selected through a navigation push: the layer shows at
+ * full strength, and the hold's own Web Animations move it from there.
+ *
  * SYNC: When modified, update pressGesture.ts (PRESS_FADE_MS removes the
  * attribute on the same clock), motion/uikit/list.ts (the clock and curve),
- * pressLayer.test.ts and scripts/build-css.test.mjs.
+ * selectionHold.ts (the held state), pressLayer.test.ts and
+ * scripts/build-css.test.mjs.
  */
 
 import * as stylex from '@stylexjs/stylex';
@@ -69,6 +74,11 @@ const ENABLED = ':where(:not(:disabled,[aria-disabled="true"]))';
 const PRESSED_ON = '[data-astryx-press="on"]';
 /** Written by the touch press controller for the release's exit. */
 const PRESSED_FADING = '[data-astryx-press="fading"]';
+/**
+ * Written by a selection hold (selectionHold.ts) while the row stays selected
+ * through a navigation push; the controller never overwrites it.
+ */
+const PRESSED_HELD = '[data-astryx-press="held"]';
 
 export const pressLayerStyles = stylex.create({
   /**
@@ -93,10 +103,12 @@ export const pressLayerStyles = stylex.create({
       borderRadius: 'inherit',
       pointerEvents: 'none',
       backgroundColor: colorVars['--color-overlay-pressed'],
-      // On at once while the press is believed; nothing transitions it.
+      // On at once while the press is believed, and while a selection hold
+      // keeps the row selected (its own animations move it from there);
+      // nothing transitions it.
       opacity: {
         default: 0,
-        [ENABLED]: {default: null, [PRESSED_ON]: 1},
+        [ENABLED]: {default: null, [PRESSED_ON]: 1, [PRESSED_HELD]: 1},
       },
       animationName: {
         default: null,

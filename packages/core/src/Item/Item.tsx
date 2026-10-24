@@ -55,6 +55,7 @@ import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {pressLayerStyles} from '../utils/pressLayer.stylex';
+import {cellPressableProps} from '../utils/selectionHold';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import type {ItemSwipeBridge} from './ItemSwipeLayer';
 
@@ -876,7 +877,7 @@ export function Item({
         (isSelected && !allowsAriaSelected ? true : undefined)
       }
       aria-disabled={isDisabled || undefined}
-      {...(isInteractive ? pressable : undefined)}
+      {...(isInteractive ? {...pressable, ...cellPressableProps} : undefined)}
       {...mergeProps(
         themeProps('item', {density, align}),
         focusOutlineProps.focusWithin(
