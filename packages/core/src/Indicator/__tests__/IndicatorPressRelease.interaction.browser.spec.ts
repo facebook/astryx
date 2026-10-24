@@ -449,3 +449,87 @@ test(
     }
   },
 );
+
+test.describe('with a mouse', () => {
+  test.use({
+    isMobile: false,
+    hasTouch: false,
+    viewport: {width: 800, height: 600},
+    deviceScaleFactor: 1,
+  });
+
+  /** The mark's colour under the probe, as presented (mean of R, G, B). */
+  const markPixel = async (page: Page, at: {x: number; y: number}) => {
+    const shot = await page.screenshot({
+      clip: {x: at.x, y: at.y, width: 1, height: 1},
+      animations: 'disabled',
+      caret: 'hide',
+    });
+    return page.evaluate(async data => {
+      const bitmap = await createImageBitmap(
+        await (await fetch(`data:image/png;base64,${data}`)).blob(),
+      );
+      const canvas = new OffscreenCanvas(1, 1);
+      const context = canvas.getContext('2d');
+      context?.drawImage(bitmap, 0, 0);
+      const px = context?.getImageData(0, 0, 1, 1).data ?? [0, 0, 0];
+      return Math.round((px[0] + px[1] + px[2]) / 3);
+    }, shot.toString('base64'));
+  };
+
+  for (const surface of SURFACES) {
+    test(`hover and :active on ${surface.name} paint as before`, async ({
+      page,
+    }) => {
+      await openStory(page, storybook(), surface.story);
+      await page.evaluate(() =>
+        window.addEventListener(
+          'click',
+          event => {
+            event.preventDefault();
+            event.stopPropagation();
+          },
+          true,
+        ),
+      );
+      const layer = surface.layer(page);
+      const box = await layer.boundingBox();
+      const target = await surface.target(page).boundingBox();
+      if (box == null || target == null) {
+        throw new Error(`${surface.story}: nothing to press`);
+      }
+      const probe = {
+        x: Math.round(box.x + 4),
+        y: Math.round(box.y + box.height / 2),
+      };
+      const center = {
+        x: target.x + target.width / 2,
+        y: target.y + target.height / 2,
+      };
+      await page.mouse.move(1, 1);
+      const rest = await markPixel(page, probe);
+      await page.mouse.move(center.x, center.y);
+      await page.waitForTimeout(300);
+      const hover = await markPixel(page, probe);
+      await page.mouse.down();
+      await page.waitForTimeout(300);
+      const active = await markPixel(page, probe);
+      const pressAttr = await page.evaluate(
+        () => document.querySelector('[data-astryx-press]') != null,
+      );
+      await page.mouse.up();
+      // The touch press never runs for a mouse.
+      expect(pressAttr).toBe(false);
+      // As on the stack without this commit (same pixels on both builds): a
+      // checkbox and a radio circle darken on hover and more on `:active`; a
+      // CheckboxList row's box stays blank while the row takes the mouse.
+      if (surface.story === 'core-checkboxlist--default') {
+        expect(hover).toBe(rest);
+        expect(active).toBe(rest);
+      } else {
+        expect(hover).toBeLessThan(rest);
+        expect(active).toBeLessThan(hover);
+      }
+    });
+  }
+});
