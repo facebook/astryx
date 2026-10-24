@@ -12,7 +12,8 @@
  *   that move the other way rides above them; nothing moves with an Android
  *   finger or a mouse, without `hasAnimatedChanges`, on the first render, or
  *   while a reorder session owns the list; content below the list moves with
- *   it unless the list keeps it still; a resize of the list between commits
+ *   it unless the list keeps it still, only by what layout moved it; with
+ *   motion off nothing is read; a resize of the list between commits
  *   refreshes where its rows are
  * @position Beside utils/useListUpdateMotion.ts; the motion itself is proven
  *   in a real engine by List/__tests__/ListUpdates.interaction.browser.spec.ts
@@ -32,6 +33,17 @@ beforeAll(() => {
   Object.defineProperty(HTMLElement.prototype, 'offsetTop', {
     configurable: true,
     get(this: HTMLElement) {
+      // Content below the list sits under its rows; a pinned footer never
+      // moves.
+      if (this.hasAttribute('data-pinned')) {
+        return 500;
+      }
+      if (this.dataset.testid === 'below') {
+        return (
+          document.querySelectorAll('ul > li:not([data-astryx-leaving])')
+            .length * rowHeight
+        );
+      }
       const parent = this.parentElement;
       if (this.tagName !== 'LI' || parent == null) {
         return 0;
@@ -97,6 +109,9 @@ function Rows({
         ))}
       </List>
       <p data-testid="below">Below the list</p>
+      <p data-testid="pinned" data-pinned="">
+        A footer layout does not move
+      </p>
     </div>
   );
 }
@@ -213,6 +228,44 @@ describe('List update motion', () => {
     rerender(<Rows labels={['D', 'B', 'C']} />);
     expect(motionOf(rowOf('B'))).toBeDefined();
     expect(['D', 'B', 'C'].filter(rides)).toEqual([]);
+  });
+
+  it('reads no layout at all without hasAnimatedChanges', async () => {
+    stubIdiom('ios');
+    const reads = vi.fn();
+    const top = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      'offsetTop',
+    );
+    Object.defineProperty(HTMLElement.prototype, 'offsetTop', {
+      configurable: true,
+      get(this: HTMLElement) {
+        reads();
+        return top?.get?.call(this) as number;
+      },
+    });
+    const off = render(
+      <Rows labels={['A', 'B', 'C']} hasAnimatedChanges={false} />,
+    );
+    await act(async () => undefined);
+    off.rerender(<Rows labels={['A', 'C']} hasAnimatedChanges={false} />);
+    expect(reads).not.toHaveBeenCalled();
+    if (top != null) {
+      Object.defineProperty(HTMLElement.prototype, 'offsetTop', top);
+    }
+  });
+
+  it('moves the content below only by what layout moved it: a pinned footer stays put', async () => {
+    stubIdiom('ios');
+    const {rerender} = render(<Rows labels={['A', 'B', 'C']} />);
+    await act(async () => undefined);
+    rerender(<Rows labels={['A', 'C']} />);
+    const below = screen.getByTestId('below');
+    expect(motionOf(below)).toBeDefined();
+    // It starts where it was: one row lower than its new place.
+    expect(presentation(below, 'y', motionNow())).toBeGreaterThan(ROW / 2);
+    expect(motionOf(screen.getByTestId('pinned'))).toBeUndefined();
+    expect(screen.getByTestId('pinned').style.translate).toBe('');
   });
 
   it('moves nothing with an Android finger or a mouse, or without hasAnimatedChanges', async () => {

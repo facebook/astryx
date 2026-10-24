@@ -46,9 +46,11 @@
  * it. The ghost goes once its motion rests. A row moved again mid-motion
  * keeps its velocity, and its curve: a layout shift never changes a running
  * motion's spring (a reorder's drop settles on its own), so the table spring
- * applies to rows at rest. Page content below the list moves by the list's
- * change in height on the same spring (utils/rowMotion.ts `contentBelow`),
- * unless the list is told to keep it still.
+ * applies to rows at rest. Page content below the list moves on the same
+ * spring by what layout moved it (utils/rowMotion.ts `contentBelow`, its
+ * layout tops recorded with the rows), unless the list is told to keep it
+ * still; while it moves, its `translate` makes it the containing block of
+ * any `position: fixed` element inside it. With motion off, nothing is read.
  *
  * It runs in the iOS idiom only (useMotionPresentation: a finger on WebKit
  * for iOS). With an Android finger (Android's list animations are its own)
@@ -129,6 +131,12 @@ interface Layout {
   readonly rows: ReadonlyArray<HTMLElement>;
   readonly boxes: ReadonlyMap<HTMLElement, Box>;
   readonly height: number;
+  /**
+   * The page content below the list that would move along (when it moves),
+   * each with its layout top (`offsetTop`), so a commit moves each only by
+   * what layout moved it.
+   */
+  readonly below: ReadonlyMap<HTMLElement, number>;
 }
 
 /**
@@ -264,8 +272,14 @@ function rowsOf(element: HTMLElement): HTMLElement[] {
   );
 }
 
-/** The rows, each row's layout box inside the list, the list's height. */
-function readLayout(element: HTMLElement): Layout {
+/**
+ * The rows, each row's layout box inside the list, the list's height, and
+ * the layout tops of the content below it that moves along.
+ */
+function readLayout(
+  element: HTMLElement,
+  followingContent: 'moves' | 'stays',
+): Layout {
   const rows = rowsOf(element);
   const boxes = new Map<HTMLElement, Box>();
   for (const row of rows) {
@@ -273,7 +287,13 @@ function readLayout(element: HTMLElement): Layout {
     const base = row.offsetParent === element ? 0 : element.offsetTop;
     boxes.set(row, {top: row.offsetTop - base, height: row.offsetHeight});
   }
-  return {rows, boxes, height: element.offsetHeight};
+  const below = new Map<HTMLElement, number>();
+  if (followingContent === 'moves') {
+    for (const content of contentBelow(element)) {
+      below.set(content, content.offsetTop);
+    }
+  }
+  return {rows, boxes, height: element.offsetHeight, below};
 }
 
 export function useListUpdateMotion(
@@ -290,21 +310,19 @@ export function useListUpdateMotion(
 
   useIsomorphicLayoutEffect(() => {
     const element = listRef.current;
-    if (element == null) {
+    // Motion off (no `hasAnimatedChanges`, or outside the iOS idiom): read
+    // nothing at all. The first commit after it turns on only records.
+    if (element == null || !animates) {
+      layoutRef.current = null;
       return;
     }
-    const layout = readLayout(element);
-    const {rows, boxes, height} = layout;
+    const layout = readLayout(element, followingContent);
+    const {rows, boxes} = layout;
     const before = layoutRef.current;
     layoutRef.current = layout;
-    const grew = height - (before?.height ?? height);
-    // The first commit, motion off, or a reorder session that owns the rows:
-    // remember where rows are, move nothing.
-    if (
-      before == null ||
-      !animates ||
-      element.hasAttribute('data-astryx-reordering')
-    ) {
+    // The first commit, or a reorder session that owns the rows: remember
+    // where rows are, move nothing.
+    if (before == null || element.hasAttribute('data-astryx-reordering')) {
       return;
     }
     const at = motionNow();
@@ -411,15 +429,19 @@ export function useListUpdateMotion(
         ghost.remove();
       });
     }
-    // What layout moved below the list moves back and comes along.
-    if (followingContent === 'moves' && Math.abs(grew) >= MIN_MOVE_PX) {
-      for (const below of contentBelow(element)) {
-        void springHome(below, 'y', -grew, SPRING, at).then(arrived => {
-          if (arrived) {
-            releaseMotion(below, 'translate');
-          }
-        });
+    // What layout moved below the list moves back and comes along, each
+    // piece by what layout moved it: content layout did not move (a footer
+    // held at the bottom of its column) stays put.
+    for (const [below, top] of layout.below) {
+      const was = before.below.get(below);
+      if (was == null || Math.abs(top - was) < MIN_MOVE_PX) {
+        continue;
       }
+      void springHome(below, 'y', was - top, SPRING, at).then(arrived => {
+        if (arrived) {
+          releaseMotion(below, 'translate');
+        }
+      });
     }
   });
 
@@ -430,14 +452,14 @@ export function useListUpdateMotion(
   // the list's box changes size.
   useIsomorphicLayoutEffect(() => {
     const element = listRef.current;
-    if (element == null) {
+    if (element == null || !animates) {
       return;
     }
     return observeResize(element, () => {
       if (layoutRef.current == null) {
         return;
       }
-      layoutRef.current = readLayout(element);
+      layoutRef.current = readLayout(element, followingContent);
     });
-  }, [listRef]);
+  }, [listRef, animates, followingContent]);
 }
