@@ -64,7 +64,7 @@ describe('MobileNav scrollbar gutter', () => {
       </MobileNav>,
     );
 
-    expect(document.documentElement.style.overflow).toBe('clip');
+    expect(document.documentElement.style.overflow).toBe('hidden');
     expect(rootGutter()).toBe('stable');
 
     view.unmount();
@@ -96,7 +96,7 @@ describe('MobileNav scrollbar gutter', () => {
       // The page stays locked, gutter included, while the drawer slides out
       // and the dialog is still open: nothing shifts under the leaving drawer.
       expect(rootGutter()).toBe('stable');
-      expect(document.documentElement.style.overflow).toBe('clip');
+      expect(document.documentElement.style.overflow).toBe('hidden');
 
       act(() => {
         vi.advanceTimersByTime(MAX_EXIT_MS);
@@ -117,7 +117,7 @@ describe('MobileNav scrollbar gutter', () => {
       </MobileNav>,
     );
 
-    expect(document.documentElement.style.overflow).toBe('clip');
+    expect(document.documentElement.style.overflow).toBe('hidden');
     expect(rootGutter()).toBe('');
     expect(document.documentElement.style.paddingRight).toBe('');
   });
