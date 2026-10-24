@@ -4,9 +4,9 @@
 > without notice.
 
 This is a Swift package that draws Astryx components with SwiftUI on iOS, plus
-page templates to copy into an app. It is arm A of the AST-082 experiment (pure native: platform
-views painted with Astryx's tokens), and the starting point for comparing it
-with the other arms.
+page templates to copy into an app. It is arm A of the AST-082 experiment
+(pure native: platform views painted with Astryx's tokens), and the starting
+point for comparing it with the other arms.
 
 The `1` in `swift-ios-1` is a generation, not an iOS version. A rethink of
 the structure starts `swift-ios-2` beside this one, so both can be measured
@@ -25,11 +25,11 @@ swift-ios-1/
 │   ├── TextInput/       # AstryxTextInput
 │   ├── Card/            # AstryxCard
 │   └── Banner/          # AstryxBanner
-├── templates/           # page templates to copy, compiled and tested here
-│   └── Login/           # LoginTemplate, from `astryx template login`
-└── tests/
-    ├── core/
-    └── templates/
+├── tests/core/
+└── templates/           # page templates to copy; its own package, never published
+    ├── Package.swift    # no products; compiles and tests the templates
+    ├── Login/           # LoginTemplate, from `astryx template login`
+    └── Tests/
 ```
 
 - **`core/`** holds one folder per component, named as in
@@ -38,8 +38,9 @@ swift-ios-1/
   the same across web and native.
 - **`templates/`** holds one folder per page template, named after the
   `astryx template` id. Templates are clone-only, as on the web: you copy a
-  template's folder into your app and own it from then on. They are not a
-  product of this package, so nothing imports them. A template is built only
+  template's folder into your app and own it from then on. They are a
+  separate package with no products, so nothing imports them, and
+  `@astryxdesign/native` leaves them out of its npm package. A template is built only
   from `AstryxCore` components and SwiftUI layout, and matches the web
   template's content and states. Rules a template needs, such as validation,
   live in a plain value type beside the view so tests can check them without a
@@ -92,18 +93,18 @@ On a Mac with Xcode or the Swift command-line tools:
 
 ```sh
 cd packages/native/swift-ios-1
-swift build
-swift test
+swift test                 # components
+cd templates && swift test # templates, against the components above
 ```
 
-The package also declares macOS 14 so it builds and tests on a Mac without a
-simulator; iOS 17 is the target. Open `Package.swift` in Xcode to run
-`LoginTemplate` in an iOS simulator through its preview.
+Both packages also declare macOS 14 so they build and test on a Mac without a
+simulator; iOS 17 is the target. Open `templates/Package.swift` in Xcode to
+run `LoginTemplate` in an iOS simulator through its preview.
 
 To add a component, create `core/<Name>/Astryx<Name>.swift` with core's prop
 names, read its tokens from `astryx`, and add tests under `tests/core/`. To
 add a template, create `templates/<Name>/<Name>Template.swift` from the
-output of `astryx template <id>`.
+output of `astryx template <id>`, with tests under `templates/Tests/`.
 
 ## Not here yet
 
