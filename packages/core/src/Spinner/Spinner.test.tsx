@@ -16,6 +16,8 @@ import {InternationalizationProvider} from '../i18n';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 import {progress} from '../motion/uikit';
+import {motionRoleIn} from '../motion/roles';
+import {IOS_TOUCH_STYLE_KEYS} from '../utils/touchPresentation';
 
 /** sm/md/lg/xl, as Spinner.tsx defines them. */
 const SIZES = {
@@ -87,15 +89,32 @@ function declarationsOf(el: Element, css = injectedCss()): string[] {
 
 /**
  * The declarations the element's classes carry in rules at the top level
- * (`media` null) or inside `@media <media>`, as `prop: value`.
+ * (`media` null), inside `@media <media>`, or inside exactly the nested
+ * conditions listed (`@media` texts as they are, `@supports` ones prefixed,
+ * in either nesting order), as `prop: value`.
  */
-function rulesOf(el: Element, media: string | null): string[] {
+function rulesOf(
+  el: Element,
+  media: string | null | ReadonlyArray<string>,
+): string[] {
   const out: string[] = [];
-  const visit = (rules: CSSRuleList, inMedia: string | null) => {
+  const key = (list: ReadonlyArray<string>) => list.slice().sort().join(' & ');
+  const want = key(
+    media == null ? [] : typeof media === 'string' ? [media] : media,
+  );
+  const visit = (rules: CSSRuleList, conditions: ReadonlyArray<string>) => {
     for (const rule of Array.from(rules)) {
       if (rule instanceof CSSMediaRule) {
-        visit(rule.cssRules, rule.conditionText ?? rule.media.mediaText);
-      } else if (rule instanceof CSSStyleRule && inMedia === media) {
+        visit(rule.cssRules, [
+          ...conditions,
+          rule.conditionText ?? rule.media.mediaText,
+        ]);
+      } else if (rule instanceof CSSSupportsRule) {
+        visit(rule.cssRules, [
+          ...conditions,
+          `@supports ${rule.conditionText}`,
+        ]);
+      } else if (rule instanceof CSSStyleRule && key(conditions) === want) {
         if (
           Array.from(el.classList).some(c =>
             rule.selectorText.includes(`.${c}`),
@@ -111,7 +130,7 @@ function rulesOf(el: Element, media: string | null): string[] {
   };
   for (const sheet of Array.from(document.styleSheets)) {
     try {
-      visit(sheet.cssRules, null);
+      visit(sheet.cssRules, []);
     } catch {
       // ignore cross-origin sheets
     }
@@ -622,22 +641,47 @@ describe("Spinner under a finger: UIKit's activity indicator", () => {
     indicator.colorAlpha;
   const frameMs = indicator.cycleMs / indicator.framesPerCycle;
 
-  it("draws the glyph in the ring's place when the primary pointer is coarse", () => {
+  it("draws the glyph in the ring's place under a finger on iOS only", () => {
     render(<Spinner data-testid="spinner" />);
     const {element, spokes} = glyph();
     expect(element).toHaveAttribute('aria-hidden', 'true');
     expect(spokes).toHaveLength(indicator.spokeCount);
-    // The resolver's touch query, spelled exactly as TOUCH_QUERY.
+    // The resolver's iOS gate, spelled and nested as IOS_TOUCH_STYLE_KEYS:
+    // the touch query outside, the touch-callout query inside.
+    const [touch, ios] = IOS_TOUCH_STYLE_KEYS;
+    const gate = [touch.replace('@media ', ''), ios];
     expect(valueOf(rulesOf(element, null), 'display')).toEqual(['none']);
-    expect(valueOf(rulesOf(element, '(pointer: coarse)'), 'display')).toEqual([
-      'block',
-    ]);
+    expect(valueOf(rulesOf(element, gate), 'display')).toEqual(['block']);
+    // A finger anywhere else (Android) keeps the ring: nothing switches on
+    // the touch query alone.
+    expect(valueOf(rulesOf(element, '(pointer: coarse)'), 'display')).toEqual(
+      [],
+    );
     for (const part of [rings()[0], rotor()]) {
       expect(valueOf(rulesOf(part, null), 'display')).toEqual(['block']);
-      expect(valueOf(rulesOf(part, '(pointer: coarse)'), 'display')).toEqual([
-        'none',
-      ]);
+      expect(valueOf(rulesOf(part, gate), 'display')).toEqual(['none']);
+      expect(valueOf(rulesOf(part, '(pointer: coarse)'), 'display')).toEqual(
+        [],
+      );
     }
+  });
+
+  it("runs on the theme's cycle role, with the table's 0.8 s by default", () => {
+    render(<Spinner data-testid="spinner" />);
+    const [spoke] = glyph().spokes;
+    const role = motionRoleIn(indicator, 'cycleMs');
+    expect(role?.id).toBe('progress.activityIndicator.cycleMs');
+    expect(role?.variable).toBe(
+      '--motion-progress-activity-indicator-cycle-ms',
+    );
+    // `var(<role>, <table value>)`, as StyleX minifies it (800ms → .8s).
+    const [duration] = valueOf(rulesOf(spoke, null), 'animation-duration');
+    const match = /^var\((--[\w-]+),\s*([^)]+)\)$/.exec(duration);
+    expect(match?.[1]).toBe(role?.variable);
+    const fallback = match?.[2] ?? '';
+    expect(
+      Number.parseFloat(fallback) * (fallback.endsWith('ms') ? 1 : 1000),
+    ).toBe(indicator.cycleMs);
   });
 
   it("steps every spoke through UIKit's alphas, one frame every 50 ms", () => {
@@ -646,9 +690,13 @@ describe("Spinner under a finger: UIKit's activity indicator", () => {
     const declarations = rulesOf(spoke, null);
     const toMs = (value: string) =>
       Number.parseFloat(value) * (value.endsWith('ms') ? 1 : 1000);
-    expect(valueOf(declarations, 'animation-duration').map(toMs)).toEqual([
-      indicator.cycleMs,
-    ]);
+    // The duration is the cycle role's variable, defaulting to the table's
+    // cycle (the role test above pins the whole value).
+    expect(
+      valueOf(declarations, 'animation-duration').map(value =>
+        toMs(/,\s*([^)]+)\)$/.exec(value)?.[1] ?? value),
+      ),
+    ).toEqual([indicator.cycleMs]);
     expect(valueOf(declarations, 'animation-timing-function')).toEqual([
       'linear',
     ]);
