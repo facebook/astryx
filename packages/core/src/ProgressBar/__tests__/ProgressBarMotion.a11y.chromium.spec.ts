@@ -352,6 +352,175 @@ test('the leading edge sits at the value, mirrored in RTL', async ({page}) => {
   }
 });
 
+test('an ordinary change keeps the theme\u2019s duration and easing', async ({
+  page,
+}) => {
+  await open(page, 20);
+  const box = await trackBox(page);
+  // The transition the width used to run: the same tokens, now on transform.
+  const timing = await page.evaluate(() => {
+    const fill = document.querySelector('[role="progressbar"]')
+      ?.firstElementChild as HTMLElement;
+    const root = getComputedStyle(document.documentElement);
+    const style = getComputedStyle(fill);
+    return {
+      property: style.transitionProperty,
+      duration: style.transitionDuration,
+      easing: style.transitionTimingFunction,
+      tokenDuration:
+        getComputedStyle(fill).getPropertyValue('--duration-medium').trim() ||
+        root.getPropertyValue('--duration-medium').trim(),
+    };
+  });
+  expect(timing.property).toBe('transform');
+  // Sample the change itself: 20% → 80%, held at five points of its time.
+  await page.evaluate(
+    async ({storyId}) =>
+      new Promise<void>(resolve => {
+        const onStart = () => {
+          document.removeEventListener('transitionstart', onStart, true);
+          const fill = document.querySelector('[role="progressbar"]')
+            ?.firstElementChild as HTMLElement;
+          for (const animation of fill.getAnimations()) {
+            animation.pause();
+          }
+          resolve();
+        };
+        document.addEventListener('transitionstart', onStart, true);
+        (
+          window as unknown as {
+            __STORYBOOK_ADDONS_CHANNEL__: {
+              emit: (event: string, payload: unknown) => void;
+            };
+          }
+        ).__STORYBOOK_ADDONS_CHANNEL__.emit('updateStoryArgs', {
+          storyId,
+          updatedArgs: {value: 80},
+        });
+      }),
+    {storyId: STORY},
+  );
+  const samples = await page.evaluate(() => {
+    const fill = document.querySelector('[role="progressbar"]')
+      ?.firstElementChild as HTMLElement;
+    const [transition] = fill.getAnimations();
+    const duration = Number(transition.effect?.getTiming().duration);
+    const easing = String(transition.effect?.getTiming().easing);
+    // The easing, evaluated by the browser through a detached animation.
+    const probe = new Animation(
+      new KeyframeEffect(null, null, {duration: 1000, easing, fill: 'both'}),
+    );
+    const out: {t: number; eased: number; right: number}[] = [];
+    for (const t of [0, 0.25, 0.5, 0.75, 1]) {
+      transition.currentTime = Math.min(t * duration, duration - 0.01);
+      probe.currentTime = t * 1000;
+      out.push({
+        t,
+        eased: probe.effect?.getComputedTiming().progress ?? t,
+        right: fill.getBoundingClientRect().right,
+      });
+    }
+    return {duration, easing, out};
+  });
+  // The duration is the theme's `--duration-medium`, the easing its
+  // `--ease-standard`, as before.
+  expect(samples.duration).toBeCloseTo(
+    Number.parseFloat(timing.duration) *
+      (timing.duration.endsWith('ms') ? 1 : 1000),
+    0,
+  );
+  expect(samples.easing).toBe(timing.easing);
+  for (const {t, eased, right} of samples.out) {
+    const expected = box.x + box.width * (0.2 + 0.6 * eased);
+    expect(Math.abs(right - expected), `edge at ${t}`).toBeLessThan(1);
+  }
+});
+
+test('below one track height of fill, the leading end follows the track\u2019s curve', async ({
+  page,
+}) => {
+  await open(page, 0);
+  await setValue(page, 1);
+  await page.waitForTimeout(700);
+  const box = await trackBox(page);
+  const colors = await page.evaluate(() => {
+    const bar = document.querySelector('[role="progressbar"]') as HTMLElement;
+    const parse = (value: string) =>
+      (value.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+    return {
+      fill: parse(
+        getComputedStyle(bar.firstElementChild as Element).backgroundColor,
+      ),
+      track: parse(getComputedStyle(bar).backgroundColor),
+    };
+  });
+  const shot = await page.screenshot({
+    clip: {x: box.x, y: box.y, width: 24, height: box.height},
+  });
+  const ink = await page.evaluate(
+    async ({png, h, fill, track}) => {
+      const bitmap = await createImageBitmap(
+        await (await fetch(`data:image/png;base64,${png}`)).blob(),
+      );
+      const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+      const context = canvas.getContext('2d');
+      if (context == null) {
+        throw new Error('no 2d context');
+      }
+      context.drawImage(bitmap, 0, 0);
+      const {data, width, height} = context.getImageData(
+        0,
+        0,
+        bitmap.width,
+        bitmap.height,
+      );
+      // How much of each pixel is the fill: its color projected on the line
+      // from the track's color to the fill's (the page around the track's
+      // rounded end projects below zero).
+      const axis = [0, 1, 2].map(k => fill[k] - track[k]);
+      const norm = axis.reduce((sum, v) => sum + v * v, 0);
+      const coverage = (x: number, y: number) => {
+        const i = (y * width + x) * 4;
+        const dot = [0, 1, 2].reduce(
+          (sum, k) => sum + (data[i + k] - track[k]) * axis[k],
+          0,
+        );
+        return Math.min(1, Math.max(0, dot / norm));
+      };
+      const columns: number[] = [];
+      for (let x = 0; x < width; x += 1) {
+        let count = 0;
+        for (let y = 0; y < height; y += 1) {
+          count += coverage(x, y);
+        }
+        columns.push(count);
+      }
+      const scale = bitmap.height / h;
+      return {
+        scale,
+        width: columns.filter(c => c > 0.5).length / scale,
+        heights: columns.map(c => c / scale),
+      };
+    },
+    {png: shot.toString('base64'), h: box.height, ...colors},
+  );
+  // About 1% of the track wide...
+  expect(ink.width).toBeGreaterThan(1);
+  expect(ink.width).toBeLessThanOrEqual((box.width * 1) / 100 + 1.5);
+  // ...and shaped by the track's own rounded end (radius half its height),
+  // column by column, where a squeezed capsule (main) rounds off with half of
+  // its own 3.7 px width and stands nearly full height at once.
+  const radius = box.height / 2;
+  for (let column = 0; column < 4; column += 1) {
+    const x = (column + 0.5) / ink.scale;
+    const expected = 2 * Math.sqrt(radius ** 2 - (radius - x) ** 2);
+    expect(
+      Math.abs(ink.heights[column] - expected),
+      `height at ${x.toFixed(2)} px`,
+    ).toBeLessThanOrEqual(1);
+  }
+});
+
 test('storyboard: the fill moving from 20% to 80% @storyboard', async ({
   page,
 }, testInfo) => {
