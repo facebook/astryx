@@ -4,7 +4,8 @@
 
 /**
  * @file RadioList.tsx
- * @input Uses React useId, useCallback, useRef, layer-scoped context, ReactNode, Field, InputStatus
+ * @input Uses React useId, useCallback, useRef, layer-scoped context, ReactNode, Field, InputStatus;
+ *   the touch row floor (Indicator/touchTarget.stylex.ts)
  * @output Exports RadioList component, RadioListProps, RadioListContext
  * @position Core implementation; consumed by index.ts, tested by RadioList.test.tsx
  *
@@ -72,7 +73,9 @@ const styles = stylex.create({
   },
   vertical: {
     flexDirection: 'column',
-    gap: spacingVars['--spacing-2'],
+    // Under a finger the rows are the targets (44 px each, touchTarget
+    // .stylex.ts), so they touch: no dead strip between two options.
+    gap: {default: spacingVars['--spacing-2'], '@media (pointer: coarse)': 0},
   },
   horizontal: {
     flexDirection: 'row',

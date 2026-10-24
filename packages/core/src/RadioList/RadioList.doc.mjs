@@ -33,7 +33,7 @@ export const docs = {
     ],
   },
   description:
-    'Radio group container with field integration for label, description, and status.',
+    'Radio group container with field integration for label, description, and status. Under a coarse pointer each option row is at least 44 px tall and the rows touch, so the whole column is target.',
   props: [
     {
       name: 'label',
@@ -148,12 +148,14 @@ export const docs = {
     {
       name: 'containerClassName',
       type: 'string',
-      description: 'Class name for the field container. Same targeting as `containerXstyle`.',
+      description:
+        'Class name for the field container. Same targeting as `containerXstyle`.',
     },
     {
       name: 'containerStyle',
       type: 'CSSProperties',
-      description: 'Inline styles for the field container. Same targeting as `containerXstyle`.',
+      description:
+        'Inline styles for the field container. Same targeting as `containerXstyle`.',
     },
     {
       name: 'controlXstyle',
