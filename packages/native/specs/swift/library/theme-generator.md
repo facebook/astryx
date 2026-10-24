@@ -139,7 +139,7 @@ re-implements theme logic.
 | Requirement | Check                                                                                                                                                                                                                                                                                                                                                                              |
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | G1          | A theme whose resolved token differs from its raw `theme.tokens` entry (a reference) shows the resolved value in Swift. A `DefinedTheme` with web component overrides generates the same file as the same theme without them.                                                                                                                                                      |
-| G2          | A source check finds no import of core in `packages/native/` outside the build-time reads AST-082 FR16 lists (the two theme entries, core's component documentation, and core's built-in icon names; later only the portable entry). Generated Swift imports only SwiftUI.                                                                                                         |
+| G2          | A source check finds no import of core in `packages/native/` outside the build-time reads AST-082 FR16 lists (the two theme entries, core's component documentation, its built-in icon names, and its locale catalogs; later only the portable entry). Generated Swift imports only SwiftUI.                                                                                       |
 | G3          | `swiftc -typecheck` compiles `AstryxTokens.swift` and every theme file together; each theme file declares one `AstryxTheme` static named as G3 says; two themes with the same name fail the run.                                                                                                                                                                                   |
 | G4          | Generating twice, and on two CI machines, gives byte-identical output.                                                                                                                                                                                                                                                                                                             |
 | G5          | Every theme's light and dark values fill every member of `AstryxTokens`, equal to core's resolved names filtered by the G5 groups.                                                                                                                                                                                                                                                 |
@@ -159,8 +159,9 @@ re-implements theme logic.
   package-boundary check scans every folder under `packages/native/`, so a core
   import anywhere in the package is checked against AST-082 FR16, with every
   build-time read FR16 allows listed by name: the generator's two theme entries
-  (G2) and the contract generator's reads of core's component documentation
-  and built-in icon names.
+  (G2), the contract generator's reads of core's component documentation and
+  built-in icon names, and the strings generator's read of core's locale
+  catalogs.
 - **D2 — Shared tokens are typed from the start.** For the shared token
   surface, the generator emits typed members
   (G3, G6), not string-keyed dictionaries, so a wrong token name fails to

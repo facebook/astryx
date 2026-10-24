@@ -8,6 +8,7 @@ These specs apply AST-082 (native-first surfaces) and AST-093 (native component
 guidelines). Where one of them and an approved record disagree, the record
 wins.
 
-| File                 | Concern                                            |
-| -------------------- | -------------------------------------------------- |
-| `theme-generator.md` | How any Astryx theme becomes a Swift `AstryxTheme` |
+| File                 | Concern                                                                               |
+| -------------------- | ------------------------------------------------------------------------------------- |
+| `accessibility.md`   | How core's accessibility semantics reach VoiceOver and Apple's accessibility settings |
+| `theme-generator.md` | How any Astryx theme becomes a Swift `AstryxTheme`                                    |
