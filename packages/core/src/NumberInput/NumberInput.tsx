@@ -708,6 +708,12 @@ export function NumberInput({
       if (pendingInput === null) {
         return;
       }
+      if (isDisabled) {
+        // A field disabled mid-entry commits nothing; its draft is dropped, as
+        // a natively disabled field's was (spec:AST-085 FR2).
+        setPendingInput(null);
+        return;
+      }
 
       const decision = resolveNumberInputCommit(pendingInput, {
         min,
@@ -731,7 +737,17 @@ export function NumberInput({
         onChange(decision.value);
       }
     },
-    [hasClear, isIntegerOnly, locale, max, min, onChange, pendingInput, value],
+    [
+      hasClear,
+      isDisabled,
+      isIntegerOnly,
+      locale,
+      max,
+      min,
+      onChange,
+      pendingInput,
+      value,
+    ],
   );
 
   // Blur ends the edit and displays the resulting committed value.

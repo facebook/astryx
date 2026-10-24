@@ -225,6 +225,28 @@ describe('NumberInput', () => {
     }
   });
 
+  it('commits nothing when a field disabled mid-entry loses focus (spec:AST-085 FR2)', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const field = (isDisabled: boolean) => (
+      <NumberInput
+        label="Quantity"
+        value={5}
+        onChange={onChange}
+        isDisabled={isDisabled}
+      />
+    );
+    const {rerender} = render(field(false));
+    const input = screen.getByRole('spinbutton');
+    await user.clear(input);
+    await user.type(input, '8');
+    onChange.mockClear();
+    rerender(field(true));
+    await user.tab();
+    expect(onChange).not.toHaveBeenCalled();
+    expect(input).toHaveValue('5');
+  });
+
   it('does not fire onChange when disabled', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
