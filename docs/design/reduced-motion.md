@@ -53,21 +53,21 @@ trackpad, or keyboard the change is immediate.
 
 ## State representation
 
-| State                             | Required representation                         | Allowed variation          |
-| --------------------------------- | ----------------------------------------------- | -------------------------- |
-| reduced motion, coarse pointer    | Opacity-only cross-fade of 200 ms or less (DR2) | A shorter cross-fade       |
-| reduced motion, any other pointer | Immediate change (DR3)                          | None                       |
-| no reduced-motion preference      | Outside this record                             | Component and theme motion |
+| State                             | Required representation                                     | Allowed variation          |
+| --------------------------------- | ----------------------------------------------------------- | -------------------------- |
+| reduced motion, coarse pointer    | Opacity-only cross-fade of 200 ms or less (DR2)             | A shorter cross-fade       |
+| reduced motion, any other pointer | Immediate change (DR3), except a touch drag's release (DR2) | None                       |
+| no reduced-motion preference      | Outside this record                                         | Component and theme motion |
 
 ## Responsive and input behavior
 
 - **DR2 — Touch presentations cross-fade.** Under reduced motion, when the
-  primary pointer is coarse (`pointer: coarse`), each DR1 transition MUST
-  change opacity only and MUST finish in 200 ms or less. An entering element
+  primary pointer is coarse (`pointer: coarse`), or when the release of a touch
+  drag starts the transition, each DR1 transition MUST change opacity only and MUST finish in 200 ms or less. An entering element
   appears in its final place and fades in; a leaving element fades out where it
   is.
 - **DR3 — Fine-pointer presentations change at once.** Under reduced motion,
-  when the primary pointer is not coarse, each DR1 transition MUST complete
+  every other DR1 transition, when the primary pointer is not coarse, MUST complete
   immediately, with no animated property.
 - **DR4 — No opt-out in core.** A core component, its props, and its theme
   values offer no way to keep travel, scaling, springs, or a longer animation
@@ -103,7 +103,7 @@ No normative assets are included.
 
 ## Component contract links
 
-- `spec:AST-057` FR5 implements DR2 and DR3 for a swiped row's slide out,
+- `spec:AST-057` FR5 implements DR2 for a swiped row's slide out,
   spring back, and hold-out.
 - `component:BottomSheetSwitcher` FR3 and ORD1 implement DR2 and DR3 for a
   handoff between sheets.
