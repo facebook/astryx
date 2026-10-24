@@ -1708,6 +1708,47 @@ describe('coincident range thumbs', () => {
     expect(start).toHaveAttribute('aria-valuenow', '30');
   });
 
+  it('picks the thumb by the mirrored direction under RTL', () => {
+    const onChange = vi.fn();
+    const realGetComputedStyle = window.getComputedStyle;
+    // Under RTL the inline start is the right edge: value = (190 - x) / 1.8.
+    const asRtl = () => {
+      const group = screen.getByRole('group');
+      return vi
+        .spyOn(window, 'getComputedStyle')
+        .mockImplementation((el: Element, pseudo?: string | null) =>
+          el === group
+            ? ({direction: 'rtl'} as CSSStyleDeclaration)
+            : realGetComputedStyle(el, pseudo ?? undefined),
+        );
+    };
+    const {unmount} = render(
+      <ControlledRange initial={[50, 50]} onChange={onChange} />,
+    );
+    mockGroupRect();
+    let spy = asRtl();
+    let [, end] = screen.getAllByRole('slider');
+    // Leftward is toward the maximum: the upper thumb follows.
+    fireEvent.pointerDown(end, {clientX: 100, clientY: 10, pointerId: 1});
+    fireEvent.pointerMove(end, {clientX: 46, clientY: 10, pointerId: 1});
+    expect(onChange).toHaveBeenLastCalledWith([50, 80]);
+    fireEvent.pointerUp(end, {clientX: 46, clientY: 10, pointerId: 1});
+    spy.mockRestore();
+    unmount();
+
+    // Rightward is toward the minimum: the lower thumb follows.
+    render(<ControlledRange initial={[50, 50]} onChange={onChange} />);
+    mockGroupRect();
+    spy = asRtl();
+    const [start, upper] = screen.getAllByRole('slider');
+    end = upper;
+    fireEvent.pointerDown(end, {clientX: 100, clientY: 10, pointerId: 1});
+    fireEvent.pointerMove(end, {clientX: 154, clientY: 10, pointerId: 1});
+    expect(onChange).toHaveBeenLastCalledWith([20, 50]);
+    expect(document.activeElement).toBe(start);
+    spy.mockRestore();
+  });
+
   it('closes the value tooltip of the thumb a drag was handed away from', () => {
     render(<ControlledRange initial={[50, 50]} onChange={vi.fn()} />);
     mockGroupRect();
