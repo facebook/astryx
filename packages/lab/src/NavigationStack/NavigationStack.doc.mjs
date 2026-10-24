@@ -25,7 +25,7 @@ export const docs = {
       name: 'NavigationStack',
       displayName: 'Navigation Stack',
       description:
-        "The navigator. You own the path: pass the entries pushed on the root screen and update them in onPathChange. The stack renders the root screen and one screen per entry, the top one last, keeps covered screens and their scroll positions alive, and makes them inert. The bar shows the top screen's title, its trailing items and a round Back button with a chevron, named by the screen it returns to. A push moves focus to the new screen's title; a pop returns it to the control that pushed the screen.",
+        "The navigator. You own the path: pass the entries pushed on the root screen and update them in onPathChange. The stack renders the root screen and one screen per entry, the top one last, keeps covered screens and their scroll positions alive, and makes them inert. The bar shows the top screen's title, its trailing items and a round Back button with a chevron, named by the screen it returns to. A list row that pushes a screen stays selected under it and deselects as the screen pops, following a back swipe. A push moves focus to the new screen's title; a pop returns it to the control that pushed the screen.",
       props: [
         {
           name: 'root',
