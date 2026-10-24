@@ -262,9 +262,13 @@ test('the rise keeps advancing every frame while the main thread is blocked', as
   await markElement(dock);
   const cast = await startScreencast(page);
   await showKeyboard(page);
+  // Mid-flight: the show is dated back to the keyboard's start, so its first
+  // frame already reads more than 16 ms. Blocking in that frame would stop
+  // the animation before its first commit, which no compositor can run;
+  // wait until it has run for a few frames.
   const block = await blockMainThread(page, 500, {
     during: dock,
-    minProgressMs: 16,
+    minProgressMs: 70,
   });
   await page.waitForTimeout(150);
   const castFrames = await cast.stop();
