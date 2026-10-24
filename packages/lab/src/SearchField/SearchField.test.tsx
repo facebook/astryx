@@ -197,4 +197,38 @@ describe('SearchField', () => {
     expect(box()).toHaveValue('figs');
     expect(close()).not.toHaveAttribute('aria-hidden');
   });
+
+  describe('bottom placement', () => {
+    it('is a 38 px field 33 px from each side, with a 38 px close button 17 px from the end', () => {
+      render(<SearchField label="Search" placement="bottom" />);
+      const root = screen.getByRole('search');
+      const field = screen
+        .getByRole('searchbox')
+        .closest('[data-search-field-content]')?.parentElement as HTMLElement;
+      const close = root.querySelector<HTMLElement>(
+        '[data-search-field-close]',
+      );
+      expect(root.getAttribute('style')).toContain('33px');
+      expect(field.getAttribute('style')).toContain('38px');
+      expect(close?.getAttribute('style')).toContain('38px');
+      expect(close?.getAttribute('style')).toContain('17px');
+    });
+
+    it('activates on focus and cancels from the close button, as the stacked field does', () => {
+      const onActiveChange = vi.fn();
+      render(
+        <SearchField
+          label="Search"
+          placement="bottom"
+          onActiveChange={onActiveChange}
+        />,
+      );
+      const input = screen.getByRole('searchbox');
+      act(() => input.focus());
+      expect(onActiveChange).toHaveBeenLastCalledWith(true);
+      fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+      expect(onActiveChange).toHaveBeenLastCalledWith(false);
+      expect(input).not.toHaveFocus();
+    });
+  });
 });

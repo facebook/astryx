@@ -18,6 +18,11 @@
  * mind mid-flight starts from the presented values and takes the share of
  * the clock that the remaining travel is of the whole, so nothing jumps.
  *
+ * The bottom (toolbar) placement moves differently: SwiftUI changes the
+ * field's frame every frame with no animation object, so its swell and
+ * narrowing are the measured frames themselves (`search.bottom.*Frames`),
+ * played back as curves; the bar's rise is the keyboard's own spring.
+ *
  * SYNC: When modified, update searchFieldModel.test.ts and SearchField.tsx.
  */
 
@@ -28,6 +33,7 @@ import {
 } from '@astryxdesign/core/motion/experimental';
 
 const {search} = uikit;
+const {bottom} = search;
 
 /** The UIKit activation curve as a function of the clock's fraction. */
 export const activationEase = cubicBezier(search.activationCurve);
@@ -177,4 +183,177 @@ export function remainingFraction(
     }
   }
   return fraction;
+}
+
+/** A frame table: rows of [ms, ...values]. */
+export type FrameTable = readonly (readonly number[])[];
+
+/**
+ * A curve through measured frames: linear between rows, held at both ends.
+ * `value` reads one row (already mapped to the property's unit).
+ */
+export function framesCurve(
+  frames: FrameTable,
+  value: (row: readonly number[]) => number,
+): MotionCurve {
+  const last = frames[frames.length - 1];
+  const duration = last[0] / 1000;
+  const at = (t: number): number => {
+    const ms = t * 1000;
+    if (ms <= frames[0][0]) {
+      return value(frames[0]);
+    }
+    if (ms >= last[0]) {
+      return value(last);
+    }
+    let i = 1;
+    while (frames[i][0] < ms) {
+      i++;
+    }
+    const a = frames[i - 1];
+    const b = frames[i];
+    const f = (ms - a[0]) / (b[0] - a[0]);
+    return value(a) + (value(b) - value(a)) * f;
+  };
+  return {
+    duration,
+    at,
+    velocity(t) {
+      const h = 0.001;
+      return (
+        (at(t + h) - at(Math.max(0, t - h))) / (t + h - Math.max(0, t - h))
+      );
+    },
+  };
+}
+
+/** The bottom field's edges, px from the root's leading edge. */
+export interface BottomEdges {
+  restLeading: number;
+  restTrailing: number;
+  activeLeading: number;
+  activeTrailing: number;
+}
+
+/** Where the bottom field's edges rest and go, in a root `width` px wide. */
+export function bottomEdges(width: number): BottomEdges {
+  return {
+    restLeading: bottom.restInset,
+    restTrailing: width - bottom.restInset,
+    activeLeading: bottom.activeInset,
+    activeTrailing:
+      width - bottom.activeInset - bottom.closeSize - bottom.closeGap,
+  };
+}
+
+/** One frame of the bottom field, in px and plain numbers. */
+export interface BottomPose {
+  /** The field's leading edge, px from the root's leading edge. */
+  leading: number;
+  /** The field's trailing edge, px from the root's leading edge. */
+  trailing: number;
+  /** The background's height as a fraction of its resting height. */
+  heightScale: number;
+  /** The close button's offset from its place, px toward the trailing end. */
+  closeX: number;
+  /** The close button's scale. */
+  closeScale: number;
+  /** The close button's opacity. */
+  closeOpacity: number;
+}
+
+/** A row of a field gel table ([ms, leading, trailing, height]) as px. */
+export function bottomFieldAt(
+  row: readonly number[],
+  edges: BottomEdges,
+): Pick<BottomPose, 'leading' | 'trailing' | 'heightScale'> {
+  return {
+    leading:
+      edges.restLeading + row[1] * (edges.activeLeading - edges.restLeading),
+    trailing:
+      edges.restTrailing + row[2] * (edges.activeTrailing - edges.restTrailing),
+    heightScale: row[3],
+  };
+}
+
+/** The bottom field settled inactive or active. */
+export function bottomPoseFor(isActive: boolean, width: number): BottomPose {
+  const edges = bottomEdges(width);
+  const enter = bottom.closeEnterFrames;
+  const hidden = enter[0];
+  return isActive
+    ? {
+        leading: edges.activeLeading,
+        trailing: edges.activeTrailing,
+        heightScale: 1,
+        closeX: 0,
+        closeScale: 1,
+        closeOpacity: 1,
+      }
+    : {
+        leading: edges.restLeading,
+        trailing: edges.restTrailing,
+        heightScale: 1,
+        closeX: hidden[3],
+        closeScale: hidden[2],
+        closeOpacity: 0,
+      };
+}
+
+/** The curves that play the bottom field's activation or cancel. */
+export interface BottomMotion {
+  leading: MotionCurve;
+  trailing: MotionCurve;
+  heightScale: MotionCurve;
+  closeX: MotionCurve;
+  closeScale: MotionCurve;
+  closeOpacity: MotionCurve;
+}
+
+/**
+ * The bottom field's activation (`isActive` true) or cancel as measured
+ * curves, in a root `width` px wide.
+ */
+export function bottomMotion(isActive: boolean, width: number): BottomMotion {
+  const edges = bottomEdges(width);
+  const field = isActive ? bottom.activationFrames : bottom.cancelFrames;
+  const hold = (value: number): MotionCurve => ({
+    duration: 0,
+    at: () => value,
+    velocity: () => 0,
+  });
+  if (isActive) {
+    const enter = bottom.closeEnterFrames;
+    return {
+      leading: framesCurve(field, row => bottomFieldAt(row, edges).leading),
+      trailing: framesCurve(field, row => bottomFieldAt(row, edges).trailing),
+      heightScale: framesCurve(field, row => row[3]),
+      closeX: framesCurve(enter, row => row[3]),
+      closeScale: framesCurve(enter, row => row[2]),
+      closeOpacity: framesCurve(enter, row => row[1]),
+    };
+  }
+  const exit = bottom.closeExitFrames;
+  return {
+    leading: framesCurve(field, row => bottomFieldAt(row, edges).leading),
+    trailing: framesCurve(field, row => bottomFieldAt(row, edges).trailing),
+    heightScale: framesCurve(field, row => row[3]),
+    closeX: hold(-bottom.cancelNarrowing),
+    closeScale: framesCurve(exit, row => row[2]),
+    closeOpacity: framesCurve(exit, row => row[1]),
+  };
+}
+
+/**
+ * The bottom field's rise for a keyboard inset, px (negative is up): while
+ * active its centre stays `keyboardCenterOffset` above the keyboard's top;
+ * otherwise the bar keeps its resting gap above the keyboard. `restGap` is
+ * how far the field's resting centre sits above the viewport's bottom edge.
+ */
+export function bottomRise(
+  isActive: boolean,
+  inset: number,
+  restGap: number,
+): number {
+  return isActive ? restGap - bottom.keyboardCenterOffset - inset : 0 - inset;
 }

@@ -271,7 +271,8 @@ fades in, with Prefer Cross-Fade Transitions on or off.
 Done (iOS 26.2 simulator, Oct 24 2026; in the search table): the activation
 and cancel clock and curve, the stacked field and its close button, the large
 title's fade, the field scrolling away, the bottom and tab placements' rest
-above the keyboard, the clear button.
+above the keyboard, the bottom placement's geometry and its field and close
+button frames during activation and cancel, the clear button.
 
 | ID    | What                       | App and gesture                                                                                                                | Extract                                                                             | Method | Feeds                                   |
 | ----- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- | ------ | --------------------------------------- |

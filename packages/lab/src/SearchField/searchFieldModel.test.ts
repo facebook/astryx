@@ -5,8 +5,9 @@
  * @input vitest, searchFieldModel.ts and the UIKit search table
  * @output The model's geometry and clock: the active width on an iPhone 17
  *   Pro, every part's pose at rest and active (both directions), the eased
- *   curve's ends, symmetry and velocities, and the share of the clock a
- *   change of mind takes
+ *   curve's ends, symmetry and velocities, the share of the clock a
+ *   change of mind takes, and the bottom placement: its edges, the measured
+ *   frames played as curves, its poses and its rise on the keyboard
  * @position Testing; validates searchFieldModel.ts without a DOM
  */
 
@@ -20,6 +21,11 @@ import {
   heldCurve,
   poseFor,
   remainingFraction,
+  bottomEdges,
+  bottomMotion,
+  bottomPoseFor,
+  bottomRise,
+  framesCurve,
 } from './searchFieldModel';
 
 const IPHONE = {restWidth: 370, height: 44, lift: 99, isRtl: false};
@@ -85,5 +91,88 @@ describe('searchFieldModel', () => {
     expect(remainingFraction(active, rest, active)).toBe(0);
     const halfway = {...rest, y: -49.5, endX: -27.5, closeX: 22};
     expect(remainingFraction(halfway, active, rest)).toBeCloseTo(0.5, 9);
+  });
+
+  describe('bottom placement', () => {
+    it('puts the edges where iOS does on a 402 px screen', () => {
+      expect(bottomEdges(402)).toEqual({
+        restLeading: 33,
+        restTrailing: 369,
+        activeLeading: 17,
+        activeTrailing: 325,
+      });
+    });
+
+    it('plays a frame table linearly between rows and holds its ends', () => {
+      const curve = framesCurve(
+        [
+          [0, 0],
+          [100, 10],
+          [200, 30],
+        ],
+        row => row[1],
+      );
+      expect(curve.duration).toBeCloseTo(0.2, 6);
+      expect(curve.at(0)).toBe(0);
+      expect(curve.at(0.05)).toBeCloseTo(5, 6);
+      expect(curve.at(0.15)).toBeCloseTo(20, 6);
+      expect(curve.at(0.5)).toBe(30);
+      expect(curve.velocity(0.15)).toBeCloseTo(200, 0);
+    });
+
+    it('activates from rest to the active field, swelling past both places on the way', () => {
+      const motion = bottomMotion(true, 402);
+      const end = motion.leading.duration;
+      expect(motion.leading.at(0)).toBeCloseTo(33, 6);
+      expect(motion.trailing.at(0)).toBeCloseTo(369, 6);
+      expect(motion.leading.at(end)).toBeCloseTo(17, 6);
+      expect(motion.trailing.at(motion.trailing.duration)).toBeCloseTo(325, 6);
+      // The swell: the trailing edge goes out past rest before it narrows,
+      // the leading edge past its active place.
+      const samples = Array.from({length: 28}, (_, i) => i / 60);
+      expect(
+        Math.max(...samples.map(t => motion.trailing.at(t))),
+      ).toBeGreaterThan(380);
+      expect(Math.min(...samples.map(t => motion.leading.at(t)))).toBeLessThan(
+        14,
+      );
+      expect(motion.closeOpacity.at(0)).toBe(0);
+      expect(motion.closeOpacity.at(motion.closeOpacity.duration)).toBe(1);
+      expect(motion.closeScale.at(motion.closeScale.duration)).toBe(1);
+    });
+
+    it('cancels from 16 px inside the active field at each side back to rest', () => {
+      const motion = bottomMotion(false, 402);
+      expect(motion.leading.at(0)).toBeCloseTo(33, 6);
+      expect(motion.trailing.at(0)).toBeCloseTo(309, 0);
+      expect(motion.trailing.at(motion.trailing.duration)).toBeCloseTo(369, 6);
+      expect(motion.closeX.at(0)).toBe(-16);
+      expect(motion.closeOpacity.at(motion.closeOpacity.duration)).toBe(0);
+    });
+
+    it('settles to the same poses the frames end at', () => {
+      expect(bottomPoseFor(true, 402)).toEqual({
+        leading: 17,
+        trailing: 325,
+        heightScale: 1,
+        closeX: 0,
+        closeScale: 1,
+        closeOpacity: 1,
+      });
+      expect(bottomPoseFor(false, 402)).toMatchObject({
+        leading: 33,
+        trailing: 369,
+        heightScale: 1,
+        closeOpacity: 0,
+      });
+    });
+
+    it('rides the keyboard: 36 px above its top while active, the resting gap otherwise', () => {
+      // iOS: the field's resting centre 52 pt above the bottom edge.
+      expect(bottomRise(true, 0, 52)).toBe(16);
+      expect(bottomRise(true, 335, 52)).toBe(-319);
+      expect(bottomRise(false, 335, 52)).toBe(-335);
+      expect(bottomRise(false, 0, 52)).toBe(0);
+    });
   });
 });
