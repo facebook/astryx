@@ -18,6 +18,11 @@
  * - /packages/core/src/motion/MEASUREMENTS.md (measurement tasks)
  */
 
+/**
+ * UIScrollView's deceleration, rubber band, bounce, paging and touch-delay
+ * values.
+ * @experimental
+ */
 export const scroll = {
   decelerationRate: {
     /**
