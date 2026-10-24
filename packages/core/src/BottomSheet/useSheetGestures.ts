@@ -627,11 +627,12 @@ export function useSheetGestures({
     return current;
   }, []);
   // A gesture takes the dim: a release's dim still playing is picked up
-  // where it is, and the host stops easing it. Only in iOS's idiom, whose
-  // dimming view follows the sheet frame by frame; everywhere else the host
-  // keeps easing the dim toward each value, as today.
+  // where it is, and the host stops easing it. Only under a finger (every
+  // touch device: one touch model), whose dimming view follows the sheet frame
+  // by frame; under a mouse the host keeps easing the dim toward each value,
+  // as today.
   const beginScrimTracking = useCallback(() => {
-    if (readTouchPresentation().idiom !== 'ios') {
+    if (!readTouchPresentation().isTouch) {
       return;
     }
     scrimOwnerRef.current = null;
