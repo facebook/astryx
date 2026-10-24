@@ -231,4 +231,53 @@ describe('SearchField', () => {
       expect(input).not.toHaveFocus();
     });
   });
+
+  describe('tab placement', () => {
+    it('draws only its content: the tab bar draws the glass and the cancel button', () => {
+      render(<SearchField label="Search" placement="tab" />);
+      const root = screen.getByRole('search');
+      expect(screen.getByRole('searchbox')).toBeInTheDocument();
+      expect(root.querySelector('[data-search-field-middle]')).toBeNull();
+      expect(root.querySelector('[data-search-field-end-cap]')).toBeNull();
+      expect(root.querySelector('[data-search-field-close]')).toBeNull();
+    });
+
+    it('cancels from the handle, for the tab bar’s own cancel button', () => {
+      const handle = createRef<SearchFieldHandle>();
+      const onActiveChange = vi.fn();
+      const onChange = vi.fn();
+      render(
+        <SearchField
+          label="Search"
+          placement="tab"
+          handleRef={handle}
+          defaultValue="ap"
+          onChange={onChange}
+          onActiveChange={onActiveChange}
+        />,
+      );
+      const input = screen.getByRole('searchbox');
+      // An own property, not an assignment: some DOMs expose `focus` as a
+      // getter-only accessor.
+      const calls: unknown[] = [];
+      const focus = HTMLElement.prototype.focus;
+      Object.defineProperty(input, 'focus', {
+        configurable: true,
+        value(options?: FocusOptions) {
+          calls.push(options);
+          focus.call(input, options);
+        },
+      });
+      act(() => handle.current?.focus());
+      expect(input).toHaveFocus();
+      // Without Safari's reveal: the tab bar moves the field.
+      expect(calls).toEqual([{preventScroll: true}]);
+      expect(onActiveChange).toHaveBeenLastCalledWith(true);
+      act(() => handle.current?.cancel());
+      expect(onChange).toHaveBeenLastCalledWith('');
+      expect(onActiveChange).toHaveBeenLastCalledWith(false);
+      expect(input).not.toHaveFocus();
+      expect(input).toHaveValue('');
+    });
+  });
 });
