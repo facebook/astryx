@@ -8,8 +8,9 @@
  * @file Shared hover and pressed overlay states
  * @input Uses StyleX and the semantic interaction-overlay color tokens
  * @output Exports reusable background-color and background-image state styles,
- *   the touch press's registered strength variable (`pressVars`) and its
- *   clocks (`pressConsts`)
+ *   the compositor press layer for list rows (`cell`), the touch press's
+ *   registered strength variable (`pressVars`) and its clocks (`pressConsts`,
+ *   and `cellPressConsts` for the row layer)
  * @position Internal styling utility for interactive core surfaces
  *
  * Every surface that paints a press composes one of these (or carries its own
@@ -113,6 +114,19 @@ export const pressConsts = stylex.defineConsts({
   releaseMs: 200,
 });
 
+/**
+ * A list row's release (`cell`), mirrored for the stylesheet: StyleX evaluates
+ * a style at build time and cannot read the constants table, so these are the
+ * table's `list.highlight` values (motion/uikit/list.ts), and
+ * interactionOverlay.cell.test.ts fails if they drift.
+ */
+export const cellPressConsts = stylex.defineConsts({
+  /** `list.highlight.releaseMs`, in ms. */
+  cellReleaseMs: 200,
+  /** `list.highlight.releaseCurve`, as CSS. */
+  cellReleaseEase: 'cubic-bezier(0, 0, 0.2, 1)',
+});
+
 /** The release's clock as CSS. */
 const PRESS_RELEASE_DURATION = `${pressConsts.releaseMs}ms`;
 
@@ -160,6 +174,15 @@ const pressedOverlayImage = 'var(--_press-paint-image)';
 const pressRelease = stylex.keyframes({
   from: {[PRESS_ALPHA]: 1},
   to: {[PRESS_ALPHA]: 0},
+});
+
+/** The row layer's clock as CSS. */
+const CELL_RELEASE = `${cellPressConsts.cellReleaseMs}ms`;
+
+/** Opacity 1 → 0: the row layer leaves; its fading arm runs it. */
+const cellRelease = stylex.keyframes({
+  from: {opacity: 1},
+  to: {opacity: 0},
 });
 
 /**
@@ -336,5 +359,66 @@ export const interactionOverlayStyles = stylex.create({
     [PRESS_ALPHA]: pressStrength,
     ...pressReleaseAnimation,
     ...pressPaint,
+  },
+  /**
+   * A list row's touch press on a compositor layer (Item, and TreeList's row
+   * box), composed AFTER the row's overlay variant (StyleX is last-wins per
+   * property). The variant's own touch paint, a gradient whose strength is a
+   * registered custom property, animates on the main thread: while script
+   * runs, a pressed row would stay at full strength and every frame of the
+   * fade would paint. Here the press is an element-sized `::before` under the
+   * row's content whose OPACITY is the strength: `on` shows it at once and
+   * `fading` runs a keyframe animation of its opacity, 1 → 0, on the cell's
+   * release clock (`list.highlight`), which engines run on the compositor:
+   * it keeps advancing while the main thread is blocked and lays out and
+   * paints nothing. Same pixels as the variant's paint at that strength. The
+   * variant keeps the hover and a mouse's `:active`. The row must be
+   * positioned (the layer is placed absolutely); `isolation: isolate` keeps
+   * the layer above the row's background (a selected fill) and below its
+   * content. A row's own `::before` from `xstyle` merges with the layer
+   * property by property and is hidden at rest: decorate with `::after` or a
+   * child.
+   *
+   * Under a finger only (a coarse primary pointer): a fine pointer keeps the
+   * variant exactly, with no layer, no stacking context and its own touch
+   * paint (`spec:AST-017` FR55, touch work leaves desktop as it was).
+   */
+  cell: {
+    // Under a finger the variant's own touch paint goes transparent and its
+    // release (a main-thread animation of the strength) is dropped: the
+    // layer paints the press instead. A fine pointer keeps both, as the
+    // variant declares them (its release's clock and curve are untouched;
+    // only the coarse arm names no animation).
+    '--_press-paint': {default: pressedOverlayColor, [COARSE]: 'transparent'},
+    animationName: {
+      default: null,
+      [PRESSED_FADING]: {default: pressRelease, [COARSE]: 'none'},
+    },
+    isolation: {default: null, [COARSE]: 'isolate'},
+    '::before': {
+      // No box under a fine pointer: a row's own `::before` is as it was.
+      content: {default: null, [COARSE]: '""'},
+      position: 'absolute',
+      inset: 0,
+      zIndex: -1,
+      borderRadius: 'inherit',
+      pointerEvents: 'none',
+      backgroundColor: colorVars['--color-overlay-pressed'],
+      // On at once while the press is believed; nothing transitions it.
+      opacity: {
+        default: 0,
+        [ENABLED]: {default: null, [PRESSED_ON]: 1},
+      },
+      animationName: {
+        default: null,
+        [ENABLED]: {default: null, [PRESSED_FADING]: cellRelease},
+      },
+      animationDuration: {default: null, [PRESSED_FADING]: CELL_RELEASE},
+      animationTimingFunction: {
+        default: null,
+        [PRESSED_FADING]: cellPressConsts.cellReleaseEase,
+      },
+      animationFillMode: {default: null, [PRESSED_FADING]: 'both'},
+    },
   },
 });
