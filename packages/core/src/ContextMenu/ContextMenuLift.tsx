@@ -16,8 +16,8 @@
  * the page: a copy of it (UIKit's preview platter) grows on from the size the
  * press gave it to its lifted size, a shadow rising under it, above a backdrop
  * that tints the page (no blur, no zoom); the view itself stays where it is,
- * under the copy. The menu's content fades in from a blur
- * (`playMenuEntrance`). When the menu closes, the copy returns to the view's
+ * under the copy. The menu's glass grows out of the finger, the content
+ * following it in from a blur (`morphMenu`). When the menu closes, the copy returns to the view's
  * place on the dismissal spring while the backdrop and the shadow clear.
  *
  * Here the copy is a clone of the trigger (inert, hidden from assistive
@@ -28,7 +28,8 @@
  * (`--color-background-backdrop`, `--shadow-high`): UIKit's own are
  * rgba(0.086, 0.082, 0.165, 0.21) and a black shadow at 0.30, radius 20, no
  * offset, shaped by the view's pixels. Position, scale and opacity move on
- * the compositor animator; the menu's blur plays as spring-sampled keyframes.
+ * the compositor animator; the menu's content (its clip and blur) plays as
+ * keyframes sampled from the same springs.
  * Nothing renders during the motion.
  *
  * SYNC: When modified, update /packages/core/src/ContextMenu/ContextMenu.tsx
@@ -38,16 +39,11 @@
 import * as stylex from '@stylexjs/stylex';
 import {useCallback, useEffect, useRef, type RefObject} from 'react';
 import {createAnimator, type Animator} from '../motion/animator';
-import {
-  SETTLING_EPSILON,
-  solveSpring,
-  toSpring,
-  type SpringDescription,
-} from '../motion/spring';
 import {contextMenu, springs} from '../motion/uikit';
 import {colorVars, shadowVars} from '../theme/tokens.stylex';
 import {
   liftedBox,
+  menuMorph,
   type LiftBox,
   type LiftViewport,
 } from './contextMenuLiftGeometry';
@@ -109,6 +105,12 @@ export interface ContextMenuLift {
    * mounted (server, or no popover support).
    */
   lift(): ContextMenuLiftResult | null;
+  /**
+   * The menu's entrance beside the copy: its glass grows out of `press`
+   * (client px) into `menu`'s frame, and its content, clipped to the glass,
+   * follows it in from a blur (`menuMorph`).
+   */
+  morphMenu(menu: HTMLElement, press: {x: number; y: number}): void;
   /** Return the preview to its place and show the trigger again. */
   drop(): void;
 }
@@ -130,34 +132,20 @@ function viewportOf(doc: Document): LiftViewport {
 }
 
 /**
- * WAAPI keyframes along a spring from 0 to 1, sampled at 60 Hz until it
- * settles (overshoot included): `frame(p)` builds the keyframe at progress p.
+ * WAAPI keyframes sampled at 60 Hz over `seconds`: `frame(t)` builds the
+ * keyframe `t` seconds in.
  */
-function springKeyframes(
-  description: SpringDescription,
-  frame: (progress: number) => Keyframe,
+function sampleKeyframes(
+  seconds: number,
+  frame: (t: number) => Keyframe,
 ): {keyframes: Keyframe[]; duration: number} {
-  const curve = solveSpring(toSpring(description), {from: 0, to: 1});
-  const seconds = Math.max(curve.settleTime(SETTLING_EPSILON), 1 / 60);
-  const steps = Math.max(2, Math.ceil(seconds * 60));
+  const length = Math.max(seconds, 1 / 60);
+  const steps = Math.max(2, Math.ceil(length * 60));
   const keyframes: Keyframe[] = [];
   for (let i = 0; i <= steps; i++) {
-    const progress = i === steps ? 1 : curve.value((i / steps) * seconds);
-    keyframes.push({...frame(progress), offset: i / steps});
+    keyframes.push({...frame((i / steps) * length), offset: i / steps});
   }
-  return {keyframes, duration: seconds * 1000};
-}
-
-function playKeyframes(
-  element: HTMLElement,
-  description: SpringDescription,
-  frame: (progress: number) => Keyframe,
-): Animation | null {
-  if (typeof element.animate !== 'function') {
-    return null;
-  }
-  const {keyframes, duration} = springKeyframes(description, frame);
-  return element.animate(keyframes, {duration, fill: 'forwards'});
+  return {keyframes, duration: length * 1000};
 }
 
 /**
@@ -181,22 +169,6 @@ function shapeRadius(trigger: HTMLElement): string {
     Math.abs(inner.width - outer.width) <= 1 &&
     Math.abs(inner.height - outer.height) <= 1;
   return fills ? getComputedStyle(content[0]).borderRadius : own;
-}
-
-/**
- * The menu's entrance beside a lifted preview: its content fades in from a
- * blur on `morphSpring` (Reduced Motion: `springs.menuReducedMotion`).
- */
-export function playMenuEntrance(menu: HTMLElement): void {
-  const blur = LIFT.menuEntranceBlur;
-  playKeyframes(
-    menu,
-    prefersReducedMotion() ? springs.menuReducedMotion : LIFT.morphSpring,
-    progress => ({
-      opacity: String(progress),
-      filter: `blur(${(blur * Math.max(1 - progress, 0)).toFixed(3)}px)`,
-    }),
-  );
 }
 
 /** A copy of the trigger to lift: inert, unnamed, with no ids to collide. */
@@ -238,10 +210,31 @@ export function useContextMenuLift(
   const previewAnimatorRef = useRef<Animator | null>(null);
   const backdropAnimatorRef = useRef<Animator | null>(null);
   const shadowAnimatorRef = useRef<Animator | null>(null);
+  const morphRef = useRef<{
+    menu: HTMLElement;
+    glass: HTMLElement;
+    glassAnimator: Animator;
+    animation: Animation;
+  } | null>(null);
   // Bumps on every lift, so a drop that finishes late leaves a newer lift be.
   const generationRef = useRef(0);
 
+  const endMorph = useCallback(() => {
+    const morph = morphRef.current;
+    if (morph == null) {
+      return;
+    }
+    morphRef.current = null;
+    morph.animation.cancel();
+    morph.glassAnimator.dispose();
+    morph.glass.remove();
+    for (const property of ['background-color', 'box-shadow', 'overflow']) {
+      morph.menu.style.removeProperty(property);
+    }
+  }, []);
+
   const cleanUp = useCallback(() => {
+    endMorph();
     shadowAnimatorRef.current?.dispose();
     shadowAnimatorRef.current = null;
     previewAnimatorRef.current?.dispose();
@@ -252,7 +245,7 @@ export function useContextMenuLift(
     if (layerEl?.matches(':popover-open')) {
       layerEl.hidePopover();
     }
-  }, []);
+  }, [endMorph]);
 
   useEffect(
     () => () => {
@@ -354,6 +347,7 @@ export function useContextMenuLift(
   }, [cleanUp, triggerRef]);
 
   const drop = useCallback(() => {
+    endMorph();
     const previewAnimator = previewAnimatorRef.current;
     const backdropAnimator = backdropAnimatorRef.current;
     if (previewAnimator == null) {
@@ -380,7 +374,106 @@ export function useContextMenuLift(
         cleanUp();
       }
     });
-  }, [cleanUp]);
+  }, [cleanUp, endMorph]);
+
+  const morphMenu = useCallback(
+    (menu: HTMLElement, press: {x: number; y: number}) => {
+      endMorph();
+      const layerEl = layerRef.current;
+      if (layerEl == null || typeof menu.animate !== 'function') {
+        return;
+      }
+      const rect = menu.getBoundingClientRect();
+      const box: LiftBox = {
+        x: rect.left,
+        y: rect.top,
+        width: rect.width,
+        height: rect.height,
+      };
+      if (box.width <= 0 || box.height <= 0) {
+        return;
+      }
+      const style = getComputedStyle(menu);
+      const radius = Number.parseFloat(style.borderTopLeftRadius) || 0;
+      const reduced = prefersReducedMotion();
+      const morph = menuMorph(box, press, {reduced});
+      const centerX = box.x + box.width / 2;
+      const centerY = box.y + box.height / 2;
+      // The glass: a blob in the lift layer wearing the menu's own background,
+      // radius and shadow, scaled on the compositor from the press point and
+      // fading in on the content's progress.
+      const glass = menu.ownerDocument.createElement('span');
+      glass.setAttribute('data-astryx-context-menu-glass', '');
+      Object.assign(glass.style, {
+        position: 'fixed',
+        left: `${box.x}px`,
+        top: `${box.y}px`,
+        width: `${box.width}px`,
+        height: `${box.height}px`,
+        borderRadius: style.borderRadius,
+        backgroundColor: style.backgroundColor,
+        boxShadow: style.boxShadow,
+        pointerEvents: 'none',
+      });
+      layerEl.append(glass);
+      const start = morph.at(0);
+      const at = glass.ownerDocument.timeline?.currentTime;
+      const startAt = typeof at === 'number' ? at : performance.now();
+      const glassAnimator = createAnimator(glass);
+      // The glass fades in with the content: UIKit's blob starts as the view
+      // under the finger (a copy of it) and cross-fades into the menu.
+      glassAnimator.set({
+        x: start.centerX - centerX,
+        y: start.centerY - centerY,
+        scaleX: start.width / box.width,
+        scaleY: start.height / box.height,
+        opacity: 0,
+      });
+      glassAnimator.animate(
+        {x: 0, y: 0, opacity: 1},
+        {spring: reduced ? springs.menuReducedMotion : LIFT.morphSpring},
+        {reducedMotion: 'keep', at: startAt},
+      );
+      glassAnimator.animate(
+        {scaleX: 1, scaleY: 1},
+        {spring: reduced ? springs.menuReducedMotion : LIFT.morphSizeSpring},
+        {reducedMotion: 'keep', at: startAt + LIFT.morphSizeDelayMs},
+      );
+      // The menu itself goes bare (the blob is its glass) and unclipped by its
+      // own scroll box; its content follows the blob's centre, scaled, faded in
+      // from a blur and clipped to the blob.
+      menu.style.backgroundColor = 'transparent';
+      menu.style.boxShadow = 'none';
+      menu.style.overflow = 'visible';
+      const blur = LIFT.menuEntranceBlur;
+      const {keyframes, duration} = sampleKeyframes(morph.duration, t => {
+        const m = morph.at(t);
+        const scale = m.contentScale;
+        const insetX = box.width / 2 - m.width / (2 * scale);
+        const insetY = box.height / 2 - m.height / (2 * scale);
+        const radiusX = (radius * m.width) / box.width / scale;
+        const radiusY = (radius * m.height) / box.height / scale;
+        return {
+          transform: `translate(${(m.centerX - centerX).toFixed(3)}px, ${(m.centerY - centerY).toFixed(3)}px) scale(${scale.toFixed(5)})`,
+          clipPath: `inset(${insetY.toFixed(3)}px ${insetX.toFixed(3)}px round ${radiusX.toFixed(3)}px / ${radiusY.toFixed(3)}px)`,
+          opacity: String(Math.min(Math.max(m.fade, 0), 1)),
+          filter: `blur(${(blur * Math.max(1 - m.fade, 0)).toFixed(3)}px)`,
+        };
+      });
+      const animation = menu.animate(keyframes, {duration});
+      const entry = {menu, glass, glassAnimator, animation};
+      morphRef.current = entry;
+      animation.finished.then(
+        () => {
+          if (morphRef.current === entry) {
+            endMorph();
+          }
+        },
+        () => {},
+      );
+    },
+    [endMorph],
+  );
 
   const layer = (
     <span
@@ -409,5 +502,5 @@ export function useContextMenuLift(
     </span>
   );
 
-  return {layer, lift, drop};
+  return {layer, lift, morphMenu, drop};
 }

@@ -3,9 +3,9 @@
 /**
  * @file contextMenuLiftGeometry.ts
  * @input The context-menu constants
- * @output Exports liftScale, liftedBox and menuPlacement: where UIKit's
- *   lifted preview lands when the menu shows, and where the menu sits
- *   against it
+ * @output Exports liftScale, liftedBox, menuPlacement and menuMorph: where
+ *   UIKit's lifted preview lands when the menu shows, where the menu sits
+ *   against it, and how the menu's glass grows out of the finger
  * @position The geometry of ContextMenu's lift presentation (touch);
  *   ContextMenu.tsx renders it
  *
@@ -19,7 +19,8 @@
  * /packages/core/src/ContextMenu/contextMenuLiftGeometry.test.ts
  */
 
-import {contextMenu} from '../motion/uikit';
+import {SETTLING_EPSILON, solveSpring, toSpring} from '../motion/spring';
+import {contextMenu, springs} from '../motion/uikit';
 
 /** A box in client CSS px. */
 export interface LiftBox {
@@ -113,4 +114,77 @@ export function menuPlacement(
         ? 'end'
         : 'center';
   return {side, alignment};
+}
+
+/** The menu's glass and content at one moment of its entrance. */
+export interface MenuMorphState {
+  /** The glass's centre and size, client px. */
+  readonly centerX: number;
+  readonly centerY: number;
+  readonly width: number;
+  readonly height: number;
+  /** The content's scale, relative to its own size. */
+  readonly contentScale: number;
+  /** The content's progress in (opacity, and its blur's complement). */
+  readonly fade: number;
+}
+
+/** The menu's entrance, from the press point to its frame. */
+export interface MenuMorph {
+  /** Seconds until every part has settled. */
+  readonly duration: number;
+  /** The state `t` seconds in. */
+  at(t: number): MenuMorphState;
+}
+
+/**
+ * The menu's entrance out of the finger: the glass starts as
+ * `contextMenu.lift.morphStart` at `press` and grows into `menu`, its centre
+ * on `morphSpring` and its size on `morphSizeSpring` (`morphSizeDelayMs`
+ * later); the content follows
+ * the centre, scaled from `morphContentScale` and faded in on
+ * `morphSpring`. Reduced Motion takes `springs.menuReducedMotion`.
+ */
+export function menuMorph(
+  menu: LiftBox,
+  press: {readonly x: number; readonly y: number},
+  {reduced = false}: {reduced?: boolean} = {},
+): MenuMorph {
+  const {
+    morphSpring,
+    morphSizeSpring,
+    morphSizeDelayMs,
+    morphStart,
+    morphContentScale,
+  } = contextMenu.lift;
+  const delay = morphSizeDelayMs / 1000;
+  const move = solveSpring(
+    toSpring(reduced ? springs.menuReducedMotion : morphSpring),
+    {from: 0, to: 1},
+  );
+  const grow = solveSpring(
+    toSpring(reduced ? springs.menuReducedMotion : morphSizeSpring),
+    {from: 0, to: 1},
+  );
+  const duration = Math.max(
+    move.settleTime(SETTLING_EPSILON),
+    delay + grow.settleTime(SETTLING_EPSILON),
+  );
+  const centerX = menu.x + menu.width / 2;
+  const centerY = menu.y + menu.height / 2;
+  return {
+    duration,
+    at(t) {
+      const p = t >= duration ? 1 : move.value(Math.max(t, 0));
+      const s = t >= duration ? 1 : grow.value(Math.max(t - delay, 0));
+      return {
+        centerX: press.x + (centerX - press.x) * p,
+        centerY: press.y + (centerY - press.y) * p,
+        width: morphStart.width + (menu.width - morphStart.width) * s,
+        height: morphStart.height + (menu.height - morphStart.height) * s,
+        contentScale: morphContentScale + (1 - morphContentScale) * p,
+        fade: p,
+      };
+    },
+  };
 }

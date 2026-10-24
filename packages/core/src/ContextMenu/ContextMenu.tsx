@@ -97,7 +97,6 @@ import {contextMenu} from '../motion/uikit';
 import {ContextMenuPressRecognizer} from './contextMenuPress';
 import {useContextMenuPressFeedback} from './contextMenuPressFeedback';
 import {
-  playMenuEntrance,
   useContextMenuLift,
   type ContextMenuLiftResult,
 } from './ContextMenuLift';
@@ -654,8 +653,7 @@ export function ContextMenu({
 
   // Opens the menu beside a lifted preview: the cursor anchor becomes the
   // preview's box (in the trigger's coordinates; the trigger is back at its
-  // size, under the preview), the layer places the menu against it, and the
-  // menu's content enters from a blur.
+  // size, under the preview), and the layer places the menu against it.
   const openLifted = useCallback(
     ({source, lifted}: ContextMenuLiftResult) => {
       const x = lifted.x - source.x;
@@ -676,13 +674,9 @@ export function ContextMenu({
           ? document.activeElement
           : triggerRef.current;
       layer.show();
-      const menu = listRef.current?.closest<HTMLElement>('[popover]');
-      if (menu != null) {
-        playMenuEntrance(menu);
-      }
       requestAnimationFrame(() => focusFirst());
     },
-    [layer, focusFirst, listRef],
+    [layer, focusFirst],
   );
 
   const handleContextMenu = useCallback(
@@ -790,6 +784,14 @@ export function ContextMenu({
             flushSync(() => {
               setLiftPlacement(placement);
             });
+          }
+          // Its glass grows out of the finger, now that its frame is known.
+          const list = listRef.current;
+          if (list != null) {
+            liftRef.current.morphMenu(
+              list,
+              recognizer.press ?? recognizer.location(),
+            );
           }
           return;
         }

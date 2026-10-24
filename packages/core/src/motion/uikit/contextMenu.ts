@@ -239,5 +239,44 @@ export const contextMenu = {
      *   2026: 4 → 0 (the outgoing view's 0 → 4 with it)
      */
     menuEntranceBlur: 4,
+    /**
+     * The menu's glass grows out of the finger: it starts as a blob this
+     * size (pt) centred on the press point. Its centre then moves on
+     * `morphSpring` and its size grows on `morphSizeSpring`,
+     * `morphSizeDelayMs` later, to the menu's frame, while the content,
+     * clipped to it, follows its centre.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+     *   iPhone 17 Pro, the morph container's frame per frame for a 3-action
+     *   menu with the card held in the middle, at the left and right edges
+     *   and at the bottom, Oct 23 2026: rms 0.35–0.47 pt per placement (max
+     *   2.3 pt)
+     * @source GUESS — one start for every menu size
+     * @measure M-CM10
+     */
+    morphStart: {width: 62, height: 52},
+    /**
+     * The glass's size spring.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+     *   iPhone 17 Pro, the morph container's width and height per frame,
+     *   Oct 23 2026: (0.315, 0.77), rms 0.48 pt over two placements; it
+     *   overshoots to 253.9 × 147.7 pt (+268 ms) for a 250 × 146 menu
+     */
+    morphSizeSpring: {response: 0.315, dampingRatio: 0.77},
+    /**
+     * How long after its centre starts moving the glass starts to grow, ms.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+     *   iPhone 17 Pro, the morph container's frame per frame, Oct 23 2026:
+     *   the size's least-squares start trails the centre's by 8.5 ms in both
+     *   placements fitted
+     */
+    morphSizeDelayMs: 8.5,
+    /**
+     * The content's scale as it enters, relative to its size; it reaches 1
+     * on `morphSpring`.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+     *   iPhone 17 Pro, the incoming morph view's relative scale per frame,
+     *   Oct 23 2026: 0.823 → 1, fit (0.30, 0.80), rms 0.0001
+     */
+    morphContentScale: 0.823,
   },
 } as const;

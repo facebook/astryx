@@ -14,7 +14,13 @@
 import {describe, expect, it} from 'vitest';
 import {solveSpring, toSpring} from '../motion/spring';
 import {contextMenu, springs} from '../motion/uikit';
-import {liftedBox, liftScale, menuPlacement} from './contextMenuLiftGeometry';
+import {
+  liftedBox,
+  liftScale,
+  menuMorph,
+  menuPlacement,
+} from './contextMenuLiftGeometry';
+import {UIKIT_MORPH_CASES} from './__tests__/uikitMorphFrames';
 import {
   UIKIT_LIFT_FRAMES,
   UIKIT_LIFT_PREVIEW_FROM,
@@ -163,5 +169,54 @@ describe('the lift’s springs against UIKit’s measured frames (iOS 26.2, 200 
     expect(Math.max(...opacity)).toBeLessThan(0.03);
     expect(rms(blur)).toBeLessThan(0.03);
     expect(Math.max(...blur)).toBeLessThan(0.12);
+  });
+});
+
+describe('menuMorph against UIKit’s glass (iOS 26.2, 3-action menu)', () => {
+  const where: Record<keyof typeof UIKIT_MORPH_CASES, string> = {
+    middle: 'in the middle',
+    leftEdge: 'at the left edge',
+    rightEdge: 'at the right edge',
+    bottom: 'at the bottom, its menu above',
+  };
+  for (const [name, uikit] of Object.entries(UIKIT_MORPH_CASES)) {
+    it(`grows out of the press point into the menu, held ${where[name as keyof typeof where]} (rms < 0.6 pt)`, () => {
+      const morph = menuMorph(uikit.menu, uikit.press);
+      const errors = uikit.frames.flatMap(([ms, x, y, width, height]) => {
+        const m = morph.at((ms - uikit.startMs) / 1000);
+        return [
+          m.centerX - x,
+          m.centerY - y,
+          m.width - width,
+          m.height - height,
+        ].map(Math.abs);
+      });
+      const rms = Math.sqrt(
+        errors.reduce((sum, e) => sum + e * e, 0) / errors.length,
+      );
+      expect(rms).toBeLessThan(0.6);
+      expect(Math.max(...errors)).toBeLessThan(2.5);
+    });
+  }
+
+  it('starts as the morph blob at the press point and ends as the menu', () => {
+    const {menu, press} = UIKIT_MORPH_CASES.middle;
+    const morph = menuMorph(menu, press);
+    expect(morph.at(0)).toMatchObject({
+      centerX: press.x,
+      centerY: press.y,
+      width: contextMenu.lift.morphStart.width,
+      height: contextMenu.lift.morphStart.height,
+      contentScale: contextMenu.lift.morphContentScale,
+      fade: 0,
+    });
+    expect(morph.at(morph.duration)).toMatchObject({
+      centerX: menu.x + menu.width / 2,
+      centerY: menu.y + menu.height / 2,
+      width: menu.width,
+      height: menu.height,
+      contentScale: 1,
+      fade: 1,
+    });
   });
 });

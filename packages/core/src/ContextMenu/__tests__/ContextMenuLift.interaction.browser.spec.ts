@@ -12,11 +12,14 @@
  *   centered; a card near the bottom gets its menu above; a card at the left
  *   edge lifts 16 px in with its menu flush; the copy grows on from the
  *   press, and the backdrop fades in, on springs.contextMenuLift frame by
- *   frame; the menu enters from a blur on morphSpring; closing returns the
- *   copy and clears the backdrop; the copy keeps growing on every frame
- *   through a blocked main thread; under Reduce Motion the card does not grow
- *   and the copy lifts on a critically damped spring; a storyboard of the
- *   lift
+ *   frame; the menu's glass grows out of the finger with its content
+ *   following from a blur, then settles as the menu itself, also at the
+ *   right edge and at the bottom, and keeps growing through a blocked main
+ *   thread (its content's clip: the iOS simulator recording); under Reduce Motion it grows without overshoot; a
+ *   close mid-morph ends it at once; closing returns the copy and clears the
+ *   backdrop; the copy keeps growing on every frame through a blocked main
+ *   thread; under Reduce Motion the card does not grow and the copy lifts on
+ *   a critically damped spring; a storyboard of the lift
  * @position Interaction specs of packages/core/src/ContextMenu, beside
  *   ContextMenuLongPress.interaction.browser.spec.ts (the press timeline)
  */
@@ -352,45 +355,74 @@ test('the copy grows on from the press, and the backdrop fades in, on springs.co
   expect(Math.max(...samples.map(s => s.scale))).toBeGreaterThan(1.13);
 });
 
-test('the menu enters from a blur, on morphSpring, and settles sharp', async ({
+test('the menu’s glass grows out of the finger, its content following from a blur, and settles as the menu itself', async ({
   page,
 }) => {
   const {driver, center} = await openLiftStory(page);
-  const playing = driver.play(tap(center, {holdMs: menuDisplayMs + 600}));
+  const playing = driver.play(tap(center, {holdMs: menuDisplayMs + 900}));
   await expect(page.getByRole('menu', {name: 'Photo actions'})).toBeVisible();
   await holdAnimations(page);
   const read = async (t: number) => {
     await seekAnimations(page, t);
     return page.evaluate(() => {
-      const popover = document
-        .querySelector('[role="menu"]')
-        ?.closest('[popover]');
-      if (popover == null) {
+      const list = document.querySelector('[role="menu"]');
+      const glass = document.querySelector('[data-astryx-context-menu-glass]');
+      if (list == null) {
         return null;
       }
-      const style = getComputedStyle(popover);
+      const style = getComputedStyle(list);
       const blur = /blur\(([\d.]+)px\)/u.exec(style.filter);
+      const box = glass?.getBoundingClientRect();
       return {
         opacity: Number(style.opacity),
         blur: blur == null ? 0 : Number(blur[1]),
+        glass:
+          box == null || glass == null
+            ? null
+            : {
+                x: box.x + box.width / 2,
+                y: box.y + box.height / 2,
+                width: box.width,
+                height: box.height,
+                opacity: Number(getComputedStyle(glass).opacity),
+              },
       };
     });
   };
   const start = await read(0);
   const middle = await read(100);
-  const end = await read(600);
   await releaseAnimations(page);
+  // Settled: the glass is gone and the menu wears its own again.
+  await page.waitForTimeout(700);
+  const settled = await page.evaluate(() => {
+    const list = document.querySelector('[role="menu"]');
+    return {
+      glass: document.querySelector('[data-astryx-context-menu-glass]') != null,
+      inline: list?.getAttribute('style') ?? '',
+      opacity: list == null ? null : getComputedStyle(list).opacity,
+    };
+  });
   await playing;
   const curve = solveSpring(toSpring(contextMenu.lift.morphSpring), {
     from: 0,
     to: 1,
   });
-  const detail = JSON.stringify({start, middle, end});
+  const detail = JSON.stringify({center, start, middle, settled});
+  const {morphStart, menuEntranceBlur} = contextMenu.lift;
+  // A blob the morph's start size, at the finger.
+  expect(start?.glass?.x, detail).toBeCloseTo(center.x, 0);
+  expect(start?.glass?.y, detail).toBeCloseTo(center.y, 0);
+  expect(start?.glass?.width, detail).toBeCloseTo(morphStart.width, 0);
+  expect(start?.glass?.height, detail).toBeCloseTo(morphStart.height, 0);
+  // It starts clear, as UIKit's starts as the view under the finger.
+  expect(start?.glass?.opacity, detail).toBeCloseTo(0, 2);
+  expect(middle?.glass?.opacity, detail).toBeCloseTo(curve.value(0.1), 1);
   expect(start?.opacity, detail).toBeCloseTo(0, 2);
-  expect(start?.blur, detail).toBeCloseTo(contextMenu.lift.menuEntranceBlur, 1);
+  expect(start?.blur, detail).toBeCloseTo(menuEntranceBlur, 1);
   expect(middle?.opacity, detail).toBeCloseTo(curve.value(0.1), 1);
-  expect(end?.opacity, detail).toBeCloseTo(1, 2);
-  expect(end?.blur, detail).toBeCloseTo(0, 1);
+  expect(settled.glass, detail).toBe(false);
+  expect(settled.inline, detail).not.toMatch(/background|box-shadow|overflow/u);
+  expect(settled.opacity, detail).toBe('1');
 });
 
 test('closing returns the copy to the card and clears the backdrop', async ({
@@ -445,7 +477,7 @@ test('a tap on the backdrop closes the menu and reaches nothing under it', async
   expect(clicked.filter(target => target !== 'backdrop')).toEqual([]);
 });
 
-test('outside the iOS idiom (Chromium’s own finger, as on Android) nothing lifts: the menu opens at 500 ms under the finger, with no copy, dim or shadow', async ({
+test('outside the iOS idiom (Chromium’s own finger, as on Android) nothing lifts: the menu opens at 500 ms under the finger, with no copy, dim, shadow or glass', async ({
   page,
   browserName,
 }) => {
@@ -468,12 +500,18 @@ test('outside the iOS idiom (Chromium’s own finger, as on Android) nothing lif
     layer: document.querySelector('[data-astryx-context-menu-lift]') != null,
     preview:
       document.querySelector('[data-astryx-context-menu-preview]') != null,
+    glass: document.querySelector('[data-astryx-context-menu-glass]') != null,
     cardScale: getComputedStyle(
       document.querySelector('[data-testid="touch-context-menu"]') as Element,
     ).scale,
   }));
   const menuBox = await menu.boundingBox();
-  expect(state).toEqual({layer: false, preview: false, cardScale: 'none'});
+  expect(state).toEqual({
+    layer: false,
+    preview: false,
+    glass: false,
+    cardScale: 'none',
+  });
   // Under the finger: the menu opens at the press point.
   expect(menuBox).not.toBeNull();
   expect(Math.abs((menuBox?.x ?? 0) - center.x)).toBeLessThan(24);
@@ -581,6 +619,222 @@ test('under Reduce Motion the card does not grow under the finger, and the copy 
       0.003,
     );
   }
+});
+
+/** The glass and the menu's frame, now (client px; the glass by its centre). */
+async function readMorph(page: Page) {
+  return page.evaluate(() => {
+    const glass = document
+      .querySelector('[data-astryx-context-menu-glass]')
+      ?.getBoundingClientRect();
+    const menu = document
+      .querySelector('[role="menu"]')
+      ?.closest('[popover]')
+      ?.getBoundingClientRect();
+    return {
+      glass:
+        glass == null
+          ? null
+          : {
+              x: glass.x + glass.width / 2,
+              y: glass.y + glass.height / 2,
+              width: glass.width,
+              height: glass.height,
+            },
+      menu:
+        menu == null
+          ? null
+          : {x: menu.x, y: menu.y, width: menu.width, height: menu.height},
+    };
+  });
+}
+
+for (const [where, moveCard] of [
+  [
+    'at the right edge, the glass grows out of the finger into a menu flush with the copy',
+    (box: Box, viewport: {width: number; height: number}) => ({
+      dx: viewport.width - 4 - (box.x + box.width),
+      dy: 0,
+    }),
+  ],
+  [
+    'at the bottom, the glass grows out of the finger into a menu above the copy',
+    (box: Box, viewport: {width: number; height: number}) => ({
+      dx: 0,
+      dy: viewport.height - 10 - (box.y + box.height),
+    }),
+  ],
+] as const) {
+  test(`held ${where}`, async ({page}) => {
+    const story = await openLiftStory(page, moveCard);
+    const playing = story.driver.play(
+      tap(story.center, {holdMs: menuDisplayMs + 900}),
+    );
+    await expect(page.getByRole('menu', {name: 'Photo actions'})).toBeVisible();
+    await holdAnimations(page);
+    await seekAnimations(page, 0);
+    const start = await readMorph(page);
+    await releaseAnimations(page);
+    await playing;
+    await page.waitForTimeout(700);
+    const end = await readMorph(page);
+    const lift = await readLift(page);
+    const viewport = page.viewportSize();
+    const detail = JSON.stringify({center: story.center, start, end, lift});
+    const {morphStart} = contextMenu.lift;
+    // A blob the morph's start size, at the finger.
+    expect(start.glass?.x, detail).toBeCloseTo(story.center.x, 0);
+    expect(start.glass?.y, detail).toBeCloseTo(story.center.y, 0);
+    expect(start.glass?.width, detail).toBeCloseTo(morphStart.width, 0);
+    expect(start.glass?.height, detail).toBeCloseTo(morphStart.height, 0);
+    // Settled: the glass is gone, the menu sits where the placement says.
+    expect(end.glass, detail).toBeNull();
+    const {preview} = lift;
+    if (end.menu == null || preview == null || viewport == null) {
+      throw new Error(detail);
+    }
+    if (where.startsWith('at the right edge')) {
+      expect(preview.x + preview.width, detail).toBeCloseTo(
+        viewport.width - screenInset,
+        0,
+      );
+      expect(end.menu.x + end.menu.width, detail).toBeCloseTo(
+        preview.x + preview.width,
+        0,
+      );
+    } else {
+      expect(end.menu.y + end.menu.height, detail).toBeCloseTo(
+        preview.y - menuGap,
+        0,
+      );
+    }
+  });
+}
+
+test('the glass keeps growing on every frame while the main thread is blocked (its content’s clip: the iOS simulator recording)', async ({
+  page,
+  browserName,
+}, testInfo) => {
+  // The glass moves on transforms, which Chromium composites; its content is
+  // clipped to it by an animated clip-path, which WebKit on iOS composites
+  // (the simulator recording: it keeps moving through a 300 ms block) and
+  // Chromium cannot, one reason the morph is the iOS idiom's only. Linux
+  // WebKit's compositor stalls with its main thread, so it proves neither.
+  test.skip(
+    browserName !== 'chromium',
+    'Linux WebKit’s compositor stalls with its main thread; iOS Safari is the simulator recording',
+  );
+  const {driver, center} = await openLiftStory(page);
+  // The glass in the marker colour, held opaque (it fades in) so the tracker
+  // finds it from the menu's moment; its size animation is untouched.
+  await markSelector(page, '[data-astryx-context-menu-glass]');
+  await page.evaluate(() => {
+    const style = document.createElement('style');
+    style.textContent =
+      '[data-astryx-context-menu-glass]{opacity:1 !important;}';
+    document.head.append(style);
+  });
+  // Blocked from 20 ms after the menu's moment, while the glass grows.
+  const busyWindow = await blockAfterTouch(page, menuDisplayMs + 20, 300);
+  const cast = await startScreencast(page);
+  await driver.play(tap(center, {holdMs: menuDisplayMs + 900}));
+  const castFrames = await cast.stop();
+  const block = await busyWindow();
+  const glass = await trackMarker(page, castFrames);
+  const proof = busyWindowProof(glass, block, {
+    axis: 'width',
+    settledWithin: 2,
+  });
+  await writeEvidence(
+    'busy-main-thread/contextmenu-morph',
+    {
+      [`${testInfo.project.name}.json`]: JSON.stringify(
+        {
+          block,
+          proof,
+          frames: glass.map(f => ({
+            t: +(f.t - block.from).toFixed(1),
+            glass: f.box?.width ?? null,
+          })),
+        },
+        null,
+        1,
+      ),
+    },
+    testInfo,
+  );
+  const film = await castStoryboard(page, castFrames, {
+    name: 'contextmenu-morph-busy-main-thread',
+    zero: block.from,
+    from: block.from - 40,
+    to: block.to + 40,
+    columns: 8,
+    cellScale: 0.35,
+    data: t => ({glass: glass.find(f => f.t === t)?.box?.width ?? -1}),
+  });
+  await film.write(testInfo, {block});
+  expect(proof.medianFrameMs).toBeLessThan(20);
+  expect(proof.frames).toBeGreaterThanOrEqual(proof.expectedFrames - 2);
+  expect(proof.monotonic).toBe(true);
+  expect(proof.longestStallMs).toBeLessThan(4 * (1000 / 60) + 4);
+  expect((proof.last ?? 0) - (proof.first ?? 0)).toBeGreaterThanOrEqual(20);
+});
+
+test('under Reduce Motion the glass grows on a critically damped spring, never past the menu', async ({
+  page,
+}) => {
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  const {driver, center} = await openLiftStory(page);
+  const playing = driver.play(tap(center, {holdMs: menuDisplayMs + 900}));
+  await expect(page.getByRole('menu', {name: 'Photo actions'})).toBeVisible();
+  await holdAnimations(page);
+  const widths: number[] = [];
+  for (const t of timeline(600)) {
+    await seekAnimations(page, t);
+    widths.push((await readMorph(page)).glass?.width ?? Number.NaN);
+  }
+  await releaseAnimations(page);
+  await playing;
+  await page.waitForTimeout(700);
+  const menu = (await readMorph(page)).menu;
+  const detail = JSON.stringify({widths, menu});
+  expect(widths[0], detail).toBeCloseTo(contextMenu.lift.morphStart.width, 0);
+  expect(Math.max(...widths), detail).toBeLessThanOrEqual(
+    (menu?.width ?? 0) + 0.5,
+  );
+  expect(
+    widths.every((w, i) => i === 0 || w >= widths[i - 1] - 0.05),
+    detail,
+  ).toBe(true);
+});
+
+test('a close during the morph ends it at once: the glass goes, the menu keeps no borrowed style, and the copy returns', async ({
+  page,
+}) => {
+  const story = await openLiftStory(page);
+  // The finger lifts just after the menu shows (it stays open).
+  await story.driver.play(tap(story.center, {holdMs: menuDisplayMs + 40}));
+  await expect(page.locator('[data-astryx-context-menu-glass]')).toBeAttached();
+  const mid = await readMorph(page);
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('menu', {name: 'Photo actions'})).toBeHidden();
+  const closed = await page.evaluate(() => ({
+    glass: document.querySelectorAll('[data-astryx-context-menu-glass]').length,
+    style: document.querySelector('[role="menu"]')?.getAttribute('style') ?? '',
+  }));
+  await page.waitForTimeout(900);
+  const after = await readLift(page);
+  const detail = JSON.stringify({mid, closed, after});
+  // Still mid-morph when it closed: the glass smaller than the menu.
+  expect(mid.glass?.width ?? Infinity, detail).toBeLessThan(
+    (mid.menu?.width ?? 0) - 1,
+  );
+  expect(closed.glass, detail).toBe(0);
+  expect(closed.style, detail).not.toMatch(
+    /background|box-shadow|overflow|clip-path/u,
+  );
+  expect(after.preview, detail).toBeNull();
+  expect(after.layerOpen, detail).toBe(false);
 });
 
 test(
