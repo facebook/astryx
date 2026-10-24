@@ -406,6 +406,10 @@ export function ToastViewport({
   const addToast = useCallback(
     (entry: ToastEntry) => {
       const {uniqueID, collisionBehavior = 'overwrite'} = entry.options;
+      // A toast that is leaving no longer holds its uniqueID: it finishes its
+      // exit in its own row, and the new toast is shown as if it were gone.
+      const holdsUniqueID = (t: ToastEntry) =>
+        t.options.uniqueID === uniqueID && !exitingIdsRef.current.has(t.id);
       // Resolve an ignored collision synchronously against the committed list
       // so a suppressed toast is neither shown nor announced. The remaining
       // announce + setToasts run outside the setToasts updater, which React may
@@ -413,7 +417,7 @@ export function ToastViewport({
       if (
         uniqueID &&
         collisionBehavior === 'ignore' &&
-        toastsRef.current.some(t => t.options.uniqueID === uniqueID)
+        toastsRef.current.some(holdsUniqueID)
       ) {
         return;
       }
@@ -429,10 +433,10 @@ export function ToastViewport({
       // every silent exit with one rule rather than one branch per path.
       setToasts(prev => {
         if (uniqueID) {
-          const existing = prev.find(t => t.options.uniqueID === uniqueID);
+          const existing = prev.find(holdsUniqueID);
           if (existing) {
             // An ignored collision already returned above; overwrite in place.
-            return prev.map(t => (t.options.uniqueID === uniqueID ? entry : t));
+            return prev.map(t => (t === existing ? entry : t));
           }
         }
         return [...prev, entry];
