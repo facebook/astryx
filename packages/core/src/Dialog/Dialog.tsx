@@ -519,11 +519,19 @@ export function Dialog({
   // own title on mount — would otherwise move document.activeElement inside
   // the dialog before the capture ran, and closing would then restore focus
   // to a detached node, stranding the user's focus on <body>.
+  //
+  // Only the closed-to-open edge captures. StrictMode re-runs this effect after
+  // the commit's passive effects, by which time that same descendant has
+  // already focused its title, so capturing on every run would take the title
+  // as the opener. The ref survives that re-run; it starts false so a dialog
+  // first mounted open still captures on its first commit.
+  const wasOpenRef = useRef(false);
   useLayoutEffect(() => {
-    if (isInline || !isOpen) {
-      return;
+    const isOpenNow = !isInline && isOpen;
+    if (isOpenNow && !wasOpenRef.current) {
+      triggerElementRef.current = document.activeElement as HTMLElement | null;
     }
-    triggerElementRef.current = document.activeElement as HTMLElement | null;
+    wasOpenRef.current = isOpenNow;
   }, [isOpen, isInline]);
 
   // Derive dismissal behavior from purpose
