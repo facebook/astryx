@@ -131,8 +131,8 @@ the only component record in the AppShell root.
   `spec:AST-012` and `architecture:theme-application`.
 - The `useAppShellMobile` hook's public contract — an uncontracted module; this
   record covers only the values AppShell provides (FR13).
-- Navigation landmark names inside the TopNav and SideNav slots — owned by those
-  components and their `label` props.
+- Navigation landmark names inside the TopNav and SideNav slots — owned by
+  TopNav (its `label` prop) and SideNav (its translated name).
 - The page heading — owned by the caller; AppShell renders no heading.
 
 ## Public concepts
