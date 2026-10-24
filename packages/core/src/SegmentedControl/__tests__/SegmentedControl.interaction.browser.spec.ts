@@ -270,25 +270,34 @@ test('a tap slides the selected surface to the new segment on UIKit’s spring, 
   const before = await control.boxes();
   const from = boxOf(before, 'grid');
   const to = boxOf(before, 'table');
-  // Hold the clock still while the first part of the slide is sampled.
+  // Hold the clock still, and each of the lens's animations at its birth:
+  // the lift's curves end with the hang's descent, sooner than a slow engine
+  // reaches a hold after the fact.
   await installTimerGate(page);
+  await holdLensAnimationsAtBirth(page);
   await control.tapSegment('table');
-  // The value commits at the lift, as UISegmentedControl's valueChanged does.
-  await expect(control.segment('table')).toHaveAttribute(
-    'aria-checked',
-    'true',
-  );
-  await waitForAnimation(control.proxy);
   await freezeTimers(page);
-  const held = await holdAnimations(page, control.proxy);
+  const held = await page.evaluate(() => {
+    (window as unknown as {__restoreAnimate: () => void}).__restoreAnimate();
+    return (
+      window as unknown as {__harnessHeld: Animation[]}
+    ).__harnessHeld.map(
+      a => (a.effect as KeyframeEffect).getComputedTiming().easing,
+    );
+  });
   // Baked curves: the lens's translate and scale, and its shadow's opacity.
-  expect(held.map(a => a.easing)).toEqual(['linear', 'linear', 'linear']);
+  expect(held).toEqual(['linear', 'linear', 'linear']);
   const samples = await sampleProxy(
     control.proxy,
     timeline(TAP_LIFT_HANG_MS - 20),
   );
   await releaseAnimations(page);
   await thawTimers(page);
+  // The value commits at the lift, as UISegmentedControl's valueChanged does.
+  await expect(control.segment('table')).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
   expect(samples.every(s => s.visible)).toBe(true);
   // The center travels on the slide spring...
   const center = compareCurve(
@@ -1275,6 +1284,31 @@ test('the track keeps vertical scrolling and takes horizontal drags', async ({
 }) => {
   const control = await openControl(page);
   await expect(control.group).toHaveCSS('touch-action', 'pan-y pinch-zoom');
+});
+
+test('a held finger selects no text on the control; letting go gives selection back', async ({
+  page,
+}) => {
+  const control = await openControl(page);
+  const userSelect = async () =>
+    control.group.evaluate(element => {
+      const style = getComputedStyle(element) as CSSStyleDeclaration & {
+        webkitUserSelect?: string;
+      };
+      return style.userSelect || style.webkitUserSelect;
+    });
+  // At rest the titles are as selectable as anywhere else on the page.
+  const atRest = await userSelect();
+  expect(atRest).not.toBe('none');
+  const playing = control.driver.play(
+    touchTap(await clientCenter(control, 'list'), {holdMs: 600}),
+  );
+  // While the finger is down the gesture host locks selection on the track
+  // (the callout beside it exists only in iOS Safari: the simulator
+  // recordings cover it).
+  await expect.poll(userSelect).toBe('none');
+  await playing;
+  await expect.poll(userSelect).toBe(atRest);
 });
 
 /** Makes the story page scroll: the control sits in a scroller. */

@@ -34,6 +34,10 @@
  * already committed (a no-op). Mouse, keyboard and assistive technology keep
  * the click.
  *
+ * While a finger is down, the gesture host turns text selection and the
+ * touch callout off on the track (`preventsTextSelection`), so a hold lifts
+ * the lens and never starts a selection; a mouse keeps desktop selection.
+ *
  * SYNC: When modified, update:
  * - /packages/core/src/SegmentedControl/useSegmentedSelectionMotion.ts
  * - /packages/core/src/SegmentedControl/__tests__/SegmentedControl.interaction.browser.spec.ts
@@ -115,6 +119,10 @@ export function useSegmentedTouchTracking(
         name: 'segmented-control-drag',
         direction: 'horizontal',
         cancelsTouchesInView: false,
+        // No title is selectable under a held finger, as in UIKit: the host
+        // turns text selection and the callout off on the track while a
+        // finger is down (the press tracker's element gets the same lock).
+        preventsTextSelection: true,
       }),
     recognizer => {
       if (recognizer.state === 'began' || recognizer.state === 'changed') {

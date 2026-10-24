@@ -3,9 +3,11 @@
 /**
  * @file SegmentedWidth.a11y.chromium.spec.ts
  * @input The `Core/SegmentedControl` Default story in a built Storybook, real
- *   clicks (desktop) and taps (phone)
+ *   clicks (desktop) and taps (phone); titles stay selectable at rest
+ *   everywhere
  * @output Real-engine proof that selecting a segment never moves or resizes
- *   any segment, and that assistive technology still reads each title once
+ *   any segment, that assistive technology still reads each title once, and
+ *   that titles stay selectable at rest
  * @position Run with `pnpm test:a11y-contract`. Layout layer of
  *   SegmentedControlItem's title twin (jsdom has no layout); the jsdom layer is
  *   SegmentedControl.test.tsx.
@@ -16,6 +18,7 @@
  */
 
 import {expect, test} from '@playwright/test';
+import {emulateIosWebKit} from './iosWebKit';
 import {
   DEFAULT_STORYBOOK_DIR,
   serveStorybook,
@@ -45,6 +48,36 @@ const CONTEXTS = {
     hasTouch: true,
   },
 } as const;
+
+test('titles stay selectable at rest: on a desktop, on Android and on iOS', async ({
+  browser,
+}) => {
+  const selectable = async (
+    options: (typeof CONTEXTS)[keyof typeof CONTEXTS],
+    {ios = false}: {ios?: boolean} = {},
+  ) => {
+    const context = await browser.newContext(options);
+    if (ios) {
+      await emulateIosWebKit(context);
+    }
+    const page = await context.newPage();
+    await page.goto(
+      `${storybook.origin}/iframe.html?id=${STORY}&viewMode=story`,
+    );
+    const group = page.getByRole('radiogroup', {name: 'View mode'});
+    await expect(group).toBeVisible();
+    const value = await group.evaluate(
+      element => getComputedStyle(element).userSelect,
+    );
+    await context.close();
+    return value;
+  };
+  // Only a held finger locks selection on iOS (the gesture host, while the
+  // finger is down: the interaction spec); at rest nothing changes.
+  expect(await selectable(CONTEXTS.phone, {ios: true})).not.toBe('none');
+  expect(await selectable(CONTEXTS.phone)).not.toBe('none');
+  expect(await selectable(CONTEXTS.desktop)).not.toBe('none');
+});
 
 for (const [name, options] of Object.entries(CONTEXTS)) {
   test(`${name}: selecting a segment never moves or resizes a segment`, async ({
