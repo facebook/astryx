@@ -151,13 +151,13 @@ describe('ComplexSelector', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', {name: 'Fruit blend'}));
+    await user.click(screen.getByRole('combobox', {name: 'Fruit blend'}));
     await user.click(
       screen.getByRole('gridcell', {name: 'Banana Juicy', ...h}),
     );
 
     expect(onChange).toHaveBeenCalledWith({fruit: 'Banana', ripeness: 'Juicy'});
-    expect(screen.getByRole('button', {name: 'Fruit blend'})).toHaveAttribute(
+    expect(screen.getByRole('combobox', {name: 'Fruit blend'})).toHaveAttribute(
       'aria-expanded',
       'false',
     );
@@ -171,7 +171,7 @@ describe('ComplexSelector', () => {
         onChange={() => {}}
       />,
     );
-    await user.click(screen.getByRole('button', {name: 'Fruit blend'}));
+    await user.click(screen.getByRole('combobox', {name: 'Fruit blend'}));
     const popup = document.querySelector('[popover]') as HTMLElement;
     expect(popup).not.toBeNull();
     // The clearance rides the edge facing the trigger and the viewport gutter
@@ -198,7 +198,7 @@ describe('ComplexSelector', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', {name: 'Fruit blend'}));
+    await user.click(screen.getByRole('combobox', {name: 'Fruit blend'}));
     await user.click(
       screen.getByRole('gridcell', {name: 'Banana Crisp', ...h}),
     );
@@ -225,7 +225,7 @@ describe('ComplexSelector', () => {
       </ComplexSelector>,
     );
 
-    const trigger = screen.getByRole('button', {name: 'Fruit blend'});
+    const trigger = screen.getByRole('combobox', {name: 'Fruit blend'});
     await user.click(trigger);
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
@@ -329,7 +329,7 @@ describe('ComplexSelector', () => {
         {() => <button type="button">Apply</button>}
       </ComplexSelector>,
     );
-    const trigger = screen.getByRole('button', {name: 'View options'});
+    const trigger = screen.getByRole('combobox', {name: 'View options'});
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
     expect(handleRef.current?.isOpen()).toBe(false);
 
@@ -375,7 +375,7 @@ describe('ComplexSelector', () => {
         {() => <button type="button">Apply</button>}
       </ComplexSelector>,
     );
-    const trigger = screen.getByRole('button', {name: 'View options'});
+    const trigger = screen.getByRole('combobox', {name: 'View options'});
 
     act(() => {
       handleRef.current?.open();
@@ -394,7 +394,7 @@ describe('ComplexSelector', () => {
         {() => <button type="button">Apply</button>}
       </ComplexSelector>,
     );
-    const trigger = screen.getByRole('button', {name: 'View options'});
+    const trigger = screen.getByRole('combobox', {name: 'View options'});
 
     await user.click(trigger);
     const popover = screen
@@ -425,7 +425,7 @@ describe('ComplexSelector popup theme target', () => {
         {() => <button type="button">Done</button>}
       </ComplexSelector>,
     );
-    await user.click(screen.getByRole('button', {name: 'Fruit blend'}));
+    await user.click(screen.getByRole('combobox', {name: 'Fruit blend'}));
 
     const popup = document.querySelector(
       '.astryx-complex-selector-popup',
@@ -461,7 +461,7 @@ describe('ComplexSelector popup theme target', () => {
         {() => <button type="button">Done</button>}
       </ComplexSelector>,
     );
-    await user.click(screen.getByRole('button', {name: 'Fruit blend'}));
+    await user.click(screen.getByRole('combobox', {name: 'Fruit blend'}));
 
     expect(
       document.querySelector('.astryx-complex-selector-popup'),
@@ -475,7 +475,7 @@ describe('ComplexSelector popup theme target', () => {
         {() => <button type="button">Done</button>}
       </ComplexSelector>,
     );
-    const trigger = screen.getByRole('button', {name: 'Fruit blend'});
+    const trigger = screen.getByRole('combobox', {name: 'Fruit blend'});
     await user.click(trigger);
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
@@ -514,7 +514,7 @@ describe('ComplexSelector trigger render prop', () => {
         {() => <button type="button">Apply</button>}
       </ComplexSelector>,
     );
-    const opener = screen.getByRole('button', {name: 'Options'});
+    const opener = screen.getByRole('combobox', {name: 'View options'});
     expect(opener).toHaveAttribute('aria-haspopup', 'dialog');
     expect(opener).toHaveAttribute('aria-expanded', 'false');
     expect(opener).toHaveAttribute('aria-controls');
@@ -542,7 +542,7 @@ describe('ComplexSelector trigger render prop', () => {
         )}
       </ComplexSelector>,
     );
-    const opener = screen.getByRole('button', {name: 'Options'});
+    const opener = screen.getByRole('combobox', {name: 'View options'});
     await user.click(opener);
     expect(opener).toHaveAttribute('aria-expanded', 'true');
     expect(handleRef.current?.isOpen()).toBe(true);
@@ -576,11 +576,53 @@ describe('ComplexSelector trigger render prop', () => {
         {() => <button type="button">Apply</button>}
       </ComplexSelector>,
     );
-    const opener = screen.getByRole('button', {name: 'Options'});
+    const opener = screen.getByRole('combobox', {name: 'View options'});
     fireEvent.keyDown(opener, {key: 'ArrowDown'});
     await waitFor(() => {
       expect(opener).toHaveAttribute('aria-expanded', 'true');
     });
+  });
+});
+
+describe('ComplexSelector trigger semantics', () => {
+  it('exposes the built-in trigger as a combobox that carries required state', () => {
+    render(
+      <ComplexSelector label="Destination" value={[]} isRequired>
+        {() => <button type="button">Apply</button>}
+      </ComplexSelector>,
+    );
+    const trigger = screen.getByRole('combobox', {name: /Destination/});
+    expect(trigger).toHaveAttribute('aria-required', 'true');
+    expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+  });
+
+  it('spreads the combobox role, required, and disabled state onto a caller control', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    render(
+      <ComplexSelector
+        label="Assignee"
+        value={[]}
+        isRequired
+        isDisabled
+        onClick={onClick}
+        renderTrigger={props => (
+          <button type="button" {...props}>
+            Assign
+          </button>
+        )}>
+        {() => <button type="button">Apply</button>}
+      </ComplexSelector>,
+    );
+    const opener = screen.getByRole('combobox', {name: 'Assignee'});
+    expect(opener).toHaveAttribute('aria-required', 'true');
+    expect(opener).toHaveAttribute('aria-disabled', 'true');
+    expect(opener).not.toHaveAttribute('disabled');
+    await user.click(opener);
+    opener.focus();
+    await user.keyboard('{ArrowDown}');
+    expect(opener).toHaveAttribute('aria-expanded', 'false');
+    expect(onClick).not.toHaveBeenCalled();
   });
 });
 
@@ -598,7 +640,7 @@ describe('ComplexSelector onOpenChange', () => {
         )}
       </ComplexSelector>,
     );
-    return screen.getByRole('button', {name: 'View options'});
+    return screen.getByRole('combobox', {name: 'View options'});
   }
 
   it('reports the open and the close of a trigger toggle', async () => {
@@ -724,7 +766,7 @@ describe('ComplexSelector onOpenChange', () => {
         {() => <button type="button">Apply</button>}
       </ComplexSelector>,
     );
-    const trigger = screen.getByRole('button', {name: 'View options'});
+    const trigger = screen.getByRole('combobox', {name: 'View options'});
 
     act(() => handleRef.current?.close());
     expect(onOpenChange).not.toHaveBeenCalled();
