@@ -38,30 +38,14 @@
  *   gesture only when it is horizontal, and let vertical ones through so
  *   swipe-to-dismiss still works on the calendar.
  *
- * ## Where the line falls, and the gestures that fall past it
+ * ## Where the line falls
  *
- * A thumb swiping sideways travels in an arc, not a line — a "horizontal"
- * swipe routinely drifts 10-30° down, and sometimes further. So an `'inline'`
- * scroller claims generously: vertical has to beat horizontal by
- * {@link VERTICAL_DOMINANCE} before the sheet gets the gesture, which puts the
- * split near 63° rather than at the diagonal.
- *
- * That is wider than the browser will pan. `touch-action: pan-x` pans only
- * while `|dx| > |dy|` and refuses the moment a gesture tips past 45°, so the
- * band between the two lines used to be the worst outcome available: measured
- * on an iPhone 15 profile, a 200px swipe at 45-60° neither paged a month nor
- * dismissed the sheet, because we had told the sheet to keep off a gesture the
- * compositor then declined to pan. Nothing moved at all.
- *
- * {@link OwnScrollGestureOptions.onSwipe} closes that band, and it does not
- * need to know where the browser's line is: if the element's scroll offset
- * never changed across a claimed gesture, the browser declined it, and a
- * swipe that cleared {@link SWIPE_DISTANCE} is reported so the caller can page
- * itself. Native pans keep their momentum and snapping and report nothing.
- *
- * The remaining asymmetry is deliberate and in the direction the scroller
- * needs: it is generous about distance too, paging on a 30px flick where the
- * sheet asks for ~200px of pull before it dismisses.
+ * An `'inline'` owner claims a gesture whose vertical travel is at most
+ * `verticalDominance` times its horizontal travel, decided on the first move
+ * past a few pixels. The month grid passes UIDatePicker's measured split
+ * (`datePicker.calendar.pager.sheetAxisRatio`, 45°): a steeper drag is the
+ * sheet's. The grid itself pans only inside its pager's tighter axis lock,
+ * so a drag between the two moves neither, which is what UIKit does.
  *
  * ## Why native listeners
  *
@@ -71,30 +55,16 @@
  * a listener attached to the element itself, during the real bubble phase,
  * before the event ever reaches the body.
  *
- * Nothing here calls `preventDefault`, so the listeners stay passive and the
- * scroller keeps native momentum, snapping and rubber-banding.
+ * Nothing here calls `preventDefault`, so the listeners stay passive; the
+ * owner's own recognizers decide what the claimed gesture does.
  *
  * SYNC: When modified, update DateInputTouch.test.tsx.
  */
 
-import {useEffect, useRef} from 'react';
-
-/**
- * How much a gesture's vertical travel must exceed its horizontal travel
- * before an `'inline'` scroller gives it up. Above 1, so horizontal wins the
- * ambiguous middle; see the file header for why the split is deliberately
- * unfair, and how the gestures past the browser's own 45° line are handled.
- */
-export const VERTICAL_DOMINANCE = 2;
+import {useEffect} from 'react';
 
 /** Movement below this is noise, not a direction. */
 const AXIS_LOCK_SLOP = 6;
-
-/**
- * Horizontal travel a claimed-but-unpanned gesture needs before it counts as
- * a swipe. Roughly the shortest flick the browser itself will page on.
- */
-export const SWIPE_DISTANCE = 32;
 
 export type OwnedAxis = 'all' | 'inline';
 
@@ -103,17 +73,10 @@ export type OwnScrollGestureOptions = {
    * so its listeners would otherwise still be live. */
   isEnabled?: boolean;
   /**
-   * Called when a claimed gesture ended without the browser having scrolled
-   * the element at all — the diagonal swipes `touch-action: pan-x` refuses.
-   *
-   * `direction` is the sign to move the scroll offset by, so it composes
-   * directly: `scrollBy({left: direction * pageWidth})`. It is physical, and
-   * therefore correct in both directions of writing.
-   *
-   * Only fires for `'inline'`. A gesture the browser panned reports nothing,
-   * so momentum and snapping are never second-guessed.
+   * `'inline'` only: the largest ratio of vertical to horizontal travel the
+   * owner still claims. @default 1 (the diagonal)
    */
-  onSwipe?: (direction: 1 | -1) => void;
+  verticalDominance?: number;
 };
 
 /**
@@ -130,12 +93,7 @@ export function useOwnScrollGesture(
   axis: OwnedAxis = 'all',
   options: OwnScrollGestureOptions = {},
 ): void {
-  const {isEnabled = true, onSwipe} = options;
-
-  // Read through a ref so a caller need not memoize the callback: re-running
-  // this effect would tear the listeners off mid-gesture.
-  const onSwipeRef = useRef(onSwipe);
-  onSwipeRef.current = onSwipe;
+  const {isEnabled = true, verticalDominance = 1} = options;
 
   useEffect(() => {
     const element = ref.current;
@@ -147,81 +105,88 @@ export function useOwnScrollGesture(
     let claimed: boolean | null = null;
     let originX = 0;
     let originY = 0;
-    let lastX = 0;
-    let offsetAtStart = 0;
-    // Whether the browser actually panned the element during this gesture.
-    // Sampled per move rather than compared once at the end, because a short
-    // pan that snaps back finishes at the offset it started from.
-    let didPan = false;
+
+    const begin = (x: number, y: number) => {
+      originX = x;
+      originY = y;
+      // 'all' decides at the start, before the sheet's own start listener
+      // records an armed edge. 'inline' cannot decide yet (a touch has no
+      // direction until it moves), so it lets the start through and locks on
+      // the first move that clears the slop.
+      claimed = axis === 'all' ? true : null;
+    };
+
+    /** Whether a move at (x, y) belongs to this element; decides once. */
+    const owns = (x: number, y: number): boolean => {
+      if (claimed == null) {
+        const dx = Math.abs(x - originX);
+        const dy = Math.abs(y - originY);
+        if (Math.max(dx, dy) < AXIS_LOCK_SLOP) {
+          return false;
+        }
+        claimed = dy <= dx * verticalDominance;
+      }
+      return claimed;
+    };
 
     const onStart = (event: TouchEvent) => {
       const touch = event.touches[0];
-      originX = touch?.clientX ?? 0;
-      originY = touch?.clientY ?? 0;
-      lastX = originX;
-      offsetAtStart = element.scrollLeft;
-      didPan = false;
-      // 'all' decides at touchstart, before the sheet's own touchstart
-      // listener records an armed edge. 'inline' cannot decide yet — a touch
-      // has no direction until it moves — so it lets touchstart through and
-      // locks on the first move that clears the slop.
-      claimed = axis === 'all' ? true : null;
+      begin(touch?.clientX ?? 0, touch?.clientY ?? 0);
       if (claimed) {
         event.stopPropagation();
       }
     };
 
     const onMove = (event: TouchEvent) => {
-      if (claimed === false) {
-        return;
-      }
       const touch = event.touches[0];
-      if (touch == null) {
+      if (touch != null && owns(touch.clientX, touch.clientY)) {
+        event.stopPropagation();
+      }
+    };
+
+    // The same finger also arrives as pointer events, ahead of its touch
+    // events, and the sheet drags from those too: they get the same
+    // decision. (A natively panned gesture used to end them with a
+    // pointercancel; a gesture recognizer's does not.)
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.pointerType !== 'touch' || !event.isPrimary) {
         return;
       }
-      if (claimed == null) {
-        const dx = Math.abs(touch.clientX - originX);
-        const dy = Math.abs(touch.clientY - originY);
-        if (Math.max(dx, dy) < AXIS_LOCK_SLOP) {
-          return;
-        }
-        claimed = dy <= dx * VERTICAL_DOMINANCE;
-        if (!claimed) {
-          return;
-        }
+      begin(event.clientX, event.clientY);
+      if (claimed) {
+        event.stopPropagation();
       }
-      lastX = touch.clientX;
-      didPan ||= Math.abs(element.scrollLeft - offsetAtStart) >= 1;
-      event.stopPropagation();
+    };
+
+    const onPointerMove = (event: PointerEvent) => {
+      if (event.pointerType !== 'touch' || !event.isPrimary) {
+        return;
+      }
+      if (owns(event.clientX, event.clientY)) {
+        event.stopPropagation();
+      }
     };
 
     const onEnd = () => {
-      // A gesture we claimed that the browser then refused to pan: the sheet
-      // was told to keep off it, so unless it is acted on here it does
-      // nothing at all. See the file header.
-      if (
-        claimed === true &&
-        axis === 'inline' &&
-        !didPan &&
-        Math.abs(lastX - originX) >= SWIPE_DISTANCE
-      ) {
-        onSwipeRef.current?.(lastX < originX ? 1 : -1);
-      }
       // touchend/touchcancel deliberately propagate: they carry no
       // interpretation, and letting them through is what resets the sheet's
       // bookkeeping.
       claimed = null;
     };
 
+    element.addEventListener('pointerdown', onPointerDown, {passive: true});
+    element.addEventListener('pointermove', onPointerMove, {passive: true});
     element.addEventListener('touchstart', onStart, {passive: true});
     element.addEventListener('touchmove', onMove, {passive: true});
     element.addEventListener('touchend', onEnd, {passive: true});
     element.addEventListener('touchcancel', onEnd, {passive: true});
     return () => {
+      element.removeEventListener('pointerdown', onPointerDown);
+      element.removeEventListener('pointermove', onPointerMove);
       element.removeEventListener('touchstart', onStart);
       element.removeEventListener('touchmove', onMove);
       element.removeEventListener('touchend', onEnd);
       element.removeEventListener('touchcancel', onEnd);
     };
-  }, [ref, axis, isEnabled]);
+  }, [ref, axis, isEnabled, verticalDominance]);
 }

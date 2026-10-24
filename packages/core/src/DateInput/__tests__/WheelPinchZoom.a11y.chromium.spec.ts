@@ -119,7 +119,7 @@ test('a pinch over an open picker wheel zooms the page and changes no value', as
   expect(await field.inputValue()).toBe(valueBefore);
 });
 
-test('one finger dragged up a wheel still scrolls it and leaves the page at scale 1', async ({
+test('one finger dragged up a wheel still turns it and leaves the page at scale 1', async ({
   page,
 }) => {
   await page.goto(
@@ -130,7 +130,7 @@ test('one finger dragged up a wheel still scrolls it and leaves the page at scal
   const wheel = page.getByRole('listbox', {name: 'Minute'});
   await expect(wheel).toBeVisible();
   await sleep(800);
-  const scrollTopBefore = await wheel.evaluate(el => el.scrollTop);
+  const restingBefore = await wheel.getAttribute('aria-activedescendant');
 
   const cdp = await page.context().newCDPSession(page);
   const at = await centerOf(wheel);
@@ -149,10 +149,11 @@ test('one finger dragged up a wheel still scrolls it and leaves the page at scal
     type: 'touchEnd',
     touchPoints: [],
   });
-  await sleep(600);
-
-  expect(await wheel.evaluate(el => el.scrollTop)).toBeGreaterThan(
-    scrollTopBefore + 60,
+  // The release coasts on; the wheel then rests on another row.
+  await expect(wheel).not.toHaveAttribute(
+    'aria-activedescendant',
+    restingBefore ?? '',
+    {timeout: 5000},
   );
   expect(await pageScale(page)).toBe(1);
 });

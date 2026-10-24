@@ -4,15 +4,15 @@
 
 /**
  * @file TouchDateTimeField.tsx
- * @input Uses React, Field, BottomSheet, SegmentedControl, DateInput month picker primitives, Wheel, StyleX intrinsic flex layout
+ * @input Uses React, Field, BottomSheet, SegmentedControl, DateInput month picker primitives, TimeWheels, StyleX intrinsic flex layout
  * @output Exports TouchDateTimeField — the coarse-pointer surface behind DateTimeInput
  * @position Internal component; consumed by DateTimeInput.tsx
  *
  * The touch half of `DateTimeInput`, holding `DateTimeInput`'s whole prop
- * contract so the desktop and touch surfaces are interchangeable. The desktop
- * only props `timeIncrement` and `timeOptionInterval` remain accepted but are
- * intentionally ignored here: time is selected with wheels instead of a typed
- * field or preset list.
+ * contract so the desktop and touch surfaces are interchangeable. Time is
+ * selected with UIDatePicker's time wheels (TimeWheels): `timeIncrement`
+ * steps the minute column, while the desktop-only `timeOptionInterval` stays
+ * accepted and ignored (a preset list has no place beside the wheels).
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/DateTimeInput/DateTimeInput.tsx
@@ -75,7 +75,6 @@ import {
   formatISOTime,
   isImeKeyEvent,
   isRenderable,
-  isTimeInRange,
   clampTime,
   mergeProps,
   parseISOTime,
@@ -89,6 +88,8 @@ import {
   DATE_FORMAT_WEEKDAY_ONLY,
   plainDateFormat,
   plainDateFromISO,
+  plainDateIsEqual,
+  plainDateToISO,
   plainDateToday,
   type PlainDate,
 } from '../utils/plainDate';
@@ -97,18 +98,22 @@ import {
   type MonthScrollerHandle,
 } from '../DateInput/MonthScroller';
 import {MonthYearWheels} from '../DateInput/MonthYearWheels';
-import {Wheel, type WheelOption} from '../DateInput/Wheel';
+import {useToggleFade} from '../DateInput/useToggleFade';
 import {
   dateInputTouchGeometry,
   dateInputTouchSizes,
+  monthYearToggleMotion,
 } from '../DateInput/tokens.stylex';
 import {
   DEFAULT_MONTH_REACH,
   clampIndex,
+  dateInMonth,
   fromMonthIndex,
   monthIndexOf,
 } from '../DateInput/monthGeometry';
 import type {DateTimeInputProps, ISODateTimeString} from './DateTimeInput';
+import {TimeWheels} from '../TimeInput/TimeWheels';
+import {minuteIntervalOf} from '../TimeInput/timeWheelRules';
 
 function splitDateTime(dt: ISODateTimeString | undefined): {
   date: ISODateString | undefined;
@@ -311,10 +316,12 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-0-5'],
     marginInlineStart: 'auto',
+    // Fades on useToggleFade; `visibility` follows the fade out.
+    transitionProperty: 'visibility',
+    transitionDuration: monthYearToggleMotion.duration,
   },
   touchHeaderActionsHidden: {
     visibility: 'hidden',
-    opacity: 0,
     pointerEvents: 'none',
   },
   touchArrow: {
@@ -344,6 +351,10 @@ const styles = stylex.create({
     inlineSize: '100%',
     minInlineSize: 0,
   },
+  // UIDatePicker's month/year toggle: the calendar fades out as the wheels
+  // fade in, at once, 0.25 s ease-in-ease-out on the animator, from the
+  // commit (useToggleFade; motion/uikit/datePicker.ts
+  // `calendar.monthYearToggle`); `visibility` follows the fade out.
   touchDateSurface: {
     gridArea: '1 / 1',
     display: 'flex',
@@ -351,10 +362,25 @@ const styles = stylex.create({
     minInlineSize: 0,
     flexDirection: 'column',
     gap: spacingVars['--spacing-2'],
+    transitionProperty: 'visibility',
+    transitionDuration: monthYearToggleMotion.duration,
+  },
+  touchTitleChevronMirror: {
+    display: 'inline-flex',
+    flexShrink: 0,
+  },
+  touchTitleChevron: {
+    display: 'inline-flex',
+    flexShrink: 0,
+    transitionProperty: 'transform',
+    transitionDuration: monthYearToggleMotion.duration,
+    transitionTimingFunction: monthYearToggleMotion.curve,
+  },
+  touchTitleChevronOpen: {
+    transform: `rotate(${monthYearToggleMotion.chevronTurn})`,
   },
   touchDateSurfaceHidden: {
     visibility: 'hidden',
-    opacity: 0,
     pointerEvents: 'none',
   },
   touchWeekdays: {
@@ -372,12 +398,13 @@ const styles = stylex.create({
   touchWheelSpacer: {
     blockSize: sizeVars['--size-element-sm'],
   },
+  // The picker (UIPickerView's 216 px) centred in the pane.
   touchTimeWheels: {
     display: 'flex',
+    alignItems: 'center',
     inlineSize: '100%',
     minInlineSize: 0,
     blockSize: dateInputTouchGeometry.paneBlockSize,
-    gap: spacingVars['--spacing-2'],
   },
   touchFooter: {
     display: 'flex',
@@ -410,45 +437,6 @@ function normalizeISOTime(
   return parsed ? formatISOTime(parsed, hasSeconds) : undefined;
 }
 
-function timeToSeconds(time: ISOTimeString | undefined): number | null {
-  if (time === undefined) {
-    return null;
-  }
-  const parsed = parseISOTime(time);
-  return parsed == null
-    ? null
-    : parsed.hour * 3600 + parsed.minute * 60 + parsed.second;
-}
-
-function twoDigits(value: number): string {
-  return String(value).padStart(2, '0');
-}
-
-function hour12From24(hour: number): number {
-  return hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-}
-
-function hour24From12(hour: number, meridiem: number): number {
-  if (meridiem === 0) {
-    return hour === 12 ? 0 : hour;
-  }
-  return hour === 12 ? 12 : hour + 12;
-}
-
-function rangeOverlaps(
-  startSecond: number,
-  endSecond: number,
-  min: ISOTimeString | undefined,
-  max: ISOTimeString | undefined,
-): boolean {
-  const minSecond = timeToSeconds(min);
-  const maxSecond = timeToSeconds(max);
-  return (
-    (minSecond == null || endSecond >= minSecond) &&
-    (maxSecond == null || startSecond <= maxSecond)
-  );
-}
-
 type TouchDateTimePanel = 'date' | 'time';
 
 export function TouchDateTimeField({
@@ -469,7 +457,7 @@ export function TouchDateTimeField({
   hasSeconds = false,
   hourFormat = '12h',
   // Desktop-only: mobile uses wheels instead of typed arrow stepping or a preset list.
-  timeIncrement: _timeIncrement,
+  timeIncrement,
   timeOptionInterval: _timeOptionInterval,
   hasClear = false,
   placeholder: placeholderFromProps,
@@ -588,6 +576,10 @@ export function TouchDateTimeField({
   );
   const [activePanel, setActivePanel] = useState<TouchDateTimePanel>('date');
   const [isWheelOpen, setIsWheelOpen] = useState(false);
+  // The month/year toggle's fades, on the animator (useToggleFade).
+  const calendarFadeRef = useToggleFade(!isWheelOpen);
+  const wheelsFadeRef = useToggleFade(isWheelOpen);
+  const headerActionsFadeRef = useToggleFade(!isWheelOpen);
   const [draftTime, setDraftTime] = useState<ISOTimeString | undefined>(() =>
     normalizeISOTime(splitDateTime(value).time, hasSeconds),
   );
@@ -816,6 +808,30 @@ export function TouchDateTimeField({
     [clampTimeForDate, fireChange, optimisticValue, timeForWheels],
   );
 
+  // Turning the month or year wheel moves the calendar, and moves a chosen
+  // date with it, keeping its day and the time (UIDatePicker's inline
+  // calendar: datePicker.calendar.monthYearWheels.changesDate), clamped to
+  // the month and the bounds. A date a custom constraint refuses stays.
+  const handleWheelChange = useCallback(
+    (next: number) => {
+      setMonthIndex(next);
+      scrollerHandleRef.current?.scrollToMonth(next, 'auto');
+      if (selectedDate == null) {
+        return;
+      }
+      const moved = dateInMonth(
+        selectedDate,
+        next,
+        parseValidISODate(calendarMin),
+        parseValidISODate(calendarMax),
+      );
+      if (!plainDateIsEqual(moved, selectedDate) && !isDateDisabled(moved)) {
+        handleDateSelect(plainDateToISO(moved));
+      }
+    },
+    [selectedDate, calendarMin, calendarMax, isDateDisabled, handleDateSelect],
+  );
+
   const commitWheelTime = useCallback(
     (rawTime: ISOTimeString) => {
       const nextTime = clampTimeForDate(valueParts.date, rawTime);
@@ -830,145 +846,7 @@ export function TouchDateTimeField({
     [clampTimeForDate, fireChange, optimisticValue, valueParts.date],
   );
 
-  const composeWheelTime = useCallback(
-    ({
-      hour24,
-      hour12,
-      minute,
-      second,
-      meridiem,
-    }: {
-      hour24?: number;
-      hour12?: number;
-      minute?: number;
-      second?: number;
-      meridiem?: number;
-    }): ISOTimeString => {
-      const currentMeridiem = parsedWheelTime.hour < 12 ? 0 : 1;
-      let hour = parsedWheelTime.hour;
-      if (hourFormat === '24h') {
-        hour = hour24 ?? hour;
-      } else {
-        hour = hour24From12(
-          hour12 ?? hour12From24(hour),
-          meridiem ?? currentMeridiem,
-        );
-      }
-      return formatISOTime(
-        {
-          hour,
-          minute: minute ?? parsedWheelTime.minute,
-          second: hasSeconds ? (second ?? parsedWheelTime.second) : 0,
-        },
-        hasSeconds,
-      );
-    },
-    [hasSeconds, hourFormat, parsedWheelTime],
-  );
-
   const timeBounds = timeBoundsForDate(valueParts.date);
-  const hourOptions: WheelOption[] = useMemo(() => {
-    if (hourFormat === '24h') {
-      return Array.from({length: 24}, (_, hour) => ({
-        value: hour,
-        label: twoDigits(hour),
-        isDisabled: !rangeOverlaps(
-          hour * 3600,
-          hour * 3600 + 3599,
-          timeBounds.min,
-          timeBounds.max,
-        ),
-      }));
-    }
-    const meridiem = parsedWheelTime.hour < 12 ? 0 : 1;
-    // In 12-hour mode the hour column is interpreted inside the active AM/PM
-    // half, so disabled rows describe reachability within that half only.
-    return Array.from({length: 12}, (_, index) => {
-      const hour = index + 1;
-      const hour24 = hour24From12(hour, meridiem);
-      return {
-        value: hour,
-        label: String(hour),
-        isDisabled: !rangeOverlaps(
-          hour24 * 3600,
-          hour24 * 3600 + 3599,
-          timeBounds.min,
-          timeBounds.max,
-        ),
-      };
-    });
-  }, [hourFormat, parsedWheelTime.hour, timeBounds.min, timeBounds.max]);
-
-  const minuteOptions: WheelOption[] = useMemo(
-    () =>
-      Array.from({length: 60}, (_, minute) => {
-        const start = parsedWheelTime.hour * 3600 + minute * 60;
-        return {
-          value: minute,
-          label: twoDigits(minute),
-          isDisabled: !rangeOverlaps(
-            start,
-            start + (hasSeconds ? 59 : 0),
-            timeBounds.min,
-            timeBounds.max,
-          ),
-        };
-      }),
-    [hasSeconds, parsedWheelTime.hour, timeBounds.min, timeBounds.max],
-  );
-
-  const secondOptions: WheelOption[] = useMemo(
-    () =>
-      Array.from({length: 60}, (_, second) => ({
-        value: second,
-        label: twoDigits(second),
-        isDisabled: !isTimeInRange(
-          formatISOTime(
-            {
-              hour: parsedWheelTime.hour,
-              minute: parsedWheelTime.minute,
-              second,
-            },
-            true,
-          ),
-          timeBounds.min,
-          timeBounds.max,
-        ),
-      })),
-    [
-      parsedWheelTime.hour,
-      parsedWheelTime.minute,
-      timeBounds.min,
-      timeBounds.max,
-    ],
-  );
-
-  const meridiemOptions: WheelOption[] = useMemo(
-    () => [
-      {
-        value: 0,
-        label: t('@astryx.dateTimeInput.meridiemAM'),
-        isDisabled: !rangeOverlaps(
-          0,
-          11 * 3600 + 3599,
-          timeBounds.min,
-          timeBounds.max,
-        ),
-      },
-      {
-        value: 1,
-        label: t('@astryx.dateTimeInput.meridiemPM'),
-        isDisabled: !rangeOverlaps(
-          12 * 3600,
-          23 * 3600 + 3599,
-          timeBounds.min,
-          timeBounds.max,
-        ),
-      },
-    ],
-    [t, timeBounds.min, timeBounds.max],
-  );
-
   const handleVisibleMonthChange = useCallback(
     (next: number) => {
       if (activePanel === 'date' && !isWheelOpen) {
@@ -1087,9 +965,24 @@ export function TouchDateTimeField({
               <span {...stylex.props(styles.touchTitleText)}>
                 {monthYearLabel}
               </span>
-              <Icon icon="chevronDown" size="sm" color="secondary" />
+              <span
+                {...stylex.props(
+                  styles.touchTitleChevronMirror,
+                  rtlStyles.mirror,
+                )}>
+                <Icon
+                  icon="chevronRight"
+                  size="sm"
+                  color="secondary"
+                  xstyle={[
+                    styles.touchTitleChevron,
+                    isWheelOpen && styles.touchTitleChevronOpen,
+                  ]}
+                />
+              </span>
             </button>
             <span
+              ref={headerActionsFadeRef}
               inert={isWheelOpen ? true : undefined}
               {...stylex.props(
                 styles.touchHeaderActions,
@@ -1141,6 +1034,7 @@ export function TouchDateTimeField({
 
           <div {...stylex.props(styles.touchDateSurfaceStack)}>
             <div
+              ref={calendarFadeRef}
               data-date-surface="calendar"
               aria-hidden={isWheelOpen ? 'true' : undefined}
               inert={isWheelOpen ? true : undefined}
@@ -1191,6 +1085,7 @@ export function TouchDateTimeField({
             </div>
 
             <div
+              ref={wheelsFadeRef}
               data-date-surface="wheels"
               aria-hidden={!isWheelOpen ? 'true' : undefined}
               inert={!isWheelOpen ? true : undefined}
@@ -1206,10 +1101,7 @@ export function TouchDateTimeField({
                 monthIndex={monthIndex}
                 minMonthIndex={minMonthIndex}
                 maxMonthIndex={maxMonthIndex}
-                onChange={next => {
-                  setMonthIndex(next);
-                  scrollerHandleRef.current?.scrollToMonth(next, 'auto');
-                }}
+                onChange={handleWheelChange}
                 monthLabel={t('@astryx.dateInput.monthWheel')}
                 yearLabel={t('@astryx.dateInput.yearWheel')}
                 isActive={activePanel === 'date' && isWheelOpen}
@@ -1238,50 +1130,18 @@ export function TouchDateTimeField({
             activePanel !== 'time' && styles.touchPanelHidden,
           )}>
           <div {...stylex.props(styles.touchTimeWheels)}>
-            <Wheel
-              label={t('@astryx.dateTimeInput.hourWheel')}
-              options={hourOptions}
-              value={
-                hourFormat === '24h'
-                  ? parsedWheelTime.hour
-                  : hour12From24(parsedWheelTime.hour)
-              }
+            <TimeWheels
+              time={parsedWheelTime}
+              hourFormat={hourFormat}
+              hasSeconds={hasSeconds}
+              minuteInterval={minuteIntervalOf(timeIncrement)}
+              min={timeBounds.min}
+              max={timeBounds.max}
               isActive={activePanel === 'time'}
-              onChange={hour =>
-                commitWheelTime(
-                  hourFormat === '24h'
-                    ? composeWheelTime({hour24: hour})
-                    : composeWheelTime({hour12: hour}),
-                )
+              onCommit={time =>
+                commitWheelTime(formatISOTime(time, hasSeconds))
               }
             />
-            <Wheel
-              label={t('@astryx.dateTimeInput.minuteWheel')}
-              options={minuteOptions}
-              value={parsedWheelTime.minute}
-              isActive={activePanel === 'time'}
-              onChange={minute => commitWheelTime(composeWheelTime({minute}))}
-            />
-            {hasSeconds && (
-              <Wheel
-                label={t('@astryx.dateTimeInput.secondWheel')}
-                options={secondOptions}
-                value={parsedWheelTime.second}
-                isActive={activePanel === 'time'}
-                onChange={second => commitWheelTime(composeWheelTime({second}))}
-              />
-            )}
-            {hourFormat === '12h' && (
-              <Wheel
-                label={t('@astryx.dateTimeInput.meridiemWheel')}
-                options={meridiemOptions}
-                value={parsedWheelTime.hour < 12 ? 0 : 1}
-                isActive={activePanel === 'time'}
-                onChange={meridiem =>
-                  commitWheelTime(composeWheelTime({meridiem}))
-                }
-              />
-            )}
           </div>
           <div {...stylex.props(styles.touchFooter)}>
             <Button

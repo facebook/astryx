@@ -367,6 +367,18 @@ describe('DateTimeInput touch surface', () => {
     );
   });
 
+  it('draws the time wheels as one picker, with one band across them', () => {
+    withMonthLayout(() => {
+      const {container} = render(
+        <DateTimeInput label="Meeting" onChange={() => {}} />,
+      );
+      openDateSheet();
+      switchToTimePanel();
+      const timePanel = container.querySelector('[data-panel="time"]')!;
+      expect(timePanel.querySelectorAll('[data-wheel-band]')).toHaveLength(1);
+    });
+  });
+
   it('switches between inert date and time panels with the pill control', () => {
     withMonthLayout(() => {
       const {container} = render(
@@ -485,6 +497,29 @@ describe('DateTimeInput touch surface', () => {
 
     fireEvent.click(screen.getByRole('dialog'));
     expect(timeField()).toHaveValue('');
+  });
+
+  it('moves the chosen date with the month wheel, keeping the day and the time', () => {
+    const onChange = vi.fn();
+    withMonthLayout(() => {
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-21T09:30' as ISODateTimeString}
+          min={'2026-01-01T00:00' as ISODateTimeString}
+          max={'2026-12-31T23:59' as ISODateTimeString}
+          onChange={onChange}
+        />,
+      );
+      openDateSheet();
+      fireEvent.click(
+        screen.getByRole('button', {name: /Choose month and year/}),
+      );
+      fireEvent.click(
+        within(screen.getByRole('listbox', {name: 'Month'})).getByText('May'),
+      );
+      expect(onChange).toHaveBeenLastCalledWith('2026-05-21T09:30');
+    });
   });
 
   it('commits 12-hour wheel changes against the controlled date', () => {

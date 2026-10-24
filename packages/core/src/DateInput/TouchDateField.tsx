@@ -92,8 +92,6 @@ import {
   fontWeightVars,
   typeScaleVars,
   typographyVars,
-  durationVars,
-  easeVars,
 } from '../theme/tokens.stylex';
 import {useTooltip} from '../Tooltip';
 import {VisuallyHidden} from '../VisuallyHidden';
@@ -106,6 +104,8 @@ import {
   themeProps,
   formatSharedDate,
   plainDateFromISO,
+  plainDateIsEqual,
+  plainDateToISO,
   plainDateToday,
   plainDateFormat,
   DATE_FORMAT_MONTH_YEAR,
@@ -118,13 +118,19 @@ import {usePressFeedback} from '../hooks/usePressFeedback';
 import {normalizeDayOfWeek} from '../utils/dateTypes';
 import {MonthScroller, type MonthScrollerHandle} from './MonthScroller';
 import {MonthYearWheels} from './MonthYearWheels';
+import {useToggleFade} from './useToggleFade';
 import {
   DEFAULT_MONTH_REACH,
   clampIndex,
+  dateInMonth,
   fromMonthIndex,
   monthIndexOf,
 } from './monthGeometry';
-import {dateInputTouchSizes, dateInputTouchGeometry} from './tokens.stylex';
+import {
+  dateInputTouchSizes,
+  dateInputTouchGeometry,
+  monthYearToggleMotion,
+} from './tokens.stylex';
 
 /**
  * The comfortable minimum tap target on both iOS and Android, honoured by
@@ -133,23 +139,23 @@ import {dateInputTouchSizes, dateInputTouchGeometry} from './tokens.stylex';
 const TOUCH_TARGET = dateInputTouchSizes.daySize;
 
 /**
- * The whole surface swap, in one leg.
+ * The whole surface swap, in one leg: UIDatePicker's month/year toggle
+ * (motion/uikit/datePicker.ts `calendar.monthYearToggle`), where the wheels
+ * fade in as the grid, the weekday row and the chevrons fade out, all at once,
+ * 0.25 s on UIKit's default ease-in-ease-out, and the title's chevron turns a
+ * quarter turn on the same clock.
  *
- * It used to be two: the outgoing surface faded out, then the incoming one
- * faded in, 110ms each. The sequencing existed for one reason — the wheels'
- * panel was transparent, so overlapping the two put the wheels' translucent
- * selection band over the calendar grid and tinted a band-shaped strip of it,
- * which read as "the grey area animates differently from the content".
+ * The wheels' panel is opaque, so it can simply fade in ON TOP of a calendar
+ * that does not move: nothing shows through it, and the arrows and the
+ * weekday row (above the panel's reach) fade out beneath it on the same
+ * timing, so the change reads as one motion. The fades run on the animator
+ * (useToggleFade), which starts them at the commit; these two values time
+ * what CSS keeps: `visibility` following the fades, and the chevron's turn.
  *
- * Giving the wheels an opaque background removes the reason. Nothing shows
- * through them, so they can simply fade in ON TOP of a calendar that does not
- * move at all — no empty middle, no outgoing animation, and one duration
- * instead of a wait plus a fade.
- *
- * `--duration-fast` rather than a literal now that this is a whole duration
- * and not half of one.
+ * Reduced Motion keeps the fades and the chevron's turn: neither travels.
  */
-const SWAP_DURATION = durationVars['--duration-fast'];
+const SWAP_DURATION = monthYearToggleMotion.duration;
+const SWAP_CURVE = monthYearToggleMotion.curve;
 
 const sizeStyles = stylex.create({
   sm: {
@@ -266,15 +272,12 @@ const styles = stylex.create({
     // The pair is the trailing item; the title takes the space before it.
     marginInlineStart: 'auto',
     // The plate starts below the header, so these two are the one part of the
-    // calendar the layer above cannot cover. They fade on its timing instead,
-    // both directions, so the change reads as one motion rather than chrome
-    // blinking out a beat before the grid is covered.
-    transitionProperty: 'opacity, visibility',
+    // calendar the layer above cannot cover. They fade on its timing instead
+    // (useToggleFade), both directions, so the change reads as one motion
+    // rather than chrome blinking out a beat before the grid is covered;
+    // `visibility` follows the fade out.
+    transitionProperty: 'visibility',
     transitionDuration: SWAP_DURATION,
-    transitionTimingFunction: 'linear',
-    '@media (prefers-reduced-motion: reduce)': {
-      transitionDuration: '0.01s',
-    },
   },
   /**
    * Hidden while the wheels are up: they step the calendar, and the calendar
@@ -297,7 +300,6 @@ const styles = stylex.create({
   },
   monthArrowsHidden: {
     visibility: 'hidden',
-    opacity: 0,
     pointerEvents: 'none',
   },
   /**
@@ -326,16 +328,11 @@ const styles = stylex.create({
   headerReset: {
     display: 'flex',
     alignItems: 'center',
-    transitionProperty: 'opacity, visibility',
+    transitionProperty: 'visibility',
     transitionDuration: SWAP_DURATION,
-    transitionTimingFunction: 'linear',
-    '@media (prefers-reduced-motion: reduce)': {
-      transitionDuration: '0.01s',
-    },
   },
   headerResetHidden: {
     visibility: 'hidden',
-    opacity: 0,
     pointerEvents: 'none',
   },
   /**
@@ -384,19 +381,19 @@ const styles = stylex.create({
   titleChevron: {
     display: 'inline-flex',
     flexShrink: 0,
-    // The one part of the swap that keeps `--ease-standard`, because it is
-    // the one part that travels: a rotation has a distance to cover, and
-    // fast-out-slow-in is what that curve is for. Same duration as the
-    // surface it announces, so the two land together.
+    // It points along the reading direction while the calendar shows and
+    // turns a quarter turn to point down while the wheels show, on the
+    // toggle's own clock.
     transitionProperty: 'transform',
     transitionDuration: SWAP_DURATION,
-    transitionTimingFunction: easeVars['--ease-standard'],
-    '@media (prefers-reduced-motion: reduce)': {
-      transitionDuration: '0.01s',
-    },
+    transitionTimingFunction: SWAP_CURVE,
   },
   titleChevronOpen: {
-    transform: 'rotate(180deg)',
+    transform: `rotate(${monthYearToggleMotion.chevronTurn})`,
+  },
+  titleChevronMirror: {
+    display: 'inline-flex',
+    flexShrink: 0,
   },
   weekdays: {
     display: 'grid',
@@ -405,18 +402,13 @@ const styles = stylex.create({
     alignItems: 'center',
     // Same as the arrows: above the plate's reach, so it fades on the layer's
     // timing rather than clearing on its own.
-    transitionProperty: 'opacity, visibility',
+    transitionProperty: 'visibility',
     transitionDuration: SWAP_DURATION,
-    transitionTimingFunction: 'linear',
-    '@media (prefers-reduced-motion: reduce)': {
-      transitionDuration: '0.01s',
-    },
   },
   weekdaysHidden: {
     // Hidden, not unmounted: the row still owes the surface its height, or
     // opening the wheels would make the picker shorter.
     visibility: 'hidden',
-    opacity: 0,
   },
   weekday: {
     textAlign: 'center',
@@ -458,9 +450,6 @@ const styles = stylex.create({
   panelBeneath: {
     transitionProperty: 'visibility',
     transitionDuration: SWAP_DURATION,
-    '@media (prefers-reduced-motion: reduce)': {
-      transitionDuration: '0.01s',
-    },
   },
   panelBeneathHidden: {
     visibility: 'hidden',
@@ -491,32 +480,20 @@ const styles = stylex.create({
    * cover only breaks at the two ends of the fade, where opacity is exactly
    * 1, which is to say whenever anyone is actually looking.
    *
-   * `visibility` rides along with `opacity`, on the same rule as the layer
-   * beneath: it stays `visible` for the whole transition, so fading out is
-   * seen rather than cut on the first frame, and the layer still leaves the
-   * a11y tree and the hit testing at the end of it.
-   *
-   * Easing is `linear`, not `--ease-standard`. That token is
-   * `cubic-bezier(0.24, 1, 0.4, 1)`, which is right for something travelling
-   * a distance and wrong for a fade: measured, it put the opacity at 50% in
-   * 91ms and 95% in 241ms of a 410ms transition, so the fade was over long
-   * before the duration was, and lengthening the duration bought an
-   * imperceptible tail rather than a slower fade. A fade has no distance to
-   * cover, so its progress should be its progress.
+   * The opacity is useToggleFade's (UIDatePicker's 0.25 s, on the animator);
+   * `visibility` follows it on the same rule as the layer beneath: it stays
+   * `visible` for the whole fade, so fading out is seen rather than cut on the
+   * first frame, and the layer still leaves the a11y tree and the hit testing
+   * at the end of it.
    */
   panelOverlay: {
     backgroundColor: colorVars['--color-background-surface'],
     isolation: 'isolate',
-    transitionProperty: 'opacity, visibility',
+    transitionProperty: 'visibility',
     transitionDuration: SWAP_DURATION,
-    transitionTimingFunction: 'linear',
-    '@media (prefers-reduced-motion: reduce)': {
-      transitionDuration: '0.01s',
-    },
   },
   panelOverlayHidden: {
     visibility: 'hidden',
-    opacity: 0,
     pointerEvents: 'none',
   },
   footer: {
@@ -677,6 +654,13 @@ export function TouchDateField({
     isSheetOpen ? sheetBodyRef : inputRef,
   );
   const [isWheelOpen, setIsWheelOpen] = useState(false);
+  // The toggle's fades, on the animator (useToggleFade): the wheels and their
+  // Done fade in as the arrows, Reset and the weekday row fade out.
+  const wheelsFadeRef = useToggleFade(isWheelOpen);
+  const doneFadeRef = useToggleFade(isWheelOpen);
+  const arrowsFadeRef = useToggleFade(!isWheelOpen);
+  const weekdaysFadeRef = useToggleFade(!isWheelOpen);
+  const resetFadeRef = useToggleFade(!isWheelOpen);
   const scrollerHandleRef = useRef<MonthScrollerHandle | null>(null);
   // Pending focus handoff from the clear button; see handleClear.
   const clearFocusTimerRef = useRef<number | null>(null);
@@ -894,10 +878,29 @@ export function TouchDateField({
   // A wheel commit steers the scroller immediately, even though it is behind
   // the wheels: it keeps its layout box while hidden, so by the time the
   // wheels close it is already resting on the new month.
-  const handleWheelChange = useCallback((next: number) => {
-    setMonthIndex(next);
-    scrollerHandleRef.current?.scrollToMonth(next, 'auto');
-  }, []);
+  // Turning the month or year wheel moves the calendar, and moves a chosen
+  // date with it, keeping its day (UIDatePicker's inline calendar:
+  // datePicker.calendar.monthYearWheels.changesDate), clamped to the month
+  // and the bounds. A date a custom constraint refuses stays where it was.
+  const handleWheelChange = useCallback(
+    (next: number) => {
+      setMonthIndex(next);
+      scrollerHandleRef.current?.scrollToMonth(next, 'auto');
+      if (selectedDate == null) {
+        return;
+      }
+      const moved = dateInMonth(
+        selectedDate,
+        next,
+        min != null ? plainDateFromISO(min) : null,
+        max != null ? plainDateFromISO(max) : null,
+      );
+      if (!plainDateIsEqual(moved, selectedDate) && !isDateDisabled(moved)) {
+        fireChange(plainDateToISO(moved));
+      }
+    },
+    [selectedDate, min, max, isDateDisabled, fireChange],
+  );
 
   /**
    * The calendar reports the month it has scrolled to — but only while it is
@@ -1006,17 +1009,21 @@ export function TouchDateField({
             focusOutlineStyles.focusVisible,
           )}>
           <span {...stylex.props(styles.titleText)}>{monthYearLabel}</span>
-          <Icon
-            icon="chevronDown"
-            size="sm"
-            color="secondary"
-            // The transform rides on the Icon itself, not a wrapper span, so
-            // the element a theme can target is the element that moves.
-            xstyle={[
-              styles.titleChevron,
-              isWheelOpen && styles.titleChevronOpen,
-            ]}
-          />
+          {/* Mirrored under RTL so it points along the reading direction;
+              the turn rides on the Icon itself, so the element a theme can
+              target is the element that moves (mirrored, the same turn still
+              ends pointing down). */}
+          <span {...stylex.props(styles.titleChevronMirror, rtlStyles.mirror)}>
+            <Icon
+              icon="chevronRight"
+              size="sm"
+              color="secondary"
+              xstyle={[
+                styles.titleChevron,
+                isWheelOpen && styles.titleChevronOpen,
+              ]}
+            />
+          </span>
         </button>
         {/* Both arrows at the trailing corner, as a pair — and only while the
             calendar is the surface they step. `IconButton` gives them
@@ -1027,6 +1034,7 @@ export function TouchDateField({
             month, which sits on the right when the inline axis runs that way,
             and the panes mirror with it. */}
         <span
+          ref={arrowsFadeRef}
           data-arrows="months"
           // `inert` as well as the hidden styling: the fade keeps them
           // `visible` until it finishes, and a control that is on its way out
@@ -1074,6 +1082,7 @@ export function TouchDateField({
             Hidden rather than unmounted, for the arrows' reason — the corner
             keeps its size, so the header cannot change height mid-swap. */}
         <span
+          ref={resetFadeRef}
           data-action="reset"
           inert={isWheelOpen ? true : undefined}
           {...stylex.props(
@@ -1096,6 +1105,7 @@ export function TouchDateField({
           this row is not a header row for assistive technology — and it must
           live outside the scroller, or it would scroll away with the month. */}
       <div
+        ref={weekdaysFadeRef}
         aria-hidden="true"
         {...stylex.props(
           styles.weekdays,
@@ -1136,6 +1146,7 @@ export function TouchDateField({
           />
         </div>
         <div
+          ref={wheelsFadeRef}
           data-panel="wheels"
           inert={isWheelOpen ? undefined : true}
           {...stylex.props(
@@ -1196,6 +1207,7 @@ export function TouchDateField({
           />
         </div>
         <div
+          ref={doneFadeRef}
           inert={isWheelOpen ? undefined : true}
           {...stylex.props(
             styles.footerAction,
