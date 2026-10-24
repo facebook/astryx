@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-08-30
+approved_at: 2026-10-24
 owners: [cixzhang, imdreamrunner]
 review_triggers: [public-api, behavior, layout, theming, accessibility]
 verified_by:
@@ -57,6 +57,14 @@ connection between the closed trigger and its selection surface.
   stable-default change, so it ships as `[breaking]` in a scheduled minor under
   `spec:AST-017`; callers that need the anchored popover on every device pass
   `popover`.
+- `adaptive`'s compact test becomes `spec:AST-012` FR9 (width below the
+  effective `md` point or height below 500) in place of the shipped
+  `(max-width: 768px)` query: a coarse-pointer screen exactly 768 pixels wide
+  opens the popover, and a coarse-pointer screen at least 768 wide but under
+  500 tall opens the bottom sheet. Both surfaces keep selection working, so no
+  caller must change source and the change is not breaking under
+  `spec:AST-017` FR1; `popover` and `bottom-sheet` pin one surface. It is
+  pending until the shared resolver conforms; FR4 describes the shipped query.
 - `hasClear` changes the value contract to include `null`; that distinction is
   already part of the public type.
 - `isReadOnly` is additive and defaults to `false`. It preserves the selected

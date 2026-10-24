@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-10-23
+approved_at: 2026-10-24
 phase: accepted
 owners: [cixzhang]
 affects_architecture: []
@@ -84,7 +84,8 @@ validating, and reviewing individual native components while
   including Reduce Motion, haptics, and VoiceOver. Each spec names the guideline
   pages it follows. The core contract keeps the component's meaning, words,
   states, and accessibility semantics; the guidelines decide how the platform
-  presents them.
+  presents them, except that a choice between presentations by screen size uses
+  the compact definition of `spec:AST-012` FR9 rather than size classes.
 - **FR4 — Brand shows through the theme everywhere else.** What FR2 and FR3
   leave open, such as accent and fill color, type family, corner shape,
   spacing, and icon choice, comes from the app's theme: tokens from its
