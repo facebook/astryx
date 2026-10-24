@@ -1586,6 +1586,18 @@ jobs:
             --project chromium \
             --output submenu-header-footer-output
 
+      # Tooltip and HoverCard answer a touch only once it is a tap: they open
+      # when the finger lifts, never for a touch that turns into a scroll, and
+      # a tap-opened layer closes when a tap outside lifts. Whether a touch is
+      # a tap, a scroll or a long press is the engine's own gesture decision,
+      # which only real touch input reaches.
+      - name: Run hover layer touch contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/Layer/__tests__/TouchTrigger.a11y.chromium.spec.ts \
+            --project chromium \
+            --output hover-layer-touch-output
+
       # A pointer that crosses from a Tooltip's trigger onto the tooltip in one
       # step must not lose it (WCAG 1.4.13 hoverable). The defect is in the
       # order the engine dispatches mouseout and mouseleave on that step, which
