@@ -31,4 +31,6 @@ export {
 export {navigation} from './navigation';
 export {scroll} from './scroll';
 export {springs} from './springs';
+// Spinner's touch presentation: UIActivityIndicatorView.
+export {progress} from './progress';
 export {timing} from './timing';

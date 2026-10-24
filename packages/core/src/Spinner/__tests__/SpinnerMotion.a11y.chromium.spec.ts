@@ -16,7 +16,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import {expect, test, type Page} from '@playwright/test';
+import {expect, test, type Locator, type Page} from '@playwright/test';
 import {
   DEFAULT_STORYBOOK_DIR,
   serveStorybook,
@@ -43,6 +43,13 @@ const BLOCK_MS = 700;
 const DPR = 2;
 
 test.use({viewport: {width: 402, height: 420}, deviceScaleFactor: DPR});
+
+/**
+ * The rotor: the first hidden span in the box. The touch glyph comes after it
+ * (and is not displayed under a fine pointer).
+ */
+const rotorOf = (spinner: Locator) =>
+  spinner.locator('span[aria-hidden="true"]').first();
 
 /** The four sizes, sm → xl, each with its rotor. */
 async function openSizes(page: Page) {
@@ -276,7 +283,7 @@ test('the arc turns clockwise at a constant rate, once per period', async ({
   page,
 }) => {
   const spinners = await openSizes(page);
-  const rotor = spinners.first().locator('span[aria-hidden="true"]');
+  const rotor = rotorOf(spinners.first());
   const samples = await rotor.evaluate(element => {
     const [animation] = element.getAnimations();
     animation.pause();
@@ -318,7 +325,9 @@ test('every ring on the page turns in phase', async ({page}) => {
   await openSizes(page);
   const angles = await page.evaluate(() =>
     Array.from(
-      document.querySelectorAll('.astryx-spinner > span[aria-hidden="true"]'),
+      document.querySelectorAll(
+        '.astryx-spinner > span[aria-hidden="true"]:has(> svg)',
+      ),
     ).map(rotor => {
       const [animation] = rotor.getAnimations();
       return {
@@ -339,7 +348,7 @@ test('storyboard: one revolution, frame by frame @storyboard', async ({
 }, testInfo) => {
   const spinners = await openSizes(page);
   const xl = spinners.nth(3);
-  const rotor = xl.locator('span[aria-hidden="true"]');
+  const rotor = rotorOf(xl);
   const duration = await rotor.evaluate(element => {
     for (const animation of document.getAnimations()) {
       animation.pause();

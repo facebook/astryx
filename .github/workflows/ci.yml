@@ -1552,13 +1552,15 @@ jobs:
             --output codeblock-diff-row-paint-output
 
       # A Spinner must keep turning while a script holds the main thread, so
-      # its arc turns on the compositor and paints nothing per frame. jsdom
-      # has neither a compositor nor paint, so only a real engine shows the
-      # frames still changing through a busy main thread.
+      # its arc (and, under a finger, the iOS activity indicator's spokes)
+      # moves on the compositor and paints nothing per frame. jsdom has
+      # neither a compositor nor paint, so only a real engine shows the frames
+      # still changing through a busy main thread.
       - name: Run Spinner busy main thread contract
         run: |
           pnpm exec playwright test \
             packages/core/src/Spinner/__tests__/SpinnerMotion.a11y.chromium.spec.ts \
+            packages/core/src/Spinner/__tests__/SpinnerTouch.a11y.chromium.spec.ts \
             --project chromium \
             --output spinner-motion-output
 

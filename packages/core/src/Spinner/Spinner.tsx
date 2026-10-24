@@ -25,6 +25,7 @@ import {Text} from '../Text/Text';
 import {mergeProps} from '../utils';
 import {useTranslator} from '../i18n';
 import {themeProps} from '../utils/themeProps';
+import {progress} from '../motion/uikit/progress';
 
 // =============================================================================
 // Constants
@@ -232,6 +233,45 @@ const rotation = stylex.keyframes({
   '100%': {transform: 'rotate(360deg)'},
 });
 
+/**
+ * Under a finger (a coarse primary pointer) the spinner draws UIKit's activity
+ * indicator instead of the ring (motion/uikit `progress.activityIndicator`):
+ * eight capsule spokes, a bright head that steps clockwise one spoke every
+ * 100 ms, a turn every 0.8 s, and the trail fading behind it. UIKit swaps
+ * sixteen pre-rendered images; here each spoke steps its own opacity through
+ * the same sixteen values on the compositor, offset by when the head reaches
+ * it (`spokeStyles`), so it keeps turning while a script runs.
+ *
+ * One frame lasts 6.25% of the cycle. Each value is held by a pair of
+ * keyframes and joined to the next by a 0.01% ramp under linear timing: WebKit
+ * never runs a `steps()` animation off the main thread. The values are
+ * UIKit's spoke alphas divided by its color's own alpha (0.6), so a shade's
+ * color takes the place of UIKit's gray at the same relative weights.
+ *
+ * Like UIKit's, the glyph keeps its pace under reduced motion, starts its own
+ * cycle when it mounts (no phase pin), and turns clockwise in RTL.
+ */
+const spokeFade = stylex.keyframes({
+  '0%': {opacity: 0.85},
+  '6.24%': {opacity: 0.85},
+  '6.25%': {opacity: 0.7783},
+  '12.49%': {opacity: 0.7783},
+  '12.5%': {opacity: 0.7067},
+  '18.74%': {opacity: 0.7067},
+  '18.75%': {opacity: 0.6333},
+  '24.99%': {opacity: 0.6333},
+  '25%': {opacity: 0.5617},
+  '31.24%': {opacity: 0.5617},
+  '31.25%': {opacity: 0.49},
+  '37.49%': {opacity: 0.49},
+  '37.5%': {opacity: 0.4183},
+  '43.74%': {opacity: 0.4183},
+  '43.75%': {opacity: 0.3467},
+  '49.99%': {opacity: 0.3467},
+  '50%': {opacity: 0.275},
+  '100%': {opacity: 0.275},
+});
+
 // =============================================================================
 // Styles
 // =============================================================================
@@ -284,7 +324,9 @@ const styles = stylex.create({
   },
   ring: {
     backfaceVisibility: 'hidden',
-    display: 'block',
+    // Under a finger the touch glyph takes the ring's place (see spokeFade).
+    // The query is the touch presentation resolver's TOUCH_QUERY.
+    display: {default: 'block', '@media (pointer: coarse)': 'none'},
     // The track and the rotor share the one grid cell, stacked and centred.
     gridArea: '1 / 1',
     // The frame is the box, read from the same composed var the span is sized
@@ -307,7 +349,7 @@ const styles = stylex.create({
   // The box that turns: it holds the arc's own svg, is exactly the frame's
   // size (so it pivots on the ring's centre), and moves by `transform` alone.
   rotor: {
-    display: 'block',
+    display: {default: 'block', '@media (pointer: coarse)': 'none'},
     gridArea: '1 / 1',
     width: `var(${BOX_SIZE})`,
     height: `var(${BOX_SIZE})`,
@@ -324,6 +366,37 @@ const styles = stylex.create({
     animationIterationCount: 'infinite',
     animationName: rotation,
     animationTimingFunction: 'linear',
+  },
+  // UIKit's activity indicator, shown in the ring's place under a finger.
+  glyph: {
+    display: {default: 'none', '@media (pointer: coarse)': 'block'},
+    gridArea: '1 / 1',
+    position: 'relative',
+    width: `var(${BOX_SIZE})`,
+    height: `var(${BOX_SIZE})`,
+  },
+  // One spoke per layer: a full-box element holding that spoke already drawn
+  // at its angle, so nothing is resampled (UIKit draws its images the same
+  // way). Its opacity is the only thing that moves, and it has its own layer
+  // so the compositor runs it.
+  spoke: {
+    position: 'absolute',
+    top: 0,
+    insetInlineStart: 0,
+    width: `var(${BOX_SIZE})`,
+    height: `var(${BOX_SIZE})`,
+    opacity: 0.275,
+    willChange: 'opacity',
+    animationName: spokeFade,
+    animationDuration: '800ms',
+    animationIterationCount: 'infinite',
+    animationTimingFunction: 'linear',
+  },
+  spokeShape: {
+    display: 'block',
+    width: `var(${BOX_SIZE})`,
+    height: `var(${BOX_SIZE})`,
+    fill: 'var(--spinner-color)',
   },
   circle: {
     fill: 'none',
@@ -442,6 +515,44 @@ const trackOpacityStyles = stylex.create({
   inherit: {strokeOpacity: TRACK_OPACITY.inherit},
 });
 
+// The eight spokes, clockwise from 12 o'clock. Each starts its fade where the
+// head reaches it: in the first frame the head is at 9 o'clock (spoke 6), and
+// it moves one spoke every two frames (100 ms). A negative delay starts a
+// spoke partway through its cycle, so every spoke is in step from the first
+// frame.
+const spokeStyles = stylex.create({
+  s0: {animationDelay: '-600ms'},
+  s1: {animationDelay: '-500ms'},
+  s2: {animationDelay: '-400ms'},
+  s3: {animationDelay: '-300ms'},
+  s4: {animationDelay: '-200ms'},
+  s5: {animationDelay: '-100ms'},
+  s6: {animationDelay: '0ms'},
+  s7: {animationDelay: '-700ms'},
+});
+
+const SPOKES = [
+  {id: 's0', style: spokeStyles.s0},
+  {id: 's1', style: spokeStyles.s1},
+  {id: 's2', style: spokeStyles.s2},
+  {id: 's3', style: spokeStyles.s3},
+  {id: 's4', style: spokeStyles.s4},
+  {id: 's5', style: spokeStyles.s5},
+  {id: 's6', style: spokeStyles.s6},
+  {id: 's7', style: spokeStyles.s7},
+];
+
+// The glyph follows UIKit's two styles, drawn in their own points and scaled
+// to the size's box: `.medium` (20 pt) for sm, md and lg, `.large` (37 pt)
+// for xl, so md draws `.medium` exactly and the box never changes size.
+// `.large` sits 1 pt up and left of its view's centre, as UIKit draws it.
+const GLYPH_STYLE = {
+  sm: progress.activityIndicator.medium,
+  md: progress.activityIndicator.medium,
+  lg: progress.activityIndicator.medium,
+  xl: progress.activityIndicator.large,
+} as const;
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -528,6 +639,7 @@ export function Spinner({
   const frameSize = diameter + border * 2;
   const circumference = Math.PI * diameter;
   const arcLength = circumference * ARC_FRACTION;
+  const glyph = GLYPH_STYLE[size];
   const hasLabel = label != null;
   const labelId = useId();
   const t = useTranslator();
@@ -619,6 +731,26 @@ export function Spinner({
             {...stylex.props(styles.circle, styles.arc)}
           />
         </svg>
+      </span>
+      <span aria-hidden="true" {...stylex.props(styles.glyph)}>
+        {SPOKES.map((spoke, index) => (
+          <span key={spoke.id} {...stylex.props(styles.spoke, spoke.style)}>
+            <svg
+              width={frameSize}
+              height={frameSize}
+              viewBox={`0 0 ${glyph.sizePt} ${glyph.sizePt}`}
+              {...stylex.props(styles.spokeShape)}>
+              <rect
+                x={glyph.glyphCenterPt - glyph.spokeWidthPt / 2}
+                y={glyph.glyphCenterPt - glyph.spokeOuterRadiusPt}
+                width={glyph.spokeWidthPt}
+                height={glyph.spokeOuterRadiusPt - glyph.spokeInnerRadiusPt}
+                rx={glyph.spokeWidthPt / 2}
+                transform={`rotate(${(index * 360) / SPOKES.length} ${glyph.glyphCenterPt} ${glyph.glyphCenterPt})`}
+              />
+            </svg>
+          </span>
+        ))}
       </span>
     </span>
   );
