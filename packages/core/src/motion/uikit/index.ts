@@ -29,6 +29,7 @@ export {
   type SourcedGestureConstant,
 } from './gestures';
 export {navigation} from './navigation';
+export {paging} from './paging';
 export {scroll} from './scroll';
 export {springs} from './springs';
 export {timing} from './timing';
