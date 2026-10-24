@@ -175,44 +175,6 @@ describe('motion roles', () => {
   });
 });
 
-/**
- * Reduce Motion: the lens's opacity and uniform scale per frame after a tap
- * and after a drag's lift (ms from its first frame at the destination), from
- * the same lab with Reduce Motion on.
- */
-const MEASURED_REDUCED_MOTION = {
-  tap: [
-    [0, 0.0005, 0.8801],
-    [16.7, 0.0564, 0.8868],
-    [33.4, 0.1925, 0.9031],
-    [50.0, 0.3831, 0.926],
-    [66.7, 0.5673, 0.9481],
-    [83.4, 0.6915, 0.963],
-    [100.0, 0.7974, 0.9757],
-    [116.7, 0.8691, 0.9843],
-    [133.4, 0.926, 0.9911],
-    [150.0, 0.9595, 0.9951],
-    [166.7, 0.9831, 0.998],
-    [183.4, 0.9954, 0.9995],
-    [200.0, 1, 1],
-  ],
-  dragLift: [
-    [0, 0.0005, 0.8801],
-    [16.7, 0.0556, 0.8867],
-    [33.4, 0.1956, 0.9035],
-    [50.0, 0.3778, 0.9253],
-    [66.7, 0.5538, 0.9465],
-    [83.4, 0.6993, 0.9639],
-    [100.0, 0.8062, 0.9767],
-    [116.7, 0.8625, 0.9835],
-    [133.4, 0.9277, 0.9913],
-    [150.0, 0.9554, 0.9946],
-    [166.7, 0.9813, 0.9978],
-    [183.4, 0.9947, 0.9994],
-    [200.0, 1, 1],
-  ],
-} as const;
-
 describe('one source for the slide', () => {
   it('the segmented slide has one spring, the measured one: no guessed thumb spring is left', () => {
     expect('segmentedThumb' in springs).toBe(false);
@@ -224,49 +186,7 @@ describe('one source for the slide', () => {
 });
 
 describe('Reduce Motion', () => {
-  const {reducedMotion} = segmentedControl;
-  const ease = cubicBezier(reducedMotion.curve);
-
-  it('fades and scales the lens in on one clock and curve, as measured', () => {
-    for (const frames of Object.values(MEASURED_REDUCED_MOTION)) {
-      // Opacity and scale share one progress at every frame.
-      for (const [, opacity, scale] of frames) {
-        expect(
-          (scale - reducedMotion.scaleFrom) / (1 - reducedMotion.scaleFrom),
-        ).toBeCloseTo(opacity, 2);
-      }
-      let best = Infinity;
-      for (let offset = -10; offset <= 10; offset += 0.5) {
-        let worst = 0;
-        for (const [t, opacity, scale] of frames) {
-          const p = ease(Math.max(0, t + offset) / reducedMotion.fadeMs);
-          worst = Math.max(
-            worst,
-            Math.abs(p - opacity),
-            Math.abs(
-              reducedMotion.scaleFrom +
-                (1 - reducedMotion.scaleFrom) * p -
-                scale,
-            ),
-          );
-        }
-        best = Math.min(best, worst);
-      }
-      // Within 0.05 of the measured opacity and scale at every frame.
-      expect(best).toBeLessThan(0.05);
-    }
-  });
-
-  it('is two theme roles (clock and curve) and a measured starting scale', () => {
-    expect(motionRoleIn(reducedMotion, 'fadeMs')).toMatchObject({
-      id: 'segmentedControl.reducedMotion.fadeMs',
-      kind: 'duration',
-      variable: '--motion-segmented-control-reduced-motion-fade-ms',
-    });
-    expect(motionRoleOf(reducedMotion.curve)).toMatchObject({
-      id: 'segmentedControl.reducedMotion.curve',
-      kind: 'curve',
-    });
-    expect(motionRoleIn(reducedMotion, 'scaleFrom')).toBeUndefined();
+  it('holds no values: SegmentedControl follows design:reduced-motion through the animator’s cross-fade, not UIKit’s fade and scale-in', () => {
+    expect('reducedMotion' in segmentedControl).toBe(false);
   });
 });

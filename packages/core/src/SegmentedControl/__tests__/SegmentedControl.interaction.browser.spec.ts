@@ -66,10 +66,8 @@ const SLIDE = {response: 0.4, dampingFraction: 0.85} as const;
 /** UIKit's title cross-fade. */
 const TITLE_FADE_MS = 200;
 const TITLE_EASE = cubicBezier(0.25, 0.1, 0.25, 1);
-/** Reduce Motion: the in-place fade and scale-in (motion/uikit/segmented.ts). */
-const RM_FADE_MS = 200;
-const RM_EASE = cubicBezier(0.25, 0.1, 0.25, 1);
-const RM_SCALE_FROM = 0.88;
+/** design:reduced-motion DR2: a cross-fade, opacity only, 200 ms or less. */
+const RM_MAX_FADE_MS = 200;
 
 interface SegmentBox {
   value: string;
@@ -500,14 +498,119 @@ test('an arrow key and a programmatic change slide the selection too', async ({
   expect(animations.length).toBeGreaterThan(0);
 });
 
-test('Reduce Motion: no travel; the surface fades and scales in at the new segment on UIKit’s 0.2 s block; the titles still cross-fade', async ({
+test('Reduce Motion (design:reduced-motion): no travel or scale; the old surface fades out where it is as the new one fades in, opacity only, in 200 ms or less; the titles cross-fade on the same clock', async ({
   page,
 }) => {
   await page.emulateMedia({reducedMotion: 'reduce'});
   const control = await openControl(page);
-  const table = boxOf(await control.boxes(), 'table');
-  // Hold the clock, and the proxy's animations from their birth: the fade is
-  // 200 ms, sooner over than a slow engine reaches a hold after the fact.
+  const boxes = await control.boxes();
+  const {samples, titleFades} = await sampleReducedMotionChange(page, control);
+  const grid = boxOf(boxes, 'grid');
+  const table = boxOf(boxes, 'table');
+  // Over in 200 ms or less (DR2), and the titles fade on that clock.
+  const fadeEnd = fadeEndOf(samples);
+  expect(fadeEnd).toBeGreaterThan(0);
+  expect(fadeEnd).toBeLessThanOrEqual(RM_MAX_FADE_MS);
+  expect(samples[samples.length - 1].entering?.opacity).toBe(1);
+  expect(titleFades.length).toBeGreaterThan(0);
+  for (const duration of titleFades) {
+    expect(duration).toBeGreaterThan(0);
+    expect(duration).toBeLessThanOrEqual(RM_MAX_FADE_MS);
+  }
+  for (const {t, entering, leaving} of samples) {
+    const label = JSON.stringify({t, entering, leaving});
+    expect(entering, label).not.toBeNull();
+    // The new surface: at Table from the first frame, full size; only its
+    // opacity changes (DR1).
+    expect(Math.abs((entering?.x ?? 0) - table.x), label).toBeLessThan(0.5);
+    expect(Math.abs((entering?.width ?? 0) - table.width), label).toBeLessThan(
+      0.5,
+    );
+    expect(entering?.sx, label).toBe(1);
+    expect(entering?.sy, label).toBe(1);
+    // The old surface, while it shows: at Grid, full size.
+    if (leaving != null && leaving.opacity > 0.001) {
+      expect(Math.abs(leaving.x - grid.x), label).toBeLessThan(0.5);
+      expect(Math.abs(leaving.width - grid.width), label).toBeLessThan(0.5);
+      expect(leaving.sx, label).toBe(1);
+      // One surface's worth of paint between the two.
+      expect(
+        Math.abs((entering?.opacity ?? 0) + leaving.opacity - 1),
+        label,
+      ).toBeLessThan(0.02);
+    }
+  }
+  expect(samples[0].leaving?.opacity ?? 0).toBeGreaterThan(0.9);
+  expect(samples[0].entering?.opacity ?? 1).toBeLessThan(0.1);
+  // Then the segment paints its own surface again, and the copy is gone.
+  await expect(control.proxy).toHaveCSS('visibility', 'hidden', {
+    timeout: 3000,
+  });
+  await expect(control.group.locator('[data-selection-leaving]')).toHaveCount(
+    0,
+  );
+  await expect(control.segment('table')).not.toHaveCSS(
+    'background-color',
+    'rgba(0, 0, 0, 0)',
+  );
+});
+
+test('Reduce Motion: a theme cannot lengthen the fade, the title cross-fade or bring back travel (design:reduced-motion DR4)', async ({
+  page,
+}) => {
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  const control = await openControl(page);
+  await page.evaluate(() => {
+    const root = document.documentElement.style;
+    root.setProperty('--motion-segmented-control-label-cross-fade-ms', '600ms');
+    root.setProperty('--motion-segmented-control-selection-spring', '1.2s 0.4');
+  });
+  const {samples, titleFades} = await sampleReducedMotionChange(page, control);
+  const fadeEnd = fadeEndOf(samples);
+  expect(fadeEnd).toBeGreaterThan(0);
+  expect(fadeEnd).toBeLessThanOrEqual(RM_MAX_FADE_MS);
+  // No visible surface ever moves, scales or resizes.
+  const first = samples[0];
+  for (const {t, entering, leaving} of samples) {
+    const label = JSON.stringify({t, entering, leaving});
+    expect(entering?.x, label).toBe(first.entering?.x);
+    expect(entering?.width, label).toBe(first.entering?.width);
+    expect(entering?.sx, label).toBe(1);
+    if (leaving != null && leaving.opacity > 0.001) {
+      expect(leaving.x, label).toBe(first.leaving?.x);
+      expect(leaving.sx, label).toBe(1);
+    }
+  }
+  expect(titleFades.length).toBeGreaterThan(0);
+  for (const duration of titleFades) {
+    expect(duration).toBeLessThanOrEqual(RM_MAX_FADE_MS);
+  }
+});
+
+interface SurfaceSample {
+  opacity: number;
+  sx: number;
+  sy: number;
+  x: number;
+  width: number;
+}
+
+/**
+ * Taps Table under Reduced Motion with the lens's animations held from
+ * their birth, and reads both surfaces (the proxy fading in, the copy fading
+ * out) every 8 ms of their animations, and the title fades' durations.
+ */
+async function sampleReducedMotionChange(
+  page: Page,
+  control: Control,
+): Promise<{
+  samples: {
+    t: number;
+    entering: SurfaceSample | null;
+    leaving: SurfaceSample | null;
+  }[];
+  titleFades: number[];
+}> {
   await installTimerGate(page);
   await holdLensAnimationsAtBirth(page);
   await control.tapSegment('table');
@@ -519,77 +622,80 @@ test('Reduce Motion: no travel; the surface fades and scales in at the new segme
             .length,
       ),
     )
-    .toBeGreaterThan(0);
+    .toBeGreaterThan(1);
   await freezeTimers(page);
   await page.evaluate(() => {
     (window as unknown as {__restoreAnimate: () => void}).__restoreAnimate();
   });
-  const samples = await control.proxy.evaluate(
-    (element, ts) => {
-      const held = (window as unknown as {__harnessHeld: Animation[]})
-        .__harnessHeld;
-      return ts.map(t => {
-        for (const animation of held) {
-          const end = Number(
-            animation.effect?.getComputedTiming().endTime ?? 0,
-          );
-          animation.currentTime = Math.min(t, Math.max(0, end - 0.5));
-        }
-        const style = getComputedStyle(element);
-        const [sx, sy = sx] =
-          style.scale === 'none' ? [1, 1] : style.scale.split(' ').map(Number);
-        return {
-          t,
-          opacity: Number(style.opacity),
-          sx,
-          sy,
-          x: style.translate === 'none' ? 0 : parseFloat(style.translate),
-          origin: style.transformOrigin.split(' ').map(parseFloat),
-          visible: style.visibility === 'visible',
-        };
+  const samples = await control.group.evaluate(group => {
+    const held = (window as unknown as {__harnessHeld: Animation[]})
+      .__harnessHeld;
+    const read = (selector: string) => {
+      const element = group.querySelector<HTMLElement>(selector);
+      if (element == null) {
+        return null;
+      }
+      const style = getComputedStyle(element);
+      const [sx, sy = sx] =
+        style.scale === 'none' ? [1, 1] : style.scale.split(' ').map(Number);
+      return {
+        opacity: style.visibility === 'visible' ? Number(style.opacity) : 0,
+        sx,
+        sy,
+        x: style.translate === 'none' ? 0 : parseFloat(style.translate),
+        width: parseFloat(style.width),
+      };
+    };
+    const out = [];
+    for (let t = 0; t <= 1000; t += 8) {
+      for (const animation of held) {
+        const animationEnd = Number(
+          animation.effect?.getComputedTiming().endTime ?? 0,
+        );
+        animation.currentTime = Math.min(t, Math.max(0, animationEnd - 0.5));
+      }
+      out.push({
+        t,
+        entering: read('[data-selection-proxy]'),
+        leaving: read('[data-selection-leaving]'),
       });
-    },
-    timeline(RM_FADE_MS - 1),
-  );
-  // The titles still cross-fade (held by their own fill until the hand-back).
-  const titleFades = await control
-    .segment('table')
-    .locator('[data-segment-title="text"]')
-    .evaluate(element =>
+    }
+    return out;
+  });
+  const titleFades = await control.group.evaluate(group =>
+    [...group.querySelectorAll('[data-segment-title]')].flatMap(element =>
       element
         .getAnimations()
         .map(a => Number(a.effect?.getComputedTiming().duration)),
-    );
+    ),
+  );
   await releaseAnimations(page);
   await thawTimers(page);
-  expect(titleFades).toContain(TITLE_FADE_MS);
-  for (const sample of samples) {
-    const p = RM_EASE(sample.t / RM_FADE_MS);
-    expect(sample.visible).toBe(true);
-    // At the new segment from the first frame: no travel...
-    expect(Math.abs(sample.x - table.x)).toBeLessThan(0.5);
-    // ...scaled about its center...
-    expect(Math.abs(sample.origin[0] - table.width / 2)).toBeLessThan(0.5);
-    expect(Math.abs(sample.origin[1] - table.height / 2)).toBeLessThan(0.5);
-    // ...fading in from 0 and growing from 0.88, on one curve.
-    expect(Math.abs(sample.opacity - p), JSON.stringify(sample)).toBeLessThan(
-      0.02,
-    );
-    expect(
-      Math.abs(sample.sx - (RM_SCALE_FROM + (1 - RM_SCALE_FROM) * p)),
-      JSON.stringify(sample),
-    ).toBeLessThan(0.005);
-    expect(sample.sy).toBeCloseTo(sample.sx, 4);
-  }
-  // Then the segment paints its own surface again.
-  await expect(control.proxy).toHaveCSS('visibility', 'hidden', {
-    timeout: 3000,
-  });
-  await expect(control.segment('table')).not.toHaveCSS(
-    'background-color',
-    'rgba(0, 0, 0, 0)',
+  return {samples, titleFades};
+}
+
+/** The last sampled time either surface's opacity is still on its way. */
+function fadeEndOf(
+  samples: {
+    t: number;
+    entering: SurfaceSample | null;
+    leaving: SurfaceSample | null;
+  }[],
+): number {
+  const last = samples[samples.length - 1];
+  return Math.max(
+    0,
+    ...samples
+      .filter(
+        ({entering, leaving}) =>
+          Math.abs((entering?.opacity ?? 0) - (last.entering?.opacity ?? 0)) >
+            0.002 ||
+          Math.abs((leaving?.opacity ?? 0) - (last.leaving?.opacity ?? 0)) >
+            0.002,
+      )
+      .map(({t}) => t),
   );
-});
+}
 
 /**
  * Pauses every animation started on the lens (the proxy and anything inside
@@ -613,7 +719,9 @@ async function holdLensAnimationsAtBirth(page: Page): Promise<void> {
       ...args: Parameters<Element['animate']>
     ): Animation {
       const animation = original.apply(this, args);
-      if (this.closest('[data-selection-proxy]') != null) {
+      if (
+        this.closest('[data-selection-proxy], [data-selection-leaving]') != null
+      ) {
         animation.pause();
         held.push(animation);
       }

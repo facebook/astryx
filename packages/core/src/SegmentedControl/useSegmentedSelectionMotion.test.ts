@@ -17,8 +17,6 @@
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {createAnimator, type Animator} from '../motion/animator';
-import {cubicBezier} from '../motion/bezier';
-import {segmentedControl} from '../motion/uikit';
 import {
   SegmentedSelectionMotion,
   TITLE_SELECTOR,
@@ -56,7 +54,7 @@ function rect(left: number, top: number, width: number, height: number) {
 let clock = 0;
 let reduceMotion = false;
 
-function setup(selected: string) {
+function setup(selected: string, {coarse = true}: {coarse?: boolean} = {}) {
   const track = document.createElement('div');
   track.getBoundingClientRect = () =>
     rect(TRACK.left, TRACK.top, TRACK.width, TRACK.height);
@@ -84,18 +82,25 @@ function setup(selected: string) {
   style.textContent = STYLES;
   document.head.append(style);
   document.body.append(track);
+  // A finger by default: Reduced Motion fades (design:reduced-motion DR2).
   const animator: Animator = createAnimator(null, {
     now: () => clock,
     prefersReducedMotion: () => reduceMotion,
+    isCoarsePointer: () => coarse,
+  });
+  const leavingAnimator: Animator = createAnimator(null, {
+    now: () => clock,
+    prefersReducedMotion: () => reduceMotion,
+    isCoarsePointer: () => coarse,
   });
   const motion = new SegmentedSelectionMotion(animator, {
     now: () => clock,
-    prefersReducedMotion: () => reduceMotion,
+    leavingAnimator,
   });
   motion.attachProxy(proxy);
   paint(segments, selected);
   motion.rememberTitles(track);
-  return {track, proxy, segments, animator, motion};
+  return {track, proxy, segments, animator, leavingAnimator, motion};
 }
 
 /**
@@ -320,38 +325,6 @@ describe('the selection slide', () => {
     expect(ctx.animator.get('x', 5000)).toBeCloseTo(xOf('table'), 6);
   });
 
-  it('Reduced Motion: no travel; the surface fades and scales in at the destination on UIKit’s 0.2 s block', async () => {
-    reduceMotion = true;
-    const ctx = setup('grid');
-    select(ctx, 'grid', 'table');
-    // At the destination from the first frame, scaled about its center.
-    expect(ctx.animator.get('x')).toBe(xOf('table'));
-    expect(ctx.proxy.style.width).toBe('106px');
-    expect(ctx.proxy.style.transformOrigin).toBe('50% 50%');
-    expectHidden(ctx.segments.table);
-    const {reducedMotion} = segmentedControl;
-    const ease = cubicBezier(reducedMotion.curve);
-    for (const t of [0, 16, 50, 100, 150, 199]) {
-      const p = ease(t / reducedMotion.fadeMs);
-      expect(ctx.animator.get('opacity', clock + t)).toBeCloseTo(p, 4);
-      expect(ctx.animator.get('scaleX', clock + t)).toBeCloseTo(
-        reducedMotion.scaleFrom + (1 - reducedMotion.scaleFrom) * p,
-        4,
-      );
-      expect(ctx.animator.get('scaleY', clock + t)).toBeCloseTo(
-        ctx.animator.get('scaleX', clock + t),
-        6,
-      );
-      // No travel at any point.
-      expect(ctx.animator.get('x', clock + t)).toBe(xOf('table'));
-    }
-    await advance(1000);
-    expect(ctx.motion.isSliding).toBe(false);
-    expect(ctx.proxy.style.visibility).toBe('hidden');
-    expect(ctx.proxy.style.transformOrigin).toBe('');
-    expectOwnSurface(ctx.segments.table);
-  });
-
   it('Reduced Motion off again: the next change slides at full size and opacity', async () => {
     reduceMotion = true;
     const ctx = setup('grid');
@@ -366,6 +339,115 @@ describe('the selection slide', () => {
     expect(ctx.proxy.style.transformOrigin).toBe('');
     await advance(3000);
     expect(ctx.animator.get('x')).toBe(xOf('list'));
+  });
+});
+
+describe('Reduced Motion (design:reduced-motion)', () => {
+  const leavingIn = (track: HTMLElement) =>
+    track.querySelector<HTMLElement>('[data-selection-leaving]');
+
+  /** design:reduced-motion DR2: a cross-fade, opacity only, 200 ms or less. */
+  const MAX_FADE_MS = 200;
+
+  /** When `get` stops changing: the end of the fade, in ms after the change. */
+  function endOf(get: (t: number) => number, start: number): number {
+    const last = get(start + 5000);
+    for (let t = 0; t <= 5000; t += 1) {
+      if (Math.abs(get(start + t) - last) < 1e-6) {
+        return t;
+      }
+    }
+    return Infinity;
+  }
+
+  it('no travel and no scale: the old surface fades out where it is as the new one fades in, opacity only, in 200 ms or less (DR1, DR2)', async () => {
+    reduceMotion = true;
+    const ctx = setup('grid');
+    const start = clock;
+    select(ctx, 'grid', 'table');
+    // The new surface: at Table, full size, from the first frame; it only
+    // fades in.
+    expect(ctx.proxy.style.width).toBe('106px');
+    expectHidden(ctx.segments.table);
+    const entering = (t: number) => ctx.animator.get('opacity', t);
+    const fadeIn = endOf(entering, start);
+    expect(fadeIn).toBeGreaterThan(0);
+    expect(fadeIn).toBeLessThanOrEqual(MAX_FADE_MS);
+    expect(entering(start)).toBeCloseTo(0, 6);
+    expect(entering(start + fadeIn)).toBeCloseTo(1, 6);
+    for (let t = 0; t <= fadeIn; t += 10) {
+      expect(ctx.animator.get('x', start + t)).toBe(xOf('table'));
+      expect(ctx.animator.get('scaleX', start + t)).toBe(1);
+      expect(ctx.animator.get('scaleY', start + t)).toBe(1);
+    }
+    // The old surface: a copy of the selected surface at Grid, not announced,
+    // catching no input, that fades out where it is on the same clock.
+    const leaving = leavingIn(ctx.track);
+    expect(leaving).not.toBeNull();
+    expect(leaving?.getAttribute('aria-hidden')).toBe('true');
+    expect(leaving?.hasAttribute('data-selection-proxy')).toBe(false);
+    expect(leaving?.style.width).toBe(`${SEGMENTS.grid.width}px`);
+    expect(leaving?.style.backgroundColor).toBe('rgb(255, 255, 255)');
+    const leavingOpacity = (t: number) => ctx.leavingAnimator.get('opacity', t);
+    expect(leavingOpacity(start)).toBeCloseTo(1, 6);
+    expect(endOf(leavingOpacity, start)).toBe(fadeIn);
+    expect(leavingOpacity(start + fadeIn)).toBeCloseTo(0, 6);
+    for (let t = 0; t < fadeIn; t += 10) {
+      // Where it is while it shows, and the two always add up to one surface.
+      expect(ctx.leavingAnimator.get('x', start + t)).toBe(xOf('grid'));
+      expect(entering(start + t) + leavingOpacity(start + t)).toBeCloseTo(1, 6);
+    }
+    await advance(1000);
+    expect(leavingIn(ctx.track)).toBeNull();
+    expect(ctx.motion.isSliding).toBe(false);
+    expect(ctx.proxy.style.visibility).toBe('hidden');
+    expectOwnSurface(ctx.segments.table);
+  });
+
+  it('a change mid-fade fades the surface out from the opacity on screen, where it is', async () => {
+    reduceMotion = true;
+    const ctx = setup('grid');
+    const start = clock;
+    select(ctx, 'grid', 'table');
+    // Halfway through the fade, whatever its clock.
+    await advance(endOf(t => ctx.animator.get('opacity', t), start) / 2);
+    const opacity = ctx.animator.get('opacity');
+    expect(opacity).toBeGreaterThan(0.05);
+    expect(opacity).toBeLessThan(0.95);
+    select(ctx, 'table', 'list');
+    // One leaving copy at a time, at Table, from what was on screen.
+    expect(ctx.track.querySelectorAll('[data-selection-leaving]')).toHaveLength(
+      1,
+    );
+    expect(ctx.leavingAnimator.get('x')).toBe(xOf('table'));
+    expect(ctx.leavingAnimator.get('opacity')).toBeCloseTo(opacity, 2);
+    expect(ctx.animator.get('x')).toBe(xOf('list'));
+  });
+
+  it('the hand-back removes a leaving copy still on screen', () => {
+    reduceMotion = true;
+    const ctx = setup('grid');
+    select(ctx, 'grid', 'table');
+    expect(leavingIn(ctx.track)).not.toBeNull();
+    ctx.motion.settle();
+    expect(leavingIn(ctx.track)).toBeNull();
+  });
+
+  it('with any other pointer the change completes at once: no fade, no leaving copy (DR3)', () => {
+    reduceMotion = true;
+    const ctx = setup('grid', {coarse: false});
+    select(ctx, 'grid', 'table');
+    expect(leavingIn(ctx.track)).toBeNull();
+    expect(ctx.animator.get('x')).toBe(xOf('table'));
+    expect(ctx.animator.get('opacity')).toBe(1);
+    expect(ctx.animator.get('scaleX')).toBe(1);
+  });
+
+  it('without Reduce Motion there is no leaving copy: the surface slides', () => {
+    const ctx = setup('grid');
+    select(ctx, 'grid', 'table');
+    expect(leavingIn(ctx.track)).toBeNull();
+    expect(ctx.animator.get('opacity')).toBe(1);
   });
 });
 
@@ -414,6 +496,28 @@ describe('the title cross-fade', () => {
 
   afterEach(() => {
     HTMLElement.prototype.animate = realAnimate;
+  });
+
+  it('the titles cross-fade on the same Reduce Motion clock, whatever the title cross-fade role says (DR2, DR4)', () => {
+    reduceMotion = true;
+    const ctx = setup('grid');
+    const start = clock;
+    select(ctx, 'grid', 'table');
+    // The Reduce Motion fade's clock, as the animator plays it on the proxy.
+    let fadeIn = 0;
+    while (fadeIn < 5000 && ctx.animator.get('opacity', start + fadeIn) < 1) {
+      fadeIn += 1;
+    }
+    expect(fadeIn).toBeGreaterThan(0);
+    expect(fadeIn).toBeLessThanOrEqual(200);
+    const titleFades = recorded.filter(
+      r => r.element.dataset.segmentTitle != null,
+    );
+    expect(titleFades.length).toBe(4);
+    for (const r of titleFades) {
+      expect(r.options.duration).toBe(fadeIn);
+      expect(Object.keys(r.keyframes[0])).toEqual(['opacity']);
+    }
   });
 
   const layers = (segment: HTMLElement) => ({

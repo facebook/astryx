@@ -47,10 +47,13 @@
  * the only main-thread work of a selection change is its first frame and the
  * hand-back's.
  *
- * Reduced Motion: UIKit drops the slide (`segmentedControl.reducedMotion`):
- * the surface jumps to the destination and fades and scales in place there
- * (opacity from 0, scale from 0.88, centered) on the block's clock and
- * curve. The titles still cross-fade, as UIKit's do.
+ * Reduced Motion (`design:reduced-motion`): nothing travels or scales. The
+ * slide is handed to the animator as an entrance, so its Reduce Motion
+ * cross-fade lands the surface on the new segment and fades it in, while a
+ * copy of the surface on screen fades out where it is, on the same clock (a
+ * leaving travel the animator fades out in place). The titles cross-fade on
+ * that clock too, whatever the title cross-fade role says: no theme value
+ * keeps a longer animation under Reduced Motion.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/SegmentedControl/SegmentedControl.tsx
@@ -63,14 +66,16 @@ import {useEffect, useRef, useState, type RefObject} from 'react';
 import {
   createAnimator,
   type Animator,
-  type MotionCurve,
   type MotionHandle,
 } from '../motion/animator';
-import {cubicBezier} from '../motion/bezier';
+import {reducedMotionFade} from '../motion/reducedMotion';
 import {resolveMotion} from '../motion/resolveMotion';
 import {segmentedControl} from '../motion/uikit';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {observeResize} from '../utils/sharedResizeObserver';
+
+/** What Reduced Motion makes of a change (Animator.reducedMotion). */
+type ReducedMotion = ReturnType<Animator['reducedMotion']>;
 
 /** The segments, in DOM order. */
 export const SEGMENT_SELECTOR = '[role="radio"][data-value]';
@@ -216,50 +221,15 @@ function boxesIn(track: HTMLElement): (element: HTMLElement) => Box {
 export interface SegmentedSelectionMotionOptions {
   /** The animator's clock (ms, document timeline); `performance.now()` by default. */
   readonly now?: () => number;
-  /** The Reduced Motion preference; `prefers-reduced-motion` by default. */
-  readonly prefersReducedMotion?: () => boolean;
+  /**
+   * The animator for the copy of the surface that fades out where it is
+   * under Reduced Motion; one of its own by default.
+   */
+  readonly leavingAnimator?: Animator;
 }
 
 function defaultNow(): number {
   return typeof performance === 'undefined' ? Date.now() : performance.now();
-}
-
-function defaultPrefersReducedMotion(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  );
-}
-
-/**
- * A timed curve from `from` to `to` over `durationMs` on the cubic-bézier
- * `points`, for the animator to bake.
- */
-function timedCurve(
-  from: number,
-  to: number,
-  durationMs: number,
-  points: readonly [number, number, number, number],
-): MotionCurve {
-  const ease = cubicBezier(points);
-  const duration = durationMs / 1000;
-  const at = (t: number) =>
-    t <= 0
-      ? from
-      : t >= duration
-        ? to
-        : from + (to - from) * ease(t / duration);
-  const step = 1e-4;
-  return {
-    duration,
-    at,
-    velocity: t =>
-      t <= 0 || t >= duration
-        ? 0
-        : (at(Math.min(duration, t + step)) - at(Math.max(0, t - step))) /
-          (Math.min(duration, t + step) - Math.max(0, t - step)),
-  };
 }
 
 /**
@@ -269,6 +239,9 @@ function timedCurve(
 export class SegmentedSelectionMotion {
   private proxy: HTMLElement | null = null;
   private slide: Slide | null = null;
+  /** Under Reduced Motion, the copy of the surface fading out where it is. */
+  private leaving: HTMLElement | null = null;
+  private readonly leavingAnimator: Animator;
   /**
    * Segments the lens was headed for when a change turned it elsewhere. They
    * stay surface-hidden until it lands: a tap's press is still fading on such
@@ -280,15 +253,13 @@ export class SegmentedSelectionMotion {
   private readonly renderings = new WeakMap<HTMLElement, TitleRendering>();
 
   private readonly now: () => number;
-  private readonly prefersReducedMotion: () => boolean;
 
   constructor(
     private readonly animator: Animator = createAnimator(null),
     options: SegmentedSelectionMotionOptions = {},
   ) {
     this.now = options.now ?? defaultNow;
-    this.prefersReducedMotion =
-      options.prefersReducedMotion ?? defaultPrefersReducedMotion;
+    this.leavingAnimator = options.leavingAnimator ?? createAnimator(null);
   }
 
   /** Callback ref for the proxy element; stable. */
@@ -333,16 +304,20 @@ export class SegmentedSelectionMotion {
       segments.find(segment => segment.dataset.value === value) ?? null;
     const origin = find(from);
     const destination = find(to);
+    // What Reduced Motion makes of this change (design:reduced-motion): the
+    // animator's call, for the surface and the titles alike.
+    const reduced = this.animator.reducedMotion();
+    this.slideSurface(track, origin, destination, reduced);
     for (const segment of [origin, destination]) {
       if (segment != null) {
-        this.crossFadeTitle(segment);
+        this.crossFadeTitle(segment, reduced);
       }
     }
-    this.slideSurface(track, origin, destination);
   }
 
   /** Hands the surface back to its segment now and hides the proxy. */
   settle(): void {
+    this.removeLeaving();
     const slide = this.slide;
     if (slide == null) {
       return;
@@ -383,6 +358,7 @@ export class SegmentedSelectionMotion {
     track: HTMLElement,
     origin: HTMLElement | null,
     destination: HTMLElement | null,
+    reduced: ReducedMotion,
   ): void {
     const proxy = this.proxy;
     if (proxy == null) {
@@ -405,14 +381,11 @@ export class SegmentedSelectionMotion {
       this.settle();
       return;
     }
-    if (this.prefersReducedMotion()) {
-      this.fadeIn(proxy, destination, to);
-      return;
-    }
     let x: number;
     let width: number;
     let velocityX = 0;
     let velocityWidth = 0;
+    let opacity = 1;
     // A slide from rest starts when the browser commits it; one that
     // continues a slide on screen starts now, from the frame on screen.
     let at: number | undefined;
@@ -421,6 +394,7 @@ export class SegmentedSelectionMotion {
       at = this.now();
       x = this.animator.get('x', at);
       width = current.width * this.animator.get('scaleX', at);
+      opacity = this.animator.get('opacity', at);
       velocityX = this.animator.getVelocity('x', at);
       velocityWidth = current.width * this.animator.getVelocity('scaleX', at);
       if (current.destination !== destination) {
@@ -446,46 +420,69 @@ export class SegmentedSelectionMotion {
         spring: segmentedControl.selectionSpring,
         velocity: {x: velocityX, scaleX: velocityWidth / to.width},
       },
-      {at},
+      // Under Reduced Motion the animator lands it on the new segment and
+      // fades it in (design:reduced-motion); otherwise this changes nothing.
+      {at, crossfadeAs: 'entrance'},
     );
     this.carry(handle, destination, to.width);
+    if (reduced === 'crossfade') {
+      // The travel became a fade-in at the new segment: the surface that was
+      // on screen fades out where it is, on the same clock.
+      this.leave(proxy, {x, width, opacity}, to, at);
+    }
   }
 
   /**
-   * Reduce Motion, as UIKit does it: no travel. The surface jumps to the
-   * destination and fades and scales in place there, its opacity from 0 and
-   * its scale from `reducedMotion.scaleFrom` (centered), on the clock and
-   * curve the control's theme sets (UIKit's 0.2 s block by default).
+   * Reduced Motion: a copy of the surface on screen (`from`: where it is, how
+   * wide, how opaque) fades out where it is while the proxy fades in on the
+   * new segment. It is handed to the animator as a leaving travel, so it fades
+   * on the same Reduce Motion clock and lands only once it is invisible.
    */
-  private fadeIn(proxy: HTMLElement, destination: HTMLElement, to: Box): void {
-    const current = this.slide;
-    if (current != null && current.destination !== destination) {
-      this.abandoned.add(current.destination);
+  private leave(
+    proxy: HTMLElement,
+    from: {x: number; width: number; opacity: number},
+    to: Box,
+    at: number | undefined,
+  ): void {
+    this.removeLeaving();
+    if (from.opacity <= 0 || proxy.parentElement == null) {
+      return;
     }
-    copySurface(destination, proxy);
-    hideSurface(destination);
-    this.abandoned.delete(destination);
-    proxy.style.top = `${to.y}px`;
-    proxy.style.width = `${to.width}px`;
-    proxy.style.height = `${to.height}px`;
-    proxy.style.visibility = 'visible';
-    // Scaled about its center, as UIKit's lens is, so it grows in place.
-    proxy.style.transformOrigin = '50% 50%';
-    const {reducedMotion} = segmentedControl;
-    const fadeMs = resolveMotion(proxy, reducedMotion, 'fadeMs');
-    const curve = resolveMotion(proxy, reducedMotion.curve);
-    const from = reducedMotion.scaleFrom;
-    this.animator.set({x: to.x, scaleX: from, scaleY: from, opacity: 0});
-    const handle = this.animator.play(
-      {
-        opacity: timedCurve(0, 1, fadeMs, curve),
-        scaleX: timedCurve(from, 1, fadeMs, curve),
-        scaleY: timedCurve(from, 1, fadeMs, curve),
-      },
-      // This is the Reduce Motion substitution itself: play it as given.
-      {reducedMotion: 'keep'},
+    const copy = proxy.cloneNode(false) as HTMLElement;
+    copy.removeAttribute('data-selection-proxy');
+    copy.setAttribute('data-selection-leaving', '');
+    copy.setAttribute('aria-hidden', 'true');
+    copy.style.top = `${to.y}px`;
+    copy.style.width = `${from.width}px`;
+    copy.style.height = `${to.height}px`;
+    copy.style.visibility = 'visible';
+    copy.style.removeProperty('transform-origin');
+    proxy.after(copy);
+    this.leaving = copy;
+    const animator = this.leavingAnimator;
+    animator.attach(copy);
+    animator.set({x: from.x, scaleX: 1, scaleY: 1, opacity: from.opacity});
+    const handle = animator.animate(
+      {x: to.x, opacity: 0},
+      {spring: segmentedControl.selectionSpring},
+      {at},
     );
-    this.carry(handle, destination, to.width);
+    void handle.finished.then(() => {
+      if (this.leaving === copy) {
+        this.removeLeaving();
+      }
+    });
+  }
+
+  private removeLeaving(): void {
+    const copy = this.leaving;
+    if (copy == null) {
+      return;
+    }
+    this.leaving = null;
+    this.leavingAnimator.stop();
+    this.leavingAnimator.attach(null);
+    copy.remove();
   }
 
   /** The proxy now carries `destination`'s surface until `handle` lands. */
@@ -503,7 +500,7 @@ export class SegmentedSelectionMotion {
     });
   }
 
-  private crossFadeTitle(segment: HTMLElement): void {
+  private crossFadeTitle(segment: HTMLElement, reduced: ReducedMotion): void {
     const title = segment.querySelector<HTMLElement>(TITLE_SELECTOR);
     const twin = segment.querySelector<HTMLElement>(TITLE_TWIN_SELECTOR);
     if (title == null || twin == null) {
@@ -531,31 +528,49 @@ export class SegmentedSelectionMotion {
     twin.style.fontWeight = outgoing.fontWeight;
     const animations: Animation[] = [];
     if (typeof twin.animate === 'function') {
-      // The clock and curve as the title's theme sets them (motion roles),
-      // UIKit's by default.
-      const fadeMs = resolveMotion(title, segmentedControl, 'labelCrossFadeMs');
-      const fadeCurve = resolveMotion(
-        title,
-        segmentedControl.labelCrossFadeCurve,
-      );
-      const timing = {
-        duration: fadeMs,
-        easing: cssCubicBezier(fadeCurve),
-      };
       // Both hold their last frame until the fade is cleaned up: the twin
       // must stay invisible until it is hidden again (on the main thread,
       // possibly late), and the title ends on its resting opacity, so letting
       // either effect lapse would only restyle text in the middle of a slide.
-      animations.push(
-        twin.animate([{opacity: twinFrom}, {opacity: 0}], {
-          ...timing,
-          fill: 'forwards',
-        }),
-        title.animate([{opacity: titleFrom}, {opacity: 1}], {
-          ...timing,
-          fill: 'forwards',
-        }),
-      );
+      if (reduced !== 'off') {
+        // Reduced Motion: the animator's fade (200 ms on a finger, at once
+        // otherwise), whatever the title cross-fade role says
+        // (design:reduced-motion DR4).
+        const fade = reducedMotionFade(title, {
+          prefersReducedMotion: () => true,
+          isCoarsePointer: () => reduced === 'crossfade',
+        });
+        const timing = {
+          duration: fade?.duration ?? 0,
+          easing: fade?.easing ?? 'linear',
+          fill: 'forwards' as const,
+        };
+        animations.push(
+          twin.animate([{opacity: twinFrom}, {opacity: 0}], timing),
+          title.animate([{opacity: titleFrom}, {opacity: 1}], timing),
+        );
+      } else {
+        // The clock and curve as the title's theme sets them (motion roles),
+        // UIKit's by default.
+        const fadeMs = resolveMotion(
+          title,
+          segmentedControl,
+          'labelCrossFadeMs',
+        );
+        const fadeCurve = resolveMotion(
+          title,
+          segmentedControl.labelCrossFadeCurve,
+        );
+        const timing = {
+          duration: fadeMs,
+          easing: cssCubicBezier(fadeCurve),
+          fill: 'forwards' as const,
+        };
+        animations.push(
+          twin.animate([{opacity: twinFrom}, {opacity: 0}], timing),
+          title.animate([{opacity: titleFrom}, {opacity: 1}], timing),
+        );
+      }
     }
     const fade: TitleFade = {segment, title, twin, animations, done: false};
     this.fades.set(segment, fade);
