@@ -10,8 +10,7 @@ approved_by: cixzhang
 approved_at: 2026-10-24
 phase: accepted
 owners: [cixzhang]
-affects_architecture:
-  [architecture:react-component-runtime, architecture:layer-runtime]
+affects_architecture: [architecture:react-component-runtime]
 affects_families: []
 affects_contributing: []
 affects_consumer_docs: []
@@ -40,6 +39,8 @@ field, or a popover.
 
 ## Non-goals
 
+- Layer geometry: how Popover and other anchor-mode layers stay above the
+  keyboard belongs to `spec:AST-059`.
 - Hardware keyboard access and focus order, owned by `spec:AST-025`,
   `spec:AST-020`, and component records.
 - The curve or timing of an animation that moves a surface with the keyboard.
@@ -57,10 +58,9 @@ field, or a popover.
   component that positions, sizes, or dismisses relative to the on-screen
   keyboard responds to the same FR2 height at the same moment, including
   BottomSheet, the chat composer, a search field placed at the bottom, tab bar
-  search, Popover and other anchor-mode layers, drag to dismiss, and any
-  keyboard layout guide, so no two components disagree about where the
+  search, drag to dismiss, and any keyboard layout guide, so no two components disagree about where the
   keyboard is. `architecture:react-component-runtime` INV11 owns the single
-  source of that height.
+  source of that height and how a component outside Core conforms.
 - **FR2 — The height a pan or a zoom cannot corrupt.** The keyboard height is
   the layout viewport height minus the visual viewport height multiplied by the
   visual viewport's scale, in CSS pixels. It is 0 when no keyboard is shown,
@@ -71,10 +71,8 @@ field, or a popover.
   Each component applies it on its own element, such as a bottom offset, a
   padding, or a maximum height, so layout is correct with no animation running:
   the chat composer, a search field placed at the bottom, and tab bar search
-  position from it, a fully expanded sheet extends its own scroll range by it,
-  and the layer runtime's viewport cap accounts for it, so Popover and other
-  anchor-mode layers stay above the keyboard (`architecture:layer-runtime`
-  INV11). How the value reaches styles is
+  position from it, and a fully expanded sheet extends its own scroll range by
+  it. How the value reaches styles is
   `architecture:react-component-runtime` INV11. An animation that rides the
   keyboard is optional and layers on top of that layout.
 - **FR4 — Focus never pans the page.** Every route into a text-entry control
@@ -117,8 +115,9 @@ field, or a popover.
   support, the keyboard height is 0 and nothing changes. During server render it
   renders nothing and reads no viewport.
 - Browser evidence: Safari on iOS, in the iOS Simulator or on a device and in a
-  top-level document, proves the iOS claims of FR2–FR5 (`spec:AST-013` FR10);
-  DOM and visual-viewport tests prove the rest of FR1–FR7. A pass on a physical
+  top-level document, proves the iOS claims of FR2–FR5, and Chrome on Android,
+  in an emulator or on a device, proves FR8 (`spec:AST-013` FR10); DOM and
+  visual-viewport tests prove the rest of FR1–FR7. A pass on a physical
   iPhone and a physical Android phone is recommended follow-up evidence (OQ1).
 
 ## Current-state impact
@@ -131,25 +130,26 @@ field, or a popover.
   shared source (`component:BottomSheet`).
 - No other component on `main` measures the keyboard. A component that later
   responds to the keyboard uses the same height (FR1).
-- The layer runtime's viewport cap does not account for the keyboard today
-  (FR3, `architecture:layer-runtime` INV11).
+- Layer caps do not account for the keyboard: `spec:AST-059` owns layer
+  geometry, and keeping Popover and other anchor-mode layers above the keyboard
+  is an amendment to that record that consumes this height.
 - No public API exposes the keyboard height, and FR3 keeps it that way.
 - The consumer documentation gains the Android viewport setting (FR8).
 
 ## Verification
 
-| Contract | Verification                                                                               | Representative states                                                                                                                     | Mutation or failure expectation                                                                                                                                                                    |
-| -------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1      | Source boundary check over Core and Lab plus a shared test that drives one keyboard change | each listed consumer; a new keyboard-aware component                                                                                      | A component with its own keyboard measurement or visual-viewport keyboard listener, or two components reading different heights for one keyboard                                                   |
-| FR2      | Module tests driving visual-viewport resize and scroll events                              | keyboard shown; hidden; page panned with the keyboard shown; offset without a keyboard; page pinch-zoomed with and without the keyboard   | A pan that lowers the reported height, or a height when no keyboard is shown                                                                                                                       |
-| FR3      | Consumer and layer tests of computed layout, plus a public-surface check                   | keyboard shown and hidden; composer, bottom search field, tab bar search, Popover through the layer cap, Tall sheet; no animation running | A consumer whose layout ignores the height, layout that is only correct after an animation, a layer cap that ignores the keyboard, or a public CSS custom property, export, or prop for the height |
-| FR4      | Focus-route tests with document scroll spies                                               | tap, previous and next buttons, Tab, programmatic focus, Done then tap, app resume while scroll-locked                                    | A route that scrolls the document, or a slipped scroll left in place                                                                                                                               |
-| FR5      | Surface move tests                                                                         | sheet drag between heights, drag to dismiss, close, with a focused field                                                                  | The field stays focused after a move starts, or content jumps on the first frame                                                                                                                   |
-| FR6      | Capability tests with the user agent varied                                                | visual viewport shrinking with a fixed layout viewport; platform keyboard geometry API present; neither                                   | Behavior that changes with the user agent alone, or measurement where the platform geometry API applies                                                                                            |
-| FR7      | Tests in an iframe and in a top-level document                                             | the same keyboard event sequence in both                                                                                                  | A non-zero value or a claimed focus inside an iframe                                                                                                                                               |
-| FR8      | Consumer-doc check                                                                         | the documented viewport setting and its effect                                                                                            | Astryx setting the viewport meta, or the setting missing from the docs                                                                                                                             |
-| FR2–FR5  | Safari on iOS in the iOS Simulator or on a device, top-level document                      | focus routes, keyboard shown and hidden, page panned and pinch-zoomed, a sheet moved, in Safari and as a home-screen app                  | The page lurches, the field ends under the keyboard, or the height is wrong after a pan or zoom                                                                                                    |
-| FR2–FR5  | Recommended follow-up: physical devices in a top-level document (OQ1)                      | iPhone Safari with the toolbar expanded and collapsed; iPhone home-screen app; Android Chrome with `interactive-widget=resizes-content`   | The page lurches, the field ends under the keyboard, or the surface does not follow the keyboard                                                                                                   |
+| Contract | Verification                                                                                                   | Representative states                                                                                                                   | Mutation or failure expectation                                                                                                                             |
+| -------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1      | Source boundary check over Core and Lab plus a shared test that drives one keyboard change                     | each listed consumer; a new keyboard-aware component                                                                                    | A component with its own keyboard measurement or visual-viewport keyboard listener, or two components reading different heights for one keyboard            |
+| FR2      | Module tests driving visual-viewport resize and scroll events                                                  | keyboard shown; hidden; page panned with the keyboard shown; offset without a keyboard; page pinch-zoomed with and without the keyboard | A pan that lowers the reported height, or a height when no keyboard is shown                                                                                |
+| FR3      | Consumer tests of computed layout, plus a public-surface check                                                 | keyboard shown and hidden; composer, bottom search field, tab bar search, Tall sheet; no animation running                              | A consumer whose layout ignores the height, layout that is only correct after an animation, or a public CSS custom property, export, or prop for the height |
+| FR4      | Focus-route tests with document scroll spies                                                                   | tap, previous and next buttons, Tab, programmatic focus, Done then tap, app resume while scroll-locked                                  | A route that scrolls the document, or a slipped scroll left in place                                                                                        |
+| FR5      | Surface move tests                                                                                             | sheet drag between heights, drag to dismiss, close, with a focused field                                                                | The field stays focused after a move starts, or content jumps on the first frame                                                                            |
+| FR6      | Capability tests with the user agent varied                                                                    | visual viewport shrinking with a fixed layout viewport; platform keyboard geometry API present; neither                                 | Behavior that changes with the user agent alone, or measurement where the platform geometry API applies                                                     |
+| FR7      | Tests in an iframe and in a top-level document                                                                 | the same keyboard event sequence in both                                                                                                | A non-zero value or a claimed focus inside an iframe                                                                                                        |
+| FR8      | Consumer documentation check plus Chrome on Android, emulator or device, with and without the viewport setting | the documented viewport setting and its effect                                                                                          | Astryx setting the viewport meta, or the setting missing from the docs                                                                                      |
+| FR2–FR5  | Safari on iOS in the iOS Simulator or on a device, top-level document                                          | focus routes, keyboard shown and hidden, page panned and pinch-zoomed, a sheet moved, in Safari and as a home-screen app                | The page lurches, the field ends under the keyboard, or the height is wrong after a pan or zoom                                                             |
+| FR2–FR5  | Recommended follow-up: physical devices in a top-level document (OQ1)                                          | iPhone Safari with the toolbar expanded and collapsed; iPhone home-screen app; Android Chrome with `interactive-widget=resizes-content` | The page lurches, the field ends under the keyboard, or the surface does not follow the keyboard                                                            |
 
 ## Decision log
 
@@ -173,8 +173,8 @@ Rejected: each component measuring the keyboard and predicting its motion on its
 ## Open questions
 
 - **OQ1 — Do physical-device passes gate merge?** (`human-design`) Safari on
-  iOS evidence gates (`spec:AST-013` FR10), and a physical iPhone and Android
-  phone pass is recommended follow-up. Options: accept Safari on iOS in the
-  iOS Simulator as the gate; or require a physical iPhone and a physical
-  Android phone pass in a top-level document before this record's
-  implementation merges.
+  iOS and Chrome on Android evidence gate (`spec:AST-013` FR10), and a physical iPhone and Android
+  phone pass is recommended follow-up. Options: accept Safari in the iOS
+  Simulator and Chrome in an Android emulator as the gate; or require a
+  physical iPhone and a physical Android phone pass in a top-level document
+  before this record's implementation merges.

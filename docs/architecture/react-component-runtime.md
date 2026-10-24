@@ -143,8 +143,11 @@ those contracts.
   (`spec:AST-099`); it is not exported. Its height reaches styles only as the
   hook's value: Core holds it in an internal StyleX variable, and each
   consumer applies it through a StyleX functional style on its own element.
-  No component reads a global CSS variable for it or keeps its own
-  visual-viewport listener for the keyboard. The hook follows INV3 and INV5.
+  No Core component reads a global CSS variable for it or keeps its own
+  visual-viewport listener for the keyboard. Packages outside Core cannot
+  import the hook; a component there that responds to the keyboard keeps one
+  listener that measures as `spec:AST-099` FR2 defines, applies the height on
+  its own elements, and follows INV3 and INV5. The hook follows INV3 and INV5.
 
 ## Authoring guidance
 
