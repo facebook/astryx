@@ -118,8 +118,8 @@ export interface ProgressBarProps extends BaseProps<HTMLDivElement> {
    * When true, renders an animated indeterminate progress indicator.
    * Use when the progress amount is unknown (e.g. loading, processing).
    * The `value` and `hasValueLabel` props are ignored in this mode.
-   * Respects `prefers-reduced-motion` by slowing the animation. On a touch
-   * screen it draws iOS Safari's own indeterminate bar instead: a quarter of
+   * Respects `prefers-reduced-motion` by slowing the animation. On an iPhone
+   * or iPad it draws iOS Safari's own indeterminate bar instead: a quarter of
    * the track sweeping back and forth, 1 s per sweep; with reduced motion
    * the whole bar pulses in place.
    * @default false
@@ -174,12 +174,15 @@ const indeterminateSlideRtl = stylex.keyframes({
   },
 });
 
-// Under a finger the indeterminate bar is iOS Safari's own `<progress>` with
-// no value (motion/uikit `progress.indeterminateWebProgress`): a quarter of
-// the track sweeping linearly end to end, 1 s per sweep, back and forth,
-// inside the rounded track. With Reduce Motion it does not travel: the whole
-// bar pulses between two opacities, 1 s each way. Both run on the
-// compositor (transform, opacity; linear, so Safari accelerates them too).
+// Under a finger on iOS (the resolver's iOS gate) the indeterminate bar is
+// iOS Safari's own `<progress>` with no value (motion/uikit
+// `progress.indeterminateWebProgress`): a quarter of the track sweeping
+// linearly end to end, 1 s per sweep (the `sweepMs` motion role), back and
+// forth, inside the rounded track. With Reduce Motion it does not travel:
+// the whole bar pulses between two opacities, 1 s each way (the
+// `reducedMotionPulseMs` role). Both run on the compositor (transform,
+// opacity; linear, so Safari accelerates them too). Android and other touch
+// screens keep the 40% slide until a Material variant exists.
 const touchSweep = stylex.keyframes({
   '0%': {
     transform: 'translateX(0%)',
@@ -273,16 +276,17 @@ const styles = stylex.create({
     overflow: 'hidden',
   },
   // Safari's reduced-motion indeterminate bar draws the whole track in the
-  // fill color at the pulsing alpha, over the page: under a finger with
-  // Reduce Motion the track's own color steps aside for the pulse. (The
-  // query lists its features in the other order from the fill's: sharing the
-  // fill's media text, this rule made the test runtime's injection lose the
-  // fill's rules under it; the compiled CSS kept both.)
+  // fill color at the pulsing alpha, over the page: under a finger on iOS
+  // with Reduce Motion the track's own color steps aside for the pulse.
   trackIndeterminate: {
     backgroundColor: {
       default: null,
-      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
-        'transparent',
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': {
+          default: null,
+          '@media (prefers-reduced-motion: reduce)': 'transparent',
+        },
+      },
     },
   },
   // The determinate fill spans the whole track and slides along it with a
@@ -353,41 +357,71 @@ const styles = stylex.create({
     height: '100%',
     width: {
       default: '40%',
-      '@media (pointer: coarse)': '25%',
-      '@media (pointer: coarse) and (prefers-reduced-motion: reduce)': '100%',
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': {
+          default: '25%',
+          '@media (prefers-reduced-motion: reduce)': '100%',
+        },
+      },
     },
     borderRadius: radiusVars['--radius-full'],
     willChange: {
       default: null,
-      '@media (pointer: coarse)': 'transform',
-      '@media (pointer: coarse) and (prefers-reduced-motion: reduce)':
-        'opacity',
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': {
+          default: 'transform',
+          '@media (prefers-reduced-motion: reduce)': 'opacity',
+        },
+      },
     },
     animationName: {
       default: indeterminateSlide,
       ':is([dir="rtl"] *)': indeterminateSlideRtl,
       '@media (pointer: coarse)': {
-        default: touchSweep,
-        ':is([dir="rtl"] *)': touchSweepRtl,
-      },
-      // Named for RTL too, so the pointer's RTL slide above never outranks it.
-      '@media (pointer: coarse) and (prefers-reduced-motion: reduce)': {
-        default: touchPulse,
-        ':is([dir="rtl"] *)': touchPulse,
+        '@supports (-webkit-touch-callout: none)': {
+          default: touchSweep,
+          ':is([dir="rtl"] *)': touchSweepRtl,
+          // Named for RTL too, so the sweep's RTL key never outranks it.
+          '@media (prefers-reduced-motion: reduce)': {
+            default: touchPulse,
+            ':is([dir="rtl"] *)': touchPulse,
+          },
+        },
       },
     },
+    // The sweep and the pulse are the table's `sweepMs` and
+    // `reducedMotionPulseMs` motion roles: a theme that sets one writes its
+    // variable; otherwise the table's 1 s. The reduced-motion key comes last
+    // and holds the pulse: StyleX lets a later sibling media key win by
+    // negating it in the earlier ones, so the touch key before it is
+    // `not (prefers-reduced-motion)`, and a finger outside iOS with Reduce
+    // Motion still gets today's 3 s slowdown (with the order reversed it got
+    // neither, and ran at 1.5 s).
     animationDuration: {
       default: '1.5s',
-      '@media (prefers-reduced-motion: reduce)': '3s',
-      '@media (pointer: coarse)': '1s',
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)':
+          'var(--motion-progress-indeterminate-web-progress-sweep-ms, 1000ms)',
+      },
+      '@media (prefers-reduced-motion: reduce)': {
+        default: '3s',
+        '@media (pointer: coarse)': {
+          '@supports (-webkit-touch-callout: none)':
+            'var(--motion-progress-indeterminate-web-progress-reduced-motion-pulse-ms, 1000ms)',
+        },
+      },
     },
     animationTimingFunction: {
       default: 'ease-in-out',
-      '@media (pointer: coarse)': 'linear',
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': 'linear',
+      },
     },
     animationDirection: {
       default: null,
-      '@media (pointer: coarse)': 'alternate',
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': 'alternate',
+      },
     },
     animationIterationCount: 'infinite',
   },

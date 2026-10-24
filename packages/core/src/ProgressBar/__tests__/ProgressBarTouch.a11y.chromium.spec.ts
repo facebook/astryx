@@ -618,11 +618,19 @@ test('storyboard: 10% to 90% under a finger @storyboard', async ({
 const INDETERMINATE = 'core-progressbar--indeterminate';
 const WEB = progress.indeterminateWebProgress;
 
-async function openIndeterminate(page: Page, dir: 'ltr' | 'rtl' = 'ltr') {
+/** The indeterminate story, on iOS (emulated) unless `ios` is false. */
+async function openIndeterminate(
+  page: Page,
+  dir: 'ltr' | 'rtl' = 'ltr',
+  {ios = true} = {},
+) {
   await page.goto(
     `${storybook.origin}/iframe.html?id=${INDETERMINATE}&viewMode=story`,
   );
   await expect(page.getByRole('progressbar')).toBeVisible();
+  if (ios) {
+    await emulateIosWebKit(page);
+  }
   // The story's own root sets `dir`; flip the closest one, as an app would.
   await page.evaluate(d => {
     const track = document.querySelector('[role="progressbar"]') as Element;
@@ -664,6 +672,31 @@ async function sampleIndeterminate(page: Page, times: number[]) {
     };
   }, times);
 }
+
+test('indeterminate: a finger outside iOS (Chromium as an Android phone) keeps the 40% slide', async ({
+  page,
+}) => {
+  await openIndeterminate(page, 'ltr', {ios: false});
+  expect(
+    await page.evaluate(() => [
+      matchMedia('(pointer: coarse)').matches,
+      CSS.supports('-webkit-touch-callout', 'none'),
+    ]),
+  ).toEqual([true, false]);
+  const normal = await sampleIndeterminate(page, [0]);
+  expect(normal.timing.duration).toBe(1500);
+  expect(normal.timing.easing).toBe('ease-in-out');
+  expect(normal.samples[0].right - normal.samples[0].left).toBeCloseTo(0.4, 2);
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  await openIndeterminate(page, 'ltr', {ios: false});
+  const reduced = await sampleIndeterminate(page, [0]);
+  // Today's reduced-motion slowdown, not Safari's pulse.
+  expect(reduced.timing.duration).toBe(3000);
+  expect(reduced.samples[0].right - reduced.samples[0].left).toBeCloseTo(
+    0.4,
+    2,
+  );
+});
 
 test('indeterminate: a quarter of the track sweeps linearly end to end, 1 s each way', async ({
   page,
@@ -847,7 +880,7 @@ test.describe('indeterminate with a mouse or trackpad', () => {
   test('keeps its 40% slide, 1.5 s eased, and the reduced-motion slowdown', async ({
     page,
   }) => {
-    await openIndeterminate(page);
+    await openIndeterminate(page, 'ltr', {ios: false});
     expect(
       await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
     ).toBe(false);
@@ -859,7 +892,7 @@ test.describe('indeterminate with a mouse or trackpad', () => {
       2,
     );
     await page.emulateMedia({reducedMotion: 'reduce'});
-    await openIndeterminate(page);
+    await openIndeterminate(page, 'ltr', {ios: false});
     const reduced = await sampleIndeterminate(page, [0]);
     expect(reduced.timing.duration).toBe(3000);
   });

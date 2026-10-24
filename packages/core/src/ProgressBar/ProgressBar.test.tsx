@@ -1037,40 +1037,32 @@ describe('ProgressBar under a finger on iOS: UIProgressView', () => {
   });
 });
 
-describe('ProgressBar indeterminate under a finger: Safari\u2019s <progress>', () => {
+describe('ProgressBar indeterminate under a finger on iOS: Safari\u2019s <progress>', () => {
   const web = progress.indeterminateWebProgress;
-  /** Every declaration of the element's classes inside media rules whose
-   * condition passes `match`, as `prop: value`. */
-  function mediaRules(el: Element, match: (condition: string) => boolean) {
-    const out: string[] = [];
-    const visit = (rules: CSSRuleList, condition: string | null) => {
-      for (const rule of Array.from(rules)) {
-        if (rule instanceof CSSMediaRule) {
-          visit(rule.cssRules, rule.conditionText ?? rule.media.mediaText);
-        } else if (
-          rule instanceof CSSStyleRule &&
-          condition != null &&
-          match(condition) &&
-          Array.from(el.classList).some(c =>
-            rule.selectorText.includes(`.${c}`),
-          )
-        ) {
-          for (let i = 0; i < rule.style.length; i += 1) {
-            const prop = rule.style[i];
-            out.push(`${prop}: ${rule.style.getPropertyValue(prop)}`);
-          }
-        }
-      }
+  // The resolver's iOS gate, as IOS_TOUCH_STYLE_KEYS spells it, and with
+  // Reduce Motion inside it.
+  const IOS = [
+    IOS_TOUCH_STYLE_KEYS[0].replace('@media ', ''),
+    IOS_TOUCH_STYLE_KEYS[1],
+  ];
+  const IOS_REDUCED = [...IOS, '(prefers-reduced-motion: reduce)'];
+  // The sweep's duration key gives way to the reduced-motion one after it,
+  // which StyleX writes as a negation of it (see `indeterminateFill`).
+  const IOS_NOT_REDUCED = [
+    `${IOS[0]} and (not (prefers-reduced-motion: reduce))`,
+    IOS[1],
+  ];
+  /** The duration a `var(<role>, <table value>)` declaration falls back to. */
+  const roleDuration = (value: string | undefined, key: keyof typeof web) => {
+    const role = motionRoleIn(web, key);
+    const match = /^var\((--[\w-]+),\s*([^)]+)\)$/.exec(value ?? '');
+    const fallback = match?.[2] ?? '';
+    return {
+      variable: match?.[1],
+      expected: role?.variable,
+      ms: Number.parseFloat(fallback) * (fallback.endsWith('ms') ? 1 : 1000),
     };
-    for (const sheet of Array.from(document.styleSheets)) {
-      try {
-        visit(sheet.cssRules, null);
-      } catch {
-        // ignore cross-origin sheets
-      }
-    }
-    return out;
-  }
+  };
   const keyframesText = () =>
     Array.from(document.styleSheets)
       .flatMap(sheet => {
@@ -1082,56 +1074,64 @@ describe('ProgressBar indeterminate under a finger: Safari\u2019s <progress>', (
       })
       .filter(text => text.startsWith('@keyframes'));
 
-  it('sweeps a quarter of the track end to end, 1 s each way, linearly', () => {
+  it('sweeps a quarter of the track end to end on the sweep role (1 s each way), linearly', () => {
     render(<ProgressBar isIndeterminate label="Processing" />);
     const fill = screen.getByRole('progressbar')
       .firstElementChild as HTMLElement;
-    const touch = mediaRules(
-      fill,
-      c =>
-        c.includes('pointer: coarse') &&
-        !/\(prefers-reduced-motion: reduce\)\)?$/.test(c),
+    const touch = rulesOf(fill, IOS);
+    expect(valueOf(touch, 'width')).toEqual([`${web.segmentFraction * 100}%`]);
+    const sweep = roleDuration(
+      valueOf(rulesOf(fill, IOS_NOT_REDUCED), 'animation-duration')[0],
+      'sweepMs',
     );
-    expect(valueOf(touch, 'width')).toContain(`${web.segmentFraction * 100}%`);
-    expect(valueOf(touch, 'animation-duration')).toContain(
-      `${web.sweepMs / 1000}s`,
+    expect(sweep.variable).toBe(
+      '--motion-progress-indeterminate-web-progress-sweep-ms',
     );
-    expect(valueOf(touch, 'animation-timing-function')).toContain('linear');
-    expect(valueOf(touch, 'animation-direction')).toContain('alternate');
+    expect(sweep.variable).toBe(sweep.expected);
+    expect(sweep.ms).toBe(web.sweepMs);
+    expect(valueOf(touch, 'animation-timing-function')).toEqual(['linear']);
+    expect(valueOf(touch, 'animation-direction')).toEqual(['alternate']);
     // From the track's start to its end: the segment travels three of its
     // own widths when it is a quarter of the track.
     const travel = ((1 - web.segmentFraction) / web.segmentFraction) * 100;
     const frames = keyframesText();
     expect(frames.some(f => f.includes(`translateX(${travel}%)`))).toBe(true);
     expect(frames.some(f => f.includes(`translateX(-${travel}%)`))).toBe(true);
+    // A finger anywhere else (Android) keeps the 40% slide: nothing switches
+    // on the touch query alone, and Reduce Motion's 3 s slowdown is not
+    // negated by it.
+    expect(rulesOf(fill, '(pointer: coarse)')).toEqual([]);
+    expect(
+      valueOf(
+        rulesOf(fill, '(prefers-reduced-motion: reduce)'),
+        'animation-duration',
+      ),
+    ).toEqual(['3s']);
   });
 
-  it('pulses the whole bar instead of travelling under reduced motion', () => {
+  it('pulses the whole bar on the pulse role instead of travelling under reduced motion', () => {
     render(<ProgressBar isIndeterminate label="Processing" />);
     const fill = screen.getByRole('progressbar')
       .firstElementChild as HTMLElement;
-    const reduced = mediaRules(
-      fill,
-      c =>
-        c.includes('pointer: coarse') &&
-        /\(prefers-reduced-motion: reduce\)\)?$/.test(c),
+    const reduced = rulesOf(fill, IOS_REDUCED);
+    expect(valueOf(reduced, 'width')).toEqual(['100%']);
+    const pulseDuration = roleDuration(
+      valueOf(reduced, 'animation-duration')[0],
+      'reducedMotionPulseMs',
     );
-    expect(valueOf(reduced, 'width')).toContain('100%');
+    expect(pulseDuration.variable).toBe(
+      '--motion-progress-indeterminate-web-progress-reduced-motion-pulse-ms',
+    );
+    expect(pulseDuration.variable).toBe(pulseDuration.expected);
+    expect(pulseDuration.ms).toBe(web.reducedMotionPulseMs);
     // Safari draws the whole bar in the fill color at that alpha, over the
     // page: the track's own color steps aside.
-    const track = mediaRules(
-      screen.getByRole('progressbar'),
-      c =>
-        c.includes('pointer: coarse') &&
-        c.includes('prefers-reduced-motion: reduce') &&
-        !c.includes('not'),
-    );
-    expect(valueOf(track, 'background-color')).toContain('transparent');
+    const track = rulesOf(screen.getByRole('progressbar'), IOS_REDUCED);
+    expect(valueOf(track, 'background-color')).toEqual(['transparent']);
     const [low, high] = web.reducedMotionAlpha;
     const pulse = keyframesText().find(
       f => f.includes(`opacity: ${low}`) && f.includes(`opacity: ${high}`),
     );
     expect(pulse).toBeDefined();
-    expect(web.reducedMotionPulseMs).toBe(web.sweepMs);
   });
 });
