@@ -13,7 +13,7 @@
  *   are proven in Mobile Safari; see the pull request evidence)
  */
 
-import {afterEach, beforeEach, describe, expect, it} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, render, screen} from '@testing-library/react';
 import {ChatLayout} from './ChatLayout';
 import {editableToClaim} from './useChatKeyboard';
@@ -40,6 +40,30 @@ function dockOf(container: HTMLElement): HTMLElement {
 
 function spacerOf(container: HTMLElement): HTMLElement {
   return container.querySelector<HTMLElement>('[aria-hidden="true"]')!;
+}
+
+// The lift an element is laid out with: the value its functional style
+// (a StyleX dynamic style, an inline custom property) carries, CSS px.
+function layoutLift(element: HTMLElement): number {
+  const match = /--[\w-]+:\s*(-?[\d.]+)px/.exec(
+    element.getAttribute('style') ?? '',
+  );
+  return match == null ? 0 : Number(match[1]);
+}
+
+// Lets the ride end (the animator's clock) and its end reach the layout.
+async function settle() {
+  await act(async () => {
+    await vi.waitFor(
+      () => {
+        if (document.getAnimations?.().some(a => a.playState === 'running')) {
+          throw new Error('still riding');
+        }
+      },
+      {timeout: 3000, interval: 20},
+    );
+    await new Promise(resolve => setTimeout(resolve, 50));
+  });
 }
 
 function renderLayout() {
@@ -77,15 +101,21 @@ describe('ChatLayout and the software keyboard', () => {
     Reflect.deleteProperty(window, 'visualViewport');
   });
 
-  it('lifts the dock by the keyboard over it and makes room after the messages', () => {
+  it('lays the dock and the room after the messages out from the keyboard height', async () => {
     const {container} = renderLayout();
     report(window.innerHeight - 300);
-    expect(dockOf(container).style.translate).toBe('0px -300px');
-    expect(spacerOf(container).style.height).toBe('300px');
+    await settle();
+    // spec:AST-099 FR3: the layout is right with no animation running, and
+    // the ride's translate is handed back to it.
+    expect(layoutLift(dockOf(container))).toBe(300);
+    expect(layoutLift(spacerOf(container))).toBe(300);
+    expect(dockOf(container).style.translate).toBe('0px 0px');
   });
 
-  it('keeps a transcript at its newest message there', () => {
+  it('keeps a transcript at its newest message there', async () => {
     const {container} = renderLayout();
+    // Past the mount's own first-frame scroll to the end.
+    await settle();
     const root = screen.getByTestId('layout');
     const spacer = spacerOf(container);
     let scrollTop = 1000 - 600;
@@ -93,7 +123,7 @@ describe('ChatLayout and the software keyboard', () => {
       clientHeight: {configurable: true, get: () => 600},
       scrollHeight: {
         configurable: true,
-        get: () => 1000 + (parseFloat(spacer.style.height) || 0),
+        get: () => 1000 + layoutLift(spacer),
       },
       scrollTop: {
         configurable: true,
@@ -104,11 +134,14 @@ describe('ChatLayout and the software keyboard', () => {
       },
     });
     report(window.innerHeight - 300);
+    await settle();
     expect(scrollTop).toBe(1300 - 600);
   });
 
-  it('leaves a transcript the reader scrolled up where it is', () => {
+  it('leaves a transcript the reader scrolled up where it is', async () => {
     const {container} = renderLayout();
+    // Past the mount's own first-frame scroll to the end.
+    await settle();
     const root = screen.getByTestId('layout');
     const spacer = spacerOf(container);
     let scrollTop = 100;
@@ -116,7 +149,7 @@ describe('ChatLayout and the software keyboard', () => {
       clientHeight: {configurable: true, get: () => 600},
       scrollHeight: {
         configurable: true,
-        get: () => 1000 + (parseFloat(spacer.style.height) || 0),
+        get: () => 1000 + layoutLift(spacer),
       },
       scrollTop: {
         configurable: true,
@@ -127,24 +160,36 @@ describe('ChatLayout and the software keyboard', () => {
       },
     });
     report(window.innerHeight - 300);
+    await settle();
     expect(scrollTop).toBe(100);
   });
 
-  it('brings the dock down when the composer text loses focus to nothing', () => {
+  it('rides the dock down from the blur, ahead of the layout, which follows the keyboard', async () => {
     const {container} = renderLayout();
     const field = screen.getByRole('textbox', {name: 'Message'});
     act(() => field.focus());
     report(window.innerHeight - 300);
+    await settle();
     act(() => field.blur());
+    await settle();
+    // The keyboard is still up (no report yet): the layout keeps its lift,
+    // and the ride has taken the dock down on top of it.
+    expect(layoutLift(dockOf(container))).toBe(300);
+    expect(dockOf(container).style.translate).toBe('0px 300px');
+    report(window.innerHeight);
+    await settle();
+    expect(layoutLift(dockOf(container))).toBe(0);
+    expect(layoutLift(spacerOf(container))).toBe(0);
     expect(dockOf(container).style.translate).toBe('0px 0px');
-    expect(spacerOf(container).style.height).toBe('0px');
   });
 
-  it('moves nothing while no keyboard is up', () => {
+  it('moves nothing while no keyboard is up', async () => {
     const {container} = renderLayout();
     report(window.innerHeight);
+    await settle();
     expect(dockOf(container).style.translate).toBe('');
-    expect(spacerOf(container).style.height).toBe('');
+    expect(layoutLift(dockOf(container))).toBe(0);
+    expect(layoutLift(spacerOf(container))).toBe(0);
   });
 });
 

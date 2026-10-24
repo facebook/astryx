@@ -20,10 +20,11 @@
  * self-scroll mode scrolls (#2573). In external-scrollRef mode the dock
  * is position: fixed (out of flow) and the message area fills the root.
  *
- * Software keyboard (useChatKeyboard): the dock rides on top of the keyboard
- * on the keyboard's own spring, a spacer after the messages lets the newest
- * message scroll above it, and a tap on the composer's text focuses it
- * without Safari scrolling the page.
+ * Software keyboard (useChatKeyboard): the dock rests above the keyboard and
+ * a spacer after the messages lets the newest message scroll above it, both
+ * laid out from the keyboard height (functional styles), with the keyboard's
+ * own spring riding on top; a tap on the composer's text focuses it without
+ * Safari scrolling the page.
  *
  * Density (compact/balanced/spacious) is controlled via a prop with
  * 'balanced' as the default. No JS measurement or ResizeObserver needed.
@@ -150,11 +151,11 @@ const styles = stylex.create({
   },
 
   // Takes the height of the keyboard over the dock, so the newest message
-  // can scroll above the lifted composer (set by useChatKeyboard).
-  keyboardSpacer: {
+  // can scroll above the lifted composer (useChatKeyboard's lift).
+  keyboardSpacer: (lift: number) => ({
     flexShrink: 0,
-    height: 0,
-  },
+    height: lift,
+  }),
 
   emptyState: {
     display: 'flex',
@@ -182,6 +183,11 @@ const styles = stylex.create({
   dockContainerSticky: {
     position: 'sticky',
   },
+  // Rests the dock above the part of the keyboard that covers it
+  // (useChatKeyboard's lift).
+  dockLift: (lift: number) => ({
+    bottom: lift,
+  }),
 
   blurLayer: {
     position: 'absolute',
@@ -411,7 +417,7 @@ export function ChatLayout({
         <div
           ref={keyboard.spacerRef}
           aria-hidden
-          {...stylex.props(styles.keyboardSpacer)}
+          {...stylex.props(styles.keyboardSpacer(keyboard.lift))}
         />
 
         {/* Dock container — sticky/fixed, holds blur + scroll button + composer */}
@@ -422,6 +428,7 @@ export function ChatLayout({
             isSelfScrolling
               ? styles.dockContainerSticky
               : styles.dockContainerFixed,
+            keyboard.lift > 0 && styles.dockLift(keyboard.lift),
           )}>
           {/* Scroll-to-bottom button */}
           {scrollButton === undefined ? defaultScrollButton : scrollButton}

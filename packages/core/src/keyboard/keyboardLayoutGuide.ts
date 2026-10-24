@@ -2,31 +2,33 @@
 
 /**
  * @file keyboardLayoutGuide.ts
- * @input The window's visual viewport, window resizes and document focus
- *   events; createKeyboardModel
+ * @input The keyboard module's reports (useMobileKeyboard.ts:
+ *   subscribeMobileKeyboard), createKeyboardModel
  * @output Exports getKeyboardLayoutGuide (a window's one guide),
- *   measureKeyboardInset, bringsUpKeyboard and the KeyboardLayoutGuide type
+ *   bringsUpKeyboard and the KeyboardLayoutGuide type
  * @position The web's UIKeyboardLayoutGuide: where the software keyboard
  *   covers the layout viewport and how it moves, for the touch presentations
  *   that keep content above it (ChatLayout's composer). Internal to core: not
  *   exported from the package entry point
  *
- * One guide per window, listening only while something subscribes. It feeds
- * the model (keyboardModel.ts) the visual viewport's reports and the focus
- * changes that start a hide, and hands each transition to the subscribers,
- * which move their own elements on the compositor (README.md).
- *
- * The inset is the distance from the bottom of the layout viewport, where
- * `position: fixed; bottom: 0` content sits, to the top of what covers it:
- * the keyboard, its accessory bar and Safari's toolbar above them. When
- * Safari pans the page to reveal a field, the visual viewport moves down the
- * layout viewport and the inset shrinks by as much. Pinch-zoomed, it is
- * unknown and the guide holds.
+ * One guide per window, subscribed only while something subscribes to it. It
+ * owns no listener and measures nothing: it feeds the model (keyboardModel.ts)
+ * the keyboard module's reports, the keyboard height of spec:AST-099 FR2, and
+ * the focus changes that start a hide, and hands each transition to the
+ * subscribers. What it adds is timing: when a show started, a hide predicted
+ * from the blur, and the motion in between. Layout follows the keyboard
+ * height itself; the guide's transitions only time the optional ride on top
+ * (README.md).
  *
  * SYNC: When modified, update /packages/core/src/keyboard/README.md
  */
 
 import {timing} from '../motion/uikit';
+import {
+  getMobileKeyboardHeight,
+  subscribeMobileKeyboard,
+  type MobileKeyboardEvent,
+} from './useMobileKeyboard';
 import {
   createKeyboardModel,
   type KeyboardModel,
@@ -48,28 +50,10 @@ export interface KeyboardLayoutGuide {
   subscribe(listener: (transition: KeyboardTransition) => void): () => void;
 }
 
-// A pinch zoom further than this from 1 makes the inset unknown.
-const ZOOM_TOLERANCE = 0.01;
 // Extra time after a predicted transition's end before checking it.
 const VERIFY_SLACK_MS = 150;
 // How long after a focus the guide watches frames for a keyboard to rise.
 const FRAME_WATCH_MS = 1000;
-
-/**
- * The keyboard's inset over the layout viewport, CSS px: 0 without a visual
- * viewport, null while pinch-zoomed.
- */
-export function measureKeyboardInset(win: Window): number | null {
-  const viewport = win.visualViewport;
-  if (viewport == null) {
-    return 0;
-  }
-  if (Math.abs(viewport.scale - 1) > ZOOM_TOLERANCE) {
-    return null;
-  }
-  const inset = win.innerHeight - (viewport.offsetTop + viewport.height);
-  return inset > 0 ? Math.round(inset * 100) / 100 : 0;
-}
 
 // Input types that never bring up a keyboard.
 const KEYLESS_INPUT_TYPES = new Set([
@@ -144,9 +128,7 @@ export function getKeyboardLayoutGuide(win: Window): KeyboardLayoutGuide {
 
 function createGuide(win: Window): KeyboardLayoutGuide {
   const listeners = new Set<(transition: KeyboardTransition) => void>();
-  let model: KeyboardModel = createKeyboardModel(
-    measureKeyboardInset(win) ?? 0,
-  );
+  let model: KeyboardModel = createKeyboardModel(getMobileKeyboardHeight(win));
   let verifyTimer: ReturnType<typeof setTimeout> | null = null;
   let detach: (() => void) | null = null;
   // While a keyboard may be about to rise (a control that brings one up has
@@ -196,54 +178,44 @@ function createGuide(win: Window): KeyboardLayoutGuide {
     verifyTimer = setTimeout(
       () => {
         verifyTimer = null;
-        publish(model.verify(measureKeyboardInset(win), win.performance.now()));
+        publish(
+          model.verify(getMobileKeyboardHeight(win), win.performance.now()),
+        );
       },
       Math.max(0, due - win.performance.now()),
     );
   };
 
   const attach = () => {
-    const viewport = win.visualViewport;
-    const doc = win.document;
-    model = createKeyboardModel(measureKeyboardInset(win) ?? 0);
-    const onViewport = (event: Event) => {
-      const transition = model.report(
-        measureKeyboardInset(win),
-        event.timeStamp,
-        lastFrame,
-      );
-      if (transition?.kind === 'show') {
-        stopWatchingFrames();
-      }
-      publish(transition);
-    };
-    const onFocusIn = (event: FocusEvent) => {
-      if (bringsUpKeyboard(event.target)) {
-        if (model.inset <= 0) {
-          watchFrames();
+    model = createKeyboardModel(getMobileKeyboardHeight(win));
+    const onReport = (event: MobileKeyboardEvent) => {
+      if (event.type === 'viewport') {
+        const transition = model.report(
+          event.height,
+          event.timeStamp,
+          lastFrame,
+        );
+        if (transition?.kind === 'show') {
+          stopWatchingFrames();
         }
-        publish(model.focused(event.timeStamp));
-      }
-    };
-    const onFocusOut = (event: FocusEvent) => {
-      if (
+        publish(transition);
+      } else if (event.type === 'focusin') {
+        if (bringsUpKeyboard(event.target)) {
+          if (model.inset <= 0) {
+            watchFrames();
+          }
+          publish(model.focused(event.timeStamp));
+        }
+      } else if (
         bringsUpKeyboard(event.target) &&
         !bringsUpKeyboard(event.relatedTarget)
       ) {
         publish(model.blurred(event.timeStamp));
       }
     };
-    viewport?.addEventListener('resize', onViewport);
-    viewport?.addEventListener('scroll', onViewport);
-    win.addEventListener('resize', onViewport);
-    doc.addEventListener('focusin', onFocusIn, true);
-    doc.addEventListener('focusout', onFocusOut, true);
+    const unsubscribe = subscribeMobileKeyboard(win, onReport);
     return () => {
-      viewport?.removeEventListener('resize', onViewport);
-      viewport?.removeEventListener('scroll', onViewport);
-      win.removeEventListener('resize', onViewport);
-      doc.removeEventListener('focusin', onFocusIn, true);
-      doc.removeEventListener('focusout', onFocusOut, true);
+      unsubscribe();
       stopWatchingFrames();
       if (verifyTimer != null) {
         clearTimeout(verifyTimer);

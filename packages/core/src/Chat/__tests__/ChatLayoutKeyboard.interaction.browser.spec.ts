@@ -77,9 +77,13 @@ async function blockThenReport(
       while (dock != null && getComputedStyle(dock).position !== 'sticky') {
         dock = dock.parentElement;
       }
+      // The presented position: translate less the layout's bottom offset.
       const read = () => {
-        const value = getComputedStyle(dock as HTMLElement).translate;
-        return value === 'none' ? 0 : parseFloat(value.split(' ')[1] ?? '0');
+        const style = getComputedStyle(dock as HTMLElement);
+        const value = style.translate;
+        const translate =
+          value === 'none' ? 0 : parseFloat(value.split(' ')[1] ?? '0');
+        return translate - (parseFloat(style.bottom) || 0);
       };
       let focusAt = 0;
       el.addEventListener(
@@ -124,6 +128,10 @@ async function blockThenReport(
  */
 async function installKeyboard(page: Page) {
   await page.addInitScript(() => {
+    // Mobile Safari has no keyboard geometry API: where one exists (Chrome's
+    // navigator.virtualKeyboard), the keyboard module measures nothing
+    // (spec:AST-099 FR6).
+    Reflect.deleteProperty(Navigator.prototype, 'virtualKeyboard');
     const viewport = Object.assign(new EventTarget(), {
       height: window.innerHeight,
       width: window.innerWidth,
@@ -202,13 +210,24 @@ const showKeyboard = async (page: Page, cover = COVER) =>
     cover,
   );
 
-// The presented vertical `translate` (the animator moves the individual
-// property, not `transform`).
-const dockY = async (dock: Locator) =>
-  dock.evaluate(el => {
-    const value = getComputedStyle(el).translate;
-    return value === 'none' ? 0 : parseFloat(value.split(' ')[1] ?? '0') || 0;
-  });
+// Where the dock is drawn relative to its rest without a keyboard, CSS px
+// (negative is up): its presented vertical `translate` (the animator moves
+// the individual property, not `transform`), less the `bottom` offset the
+// layout gives it from the keyboard height (spec:AST-099 FR3).
+const dockY = async (dock: Locator) => dock.evaluate(presentedY);
+
+function presentedY(el: Element): number {
+  const style = getComputedStyle(el);
+  const translate =
+    style.translate === 'none'
+      ? 0
+      : parseFloat(style.translate.split(' ')[1] ?? '0') || 0;
+  const bottom =
+    style.position === 'sticky' || style.position === 'fixed'
+      ? parseFloat(style.bottom) || 0
+      : 0;
+  return translate - bottom;
+}
 
 test('the dock rises on the keyboard spring by the cover over it', async ({
   page,
@@ -305,8 +324,13 @@ test('Reduce Motion: the dock never travels, it cross-fades to the keyboard (des
         const out: {y: number; opacity: number}[] = [];
         const step = () => {
           const style = getComputedStyle(el);
+          const translate =
+            style.translate === 'none'
+              ? 0
+              : Number(style.translate.split(' ')[1]?.replace('px', '') ?? 0);
           out.push({
-            y: Number(style.translate.split(' ')[1]?.replace('px', '') ?? 0),
+            // The presented position: translate less the layout's offset.
+            y: translate - (parseFloat(style.bottom) || 0),
             opacity: Number(style.opacity),
           });
           if (out.length < 60) {
@@ -343,9 +367,13 @@ test('focus returning mid-hide turns the dock back up without a jump', async ({
     while (dock != null && getComputedStyle(dock).position !== 'sticky') {
       dock = dock.parentElement;
     }
+    // The presented position: translate less the layout's bottom offset.
     const read = () => {
-      const value = getComputedStyle(dock as HTMLElement).translate;
-      return value === 'none' ? 0 : parseFloat(value.split(' ')[1] ?? '0');
+      const style = getComputedStyle(dock as HTMLElement);
+      const value = style.translate;
+      const translate =
+        value === 'none' ? 0 : parseFloat(value.split(' ')[1] ?? '0');
+      return translate - (parseFloat(style.bottom) || 0);
     };
     const out: [number, number][] = [];
     const until = performance.now() + 900;

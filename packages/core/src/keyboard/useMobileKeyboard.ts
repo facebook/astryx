@@ -4,28 +4,48 @@
 
 /**
  * @file useMobileKeyboard.ts
- * @input Uses React effects and refs supplied by BottomSheet
- * @output Exports internal useMobileKeyboard hook
- * @position Internal to BottomSheet; not exported from the core entry point
+ * @input The window's visual viewport, focus events, React effects and refs
+ * @output Exports the on-screen keyboard module: measureKeyboardHeight,
+ *   isKeyboardMeasurable, subscribeMobileKeyboard, getMobileKeyboardHeight,
+ *   useKeyboardHeight, isTextEntryControl, findTextEntryControl,
+ *   refuseFocusReveal, and BottomSheet's useMobileKeyboard hook
+ * @position Core's one source for the on-screen keyboard (spec:AST-099,
+ *   architecture:react-component-runtime INV11). Internal to core: nothing
+ *   here is exported from the package. BottomSheet, ChatLayout and the
+ *   keyboard layout guide read the keyboard here and nowhere else
  *
- * Gives a fully expanded, explicitly Tall sheet a keyboard-aware internal
- * scroll range while leaving the sheet itself stationary. Shorter detents and
- * other heights opt out entirely. Starting Tall-sheet travel or closing the
- * sheet blurs the field and dismisses the keyboard.
+ * The keyboard height (AST-099 FR2) is the layout viewport's height minus the
+ * visual viewport's height times its scale, in CSS px: a page pan is not a
+ * smaller keyboard, and a pinch zoom is not a keyboard. It is 0 where the
+ * platform has its own keyboard geometry API (`navigator.virtualKeyboard`,
+ * Android's path, FR6, FR8), without a visual viewport, and inside an iframe,
+ * whose visual viewport never shrinks for the keyboard (FR7). One set of
+ * listeners per window reads it (the visual viewport's resize and scroll, the
+ * window's resize, and focus moves), however many components subscribe.
  *
- * Every route into a field also has to reach it without the browser revealing
- * it for us. On iOS that reveal scrolls the DOCUMENT, and a fixed sheet travels
+ * Every route into a field has to reach it without the browser revealing it
+ * (FR4). On iOS that reveal scrolls the DOCUMENT, and fixed content travels
  * with it, so the whole page lurches. The reveal is attached to the focus
- * operation, which is where it can be refused: take the focus transition over
- * on the capture-phase blur, deliver it with preventScroll, and bring the
- * control into view with the sheet's own scroller afterwards. Every route in —
- * a tap, the keyboard's Next, Tab, a programmatic focus() — passes through that
- * one transition.
+ * operation, which is where it can be refused (`refuseFocusReveal`): take the
+ * focus transition over on the capture-phase blur, deliver it with
+ * preventScroll, and bring the control into view with the surface's own
+ * scroller afterwards. Every route in (a tap, the keyboard's Next, Tab, a
+ * programmatic focus()) passes through that one transition.
+ *
+ * BottomSheet's hook (`useMobileKeyboard`) gives a fully expanded, explicitly
+ * Tall sheet a keyboard-aware internal scroll range while leaving the sheet
+ * itself stationary. Shorter detents and other heights opt out entirely.
+ * Starting Tall-sheet travel or closing the sheet blurs the field and
+ * dismisses the keyboard (FR5).
+ *
+ * SYNC: When modified, update /packages/core/src/keyboard/README.md
  */
 
-import {useEffect, useRef, type RefObject} from 'react';
+import {useEffect, useRef, useSyncExternalStore, type RefObject} from 'react';
 
 const MOBILE_KEYBOARD_INSET_VAR = '--_sheet-keyboard-inset';
+// A shortfall smaller than this is rounding, not a keyboard.
+const KEYBOARD_EPSILON = 1;
 const NON_TEXT_INPUT_TYPES = new Set([
   'button',
   'checkbox',
@@ -39,40 +59,176 @@ const NON_TEXT_INPUT_TYPES = new Set([
   'submit',
 ]);
 
-interface UseMobileKeyboardOptions {
-  bodyRef: RefObject<HTMLElement | null>;
-  bottomClearance: number;
-  isEnabled: boolean;
-  isFullyExpanded: boolean;
-  isPageScrollLocked: boolean;
-  isSheetTraveling: boolean;
-  isOpen: boolean;
-  isPresented: boolean;
-  sheetRef: RefObject<HTMLDivElement | null>;
-}
-
-interface KeyboardGeometry {
-  bodyBottom: number;
-}
-
-function getObstructionTop(): number {
-  return window.visualViewport?.height ?? window.innerHeight;
-}
-
-// The keyboard is gone once the visible band reaches the layout viewport bottom.
-function isVisualViewportRecovered(): boolean {
-  return getObstructionTop() >= window.innerHeight - 0.5;
-}
-
-function isIOSWebKit(): boolean {
-  const userAgent = window.navigator.userAgent;
+/**
+ * Whether this window measures the keyboard: a top-level document (FR7) with
+ * a visual viewport and no keyboard geometry API of its own (FR6). Decided
+ * from capabilities, never from the user agent.
+ */
+export function isKeyboardMeasurable(win: Window): boolean {
   return (
-    /iPad|iPhone|iPod/.test(userAgent) ||
-    (userAgent.includes('Macintosh') && window.navigator.maxTouchPoints > 1)
+    win.visualViewport != null &&
+    !('virtualKeyboard' in win.navigator) &&
+    win.self === win.top
   );
 }
 
-function isTextEntryControl(element: Element | null): element is HTMLElement {
+/**
+ * The on-screen keyboard's height over the layout viewport, CSS px (FR2): 0
+ * when none is shown, while pinch-zoomed included, and wherever
+ * `isKeyboardMeasurable` is false.
+ */
+export function measureKeyboardHeight(win: Window): number {
+  const viewport = win.visualViewport;
+  if (viewport == null || !isKeyboardMeasurable(win)) {
+    return 0;
+  }
+  const height = win.innerHeight - viewport.height * (viewport.scale ?? 1);
+  return height > KEYBOARD_EPSILON ? Math.round(height * 100) / 100 : 0;
+}
+
+/** A report from the keyboard module, in the order the window raised them. */
+export type MobileKeyboardEvent =
+  | {
+      /** The visual viewport or the window changed size or position. */
+      type: 'viewport';
+      /** The keyboard height after this report. */
+      height: number;
+      /** The report's event time (the document timeline). */
+      timeStamp: number;
+    }
+  | {
+      /** Focus moved into (`focusin`) or out of (`focusout`) `target`. */
+      type: 'focusin' | 'focusout';
+      height: number;
+      timeStamp: number;
+      target: EventTarget | null;
+      relatedTarget: EventTarget | null;
+    };
+
+interface KeyboardStore {
+  height: number;
+  listeners: Set<(event: MobileKeyboardEvent) => void>;
+  detach: (() => void) | null;
+}
+
+const stores = new WeakMap<Window, KeyboardStore>();
+
+function storeOf(win: Window): KeyboardStore {
+  let store = stores.get(win);
+  if (store == null) {
+    store = {height: 0, listeners: new Set(), detach: null};
+    stores.set(win, store);
+  }
+  return store;
+}
+
+function attach(win: Window, store: KeyboardStore): () => void {
+  const viewport = win.visualViewport;
+  const doc = win.document;
+  store.height = measureKeyboardHeight(win);
+  const emit = (event: MobileKeyboardEvent) => {
+    for (const listener of [...store.listeners]) {
+      listener(event);
+    }
+  };
+  const onViewport = (event: Event) => {
+    store.height = measureKeyboardHeight(win);
+    emit({type: 'viewport', height: store.height, timeStamp: event.timeStamp});
+  };
+  const onFocus = (event: FocusEvent) => {
+    emit({
+      type: event.type === 'focusin' ? 'focusin' : 'focusout',
+      height: store.height,
+      timeStamp: event.timeStamp,
+      target: event.target,
+      relatedTarget: event.relatedTarget,
+    });
+  };
+  viewport?.addEventListener('resize', onViewport);
+  viewport?.addEventListener('scroll', onViewport);
+  win.addEventListener('resize', onViewport);
+  doc.addEventListener('focusin', onFocus, true);
+  doc.addEventListener('focusout', onFocus, true);
+  return () => {
+    viewport?.removeEventListener('resize', onViewport);
+    viewport?.removeEventListener('scroll', onViewport);
+    win.removeEventListener('resize', onViewport);
+    doc.removeEventListener('focusin', onFocus, true);
+    doc.removeEventListener('focusout', onFocus, true);
+  };
+}
+
+/**
+ * Calls `listener` with every report of `win`'s keyboard until the returned
+ * function is called. All subscribers of a window share one set of listeners.
+ *
+ * @example
+ * ```
+ * const stop = subscribeMobileKeyboard(window, event => {
+ *   if (event.type === 'viewport') layout(event.height);
+ * });
+ * ```
+ */
+export function subscribeMobileKeyboard(
+  win: Window,
+  listener: (event: MobileKeyboardEvent) => void,
+): () => void {
+  const store = storeOf(win);
+  store.listeners.add(listener);
+  if (store.detach == null) {
+    store.detach = attach(win, store);
+  }
+  return () => {
+    store.listeners.delete(listener);
+    if (store.listeners.size === 0 && store.detach != null) {
+      store.detach();
+      store.detach = null;
+    }
+  };
+}
+
+/**
+ * `win`'s keyboard height now. Read live, so a reader between two reports
+ * (a layout effect, a timer) never sees a stale value.
+ */
+export function getMobileKeyboardHeight(win: Window): number {
+  return measureKeyboardHeight(win);
+}
+
+/**
+ * The keyboard height for a component, CSS px, re-rendering when it changes.
+ * 0 during server render and before hydration reads a viewport.
+ *
+ * @example
+ * ```
+ * const keyboardHeight = useKeyboardHeight();
+ * <div {...stylex.props(styles.bottom(keyboardHeight))} />
+ * ```
+ */
+export function useKeyboardHeight(win?: Window | null): number {
+  const target = win ?? (typeof window === 'undefined' ? null : window);
+  return useSyncExternalStore(
+    onChange => {
+      if (target == null) {
+        return () => {};
+      }
+      let last = getMobileKeyboardHeight(target);
+      return subscribeMobileKeyboard(target, event => {
+        if (event.type === 'viewport' && event.height !== last) {
+          last = event.height;
+          onChange();
+        }
+      });
+    },
+    () => (target == null ? 0 : getMobileKeyboardHeight(target)),
+    () => 0,
+  );
+}
+
+/** Whether focusing `element` brings up a keyboard for typing text. */
+export function isTextEntryControl(
+  element: Element | null,
+): element is HTMLElement {
   if (element instanceof HTMLTextAreaElement) {
     return !element.disabled && !element.readOnly;
   }
@@ -91,9 +247,10 @@ function isTextEntryControl(element: Element | null): element is HTMLElement {
   );
 }
 
-function findTextEntryControl(
+/** The text-entry control inside `container` that `target` is or labels. */
+export function findTextEntryControl(
   target: EventTarget | null,
-  body: HTMLElement,
+  container: HTMLElement,
 ): HTMLElement | null {
   if (!(target instanceof Element)) {
     return null;
@@ -102,15 +259,103 @@ function findTextEntryControl(
   const direct = target.closest(
     'input, textarea, [contenteditable]:not([contenteditable="false"])',
   );
-  if (body.contains(direct) && isTextEntryControl(direct)) {
+  if (container.contains(direct) && isTextEntryControl(direct)) {
     return direct;
   }
 
   const label = target.closest('label');
   const control = label instanceof HTMLLabelElement ? label.control : null;
-  return body.contains(control) && isTextEntryControl(control) ? control : null;
+  return container.contains(control) && isTextEntryControl(control)
+    ? control
+    : null;
 }
 
+/** The caller's rules for refuseFocusReveal. */
+export interface RefuseFocusRevealOptions {
+  /** Whether to claim at all just now, checked on every blur. */
+  isActive?: () => boolean;
+  /** The control a focus move is heading to, when this caller claims it. */
+  claim: (destination: EventTarget | null) => HTMLElement | null;
+  /** Focus left `origin` for nothing (the keyboard's Done): park it, if at all. */
+  park?: (origin: EventTarget | null) => void;
+}
+
+/**
+ * Delivers the focus moves `claim` accepts with `preventScroll`, so the
+ * browser never reveals their destination itself (FR4), until the returned
+ * function is called.
+ *
+ * `blur` is dispatched in the capture phase ahead of the browser's own focus
+ * step, and it names the destination in `relatedTarget`. Focusing it there
+ * with preventScroll settles the transition: the browser's step finds the
+ * element already active, so it dispatches nothing further and has nothing
+ * to reveal.
+ *
+ * @example
+ * ```
+ * const stop = refuseFocusReveal(document, {
+ *   claim: target => findTextEntryControl(target, body),
+ *   park: () => sheet.focus({preventScroll: true}),
+ * });
+ * ```
+ */
+export function refuseFocusReveal(
+  doc: Document,
+  {isActive, claim, park}: RefuseFocusRevealOptions,
+): () => void {
+  const onBlur = (event: FocusEvent) => {
+    if (isActive != null && !isActive()) {
+      return;
+    }
+    const destination = claim(event.relatedTarget);
+    if (destination != null) {
+      if (destination !== doc.activeElement) {
+        destination.focus({preventScroll: true});
+      }
+      return;
+    }
+    if (event.relatedTarget == null) {
+      park?.(event.target);
+    }
+  };
+  // `blur` does not bubble: only the capture phase hears every one, and it
+  // runs before the browser's own focus step.
+  doc.addEventListener('blur', onBlur, true);
+  return () => {
+    doc.removeEventListener('blur', onBlur, true);
+  };
+}
+
+interface UseMobileKeyboardOptions {
+  bodyRef: RefObject<HTMLElement | null>;
+  bottomClearance: number;
+  isEnabled: boolean;
+  isFullyExpanded: boolean;
+  isPageScrollLocked: boolean;
+  isSheetTraveling: boolean;
+  isOpen: boolean;
+  isPresented: boolean;
+  sheetRef: RefObject<HTMLDivElement | null>;
+}
+
+interface KeyboardGeometry {
+  bodyBottom: number;
+}
+
+// Where the keyboard's top is in the layout viewport.
+function getObstructionTop(): number {
+  return window.innerHeight - getMobileKeyboardHeight(window);
+}
+
+// The keyboard is gone once its height is back to 0.
+function isVisualViewportRecovered(): boolean {
+  return getMobileKeyboardHeight(window) <= 0.5;
+}
+
+/**
+ * BottomSheet's use of the keyboard: a Tall sheet's scroll range, its focus
+ * moves and its dismissal (see the file header).
+ */
 export function useMobileKeyboard({
   bodyRef,
   bottomClearance,
@@ -176,7 +421,8 @@ export function useMobileKeyboard({
 
     let keyboardGeometry: KeyboardGeometry | null = null;
     let documentScrollAtKeyboard: {x: number; y: number} | null = null;
-    const ownsFocusTransitions = isIOSWebKit();
+    // FR6: where this window measures the keyboard, never by user agent.
+    const ownsFocusTransitions = isKeyboardMeasurable(window);
 
     const clearKeyboardLayout = () => {
       body.style.setProperty(MOBILE_KEYBOARD_INSET_VAR, '0px');
@@ -253,43 +499,29 @@ export function useMobileKeyboard({
       body.style.setProperty(MOBILE_KEYBOARD_INSET_VAR, `${inset}px`);
     };
 
-    // Take the focus transition over before the browser performs it.
+    // Take every focus move into a field over before the browser performs it
+    // (refuseFocusReveal). Revealing the field is not that handler's job:
+    // focusing it raises focusin, and the viewport report that follows the
+    // keyboard raises another; both schedule the reveal below, which knows
+    // the safe area and scrolls only the sheet's own body.
     //
-    // `blur` is dispatched in the capture phase ahead of the browser's own
-    // focus step, and it names the destination in `relatedTarget`. Focusing it
-    // here with preventScroll settles the transition: the browser's step finds
-    // the element already active, so it dispatches nothing further and has
-    // nothing to reveal.
-    const claimFocusTransition = (event: FocusEvent) => {
-      if (!isFullyExpandedRef.current) {
-        return;
-      }
-      const destination = findTextEntryControl(event.relatedTarget, body);
-      if (destination) {
-        if (destination !== document.activeElement) {
-          // Revealing the field is not this handler's job: focusing it raises
-          // focusin, and the viewport resize that follows the keyboard raises
-          // another — both already schedule the reveal below, which knows the
-          // safe area and scrolls only the sheet's own body.
-          destination.focus({preventScroll: true});
-        }
-        return;
-      }
-
-      // Focus left for nothing — the keyboard's Done button parks it on the
-      // body. Park it on the sheet instead, so re-tapping the same field is
-      // still a transition this handler sees. Left on the body, the field is
-      // already `document.activeElement` on the next tap, no blur fires, and
-      // the browser reveals it its own way.
-      //
-      // Only while the sheet is open: closing blurs the field too, and there
-      // is no next tap to keep claimable — the host restores focus to whatever
-      // opened the sheet.
-      const origin = findTextEntryControl(event.target, body);
-      if (isOpenRef.current && origin && !event.relatedTarget) {
-        sheet?.focus({preventScroll: true});
-      }
-    };
+    // Focus that leaves for nothing (the keyboard's Done button parks it on
+    // the body) is parked on the sheet instead, so re-tapping the same field
+    // is still a transition it sees. Left on the body, the field is already
+    // `document.activeElement` on the next tap, no blur fires, and the browser
+    // reveals it its own way. Only while the sheet is open: closing blurs the
+    // field too, and there is no next tap to keep claimable; the host
+    // restores focus to whatever opened the sheet.
+    const claimFocusTransitions = () =>
+      refuseFocusReveal(document, {
+        isActive: () => isFullyExpandedRef.current,
+        claim: destination => findTextEntryControl(destination, body),
+        park: origin => {
+          if (isOpenRef.current && findTextEntryControl(origin, body)) {
+            sheet?.focus({preventScroll: true});
+          }
+        },
+      });
 
     const revealFocusedControl = () => {
       const activeElement = document.activeElement;
@@ -445,20 +677,18 @@ export function useMobileKeyboard({
       }
     };
 
-    const viewport = window.visualViewport;
-    if (ownsFocusTransitions) {
-      // `blur` does not bubble, so the capture phase is the only place to hear
-      // every one of them — and it runs before the browser's own focus step,
-      // which is the only window in which the transition can still be claimed.
-      document.addEventListener('blur', claimFocusTransition, true);
-    }
+    const stopClaiming = ownsFocusTransitions ? claimFocusTransitions() : null;
+    // Every keyboard report reaches the reveal through the keyboard module's
+    // one set of listeners.
+    const unsubscribe = subscribeMobileKeyboard(window, event => {
+      if (event.type === 'viewport') {
+        scheduleReveal();
+      }
+    });
     body.addEventListener('focusin', handleFocusIn);
     body.addEventListener('focusout', handleFocusOut);
     sheet?.addEventListener('transitionend', handleSheetTransitionEnd);
-    viewport?.addEventListener('resize', scheduleReveal);
-    viewport?.addEventListener('scroll', scheduleReveal);
     window.addEventListener('scroll', handleDocumentScroll);
-    window.addEventListener('resize', scheduleReveal);
     mutationObserver?.observe(body, {
       attributes: true,
       characterData: true,
@@ -472,16 +702,12 @@ export function useMobileKeyboard({
 
     return () => {
       cancelAnimationFrame(animationFrame);
-      if (ownsFocusTransitions) {
-        document.removeEventListener('blur', claimFocusTransition, true);
-      }
+      stopClaiming?.();
+      unsubscribe();
       body.removeEventListener('focusin', handleFocusIn);
       body.removeEventListener('focusout', handleFocusOut);
       sheet?.removeEventListener('transitionend', handleSheetTransitionEnd);
-      viewport?.removeEventListener('resize', scheduleReveal);
-      viewport?.removeEventListener('scroll', scheduleReveal);
       window.removeEventListener('scroll', handleDocumentScroll);
-      window.removeEventListener('resize', scheduleReveal);
       resizeObserver?.disconnect();
       mutationObserver?.disconnect();
       body.style.removeProperty(MOBILE_KEYBOARD_INSET_VAR);
