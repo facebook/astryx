@@ -757,6 +757,34 @@ describe('BottomSheet', () => {
       expect(onOpenChange).toHaveBeenCalledWith(false);
     });
 
+    it('pins the scrim easing while a drag moves the dim, and hands it back when the sheet lands', async () => {
+      render(
+        <BottomSheet isOpen onOpenChange={vi.fn()} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      measureTallSheet();
+      const dialog = screen.getByRole('dialog');
+      const handle = getHandle();
+      fireTimedPointer(handle, 'pointerdown', {time: 0, y: 0});
+      // The dim follows the finger with no easing of its own.
+      expect(dialog.style.getPropertyValue('--_sheet-scrim-duration')).toBe(
+        '0s',
+      );
+      fireTimedPointer(handle, 'pointermove', {time: 1000, y: 200});
+      // Gone is 736px below open (the sheet's visible height): the dim is
+      // linear in position to there.
+      expect(
+        Number(dialog.style.getPropertyValue('--_sheet-scrim-opacity')),
+      ).toBeCloseTo((736 - 200) / 736, 2);
+      fireTimedPointer(handle, 'pointerup', {time: 2000, y: 200});
+      await landSpring();
+      // Back at rest the host's own easing is restored, for its open and
+      // close fades, at the dim the sheet came to rest with.
+      expect(dialog.style.getPropertyValue('--_sheet-scrim-duration')).toBe('');
+      expect(dialog).toHaveStyle({'--_sheet-scrim-opacity': '1'});
+    });
+
     it('restores the sheet when a context menu interrupts an active drag', () => {
       const onOpenChange = vi.fn();
       render(

@@ -2088,3 +2088,214 @@ describe('useSheetGestures: the release on the compositor', () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('useSheetGestures: the dim follows the sheet', () => {
+  // A finger: the release runs on UIKit's springs (releaseMotion.ts).
+  beforeEach(() => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => ({
+        matches: query.includes('pointer: coarse'),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    );
+  });
+
+  interface Played {
+    keyframes: Keyframe[];
+    options: KeyframeAnimationOptions & {pseudoElement?: string};
+    cancel: ReturnType<typeof vi.fn>;
+  }
+  function recordAnimations(el: HTMLElement): Played[] {
+    const played: Played[] = [];
+    el.animate = vi.fn((keyframes, options) => {
+      const cancel = vi.fn();
+      played.push({
+        keyframes: keyframes as Keyframe[],
+        options: options as Played['options'],
+        cancel,
+      });
+      return {cancel, startTime: 0} as unknown as Animation;
+    });
+    return played;
+  }
+  /** A played property's value `ms` after its start. */
+  function valueAt(
+    animation: Played,
+    ms: number,
+    read: (frame: Keyframe) => number,
+  ): number {
+    const duration = animation.options.duration as number;
+    const frames = animation.keyframes.map(frame => ({
+      t: (frame.offset as number) * duration,
+      v: read(frame),
+    }));
+    for (let i = 1; i < frames.length; i++) {
+      if (ms <= frames[i].t) {
+        const a = frames[i - 1];
+        const b = frames[i];
+        return a.v + ((b.v - a.v) * (ms - a.t)) / (b.t - a.t);
+      }
+    }
+    return frames[frames.length - 1].v;
+  }
+  const travelOf = (frame: Keyframe) =>
+    Number.parseFloat(String(frame.translate).split(' ')[1]);
+  const opacityOf = (frame: Keyframe) => Number(frame.opacity);
+  // A 400px sheet with a 200px stop: offsets [0, 200], gone at 400. UIKit's
+  // dim is full at the shortest detent and above, linear to clear at gone.
+  const dimAt = (offset: number) =>
+    Math.min(1, Math.max(0, (400 - offset) / (400 - 200)));
+
+  /** A sheet target inside a modal dialog, whose ::backdrop is the scrim. */
+  function inDialog() {
+    const dialog = document.createElement('dialog');
+    const target = makeTarget();
+    dialog.appendChild(target);
+    document.body.appendChild(dialog);
+    return {dialog, target};
+  }
+
+  it('clears the dim at the dismissed position, linear from the shortest detent', () => {
+    const onScrimOpacity = vi.fn();
+    const {hook} = setup({snapHeights: () => [200], onScrimOpacity});
+    const t = makeTarget();
+    down(hook, 0, 0, t);
+    for (const y of [150, 200, 250, 300, 380]) {
+      move(hook, y, y, t);
+      expect(Number(onScrimOpacity.mock.calls.at(-1)?.[0])).toBeCloseTo(
+        dimAt(y),
+        9,
+      );
+    }
+  });
+
+  it("pins the host's easing for the gesture and hands it back when the sheet lands", async () => {
+    const onScrimOpacity = vi.fn();
+    const onScrimTracking = vi.fn();
+    const {hook} = setup({
+      snapHeights: () => [200],
+      onScrimOpacity,
+      onScrimTracking,
+    });
+    const {target} = inDialog();
+    recordAnimations(target);
+    down(hook, 0, 0, target);
+    expect(onScrimTracking.mock.calls).toEqual([[true]]);
+    stream(hook, target, {from: 0, to: 290, t0: 0, t1: 600});
+    restAt(hook, 290, 650, target);
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(
+        pointerEvent(290, 800, target),
+      ),
+    );
+    // Still the release's: the sheet is on its way to the 200 detent.
+    expect(onScrimTracking.mock.calls).toEqual([[true]]);
+    land();
+    // The spring's end resolves on a microtask.
+    await Promise.resolve();
+    expect(onScrimTracking.mock.calls).toEqual([[true], [false]]);
+    expect(onScrimOpacity).toHaveBeenLastCalledWith(1);
+  });
+
+  it('plays the dim on the backdrop in lockstep with the release', () => {
+    const {hook} = setup({
+      snapHeights: () => [200],
+      onScrimOpacity: vi.fn(),
+      onScrimTracking: vi.fn(),
+    });
+    const {dialog, target} = inDialog();
+    const sheetAnimations = recordAnimations(target);
+    const backdrop = recordAnimations(dialog);
+    down(hook, 0, 0, target);
+    stream(hook, target, {from: 0, to: 290, t0: 0, t1: 600});
+    restAt(hook, 290, 650, target);
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(
+        pointerEvent(290, 800, target),
+      ),
+    );
+    expect(hook.result.current.settledOffset).toBe(200);
+    const sheetAnimation = sheetAnimations.at(-1) as Played;
+    const dim = backdrop.at(-1) as Played;
+    expect(dim.options.pseudoElement).toBe('::backdrop');
+    // Each moment's dim is the one for where the sheet is at that moment.
+    for (const ms of [0, 16, 50, 100, 200, 300]) {
+      const offset = valueAt(sheetAnimation, ms, travelOf);
+      expect(valueAt(dim, ms, opacityOf)).toBeCloseTo(dimAt(offset), 2);
+    }
+    expect(valueAt(dim, 0, opacityOf)).toBeCloseTo(dimAt(290), 2);
+  });
+
+  it('lets a finger catch the dim where it is', () => {
+    const onScrimOpacity = vi.fn();
+    const {hook} = setup({
+      snapHeights: () => [200],
+      onScrimOpacity,
+      onScrimTracking: vi.fn(),
+    });
+    const {dialog, target} = inDialog();
+    recordAnimations(target);
+    const backdrop = recordAnimations(dialog);
+    down(hook, 0, 0, target);
+    stream(hook, target, {from: 0, to: 290, t0: 0, t1: 600});
+    restAt(hook, 290, 650, target);
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(
+        pointerEvent(290, 800, target),
+      ),
+    );
+    const dim = backdrop.at(-1) as Played;
+    // 60 ms into the settle a finger lands on the sheet.
+    act(() => {
+      vi.advanceTimersByTime(60);
+    });
+    const expected = valueAt(dim, 60, opacityOf);
+    down(hook, 250, 900, target);
+    expect(dim.cancel).toHaveBeenCalled();
+    const caught = Number(onScrimOpacity.mock.calls.at(-1)?.[0]);
+    expect(caught).toBeGreaterThan(dimAt(290));
+    expect(caught).toBeLessThan(1);
+    expect(caught).toBeCloseTo(expected, 1);
+  });
+
+  it("hands a drag dismissal's dim to the host's exit under a mouse", () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({
+        matches: false,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    );
+    const order: string[] = [];
+    const onScrimOpacity = vi.fn((o: number) => order.push(`dim ${o}`));
+    const onScrimTracking = vi.fn((on: boolean) => order.push(`track ${on}`));
+    const onDismiss = vi.fn(() => order.push('dismiss'));
+    const {hook} = setup({
+      snapHeights: () => [200],
+      onScrimOpacity,
+      onScrimTracking,
+      onDismiss,
+    });
+    const {target} = inDialog();
+    target.style.transitionProperty = 'transform';
+    target.style.transitionDuration = '410ms';
+    target.style.transitionTimingFunction = 'ease';
+    down(hook, 0, 0, target);
+    stream(hook, target, {from: 0, to: 360, t0: 0, t1: 300});
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(
+        pointerEvent(360, 302, target),
+      ),
+    );
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+    // The dim is handed back where it is, unpinned, before the host closes.
+    const handBack = order.indexOf('track false');
+    expect(handBack).toBeGreaterThan(-1);
+    expect(handBack).toBeLessThan(order.indexOf('dismiss'));
+    expect(order[handBack - 1]).toMatch(/^dim /);
+    expect(Number(order[handBack - 1].slice(4))).toBeCloseTo(dimAt(360), 9);
+  });
+});
