@@ -31,7 +31,10 @@
  * value on screen when the row is toggled again mid-motion. A collapse keeps
  * the children rendered until the block has slid away; the commit that
  * removes them shifts the rows below back by the same height, so nothing
- * jumps.
+ * jumps. Page content below the tree moves the same way (utils/rowMotion.ts
+ * `contentBelow`: in-flow content after the tree up to its scroll container,
+ * never an element another owner already translates), unless the tree is
+ * told to keep it still (`followingContent: 'stays'`).
  *
  * With a mouse (the theme's presentation) nothing moves: the children appear
  * and leave at once, as before. Leaving children are inert while they slide
@@ -44,76 +47,20 @@
 
 import {useCallback, useRef, useState} from 'react';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
-import {createAnimator, type Animator} from '../motion/animator';
 import {list} from '../motion/uikit/list';
+import {
+  animatorFor,
+  contentBelow,
+  motionNow,
+  releaseMotion,
+  springHome,
+  springTo,
+} from '../utils/rowMotion';
 import {useMotionPresentation} from '../utils/touchPresentation';
 
 const SPRING = list.update.outlineSpring;
 /** The chevron turns a quarter turn between collapsed and expanded. */
 const QUARTER_TURN = 90;
-/**
- * Reduce Motion keeps the motion: UIKit runs the same slide, clip and chevron
- * turn with Reduce Motion on, and with Prefer Cross-Fade Transitions too
- * (measured: UIKit lab, iOS 26.2 sim iPhone 17 Pro, CAAnimation dump, Oct 23
- * 2026).
- */
-const REDUCED_MOTION = 'keep' as const;
-
-/** The animator of each element that moves, shared by every row that moves it. */
-const animators = new WeakMap<HTMLElement, Animator>();
-
-function animatorFor(element: HTMLElement): Animator {
-  let animator = animators.get(element);
-  if (animator == null) {
-    animator = createAnimator(element);
-    animators.set(element, animator);
-  }
-  return animator;
-}
-
-/**
- * Springs `element`'s `property` to 0 after moving it by `shift` (the layout
- * just moved it the other way), keeping the velocity it has on screen.
- * Resolves true when it arrives.
- */
-async function springHome(
-  element: HTMLElement,
-  property: 'y' | 'rotate',
-  shift: number,
-  at: number,
-): Promise<boolean> {
-  const animator = animatorFor(element);
-  const value = animator.get(property, at);
-  const velocity = animator.getVelocity(property, at);
-  if (shift !== 0) {
-    animator.set({[property]: value + shift});
-  }
-  return animator.animate(
-    {[property]: 0},
-    {spring: SPRING, velocity: {[property]: velocity}},
-    {at, reducedMotion: REDUCED_MOTION},
-  ).finished;
-}
-
-/** Springs `element`'s `y` to `to` from the value on screen. */
-async function springTo(
-  element: HTMLElement,
-  to: number,
-  at: number,
-): Promise<boolean> {
-  return animatorFor(element).animate(
-    {y: to},
-    {spring: SPRING},
-    {at, reducedMotion: REDUCED_MOTION},
-  ).finished;
-}
-
-/** Drops an element's animator and its identity inline value once it rests. */
-function release(element: HTMLElement, property: 'translate' | 'rotate') {
-  animators.get(element)?.dispose();
-  animators.delete(element);
-  element.style.removeProperty(property);
-}
 
 /** Every row after `group` in its tree, at each level up to the tree. */
 function rowsAfter(group: HTMLElement): HTMLElement[] {
@@ -135,9 +82,6 @@ function rowsAfter(group: HTMLElement): HTMLElement[] {
   return rows;
 }
 
-const now = () =>
-  typeof performance === 'undefined' ? Date.now() : performance.now();
-
 export interface TreeExpansionMotion {
   /** Render the children: expanded, or still sliding away. */
   readonly showsChildren: boolean;
@@ -156,6 +100,7 @@ function chevronOf(group: HTMLElement): HTMLElement | null {
 
 export function useTreeExpansionMotion(
   isExpanded: boolean,
+  followingContent: 'moves' | 'stays' = 'moves',
 ): TreeExpansionMotion {
   const animates = useMotionPresentation() === 'uikit';
   const [shown, setShown] = useState(isExpanded);
@@ -170,6 +115,8 @@ export function useTreeExpansionMotion(
   const previousRef = useRef({isExpanded, shown});
   /** The motion in flight; a newer one makes an older one's ending moot. */
   const generationRef = useRef(0);
+  /** A motion is running: a toggle now retargets it instead of restarting. */
+  const inFlightRef = useRef(false);
   /** The rows the motion moves and the height they move by. */
   const movedRef = useRef<{rows: HTMLElement[]; height: number}>({
     rows: [],
@@ -183,12 +130,15 @@ export function useTreeExpansionMotion(
     // The commit that removed the children moved the rows below up by their
     // height: move them back down by it, invisibly, and let them rest.
     if (before.shown && !shown) {
-      for (const row of movedRef.current.rows) {
-        if (animators.has(row)) {
-          release(row, 'translate');
-        }
+      const {rows, height} = movedRef.current;
+      const at = motionNow();
+      for (const row of rows) {
+        const animator = animatorFor(row);
+        animator.set({y: animator.get('y', at) + height});
+        releaseMotion(row, 'translate');
       }
       movedRef.current = {rows: [], height: 0};
+      inFlightRef.current = false;
       return;
     }
     if (before.isExpanded === isExpanded || !animates) {
@@ -198,15 +148,28 @@ export function useTreeExpansionMotion(
     if (element == null) {
       return;
     }
-    const at = now();
+    const at = motionNow();
     const mine = ++generationRef.current;
     const height = element.offsetHeight;
     const children = Array.from(element.children).filter(
       (child): child is HTMLElement => child instanceof HTMLElement,
     );
     const justMounted = !before.shown;
-    const rows = justMounted ? rowsAfter(element) : movedRef.current.rows;
+    // The rows after the group in the tree, and the page content below the
+    // tree (unless the app keeps it still); kept as they are while a motion
+    // runs, so a toggle mid-motion retargets the same elements.
+    const tree = element.closest<HTMLElement>('[role="tree"]');
+    const rows =
+      justMounted || !inFlightRef.current
+        ? [
+            ...rowsAfter(element),
+            ...(followingContent === 'moves' && tree != null
+              ? contentBelow(tree)
+              : []),
+          ]
+        : movedRef.current.rows;
     movedRef.current = {rows, height};
+    inFlightRef.current = true;
     // The clip: the group's own box, whose top edge is the parent row's
     // bottom, for the length of the motion.
     element.style.overflow = 'clip';
@@ -220,10 +183,11 @@ export function useTreeExpansionMotion(
         glyph,
         'rotate',
         (isExpanded ? -QUARTER_TURN : QUARTER_TURN) * sign,
+        SPRING,
         at,
       ).then(arrived => {
         if (arrived && generationRef.current === mine) {
-          release(glyph, 'rotate');
+          releaseMotion(glyph, 'rotate');
         }
       });
     }
@@ -233,13 +197,13 @@ export function useTreeExpansionMotion(
       // rows below start where they were before the children took space.
       const block = children.map(async child =>
         justMounted
-          ? springHome(child, 'y', -height, at)
-          : springTo(child, 0, at),
+          ? springHome(child, 'y', -height, SPRING, at)
+          : springTo(child, 0, SPRING, at),
       );
       for (const row of rows) {
         void (justMounted
-          ? springHome(row, 'y', -height, at)
-          : springTo(row, 0, at));
+          ? springHome(row, 'y', -height, SPRING, at)
+          : springTo(row, 0, SPRING, at));
       }
       void Promise.all(block).then(results => {
         if (generationRef.current !== mine || results.some(done => !done)) {
@@ -247,31 +211,34 @@ export function useTreeExpansionMotion(
         }
         element.style.removeProperty('overflow');
         for (const child of children) {
-          release(child, 'translate');
+          releaseMotion(child, 'translate');
         }
         for (const row of rows) {
-          release(row, 'translate');
+          releaseMotion(row, 'translate');
         }
+        inFlightRef.current = false;
       });
       return;
     }
 
     // Back under the parent; the rows below follow the block's bottom edge.
-    const block = children.map(async child => springTo(child, -height, at));
+    const block = children.map(async child =>
+      springTo(child, -height, SPRING, at),
+    );
     for (const row of rows) {
-      void springTo(row, -height, at);
+      void springTo(row, -height, SPRING, at);
     }
     void Promise.all(block).then(results => {
       if (generationRef.current !== mine || results.some(done => !done)) {
         return;
       }
       for (const child of children) {
-        release(child, 'translate');
+        releaseMotion(child, 'translate');
       }
       element.style.removeProperty('overflow');
       setShown(false);
     });
-  }, [isExpanded, shown, animates]);
+  }, [isExpanded, shown, animates, followingContent]);
 
   const groupRef = useCallback((element: HTMLUListElement | null) => {
     groupElementRef.current = element;

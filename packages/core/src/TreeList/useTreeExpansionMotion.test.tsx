@@ -6,7 +6,8 @@
  * @output Unit tests for the expansion's presence rules: with a mouse a
  *   collapse removes the children at once; on a touch screen they stay,
  *   inert and out of the arrow keys' reach, until they have slid away, and an
- *   expand that interrupts the collapse keeps them
+ *   expand that interrupts the collapse keeps them; page content below the
+ *   tree moves with an expansion unless the tree keeps it still
  * @position Beside TreeList/useTreeExpansionMotion.ts; the motion itself is
  *   proven in a real engine by
  *   TreeList/__tests__/TreeListExpand.interaction.browser.spec.ts
@@ -16,6 +17,7 @@ import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {TreeList} from './TreeList';
 import type {TreeListItemData} from './TreeListTypes';
+import {motionOf} from '../utils/rowMotion';
 
 const items: TreeListItemData[] = [
   {
@@ -102,5 +104,43 @@ describe('TreeList expansion presence', () => {
     await new Promise(resolve => setTimeout(resolve, 800));
     expect(group()).toBe(before);
     expect(screen.getByText('Card.tsx')).toBeInTheDocument();
+  });
+});
+
+describe('content below the tree', () => {
+  const collapsed: TreeListItemData[] = [
+    {
+      id: 'components',
+      label: 'components',
+      children: [{id: 'button', label: 'Button.tsx'}],
+    },
+    {id: 'app', label: 'App.tsx'},
+  ];
+
+  function Page({followingContent}: {followingContent?: 'moves' | 'stays'}) {
+    return (
+      <div>
+        <TreeList items={collapsed} followingContent={followingContent} />
+        <p data-testid="below">Below the tree</p>
+      </div>
+    );
+  }
+
+  it('moves with an expansion on a touch screen', async () => {
+    stubPointer(true);
+    render(<Page />);
+    await act(async () => undefined);
+    fireEvent.click(toggle() as HTMLElement);
+    expect(motionOf(screen.getByTestId('below'))).toBeDefined();
+  });
+
+  it("stays still with followingContent: 'stays'", async () => {
+    stubPointer(true);
+    render(<Page followingContent="stays" />);
+    await act(async () => undefined);
+    fireEvent.click(toggle() as HTMLElement);
+    expect(motionOf(screen.getByTestId('below'))).toBeUndefined();
+    // The rows inside the tree still move.
+    expect(motionOf(row('app') as HTMLElement)).toBeDefined();
   });
 });

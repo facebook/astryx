@@ -10,8 +10,9 @@
  *   as one block inside the group's clip, the rows below move with them and
  *   the chevron turns, all on the outline spring, sampled frame by frame; a
  *   collapse slides them back and removes them with no jump; the rows below
- *   keep moving while the main thread is blocked, with no Layout or Paint; a
- *   storyboard of the expand
+ *   keep moving while the main thread is blocked, with no Layout or Paint;
+ *   Reduce Motion keeps it (as measured on UIKit); right to left mirrors the
+ *   chevron's turn; a storyboard of the expand
  * @position Interaction evidence for TreeList/useTreeExpansionMotion.ts
  */
 
@@ -111,6 +112,54 @@ async function open(page: Page) {
   test.skip(!touch, 'the expansion moves on a touch screen only');
   await expect(parts(page).below).toBeVisible();
 }
+
+test('Reduce Motion keeps the expansion: UIKit runs the same outline spring', async ({
+  page,
+}) => {
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  await open(page);
+  const {group, child, below} = parts(page);
+  await tapToggle(page);
+  await expect(child).toBeVisible();
+  await holdAnimations(page);
+  const height = await group.evaluate(el => (el as HTMLElement).offsetHeight);
+  for (const t of [0, SETTLE_MS / 4, SETTLE_MS / 2]) {
+    await seekAnimations(page, t);
+    expect(await translateY(child)).toBeCloseTo(-height * (1 - progress(t)), 0);
+    expect(await translateY(below)).toBeCloseTo(-height * (1 - progress(t)), 0);
+  }
+  await releaseAnimations(page, {finish: true});
+  await expect.poll(async () => translateY(below)).toBe(0);
+});
+
+test("right to left: the chevron's quarter turn mirrors, and the children slide the same way", async ({
+  page,
+}) => {
+  await page.goto(
+    `${storybook()}/iframe.html?id=${STORY}&viewMode=story&globals=direction:rtl`,
+  );
+  const touch = await page.evaluate(
+    () => matchMedia('(pointer: coarse)').matches,
+  );
+  test.skip(!touch, 'the expansion moves on a touch screen only');
+  const {group, child, chevron} = parts(page);
+  await expect(parts(page).below).toBeVisible();
+  expect(await chevron.evaluate(el => getComputedStyle(el).direction)).toBe(
+    'rtl',
+  );
+  await tapToggle(page);
+  await expect(child).toBeVisible();
+  await holdAnimations(page);
+  const height = await group.evaluate(el => (el as HTMLElement).offsetHeight);
+  for (const t of [0, SETTLE_MS / 4, SETTLE_MS / 2]) {
+    await seekAnimations(page, t);
+    // LTR starts the additive turn at −90°; right to left at +90°.
+    expect(await rotation(chevron)).toBeCloseTo(90 * (1 - progress(t)), 0);
+    expect(await translateY(child)).toBeCloseTo(-height * (1 - progress(t)), 0);
+  }
+  await releaseAnimations(page, {finish: true});
+  await expect.poll(async () => rotation(chevron)).toBe(0);
+});
 
 test('expand: the children slide out from under the parent, the rows below move with them, the chevron turns, on the outline spring', async ({
   page,
@@ -227,6 +276,65 @@ test('collapse: the children slide back under the parent, then leave, with no ju
   expect(await translateY(below)).toBe(0);
   expect((await below.boundingBox())?.y ?? 0).toBeCloseTo(belowCollapsed, 0);
 });
+
+test('content below the tree moves with the rows, out and back, with no jump', async ({
+  page,
+}) => {
+  await openStory(page, storybook(), 'core-treelist--with-content-below');
+  const touch = await page.evaluate(
+    () => matchMedia('(pointer: coarse)').matches,
+  );
+  test.skip(!touch, 'the expansion moves on a touch screen only');
+  const button = page.getByRole('button', {name: 'Open folder'});
+  const {group, below} = parts(page);
+  await expect(button).toBeVisible();
+  const rest = (await button.boundingBox())?.y ?? 0;
+  await tapToggle(page);
+  await holdAnimations(page);
+  await seekAnimations(page, 0);
+  const height = await group.evaluate(el => (el as HTMLElement).offsetHeight);
+  // On screen where it was: its new layout, one group height back up.
+  expect(await translateY(button)).toBeCloseTo(-height, 0);
+  // In step with the rows below inside the tree.
+  await seekAnimations(page, SETTLE_MS / 4);
+  expect(await translateY(button)).toBeCloseTo(await translateY(below), 1);
+  await releaseAnimations(page, {finish: true});
+  await expect.poll(async () => translateY(button)).toBe(0);
+  expect(((await button.boundingBox())?.y ?? 0) - rest).toBeCloseTo(height, 0);
+
+  await tapToggle(page);
+  await holdAnimations(page);
+  await seekAnimations(page, SETTLE_MS / 3);
+  const midway = await translateY(button);
+  expect(midway).toBeLessThan(-1);
+  expect(midway).toBeGreaterThan(-height + 1);
+  await releaseAnimations(page, {finish: true});
+  await expect(group).toHaveCount(0);
+  expect(await translateY(button)).toBe(0);
+  expect((await button.boundingBox())?.y ?? 0).toBeCloseTo(rest, 0);
+});
+
+test(
+  'storyboard: content below the tree moving with an expansion',
+  {tag: '@storyboard'},
+  async ({page}, testInfo) => {
+    await openStory(page, storybook(), 'core-treelist--with-content-below');
+    const touch = await page.evaluate(
+      () => matchMedia('(pointer: coarse)').matches,
+    );
+    test.skip(!touch, 'the expansion moves on a touch screen only');
+    await tapToggle(page);
+    const {storyboard} = await animationStoryboard(page, {
+      name: 'tree-list-expand-content-below',
+      clip: {x: 0, y: 0, width: 402, height: 600},
+      times: [0, 33, 67, 100, 150, 200, 267, Math.round(SETTLE_MS)],
+      columns: 8,
+      cellScale: 0.45,
+    });
+    await releaseAnimations(page, {finish: true});
+    await storyboard.write(testInfo);
+  },
+);
 
 test('the rows below keep moving on every frame while the main thread is blocked', async ({
   page,
