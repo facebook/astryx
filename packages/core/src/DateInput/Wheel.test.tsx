@@ -23,6 +23,7 @@ import {
   type WheelProps,
 } from './Wheel';
 import {rowTransform} from './wheelDrum';
+import {WheelGroup} from './WheelGroup';
 
 const ROW = 32;
 const RADIUS = 97.2;
@@ -461,5 +462,124 @@ describe('Wheel — mechanics for its owners', () => {
     // It came to rest on a row and committed it, as without the re-render.
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0][0]).toBeGreaterThan(15);
+  });
+});
+
+describe('Wheel — Reduce Motion and RTL', () => {
+  it('coasts the same under Reduce Motion, as UIPickerView does', () => {
+    const previous = Object.getOwnPropertyDescriptor(window, 'matchMedia');
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: (query: string) => ({
+        matches: query.includes('prefers-reduced-motion: reduce'),
+        media: query,
+        onchange: null,
+        addEventListener() {},
+        removeEventListener() {},
+        addListener() {},
+        removeListener() {},
+        dispatchEvent: () => false,
+      }),
+    });
+    try {
+      const {column, onChange} = renderWheel({
+        options: MINUTES,
+        value: 10,
+        label: 'Minute',
+      });
+      drag(column, 180, 60, {steps: 6, interval: 16});
+      // Still coasting, not jumped to its rest.
+      advance(200);
+      expect(onChange).not.toHaveBeenCalled();
+      advance(4000);
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange.mock.calls[0][0]).toBeGreaterThan(15);
+    } finally {
+      if (previous == null) {
+        Reflect.deleteProperty(window, 'matchMedia');
+      } else {
+        Object.defineProperty(window, 'matchMedia', previous);
+      }
+    }
+  });
+
+  it('leans each column toward the picker centre from where it is laid out, so RTL mirrors it', async () => {
+    // An RTL row of three 123 px columns in a 402 px picker: AM/PM on the
+    // left, Hour on the right.
+    const left: Record<string, number> = {'AM/PM': 17, Minute: 140, Hour: 262};
+    const spy = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function (this: HTMLElement) {
+        const label = this.getAttribute('aria-label');
+        const isGroup =
+          this.querySelector(':scope > [data-wheel-band]') != null;
+        const x = label != null && label in left ? left[label] : 0;
+        const width = label != null && label in left ? 123 : isGroup ? 402 : 0;
+        return {
+          x,
+          y: 0,
+          left: x,
+          top: 0,
+          right: x + width,
+          bottom: 216,
+          width,
+          height: 216,
+          toJSON() {},
+        };
+      });
+    // Browsers report each observed box once laid out; the wheels place
+    // their vanishing point from that report, the group's box included.
+    const previousObserver = window.ResizeObserver;
+    window.ResizeObserver = class {
+      constructor(private readonly callback: ResizeObserverCallback) {}
+      observe() {
+        queueMicrotask(() => this.callback([], this));
+      }
+      unobserve() {}
+      disconnect() {}
+    };
+    try {
+      const meridiem: WheelOption[] = [
+        {value: 0, label: 'AM'},
+        {value: 1, label: 'PM'},
+      ];
+      render(
+        <div dir="rtl">
+          <WheelGroup>
+            <Wheel
+              label="Hour"
+              options={HOURS}
+              value={10}
+              onChange={() => {}}
+            />
+            <Wheel
+              label="Minute"
+              options={MINUTES}
+              value={0}
+              onChange={() => {}}
+            />
+            <Wheel
+              label="AM/PM"
+              options={meridiem}
+              value={0}
+              onChange={() => {}}
+            />
+          </WheelGroup>
+        </div>,
+      );
+      await act(async () => {});
+      const origin = (label: string) =>
+        screen
+          .getByRole('listbox', {name: label})
+          .querySelector<HTMLElement>('[style*="perspective-origin"]')!.style
+          .perspectiveOrigin;
+      // The picker centre is 201 px: the left column draws toward its right,
+      // the right column toward its left.
+      expect(origin('AM/PM')).toBe('184px 50%');
+      expect(origin('Hour')).toBe('-61px 50%');
+    } finally {
+      spy.mockRestore();
+      window.ResizeObserver = previousObserver;
+    }
   });
 });
