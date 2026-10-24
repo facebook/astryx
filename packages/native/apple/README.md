@@ -36,6 +36,7 @@ apple/
 │       └── Generated/     # generated; do not edit
 ├── Tests/
 │   ├── AstryxTests/
+│   ├── AstryxScreenshotTests/ # draws every component state on the iOS Simulator
 │   └── AstryxNativeTests/
 └── Templates/             # page templates to copy; its own package, never published
     ├── Package.swift      # no products; compiles and tests the templates
@@ -135,7 +136,18 @@ To add a component, create `Sources/Astryx/<Name>/Astryx<Name>.swift` with
 core's prop names, read its tokens from `astryx`, and add tests under
 `Tests/AstryxTests/`. To add a template, create
 `Templates/<Name>/<Name>Template.swift` from the output of
-`astryx template <id>`, with tests under `Templates/Tests/`.
+`astryx template <id>`, with tests under `Templates/Tests/`. Add a new
+component's key states to `Tests/AstryxScreenshotTests/ScreenshotTests.swift`.
+
+## Screenshots
+
+`Tests/AstryxScreenshotTests/` draws every component in its key states, in
+light and dark, on the iOS Simulator; each state must draw a non-empty image.
+CI uploads them as the `native-screenshots-<head sha>` artifact of the
+`test-native-swift` job, one PNG per state at
+`apple/<Component>/<state>-<light|dark>.png`. To write them locally, run the
+tests on an iOS Simulator with `TEST_RUNNER_ASTRYX_SCREENSHOT_DIR` set to a
+directory.
 
 ## Not here yet
 

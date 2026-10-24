@@ -31,5 +31,10 @@ let package = Package(
     ),
     .testTarget(name: "AstryxNativeTests", dependencies: ["AstryxNative"], path: "Tests/AstryxNativeTests"),
     .testTarget(name: "AstryxTests", dependencies: ["Astryx"], path: "Tests/AstryxTests"),
+    .testTarget(
+      name: "AstryxScreenshotTests",
+      dependencies: ["Astryx"],
+      path: "Tests/AstryxScreenshotTests"
+    ),
   ]
 )
