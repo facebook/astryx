@@ -46,7 +46,8 @@ import {useTooltip} from '../Tooltip';
 import {mergeProps, rtlStyles} from '../utils';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import spinnerMessages from '../i18n/generated-locales/en/spinner.generated';
 import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
 import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {usePressFeedback} from '../hooks/usePressFeedback';
@@ -373,7 +374,7 @@ export function CheckboxInput({
   // `opacity: 0`, and only the indicator's own element can shape the outline
   // to match it. See useIndicatorFocusRing.
   const indicatorRef = useRef<HTMLSpanElement>(null);
-  const t = useTranslator();
+  const t = useComponentTranslator(spinnerMessages);
   // The busy Spinner sits in the decorative, aria-hidden indicator, so this
   // control announces its busy start itself (spec:AST-086 FR8).
   useBusyAnnouncement(isBusy, t('@astryx.spinner.loading'), indicatorRef);

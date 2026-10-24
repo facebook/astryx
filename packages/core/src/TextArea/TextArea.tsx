@@ -61,10 +61,15 @@ import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
 import {characterCount} from '../utils/characters';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import textAreaMessages from '../i18n/generated-locales/en/textArea.generated';
+import spinnerMessages from '../i18n/generated-locales/en/spinner.generated';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
+
+// The English strings this module reads: the namespaces its keys name.
+const messages = {...textAreaMessages, ...spinnerMessages};
 const COUNTER_WARNING_THRESHOLD = 0.8;
 
 const styles = stylex.create({
@@ -425,7 +430,7 @@ export function TextArea({
     containerStyle,
   });
   const size = useSize(sizeProp, 'md');
-  const t = useTranslator();
+  const t = useComponentTranslator(messages);
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const announce = useAnnounce();
   const generatedID = useId();

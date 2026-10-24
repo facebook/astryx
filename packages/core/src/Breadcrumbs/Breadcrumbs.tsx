@@ -23,7 +23,8 @@ import {spacingVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import breadcrumbsMessages from '../i18n/generated-locales/en/breadcrumbs.generated';
 import type {BreadcrumbsVariantMap} from './index';
 
 // =============================================================================
@@ -139,7 +140,7 @@ export function Breadcrumbs({
   ref,
   ...rest
 }: BreadcrumbsProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(breadcrumbsMessages);
   const label = labelFromProps ?? t('@astryx.breadcrumbs.label');
   const ctxValue = useMemo<BreadcrumbContextValue>(
     () => ({variant, separator}),

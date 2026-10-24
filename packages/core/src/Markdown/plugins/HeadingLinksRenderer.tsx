@@ -17,7 +17,8 @@ import {Button} from '../../Button/Button';
 import {Icon} from '../../Icon';
 import {useClipboard} from '../../hooks/useClipboard';
 import {useContainerReveal} from '../../hooks/useContainerReveal';
-import {useTranslator} from '../../i18n';
+import {useComponentTranslator} from '../../i18n/useComponentTranslator';
+import markdownHeadingLinksMessages from '../../i18n/generated-locales/en/markdownHeadingLinks.generated';
 import {colorVars, sizeVars, spacingVars} from '../../theme/tokens.stylex';
 import {mergeProps, rtlStyles} from '../../utils';
 
@@ -132,7 +133,7 @@ export function HeadingLinksRenderer({
   headingTextStyle,
   blockSpacingStyle,
 }: HeadingLinksRendererProps): ReactElement {
-  const t = useTranslator();
+  const t = useComponentTranslator(markdownHeadingLinksMessages);
   const copiedLabel = t('@astryx.markdownHeadingLinks.copied');
   const copyLabel = t('@astryx.markdownHeadingLinks.copy', {
     heading: headingLabel || headingId,

@@ -19,7 +19,9 @@ import {Selector} from '../Selector';
 import {HStack, VStack} from '../Stack';
 import {Icon} from '../Icon';
 import {TreeList, type TreeListItemData} from '../TreeList';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import {useCatalogTranslator} from '../i18n/useCatalogTranslator';
+import powersearchMessages from '../i18n/generated-locales/en/powersearch.generated';
 import {isImeKeyEvent} from '../utils/ime';
 import {spacingVars, typeScaleVars} from '../theme/tokens.stylex';
 import {
@@ -264,7 +266,10 @@ function NestedSubFilterRow({
   maxMenuItems,
   isReadOnly,
 }: NestedSubFilterRowProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(powersearchMessages);
+  // A caller's own operator `i18nKey` reads the whole catalog; shipped
+  // defaults (`@astryx.powersearch.*`) read the slice like every fixed string.
+  const tCaller = useCatalogTranslator();
   const fieldOptions = useMemo(
     () =>
       config.getVisibleFields().map(field => ({
@@ -278,9 +283,9 @@ function NestedSubFilterRow({
     const operators = config.getVisibleOperators(subFilter.field);
     return operators.map(op => ({
       value: op.key,
-      label: resolveOperatorLabel(op, t),
+      label: resolveOperatorLabel(op, t, tCaller),
     }));
-  }, [config, subFilter.field, t]);
+  }, [config, subFilter.field, t, tCaller]);
 
   const currentOperator = subFilter.operator
     ? config.getOperator(subFilter.field, subFilter.operator)
@@ -397,7 +402,7 @@ function NestedEditor({
   maxMenuItems,
   isReadOnly,
 }: NestedEditorProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(powersearchMessages);
   const [subFilters, setSubFilters] = useState<EditablePartialFilter[]>(() => {
     if (partialFilter.value && partialFilter.value.type === 'nested') {
       return partialFilter.value.value.map(f => initEditableFilter(config, f));
@@ -661,7 +666,10 @@ export function PowerSearchEditPopover({
   maxMenuItems,
   isReadOnly = false,
 }: PowerSearchEditPopoverProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(powersearchMessages);
+  // A caller's own operator `i18nKey` reads the whole catalog; shipped
+  // defaults (`@astryx.powersearch.*`) read the slice like every fixed string.
+  const tCaller = useCatalogTranslator();
   const saveButtonLabel =
     saveButtonLabelFromProps ?? t('@astryx.powersearch.editor.apply');
   const [partialFilter, setPartialFilter] =
@@ -686,9 +694,9 @@ export function PowerSearchEditPopover({
     const operators = config.getVisibleOperators(partialFilter.field);
     return operators.map(op => ({
       value: op.key,
-      label: resolveOperatorLabel(op, t),
+      label: resolveOperatorLabel(op, t, tCaller),
     }));
-  }, [config, partialFilter.field, t]);
+  }, [config, partialFilter.field, t, tCaller]);
 
   // An "empty" operator takes no value, so choosing one completes the filter:
   // save it from the choice itself, once, rather than reacting to the state.

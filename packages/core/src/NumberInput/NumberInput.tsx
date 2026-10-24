@@ -220,7 +220,9 @@ import {
 } from '../Field/fieldParts';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator, useLocale} from '../i18n';
+import {useLocale} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import numberInputMessages from '../i18n/generated-locales/en/numberInput.generated';
 import {formatEditableNumber} from './numberParser';
 import {parseNumberInput, resolveNumberInputCommit} from './numberInputCommit';
 
@@ -583,7 +585,7 @@ export function NumberInput({
     containerStyle,
   });
   const pressable = usePressFeedback();
-  const t = useTranslator();
+  const t = useComponentTranslator(numberInputMessages);
   const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const size = useSize(sizeProp, 'md');

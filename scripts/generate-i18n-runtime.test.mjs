@@ -8,11 +8,16 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {describe, expect, it} from 'vitest';
 import {
+  createNamespaceSlices,
   createRuntimeCatalog,
   createRuntimeCatalogs,
   createSpawnInvocation,
   getGeneratedModuleName,
+  getSliceModuleName,
   isSourceLocaleFile,
+  namespaceOf,
+  renderEnglishCatalogModule,
+  renderNamespaceSliceModule,
   renderRuntimeCatalogModule,
 } from './generate-i18n-runtime.mjs';
 
@@ -119,6 +124,63 @@ describe('createRuntimeCatalogs', () => {
     expect(catalogs['fr-FR.json']['@astryx.button.submit']).toBe('Envoyer');
     expect(catalogs['pseudo.json']['@astryx.button.submit']).toBe('⟦Šúƀɱíţ⟧');
     expect(JSON.stringify(catalogs)).not.toContain('description');
+  });
+});
+
+describe('English namespace slices', () => {
+  it('names the namespace of a key', () => {
+    expect(namespaceOf('@astryx.button.loading')).toBe('button');
+    expect(namespaceOf('@astryx.dateTimeInput.time.hour')).toBe(
+      'dateTimeInput',
+    );
+  });
+
+  it('rejects a key that names no namespace', () => {
+    expect(() => namespaceOf('@astryx.loading')).toThrow('<namespace>.<name>');
+    expect(() => namespaceOf('loading')).toThrow('<namespace>.<name>');
+  });
+
+  it('splits a runtime catalog into one map per namespace, every key kept once', () => {
+    const slices = createNamespaceSlices({
+      '@astryx.button.loading': 'Loading',
+      '@astryx.pagination.next': 'Go to next page',
+      '@astryx.pagination.previous': 'Go to previous page',
+    });
+    expect(slices).toEqual({
+      button: {'@astryx.button.loading': 'Loading'},
+      pagination: {
+        '@astryx.pagination.next': 'Go to next page',
+        '@astryx.pagination.previous': 'Go to previous page',
+      },
+    });
+    expect(Object.values(slices).flatMap(Object.keys)).toHaveLength(3);
+  });
+
+  it('renders a slice as the same string-map module shape, named after the namespace', async () => {
+    expect(getSliceModuleName('button')).toBe('button.generated.ts');
+    const output = await renderNamespaceSliceModule(
+      {'@astryx.button.loading': 'Loading'},
+      'button',
+    );
+    expect(output).toContain('from the `button` keys of');
+    expect(output).toContain(
+      "const runtimeCatalog: Readonly<Record<string, string>> = {\n  '@astryx.button.loading': 'Loading',\n};",
+    );
+    expect(output).toContain('export default runtimeCatalog;');
+  });
+
+  it('renders the whole English catalog as the spread of its slices, so each string ships once', async () => {
+    const output = await renderEnglishCatalogModule(['button', 'pagination']);
+    expect(output).toContain(
+      "import buttonMessages from './en/button.generated';",
+    );
+    expect(output).toContain(
+      "import paginationMessages from './en/pagination.generated';",
+    );
+    expect(output).toContain('...buttonMessages,');
+    expect(output).toContain('...paginationMessages,');
+    expect(output).not.toMatch(/'@astryx\./);
+    expect(output).toContain('export default runtimeCatalog;');
   });
 });
 

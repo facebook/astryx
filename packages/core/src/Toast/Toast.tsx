@@ -42,7 +42,8 @@ import type {
   ToastContentRenderFn,
 } from './types';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import toastMessages from '../i18n/generated-locales/en/toast.generated';
 import {useToastGesture, type ToastGestureDirection} from './useToastGesture';
 
 const SWIPE_INTERACTIVE_TARGET_SELECTOR = `${INTERACTIVE_SELECTORS},[tabindex],[contenteditable]:not([contenteditable="false"])`;
@@ -183,7 +184,7 @@ export function ToastSurface({
   renderContent,
   gestureDirection,
 }: ToastSurfaceProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(toastMessages);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isPausedRef = useRef(false);
   const remainingRef = useRef(autoHideDuration);
