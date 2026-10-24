@@ -61,6 +61,12 @@ export const docs = {
         'Content to render after the label and description, such as a badge or metadata.',
     },
     {
+      name: 'children',
+      type: 'ReactNode',
+      description:
+        'Content drawn as a cell instead of the row: a tile, a colour swatch, an icon, a numbered slot. The cell shows no radio mark; label names it through a visually hidden element, the checked cell carries an accent border (Highlight under forced colors), and keyboard focus adds the focus ring. Cells keep the row role, focus, selection and handlers, so the arrow keys and typeahead reach them in DOM order. Lay them out by styling the group or a wrapper inside it as a grid. Children that render nothing leave the row; icon, description and endContent are not shown in a cell.',
+    },
+    {
       name: 'ref',
       type: 'React.Ref<HTMLElement>',
       description:
@@ -82,6 +88,8 @@ export const docsZh = {
     icon: '显示在标签前的图标。',
     isDisabled: '该单选项是否禁用。',
     endContent: '在标签和描述之后渲染的内容。',
+    children:
+      '以单元格而非行绘制的内容：图块、色板、图标或编号槽位。单元格不显示单选标记；label 通过视觉隐藏的元素为其命名，选中的单元格带有强调色边框（强制颜色模式下为 Highlight），键盘焦点会显示焦点环。单元格保留行的角色、焦点、选择和事件处理，方向键和输入查找按 DOM 顺序到达它们。通过将组或组内的包装元素设为网格来布局。不渲染任何内容的 children 保持为行；单元格中不显示 icon、description 和 endContent。',
     ref: '转发到行根元素（带 role="menuitemradio" 的元素）的 ref。',
   },
 };
@@ -99,6 +107,8 @@ export const docsDense = {
     isDisabled:
       'disabled; aria-disabled, blocks selection, skipped by arrow keys',
     endContent: 'content after label+description',
+    children:
+      'drawn as a cell (tile, swatch, icon) instead of the row: no radio mark, named by label, accent border when checked, focus ring on keyboard focus; arrows reach cells in DOM order; lay out via group/wrapper grid; non-rendering children stay a row',
     ref: 'forwarded to the row root (the role="menuitemradio" element)',
   },
 };

@@ -1546,6 +1546,17 @@ jobs:
             --project chromium \
             --output table-min-width-output
 
+      # A radio item given children is a cell: a named menuitemradio whose
+      # checked state is painted on its border, also under forced colors, and
+      # which the arrow keys reach in DOM order. Only a real engine computes
+      # the name, the paint and forced colors.
+      - name: Run DropdownMenu radio cell contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/DropdownMenu/__tests__/RadioCell.a11y.chromium.spec.ts \
+            --project chromium \
+            --output dropdown-menu-radio-cell-output
+
       # A CodeBlock diff row's tint has to follow a long line to the end of its
       # scroll width; jsdom has no layout, so only a real engine shows whether
       # the paint stops at the viewport edge when the reader scrolls.

@@ -13,6 +13,8 @@ review_triggers: [public-api, behavior, accessibility, theming, testing]
 verified_by:
   [
     packages/core/src/DropdownMenu/DropdownMenuSelectable.test.tsx,
+    packages/core/src/DropdownMenu/DropdownMenuRadioCell.test.tsx,
+    packages/core/src/DropdownMenu/__tests__/RadioCell.a11y.chromium.spec.ts,
     packages/core/src/DropdownMenu/__tests__/Menu.a11y.test.tsx,
     packages/core/src/RadioList/__tests__/RadioGroup.a11y.test.tsx,
     packages/core/src/DropdownMenu/__tests__/DropdownMenuRadioItemAudit.a11y.chromium.spec.ts,
@@ -40,7 +42,7 @@ system_specs: [spec:AST-020, spec:AST-029]
 
 | Area                    | Contract                                                                                                                                                                                     |
 | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | One `menuitemradio` row inside a DropdownMenuRadioGroup with a required value and label, optional description, icon, end content, disabled state, root inputs, and an explicit React 19 ref. |
+| Public contract         | One `menuitemradio` row, or a cell given children (proposed), in a DropdownMenuRadioGroup; required value and label; optional description, icon, end content, disabled state, inputs, a ref. |
 | Behavior                | Enabled activation emits the row value through the group, applies the group close policy, then runs the caller click handler; disabled activation does none of these.                        |
 | End-user impact         | Assistive technology hears one radio option with its checked state; pointer and keyboard selection commit the same value, and a disabled option cannot be chosen.                            |
 | Builder impact          | Place the row inside a DropdownMenuRadioGroup and give it a unique value and a label; caller handlers run alongside the row's own behavior.                                                  |
@@ -57,13 +59,17 @@ the pointer presentation of DropdownMenu. The row owns its `menuitemradio`
 semantics, checked state, decorative radio marker, visible content, disabled
 paint, and activation order. DropdownMenuRadioGroup owns the controlled value
 and close policy; DropdownMenu owns focus movement, typeahead, keyboard
-activation, and the menu lifecycle.
+activation, and the menu lifecycle. Given children that render, the option is
+a cell instead of a row: the children are its tile, named by its label, with
+no radio marker (DEC-1, pending owner review).
 
 ## Compatibility and migration
 
 - Released default preserved: yes (`isDisabled=false`).
 - Compatibility class: no public API change; caller `onClick` and
   `onPointerMove` compose with the row's own behavior.
+- Proposed (DEC-1): optional `children` make the option a cell; omitted, the
+  row is unchanged.
 - Controlled behavior: the checked state always derives from the group `value`;
   the row holds no selection state.
 - Migration decision: none.
@@ -78,8 +84,12 @@ Consumer migration instructions belong in consumer docs and release notes.
   group value.
 - Selection order: disabled guard, group `onChange(value)`, optional close, then
   the caller click handler.
-- The decorative shared radio marker, its size, and its inline placement.
-- Label, description, icon, and end content composition through Item.
+- The decorative shared radio marker, its size, and its inline placement, for
+  a row.
+- Label, description, icon, and end content composition through Item, for a
+  row.
+- The cell form (DEC-1, proposed): caller children as the tile, a visually
+  hidden label, the checked border, and a focus ring for keyboard focus.
 - Disabled state exposure and paint, and hover focus for enabled rows.
 - Root composition of ref, supported host inputs, `className`, `style`, and
   `xstyle`.
@@ -103,6 +113,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | Availability | enabled; disabled                              | Whether the row can take hover focus and commit its value.        | Every row                                 | enabled  | `component:DropdownMenuRadioItem` | stable    | Disabled blocks every activation path.                   |
 | Content      | label; description; icon; end content          | Visible identification of the option, in reading order.           | Every row                                 | label    | row through Item                  | stable    | `label` is required by the public type.                  |
 | Root surface | ref; DOM/data/ARIA; class/style/xstyle; events | Extends the row root while preserving its role and checked state. | Every row                                 | omitted  | public component API              | stable    | `role`, `aria-checked`, and `tabIndex` are not accepted. |
+| Presentation | row; cell (children that render)               | A row with a marker, or a tile of caller content (a cell).        | Every option                              | row      | `component:DropdownMenuRadioItem` | proposed  | Non-rendering children leave a row.                      |
 
 ## Behavioral and layout contract
 
@@ -116,9 +127,10 @@ intentional decision.
 | FR3 | Enabled activation, by pointer or by the parent's synthesized Enter/Space click, MUST call the group `onChange` with the row value, then ask DropdownMenu to close when the group's close policy is on, then call the caller `onClick`.                                                | Released behavior; `architecture:public-component-api/INV7`; focused tests | verify             |
 | FR4 | A disabled row MUST expose `aria-disabled="true"`, render no `tabindex`, take no hover focus, and on any activation, including an assistive-technology click, MUST NOT call `onChange`, close the menu, or call the caller `onClick`. It paints at half opacity with a default cursor. | Current source, focused tests, and browser evidence                        | verify             |
 | FR5 | Ref, supported host attributes and handlers, `className`, `style`, and `xstyle` MUST reach or compose on the row root. Caller `onPointerMove` MUST run after the row's hover focus, and caller handlers MUST NOT replace the row's own behavior.                                       | `architecture:public-component-api/INV5–INV8`; focused tests               | verify             |
-| FR6 | The marker MUST be the shared radio Indicator, hidden from assistive technology, never the pointer target, sized `sm` in a small menu and `md` otherwise, at the row's inline start on a fine pointer and its inline end on a coarse pointer.                                          | Current source, focused tests, and browser evidence                        | verify             |
-| FR7 | The row MUST carry the `dropdown-menu-item` target with the menu size and the marker MUST carry the `dropdown-menu-radio` target with size, checked, and disabled reflections.                                                                                                         | `architecture:component-theming-surface/INV4–INV6`; current source/docs    | verify             |
+| FR6 | A row's marker MUST be the shared radio Indicator, hidden from assistive technology, never the pointer target, sized `sm` in a small menu and `md` otherwise, at the row's inline start on a fine pointer and its inline end on a coarse pointer.                                      | Current source, focused tests, and browser evidence                        | verify             |
+| FR7 | A row MUST carry the `dropdown-menu-item` target with the menu size and the marker MUST carry the `dropdown-menu-radio` target with size, checked, and disabled reflections. A cell carries neither (DEC-1).                                                                           | `architecture:component-theming-surface/INV4–INV6`; current source/docs    | verify             |
 | FR8 | The row MUST add no key handler or tab stop of its own: enabled rows are `tabindex="-1"` for the parent's roving focus, and keyboard selection arrives as the parent's synthesized click.                                                                                              | `architecture:interaction-modality`; parent keyboard tests                 | verify             |
+| FR9 | Given children that render, the option MUST be a cell: one `menuitemradio` element holding them, no marker or Item slots, named by `label` through a visually hidden element; it keeps FR1, FR3–FR5 and FR8. Children that render nothing leave a row; row-only content warns.         | Proposed DEC-1; cell tests                                                 | proposed (DEC-1)   |
 
 ### Allowed variation
 
@@ -140,6 +152,7 @@ intentional decision.
 | Disabled       | `aria-disabled=true`, no tab stop, half opacity, and no activation.       | Checked or unchecked value.                                    |
 | Coarse pointer | The marker sits at the inline end of the row.                             | Direction mirrors the placement.                               |
 | RTL / narrow   | Content and marker follow logical order with no horizontal page overflow. | Parent menu placement and width.                               |
+| Cell           | Children as the tile, named by `label`; accent border when checked.       | Keyboard focus adds the ring; layout is the caller's.          |
 
 ### Transformation and precedence order
 
@@ -153,13 +166,14 @@ intentional decision.
 ### Performance and resources
 
 - **PR1 — Render only.** The row owns no Effect, listener, observer, timer,
-  request, or local state.
+  request, or local state. A cell keeps one flag, whether the keyboard moved
+  focus to it, and activates the shared modality tracking (AR5).
 
 ## Accessibility contract
 
 - **AR1 — One radio option.** The row is the only announced control; its
   accessible name comes from its visible content and its state from
-  `aria-checked`.
+  `aria-checked`. A cell's name comes from its `label`, not its tile (FR9).
 - **AR2 — Disabled state.** A disabled row exposes `aria-disabled` and cannot
   commit a value through any input.
 - **AR3 — Keyboard ownership.** DropdownMenu owns focus movement and activation;
@@ -170,7 +184,14 @@ intentional decision.
   only as the menu overlay tint with no outline, which measures about 1.1:1
   against the menu surface and paints nothing under forced colors. The
   remediation is a shared row-visual decision with `component:DropdownMenuItem`
-  (its OQ2); this draft records the gap and does not settle it.
+  (its OQ2); this draft records the gap and does not settle it. A cell does
+  not share the gap (AR5).
+- **AR5 — A cell's checked state and keyboard focus are visible (proposed,
+  DEC-1).** A checked cell carries a 2px `--color-accent` border every cell
+  reserves, transparent when unchecked and Highlight against Canvas under forced
+  colors. The shared focus ring paints outside it only for focus the keyboard
+  moved there; focus a pointer moved there paints none, the browser's ring
+  included (`architecture:interaction-modality` INV1).
 
 ## Design relationships
 
@@ -180,6 +201,7 @@ intentional decision.
 | Radio marker     | Shared radio Indicator at the menu's control size.               | Shared radio Indicator           | prominent      | FR1, FR6           |
 | Disabled         | Half-opacity row with a default cursor.                          | Current source                   | supporting     | FR4                |
 | Direction/touch  | Logical marker placement that mirrors and moves on touch.        | Bidirectionality and current CSS | structural     | FR6                |
+| Cell             | Caller tile; accent border when checked; keyboard ring outside.  | Proposed DEC-1                   | prominent      | FR9, AR5           |
 
 No new component-local visual decision is settled by this draft.
 
@@ -206,10 +228,34 @@ No new component-local visual decision is settled by this draft.
 | FR4, AR2      | Disabled focused test with an assistive-technology click; browser disabled-hover frame              | disabled checked/unchecked                                     | Removing the disabled guard makes the focused test fail                                                                      | `audit:DropdownMenuRadioItem/§1,§4`        |
 | AR4           | Exact-head keyboard-focus and forced-colors frames with rendered contrast                           | Neutral/Butter light/dark focus, forced colors                 | Current frames record the gap; a remediation passes only with a perceivable indicator in every theme and under forced colors | `audit:DropdownMenuRadioItem/§1,§5`        |
 | FR6, FR7      | Marker and target tests; exact-head Neutral/Butter/RTL/narrow/size/coarse/focus frames              | sm/md/lg, fine/coarse, LTR/RTL, light/dark                     | A lost target or reflection, a marker that is announced, wrongly sized, or misplaced fails                                   | `audit:DropdownMenuRadioItem/§2,§5,§9,§10` |
+| FR9, AR1, AR5 | `DropdownMenuRadioCell.test.tsx`; `RadioCell.a11y.chromium.spec.ts` (AX names, paint, keys, axe)    | cell, non-rendering children, pointer/keyboard focus, forced   | A marker or row slot in a cell, a cell named by its tile, a lost checked border, or a ring for pointer-moved focus fails     | `audit:DropdownMenuRadioItem/§1,§4,§5`     |
 
 ## Decision log
 
-None. This draft records current facts and introduces no product decision.
+### DEC-1 (proposed) — A radio item given children is a cell
+
+**Reference:** `component:DropdownMenuRadioItem/DEC-1`
+**Decider:** proposed by `vjeux`, 2026-10-24; pending owner review
+
+A one-of choice drawn as tiles (colour swatches, icons, numbered slots) is
+still a radio set in a menu, so each tile is a `DropdownMenuRadioItem`: given
+children that render, the item draws them as a cell instead of its row, with no
+radio marker, and names it by its `label` through a visually hidden element, so
+the name stays the label when the tile shows text of its own. The selection is
+painted on the cell: a border every cell reserves, so checking moves nothing,
+and a border rather than a shadow because forced colors keep borders; there it
+is Highlight against Canvas. Keyboard focus adds the shared ring outside that
+border; focus the menu moves to a cell under the mouse after a pointer open adds
+none. Cells keep the row's role, focus, selection, handler order and press
+model, so the menu's arrow keys move through them in DOM order and ArrowLeft and
+ArrowRight keep their sub-menu meanings. The caller lays cells out, with a grid
+on the group or on a wrapper inside it. A cell carries no theming target of its
+own; its paint reads the accent and focus tokens (`component:DropdownMenu`
+owns the target inventory).
+Rejected: a grid variant of `DropdownMenuRadioGroup`, which decides the tiles'
+size and columns and still needs caller content for a swatch.
+Rejected: exporting the group's context for a custom cell, which leaves every
+caller to rebuild the role, focus and paint.
 
 ## Open questions
 
