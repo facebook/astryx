@@ -32,9 +32,14 @@ describe('UIKit search table', () => {
     expect(402 - fieldInset - closeSize).toBe(342);
   });
 
-  it('rests the bottom field 17 pt above the keyboard', () => {
+  it('rests the bottom field 17 pt above the keyboard, as the cited frames put it', () => {
     const {fieldHeight, keyboardCenterOffset} = search.bottom;
-    expect(keyboardCenterOffset - fieldHeight / 2).toBe(17);
+    // The cited capture: the pinned field's centre at y 503 with the
+    // keyboard's top at 539 (the value's @source).
+    const centre = 503;
+    const keyboardTop = 539;
+    expect(keyboardCenterOffset).toBe(keyboardTop - centre);
+    expect(keyboardTop - (centre + fieldHeight / 2)).toBe(17);
   });
 
   it('fades the bar items out by a third of the activation and the large title back in over the rest', () => {

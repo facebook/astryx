@@ -64,8 +64,8 @@ export type {BezierPoints} from './bezier';
 
 /**
  * The UIKit constants table, read-only: `uikit.springs`, `uikit.scroll`,
- * `uikit.timing`, `uikit.navigation`, `uikit.UIKIT_GESTURES` and the haptic
- * tables, each value with its source.
+ * `uikit.timing`, `uikit.navigation`, `uikit.search`, `uikit.UIKIT_GESTURES`
+ * and the haptic tables, each value with its source.
  * @experimental
  */
 export * as uikit from './uikit';

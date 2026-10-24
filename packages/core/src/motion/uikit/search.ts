@@ -61,8 +61,8 @@ export const search = {
    * Reduce Motion keeps the activation's travel and adds no cross-fade:
    * `'keep'` in the animator's terms.
    * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
-   *   iPhone 17 Pro, Reduce Motion on: the same frames and alphas as without
-   *   it, Oct 24 2026
+   *   iPhone 17 Pro, Reduce Motion on with Prefer Cross-Fade Transitions off
+   *   (M-16): the same frames and alphas as without it, Oct 24 2026
    */
   reducedMotion: 'keep',
   stacked: {
@@ -159,8 +159,8 @@ export const search = {
   bottom: {
     /**
      * The bottom (toolbar) field's height at rest, pt; it is 336 wide at
-     * the bottom of a 402 pt screen. (A tab bar's search tab keeps its own
-     * glass geometry in `tabBar`.)
+     * the bottom of a 402 pt screen. (A tab bar's search tab has its own
+     * glass geometry, which belongs with the tab bar's values, not here.)
      * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
      *   iPhone 17 Pro, the `.integrated` field's frame (336 × 38 at y 803),
      *   Oct 24 2026
