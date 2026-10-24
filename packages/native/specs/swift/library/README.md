@@ -14,4 +14,4 @@ wins.
 | `accessibility.md`   | How core's accessibility semantics reach VoiceOver and Apple's accessibility settings |
 | `component-api.md`   | How a SwiftUI view is named and takes its generated contract                          |
 | `slots.md`           | How each slot kind (text, icon, content) appears in SwiftUI                           |
-| `theme-generator.md` | How any Astryx theme becomes a Swift `AstryxTheme`                                    |
+| `theme-generator.md` | How any Astryx theme becomes a Swift `Theme`                                          |
