@@ -8,7 +8,8 @@
  *   release coast (spring, projection rate and share), the thumb's lift and
  *   drop springs and scale, the end-of-track haptic, and the Reduce Motion
  *   rule
- * @position The slider domain of the UIKit constants table (motion/uikit)
+ * @position The slider domain of the UIKit constants table (motion/uikit);
+ *   read by Slider's touch presentation (Slider/useSliderTouch.ts)
  *
  * The reference is UISlider on iOS 26.2: a white capsule thumb (37 × 24 pt,
  * a `_UILiquidLensView`) on a 6 pt track. Under a finger the thumb lifts
@@ -41,7 +42,9 @@
  * (`slider.releaseSpring`, `slider.liftSpring`, `slider.dropSpring`); the
  * hit target, tracking gain, projection, scale and haptic are not motion.
  *
- * SYNC: When modified, update /packages/core/src/motion/uikit/slider.test.ts
+ * SYNC: When modified, update:
+ * - /packages/core/src/Slider/useSliderTouch.ts
+ * - /packages/core/src/motion/uikit/slider.test.ts
  * and run `pnpm generate:motion-roles`
  */
 

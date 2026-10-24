@@ -4,8 +4,8 @@
 
 /**
  * @file Slider.tsx
- * @input Uses React, useId, useRef, useCallback, useEffect, Field, Tooltip, useTooltip, VisuallyHidden
- * @output Exports Slider and its props; unfilled marks share the track token; modifier-only key presses do not restore the thumb focus ring; a drag belongs to the pointer that started it; the thumbs and the filled range travel by `translate` from a progress custom property in the control's container units, so moving them never lays out (a value tooltip or text display still does)
+ * @input Uses React, useId, useRef, useCallback, useEffect, Field, Tooltip, useTooltip, VisuallyHidden; the touch presentation resolver and useSliderTouch (UISlider's touch tracking)
+ * @output Exports Slider and its props; unfilled marks share the track token; modifier-only key presses do not restore the thumb focus ring; a drag belongs to the pointer that started it; the thumbs and the filled range travel by `translate` from a progress custom property in the control's container units, so moving them never lays out (a value tooltip or text display still does); under a finger (coarse primary pointer) only the thumbs' touch targets take touches, tracked as UISlider does, while a mouse keeps the pointer handlers
  * @position Core implementation; consumed by index.ts, tested by Slider.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -27,6 +27,7 @@ import {
   type KeyboardEvent,
   type PointerEvent,
 } from 'react';
+import {flushSync} from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -55,6 +56,14 @@ import {
 } from '../Field/fieldParts';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {useTouchPresentation} from '../utils/touchPresentation';
+import {slider as UIKIT_SLIDER} from '../motion/uikit/slider';
+import {
+  SLIDER_HIT_ATTRIBUTE,
+  useSliderTouch,
+  type SliderTouchModel,
+  type SliderTouchParts,
+} from './useSliderTouch';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
@@ -197,7 +206,12 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     flexGrow: 1,
-    touchAction: 'none',
+    // Under a finger only the thumbs take touches (their touch targets set
+    // their own touch-action); the track leaves the page its scrolling.
+    touchAction: {
+      default: 'none',
+      '@media (pointer: coarse)': 'manipulation',
+    },
     userSelect: 'none',
     isolation: 'isolate',
     // The thumbs and the fill travel in container units of this box
@@ -378,6 +392,17 @@ const styles = stylex.create({
       ':dir(rtl)': `calc(var(${THUMB_PROGRESS}) * (${THUMB_SIZE}px - 100cqi)) 0`,
     },
   },
+  // A thumb's touch target under a finger (UISlider's hit area): invisible,
+  // centered on the thumb, larger than it.
+  thumbHit: {
+    position: 'absolute',
+    top: '50%',
+    pointerEvents: 'auto',
+  },
+  thumbHitSize: (size: number) => ({
+    width: size,
+    height: size,
+  }),
   thumbVertical: {
     bottom: 0,
     translate: `0 calc(var(${THUMB_PROGRESS}) * (${THUMB_SIZE}px - 100cqb))`,
@@ -635,8 +660,15 @@ export function Slider({ref, ...props}: SliderProps) {
   const requiredID = useId();
 
   const trackRef = useRef<HTMLDivElement>(null);
+  const fillMoverRef = useRef<HTMLDivElement>(null);
+  const fillRef = useRef<HTMLDivElement>(null);
   const draggingThumbRef = useRef<number | null>(null);
   const [draggingThumb, setDraggingThumb] = useState<number | null>(null);
+
+  // Under a finger (a coarse primary pointer) the thumbs track touches as
+  // UISlider does (useSliderTouch); a mouse keeps the pointer handlers below.
+  const {isTouch: isTouchPresentation} = useTouchPresentation();
+  const hasTouchTargets = isTouchPresentation && !isDisabled;
 
   // A thumb is a div[role="slider"], and `handlePointerDown` focuses it from
   // script after preventDefault — which Chromium treats as focus-visible, so
@@ -840,6 +872,11 @@ export function Slider({ref, ...props}: SliderProps) {
       if (isDisabled) {
         return;
       }
+      // A finger or a pen under the touch presentation belongs to the thumbs'
+      // touch targets; the track ignores it, as UISlider's does.
+      if (isTouchPresentation && e.pointerType !== 'mouse') {
+        return;
+      }
       e.preventDefault();
       if (draggingThumbRef.current !== null) {
         return;
@@ -885,7 +922,13 @@ export function Slider({ref, ...props}: SliderProps) {
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
       }
     },
-    [isDisabled, getValueFromPosition, getClosestThumb, updateValue],
+    [
+      isDisabled,
+      isTouchPresentation,
+      getValueFromPosition,
+      getClosestThumb,
+      updateValue,
+    ],
   );
 
   const handlePointerMove = useCallback(
@@ -939,6 +982,82 @@ export function Slider({ref, ...props}: SliderProps) {
     doc.addEventListener('lostpointercapture', onLostCapture);
     return () => doc.removeEventListener('lostpointercapture', onLostCapture);
   }, [endDrag]);
+
+  // The touch presentation's value model (useSliderTouch reads it fresh).
+  const updateValueRef = useRef(updateValue);
+  updateValueRef.current = updateValue;
+  const touchModel: SliderTouchModel = {
+    min,
+    max,
+    isRange,
+    isHorizontal,
+    isDisabled: isDisabled ?? false,
+    thumbSize: THUMB_SIZE,
+    values: () => valuesRef.current,
+    // The value updateValue would report for this thumb.
+    constrain: (index, raw) => {
+      const next = clamp(snapToStep(raw, min, step), min, max);
+      if (!isRange) {
+        return next;
+      }
+      const minGap = minStepsBetweenThumbs * step;
+      const [v0, v1] = valuesRef.current;
+      return index === 0
+        ? clamp(Math.min(next, v1 - minGap), min, max)
+        : clamp(Math.max(next, v0 + minGap), min, max);
+    },
+    bounds: index => {
+      if (!isRange) {
+        return [min, max];
+      }
+      const minGap = minStepsBetweenThumbs * step;
+      const [v0, v1] = valuesRef.current;
+      return index === 0
+        ? [min, clamp(v1 - minGap, min, max)]
+        : [clamp(v0 + minGap, min, max), max];
+    },
+    change: (index, next) => updateValueRef.current(index, next),
+    // A finger paints the thumb pressed and opens its value tooltip; it does
+    // not focus it (no keyboard follows a touch).
+    press: index => setDraggingThumb(index),
+    // The touch interaction ended, in the handler that ended it (the lift, a
+    // cancel, the coast's last frame). The owner renders the last value now,
+    // so the controller can hand the parts back to the stylesheet and
+    // onChangeEnd carries the value the owner rendered (FR5), from that same
+    // handler.
+    commit: (index, next) => {
+      // eslint-disable-next-line @eslint-react/dom-no-flush-sync -- the owner must render the interaction's last value before the parts return to the stylesheet and onChangeEnd reads it
+      flushSync(() => {
+        if (next !== null) {
+          updateValueRef.current(index, next);
+        }
+        setDraggingThumb(null);
+      });
+    },
+    reportEnd: () => fireChangeEnd(),
+  };
+  useSliderTouch({
+    isEnabled: hasTouchTargets,
+    model: touchModel,
+    thumbCount: values.length,
+    getParts: (): SliderTouchParts | null => {
+      const control = trackRef.current;
+      if (control == null) {
+        return null;
+      }
+      return {
+        control,
+        thumbs: Array.from(
+          control.querySelectorAll<HTMLElement>('[role="slider"]'),
+        ),
+        hits: Array.from(
+          control.querySelectorAll<HTMLElement>(`[${SLIDER_HIT_ATTRIBUTE}]`),
+        ),
+        fillMover: fillMoverRef.current,
+        fill: fillRef.current,
+      };
+    },
+  });
 
   // Keyboard handler
   const handleKeyDown = useCallback(
@@ -1131,8 +1250,19 @@ export function Slider({ref, ...props}: SliderProps) {
           ),
           undefined,
           positionStyle,
+        )}>
+        {hasTouchTargets && (
+          <span
+            aria-hidden="true"
+            {...{[SLIDER_HIT_ATTRIBUTE]: ''}}
+            {...stylex.props(
+              styles.thumbHit,
+              rtlStyles.centerInline('-50%'),
+              styles.thumbHitSize(UIKIT_SLIDER.thumbHitTarget),
+            )}
+          />
         )}
-      />
+      </div>
     );
 
     if (useValueTooltip) {
@@ -1283,6 +1413,7 @@ export function Slider({ref, ...props}: SliderProps) {
                 : [styles.fillClipVertical, rtlStyles.centerInline('0px')],
             )}>
             <div
+              ref={fillMoverRef}
               {...mergeProps(
                 stylex.props(
                   styles.fillMover,
@@ -1300,6 +1431,7 @@ export function Slider({ref, ...props}: SliderProps) {
                 {style: fillStyle},
               )}>
               <div
+                ref={fillRef}
                 {...mergeProps(
                   stylex.props(
                     styles.filledTrack,
