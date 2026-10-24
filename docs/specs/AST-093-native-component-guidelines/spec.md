@@ -149,6 +149,12 @@ validating, and reviewing individual native components while
   they are the only native components exempt from FR5's generated-parameter
   requirement; every other FR5 check applies to them. A new view never takes
   this exemption.
+- Swift tests run as Swift package tests, where SwiftUI exposes no
+  accessibility tree, so FR5's accessibility assertions check the label,
+  traits, and value a view sets, not the tree VoiceOver reads. Until an
+  app-hosted iOS test target exists, a change reports the rendered tree's
+  accessibility as not measured, as FR5 reports a claim it could not capture.
+  Every other FR5 check applies.
 
 ## Verification
 
