@@ -742,6 +742,54 @@ describe('BottomSheet', () => {
     });
   });
 
+  describe('under a mouse', () => {
+    it('opens and closes on the stylesheet transitions, not the sheet spring', async () => {
+      const played: Keyframe[][] = [];
+      // jsdom has no Web Animations: record what the animator would play.
+      Object.defineProperty(Element.prototype, 'animate', {
+        configurable: true,
+        writable: true,
+        value: function (this: Element, keyframes: Keyframe[]) {
+          played.push(keyframes);
+          return {cancel: vi.fn(), startTime: 0} as unknown as Animation;
+        },
+      });
+      const travels = () =>
+        played.flat().filter(frame => frame.translate != null).length;
+      const {rerender} = render(
+        <BottomSheet isOpen={false} onOpenChange={vi.fn()} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      rerender(
+        <BottomSheet isOpen onOpenChange={vi.fn()} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      await act(async () => {
+        await Promise.resolve();
+      });
+      const dialog = screen.getByRole('dialog');
+      // No spring travel and no scrim hand-off: the stylesheet's entrance.
+      expect(travels()).toBe(0);
+      expect(dialog.style.getPropertyValue('--_sheet-scrim-duration')).toBe('');
+      rerender(
+        <BottomSheet isOpen={false} onOpenChange={vi.fn()} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      // The exit is the stylesheet's transition: the dialog closes when it ends.
+      expect(travels()).toBe(0);
+      expect(dialog).toHaveAttribute('open');
+      act(() => finishSheetExit());
+      await act(async () => {
+        await Promise.resolve();
+      });
+      expect(dialog).not.toHaveAttribute('open');
+      delete (Element.prototype as {animate?: unknown}).animate;
+    });
+  });
+
   describe('under a finger', () => {
     // A coarse primary pointer: the sheet opens and closes on UIKit's sheet
     // spring, played on the travel channel (useSheetGestures present/dismiss).
@@ -760,6 +808,115 @@ describe('BottomSheet', () => {
         })),
       );
       vi.stubGlobal('innerHeight', 800);
+    });
+
+    function recordAnimate() {
+      const played: {keyframes: Keyframe[]; target: Element}[] = [];
+      // jsdom has no Web Animations: record what the animator plays.
+      Object.defineProperty(Element.prototype, 'animate', {
+        configurable: true,
+        writable: true,
+        value: function (this: Element, keyframes: Keyframe[]) {
+          played.push({keyframes, target: this});
+          return {cancel: vi.fn(), startTime: 0} as unknown as Animation;
+        },
+      });
+      return played;
+    }
+    const travelOf = (
+      played: {keyframes: Keyframe[]; target: Element}[],
+      target: Element,
+    ) =>
+      played
+        .filter(p => p.target === target)
+        .flatMap(p => p.keyframes)
+        .filter(frame => frame.translate != null)
+        .map(frame => Number.parseFloat(String(frame.translate).split(' ')[1]));
+
+    it('holds input while the sheet presents: a hold covers the sheet and the scrim until it lands (F4 b59)', async () => {
+      recordAnimate();
+      const {rerender} = render(
+        <BottomSheet isOpen={false} onOpenChange={vi.fn()} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      rerender(
+        <BottomSheet isOpen onOpenChange={vi.fn()} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      vi.spyOn(getSheet(), 'getBoundingClientRect').mockReturnValue(
+        rect({top: 300, bottom: 848}),
+      );
+      await act(async () => {
+        await Promise.resolve();
+      });
+      const dialog = screen.getByRole('dialog');
+      const hold = () => dialog.querySelector('[data-astryx-sheet-hold]');
+      // At 60 and 150 ms a touch lands on the hold, not on the sheet or the
+      // scrim.
+      for (const ms of [60, 90]) {
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(ms);
+        });
+        expect(hold()).not.toBeNull();
+        expect(hold()?.parentElement).toBe(dialog);
+      }
+      // A tap on it is not a tap on the scrim: the sheet stays open.
+      fireEvent.click(hold() as Element);
+      expect(dialog).toHaveAttribute('open');
+      // Landed: the hold is gone, so input works from the completion on.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2000);
+      });
+      expect(hold()).toBeNull();
+      delete (Element.prototype as {animate?: unknown}).animate;
+    });
+
+    it('a close at 100 ms waits for the sheet to land, then dismisses from the detent (F4 b59)', async () => {
+      const played = recordAnimate();
+      const {rerender} = render(
+        <BottomSheet isOpen={false} onOpenChange={vi.fn()} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      rerender(
+        <BottomSheet isOpen onOpenChange={vi.fn()} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      vi.spyOn(getSheet(), 'getBoundingClientRect').mockReturnValue(
+        rect({top: 300, bottom: 848}),
+      );
+      await act(async () => {
+        await Promise.resolve();
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(100);
+      });
+      const before = travelOf(played, getSheet()).length;
+      const dialog = screen.getByRole('dialog');
+      const sheet = getSheet();
+      rerender(
+        <BottomSheet isOpen={false} onOpenChange={vi.fn()} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      // No reversal: nothing new plays until the entrance lands.
+      expect(travelOf(played, sheet)).toHaveLength(before);
+      expect(dialog).toHaveAttribute('open');
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(800);
+      });
+      // Then a full dismissal from the detent.
+      const leaving = travelOf(played, sheet).slice(before);
+      expect(leaving[0]).toBeCloseTo(0, 0);
+      expect(leaving.at(-1)).toBeCloseTo(500, 0);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2000);
+      });
+      expect(dialog).not.toHaveAttribute('open');
+      delete (Element.prototype as {animate?: unknown}).animate;
     });
 
     it('opens and closes on the sheet spring, closing the dialog when it lands', async () => {

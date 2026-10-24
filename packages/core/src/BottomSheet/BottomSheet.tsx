@@ -162,6 +162,11 @@ const styles = stylex.create({
     justifyContent: 'center',
     pointerEvents: 'none',
   },
+  // Over the sheet and the scrim while the sheet presents under a finger.
+  entranceHold: {
+    position: 'fixed',
+    inset: 0,
+  },
   positionerHidden: {
     display: 'none',
   },
@@ -358,6 +363,11 @@ function StandaloneBottomSheet({
   // follows it with no easing of its own (the release plays it in lockstep
   // with the sheet). The pin is lifted only after a style flush has applied
   // the last value, so that value does not ease in again.
+  // Under a finger UIKit drops every touch that begins during a sheet's
+  // presentation, for its whole life (F4 b59): a hold covers the sheet and
+  // the scrim until the sheet lands, so such a touch reaches neither (its
+  // later moves and lift stay with the hold, even once it is gone).
+  const [isEntranceHeld, setIsEntranceHeld] = useState(false);
   const handleScrimTracking = useCallback((tracking: boolean) => {
     const dialog = dialogRef.current;
     if (dialog == null) {
@@ -515,12 +525,20 @@ function StandaloneBottomSheet({
           onScrimOpacity={handleScrimOpacity}
           onScrimTracking={hasScrim ? handleScrimTracking : undefined}
           hasSpringPresentation
+          onPresentingChange={setIsEntranceHeld}
           onElementChange={handlePanelElementChange}
           onMotionComplete={handleMotionComplete}>
           <LayerDepthProvider>{children}</LayerDepthProvider>
         </BottomSheetPanel>
       </div>
       <BottomSheetEdgeTint />
+      {isEntranceHeld && (
+        <div
+          {...stylex.props(styles.entranceHold)}
+          data-astryx-sheet-hold=""
+          aria-hidden="true"
+        />
+      )}
     </dialog>
   );
 }

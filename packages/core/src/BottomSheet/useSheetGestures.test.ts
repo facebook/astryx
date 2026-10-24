@@ -2435,10 +2435,10 @@ describe('useSheetGestures: present and dismiss under a finger', () => {
   const opacityOf = (frame: Keyframe) => Number(frame.opacity);
 
   /** A sheet resting with its top at 400 of an 800 px viewport, in a dialog. */
-  function presentedSheet() {
+  function presentedSheet(options: Partial<UseSheetGesturesOptions> = {}) {
     const onScrimOpacity = vi.fn();
     const onScrimTracking = vi.fn();
-    const {hook} = setup({onScrimOpacity, onScrimTracking});
+    const {hook} = setup({onScrimOpacity, onScrimTracking, ...options});
     const dialog = document.createElement('dialog');
     const target = makeTarget();
     target.getBoundingClientRect = () =>
@@ -2575,5 +2575,117 @@ describe('useSheetGestures: present and dismiss under a finger', () => {
     });
     expect(sheetAnimations).toHaveLength(0);
     expect(onScrimTracking).not.toHaveBeenCalled();
+  });
+  describe('during the entrance (UIKit, F4 b59)', () => {
+    // A sheet presented at its full height with a second stop at 200 px.
+    const entrance = solveSpring(toSpring(springs.sheetPresent), {
+      from: 400,
+      to: 0,
+    });
+    const entranceMs = entrance.settleTime(0.05) * 1000;
+    async function startEntrance() {
+      const onPresentingChange = vi.fn();
+      const sheet = presentedSheet({
+        snapHeights: () => [200],
+        onPresentingChange,
+      });
+      act(() => {
+        sheet.hook.result.current.present();
+      });
+      await act(async () => {
+        await Promise.resolve();
+      });
+      return {...sheet, onPresentingChange};
+    }
+    async function settle(ms: number) {
+      act(() => {
+        vi.advanceTimersByTime(ms);
+      });
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+    }
+
+    it('holds input from the start of the entrance until the sheet lands', async () => {
+      const {onPresentingChange} = await startEntrance();
+      expect(onPresentingChange.mock.calls).toEqual([[true]]);
+      await settle(150);
+      expect(onPresentingChange.mock.calls).toEqual([[true]]);
+      await settle(entranceMs + 100);
+      expect(onPresentingChange.mock.calls).toEqual([[true], [false]]);
+    });
+
+    it('a close at 100 ms waits for the sheet to land, then dismisses from the detent', async () => {
+      const {hook, sheetAnimations, backdrop} = await startEntrance();
+      await settle(100);
+      const before = sheetAnimations.length;
+      let exit: ReturnType<typeof hook.result.current.dismiss> = null;
+      act(() => {
+        exit = hook.result.current.dismiss();
+      });
+      expect(exit).not.toBeNull();
+      let done = false;
+      void (exit as unknown as {finished: Promise<boolean>}).finished.then(
+        () => {
+          done = true;
+        },
+      );
+      // No reversal: the entrance runs on.
+      expect(sheetAnimations).toHaveLength(before);
+      await settle(entranceMs);
+      // Landed: a full dismissal from the detent, the dim from its rest.
+      const leave = sheetAnimations.at(-1) as Played;
+      expect(sheetAnimations.length).toBeGreaterThan(before);
+      expect(valueAt(leave, 0, travelOf)).toBeCloseTo(0, 0);
+      expect(
+        valueAt(leave, leave.options.duration as number, travelOf),
+      ).toBeCloseTo(400, 0);
+      const curve = solveSpring(toSpring(springs.sheetDismiss), {
+        from: 0,
+        to: 400,
+      });
+      for (const ms of [16, 100, 200]) {
+        expect(valueAt(leave, ms, travelOf)).toBeCloseTo(
+          curve.value(ms / 1000),
+          1,
+        );
+      }
+      const fade = backdrop.at(-1) as Played;
+      expect(valueAt(fade, 0, opacityOf)).toBeCloseTo(1, 2);
+      expect(done).toBe(false);
+      await settle(2000);
+      expect(done).toBe(true);
+    });
+
+    it('a close during a release leaves from where the sheet is, the dim from where it is', () => {
+      const {hook, target, sheetAnimations, backdrop} = presentedSheet({
+        snapHeights: () => [200],
+      });
+      down(hook, 0, 0, target);
+      stream(hook, target, {from: 0, to: 290, t0: 0, t1: 600});
+      restAt(hook, 290, 650, target);
+      act(() =>
+        hook.result.current.handleProps.onPointerUp(
+          pointerEvent(290, 800, target),
+        ),
+      );
+      const release = sheetAnimations.at(-1) as Played;
+      const releaseDim = backdrop.at(-1) as Played;
+      act(() => {
+        vi.advanceTimersByTime(60);
+      });
+      const y = valueAt(release, 60, travelOf);
+      const dim = valueAt(releaseDim, 60, opacityOf);
+      act(() => {
+        hook.result.current.dismiss();
+      });
+      const leave = sheetAnimations.at(-1) as Played;
+      expect(valueAt(leave, 0, travelOf)).toBeCloseTo(y, 0);
+      expect(valueAt(backdrop.at(-1) as Played, 0, opacityOf)).toBeCloseTo(
+        dim,
+        2,
+      );
+    });
   });
 });

@@ -328,6 +328,8 @@ interface BottomSheetPanelProps extends BaseProps<HTMLDivElement> {
    * entrance and exit. Set by the standalone sheet.
    */
   hasSpringPresentation?: boolean;
+  /** See useSheetGestures: true while the sheet presents under a finger. */
+  onPresentingChange?: (presenting: boolean) => void;
   onElementChange?: (element: HTMLDivElement | null) => void;
   onMotionStart?: (motion: BottomSheetPanelMotion) => void;
   onMotionComplete?: (motion: BottomSheetPanelMotion) => void;
@@ -461,6 +463,7 @@ export function BottomSheetPanel({
   onScrimOpacity,
   onScrimTracking,
   hasSpringPresentation = false,
+  onPresentingChange,
   onElementChange,
   onMotionStart,
   onMotionComplete,
@@ -556,6 +559,7 @@ export function BottomSheetPanel({
     snapHeights,
     onScrimOpacity,
     onScrimTracking,
+    onPresentingChange,
   });
 
   const {getViewportProps, getContentProps} = useScrollableArea({
