@@ -335,11 +335,12 @@ test('the rise does no Layout or Paint per frame', async ({
       return {from, to: performance.timeOrigin + performance.now()};
     }, COVER);
   });
-  // The steady part of the rise. Its start lays out and paints a few times
-  // (the spacer, the scroll to the newest message, the scroll's handlers),
-  // within 75 ms of the report at a 6x CPU slowdown; from 150 ms the rise
-  // runs on the compositor alone.
-  const during = countBetween(trace, rise.from + 150, rise.to - 50);
+  // The steady part of the rise, 150–400 ms after the report. Its start lays
+  // out and paints a few times (the spacer, the scroll to the newest message,
+  // the scroll's handlers), within 75 ms of the report at a 6x CPU slowdown;
+  // its end (about 480 ms) hands the layers back, which lays out once. A
+  // window that followed the late timer under load would take that in.
+  const during = countBetween(trace, rise.from + 150, rise.from + 400);
   expect(during.Layout ?? 0, JSON.stringify(during)).toBe(0);
   expect(during.Paint ?? 0, JSON.stringify(during)).toBe(0);
 });
