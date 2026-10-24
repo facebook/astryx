@@ -40,6 +40,12 @@ export const docs = {
             'External ref to use as the popover anchor in sibling mode.',
         },
         {
+          name: 'anchorRect',
+          type: 'PopoverAnchorRect',
+          description:
+            'A rectangle in viewport coordinates ({top, left, width, height}, what element.getBoundingClientRect() returns) to anchor on, for a popover its caller opens with isOpen beside something that is not a button: a list row, a link, a text selection, or a point (width and height 0). The popover sits beside it as beside a trigger of that size and moves when a new rectangle is passed; the rectangle stays put in the viewport, so pass a new one when what it marks moves. No element gets trigger ARIA or handlers, and focus returns on close to the element that had it. Replaces children and anchorRef.',
+        },
+        {
           name: 'content',
           type: 'ReactNode',
           description: 'Content to display inside the popover.',
@@ -190,6 +196,17 @@ export const docs = {
   <Button label="Save search" variant="secondary" />
 </Popover>`,
     },
+    {
+      label: 'Opened by the app beside a list row',
+      code: `<Popover
+  anchorRect={rowRect}
+  isOpen={rowRect != null}
+  onOpenChange={isOpen => !isOpen && setRowRect(null)}
+  placement="end"
+  label="Group sessions"
+  content={<GroupForm />}
+/>`,
+    },
   ],
   playground: {
     defaults: {
@@ -257,9 +274,9 @@ export const docs = {
     anatomy: [
       {
         name: 'Trigger element',
-        required: true,
+        required: false,
         description:
-          'Caller-supplied or externally referenced control that anchors and toggles the popover.',
+          'Caller-supplied or externally referenced control that anchors and toggles the popover. A viewport rectangle (anchorRect) takes its place for a popover the caller opens.',
       },
       {
         name: 'Popover surface',
@@ -308,6 +325,12 @@ export const docsZh = {
           name: 'anchorRef',
           type: 'React.RefObject<HTMLElement>',
           description: '在兄弟模式下用作弹出框锚点的外部 ref。',
+        },
+        {
+          name: 'anchorRect',
+          type: 'PopoverAnchorRect',
+          description:
+            '用作锚点的视口坐标矩形（{top, left, width, height}，即 element.getBoundingClientRect() 的返回值），适用于调用方用 isOpen 打开、位于非按钮元素旁的弹出框：列表行、链接、文本选区或一个点（宽高为 0）。弹出框像位于同尺寸触发器旁一样定位，传入新矩形时随之移动；矩形在视口中保持不动，所标记的内容移动时请传入新矩形。不会给任何元素添加触发器 ARIA 或处理函数，关闭时焦点返回到打开前拥有焦点的元素。替代 children 和 anchorRef。',
         },
         {
           name: 'content',
@@ -475,9 +498,9 @@ export const docsZh = {
     anatomy: [
       {
         name: 'Trigger element',
-        required: true,
+        required: false,
         description:
-          'Caller-supplied or externally referenced control that anchors and toggles the popover.',
+          'Caller-supplied or externally referenced control that anchors and toggles the popover. A viewport rectangle (anchorRect) takes its place for a popover the caller opens.',
       },
       {
         name: 'Popover surface',
@@ -548,9 +571,9 @@ export const docsDense = {
     anatomy: [
       {
         name: 'Trigger element',
-        required: true,
+        required: false,
         description:
-          'Caller-supplied or externally referenced control that anchors and toggles the popover.',
+          'Caller-supplied or externally referenced control that anchors and toggles the popover. A viewport rectangle (anchorRect) takes its place for a popover the caller opens.',
       },
       {
         name: 'Popover surface',
@@ -587,6 +610,8 @@ export const docsDense = {
         children:
           'Trigger element. Must contain <button> or [role="button"] element.',
         anchorRef: 'External ref for popover anchor in sibling mode.',
+        anchorRect:
+          'Viewport rect ({top, left, width, height}) to anchor a caller-opened (isOpen) popover beside a row, link, selection or point; moves with a new rect; no trigger ARIA; focus returns on close; replaces children/anchorRef.',
         content: 'Content displayed inside popover.',
         placement:
           "Position relative to trigger. Logical: start/end resolve against the popover's inherited direction (RTL mirrors).",

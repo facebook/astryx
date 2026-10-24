@@ -5,8 +5,12 @@ import * as stylex from '@stylexjs/stylex';
 import type {Meta, StoryObj} from '@storybook/react';
 import {BottomSheet} from '@astryxdesign/core/BottomSheet';
 import {Popover} from '@astryxdesign/core/Popover';
-import type {PopoverTriggerRenderProps} from '@astryxdesign/core/Popover';
+import type {
+  PopoverAnchorRect,
+  PopoverTriggerRenderProps,
+} from '@astryxdesign/core/Popover';
 import {Button} from '@astryxdesign/core/Button';
+import {TextInput} from '@astryxdesign/core/TextInput';
 import {Token} from '@astryxdesign/core/Token';
 import {Link} from '@astryxdesign/core/Link';
 import {List, ListItem} from '@astryxdesign/core/List';
@@ -510,6 +514,79 @@ export const AnchorRef: Story = {
           }
         />
       </>
+    );
+  },
+};
+
+// =============================================================================
+// Anchor rectangle: a popover the caller opens beside a link row
+// =============================================================================
+
+const anchorRectStyles = stylex.create({
+  row: {
+    display: 'block',
+    inlineSize: 280,
+    paddingBlock: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-3'],
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'currentColor',
+    borderRadius: spacingVars['--spacing-2'],
+    color: 'inherit',
+    textDecoration: 'none',
+  },
+});
+
+export const AnchorRect: Story = {
+  render: function AnchorRectStory() {
+    const rowRef = React.useRef<HTMLAnchorElement>(null);
+    const [rect, setRect] = React.useState<PopoverAnchorRect | null>(null);
+    return (
+      <VStack gap={3}>
+        {/* The row is a link, which keeps its own semantics: the popover
+            anchors on its rectangle, not on the element. */}
+        <a
+          ref={rowRef}
+          href="#session-row"
+          {...stylex.props(anchorRectStyles.row)}>
+          Session row
+        </a>
+        <HStack gap={2}>
+          <Button
+            label="Group with…"
+            onClick={() => {
+              const row = rowRef.current;
+              if (row != null) {
+                setRect(row.getBoundingClientRect());
+              }
+            }}
+          />
+        </HStack>
+        {rect != null && (
+          <Popover
+            anchorRect={rect}
+            isOpen
+            onOpenChange={isOpen => {
+              if (!isOpen) {
+                setRect(null);
+              }
+            }}
+            placement="end"
+            alignment="start"
+            width={260}
+            label="Group sessions"
+            content={
+              <VStack gap={2}>
+                <TextInput label="Group name" value="" onChange={() => {}} />
+                <Text type="body">
+                  Anchored on the row&apos;s rectangle, measured when the button
+                  was pressed.
+                </Text>
+              </VStack>
+            }
+          />
+        )}
+      </VStack>
     );
   },
 };

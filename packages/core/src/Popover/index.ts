@@ -18,6 +18,7 @@ export type {UsePopoverOptions, UsePopoverReturn} from './usePopover';
 // Popover component
 export {Popover} from './Popover';
 export type {
+  PopoverAnchorRect,
   PopoverPresentation,
   PopoverProps,
   PopoverTriggerRenderProps,

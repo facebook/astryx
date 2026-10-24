@@ -5,7 +5,7 @@
 /**
  * @file Popover.tsx
  * @input Uses React layout measurement and the usePopover hook
- * @output Exports Popover with conditional overflow and content-first focus above the layer runtime's viewport fit
+ * @output Exports Popover with conditional overflow and content-first focus above the layer runtime's viewport fit, anchored on a trigger, a referenced button or a viewport rectangle
  * @position Layer component; declarative wrapper around usePopover hook
  *
  * For hover-triggered overlays, use HoverCard instead.
@@ -48,6 +48,7 @@ import {
 import {useThemeDefinition} from '../theme/useTheme';
 import * as stylex from '@stylexjs/stylex';
 import {devWarn} from '../utils/devWarning';
+import {useDevWarning} from '../hooks/useDevWarning';
 import type {BaseProps} from '../BaseProps';
 import {usePopover} from './usePopover';
 import {FOCUSABLE_SELECTOR} from '../hooks/focusableSelector';
@@ -166,6 +167,21 @@ export interface PopoverTriggerRenderProps {
   'aria-controls': string;
 }
 
+/**
+ * A rectangle in viewport coordinates, the shape `getBoundingClientRect()`
+ * returns, for a popover to anchor on in place of a trigger.
+ */
+export interface PopoverAnchorRect {
+  /** Distance from the viewport's top edge, in CSS pixels. */
+  top: number;
+  /** Distance from the viewport's left edge, in CSS pixels. */
+  left: number;
+  /** Width in CSS pixels; 0 for a point. */
+  width: number;
+  /** Height in CSS pixels; 0 for a point. */
+  height: number;
+}
+
 export interface PopoverProps extends Pick<
   BaseProps,
   'xstyle' | 'className' | 'style'
@@ -210,6 +226,32 @@ export interface PopoverProps extends Pick<
    * handlers and ARIA attributes to it directly.
    */
   anchorRef?: React.RefObject<HTMLElement>;
+
+  /**
+   * A rectangle in viewport coordinates to anchor the popover on, for a
+   * popover its caller opens with `isOpen` beside something that is not a
+   * button: a list row, a link, a text selection, or a point (width and
+   * height 0). `element.getBoundingClientRect()` returns one. The popover sits
+   * beside it as it would beside a trigger of that size, and moves when a new
+   * rectangle is passed; the rectangle stays where it is in the viewport, so
+   * pass a new one when what it marks moves. No element gets trigger ARIA or
+   * handlers, and focus returns on close to the element that had it before
+   * the popover opened. Replaces `children` and `anchorRef`, which are ignored
+   * beside it.
+   *
+   * @example
+   * ```
+   * <Popover
+   *   anchorRect={row.getBoundingClientRect()}
+   *   isOpen
+   *   onOpenChange={setIsOpen}
+   *   placement="end"
+   *   label="Group sessions"
+   *   content={<GroupForm />}
+   * />
+   * ```
+   */
+  anchorRect?: PopoverAnchorRect;
 
   /**
    * Content to display inside the popover.
@@ -410,6 +452,26 @@ const styles = stylex.create({
       ':focus': 'fit-content',
     },
   },
+  // The box an anchor rectangle places for the layer to anchor on: fixed to
+  // the viewport, never painted and never hit. Opacity hides it, not
+  // visibility: a layer whose anchor is visibility-hidden is hidden with it
+  // (CSS position-visibility).
+  rectAnchor: {
+    position: 'fixed',
+    boxSizing: 'border-box',
+    margin: 0,
+    padding: 0,
+    borderWidth: 0,
+    opacity: 0,
+    pointerEvents: 'none',
+  },
+  rectAnchorAt: (top: string, left: string, width: string, height: string) => ({
+    top,
+    // eslint-disable-next-line @astryx/no-physical-properties -- intentional: the rectangle is a viewport measurement (getBoundingClientRect) taken from the physical left edge in every direction; a logical inset would flip it under RTL.
+    left,
+    width,
+    height,
+  }),
   // The painted surface is capped to the viewport with the layer runtime's
   // one definition (spec:AST-059 FR2, FR3): the layer box above it caps the
   // block axis itself and leaves the inline axis to the surface, so a flip is
@@ -488,6 +550,7 @@ const styles = stylex.create({
 export function Popover({
   children,
   anchorRef,
+  anchorRect,
   content,
   placement = 'below',
   alignment = 'start',
@@ -512,6 +575,7 @@ export function Popover({
 }: PopoverProps): ReactElement {
   const t = useTranslator();
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const rectAnchorElementRef = useRef<HTMLSpanElement>(null);
   const measurementFrameRef = useRef<number | null>(null);
   const [hasOverflow, setHasOverflow] = useState(false);
   const isControlled = isOpen !== undefined;
@@ -519,6 +583,20 @@ export function Popover({
   // whether the sheet is the surface that is open.
   const resolvedPresentation = usePresentationSurface(presentation);
   const [isSheetOpenState, setIsSheetOpenState] = useState(false);
+  const hasAnchorRect = anchorRect != null;
+
+  useDevWarning(
+    'Popover',
+    'anchorRect replaces children and anchorRef: the popover anchors on the ' +
+      'rectangle, and they are ignored.',
+    hasAnchorRect && (children != null || anchorRef != null),
+  );
+  useDevWarning(
+    'Popover',
+    'A popover anchored on anchorRect has no trigger, so nothing opens it: ' +
+      'pass isOpen and onOpenChange.',
+    hasAnchorRect && !isControlled,
+  );
 
   const handlePopoverShow = useCallback(() => {
     onOpenChange?.(true);
@@ -875,9 +953,44 @@ export function Popover({
     ],
   );
 
+  // Rectangle mode: the layer anchors on the box placed at the rectangle,
+  // and no element receives trigger ARIA or handlers.
+  useIsomorphicLayoutEffect(() => {
+    if (!hasAnchorRect) {
+      return;
+    }
+    const box = rectAnchorElementRef.current;
+    if (!box) {
+      return;
+    }
+    popover.triggerRef(box);
+    return () => {
+      popover.triggerRef(null);
+    };
+  }, [hasAnchorRect, popover]);
+
+  // A transformed, filtered or contained ancestor makes a fixed box relative
+  // to itself instead of the viewport. Read where the box landed and shift it
+  // by the difference, so it covers the rectangle the caller measured.
+  const rectTop = anchorRect?.top;
+  const rectLeft = anchorRect?.left;
+  useIsomorphicLayoutEffect(() => {
+    const box = rectAnchorElementRef.current;
+    if (!box || rectTop == null || rectLeft == null) {
+      return;
+    }
+    box.style.removeProperty('translate');
+    const placed = box.getBoundingClientRect();
+    const dx = rectLeft - placed.left;
+    const dy = rectTop - placed.top;
+    if (Math.abs(dx) >= 0.5 || Math.abs(dy) >= 0.5) {
+      box.style.setProperty('translate', `${dx}px ${dy}px`);
+    }
+  }, [rectTop, rectLeft]);
+
   // Sibling mode: attach to external anchorRef
   useIsomorphicLayoutEffect(() => {
-    if (!anchorRef) {
+    if (!anchorRef || hasAnchorRect) {
       return;
     }
 
@@ -908,14 +1021,14 @@ export function Popover({
       popover.triggerRef(null);
       detach();
     };
-  }, [anchorRef, popover, attachTrigger]);
+  }, [anchorRef, hasAnchorRect, popover, attachTrigger]);
 
   // Children mode: use wrapper as CSS anchor, find button inside for
   // ARIA + event handlers.
   useIsomorphicLayoutEffect(() => {
-    if (anchorRef) {
+    if (anchorRef || hasAnchorRect) {
       return;
-    } // Skip if using anchorRef mode
+    } // Skip if using anchorRef or anchorRect mode
     if (typeof children === 'function') {
       return;
     } // Skip if using render prop mode
@@ -948,7 +1061,7 @@ export function Popover({
       popover.triggerRef(null);
       detach();
     };
-  }, [anchorRef, popover, attachTrigger]);
+  }, [anchorRef, hasAnchorRect, popover, attachTrigger]);
 
   // Sync controlled state: show or hide the anchored popover, the one surface
   // with an imperative API, to follow the latch. The sheet follows the latch
@@ -1029,6 +1142,31 @@ export function Popover({
         offset: spacingVars['--spacing-1'],
         xstyle: layerXstyle,
       });
+
+  // Rectangle mode: an invisible box at the rectangle, then the popover,
+  // anchored on that box (a bottom sheet is anchored on nothing).
+  if (anchorRect != null) {
+    const px = (value: number) => `${value}px`;
+    return (
+      <>
+        <span
+          ref={rectAnchorElementRef}
+          aria-hidden="true"
+          {...stylex.props(
+            styles.rectAnchor,
+            styles.rectAnchorAt(
+              px(anchorRect.top),
+              px(anchorRect.left),
+              px(anchorRect.width),
+              px(anchorRect.height),
+            ),
+          )}
+        />
+        {anchoredLayer}
+        {sheet}
+      </>
+    );
+  }
 
   // Sibling mode: render only the popover (no wrapper needed)
   if (anchorRef && children == null) {

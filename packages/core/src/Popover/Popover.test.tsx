@@ -594,6 +594,127 @@ describe('Popover', () => {
     expect(anchor).toHaveAttribute('aria-expanded', 'false');
   });
 
+  describe('anchorRect', () => {
+    // The element the layer anchors on carries the layer's anchor name.
+    function anchoredBox(): HTMLElement | undefined {
+      return [...document.body.querySelectorAll<HTMLElement>('*')].find(el =>
+        (
+          (el.style as unknown as Record<string, string>).anchorName ?? ''
+        ).includes('--astryx-layer-'),
+      );
+    }
+
+    it('anchors an opened popover on an invisible box at the rectangle, and gives no element trigger state', () => {
+      render(
+        <>
+          <a href="#row">Session row</a>
+          <Popover
+            anchorRect={{top: 40, left: 20, width: 200, height: 32}}
+            isOpen
+            onOpenChange={() => {}}
+            label="Group sessions"
+            content={<button type="button">Inside</button>}
+          />
+        </>,
+      );
+      // Opened: the layer is shown, with nothing to click.
+      const layer = screen.getByRole('dialog', {
+        name: 'Group sessions',
+        hidden: true,
+      });
+      expect(
+        vi.mocked(HTMLElement.prototype.showPopover).mock.contexts,
+      ).toContain(layer.closest('[popover]'));
+      const box = anchoredBox();
+      expect(box?.tagName).toBe('SPAN');
+      expect(box).toHaveAttribute('aria-hidden', 'true');
+      expect(box).toBeEmptyDOMElement();
+      // The rectangle reaches the box's own inline style.
+      expect(box?.getAttribute('style')).toContain('40px');
+      expect(box?.getAttribute('style')).toContain('200px');
+      // No trigger: nothing on the page is told it opens or controls a popup.
+      expect(document.querySelector('[aria-haspopup]')).toBeNull();
+      expect(document.querySelector('[aria-expanded]')).toBeNull();
+      expect(document.querySelector('[aria-controls]')).toBeNull();
+      expect(
+        screen.getByRole('link', {name: 'Session row'}),
+      ).not.toHaveAttribute('style');
+    });
+
+    it('moves the box when a new rectangle is passed', () => {
+      const props = {
+        isOpen: true,
+        onOpenChange: () => {},
+        label: 'Group sessions',
+        content: <span>Content</span>,
+      };
+      const {rerender} = render(
+        <Popover
+          anchorRect={{top: 40, left: 20, width: 200, height: 32}}
+          {...props}
+        />,
+      );
+      const box = anchoredBox();
+      rerender(
+        <Popover
+          anchorRect={{top: 96, left: 20, width: 200, height: 32}}
+          {...props}
+        />,
+      );
+      expect(anchoredBox()).toBe(box);
+      expect(box?.getAttribute('style')).toContain('96px');
+      expect(box?.getAttribute('style')).not.toContain('40px');
+    });
+
+    it('ignores children and anchorRef beside it, and says so in development', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      function Both() {
+        const ref = useRef<HTMLButtonElement>(null);
+        return (
+          <>
+            <button type="button" ref={ref}>
+              Referenced
+            </button>
+            <Popover
+              anchorRef={ref as React.RefObject<HTMLElement>}
+              anchorRect={{top: 40, left: 20, width: 200, height: 32}}
+              isOpen
+              onOpenChange={() => {}}
+              label="Group sessions"
+              content={<span>Content</span>}>
+              <button type="button">Wrapped</button>
+            </Popover>
+          </>
+        );
+      }
+      render(<Both />);
+      expect(screen.queryByRole('button', {name: 'Wrapped'})).toBeNull();
+      expect(
+        screen.getByRole('button', {name: 'Referenced'}),
+      ).not.toHaveAttribute('aria-expanded');
+      expect(anchoredBox()?.tagName).toBe('SPAN');
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('anchorRect replaces children and anchorRef'),
+      );
+      warnSpy.mockRestore();
+    });
+
+    it('warns in development when nothing can open it', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      render(
+        <Popover
+          anchorRect={{top: 40, left: 20, width: 0, height: 0}}
+          label="Group sessions"
+          content={<span>Content</span>}
+        />,
+      );
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('pass isOpen and onOpenChange'),
+      );
+      warnSpy.mockRestore();
+    });
+  });
+
   it('finds button inside wrapper and attaches ARIA', () => {
     render(
       <Popover content={<span>Content</span>} label="Test">

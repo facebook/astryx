@@ -13,6 +13,7 @@ review_triggers: [public-api, behavior, layout, theming, accessibility]
 verified_by:
   [
     packages/core/src/Popover/Popover.test.tsx,
+    packages/core/src/Popover/PopoverAnchorRect.a11y.chromium.spec.ts,
     packages/core/src/Popover/Popover.doc.mjs,
     packages/core/src/Popover/usePopover.doc.mjs,
     packages/core/src/hooks/useFocusTrap.test.tsx,
@@ -55,6 +56,8 @@ only broad Popover surface target.
 
 DEC-4 below (pending owner review) adds one public concept: the surface padding
 rung, so a caller whose content owns its own edges can ask for a flush surface.
+A popover its caller opens can anchor on a viewport rectangle instead of a
+trigger: a row, a link, a selection or a point (DEC-5, pending owner review).
 
 ## Compatibility and migration
 
@@ -77,8 +80,8 @@ rung, so a caller whose content owns its own edges can ask for a flush surface.
 
 **Owns**
 
-- The standard trigger or referenced-anchor composition, the painted Popover
-  surface, the canonical broad `popover` theme target for that surface, and the
+- The standard trigger, referenced-anchor or anchor-rectangle composition, the
+  painted Popover surface, the canonical broad `popover` theme target for that surface, and the
   slot that renders caller-supplied content inside it.
 - The public `usePopover` semantic contract: visibility operations, trigger
   bindings, surface rendering, dialog semantics, focus containment, and
@@ -121,6 +124,7 @@ surface, not the Layer entry point. There is no installable
 | Concept                      | Closed values or states                                      | Meaning                                                                                                                    | Availability              | Default                                                                      | Owner                                                                               | Stability                      | Invalid or unsupported behavior                                                                                                                            |
 | ---------------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- | ------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Trigger composition          | Wrapped trigger, render-prop trigger, or referenced anchor   | Supplies the anchor and the control that opens or closes the standard component                                            | Popover                   | Wrapped trigger when children are supplied                                   | `component:Popover`                                                                 | Current public behavior        | A referenced or wrapped anchor without a button or button role warns in development and receives no trigger handler; it does not throw.                    |
+| Anchor rectangle             | Absent, or a viewport rectangle: top, left, width, height    | Anchors a Popover its caller opens beside a rectangle instead of a trigger; no element receives trigger state or handlers  | Popover                   | Absent                                                                       | `component:Popover`                                                                 | Pending owner review (DEC-5)   | Beside `children` or `anchorRef` it warns in development and they are ignored; without `isOpen` it warns, since nothing can open it.                       |
 | Visibility ownership         | Uncontrolled or externally controlled                        | Chooses whether Popover stores visibility or synchronizes to caller state                                                  | Popover                   | Uncontrolled                                                                 | `component:Popover`                                                                 | Current public behavior        | Controlled changes are synchronized through show/hide; dismissal requests are reported to the caller rather than redefining the external source of truth.  |
 | Popup semantics              | Dialog or neutral wrapper                                    | Exposes dialog semantics or lets child menu/listbox semantics own the popup                                                | Popover and hook          | Dialog                                                                       | `component:Popover`                                                                 | Current public behavior        | A dialog without a label warns in development. Neutral mode omits dialog role and modal semantics.                                                         |
 | Focus entry                  | Automatic or caller-preserved                                | Focuses genuine caller content, falls back to the labeled dialog surface when none exists, or preserves current focus      | Popover and hook          | Automatic                                                                    | `component:Popover`                                                                 | Current public behavior        | The injected fallback close control is excluded from initial-focus candidates and reveals only when reached sequentially.                                  |
@@ -171,23 +175,26 @@ table owns their semantic effect.
 - The default context layer keeps its mounted host while closed after initial
   resolution; open state, not host existence, controls visibility. Lazy mounting
   remains a Layer-level option rather than a separate Popover contract.
+- An anchor rectangle places one invisible box at the rectangle while Popover
+  is mounted; the box carries the CSS anchor name, and no caller element does.
 - Popover component trigger handlers and ARIA state exist only while the trigger
   is mounted and enabled. Disabling Popover ignores its trigger interaction; it
   does not disable the caller's trigger element.
 
 ## Behavioral and layout contract
 
-| ID  | Invariant                                                                                                                                                                                                                                                                                                        | Basis                                                                                                 | Acceptance and implementation state                                                         |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| FR1 | Popover and public `usePopover` expose one visibility lifecycle with canonical show, hide, and toggle operations. Every opening path inherits same-gesture reopen protection without changing public signatures.                                                                                                 | Current public package surface, `architecture:layer-runtime/INV7`, and owner approval on 2026-09-07   | Accepted; implemented and covered by focused Popover-family tests                           |
-| FR2 | Popover derives semantic focus entry identically across activation modalities: first genuine caller content, then labeled dialog-surface fallback. The injected close control is excluded. Shared interaction modality controls focus indication, not destination.                                               | PR #5373, `architecture:interaction-modality`, and owner approval on 2026-09-07                       | Accepted; implemented and covered by Popover focus tests                                    |
-| FR3 | Retired. Viewport and safe-area capping is the layer runtime's (`spec:AST-059` FR2, FR3); Popover clamps its preferred size with the runtime's cap and caps its painted surface with the same definition.                                                                                                        | `spec:AST-059`, owner direction 2026-10-03                                                            | Retired; see `architecture:layer-runtime` INV11 and the `Core/Layer` viewport-inset stories |
-| FR4 | Popover enables internal scrolling only after measured overflow exceeds the current tolerance. Fitting content does not become a scroll container.                                                                                                                                                               | PR #5373 and current tests                                                                            | Verified current behavior                                                                   |
-| FR5 | Overflow signals while open coalesce into at most one measurement per animation frame, and Popover owns no measurement observers while closed.                                                                                                                                                                   | PR #5373 and current tests                                                                            | Verified current resource behavior                                                          |
-| FR6 | Component anatomy contains the caller trigger and content, one painted Popover surface, and the optional fallback close control. Popover owns no Header, Body, or separate shared-hook surface part.                                                                                                             | Current source, docs target inventory, and tests                                                      | Accepted anatomy; stale consumer anatomy corrected by this contract                         |
-| FR7 | The painted surface has one broad canonical target, `popover`; composed components may add one authoritative component-specific refinement target.                                                                                                                                                               | Owner direction on 2026-08-31 plus current target inventory                                           | Accepted canonical contract; covered by focused target tests                                |
-| FR8 | The surface padding is one spacing-scale rung applied on the painted surface. Popover defaults to step 3 (the released inset); `0` paints a flush surface; a direct `usePopover` composition paints none unless it asks for a rung. The rung sits where a theme's `padding` on the `popover` target replaces it. | PR #6683 and its Popover tests; `architecture:container-padding/INV8` (padding alone does not enroll) | Pending owner review (DEC-4); implemented and covered by the Popover surface-padding suite  |
-| FR9 | Under a finger, Popover grows out of its trigger and shrinks back into it, and a touch during its growth is ignored, as `spec:AST-094` FR31 and FR35 state. Its dismissal is unchanged, and a mouse keeps today's entrance.                                                                                      | `spec:AST-094` FR31, FR35                                                                             | Pending implementation; tests land with it                                                  |
+| ID   | Invariant                                                                                                                                                                                                                                                                                                        | Basis                                                                                                 | Acceptance and implementation state                                                         |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| FR1  | Popover and public `usePopover` expose one visibility lifecycle with canonical show, hide, and toggle operations. Every opening path inherits same-gesture reopen protection without changing public signatures.                                                                                                 | Current public package surface, `architecture:layer-runtime/INV7`, and owner approval on 2026-09-07   | Accepted; implemented and covered by focused Popover-family tests                           |
+| FR2  | Popover derives semantic focus entry identically across activation modalities: first genuine caller content, then labeled dialog-surface fallback. The injected close control is excluded. Shared interaction modality controls focus indication, not destination.                                               | PR #5373, `architecture:interaction-modality`, and owner approval on 2026-09-07                       | Accepted; implemented and covered by Popover focus tests                                    |
+| FR3  | Retired. Viewport and safe-area capping is the layer runtime's (`spec:AST-059` FR2, FR3); Popover clamps its preferred size with the runtime's cap and caps its painted surface with the same definition.                                                                                                        | `spec:AST-059`, owner direction 2026-10-03                                                            | Retired; see `architecture:layer-runtime` INV11 and the `Core/Layer` viewport-inset stories |
+| FR4  | Popover enables internal scrolling only after measured overflow exceeds the current tolerance. Fitting content does not become a scroll container.                                                                                                                                                               | PR #5373 and current tests                                                                            | Verified current behavior                                                                   |
+| FR5  | Overflow signals while open coalesce into at most one measurement per animation frame, and Popover owns no measurement observers while closed.                                                                                                                                                                   | PR #5373 and current tests                                                                            | Verified current resource behavior                                                          |
+| FR6  | Component anatomy contains the caller trigger and content, one painted Popover surface, and the optional fallback close control. Popover owns no Header, Body, or separate shared-hook surface part.                                                                                                             | Current source, docs target inventory, and tests                                                      | Accepted anatomy; stale consumer anatomy corrected by this contract                         |
+| FR7  | The painted surface has one broad canonical target, `popover`; composed components may add one authoritative component-specific refinement target.                                                                                                                                                               | Owner direction on 2026-08-31 plus current target inventory                                           | Accepted canonical contract; covered by focused target tests                                |
+| FR8  | The surface padding is one spacing-scale rung applied on the painted surface. Popover defaults to step 3 (the released inset); `0` paints a flush surface; a direct `usePopover` composition paints none unless it asks for a rung. The rung sits where a theme's `padding` on the `popover` target replaces it. | PR #6683 and its Popover tests; `architecture:container-padding/INV8` (padding alone does not enroll) | Pending owner review (DEC-4); implemented and covered by the Popover surface-padding suite  |
+| FR9  | Under a finger, Popover grows out of its trigger and shrinks back into it, and a touch during its growth is ignored, as `spec:AST-094` FR31 and FR35 state. Its dismissal is unchanged, and a mouse keeps today's entrance.                                                                                      | `spec:AST-094` FR31, FR35                                                                             | Pending implementation; tests land with it                                                  |
+| FR10 | With an anchor rectangle, Popover places its surface beside an invisible box at the rectangle (never hit; hidden by opacity, not visibility; offset against a transformed ancestor), follows a new rectangle, and gives no element trigger state. Focus enters as on a controlled open and returns where it was. | DEC-5, the `anchorRect` tests and the Chromium anchor-rectangle spec                                  | Pending owner review (DEC-5); implemented and tested                                        |
 
 ### Allowed variation
 
@@ -215,6 +222,7 @@ table owns their semantic effect.
 | Neutral-role popup                                | The neutral wrapper is not selected as a dialog focus target; automatic entry prefers genuine content focus, or callers may disable autofocus for trigger-retained patterns.                | Child menu, listbox, or other semantics own their focus model.                                           |
 | Automatic focus disabled                          | Opening does not move focus.                                                                                                                                                                | May be persistent configuration or a one-opening show preference.                                        |
 | Controlled open                                   | External open state invokes the no-activation opening path: first genuine content control, then dialog-container fallback.                                                                  | The caller remains the visibility source of truth.                                                       |
+| Controlled open on an anchor rectangle            | Focus entry follows Controlled open; no element carries trigger state; dismissal returns focus to the element focused before opening.                                                       | The rectangle may be a row, a link, a selection or a point.                                              |
 | Tab from a focused container                      | Focus enters the first tabbable descendant.                                                                                                                                                 | If none exists, focus remains inside.                                                                    |
 | Shift+Tab from a focused container                | Focus enters the last tabbable descendant.                                                                                                                                                  | If none exists, focus remains inside.                                                                    |
 | Escape                                            | The topmost eligible Popover closes according to shared dismissal policy.                                                                                                                   | Explicit-dismiss surfaces may disable both light and Escape dismissal.                                   |
@@ -253,7 +261,9 @@ table owns their semantic effect.
 ## Accessibility contract
 
 - **AR1 — Trigger relationship.** The trigger exposes expanded state, the popup
-  relationship, and a role-appropriate popup type while mounted.
+  relationship, and a role-appropriate popup type while mounted. A popover on an
+  anchor rectangle has no trigger, so no element carries this relationship; its
+  dialog label names it, and its anchor box is hidden from assistive technology.
 - **AR2 — Dialog naming.** Dialog mode requires a caller-provided accessible
   label and places dialog/modal semantics on the painted surface. Missing naming
   warns in development but does not synthesize a label.
@@ -263,7 +273,8 @@ table owns their semantic effect.
   the shared modality-aware focus indication rather than changing semantic focus
   placement to suppress pointer outlines.
 - **AR4 — Focus return.** Dismissal returns focus to the trigger when focus had
-  entered the closing Popover and would otherwise be lost.
+  entered the closing Popover and would otherwise be lost; on an anchor
+  rectangle, to the element focused before it opened.
 - **AR5 — Evidence boundary.** Current automated tests establish DOM roles, ARIA
   state, focus movement, and focus return. The Storybook manual-AT story is a
   fixture, not a recorded result. PR #5373 records no named NVDA + Chrome or
@@ -274,7 +285,7 @@ table owns their semantic effect.
 
 | Anatomy or state       | Design requirement                                                                                                                         | Representation authority       | Hierarchy role | Component contract    |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ | -------------- | --------------------- |
-| Trigger element        | Supplies or references the control and anchor without becoming Popover-owned presentation.                                                 | Caller content                 | Supporting     | FR6, AR1              |
+| Trigger element        | Supplies or references the control and anchor; an anchor rectangle uses an invisible box Popover places instead.                           | Caller content                 | Supporting     | FR6, FR10, AR1        |
 | Popover surface        | Paints the component surface, owns the canonical `popover` target, and carries scroll, focus, and dialog behavior.                         | Current source and owner DEC-2 | Prominent      | FR2, FR4–FR7, AR2–AR4 |
 | Touch sheet            | Holds the same content in place of the surface when `presentation` resolves to `bottom-sheet`; paints BottomSheet's `bottom-sheet` target. | `component:BottomSheet`        | Prominent      | DEC-6, AR1, AR4       |
 | Popover content        | Renders caller-supplied interaction or information inside the surface.                                                                     | Caller content                 | Prominent      | FR2, FR6              |
@@ -288,7 +299,7 @@ table owns their semantic effect.
 {
   "Trigger element": {
     "none": {
-      "reason": "intentional: The trigger is caller-owned and receives no Popover theming target."
+      "reason": "intentional: The trigger is caller-owned and receives no Popover theming target; the box an anchor rectangle places is never painted."
     }
   },
   "Popover surface": {"target": "popover"},
@@ -349,6 +360,7 @@ consumers that need distinct theme reachability provide and document an owned
 | ORD2, FR4                    | `Popover.test.tsx` sizing/overflow suites; `Popover.stories.tsx` match-trigger and overflow scenarios; geometry under `Core/Layer` viewport-inset stories | Explicit width clamped to the viewport, trigger matching, fitting and overflowing content                          | Reversing width precedence, capping to the span beside the trigger, or always enabling scroll fails emitted-style or overflow assertions.           | `audit:Popover/layout`        |
 | FR8                          | `Popover.test.tsx` surface-padding suite                                                                                                                  | Default rung, `0`, an explicit rung, a direct hook composition with and without a rung                             | A default other than step 3, a rung landing on a box inside the surface, or the hook painting a rung it was not given fails the suite.              | `audit:Popover/theming`       |
 | FR9                          | `spec:AST-094` verification for FR31 and FR35                                                                                                             | Under a finger: open, close, a touch during growth; a mouse                                                        | A Popover that does not grow from and shrink into its trigger, a changed dismissal, or a changed mouse path fails.                                  | `audit:Popover/behavior`      |
+| FR10, AR1, AR4               | `Popover.test.tsx` anchorRect suite; `PopoverAnchorRect.a11y.chromium.spec.ts` on the `AnchorRect` story                                                  | Opened by `isOpen`, a new rectangle, beside `children` or `anchorRef`, uncontrolled; real placement, focus return  | Trigger state on any element, a box that is painted or hit, a surface off the rectangle (also under a transform), or no focus return fails.         | `audit:Popover/layout`        |
 | FR5                          | `Popover.test.tsx` scheduling and observer-lifecycle suites                                                                                               | Closed, opened, repeated signals, cleanup                                                                          | Constructing observers while closed or measuring more than once per pending frame fails lifecycle assertions.                                       | `audit:Popover/resources`     |
 | FR6, FR7 and theming anatomy | `Popover.test.tsx`, `Popover.doc.mjs`, `usePopover.doc.mjs`, `astryx theme targets Popover --json`, and `scripts/check-knowledge.mjs`                     | One real surface with canonical `popover` plus composed-component refinements                                      | A fake anatomy part, missing canonical output, or an active target without a real owner fails review or validation.                                 | `audit:Popover/theming`       |
 | AR5                          | `Popover.stories.tsx` manual-AT fixture and PR #5373 test record                                                                                          | Read-only dialog manual-AT fixture; no recorded NVDA/VoiceOver announcement result                                 | A fixture without recorded AT/browser observations cannot be cited as announcement proof.                                                           | `audit:Popover/at-evidence`   |
@@ -498,3 +510,35 @@ spells the flush case as `0` on the numeric scale, and a second spelling of the
 same value would leave two ways to write one state. Also rejected: moving the
 padding onto an inner content wrapper a consumer class can replace — that turns
 the released theming placement back into a nested box.
+
+### DEC-5 — A caller-opened popover can anchor on a viewport rectangle
+
+**Reference:** `component:Popover/DEC-5`
+
+**Decider:** pending owner review
+
+`Popover` takes `anchorRect`, a rectangle in viewport coordinates with the
+`top`, `left`, `width` and `height` that `getBoundingClientRect()` returns, for
+a popover its caller opens with `isOpen` beside something that is not a button:
+a list row, a link that keeps its own semantics, a text selection, or a point.
+The popover sits beside the rectangle as it would beside a trigger of that size,
+and moves when a new rectangle is passed. The rectangle is fixed to the
+viewport: a caller whose target moves passes a new one.
+
+Popover anchors on an invisible box it places at the rectangle, as ContextMenu
+anchors its menu on the pointer. The box is never painted or hit and is hidden
+from assistive technology. It is hidden by opacity, not visibility, because a
+layer whose anchor is visibility-hidden is hidden with it. A transformed,
+filtered or contained ancestor makes a fixed box relative to itself, so Popover
+offsets the box by the difference it reads after layout. There is no trigger:
+no element receives expanded state or handlers, and focus returns on dismissal
+to the element focused before the popover opened. Beside `children` or
+`anchorRef` the rectangle wins and they are ignored, with a development
+warning; without `isOpen`, nothing can open the popover, which also warns.
+
+Rejected: `anchorRef` on any element, which cannot anchor where no element is
+and leaves each caller to place an invisible anchor that must not be hidden by
+visibility.
+
+Rejected: a function that returns the rectangle, which CSS anchor positioning
+cannot read.
