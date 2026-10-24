@@ -80,7 +80,7 @@ export const docs = {
       // the description instead (#1645).
       type: 'LightboxMedia | LightboxMedia[]',
       description:
-        "Media to display. Pass a single object for one item, or an array for gallery mode with prev/next navigation. Each item is {src: string, alt: string, caption?: ReactNode, type?: 'image' | 'video'}; type defaults to 'image', and zoom/pan is disabled for 'video'.",
+        "Media to display. Pass a single object for one item, or an array for gallery mode with prev/next navigation (on a touch screen, a swipe moves between items too). Each item is {src: string, alt: string, caption?: ReactNode, type?: 'image' | 'video'}; type defaults to 'image', and zoom/pan is disabled for 'video'.",
       required: true,
     },
     {
@@ -92,13 +92,13 @@ export const docs = {
       name: 'onIndexChange',
       type: '(index: number) => void',
       description:
-        'Callback when the gallery index changes via prev/next navigation.',
+        'Callback when the gallery index changes: prev/next, the arrow keys, or a swipe.',
     },
     {
       name: 'hasZoom',
       type: 'boolean',
       description:
-        'Enable zoom on double-click, or Enter/Space/+/- via keyboard (images only). When zoomed, drag or use arrow keys to pan.',
+        'Enable zoom (images only): pinch, or double-tap or double-click to zoom in at that point and back, or Enter/Space/+/- via keyboard. When zoomed, drag (with momentum) or use arrow keys to pan.',
       default: 'false',
     },
     {
@@ -128,7 +128,7 @@ export const docs = {
   usage: {
     anatomy,
     description:
-      'A fullscreen overlay for viewing images and videos at full resolution. Supports single-item and gallery modes with prev/next navigation, optional zoom and pan for images, and native video controls.',
+      'A fullscreen overlay for viewing images and videos at full resolution. Supports single-item and gallery modes with prev/next navigation and swiping, optional zoom and pan for images, and native video controls.',
     bestPractices: [
       {
         guidance: true,
@@ -211,7 +211,8 @@ export const docsZh = {
     {
       name: 'hasZoom',
       type: 'boolean',
-      description: '启用双击缩放（仅图片）。缩放后可拖动平移。',
+      description:
+        '启用缩放（仅图片）：双指捏合，或双击/双点按在该处放大并还原，或使用 Enter/Space/+/- 键。缩放后可拖动（带惯性）或用方向键平移。',
       default: 'false',
     },
     {
@@ -227,7 +228,7 @@ export const docsZh = {
   usage: {
     anatomy,
     description:
-      'A fullscreen overlay for viewing images and videos at full resolution. Supports single-item and gallery modes with prev/next navigation, optional zoom and pan for images, and native video controls.',
+      'A fullscreen overlay for viewing images and videos at full resolution. Supports single-item and gallery modes with prev/next navigation and swiping, optional zoom and pan for images, and native video controls.',
     bestPractices: [
       {
         guidance: true,
@@ -265,7 +266,7 @@ export const docsDense = {
   usage: {
     anatomy,
     description:
-      'A fullscreen overlay for viewing images and videos at full resolution. Supports single-item and gallery modes with prev/next navigation, optional zoom and pan for images, and native video controls.',
+      'A fullscreen overlay for viewing images and videos at full resolution. Supports single-item and gallery modes with prev/next navigation and swiping, optional zoom and pan for images, and native video controls.',
     bestPractices: [
       {guidance: true, description: 'Always provide alt text for every image.'},
       {
@@ -294,9 +295,10 @@ export const docsDense = {
     onOpenChange: 'Callback when open state changes.',
     media: 'Single media object or array for gallery mode.',
     index: 'Current index in gallery mode.',
-    onIndexChange: 'Callback when gallery index changes.',
+    onIndexChange:
+      'Callback when gallery index changes (buttons, keys or a swipe).',
     hasZoom:
-      'Enable zoom (double-click, Enter/Space, or +/-) and pan (drag or arrow keys) for images.',
+      'Enable zoom (pinch, double-tap or double-click, Enter/Space, or +/-) and pan (drag or arrow keys) for images.',
     xstyle: 'StyleX styles for layout customization.',
   },
 };
