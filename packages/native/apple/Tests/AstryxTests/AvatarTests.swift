@@ -52,7 +52,7 @@ import Testing
 }
 
 @MainActor
-@Test func bothInitializersBuildTheSameProps() {
+@Test func avatarInitializersBuildTheSameProps() {
   let labeled = Avatar("Ada", src: "a", fallbackSrc: "b", alt: "c", size: .lg, shape: .square, href: "https://example.com").props
   let fromProps = Avatar(AvatarProps(src: "a", fallbackSrc: "b", name: "Ada", alt: "c", size: .lg, shape: .square, href: "https://example.com")).props
   #expect(labeled.name == fromProps.name)
