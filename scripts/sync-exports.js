@@ -43,7 +43,7 @@ const UTILITY_DIRS = new Set(['hooks', 'theme', 'utils']);
  * publicly exported. These are shared implementation details
  * consumed by other components via relative imports.
  */
-const INTERNAL_DIRS = new Set(['NavItem']);
+const INTERNAL_DIRS = new Set(['NavItem', 'gestures']);
 
 /**
  * Additional exports that can't be auto-discovered from directory structure.
@@ -176,6 +176,11 @@ const STATIC_EXPORTS = {
     source: './src/utils/interactionOverlay.stylex.ts',
     types: './dist/utils/interactionOverlay.stylex.d.ts',
     default: './dist/utils/interactionOverlay.stylex.js',
+  },
+  './utils/pressLayer.stylex': {
+    source: './src/utils/pressLayer.stylex.ts',
+    types: './dist/utils/pressLayer.stylex.d.ts',
+    default: './dist/utils/pressLayer.stylex.js',
   },
   './docs.mjs': './docs.mjs',
   './groups.doc.mjs': './groups.doc.mjs',

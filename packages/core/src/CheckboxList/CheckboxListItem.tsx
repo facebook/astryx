@@ -4,7 +4,9 @@
 
 /**
  * @file CheckboxListItem.tsx
- * @input Uses React, CheckboxInput, ListItem, CheckboxListContext
+ * @input Uses React, CheckboxInput, ListItem, CheckboxListContext, the press
+ *   marker and the row press scope (the row owns its checkbox's touch press
+ *   through CheckboxRowPressContext)
  * @output Exports CheckboxListItem component, CheckboxListItemProps
  * @position Core implementation; consumed by index.ts, tested by CheckboxList.test.tsx
  *
@@ -24,6 +26,9 @@ import {colorVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
 import {CheckboxInput} from '../CheckboxInput/CheckboxInput';
 import type {CheckboxInputProps} from '../CheckboxInput/CheckboxInput';
+import {CheckboxRowPressContext} from '../CheckboxInput/CheckboxRowPressContext';
+import {usePressFeedback} from '../hooks/usePressFeedback';
+import {checkboxRowPressScope} from '../CheckboxInput/checkboxRowPress.markers.stylex';
 import {ListItem} from '../List/ListItem';
 import {ListContext} from '../List/ListContext';
 import {CheckboxListContext} from './CheckboxListContext';
@@ -263,6 +268,16 @@ export function CheckboxListItem({
   const checkboxRef = useRef<HTMLInputElement | null>(null);
   const hasRowInteraction = isInteractive || onClickProp != null;
 
+  // A row that delegates its surface clicks is the option's one press
+  // surface: a finger on the label, the description or the box itself
+  // presses the row, and the box's overlay paints from the row's press
+  // (CheckboxRowPressContext), the way a radio row's circle does. Item marks
+  // an interactive row itself; naming the row here as well keeps the row
+  // press scope it now carries verifiably reachable by the touch press
+  // controller (pressableCoverage.test.ts).
+  const pressable = usePressFeedback();
+  const rowOwnsPress = hasRowInteraction && !effectiveDisabled;
+
   // A read-only checkbox carries aria-readonly, which the row's clickable
   // container treats as a non-interactive target, so a click on it would be
   // delegated straight back to the checkbox without end. Stop that click at
@@ -302,6 +317,7 @@ export function CheckboxListItem({
   return (
     <ListItem
       {...restProps}
+      {...(rowOwnsPress ? pressable : undefined)}
       ref={ref}
       label={namesFromVisibleLabel ? <span id={labelID}>{label}</span> : label}
       description={description}
@@ -317,6 +333,9 @@ export function CheckboxListItem({
       aria-busy={isBusy || undefined}
       xstyle={
         [
+          // The overlay over the box reads the row's touch press through this
+          // ancestor marker.
+          rowOwnsPress && checkboxRowPressScope,
           resolvedChecked === true &&
             !effectiveDisabled &&
             !effectiveReadOnly &&
@@ -327,19 +346,23 @@ export function CheckboxListItem({
       className={className}
       style={style}
       startContent={
-        <DescribedCheckboxInput
-          ref={checkboxRef}
-          label={checkboxLabel}
-          aria-labelledby={namesFromVisibleLabel ? labelID : undefined}
-          isLabelHidden
-          value={resolvedChecked}
-          onChange={() => handleToggle()}
-          onClick={handleCheckboxClick}
-          isDisabled={effectiveDisabled}
-          isReadOnly={effectiveReadOnly}
-          isLoading={isBusy}
-          size={checkboxSize}
-        />
+        // Only the row's own checkbox: a checkbox placed in the row's content
+        // keeps its own press.
+        <CheckboxRowPressContext value={rowOwnsPress}>
+          <DescribedCheckboxInput
+            ref={checkboxRef}
+            label={checkboxLabel}
+            aria-labelledby={namesFromVisibleLabel ? labelID : undefined}
+            isLabelHidden
+            value={resolvedChecked}
+            onChange={() => handleToggle()}
+            onClick={handleCheckboxClick}
+            isDisabled={effectiveDisabled}
+            isReadOnly={effectiveReadOnly}
+            isLoading={isBusy}
+            size={checkboxSize}
+          />
+        </CheckboxRowPressContext>
       }
     />
   );

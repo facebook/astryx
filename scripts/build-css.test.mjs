@@ -17,12 +17,14 @@ import {fileURLToPath} from 'node:url';
 import {ensureCoreBuilt} from '../packages/cli/clients/cli/commands/ensure-core-built.mjs';
 
 /**
- * The release clock, read off its one source: `pressConsts.releaseMs` in
- * utils/interactionOverlay.stylex.ts, which both the stylesheet (at build
- * time) and the controller (at run time) take it from. The module itself
- * cannot be imported here, since a StyleX source file only runs compiled.
+ * The release clocks, read off their one source: `pressConsts` in
+ * utils/interactionOverlay.stylex.ts (`releaseMs`, a cell's deselect, and
+ * `controlReleaseMs`, a control's), which both the stylesheet (at build
+ * time) and the controller's profile table (at run time) take them from. The
+ * module itself cannot be imported here, since a StyleX source file only
+ * runs compiled.
  */
-async function readReleaseMs() {
+async function readReleaseClocks() {
   const source = await fs.readFile(
     path.join(
       path.dirname(fileURLToPath(import.meta.url)),
@@ -30,13 +32,14 @@ async function readReleaseMs() {
     ),
     'utf8',
   );
-  const match = source.match(/releaseMs:\s*(\d+)/);
-  if (match == null) {
+  const cell = source.match(/\breleaseMs:\s*(\d+)/);
+  const control = source.match(/\bcontrolReleaseMs:\s*(\d+)/);
+  if (cell == null || control == null) {
     throw new Error(
-      'pressConsts.releaseMs not found in interactionOverlay.stylex.ts',
+      'pressConsts.releaseMs / controlReleaseMs not found in interactionOverlay.stylex.ts',
     );
   }
-  return Number(match[1]);
+  return {cell: Number(cell[1]), control: Number(control[1])};
 }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -266,8 +269,13 @@ describe('build-css astryx.css', () => {
         /@keyframes ([\w-]+)\{from\{--astryx-press-alpha:1;?\}to\{--astryx-press-alpha:0;?\}\}/,
       );
       expect(keyframes).not.toBeNull();
-      const fading = lines().filter(line =>
-        line.includes('[data-astryx-press="fading"]'),
+      // The overlay's arms on the element itself; the compositor press
+      // layers' `::before` and `::after` arms have their own block below.
+      const fading = lines().filter(
+        line =>
+          line.includes('[data-astryx-press="fading"]') &&
+          !line.includes('::before') &&
+          !line.includes('::after'),
       );
       expect(
         fading.some(line => line.includes(`animation-name:${keyframes[1]}`)),
@@ -276,8 +284,21 @@ describe('build-css astryx.css', () => {
         .map(line => line.match(/animation-duration:\s*([^;}]+)/))
         .filter(Boolean)
         .map(match => toMs(match[1]));
-      // One clock, the one the controller removes the attribute on.
-      expect(durations).toEqual([await readReleaseMs()]);
+      // One clock per profile, the ones the controller removes the attribute
+      // on: a control's by default, a cell's where the marker says `cell`.
+      const clocks = await readReleaseClocks();
+      expect([...durations].sort((a, b) => a - b)).toEqual(
+        [clocks.cell, clocks.control].sort((a, b) => a - b),
+      );
+      const cellArm = fading.filter(line =>
+        line.includes('[data-astryx-pressable="cell"]'),
+      );
+      expect(
+        cellArm
+          .map(line => line.match(/animation-duration:\s*([^;}]+)/))
+          .filter(Boolean)
+          .map(match => toMs(match[1])),
+      ).toEqual([clocks.cell]);
       // The onset is instant: nothing animates on the on arm.
       const on = lines().filter(line =>
         line.includes('[data-astryx-press="on"]'),
@@ -291,8 +312,12 @@ describe('build-css astryx.css', () => {
       // press's strength, declared by the shared overlay styles on the element
       // the controller writes to. StyleX deduplicates the identical
       // declaration across the variants, so the shipped sheet carries it once.
-      const declarations = lines().filter(line =>
-        /\{--_press-paint:/.test(line),
+      // (The compositor press layer's rows turn this paint off with
+      // `--_press-paint: transparent`; that declaration is its own, below.)
+      const declarations = lines().filter(
+        line =>
+          /\{--_press-paint:/.test(line) &&
+          !/\{--_press-paint:transparent/.test(line),
       );
       expect(declarations).toHaveLength(1);
       expect(declarations[0]).toContain('var(--color-overlay-pressed)');
@@ -304,16 +329,16 @@ describe('build-css astryx.css', () => {
       );
       expect(formulas).toHaveLength(1);
       // Every overlay variant, the cards' `--_press-overlay`, and the
-      // ancestor-scoped paints (switch, the checkbox and radio overlays, tab)
-      // read it back: twelve lines today, fewer than the arms because StyleX
-      // deduplicates identical rules. A regex that stopped matching would
-      // fall well below this floor.
+      // ancestor-scoped paints (switch, tab) read it back: eight lines today,
+      // fewer than the arms because StyleX deduplicates identical rules. The
+      // checkbox and radio overlays paint on their own layer instead (below).
+      // A regex that stopped matching would fall well below this floor.
       const paints = lines().filter(
         line =>
           /\[data-astryx-press="(?:on|fading)"\]/.test(line) &&
           line.includes('var(--_press-paint'),
       );
-      expect(paints.length).toBeGreaterThanOrEqual(10);
+      expect(paints.length).toBeGreaterThanOrEqual(7);
       // Not the hover strength: under a finger there is no hover to land on,
       // and a paint that stepped there would still have to step off.
       const arms = lines().filter(line =>
@@ -322,6 +347,187 @@ describe('build-css astryx.css', () => {
       expect(arms.some(line => line.includes('--color-overlay-hover'))).toBe(
         false,
       );
+    });
+
+    it('paints the checkbox and radio press on their own layer and releases it by opacity', () => {
+      // The layer over a checkbox box or a radio circle (its owner's
+      // `::after`) answers a press its ancestor holds: the pressed token at
+      // full strength on the on and fading arms, and an opacity animation on
+      // the fading arm, on a control's clock (250 ms) for a standalone
+      // checkbox and a cell's (200 ms) in a row. It reads no strength.
+      const layer = lines().filter(
+        line =>
+          /:where\(\.[\w-]+\[data-astryx-press="(?:on|fading)"\] \*\)/.test(
+            line,
+          ) && line.includes('::after{'),
+      );
+      const painted = arm =>
+        layer.some(
+          line =>
+            line.includes(`[data-astryx-press="${arm}"]`) &&
+            line.includes(
+              '::after{background-image:linear-gradient(var(--color-overlay-pressed)',
+            ),
+        );
+      expect(painted('on')).toBe(true);
+      expect(painted('fading')).toBe(true);
+      expect(layer.some(line => /::after\{animation-name:/.test(line))).toBe(
+        true,
+      );
+      const durations = layer.flatMap(line => {
+        const match = line.match(/::after\{animation-duration:(\d+)ms\}/);
+        return match == null ? [] : [Number(match[1])];
+      });
+      expect(new Set(durations)).toEqual(new Set([200, 250]));
+      expect(layer.some(line => line.includes('var(--_press-paint'))).toBe(
+        false,
+      );
+    });
+  });
+  describe('the compositor press layer (utils/pressLayer.stylex.ts)', () => {
+    /** The cell clock and curve, read off their one stylesheet source. */
+    async function readLayerConsts() {
+      const source = await fs.readFile(
+        path.join(ROOT, 'packages/core/src/utils/pressLayer.stylex.ts'),
+        'utf8',
+      );
+      const ms = source.match(/cellReleaseMs:\s*(\d+)/);
+      const ease = source.match(/cellReleaseEase:\s*'([^']+)'/);
+      if (ms == null || ease == null) {
+        throw new Error('pressLayerConsts not found in pressLayer.stylex.ts');
+      }
+      return {
+        ms: Number(ms[1]),
+        points: ease[1].match(/-?\d*\.?\d+/g).map(Number),
+      };
+    }
+    const toMs = value => {
+      const match = value.trim().match(/^([\d.]+)(ms|s)$/);
+      return match == null
+        ? Number.NaN
+        : Number(match[1]) * (match[2] === 's' ? 1000 : 1);
+    };
+    const layerLines = arm =>
+      astryxCss
+        .split('\n')
+        .filter(line => line.includes(arm) && line.includes('::before'));
+
+    it('releases with an opacity keyframe animation on the cell clock and curve', async () => {
+      // Opacity, the property engines run on the compositor: the release
+      // keeps fading while script runs.
+      const keyframes = astryxCss.match(
+        /@keyframes ([\w-]+)\{from\{opacity:1;?\}to\{opacity:0;?\}\}/,
+      );
+      expect(keyframes).not.toBeNull();
+      const fading = layerLines('[data-astryx-press="fading"]');
+      expect(
+        fading.some(line => line.includes(`animation-name:${keyframes[1]}`)),
+      ).toBe(true);
+      const {ms, points} = await readLayerConsts();
+      const durations = fading
+        .map(line => line.match(/animation-duration:\s*([^;}]+)/))
+        .filter(Boolean)
+        .map(match => toMs(match[1]));
+      // The control layer (Button) releases on its own clock beside it.
+      expect(durations).toContain(ms);
+      const curves = fading
+        .map(line => line.match(/animation-timing-function:\s*([^;}]+)/))
+        .filter(Boolean)
+        .map(match => match[1].match(/-?\d*\.?\d+/g).map(Number));
+      expect(curves).toContainEqual(points);
+    });
+
+    it('shows the layer at once on the on arm, over its resting opacity of 0', () => {
+      const on = layerLines('[data-astryx-press="on"]');
+      const shown = on.find(line => /\{opacity:1;?\}/.test(line));
+      expect(shown).toBeDefined();
+      expect(on.some(line => line.includes('animation'))).toBe(false);
+      // Both rules share the base layer here, so the arm must outrank the
+      // resting value by specificity, or the press would never show.
+      const resting = astryxCss
+        .split('\n')
+        .find(
+          line =>
+            line.includes('::before{opacity:0') &&
+            !line.includes('data-astryx-press'),
+        );
+      expect(resting).toBeDefined();
+      const weight = line => (line.match(/:not\(#\\#\)/g) ?? []).length;
+      expect(weight(shown)).toBeGreaterThan(weight(resting));
+    });
+
+    /** The control clock and curve, read off the same stylesheet source. */
+    async function readControlConsts() {
+      const source = await fs.readFile(
+        path.join(ROOT, 'packages/core/src/utils/pressLayer.stylex.ts'),
+        'utf8',
+      );
+      const ms = source.match(/controlReleaseMs:\s*(\d+)/);
+      const ease = source.match(/controlReleaseEase:\s*'([^']+)'/);
+      if (ms == null || ease == null) {
+        throw new Error('control release not found in pressLayer.stylex.ts');
+      }
+      return {
+        ms: Number(ms[1]),
+        points: ease[1].match(/-?\d*\.?\d+/g).map(Number),
+      };
+    }
+
+    it.each(['::before', '::after'])(
+      'releases a control (%s) with an opacity keyframe animation on the control clock and curve',
+      async pseudo => {
+        const keyframes = astryxCss.match(
+          /@keyframes ([\w-]+)\{from\{opacity:1;?\}to\{opacity:0;?\}\}/,
+        );
+        expect(keyframes).not.toBeNull();
+        const {ms, points} = await readControlConsts();
+        const fading = astryxCss
+          .split('\n')
+          .filter(
+            line =>
+              line.includes('[data-astryx-press="fading"]') &&
+              line.includes(pseudo),
+          );
+        expect(
+          fading.some(line => line.includes(`animation-name:${keyframes[1]}`)),
+        ).toBe(true);
+        const durations = fading
+          .map(line => line.match(/animation-duration:\s*([^;}]+)/))
+          .filter(Boolean)
+          .map(match => toMs(match[1]));
+        expect(durations).toContain(ms);
+        const curves = fading
+          .map(line => line.match(/animation-timing-function:\s*([^;}]+)/))
+          .filter(Boolean)
+          .map(match => match[1].match(/-?\d*\.?\d+/g).map(Number));
+        expect(curves).toContainEqual(points);
+      },
+    );
+
+    it("paints a card's press at full strength on its ::after, over the ::after's resting image", () => {
+      const weight = line => (line.match(/:not\(#\\#\)/g) ?? []).length;
+      // The card's own arm: the attribute on the card itself, not an
+      // ancestor's (the checkbox and radio layers paint the same image from
+      // an ancestor's press).
+      const on = astryxCss
+        .split('\n')
+        .filter(
+          line =>
+            line.includes('[data-astryx-press="on"]') &&
+            !/:where\([^)]*\[data-astryx-press="on"\] \*\)/.test(line) &&
+            line.includes(
+              '::after{background-image:linear-gradient(var(--color-overlay-pressed)',
+            ),
+        );
+      expect(on.length).toBeGreaterThan(0);
+      // The card's own `::after` colour rule is the one the press must win.
+      const resting = astryxCss
+        .split('\n')
+        .find(line =>
+          line.includes('::after{background-color:var(--_press-overlay)'),
+        );
+      expect(resting).toBeDefined();
+      expect(weight(on[0])).toBeGreaterThan(weight(resting));
     });
   });
 });

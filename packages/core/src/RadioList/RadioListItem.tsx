@@ -4,7 +4,8 @@
 
 /**
  * @file RadioListItem.tsx
- * @input Uses React use, useId, useRef, RadioListContext, Item
+ * @input Uses React use, useId, useRef, RadioListContext, Item, the press
+ *   release clocks (pressLayerConsts)
  * @output Exports RadioListItem component, RadioListItemProps
  * @position Core implementation; consumed by index.ts, tested by RadioList.test.tsx
  *
@@ -31,12 +32,19 @@ import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useIndicator} from '../Indicator';
 import {Item, type ItemAlign} from '../Item';
 import {themeProps} from '../utils/themeProps';
+import {pressLayerConsts} from '../utils/pressLayer.stylex';
 
-// The touch press's paint, declared by the shared overlay styles on the
-// element the controller writes to (`pressedAlpha`) at the press's strength,
-// 1 while on and 1 → 0 over the release, and inherited resolved by the layer
-// that paints it. See interactionOverlay.stylex.ts.
-const pressedOverlayImage = 'var(--_press-paint-image)';
+/** The pressed token as an image layer, at full strength. */
+const pressedImage = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
+const COARSE = '@media (pointer: coarse)';
+/** The row is a cell: the circle releases on the row's deselect clock. */
+const CELL_RELEASE = `${pressLayerConsts.cellReleaseMs}ms`;
+
+/** Opacity 1 → 0: the layer over the circle leaves; the fading arm runs it. */
+const pressRelease = stylex.keyframes({
+  from: {opacity: 1},
+  to: {opacity: 0},
+});
 
 const styles = stylex.create({
   radioWrapper: {
@@ -56,6 +64,11 @@ const styles = stylex.create({
   // reads off the same scope marker as the hover tint. The controller paints
   // the innermost pressable, so a nested link or button takes the press
   // itself and the row never carries the attribute for it.
+  //
+  // The touch press is this layer's own: the pressed token at full strength
+  // while the press is on, and a release of the layer's opacity, 1 → 0, on
+  // the row's clock (a cell's deselect). Opacity runs on the compositor, so
+  // the release keeps moving while script runs.
   indicatorPressOverlay: {
     '::after': {
       content: '""',
@@ -70,24 +83,46 @@ const styles = stylex.create({
           indicatorScope,
         )]: {
           default: colorVars['--color-overlay-pressed'],
-          '@media (pointer: coarse)': 'transparent',
+          [COARSE]: 'transparent',
         },
       },
-      // The touch press, as an image layer over the colour: an image change is
-      // discrete, so no transition can delay the onset, and the strength the
-      // row's `pressedAlpha` arms own (1 while on, 1 → 0 over the release) is
-      // what moves. Coarse pointers only, like the drop above.
+      // An image layer over the colour: an image change is discrete, so no
+      // transition can delay the onset. Coarse pointers only, like the drop
+      // above.
       backgroundImage: {
         default: null,
         [stylex.when.ancestor('[data-astryx-press="on"]', indicatorScope)]: {
           default: null,
-          '@media (pointer: coarse)': pressedOverlayImage,
+          [COARSE]: pressedImage,
         },
         [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
           {
             default: null,
-            '@media (pointer: coarse)': pressedOverlayImage,
+            [COARSE]: pressedImage,
           },
+      },
+      animationName: {
+        default: null,
+        [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
+          {
+            default: null,
+            [COARSE]: pressRelease,
+          },
+      },
+      animationDuration: {
+        default: null,
+        [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
+          CELL_RELEASE,
+      },
+      animationTimingFunction: {
+        default: null,
+        [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
+          pressLayerConsts.cellReleaseEase,
+      },
+      animationFillMode: {
+        default: null,
+        [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
+          'both',
       },
     },
   },
@@ -146,11 +181,14 @@ const rowStyles = stylex.create({
     // Suppress Item's interactive hover/press background so the resting and
     // hovered row look identical by default (a theme can restyle either).
     backgroundColor: 'transparent',
-    // ...and the touch press's overlay image, for the same reason: under a
-    // finger only the radio circle paints, as under a mouse. The press's
-    // strength still lands on the row, which is where the layer over the
-    // circle reads it.
+    // ...and the touch press's overlay image and the row's press layer
+    // (Item's compositor `::before`), for the same reason: under a finger
+    // only the radio circle paints, as under a mouse. The circle's layer
+    // paints and releases that press itself.
     backgroundImage: 'none',
+    '::before': {
+      content: 'none',
+    },
   },
 });
 

@@ -28,6 +28,7 @@ vi.mock('../EmojiPicker/emojiData', () => ({
 }));
 
 import {Popover} from '@astryxdesign/core/Popover';
+import {usePressFeedback} from '@astryxdesign/core/hooks';
 import {CommentThread, type CommentThreadProps} from './CommentThread';
 import {unsavedDraftOf} from './useCommentThreadDismissal';
 import type {
@@ -54,6 +55,15 @@ const THREAD: CommentThreadData = {
     },
   ],
 };
+
+/** Any pressable surface: mounting it installs the shared press model. */
+function PressSentinel() {
+  return (
+    <button type="button" {...usePressFeedback()}>
+      Sentinel
+    </button>
+  );
+}
 
 const originalMatches = HTMLElement.prototype.matches;
 const popoverOpenState = new WeakMap<HTMLElement, boolean>();
@@ -536,6 +546,10 @@ describe('CommentThread dismissal', () => {
   });
 
   it('adds no listeners and dismisses nothing without onDismiss', async () => {
+    // The press model's document listeners install with the first pressable
+    // on the page and stay while any is mounted; one is mounted first, so the
+    // spy sees only the thread's own.
+    render(<PressSentinel />);
     const addListener = vi.spyOn(document, 'addEventListener');
     renderThread({onDismiss: undefined});
     await settle();
