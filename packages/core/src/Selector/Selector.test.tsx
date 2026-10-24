@@ -1038,6 +1038,48 @@ describe('Selector', () => {
       expect(screen.getByRole('combobox', h)).toBeInTheDocument();
     });
 
+    it('keeps Enter selecting the highlighted option in the search row: the Search key is only its label', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          onChange={onChange}
+          hasSearch
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      const search = screen.getByRole('combobox', h);
+      expect(search).toHaveAttribute('enterkeyhint', 'search');
+      await user.type(search, 'ban');
+      await user.keyboard('{ArrowDown}');
+      fireEvent.keyDown(search, {key: 'Enter'});
+      expect(onChange).toHaveBeenCalledWith('Banana');
+    });
+
+    it('asks a touch keyboard for its Search key and no autocorrection in the search row', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      expect(screen.getByRole('combobox', h)).toHaveAttribute(
+        'enterkeyhint',
+        'search',
+      );
+      expect(screen.getByRole('combobox', h)).toHaveAttribute(
+        'autocorrect',
+        'off',
+      );
+    });
+
     // The search input's expanded state, popup relationship, and active option
     // are bound to the shared Combobox contract (Selector.combobox.a11y.test.tsx,
     // search-active); this keeps only the Selector-specific wiring.

@@ -78,6 +78,42 @@ describe('CommandPaletteInput', () => {
     expect(input).not.toHaveAttribute('aria-autocomplete');
   });
 
+  it('keeps routing Enter to the palette: the Search key is only its label', () => {
+    const onKeyDown = vi.fn();
+    render(
+      <CommandPaletteContext value={makeContext({onKeyDown})}>
+        <CommandPaletteInput />
+      </CommandPaletteContext>,
+    );
+    const input = screen.getByRole('combobox');
+    expect(input).toHaveAttribute('enterkeyhint', 'search');
+    fireEvent.keyDown(input, {key: 'Enter'});
+    expect(onKeyDown).toHaveBeenCalledWith(
+      expect.objectContaining({key: 'Enter'}),
+    );
+  });
+
+  it('asks a touch keyboard for its Search key and no autocorrection, standalone and in a palette', () => {
+    const {unmount} = render(<CommandPaletteInput />);
+    expect(screen.getByRole('searchbox')).toHaveAttribute(
+      'enterkeyhint',
+      'search',
+    );
+    expect(screen.getByRole('searchbox')).toHaveAttribute('autocorrect', 'off');
+    unmount();
+
+    render(
+      <CommandPaletteContext value={makeContext()}>
+        <CommandPaletteInput />
+      </CommandPaletteContext>,
+    );
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'enterkeyhint',
+      'search',
+    );
+    expect(screen.getByRole('combobox')).toHaveAttribute('autocorrect', 'off');
+  });
+
   it('preserves standalone caller-owned popup semantics', () => {
     render(
       <CommandPaletteInput
