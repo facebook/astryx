@@ -23,8 +23,11 @@
  * - Only the thumb takes a finger: each thumb carries an invisible square
  *   touch target (`slider.thumbHitTarget`) holding a PressTracker (UIControl's
  *   tracking: touch-down, inside / outside, up, cancel) and a pan recognizer
- *   along the travel. The track ignores touches, so the page scrolls from it
- *   and a tap on it does nothing.
+ *   along the travel. A swipe from the track scrolls the page. A tap on the
+ *   track or a mark (lifted before the pan's 10 px) sets the value on its lift
+ *   and springs the thumb there: UISlider ignores the tap, but a drag must not
+ *   be the only pointer way to set the value (WCAG 2.2 SC 2.5.7,
+ *   spec:AST-020 FR9).
  * - Touch-down lifts the thumb (`slider.liftScale` on `slider.liftSpring`),
  *   after the scroller's content delay inside one, and paints it pressed.
  * - The pan begins after its hysteresis (10 px along the travel); a drag
@@ -77,6 +80,7 @@ import {
   type ControlEvent,
 } from '../gestures/PressTracker';
 import {SwipeGestureRecognizer} from '../gestures/SwipeGestureRecognizer';
+import {TapGestureRecognizer} from '../gestures/TapGestureRecognizer';
 import type {PointerKind} from '../gestures/types';
 import {isRtlElement} from '../hooks/isRtlElement';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
@@ -141,6 +145,13 @@ export interface SliderTouchModel {
   commit(index: number, value: number | null): void;
   /** `onChangeEnd`, with the values the owner rendered (FR5). */
   reportEnd(): void;
+  /**
+   * The value a press at client point (`x`, `y`) on the track means: a
+   * mark's value on a mark, else the point along the travel.
+   */
+  valueAt(x: number, y: number): number;
+  /** The thumb a track press at `value` moves. */
+  thumbFor(value: number): number;
 }
 
 /** The travel's geometry, read once when a finger lands. */
@@ -237,6 +248,8 @@ export class SliderTouchController {
   private readonly animators = new Map<HTMLElement, Animator>();
   /** Thumbs whose current touch is a mouse: Slider's own handlers take it. */
   private readonly mouseOwners = new Set<number>();
+  /** The track's tap (see handleTrackTap); null while detached. */
+  private trackTap: TapGestureRecognizer | null = null;
 
   constructor(
     model: SliderTouchModel,
@@ -288,6 +301,28 @@ export class SliderTouchController {
         removeListener,
         () => tracker.dispose(),
       );
+    });
+    // A tap on the track (or a mark) sets the value when it lifts, so a drag
+    // is not the only pointer way to operate the slider (WCAG 2.2 SC 2.5.7,
+    // spec:AST-020 FR9). UISlider ignores track taps; this departs from it.
+    // A touch that moves past the tap's allowance, or that the page takes to
+    // scroll, is no tap.
+    const tap = new TapGestureRecognizer({
+      name: 'slider-track-tap',
+      allowedPointerTypes: ['touch', 'pen'],
+      cancelsTouchesInView: false,
+      // A touch that travels as far as a thumb's pan needs to begin is a
+      // swipe, not a tap (UITapGestureRecognizer would allow 45 pt).
+      allowableMovement: UIKIT_GESTURES.pan.hysteresis.value,
+    });
+    this.trackTap = tap;
+    const removeTapListener = tap.addListener(current => {
+      if (current.state === 'ended') {
+        this.handleTrackTap(current);
+      }
+    });
+    detachers.push(host.attach(parts.control, tap), removeTapListener, () => {
+      this.trackTap = null;
     });
     return () => {
       // Interactions end silently first, so the cancel the recognizers send
@@ -463,6 +498,10 @@ export class SliderTouchController {
 
   /** UISlider's veto: an ancestor's pan or swipe along the travel. */
   private vetoes(recognizer: GestureRecognizer): boolean {
+    // A touch on a thumb is the thumb's: a tap there changes nothing.
+    if (recognizer === this.trackTap) {
+      return true;
+    }
     const horizontal = this.model.isHorizontal;
     if (recognizer instanceof SwipeGestureRecognizer) {
       return recognizer.directions.some(direction =>
@@ -602,9 +641,62 @@ export class SliderTouchController {
     const pxPerValue = range > 0 ? geometry.travel / range : 0;
     const valueVelocity =
       (velocity / geometry.length) * range * UIKIT_SLIDER.trackingGain;
+    this.coastTo(interaction, target, valueVelocity * pxPerValue);
+  }
+
+  /**
+   * A tap on the track: the thumb the tap's value picks springs there (the
+   * release spring, from rest), reporting as a coast does, and
+   * `onChangeEnd` follows. A tap on the thumb's own value changes nothing.
+   */
+  private handleTrackTap(tap: TapGestureRecognizer): void {
+    const parts = this.getParts();
+    if (parts == null || this.model.isDisabled || this.interactions.size > 0) {
+      return;
+    }
+    const {x, y} = tap.location();
+    const raw = this.model.valueAt(x, y);
+    const index = this.model.thumbFor(raw);
+    const target = this.model.constrain(index, raw);
+    const value = this.model.values()[index] ?? this.model.min;
+    if (target === value) {
+      return;
+    }
+    const interaction: Interaction = {
+      owner: index,
+      index,
+      geometry: this.measure(parts),
+      startValue: null,
+      beganSign: 1,
+      value,
+      isInside: true,
+      atEnd: this.endOf(value),
+      changed: false,
+      coast: null,
+      released: true,
+    };
+    this.interactions.set(index, interaction);
+    this.coastTo(interaction, target, 0);
+  }
+
+  /**
+   * Springs the interaction's thumb from its value to `target`, starting at
+   * `velocityPx` (px/s along the travel), on the compositor and clamped:
+   * `onChange` follows from the coast's fourth frame and the interaction
+   * ends (`onChangeEnd`) on its last.
+   */
+  private coastTo(
+    interaction: Interaction,
+    target: number,
+    velocityPx: number,
+  ): void {
+    const {geometry, index} = interaction;
+    const {min, max} = this.model;
+    const range = max - min;
+    const pxPerValue = range > 0 ? geometry.travel / range : 0;
+    const from = interaction.value;
     const fromPx = (from - min) * pxPerValue;
     const toPx = (target - min) * pxPerValue;
-    const velocityPx = valueVelocity * pxPerValue;
     const [lowerValue, upperValue] = this.model.bounds(index);
     const curve = sliderCoastCurve({
       from: fromPx,

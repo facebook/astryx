@@ -6,7 +6,8 @@
  *   scrolling list"), real touch input (Chromium CDP / WebKit's input
  *   command) and the interaction harness
  * @output Interaction and animation proofs for Slider's touch presentation
- *   (UISlider's tracking): a tap on the track does nothing, the thumb's
+ *   (UISlider's tracking): a tap on the track sets the value on its lift
+ *   (the thumb springs there; WCAG 2.5.7, a departure from UISlider), the thumb's
  *   48 px touch target takes a finger beside it and the thumb lifts 1.55×;
  *   the value follows the finger's travel past the 10 px threshold over the
  *   track's length; past an end the value waits for the finger to come back;
@@ -280,7 +281,7 @@ function trackedValue(
   return start + (Math.sign(travel) * translation * range) / length;
 }
 
-test('a tap on the track does nothing; the thumb takes a finger through a target larger than it', async ({
+test('a tap on the track sets the value when it lifts and the thumb springs there; the thumb takes a finger through a target larger than it', async ({
   page,
 }) => {
   const {driver, thumb, center, value, length} = await openSlider(
@@ -292,12 +293,8 @@ test('a tap on the track does nothing; the thumb takes a finger through a target
   const hit = await thumb.locator('[data-slider-hit]').boundingBox();
   expect(hit?.width).toBeCloseTo(UISLIDER.hitTarget, 0);
   expect(hit?.height).toBeCloseTo(UISLIDER.hitTarget, 0);
-  // Far on the track: nothing, as UISlider.
-  await driver.play(tap({x: at.x + length * 0.3, y: at.y}));
-  await frames(page, 4);
-  expect(await value()).toBe(start);
   // 20 px beside the thumb's center, inside its 48 px touch target: the
-  // thumb takes the finger and lifts.
+  // thumb takes the finger and lifts, and a tap there changes nothing.
   const beside = {x: at.x + 20, y: at.y};
   const [scale] = await playReading(
     page,
@@ -312,6 +309,38 @@ test('a tap on the track does nothing; the thumb takes a finger through a target
   expect(Number(scale)).toBeCloseTo(UISLIDER.liftScale, 2);
   await frames(page, 4);
   expect(await value()).toBe(start);
+  // Far on the track: nothing while the finger is down; on the lift the
+  // value is the tap's and the thumb springs there (WCAG 2.5.7: a drag is
+  // not the only pointer way; UISlider itself ignores the tap).
+  const far = {x: at.x + length * 0.3, y: at.y};
+  const [held] = await playReading(
+    page,
+    driver,
+    tap(far, {holdMs: 300}),
+    [0],
+    async () => {
+      await page.waitForTimeout(150);
+      return value();
+    },
+  );
+  expect(held).toBe(start);
+  const box = await thumb
+    .locator('xpath=ancestor::*[contains(@class, "astryx-slider-control")][1]')
+    .boundingBox();
+  if (box == null) {
+    throw new Error('no control');
+  }
+  const expected = Math.round(
+    ((far.x - box.x - THUMB / 2) / (box.width - THUMB)) * 100,
+  );
+  // Mid-spring the thumb is on its way (a compositor animation), not there.
+  await page.waitForTimeout(60);
+  expect(
+    await thumb.evaluate(element => element.getAnimations().length),
+  ).toBeGreaterThan(0);
+  await waitForRest(thumb);
+  await frames(page, 4);
+  expect(await value()).toBe(expected);
 });
 
 test('the value follows the pan’s travel over the track length, past the 10 px hysteresis', async ({

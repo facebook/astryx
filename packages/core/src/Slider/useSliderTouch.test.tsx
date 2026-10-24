@@ -482,6 +482,55 @@ describe('Slider touch presentation (UISlider tracking)', () => {
     expect(onChangeEnd).toHaveBeenCalledTimes(1);
   });
 
+  it('sets the value from a tap on the track when the finger lifts, the thumb springing there (WCAG 2.5.7)', async () => {
+    stubMatchMedia(true);
+    stubControlGeometry();
+    const onChange = vi.fn();
+    const onChangeEnd = vi.fn();
+    render(
+      <Controlled initial={50} onChange={onChange} onChangeEnd={onChangeEnd} />,
+    );
+    const control = document.querySelector(
+      '.astryx-slider-control',
+    ) as HTMLElement;
+    const start = nextStart();
+    touch('touchstart', control, {id: 1, x: 250, y: 12}, start);
+    // Nothing moves while the finger is down: a tap sets the value on lift.
+    expect(onChange).not.toHaveBeenCalled();
+    touch('touchend', control, {id: 1, x: 250, y: 12}, start + 80);
+    // Frame by frame, as a browser renders the owner between frames.
+    for (let frame = 0; frame < 100; frame++) {
+      await act(async () => {
+        vi.advanceTimersByTime(16);
+      });
+    }
+    // (250 - 10) / (300 - 20) of the range.
+    expect(onChange).toHaveBeenLastCalledWith(86);
+    expect(onChangeEnd).toHaveBeenCalledTimes(1);
+    expect(onChangeEnd).toHaveBeenCalledWith(86);
+    expect(screen.getByRole('slider')).toHaveAttribute('aria-valuenow', '86');
+  });
+
+  it('sets nothing from a touch on the track that moves away before lifting (a swipe)', async () => {
+    stubMatchMedia(true);
+    stubControlGeometry();
+    const onChange = vi.fn();
+    render(<Controlled initial={50} onChange={onChange} />);
+    const control = document.querySelector(
+      '.astryx-slider-control',
+    ) as HTMLElement;
+    const start = nextStart();
+    // Past the pan's 10 px threshold, the touch is no tap (in a browser the
+    // page takes it to scroll).
+    touch('touchstart', control, {id: 1, x: 250, y: 12}, start);
+    touch('touchmove', control, {id: 1, x: 250, y: 26}, start + 40);
+    touch('touchend', control, {id: 1, x: 250, y: 26}, start + 80);
+    await act(async () => {
+      vi.advanceTimersByTime(1500);
+    });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it('takes a pen on a thumb as it takes a finger, and ignores a pen on the track', () => {
     stubMatchMedia(true);
     stubControlGeometry();

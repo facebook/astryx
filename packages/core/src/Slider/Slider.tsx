@@ -994,8 +994,9 @@ export function Slider({ref, ...props}: SliderProps) {
       if (isDisabled) {
         return;
       }
-      // A finger or a pen under the touch presentation belongs to the thumbs'
-      // touch targets; the track ignores it, as UISlider's does.
+      // A finger or a pen under the touch presentation belongs to the
+      // touch presentation: the thumbs' touch targets take a drag, and a tap
+      // on the track sets the value when it lifts (useSliderTouch).
       if (isTouchPresentation && e.pointerType !== 'mouse') {
         return;
       }
@@ -1140,6 +1141,18 @@ export function Slider({ref, ...props}: SliderProps) {
       });
     },
     reportEnd: () => fireChangeEnd(),
+    // A tap on the track (useSliderTouch's track tap): a mark's value on a
+    // mark, else the point along the travel, and the thumb a track press
+    // moves.
+    valueAt: (x, y) => {
+      const mark = trackRef.current?.ownerDocument
+        .elementFromPoint?.(x, y)
+        ?.closest<HTMLElement>('[data-mark-value]');
+      return mark != null
+        ? Number(mark.dataset.markValue)
+        : getValueFromPosition(x, y);
+    },
+    thumbFor: value => getClosestThumb(value),
   };
   useSliderTouch({
     isEnabled: hasTouchTargets,

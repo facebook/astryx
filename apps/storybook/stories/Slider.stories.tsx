@@ -313,7 +313,7 @@ export const TouchTracking: Story = {
     docs: {
       description: {
         story:
-          'On iOS only the thumb takes a finger, through a touch target larger than it; a tap on the track does nothing and a swipe from it scrolls the page. The value follows the finger’s travel past a 10 px start threshold, so the thumb never jumps to the finger, and a release coasts on before `onChangeEnd` reports the value.',
+          'On iOS only the thumb takes a drag, through a touch target larger than it; a swipe from the track scrolls the page, and a tap on the track sets the value when the finger lifts. The value follows the finger’s travel past a 10 px start threshold, so the thumb never jumps to the finger, and a release coasts on before `onChangeEnd` reports the value.',
       },
     },
   },
