@@ -242,12 +242,23 @@ extension EnvironmentValues {
   public var astryx: AstryxStyle {
     let theme = astryxTheme
     return AstryxStyle(
-      tokens: colorScheme == .dark ? theme.dark : theme.light,
+      tokens: astryxTokens(theme, scheme: colorScheme, contrast: colorSchemeContrast),
       textScale: astryxTextScale(for: dynamicTypeSize),
       icons: theme.icons,
       isBoldText: legibilityWeight == .bold
     )
   }
+}
+
+/// A theme's tokens for a color scheme and contrast. With Increase Contrast
+/// on, borders and separators use the emphasized border color, since core has
+/// no contrast mode (theme generator spec, D4).
+func astryxTokens(_ theme: Theme, scheme: ColorScheme, contrast: ColorSchemeContrast) -> Tokens {
+  var tokens = scheme == .dark ? theme.dark : theme.light
+  if contrast == .increased {
+    tokens.color.border = tokens.color.borderEmphasized
+  }
+  return tokens
 }
 
 extension View {
