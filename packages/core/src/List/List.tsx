@@ -18,7 +18,7 @@
  * - /packages/cli/assets/templates/blocks/components/List/ (showcase blocks)
  */
 
-import {useId, useMemo, type ReactNode} from 'react';
+import {useId, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
@@ -29,6 +29,8 @@ import {
   type ListMarkerStyle,
 } from './ListContext';
 import {mergeProps} from '../utils';
+import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useListUpdateMotion} from '../utils/useListUpdateMotion';
 import {themeProps} from '../utils/themeProps';
 import {useDevWarning} from '../hooks/useDevWarning';
 
@@ -60,6 +62,25 @@ export interface ListProps extends BaseProps<
    * @default 'balanced'
    */
   density?: ListDensity;
+
+  /**
+   * On a touch screen, animate the list's changes the way an iOS table does:
+   * when rows are inserted, removed or reordered, the rows that stay slide
+   * from where they were to where they are and new rows fade in, on UIKit's
+   * table update spring. A row swiped away with a removal action leaves only
+   * its gap to close. Off by default; with a mouse nothing moves.
+   * @default false
+   */
+  hasAnimatedChanges?: boolean;
+
+  /**
+   * With `hasAnimatedChanges`, page content below the list moves with its
+   * rows (a transient `translate`, cleared at rest) instead of jumping when
+   * the list changes height. `'stays'` keeps it still, for apps that manage
+   * that area themselves.
+   * @default 'moves'
+   */
+  followingContent?: 'moves' | 'stays';
 
   /**
    * Whether to show dividers between list items. A touch press hides the
@@ -214,6 +235,8 @@ const dynamicStyles = stylex.create({
  */
 export function List({
   children,
+  hasAnimatedChanges = false,
+  followingContent = 'moves',
   density = 'balanced',
   hasDividers = false,
   edge: edgeProp,
@@ -229,6 +252,12 @@ export function List({
   ...props
 }: ListProps) {
   const headerId = useId();
+  const listRef = useRef<HTMLUListElement & HTMLOListElement>(null);
+  useListUpdateMotion(listRef, hasAnimatedChanges, followingContent);
+  const mergedRef = useMergedRefs(
+    listRef,
+    ref as React.Ref<HTMLUListElement & HTMLOListElement>,
+  );
   const isOrdered = listStyle === 'decimal';
   const Tag = isOrdered ? 'ol' : 'ul';
   // Plain use of the deprecated prop is reported by its @deprecated type;
@@ -250,7 +279,7 @@ export function List({
 
   const listElement = (
     <Tag
-      ref={ref as React.Ref<HTMLUListElement & HTMLOListElement>}
+      ref={mergedRef}
       // Consumer props first: everything the component sets for itself below
       // is part of its contract and wins on conflict.
       {...props}

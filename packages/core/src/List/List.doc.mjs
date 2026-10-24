@@ -42,6 +42,18 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'hasAnimatedChanges',
+      type: 'boolean',
+      description: 'On a touch screen, animate changes to the rows the way an iOS table does: when rows are inserted, removed or reordered, the rows that stay slide to their new places and new rows fade in. Rows need stable keys. With a mouse nothing moves.',
+      default: 'false',
+    },
+    {
+      name: 'followingContent',
+      type: "'moves' | 'stays'",
+      description: "With hasAnimatedChanges, page content below the list moves with its rows (a transient translate, cleared at rest) instead of jumping when the list changes height. Use 'stays' to keep it still when the app manages that area itself.",
+      default: "'moves'",
+    },
+    {
       name: 'edge',
       type: "'padded' | 'flush' | 'outset' | 'bleed'",
       description:
