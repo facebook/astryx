@@ -209,7 +209,10 @@ export interface WheelOption {
   value: number;
   /** Row text. */
   label: string;
-  /** Rows outside min/max stay visible but cannot be committed. */
+  /**
+   * Rows outside min/max stay visible but cannot be committed: a wheel that
+   * stops on one travels on to the nearest enabled row.
+   */
   isDisabled?: boolean;
 }
 
@@ -227,6 +230,46 @@ export interface WheelProps {
    * scroller are meaningless, so listeners and the initial scroll wait.
    */
   isActive?: boolean;
+}
+
+/**
+ * The enabled row nearest `index`: `index` itself when it is enabled,
+ * otherwise the closest enabled row on either side. A tie goes to the side of
+ * `towardIndex` (the committed row), and a wheel with no enabled row stays on
+ * `towardIndex`.
+ *
+ * @example
+ * ```
+ * // Hours 0-23 with 09:00-17:00 bounds: stopping on 7 rests on 9.
+ * nearestEnabledIndex(hourOptions, 7, 10); // 9
+ * ```
+ */
+export function nearestEnabledIndex(
+  options: ReadonlyArray<WheelOption>,
+  index: number,
+  towardIndex: number,
+): number {
+  const isEnabled = (i: number) =>
+    i >= 0 && i < options.length && !options[i].isDisabled;
+  if (isEnabled(index)) {
+    return index;
+  }
+  for (let distance = 1; distance < options.length; distance++) {
+    const below = index - distance;
+    const above = index + distance;
+    const isBelowEnabled = isEnabled(below);
+    const isAboveEnabled = isEnabled(above);
+    if (isBelowEnabled && isAboveEnabled) {
+      return towardIndex < index ? below : above;
+    }
+    if (isBelowEnabled) {
+      return below;
+    }
+    if (isAboveEnabled) {
+      return above;
+    }
+  }
+  return towardIndex;
 }
 
 /**
@@ -280,8 +323,9 @@ export function Wheel({
     [itemBlockSize],
   );
 
-  // Commit on rest. A disabled row is bounced back to the committed one
-  // rather than silently keeping a value the wheel is not showing.
+  // Commit on rest. A wheel that stopped on a disabled row (one outside the
+  // bounds) travels on to the nearest enabled row, as UIDatePicker does, and
+  // that second rest commits it.
   //
   // Declared here, above the park effect, because that effect consults the
   // `isAtRestRef` this returns before it repositions anything.
@@ -296,12 +340,13 @@ export function Wheel({
         options.length - 1,
         Math.max(0, Math.round(scroller.scrollTop / size)),
       );
-      const option = options[index];
-      if (option == null || option.isDisabled) {
-        scrollToIndex(selectedIndex, 'smooth');
+      const restIndex = nearestEnabledIndex(options, index, selectedIndex);
+      if (restIndex !== index) {
+        scrollToIndex(restIndex, 'smooth');
         return;
       }
-      if (option.value !== value) {
+      const option = options[index];
+      if (option != null && !option.isDisabled && option.value !== value) {
         onChange(option.value);
       }
     },
