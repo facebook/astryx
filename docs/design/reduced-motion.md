@@ -75,11 +75,12 @@ trackpad, or keyboard the change is immediate.
   DR1–DR3.
 
 Content that moves with the person's own pointer or finger during a drag
-follows it as direct manipulation and is not a DR1 transition; a transition a
-component starts after release, such as a swiped row sliding out or returning
-(`spec:AST-057` FR5) or one sheet handing off to another
-(`component:BottomSheetSwitcher` FR3), follows DR2 on a coarse primary pointer
-and DR3 otherwise.
+follows it as direct manipulation and is not a DR1 transition. A transition a
+component starts when a touch drag is released, such as a swiped row sliding
+out or returning (`spec:AST-057` FR5), cross-fades as DR2 says, because a
+finger started it. Any other transition, such as one sheet handing off to
+another (`component:BottomSheetSwitcher` FR3), follows DR2 on a coarse primary
+pointer and DR3 otherwise.
 
 ## Accessibility intent
 

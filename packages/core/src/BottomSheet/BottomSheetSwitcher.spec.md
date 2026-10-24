@@ -44,7 +44,9 @@ modality, identifier, and theming questions below stay open.
 
 - Released default preserved: `yes`
 - Compatibility class: nonbreaking; public props, defaults, exports, visual
-  output, and transition behavior stay unchanged. The element the `ref` resolves
+  output, and transition behavior stay unchanged, except that under reduced
+  motion a handoff follows `design:reduced-motion` (FR3), a visual-only motion
+  change under `spec:AST-017` FR3. The element the `ref` resolves
   to, and that it changes on a handoff, is implementation rather than public
   contract (DEC-2)
 - Controlled/uncontrolled behavior: `activeSheet` remains fully controlled
