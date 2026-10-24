@@ -4,7 +4,7 @@
  * @file menuPressGesture.ts
  * @input A menu press gesture and one pointer event, both as plain data
  * @output Exports the pure `menuPressStep` state machine, its state, event and
- *   effect types, and the settle constant
+ *   effect types, the settle constant and the finger's scrub handoff
  * @position Pure module under `useMenuPress`; no DOM, no React, so every
  *   transition is unit-testable without a browser
  *
@@ -15,16 +15,26 @@
  * States:
  * - `idle` — no gesture is live.
  * - `triggerPress` — a finger rests on the trigger; the menu is not open yet.
- *   A mouse skips this state: a mouse press on the trigger opens at once.
- * - `open` — the menu opened under a held pointer (a mouse press, or a finger
- *   held for the long-press delay) and the pointer has not entered it yet.
+ *   A mouse skips this state: a mouse press on the trigger opens at once. So
+ *   does a finger on a trigger whose press carries `touchOpen: 'press'`.
+ * - `open` — the menu opened under a held pointer (a mouse press, a finger's
+ *   press on a `touchOpen: 'press'` trigger, or a finger held on the trigger
+ *   for the hold-open delay) and the pointer is not picking yet. A finger's
+ *   press-open is tentative: the browser has not yet decided whether the
+ *   finger is scrolling, and if it takes the gesture before the pointer
+ *   enters the menu, the open is withdrawn.
  * - `tracking` — the pointer is held and the highlight follows it.
  *
- * The settle rule: the release of the gesture that OPENED the menu acts only
- * once the pointer has entered the menu or the press has lasted
- * `MENU_PRESS_SETTLE_MS`; otherwise it acts on nothing and the menu stays
- * open. Without it a menu that opens under the pointer would pick a row
- * nobody chose.
+ * When the opening press may pick, by pointer:
+ * - A finger (or a pen): UIMenu's handoff. The still-held finger has to
+ *   travel `MENU_PRESS_HANDOFF_PX` from the first sample the menu sees
+ *   before it picks; until then nothing is highlighted and its lift acts on
+ *   nothing. So the press that opened a menu never picks the row that
+ *   appeared under it, however long it rests (UIKit counts distance, not
+ *   time). A host that reports no positions keeps the settle rule below.
+ * - A mouse: the settle rule. Its release acts only once it has entered the
+ *   menu or the press has lasted `MENU_PRESS_SETTLE_MS`, as a macOS pop-up
+ *   button's does; otherwise it acts on nothing and the menu stays open.
  *
  * Rows are opaque (`T`): the machine never touches the DOM. The hook resolves
  * the enabled row under the pointer and feeds it in; `null` means the pointer
@@ -35,8 +45,16 @@
  * - /packages/core/src/hooks/useMenuPress.ts
  */
 
-/** How long the opening press must last before its release may act. */
+import {menu} from '../motion/uikit/menu';
+
+/** How long a MOUSE's opening press must last before its release may act. */
 export const MENU_PRESS_SETTLE_MS = 300;
+
+/**
+ * How far a finger that opened the menu travels, from the first sample the
+ * menu sees, before it starts picking (UIMenu's scrub handoff).
+ */
+export const MENU_PRESS_HANDOFF_PX: number = menu.scrubHandoffPx;
 
 export type MenuPressPointerType = 'mouse' | 'touch' | 'pen';
 
@@ -51,6 +69,17 @@ export type MenuPressGesture<T> =
       phase: 'open';
       pointerType: MenuPressPointerType;
       openedAt: number;
+      /**
+       * A finger's press opened the menu before the browser decided whether
+       * the finger is scrolling. A cancel before the pointer enters the menu
+       * withdraws the open.
+       */
+      isTentative?: boolean;
+      /**
+       * A finger's handoff: the first position the menu saw after it opened,
+       * which the scrub distance is counted from. Unset until that sample.
+       */
+      handoffFrom?: {x: number; y: number};
     }
   | {
       phase: 'tracking';
@@ -59,6 +88,11 @@ export type MenuPressGesture<T> =
       origin: 'trigger' | 'menu';
       /** The enabled row currently under the pointer, if any. */
       row: T | null;
+      /**
+       * A tentative finger open whose handoff completed before the finger
+       * reached the menu: a cancel still withdraws the open until it does.
+       */
+      isTentative?: boolean;
     };
 
 export type MenuPressEvent<T> =
@@ -69,23 +103,44 @@ export type MenuPressEvent<T> =
       /** The enabled row under the press when it lands inside the menu. */
       row: T | null;
       time: number;
+      /**
+       * How a finger's press on the trigger opens the menu: `'tap'` waits for
+       * the tap's click or the long-press delay, `'press'` opens at once as a
+       * mouse press does. A mouse always opens on the press.
+       * @default 'tap'
+       */
+      touchOpen?: 'tap' | 'press';
     }
   /** The menu opened while the trigger press is still held. */
   | {type: 'opened'; time: number}
-  | {type: 'move'; row: T | null; isInMenu: boolean; time: number}
+  | {
+      type: 'move';
+      row: T | null;
+      isInMenu: boolean;
+      time: number;
+      /** Viewport position, for a finger's handoff distance. */
+      x?: number;
+      y?: number;
+    }
   | {
       type: 'up';
       row: T | null;
       isInMenu: boolean;
       isOnTrigger: boolean;
       time: number;
+      /** Viewport position, for a finger's handoff distance. */
+      x?: number;
+      y?: number;
     }
   /** The browser took the gesture: pointercancel, a second pointer, a scroll. */
   | {type: 'cancel'};
 
 export type MenuPressEffect<T> =
   | {type: 'none'}
-  /** A mouse pressed the trigger: open the menu now, under the held pointer. */
+  /**
+   * A mouse pressed the trigger, or a finger did with `touchOpen: 'press'`:
+   * open the menu now, under the held pointer.
+   */
   | {type: 'open'}
   | {type: 'highlight'; row: T}
   | {type: 'clear'}
@@ -93,9 +148,10 @@ export type MenuPressEffect<T> =
   /**
    * The gesture ended without a row acting. `stray` says whether the browser
    * will still report a `click` for this gesture that must not act; `dismiss`
-   * says the menu should close (a mouse released outside it).
+   * says the menu should close (a mouse released outside it); `clear` says a
+   * row was still lit and its highlight goes (the browser took the press).
    */
-  | {type: 'settle'; stray: boolean; dismiss: boolean};
+  | {type: 'settle'; stray: boolean; dismiss: boolean; clear?: true};
 
 export interface MenuPressStep<T> {
   gesture: MenuPressGesture<T>;
@@ -112,6 +168,30 @@ function idle<T>(effect: MenuPressEffect<T>): MenuPressStep<T> {
 
 function highlightEffect<T>(row: T | null): MenuPressEffect<T> {
   return row == null ? {type: 'clear'} : {type: 'highlight', row};
+}
+
+/** A finger or a pen: UIKit's touch rules apply. */
+function isFinger(pointerType: MenuPressPointerType): boolean {
+  return pointerType !== 'mouse';
+}
+
+function hasPosition(event: {
+  x?: number;
+  y?: number;
+}): event is {x: number; y: number} {
+  return event.x != null && event.y != null;
+}
+
+/**
+ * Whether a finger has travelled the handoff distance from `from`: a
+ * straight-line distance, as UIMenu measures it (a diagonal 7 pt each way
+ * does not hand off, 9 pt each way does).
+ */
+function hasPassedHandoff(
+  from: {x: number; y: number},
+  to: {x: number; y: number},
+): boolean {
+  return Math.hypot(to.x - from.x, to.y - from.y) >= MENU_PRESS_HANDOFF_PX;
 }
 
 /**
@@ -180,6 +260,21 @@ function stepIdle<T>(
       effect: {type: 'open'},
     };
   }
+  if (event.touchOpen === 'press') {
+    // The trigger asked for the press itself to open the menu, as a mouse's
+    // does. The browser has not yet decided whether this finger is
+    // scrolling, so the open stays tentative until the pointer enters the
+    // menu.
+    return {
+      gesture: {
+        phase: 'open',
+        pointerType: event.pointerType,
+        openedAt: event.time,
+        isTentative: true,
+      },
+      effect: {type: 'open'},
+    };
+  }
   return {
     gesture: {
       phase: 'triggerPress',
@@ -225,7 +320,33 @@ function stepOpen<T>(
   event: MenuPressEvent<T>,
 ): MenuPressStep<T> {
   switch (event.type) {
-    case 'move':
+    case 'move': {
+      if (isFinger(gesture.pointerType) && hasPosition(event)) {
+        // UIMenu's handoff: the first sample after the open is where the
+        // distance counts from; the finger picks once it is that far away.
+        const from = gesture.handoffFrom;
+        if (from == null) {
+          return {
+            gesture: {...gesture, handoffFrom: {x: event.x, y: event.y}},
+            effect: NONE,
+          };
+        }
+        if (!hasPassedHandoff(from, event)) {
+          return {gesture, effect: NONE};
+        }
+        return {
+          gesture: {
+            phase: 'tracking',
+            pointerType: gesture.pointerType,
+            origin: 'trigger',
+            row: event.row,
+            ...(gesture.isTentative === true && !event.isInMenu
+              ? {isTentative: true}
+              : null),
+          },
+          effect: highlightEffect(event.row),
+        };
+      }
       if (!event.isInMenu) {
         return {gesture, effect: NONE};
       }
@@ -238,7 +359,14 @@ function stepOpen<T>(
         },
         effect: highlightEffect(event.row),
       };
+    }
     case 'up': {
+      if (isFinger(gesture.pointerType) && hasPosition(event)) {
+        // The finger never travelled the handoff distance: whatever row is
+        // under it now appeared under a press nobody moved, so nothing acts,
+        // the menu stays, and the trigger's click for this press is spent.
+        return idle({type: 'settle', stray: true, dismiss: false});
+      }
       const hasSettled = event.time - gesture.openedAt >= MENU_PRESS_SETTLE_MS;
       if (!hasSettled) {
         // The pointer never entered the menu and the press was short: the
@@ -250,8 +378,15 @@ function stepOpen<T>(
     }
     case 'cancel':
       // As above: the gesture ends, so its document listeners come off. The
-      // menu stays open — a cancelled pointer did not ask to close it.
-      return idle({type: 'settle', stray: false, dismiss: false});
+      // menu stays open — a cancelled pointer did not ask to close it —
+      // unless a finger's press opened it tentatively: then the browser took
+      // that press for a scroll or a pinch before it reached the menu, and
+      // the open is withdrawn.
+      return idle({
+        type: 'settle',
+        stray: false,
+        dismiss: gesture.isTentative === true,
+      });
     case 'down':
     case 'opened':
       return {gesture, effect: NONE};
@@ -264,20 +399,34 @@ function stepTracking<T>(
 ): MenuPressStep<T> {
   switch (event.type) {
     case 'move': {
-      if (event.row === gesture.row) {
+      const reachedMenu = gesture.isTentative === true && event.isInMenu;
+      if (event.row === gesture.row && !reachedMenu) {
         return {gesture, effect: NONE};
       }
+      const {isTentative: _wasTentative, ...rest} = gesture;
       return {
-        gesture: {...gesture, row: event.row},
-        effect: highlightEffect(event.row),
+        gesture: {
+          ...(reachedMenu ? rest : gesture),
+          row: event.row,
+        },
+        effect: event.row === gesture.row ? NONE : highlightEffect(event.row),
       };
     }
     case 'up':
       return release(gesture.pointerType, event);
     case 'cancel':
       // The browser took the gesture (a scroll, a second finger): nothing
-      // acts, the menu stays, and no click follows a cancelled pointer.
-      return idle({type: 'settle', stray: false, dismiss: false});
+      // acts, the menu stays, and no click follows a cancelled pointer —
+      // unless a tentative finger open has not reached the menu yet: the
+      // browser took that press for a scroll, and the open is withdrawn. The
+      // row the press lit loses its highlight, as UIKit clears it when the
+      // list starts scrolling.
+      return idle({
+        type: 'settle',
+        stray: false,
+        dismiss: gesture.isTentative === true,
+        ...(gesture.row != null ? {clear: true as const} : {}),
+      });
     case 'down':
     case 'opened':
       return {gesture, effect: NONE};
