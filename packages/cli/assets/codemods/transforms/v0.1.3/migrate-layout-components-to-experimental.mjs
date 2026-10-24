@@ -28,10 +28,12 @@
  *     - object `{ from, description?, default? }` → carried over UNCHANGED
  *       (from/description/default preserved, key order preserved).
  *
- * The transform recognizes the config default export as EITHER a bare object
- * literal (`export default { ... }`) or a `createConfig({ ... })` call wrapping
- * an object literal (`export default createConfig({ ... })`). Anything else is
- * not statically analyzable and the transform THROWS with a clear
+ * The transform recognizes the config default export as a bare object literal
+ * (`export default { ... }`), a `createConfig({ ... })` call wrapping an object
+ * literal (`export default createConfig({ ... })`), or an identifier bound by a
+ * top-level `const` to either form (`const config = { ... }; export default
+ * config;`, the shape generated configs use). Anything else is not statically
+ * analyzable and the transform THROWS with a clear
  * migrate-manually message (the unified config-codemod contract has no
  * structured-error return — `runConfigCodemod` surfaces a thrown `err.message`
  * as `{file, codemod, error}`).
@@ -76,10 +78,16 @@ export default function transformer(file, api) {
 
   const declaration = defaultExports.paths()[0].node.declaration;
 
-  // Resolve the config object literal from either form:
+  // Resolve the config object literal from any supported form:
   //   export default { ... }
   //   export default createConfig({ ... })
-  const configObject = resolveConfigObject(j, declaration);
+  //   const config = { ... } | createConfig({ ... }); export default config;
+  const configObject = resolveConfigObject(
+    j,
+    j.Identifier.check(declaration)
+      ? findTopLevelConstInit(j, root, declaration.name)
+      : declaration,
+  );
   if (!configObject) {
     throw new Error(
       `could not statically analyze astryx config; ${MANUAL}`,
@@ -175,6 +183,36 @@ function resolveConfigObject(/** @type {any} */ j, /** @type {any} */ declaratio
     j.ObjectExpression.check(declaration.arguments[0])
   ) {
     return declaration.arguments[0];
+  }
+  return null;
+}
+
+/**
+ * Find the initializer of a top-level `const <name> = <init>` declaration
+ * (optionally `export const`). `let`/`var` bindings can be reassigned, so they
+ * are not treated as statically analyzable.
+ * @returns {any} the initializer node, or null if there is no such binding
+ */
+function findTopLevelConstInit(/** @type {any} */ j, /** @type {any} */ root, /** @type {string} */ name) {
+  for (const statement of root.get().node.program.body) {
+    const declaration = j.ExportNamedDeclaration.check(statement)
+      ? statement.declaration
+      : statement;
+    if (
+      !j.VariableDeclaration.check(declaration) ||
+      declaration.kind !== 'const'
+    ) {
+      continue;
+    }
+    for (const declarator of declaration.declarations) {
+      if (
+        j.VariableDeclarator.check(declarator) &&
+        j.Identifier.check(declarator.id) &&
+        declarator.id.name === name
+      ) {
+        return declarator.init ?? null;
+      }
+    }
   }
   return null;
 }
