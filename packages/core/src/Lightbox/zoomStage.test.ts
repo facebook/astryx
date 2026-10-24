@@ -367,3 +367,23 @@ describe('a resize while zoomed (rotation)', () => {
     expect(transformForResize(before, after, IDENTITY)).toEqual(IDENTITY);
   });
 });
+
+describe('edges that do not give (a mouse)', () => {
+  const g = landscape();
+  it('a pinch stops at the limits', () => {
+    expect(overshootScale(g, g.maxScale * 2, false)).toBe(g.maxScale);
+    expect(overshootScale(g, g.minScale / 2, false)).toBe(g.minScale);
+    expect(overshootScale(g, 1.5, false)).toBe(1.5);
+    expect(pinchScaleFor(g, g.maxScale, false)).toBe(g.maxScale);
+  });
+  it('a drag stops at the edge', () => {
+    const range = restRange(g, 3);
+    const past = draggedTransform(
+      g,
+      {x: range.x.max + 80, y: 0, scale: 3},
+      false,
+    );
+    expect(past.x).toBe(range.x.max);
+    expect(rawForDragged(g, past, false)).toEqual(past);
+  });
+});

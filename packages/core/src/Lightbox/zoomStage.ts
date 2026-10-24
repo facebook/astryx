@@ -9,8 +9,8 @@
  *   kept inside it where larger), the rubber band of a drag, the overshoot
  *   of a pinch past a limit, the transform that keeps a point under the
  *   fingers, and the eased settle curves (UIScrollView's zoom animation)
- * @position Pure math under useZoomStage (Lightbox's touch zoom); no DOM, no
- *   React
+ * @position Pure math under useZoomCore and useZoomStage (Lightbox's zoom);
+ *   no DOM, no React
  *
  * The model is a zooming UIScrollView in a photo viewer. The photo's box at
  * the fitted size (scale 1, laid out by CSS) is `fit`, in the stage's
@@ -22,7 +22,8 @@
  * it rests with no gap at either edge. All constants come from
  * motion/uikit/zoomMedia.ts and motion/uikit/scroll.ts.
  *
- * SYNC: When modified, update zoomStage.test.ts.
+ * SYNC: When modified, update zoomStage.test.ts, useZoomCore.ts and
+ * useZoomStage.ts.
  */
 
 import {cubicBezier} from '../motion/bezier';
@@ -160,11 +161,19 @@ export function restingTransform(
 
 /**
  * The scale a pinch shows for its own scale `scale`: 1:1 inside the
- * limits, giving way past them (`zoomMedia.overshoot.limitFactor`).
+ * limits, giving way past them (`zoomMedia.overshoot.limitFactor`), or
+ * stopping at them when the limits do not give (a mouse).
  */
-export function overshootScale(geometry: ZoomGeometry, scale: number): number {
+export function overshootScale(
+  geometry: ZoomGeometry,
+  scale: number,
+  gives = true,
+): number {
   const f = zoomMedia.overshoot.limitFactor;
   const {minScale: m, maxScale: M} = geometry;
+  if (!gives) {
+    return Math.min(M, Math.max(m, scale));
+  }
   if (scale > M) {
     return M * (f - ((f - 1) * M) / scale);
   }
@@ -178,9 +187,16 @@ export function overshootScale(geometry: ZoomGeometry, scale: number): number {
  * The pinch's own scale that shows `shown`: the inverse of
  * `overshootScale`, to continue a pinch from a photo already past a limit.
  */
-export function pinchScaleFor(geometry: ZoomGeometry, shown: number): number {
+export function pinchScaleFor(
+  geometry: ZoomGeometry,
+  shown: number,
+  gives = true,
+): number {
   const f = zoomMedia.overshoot.limitFactor;
   const {minScale: m, maxScale: M} = geometry;
+  if (!gives) {
+    return shown;
+  }
   if (shown > M) {
     // shown = M·(f − (f − 1)·M ÷ s)  ⇒  s = (f − 1)·M² ÷ (f·M − shown)
     const gap = f * M - shown;
@@ -221,14 +237,19 @@ export function transformKeepingPoint(
 /**
  * Where a drag shows the photo: `raw` is where the finger's travel would put
  * it with no edges. Past an edge it gives way with UIScrollView's rubber
- * band over the stage's size on that axis; on an axis where the photo is
+ * band over the stage's size on that axis, or stops at the edge when edges
+ * do not give (a mouse); on an axis where the photo is
  * smaller than the stage it stays centred (a scroll view that does not
  * bounce when its content fits).
  */
 export function draggedTransform(
   geometry: ZoomGeometry,
   raw: ZoomTransform,
+  gives = true,
 ): ZoomTransform {
+  if (!gives) {
+    return restingTransform(geometry, raw);
+  }
   const range = restRange(geometry, raw.scale);
   return {
     x:
@@ -247,7 +268,11 @@ export function draggedTransform(
 export function rawForDragged(
   geometry: ZoomGeometry,
   shown: ZoomTransform,
+  gives = true,
 ): ZoomTransform {
+  if (!gives) {
+    return shown;
+  }
   const range = restRange(geometry, shown.scale);
   return {
     x:

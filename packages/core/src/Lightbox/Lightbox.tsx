@@ -5,13 +5,19 @@
 /**
  * @file Lightbox.tsx
  * @input Uses React, native dialog, StyleX, IconButton, theme tokens, layerTextReset, layerStructureReset,
- *   isRtlElement (gallery arrow keys follow the rendered direction)
+ *   isRtlElement (gallery arrow keys follow the rendered direction), useZoomCore (the zoom
+ *   stage for every pointer: keys, a mouse double-click and drag) and useZoomStage (its touch
+ *   layer: pinch, double tap and pan on the gesture recognizers), moved by the compositor
+ *   animator
  * @output Exports Lightbox component, LightboxProps, LightboxMedia
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Lightbox/Lightbox.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Lightbox/Lightbox.test.tsx (tests for new/changed behavior)
+ * - /packages/core/src/Lightbox/useZoomCore.ts (the zoom stage for every pointer)
+ * - /packages/core/src/Lightbox/useZoomStage.ts (the touch layer)
+ * - /packages/core/src/Lightbox/__tests__/LightboxZoom.interaction.browser.spec.ts (touch zoom proofs)
  * - /packages/core/src/Lightbox/index.ts (exports if types change)
  * - /packages/core/src/Layer/useLayerDismissal.ts (dismissal stack)
  * - /apps/storybook/stories/Lightbox.stories.tsx (storybook stories)
@@ -48,6 +54,9 @@ import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {isRtlElement} from '../hooks/isRtlElement';
+import {useZoomCore} from './useZoomCore';
+import {useZoomStage} from './useZoomStage';
+import {useTouchPresentation} from '../utils/touchPresentation';
 /**
  * Media type for lightbox items.
  */
@@ -102,8 +111,9 @@ export interface LightboxProps extends BaseProps<HTMLDialogElement> {
    */
   onIndexChange?: (index: number) => void;
   /**
-   * Enable zoom on double-click, or Enter/Space/`+`/`-` via keyboard
-   * (images only). When zoomed, drag or use arrow keys to pan.
+   * Enable zoom (images only): pinch, double-tap or double-click to zoom in
+   * at that point, or Enter/Space/`+`/`-` via keyboard. When zoomed, drag
+   * or use arrow keys to pan.
    * @default false
    */
   hasZoom?: boolean;
@@ -155,6 +165,22 @@ const styles = stylex.create({
     maxHeight: '100%',
     overflow: 'hidden',
   },
+  // On a touch screen (the shared touch resolver, useTouchPresentation) a
+  // zoomable photo's stage fills the viewer, as a photo viewer's zooming
+  // scroll view does: a zoomed photo uses the whole screen and a pinch can
+  // start anywhere around it. Only for a zoom target: around any other item
+  // a tap on the dark area still closes the viewer.
+  mediaGroupZoom: {
+    alignSelf: 'stretch',
+    flexGrow: 1,
+    minHeight: 0,
+  },
+  imageWrapperFill: {
+    alignSelf: 'stretch',
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+  },
   imageWrapper: {
     display: 'flex',
     alignItems: 'center',
@@ -163,6 +189,12 @@ const styles = stylex.create({
     cursor: 'default',
     userSelect: 'none',
     minHeight: 0,
+  },
+  // The stage's own pinch, pan and double tap take every touch on it. Only
+  // the stage: the controls and caption leave pinch-zoom to the page. On a
+  // touch screen it fills the viewer (mediaGroupZoom, imageWrapperFill).
+  imageWrapperZoomTarget: {
+    touchAction: 'none',
   },
   imageWrapperZoomable: {
     cursor: {
@@ -174,12 +206,8 @@ const styles = stylex.create({
   imageWrapperZoomed: {
     cursor: {
       default: 'grab',
-      ':is(:disabled,[aria-disabled="true"])': 'default',
-    },
-  },
-  imageWrapperDragging: {
-    cursor: {
-      default: 'grabbing',
+      // ZOOM_DRAGGING_ATTRIBUTE, set by the stage while a drag moves the photo.
+      ':is([data-zoom-dragging])': 'grabbing',
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
@@ -188,15 +216,9 @@ const styles = stylex.create({
     maxHeight: '100%',
     objectFit: 'contain',
     pointerEvents: 'none',
-    transitionProperty: 'transform',
-    transitionDuration: {
-      default: '200ms',
-      '@media (prefers-reduced-motion: reduce)': '0ms',
-    },
-    transitionTimingFunction: 'ease-out',
-  },
-  imageDragging: {
-    transitionProperty: 'none',
+    // The zoom stage scales the photo about its top-left corner and moves it
+    // with the individual `scale` and `translate` properties.
+    transformOrigin: '0 0',
   },
   video: {
     maxWidth: '100%',
@@ -252,12 +274,6 @@ const styles = stylex.create({
   },
 });
 
-const dynamicStyles = stylex.create({
-  imageTransform: (transform: string) => ({
-    transform,
-  }),
-});
-
 /**
  * Pan distance (px) per arrow-key press while zoomed. Offsets move the
  * viewport in the arrow's direction — pressing ArrowRight reveals content to
@@ -279,8 +295,11 @@ const KEYBOARD_PAN_OFFSETS: Record<string, [number, number]> = {
  * prev/next navigation via buttons and arrow keys; the arrow keys follow
  * the writing direction (in RTL, ArrowLeft goes to the next item, like the
  * Next button on the left). Optionally supports
- * zoom (double-click, Enter/Space on the image, or `+`/`-` to toggle 2x)
- * and pan (drag or arrow keys when zoomed; arrows navigate the gallery
+ * zoom like a photo viewer: under a finger, pinch about the fingers (with the
+ * give past the limits and the eased return); double-tap or double-click to
+ * zoom in at that point and back, Enter/Space on the image or `+`/`-` from
+ * the keyboard; and pan (drag, under a finger with momentum and the rubber
+ * band at the edges, or arrow keys when zoomed; arrows navigate the gallery
  * when not zoomed).
  *
  * Uses the native `<dialog>` element with `showModal()` for focus
@@ -347,11 +366,10 @@ export function Lightbox({
     [isControlled, onIndexChange, setUncontrolledIndex],
   );
 
-  // Zoom/pan state
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({x: 0, y: 0});
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStartRef = useRef({x: 0, y: 0, panX: 0, panY: 0});
+  // Whether the photo is zoomed: a discrete state for aria-pressed and the
+  // cursor. The zoom and pan themselves live outside React (useZoomCore,
+  // useZoomStage).
+  const [isZoomed, setIsZoomed] = useState(false);
 
   // Resolve current media item
   const mediaArray = useMemo(
@@ -372,7 +390,7 @@ export function Lightbox({
   useScrollLock(isOpen);
 
   // A new media item starts unzoomed. Adjusted during render, so the new item
-  // never paints at the previous item's zoom and pan.
+  // never paints as zoomed; the stage resets the photo before it paints.
   const currentSrc = currentItem?.src;
   const [viewedItem, setViewedItem] = useState({index, src: currentSrc});
   // Object.is, matching the dependency comparison of the effect this replaces:
@@ -382,8 +400,7 @@ export function Lightbox({
     !Object.is(viewedItem.src, currentSrc)
   ) {
     setViewedItem({index, src: currentSrc});
-    setZoom(1);
-    setPan({x: 0, y: 0});
+    setIsZoomed(false);
   }
 
   // Announce gallery navigation to screen readers. Moving between images only
@@ -466,7 +483,8 @@ export function Lightbox({
   // so clicks on the visual backdrop (the dark area around the media) land on
   // the container, never on the dialog element itself — treat both as the
   // backdrop. A pan drag that ends over the backdrop still fires a click on
-  // the common ancestor; ignore it so releasing a drag doesn't dismiss.
+  // the common ancestor; ignore it so releasing a drag doesn't dismiss (the
+  // flag is cleared when the next press lands on the photo).
   const didDragRef = useRef(false);
   const handleBackdropClick = useCallback(
     (e: ReactMouseEvent<HTMLDialogElement>) => {
@@ -494,29 +512,39 @@ export function Lightbox({
     }
   }, [canNext, index, setIndex]);
 
-  // Zoom: double-click, Enter/Space on the image, or +/- keys toggle 1x ↔ 2x.
-  // Zoom changes are silent to assistive tech (only the transform changes), so
-  // mirror them in the polite live region, including a hint that arrow keys
-  // pan while zoomed.
-  const applyZoom = useCallback(
-    (next: number) => {
-      if (!hasZoom || isVideo || next === zoom) {
-        return;
-      }
-      setZoom(next);
-      setPan({x: 0, y: 0});
+  // Zoom: pinch, double tap or double-click, Enter/Space on the image, or
+  // +/- keys. Zoom changes are silent to assistive tech (only the transform
+  // changes), so mirror them in the polite live region, including a hint that
+  // arrow keys pan while zoomed. A tap on the dark area around the photo
+  // closes, as a click on the backdrop does.
+  const isZoomTarget = hasZoom && !isVideo;
+  // The zoom stage for every pointer (the keyboard, a mouse double-click and
+  // drag) and, under a finger, its touch layer: one touch model on every
+  // touch device (the shared touch resolver), whose pinch and pan give past
+  // their limits and bounce back.
+  const {isTouch} = useTouchPresentation();
+  const onDragStart = () => {
+    didDragRef.current = true;
+  };
+  const zoom = useZoomCore({
+    stageRef: imageWrapperRef,
+    isEnabled: isOpen && isZoomTarget,
+    itemKey: viewedItem,
+    onZoomedChange: next => {
+      setIsZoomed(next);
       announce(
-        next > 1
-          ? t('@astryx.lightbox.zoomedIn')
-          : t('@astryx.lightbox.zoomedOut'),
+        next ? t('@astryx.lightbox.zoomedIn') : t('@astryx.lightbox.zoomedOut'),
       );
     },
-    [hasZoom, isVideo, zoom, announce, t],
-  );
-
-  const handleDoubleClick = useCallback(() => {
-    applyZoom(zoom === 1 ? 2 : 1);
-  }, [applyZoom, zoom]);
+    onDragStart,
+  });
+  const stage = useZoomStage(zoom, {
+    stageRef: imageWrapperRef,
+    isEnabled: isOpen && isZoomTarget && isTouch,
+    itemKey: viewedItem,
+    onTapOutside: handleClose,
+    onDragStart,
+  });
 
   // Keyboard navigation. While zoomed, arrows pan the image (matching common
   // lightbox conventions); when not zoomed they navigate the gallery.
@@ -528,21 +556,21 @@ export function Lightbox({
   // its right.
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (hasZoom && !isVideo) {
+      if (isZoomTarget) {
         if (e.key === '+' || e.key === '=') {
           e.preventDefault();
-          applyZoom(2);
+          stage.zoomIn();
           return;
         }
         if (e.key === '-') {
           e.preventDefault();
-          applyZoom(1);
+          stage.zoomOut();
           return;
         }
-        if (zoom > 1 && KEYBOARD_PAN_OFFSETS[e.key] !== undefined) {
+        if (stage.isZoomed() && KEYBOARD_PAN_OFFSETS[e.key] !== undefined) {
           e.preventDefault();
           const [dx, dy] = KEYBOARD_PAN_OFFSETS[e.key];
-          setPan(prev => ({x: prev.x + dx, y: prev.y + dy}));
+          stage.panBy(dx, dy);
           return;
         }
       }
@@ -557,7 +585,7 @@ export function Lightbox({
         }
       }
     },
-    [hasZoom, isVideo, zoom, applyZoom, goToPrev, goToNext],
+    [isZoomTarget, stage, goToPrev, goToNext],
   );
 
   // Enter/Space on the focused image wrapper (role="button") toggles zoom.
@@ -565,63 +593,11 @@ export function Lightbox({
     (e: React.KeyboardEvent<HTMLDivElement>) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        handleDoubleClick();
+        stage.toggle();
       }
     },
-    [handleDoubleClick],
+    [stage],
   );
-
-  // Pan: mouse drag when zoomed
-  const handlePointerDown = useCallback(
-    (e: ReactMouseEvent<HTMLDivElement>) => {
-      if (zoom <= 1 || !hasZoom) {
-        return;
-      }
-      setIsDragging(true);
-      didDragRef.current = false;
-      dragStartRef.current = {
-        x: e.clientX,
-        y: e.clientY,
-        panX: pan.x,
-        panY: pan.y,
-      };
-    },
-    [zoom, hasZoom, pan],
-  );
-
-  useEffect(() => {
-    if (!isDragging) {
-      return;
-    }
-
-    const handlePointerMove = (e: PointerEvent) => {
-      didDragRef.current = true;
-      const dx = e.clientX - dragStartRef.current.x;
-      const dy = e.clientY - dragStartRef.current.y;
-      setPan({
-        x: dragStartRef.current.panX + dx,
-        y: dragStartRef.current.panY + dy,
-      });
-    };
-
-    const handlePointerUp = () => {
-      setIsDragging(false);
-    };
-
-    window.addEventListener('pointermove', handlePointerMove);
-    window.addEventListener('pointerup', handlePointerUp);
-    return () => {
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', handlePointerUp);
-    };
-  }, [isDragging]);
-
-  const isZoomed = zoom > 1;
-  const isZoomTarget = hasZoom && !isVideo;
-  const imageTransform =
-    zoom === 1
-      ? null
-      : `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`;
 
   if (!currentItem) {
     return null;
@@ -691,7 +667,11 @@ export function Lightbox({
             )}
 
             {/* Media + caption group (centered together) */}
-            <div {...stylex.props(styles.mediaGroup)}>
+            <div
+              {...stylex.props(
+                styles.mediaGroup,
+                isZoomTarget && isTouch && styles.mediaGroupZoom,
+              )}>
               <div
                 ref={imageWrapperRef}
                 // The wrapper is a keyboard-operable zoom toggle when zoom is
@@ -704,17 +684,16 @@ export function Lightbox({
                 }
                 {...stylex.props(
                   styles.imageWrapper,
+                  isZoomTarget && styles.imageWrapperZoomTarget,
+                  isZoomTarget && isTouch && styles.imageWrapperFill,
                   isZoomTarget && focusOutlineStyles.focusVisible,
-                  !isVideo &&
-                    hasZoom &&
-                    !isZoomed &&
-                    styles.imageWrapperZoomable,
-                  !isVideo && isZoomed && styles.imageWrapperZoomed,
-                  !isVideo && isDragging && styles.imageWrapperDragging,
+                  isZoomTarget && !isZoomed && styles.imageWrapperZoomable,
+                  isZoomTarget && isZoomed && styles.imageWrapperZoomed,
                 )}
-                onDoubleClick={isVideo ? undefined : handleDoubleClick}
                 onKeyDown={isZoomTarget ? handleImageKeyDown : undefined}
-                onPointerDown={isVideo ? undefined : handlePointerDown}>
+                onPointerDown={() => {
+                  didDragRef.current = false;
+                }}>
                 {isVideo ? (
                   <video
                     src={currentItem.src}
@@ -725,15 +704,11 @@ export function Lightbox({
                   />
                 ) : (
                   <img
+                    ref={stage.contentRef}
                     src={currentItem.src}
                     alt={currentItem.alt}
                     draggable={false}
-                    {...stylex.props(
-                      styles.image,
-                      isDragging && styles.imageDragging,
-                      imageTransform != null &&
-                        dynamicStyles.imageTransform(imageTransform),
-                    )}
+                    {...stylex.props(styles.image)}
                   />
                 )}
               </div>
