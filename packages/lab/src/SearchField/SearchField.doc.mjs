@@ -90,6 +90,13 @@ export const docs = {
             "How far the active field rises into its host's bar, in px. A navigation bar passes the distance from under its large title to its own row. Defaults to 0: the field stays in place.",
         },
         {
+          name: 'placement',
+          type: "'stacked' | 'bottom'",
+          description:
+            "Where the field lives. 'stacked' (default): in a page header or under a navigation bar's title. 'bottom': iOS 26's toolbar field, 38 px tall and 33 px from each side, in a bar you keep at the bottom of the viewport; it rides the software keyboard (its centre 36 px above the keyboard's top while active) and grows a 38 px close button in beside it. lift applies to 'stacked' only.",
+          default: "'stacked'",
+        },
+        {
           name: 'cancelLabel',
           type: 'string',
           description:
@@ -106,7 +113,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'Use SearchField at the top of a phone screen whose content can be searched, such as a list. Filter the content as the query changes, and restore it when search is cancelled.',
+      "Use SearchField at the top of a phone screen whose content can be searched, such as a list, or with placement='bottom' in a bar at the bottom of the screen, where iOS 26 puts a toolbar's search field. Filter the content as the query changes, and restore it when search is cancelled.",
     bestPractices: [
       {
         guidance: true,
