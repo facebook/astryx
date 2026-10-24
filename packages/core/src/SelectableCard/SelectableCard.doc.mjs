@@ -11,7 +11,7 @@ export const docs = {
     description: 'A card that toggles between selected and unselected states with an accent border. For navigation use ClickableCard.',
     bestPractices: [
       {guidance: true, description: 'Use for plan pickers, filter chips, or option grids.'},
-      {guidance: true, description: 'For single-select track one ID; for multi-select use a Set.'},
+      {guidance: true, description: 'For single-select track one ID and give each card inputType="radio" and the set\'s shared name; for multi-select use a Set.'},
       {guidance: true, description: 'When focused, toggle selection with Space or Enter.'},
       {guidance: false, description: 'Use for navigation; use ClickableCard for that.'},
     ],
@@ -23,7 +23,9 @@ export const docs = {
   props: [
     {name: 'label', type: 'string', description: 'Accessibility label.', required: true},
     {name: 'isSelected', type: 'boolean', description: 'Controlled selection state.', required: true},
-    {name: 'onChange', type: '(isSelected: boolean) => void', description: 'Called when toggled.', required: true},
+    {name: 'onChange', type: '(isSelected: boolean) => void', description: 'Called when toggled. A radio card only calls it with true.', required: true},
+    {name: 'inputType', type: "'checkbox' | 'radio'", description: 'The native control inside the card. A radio card is one choice of a set: it selects and never deselects itself. Give the set one `name` and put it in a role="radiogroup" with an accessible name; the browser then makes it one tab stop, arrow keys move and select, and "2 of 3" is spoken.', default: "'checkbox'"},
+    {name: 'name', type: 'string', description: 'The native input name. Radio cards that share it form one group.'},
     {name: 'isDisabled', type: 'boolean', description: 'Disables the card.', default: 'false'},
     {name: 'children', type: 'ReactNode', description: 'Card content.'},
     {name: 'padding', type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10', description: 'Inner padding.', default: '4'},
@@ -67,7 +69,7 @@ export const docsDense = {
     description: 'Card toggling between selected/unselected states w/ accent border. For navigation use ClickableCard instead.',
     bestPractices: [
       {guidance: true, description: 'Use for plan pickers, filter chips, option grids.'},
-      {guidance: true, description: 'For single-select track one ID; for multi-select use a Set.'},
+      {guidance: true, description: 'For single-select track one ID and give each card inputType="radio" and the set\'s shared name; for multi-select use a Set.'},
       {guidance: true, description: 'When focused, toggle selection with Space or Enter.'},
       {guidance: false, description: 'Use for navigation; use ClickableCard instead.'},
     ],
