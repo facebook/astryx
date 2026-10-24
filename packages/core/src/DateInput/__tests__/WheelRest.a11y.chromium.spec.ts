@@ -6,12 +6,12 @@
  *   Chromium touch input (CDP) on a phone profile
  * @output Browser evidence that a wheel dragged onto a row outside the bounds
  *   comes to rest on the nearest row inside them and commits it
- * @position Real-engine proof for Wheel.tsx's rest rule: native scrolling,
- *   CSS snapping and the browser's own end-of-scroll signal, none of which
- *   jsdom has. Wheel.test.tsx holds the rule itself.
+ * @position Real-engine proof for Wheel.tsx's rest rule through real touch
+ *   input; Wheel.test.tsx holds the rule itself.
  */
 
 import {expect, test, type Locator, type Page} from '@playwright/test';
+import {picker, UIKIT_GESTURES} from '../../motion/uikit';
 import {
   DEFAULT_STORYBOOK_DIR,
   serveStorybook,
@@ -52,7 +52,7 @@ async function openHourWheel(page: Page) {
   return {field, hours};
 }
 
-/** A slow one-finger drag: no fling, so the wheel snaps where it is let go. */
+/** A slow one-finger drag: no fling, so the wheel rests where it is let go. */
 async function drag(page: Page, wheel: Locator, dy: number) {
   const box = await wheel.boundingBox();
   if (box == null) {
@@ -65,7 +65,9 @@ async function drag(page: Page, wheel: Locator, dy: number) {
     type: 'touchStart',
     touchPoints: [{x, y, id: 1}],
   });
-  const steps = 30;
+  // Slow (well under the release velocity floor), so the wheel rests on the
+  // row it is let go on rather than coasting.
+  const steps = 60;
   for (let i = 1; i <= steps; i++) {
     await sleep(16);
     await cdp.send('Input.dispatchTouchEvent', {
@@ -84,23 +86,22 @@ async function drag(page: Page, wheel: Locator, dy: number) {
 const selectedHour = (hours: Locator) =>
   hours.locator('[role="option"][aria-selected="true"]');
 
+/** UIPickerView's row pitch. */
+const ROW = picker.geometry.rowHeight;
+
 /**
- * Chromium starts a touch scroll only after the finger has travelled its slop,
- * so a drag moves the content that much less than the finger. Each drag adds
- * this much so the wheel snaps to the intended row.
+ * A drag begins only once the finger has travelled the pan's hysteresis,
+ * which the rows never show, so each drag adds that and a little more and
+ * the wheel rests on the intended row.
  */
-const SCROLL_SLOP_ALLOWANCE = 16;
+const SLOP_ALLOWANCE = UIKIT_GESTURES.pan.hysteresis.value + 6;
 
 test('a wheel dragged below the minimum comes to rest on the minimum', async ({
   page,
 }) => {
   const {field, hours} = await openHourWheel(page);
-  const row = await hours
-    .locator('[role="option"]')
-    .first()
-    .evaluate(el => el.getBoundingClientRect().height);
   // 10 → 7: three rows down, past 9 AM.
-  await drag(page, hours, 3 * row + SCROLL_SLOP_ALLOWANCE);
+  await drag(page, hours, 3 * ROW + SLOP_ALLOWANCE);
 
   await expect(selectedHour(hours)).toHaveText('9', {timeout: 3000});
   await expect(field).toHaveValue('9:00 AM');
@@ -110,12 +111,8 @@ test('a wheel dragged onto a row inside the bounds commits that row', async ({
   page,
 }) => {
   const {field, hours} = await openHourWheel(page);
-  const row = await hours
-    .locator('[role="option"]')
-    .first()
-    .evaluate(el => el.getBoundingClientRect().height);
   // 10 → 11: one row up, still inside the bounds.
-  await drag(page, hours, -(row + SCROLL_SLOP_ALLOWANCE));
+  await drag(page, hours, -(ROW + SLOP_ALLOWANCE));
 
   await expect(selectedHour(hours)).toHaveText('11', {timeout: 3000});
   await expect(field).toHaveValue('11:00 AM');

@@ -131,8 +131,10 @@ const styles = stylex.create({
     paddingBlockStart: spacingVars['--spacing-6'],
     paddingBlockEnd: spacingVars['--spacing-4'],
   },
+  // The picker (UIPickerView's 216 px) centred in the pane.
   wheels: {
     display: 'flex',
+    alignItems: 'center',
     inlineSize: '100%',
     minInlineSize: 0,
     blockSize: dateInputTouchGeometry.paneBlockSize,

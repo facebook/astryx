@@ -32,8 +32,10 @@ import {Wheel, type WheelOption} from './Wheel';
 import {fromMonthIndex, toMonthIndex} from './monthGeometry';
 
 const styles = stylex.create({
+  // The picker (UIPickerView's 216 px) centred in the pane.
   wheels: {
     display: 'flex',
+    alignItems: 'center',
     blockSize: dateInputTouchGeometry.paneBlockSize,
     gap: spacingVars['--spacing-2'],
   },

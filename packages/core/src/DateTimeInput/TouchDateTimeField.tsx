@@ -372,8 +372,10 @@ const styles = stylex.create({
   touchWheelSpacer: {
     blockSize: sizeVars['--size-element-sm'],
   },
+  // The picker (UIPickerView's 216 px) centred in the pane.
   touchTimeWheels: {
     display: 'flex',
+    alignItems: 'center',
     inlineSize: '100%',
     minInlineSize: 0,
     blockSize: dateInputTouchGeometry.paneBlockSize,
