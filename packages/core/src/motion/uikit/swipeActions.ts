@@ -103,28 +103,31 @@ export const swipeActions = {
    */
   releaseVelocity: 48,
   /**
-   * Past the open width, how far beyond the panel the row must be dragged
-   * for a release to fire the outermost action (`commitPastPanel`), unless
-   * `commitFraction` of the row is further.
-   * @source GUESS — the threshold Astryx used before the UIKit lab; UIKit's
-   *   confirmation threshold (the table width − 29 pt on iOS 26.2) replaces
-   *   it with the full-swipe expansion
+   * Where the full swipe confirms: this far short of the row's far edge the
+   * row's offset snaps to on confirming (UIKit's `confirmationThreshold`,
+   * the table width less this inset, whatever the action count).
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, `UISwipeActionPullView.confirmationThreshold` read:
+   *   −373 at 402 pt and −346 at 375 pt, with one, two and three actions
+   *   (batch 10b); on confirming the row jumped from −326 to −376.6 ahead of
+   *   the finger (batch 38), Oct 23 2026
+   */
+  confirmInset: 29,
+  /**
+   * How far from the open width toward the confirmation offset (the row
+   * width less `confirmInset`) the finger must have dragged for the full
+   * swipe to confirm. Judged on the finger's travel, not the row's: the row
+   * lags the finger on its spring.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, 402 pt rows: with a 204.67 pt open width a release
+   *   performed from 335 pt of swipe and not from 315, at every velocity
+   *   tried, and backing out from 345 to 315 left the row unconfirmed
+   *   (batch 38); with a 156.67 pt open width it performed from 315 and not
+   *   from 275 (batch 10b): 0.655 to 0.732 of the way, Oct 23 2026
+   * @source GUESS — the fraction inside the measured 0.655 to 0.732 bracket
    * @measure M-SA02
    */
-  commitPastPanel: 48,
-  /**
-   * See `commitPastPanel`.
-   * @source GUESS — the threshold Astryx used before the UIKit lab
-   * @measure M-SA02
-   */
-  commitFraction: 0.5,
-  /**
-   * Past the commit point the row moves this much per point of finger
-   * travel.
-   * @source GUESS — the resistance Astryx used before the UIKit lab
-   * @measure M-SA03
-   */
-  overdragResistance: 0.35,
+  confirmFraction: 0.69,
   /**
    * How far past the row's edge the row travels when an action fires and
    * the row goes out.

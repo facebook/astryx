@@ -374,24 +374,35 @@ test('the trailing panel: Delete is outermost and the panel wears its colour', a
   expect(
     Math.abs(fill.x - (rest.x + rest.width + (await translationOf(row)))),
   ).toBeLessThanOrEqual(1);
-  // The entries run Archive then Delete toward the outer edge; the fill out
-  // to the edge is Delete's colour, painted beside it (its pseudo-element),
-  // and the track paints the surface the entries sit on.
-  const [trackColor, fillColor, deleteColor, archiveColor] = await trackOf(
-    panel,
-  ).evaluate(node => {
+  // The entries run Archive then Delete toward the outer edge. Delete, the
+  // outermost, wears its own colour and paints it beside itself out to the
+  // edge (its pseudo-element); the track paints the surface the entries sit
+  // on and keeps Delete's colour as its confirm fill, hidden until a full
+  // swipe confirms.
+  const [
+    trackColor,
+    fillColor,
+    fillOpacity,
+    extensionColor,
+    deleteColor,
+    archiveColor,
+  ] = await trackOf(panel).evaluate(node => {
     const buttons = Array.from(node.querySelectorAll('button'));
     const last = buttons[buttons.length - 1];
     const first = buttons[0];
     return [
       getComputedStyle(node).backgroundColor,
+      getComputedStyle(node, '::before').backgroundColor,
+      getComputedStyle(node, '::before').opacity,
       getComputedStyle(last, '::after').backgroundColor,
       getComputedStyle(last).backgroundColor,
       getComputedStyle(first).backgroundColor,
     ];
   });
-  expect(trackColor).not.toBe(deleteColor);
+  expect(extensionColor).toBe(deleteColor);
   expect(fillColor).toBe(deleteColor);
+  expect(fillOpacity).toBe('0');
+  expect(trackColor).not.toBe(deleteColor);
   expect(archiveColor).not.toBe(deleteColor);
   const deleteBox = await boxOf(panel.getByRole('button', {name: 'Delete'}));
   const archiveBox = await boxOf(panel.getByRole('button', {name: 'Archive'}));
