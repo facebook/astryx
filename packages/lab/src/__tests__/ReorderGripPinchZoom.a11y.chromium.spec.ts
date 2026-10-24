@@ -10,9 +10,9 @@
  *   grip (also one whose first finger slid on it first) zooms the page and
  *   leaves the order as it was, while a one-finger drag on the grip still
  *   reorders (WCAG 1.4.4)
- * @position Chromium proof for the Lab reorder grips' `touch-action`: the
- *   shared Lab grip (packages/lab/src/reorderStyles.ts, ListInput) and core
- *   List's reorder handle (TransferList)
+ * @position Chromium proof for the `touch-action` of core List's reorder
+ *   handle as the Lab reorderable inputs render it (ListInput through core's
+ *   List reorder modules, TransferList through `List`)
  */
 
 import {expect, test, type CDPSession, type Page} from '@playwright/test';
@@ -61,8 +61,11 @@ const SURFACES: Surface[] = [
   {
     name: 'ListInput',
     story: 'lab-listinput--tag-options',
-    grip: 'button[data-list-input-reorder]',
+    grip: '[data-list-input-row] button[data-astryx-list-reorder]',
     rowAttribute: 'data-list-input-row',
+    // Core List's handle claims a still finger after 150 ms, as UIKit's
+    // reorder control does.
+    holdMs: 250,
   },
   {
     name: 'TransferList',
@@ -82,6 +85,9 @@ async function openStory(page: Page, surface: Surface) {
   const grip = page.locator(surface.grip).first();
   await expect(grip).toBeVisible();
   expect(await page.evaluate(() => window.visualViewport?.scale)).toBe(1);
+  // A wide story can put the handle past the phone's visible width (it ends
+  // the row); a finger can only land on what is on screen.
+  await grip.scrollIntoViewIfNeeded();
   const box = (await grip.boundingBox()) as Box;
   const center = {x: box.x + box.width / 2, y: box.y + box.height / 2};
   const cdp = await page.context().newCDPSession(page);
