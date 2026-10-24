@@ -13,8 +13,9 @@
  *   a release coasts on UIKit's spring to 0.4 of the momentum projection
  *   (final value and presented curve against an independent spring), a slow
  *   release does not coast, a drag that rests before the lift still coasts
- *   on its last velocity, Reduce Motion keeps the lift and the coast, and a
- *   finger lifted outside stays at the lift value; `onChangeEnd`
+ *   on its last velocity, Reduce Motion keeps the lift and the coast, a
+ *   held thumb selects no text, and a finger lifted outside stays at the
+ *   lift value; `onChangeEnd`
  *   reports after the coast; coincident range thumbs; a vertical swipe from
  *   a thumb scrolls a list; RTL; the coast keeps moving through a blocked
  *   main thread (with its storyboard); no Layout per drag move and no Layout
@@ -530,6 +531,40 @@ test('Reduce Motion keeps the finger-driven lift and coast on their springs', as
   await waitForRest(thumb);
   await frames(page, 4);
   expect(await value()).toBeGreaterThan(start);
+});
+
+test('a finger held on a thumb selects no text: the touch control declares Safari’s prefixed user-select and callout', async ({
+  page,
+}) => {
+  const {thumb} = await openSlider(page, 'core-slider--touch-tracking', {
+    name: 'Brightness',
+  });
+  // Safari reads only the prefixed forms: without them a thumb held before
+  // it moves selects its row and raises the loupe (iOS 26.2 simulator).
+  // An engine drops a property it does not know from the CSSOM, so this
+  // reads the shipped rule text for the control's classes.
+  const declared = await thumb.evaluate(async element => {
+    const control = element.closest('.astryx-slider-control');
+    if (control == null) {
+      return '';
+    }
+    const classes = [...control.classList].map(name => `.${name}`);
+    const linked = [
+      ...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'),
+    ].map(async link => (await fetch(link.href)).text());
+    const texts = [
+      ...(await Promise.all(linked)),
+      ...[...document.querySelectorAll('style')].map(
+        style => style.textContent ?? '',
+      ),
+    ];
+    const rules = texts.join('\n').match(/[^{}]+\{[^{}]*\}/g) ?? [];
+    return rules
+      .filter(rule => classes.some(name => rule.trimStart().startsWith(name)))
+      .join('\n');
+  });
+  expect(declared).toMatch(/-webkit-user-select:\s*none/);
+  expect(declared).toMatch(/-webkit-touch-callout:\s*none/);
 });
 
 test('a finger lifted outside the tracking bounds coasts back to the lift value', async ({
