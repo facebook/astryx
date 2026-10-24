@@ -6,9 +6,8 @@
  * @output Exports the pure model of Switch's touch presentation: the thumb
  *   geometry scaled to a track, the drag's thumb target, the flip rule, the
  *   commit on release and when the lifted thumb may settle
- * @position Pure half of Switch's touch presentation, tested by
- *   switchTouch.test.ts without a browser; the presentation itself (thumb,
- *   gestures, compositor motion) drives it
+ * @position Pure half of Switch's touch presentation; driven by
+ *   useSwitchTouch.ts, tested by switchTouch.test.ts without a browser
  *
  * UISwitch on iOS 26.2 is the reference (see motion/uikit/switch.ts):
  *
@@ -27,7 +26,7 @@
  * - A release commits the side the drag shows if it ever flipped, or toggles
  *   when it flipped nothing (a tap, a hold, a slide off, a short drag).
  *
- * SYNC: When modified, update switchTouch.test.ts.
+ * SYNC: When modified, update useSwitchTouch.ts and switchTouch.test.ts.
  */
 
 import {rubberBandClamp, rubberBandUnclamp} from '../motion/rubberBand';

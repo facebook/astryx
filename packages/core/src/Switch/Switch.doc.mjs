@@ -223,7 +223,7 @@ export const docs = {
     ],
     anatomy,
     description:
-      'A toggle control for on/off states that take effect immediately. Supports labels, descriptions, loading states, and validation. Use it for settings or preferences that apply instantly. For changes requiring a form submission, use a checkbox instead.',
+      'A toggle control for on/off states that take effect immediately. Supports labels, descriptions, loading states, and validation. Use it for settings or preferences that apply instantly. For changes requiring a form submission, use a checkbox instead. On a touch screen it behaves like the iOS switch: a press lifts the thumb, a drag across flips it, and lifting the finger commits.',
     bestPractices: [
       {
         guidance: true,
@@ -395,7 +395,7 @@ export const docsZh = {
   },
   usage: {
     description:
-      'A toggle control for on/off states that take effect immediately. Supports labels, descriptions, loading states, and validation. Use it for settings or preferences that apply instantly. For changes requiring a form submission, use a checkbox instead.',
+      'A toggle control for on/off states that take effect immediately. Supports labels, descriptions, loading states, and validation. Use it for settings or preferences that apply instantly. For changes requiring a form submission, use a checkbox instead. On a touch screen it behaves like the iOS switch: a press lifts the thumb, a drag across flips it, and lifting the finger commits.',
     bestPractices: [
       {
         guidance: true,
@@ -431,7 +431,7 @@ export const docsDense = {
   description: 'Toggle switch for boolean values w/ integrated label support.',
   usage: {
     description:
-      'A toggle control for on/off states that take effect immediately. Supports labels, descriptions, loading states, and validation. Use it for settings or preferences that apply instantly. For changes requiring a form submission, use a checkbox instead.',
+      'A toggle control for on/off states that take effect immediately. Supports labels, descriptions, loading states, and validation. Use it for settings or preferences that apply instantly. For changes requiring a form submission, use a checkbox instead. On a touch screen it behaves like the iOS switch: a press lifts the thumb, a drag across flips it, and lifting the finger commits.',
     bestPractices: [
       {
         guidance: true,
