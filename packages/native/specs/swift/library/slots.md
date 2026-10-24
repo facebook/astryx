@@ -51,7 +51,7 @@ places as on the web, read by VoiceOver in the same order.
 
 | Requirement | Check                                                                                                                                                                                                                  |
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| S1, S6      | The generator test fails on a fixture component whose free-form prop has no slot kind, and produces each of the four Swift forms for a fixture with all four.                                                          |
+| S1, S6      | The generator test fails on a fixture component whose free-form prop has no slot kind, and produces the Swift form of each kind for a fixture with all three.                                                          |
 | S2          | Every built-in name maps to an SF Symbol that exists on the package's iOS floor; registering `acme:rocket` makes `"acme:rocket"` draw it; an unregistered name stops a development build and draws nothing in release. |
 | S3          | A compile test passes an `AstryxAvatar` into a row's start slot and fails to compile when passing a SwiftUI `Toggle`.                                                                                                  |
 | S4          | A test reads the resolved size of an unsized icon inside a small and a large owner.                                                                                                                                    |
