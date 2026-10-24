@@ -125,7 +125,8 @@ then have contradictory winners.
      is `text`, `icon`, `background`, or `border`. The role is an emphasis
      (`primary`, `secondary`, `disabled`, `emphasized`), an intent
      (`--color-text-accent`), a surface (`surface`, `body`, `card`, `popover`,
-     `muted`, `inverted`), or a hue (`--color-text-green`).
+     `muted`, `inverted`, `backdrop` for the dim behind a modal, `glass` for
+     the surface behind bar buttons), or a hue (`--color-text-green`).
   2. `--color-<intent>`: the intent's own colour. The intents are `accent`,
      `neutral`, `info`, `success`, `warning`, and `error`.
   3. A shape-1 or shape-2 name with one variant suffix: `-muted` (the pale

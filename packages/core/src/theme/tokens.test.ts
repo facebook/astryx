@@ -339,7 +339,7 @@ describe('colour token name grammar (architecture:theme-tokens INV10)', () => {
   const intent = '(?:accent|neutral|info|success|warning|error)';
   const hue = '(?:blue|cyan|gray|green|orange|pink|purple|red|teal|yellow)';
   const emphasis = '(?:primary|secondary|disabled|emphasized)';
-  const surface = '(?:surface|body|card|popover|muted|inverted)';
+  const surface = '(?:surface|body|card|popover|muted|inverted|backdrop|glass)';
   const variant = '(?:-(?:muted|emphasized|hover|pressed|inverted))?';
   const shapes = [
     // 1 and 3: property first, then role, then an optional variant.
@@ -376,6 +376,15 @@ describe('colour token name grammar (architecture:theme-tokens INV10)', () => {
         !utilityNames.has(name) && !shapes.some(shape => shape.test(name)),
     );
     expect(misfits).toEqual([]);
+  });
+
+  it('takes the modal dim and the bar glass as surface roles', () => {
+    for (const name of [
+      '--color-background-backdrop',
+      '--color-background-glass',
+    ]) {
+      expect(shapes.some(shape => shape.test(name))).toBe(true);
+    }
   });
 
   it('rejects names outside the grammar', () => {
