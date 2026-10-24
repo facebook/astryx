@@ -8,7 +8,8 @@
  * @output Exports WheelGroup — UIPickerView's frame around picker columns: one
  *   selection band across every column, the picker's height, and the one
  *   vanishing point all columns are drawn towards
- * @position Internal component; the frame of picker Wheels drawn side by side
+ * @position Internal component; wraps the Wheels in MonthYearWheels.tsx,
+ *   TouchTimeField.tsx and TouchDateTimeField.tsx
  *
  * UIPickerView draws one band under all its columns (inset from the picker's
  * sides) and centres every column's table on the picker, so the dimmed rows

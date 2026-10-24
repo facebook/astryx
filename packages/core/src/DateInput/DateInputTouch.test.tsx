@@ -1442,6 +1442,14 @@ describe('DateInput — month/year wheels', () => {
     expect(screen.getByRole('listbox', {name: 'Year'})).toBeInTheDocument();
   });
 
+  it('draws the month and year wheels as one picker, with one band', () => {
+    renderAndOpen();
+    openWheels();
+    expect(panel('wheels').querySelectorAll('[data-wheel-band]')).toHaveLength(
+      1,
+    );
+  });
+
   /**
    * The arrows step the calendar, and the calendar is not on screen. They
    * keep their layout box rather than unmounting: they are the tallest thing

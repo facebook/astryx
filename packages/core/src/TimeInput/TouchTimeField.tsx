@@ -52,6 +52,7 @@ import {useSize} from '../SizeContext/SizeContext';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
 import {Wheel, type WheelOption} from '../DateInput/Wheel';
+import {WheelGroup} from '../DateInput/WheelGroup';
 import {dateInputTouchGeometry} from '../DateInput/tokens.stylex';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {themeProps} from '../utils/themeProps';
@@ -138,7 +139,6 @@ const styles = stylex.create({
     inlineSize: '100%',
     minInlineSize: 0,
     blockSize: dateInputTouchGeometry.paneBlockSize,
-    gap: spacingVars['--spacing-2'],
   },
   footer: {
     display: 'flex',
@@ -545,50 +545,54 @@ export function TouchTimeField({
         padding={0}>
         <div ref={sheetBodyRef} {...stylex.props(styles.sheetBody)}>
           <div {...stylex.props(styles.wheels)}>
-            <Wheel
-              label={t('@astryx.dateTimeInput.hourWheel')}
-              options={hourOptions}
-              value={
-                hourFormat === '24h'
-                  ? parsedWheelTime.hour
-                  : hour12From24(parsedWheelTime.hour)
-              }
-              isActive={isSheetOpen}
-              onChange={hour =>
-                commitWheelTime(
+            <WheelGroup>
+              <Wheel
+                label={t('@astryx.dateTimeInput.hourWheel')}
+                options={hourOptions}
+                value={
                   hourFormat === '24h'
-                    ? composeWheelTime({hour24: hour})
-                    : composeWheelTime({hour12: hour}),
-                )
-              }
-            />
-            <Wheel
-              label={t('@astryx.dateTimeInput.minuteWheel')}
-              options={minuteOptions}
-              value={parsedWheelTime.minute}
-              isActive={isSheetOpen}
-              onChange={minute => commitWheelTime(composeWheelTime({minute}))}
-            />
-            {hasSeconds && (
-              <Wheel
-                label={t('@astryx.dateTimeInput.secondWheel')}
-                options={secondOptions}
-                value={parsedWheelTime.second}
+                    ? parsedWheelTime.hour
+                    : hour12From24(parsedWheelTime.hour)
+                }
                 isActive={isSheetOpen}
-                onChange={second => commitWheelTime(composeWheelTime({second}))}
-              />
-            )}
-            {hourFormat === '12h' && (
-              <Wheel
-                label={t('@astryx.dateTimeInput.meridiemWheel')}
-                options={meridiemOptions}
-                value={parsedWheelTime.hour < 12 ? 0 : 1}
-                isActive={isSheetOpen}
-                onChange={meridiem =>
-                  commitWheelTime(composeWheelTime({meridiem}))
+                onChange={hour =>
+                  commitWheelTime(
+                    hourFormat === '24h'
+                      ? composeWheelTime({hour24: hour})
+                      : composeWheelTime({hour12: hour}),
+                  )
                 }
               />
-            )}
+              <Wheel
+                label={t('@astryx.dateTimeInput.minuteWheel')}
+                options={minuteOptions}
+                value={parsedWheelTime.minute}
+                isActive={isSheetOpen}
+                onChange={minute => commitWheelTime(composeWheelTime({minute}))}
+              />
+              {hasSeconds && (
+                <Wheel
+                  label={t('@astryx.dateTimeInput.secondWheel')}
+                  options={secondOptions}
+                  value={parsedWheelTime.second}
+                  isActive={isSheetOpen}
+                  onChange={second =>
+                    commitWheelTime(composeWheelTime({second}))
+                  }
+                />
+              )}
+              {hourFormat === '12h' && (
+                <Wheel
+                  label={t('@astryx.dateTimeInput.meridiemWheel')}
+                  options={meridiemOptions}
+                  value={parsedWheelTime.hour < 12 ? 0 : 1}
+                  isActive={isSheetOpen}
+                  onChange={meridiem =>
+                    commitWheelTime(composeWheelTime({meridiem}))
+                  }
+                />
+              )}
+            </WheelGroup>
           </div>
           <div {...stylex.props(styles.footer)}>
             <Button
