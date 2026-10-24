@@ -1,0 +1,266 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+import AstryxNative
+import SwiftUI
+
+/// A person's or an entity's picture: the image at `src`, else `fallbackSrc`,
+/// else initials from `name`, else a person symbol (core `Avatar`).
+///
+/// ```swift
+/// Avatar("Ada Lovelace", src: "https://example.com/ada.jpg")
+/// Avatar("Ada Lovelace", size: .lg, shape: .rounded)
+/// Avatar("Ada Lovelace", href: "https://example.com/ada")
+/// Avatar("Ada Lovelace") { showProfile() }
+/// ```
+public struct Avatar: View {
+  /// The contract the view draws, the same for both initializers.
+  public let props: AvatarProps
+  @Environment(\.astryx) private var astryx
+
+  /// An avatar from its labeled props.
+  /// - Parameters:
+  ///   - name: The person's or entity's name, for initials and the accessible name (core `name`).
+  ///   - src: The image URL (core `src`).
+  ///   - fallbackSrc: The image URL to try when `src` fails (core `fallbackSrc`).
+  ///   - alt: The accessible name, when it differs from `name` (core `alt`).
+  ///   - size: `xsm` 20, `sm` 24, `md` 36, `lg` 48, or `xl` 128 points; `nil` is `md` (core `size`).
+  ///   - shape: `circle`, `rounded`, or `square`; `nil` is `circle` (core `shape`).
+  ///   - href: A URL the system opens when the avatar is tapped; the avatar becomes a link (core `href`).
+  ///   - onClick: Runs when the avatar is tapped; without `href` the avatar becomes a button (core `onClick`).
+  public init(
+    _ name: String? = nil,
+    src: String? = nil,
+    fallbackSrc: String? = nil,
+    alt: String? = nil,
+    size: AvatarSize? = nil,
+    shape: AvatarShape? = nil,
+    href: String? = nil,
+    onClick: (() -> Void)? = nil
+  ) {
+    self.init(
+      AvatarProps(
+        src: src, fallbackSrc: fallbackSrc, name: name, alt: alt, size: size, shape: shape, href: href,
+        onClick: onClick
+      ))
+  }
+
+  /// An avatar from its generated contract, for generated and wire-driven callers.
+  public init(_ props: AvatarProps) {
+    self.props = props
+  }
+
+  public var body: some View {
+    if props.base.isHidden != true {
+      control
+        .modifier(AvatarIdentifier(id: props.base.id))
+    }
+  }
+
+  /// The picture as a link with `href`, a button with only `onClick`, or a
+  /// static image (Swift component API, A4). All three draw the same.
+  @ViewBuilder private var control: some View {
+    if let url = linkURL {
+      SwiftUI.Link(destination: url) { picture }
+        .buttonStyle(.plain)
+        // `onClick` runs as the link opens, as core's does.
+        .environment(\.openURL, OpenURLAction { url in
+          props.onClick?()
+          return .systemAction(url)
+        })
+        .modifier(AvatarTarget(side: side))
+        .modifier(AvatarName(label: accessibilityLabel, isInteractive: true))
+    } else if let onClick = props.onClick {
+      SwiftUI.Button(action: onClick) { picture }
+        .buttonStyle(.plain)
+        .modifier(AvatarTarget(side: side))
+        .modifier(AvatarName(label: accessibilityLabel, isInteractive: true))
+    } else {
+      picture
+        .modifier(AvatarName(label: accessibilityLabel, isInteractive: false))
+    }
+  }
+
+  private var picture: some View {
+    AvatarImage(url: url(props.src)) {
+      AvatarImage(url: url(props.fallbackSrc)) { plate }
+    }
+    .frame(width: side, height: side)
+    .clipShape(AvatarShapeOutline(shape: resolvedShape, radius: cornerRadius))
+  }
+
+  /// The fallback: initials on the neutral plate, else a person symbol.
+  private var plate: some View {
+    ZStack {
+      astryx.tokens.color.neutral
+      if let initials {
+        SwiftUI.Text(initials)
+          .font(initialsFont)
+          .foregroundStyle(astryx.tokens.color.textSecondary)
+          .lineLimit(1)
+          .fixedSize()
+      } else {
+        Image(systemName: "person.fill")
+          .resizable()
+          .scaledToFit()
+          .frame(width: side * 0.6, height: side * 0.6)
+          .foregroundStyle(astryx.tokens.color.textSecondary)
+      }
+    }
+  }
+
+  /// The side of the avatar in points.
+  var side: CGFloat { Avatar.points(for: props.size ?? .md) }
+
+  var resolvedShape: AvatarShape { props.shape ?? .circle }
+
+  /// The corner radius for `rounded`, from the theme's element radius.
+  private var cornerRadius: CGFloat { astryx.tokens.radius.element }
+
+  /// Initials drawn at 40% of the side in the theme's body family, medium weight.
+  private var initialsFont: Font {
+    astryxFont(
+      families: astryx.tokens.font.familyBody,
+      size: side * 0.4,
+      weight: astryx.fontWeight(astryx.tokens.font.weightMedium),
+      isBoldText: astryx.isBoldText
+    )
+  }
+
+  /// The initials the plate shows, or `nil` for the person symbol.
+  var initials: String? {
+    guard let name = Avatar.meaningful(props.name) else { return nil }
+    let initials = Avatar.initials(from: name)
+    return initials.isEmpty ? nil : initials
+  }
+
+  /// The name VoiceOver reads: `alt`, else `name`; `nil` when neither
+  /// carries anything, and then a static avatar is decorative.
+  var accessibilityLabel: String? {
+    Avatar.meaningful(props.alt) ?? Avatar.meaningful(props.name)
+  }
+
+  /// The URL the avatar opens, or `nil` when it has no usable `href`.
+  var linkURL: URL? { url(props.href) }
+
+  private func url(_ string: String?) -> URL? {
+    guard let string, !string.isEmpty else { return nil }
+    return URL(string: string)
+  }
+
+  /// Core's named sizes in points.
+  nonisolated static func points(for size: AvatarSize) -> CGFloat {
+    switch size {
+    case .xsm: 20
+    case .sm: 24
+    case .md: 36
+    case .lg: 48
+    case .xl: 128
+    }
+  }
+
+  /// The string when it carries something, `nil` when it is absent or blank.
+  nonisolated static func meaningful(_ value: String?) -> String? {
+    guard let value, !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+    return value
+  }
+
+  /// Core's initials: the first letter, digit, or emoji of the first and last
+  /// words that have one, uppercased. Leading punctuation in a word is skipped.
+  nonisolated static func initials(from name: String) -> String {
+    let letters = name.split(whereSeparator: { $0.isWhitespace }).compactMap { word in
+      word.first(where: canStandForAWord)
+    }
+    guard let first = letters.first else { return "" }
+    guard letters.count > 1, let last = letters.last else { return String(first).uppercased() }
+    return (String(first) + String(last)).uppercased()
+  }
+
+  /// A letter, a digit, or an emoji, as core's `\p{L}`, `\p{N}`,
+  /// `\p{Extended_Pictographic}`, and `\p{Regional_Indicator}`.
+  nonisolated static func canStandForAWord(_ character: Character) -> Bool {
+    if character.isLetter || character.isNumber { return true }
+    guard let scalar = character.unicodeScalars.first else { return false }
+    // `isEmoji` also covers `#`, `*`, and the digits, which are ASCII.
+    return scalar.value > 0x7F && scalar.properties.isEmoji
+  }
+}
+
+/// Draws the image at a URL, and `fallback` while it loads, when it fails, or
+/// when there is no URL.
+private struct AvatarImage<Fallback: View>: View {
+  let url: URL?
+  @ViewBuilder let fallback: () -> Fallback
+
+  var body: some View {
+    if let url {
+      AsyncImage(url: url) { phase in
+        if let image = phase.image {
+          image.resizable().scaledToFill()
+        } else {
+          fallback()
+        }
+      }
+    } else {
+      fallback()
+    }
+  }
+}
+
+/// The outline each shape clips to: a circle, the element radius, or square.
+private struct AvatarShapeOutline: Shape {
+  let shape: AvatarShape
+  let radius: CGFloat
+
+  func path(in rect: CGRect) -> Path {
+    switch shape {
+    case .circle: Circle().path(in: rect)
+    case .rounded: RoundedRectangle(cornerRadius: radius, style: .continuous).path(in: rect)
+    case .square: Rectangle().path(in: rect)
+    }
+  }
+}
+
+/// One element named by the avatar's label. A static avatar without a label
+/// is hidden; an interactive one keeps its link or button trait.
+private struct AvatarName: ViewModifier {
+  let label: String?
+  let isInteractive: Bool
+
+  func body(content: Content) -> some View {
+    if let label {
+      if isInteractive {
+        content.accessibilityElement(children: .ignore).accessibilityLabel(label)
+      } else {
+        content.accessibilityElement(children: .ignore).accessibilityLabel(label).accessibilityAddTraits(.isImage)
+      }
+    } else if isInteractive {
+      content
+    } else {
+      content.accessibilityHidden(true)
+    }
+  }
+}
+
+/// A tappable avatar answers taps across at least 44 by 44 points without
+/// changing its drawn size or its layout (Swift accessibility, X7).
+private struct AvatarTarget: ViewModifier {
+  let side: CGFloat
+
+  func body(content: Content) -> some View {
+    let outset = max(0, (44 - side) / 2)
+    content.contentShape(.interaction, Rectangle().inset(by: -outset))
+  }
+}
+
+/// The base `id` becomes the accessibility identifier (AST-082 FR7).
+private struct AvatarIdentifier: ViewModifier {
+  let id: String?
+
+  func body(content: Content) -> some View {
+    if let id {
+      content.accessibilityIdentifier(id)
+    } else {
+      content
+    }
+  }
+}
