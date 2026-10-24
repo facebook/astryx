@@ -31,7 +31,6 @@ import {
   borderVars,
   durationVars,
   easeVars,
-  sizeVars,
 } from '../theme/tokens.stylex';
 import {isRenderable, mergeProps} from '../utils';
 import {useClipboard} from '../hooks/useClipboard';
