@@ -126,7 +126,7 @@
  * @property {string} file Path relative to the folder the command ran in.
  * @property {string[]} codemods Codemods that need the rebuild.
  * @property {string[]} commands Exact commands that rebuild the file, when known: the generated header's `Command:` line, or the command the codemod names (such as `astryx theme build`).
- * @property {string[]} messages Why a codemod reported the file out of date; empty for a protected file, whose `protectedFiles` entry carries its declarations.
+ * @property {string[]} messages Why a codemod reported the file out of date; empty for a protected generated file that no codemod reported out of date, whose `protectedFiles` entry carries its declarations.
  */
 
 /**
