@@ -46,14 +46,14 @@ export const docs = {
     vars: [
       {name: '--spinner-diameter', description: "Diameter of the drawn ring. Set it on a size-variant target to retheme what each named size resolves to, e.g. spinner: { 'size:xl': { '--spinner-diameter': '2.5rem' } }. The rendered box is this plus the stroke width on each side, and follows automatically. Any length works: rem, em and calc() are resolved before the ring is drawn.", default: '10px (sm), 14px (md), 18px (lg), 28px (xl)'},
       {name: '--spinner-stroke-width', description: 'Stroke width of both circles the ring is drawn from: the moving arc and the track behind it. Set it per size alongside the diameter. One stroke width drives both, so 0 is honoured as a zero-width stroke and paints nothing at all rather than falling back to the default; for an arc with no track behind it, set --spinner-track-color to transparent instead.', default: '2px (sm), 3px (md), 3px (lg), 4px (xl)'},
-      {name: '--spinner-color', description: "Color of the moving arc. Defaults to the shade's token, so set it on a shade-variant target to retheme one shade (spinner: { 'shade:subtle': { '--spinner-color': 'var(--color-text-tertiary)' } }), or on the base target to retheme all four. Accepts any color notation, including var(), color-mix() and currentColor.", default: 'var(--color-accent) (default), var(--color-text-secondary) (subtle), var(--color-on-dark) (onMedia), currentColor (inherit)'},
+      {name: '--spinner-color', description: "Color of the moving arc, and of the spokes drawn on a touch screen. Defaults to the shade's token, so set it on a shade-variant target to retheme one shade (spinner: { 'shade:subtle': { '--spinner-color': 'var(--color-text-tertiary)' } }), or on the base target to retheme all four. Accepts any color notation, including var(), color-mix() and currentColor.", default: 'var(--color-accent) (default), var(--color-text-secondary) (subtle), var(--color-on-dark) (onMedia), currentColor (inherit)'},
       {name: '--spinner-track-color', description: 'Color of the track the arc travels on. Set it to `transparent` for an arc with no track. The onMedia and inherit shades draw the track at reduced alpha (30%) so it reads against an arbitrary backdrop; that fade applies to a themed color too.', default: 'var(--color-track) (default, subtle), var(--color-on-dark) (onMedia), currentColor (inherit)'},
       {name: '--spinner-arc-fraction', description: "Fraction of the ring the moving arc covers, as a plain number (not a percentage or angle). Set it on a size-variant target the same way as --spinner-diameter, e.g. spinner: { 'size:xl': { '--spinner-arc-fraction': '0.75' } } for a 270deg sweep. Only takes effect once the stylesheet loads; a render with no CSS (SSR, no-JS) always draws the default 135deg arc.", default: '0.375 (135deg), same for every size'},
     ],
   },
   usage: {
     description:
-      'An animated loading indicator for processes with unknown duration, such as data fetching or form submission. Supports visible labels, multiple sizes, and a dark background variant. For content with known dimensions, use Skeleton instead.',
+      'An animated loading indicator for processes with unknown duration, such as data fetching or form submission. Supports visible labels, multiple sizes, and a dark background variant. On a touch screen it draws the iOS activity indicator (eight spokes with a fading trail) in place of the ring, at the same size and color. For content with known dimensions, use Skeleton instead.',
     bestPractices: [
       {guidance: true, description: 'Provide a meaningful label to describe what is loading for screen reader users.'},
       {guidance: true, description: 'Use the "onMedia" shade when placed on dark or accent-colored backgrounds.'},
@@ -112,7 +112,7 @@ export const docsZh = {
   },
   usage: {
     description:
-      'An animated loading indicator for processes with unknown duration, such as data fetching or form submission. Supports visible labels, multiple sizes, and a dark background variant. For content with known dimensions, use Skeleton instead.',
+      'An animated loading indicator for processes with unknown duration, such as data fetching or form submission. Supports visible labels, multiple sizes, and a dark background variant. On a touch screen it draws the iOS activity indicator (eight spokes with a fading trail) in place of the ring, at the same size and color. For content with known dimensions, use Skeleton instead.',
     bestPractices: [
       {guidance: true, description: 'Provide a meaningful label to describe what is loading for screen reader users.'},
       {guidance: true, description: 'Use the "onMedia" shade when placed on dark or accent-colored backgrounds.'},
@@ -126,7 +126,7 @@ export const docsZh = {
 export const docsDense = {
   usage: {
     description:
-      'An animated loading indicator for processes with unknown duration, such as data fetching or form submission. Supports visible labels, multiple sizes, and a dark background variant. For content with known dimensions, use Skeleton instead.',
+      'An animated loading indicator for processes with unknown duration, such as data fetching or form submission. Supports visible labels, multiple sizes, and a dark background variant. On a touch screen it draws the iOS activity indicator (eight spokes with a fading trail) in place of the ring, at the same size and color. For content with known dimensions, use Skeleton instead.',
     bestPractices: [
       {guidance: true, description: 'Provide a meaningful label to describe what is loading for screen reader users.'},
       {guidance: true, description: 'Use the "onMedia" shade when placed on dark or accent-colored backgrounds.'},

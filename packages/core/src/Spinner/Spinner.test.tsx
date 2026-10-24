@@ -15,6 +15,7 @@ import {Spinner} from './Spinner';
 import {InternationalizationProvider} from '../i18n';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
+import {progress} from '../motion/uikit';
 
 /** sm/md/lg/xl, as Spinner.tsx defines them. */
 const SIZES = {
@@ -27,10 +28,149 @@ const SIZES = {
 const ring = (testId = 'spinner') =>
   screen.getByTestId(testId).querySelector('svg') as SVGSVGElement;
 
+/** The track's svg and the arc's svg, in that order. */
+const rings = (testId = 'spinner') => [
+  // The track's svg is a child of the box, the arc's sits in the rotor; the
+  // touch glyph's spokes are a level deeper.
+  ...screen
+    .getByTestId(testId)
+    .querySelectorAll(':scope > svg, :scope > span > svg'),
+];
+
+/** The box that turns: the arc's svg sits inside it, the track's does not. */
+const rotor = (testId = 'spinner') =>
+  rings(testId)[1].parentElement as HTMLSpanElement;
+
 const circles = (testId = 'spinner') => {
-  const [track, arc] = [...ring(testId).querySelectorAll('circle')];
+  const [track, arc] = [
+    ...screen.getByTestId(testId).querySelectorAll('circle'),
+  ];
   return {track, arc};
 };
+
+/** Every rule StyleX injected, as text (jsdom computes no animations). */
+function injectedCss(): string {
+  let out = '';
+  for (const sheet of Array.from(document.styleSheets)) {
+    try {
+      for (const rule of Array.from(sheet.cssRules)) {
+        out += rule.cssText + '\n';
+      }
+    } catch {
+      // ignore cross-origin sheets
+    }
+  }
+  return (
+    out +
+    Array.from(document.querySelectorAll('style'))
+      .map(s => s.textContent || '')
+      .join('\n')
+  );
+}
+
+/** The declarations the element's atomic classes carry, as `prop: value`. */
+function declarationsOf(el: Element, css = injectedCss()): string[] {
+  const out: string[] = [];
+  for (const cls of Array.from(el.classList)) {
+    const re = new RegExp(`\\.${cls}\\b[^{]*\\{([^}]*)\\}`, 'g');
+    for (const match of css.matchAll(re)) {
+      out.push(
+        ...match[1]
+          .split(';')
+          .map(d => d.trim())
+          .filter(Boolean),
+      );
+    }
+  }
+  return out;
+}
+
+/**
+ * The declarations the element's classes carry in rules at the top level
+ * (`media` null) or inside `@media <media>`, as `prop: value`.
+ */
+function rulesOf(el: Element, media: string | null): string[] {
+  const out: string[] = [];
+  const visit = (rules: CSSRuleList, inMedia: string | null) => {
+    for (const rule of Array.from(rules)) {
+      if (rule instanceof CSSMediaRule) {
+        visit(rule.cssRules, rule.conditionText ?? rule.media.mediaText);
+      } else if (rule instanceof CSSStyleRule && inMedia === media) {
+        if (
+          Array.from(el.classList).some(c =>
+            rule.selectorText.includes(`.${c}`),
+          )
+        ) {
+          for (let i = 0; i < rule.style.length; i += 1) {
+            const prop = rule.style[i];
+            out.push(`${prop}: ${rule.style.getPropertyValue(prop)}`);
+          }
+        }
+      }
+    }
+  };
+  for (const sheet of Array.from(document.styleSheets)) {
+    try {
+      visit(sheet.cssRules, null);
+    } catch {
+      // ignore cross-origin sheets
+    }
+  }
+  return out;
+}
+
+/** UIKit's activity indicator: the glyph and its eight spokes. */
+const glyph = (testId = 'spinner') => {
+  const root = screen.getByTestId(testId);
+  const element = root.lastElementChild as HTMLSpanElement;
+  return {element, spokes: [...element.children] as HTMLSpanElement[]};
+};
+
+/** The named animation's opacity keyframes as [offset 0..1, opacity], in order. */
+function opacityKeyframes(name: string): [number, number][] {
+  const css = injectedCss();
+  // jsdom lowercases an animation-name it parses, not the @keyframes name.
+  const start = css.search(new RegExp(`@keyframes ${name}\\b`, 'i'));
+  expect(start).toBeGreaterThanOrEqual(0);
+  let depth = 0;
+  let end = css.length;
+  for (let i = css.indexOf('{', start); i < css.length; i += 1) {
+    if (css[i] === '{') {
+      depth += 1;
+    }
+    if (css[i] === '}' && --depth === 0) {
+      end = i + 1;
+      break;
+    }
+  }
+  return Array.from(
+    css
+      .slice(start, end)
+      .matchAll(/(from|to|[\d.]+%)\s*\{\s*opacity:\s*([\d.]+)/g),
+    m => {
+      const at =
+        m[1] === 'from' ? 0 : m[1] === 'to' ? 100 : Number.parseFloat(m[1]);
+      return [at / 100, Number(m[2])] as [number, number];
+    },
+  ).sort((a, b) => a[0] - b[0]);
+}
+
+/** Opacity at progress x through one cycle, linear between keyframes. */
+function opacityAt(frames: [number, number][], x: number): number {
+  for (let i = 1; i < frames.length; i += 1) {
+    const [x0, y0] = frames[i - 1];
+    const [x1, y1] = frames[i];
+    if (x <= x1) {
+      return x1 === x0 ? y1 : y0 + ((y1 - y0) * (x - x0)) / (x1 - x0);
+    }
+  }
+  return frames[frames.length - 1][1];
+}
+
+const valueOf = (declarations: string[], prop: string) =>
+  declarations
+    .filter(d => d.startsWith(`${prop}:`))
+    .map(d => d.slice(prop.length + 1).trim());
 
 const dashOf = (el: SVGCircleElement) =>
   (el.getAttribute('stroke-dasharray') ?? '').split(/[\s,]+/).map(Number);
@@ -251,9 +391,13 @@ describe('Spinner ring', () => {
 
   it('draws the ring in SVG', () => {
     render(<Spinner data-testid="spinner" />);
-    const svg = ring();
-    expect(svg).not.toBeNull();
-    expect(svg.querySelectorAll('circle')).toHaveLength(2);
+    // The track and the arc each have their own svg: the track stays put and
+    // the arc's svg sits in the rotor that turns.
+    const [trackSvg, arcSvg] = rings();
+    expect(trackSvg.querySelectorAll('circle')).toHaveLength(1);
+    expect(arcSvg.querySelectorAll('circle')).toHaveLength(1);
+    expect(trackSvg.parentElement).toBe(screen.getByTestId('spinner'));
+    expect(rotor().parentElement).toBe(screen.getByTestId('spinner'));
     expect(screen.getByTestId('spinner').querySelector('canvas')).toBeNull();
   });
 
@@ -266,10 +410,11 @@ describe('Spinner ring', () => {
       // No viewBox: one user unit is one px, so the attributes below mean px.
       // They are the no-stylesheet fallback; CSS sizes the frame from the box.
       const frame = diameter + border * 2;
-      const svg = ring();
-      expect(svg.getAttribute('viewBox')).toBeNull();
-      expect(Number(svg.getAttribute('width'))).toBe(frame);
-      expect(Number(svg.getAttribute('height'))).toBe(frame);
+      for (const svg of rings()) {
+        expect(svg.getAttribute('viewBox')).toBeNull();
+        expect(Number(svg.getAttribute('width'))).toBe(frame);
+        expect(Number(svg.getAttribute('height'))).toBe(frame);
+      }
       for (const c of [circles().track, circles().arc]) {
         expect(c.getAttribute('cx')).toBe('50%');
         expect(c.getAttribute('cy')).toBe('50%');
@@ -302,13 +447,14 @@ describe('Spinner ring', () => {
   // because nothing tied them.
   it('sizes the frame from CSS, not from the size constant', () => {
     render(<Spinner data-testid="spinner" />);
-    const svg = ring();
     // No viewBox, and the circles centre on the box rather than on a centre
     // in user units — together that is what lets CSS size the frame from
     // `--_spinner-box-size`, the same composed var the span is sized from, so
     // a themed diameter moves both. The px attributes remain as the
     // no-stylesheet fallback and CSS outranks them whenever one is present.
-    expect(svg.getAttribute('viewBox')).toBeNull();
+    for (const svg of rings()) {
+      expect(svg.getAttribute('viewBox')).toBeNull();
+    }
     for (const c of [circles().track, circles().arc]) {
       expect(c.getAttribute('cx')).toBe('50%');
       expect(c.getAttribute('cy')).toBe('50%');
@@ -362,21 +508,66 @@ describe('Spinner ring', () => {
   );
 
   it('schedules no frame where the Web Animations API is absent', () => {
-    expect(SVGElement.prototype).not.toHaveProperty('getAnimations');
+    expect(HTMLElement.prototype).not.toHaveProperty('getAnimations');
     const raf = vi.spyOn(window, 'requestAnimationFrame');
     render(<Spinner data-testid="spinner" />);
     expect(ring()).not.toBeNull();
     expect(raf).not.toHaveBeenCalled();
   });
 
+  // The ring turns on the compositor: only the rotor moves, and only by
+  // `transform`, a property the browser animates without the main thread.
+  // A `stroke-dashoffset` (or any other paint) animation would repaint the arc
+  // on the main thread every frame and stop for as long as a script runs —
+  // the browser proof (Spinner.interaction.browser.spec.ts) holds the frames.
+  it('turns the arc by rotating the rotor, with nothing else animated', () => {
+    render(<Spinner data-testid="spinner" />);
+    const css = injectedCss();
+    const rotorDecls = declarationsOf(rotor(), css);
+    const name = rotorDecls
+      .find(d => d.startsWith('animation-name:'))
+      ?.slice('animation-name:'.length)
+      .trim();
+    expect(name).toBeTruthy();
+    expect(rotorDecls).toContain('animation-timing-function: linear');
+    expect(rotorDecls).toContain('animation-iteration-count: infinite');
+    // Its keyframes turn it once, by transform and nothing else. (jsdom's
+    // CSSOM lowercases the name in the rule but not in the at-rule.)
+    const keyframes = new RegExp(
+      `@keyframes ${name}\\s*\\{([\\s\\S]*?\\})\\s*\\}`,
+      'i',
+    ).exec(css)?.[1];
+    expect(keyframes).toMatch(/rotate\(0deg\)/);
+    expect(keyframes).toMatch(/rotate\(360deg\)/);
+    expect(keyframes).not.toMatch(/stroke|width|height|top|left/);
+    // Its own compositing layer from the first frame.
+    expect(rotorDecls).toContain('will-change: transform');
+    // Nothing else in the spinner animates: not the arc, not the track.
+    for (const el of [
+      ...screen.getByTestId('spinner').querySelectorAll('svg, circle'),
+    ]) {
+      expect(
+        declarationsOf(el, css).some(d => d.startsWith('animation-name:')),
+      ).toBe(false);
+    }
+    expect(css).not.toMatch(/@keyframes[^{]*\{[^}]*stroke-dashoffset/);
+  });
+
+  it('keeps the track out of the rotor', () => {
+    render(<Spinner data-testid="spinner" />);
+    expect(rotor().contains(circles().arc)).toBe(true);
+    expect(rotor().contains(circles().track)).toBe(false);
+    expect(rotor().getAttribute('aria-hidden')).toBe('true');
+  });
+
   it('pins every ring to the timeline origin in a single frame', () => {
     const animations: {startTime: number | null}[] = [];
-    const getAnimations = vi.fn(function (this: SVGElement) {
+    const getAnimations = vi.fn(function (this: HTMLElement) {
       const a = {startTime: null as number | null};
       animations.push(a);
       return [a];
     });
-    Object.defineProperty(SVGElement.prototype, 'getAnimations', {
+    Object.defineProperty(HTMLElement.prototype, 'getAnimations', {
       value: getAnimations,
       configurable: true,
       writable: true,
@@ -394,7 +585,7 @@ describe('Spinner ring', () => {
       const {container} = render(
         <>
           {Array.from({length: 5}, (_, i) => (
-            <Spinner key={i} />
+            <Spinner key={i} data-testid={`spinner-${i}`} />
           ))}
         </>,
       );
@@ -404,10 +595,10 @@ describe('Spinner ring', () => {
       frames.forEach(cb => cb(0));
       expect(animations).toHaveLength(5);
       expect(animations.every(a => a.startTime === 0)).toBe(true);
-      // The dash animation lives on the arc <circle>, a descendant of the
-      // <svg> this ref sits on, not the <svg> itself (#6253) — subtree:true
-      // is what lets getAnimations() find it from here.
-      expect(getAnimations).toHaveBeenCalledWith({subtree: true});
+      // The rotation lives on the rotor itself, the element the ref sits on.
+      expect(getAnimations.mock.contexts).toEqual(
+        Array.from({length: 5}, (_, i) => rotor(`spinner-${i}`)),
+      );
       // The pin runs on the branch the other shade cases cannot reach, so the
       // no-read assertion is made here too.
       expect(
@@ -417,7 +608,159 @@ describe('Spinner ring', () => {
       ).toEqual([]);
     } finally {
       // @ts-expect-error — removing the stub restores jsdom's real surface
-      delete SVGElement.prototype.getAnimations;
+      delete HTMLElement.prototype.getAnimations;
+    }
+  });
+});
+
+describe("Spinner under a finger: UIKit's activity indicator", () => {
+  const indicator = progress.activityIndicator;
+  // UIKit's spoke alphas include its color's own alpha; the glyph draws the
+  // shade's color at the same relative weights.
+  const weight = (frame: number) =>
+    indicator.spokeAlphas[Math.min(frame, indicator.spokeAlphas.length - 1)] /
+    indicator.colorAlpha;
+  const frameMs = indicator.cycleMs / indicator.framesPerCycle;
+
+  it("draws the glyph in the ring's place when the primary pointer is coarse", () => {
+    render(<Spinner data-testid="spinner" />);
+    const {element, spokes} = glyph();
+    expect(element).toHaveAttribute('aria-hidden', 'true');
+    expect(spokes).toHaveLength(indicator.spokeCount);
+    // The resolver's touch query, spelled exactly as TOUCH_QUERY.
+    expect(valueOf(rulesOf(element, null), 'display')).toEqual(['none']);
+    expect(valueOf(rulesOf(element, '(pointer: coarse)'), 'display')).toEqual([
+      'block',
+    ]);
+    for (const part of [rings()[0], rotor()]) {
+      expect(valueOf(rulesOf(part, null), 'display')).toEqual(['block']);
+      expect(valueOf(rulesOf(part, '(pointer: coarse)'), 'display')).toEqual([
+        'none',
+      ]);
+    }
+  });
+
+  it("steps every spoke through UIKit's alphas, one frame every 50 ms", () => {
+    render(<Spinner data-testid="spinner" />);
+    const [spoke] = glyph().spokes;
+    const declarations = rulesOf(spoke, null);
+    const toMs = (value: string) =>
+      Number.parseFloat(value) * (value.endsWith('ms') ? 1 : 1000);
+    expect(valueOf(declarations, 'animation-duration').map(toMs)).toEqual([
+      indicator.cycleMs,
+    ]);
+    expect(valueOf(declarations, 'animation-timing-function')).toEqual([
+      'linear',
+    ]);
+    expect(valueOf(declarations, 'animation-iteration-count')).toEqual([
+      'infinite',
+    ]);
+    expect(valueOf(declarations, 'will-change')).toEqual(['opacity']);
+    const [name] = valueOf(declarations, 'animation-name');
+    const frames = opacityKeyframes(name);
+    // Each of the 16 frames holds one value from its start to its end.
+    for (let frame = 0; frame < indicator.framesPerCycle; frame += 1) {
+      for (const within of [0.02, 0.5, 0.98]) {
+        const x = (frame + within) / indicator.framesPerCycle;
+        expect(opacityAt(frames, x), `frame ${frame}`).toBeCloseTo(
+          weight(frame),
+          3,
+        );
+      }
+    }
+    // …and changes in 0.01% of the cycle, never through steps(), which
+    // WebKit runs on the main thread.
+    for (let i = 1; i < frames.length; i += 1) {
+      if (frames[i][1] !== frames[i - 1][1]) {
+        expect(frames[i][0] - frames[i - 1][0]).toBeCloseTo(0.0001, 6);
+      }
+    }
+    // A spoke's resting opacity is the trail's last value.
+    expect(valueOf(declarations, 'opacity')).toEqual([String(weight(99))]);
+  });
+
+  it("starts the head at 9 o'clock and moves it one spoke clockwise every two frames", () => {
+    render(<Spinner data-testid="spinner" />);
+    const {spokes} = glyph();
+    spokes.forEach((spoke, index) => {
+      const declarations = rulesOf(spoke, null);
+      // Spoke `index` is drawn index × 45° clockwise from 12 o'clock, about
+      // the centre of UIKit's frame; its layer itself never turns.
+      const svg = spoke.querySelector('svg') as SVGSVGElement;
+      const center = indicator.medium.glyphCenterPt;
+      expect(svg.querySelector('rect')?.getAttribute('transform')).toBe(
+        `rotate(${(index * 360) / indicator.spokeCount} ${center} ${center})`,
+      );
+      expect(valueOf(declarations, 'transform')).toEqual([]);
+      // The head reaches it this many frames into the cycle…
+      const reached =
+        indicator.framesPerSpoke *
+        ((index - indicator.headSpokeAtStart + indicator.spokeCount) %
+          indicator.spokeCount);
+      // …so at the first frame it is that many frames before its own start.
+      const [delay] = valueOf(declarations, 'animation-delay');
+      const startFrame =
+        ((-Number.parseFloat(delay) / frameMs) % indicator.framesPerCycle) + 0;
+      expect(startFrame).toBe(
+        (indicator.framesPerCycle - reached) % indicator.framesPerCycle,
+      );
+      expect(Number.parseFloat(delay)).toBeLessThanOrEqual(0);
+    });
+  });
+
+  it('keeps its pace under reduced motion and needs no phase pin, as UIKit does', () => {
+    render(<Spinner data-testid="spinner" />);
+    const [spoke] = glyph().spokes;
+    expect(
+      rulesOf(spoke, '(prefers-reduced-motion: reduce)').filter(d =>
+        d.startsWith('animation'),
+      ),
+    ).toEqual([]);
+    expect(indicator.unchangedByReduceMotionOrRtl).toBe(true);
+    expect(indicator.startsAtFirstFrame).toBe(true);
+  });
+
+  it("draws UIKit's medium and large spokes, scaled to the box", () => {
+    for (const [size, style] of [
+      ['sm', indicator.medium],
+      ['md', indicator.medium],
+      ['lg', indicator.medium],
+      ['xl', indicator.large],
+    ] as const) {
+      const {unmount} = render(
+        <Spinner size={size} data-testid={`spinner-${size}`} />,
+      );
+      const {spokes} = glyph(`spinner-${size}`);
+      for (const spoke of spokes) {
+        // Each spoke's layer covers the box…
+        const layer = rulesOf(spoke, null);
+        expect(valueOf(layer, 'top')).toEqual(['0px']);
+        expect(valueOf(layer, 'width')).toEqual(['var(--_spinner-box-size)']);
+        // …and draws one capsule in UIKit's points, scaled to the box.
+        const svg = spoke.querySelector('svg') as SVGSVGElement;
+        expect(svg.getAttribute('viewBox')).toBe(
+          `0 0 ${style.sizePt} ${style.sizePt}`,
+        );
+        expect(valueOf(rulesOf(svg, null), 'width')).toEqual([
+          'var(--_spinner-box-size)',
+        ]);
+        const rect = svg.querySelector('rect') as SVGRectElement;
+        const attr = (name: string) => Number(rect.getAttribute(name));
+        const center = style.glyphCenterPt;
+        expect(attr('width'), size).toBeCloseTo(style.spokeWidthPt, 6);
+        expect(attr('rx'), size).toBeCloseTo(style.spokeWidthPt / 2, 6);
+        expect(attr('x'), size).toBeCloseTo(center - style.spokeWidthPt / 2, 6);
+        // From the inner radius to the outer one, at 12 o'clock.
+        expect(attr('y'), size).toBeCloseTo(
+          center - style.spokeOuterRadiusPt,
+          6,
+        );
+        expect(attr('y') + attr('height'), size).toBeCloseTo(
+          center - style.spokeInnerRadiusPt,
+          6,
+        );
+      }
+      unmount();
     }
   });
 });

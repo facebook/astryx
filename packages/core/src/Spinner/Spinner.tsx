@@ -11,6 +11,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Spinner/Spinner.doc.mjs
  * - /packages/core/src/Spinner/Spinner.test.tsx
+ * - /packages/core/src/Spinner/__tests__/SpinnerMotion.a11y.chromium.spec.ts (rotor timing)
  * - /packages/core/src/Spinner/index.ts
  * - /apps/storybook/stories/Spinner.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/Spinner/ (showcase blocks)
@@ -24,6 +25,7 @@ import {Text} from '../Text/Text';
 import {mergeProps} from '../utils';
 import {useTranslator} from '../i18n';
 import {themeProps} from '../utils/themeProps';
+import {progress} from '../motion/uikit/progress';
 
 // =============================================================================
 // Constants
@@ -147,60 +149,63 @@ function registerSpinnerVars(): void {
 registerSpinnerVars();
 
 /**
- * Pin every ring's dash motion to the document timeline's origin instead of
- * its own start time, so spinners mounted seconds apart stay in phase.
+ * Pin every ring's rotation to the document timeline's origin instead of its
+ * own start time, so spinners mounted seconds apart stay in phase.
  *
  * Setting `startTime` is exact where arithmetic on a clock read is not: a
  * negative `animation-delay` computed at mount is only as good as the gap
  * between reading the clock and the frame the animation starts in, which at
- * 10x CPU throttling measured 116deg of drift (from when this animated a
- * literal rotation; the same drift risk applies to the dash offset now).
+ * 10x CPU throttling measured 116deg of drift.
  *
- * Rings are collected and pinned in one frame because `getAnimations()`
+ * Rotors are collected and pinned in one frame because `getAnimations()`
  * resolves style and `startTime` dirties it again, so pinning them one at a
  * time makes each mount re-force what the previous one invalidated — 53 style
  * recalcs for 38 spinners against 19 batched.
+ *
+ * A start time set from script is also why the rotor declares
+ * `will-change: transform` up front (see `styles.rotor`): Mobile Safari runs a
+ * re-timed animation off the main thread only on an element that already has
+ * its own compositing layer; without one it falls back to the main thread and
+ * stops for as long as a script runs.
  */
-const pendingRings = new Set<SVGSVGElement>();
+const pendingRotors = new Set<HTMLSpanElement>();
 let flushScheduled = false;
 
-function pinRingsToTimelineOrigin(): void {
+function pinRotorsToTimelineOrigin(): void {
   flushScheduled = false;
   const animations: Animation[] = [];
-  for (const svg of pendingRings) {
-    // The animation now runs on the arc <circle>, a descendant of the ring
-    // this ref sits on (#6253), so it needs subtree:true to be found here.
-    animations.push(...svg.getAnimations({subtree: true}));
+  for (const rotor of pendingRotors) {
+    animations.push(...rotor.getAnimations());
   }
-  pendingRings.clear();
+  pendingRotors.clear();
   for (const animation of animations) {
     animation.startTime = 0;
   }
 }
 
 /**
- * Ref callback for the ring: the one place a mounted ring touches the DOM.
+ * Ref callback for the rotor: the one place a mounted ring touches the DOM.
  *
  * It reads nothing back — the geometry is resolved by the cascade, not in JS.
  */
 function syncRotationPhase(
-  svg: SVGSVGElement | null,
+  rotor: HTMLSpanElement | null,
 ): (() => void) | undefined {
-  if (svg == null) {
+  if (rotor == null) {
     return undefined;
   }
   // jsdom implements no Web Animations, and this runs in every consumer's
   // component tests.
-  if (typeof svg.getAnimations !== 'function') {
+  if (typeof rotor.getAnimations !== 'function') {
     return undefined;
   }
-  pendingRings.add(svg);
+  pendingRotors.add(rotor);
   if (!flushScheduled) {
     flushScheduled = true;
-    requestAnimationFrame(pinRingsToTimelineOrigin);
+    requestAnimationFrame(pinRotorsToTimelineOrigin);
   }
   return () => {
-    pendingRings.delete(svg);
+    pendingRotors.delete(rotor);
   };
 }
 
@@ -209,19 +214,62 @@ function syncRotationPhase(
 // =============================================================================
 
 /**
- * Moves the dash around a stationary circle instead of rotating the whole
- * ring. WebKit re-antialiases a rotating stroked shape's rounded cap
- * (`strokeLinecap: 'round'`, below) slightly differently at each intermediate
- * angle, which reads as a visible wobble on iOS Safari independent of
- * compositing (#6253) — confirmed by a real-device test against this exact
- * fix, since `willChange`/layer promotion alone (the earlier fix for #3617)
- * only smooths the rotation's motion, not the per-frame stroke rasterization.
- * A static circle with an animated `stroke-dashoffset` never rotates, so
- * WebKit never re-rasterizes the cap at an intermediate angle at all.
+ * Turns the arc once per period. Only the rotor — an HTML box holding the arc,
+ * with its own compositing layer declared up front — moves, and only its
+ * `transform`, so the browser's compositor turns the already-rasterized arc
+ * without the main thread: the ring keeps turning while a script runs, which
+ * is exactly when a loading indicator is on screen. The track behind it never
+ * moves.
+ *
+ * This replaces a `stroke-dashoffset` animation (#6311), which repainted the
+ * arc on the main thread every frame and froze for as long as a script ran.
+ * That animation had in turn replaced a rotating `<svg>` reported to wobble
+ * on an iPhone (#6253). The box that turns here is an HTML element holding
+ * a compositing layer from its first frame, so the arc is rasterized once and
+ * turned as a whole.
  */
-const dashMotion = stylex.keyframes({
-  '0%': {strokeDashoffset: '0px'},
-  '100%': {strokeDashoffset: `calc(var(${RESOLVED_DIAMETER}) * -${PI})`},
+const rotation = stylex.keyframes({
+  '0%': {transform: 'rotate(0deg)'},
+  '100%': {transform: 'rotate(360deg)'},
+});
+
+/**
+ * Under a finger (a coarse primary pointer) the spinner draws UIKit's activity
+ * indicator instead of the ring (motion/uikit `progress.activityIndicator`):
+ * eight capsule spokes, a bright head that steps clockwise one spoke every
+ * 100 ms, a turn every 0.8 s, and the trail fading behind it. UIKit swaps
+ * sixteen pre-rendered images; here each spoke steps its own opacity through
+ * the same sixteen values on the compositor, offset by when the head reaches
+ * it (`spokeStyles`), so it keeps turning while a script runs.
+ *
+ * One frame lasts 6.25% of the cycle. Each value is held by a pair of
+ * keyframes and joined to the next by a 0.01% ramp under linear timing: WebKit
+ * never runs a `steps()` animation off the main thread. The values are
+ * UIKit's spoke alphas divided by its color's own alpha (0.6), so a shade's
+ * color takes the place of UIKit's gray at the same relative weights.
+ *
+ * Like UIKit's, the glyph keeps its pace under reduced motion, starts its own
+ * cycle when it mounts (no phase pin), and turns clockwise in RTL.
+ */
+const spokeFade = stylex.keyframes({
+  '0%': {opacity: 0.85},
+  '6.24%': {opacity: 0.85},
+  '6.25%': {opacity: 0.7783},
+  '12.49%': {opacity: 0.7783},
+  '12.5%': {opacity: 0.7067},
+  '18.74%': {opacity: 0.7067},
+  '18.75%': {opacity: 0.6333},
+  '24.99%': {opacity: 0.6333},
+  '25%': {opacity: 0.5617},
+  '31.24%': {opacity: 0.5617},
+  '31.25%': {opacity: 0.49},
+  '37.49%': {opacity: 0.49},
+  '37.5%': {opacity: 0.4183},
+  '43.74%': {opacity: 0.4183},
+  '43.75%': {opacity: 0.3467},
+  '49.99%': {opacity: 0.3467},
+  '50%': {opacity: 0.275},
+  '100%': {opacity: 0.275},
 });
 
 // =============================================================================
@@ -276,7 +324,11 @@ const styles = stylex.create({
   },
   ring: {
     backfaceVisibility: 'hidden',
-    display: 'block',
+    // Under a finger the touch glyph takes the ring's place (see spokeFade).
+    // The query is the touch presentation resolver's TOUCH_QUERY.
+    display: {default: 'block', '@media (pointer: coarse)': 'none'},
+    // The track and the rotor share the one grid cell, stacked and centred.
+    gridArea: '1 / 1',
     // The frame is the box, read from the same composed var the span is sized
     // from — not from the size constant, which a theme cannot reach, and not
     // from a percentage, which needs the grid area to be a definite size in
@@ -293,6 +345,58 @@ const styles = stylex.create({
     // diameter — an overflowing grid item aligns to start rather than centre,
     // which put the ring 1.5-3.3px off across the four sizes.
     overflow: 'visible',
+  },
+  // The box that turns: it holds the arc's own svg, is exactly the frame's
+  // size (so it pivots on the ring's centre), and moves by `transform` alone.
+  rotor: {
+    display: {default: 'block', '@media (pointer: coarse)': 'none'},
+    gridArea: '1 / 1',
+    width: `var(${BOX_SIZE})`,
+    height: `var(${BOX_SIZE})`,
+    // Its own compositing layer from the first frame, before the start time
+    // is pinned from script (see `pinRotorsToTimelineOrigin`).
+    willChange: 'transform',
+    // Slow the motion dramatically under reduced-motion rather than freezing
+    // it (a frozen spinner reads as broken), matching ProgressBar's approach.
+    // The role="status" + "Loading" label still convey busy state (obs-6).
+    animationDuration: {
+      default: durationVars['--duration-slow-min'],
+      '@media (prefers-reduced-motion: reduce)': '3s',
+    },
+    animationIterationCount: 'infinite',
+    animationName: rotation,
+    animationTimingFunction: 'linear',
+  },
+  // UIKit's activity indicator, shown in the ring's place under a finger.
+  glyph: {
+    display: {default: 'none', '@media (pointer: coarse)': 'block'},
+    gridArea: '1 / 1',
+    position: 'relative',
+    width: `var(${BOX_SIZE})`,
+    height: `var(${BOX_SIZE})`,
+  },
+  // One spoke per layer: a full-box element holding that spoke already drawn
+  // at its angle, so nothing is resampled (UIKit draws its images the same
+  // way). Its opacity is the only thing that moves, and it has its own layer
+  // so the compositor runs it.
+  spoke: {
+    position: 'absolute',
+    top: 0,
+    insetInlineStart: 0,
+    width: `var(${BOX_SIZE})`,
+    height: `var(${BOX_SIZE})`,
+    opacity: 0.275,
+    willChange: 'opacity',
+    animationName: spokeFade,
+    animationDuration: '800ms',
+    animationIterationCount: 'infinite',
+    animationTimingFunction: 'linear',
+  },
+  spokeShape: {
+    display: 'block',
+    width: `var(${BOX_SIZE})`,
+    height: `var(${BOX_SIZE})`,
+    fill: 'var(--spinner-color)',
   },
   circle: {
     fill: 'none',
@@ -330,16 +434,6 @@ const styles = stylex.create({
   // `0` the way the registered length pair guards against, so it needs no
   // registration.
   arc: {
-    // Slow the motion dramatically under reduced-motion rather than freezing
-    // it (a frozen spinner reads as broken), matching ProgressBar's approach.
-    // The role="status" + "Loading" label still convey busy state (obs-6).
-    animationDuration: {
-      default: durationVars['--duration-slow-min'],
-      '@media (prefers-reduced-motion: reduce)': '3s',
-    },
-    animationIterationCount: 'infinite',
-    animationName: dashMotion,
-    animationTimingFunction: 'linear',
     stroke: 'var(--spinner-color)',
     transform: 'rotate(-90deg)',
     strokeDasharray: `calc(var(${RESOLVED_DIAMETER}) * ${PI} * var(--spinner-arc-fraction)) calc(var(${RESOLVED_DIAMETER}) * ${PI} * (1 - var(--spinner-arc-fraction)))`,
@@ -420,6 +514,44 @@ const trackOpacityStyles = stylex.create({
   onMedia: {strokeOpacity: TRACK_OPACITY.onMedia},
   inherit: {strokeOpacity: TRACK_OPACITY.inherit},
 });
+
+// The eight spokes, clockwise from 12 o'clock. Each starts its fade where the
+// head reaches it: in the first frame the head is at 9 o'clock (spoke 6), and
+// it moves one spoke every two frames (100 ms). A negative delay starts a
+// spoke partway through its cycle, so every spoke is in step from the first
+// frame.
+const spokeStyles = stylex.create({
+  s0: {animationDelay: '-600ms'},
+  s1: {animationDelay: '-500ms'},
+  s2: {animationDelay: '-400ms'},
+  s3: {animationDelay: '-300ms'},
+  s4: {animationDelay: '-200ms'},
+  s5: {animationDelay: '-100ms'},
+  s6: {animationDelay: '0ms'},
+  s7: {animationDelay: '-700ms'},
+});
+
+const SPOKES = [
+  {id: 's0', style: spokeStyles.s0},
+  {id: 's1', style: spokeStyles.s1},
+  {id: 's2', style: spokeStyles.s2},
+  {id: 's3', style: spokeStyles.s3},
+  {id: 's4', style: spokeStyles.s4},
+  {id: 's5', style: spokeStyles.s5},
+  {id: 's6', style: spokeStyles.s6},
+  {id: 's7', style: spokeStyles.s7},
+];
+
+// The glyph follows UIKit's two styles, drawn in their own points and scaled
+// to the size's box: `.medium` (20 pt) for sm, md and lg, `.large` (37 pt)
+// for xl, so md draws `.medium` exactly and the box never changes size.
+// `.large` sits 1 pt up and left of its view's centre, as UIKit draws it.
+const GLYPH_STYLE = {
+  sm: progress.activityIndicator.medium,
+  md: progress.activityIndicator.medium,
+  lg: progress.activityIndicator.medium,
+  xl: progress.activityIndicator.large,
+} as const;
 
 // =============================================================================
 // Types
@@ -507,6 +639,7 @@ export function Spinner({
   const frameSize = diameter + border * 2;
   const circumference = Math.PI * diameter;
   const arcLength = circumference * ARC_FRACTION;
+  const glyph = GLYPH_STYLE[size];
   const hasLabel = label != null;
   const labelId = useId();
   const t = useTranslator();
@@ -562,7 +695,6 @@ export function Spinner({
         },
       )}>
       <svg
-        ref={syncRotationPhase}
         width={frameSize}
         height={frameSize}
         aria-hidden="true"
@@ -578,18 +710,48 @@ export function Spinner({
             trackOpacityStyles[shade],
           )}
         />
-        <circle
-          cx="50%"
-          cy="50%"
-          r={diameter / 2}
-          strokeWidth={border}
-          // The size's own dash, for the render with no stylesheet. The rule
-          // above composes the same lengths from the resolved diameter, so a
-          // themed ring keeps this fraction of arc rather than this length.
-          strokeDasharray={`${arcLength} ${circumference - arcLength}`}
-          {...stylex.props(styles.circle, styles.arc)}
-        />
       </svg>
+      <span
+        ref={syncRotationPhase}
+        aria-hidden="true"
+        {...stylex.props(styles.rotor)}>
+        <svg
+          width={frameSize}
+          height={frameSize}
+          {...stylex.props(styles.ring)}>
+          <circle
+            cx="50%"
+            cy="50%"
+            r={diameter / 2}
+            strokeWidth={border}
+            // The size's own dash, for the render with no stylesheet. The rule
+            // above composes the same lengths from the resolved diameter, so a
+            // themed ring keeps this fraction of arc rather than this length.
+            strokeDasharray={`${arcLength} ${circumference - arcLength}`}
+            {...stylex.props(styles.circle, styles.arc)}
+          />
+        </svg>
+      </span>
+      <span aria-hidden="true" {...stylex.props(styles.glyph)}>
+        {SPOKES.map((spoke, index) => (
+          <span key={spoke.id} {...stylex.props(styles.spoke, spoke.style)}>
+            <svg
+              width={frameSize}
+              height={frameSize}
+              viewBox={`0 0 ${glyph.sizePt} ${glyph.sizePt}`}
+              {...stylex.props(styles.spokeShape)}>
+              <rect
+                x={glyph.glyphCenterPt - glyph.spokeWidthPt / 2}
+                y={glyph.glyphCenterPt - glyph.spokeOuterRadiusPt}
+                width={glyph.spokeWidthPt}
+                height={glyph.spokeOuterRadiusPt - glyph.spokeInnerRadiusPt}
+                rx={glyph.spokeWidthPt / 2}
+                transform={`rotate(${(index * 360) / SPOKES.length} ${glyph.glyphCenterPt} ${glyph.glyphCenterPt})`}
+              />
+            </svg>
+          </span>
+        ))}
+      </span>
     </span>
   );
 
