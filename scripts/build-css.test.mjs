@@ -386,6 +386,12 @@ describe('build-css astryx.css', () => {
       expect(curves).toEqual([points]);
     });
 
+    it('lets the motion animator promote the layer it animates', () => {
+      expect(astryxCss).toMatch(
+        /::before\{[^}]*will-change:var\(--astryx-motion-will-change-before,\s*auto\)/,
+      );
+    });
+
     it('shows the layer at once on the on arm, over its resting opacity of 0', () => {
       const on = layerLines('[data-astryx-press="on"]');
       const shown = on.find(line => /\{opacity:1;?\}/.test(line));
@@ -426,6 +432,14 @@ describe('build-css astryx.css', () => {
     it('hides the dividers beside a pressed row, and reaches its layer over them, only under a finger', () => {
       const arms = dividerArms('on');
       // Its own divider, the one above, the layer's reach, the last row's.
+      expect(arms.length).toBeGreaterThanOrEqual(4);
+      for (const rule of arms) {
+        expect(rule).toMatch(TOUCH_GATED);
+      }
+    });
+
+    it('keeps them hidden around a row held through a navigation push the same way', () => {
+      const arms = dividerArms('held');
       expect(arms.length).toBeGreaterThanOrEqual(4);
       for (const rule of arms) {
         expect(rule).toMatch(TOUCH_GATED);
