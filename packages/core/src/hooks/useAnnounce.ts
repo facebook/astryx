@@ -231,6 +231,24 @@ export function useAnnounce(): AnnounceFn {
 }
 
 /**
+ * Withdraws a message still waiting to be exposed, so a busy start overtaken by
+ * its own outcome is never spoken (spec:AST-086 FR8). Shared with
+ * useBusyAnnouncement; not exported from the hooks index.
+ *
+ * @internal
+ */
+export function withdrawPendingAnnouncement(
+  message: string,
+  politeness: AnnouncePoliteness,
+): void {
+  const pending = pendingMessages[politeness];
+  const index = pending.indexOf(message);
+  if (index >= 0) {
+    pending.splice(index, 1);
+  }
+}
+
+/**
  * Test-only helper: removes the singleton live regions and resets state so
  * each test starts clean. Not part of the public runtime API.
  *
