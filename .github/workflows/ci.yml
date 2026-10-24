@@ -1525,6 +1525,17 @@ jobs:
             --project chromium \
             --output disabled-trigger-focus-output
 
+      # A pinch that starts on, or reaches, a Lab reorder grip (ListInput,
+      # TransferList) must zoom the page (WCAG 1.4.4), while a one-finger drag
+      # on the grip still reorders. touch-action and pinch-zoom only exist in a
+      # real engine with two-finger touch input.
+      - name: Run Lab reorder grip pinch-zoom contract
+        run: |
+          pnpm exec playwright test \
+            packages/lab/src/__tests__/ReorderGripPinchZoom.a11y.chromium.spec.ts \
+            --project chromium \
+            --output reorder-grip-pinch-zoom-output
+
       # Table merges a consumer min-width with its column floors through CSS
       # max(). jsdom keeps any string, so only a real engine shows whether the
       # emitted declaration parses; an invalid one drops the floors entirely.
