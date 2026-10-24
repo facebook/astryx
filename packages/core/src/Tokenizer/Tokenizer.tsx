@@ -649,7 +649,9 @@ export function Tokenizer<T extends SearchableItem>({
 
   // Layer for unfocusedLayer mode — promotes expanded content to the top layer
   // so it isn't clipped by ancestor overflow.
-  const isLayerMode = tokenOverflowBehavior === 'unfocusedLayer';
+  // A disabled field never expands into the layer, so it stays inline, where
+  // its input keeps its tab stop (spec:AST-085 FR1).
+  const isLayerMode = tokenOverflowBehavior === 'unfocusedLayer' && !isDisabled;
   const layer = useLayer({mode: 'context'});
   const layerContentRef = useRef<HTMLDivElement>(null);
 

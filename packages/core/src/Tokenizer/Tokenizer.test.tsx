@@ -457,6 +457,26 @@ describe('Tokenizer', () => {
     expect(form.querySelector('[disabled]')).toBeNull();
   });
 
+  it('keeps a disabled unfocusedLayer Tokenizer in the tab order (spec:AST-085 FR1)', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <button type="button">Before</button>
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={users}
+          onChange={() => {}}
+          tokenOverflowBehavior="unfocusedLayer"
+          isDisabled
+        />
+      </>,
+    );
+    await user.click(screen.getByRole('button', {name: 'Before'}));
+    await user.tab();
+    expect(screen.getByRole('combobox')).toHaveFocus();
+  });
+
   it('renders with data-testid', () => {
     render(
       <Tokenizer

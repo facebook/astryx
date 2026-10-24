@@ -457,6 +457,28 @@ describe('BaseTypeahead', () => {
     expect(onOpenChange).not.toHaveBeenCalledWith(true);
   });
 
+  it('runs no debounced search once the field became disabled (spec:AST-085 FR2)', async () => {
+    const user = userEvent.setup();
+    const search = vi.fn(fruitSource.search);
+    const source = {...fruitSource, search, cancel: vi.fn()};
+    const field = (isDisabled: boolean) => (
+      <BaseTypeahead
+        searchSource={source}
+        value={null}
+        onChange={() => {}}
+        debounceMs={50}
+        isDisabled={isDisabled}
+      />
+    );
+    const {rerender} = render(field(false));
+    await user.type(screen.getByRole('combobox'), 'a');
+    source.cancel.mockClear();
+    rerender(field(true));
+    expect(source.cancel).toHaveBeenCalledTimes(1);
+    await act(async () => new Promise(r => setTimeout(r, 100)));
+    expect(search).not.toHaveBeenCalled();
+  });
+
   it('keeps a disabled Typeahead focusable and inert (spec:AST-085 FR1, FR2, FR6)', async () => {
     const user = userEvent.setup();
     const handlers = {

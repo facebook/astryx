@@ -451,7 +451,8 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   minQueryLength = 1,
   emptySearchText: emptySearchTextFromProps,
   isDisabled = false,
-  isFocusableDisabled = false,
+  // Accepted for compatibility; a disabled input is always focusable.
+  isFocusableDisabled: _isFocusableDisabled = false,
   hasAutoFocus = false,
   onChangeQuery,
   onOpenChange,
@@ -571,6 +572,9 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     onLoadingChangeRef.current = busyLane?.onBusyChange;
   }, [busyLane]);
   const loadingRef = useRef(false);
+  // Read by debounced and awaited search work, which runs after the render
+  // that scheduled it; kept current by the isDisabled Effect below.
+  const isDisabledRef = useRef(isDisabled);
   const setLoading = useCallback((next: boolean) => {
     if (loadingRef.current === next) {
       return;
@@ -681,6 +685,9 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // Without this, popover="auto" light-dismiss immediately closes the
   // dropdown when it opens between pointerdown and pointerup/click.
   const showLayer = useCallback(() => {
+    if (isDisabledRef.current) {
+      return;
+    }
     if (pointerActiveRef.current) {
       document.addEventListener(
         'click',
@@ -706,6 +713,9 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // Perform search
   const performSearch = useCallback(
     async (searchQuery: string) => {
+      if (isDisabledRef.current) {
+        return;
+      }
       searchSource.cancel?.();
       // Claim a new generation so overlapping searches can't race: an
       // in-flight response for an older query fails the gen check below
@@ -1149,25 +1159,19 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   const selectedKey =
     value == null ? null : getKey(value.id, () => results.indexOf(value));
 
-  // Synchronizes pending search work and the browser's top-layer popover (the
-  // list) with isDisabled: a disabled field shows no surface (spec:AST-085
-  // FR2). Becoming disabled drops a queued or in-flight search, so its result
-  // cannot open the list, and hides an open list. It acquires nothing, and a
-  // replay only repeats no-ops.
-  const {hide: hidePopover, isOpen: isPopoverOpen} = popover;
+  // Synchronizes the browser's top-layer popover (the list), the search
+  // source's in-flight request, and search work scheduled by earlier renders
+  // with isDisabled: a disabled field shows no surface and runs no search
+  // (spec:AST-085 FR2). Hiding and cancelling are idempotent and acquire
+  // nothing.
+  const hidePopover = popover.hide;
   useEffect(() => {
-    if (!isDisabled) {
-      return;
-    }
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-    searchGenRef.current++;
-    setLoading(false);
-    if (isPopoverOpen) {
+    isDisabledRef.current = isDisabled;
+    if (isDisabled) {
       hidePopover();
+      prevSearchSourceRef.current.cancel?.();
     }
-  }, [isDisabled, isPopoverOpen, hidePopover, setLoading]);
+  }, [isDisabled, hidePopover]);
 
   // While disabled the input keeps only a caller's focus and blur handlers
   // (`spec:AST-085` FR2).
