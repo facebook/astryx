@@ -27,6 +27,7 @@ import {
   busyWindowProof,
   castStoryboard,
   compareCurve,
+  drag,
   freezeTimers,
   holdAnimations,
   installTimerGate,
@@ -220,6 +221,30 @@ test('closes on the sheet spring, back below the screen', async ({page}) => {
   for (const s of samples) {
     expect(s.dim, `t=${s.t}`).toBeCloseTo(1 - s.travel / distance, 2);
   }
+  await expect(dialog).not.toHaveAttribute('open');
+});
+
+test('during the entrance a tap on the dim and a grab are ignored, and input returns as the sheet lands (UIKit, F4 b59)', async ({
+  page,
+}) => {
+  const {driver, dialog, sheet, tapTrigger} = await story(page);
+  const viewport = page.viewportSize() ?? {width: 402, height: 714};
+  const center = viewport.width / 2;
+  await tapTrigger();
+  // ~60 ms in: a tap on the dimmed page above the sheet.
+  await page.waitForTimeout(60);
+  await driver.tap({x: center, y: 30});
+  // Right after: a finger lands on the rising sheet and drags 120 px down.
+  await driver.play(
+    drag({x: center, y: 420}, {x: center, y: 540}, {durationMs: 300, hz: 60}),
+  );
+  await waitForRest(sheet);
+  // Neither reached it: the sheet presented to its detent and stayed.
+  await expect(dialog).toHaveAttribute('open');
+  expect(await sheetTop(sheet)).toBeLessThan(viewport.height * 0.15);
+  // Landed: the hold is gone and a tap on the dim closes the sheet.
+  await expect(dialog.locator('[data-astryx-sheet-hold]')).toHaveCount(0);
+  await driver.tap({x: center, y: 30});
   await expect(dialog).not.toHaveAttribute('open');
 });
 
