@@ -38,7 +38,7 @@ import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useTouchIdiom} from '../utils/touchPresentation';
-import {useSwipeAction, type SwipeSide} from './useSwipeAction';
+import {isSwipeOpen, useSwipeAction, type SwipeSide} from './useSwipeAction';
 import type {ItemSwipeAction, ItemSwipeBehavior} from './Item';
 
 // =============================================================================
@@ -60,6 +60,13 @@ export interface ItemSwipeLayerProps {
    * of the layer, and with `null` when the layer leaves.
    */
   onBridge: (bridge: ItemSwipeBridge | null) => void;
+  /**
+   * Called with `true` when the row opens (from the release that opens it)
+   * and with `false` when it closes or the layer leaves. The root takes no
+   * press while open: a tap on an open row's content only closes it, as in
+   * UIKit, where the cell never sees that touch.
+   */
+  onOpenChange: (isOpen: boolean) => void;
   leading: ItemSwipeAction[];
   trailing: ItemSwipeAction[];
   behavior: ItemSwipeBehavior;
@@ -182,6 +189,7 @@ const swipeVariantStyles = stylex.create({
  */
 export default function ItemSwipeLayer({
   onBridge,
+  onOpenChange,
   leading,
   trailing,
   behavior,
@@ -222,6 +230,17 @@ export default function ItemSwipeLayer({
     };
   });
   const isSwipeResting = swipe.state.phase === 'resting';
+  // On iOS an open row's root takes no press; elsewhere it presses as before.
+  const isOpen = idiom === 'ios' && isSwipeOpen(swipe.state);
+  useEffect(() => {
+    if (!isOpen) {
+      return undefined;
+    }
+    onOpenChange(true);
+    return () => {
+      onOpenChange(false);
+    };
+  }, [isOpen, onOpenChange]);
 
   // A side's panel: entries as real buttons under `reveal`, presentational
   // blocks under `commit`. Out of the accessibility tree and the tab order

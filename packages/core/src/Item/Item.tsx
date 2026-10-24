@@ -31,6 +31,7 @@ import {
   useCallback,
   useId,
   useRef,
+  useState,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -335,7 +336,10 @@ export interface ItemProps extends BaseProps<HTMLElement> {
    * a touch accelerator and never a row's only path to a verb: a verb
    * reachable only by swipe is unreachable by keyboard and by mouse, so every
    * entry must also be reachable through the row's own content (a menu or a
-   * button in `endContent`).
+   * button in `endContent`). On iOS an open row closes on a tap on its own
+   * content, which activates nothing and paints no press, on a touch
+   * elsewhere, when the list or page scrolls, and on Escape; elsewhere it
+   * closes on a touch elsewhere and on Escape, as before.
    *
    * Available on a row whose role permits interactive descendants — a
    * `listitem`, a row with no role — and not served on one whose role forbids
@@ -747,6 +751,9 @@ export function Item({
   const setSwipeBridge = useCallback((bridge: ItemSwipeBridge | null) => {
     swipeBridgeRef.current = bridge;
   }, []);
+  // An open row's root is no pressable surface: a tap on its content only
+  // closes it, and UIKit's cell neither sees that touch nor highlights.
+  const [isSwipeOpen, setSwipeOpen] = useState(false);
   const linkRootProps = isLinkRoot
     ? {
         // A disabled row keeps its place in the tree but goes nowhere.
@@ -1001,7 +1008,7 @@ export function Item({
             : (rootControlProps.tabIndex ?? restProps.tabIndex)
           : restProps.tabIndex
       }
-      {...(isInteractive ? pressable : undefined)}
+      {...(isInteractive && !isSwipeOpen ? pressable : undefined)}
       {...mergeProps(
         themeProps('item', {density, align}),
         focusOutlineProps.focusWithin(
@@ -1034,6 +1041,7 @@ export function Item({
         <Suspense fallback={null}>
           <LazyItemSwipeLayer
             onBridge={setSwipeBridge}
+            onOpenChange={setSwipeOpen}
             leading={leadingSwipe}
             trailing={trailingSwipe}
             behavior={swipeBehavior}
