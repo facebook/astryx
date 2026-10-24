@@ -213,7 +213,7 @@ export const docs = {
       name: 'increment',
       type: 'number',
       description:
-        'Number of minutes to add or subtract when the user presses the up or down arrow key. Steps are whole minutes; a fractional value leaves the time unchanged.',
+        'Number of minutes to add or subtract when the user presses the up or down arrow key. Steps are whole minutes; a fractional value leaves the time unchanged. The bottom-sheet wheels show every n-th minute when it divides 60 (1 to 30) and every minute otherwise; a time between two steps shows rounded to the nearest one until a wheel moves.',
       default: '1',
     },
     {
@@ -330,7 +330,8 @@ export const docsZh = {
     {
       name: 'isDisabled',
       type: 'boolean',
-      description: '禁用输入框并抑制交互。输入框仍可聚焦并暴露 `aria-disabled`。',
+      description:
+        '禁用输入框并抑制交互。输入框仍可聚焦并暴露 `aria-disabled`。',
       default: 'false',
     },
     {
@@ -394,7 +395,7 @@ export const docsZh = {
       name: 'increment',
       type: 'number',
       description:
-        '用户按上或下方向键时增加或减少的分钟数。步长为整分钟；传入小数时时间保持不变。',
+        '用户按上或下方向键时增加或减少的分钟数。步长为整分钟；传入小数时时间保持不变。底部面板的滚轮在该值能整除 60（1 到 30）时每隔 n 分钟显示一行，否则逐分钟显示；不在步长上的时间在滚轮转动前显示为最接近的一步。',
       default: '1',
     },
     {
@@ -626,7 +627,7 @@ export const docsDense = {
     hourFormat:
       "Display format. '12h' shows AM/PM; '24h' uses 24-hour notation.",
     increment:
-      'Minutes to add/subtract on arrow up/down. Whole minutes only; a fractional value leaves the time unchanged.',
+      'Minutes to add/subtract on arrow up/down. Whole minutes only; a fractional value leaves the time unchanged. Sheet wheels step minutes by it when it divides 60 (1-30).',
     presentation:
       "picker surface: 'adaptive-native' (default) = typed field fine / browser/OS coarse (hasSeconds or increment!=1 retains typed); 'native' = browser/OS always, no fallback; 'adaptive-bottom-sheet' = typed fine / Astryx wheel sheet coarse; 'bottom-sheet' = sheet always; 'text-input'/'popover' = typed field only.",
     nativePicker:

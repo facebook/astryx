@@ -6,22 +6,34 @@
  * @file MonthScroller.tsx
  * @input Month bounds, selected value, constraints, week start
  * @output Exports MonthScroller and MonthScrollerHandle
- * @position Internal component; consumed by TouchDateField.tsx
+ * @position Internal component; consumed by TouchDateField.tsx and
+ *   TouchDateTimeField.tsx
  *
- * The continuous surface: months stacked vertically in one scroller, each pane
- * exactly as tall as the scrollport and snapped to its start. Two consequences
- * fall out of that single geometric choice — the picker never changes height,
- * and there is no resting position that shows half of two months.
+ * The inline calendar's month grid, paged the way UIDatePicker pages it: a
+ * paging scroll view (motion/uikit/datePicker.ts `calendar`, on the paging
+ * table). It is driven by the shared pager (hooks/usePager.ts), not native
+ * scrolling:
  *
- * Every pane is a fixed six-row grid, including the months that only need
- * four or five, because a pane whose height depended on its contents would
- * make snap offsets vary from month to month and the scroll position drift.
+ * - A horizontal drag moves the months 1:1 on the compositor; past the first
+ *   or last reachable month it rubber-bands.
+ * - At the lift the month is chosen with UIKit's paging rule (300 pt/s or
+ *   half a page, at most one month per release) and the grid settles on
+ *   UIKit's paging integrator. A native scroll-snap container cannot: iOS
+ *   gives it the fast deceleration rate bent onto WebKit's snap target, and
+ *   a fling crossed three or four months.
+ * - The header's title follows the drag: it names the month nearest the
+ *   offset, changing as the content crosses half a page.
+ * - `scrollToMonth` runs `setContentOffset(_:animated:)`'s 0.3 s curve (the
+ *   header chevrons), restarting from wherever the grid is when a second tap
+ *   lands mid-scroll; a far jump (the wheels, Today) moves at once.
+ * - Inside a bottom sheet, a drag steeper than 45° belongs to the sheet; one
+ *   between the pager's own axis lock and 45° moves neither, as in UIKit.
  *
- * The list is long (a century by default) but only a few panes are ever
- * mounted: a spacer holds the full scroll height and the visible panes are
- * positioned into it absolutely. Nothing is stitched or recycled during a
- * scroll, so snap offsets are constant and momentum is never interrupted —
- * which is the failure mode of the usual "append months at the edge" approach.
+ * Every pane is a fixed six-row grid, so the picker never changes height. The
+ * list is long (a century by default) but only a few panes are mounted, each
+ * placed at its own offset in the pager's track and on its own compositor
+ * layer: through a busy main thread Mobile Safari moves the track but cannot
+ * paint a page it had not painted.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/DateInput/TouchDateField.tsx
@@ -40,7 +52,9 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useCalendarDays} from '../Calendar';
+import {usePager} from '../hooks/usePager';
 import {useDirection, useLocale} from '../i18n';
+import {datePicker} from '../motion/uikit/datePicker';
 import {
   colorVars,
   radiusVars,
@@ -55,6 +69,7 @@ import {
   type ISODateString,
   type PlainDate,
   plainDateAddDays,
+  plainDateAddMonths,
   plainDateDayOfWeek,
   plainDateFormat,
   plainDateIsEqual,
@@ -64,67 +79,54 @@ import {
 } from '../utils';
 import {dateInputTouchSizes, dateInputTouchGeometry} from './tokens.stylex';
 import {useOwnScrollGesture} from './useOwnScrollGesture';
-import {useScrollSettle} from './useScrollSettle';
 import {
+  clampIndex,
   fromMonthIndex,
   monthIndexOf,
   paneWindow,
-  rowAtScrollOffset,
   rowsIn,
-  scrollOffsetForRow,
 } from './monthGeometry';
 
 const DAY_SIZE = dateInputTouchSizes.daySize;
 
 /**
- * Panes mounted on each side of the visible one. Sized against a fast fling:
- * the window widens once per animation frame, so it only fails if a single
- * frame travels further than this — three months, about 800px at the default
- * day size. Under `scroll-snap-type: mandatory`, landing on an unmounted pane
- * would not merely show a gap, it would re-snap to the nearest mounted one.
+ * Panes mounted on each side of the target month: UIKit's calendar keeps
+ * seven pages. A release moves at most one month and a chevron one per tap,
+ * so the window, which follows the target, always holds the pages on screen.
  */
 const OVERSCAN = 3;
 
 const styles = stylex.create({
-  scroller: {
+  viewport: {
     position: 'relative',
     blockSize: dateInputTouchGeometry.paneBlockSize,
-    // Stated, not inherited from the reset: the pane size, the snap offsets
-    // and the virtualization all key off the measured box, so a consumer
-    // without reset.css (or with a stray box-sizing rule — the reset's is
-    // zero-specificity `:where`) must not be able to change what it means.
+    // Stated, not inherited from the reset: the pane size and the pager's
+    // page width key off the measured box.
     boxSizing: 'border-box',
-    overflowX: 'auto',
-    overflowY: 'hidden',
-    // The paging behaviour, now along the inline axis. Every snap area is a
-    // full pane, so there is exactly one resting position per month.
-    scrollSnapType: 'x mandatory',
-    // Keeps a fling inside the picker rather than handing it to the page.
-    overscrollBehavior: 'contain',
-    scrollbarWidth: 'none',
-    // pan-x, so the browser keeps horizontal pans here and hands VERTICAL
-    // ones straight to the sheet. That is why this scroller no longer claims
-    // the gesture the way the wheels do: with the axes separated there is
-    // nothing to fight over, and a downward drag on the calendar can go back
-    // to meaning swipe-to-dismiss.
-    touchAction: 'pan-x',
+    overflow: 'hidden',
   },
-  spacer: {
-    position: 'relative',
-    blockSize: '100%',
+  /** The row of panes the pager translates. */
+  track: {
+    position: 'absolute',
+    insetBlock: 0,
+    insetInlineStart: 0,
+    inlineSize: '100%',
+    // No native pan on either axis: horizontal drags are the pager's and
+    // vertical ones the sheet's, both in JavaScript, as on the sheet's own
+    // surface. (The pager leaves the viewport `pan-y`, which in a sheet lets
+    // the browser start a vertical scroll and throttle the moves the sheet
+    // drags with.) Pinch-zoom stays the browser's.
+    touchAction: 'pinch-zoom',
   },
   pane: {
     position: 'absolute',
     insetBlock: 0,
     blockSize: dateInputTouchGeometry.paneBlockSize,
-    scrollSnapAlign: 'start',
-    // No `scroll-snap-stop: always`. It would cap every fling at one month,
-    // which is tidy but stops the surface being continuous — "three months
-    // ahead" should be one throw, not three flicks. Momentum carrying past
-    // several panes is why OVERSCAN is what it is.
     display: 'grid',
     gridTemplateColumns: 'repeat(7, 1fr)',
     gridTemplateRows: dateInputTouchGeometry.paneRows,
+    // Its own layer, painted whole before it moves (see the file header).
+    willChange: 'transform',
   },
   row: {
     display: 'contents',
@@ -255,11 +257,8 @@ const styles = stylex.create({
 });
 
 const dynamic = stylex.create({
-  spacer: (inlineSize: number) => ({
-    inlineSize: `${inlineSize}px`,
-  }),
-  // insetInlineStart, not left: under RTL the panes have to lay out from the
-  // right, and the scroll math mirrors with them (see scrollOffsetForRow).
+  // insetInlineStart, not left: under RTL the panes lay out from the right,
+  // and the pager mirrors its track with them.
   pane: (insetInlineStart: number, inlineSize: number) => ({
     insetInlineStart: `${insetInlineStart}px`,
     inlineSize: `${inlineSize}px`,
@@ -267,7 +266,10 @@ const dynamic = stylex.create({
 });
 
 export interface MonthScrollerHandle {
-  /** Bring a month to rest at the top of the scrollport. */
+  /**
+   * Bring a month to rest: `'smooth'` on `setContentOffset(_:animated:)`'s
+   * curve (a month or a few away), `'auto'` (or a far month) at once.
+   */
   scrollToMonth: (monthIndex: number, behavior?: ScrollBehavior) => void;
 }
 
@@ -280,7 +282,10 @@ export interface MonthScrollerProps {
   maxMonthIndex: number;
   /** Month to rest on at mount. */
   initialMonthIndex: number;
-  /** Fires as the scroller passes each month, settled or not. */
+  /**
+   * Fires as a drag passes each month (at half a page) and when a release
+   * settles on one; not for the moves `scrollToMonth` makes.
+   */
   onVisibleMonthChange: (monthIndex: number) => void;
   /** Currently selected date. */
   selectedDate: PlainDate | null;
@@ -295,7 +300,7 @@ export interface MonthScrollerProps {
 }
 
 /**
- * A vertically continuous, snap-paged run of month grids.
+ * A run of month grids paged like UIDatePicker's inline calendar.
  */
 export function MonthScroller({
   handleRef,
@@ -309,32 +314,27 @@ export function MonthScroller({
   weekStartsOn,
   onSelect,
 }: MonthScrollerProps) {
-  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const trackRef = useRef<HTMLDivElement | null>(null);
   const rowCount = maxMonthIndex - minMonthIndex + 1;
+  const initialRow = clampIndex(
+    initialMonthIndex - minMonthIndex,
+    0,
+    rowCount - 1,
+  );
 
-  // Pane WIDTH is read from layout, never assumed: it is whatever the CSS
-  // says the scrollport is, so the snap offsets and the virtualization follow
-  // a resize (rotation, a split-screen change) without re-deriving anything.
+  // Pane width is read from layout, never assumed, so the panes follow a
+  // resize (rotation, a split-screen change). The pager measures the same
+  // box for its page width.
   const [paneSize, setPaneSize] = useState(0);
-  // Which way the inline axis runs. Under RTL the panes lay out from the
-  // right and scrollLeft counts DOWN from 0, so every conversion between a
-  // row and a scroll offset has to know.
-  const isRTL = useDirection() === 'rtl';
-  const [centerRow, setCenterRow] = useState(initialMonthIndex - minMonthIndex);
-  // The visible row, mirrored so the scroll handler can tell "changed" from
-  // "same" without reading state, and notify the parent OUTSIDE a state
-  // updater — React runs updaters during render, where another component's
-  // setState is illegal.
-  const centerRowRef = useRef(centerRow);
-  // A row to scroll to once its pane is mounted; see scrollToMonth.
-  const pendingScrollRef = useRef<number | null>(null);
-
-  /**
-   * The row a programmatic scroll is heading for, so its own scroll events
-   * are not reported back as if the user had gone there. Null once a finger
-   * touches the scroller, or once the steered scroll has arrived.
-   */
-  const steeredRowRef = useRef<number | null>(null);
+  const paneSizeRef = useRef(0);
+  // The pager's target month: the mounted window follows it.
+  const [centerRow, setCenterRow] = useState(initialRow);
+  // The month last reported to the owner, so a drag reports each crossing
+  // once.
+  const reportedRowRef = useRef(initialRow);
+  // A far jump waits for its pane to mount before the track moves.
+  const pendingRowRef = useRef<number | null>(null);
 
   // Keyboard focus moves by date, not by cell index, so it crosses month
   // boundaries the way a calendar should. Null until the user takes the grid
@@ -343,282 +343,131 @@ export function MonthScroller({
   const shouldRestoreFocusRef = useRef(false);
 
   const onVisibleMonthChangeRef = useRef(onVisibleMonthChange);
-  onVisibleMonthChangeRef.current = onVisibleMonthChange;
+  useLayoutEffect(() => {
+    onVisibleMonthChangeRef.current = onVisibleMonthChange;
+  });
+
+  const report = useCallback(
+    (row: number) => {
+      if (row === reportedRowRef.current) {
+        return;
+      }
+      reportedRowRef.current = row;
+      onVisibleMonthChangeRef.current(minMonthIndex + row);
+    },
+    [minMonthIndex],
+  );
+
+  const pager = usePager({
+    viewportRef,
+    trackRef,
+    count: rowCount,
+    defaultIndex: initialRow,
+    onIndexChange: (index, reason) => {
+      setCenterRow(index);
+      // A release reports the month it settles on; a steered move was asked
+      // for by an owner that already knows the month.
+      if (reason === 'drag') {
+        report(index);
+      } else {
+        reportedRowRef.current = index;
+      }
+    },
+  });
 
   useLayoutEffect(() => {
-    const scroller = scrollerRef.current;
-    if (scroller == null) {
+    const viewport = viewportRef.current;
+    if (viewport == null) {
       return;
     }
     const measure = () => {
       // Ignore zero: the picker can be mounted inside something not yet
-      // displayed (a closed BottomSheet), and a zero width would unmount
-      // every pane and lose the scroll position.
-      const measured = scroller.clientWidth;
+      // displayed (a closed BottomSheet).
+      const measured = viewport.clientWidth;
       if (measured > 0) {
+        paneSizeRef.current = measured;
         // eslint-disable-next-line @eslint-react/set-state-in-effect -- pane width is a measurement; layout is the only place it exists
         setPaneSize(measured);
       }
     };
     measure();
     const observer = new ResizeObserver(measure);
-    observer.observe(scroller);
+    observer.observe(viewport);
     return () => observer.disconnect();
   }, []);
 
-  // Land on the initial month before the first paint. Runs once the height is
-  // known; `hasPositioned` keeps a later resize from yanking the user back.
-  const hasPositionedRef = useRef(false);
-  useLayoutEffect(() => {
-    const scroller = scrollerRef.current;
-    if (scroller == null || paneSize === 0 || hasPositionedRef.current) {
-      return;
-    }
-    hasPositionedRef.current = true;
-    scroller.scrollLeft = scrollOffsetForRow(
-      initialMonthIndex - minMonthIndex,
-      paneSize,
-      isRTL,
-    );
-  }, [paneSize, initialMonthIndex, minMonthIndex, isRTL]);
+  // The title follows the drag: the month nearest the offset, reported as the
+  // content crosses half a page (UIDatePicker's
+  // `datePicker.calendar.pager.titleFollows`). The pager's own listener runs
+  // first, so the position read here is the one this move wrote.
+  useEffect(
+    () =>
+      pager.pan.addListener(recognizer => {
+        const state = recognizer.state;
+        if (state === 'began' || state === 'changed') {
+          const width = paneSizeRef.current;
+          if (width > 0) {
+            report(
+              clampIndex(
+                Math.round(pager.presentation() / width),
+                0,
+                rowCount - 1,
+              ),
+            );
+          }
+        } else if (state === 'ended' || state === 'cancelled') {
+          // The release has chosen its month by now.
+          report(pager.virtualIndex);
+        }
+      }),
+    [pager, report, rowCount],
+  );
 
   const scrollToMonth = useCallback(
     (monthIndex: number, behavior: ScrollBehavior = 'smooth') => {
-      const scroller = scrollerRef.current;
-      if (scroller == null || paneSize === 0) {
+      const row = clampIndex(monthIndex - minMonthIndex, 0, rowCount - 1);
+      reportedRowRef.current = row;
+      const distance = Math.abs(row - pager.virtualIndex);
+      if (behavior === 'smooth' && distance <= OVERSCAN) {
+        pager.goTo(row, {animated: true});
         return;
       }
-      const row = Math.min(
-        rowCount - 1,
-        Math.max(0, monthIndex - minMonthIndex),
-      );
-      if (Math.abs(row - centerRowRef.current) > OVERSCAN) {
-        // Beyond the mounted window there is no pane at the target offset, and
-        // `scroll-snap-type: mandatory` will not leave the scroller resting
-        // where no snap area is — it re-snaps to the nearest mounted pane, so
-        // a jump to another year lands one month away instead. Mount the
-        // target first and scroll once it exists (see the layout effect
-        // below); a jump that far is never worth animating either.
-        pendingScrollRef.current = row;
-        centerRowRef.current = row;
-        setCenterRow(row);
-        return;
-      }
-      steeredRowRef.current = row;
-      scroller.scrollTo({
-        left: scrollOffsetForRow(row, paneSize, isRTL),
-        behavior,
-      });
+      // Beyond the mounted window there is no pane at the target yet: mount
+      // it first, then move (the layout effect below). A jump that far is
+      // never worth animating either.
+      pendingRowRef.current = row;
+      setCenterRow(row);
     },
-    [paneSize, minMonthIndex, rowCount, isRTL],
+    [minMonthIndex, rowCount, pager],
   );
 
   // Deliberately un-keyed: it runs after every render, costs a null check, and
   // must fire on whichever render finally mounts the pending row's pane.
   useLayoutEffect(() => {
-    const row = pendingScrollRef.current;
-    const scroller = scrollerRef.current;
-    if (row == null || scroller == null || paneSize === 0) {
+    const row = pendingRowRef.current;
+    if (row == null) {
       return;
     }
-    pendingScrollRef.current = null;
-    scroller.scrollTo({
-      left: scrollOffsetForRow(row, paneSize, isRTL),
-      behavior: 'auto',
-    });
+    pendingRowRef.current = null;
+    pager.goTo(row, {animated: false});
   });
 
   useImperativeHandle(handleRef, () => ({scrollToMonth}), [scrollToMonth]);
 
-  /**
-   * Put the scroller back on a pane boundary once the gesture is over.
-   *
-   * `scroll-snap-type: mandatory` is supposed to make this unnecessary, and
-   * on a static list it does. This list is virtualized: seven panes exist out
-   * of twelve hundred, and the panes ARE the snap areas — so every month the
-   * finger crosses mounts one and unmounts another, mid-fling.
-   *
-   * iOS scrolls off the main thread. It picks a landing place from the snap
-   * points it knows about at the time, and a React re-render that lands after
-   * that decision moves them; the scroller then comes to rest where no snap
-   * point exists any more, and nothing re-snaps it. That is the calendar
-   * sitting between two months with the weekday header still square — the
-   * grid is not skewed, the scrollport is simply parked a couple of columns
-   * into a pane. Chrome hides it by snapping again after the mutation.
-   *
-   * So the rest position is corrected here rather than trusted. It waits for
-   * a true settle — touch released AND quiet, since iOS below 26 has no
-   * `scrollend` and its momentum outlasts any naive timer (see
-   * useScrollSettle) — and only moves when the offset is genuinely off, so a
-   * scroller the browser snapped for itself is left alone.
-   *
-   * ## Why it re-checks that the scroller is still
-   *
-   * A quiet period is not proof of rest, and getting that wrong here does not
-   * merely fail to fix the bug — it REVERSES the user's swipe. iOS runs its
-   * own snap animation for ~150-300ms after the finger lifts, and the scroll
-   * events it fires during that animation arrive irregularly; a gap longer
-   * than the quiet period is routine in the slow tail. The settle then lands
-   * mid-animation, reads a scrollLeft still travelling toward April, rounds
-   * THAT to the nearest pane — which is still March, because the animation is
-   * not yet halfway — and drags the calendar back where it came from. Swipe
-   * forward, get pulled backward, which is what this looked like on a device.
-   *
-   * Two samples a frame apart settle it: if the offset moved, the scroller is
-   * still going somewhere and its destination is not ours to guess. Skipping
-   * costs nothing, because the animation's own scroll events re-arm the
-   * settle, and the last of them gets a quiet period that ends at true rest.
-   *
-   * The threshold is a subpixel rather than exact equality. A scroller at rest
-   * on a fractional-density viewport can report an offset that wobbles in the
-   * last decimal place, and exact equality would read that as travel and never
-   * correct at all — the failure mode being silent, which is the worst kind.
-   * A tail crawling slower than half a pixel a frame has effectively arrived,
-   * so treating it as arrived is right anyway.
-   *
-   * The correction is at most half a pane by construction, and its own scroll
-   * settles onto the boundary it just aimed at, so it cannot oscillate.
-   */
-  const settleFrameRef = useRef<number | undefined>(undefined);
-  useEffect(
-    () => () => {
-      if (settleFrameRef.current != null) {
-        cancelAnimationFrame(settleFrameRef.current);
-      }
-    },
-    [],
-  );
-
-  useScrollSettle(scrollerRef, scroller => {
-    if (paneSize === 0) {
-      return;
-    }
-    const offsetBefore = scroller.scrollLeft;
-    if (settleFrameRef.current != null) {
-      cancelAnimationFrame(settleFrameRef.current);
-    }
-    settleFrameRef.current = requestAnimationFrame(() => {
-      settleFrameRef.current = undefined;
-      // Still travelling — including a snap animation iOS has not finished.
-      // Correcting toward the nearest pane from a position mid-flight would
-      // undo the swipe rather than complete it.
-      if (Math.abs(scroller.scrollLeft - offsetBefore) >= 0.5) {
-        return;
-      }
-      const row = rowAtScrollOffset(
-        scroller.scrollLeft,
-        paneSize,
-        rowCount,
-        isRTL,
-      );
-      const target = scrollOffsetForRow(row, paneSize, isRTL);
-      // Sub-pixel drift is the browser's own rounding, not a failed snap.
-      if (Math.abs(scroller.scrollLeft - target) < 1) {
-        return;
-      }
-      scroller.scrollTo({left: target, behavior: 'smooth'});
-    });
+  // Inside a bottom sheet, keep the sheet's own touch listener off the drags
+  // that are not the sheet's: those no steeper than
+  // `datePicker.calendar.pager.sheetAxisRatio` (45°). The pager pans only
+  // within its own axis lock (`paging.panAxisRatio`, 26.6°), so the drags in
+  // between move neither, as UIKit's do.
+  useOwnScrollGesture(viewportRef, 'inline', {
+    verticalDominance: datePicker.calendar.pager.sheetAxisRatio,
   });
 
-  // Claim horizontal gestures, leave vertical ones to the sheet.
-  //
-  // `touch-action: pan-x` alone is NOT enough: it governs what the browser
-  // pans natively, and the sheet's listener is JavaScript whose
-  // preventDefault() cancels the scroll regardless. Measured — a swipe 9° off
-  // horizontal had every touchmove cancelled by the sheet and the month never
-  // changed. The axis lock is biased toward horizontal, because a thumb arcs
-  // as it swipes; `onSwipe` then pages the diagonals the browser itself
-  // declines to pan, so no angle is left doing nothing. See
-  // useOwnScrollGesture.
-  useOwnScrollGesture(scrollerRef, 'inline', {
-    onSwipe: direction => {
-      const scroller = scrollerRef.current;
-      if (scroller == null || paneSize === 0) {
-        return;
-      }
-      scroller.scrollBy({left: direction * paneSize, behavior: 'smooth'});
-    },
-  });
-
-  // rAF-throttled: a touch scroll fires far more scroll events than frames,
-  // and all this does is move a label and widen a window.
-  const frameRef = useRef<number | undefined>(undefined);
-  useEffect(() => {
-    const scroller = scrollerRef.current;
-    // Not before the height is known. A listener attached while it was zero
-    // would close over that zero and report row 0 for any scroll — and the
-    // scroll event fired by the initial positioning arrives just late enough
-    // to be handled by that stale listener. Every pane then unmounts except
-    // rows 0-2, and `scroll-snap-type: mandatory` yanks the scroller to the
-    // nearest surviving snap area, a century away from where it just landed.
-    if (scroller == null || paneSize === 0) {
-      return;
-    }
-    // A finger on the scroller ends any steering: from here the months it
-    // passes are the user's doing and every one of them is worth reporting.
-    const onTouchStart = () => {
-      steeredRowRef.current = null;
-    };
-
-    const onScroll = () => {
-      if (frameRef.current != null) {
-        return;
-      }
-      frameRef.current = requestAnimationFrame(() => {
-        frameRef.current = undefined;
-        const row = rowAtScrollOffset(
-          scroller.scrollLeft,
-          paneSize,
-          rowCount,
-          isRTL,
-        );
-        if (row === centerRowRef.current) {
-          return;
-        }
-        centerRowRef.current = row;
-        setCenterRow(row);
-        // Report nothing while a steer is in flight. `scrollToMonth` is only
-        // ever called by something that already knows the month — a wheel
-        // commit, a header arrow, the re-assert when the wheels close — so
-        // none of the scrolling it causes is news, including whatever the
-        // scroller passes through on the way.
-        //
-        // Reporting it is a feedback cycle, and worse on iOS. A wheel commit
-        // steers this scroller while it is hidden behind the wheels, and a
-        // hidden scroller does not reliably stay where it was put: iOS
-        // re-snaps it when the panel becomes visible again, firing scrolls at
-        // the exact moment reports start being trusted again. The month drifted
-        // on the way back to the calendar.
-        //
-        // Cleared on arrival, or by a touch below — once a finger is on the
-        // scroller the user owns it, and every month it passes is worth
-        // reporting.
-        if (steeredRowRef.current != null) {
-          if (steeredRowRef.current === row) {
-            steeredRowRef.current = null;
-          }
-          return;
-        }
-        onVisibleMonthChangeRef.current(minMonthIndex + row);
-      });
-    };
-    scroller.addEventListener('scroll', onScroll, {passive: true});
-    scroller.addEventListener('touchstart', onTouchStart, {passive: true});
-    return () => {
-      scroller.removeEventListener('scroll', onScroll);
-      scroller.removeEventListener('touchstart', onTouchStart);
-      if (frameRef.current != null) {
-        cancelAnimationFrame(frameRef.current);
-        frameRef.current = undefined;
-      }
-    };
-  }, [paneSize, rowCount, minMonthIndex, isRTL]);
-
-  // Move the keyboard focus by whole days and let the scroller follow. Paging
-  // by month is PageUp/PageDown; everything else is the APG grid vocabulary.
-  const moveFocus = useCallback(
-    (from: PlainDate, deltaDays: number) => {
-      const next = plainDateAddDays(from, deltaDays);
+  // Move the keyboard focus by whole days (or months) and let the pager
+  // follow. The vocabulary is the APG grid's, plus PageUp/PageDown for a
+  // month and Shift with them for a year, as Calendar does.
+  const moveFocusTo = useCallback(
+    (from: PlainDate, next: PlainDate) => {
       const nextIndex = monthIndexOf(next);
       if (nextIndex < minMonthIndex || nextIndex > maxMonthIndex) {
         return;
@@ -627,11 +476,13 @@ export function MonthScroller({
       setFocusedDate(next);
       if (nextIndex !== monthIndexOf(from)) {
         scrollToMonth(nextIndex, 'smooth');
+        onVisibleMonthChangeRef.current(nextIndex);
       }
     },
     [minMonthIndex, maxMonthIndex, scrollToMonth],
   );
 
+  const isRTL = useDirection() === 'rtl';
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent, date: PlainDate) => {
       // Column within the displayed week, which is what Home/End move to —
@@ -641,40 +492,48 @@ export function MonthScroller({
       // RTL the next day sits to the left.
       const forward = isRTL ? 'ArrowLeft' : 'ArrowRight';
       const backward = isRTL ? 'ArrowRight' : 'ArrowLeft';
+      const byDays = (days: number) => {
+        event.preventDefault();
+        moveFocusTo(date, plainDateAddDays(date, days));
+      };
+      const byMonths = (months: number) => {
+        event.preventDefault();
+        moveFocusTo(date, plainDateAddMonths(date, months));
+      };
       switch (event.key) {
         case backward:
-          event.preventDefault();
-          moveFocus(date, -1);
+          byDays(-1);
           break;
         case forward:
-          event.preventDefault();
-          moveFocus(date, 1);
+          byDays(1);
           break;
         case 'ArrowUp':
-          event.preventDefault();
-          moveFocus(date, -7);
+          byDays(-7);
           break;
         case 'ArrowDown':
-          event.preventDefault();
-          moveFocus(date, 7);
+          byDays(7);
           break;
         case 'Home':
-          event.preventDefault();
-          moveFocus(date, -column);
+          byDays(-column);
           break;
         case 'End':
-          event.preventDefault();
-          moveFocus(date, 6 - column);
+          byDays(6 - column);
+          break;
+        case 'PageUp':
+          byMonths(event.shiftKey ? -12 : -1);
+          break;
+        case 'PageDown':
+          byMonths(event.shiftKey ? 12 : 1);
           break;
         default:
           break;
       }
     },
-    [isRTL, moveFocus, weekStartsOn],
+    [isRTL, moveFocusTo, weekStartsOn],
   );
 
   // The focused day may have been in an unmounted pane a frame ago; focus it
-  // once it exists, and only in response to a key press so a scroll never
+  // once it exists, and only in response to a key press so a drag never
   // steals focus.
   const focusedISO = focusedDate == null ? null : plainDateToISO(focusedDate);
   useEffect(() => {
@@ -684,14 +543,13 @@ export function MonthScroller({
     // A date can be mounted twice: as a real day in its own pane and as a
     // dimmed, disabled spill copy at the edge of a neighbouring pane. Only
     // the real day may take focus, or Enter and Space would select nothing.
-    const target = scrollerRef.current?.querySelector<HTMLElement>(
+    const target = viewportRef.current?.querySelector<HTMLElement>(
       `[data-date="${focusedISO}"]:not([data-outside])`,
     );
     if (target != null) {
       shouldRestoreFocusRef.current = false;
-      // preventScroll: the scroller is already snapping to this month; a
-      // browser scroll-into-view here would fight the snap and land between
-      // two panes.
+      // preventScroll: the viewport does not scroll, and a browser
+      // scroll-into-view would shift it under the pager's track.
       target.focus({preventScroll: true});
     }
   }, [focusedISO]);
@@ -708,11 +566,10 @@ export function MonthScroller({
 
   return (
     <div
-      ref={scrollerRef}
+      ref={viewportRef}
       data-scroller="months"
-      {...stylex.props(styles.scroller)}>
-      <div
-        {...stylex.props(styles.spacer, dynamic.spacer(rowCount * paneSize))}>
+      {...stylex.props(styles.viewport)}>
+      <div ref={trackRef} data-month-track="" {...stylex.props(styles.track)}>
         {paneSize > 0 &&
           rowsIn(visibleRows).map(row => (
             <MonthPane

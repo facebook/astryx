@@ -122,7 +122,7 @@ export const docs = {
       name: 'timeIncrement',
       type: '1 | 5 | 10 | 15 | 30',
       description:
-        "Minute step for arrow keys in Astryx's typed time field. A non-default value keeps the Astryx time field in nativePicker modes because iOS treats native step as validation, not picker cadence. Ignored by the Astryx touch sheet, which uses wheels.",
+        "Minute step for arrow keys in Astryx's typed time field, and the minute wheel's step in the Astryx touch sheet. A non-default value keeps the Astryx time field in nativePicker modes because iOS treats native step as validation, not picker cadence.",
       default: '1',
     },
     {
@@ -445,7 +445,8 @@ export const docsZh = {
     {
       name: 'isDisabled',
       type: 'boolean',
-      description: '禁用输入框和选择器。字段仍可聚焦并暴露 `aria-disabled`，但不能输入或打开选择器。',
+      description:
+        '禁用输入框和选择器。字段仍可聚焦并暴露 `aria-disabled`，但不能输入或打开选择器。',
       default: 'false',
     },
     {
@@ -509,7 +510,7 @@ export const docsZh = {
       name: 'timeIncrement',
       type: '1 | 5 | 10 | 15 | 30',
       description:
-        'Astryx 可输入时间字段中箭头键的分钟步长。非默认值会在 nativePicker 模式下保留 Astryx 时间字段，因为 iOS 将原生 step 视为验证规则，而不是选择器步长。Astryx 触摸面板使用滚轮。',
+        'Astryx 可输入时间字段中箭头键的分钟步长，也是 Astryx 触摸面板中分钟滚轮的步长。非默认值会在 nativePicker 模式下保留 Astryx 时间字段，因为 iOS 将原生 step 视为验证规则，而不是选择器步长。',
       default: '1',
     },
     {
@@ -692,7 +693,7 @@ export const docsDense = {
       'include seconds; retains Astryx time field because iOS native picker has no seconds wheel',
     hourFormat: "display format. '12h' shows AM/PM; '24h' uses 24-hour",
     timeIncrement:
-      'minute step for Astryx typed field; non-default retains Astryx time field in native modes because iOS native step is validation-only',
+      'minute step for Astryx typed field and the touch sheet minute wheel; non-default retains Astryx time field in native modes because iOS native step is validation-only',
     timeOptionInterval:
       'preset-time combobox cadence; setting it retains Astryx time field because native pickers have no equivalent list',
     hasClear: 'Shows clear button when datetime is set',
