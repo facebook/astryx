@@ -262,10 +262,16 @@ test('the rise keeps advancing every frame while the main thread is blocked', as
   await markElement(dock);
   const cast = await startScreencast(page);
   await showKeyboard(page);
-  // Mid-flight: the show is dated back to the keyboard's start, so its first
-  // frame already reads more than 16 ms. Blocking in that frame would stop
-  // the animation before its first commit, which no compositor can run;
-  // wait until it has run for a few frames.
+  // Mid-flight. The show is dated back to the keyboard's start, so its first
+  // frame already reads more than 16 ms: blocking in that frame would stop
+  // the animation before its first commit, which no compositor can run. Let
+  // two frames pass (the first commit) and block once it has run 70 ms.
+  await page.evaluate(
+    async () =>
+      new Promise(resolve =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      ),
+  );
   const block = await blockMainThread(page, 500, {
     during: dock,
     minProgressMs: 70,
@@ -329,9 +335,11 @@ test('the rise does no Layout or Paint per frame', async ({
       return {from, to: performance.timeOrigin + performance.now()};
     }, COVER);
   });
-  // The steady part of the rise: the spacer and the scroll to the newest
-  // message lay out once, at its start.
-  const during = countBetween(trace, rise.from + 50, rise.to - 50);
+  // The steady part of the rise. Its start lays out and paints a few times
+  // (the spacer, the scroll to the newest message, the scroll's handlers),
+  // within 75 ms of the report at a 6x CPU slowdown; from 150 ms the rise
+  // runs on the compositor alone.
+  const during = countBetween(trace, rise.from + 150, rise.to - 50);
   expect(during.Layout ?? 0, JSON.stringify(during)).toBe(0);
   expect(during.Paint ?? 0, JSON.stringify(during)).toBe(0);
 });
