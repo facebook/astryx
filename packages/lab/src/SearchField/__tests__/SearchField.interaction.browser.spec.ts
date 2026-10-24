@@ -14,7 +14,9 @@
  *   keeps advancing every frame through a blocked main thread and does no
  *   Layout or Paint; Reduce Motion keeps the travel; right to left it
  *   narrows from the left; under a mouse every part takes its place at once;
- *   a theme's search.activationMs role times the activation; all of that in
+ *   a theme's search.activationMs role times the activation; in the Lifted
+ *   story the results rise with the field and the title fades as UIKit's
+ *   does (the story stands in for the navigation bar); all of that in
  *   the iOS idiom (emulated: `CSS.supports` and the `@supports` rules answer
  *   `-webkit-touch-callout`, as only WebKit on iOS does), where the close
  *   button is glass; outside it (an Android finger, Reduce Motion or not)
@@ -317,6 +319,80 @@ test('a lifted field rises on the same clock', async ({page}) => {
       Math.abs(sample.y / 53 - sample.endX / NARROWING),
       JSON.stringify(sample),
     ).toBeLessThan(0.01);
+  });
+});
+
+test('in the Lifted story the results rise with the field and the title fades as UIKit’s does', async ({
+  page,
+}) => {
+  const {driver, field} = await openField(page, 'lifted');
+  const content = page.locator('[data-search-story-content]');
+  const title = page.getByRole('heading', {name: 'Search'});
+  await driver.tap(await centerOf(field));
+  await waitForAnimation(root(page));
+  await holdAnimations(page);
+  const ys = await sampleCurve(root(page), times);
+  const contents = await sampleCurve(content, times);
+  const titles = await sampleCurve(title, times);
+  await releaseAnimations(page, {finish: true});
+  times.forEach((t, i) => {
+    const p = progress(t);
+    const sample = {
+      t,
+      field: ys[i].transform.translateY,
+      content: contents[i].transform.translateY,
+      title: titles[i].opacity,
+    };
+    // The results ride with the field: no gap opens under it.
+    expect(
+      Math.abs(sample.content - sample.field),
+      JSON.stringify(sample),
+    ).toBeLessThan(0.5);
+    expect(
+      Math.abs(sample.title - Math.max(0, 1 - p / 0.35) ** 2),
+      JSON.stringify(sample),
+    ).toBeLessThan(0.02);
+  });
+});
+
+test('in the Lifted story a cancel brings the results down with the field and the title back from p = 0.65', async ({
+  page,
+}) => {
+  const {driver, field} = await openField(page, 'lifted');
+  const content = page.locator('[data-search-story-content]');
+  const title = page.getByRole('heading', {name: 'Search'});
+  await driver.tap(await centerOf(field));
+  await waitForAnimation(root(page));
+  await waitForRest(root(page));
+  await waitForRest(content);
+  await waitForRest(title);
+  await driver.tap(await centerOf(close(page)));
+  await waitForAnimation(content);
+  await holdAnimations(page);
+  const back = await sampleCurve(title, times);
+  const down = await sampleCurve(content, times);
+  const fieldDown = await sampleCurve(root(page), times);
+  await releaseAnimations(page, {finish: true});
+  times.forEach((t, i) => {
+    const p = progress(t);
+    const sample = {
+      t,
+      title: back[i].opacity,
+      content: down[i].transform.translateY,
+      field: fieldDown[i].transform.translateY,
+    };
+    expect(
+      Math.abs(sample.content - sample.field),
+      JSON.stringify(sample),
+    ).toBeLessThan(0.5);
+    expect(
+      Math.abs(sample.content + 53 * (1 - p)),
+      JSON.stringify(sample),
+    ).toBeLessThan(0.5);
+    expect(
+      Math.abs(sample.title - Math.min(1, Math.max(0, (p - 0.65) / 0.35))),
+      JSON.stringify(sample),
+    ).toBeLessThan(0.02);
   });
 });
 

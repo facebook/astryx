@@ -1,7 +1,15 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useState} from 'react';
+import {useLayoutEffect, useRef, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
+import {useTouchPresentation} from '@astryxdesign/core/gestures/experimental';
+import {
+  cubicBezier,
+  resolveMotion,
+  uikit,
+  useAnimator,
+  type MotionCurve,
+} from '@astryxdesign/core/motion/experimental';
 import {SearchField} from '@astryxdesign/lab';
 
 // =============================================================================
@@ -47,15 +55,13 @@ const page: React.CSSProperties = {
   paddingTop: 8,
   fontFamily: 'system-ui, sans-serif',
 };
-const largeTitle = (hidden: boolean): React.CSSProperties => ({
+const largeTitle: React.CSSProperties = {
   margin: 0,
   padding: '4px 16px 8px',
   fontSize: 34,
   fontWeight: 700,
   lineHeight: '41px',
-  opacity: hidden ? 0 : 1,
-  transition: 'opacity 100ms linear',
-});
+};
 const list: React.CSSProperties = {
   listStyle: 'none',
   margin: '8px 0 0',
@@ -66,6 +72,87 @@ const row: React.CSSProperties = {
   borderBottom: '1px solid rgba(127, 127, 127, 0.2)',
   fontSize: 17,
 };
+
+/** A curve the animator plays: `value(progress(t))` over `duration` s. */
+function curve(
+  duration: number,
+  value: (p: number) => number,
+  progress: (t: number) => number,
+): MotionCurve {
+  const at = (t: number) => value(progress(t));
+  return {
+    duration,
+    at,
+    velocity: t => {
+      if (duration <= 0 || t >= duration) {
+        return 0;
+      }
+      const a = Math.max(0, t - 0.001);
+      const b = Math.min(duration, t + 0.001);
+      return (at(b) - at(a)) / (b - a);
+    },
+  };
+}
+
+/**
+ * The host's half of a lift, as a navigation bar does it (NavigationStack
+ * runs the real one): the content rises with the field by `lift` on the
+ * field's clock, and the large title fades as UIKit's does (opacity
+ * (1 − p / 0.35)² on activation; on cancel it comes back from p = 0.65).
+ * Placed at once outside the iOS idiom, as the field is.
+ */
+function useLiftedHost(isActive: boolean, lift: number) {
+  const content = useAnimator();
+  const title = useAnimator();
+  const {idiom} = useTouchPresentation();
+  const settled = useRef<boolean | null>(null);
+  useLayoutEffect(() => {
+    const target = isActive && lift > 0;
+    const y = target ? -lift : 0;
+    if (settled.current === null || idiom !== 'ios' || lift === 0) {
+      settled.current = target;
+      content.animator.set({y});
+      title.animator.set({opacity: target ? 0 : 1});
+      return;
+    }
+    if (settled.current === target) {
+      return;
+    }
+    settled.current = target;
+    const element = content.animator.element;
+    const seconds = resolveMotion(element, uikit.search, 'activationMs') / 1000;
+    const ease = cubicBezier(
+      resolveMotion(element, uikit.search.activationCurve),
+    );
+    // A reversal starts where the content is, on the rest of the clock.
+    const fromY = content.animator.get('y');
+    const remaining = Math.min(1, Math.abs(y - fromY) / lift);
+    const duration = seconds * remaining;
+    const start = 1 - remaining;
+    const progress = (t: number) =>
+      start +
+      remaining *
+        ease(duration > 0 ? Math.min(1, Math.max(0, t / duration)) : 1);
+    // `p` is the activation's progress (1 = active), whichever way it runs.
+    const activation = (p: number) => (target ? p : 1 - p);
+    content.animator.play({
+      y: curve(duration, p => -lift * activation(p), progress),
+    });
+    title.animator.play({
+      opacity: curve(
+        duration,
+        p => {
+          const a = activation(p);
+          return target
+            ? Math.max(0, 1 - a / 0.35) ** 2
+            : Math.min(1, Math.max(0, (1 - a - 0.65) / 0.35));
+        },
+        progress,
+      ),
+    });
+  }, [isActive, lift, idiom, content, title]);
+  return {contentRef: content.ref, titleRef: title.ref};
+}
 
 function Screen({
   lift = 0,
@@ -84,9 +171,12 @@ function Screen({
   const results = FRUITS.filter(fruit =>
     fruit.toLowerCase().includes(query.trim().toLowerCase()),
   );
+  const {contentRef, titleRef} = useLiftedHost(isActive, lift);
   return (
     <div style={page} dir={dir}>
-      <h1 style={largeTitle(lift > 0 && isActive)}>Search</h1>
+      <h1 ref={titleRef} style={largeTitle}>
+        Search
+      </h1>
       <SearchField
         label="Search"
         placeholder="Fruits"
@@ -97,19 +187,21 @@ function Screen({
         onSubmit={setSubmitted}
         lift={lift}
       />
-      <ul style={list} aria-label="Results">
-        {results.map(fruit => (
-          <li key={fruit} style={row}>
-            {fruit}
-          </li>
-        ))}
-      </ul>
-      <p
-        data-testid="search-state"
-        style={{padding: '0 16px', fontSize: 13, opacity: 0.6}}>
-        {isActive ? 'active' : 'inactive'}
-        {submitted != null ? ` · submitted "${submitted}"` : ''}
-      </p>
+      <div ref={contentRef} data-search-story-content="">
+        <ul style={list} aria-label="Results">
+          {results.map(fruit => (
+            <li key={fruit} style={row}>
+              {fruit}
+            </li>
+          ))}
+        </ul>
+        <p
+          data-testid="search-state"
+          style={{padding: '0 16px', fontSize: 13, opacity: 0.6}}>
+          {isActive ? 'active' : 'inactive'}
+          {submitted != null ? ` · submitted "${submitted}"` : ''}
+        </p>
+      </div>
     </div>
   );
 }
@@ -133,8 +225,9 @@ export const ActiveWithQuery: Story = {
 /**
  * Lifted as a navigation bar lifts it: the active field rises over the large
  * title (its 53 px here; 99 px from under the title to the bar's row on an
- * iPhone 17 Pro) while the title fades. Here the screen fades its own title;
- * NavigationStack's bar will run the measured fade.
+ * iPhone 17 Pro) and the results rise with it, while the title fades. The
+ * screen stands in for the bar here (NavigationStack runs the real one), on
+ * the field's clock and UIKit's measured title fade.
  */
 export const Lifted: Story = {
   render: () => <Screen lift={53} />,
