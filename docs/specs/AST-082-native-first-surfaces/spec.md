@@ -277,7 +277,8 @@ depends only on runtimes it can maintain.
   and native never imports core outside the portable entry. Until the portable
   entry ships, a native build script may read core at build time through
   `@astryxdesign/core/theme` and `@astryxdesign/core/theme/tokens`, and read
-  core's component documentation and its built-in icon names as data, to
+  core's component documentation, its built-in icon names, and its locale
+  catalogs as data, to
   generate native code and to check native coverage in native tests. The
   boundary check lists each such read by name and refuses any other, and no
   native runtime code or generated binding imports core. The portable entry
