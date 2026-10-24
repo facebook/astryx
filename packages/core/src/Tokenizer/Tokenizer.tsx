@@ -68,6 +68,10 @@ import {
 } from '../theme/tokens.stylex';
 import type {SearchableItem, SearchSource} from '../Typeahead/types';
 import {mergeProps} from '../utils';
+import {
+  getInteractionModality,
+  useInteractionModalityTracking,
+} from '../utils/interactionModality';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
@@ -603,6 +607,39 @@ export function Tokenizer<T extends SearchableItem>({
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
+  // The last press that started inside the field: whether a finger (or a pen)
+  // made it, and whether the input already had focus when it began. A touch
+  // keyboard rises whenever this field focuses its input during a tap, so a
+  // tap on a token's own control (its remove button) must not move focus to
+  // the input unless the input had it, and the keyboard was up, already.
+  // `getInteractionModality()` says whether that press is still the latest
+  // interaction: any key press since then hands focus decisions back to the
+  // keyboard rules.
+  useInteractionModalityTracking();
+  const lastPressRef = useRef<{
+    isTouch: boolean;
+    inputHadFocus: boolean;
+  } | null>(null);
+  const handlePointerDownCapture = useCallback((e: React.PointerEvent) => {
+    lastPressRef.current = {
+      isTouch: e.pointerType === 'touch' || e.pointerType === 'pen',
+      inputHadFocus:
+        inputRef.current != null &&
+        inputRef.current.ownerDocument.activeElement === inputRef.current,
+    };
+  }, []);
+  // True while the latest interaction is a touch press that began with the
+  // input unfocused (so the touch keyboard is down).
+  const isTouchPressWithKeyboardDown = useCallback(() => {
+    const press = lastPressRef.current;
+    return (
+      press != null &&
+      press.isTouch &&
+      !press.inputHadFocus &&
+      getInteractionModality() === 'pointer'
+    );
+  }, []);
+
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
   // tooltip listeners attach to the input wrapper and the typeahead input stays
   // perceivable via aria-disabled instead of the disabled attribute. Input is
@@ -696,13 +733,22 @@ export function Tokenizer<T extends SearchableItem>({
       if (comingFromOutside) {
         onFocus?.(e);
         // Redirect to the input so the user doesn't have to tab through
-        // every token remove button.
-        if (e.target !== inputRef.current) {
+        // every token remove button. Not for a finger landing on a token's
+        // control while the keyboard is down: where the browser focuses the
+        // pressed button (Android Chrome), moving focus on to the input would
+        // raise the keyboard for a tap that only meant to remove a token.
+        if (e.target !== inputRef.current && !isTouchPressWithKeyboardDown()) {
           inputRef.current?.focus();
         }
       }
     },
-    [isLayerMode, layer, isFocusInTokenizer, onFocus],
+    [
+      isLayerMode,
+      layer,
+      isFocusInTokenizer,
+      onFocus,
+      isTouchPressWithKeyboardDown,
+    ],
   );
 
   const handleBlurCapture = useCallback(
@@ -861,9 +907,16 @@ export function Tokenizer<T extends SearchableItem>({
       const newItems = value.filter(v => v.id !== item.id);
       onChange(newItems, {item, type: 'remove'});
       announce(t('@astryx.tokenizer.tokenRemoved', {label: item.label}));
-      inputRef.current?.focus();
+      // Focus goes to the input, where typing continues, except after a tap
+      // that began with the keyboard down: focusing the input inside that tap
+      // would raise the touch keyboard, which removing a token never asks for.
+      // A keyboard removal, a mouse click, or a tap made while the input was
+      // focused still lands on the input.
+      if (!isTouchPressWithKeyboardDown()) {
+        inputRef.current?.focus();
+      }
     },
-    [value, onChange, announce, t],
+    [value, onChange, announce, t, isTouchPressWithKeyboardDown],
   );
 
   // Handle clearing all items
@@ -965,6 +1018,7 @@ export function Tokenizer<T extends SearchableItem>({
       role="group"
       aria-label={label}
       onClick={handleWrapperClick}
+      onPointerDownCapture={handlePointerDownCapture}
       onFocusCapture={handleFocusCapture}
       onBlurCapture={handleBlurCapture}
       // Keys on the field's other controls (clear button, tokens) reach a
