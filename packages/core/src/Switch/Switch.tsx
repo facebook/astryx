@@ -20,7 +20,6 @@ import {
   useId,
   useMemo,
   useOptimistic,
-  useState,
   useTransition,
   useEffect,
   useRef,
@@ -56,7 +55,7 @@ import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {usePressFeedback} from '../hooks/usePressFeedback';
-import {switchTouchGeometry} from './switchTouch';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {useSwitchTouch, type SwitchTouchParts} from './useSwitchTouch';
 
 /**
@@ -67,8 +66,9 @@ import {useSwitchTouch, type SwitchTouchParts} from './useSwitchTouch';
 const TRACK_SIZE = {sm: [32, 20], md: [40, 24]} as const;
 
 /**
- * The touch presentation's media key: utils/touchPresentation.ts's
- * TOUCH_QUERY, which useSwitchTouch reads.
+ * A finger: utils/touchPresentation.ts's TOUCH_QUERY. The touch presentation
+ * is one model on every touch device (`spec:AST-094`): the lift, tracking,
+ * flip rule and springs sit under it alone.
  * SYNC: utils/touchPresentation.ts TOUCH_QUERY.
  */
 const TOUCH = '@media (pointer: coarse)';
@@ -95,9 +95,9 @@ const inputSizeStyles = stylex.create({
   },
 });
 
-// Under a finger every touch value sits in the same property as the mouse
-// value (a nested condition), never in a later style: a later style that
-// names a property replaces all of it, mouse value included.
+// Every touch value sits in the same property as the mouse value (a nested
+// condition), never in a later style: a later style that names a property
+// replaces all of it, mouse value included.
 const trackSizeStyles = stylex.create({
   sm: {
     width: 32,
@@ -112,24 +112,31 @@ const trackSizeStyles = stylex.create({
   },
 });
 
-// Under a finger the themed thumb fills the box useSwitchTouch moves.
+// Under a finger the thumb takes UISwitch's proportions in the track's
+// container units (motion/uikit/switch.ts), and useSwitchTouch moves it.
 const thumbOffSizeStyles = stylex.create({
   sm: {
-    width: {default: 14, [TOUCH]: '100%'},
-    height: {default: 14, [TOUCH]: '100%'},
-    transform: {default: 'translateX(0)', [TOUCH]: 'none'},
+    width: {default: 14, [TOUCH]: '58.7302cqw'},
+    height: {default: 14, [TOUCH]: '85.7143cqh'},
+    transform: {
+      default: 'translateX(0)',
+      [TOUCH]: 'none',
+    },
   },
   md: {
-    width: {default: 16, [TOUCH]: '100%'},
-    height: {default: 16, [TOUCH]: '100%'},
-    transform: {default: 'translateX(0)', [TOUCH]: 'none'},
+    width: {default: 16, [TOUCH]: '58.7302cqw'},
+    height: {default: 16, [TOUCH]: '85.7143cqh'},
+    transform: {
+      default: 'translateX(0)',
+      [TOUCH]: 'none',
+    },
   },
 });
 
 const thumbOnSizeStyles = stylex.create({
   sm: {
-    width: {default: 16, [TOUCH]: '100%'},
-    height: {default: 16, [TOUCH]: '100%'},
+    width: {default: 16, [TOUCH]: '58.7302cqw'},
+    height: {default: 16, [TOUCH]: '85.7143cqh'},
     // The thumb rests at the inline-start edge (flex-start, which flexbox
     // already mirrors under RTL). The on-state travel toward the inline-end
     // edge is a physical translateX, so it must flip sign under RTL — right
@@ -137,16 +144,22 @@ const thumbOnSizeStyles = stylex.create({
     // iOS): off-thumb on the reading-start side, on-thumb on the reading-end.
     transform: {
       default: 'translateX(12px)',
-      ':is([dir="rtl"] *)': {default: 'translateX(-12px)', [TOUCH]: 'none'},
+      ':is([dir="rtl"] *)': {
+        default: 'translateX(-12px)',
+        [TOUCH]: 'none',
+      },
       [TOUCH]: 'none',
     },
   },
   md: {
-    width: {default: 20, [TOUCH]: '100%'},
-    height: {default: 20, [TOUCH]: '100%'},
+    width: {default: 20, [TOUCH]: '58.7302cqw'},
+    height: {default: 20, [TOUCH]: '85.7143cqh'},
     transform: {
       default: 'translateX(14px)',
-      ':is([dir="rtl"] *)': {default: 'translateX(-14px)', [TOUCH]: 'none'},
+      ':is([dir="rtl"] *)': {
+        default: 'translateX(-14px)',
+        [TOUCH]: 'none',
+      },
       [TOUCH]: 'none',
     },
   },
@@ -160,9 +173,11 @@ const thumbOnSizeStyles = stylex.create({
 // hover tint already is: pressing the input, the track or the label all
 // activate the row.
 const pressedImage = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
-// Under a finger (coarse pointer) the switch paints no pressed overlay: the
-// touch presentation lifts its thumb into a glass lens instead, as UISwitch
-// does (useSwitchTouch.ts). The mouse keeps the overlay.
+// The touch press's paint, declared by the shared overlay styles on the
+// element the controller writes to (`pressedAlpha`) at the press's strength,
+// 1 while on and 1 → 0 over the release, and inherited resolved by the layer
+// that paints it. See interactionOverlay.stylex.ts.
+const pressedOverlayImage = 'var(--_press-paint-image)';
 
 const labelWrapperSizeStyles = stylex.create({
   sm: {
@@ -199,9 +214,12 @@ const styles = stylex.create({
     flexShrink: 0,
     isolation: 'isolate',
     // Under a finger, horizontal moves are the switch's drag and vertical
-    // ones the page's scroll; set in CSS so it holds before hydration and
-    // the switch never needs a blocking listener (switchTouchClaim.ts).
-    touchAction: {default: null, [TOUCH]: 'pan-y pinch-zoom'},
+    // ones the page's scroll; set in CSS so it holds before hydration
+    // (switchTouchClaim.ts).
+    touchAction: {
+      default: null,
+      [TOUCH]: 'pan-y pinch-zoom',
+    },
   },
   input: {
     position: 'absolute',
@@ -230,18 +248,22 @@ const styles = stylex.create({
   track: {
     display: 'flex',
     alignItems: 'center',
-    // Under a finger the on layer and the thumb box sit in the track, sized
-    // in its container units.
+    // Under a finger the fade layer (::before) and the thumb box sit in the
+    // track, the box sized in the track's container units.
     position: {default: null, [TOUCH]: 'relative'},
     containerType: {default: null, [TOUCH]: 'size'},
     borderRadius: radiusVars['--radius-full'],
     transitionProperty: 'background-color',
-    // Under a finger the track's own fill never changes (the on layer fades
-    // in over it). Reduce Motion stays the last key so it holds everywhere.
+    // Under a finger the track's fill changes at once and the fade layer
+    // crossfades it on the compositor. Reduced motion (design:reduced-motion)
+    // comes last so it holds everywhere: under a finger the fade layer
+    // carries the colour, and with a mouse the change is immediate.
     transitionDuration: {
       default: durationVars['--duration-fast'],
       [TOUCH]: '0s',
-      '@media (prefers-reduced-motion: reduce)': '0s',
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)': '0s',
+      '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
+        '0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
     boxSizing: 'border-box',
@@ -268,10 +290,46 @@ const styles = stylex.create({
         default: null,
         '@media (forced-colors: none)': {
           default: pressedImage,
-          // Under a coarse pointer the thumb lifts instead (useSwitchTouch.ts).
+          // Under a coarse pointer the touch press model writes
+          // `data-astryx-press` on the row instead; see
+          // interactionOverlay.stylex.ts.
           '@media (pointer: coarse)': 'none',
         },
       },
+      // Nested in the same media as the arm above so it outranks the drop: an
+      // ancestor-scoped attribute selector gets no priority of its own.
+      [stylex.when.ancestor('[data-astryx-press="on"]', switchScope)]: {
+        default: null,
+        '@media (forced-colors: none)': {
+          default: null,
+          '@media (pointer: coarse)': pressedOverlayImage,
+        },
+      },
+      [stylex.when.ancestor('[data-astryx-press="fading"]', switchScope)]: {
+        default: null,
+        '@media (forced-colors: none)': {
+          default: null,
+          '@media (pointer: coarse)': pressedOverlayImage,
+        },
+      },
+    },
+    // The fade layer, under a finger: over the track's own fill (themed in
+    // both states), it shows the fill the track is leaving (or, mid-drag,
+    // the one it is heading to) and fades it on the compositor. Its colour is
+    // the theme's, read from the track (switchFill.ts) into a variable; the
+    // animator owns its opacity, and at rest it is clear.
+    '::before': {
+      content: '""',
+      display: {default: 'none', [TOUCH]: 'block'},
+      position: 'absolute',
+      inset: 0,
+      borderRadius: 'inherit',
+      pointerEvents: 'none',
+      opacity: 0,
+      backgroundColor: 'var(--_switch-fade-fill, transparent)',
+      // Its own compositing layer from the start, so its fade runs off the
+      // main thread (iOS Safari otherwise animates it on the main thread).
+      willChange: {default: null, [TOUCH]: 'opacity'},
     },
   },
   // The one ring in the system not drawn by focusOutlineStyles. The focusable
@@ -308,12 +366,6 @@ const styles = stylex.create({
       [stylex.when.ancestor(':hover', switchScope)]: {
         '@media (hover: hover) and (forced-colors: none)': `color-mix(in srgb, ${colorVars['--color-background-gray']}, ${colorVars['--color-tint-hover']} 5%)`,
       },
-      // Under a finger the track is the off colour in both states; the on
-      // layer fades the on colour in over it.
-      [TOUCH]: {
-        default: colorVars['--color-background-gray'],
-        '@media (forced-colors: active)': 'Canvas',
-      },
     },
   },
   trackOn: {
@@ -324,11 +376,6 @@ const styles = stylex.create({
       // flatten the Highlight track to white under the HighlightText thumb.
       [stylex.when.ancestor(':hover', switchScope)]: {
         '@media (hover: hover) and (forced-colors: none)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
-      },
-      // See trackOff: the on layer carries the on colour under a finger.
-      [TOUCH]: {
-        default: colorVars['--color-background-gray'],
-        '@media (forced-colors: active)': 'Canvas',
       },
     },
   },
@@ -349,15 +396,23 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radiusVars['--radius-full'],
-    // Under a finger the thumb fills a box useSwitchTouch moves on the
-    // compositor: nothing of its own transitions.
+    // Under a finger it sits in the track at UISwitch's inset, above the
+    // track's fade layer (::before), and useSwitchTouch moves and lifts it on
+    // the compositor: nothing of its own transitions.
+    position: {default: null, [TOUCH]: 'absolute'},
+    top: {default: null, [TOUCH]: '7.1429cqh'},
+    pointerEvents: {default: null, [TOUCH]: 'none'},
     transitionProperty: {
       default: 'transform, width, height',
       [TOUCH]: 'none',
     },
+    // Under reduced motion nothing slides: under a finger the thumb
+    // cross-fades through the animator, and with a mouse it moves at once.
     transitionDuration: {
       default: durationVars['--duration-fast'],
-      '@media (prefers-reduced-motion: reduce)': '0s',
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)': '0s',
+      '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
+        '0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
     // Pressed: the same overlay as the track, so the whole control darkens
@@ -370,6 +425,22 @@ const styles = stylex.create({
         '@media (forced-colors: none)': {
           default: pressedImage,
           '@media (pointer: coarse)': 'none',
+        },
+      },
+      // Nested in the same media as the arm above so it outranks the drop: an
+      // ancestor-scoped attribute selector gets no priority of its own.
+      [stylex.when.ancestor('[data-astryx-press="on"]', switchScope)]: {
+        default: null,
+        '@media (forced-colors: none)': {
+          default: null,
+          '@media (pointer: coarse)': pressedOverlayImage,
+        },
+      },
+      [stylex.when.ancestor('[data-astryx-press="fading"]', switchScope)]: {
+        default: null,
+        '@media (forced-colors: none)': {
+          default: null,
+          '@media (pointer: coarse)': pressedOverlayImage,
         },
       },
     },
@@ -391,67 +462,34 @@ const styles = stylex.create({
     },
   },
   // ---------------------------------------------------------------------
-  // Touch presentation (coarse pointer): UISwitch on iOS 26.2. The track's
-  // own fill is the off color; a layer over it fades in the on color; the
-  // thumb is a constant-size capsule in a box that useSwitchTouch moves and
-  // lifts on the compositor (translate / scale / opacity only). Its geometry
-  // is UIKit's (a 37 × 24 thumb in a 63 × 28 track) in proportion to the
-  // track, in container units so it follows the track's box. Where a touch
-  // value shares a property with the mouse (the track's fill, padding and
-  // fade; the thumb's size, travel and transition) it is a nested condition
-  // of that property above; the parts below exist only under a finger.
+  // Under a finger the track keeps its own fill (the theme's) and a layer
+  // over it fades the outgoing fill out on the compositor. The thumb is a
+  // constant-size capsule in a box that useSwitchTouch moves and lifts on the
+  // compositor (translate / scale / opacity only), as UISwitch's (iOS 26.2).
+  // Its geometry is UIKit's (a 37 × 24 thumb in a 63 × 28 track) in
+  // proportion to the track, in container units so it follows the track's
+  // box. Where a touch value shares a property with the mouse (the track's
+  // padding and fade; the thumb's size, travel and transition) it is a nested
+  // condition of that property above; the parts below exist only under a
+  // finger.
   // ---------------------------------------------------------------------
-  trackOnLayer: {
-    display: {default: 'none', [TOUCH]: 'block'},
-    position: 'absolute',
-    inset: 0,
-    borderRadius: 'inherit',
-    pointerEvents: 'none',
-    // Its own compositing layer from the start, so its colour fade runs off
-    // the main thread (iOS Safari otherwise animates it on the main thread).
-    willChange: {default: null, [TOUCH]: 'opacity'},
-    backgroundColor: {
-      default: colorVars['--color-accent'],
-      '@media (forced-colors: active)': 'Highlight',
+  // The fade layer: over the track's own fill (themed in both states), it
+  // shows the fill the track is leaving (or, mid-drag, the one it is heading
+  // to) and fades it on the compositor. Its colour is the theme's, read from
+  // the track (switchFill.ts) and set inline; at rest it is clear. The
+  // animator owns its opacity, so it has no transition of its own.
+  // The thumb's resting place under a finger: its inline-start inset, so the
+  // steady state needs no script and mirrors under RTL by itself.
+  thumbPlaceOff: {
+    insetInlineStart: {
+      default: null,
+      [TOUCH]: '7.1429cqh',
     },
   },
-  trackOnLayerOff: {
-    opacity: 0,
-  },
-  thumbBox: {
-    display: {default: 'contents', [TOUCH]: 'block'},
-    position: {default: null, [TOUCH]: 'absolute'},
-    top: {default: null, [TOUCH]: '7.1429cqh'},
-    width: {default: null, [TOUCH]: '58.7302cqw'},
-    height: {default: null, [TOUCH]: '85.7143cqh'},
-    pointerEvents: 'none',
-  },
-  thumbBoxOff: {
-    insetInlineStart: {default: null, [TOUCH]: '7.1429cqh'},
-  },
-  thumbBoxOn: {
+  thumbPlaceOn: {
     insetInlineStart: {
       default: null,
       [TOUCH]: 'calc(41.2698cqw - 7.1429cqh)',
-    },
-  },
-  // The clear lens the lifted thumb becomes: a faint fill, a bright rim and
-  // UIKit's lifted shadow (y 7, radius 3, alpha 0.12 in pt, divided by the
-  // lift scale since the box scales it), faded in over the fill.
-  thumbGlass: {
-    display: {default: 'none', [TOUCH]: 'block'},
-    position: 'absolute',
-    inset: 0,
-    borderRadius: radiusVars['--radius-full'],
-    opacity: 0,
-    pointerEvents: 'none',
-    backgroundColor: {
-      default: `color-mix(in srgb, ${colorVars['--color-background-surface']} 16%, transparent)`,
-      '@media (forced-colors: active)': 'Canvas',
-    },
-    boxShadow: {
-      default: `inset 0 0 0 0.75px color-mix(in srgb, ${colorVars['--color-background-surface']} 75%, transparent), inset 0 1px 1px color-mix(in srgb, ${colorVars['--color-background-surface']} 60%, transparent), 0 4.4px 3.8px rgb(0 0 0 / 0.12)`,
-      '@media (forced-colors: active)': 'inset 0 0 0 1px CanvasText',
     },
   },
   labelWrapper: {
@@ -726,34 +764,40 @@ export function Switch({
   // CSS shows them under a finger and the hook animates and listens there.
   const surfaceRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const thumbBoxRef = useRef<HTMLSpanElement>(null);
   const thumbRef = useRef<HTMLDivElement>(null);
-  const glassRef = useRef<HTMLSpanElement>(null);
-  const onLayerRef = useRef<HTMLSpanElement>(null);
-  // Once mounted, the touch presentation's animator owns the on layer's
-  // opacity; its class keeps the value it mounted with, so a toggle never
-  // changes the faded property's base under a running fade.
-  const [isOnAtMount] = useState(isOn);
+  const trackRef = useRef<HTMLDivElement>(null);
   const touchParts = useMemo<SwitchTouchParts>(
     () => ({
       surface: surfaceRef,
       input: inputRef,
-      thumb: thumbBoxRef,
-      fill: thumbRef,
-      glass: glassRef,
-      on: onLayerRef,
+      thumb: thumbRef,
+      track: trackRef,
     }),
     [],
   );
-  const [trackWidth, trackHeight] = TRACK_SIZE[size];
-  const touchGeometry = useMemo(
-    () => switchTouchGeometry(trackWidth, trackHeight),
-    [trackWidth, trackHeight],
-  );
+  // The track in a state: its theme target and fill. The other state's, for
+  // the fade layer's colour (switchFill.ts).
+  const trackPropsFor = (on: boolean) =>
+    mergeProps(
+      themeProps('switch', {
+        checked: on ? 'checked' : null,
+        disabled: isDisabled ? 'disabled' : null,
+        size,
+      }),
+      stylex.props(
+        styles.track,
+        trackSizeStyles[size],
+        on ? styles.trackOn : styles.trackOff,
+        styles.trackFocus,
+        isDisabled && styles.trackDisabled,
+        isDisabled && !on && styles.trackDisabledOff,
+      ),
+    );
   useSwitchTouch(touchParts, {
     isOn,
     isInteractive: !isDisabled && !isBusy,
-    geometry: touchGeometry,
+    trackSize: TRACK_SIZE[size],
+    otherTrackProps: trackPropsFor(!isOn),
   });
 
   const switchElement = (
@@ -805,53 +849,23 @@ export function Switch({
           isBusy && styles.inputBusy,
         )}
       />
-      <div
-        aria-hidden="true"
-        {...mergeProps(
-          themeProps('switch', {
-            checked: isOn ? 'checked' : null,
-            disabled: isDisabled ? 'disabled' : null,
-            size,
-          }),
-          stylex.props(
-            styles.track,
-            trackSizeStyles[size],
-            isOn ? styles.trackOn : styles.trackOff,
-            styles.trackFocus,
-            isDisabled && styles.trackDisabled,
-            isDisabled && !isOn && styles.trackDisabledOff,
-          ),
-        )}>
-        <span
-          ref={onLayerRef}
-          {...stylex.props(
-            styles.trackOnLayer,
-            !isOnAtMount && styles.trackOnLayerOff,
-          )}
-        />
-        <span
-          ref={thumbBoxRef}
-          {...stylex.props(
-            styles.thumbBox,
-            isOn ? styles.thumbBoxOn : styles.thumbBoxOff,
+      <div ref={trackRef} aria-hidden="true" {...trackPropsFor(isOn)}>
+        <div
+          ref={thumbRef}
+          {...mergeProps(
+            themeProps('switch-thumb', {
+              checked: isOn ? 'checked' : null,
+              size,
+            }),
+            stylex.props(
+              styles.thumb,
+              isOn ? thumbOnSizeStyles[size] : thumbOffSizeStyles[size],
+              isOn ? styles.thumbOn : styles.thumbOff,
+              isOn ? styles.thumbPlaceOn : styles.thumbPlaceOff,
+            ),
           )}>
-          <div
-            ref={thumbRef}
-            {...mergeProps(
-              themeProps('switch-thumb', {
-                checked: isOn ? 'checked' : null,
-                size,
-              }),
-              stylex.props(
-                styles.thumb,
-                isOn ? thumbOnSizeStyles[size] : thumbOffSizeStyles[size],
-                isOn ? styles.thumbOn : styles.thumbOff,
-              ),
-            )}>
-            {isBusy && <Spinner size="sm" />}
-          </div>
-          <span ref={glassRef} {...stylex.props(styles.thumbGlass)} />
-        </span>
+          {isBusy && <Spinner size="sm" />}
+        </div>
       </div>
     </div>
   );
@@ -907,6 +921,9 @@ export function Switch({
           labelSpacing === 'spread' && styles.containerSpread,
           !isDisabled && switchScope,
           switchFocusScope,
+          // The touch press's strength and release live on the row the
+          // controller writes to; the track and thumb inherit and paint it.
+          !isDisabled && interactionOverlayStyles.pressedAlpha,
         )}>
         {' '}
         {labelPosition === 'start' ? (

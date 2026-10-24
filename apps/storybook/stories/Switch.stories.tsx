@@ -627,7 +627,7 @@ export const PressedState: Story = {
     docs: {
       description: {
         story:
-          "Press and hold an enabled switch with a mouse to paint the system's `--color-overlay-pressed` layer on its track and thumb together; under a finger the thumb lifts into a glass lens instead. The disabled example remains visually unchanged and cannot toggle.",
+          "Press and hold an enabled switch to paint the system's `--color-overlay-pressed` layer on its track and thumb together. The disabled example remains visually unchanged and cannot toggle.",
       },
     },
   },
@@ -655,7 +655,7 @@ export const InScrollingList: Story = {
     docs: {
       description: {
         story:
-          'Switches in rows of a list taller than the screen, as in a settings page. On a touch screen a finger that starts moving at once scrolls the page; a finger that rests on a switch first keeps it, so moving then never scrolls and lifting toggles.',
+          'Switches in rows of a list taller than the screen, as in a settings page. Under a finger, a finger that starts moving at once scrolls the page; a finger that rests on a switch first keeps it, so moving then never scrolls and lifting toggles.',
       },
     },
   },

@@ -31,7 +31,11 @@ import {
   getAllInjectedCss,
   getForcedColorsRules,
 } from '../__tests__/forcedColors';
-import {hasPressedArm, readsPressStrength} from '../__tests__/pressState';
+import {
+  hasPressedArm,
+  hasReleaseFade,
+  readsPressStrength,
+} from '../__tests__/pressState';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {InternationalizationProvider} from '../i18n';
 
@@ -974,7 +978,7 @@ describe('Switch', () => {
       expect(hasPressedArm(thumb)).toBe(true);
     });
 
-    it('paints no pressed overlay under a finger: the thumb lifts instead', () => {
+    it('fades the touch press out from the row, with the track and thumb reading its strength', () => {
       const {container} = render(
         <Switch label="Notifications" value={false} onChange={() => {}} />,
       );
@@ -984,14 +988,15 @@ describe('Switch', () => {
       if (track == null || thumb == null || row == null) {
         throw new Error('the switch has no pressable row, track or thumb');
       }
-      // The row stays a pressable surface, so a touch on the switch does not
-      // light a pressable row around it; the touch presentation answers the
-      // press with the thumb's lift (useSwitchTouch.ts), not the overlay.
+      // The controller writes the row; the row owns the strength and its
+      // release, and the two parts paint the pressed token at that strength
+      // on both touch arms, so they fade together. Under a finger nothing
+      // lifts (UISwitch's lift waits on its look decision), so the press
+      // shows this overlay.
+      expect(hasReleaseFade(row)).toBe(true);
       for (const part of [track, thumb]) {
-        expect(readsPressStrength(part, '[data-astryx-press="on"]')).toBe(
-          false,
-        );
-        expect(readsPressStrength(part)).toBe(false);
+        expect(readsPressStrength(part, '[data-astryx-press="on"]')).toBe(true);
+        expect(readsPressStrength(part)).toBe(true);
       }
     });
   });
@@ -1021,6 +1026,8 @@ describe('Switch', () => {
     };
 
     it('keeps the track fill, padding and colour fade, and the thumb size and slide', () => {
+      // A fine pointer: the desktop switch.
+      expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
       const {container, rerender} = render(
         <Switch label="Wi-Fi" value={false} onChange={() => {}} />,
       );
@@ -1040,7 +1047,20 @@ describe('Switch', () => {
       expect(on.travel).toBe('translateX(14px)');
     });
 
+    it('adds no element: the thumb is the track’s only child, under a finger too', () => {
+      const {container} = render(
+        <Switch label="Wi-Fi" value={false} onChange={() => {}} />,
+      );
+      const track = container.querySelector('.astryx-switch');
+      const thumb = container.querySelector('.astryx-switch-thumb');
+      // architecture:component-style-authoring INV7: the touch presentation
+      // styles the existing thumb (the fade layer is the track's ::before).
+      expect(track?.children.length).toBe(1);
+      expect(thumb?.parentElement).toBe(track);
+    });
+
     it('keeps the small size’s padding and thumb', () => {
+      expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
       const {container} = render(
         <Switch label="Wi-Fi" size="sm" value={false} onChange={() => {}} />,
       );

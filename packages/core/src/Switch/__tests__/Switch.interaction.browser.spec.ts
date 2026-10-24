@@ -6,24 +6,34 @@
  *   input command) and @astryxdesign/interaction-harness
  * @output Interaction and animation proofs of Switch's touch presentation
  *   against UISwitch on iOS 26.2, one named case per path (P1–P14): a press
- *   lifts the thumb into a glass lens and a release toggles; a drag flips
- *   26/63 of the track from where the finger landed and commits at the lift,
+ *   toggles at the release (nothing lifts: UISwitch's lens waits on its look
+ *   decision, and the press shows the shared overlay); a drag flips
+ *   26/63 of the track from where the finger landed and commits at the release,
  *   back to the landing point commits nothing, shorter toggles like a tap; a
- *   vertical pan scrolls the page while a held switch keeps the touch; Reduce
- *   Motion keeps the lift and the springs; right to left mirrors the ends and
+ *   vertical pan scrolls the page while a held switch keeps the touch; with
+ *   reduced motion a change cross-fades (design:reduced-motion); right to
+ *   left mirrors the ends and
  *   the drag; a second tap mid-travel turns the thumb around where it is; a
- *   disabled or busy switch stays inert; the lift, travel and track-color
+ *   disabled or busy switch stays inert; the travel and track-color
  *   curves match the UIKit springs when sampled; the motion keeps advancing
  *   through a blocked main thread and does no Layout or Paint; storyboards of
  *   a tap and of a drag.
  * @position The browser layer of Switch's touch tests; the pure model is
  *   switchTouch.test.ts. Runs on the phone profile (coarse pointer), where
- *   the touch presentation is the one rendered.
+ *   the touch presentation is the one rendered, one model on every touch
+ *   device (Chromium's and WebKit's alike); a mouse context keeps the
+ *   desktop switch.
  *
  * SYNC: useSwitchTouch.ts, switchTouch.ts, motion/uikit/switch.ts.
  */
 
-import {expect, test, type Locator, type Page} from '@playwright/test';
+import {
+  expect,
+  test,
+  type Browser,
+  type Locator,
+  type Page,
+} from '@playwright/test';
 import {
   animationStoryboard,
   blockMainThread,
@@ -58,7 +68,6 @@ import {SWITCH_CLAIMS_HELD_TOUCH} from '../switchTouchClaim';
 const storybook = withStorybook(test);
 
 // UISwitch on iOS 26.2 (motion/uikit/switch.ts), restated here as the oracle.
-const LIFT = {response: 0.23, dampingFraction: 0.55};
 const TRAVEL = {response: 0.3, dampingFraction: 1};
 const WELL_ON = {response: 0.68, dampingFraction: 1};
 /** The md track is 40 × 24: thumb 37/63 of the width, 24/28 of the height. */
@@ -67,7 +76,124 @@ const THUMB_WIDTH = (TRACK.width * 37) / 63;
 const INSET = (TRACK.height - (TRACK.height * 24) / 28) / 2;
 const TRAVEL_PX = TRACK.width - THUMB_WIDTH - 2 * INSET;
 const FLIP_DISTANCE = (TRACK.width * 26) / 63;
-const LIFT_SCALE = {x: 58 / 37, y: 38.333 / 24};
+/**
+ * design:reduced-motion DR2: under reduced motion a touch change is an
+ * opacity-only cross-fade of this many ms or less.
+ */
+const REDUCED_FADE_MAX_MS = 200;
+
+interface ChangeSample {
+  t: number;
+  /** The thumb's scale as presented. */
+  scale: number;
+  /** The thumb's left edge from the track's. */
+  left: number;
+  /** How opaque the thumb shows. */
+  opacity: number;
+  /** How far the colour shows on (see presented()). */
+  on: number;
+  /** The track's own fill. */
+  fill: string;
+}
+
+/**
+ * Samples the first switch every frame for `ms` while `act` runs.
+ */
+async function sampleChange(
+  page: Page,
+  act: () => Promise<void>,
+  ms = 700,
+): Promise<ChangeSample[]> {
+  await page.evaluate(duration => {
+    const w = window as unknown as {__change: unknown[]};
+    const track = document.querySelector<HTMLElement>(
+      '#storybook-root .astryx-switch',
+    )!;
+    const thumb = document.querySelector<HTMLElement>(
+      '#storybook-root .astryx-switch-thumb',
+    )!;
+    const input = document.querySelector<HTMLInputElement>(
+      '#storybook-root [role="switch"]',
+    )!;
+    const scaleOf = (element: Element) => {
+      const scale = getComputedStyle(element).scale;
+      return scale === 'none' ? 1 : Number(scale.split(' ')[0]);
+    };
+    w.__change = [];
+    const start = performance.now();
+    const tick = () => {
+      const t = performance.now() - start;
+      const faded = Number(getComputedStyle(track, '::before').opacity);
+      w.__change.push({
+        t,
+        scale: scaleOf(thumb),
+        left:
+          thumb.getBoundingClientRect().left -
+          track.getBoundingClientRect().left,
+        opacity: Number(getComputedStyle(thumb).opacity),
+        on: input.checked ? 1 - faded : faded,
+        fill: getComputedStyle(track).backgroundColor,
+      });
+      if (t < duration) {
+        requestAnimationFrame(tick);
+      }
+    };
+    requestAnimationFrame(tick);
+  }, ms);
+  await act();
+  await page.waitForTimeout(ms + 100);
+  return page.evaluate(
+    () => (window as unknown as {__change: ChangeSample[]}).__change,
+  );
+}
+
+/**
+ * design:reduced-motion DR1 and DR2: the change scales nothing, never shows
+ * the thumb between its two places, fades (opacity), and is done within the
+ * cross-fade's bound.
+ */
+function expectCrossFade(samples: ChangeSample[]): void {
+  const first = samples[0];
+  const last = samples.at(-1)!;
+  expect(Math.abs(last.left - first.left)).toBeGreaterThan(4);
+  for (const sample of samples) {
+    expect(Math.abs(sample.scale - 1), JSON.stringify(sample)).toBeLessThan(
+      0.01,
+    );
+    if (sample.opacity > 0.1) {
+      const atAnEnd = Math.min(
+        Math.abs(sample.left - first.left),
+        Math.abs(sample.left - last.left),
+      );
+      expect(atAnEnd, JSON.stringify(sample)).toBeLessThan(0.75);
+    }
+  }
+  // A fade, not a jump: some frame shows the thumb or the colour part-way.
+  expect(
+    samples.some(
+      s => (s.opacity > 0.1 && s.opacity < 0.9) || (s.on > 0.1 && s.on < 0.9),
+    ),
+  ).toBe(true);
+  const settled = (s: ChangeSample) =>
+    s.opacity > 0.98 &&
+    Math.abs(s.left - last.left) < 0.5 &&
+    Math.abs(s.on - last.on) < 0.02;
+  const begins = samples.findIndex(
+    s =>
+      s.opacity < 0.98 ||
+      Math.abs(s.on - first.on) > 0.02 ||
+      Math.abs(s.left - first.left) > 0.5,
+  );
+  let ends = samples.length - 1;
+  while (ends > 0 && settled(samples[ends - 1])) {
+    ends--;
+  }
+  expect(begins).toBeGreaterThanOrEqual(0);
+  // One frame of slack on each side of the sampled window.
+  expect(samples[ends].t - samples[begins].t).toBeLessThanOrEqual(
+    REDUCED_FADE_MAX_MS + 34,
+  );
+}
 
 interface OpenSwitch {
   driver: TouchDriver;
@@ -81,15 +207,26 @@ interface OpenSwitch {
 async function openSwitch(
   page: Page,
   storyId = 'core-switch--default',
-  {direction = 'ltr'}: {direction?: 'ltr' | 'rtl'} = {},
+  {
+    direction = 'ltr',
+    globals = [],
+  }: {
+    direction?: 'ltr' | 'rtl';
+    /** More Storybook globals, e.g. `theme:probe`. */
+    globals?: string[];
+  } = {},
 ): Promise<OpenSwitch> {
-  if (direction === 'ltr') {
+  const allGlobals = [
+    ...(direction === 'rtl' ? ['direction:rtl'] : []),
+    ...globals,
+  ];
+  if (allGlobals.length === 0) {
     await openStory(page, storybook(), storyId);
   } else {
-    // Storybook's direction global wraps the story in `dir="rtl"` from its
-    // first render, so the switch mounts right to left.
+    // Storybook's globals apply from the story's first render (the direction
+    // global wraps it in `dir="rtl"`, so the switch mounts right to left).
     await page.goto(
-      `${storybook()}/iframe.html?id=${storyId}&viewMode=story&globals=direction:rtl`,
+      `${storybook()}/iframe.html?id=${storyId}&viewMode=story&globals=${allGlobals.join(';')}`,
     );
     await page
       .locator('#storybook-root > *')
@@ -105,8 +242,10 @@ async function openSwitch(
   const driver = await touchDriver(page);
   const root = page.locator('#storybook-root');
   const input = root.getByRole('switch').first();
-  const thumb = root.locator('.astryx-switch-thumb').first().locator('..');
-  const onLayer = root.locator('.astryx-switch > span').first();
+  const thumb = root.locator('.astryx-switch-thumb').first();
+  // The track: its ::before is the fade layer.
+  const onLayer = root.locator('.astryx-switch').first();
+  // Under a finger the thumb itself moves and lifts.
   const box = await thumb.boundingBox();
   if (box == null) {
     throw new Error('no thumb');
@@ -127,23 +266,52 @@ interface Presented {
   fill: number;
 }
 
-/** The thumb's lift and the track's color, as presented. */
+/** The press state the row's press feedback shows (`data-astryx-press`). */
+async function pressState(page: Page, index = 0): Promise<string | null> {
+  return page.evaluate(i => {
+    const inputs = document.querySelectorAll('#storybook-root [role="switch"]');
+    const row = inputs[i]?.closest('[data-astryx-pressable]');
+    return row?.getAttribute('data-astryx-press') ?? null;
+  }, index);
+}
+
+/**
+ * The switch at rest: the thumb still, and the track's colour fade (its
+ * ::before, which waitForRest does not read) finished too.
+ */
+async function waitForSwitchRest(page: Page, thumb: Locator): Promise<void> {
+  await waitForRest(thumb);
+  await page.waitForFunction(() =>
+    document
+      .querySelector('#storybook-root .astryx-switch')!
+      .getAnimations({subtree: true})
+      .every(animation => animation.playState !== 'running'),
+  );
+}
+
+/** The thumb's scale and the track's color, as presented. */
 async function presented(page: Page): Promise<Presented> {
   return page.evaluate(() => {
     const thumb = document.querySelector<HTMLElement>(
       '#storybook-root .astryx-switch-thumb',
     )!;
-    const on = document.querySelector<HTMLElement>(
-      '#storybook-root .astryx-switch > span',
+    // The fade layer over the track shows the other side's fill: how far the
+    // colour shows on is its opacity while off, its complement while on.
+    const fade = document.querySelector<HTMLElement>(
+      '#storybook-root .astryx-switch',
     )!;
-    const scale = getComputedStyle(thumb.parentElement!).scale;
+    const input = document.querySelector<HTMLInputElement>(
+      '#storybook-root [role="switch"]',
+    )!;
+    const faded = Number(getComputedStyle(fade, '::before').opacity);
+    const scale = getComputedStyle(thumb).scale;
     const [sx, sy = sx] = (scale === 'none' ? '1' : scale)
       .split(' ')
       .map(Number);
     return {
       scaleX: sx,
       scaleY: sy,
-      on: Number(getComputedStyle(on).opacity),
+      on: input.checked ? 1 - faded : faded,
       fill: Number(getComputedStyle(thumb).opacity),
     };
   });
@@ -157,7 +325,7 @@ async function thumbOffset(page: Page): Promise<number> {
   return page.evaluate(() => {
     const box = document.querySelector<HTMLElement>(
       '#storybook-root .astryx-switch-thumb',
-    )!.parentElement!;
+    )!;
     const rect = box.getBoundingClientRect();
     const track = box.parentElement!.getBoundingClientRect();
     return (
@@ -180,7 +348,7 @@ async function travelAnimation(
     const found = await page.evaluate(() => {
       const box = document.querySelector<HTMLElement>(
         '#storybook-root .astryx-switch-thumb',
-      )!.parentElement!;
+      )!;
       const travel = box
         .getAnimations()
         .filter(
@@ -218,8 +386,88 @@ async function travelAnimation(
   throw new Error('the thumb never travelled');
 }
 
-test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
-  test('P1 · a tap lifts the thumb into the lens, then toggles: it travels and the track turns on', async ({
+/** The probe theme paints every state of the `switch` target its own fill. */
+const PROBE_THEME = 'astryxTheme:probe';
+
+/**
+ * The track's fill off and on as a theme paints it under a mouse: what a
+ * finger has to show too.
+ */
+async function mouseFills(
+  browser: Browser,
+  globals: string[],
+): Promise<{off: string; on: string}> {
+  const context = await browser.newContext({
+    hasTouch: false,
+    isMobile: false,
+    deviceScaleFactor: 1,
+    viewport: {width: 480, height: 320},
+  });
+  try {
+    const page = await context.newPage();
+    await page.goto(
+      `${storybook()}/iframe.html?id=core-switch--default&viewMode=story&globals=${globals.join(';')}`,
+    );
+    const input = page.locator('#storybook-root').getByRole('switch').first();
+    await input.waitFor({state: 'attached'});
+    const fill = async () => {
+      // Off the switch (no hover tint), after the track's own transition.
+      await page.mouse.move(1, 1);
+      await page.waitForTimeout(400);
+      return page.evaluate(
+        () =>
+          getComputedStyle(
+            document.querySelector('#storybook-root .astryx-switch')!,
+          ).backgroundColor,
+      );
+    };
+    const off = await fill();
+    await input.click({force: true});
+    await expect(input).toBeChecked();
+    return {off, on: await fill()};
+  } finally {
+    await context.close();
+  }
+}
+
+/**
+ * The colour a finger sees on the track: the fade layer's while it is
+ * opaque, the track's own fill while it is clear.
+ */
+async function visibleFill(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const track = document.querySelector<HTMLElement>(
+      '#storybook-root .astryx-switch',
+    )!;
+    const fade = getComputedStyle(track, '::before');
+    return Number(fade.opacity) > 0.5
+      ? fade.backgroundColor
+      : getComputedStyle(track).backgroundColor;
+  });
+}
+
+test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', () => {
+  test('a theme’s `switch` fill shows under a finger, off and on: the track keeps the theme’s fill and the fade layer only crossfades', async ({
+    page,
+    browser,
+  }) => {
+    const expected = await mouseFills(browser, [PROBE_THEME]);
+    expect(expected.on).not.toBe(expected.off);
+    const {driver, input, thumb, center} = await openSwitch(
+      page,
+      'core-switch--default',
+      {globals: [PROBE_THEME]},
+    );
+    expect(await visibleFill(page)).toBe(expected.off);
+    await driver.play(tap(center));
+    await expect(input).toBeChecked();
+    await waitForSwitchRest(page, thumb);
+    // The well spring (0.68 s on) has settled.
+    await page.waitForTimeout(900);
+    expect(await visibleFill(page)).toBe(expected.on);
+  });
+
+  test('P1 · a tap toggles at the release: the thumb travels and the track turns on, and nothing lifts', async ({
     page,
   }) => {
     const {driver, input, thumb, center} = await openSwitch(page);
@@ -227,10 +475,9 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
     expect(await thumbOffset(page)).toBeCloseTo(INSET, 0);
     await driver.play(tap(center, {holdMs: 50}));
     await expect(input).toBeChecked();
-    // Lifted right after the release (no sooner than the minimum lift).
-    const lifted = await presented(page);
-    expect(lifted.scaleX).toBeGreaterThan(1.2);
-    await waitForRest(thumb);
+    // Nothing lifts (UISwitch's lens waits on its look decision).
+    expect((await presented(page)).scaleX).toBeCloseTo(1, 2);
+    await waitForSwitchRest(page, thumb);
     const rest = await presented(page);
     expect(rest.scaleX).toBeCloseTo(1, 2);
     expect(rest.on).toBeCloseTo(1, 2);
@@ -238,25 +485,27 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
     expect(await thumbOffset(page)).toBeCloseTo(INSET + TRAVEL_PX, 0);
   });
 
-  test('P2 · a hold keeps the lens lifted, and the release toggles', async ({
+  test('P2 · a hold shows the pressed overlay, not a lift, and the release toggles', async ({
     page,
   }) => {
     const {driver, input, center} = await openSwitch(page);
     const script = tap(center, {holdMs: 700});
     let held: Presented | null = null;
+    let press: string | null = null;
     await driver.play(script, {
       onEvent: async step => {
         if (step.type === 'touchStart') {
           await page.waitForTimeout(500);
           held = await presented(page);
+          press = await pressState(page);
         }
       },
     });
     expect(held).not.toBeNull();
-    expect(held!.scaleX).toBeCloseTo(LIFT_SCALE.x, 1);
-    expect(held!.scaleY).toBeCloseTo(LIFT_SCALE.y, 1);
-    // The white fill gave way to the clear glass.
-    expect(held!.fill).toBeLessThan(0.05);
+    // The thumb keeps its size and fill; the row shows the pressed overlay.
+    expect(held!.scaleX).toBeCloseTo(1, 2);
+    expect(held!.fill).toBeCloseTo(1, 2);
+    expect(press).toBe('on');
     await expect(input).toBeChecked();
   });
 
@@ -321,7 +570,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
     expect(held.after?.locked).toBe(false);
   });
 
-  test('P3 · a drag flips once the finger is 26/63 of the track past where it landed, and the lift commits it', async ({
+  test('P3 · a drag flips once the finger is 26/63 of the track past where it landed, and the release commits it', async ({
     page,
   }) => {
     const {driver, input, onLayer, center} = await openSwitch(page);
@@ -337,7 +586,9 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
           onAt.push({
             dx: step.fingers[0].x - center.x,
             on: Number(
-              await onLayer.evaluate(el => getComputedStyle(el).opacity),
+              await onLayer.evaluate(
+                el => getComputedStyle(el, '::before').opacity,
+              ),
             ),
           });
         }
@@ -366,12 +617,12 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
         .map(frame => ({...frame, t: frame.t + 700})),
     ];
     await driver.play(script);
-    await waitForRest(thumb);
+    await waitForSwitchRest(page, thumb);
     await expect(input).not.toBeChecked();
     expect(await thumbOffset(page)).toBeCloseTo(INSET, 0);
   });
 
-  test('P5 · a drag shorter than the flip distance toggles at the lift, like a tap', async ({
+  test('P5 · a drag shorter than the flip distance toggles at the release, like a tap', async ({
     page,
   }) => {
     const {driver, input, center} = await openSwitch(page);
@@ -395,7 +646,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
     await expect(input).toBeChecked();
   });
 
-  test('P7 · a vertical pan that starts on the switch scrolls the page and changes nothing', async ({
+  test('P7 · a vertical pan that starts on the switch scrolls the page, shows no press, and changes nothing', async ({
     page,
   }) => {
     const {driver, input, thumb, center} = await openSwitch(
@@ -406,16 +657,94 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
       !driver.drivesNativeGestures,
       'injected touches do not scroll natively in this engine (the iOS simulator rig covers it)',
     );
+    // The page scrolls the document: it is the scroll view, so the press
+    // waits UIScrollView's content delay and the scroll takes the touch
+    // first. UIKit shows no press for a scroll (iOS 26.2, in a table).
+    const presses: (string | null)[] = [];
     await driver.play(
       drag(center, {x: center.x, y: center.y - 300}, {durationMs: 300}),
+      {
+        onEvent: async step => {
+          if (step.type === 'touchMove' || step.type === 'touchEnd') {
+            presses.push(await pressState(page));
+          }
+        },
+      },
     );
-    await waitForRest(thumb);
+    expect(presses.length).toBeGreaterThan(3);
+    expect(presses).not.toContain('on');
+    await waitForSwitchRest(page, thumb);
     expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(100);
     // The first row starts on and stays on.
     await expect(input).toBeChecked();
     const rest = await presented(page);
     expect(rest.scaleX).toBeCloseTo(1, 2);
     expect(rest.on).toBeCloseTo(1, 2);
+  });
+
+  test('P7 · on a page that scrolls, a press waits UIScrollView’s content delay before it shows', async ({
+    page,
+  }) => {
+    // The document is the page's scroll view, as a table is UIKit's: the
+    // press waits the content delay, so a scroll takes the touch first (in a
+    // table UIKit's press shows ~200 ms after touch-down).
+    const {driver, center} = await openSwitch(
+      page,
+      'core-switch--in-scrolling-list',
+    );
+    const presses: {at: number; press: string | null}[] = [];
+    await driver.play(tap(center, {holdMs: 450}), {
+      onEvent: async step => {
+        if (step.type === 'touchStart') {
+          await page.waitForTimeout(60);
+          presses.push({at: 60, press: await pressState(page)});
+          await page.waitForTimeout(300);
+          presses.push({at: 360, press: await pressState(page)});
+        }
+      },
+    });
+    expect(presses).toHaveLength(2);
+    expect(presses[0].press).not.toBe('on');
+    expect(presses[1].press).toBe('on');
+  });
+
+  test('two switches tapped 0.2 s apart leave the page selectable: no page-wide selection lock', async ({
+    page,
+  }) => {
+    const {driver} = await openSwitch(page, 'core-switch--in-scrolling-list');
+    const centers = await page.evaluate(() =>
+      Array.from(
+        document.querySelectorAll<HTMLElement>(
+          '#storybook-root .astryx-switch-thumb',
+        ),
+      )
+        .slice(0, 2)
+        .map(thumb => {
+          const rect = thumb.getBoundingClientRect();
+          return {
+            x: rect.x + rect.width / 2,
+            y: rect.y + rect.height / 2,
+          };
+        }),
+    );
+    await driver.play(tap(centers[0]));
+    await page.waitForTimeout(200);
+    await driver.play(tap(centers[1]));
+    // Past any lock's release after the last lift.
+    await page.waitForTimeout(1200);
+    const root = await page.evaluate(() => {
+      const html = document.documentElement;
+      return {
+        inline:
+          html.style.getPropertyValue('user-select') +
+          html.style.getPropertyValue('-webkit-user-select'),
+        computed:
+          getComputedStyle(html).getPropertyValue('-webkit-user-select') ||
+          getComputedStyle(html).userSelect,
+      };
+    });
+    expect(root.inline).toBe('');
+    expect(root.computed).not.toBe('none');
   });
 
   test('P8 · a held switch in a scrolling list keeps the touch: a held drag up toggles and never scrolls', async ({
@@ -430,7 +759,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
       'injected touches do not scroll natively in this engine (the iOS simulator rig covers it)',
     );
     // Held 300 ms, then dragged up 200 px. UIKit (a switch in a table cell):
-    // only the switch tracks, the table stays put and the lift toggles. The
+    // only the switch tracks, the table stays put and the release toggles. The
     // passive variant (switchTouchClaim.ts) scrolls the page and the switch
     // yields instead.
     await driver.play(
@@ -440,7 +769,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
         {durationMs: 300, holdMs: 300},
       ),
     );
-    await waitForRest(thumb);
+    await waitForSwitchRest(page, thumb);
     const scrollY = await page.evaluate(() => window.scrollY);
     if (SWITCH_CLAIMS_HELD_TOUCH) {
       expect(scrollY).toBe(0);
@@ -475,12 +804,58 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
     expect(await page.evaluate(() => window.scrollY)).toBe(0);
   });
 
-  test('P11 · a mouse click toggles once, through the native checkbox', async ({
+  test('P11 · a mouse click on a touch device toggles once, through the native checkbox', async ({
     page,
   }) => {
     const {input} = await openSwitch(page);
+    // A touch device (a coarse primary pointer), clicked with a mouse.
+    expect(
+      await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+    ).toBe(true);
     await input.click({force: true});
     await expect(input).toBeChecked();
+  });
+
+  test('P11 · under a mouse with Reduce Motion a click changes at once (design:reduced-motion DR3)', async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({
+      viewport: {width: 480, height: 320},
+      screen: {width: 480, height: 320},
+      deviceScaleFactor: 1,
+      isMobile: false,
+      hasTouch: false,
+      reducedMotion: 'reduce',
+    });
+    try {
+      const page = await context.newPage();
+      await openStory(page, storybook(), 'core-switch--default');
+      expect(
+        await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+      ).toBe(false);
+      const input = page.locator('#storybook-root').getByRole('switch').first();
+      const samples = await sampleChange(page, async () => {
+        await input.click();
+        // Off the switch: no hover tint on the fill.
+        await page.mouse.move(1, 1);
+      });
+      await expect(input).toBeChecked();
+      const last = samples.at(-1)!;
+      const changed = samples.findIndex(
+        s => Math.abs(s.left - samples[0].left) > 0.5,
+      );
+      expect(changed).toBeGreaterThan(0);
+      for (const sample of samples.slice(changed)) {
+        expect(
+          Math.abs(sample.left - last.left),
+          JSON.stringify(sample),
+        ).toBeLessThan(0.5);
+        expect(sample.opacity).toBeCloseTo(1, 2);
+        expect(sample.scale).toBeCloseTo(1, 2);
+      }
+    } finally {
+      await context.close();
+    }
   });
 
   test('P11 · under a mouse the switch keeps its desktop look: the track’s fill and padding, the thumb’s size and slide', async ({
@@ -513,9 +888,8 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
           const thumb = track?.querySelector<HTMLElement>(
             '.astryx-switch-thumb',
           );
-          const layer = track?.firstElementChild;
-          if (track == null || thumb == null || layer == null) {
-            throw new Error('the switch has no track, thumb or on layer');
+          if (track == null || thumb == null) {
+            throw new Error('the switch has no track or thumb');
           }
           const t = getComputedStyle(track);
           const box = thumb.getBoundingClientRect();
@@ -525,7 +899,11 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
             fade: t.transitionDuration,
             size: [box.width, box.height],
             slide: getComputedStyle(thumb).transitionProperty,
-            layer: getComputedStyle(layer).display,
+            // The fade layer (the track's ::before) exists only under a
+            // finger, and the thumb sits directly in the track (no wrapper).
+            layer: getComputedStyle(track, '::before').display,
+            direct: thumb.parentElement === track,
+            children: track.children.length,
           };
         });
       const off = await read();
@@ -535,6 +913,8 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
       expect(off.size).toEqual([16, 16]);
       expect(off.slide).toBe('transform, width, height');
       expect(off.layer).toBe('none');
+      expect(off.direct).toBe(true);
+      expect(off.children).toBe(1);
 
       const input = page.locator('#storybook-root').getByRole('switch');
       await input.click({force: true});
@@ -550,53 +930,57 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
     }
   });
 
-  test('P12 · Reduce Motion keeps the lift, as UISwitch does: a hold grows the lens and the release toggles', async ({
+  test('P12 · with Reduce Motion a tap cross-fades the change: no lift, no travel, opacity only, within 200 ms (design:reduced-motion DR1, DR2)', async ({
     page,
   }) => {
-    // UIKit with Reduce Motion on keeps the lift's growth and timing; it
-    // drops only the lens's squash and stretch, which this does not draw.
     await page.emulateMedia({reducedMotion: 'reduce'});
     const {driver, input, center} = await openSwitch(page);
-    expect(
-      await page.evaluate(
-        () => matchMedia('(prefers-reduced-motion: reduce)').matches,
-      ),
-    ).toBe(true);
-    let held: Presented | null = null;
-    await driver.play(tap(center, {holdMs: 700}), {
-      onEvent: async step => {
-        if (step.type === 'touchStart') {
-          await page.waitForTimeout(500);
-          held = await presented(page);
-        }
-      },
+    const samples = await sampleChange(page, async () => {
+      await driver.play(tap(center));
     });
-    expect(held).not.toBeNull();
-    expect(held!.scaleX).toBeCloseTo(LIFT_SCALE.x, 1);
-    expect(held!.fill).toBeLessThan(0.05);
     await expect(input).toBeChecked();
+    expectCrossFade(samples);
+    // It lands at the on end, not a travel past it (iOS 26.2 simulator).
+    expect(await thumbOffset(page)).toBeCloseTo(INSET + TRAVEL_PX, 0);
   });
 
-  test('P12 · Reduce Motion keeps the travel on its spring: the thumb slides and never cross-fades', async ({
+  test('P12 · with Reduce Motion a programmatic change cross-fades too (design:reduced-motion DR2)', async ({
     page,
   }) => {
     await page.emulateMedia({reducedMotion: 'reduce'});
-    const {thumb} = await openSwitch(page, 'core-switch--controlled-update');
-    await page.getByRole('button', {name: 'Turn on remotely'}).click();
-    await waitForAnimation(thumb);
-    await holdAnimations(page, page.locator('#storybook-root .astryx-switch'));
-    const samples = await sampleThumb(page, timeline(500));
-    await releaseAnimations(page);
-    const travel = compareCurve(
-      samples.map(s => ({t: s.t, value: s.x})),
-      t => -TRAVEL_PX * (1 - springStep(TRAVEL, t)),
-      0.15,
-    );
-    expect(travel.maxError, JSON.stringify(travel.worst)).toBeLessThanOrEqual(
-      0.15,
-    );
-    // A cross-fade would dip the thumb's opacity; the thumb stays opaque.
-    expect(Math.min(...samples.map(s => s.boxOpacity))).toBe(1);
+    await openSwitch(page, 'core-switch--controlled-update');
+    const samples = await sampleChange(page, async () => {
+      await page.getByRole('button', {name: 'Turn on remotely'}).click();
+    });
+    expectCrossFade(samples);
+    expect(await thumbOffset(page)).toBeCloseTo(INSET + TRAVEL_PX, 0);
+  });
+
+  test('P12 · with Reduce Motion a drag still moves the thumb under the finger, unlifted (direct manipulation)', async ({
+    page,
+  }) => {
+    await page.emulateMedia({reducedMotion: 'reduce'});
+    const {driver, input, center} = await openSwitch(page);
+    const samples = await sampleChange(page, async () => {
+      await driver.play(
+        drag(
+          center,
+          {x: center.x + FLIP_DISTANCE + 6, y: center.y},
+          {durationMs: 400, holdMs: 200, restMs: 100},
+        ),
+      );
+    });
+    await expect(input).toBeChecked();
+    for (const sample of samples) {
+      expect(Math.abs(sample.scale - 1), JSON.stringify(sample)).toBeLessThan(
+        0.01,
+      );
+    }
+    // It followed the finger part of the way before the release.
+    const start = samples[0].left;
+    expect(
+      samples.some(s => s.opacity > 0.9 && s.left > start + 6 && s.on < 0.9),
+    ).toBe(true);
   });
 
   test('P13 · RTL: the off thumb rests at the right, and a tap carries it to the left end and turns the track on', async ({
@@ -616,12 +1000,12 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
     );
     await driver.play(tap(center, {holdMs: 50}));
     await expect(input).toBeChecked();
-    await waitForRest(thumb);
+    await waitForSwitchRest(page, thumb);
     expect(await thumbOffset(page)).toBeCloseTo(INSET, 0);
     expect((await presented(page)).on).toBeCloseTo(1, 2);
   });
 
-  test('P13 · RTL: a drag toward the left flips the switch during the drag; a drag toward the right never flips and toggles at the lift', async ({
+  test('P13 · RTL: a drag toward the left flips the switch during the drag; a drag toward the right never flips and toggles at the release', async ({
     page,
   }) => {
     // Toward the left: the track turns on once the finger has travelled the
@@ -645,7 +1029,9 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
               onAt.push({
                 dx: center.x - step.fingers[0].x,
                 on: Number(
-                  await onLayer.evaluate(el => getComputedStyle(el).opacity),
+                  await onLayer.evaluate(
+                    el => getComputedStyle(el, '::before').opacity,
+                  ),
                 ),
               });
             }
@@ -677,7 +1063,9 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
             if (step.type === 'touchMove') {
               ons.push(
                 Number(
-                  await onLayer.evaluate(el => getComputedStyle(el).opacity),
+                  await onLayer.evaluate(
+                    el => getComputedStyle(el, '::before').opacity,
+                  ),
                 ),
               );
             }
@@ -697,7 +1085,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
     await page.evaluate(() => {
       const box = document.querySelector<HTMLElement>(
         '#storybook-root .astryx-switch-thumb',
-      )!.parentElement!;
+      )!;
       const record = window as unknown as {__thumbXs: number[]};
       record.__thumbXs = [];
       const loop = () => {
@@ -717,7 +1105,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
       {t: 110, fingers: [finger]},
       {t: 140, fingers: []},
     ]);
-    await waitForRest(thumb);
+    await waitForSwitchRest(page, thumb);
     await expect(input).not.toBeChecked();
     expect(await thumbOffset(page)).toBeCloseTo(INSET, 0);
     const xs = await page.evaluate(
@@ -732,7 +1120,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
     expect(Math.max(...steps)).toBeLessThan(4);
   });
 
-  test('a disabled or busy switch neither lifts nor toggles under a finger', async ({
+  test('a disabled or busy switch stays inert under a finger', async ({
     page,
   }) => {
     for (const storyId of ['core-switch--disabled', 'core-switch--loading']) {
@@ -752,29 +1140,10 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
     }
   });
 
-  test('the lift and the travel follow the UIKit springs, sampled frame by frame', async ({
+  test('the travel and the track colour follow the UIKit springs, sampled frame by frame', async ({
     page,
   }, testInfo) => {
-    const {driver, thumb, center} = await openSwitch(page);
-    // The lift: hold the finger down and sample the held animations.
-    let liftSamples: {t: number; scaleX: number; fill: number}[] = [];
-    await driver.play(tap(center, {holdMs: 400}), {
-      onEvent: async step => {
-        if (step.type !== 'touchStart') {
-          return;
-        }
-        await waitForAnimation(thumb);
-        await holdAnimations(page, thumb);
-        liftSamples = await sampleThumb(page, timeline(400));
-        await releaseAnimations(page);
-      },
-    });
-    const liftResult = compareCurve(
-      liftSamples.map(s => ({t: s.t, value: s.scaleX})),
-      t => 1 + (LIFT_SCALE.x - 1) * springStep(LIFT, t),
-      0.01,
-    );
-    await waitForRest(thumb);
+    const {thumb} = await openSwitch(page);
     // The travel and the track color, from a programmatic change: the thumb
     // starts at rest, as UISwitch's `setOn(_:animated:)` does.
     await openStory(page, storybook(), 'core-switch--controlled-update');
@@ -797,17 +1166,13 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
       'curves/switch',
       {
         [`${testInfo.project.name}.json`]: JSON.stringify(
-          {liftSamples, travelSamples, liftResult, travelResult, wellResult},
+          {travelSamples, travelResult, wellResult},
           null,
           1,
         ),
       },
       testInfo,
     );
-    expect(
-      liftResult.maxError,
-      JSON.stringify(liftResult.worst),
-    ).toBeLessThanOrEqual(0.01);
     expect(
       travelResult.maxError,
       JSON.stringify(travelResult.worst),
@@ -888,8 +1253,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
     // Hide the thumb (its animations still run) so the whole track shows
     // its colour.
     await page.addStyleTag({
-      content:
-        '#storybook-root .astryx-switch > span:not(:first-child) { visibility: hidden }',
+      content: '#storybook-root .astryx-switch > span { visibility: hidden }',
     });
     const box = await page
       .locator('#storybook-root .astryx-switch')
@@ -938,21 +1302,29 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
     expect(held[0].luma - held.at(-1)!.luma).toBeGreaterThan(0.5 * (off - on));
   });
 
-  test('P10 · the toggle does no Layout or Paint per frame', async ({
+  test('P10 · a change does no Layout or Paint per frame', async ({
     page,
     browserName,
   }) => {
     test.skip(browserName !== 'chromium', 'rendering traces are Chromium-only');
-    const {driver, input, thumb, center} = await openSwitch(page);
+    // A programmatic change, so the trace holds the switch's own motion: a
+    // press also paints the shared press overlay, the press feedback's.
+    const {input, thumb} = await openSwitch(
+      page,
+      'core-switch--controlled-update',
+    );
     let travel = {from: 0, to: 0};
     const trace = await traceRendering(page, async () => {
-      await driver.play(tap(center, {holdMs: 50}));
-      // The commit re-bases the travel in the same frame: read it after.
+      await page.evaluate(() =>
+        Array.from(document.querySelectorAll('button'))
+          .find(button => button.textContent?.includes('Turn on remotely'))!
+          .click(),
+      );
       await expect(input).toBeChecked();
       travel = await travelAnimation(page);
-      await waitForRest(thumb);
+      await waitForSwitchRest(page, thumb);
     });
-    // The steady part of the travel, while the lens settles and the track
+    // The steady part of the travel, while the thumb settles and the track
     // color rises too: the value's commit comes before it.
     const during = countBetween(trace, travel.from + 50, travel.to - 50);
     expect(during.Layout ?? 0, JSON.stringify(during)).toBe(0);
@@ -961,7 +1333,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
   });
 
   test(
-    'storyboard: tap — lift, travel and settle',
+    'storyboard: tap — travel',
     {tag: '@storyboard'},
     async ({page}, testInfo) => {
       const {driver, thumb, center} = await openSwitch(page);
@@ -972,7 +1344,8 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
       await freezeTimers(page);
       const {storyboard} = await animationStoryboard(page, {
         name: 'switch-tap',
-        // The motion: the lens settles last, about 1.2 s after the release.
+        // The motion: the track colour settles last, about 1.2 s after the
+        // release.
         times: timeline(1250),
         clip: {...(await clipAround(clip))},
         measure: async () => ({
@@ -993,7 +1366,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
   );
 
   test(
-    'storyboard: hold, drag across, lift',
+    'storyboard: hold, drag across, release',
     {tag: '@storyboard'},
     async ({page}, testInfo) => {
       const {driver, center} = await openSwitch(page);
@@ -1087,7 +1460,7 @@ async function sampleLuma(
   }
 }
 
-/** The track with room for the lifted lens around it. */
+/** The track with room for the lifted thumb around it. */
 async function clipAround(track: Locator) {
   const box = await track.boundingBox();
   if (box == null) {
@@ -1123,9 +1496,14 @@ async function sampleThumb(
       const thumb = document.querySelector<HTMLElement>(
         '#storybook-root .astryx-switch-thumb',
       )!;
-      const box = thumb.parentElement!;
-      const on = document.querySelector<HTMLElement>(
-        '#storybook-root .astryx-switch > span',
+      // The thumb itself moves and lifts.
+      const box = thumb;
+      // The fade layer shows the other side's fill (see presented()).
+      const fade = document.querySelector<HTMLElement>(
+        '#storybook-root .astryx-switch',
+      )!;
+      const input = document.querySelector<HTMLInputElement>(
+        '#storybook-root [role="switch"]',
       )!;
       const start = Math.min(...held.map(a => Number(a.startTime ?? 0)));
       return ts.map(t => {
@@ -1144,7 +1522,9 @@ async function sampleThumb(
           x: parseFloat(translate),
           scaleX: Number(scale.split(' ')[0]),
           fill: Number(getComputedStyle(thumb).opacity),
-          on: Number(getComputedStyle(on).opacity),
+          on: input.checked
+            ? 1 - Number(getComputedStyle(fade, '::before').opacity)
+            : Number(getComputedStyle(fade, '::before').opacity),
           boxOpacity: Number(style.opacity),
         };
       });
