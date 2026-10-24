@@ -33,7 +33,10 @@ import {
   type KeyboardTransition,
 } from './keyboardModel';
 
-/** A window's keyboard layout guide. */
+/**
+ * A window's keyboard layout guide.
+ * @experimental
+ */
 export interface KeyboardLayoutGuide {
   /** The inset the keyboard rests at (or is heading to), CSS px. */
   readonly inset: number;
@@ -123,7 +126,8 @@ export function bringsUpKeyboard(target: EventTarget | null): boolean {
 const guides = new WeakMap<Window, KeyboardLayoutGuide>();
 
 /**
- * The window's keyboard layout guide, created on first use.
+ * The window's keyboard layout guide, created on first use. It listens only
+ * while something subscribes.
  *
  * @example
  * ```
@@ -132,6 +136,7 @@ const guides = new WeakMap<Window, KeyboardLayoutGuide>();
  *   animator.animate({y: -t.to}, {spring: springs.keyboard}, {at: t.start, reducedMotion: 'keep'});
  * });
  * ```
+ * @experimental
  */
 export function getKeyboardLayoutGuide(win: Window): KeyboardLayoutGuide {
   let guide = guides.get(win);

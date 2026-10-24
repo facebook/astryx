@@ -1,9 +1,14 @@
-Results for "experimental" (7)
+Results for "experimental" (8)
 name:        useAnimator
 domain:      hook
 package:     @astryxdesign/core
 import:      @astryxdesign/core/motion/experimental
 command:     pnpm exec astryx hook useAnimator
+name:        useKeyboardLayoutGuide
+domain:      hook
+package:     @astryxdesign/core
+import:      @astryxdesign/core/keyboard/experimental
+command:     pnpm exec astryx hook useKeyboardLayoutGuide
 name:        useGestureRecognizer
 domain:      hook
 package:     @astryxdesign/core
