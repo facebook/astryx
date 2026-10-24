@@ -158,10 +158,12 @@ export const LongLabels: Story = {
   },
 };
 
-// A badge is one line of its own text tall at least. When the text grows, as
-// it does on iOS when a theme follows the reader's text size, the pill grows
-// with the label instead of letting it spill out. Here the supporting text
-// size is raised on a wrapper to stand in for a larger reader setting.
+// A badge is at least one line of its own text tall, and a short label is
+// never narrower than that. When the text grows, as it does on iOS when a
+// theme follows the reader's text size, the pill grows with the label instead
+// of letting it spill out, and a one-character count stays a circle. Here the
+// supporting text size is raised on a wrapper to stand in for a larger reader
+// setting.
 export const LargerText: Story = {
   name: 'Larger text',
   render: () => (
@@ -175,6 +177,7 @@ export const LargerText: Story = {
         };
         return (
           <div key={size} data-testid={`badge-row-${size}`} style={row}>
+            <Badge variant="info" label={3} />
             <Badge label="Ready" />
             <Badge variant="success" label="Shipped" />
             <Badge

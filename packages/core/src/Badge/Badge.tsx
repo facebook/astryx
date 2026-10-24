@@ -37,12 +37,14 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacingVars['--spacing-1'],
-    // The theme's height, but never shorter than one line of the badge's own
-    // text: when the reader's text size grows (iOS Dynamic Type) the label
-    // grows and the pill grows with it, instead of the label spilling out of
-    // a fixed box. At the default size the line fits the height, so nothing
-    // moves.
-    height: `max(${spacingVars['--spacing-5']}, 1lh)`,
+    height: spacingVars['--spacing-5'],
+    // Never shorter than one line of the badge's own text: when the text grows
+    // (a theme following the reader's iOS text size) the pill grows with the
+    // label instead of the label spilling out of it. A minimum rather than a
+    // new height, so a theme that sets the badge's height keeps that height at
+    // the default size and its badges still grow. At the default size the line
+    // fits the height, so nothing moves.
+    minHeight: '1lh',
     paddingBlock: 0,
     paddingInline: spacingVars['--spacing-2'],
     borderRadius: radiusVars['--radius-full'],
@@ -55,11 +57,14 @@ const styles = stylex.create({
     // label wider than the space available has to go somewhere. Without these
     // it went *outside* its container: `nowrap` with nothing to clip it
     // neither wraps nor truncates, it just escapes, and lands on whatever sits
-    // beside it. `minWidth: 0` matters as much as the max: as a flex item the
-    // automatic minimum size would otherwise hold the badge at its full text
-    // width and push the clamp back out again.
+    // beside it. The explicit `minWidth` matters as much as the max: as a flex
+    // item the automatic minimum size would otherwise hold the badge at its
+    // full text width and push the clamp back out again. It is one line
+    // rather than 0 so a short label (a one-character count) is never
+    // narrower than it is tall and stays a circle when its text grows; at the
+    // default size padding already makes every label at least that wide.
     maxWidth: '100%',
-    minWidth: 0,
+    minWidth: '1lh',
   },
   // The ellipsis goes on the label rather than the badge itself, because
   // `text-overflow` needs a block container and taking the root off
