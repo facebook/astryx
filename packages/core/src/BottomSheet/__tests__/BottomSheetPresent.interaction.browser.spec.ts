@@ -11,13 +11,19 @@
  *   sheet's resting top to the bottom of the screen and back), the dim on the
  *   same spring's progress, the entrance advancing every frame through a
  *   blocked main thread, a fade on the spring instead under Reduce Motion,
- *   and a storyboard of the entrance.
+ *   an exit whose clock starts when the browser commits it, and a storyboard
+ *   of the entrance. On Android (no iOS idiom) the stylesheet's entrance and
+ *   exit run as today, Reduce Motion's included.
  * @position Interaction proof for BottomSheet's presentation, in the shape of
  *   BottomSheetDetent.interaction.browser.spec.ts
  *
  * The sheet travels on the `translate` property (the motion foundation's
  * animator) from its resting `transform`; the dim is the dialog's
  * `::backdrop` opacity, animated by the same animator.
+ *
+ * UIKit's presentation belongs to iOS's idiom (WebKit on iOS under a finger),
+ * so the UIKit cases run under `emulateIosWebKit`; the Android cases run
+ * without it.
  */
 
 import {expect, test, type Locator, type Page} from '@playwright/test';
@@ -48,6 +54,7 @@ import {
   type TouchDriver,
 } from '@astryxdesign/interaction-harness';
 import {springs} from '../../motion/uikit/springs';
+import {emulateIosWebKit} from './emulateIosWebKit';
 
 const storybook = withStorybook(test);
 
@@ -95,7 +102,13 @@ interface Story {
   tapTrigger: () => Promise<void>;
 }
 
-async function story(page: Page): Promise<Story> {
+async function story(
+  page: Page,
+  {idiom = 'ios'}: {idiom?: 'ios' | 'android'} = {},
+): Promise<Story> {
+  if (idiom === 'ios') {
+    await emulateIosWebKit(page);
+  }
   await openStory(page, storybook(), 'core-bottomsheet--snap-points');
   const driver = await touchDriver(page);
   const trigger = page.getByRole('button', {name: 'Open nearby places'});
@@ -384,3 +397,70 @@ test(
     expect(frames.at(-1)?.dim).toBeCloseTo(1, 1);
   },
 );
+
+test('the exit starts when the browser commits it, not when it is called', async ({
+  page,
+}) => {
+  // Dated from the call, an exit a long task follows skips into its curve on
+  // iOS (its first frames never show); left without a start time, the
+  // browser starts it when it commits the frame (the animator, from rest).
+  const {dialog, sheet, tapTrigger} = await story(page);
+  await tapTrigger();
+  await expect(sheet).toBeVisible();
+  await waitForRest(sheet);
+  const startTimes = await dialog.evaluate(async el => {
+    // A tap on the dim: the dialog itself is the click's target.
+    el.dispatchEvent(
+      new MouseEvent('click', {bubbles: true, cancelable: true}),
+    );
+    // The close commits in a microtask; the frame has not run yet.
+    await Promise.resolve();
+    await Promise.resolve();
+    return document
+      .getAnimations()
+      .filter(a => {
+        const target = (a.effect as KeyframeEffect | null)?.target;
+        return target === el || (target != null && el.contains(target));
+      })
+      .map(a => a.startTime);
+  });
+  // The sheet's travel and the dim, both waiting for the commit.
+  expect(startTimes.length).toBeGreaterThanOrEqual(2);
+  expect(startTimes).toEqual(startTimes.map(() => null));
+  await expect(dialog).not.toHaveAttribute('open');
+});
+
+test("on Android the sheet keeps today's entrance and exit", async ({page}) => {
+  const {dialog, sheet, tapTrigger} = await story(page, {idiom: 'android'});
+  await tapTrigger();
+  await expect(sheet).toBeVisible();
+  // The stylesheet's transition carries it in: no spring on the travel
+  // channel, and no input hold over the page.
+  const kinds = await sheet.evaluate(el =>
+    el.getAnimations().map(a => a.constructor.name),
+  );
+  expect(kinds).not.toContain('Animation');
+  expect(await page.locator('[data-astryx-sheet-hold]').count()).toBe(0);
+  await waitForRest(sheet);
+  const restTop = await sheetTop(sheet);
+  const viewport = page.viewportSize() ?? {width: 402, height: 714};
+  await page.mouse.click(viewport.width / 2, restTop / 2);
+  await expect(dialog).not.toHaveAttribute('open');
+});
+
+test("under Reduce Motion on Android the entrance takes the stylesheet's reduced timing", async ({
+  page,
+}) => {
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  const {sheet, tapTrigger} = await story(page, {idiom: 'android'});
+  await tapTrigger();
+  await expect(sheet).toBeVisible();
+  // Today's Reduce Motion rule: 0.01 s, not UIKit's fade on the spring.
+  const durations = await sheet.evaluate(el =>
+    el
+      .getAnimations()
+      .map(a => Number(a.effect?.getComputedTiming().duration ?? 0)),
+  );
+  expect(durations.every(ms => ms <= 20)).toBe(true);
+  await waitForRest(sheet);
+});
