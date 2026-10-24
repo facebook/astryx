@@ -2522,6 +2522,17 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+      # A Link without href renders a <button>, and a browser's stylesheet sets
+      # letter spacing, word spacing, case and text shadow on a <button>; only
+      # a real engine shows whether the link's words still match its anchor
+      # form's in styled text.
+      - name: Run Link button text check
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/Link/__tests__/LinkButtonText.a11y.browser.spec.ts \
+            --project chromium \
+            --output link-button-text-output
+
       # The combobox contract's accessible name and its popup and
       # active-descendant relationships are accessibility-tree facts that jsdom
       # cannot observe. Run the contract's own fixture proof and the Selector

@@ -321,6 +321,38 @@ export const ButtonFallbackInline: Story = {
   },
 };
 
+export const ButtonFallbackInStyledText: Story = {
+  render: () => (
+    <div
+      style={{
+        letterSpacing: '0.2em',
+        wordSpacing: '0.3em',
+        textTransform: 'uppercase',
+        textShadow: '1px 1px 0 var(--color-text-secondary)',
+      }}>
+      <Text type="body">
+        <Link href="#same-words" data-styled-text-link="anchor">
+          Same words
+        </Link>{' '}
+        and{' '}
+        <Link onClick={() => {}} data-styled-text-link="button">
+          Same words
+        </Link>
+      </Text>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A browser gives a `<button>` its own letter spacing, word spacing, ' +
+          'case and text shadow. The button fallback takes them from the ' +
+          'surrounding text, as the anchor does, so both render alike.',
+      },
+    },
+  },
+};
+
 export const LinkVsButtonComparison: Story = {
   render: () => (
     <div
