@@ -29,7 +29,8 @@
  * its own tap so the keyboard rises) activates it. Under a finger (touch
  * presentation) the field then plays UIKit's activation, all on one clock
  * (`search.activationMs`, 383 ms on `search.activationCurve`, the
- * UIViewPropertyAnimator UIKit uses): it rises by the host's `lift`, it
+ * UIViewPropertyAnimator UIKit uses; both are motion roles a theme may
+ * retune, read when each move starts): it rises by the host's `lift`, it
  * narrows to make room for the close button, and the glass close button
  * slides in from 44 px past its place while it fades in. Every part moves
  * on the compositor (translate, scale, opacity), so the activation keeps
@@ -87,7 +88,7 @@ import {
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {mergeProps, themeProps} from '@astryxdesign/core/utils';
 import {
-  ACTIVATION_S,
+  activationTiming,
   easedCurve,
   heldCurve,
   poseFor,
@@ -448,33 +449,47 @@ export function SearchField({
     settledRef.current = target;
     const from = poseFor(!target, shape);
     const current = presented();
-    const duration = ACTIVATION_S * remainingFraction(current, from, to);
+    // The clock and curve under the field's theme, read as the move starts.
+    const timing = activationTiming(rootAnimator.animator.element);
+    const duration = timing.seconds * remainingFraction(current, from, to);
     const options = {reducedMotion: search.reducedMotion};
     isAnimating.current = true;
     const handles = [
       play(
         rootAnimator.animator,
-        {y: easedCurve(current.y, to.y, duration)},
+        {y: easedCurve(current.y, to.y, duration, timing.ease)},
         options,
       ),
       play(
         middleAnimator.animator,
-        {scaleX: easedCurve(current.middleScale, to.middleScale, duration)},
+        {
+          scaleX: easedCurve(
+            current.middleScale,
+            to.middleScale,
+            duration,
+            timing.ease,
+          ),
+        },
         options,
       ),
       play(
         endAnimator.animator,
-        {x: easedCurve(current.endX, to.endX, duration)},
+        {x: easedCurve(current.endX, to.endX, duration, timing.ease)},
         options,
       ),
       play(
         closeAnimator.animator,
         {
-          x: easedCurve(current.closeX, to.closeX, duration),
+          x: easedCurve(current.closeX, to.closeX, duration, timing.ease),
           // Cancel slides the close button out at the opacity it has and
           // removes it at the end, as UIKit does.
           opacity: target
-            ? easedCurve(current.closeOpacity, to.closeOpacity, duration)
+            ? easedCurve(
+                current.closeOpacity,
+                to.closeOpacity,
+                duration,
+                timing.ease,
+              )
             : heldCurve(current.closeOpacity, to.closeOpacity, duration),
         },
         options,

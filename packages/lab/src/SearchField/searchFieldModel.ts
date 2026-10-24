@@ -3,7 +3,8 @@
 /**
  * @file searchFieldModel.ts
  * @input The UIKit search table (`uikit.search` from
- *   `@astryxdesign/core/motion/experimental`) and core's cubic-bézier curves
+ *   `@astryxdesign/core/motion/experimental`), core's cubic-bézier curves and
+ *   `resolveMotion` (a theme's retuned clock and curve)
  * @output Pure math for SearchField: the active field's width, the targets
  *   of every animated part at rest and while active, and the timed curves
  *   that move them (a UIViewPropertyAnimator's cubic-bézier clock, started
@@ -17,12 +18,16 @@
  * rest, the close button sliding out at the opacity it has. A change of
  * mind mid-flight starts from the presented values and takes the share of
  * the clock that the remaining travel is of the whole, so nothing jumps.
+ * The clock and the curve are motion roles (`search.activationMs`,
+ * `search.activationCurve`): a theme may retune them, and each activation
+ * reads them for the field's theme when it starts.
  *
  * SYNC: When modified, update searchFieldModel.test.ts and SearchField.tsx.
  */
 
 import {
   cubicBezier,
+  resolveMotion,
   uikit,
   type MotionCurve,
 } from '@astryxdesign/core/motion/experimental';
@@ -34,6 +39,31 @@ export const activationEase = cubicBezier(search.activationCurve);
 
 /** The activation's length, s. */
 export const ACTIVATION_S = search.activationMs / 1000;
+
+/** An activation's clock and curve. */
+export interface ActivationTiming {
+  /** The full activation's length, s. */
+  readonly seconds: number;
+  /** The curve, as a function of the clock's fraction. */
+  readonly ease: (x: number) => number;
+}
+
+/**
+ * The activation's clock and curve under `element`'s theme: the table's
+ * (UIKit's 383 ms ease-in-ease-out) unless the theme retunes the
+ * `search.activationMs` or `search.activationCurve` role.
+ */
+export function activationTiming(
+  element: Element | null | undefined,
+): ActivationTiming {
+  const ms = resolveMotion(element, search, 'activationMs');
+  const curve = resolveMotion(element, search.activationCurve);
+  return {
+    seconds: ms / 1000,
+    ease:
+      curve === search.activationCurve ? activationEase : cubicBezier(curve),
+  };
+}
 
 /**
  * The active field's width beside the close button, from its resting width
@@ -98,13 +128,14 @@ export function poseFor(
 }
 
 /**
- * A timed move from `from` to `to` on the activation curve over `duration`
- * seconds, as a curve the animator plays.
+ * A timed move from `from` to `to` on the activation curve (or `ease`) over
+ * `duration` seconds, as a curve the animator plays.
  */
 export function easedCurve(
   from: number,
   to: number,
   duration: number,
+  ease: (x: number) => number = activationEase,
 ): MotionCurve {
   const delta = to - from;
   const step = 1e-4;
@@ -114,9 +145,7 @@ export function easedCurve(
       if (duration <= 0) {
         return to;
       }
-      return (
-        from + delta * activationEase(Math.min(1, Math.max(0, t / duration)))
-      );
+      return from + delta * ease(Math.min(1, Math.max(0, t / duration)));
     },
     velocity(t) {
       if (duration <= 0 || delta === 0) {
@@ -125,11 +154,7 @@ export function easedCurve(
       const x = Math.min(1, Math.max(0, t / duration));
       const lo = Math.max(0, x - step);
       const hi = Math.min(1, x + step);
-      return (
-        (delta * (activationEase(hi) - activationEase(lo))) /
-        (hi - lo) /
-        duration
-      );
+      return (delta * (ease(hi) - ease(lo))) / (hi - lo) / duration;
     },
   };
 }
