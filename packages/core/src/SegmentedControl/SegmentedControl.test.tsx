@@ -12,6 +12,7 @@
  * SYNC: When SegmentedControl components change, update tests to match new behavior
  */
 
+import {StrictMode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -215,8 +216,10 @@ describe('SegmentedControl', () => {
     );
 
     const button = screen.getByRole('radio', {name: /very long/});
+    // The visible title; its aria-hidden twin carries the same text.
     const label = screen.getByText(
       'A very long segment label that should truncate',
+      {selector: '[data-segment-title="text"]'},
     );
 
     // The button (flex child) must allow shrinking below content size
@@ -312,7 +315,9 @@ describe('SegmentedControl', () => {
     expect(getComputedStyle(segment).flexShrink).not.toBe('0');
     const iconWrapper = screen.getByTestId('grid-icon').parentElement!;
     expect(getComputedStyle(iconWrapper).flexShrink).toBe('0');
-    const label = screen.getByText('Grid with thumbnails and captions');
+    const label = screen.getByText('Grid with thumbnails and captions', {
+      selector: '[data-segment-title="text"]',
+    });
     expect(getComputedStyle(label).textOverflow).toBe('ellipsis');
   });
 
@@ -847,5 +852,184 @@ describe('pressed state', () => {
     expect(hasPressedArm(screen.getByRole('radio', {name: 'List'}))).toBe(
       false,
     );
+  });
+});
+
+describe('segment width', () => {
+  it('reads each title once: the width-reserving twin is hidden from assistive technology', () => {
+    render(
+      <SegmentedControl value="grid" onChange={() => {}} label="View mode">
+        <SegmentedControlItem value="grid" label="Grid" />
+        <SegmentedControlItem value="list" label="List" />
+        <SegmentedControlItem
+          value="icon"
+          label="Icon"
+          icon={<span>*</span>}
+          isLabelHidden
+        />
+      </SegmentedControl>,
+    );
+    for (const name of ['Grid', 'List']) {
+      const radio = screen.getByRole('radio', {name});
+      const twin = radio.querySelector('[data-segment-title="twin"]');
+      expect(twin).toHaveAttribute('aria-hidden', 'true');
+      expect(twin?.textContent).toBe(name);
+    }
+    // Icon-only segments have no title layers.
+    expect(
+      screen
+        .getByRole('radio', {name: 'Icon'})
+        .querySelector('[data-segment-title]'),
+    ).toBeNull();
+  });
+});
+
+describe('selection motion', () => {
+  /** A finger is the primary pointer (any touch screen). */
+  function mockCoarsePointer() {
+    return vi.spyOn(window, 'matchMedia').mockImplementation(
+      (query: string) =>
+        ({
+          matches: query === '(pointer: coarse)',
+          media: query,
+          onchange: null,
+          addListener: () => {},
+          removeListener: () => {},
+          addEventListener: () => {},
+          removeEventListener: () => {},
+          dispatchEvent: () => false,
+        }) as MediaQueryList,
+    );
+  }
+
+  /**
+   * A finger on WebKit for iOS: the iOS touch idiom, where the slide runs.
+   * The engine is recognized by `-webkit-touch-callout`, which only it
+   * implements.
+   */
+  function mockIosFinger() {
+    const spy = mockCoarsePointer();
+    vi.stubGlobal('CSS', {
+      ...globalThis.CSS,
+      supports: (query: string) => query === '(-webkit-touch-callout: none)',
+    });
+    return {
+      mockRestore() {
+        spy.mockRestore();
+        vi.unstubAllGlobals();
+      },
+    };
+  }
+
+  function renderControl(onChange = vi.fn()) {
+    return render(
+      <SegmentedControl value="grid" onChange={onChange} label="View mode">
+        <SegmentedControlItem value="grid" label="Grid" />
+        <SegmentedControlItem value="list" label="List" />
+        <SegmentedControlItem
+          value="icon"
+          label="Icon"
+          icon={<span>*</span>}
+          isLabelHidden
+        />
+      </SegmentedControl>,
+    );
+  }
+
+  it('keeps the pointer presentation as it was: no proxy, the theme’s transitions', () => {
+    renderControl();
+    expect(
+      screen.getByRole('radiogroup').querySelector('[data-selection-proxy]'),
+    ).toBeNull();
+    expect(
+      getComputedStyle(screen.getByRole('radio', {name: 'List'}))
+        .transitionProperty,
+    ).toContain('background-color');
+  });
+
+  it('a finger outside iOS (Android) keeps today’s presentation: no proxy, the theme’s transitions', async () => {
+    const spy = mockCoarsePointer();
+    try {
+      const onChange = vi.fn();
+      renderControl(onChange);
+      expect(
+        screen.getByRole('radiogroup').querySelector('[data-selection-proxy]'),
+      ).toBeNull();
+      expect(
+        getComputedStyle(screen.getByRole('radio', {name: 'List'}))
+          .transitionProperty,
+      ).toContain('background-color');
+      await userEvent.setup().click(screen.getByRole('radio', {name: 'List'}));
+      expect(onChange).toHaveBeenCalledWith('list');
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('touch presentation: an aria-hidden proxy behind the segments; selection unchanged', async () => {
+    const spy = mockIosFinger();
+    try {
+      const onChange = vi.fn();
+      renderControl(onChange);
+      const group = screen.getByRole('radiogroup');
+      const proxy = group.querySelector('[data-selection-proxy]');
+      expect(group.firstElementChild).toBe(proxy);
+      expect(proxy).toHaveAttribute('aria-hidden', 'true');
+      await userEvent.setup().click(screen.getByRole('radio', {name: 'List'}));
+      expect(onChange).toHaveBeenCalledWith('list');
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('touch presentation: a value change starts the slide, StrictMode included', () => {
+    const spy = mockIosFinger();
+    const boxes: Record<string, [number, number]> = {
+      grid: [2, 96],
+      list: [102, 96],
+    };
+    const rects = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function (this: HTMLElement) {
+        const [left, width] =
+          this.getAttribute('role') === 'radiogroup'
+            ? [0, 200]
+            : (boxes[this.dataset.value ?? ''] ?? [0, 0]);
+        return {
+          left,
+          top: 2,
+          width,
+          height: 28,
+          right: left + width,
+          bottom: 30,
+          x: left,
+          y: 2,
+          toJSON: () => ({}),
+        };
+      });
+    try {
+      const ui = (value: string) => (
+        <StrictMode>
+          <SegmentedControl value={value} onChange={() => {}} label="View">
+            <SegmentedControlItem value="grid" label="Grid" />
+            <SegmentedControlItem value="list" label="List" />
+          </SegmentedControl>
+        </StrictMode>
+      );
+      const {rerender} = render(ui('grid'));
+      rerender(ui('list'));
+      const proxy = screen
+        .getByRole('radiogroup')
+        .querySelector<HTMLElement>('[data-selection-proxy]')!;
+      // After StrictMode's extra unmount and remount, the proxy still takes
+      // the destination's box and its animator still drives it (jsdom has no
+      // Web Animations, so the animator writes the landing value inline).
+      expect(proxy.style.visibility).toBe('visible');
+      expect(proxy.style.width).toBe('96px');
+      expect(proxy.style.translate).toMatch(/^102px/);
+    } finally {
+      rects.mockRestore();
+      spy.mockRestore();
+    }
   });
 });

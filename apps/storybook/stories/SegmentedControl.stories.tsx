@@ -6,6 +6,7 @@ import {
   SegmentedControl,
   SegmentedControlItem,
 } from '@astryxdesign/core/SegmentedControl';
+import {Button} from '@astryxdesign/core/Button';
 import {Card} from '@astryxdesign/core/Card';
 import {Heading} from '@astryxdesign/core/Heading';
 import {Icon} from '@astryxdesign/core/Icon';
@@ -353,6 +354,58 @@ export const PressedState: Story = {
           isDisabled
         />
       </SegmentedControl>
+    );
+  },
+};
+
+const PERIODS = [
+  {value: 'day', label: 'Day'},
+  {value: 'week', label: 'Week'},
+  {value: 'month', label: 'Month'},
+  {value: 'year', label: 'Year to date'},
+];
+
+/**
+ * On a touch screen the selection slides from one segment to the next on
+ * UIKit's spring and the titles cross-fade, whether a finger, a key or the app
+ * changed the value. Segments keep their width when the selection moves: each
+ * reserves its title's selected width. With a mouse the selection changes in
+ * place, as before.
+ */
+export const SelectionMotion: Story = {
+  name: 'Selection motion',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'On iPhone and iPad the selection slides between segments on UIKit’s spring and the titles cross-fade, for taps, arrow keys and programmatic changes alike (the button changes the value from outside). Under Reduce Motion the selection fades and scales in at the new segment instead; other touch screens and desktops keep the color fade. Segments never change width when the selection moves.',
+      },
+    },
+  },
+  render: () => {
+    const [value, setValue] = useState('day');
+    const next = () => {
+      const index = PERIODS.findIndex(period => period.value === value);
+      setValue(PERIODS[(index + 1) % PERIODS.length].value);
+    };
+    return (
+      <VStack gap={4} width="100%">
+        <SegmentedControl value={value} onChange={setValue} label="Period">
+          {PERIODS.map(period => (
+            <SegmentedControlItem key={period.value} {...period} />
+          ))}
+        </SegmentedControl>
+        <SegmentedControl
+          value={value}
+          onChange={setValue}
+          label="Period, filling the row"
+          layout="fill">
+          {PERIODS.map(period => (
+            <SegmentedControlItem key={period.value} {...period} />
+          ))}
+        </SegmentedControl>
+        <Button label="Next period" onClick={next} />
+      </VStack>
     );
   },
 };
