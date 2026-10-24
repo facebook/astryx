@@ -35,8 +35,8 @@ swift-ios-1/
 - **`core/`** holds one folder per component, named as in
   `packages/core/src/<Name>/`. A component's parameters use core's prop names
   and values (`variant: .primary`, `size: .lg`, `isLoading`), so code reads
-  the same across web and native, with three exceptions, the interim shape
-  AST-093 exempts until the components move onto the generated contracts: `AstryxButton` takes `action` where core
+  the same across web and native, with three exceptions until the components
+  move onto the generated contracts: `AstryxButton` takes `action` where core
   has `onClick`, `AstryxTextInput` takes a `Binding` where core has `value` and
   `onChange`, and `AstryxHeading`'s `level` is optional where core requires
   it.
