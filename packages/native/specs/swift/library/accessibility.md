@@ -28,7 +28,9 @@ Differentiate Without Color get components that honor each setting.
 - **X3 — Announcements follow AST-086.** A component AST-086 FR11 covers
   announces its own message with `AccessibilityNotification.Announcement` once
   when it appears or its words change after its screen has loaded, and not
-  when it is present as the screen loads; errors are announced at high
+  when it is present as the screen loads, except a message that VoiceOver can
+  reach only through its announcement, which announces even as the screen
+  loads (FR11). Errors and time-critical failures are announced at high
   priority (FR5), and re-rendering the same message does not announce it again
   (FR6). Banner, FieldStatus, and a grouped field's status keep their own
   rules, as FR11 says: Banner's status is visual only and the Banner never
@@ -54,14 +56,14 @@ Differentiate Without Color get components that honor each setting.
 
 ## Acceptance checks
 
-| Requirement | Check                                                                                                                                                                                                                                                           |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| X1          | Unit tests assert each component's label, traits, and value in every state its contract names.                                                                                                                                                                  |
-| X2          | A test disables a focused control and finds it still focused, read as dimmed, with its reason as the hint.                                                                                                                                                      |
-| X3          | A test shows a covered component's message after load and observes exactly one announcement, at high priority for an error; a second render announces nothing; the same message present at load announces nothing; a Banner shown after load announces nothing. |
-| X4, X5      | A UI test runs `performAccessibilityAudit()` on a screen of every component at the default and largest text sizes, with no failures.                                                                                                                            |
-| X6          | Captures under Reduce Motion show no movement; under Reduce Transparency, opaque surfaces; under Differentiate Without Color, every status shows its icon and word; under Button Shapes, every borderless control shows an edge.                                |
-| X7          | The audit's hit-region check passes for every control.                                                                                                                                                                                                          |
+| Requirement | Check                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| X1          | Unit tests assert each component's label, traits, and value in every state its contract names.                                                                                                                                                                                                                                                                                                               |
+| X2          | A test disables a focused control and finds it still focused, read as dimmed, with its reason as the hint.                                                                                                                                                                                                                                                                                                   |
+| X3          | A test shows a covered component's message after load and observes exactly one announcement, at high priority for an error; a time-critical failure is also high priority; a second render announces nothing; the same message present at load announces nothing; a Banner shown after load announces nothing. A message VoiceOver can reach only through its announcement, present at load, announces once. |
+| X4, X5      | A UI test runs `performAccessibilityAudit()` on a screen of every component at the default and largest text sizes, with no failures.                                                                                                                                                                                                                                                                         |
+| X6          | Captures under Reduce Motion show no movement; under Reduce Transparency, opaque surfaces; under Bold Text, heavier text in every component; under Differentiate Without Color, every state shown by color also shows a shape, an icon, or a word; under Button Shapes, every control drawn without a visible edge shows one.                                                                                |
+| X7          | The audit's hit-region check passes for every control.                                                                                                                                                                                                                                                                                                                                                       |
 
 ## Current state
 
