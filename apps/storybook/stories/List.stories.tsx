@@ -583,7 +583,9 @@ export const AnimatedChanges: Story = {
         story:
           'With `hasAnimatedChanges`, on an iPhone or iPad under a finger, ' +
           'rows that stay slide to their new places and new rows fade in ' +
-          'when the list changes, on UIKit’s table update spring.',
+          'once the rows sliding past have cleared them, on UIKit’s table ' +
+          'update spring; a row crossing rows that move the other way ' +
+          'rides above them with the surface color behind it.',
       },
     },
   },
