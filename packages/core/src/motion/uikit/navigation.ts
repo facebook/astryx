@@ -126,6 +126,16 @@ export const navigation = {
    *   0.825, 0.642, 0.474 … at 34 ms steps), Oct 24 2026
    */
   backChevronPushDelayMs: 60,
+  /**
+   * How far, in px, the bar's title rises as it fades in once a large title
+   * has scrolled under the bar (and sinks as it fades out when the large
+   * title comes back), on `springs.navigationBarElements`.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, real HID drags of a large-title table: the inline title
+   *   label's frame y 88.67 → 73.67 on a UIView spring (springDuration 0.6,
+   *   bounce 0) fired ~5 pt after the bar collapsed, Oct 24 2026
+   */
+  inlineTitleRise: 15,
 } as const;
 
 /**

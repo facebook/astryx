@@ -129,6 +129,13 @@ export interface NavigationScreenProps {
   backTitle?: string;
   /** Items at the trailing end of the bar while this screen is on top. */
   trailing?: ReactNode;
+  /**
+   * How the title shows: in the bar (`inline`), or `large` above the
+   * content, scrolling with it and handing over to the bar's title once it
+   * has scrolled under the bar (iOS's large titles).
+   * @default 'inline'
+   */
+  titleDisplayMode?: 'large' | 'inline';
   /** The screen's content; it scrolls on its own. */
   children?: ReactNode;
 }
@@ -245,11 +252,21 @@ const styles = stylex.create({
   },
   barTitle: {
     margin: 0,
+    minWidth: 0,
     fontSize: textSizeVars['--font-size-lg'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
+  },
+  largeTitle: {
+    margin: 0,
+    paddingInline: spacingVars['--spacing-4'],
+    paddingTop: spacingVars['--spacing-1'],
+    paddingBottom: spacingVars['--spacing-2'],
+    fontSize: textSizeVars['--font-size-4xl'],
+    fontWeight: fontWeightVars['--font-weight-bold'],
+    lineHeight: 1.2,
   },
   barTrailing: {
     display: 'flex',
@@ -339,6 +356,10 @@ interface ScreenLayers {
   barDim: Animator;
   cardElement: HTMLElement | null;
   titleElement: HTMLElement | null;
+  /** The large title above the content, for `titleDisplayMode="large"`. */
+  largeTitleElement: HTMLElement | null;
+  /** The bar title's text, hidden while the large title shows. */
+  titleText: Animator;
 }
 
 type Registry = Map<string, Partial<ScreenLayers>>;
@@ -356,13 +377,51 @@ function CardLayer({
   isTop,
   isCovered,
   isHidden,
+  onLargeTitleCollapse,
 }: {
   model: ScreenModel;
   registry: Registry;
   isTop: boolean;
   isCovered: boolean;
   isHidden: boolean;
+  onLargeTitleCollapse: (key: string, isCollapsed: boolean) => void;
 }) {
+  const isLarge = model.element.props.titleDisplayMode === 'large';
+  const largeTitleRef = useRef<HTMLHeadingElement | null>(null);
+  // The large title has collapsed once it has scrolled entirely under the
+  // bar: the bar's own title takes over. Read from the card's scroll position
+  // (the system this listens to) as it scrolls; a card hidden two levels down
+  // scrolls no more and keeps its last value. A card that unmounts drops its
+  // collapse: mounted again, it starts at the top with its large title.
+  useLayoutEffect(() => {
+    const title = largeTitleRef.current;
+    const card = title?.parentElement ?? null;
+    if (!isLarge || title == null || card == null) {
+      return undefined;
+    }
+    // A title with no layout (nothing rendered yet) has not scrolled away.
+    const read = () =>
+      onLargeTitleCollapse(
+        model.key,
+        title.offsetHeight > 0 &&
+          card.scrollTop >= title.offsetTop + title.offsetHeight,
+      );
+    read();
+    card.addEventListener('scroll', read, {passive: true});
+    return () => {
+      card.removeEventListener('scroll', read);
+      onLargeTitleCollapse(model.key, false);
+    };
+  }, [isLarge, model.key, onLargeTitleCollapse]);
+  const largeTitleCallback = useCallback(
+    (element: HTMLHeadingElement | null) => {
+      largeTitleRef.current = element;
+      const entry = registry.get(model.key) ?? {};
+      entry.largeTitleElement = element;
+      registry.set(model.key, entry);
+    },
+    [registry, model.key],
+  );
   const card = useAnimator();
   const dim = useAnimator();
   const cardElementRef = useRef<HTMLDivElement | null>(null);
@@ -415,6 +474,14 @@ function CardLayer({
         isOverflowing && styles.cardOverflowing,
         isHidden && styles.cardHidden,
       )}>
+      {isLarge ? (
+        <h1
+          ref={largeTitleCallback}
+          tabIndex={-1}
+          {...stylex.props(styles.largeTitle, focusOutlineStyles.focusVisible)}>
+          {model.element.props.title}
+        </h1>
+      ) : null}
       {model.element.props.children}
       <div
         ref={dim.ref}
@@ -432,26 +499,53 @@ function BarLayer({
   model,
   registry,
   isCovered,
+  isLargeTitleShown,
 }: {
   model: ScreenModel;
   registry: Registry;
   isCovered: boolean;
+  isLargeTitleShown: boolean;
 }) {
   const bar = useAnimator();
   const barDim = useAnimator();
+  const titleText = useAnimator();
+  // The bar's title is hidden while the screen's large title shows, and
+  // fades in when the large title has scrolled under the bar: this drives
+  // the title's compositor animator (the system it synchronizes).
+  const wasShownRef = useRef<boolean | null>(null);
+  useLayoutEffect(() => {
+    const entry = registry.get(model.key) ?? {};
+    entry.titleText = titleText.animator;
+    registry.set(model.key, entry);
+    const target = {
+      opacity: isLargeTitleShown ? 0 : 1,
+      y: isLargeTitleShown ? navigation.inlineTitleRise : 0,
+    };
+    if (wasShownRef.current == null) {
+      titleText.animator.set(target);
+    } else if (wasShownRef.current !== isLargeTitleShown) {
+      titleText.animator.animate(target, {
+        spring: springs.navigationBarElements,
+      });
+    }
+    wasShownRef.current = isLargeTitleShown;
+  }, [registry, model.key, titleText.animator, isLargeTitleShown]);
   useLayoutEffect(() => {
     const entry = registry.get(model.key) ?? {};
     entry.bar = bar.animator;
     entry.barDim = barDim.animator;
     registry.set(model.key, entry);
   }, [registry, model.key, bar.animator, barDim.animator]);
-  const titleRef = useCallback(
+  // The title is one element (its heading role): the stack focuses it, and
+  // the animator rises and fades it.
+  const titleRefs = useCallback(
     (element: HTMLHeadingElement | null) => {
       const entry = registry.get(model.key) ?? {};
       entry.titleElement = element;
       registry.set(model.key, entry);
+      titleText.ref(element);
     },
-    [registry, model.key],
+    [registry, model.key, titleText],
   );
   const props = model.element.props;
   return (
@@ -462,8 +556,9 @@ function BarLayer({
       {...stylex.props(styles.barLayer, isCovered && styles.barLayerCovered)}>
       <div {...stylex.props(styles.barLeading)} />
       <h2
-        ref={titleRef}
+        ref={titleRefs}
         tabIndex={-1}
+        aria-hidden={isLargeTitleShown || undefined}
         {...stylex.props(styles.barTitle, focusOutlineStyles.focusVisible)}>
         {props.title}
       </h2>
@@ -605,6 +700,29 @@ export function NavigationStack<T>({
   const containerRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
   const [registry] = useState<Registry>(() => new Map());
+  // Screens whose large title has scrolled under the bar.
+  const [collapsedTitles, setCollapsedTitles] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const collapsedRef = useRef(collapsedTitles);
+  collapsedRef.current = collapsedTitles;
+  const onLargeTitleCollapse = useCallback(
+    (key: string, isCollapsed: boolean) => {
+      setCollapsedTitles(current => {
+        if (current.has(key) === isCollapsed) {
+          return current;
+        }
+        const next = new Set(current);
+        if (isCollapsed) {
+          next.add(key);
+        } else {
+          next.delete(key);
+        }
+        return next;
+      });
+    },
+    [],
+  );
 
   // The screens on the path, root first.
   const models = useMemo<ScreenModel[]>(() => {
@@ -994,8 +1112,15 @@ export function NavigationStack<T>({
           return;
         }
       }
-      // Else the screen now on top: the one pushed, or the one revealed.
-      layersOf(revealed ?? key)?.titleElement?.focus(focusOptions);
+      // Else the screen now on top (the one pushed, or the one revealed): its
+      // visible title, the large title while it shows, else the bar's.
+      const target = revealed ?? key;
+      const layers = layersOf(target);
+      const large = layers?.largeTitleElement;
+      (large != null && large.isConnected && !collapsedRef.current.has(target)
+        ? large
+        : layers?.titleElement
+      )?.focus(focusOptions);
     },
     [layersOf],
   );
@@ -1416,6 +1541,10 @@ export function NavigationStack<T>({
                 model={model}
                 registry={registry}
                 isCovered={model.key !== topKey || view.leaving != null}
+                isLargeTitleShown={
+                  model.element.props.titleDisplayMode === 'large' &&
+                  !collapsedTitles.has(model.key)
+                }
               />
             ) : null,
           )}
@@ -1438,6 +1567,7 @@ export function NavigationStack<T>({
               isTop={model.key === topKey && view.leaving == null}
               isCovered={model.key !== topKey || view.leaving != null}
               isHidden={model.key !== topKey && model.key !== underKey}
+              onLargeTitleCollapse={onLargeTitleCollapse}
             />
           ))}
         </div>
