@@ -943,7 +943,7 @@ describe('pressed state', () => {
       paintsOn: true,
       paintsFading: true,
       releases: true,
-      releaseMs: [cellPressConsts.cellReleaseMs],
+      releaseMs: [cellPressConsts.cellReleaseMs, 200],
       fillsBoth: true,
     });
     expect(readsPressStrength(wrapper)).toBe(false);

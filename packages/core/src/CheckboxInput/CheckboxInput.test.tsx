@@ -955,7 +955,9 @@ describe('pressed state', () => {
       paintsOn: true,
       paintsFading: true,
       releases: true,
-      releaseMs: [pressConsts.controlReleaseMs],
+      // UIButton's release, and under Reduce Motion the policy's 200 ms fade
+      // (design:reduced-motion DR2, reducedMotionFadeConsts).
+      releaseMs: [pressConsts.controlReleaseMs, 200],
       fillsBoth: true,
     });
     // Nothing carries a press strength any more, so no main-thread release

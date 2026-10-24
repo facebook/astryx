@@ -31,7 +31,7 @@ export interface IndicatorPressLayer {
   readonly paintsFading: boolean;
   /** The release runs an animation of the layer (not of a strength). */
   readonly releases: boolean;
-  /** The release's durations, ms (one expected). */
+  /** The release's durations, ms: its clock, then any Reduce Motion cap. */
   readonly releaseMs: number[];
   /** The release fills both ways, so it holds its ends. */
   readonly fillsBoth: boolean;

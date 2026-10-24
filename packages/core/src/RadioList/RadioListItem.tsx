@@ -5,7 +5,8 @@
 /**
  * @file RadioListItem.tsx
  * @input Uses React use, useId, useRef, RadioListContext, Item, the press
- *   release clocks (cellPressConsts)
+ *   release clocks (cellPressConsts) and the Reduce Motion fade
+ *   (reducedMotionFadeConsts)
  * @output Exports RadioListItem component, RadioListItemProps
  * @position Core implementation; consumed by index.ts, tested by RadioList.test.tsx
  *
@@ -33,6 +34,7 @@ import {useIndicator} from '../Indicator';
 import {Item, type ItemAlign} from '../Item';
 import {themeProps} from '../utils/themeProps';
 import {cellPressConsts} from '../utils/interactionOverlay.stylex';
+import {reducedMotionFadeConsts} from '../motion/reducedMotion.stylex';
 
 /** The pressed token as an image layer, at full strength. */
 const pressedImage = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
@@ -109,15 +111,26 @@ const styles = stylex.create({
             [COARSE]: pressRelease,
           },
       },
+      // Reduce Motion: the policy's fade, under the plain query; StyleX drops
+      // the compound `and (pointer: coarse)` key inside `when.ancestor`, and
+      // the release only runs under a coarse pointer anyway.
       animationDuration: {
         default: null,
         [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
-          CELL_RELEASE,
+          {
+            default: CELL_RELEASE,
+            '@media (prefers-reduced-motion: reduce)':
+              reducedMotionFadeConsts.duration,
+          },
       },
       animationTimingFunction: {
         default: null,
         [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
-          cellPressConsts.cellReleaseEase,
+          {
+            default: cellPressConsts.cellReleaseEase,
+            '@media (prefers-reduced-motion: reduce)':
+              reducedMotionFadeConsts.easing,
+          },
       },
       animationFillMode: {
         default: null,

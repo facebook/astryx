@@ -6,7 +6,8 @@
  * @file CheckboxInput.tsx
  * @input Uses React, useId, ChangeEvent, FieldLabel, FieldStatus, IconType, InputStatus, useTooltip,
  *   CheckboxRowPressContext (a row around the checkbox that owns its press),
- *   the press release clocks (pressConsts, cellPressConsts)
+ *   the press release clocks (pressConsts, cellPressConsts) and the Reduce
+ *   Motion fade (reducedMotionFadeConsts)
  * @output Exports CheckboxInput component, CheckboxInputProps
  * @position Core implementation; consumed by index.ts, tested by CheckboxInput.test.tsx
  *
@@ -49,6 +50,7 @@ import {useTooltip} from '../Tooltip';
 import {mergeProps, rtlStyles} from '../utils';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
 import {cellPressConsts, pressConsts} from '../utils/interactionOverlay.stylex';
+import {reducedMotionFadeConsts} from '../motion/reducedMotion.stylex';
 import {useTranslator} from '../i18n';
 import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
 import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
@@ -108,6 +110,11 @@ const styles = stylex.create({
   // checkbox owns the press; a cell's, the row's deselect, when a row does).
   // Opacity runs on the compositor, so the release keeps moving while script
   // runs, in step with a row's own press layer (interactionOverlayStyles.cell).
+  // Under Reduce Motion the release is the policy's fade
+  // (reducedMotionFadeConsts; `design:reduced-motion` DR2), like the row's.
+  // Its key is the plain Reduce Motion query: StyleX drops the compound
+  // `and (pointer: coarse)` key inside `when.ancestor`, and these release
+  // arms only run under a coarse pointer anyway.
   indicatorPressOverlay: {
     '::after': {
       content: '""',
@@ -148,12 +155,20 @@ const styles = stylex.create({
       animationDuration: {
         default: null,
         [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
-          CONTROL_RELEASE,
+          {
+            default: CONTROL_RELEASE,
+            '@media (prefers-reduced-motion: reduce)':
+              reducedMotionFadeConsts.duration,
+          },
       },
       animationTimingFunction: {
         default: null,
         [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
-          pressConsts.controlReleaseEase,
+          {
+            default: pressConsts.controlReleaseEase,
+            '@media (prefers-reduced-motion: reduce)':
+              reducedMotionFadeConsts.easing,
+          },
       },
       animationFillMode: {
         default: null,
@@ -214,20 +229,36 @@ const styles = stylex.create({
       animationDuration: {
         default: null,
         [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
-          CONTROL_RELEASE,
+          {
+            default: CONTROL_RELEASE,
+            '@media (prefers-reduced-motion: reduce)':
+              reducedMotionFadeConsts.duration,
+          },
         [stylex.when.ancestor(
           '[data-astryx-press="fading"]',
           checkboxRowPressScope,
-        )]: CELL_RELEASE,
+        )]: {
+          default: CELL_RELEASE,
+          '@media (prefers-reduced-motion: reduce)':
+            reducedMotionFadeConsts.duration,
+        },
       },
       animationTimingFunction: {
         default: null,
         [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
-          pressConsts.controlReleaseEase,
+          {
+            default: pressConsts.controlReleaseEase,
+            '@media (prefers-reduced-motion: reduce)':
+              reducedMotionFadeConsts.easing,
+          },
         [stylex.when.ancestor(
           '[data-astryx-press="fading"]',
           checkboxRowPressScope,
-        )]: cellPressConsts.cellReleaseEase,
+        )]: {
+          default: cellPressConsts.cellReleaseEase,
+          '@media (prefers-reduced-motion: reduce)':
+            reducedMotionFadeConsts.easing,
+        },
       },
       animationFillMode: {
         default: null,

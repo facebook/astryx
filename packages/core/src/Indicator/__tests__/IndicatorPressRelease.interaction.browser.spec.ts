@@ -450,6 +450,50 @@ test(
   },
 );
 
+test('under Reduce Motion a checkbox’s press release is an opacity cross-fade of 200 ms or less', async ({
+  page,
+}) => {
+  // design:reduced-motion DR2: on a coarse pointer a change cross-fades,
+  // opacity only, in 200 ms or less. The control clock (UIButton's 250 ms)
+  // is capped there.
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  const opened = await open(page, SURFACES[0]);
+  await opened.driver.tap({
+    x: Math.round(opened.center.x),
+    y: Math.round(opened.center.y),
+  });
+  const releases = await opened.layer.evaluate(el =>
+    el
+      .getAnimations({subtree: true})
+      .filter(
+        animation =>
+          (animation.effect as KeyframeEffect | null)?.pseudoElement ===
+          '::after',
+      )
+      .map(animation => {
+        const effect = animation.effect as KeyframeEffect;
+        return {
+          duration: Number(effect.getTiming().duration),
+          properties: effect
+            .getKeyframes()
+            .flatMap(frame =>
+              Object.keys(frame).filter(
+                key =>
+                  !['offset', 'computedOffset', 'easing', 'composite'].includes(
+                    key,
+                  ),
+              ),
+            ),
+        };
+      }),
+  );
+  expect(releases.length).toBeGreaterThan(0);
+  for (const release of releases) {
+    expect(release.duration).toBeLessThanOrEqual(200);
+    expect(new Set(release.properties)).toEqual(new Set(['opacity']));
+  }
+});
+
 test.describe('with a mouse', () => {
   test.use({
     isMobile: false,
