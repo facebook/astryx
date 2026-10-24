@@ -1498,6 +1498,18 @@ jobs:
       - name: Run story play guard
         run: node .github/scripts/story-play-guard.js --storybook-dir apps/storybook/dist
 
+      # A determinate ProgressBar must keep moving to a new value while a
+      # script holds the main thread, so its fill slides on the compositor and
+      # lays out and paints nothing per frame. jsdom has no layout, compositor
+      # or paint, so only a real engine shows the fill moving through a busy
+      # main thread and landing on the value in both directions.
+      - name: Run ProgressBar busy main thread contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/ProgressBar/__tests__/ProgressBarMotion.a11y.chromium.spec.ts \
+            --project chromium \
+            --output progress-bar-motion-output
+
       # The empty-state announcement is a live-region claim: what a screen
       # reader receives when a search dead-ends, and that the message element
       # stays presentational so `role="listbox"` keeps only option/group
