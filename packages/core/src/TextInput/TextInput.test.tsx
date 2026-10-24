@@ -1159,8 +1159,12 @@ describe('TextInput clear button focus behavior', () => {
     expect(document.activeElement).toBe(input);
   });
 
-  it('defers focus restoration via requestAnimationFrame on pointer activation', () => {
+  it('focuses the input inside the tap on pointer activation, without scrolling', () => {
+    // iOS Safari brings up its keyboard only for a focus made while handling
+    // the touch: a deferred focus would leave an unfocused field focused but
+    // keyboardless.
     const handleChange = vi.fn();
+    const focusSpy = vi.spyOn(HTMLElement.prototype, 'focus');
     const rafSpy = vi.spyOn(window, 'requestAnimationFrame');
     render(
       <TextInput
@@ -1170,14 +1174,17 @@ describe('TextInput clear button focus behavior', () => {
         onChange={handleChange}
       />,
     );
-
+    const input = screen.getByRole('textbox');
     const clearButton = screen.getByRole('button', {name: /clear/i});
+    expect(document.activeElement).not.toBe(input);
 
-    // Pointer activation (detail > 0)
     fireEvent.click(clearButton, {detail: 1});
 
     expect(handleChange).toHaveBeenCalledWith('', expect.any(Object));
-    expect(rafSpy).toHaveBeenCalled();
+    expect(document.activeElement).toBe(input);
+    expect(focusSpy).toHaveBeenLastCalledWith({preventScroll: true});
+    expect(rafSpy).not.toHaveBeenCalled();
+    focusSpy.mockRestore();
     rafSpy.mockRestore();
   });
 });

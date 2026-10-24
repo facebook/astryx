@@ -61,22 +61,85 @@ const IGNORED_DIRS = new Set([
 ]);
 export {IGNORED_DIRS};
 
+/** Yarn's install and cache folders, a hard boundary under `.yarn`. */
+const YARN_STORE_DIRS = new Set(['__virtual__', 'cache', 'sdks', 'unplugged']);
+
+/**
+ * The number of path segments a hard boundary starting at `parts[index]`
+ * spans: 1 for a name in {@link IGNORED_DIRS}, 2 for `.yarn` followed by one
+ * of its store folders, 0 when none starts there.
+ * @param {string[]} parts
+ * @param {number} index
+ */
+function boundaryLength(parts, index) {
+  if (IGNORED_DIRS.has(parts[index])) return 1;
+  if (parts[index] === '.yarn' && YARN_STORE_DIRS.has(parts[index + 1])) {
+    return 2;
+  }
+  return 0;
+}
+
 /** @param {string} root @param {string} fullPath @param {string} name */
 export function isIgnoredDirectory(root, fullPath, name) {
   if (IGNORED_DIRS.has(name)) return true;
   const parts = path.relative(root, fullPath).split(path.sep);
-  return (
-    parts[0] === '.yarn' &&
-    ['__virtual__', 'cache', 'sdks', 'unplugged'].includes(parts[1])
-  );
+  return boundaryLength(parts, 0) === 2;
+}
+
+/**
+ * Whether a symbolic link to a directory leads into a tree the scan never
+ * descends. The link is checked like a directory by {@link isIgnoredDirectory},
+ * and its resolved target's absolute path is searched for the same hard
+ * boundaries, wherever the target lives: a symlinked `node_modules`, or a link
+ * into a dependency, package-store or version-control tree such as another
+ * project's `.yarn/cache`, is not walked. Only a target that stays inside the
+ * operation root may sit below a boundary that also contains that root, so a
+ * project that itself lives below a `node_modules` folder is still scanned; a
+ * link from it to a sibling package under that same folder is not.
+ * @param {string} root scan root
+ * @param {string} fullPath the link's path
+ * @param {string} name the link's name
+ * @param {string} realTarget the link's resolved real path
+ * @param {string} [operationRoot] the project root of the operation (default: the scan root)
+ * @returns {boolean}
+ */
+export function isIgnoredLinkedDirectory(
+  root,
+  fullPath,
+  name,
+  realTarget,
+  operationRoot = root,
+) {
+  if (isIgnoredDirectory(root, fullPath, name)) return true;
+  let realRoot = operationRoot;
+  try {
+    realRoot = fs.realpathSync(operationRoot);
+  } catch {
+    // An unreadable root has no descendants to compare against.
+  }
+  const relative = path.relative(realRoot, realTarget);
+  const inside =
+    relative === '' ||
+    (relative !== '..' &&
+      !relative.startsWith(`..${path.sep}`) &&
+      !path.isAbsolute(relative));
+  // Inside the root, only a boundary that ends below the root counts.
+  const floor = inside ? realRoot.split(path.sep).length : 0;
+  const targetParts = realTarget.split(path.sep);
+  for (let index = 0; index < targetParts.length; index++) {
+    const length = boundaryLength(targetParts, index);
+    if (length > 0 && index + length > floor) return true;
+  }
+  return false;
 }
 
 /**
  * Recursively find all source files in a directory.
  * @param {string} dir
+ * @param {string} [root] the operation's project root (default: `dir`)
  * @returns {string[]}
  */
-function findSourceFiles(dir) {
+function findSourceFiles(dir, root = dir) {
   /** @type {string[]} */
   const results = [];
   const extensions = new Set([
@@ -112,13 +175,23 @@ function findSourceFiles(dir) {
     for (const entry of entries) {
       const fullPath = path.join(currentDir, entry.name);
       // Symlinked files and descendants remain read-only candidates so a
-      // required change can be reported. Real-path ancestors prevent cycles.
+      // required change can be reported. Real-path ancestors prevent cycles,
+      // and a link into a dependency or VCS tree is not descended.
       if (entry.isSymbolicLink()) {
         try {
           const target = fs.statSync(fullPath);
           if (target.isFile() && extensions.has(path.extname(entry.name))) {
             results.push(fullPath);
-          } else if (target.isDirectory()) {
+          } else if (
+            target.isDirectory() &&
+            !isIgnoredLinkedDirectory(
+              dir,
+              fullPath,
+              entry.name,
+              fs.realpathSync(fullPath),
+              root,
+            )
+          ) {
             walk(fullPath, nextAncestors);
           }
         } catch {
@@ -472,7 +545,7 @@ export async function runCodemods(
   let files = [];
   if (sourcePathExists) {
     log.step(`Scanning ${resolvedPath} for source files...`);
-    files = findSourceFiles(resolvedPath);
+    files = findSourceFiles(resolvedPath, path.resolve(root));
     if (files.length === 0) {
       log.warn('No source files found.');
     } else {
