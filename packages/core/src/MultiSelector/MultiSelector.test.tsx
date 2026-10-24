@@ -25,7 +25,7 @@ import {
   type MultiSelectorHandle,
   type MultiSelectorChange,
 } from './MultiSelector';
-import {useRef, useState} from 'react';
+import {startTransition, useRef, useState} from 'react';
 import {Icon} from '../Icon';
 import {InternationalizationProvider} from '../i18n';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
@@ -3686,16 +3686,30 @@ describe('MultiSelector hasCreate', () => {
     const user = userEvent.setup();
     const onChange =
       vi.fn<(value: string[], change?: MultiSelectorChange) => void>();
-    render(
-      <MultiSelector
-        label="Labels"
-        options={OPTIONS}
-        value={['bug']}
-        onChange={onChange}
-        hasSearch
-        hasCreate
-      />,
-    );
+    function Labels() {
+      const [options, setOptions] = useState(OPTIONS);
+      const [value, setValue] = useState(['bug']);
+      return (
+        <MultiSelector
+          label="Labels"
+          options={options}
+          value={value}
+          onChange={(next, change) => {
+            onChange(next, change);
+            if (change?.type === 'create') {
+              setOptions(current => [
+                ...current,
+                {value: change.query, label: change.query},
+              ]);
+            }
+            setValue(next);
+          }}
+          hasSearch
+          hasCreate
+        />
+      );
+    }
+    render(<Labels />);
     await user.click(screen.getByRole('button', {name: 'Labels'}));
     const search = screen.getByRole('combobox', h);
     await user.type(search, 'Urgent');
@@ -3715,8 +3729,13 @@ describe('MultiSelector hasCreate', () => {
       type: 'create',
       query: 'Urgent',
     });
-    // The filter is cleared so the option the caller adds is visible.
+    // Accepted: the filter is cleared so the option the caller added is
+    // visible.
     expect(search).toHaveValue('');
+    expect(screen.getByRole('option', {name: 'Urgent', ...h})).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
   });
 
   it('a plain toggle passes no descriptor, so a one-argument handler is unchanged', async () => {
@@ -3832,6 +3851,8 @@ describe('MultiSelector hasCreate', () => {
       query: 'Urgent',
     });
 
+    // This caller accepts nothing, so the typed text stayed; start over.
+    await user.clear(search);
     await user.type(search, 'Later');
     fireEvent.keyDown(search, {key: 'ArrowDown'});
     const createRow = screen.getByRole('option', {
@@ -3931,6 +3952,295 @@ describe('MultiSelector hasCreate', () => {
     } finally {
       warn.mockRestore();
     }
+  });
+
+  it('a creation the caller refuses keeps the typed text to be corrected and announces nothing', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={['bug']}
+        onChange={onChange}
+        hasSearch
+        hasCreate
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    const search = screen.getByRole('combobox', h);
+    await user.type(search, 'Urgent');
+    await user.click(
+      screen.getByRole('option', {name: 'Create "Urgent"', ...h}),
+    );
+    expect(onChange).toHaveBeenCalledWith(['bug', 'Urgent'], {
+      type: 'create',
+      query: 'Urgent',
+    });
+
+    // The caller left `value` as it was: the name stays, ready to fix.
+    expect(search).toHaveValue('Urgent');
+    expect(politeRegion()?.textContent ?? '').not.toContain('created');
+    await user.type(search, '!');
+    expect(
+      screen.getByRole('option', {name: 'Create "Urgent!"', ...h}),
+    ).toBeInTheDocument();
+  });
+
+  it('with a change action, keeps the text while it is pending, ignores a second pick, and keeps it when the action is refused', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    let refuse: () => void = () => {};
+    const changeAction = vi.fn(async () => {
+      await new Promise<void>(resolve => {
+        refuse = resolve;
+      });
+    });
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={onChange}
+        changeAction={changeAction}
+        hasSearch
+        hasCreate
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    const search = screen.getByRole('combobox', h);
+    await user.type(search, 'Urgent');
+    const create = screen.getByRole('option', {name: 'Create "Urgent"', ...h});
+    await user.click(create);
+    expect(changeAction).toHaveBeenCalledWith(['Urgent']);
+    expect(search).toHaveValue('Urgent');
+
+    // Unanswered: picking the same text again does not create it twice.
+    await user.click(create);
+    expect(onChange).toHaveBeenCalledTimes(1);
+
+    // The action settles and the caller never took the value: refused.
+    await act(async () => {
+      refuse();
+    });
+    expect(search).toHaveValue('Urgent');
+    expect(politeRegion()?.textContent ?? '').not.toContain('created');
+    await user.click(
+      screen.getByRole('option', {name: 'Create "Urgent"', ...h}),
+    );
+    expect(onChange).toHaveBeenCalledTimes(2);
+    // Settle the second action: an async transition left pending would hold
+    // every later transition in this file.
+    await act(async () => {
+      refuse();
+    });
+  });
+
+  it('with a change action, clears the search and announces once the caller accepts', async () => {
+    const user = userEvent.setup();
+    function Labels() {
+      const [options, setOptions] = useState(OPTIONS);
+      const [value, setValue] = useState<string[]>([]);
+      return (
+        <MultiSelector
+          label="Labels"
+          options={options}
+          value={value}
+          onChange={() => {}}
+          changeAction={async next => {
+            await Promise.resolve();
+            const added = next.find(
+              entry => !options.some(option => option.value === entry),
+            );
+            if (added != null) {
+              setOptions(current => [...current, {value: added, label: added}]);
+            }
+            setValue(next);
+          }}
+          hasSearch
+          hasCreate
+        />
+      );
+    }
+    render(<Labels />);
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    const search = screen.getByRole('combobox', h);
+    await user.type(search, 'Urgent');
+    await user.click(
+      screen.getByRole('option', {name: 'Create "Urgent"', ...h}),
+    );
+    await waitFor(() => expect(search).toHaveValue(''));
+    await waitFor(() => {
+      expect(politeRegion()?.textContent).toBe('Urgent created');
+    });
+  });
+
+  it('a caller that accepts inside a transition gets the search cleared and the creation announced', async () => {
+    const user = userEvent.setup();
+    function Labels() {
+      const [options, setOptions] = useState(OPTIONS);
+      const [value, setValue] = useState<string[]>([]);
+      return (
+        <MultiSelector
+          label="Labels"
+          options={options}
+          value={value}
+          onChange={(next, change) => {
+            startTransition(() => {
+              if (change?.type === 'create') {
+                const {query} = change;
+                setOptions(current => [
+                  ...current,
+                  {value: query, label: query},
+                ]);
+              }
+              setValue(next);
+            });
+          }}
+          hasSearch
+          hasCreate
+        />
+      );
+    }
+    render(<Labels />);
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    const search = screen.getByRole('combobox', h);
+    await user.type(search, 'Urgent');
+    await user.click(
+      screen.getByRole('option', {name: 'Create "Urgent"', ...h}),
+    );
+    await waitFor(() => expect(search).toHaveValue(''));
+    await waitFor(() => {
+      expect(politeRegion()?.textContent).toBe('Urgent created');
+    });
+  });
+
+  it('with a change action, announces each creation the caller accepts, two picked while one is in flight', async () => {
+    const user = userEvent.setup();
+    const releases: (() => void)[] = [];
+    function Labels() {
+      const [options, setOptions] = useState(OPTIONS);
+      const [value, setValue] = useState<string[]>([]);
+      return (
+        <MultiSelector
+          label="Labels"
+          options={options}
+          value={value}
+          onChange={() => {}}
+          changeAction={async next => {
+            await new Promise<void>(resolve => {
+              releases.push(resolve);
+            });
+            setOptions(current => [
+              ...current,
+              ...next
+                .filter(
+                  entry => !current.some(option => option.value === entry),
+                )
+                .map(entry => ({value: entry, label: entry})),
+            ]);
+            setValue(next);
+          }}
+          hasSearch
+          hasCreate
+        />
+      );
+    }
+    render(<Labels />);
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    const search = screen.getByRole('combobox', h);
+    await user.type(search, 'Urgent');
+    await user.click(
+      screen.getByRole('option', {name: 'Create "Urgent"', ...h}),
+    );
+    await user.clear(search);
+    await user.type(search, 'Blocked');
+    await user.click(
+      screen.getByRole('option', {name: 'Create "Blocked"', ...h}),
+    );
+    expect(releases).toHaveLength(2);
+
+    await act(async () => {
+      releases[0]();
+    });
+    await waitFor(() => {
+      expect(politeRegion()?.textContent).toBe('Urgent created');
+    });
+    expect(search).toHaveValue('Blocked');
+    await act(async () => {
+      releases[1]();
+    });
+    await waitFor(() => {
+      expect(politeRegion()?.textContent).toBe('Blocked created');
+    });
+    expect(search).toHaveValue('');
+  });
+
+  it('with a change action, announces creations the caller accepts together as one message', async () => {
+    const user = userEvent.setup();
+    const releases: (() => void)[] = [];
+    function Labels() {
+      const [options, setOptions] = useState(OPTIONS);
+      const [value, setValue] = useState<string[]>([]);
+      return (
+        <MultiSelector
+          label="Labels"
+          options={options}
+          value={value}
+          onChange={() => {}}
+          changeAction={async next => {
+            await new Promise<void>(resolve => {
+              releases.push(resolve);
+            });
+            setOptions(current => [
+              ...current,
+              ...next
+                .filter(
+                  entry => !current.some(option => option.value === entry),
+                )
+                .map(entry => ({value: entry, label: entry})),
+            ]);
+            setValue(current => [...new Set([...current, ...next])]);
+          }}
+          hasSearch
+          hasCreate
+        />
+      );
+    }
+    render(<Labels />);
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    const search = screen.getByRole('combobox', h);
+    await user.type(search, 'Urgent');
+    await user.click(
+      screen.getByRole('option', {name: 'Create "Urgent"', ...h}),
+    );
+    await user.clear(search);
+    await user.type(search, 'Blocked');
+    await user.click(
+      screen.getByRole('option', {name: 'Create "Blocked"', ...h}),
+    );
+    expect(releases).toHaveLength(2);
+
+    // The second action settles first and its `next` carries both names, so
+    // both are accepted in one render and announced as one message.
+    await act(async () => {
+      releases[1]();
+    });
+    await waitFor(() => {
+      expect(politeRegion()?.textContent).toBe('2 options created');
+    });
+    expect(search).toHaveValue('');
+    expect(
+      screen.getByRole('option', {name: 'Urgent', ...h}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('option', {name: 'Blocked', ...h}),
+    ).toBeInTheDocument();
+    // Settle the first action too: a pending action holds later transitions.
+    await act(async () => {
+      releases[0]();
+    });
+    expect(politeRegion()?.textContent).toBe('2 options created');
   });
 
   it('is off by default', async () => {

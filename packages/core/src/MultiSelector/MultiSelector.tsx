@@ -878,10 +878,12 @@ export interface MultiSelectorProps<
    * trimmed query equals no option's label under the search's own matching
    * (case-insensitive). Picking it, or Enter with nothing highlighted, calls
    * `onChange` with the query appended to `value` and a `{type: 'create',
-   * query}` descriptor, then clears the search. The caller MUST add an option
-   * for the new value in that same update; the component does not mint
-   * options. Nothing is offered while `isLoading`. Setting this without
-   * `hasSearch` warns in development and offers nothing.
+   * query}` descriptor. The caller MUST add an option for the new value in
+   * that same update; the component does not mint options. Once `value`
+   * carries the new entry the search clears and the creation is announced.
+   * To refuse it, leave `value` without it: the typed text stays in the
+   * search to be corrected. Nothing is offered while `isLoading`. Setting
+   * this without `hasSearch` warns in development and offers nothing.
    * @default false
    */
   hasCreate?: boolean;
@@ -1201,7 +1203,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     null,
   );
 
-  const [, startTransition] = useTransition();
+  const [isChangePending, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
   // The busy Spinner is decorative; this control announces its busy start
@@ -1723,16 +1725,26 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
 
   // Picking the create row: the typed text joins the value and the caller is
   // told it is a creation on the channel it already listens to, so adding the
-  // option and accepting the value are one update. The search is cleared so
-  // the option the caller adds is visible.
+  // option and accepting the value are one update. The search keeps the typed
+  // text until the caller accepts (below), so a name the caller refuses stays
+  // in the field to be corrected instead of having to be typed again (WCAG
+  // 3.3.7). While a change action is in flight, a second pick of a text
+  // already picked is ignored.
+  const [pendingCreates, setPendingCreates] = useState<ReadonlyArray<string>>(
+    [],
+  );
   const commitCreate = useCallback(
     (query: string) => {
+      if (isChangePending && pendingCreates.includes(query)) {
+        return;
+      }
       const newValue = optimisticValue.includes(query)
         ? optimisticValue
         : [...optimisticValue, query];
       onChange(newValue, {type: 'create', query});
-      setSearchQuery('');
-      announce(t('@astryx.multiSelector.optionCreated', {label: query}));
+      setPendingCreates(current =>
+        current.includes(query) ? current : [...current, query],
+      );
       if (changeAction) {
         startTransition(async () => {
           setOptimisticValue(newValue);
@@ -1741,15 +1753,61 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       }
     },
     [
+      isChangePending,
+      pendingCreates,
       optimisticValue,
       onChange,
       changeAction,
       startTransition,
       setOptimisticValue,
-      announce,
-      t,
     ],
   );
+
+  // A picked creation is accepted once `value` carries it, whenever that is:
+  // in the same update, in a transition the caller starts, or when a change
+  // action settles. Each accepted creation is announced, and the search clears
+  // if it still holds that text, so the option the caller added shows. A pick
+  // the caller has not accepted waits while the search still holds its text
+  // or a change action is in flight; otherwise it is dropped, unannounced.
+  // State derived from props is adjusted while rendering, as for `isGrid`.
+  const [createdBatch, setCreatedBatch] = useState<{
+    labels: ReadonlyArray<string>;
+  } | null>(null);
+  if (pendingCreates.length > 0) {
+    const query = searchQuery.trim();
+    const accepted = pendingCreates.filter(entry => value.includes(entry));
+    const remaining = pendingCreates.filter(
+      entry => !value.includes(entry) && (isChangePending || entry === query),
+    );
+    if (remaining.length !== pendingCreates.length) {
+      setPendingCreates(remaining);
+      if (accepted.length > 0) {
+        setCreatedBatch({labels: accepted});
+        if (accepted.includes(query)) {
+          setSearchQuery('');
+        }
+      }
+    }
+  }
+  // Synchronizes the shared polite live region (`useAnnounce`) with the
+  // creations the caller accepted: each batch is announced once, as one
+  // catalog message, so a second creation never cuts off the first.
+  const announcedBatchRef = useRef<{labels: ReadonlyArray<string>} | null>(
+    null,
+  );
+  useEffect(() => {
+    if (createdBatch != null && announcedBatchRef.current !== createdBatch) {
+      announcedBatchRef.current = createdBatch;
+      // One creation is named; several accepted together are counted, as
+      // bulk changes elsewhere are, and show as new options in the list.
+      const {labels} = createdBatch;
+      announce(
+        labels.length === 1
+          ? t('@astryx.multiSelector.optionCreated', {label: labels[0]})
+          : t('@astryx.multiSelector.optionsCreated', {count: labels.length}),
+      );
+    }
+  }, [createdBatch, announce, t]);
 
   // Route toggle: select-all sentinel → handleSelectAll, the create row →
   // commitCreate, everything else → handleToggle
