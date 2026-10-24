@@ -23,7 +23,10 @@ places as on the web, read by VoiceOver in the same order.
     additions list which ones it accepts, and whether it holds one or many
     (a row's start holds one of `Avatar`, `Icon`, `Thumbnail`; a card holds
     many of any).
-    A free-form web prop with no slot kind stays in the web contract only.
+    The Swift contract accepts only these core forms. It takes no wider form for
+    any slot (no arbitrary `View`, no image, no attributed text), so a slot means
+    the same thing on Swift as in the core. A free-form web prop with no slot
+    kind stays in the web contract only.
 - **S2 — Icon names are a string-backed type with the built-ins as members.**
   `AstryxIconName` is a `RawRepresentable`, `ExpressibleByStringLiteral`,
   `Hashable`, `Codable`, `Sendable` value. Every built-in semantic name is a
