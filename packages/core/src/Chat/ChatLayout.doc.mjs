@@ -6,7 +6,7 @@ export const docs = {
   name: 'ChatLayout',
   subComponentOf: 'Chat',
   displayName: 'Chat Layout',
-  description: 'Layout shell for full chat interfaces. Messages flow in normal page flow, composer is fixed to the bottom with a frosted glass dock. Set density (compact/balanced/spacious) to control spacing, message max-width, and blur layer sizing. Includes built-in auto-scroll, a "New messages" scroll-to-bottom button, and a frosted glass blur layer behind the composer. By default the layout root is the scroll container; pass scrollRef to delegate scrolling to a parent element or the document body. On a phone the composer rides on top of the software keyboard, in step with it, and a conversation at its newest message stays there; tapping the composer focuses it without scrolling the page.',
+  description: 'Layout shell for full chat interfaces. Messages flow in normal page flow, composer is fixed to the bottom with a frosted glass dock. Set density (compact/balanced/spacious) to control spacing, message max-width, and blur layer sizing. Includes built-in auto-scroll, a "New messages" scroll-to-bottom button, and a frosted glass blur layer behind the composer. By default the layout root is the scroll container; pass scrollRef to delegate scrolling to a parent element or the document body. On a phone the composer rides on top of the software keyboard, in step with it, and a conversation at its newest message stays there; tapping the composer focuses it without scrolling the page, and dragging the conversation down to the composer dismisses the keyboard (keyboardDismissMode).',
   props: [
     {
       name: 'children',
@@ -58,6 +58,12 @@ export const docs = {
       type: "'compact' | 'balanced' | 'spacious'",
       description: 'Visual density: controls dock padding, message-area max-width and inline padding, and the height of the frosted glass blur layer.',
       default: "'balanced'",
+    },
+    {
+      name: 'keyboardDismissMode',
+      type: "'none' | 'onDrag' | 'interactive'",
+      description: "How a drag on the transcript dismisses the software keyboard: 'interactive' when the finger reaches the composer (as in Messages; the keyboard leaves on its own rather than following the finger), 'onDrag' as soon as the transcript starts to scroll, 'none' leaves it up.",
+      default: "'interactive'",
     },
   ],
   usage: {
@@ -131,7 +137,7 @@ export const docsZh = {
 export const docsDense = {
   name: 'ChatLayout',
   displayName: 'Chat Layout',
-  description: 'layout shell for full chat; msgs in page flow, composer fixed bottom w/ frosted glass dock; density prop (default balanced); scrollRef delegates to parent/body; on phones the composer rides the software keyboard, transcript stays at newest msg, tap focuses w/o page scroll',
+  description: 'layout shell for full chat; msgs in page flow, composer fixed bottom w/ frosted glass dock; density prop (default balanced); scrollRef delegates to parent/body; on phones the composer rides the software keyboard, transcript stays at newest msg, tap focuses w/o page scroll, drag to composer dismisses keyboard (keyboardDismissMode)',
   usage: {
     bestPractices: [
       {guidance: true, description: 'Pass ChatMessageList as children and ChatComposer as composer prop for complete chat.'},

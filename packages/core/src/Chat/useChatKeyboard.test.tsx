@@ -6,12 +6,13 @@
  * @output Tests ChatLayout's keyboard behavior in jsdom: the dock lifts by
  *   the keyboard's cover and makes room after the messages, a transcript at
  *   its newest message stays there, the dock comes down when the composer's
- *   text blurs, nothing moves without a keyboard
+ *   text blurs, nothing moves without a keyboard, a hide under a scrolling
+ *   finger keeps the room until the scroll ends
  * @position Unit tests for Chat/useChatKeyboard.ts (motion and the tap claim
  *   are proven in Mobile Safari; see the pull request evidence)
  */
 
-import {afterEach, beforeEach, describe, expect, it} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, render, screen} from '@testing-library/react';
 import {ChatLayout} from './ChatLayout';
 
@@ -144,6 +145,47 @@ describe('ChatLayout and the software keyboard', () => {
     act(() => field.blur());
     expect(dockOf(container).style.translate).toBe('0px 0px');
     expect(spacerOf(container).style.height).toBe('0px');
+  });
+
+  it('keeps the room after the messages until a scrolling finger lifts and the scroll ends', () => {
+    vi.useFakeTimers();
+    try {
+      const {container} = renderLayout();
+      const layout = screen.getByTestId('layout');
+      const field = screen.getByRole('textbox', {name: 'Message'});
+      act(() => field.focus());
+      report(window.innerHeight - 300);
+      // A finger over the conversation, as a TouchEvent carries it.
+      const touch = {identifier: 0, clientX: 100, clientY: 100};
+      const finger = (type: string, count: number) => {
+        const event = new Event(type, {bubbles: true});
+        Object.assign(event, {
+          touches: count === 0 ? [] : [touch],
+          changedTouches: [touch],
+        });
+        act(() => {
+          layout.dispatchEvent(event);
+        });
+      };
+      finger('touchstart', 1);
+      // The drag dismisses the keyboard: the dock comes down at once, the
+      // room stays while the finger scrolls.
+      act(() => field.blur());
+      expect(dockOf(container).style.translate).toBe('0px 0px');
+      expect(spacerOf(container).style.height).toBe('300px');
+      finger('touchend', 0);
+      act(() => {
+        layout.dispatchEvent(new Event('scroll'));
+        vi.advanceTimersByTime(100);
+      });
+      expect(spacerOf(container).style.height).toBe('300px');
+      act(() => {
+        vi.advanceTimersByTime(200);
+      });
+      expect(spacerOf(container).style.height).toBe('0px');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('moves nothing while no keyboard is up', () => {

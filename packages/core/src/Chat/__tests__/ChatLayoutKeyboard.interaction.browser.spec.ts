@@ -37,7 +37,9 @@ import {
   springStep,
   startScreencast,
   timeline,
+  drag,
   touchDriver,
+  touchStoryboard,
   traceRendering,
   trackMarker,
   waitForAnimation,
@@ -140,14 +142,17 @@ interface Chat {
 
 async function openChat(
   page: Page,
-  {android = false}: {android?: boolean} = {},
+  {
+    android = false,
+    args,
+  }: {android?: boolean; args?: Readonly<Record<string, string>>} = {},
 ): Promise<Chat> {
   if (android) {
     await installAndroidKeyboard(page);
   } else {
     await installKeyboard(page);
   }
-  await openStory(page, storybook(), 'core-chatlayout--full-ai-chat');
+  await openStory(page, storybook(), 'core-chatlayout--full-ai-chat', args);
   const editable = page.locator('[contenteditable="true"]').first();
   await expect(editable).toBeVisible();
   // Name the dock (the sticky container around the composer) and the
@@ -484,6 +489,95 @@ test('a tap on the composer text focuses it without scrolling the page', async (
   expect(after).toEqual(before);
 });
 
+/** Focuses the composer under a shown keyboard and returns two finger rows. */
+async function keyboardUp(page: Page, {dock, editable}: Chat) {
+  await editable.focus();
+  await showKeyboard(page);
+  await waitForRest(dock);
+  const dockBox = await dock.boundingBox();
+  const textBox = await editable.boundingBox();
+  if (dockBox == null || textBox == null) {
+    throw new Error('no dock');
+  }
+  return {
+    x: textBox.x + textBox.width / 2,
+    // Above everything the dock holds, and inside the composer's text.
+    aboveDock: dockBox.y - 40,
+    inComposer: textBox.y + 4,
+  };
+}
+
+const transcriptScroll = async (dock: Locator) =>
+  dock.evaluate(el => (el.parentElement as HTMLElement).scrollTop);
+
+test('a drag that stays above the composer scrolls and keeps the keyboard', async ({
+  page,
+}) => {
+  const chat = await openChat(page);
+  const rows = await keyboardUp(page, chat);
+  const driver = await touchDriver(page);
+  const before = await transcriptScroll(chat.dock);
+  await driver.play(
+    drag(
+      {x: rows.x, y: 120},
+      {x: rows.x, y: rows.aboveDock},
+      {durationMs: 300},
+    ),
+  );
+  await expect(chat.editable).toBeFocused();
+  if (driver.drivesNativeGestures) {
+    expect(await transcriptScroll(chat.dock)).toBeLessThan(before);
+  }
+});
+
+test('a drag that reaches the composer dismisses the keyboard and the dock rides down', async ({
+  page,
+}) => {
+  const chat = await openChat(page);
+  const rows = await keyboardUp(page, chat);
+  const driver = await touchDriver(page);
+  await driver.play(
+    drag(
+      {x: rows.x, y: 120},
+      {x: rows.x, y: rows.inComposer},
+      {durationMs: 300},
+    ),
+  );
+  await expect(chat.editable).not.toBeFocused();
+  await waitForAnimation(chat.dock);
+});
+
+test('onDrag dismisses the keyboard as soon as the transcript scrolls', async ({
+  page,
+}) => {
+  const {drivesNativeGestures} = await touchDriver(page);
+  test.skip(
+    !drivesNativeGestures,
+    'injected WebKit touches do not scroll natively (README: engine limits), so the browser never takes the touch',
+  );
+  const chat = await openChat(page, {args: {keyboardDismissMode: 'onDrag'}});
+  const rows = await keyboardUp(page, chat);
+  const driver = await touchDriver(page);
+  await driver.play(
+    drag({x: rows.x, y: 120}, {x: rows.x, y: 200}, {durationMs: 200}),
+  );
+  await expect(chat.editable).not.toBeFocused();
+});
+
+test('none leaves the keyboard up through any drag', async ({page}) => {
+  const chat = await openChat(page, {args: {keyboardDismissMode: 'none'}});
+  const rows = await keyboardUp(page, chat);
+  const driver = await touchDriver(page);
+  await driver.play(
+    drag(
+      {x: rows.x, y: 120},
+      {x: rows.x, y: rows.inComposer},
+      {durationMs: 300},
+    ),
+  );
+  await expect(chat.editable).toBeFocused();
+});
+
 test('the rise keeps advancing every frame while the main thread is blocked', async ({
   page,
   browserName,
@@ -632,5 +726,92 @@ test(
       expect(trace[i].dockY).toBeLessThanOrEqual(trace[i - 1].dockY + 0.01);
     }
     expect(trace.at(-1)?.dockY).toBeCloseTo(-lift, 0);
+  },
+);
+
+test(
+  'storyboard: a drag down the conversation reaches the composer and the keyboard leaves',
+  {tag: '@storyboard'},
+  async ({page}, testInfo) => {
+    const chat = await openChat(page);
+    const rows = await keyboardUp(page, chat);
+    const viewport = page.viewportSize() ?? {width: 402, height: 714};
+    const clip = {x: 0, y: 0, width: viewport.width, height: viewport.height};
+    // The finger, drawn for the film only (it never takes a touch).
+    await page.evaluate(() => {
+      const dot = document.createElement('div');
+      dot.style.cssText =
+        'position:fixed;left:-100px;top:-100px;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;background:rgba(255,40,40,.3);border:2px solid rgba(255,40,40,.9);pointer-events:none;z-index:2147483647';
+      document.body.append(dot);
+      const follow = (event: TouchEvent) => {
+        const touch = event.touches[0];
+        dot.style.left = touch == null ? '-100px' : `${touch.clientX}px`;
+        dot.style.top = touch == null ? '-100px' : `${touch.clientY}px`;
+      };
+      for (const type of ['touchstart', 'touchmove', 'touchend']) {
+        window.addEventListener(type, follow as EventListener, {
+          capture: true,
+          passive: true,
+        });
+      }
+      // As Mobile Safari does, report the keyboard down once it is down.
+      window.addEventListener('focusout', () => {
+        setTimeout(() => {
+          (window as unknown as {__keyboard: (c: number) => void}).__keyboard(
+            0,
+          );
+        }, 430);
+      });
+    });
+    const focused = async () =>
+      chat.editable.evaluate(el => el === document.activeElement);
+    const driver = await touchDriver(page);
+    // Down the conversation to just above the composer, then into it.
+    const over = rows.inComposer - 64;
+    const drag = await touchStoryboard(
+      page,
+      driver,
+      [
+        ...[0, 1, 2, 3].map(i => ({
+          t: i * 40,
+          fingers: [{id: 0, x: rows.x, y: 120 + ((over - 120) * i) / 3}],
+        })),
+        {t: 160, fingers: [{id: 0, x: rows.x, y: rows.inComposer}]},
+        {t: 200, fingers: []},
+      ],
+      {
+        name: 'chatlayout-keyboard-dismiss-drag',
+        clip,
+        columns: 4,
+        cellScale: 0.4,
+        measure: async () => ({
+          focused: await focused(),
+          dockY: await dockY(chat.dock),
+        }),
+      },
+    );
+    // The keyboard and the composer ride down from the blur.
+    const {storyboard: ride} = await animationStoryboard(page, {
+      name: 'chatlayout-keyboard-dismiss-ride',
+      clip,
+      scope: chat.dock,
+      times: timeline(400, 400 / 12),
+      columns: 6,
+      cellScale: 0.4,
+      measure: async () => ({dockY: await dockY(chat.dock)}),
+    });
+    await drag.write(testInfo);
+    await ride.write(testInfo);
+    const steps = drag.frames.map(f => f.data as {focused: boolean});
+    // Focus holds while the finger is over the conversation, and the move
+    // that reaches the composer blurs it.
+    expect(steps.slice(0, 5).every(f => f.focused)).toBe(true);
+    expect(steps.at(-1)?.focused).toBe(false);
+    const trace = ride.frames.map(f => f.data as {dockY: number});
+    expect(trace[0].dockY).toBeLessThan(-100);
+    for (let i = 1; i < trace.length; i += 1) {
+      expect(trace[i].dockY).toBeGreaterThanOrEqual(trace[i - 1].dockY - 0.01);
+    }
+    expect(trace.at(-1)?.dockY).toBeCloseTo(0, 0);
   },
 );

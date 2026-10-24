@@ -41,6 +41,22 @@ For an element docked at the bottom, rise by the part of the cover over its
 resting bottom, and only while a keyboard is up:
 `lift = to > 0 ? max(0, restingBottom − (innerHeight − to)) : 0`.
 
+## Dismissing the keyboard from a drag
+
+`observeKeyboardDismiss(scroller, {mode, dismissPadding})` is UIScrollView's
+`keyboardDismissMode` for drags that start on `scroller`, default `none`:
+
+- `onDrag` blurs the focused editable when the browser takes the touch to
+  scroll (`pointercancel` for the touch's pointer).
+- `interactive` blurs it when the finger reaches the keyboard's top edge, less
+  `dismissPadding` (the height of a bar on the keyboard). UIKit's keyboard
+  follows the finger; a page cannot move it, so it leaves on its own and
+  pulling back cannot cancel.
+
+Only a touch that starts above that line and outside the focused editable is
+followed, and every listener is passive. The blur hands the hide to the guide,
+which starts it at the blur.
+
 ## What the page sees (Mobile Safari, iOS 26.2)
 
 - The inset is `innerHeight − (visualViewport.offsetTop + visualViewport.height)`:
@@ -65,6 +81,9 @@ resting bottom, and only while a keyboard is up:
 - Safari reveals a focused field by scrolling the whole page, so a layout that
   keeps its own content above the keyboard focuses its field with
   `preventScroll` from a claimed tap (ChatLayout's composer does).
+- During a drag that scrolls, the page gets `pointercancel` when the scroll
+  takes the touch, then `touchmove` (not cancelable) on every move, also while
+  the finger is over the keyboard.
 
 ## What the page sees (Chrome 124 with Gboard, Android 15)
 
@@ -92,7 +111,9 @@ resting bottom, and only while a keyboard is up:
 
 - ChatLayout (`Chat/useChatKeyboard.ts`): the dock rides the keyboard, the
   transcript keeps room to scroll above it and stays at its newest message,
-  and a tap on the composer's text focuses it without Safari's reveal.
+  a tap on the composer's text focuses it without Safari's reveal, and a drag
+  on the transcript dismisses the keyboard (`keyboardDismissMode`, default
+  `interactive` with the composer as the bar on the keyboard).
 
 ## Files
 
@@ -101,6 +122,7 @@ resting bottom, and only while a keyboard is up:
 | `keyboardModel.ts`       | The clock-free core: transitions from viewport reports and focus changes.                  |
 | `keyboardLayoutGuide.ts` | One guide per window: the listeners, the frame watch, the verification timer, the overlay. |
 | `rideKeyboard.ts`        | Moves an element with the keyboard on its spring (iOS) or its curve (Chrome).              |
+| `keyboardDismiss.ts`     | `keyboardDismissMode` for a scroller: dismissing the keyboard from a drag.                 |
 | `index.ts`               | Entry point.                                                                               |
 
 The timing constants live in `../motion/uikit/keyboard.ts`, the spring in

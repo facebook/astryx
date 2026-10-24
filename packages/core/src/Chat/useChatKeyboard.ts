@@ -4,8 +4,9 @@
 
 /**
  * @file useChatKeyboard.ts
- * @input React refs, the keyboard layout guide and rideKeyboard, the
- *   animator, the gesture system's tap recognizer
+ * @input React refs, the keyboard layout guide, rideKeyboard and
+ *   observeKeyboardDismiss, the animator, `springs.keyboard` (a spacer that
+ *   waited for a scroll), the gesture system's tap recognizer
  * @output Exports useChatKeyboard: the refs ChatLayout puts on its dock,
  *   message area, keyboard spacer and composer region so the composer rides
  *   the software keyboard
@@ -26,11 +27,16 @@
  *   (`overlayWhileFocused`): Chrome then neither resizes nor pans the page
  *   for the keyboard, and the dock does the moving.
  * - A spacer after the messages takes the same height, once per keyboard
- *   change, so the newest message can scroll above the lifted composer. A
+ *   change, so the newest message can scroll above the lifted composer
+ *   (shrinking only once no finger is scrolling the transcript). A
  *   transcript at its newest message is scrolled to the new end in the same
  *   task and its content rides the keyboard's spring back from where it was
  *   (a FLIP on `translate`), so it moves with the composer instead of
  *   jumping.
+ * - A drag on the transcript dismisses the keyboard as `keyboardDismissMode`
+ *   says (keyboard/keyboardDismiss.ts). `interactive`, Messages' mode, is
+ *   triggered where the finger reaches the composer: the composer is the
+ *   bar on the keyboard, so its height is the dismiss padding.
  * - A tap on the composer's text while it is not focused focuses it without
  *   Safari's reveal (`preventScroll`), which would otherwise scroll the
  *   whole page up to show a field that the keyboard is about to cover, and
@@ -46,11 +52,14 @@
 
 import {useRef, type RefObject} from 'react';
 import {useAnimator} from '../motion/useAnimator';
+import {springs} from '../motion/uikit';
 import {TapGestureRecognizer, useGestureRecognizer} from '../gestures';
 import {
   bringsUpKeyboard,
   getKeyboardLayoutGuide,
   rideKeyboard,
+  observeKeyboardDismiss,
+  type KeyboardDismissMode,
   type KeyboardTransition,
 } from '../keyboard';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
@@ -65,6 +74,8 @@ export interface UseChatKeyboardOptions {
    * than an outer scroller (a fixed dock at the layout viewport's bottom).
    */
   isSelfScrolling: boolean;
+  /** How a drag on the transcript dismisses the keyboard. */
+  keyboardDismissMode: KeyboardDismissMode;
 }
 
 export interface UseChatKeyboardResult {
@@ -80,6 +91,9 @@ export interface UseChatKeyboardResult {
 
 // A transcript within this many px of its end counts as at its newest message.
 const AT_END_SLOP = 2;
+// How long the transcript must stay still after the finger lifts before a
+// spacer that waited for the scroll to end shrinks.
+const SCROLL_SETTLE_MS = 150;
 
 /**
  * The editable a touch landed in, when tapping it would bring up the
@@ -125,7 +139,12 @@ function focusAtPoint(editable: HTMLElement, x: number, y: number) {
  *
  * @example
  * ```
- * const keyboard = useChatKeyboard({rootRef, scrollRef, isSelfScrolling});
+ * const keyboard = useChatKeyboard({
+ *   rootRef,
+ *   scrollRef,
+ *   isSelfScrolling,
+ *   keyboardDismissMode: 'interactive',
+ * });
  * <div ref={keyboard.messagesRef}>…</div>
  * <div ref={keyboard.spacerRef} aria-hidden />
  * <div ref={keyboard.dockRef}><div ref={keyboard.composerRef}>…</div></div>
@@ -135,6 +154,7 @@ export function useChatKeyboard({
   rootRef,
   scrollRef,
   isSelfScrolling,
+  keyboardDismissMode,
 }: UseChatKeyboardOptions): UseChatKeyboardResult {
   const dock = useAnimator();
   const messages = useAnimator();
@@ -149,20 +169,20 @@ export function useChatKeyboard({
     if (root == null || win == null) {
       return undefined;
     }
-    const follow = (transition: KeyboardTransition) => {
-      // A sticky dock rests at the root's bottom edge, which may sit above
-      // or below the layout viewport's; a fixed dock rests at the
-      // viewport's. While a keyboard is up the dock rises until it clears
-      // the keyboard's cover; without one it rests where the layout puts it.
-      const bottom = isSelfScrolling
-        ? root.getBoundingClientRect().bottom
-        : win.innerHeight;
-      const lift =
-        transition.to > 0
-          ? Math.max(0, bottom - (win.innerHeight - transition.to))
-          : 0;
-      rideKeyboard(dock.animator, {y: -lift}, transition);
+    // The spacer shrinks only once no finger is scrolling the transcript.
+    // Shrinking it mid-scroll (a drag that dismissed the keyboard) would put
+    // the end of the messages inside the scrollport until the scroll caught
+    // up, which Safari puts off while the finger is down, and the sticky
+    // dock would leave the bottom to sit at that end. A growing spacer (a
+    // show) applies at once.
+    let touches = 0;
+    let pendingLift: number | null = null;
+    let settleTimer: ReturnType<typeof setTimeout> | undefined;
 
+    const resizeSpacer = (
+      lift: number,
+      transition: KeyboardTransition | null,
+    ) => {
       const spacer = spacerRef.current;
       const scroller = scrollRef.current;
       if (
@@ -190,8 +210,65 @@ export function useChatKeyboard({
       // The content just moved by `moved`; hold it where it was and let it
       // follow the keyboard's spring from there.
       messages.animator.set({y: messages.animator.get('y') + moved});
-      rideKeyboard(messages.animator, {y: 0}, transition);
+      if (transition == null) {
+        messages.animator.animate({y: 0}, {spring: springs.keyboard});
+      } else {
+        rideKeyboard(messages.animator, {y: 0}, transition);
+      }
     };
+
+    const settle = () => {
+      clearTimeout(settleTimer);
+      settleTimer = setTimeout(() => {
+        if (pendingLift != null && touches === 0) {
+          const lift = pendingLift;
+          pendingLift = null;
+          resizeSpacer(lift, null);
+        }
+      }, SCROLL_SETTLE_MS);
+    };
+    const onTouches = (event: TouchEvent) => {
+      touches = event.touches.length;
+      if (touches === 0 && pendingLift != null) {
+        settle();
+      }
+    };
+    const onScroll = () => {
+      if (pendingLift != null && touches === 0) {
+        settle();
+      }
+    };
+
+    const follow = (transition: KeyboardTransition) => {
+      // A sticky dock rests at the root's bottom edge, which may sit above
+      // or below the layout viewport's; a fixed dock rests at the
+      // viewport's. While a keyboard is up the dock rises until it clears
+      // the keyboard's cover; without one it rests where the layout puts it.
+      const bottom = isSelfScrolling
+        ? root.getBoundingClientRect().bottom
+        : win.innerHeight;
+      const lift =
+        transition.to > 0
+          ? Math.max(0, bottom - (win.innerHeight - transition.to))
+          : 0;
+      rideKeyboard(dock.animator, {y: -lift}, transition);
+      if (lift < liftRef.current && touches > 0) {
+        pendingLift = lift;
+        return;
+      }
+      pendingLift = null;
+      resizeSpacer(lift, transition);
+    };
+    const passive = {passive: true} as const;
+    root.addEventListener('touchstart', onTouches, passive);
+    root.addEventListener('touchend', onTouches, passive);
+    root.addEventListener('touchcancel', onTouches, passive);
+    const scrollTarget: EventTarget | null = isSelfScrolling
+      ? root
+      : scrollRef.current === root.ownerDocument.documentElement
+        ? win
+        : scrollRef.current;
+    scrollTarget?.addEventListener('scroll', onScroll, passive);
     const guide = getKeyboardLayoutGuide(win);
     const unsubscribe = guide.subscribe(follow);
     if (guide.inset > 0) {
@@ -204,7 +281,14 @@ export function useChatKeyboard({
         animated: false,
       });
     }
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      clearTimeout(settleTimer);
+      root.removeEventListener('touchstart', onTouches);
+      root.removeEventListener('touchend', onTouches);
+      root.removeEventListener('touchcancel', onTouches);
+      scrollTarget?.removeEventListener('scroll', onScroll);
+    };
   }, [rootRef, scrollRef, isSelfScrolling, dock.animator, messages.animator]);
 
   useIsomorphicLayoutEffect(() => {
@@ -215,6 +299,27 @@ export function useChatKeyboard({
     }
     return getKeyboardLayoutGuide(win).overlayWhileFocused(composer);
   }, []);
+
+  useIsomorphicLayoutEffect(() => {
+    const root = rootRef.current;
+    const win = root?.ownerDocument.defaultView;
+    if (root == null || win == null) {
+      return undefined;
+    }
+    const guide = getKeyboardLayoutGuide(win);
+    return observeKeyboardDismiss(root, {
+      mode: keyboardDismissMode,
+      // From the keyboard's top edge up to the composer's.
+      dismissPadding: () => {
+        const composer = composerRef.current;
+        return composer == null
+          ? 0
+          : win.innerHeight -
+              guide.inset -
+              composer.getBoundingClientRect().top;
+      },
+    });
+  }, [rootRef, keyboardDismissMode]);
 
   useGestureRecognizer(
     composerRef,
