@@ -104,6 +104,8 @@ import {
   themeProps,
   formatSharedDate,
   plainDateFromISO,
+  plainDateIsEqual,
+  plainDateToISO,
   plainDateToday,
   plainDateFormat,
   DATE_FORMAT_MONTH_YEAR,
@@ -120,6 +122,7 @@ import {useToggleFade} from './useToggleFade';
 import {
   DEFAULT_MONTH_REACH,
   clampIndex,
+  dateInMonth,
   fromMonthIndex,
   monthIndexOf,
 } from './monthGeometry';
@@ -875,10 +878,29 @@ export function TouchDateField({
   // A wheel commit steers the scroller immediately, even though it is behind
   // the wheels: it keeps its layout box while hidden, so by the time the
   // wheels close it is already resting on the new month.
-  const handleWheelChange = useCallback((next: number) => {
-    setMonthIndex(next);
-    scrollerHandleRef.current?.scrollToMonth(next, 'auto');
-  }, []);
+  // Turning the month or year wheel moves the calendar, and moves a chosen
+  // date with it, keeping its day (UIDatePicker's inline calendar:
+  // datePicker.calendar.monthYearWheels.changesDate), clamped to the month
+  // and the bounds. A date a custom constraint refuses stays where it was.
+  const handleWheelChange = useCallback(
+    (next: number) => {
+      setMonthIndex(next);
+      scrollerHandleRef.current?.scrollToMonth(next, 'auto');
+      if (selectedDate == null) {
+        return;
+      }
+      const moved = dateInMonth(
+        selectedDate,
+        next,
+        min != null ? plainDateFromISO(min) : null,
+        max != null ? plainDateFromISO(max) : null,
+      );
+      if (!plainDateIsEqual(moved, selectedDate) && !isDateDisabled(moved)) {
+        fireChange(plainDateToISO(moved));
+      }
+    },
+    [selectedDate, min, max, isDateDisabled, fireChange],
+  );
 
   /**
    * The calendar reports the month it has scrolled to — but only while it is

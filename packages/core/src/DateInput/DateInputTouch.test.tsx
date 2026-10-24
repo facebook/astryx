@@ -49,6 +49,7 @@ import {
   monthIndexOf,
   fromMonthIndex,
   clampIndex,
+  dateInMonth,
   paneWindow,
   rowsIn,
   DEFAULT_MONTH_REACH,
@@ -1327,6 +1328,85 @@ describe('DateInput — month/year wheels', () => {
     expect(title()).toHaveTextContent('March 2025');
   });
 
+  /**
+   * UIDatePicker's inline calendar: turning the month or year wheel changes
+   * the date, keeping its day (datePicker.calendar.monthYearWheels
+   * .changesDate), clamped to the month and the bounds.
+   */
+  it('moves the chosen date with the wheels, keeping its day', () => {
+    const onChange = vi.fn();
+    renderAndOpen(
+      <Controlled initial="2026-03-21" {...ONE_YEAR} onChange={onChange} />,
+    );
+    openWheels();
+    fireEvent.click(
+      within(screen.getByRole('listbox', {name: 'Month'})).getByText('May'),
+    );
+    expect(onChange).toHaveBeenLastCalledWith('2026-05-21');
+    expect(field()).toHaveValue('May 21, 2026');
+  });
+
+  it('clamps a day the new month lacks to its last day', () => {
+    const onChange = vi.fn();
+    renderAndOpen(
+      <Controlled initial="2026-03-31" {...ONE_YEAR} onChange={onChange} />,
+    );
+    openWheels();
+    fireEvent.click(
+      within(screen.getByRole('listbox', {name: 'Month'})).getByText('April'),
+    );
+    expect(onChange).toHaveBeenLastCalledWith('2026-04-30');
+  });
+
+  it('loops the month wheel without changing the year', () => {
+    const onChange = vi.fn();
+    renderAndOpen(
+      <Controlled initial="2026-12-10" {...ONE_YEAR} onChange={onChange} />,
+    );
+    openWheels();
+    fireEvent.keyDown(screen.getByRole('listbox', {name: 'Month'}), {
+      key: 'ArrowDown',
+    });
+    expect(title()).toHaveTextContent('January 2026');
+    expect(onChange).toHaveBeenLastCalledWith('2026-01-10');
+  });
+
+  it('brings a year change past the range back onto it, date and month wheel too', async () => {
+    const onChange = vi.fn();
+    renderAndOpen(
+      <Controlled
+        initial="2026-03-21"
+        min="2025-06-01"
+        max="2026-12-31"
+        onChange={onChange}
+      />,
+    );
+    openWheels();
+    fireEvent.click(
+      within(screen.getByRole('listbox', {name: 'Year'})).getByText('2025'),
+    );
+    // March 2025 is before the range: June 2025, the first reachable month.
+    expect(title()).toHaveTextContent('June 2025');
+    expect(onChange).toHaveBeenLastCalledWith('2025-06-21');
+    const months = screen.getByRole('listbox', {name: 'Month'});
+    await waitFor(() =>
+      expect(
+        document.getElementById(months.getAttribute('aria-activedescendant')!),
+      ).toHaveTextContent('June'),
+    );
+  });
+
+  it('only moves the calendar when no date is chosen', () => {
+    const onChange = vi.fn();
+    renderAndOpen(<Controlled {...ONE_YEAR} onChange={onChange} />);
+    openWheels();
+    fireEvent.click(
+      within(screen.getByRole('listbox', {name: 'Month'})).getByText('May'),
+    );
+    expect(title()).toHaveTextContent('May 2026');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it('is a single tab stop driven by the arrow keys', () => {
     renderAndOpen();
     openWheels();
@@ -1785,6 +1865,29 @@ describe('monthGeometry', () => {
     expect(monthIndexOf({year: 2026, month: 3, day: 1})).toBe(
       monthIndexOf({year: 2026, month: 3, day: 31}),
     );
+  });
+
+  it('moves a date to another month keeping its day, within the month and the bounds', () => {
+    const d = (year: number, month: number, day: number) => ({
+      year,
+      month,
+      day,
+    });
+    expect(dateInMonth(d(2026, 10, 15), toMonthIndex(2026, 5))).toEqual(
+      d(2026, 5, 15),
+    );
+    expect(dateInMonth(d(2026, 1, 31), toMonthIndex(2026, 2))).toEqual(
+      d(2026, 2, 28),
+    );
+    expect(dateInMonth(d(2024, 1, 31), toMonthIndex(2024, 2))).toEqual(
+      d(2024, 2, 29),
+    );
+    expect(
+      dateInMonth(d(2026, 6, 10), toMonthIndex(2026, 5), d(2026, 5, 20)),
+    ).toEqual(d(2026, 5, 20));
+    expect(
+      dateInMonth(d(2026, 6, 25), toMonthIndex(2026, 7), null, d(2026, 7, 4)),
+    ).toEqual(d(2026, 7, 4));
   });
 
   it('clamps to the reachable range', () => {
