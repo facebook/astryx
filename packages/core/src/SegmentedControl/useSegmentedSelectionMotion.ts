@@ -48,8 +48,9 @@
  * hand-back's.
  *
  * Reduced Motion: UIKit drops the slide (`segmentedControl.reducedMotion`):
- * the surface reappears at the destination in the same frame. The titles
- * still cross-fade, as UIKit's do.
+ * the surface jumps to the destination and fades and scales in place there
+ * (opacity from 0, scale from 0.88, centered) on the block's clock and
+ * curve. The titles still cross-fade, as UIKit's do.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/SegmentedControl/SegmentedControl.tsx
@@ -62,8 +63,10 @@ import {useEffect, useRef, useState, type RefObject} from 'react';
 import {
   createAnimator,
   type Animator,
+  type MotionCurve,
   type MotionHandle,
 } from '../motion/animator';
+import {cubicBezier} from '../motion/bezier';
 import {resolveMotion} from '../motion/resolveMotion';
 import {segmentedControl} from '../motion/uikit';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
@@ -213,10 +216,50 @@ function boxesIn(track: HTMLElement): (element: HTMLElement) => Box {
 export interface SegmentedSelectionMotionOptions {
   /** The animator's clock (ms, document timeline); `performance.now()` by default. */
   readonly now?: () => number;
+  /** The Reduced Motion preference; `prefers-reduced-motion` by default. */
+  readonly prefersReducedMotion?: () => boolean;
 }
 
 function defaultNow(): number {
   return typeof performance === 'undefined' ? Date.now() : performance.now();
+}
+
+function defaultPrefersReducedMotion(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+}
+
+/**
+ * A timed curve from `from` to `to` over `durationMs` on the cubic-bézier
+ * `points`, for the animator to bake.
+ */
+function timedCurve(
+  from: number,
+  to: number,
+  durationMs: number,
+  points: readonly [number, number, number, number],
+): MotionCurve {
+  const ease = cubicBezier(points);
+  const duration = durationMs / 1000;
+  const at = (t: number) =>
+    t <= 0
+      ? from
+      : t >= duration
+        ? to
+        : from + (to - from) * ease(t / duration);
+  const step = 1e-4;
+  return {
+    duration,
+    at,
+    velocity: t =>
+      t <= 0 || t >= duration
+        ? 0
+        : (at(Math.min(duration, t + step)) - at(Math.max(0, t - step))) /
+          (Math.min(duration, t + step) - Math.max(0, t - step)),
+  };
 }
 
 /**
@@ -230,12 +273,15 @@ export class SegmentedSelectionMotion {
   private readonly renderings = new WeakMap<HTMLElement, TitleRendering>();
 
   private readonly now: () => number;
+  private readonly prefersReducedMotion: () => boolean;
 
   constructor(
     private readonly animator: Animator = createAnimator(null),
     options: SegmentedSelectionMotionOptions = {},
   ) {
     this.now = options.now ?? defaultNow;
+    this.prefersReducedMotion =
+      options.prefersReducedMotion ?? defaultPrefersReducedMotion;
   }
 
   /** Callback ref for the proxy element; stable. */
@@ -299,6 +345,7 @@ export class SegmentedSelectionMotion {
     showSurface(slide.destination);
     if (this.proxy != null) {
       this.proxy.style.visibility = 'hidden';
+      this.proxy.style.removeProperty('transform-origin');
     }
     // Fades that finished during the slide restyle their twins now, in the
     // same frame as the hand-back.
@@ -347,6 +394,10 @@ export class SegmentedSelectionMotion {
       this.settle();
       return;
     }
+    if (this.prefersReducedMotion()) {
+      this.fadeIn(proxy, destination, to);
+      return;
+    }
     let x: number;
     let width: number;
     let velocityX = 0;
@@ -375,18 +426,62 @@ export class SegmentedSelectionMotion {
     proxy.style.width = `${to.width}px`;
     proxy.style.height = `${to.height}px`;
     proxy.style.visibility = 'visible';
-    this.animator.set({x, scaleX: width / to.width});
+    proxy.style.removeProperty('transform-origin');
+    this.animator.set({x, scaleX: width / to.width, scaleY: 1, opacity: 1});
     const handle = this.animator.animate(
       {x: to.x, scaleX: 1},
       {
         spring: segmentedControl.selectionSpring,
         velocity: {x: velocityX, scaleX: velocityWidth / to.width},
       },
-      // Under Reduce Motion UIKit does not travel: the surface reappears at
-      // the destination (the handle settles at once and hands it back).
-      {reducedMotion: segmentedControl.reducedMotion, at},
+      {at},
     );
-    const slide: Slide = {handle, destination, width: to.width};
+    this.carry(handle, destination, to.width);
+  }
+
+  /**
+   * Reduce Motion, as UIKit does it: no travel. The surface jumps to the
+   * destination and fades and scales in place there, its opacity from 0 and
+   * its scale from `reducedMotion.scaleFrom` (centered), on the clock and
+   * curve the control's theme sets (UIKit's 0.2 s block by default).
+   */
+  private fadeIn(proxy: HTMLElement, destination: HTMLElement, to: Box): void {
+    const current = this.slide;
+    if (current != null && current.destination !== destination) {
+      showSurface(current.destination);
+    }
+    copySurface(destination, proxy);
+    hideSurface(destination);
+    proxy.style.top = `${to.y}px`;
+    proxy.style.width = `${to.width}px`;
+    proxy.style.height = `${to.height}px`;
+    proxy.style.visibility = 'visible';
+    // Scaled about its center, as UIKit's lens is, so it grows in place.
+    proxy.style.transformOrigin = '50% 50%';
+    const {reducedMotion} = segmentedControl;
+    const fadeMs = resolveMotion(proxy, reducedMotion, 'fadeMs');
+    const curve = resolveMotion(proxy, reducedMotion.curve);
+    const from = reducedMotion.scaleFrom;
+    this.animator.set({x: to.x, scaleX: from, scaleY: from, opacity: 0});
+    const handle = this.animator.play(
+      {
+        opacity: timedCurve(0, 1, fadeMs, curve),
+        scaleX: timedCurve(from, 1, fadeMs, curve),
+        scaleY: timedCurve(from, 1, fadeMs, curve),
+      },
+      // This is the Reduce Motion substitution itself: play it as given.
+      {reducedMotion: 'keep'},
+    );
+    this.carry(handle, destination, to.width);
+  }
+
+  /** The proxy now carries `destination`'s surface until `handle` lands. */
+  private carry(
+    handle: MotionHandle,
+    destination: HTMLElement,
+    width: number,
+  ): void {
+    const slide: Slide = {handle, destination, width};
     this.slide = slide;
     void handle.finished.then(finished => {
       if (finished && this.slide === slide) {
