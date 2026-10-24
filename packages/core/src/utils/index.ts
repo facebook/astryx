@@ -118,3 +118,15 @@ export {isImeKeyEvent} from './ime';
 // that paints and composes one of these on it; the controller, its attributes
 // and its clocks are internals.
 export {interactionOverlayStyles} from './interactionOverlay.stylex';
+
+// A list row kept selected while a navigation covers it, deselected as the
+// navigation pops (UIKit's push-from-a-row). Exported for @astryxdesign/lab's
+// navigation stack, which calls it with the activation that pushed.
+export {
+  holdSelection,
+  type SelectionHold,
+  type HoldTiming,
+  type HoldTransitionTiming,
+  type HoldSpringTiming,
+  type HoldCurveTiming,
+} from './selectionHold';
