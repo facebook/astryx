@@ -113,6 +113,33 @@ function summarizeDeclinedCandidates(rows, protectedRows = []) {
   return [...byFile.values()].sort((a, b) => a.file.localeCompare(b.file));
 }
 
+/**
+ * Print the protected files the run skipped because a codemod could not parse
+ * them, from the final declined list (files it reports as protected are
+ * already left out), so the text output carries what the receipt lists.
+ * @param {Array<{file: string, location?: string, reason: string}>} declined
+ */
+function logDeclined(declined) {
+  if (declined.length === 0) return;
+  const n = declined.length;
+  logger.warn(
+    `${n} protected file${n === 1 ? ' was' : 's were'} skipped because ${n === 1 ? 'it does' : 'they do'} not parse; review manually:`,
+  );
+  for (const {file, location, reason} of declined) {
+    logger.warn(`  ${file}${location ? `:${location}` : ''} — ${reason}`);
+  }
+}
+
+/**
+ * @template {Array<{file: string, location?: string, reason: string}>} T
+ * @param {T} declined
+ * @returns {T}
+ */
+function logged(declined) {
+  logDeclined(declined);
+  return declined;
+}
+
 /** @param {string} cwd */
 function loadFileProtection(cwd) {
   try {
@@ -177,9 +204,8 @@ function stoppedReceipt({
     transformsApplied,
     modifiedFiles,
     protectedFiles: summarizeProtectedFiles(protectedRows),
-    declinedCandidates: summarizeDeclinedCandidates(
-      declinedRows,
-      protectedRows,
+    declinedCandidates: logged(
+      summarizeDeclinedCandidates(declinedRows, protectedRows),
     ),
     complete: false,
     errorCode,
@@ -429,9 +455,11 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
             path.relative(cwd, file).split(path.sep).join('/'),
           ),
           protectedFiles,
-          declinedCandidates: summarizeDeclinedCandidates(
-            coreResult?.declinedCandidates ?? [],
-            allProtected,
+          declinedCandidates: logged(
+            summarizeDeclinedCandidates(
+              coreResult?.declinedCandidates ?? [],
+              allProtected,
+            ),
           ),
           complete: false,
           errorCode: 'ERR_CODEMOD_PROTECTED',
@@ -840,12 +868,14 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
     ...hookModifiedFiles,
   ]).map(file => path.relative(cwd, file).split(path.sep).join('/'));
   receipt.protectedFiles = protectedFiles;
-  receipt.declinedCandidates = summarizeDeclinedCandidates(
-    [
-      ...(coreResult?.declinedCandidates ?? []),
-      ...(integrationResult?.declinedCandidates ?? []),
-    ],
-    remainingProtected,
+  receipt.declinedCandidates = logged(
+    summarizeDeclinedCandidates(
+      [
+        ...(coreResult?.declinedCandidates ?? []),
+        ...(integrationResult?.declinedCandidates ?? []),
+      ],
+      remainingProtected,
+    ),
   );
   receipt.complete = protectedFiles.length === 0 && finalErrors.length === 0;
   if (protectedFiles.length > 0) {

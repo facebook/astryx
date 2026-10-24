@@ -24,7 +24,7 @@ import {
   runCodeCodemod,
   runConfigCodemod,
 } from './run-codemod.mjs';
-import {logDeclinedCandidates, withoutProtected} from './runner.mjs';
+import {withoutProtected} from './runner.mjs';
 import {createFileProtectionResolver} from '../../foundation/fs/file-protection.mjs';
 
 /**
@@ -155,7 +155,6 @@ export function runIntegrationCodemods(
     }
   }
   const reportedDeclined = withoutProtected(declinedCandidates, protectedFiles);
-  logDeclinedCandidates(log, reportedDeclined);
 
   // A file several codemods changed is one file; transforms count each change.
   const totalFilesChanged = new Set(changedFiles).size;

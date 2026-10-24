@@ -232,23 +232,6 @@ export function withoutProtected(declined, protectedRows) {
 }
 
 /**
- * Print the protected files a run skipped because their source does not
- * parse, once per file, so the human output carries what the receipt lists.
- * @param {{warn: (m: string) => void, info: (m: string) => void}} log
- * @param {Array<{file: string, location?: string, reason: string}>} declined
- */
-export function logDeclinedCandidates(log, declined) {
-  const byFile = new Map(declined.map(item => [item.file, item]));
-  if (byFile.size === 0) return;
-  log.warn(
-    `${byFile.size} protected file${byFile.size === 1 ? ' was' : 's were'} skipped because ${byFile.size === 1 ? 'it does' : 'they do'} not parse; review manually:`,
-  );
-  for (const {file, location, reason} of byFile.values()) {
-    log.info(`  ${file}${location ? `:${location}` : ''} — ${reason}`);
-  }
-}
-
-/**
  * Validate transform output before writing to disk.
  *
  * Checks:
@@ -749,9 +732,9 @@ export async function runCodemods(
     );
   }
 
-  // A later codemod can block a file an earlier one declined.
+  // A later codemod can block a file an earlier one declined. The caller
+  // prints declined files once it has reconciled every runner's results.
   const reportedDeclined = withoutProtected(declinedCandidates, protectedFiles);
-  logDeclinedCandidates(log, reportedDeclined);
 
   if (
     totalFilesChanged === 0 &&

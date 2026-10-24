@@ -330,6 +330,22 @@ describe('upgrade protected-file contract', () => {
     write('vendor/bundle.css', 'a:: { color: red; }\n');
 
     const result = run(['--from', '0.5.4', '--path', '.']);
+    const text = spawnSync(
+      process.execPath,
+      [CLI, 'upgrade', '--from', '0.5.4', '--path', '.'],
+      {
+        cwd: root,
+        encoding: 'utf8',
+        timeout: 60_000,
+        env: {...process.env, FORCE_COLOR: '0', CI: ''},
+      },
+    );
+    const output = `${text.stdout}${text.stderr}`;
+    expect(text.status).toBe(1);
+    expect(output).toContain('ERR_CODEMOD_PROTECTED');
+    expect(output).toMatch(/^ {2}vendor\/bundle\.css — /m);
+    expect(output).not.toContain('skipped because');
+    expect(output).not.toContain('unparseable protected file');
 
     expect(result.status).toBe(1);
     expect(result.envelope).toMatchObject({

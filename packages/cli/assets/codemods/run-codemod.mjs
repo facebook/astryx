@@ -410,9 +410,8 @@ export function runCodeCodemod(
         resolver,
       );
       if (declined) {
-        log.warn(
-          `    ! ${relativePath}${declined.location ? `:${declined.location}` : ''} — skipped: ${declined.reason}`,
-        );
+        // Printed by the caller once every codemod has run: a later codemod
+        // can still make this file a protected one, listed only as such.
         declinedCandidates.push(declined);
         continue;
       }
