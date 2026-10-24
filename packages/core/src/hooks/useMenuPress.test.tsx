@@ -17,6 +17,7 @@ import {
   MENU_PRESS_AUTOSCROLL_ZONE_PX,
   MENU_PRESS_LONG_PRESS_MS,
   MENU_PRESS_STRAY_CLICK_MS,
+  MENU_PRESS_TOUCH_CLICK_MS,
   __resetMenuPressForTest,
   useMenuPress,
 } from './useMenuPress';
@@ -287,17 +288,62 @@ describe('useMenuPress — one gesture, one activation', () => {
     expect(onSelect).toHaveBeenLastCalledWith('B');
   });
 
-  it('disarms the swallower after the short window', () => {
+  it('after a mouse release, disarms the swallower after the short window', () => {
+    vi.useFakeTimers();
+    const onSelect = vi.fn();
+    render(<Harness onSelect={onSelect} />);
+    fireEvent.pointerDown(row('A'), mouse());
+    fireEvent.pointerUp(row('A'), mouse());
+    act(() => {
+      vi.advanceTimersByTime(MENU_PRESS_STRAY_CLICK_MS + 1);
+    });
+    fireEvent.click(row('B'), {detail: 1});
+    expect(onSelect).toHaveBeenCalledTimes(2);
+  });
+
+  it('after a touch release, swallows its click when a busy main thread holds it past the short window, and only that one', () => {
+    vi.useFakeTimers();
+    const onSelect = vi.fn();
+    render(<Harness onSelect={onSelect} />);
+    fireEvent.pointerDown(row('A'), touch());
+    fireEvent.pointerUp(row('A'), touch());
+    expect(onSelect).toHaveBeenCalledWith('A');
+    act(() => {
+      vi.advanceTimersByTime(MENU_PRESS_STRAY_CLICK_MS * 3);
+    });
+    // The touch's click, aimed at whatever row is now under the finger.
+    fireEvent.click(row('B'), {detail: 1});
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    // One click per touch: the next one acts.
+    fireEvent.click(row('B'), {detail: 1});
+    expect(onSelect).toHaveBeenCalledTimes(2);
+    expect(onSelect).toHaveBeenLastCalledWith('B');
+  });
+
+  it('after a touch release whose click never comes, stops waiting at the cap: a later click with no press acts', () => {
     vi.useFakeTimers();
     const onSelect = vi.fn();
     render(<Harness onSelect={onSelect} />);
     fireEvent.pointerDown(row('A'), touch());
     fireEvent.pointerUp(row('A'), touch());
     act(() => {
-      vi.advanceTimersByTime(MENU_PRESS_STRAY_CLICK_MS + 1);
+      vi.advanceTimersByTime(MENU_PRESS_TOUCH_CLICK_MS + 1);
     });
+    // An activation with no press before it (an assistive technology's).
     fireEvent.click(row('B'), {detail: 1});
     expect(onSelect).toHaveBeenCalledTimes(2);
+    expect(onSelect).toHaveBeenLastCalledWith('B');
+  });
+
+  it('a key press ends the wait for a touch\u2019s click', () => {
+    const onSelect = vi.fn();
+    render(<Harness onSelect={onSelect} />);
+    fireEvent.pointerDown(row('A'), touch());
+    fireEvent.pointerUp(row('A'), touch());
+    fireEvent.keyDown(document.body, {key: 'Enter'});
+    fireEvent.click(row('B'), {detail: 1});
+    expect(onSelect).toHaveBeenCalledTimes(2);
+    expect(onSelect).toHaveBeenLastCalledWith('B');
   });
 });
 
