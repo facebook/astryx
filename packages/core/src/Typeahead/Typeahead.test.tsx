@@ -1662,6 +1662,37 @@ describe('Typeahead edit mode', () => {
     },
   );
 
+  // The base sees the label as its query by the time the focus lands, so a
+  // hasEntriesOnFocus field searches the label instead of opening its
+  // bootstrap entries, and Enter cannot commit a bootstrap item.
+  it('with hasEntriesOnFocus, editing the value searches its label instead of opening the bootstrap entries', async () => {
+    const onChange = vi.fn();
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[3]}
+        onChange={onChange}
+        hasEntriesOnFocus
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole<HTMLInputElement>('combobox');
+
+    fireEvent.click(screen.getByText(fruits[3].label));
+
+    expect(input).toHaveFocus();
+    expect(input.value).toBe(fruits[3].label);
+    // Let any bootstrap or search settle (debounceMs is 0).
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 20));
+    });
+
+    // Apple is the first bootstrap entry, which the label does not match.
+    fireEvent.keyDown(input, {key: 'Enter'});
+    expect(onChange).not.toHaveBeenCalledWith(fruits[0]);
+  });
+
   it('enters edit mode on token container click', () => {
     const onChange = vi.fn();
     render(

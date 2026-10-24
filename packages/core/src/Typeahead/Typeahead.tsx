@@ -27,6 +27,7 @@ import React, {
   type ReactNode,
   type RefObject,
 } from 'react';
+import {flushSync} from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
 import {
   BusyIndicatorLaneProvider,
@@ -482,14 +483,19 @@ export function Typeahead<T extends SearchableItem>({
     if (input) {
       // Set the input value directly since the base manages its own query
       // state, and trigger a synthetic change to sync the base's internal
-      // state. The value is in place before the focus, so the base's focus
-      // handler sees the label rather than an empty query.
+      // state. flushSync commits that query before the focus, so the base's
+      // focus handler sees the label rather than an empty query: an empty one
+      // would open the hasEntriesOnFocus bootstrap entries, and Enter would
+      // commit the first of them instead of the edited value.
       const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
         window.HTMLInputElement.prototype,
         'value',
       )?.set;
-      nativeInputValueSetter?.call(input, value.label);
-      input.dispatchEvent(new Event('input', {bubbles: true}));
+      // eslint-disable-next-line @eslint-react/dom-no-flush-sync -- the base must hold the label as its query before the in-tap focus
+      flushSync(() => {
+        nativeInputValueSetter?.call(input, value.label);
+        input.dispatchEvent(new Event('input', {bubbles: true}));
+      });
       input.focus();
       input.setSelectionRange(0, input.value.length);
     }
