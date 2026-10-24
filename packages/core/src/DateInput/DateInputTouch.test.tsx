@@ -1430,6 +1430,26 @@ describe('DateInput — month/year wheels', () => {
   const ONE_YEAR = {min: '2026-01-01', max: '2026-12-31'} as const;
   const FIVE_YEARS = {min: '2024-01-01', max: '2028-12-31'} as const;
 
+  it('draws the month and year wheels as one picker, with one band, under a finger', () => {
+    renderAndOpen();
+    openWheels();
+    expect(panel('wheels').querySelectorAll('[data-wheel-band]')).toHaveLength(
+      1,
+    );
+  });
+
+  it('keeps the scrolling month and year columns, with no shared band, under a mouse', () => {
+    // A desktop whose field asks for the sheet: today's columns.
+    setViewport('desktop');
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+    renderAndOpen(
+      <Controlled initial="2026-03-21" presentation="bottom-sheet" />,
+    );
+    openWheels();
+    expect(panel('wheels').querySelector('[data-wheel-band]')).toBeNull();
+    expect(panel('wheels').querySelector('[data-wheel]')).toBeNull();
+  });
+
   it('the header title opens them, and says so', () => {
     renderAndOpen();
     expect(title()).toHaveAttribute('aria-expanded', 'false');
