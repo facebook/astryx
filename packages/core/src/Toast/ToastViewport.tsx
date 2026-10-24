@@ -267,6 +267,9 @@ function ToastRow({
   const isAutoHide = o.isAutoHide ?? (type === 'error' ? false : true);
   const dur = o.autoHideDuration ?? 5000;
   const [isSettled, setIsSettled] = useState(false);
+  // A swiped card leaves from where the finger left it, partly outside the
+  // row: the row does not clip it while it collapses.
+  const [isSwipeExit, setIsSwipeExit] = useState(false);
 
   return (
     <div
@@ -299,7 +302,8 @@ function ToastRow({
       <div
         {...stylex.props(
           styles.toastWrapperInner,
-          isSettled && !isExiting && styles.toastWrapperInnerSettled,
+          ((isSettled && !isExiting) || isSwipeExit) &&
+            styles.toastWrapperInnerSettled,
         )}>
         <ToastSurface
           type={type}
@@ -310,6 +314,7 @@ function ToastRow({
           isExiting={isExiting}
           gestureDirection={isReversed ? -1 : 1}
           onDismiss={reason => onDismiss(entry.id, reason)}
+          onSwipeExit={() => setIsSwipeExit(true)}
           renderContent={o.renderContent}
         />
       </div>
