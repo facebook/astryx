@@ -32,7 +32,7 @@ export const docs = {
     {
       name: 'density',
       type: "'compact' | 'balanced' | 'spacious'",
-      description: 'Spacing density for items.',
+      description: 'Spacing density for items. On a touch screen (a coarse primary pointer), rows are at least 52px tall, 62px with a description, and never shorter than 44px in compact density, as iOS table rows are.',
       default: "'balanced'",
     },
     {

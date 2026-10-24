@@ -5,8 +5,9 @@
 /**
  * @file ListItem.tsx
  * @input Uses React, ReactNode, StyleXStyles, theme tokens, the List row edge
- *   treatment, the press layer (dividers beside a touch-pressed row hide and
- *   the layer reaches over the row's own), CheckboxInput, and the marker or task checkbox a
+ *   treatment, the press layer (dividers beside a touch-pressed or held row
+ *   hide and the layer reaches over the row's own), the touch row heights
+ *   (listRow.stylex.ts), CheckboxInput, and the marker or task checkbox a
  *   ListMarkerScope sets (Markdown's nested lists and the task items of mixed
  *   lists)
  * @output Exports ListItem component, ListItemProps type
@@ -35,10 +36,11 @@ import {
 import type {BaseProps} from '../BaseProps';
 import {ListContext, type ListMarker} from './ListContext';
 import {CheckboxInput} from '../CheckboxInput';
-import {mergeProps} from '../utils';
+import {isRenderable, mergeProps} from '../utils';
 import {Item} from '../Item';
 import type {ItemAlign, ItemSwipeActions, ItemSwipeBehavior} from '../Item';
 import {themeProps} from '../utils/themeProps';
+import {listRowStyles} from './listRow.stylex';
 
 // =============================================================================
 // Types
@@ -314,6 +316,11 @@ const NUMBER_STYLES = {
   'lower-roman': markerStyles.lowerRoman,
 } as const;
 
+/**
+ * A row's height on a touch screen (primary pointer coarse): UIKit's table
+ * rows (`list.metrics`), at least that tall, never shorter than the
+ * platform's control size. A theme's `min-height` on `list-item` replaces it.
+ */
 const embeddedStyles = stylex.create({
   noRadius: {
     borderRadius: 0,
@@ -422,6 +429,11 @@ export function ListItem({
           hasMarkers && styles.withCounter,
           hasDividers && styles.withDivider,
           hasDividers && embeddedStyles.noRadius,
+          density === 'compact'
+            ? listRowStyles.touchCompact
+            : isRenderable(description)
+              ? listRowStyles.touchTwoLine
+              : listRowStyles.touchOneLine,
           edge === 'flush' && styles.edgeFlush,
           edge === 'outset' && styles.edgeOutset,
           edge === 'bleed' && styles.edgeBleed,
