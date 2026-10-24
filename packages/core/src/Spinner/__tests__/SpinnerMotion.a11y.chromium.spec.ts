@@ -321,6 +321,43 @@ test('the arc turns clockwise at a constant rate, once per period', async ({
   }
 });
 
+test('reduced motion slows the ring to 3 s per turn, as before, still clockwise and still turning', async ({
+  page,
+}) => {
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  const spinners = await openSizes(page);
+  const rotor = rotorOf(spinners.first());
+  const samples = await rotor.evaluate(element => {
+    const [animation] = element.getAnimations();
+    animation.pause();
+    const duration = Number(animation.effect?.getTiming().duration);
+    const out: {t: number; transform: string}[] = [];
+    for (let i = 0; i < 4; i += 1) {
+      const t = (duration * i) / 4;
+      animation.currentTime = t;
+      out.push({t, transform: getComputedStyle(element).transform});
+    }
+    return {
+      duration,
+      iterations: animation.effect?.getTiming().iterations,
+      out,
+    };
+  });
+  // The reduced-motion period this component had before the change: slowed,
+  // never frozen (`Spinner.tsx`, `animationDuration` under the media query).
+  expect(samples.duration).toBe(3000);
+  expect(samples.iterations).toBe(Infinity);
+  for (const {t, transform} of samples.out) {
+    const expected = (360 * t) / samples.duration;
+    const actual = angleOf(transform);
+    const error = Math.min(
+      Math.abs(actual - expected),
+      360 - Math.abs(actual - expected),
+    );
+    expect(error, `angle at ${t} ms`).toBeLessThan(0.5);
+  }
+});
+
 test('every ring on the page turns in phase', async ({page}) => {
   await openSizes(page);
   const angles = await page.evaluate(() =>

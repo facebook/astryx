@@ -5,7 +5,8 @@
 /**
  * @file ProgressBar.tsx
  * @input Uses React (useId, useState), stylex, color/spacing/radius/transition
- *   tokens, the UIKit progress table (motion/uikit)
+ *   tokens, the UIKit progress table's values and motion roles (motion/uikit,
+ *   read as CSS variables with the table's values as fallbacks)
  * @output Exports ProgressBar component, ProgressBarProps, ProgressBarVariant types
  * @position Core implementation; consumed by index.ts
  *
@@ -35,7 +36,6 @@ import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {VisuallyHidden} from '../VisuallyHidden';
-import {progress} from '../motion/uikit/progress';
 import type {ProgressBarVariantMap} from './index';
 
 // Every mark is wrapped in a Tooltip (marks always carry a label), so load it
@@ -293,14 +293,18 @@ const styles = stylex.create({
   // exactly there, mirrored in RTL. The layer is declared up front so Safari
   // has the whole bar painted before it first moves.
   //
-  // Under a finger (a coarse primary pointer, the touch presentation
-  // resolver's TOUCH_QUERY) the fill moves the way UIProgressView's
-  // setProgress(_:animated: true) does (motion/uikit
-  // `progress.progressView`): linearly, for 1 s per whole track of the change
-  // (`--_progress-bar-duration`, set from the previous value), starting from
-  // wherever it is drawn; it never draws narrower than two track heights once
-  // above zero (16px on the 8px track), and is transparent at zero
-  // (`fillEmpty`). Reduce Motion leaves it unchanged, as on iOS.
+  // Under a finger on iOS (the touch presentation resolver's iOS gate,
+  // IOS_TOUCH_STYLE_KEYS nested as it spells them) the fill moves the way
+  // UIProgressView's setProgress(_:animated: true) does (motion/uikit
+  // `progress.progressView`): linearly, for the whole-track duration times
+  // the share of the track the value moved (`--_progress-bar-change`, set
+  // from the previous value; the duration is the
+  // `progress.progressView.wholeTrackMs` motion role, 1 s by default),
+  // starting from wherever it is drawn; it never draws narrower than two
+  // track heights once above zero (16px on the 8px track), and is
+  // transparent at zero (`fillEmpty`). Reduce Motion leaves it unchanged, as
+  // on iOS. Android and other touch screens keep the theme's timing until a
+  // Material variant exists.
   fill: {
     width: '100%',
     height: '100%',
@@ -310,25 +314,37 @@ const styles = stylex.create({
       ':is([dir="rtl"] *)':
         'translateX(calc(100% - var(--_progress-bar-fill, 0%)))',
       '@media (pointer: coarse)': {
-        default:
-          'translateX(calc(max(var(--_progress-bar-fill, 0%), 16px) - 100%))',
-        ':is([dir="rtl"] *)':
-          'translateX(min(calc(100% - var(--_progress-bar-fill, 0%)), calc(100% - 16px)))',
+        '@supports (-webkit-touch-callout: none)': {
+          default:
+            'translateX(calc(max(var(--_progress-bar-fill, 0%), 16px) - 100%))',
+          ':is([dir="rtl"] *)':
+            'translateX(min(calc(100% - var(--_progress-bar-fill, 0%)), calc(100% - 16px)))',
+        },
       },
     },
     willChange: 'transform',
     transitionProperty: 'transform',
     transitionDuration: {
       default: durationVars['--duration-medium'],
-      '@media (pointer: coarse)': 'var(--_progress-bar-duration, 0s)',
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)':
+          'calc(var(--_progress-bar-change, 0) * var(--motion-progress-progress-view-whole-track-ms, 1000ms))',
+      },
     },
     transitionTimingFunction: {
       default: easeVars['--ease-standard'],
-      '@media (pointer: coarse)': 'linear',
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': 'linear',
+      },
     },
   },
   fillEmpty: {
-    opacity: {default: null, '@media (pointer: coarse)': 0},
+    opacity: {
+      default: null,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': 0,
+      },
+    },
   },
   // The touch keys come last: StyleX makes a later media condition win over
   // an earlier one (it negates the later ones into the earlier), so under a
@@ -487,14 +503,7 @@ const markOnTrackStyles = stylex.create({
 // inline style — which publishes the filled share as the private
 // `--_progress-bar-fill` — needs this augmentation to typecheck.
 type FillStyle = CSSProperties &
-  Record<'--_progress-bar-fill' | '--_progress-bar-duration', string>;
-
-/**
- * UIProgressView's animated setProgress runs for this long per percent of the
- * track it moves (motion/uikit `progress.progressView.animatedMsPerProgress`
- * spread over 100 percent).
- */
-const TOUCH_MS_PER_PERCENT = progress.progressView.animatedMsPerProgress / 100;
+  Record<'--_progress-bar-fill' | '--_progress-bar-change', string>;
 
 function defaultFormatValueLabel(value: number, max: number): string {
   const pct = max > 0 ? Math.round((value / max) * 100) : 0;
@@ -581,17 +590,19 @@ export function ProgressBar({
   // one thing ProgressBar remembers: the previous value, for timing only; what
   // it draws still follows from the props alone.
   // eslint-disable-next-line @astryx/presentational-component -- UIProgressView times a change by its size, which needs the previous value (proposed exception)
-  const [motion, setMotion] = useState({percentage, durationMs: 0});
-  const durationMs =
+  const [motion, setMotion] = useState({percentage, change: 0});
+  // The share of the track the value moved (0–1); CSS multiplies it by the
+  // whole-track duration role.
+  const change =
     motion.percentage === percentage
-      ? motion.durationMs
-      : Math.abs(percentage - motion.percentage) * TOUCH_MS_PER_PERCENT;
+      ? motion.change
+      : Math.abs(percentage - motion.percentage) / 100;
   if (motion.percentage !== percentage) {
-    setMotion({percentage, durationMs});
+    setMotion({percentage, change});
   }
   const fillStyle: FillStyle = {
     '--_progress-bar-fill': `${percentage}%`,
-    '--_progress-bar-duration': `${durationMs}ms`,
+    '--_progress-bar-change': String(change),
   };
 
   // Marks make no sense without a determinate value, so they are only drawn

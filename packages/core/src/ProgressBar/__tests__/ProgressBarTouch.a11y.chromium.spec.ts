@@ -4,15 +4,19 @@
  * @file ProgressBarTouch.a11y.chromium.spec.ts
  * @input Built ProgressBar stories in real Chromium with a coarse (touch)
  *   pointer (Web Animations seeking, CDP screencast)
- * @output Browser evidence that under a finger a determinate value change
- *   runs the way UIProgressView's setProgress(_:animated: true) does: linear,
- *   1 s per whole track of the change, retargeted from where the fill is
- *   drawn with the model change's duration, never narrower than two track
+ * @output Browser evidence that under a finger on iOS a determinate value
+ *   change runs the way UIProgressView's setProgress(_:animated: true) does:
+ *   linear, 1 s per whole track of the change, retargeted from where the fill
+ *   is drawn with the model change's duration, never narrower than two track
  *   heights above zero, transparent at zero, and still moving while a script
- *   holds the main thread. Writes a storyboard (contact sheet + JSON trace)
- *   to test-results/progress-bar-touch/.
- * @position Chromium proof for ProgressBar's touch presentation; the iOS
- *   Safari side is a simulator recording attached to the pull request.
+ *   holds the main thread; and that a finger anywhere else (Chromium as an
+ *   Android phone) keeps the theme's timing and no minimum. Writes a
+ *   storyboard (contact sheet + JSON trace) to test-results/progress-bar-touch/.
+ * @position Chromium proof for ProgressBar's touch presentation. The iOS gate
+ *   is `@supports (-webkit-touch-callout: none)` inside the touch query,
+ *   which only WebKit on iOS matches: the iOS tests emulate it in Chromium
+ *   (`emulateIosWebKit`); the real iOS Safari side is a simulator recording
+ *   attached to the pull request.
  *
  * SYNC: Keep in step with ProgressBar.tsx (`styles.fill`, `fillEmpty`) and
  * motion/uikit/progress.ts (`progressView`).
@@ -53,12 +57,54 @@ test.use({
   isMobile: true,
 });
 
-async function open(page: Page, value: number) {
+/**
+ * Makes Chromium take the iOS gate: every `@supports (-webkit-touch-callout:
+ * none)` rule (only WebKit on iOS implements the property) is rewritten to a
+ * condition Chromium meets, keeping the touch query inside it, and
+ * `CSS.supports` answers the same for script. Everything else is Chromium's.
+ */
+async function emulateIosWebKit(page: Page) {
+  await page.evaluate(() => {
+    const original = CSS.supports.bind(CSS);
+    CSS.supports = (condition: string, value?: string) =>
+      `${condition}${value ?? ''}`.includes('-webkit-touch-callout') ||
+      (value === undefined ? original(condition) : original(condition, value));
+    const visit = (owner: CSSStyleSheet | CSSGroupingRule) => {
+      const rules = owner.cssRules;
+      for (let i = 0; i < rules.length; i += 1) {
+        const rule = rules[i];
+        if (
+          rule instanceof CSSSupportsRule &&
+          rule.conditionText.includes('-webkit-touch-callout')
+        ) {
+          const inner = Array.from(rule.cssRules, r => r.cssText).join('\n');
+          owner.deleteRule(i);
+          owner.insertRule(`@supports (display: block) {${inner}}`, i);
+        } else if (rule instanceof CSSGroupingRule) {
+          visit(rule);
+        }
+      }
+    };
+    for (const sheet of Array.from(document.styleSheets)) {
+      try {
+        visit(sheet);
+      } catch {
+        // a cross-origin sheet
+      }
+    }
+  });
+}
+
+/** The default story at `value`, on iOS (emulated) unless `ios` is false. */
+async function open(page: Page, value: number, {ios = true} = {}) {
   await page.goto(`${storybook.origin}/iframe.html?id=${STORY}&viewMode=story`);
   await expect(page.getByRole('progressbar')).toBeVisible();
   expect(
     await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
   ).toBe(true);
+  if (ios) {
+    await emulateIosWebKit(page);
+  }
   await setValue(page, value);
   await page.waitForTimeout(1200);
 }
@@ -165,7 +211,7 @@ test('a value change runs linearly for 1 s per whole track of the change', async
       out,
     };
   });
-  expect(samples.duration).toBeCloseTo(0.8 * VIEW.animatedMsPerProgress, 3);
+  expect(samples.duration).toBeCloseTo(0.8 * VIEW.wholeTrackMs, 3);
   // The transition's own curve is linear (UIView.animate, curveLinear).
   expect(samples.easing).toBe('linear');
   for (const {t, edge: at} of samples.out) {
@@ -174,6 +220,62 @@ test('a value change runs linearly for 1 s per whole track of the change', async
       (0.1 + (0.8 * Math.min(t, samples.duration)) / samples.duration);
     expect(at, `edge at ${t} ms`).toBeCloseTo(expected, 0);
   }
+});
+
+test('a finger outside iOS (Chromium as an Android phone) keeps the theme\u2019s timing and no minimum', async ({
+  page,
+}) => {
+  await open(page, 10, {ios: false});
+  const theme = await page.evaluate(() => ({
+    callout: CSS.supports('-webkit-touch-callout', 'none'),
+    ...(() => {
+      const fill = document.querySelector('[role="progressbar"]')
+        ?.firstElementChild as Element;
+      const style = getComputedStyle(fill);
+      return {
+        duration: style.transitionDuration,
+        easing: style.transitionTimingFunction,
+      };
+    })(),
+  }));
+  expect(theme.callout).toBe(false);
+  await changeAndPause(page, 90);
+  const change = await page.evaluate(() => {
+    const fill = document.querySelector('[role="progressbar"]')
+      ?.firstElementChild as Element;
+    const [transition] = fill.getAnimations();
+    return {
+      duration: Number(transition.effect?.getTiming().duration),
+      easing: String(transition.effect?.getTiming().easing),
+    };
+  });
+  // The theme's `--duration-medium` and `--ease-standard`, not UIKit's
+  // linear 0.8 s.
+  const themeMs =
+    Number.parseFloat(theme.duration) *
+    (theme.duration.endsWith('ms') ? 1 : 1000);
+  expect(change.duration).toBeCloseTo(themeMs, 0);
+  expect(change.duration).not.toBeCloseTo(0.8 * VIEW.wholeTrackMs, 0);
+  expect(change.easing).toBe(theme.easing);
+  expect(change.easing).not.toBe('linear');
+  // At 1% the fill is 1% of the track, with no two-track-height minimum.
+  await page.evaluate(() => {
+    for (const animation of document.getAnimations()) {
+      animation.finish();
+    }
+  });
+  await setValue(page, 1);
+  await page.waitForTimeout(800);
+  const box = await page.evaluate(() => {
+    const track = document.querySelector('[role="progressbar"]') as Element;
+    const fill = track.firstElementChild as Element;
+    return {
+      edge:
+        fill.getBoundingClientRect().right - track.getBoundingClientRect().left,
+      width: track.getBoundingClientRect().width,
+    };
+  });
+  expect(box.edge).toBeCloseTo(box.width * 0.01, 0);
 });
 
 test('a change mid-flight starts from where the fill is drawn, timed by the model change', async ({
@@ -209,7 +311,7 @@ test('a change mid-flight starts from where the fill is drawn, timed by the mode
   // Starts from the drawn 50%, not from the old value…
   expect(retarget.start / retarget.width).toBeCloseTo(0.5, 2);
   // …for 90 → 30 on the model: 0.6 of the track, 600 ms.
-  expect(retarget.duration).toBeCloseTo(0.6 * VIEW.animatedMsPerProgress, 3);
+  expect(retarget.duration).toBeCloseTo(0.6 * VIEW.wholeTrackMs, 3);
 });
 
 test('never narrower than two track heights above zero, transparent at zero', async ({
@@ -271,7 +373,7 @@ test('in RTL the minimum and the motion mirror', async ({page}) => {
   });
   // 1 → 81 is 0.8 of the track: 800 ms. It leaves from the drawn minimum,
   // so halfway sits midway between that and 81%, measured from the right.
-  expect(half.duration).toBeCloseTo(0.8 * VIEW.animatedMsPerProgress, 3);
+  expect(half.duration).toBeCloseTo(0.8 * VIEW.wholeTrackMs, 3);
   expect(half.length).toBeCloseTo((tiny.length + 0.81 * half.width) / 2, 0);
 });
 
