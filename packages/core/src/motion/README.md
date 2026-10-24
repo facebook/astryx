@@ -17,6 +17,8 @@ from the package entry point; components import it by path.
 | `uikit/timing.ts`                                | Non-spring clocks and curves: press highlight, Core Animation's named curves, keyboard, Reduced Motion cross-fade.                                                   |
 | `uikit/navigation.ts`                            | UINavigationController: push velocity, parallax, dimming, transition clock, interactive pop finish rule.                                                             |
 | `uikit/gestures.ts`                              | Gesture recognizer thresholds, the velocity filter and the haptic stand-ins, as typed entries the gesture system reads.                                              |
+| `roles.ts`                                       | Motion roles: each spring, duration and curve of a registered table, named by its path, and its CSS variable.                                                        |
+| `resolveMotion.ts`                               | A role's value under an element's theme, read once when a motion starts.                                                                                             |
 | `MEASUREMENTS.md`                                | The UIKit reference captures each unconfirmed value still needs.                                                                                                     |
 | `spring.ts`                                      | Closed-form damped spring, every Apple parameterization, settling duration, a spring chasing a moving target.                                                        |
 | `decay.ts`                                       | UIScrollView's momentum coast.                                                                                                                                       |
@@ -24,12 +26,38 @@ from the package entry point; components import it by path.
 | `projection.ts`                                  | Release targets: the rest point nearest the projected coast; paging.                                                                                                 |
 | `bezier.ts`                                      | Cubic-bézier timing functions (Core Animation's named curves).                                                                                                       |
 | `animator.ts`                                    | Compositor animator: springs, decays and any closed-form curve compiled to Web Animations, read back analytically.                                                   |
+| `experimental.ts`                                | The experimental public subpath (`@astryxdesign/core/motion/experimental`).                                                                                          |
 | `useAnimator.ts`                                 | React wrapper that never re-renders per frame.                                                                                                                       |
 | `__tests__/animator.interaction.browser.spec.ts` | Browser proofs on the interaction harness (Chromium and WebKit): busy main thread, end state through a block, no Layout / Paint, seeked curves, a dialog's backdrop. |
 
 Component-specific values (a sheet's detents, a switch's geometry, a context
 menu's timeline) live in a domain file per component, `uikit/<component>.ts`,
 under the same rules.
+
+## Theme
+
+Every spring, duration (a key ending in `Ms`) and curve of a table that calls
+`registerMotionTable` is a motion role named by its path, such as
+`springs.sheetPresent` or `timing.curves.easeInOut`. A theme retunes a role
+with `defineTheme({motion: {springs, durations, curves}})`, which writes the
+role's CSS variable (`--motion-springs-sheet-present: 0.6s 0.1`) only for the
+roles it sets; the table's value stays the default. The animator resolves each
+table spring and curve it is handed when the motion starts; code that times
+something itself calls `resolveMotion(element, timing.press, 'highlightOutMs')`.
+Gesture thresholds and the timings that decide who gets a touch are not roles
+(`exclude`). `pnpm generate:motion-roles` regenerates the role table in the
+motion docs.
+
+## Experimental subpath
+
+`@astryxdesign/core/motion/experimental` exposes this foundation to lab
+components, outside the stable compatibility promise (`spec:AST-017` FR21): it
+may change or be removed in a patch release, it is never re-exported from the
+package root or an ordinary subpath, and every declaration it exposes carries
+`@experimental`. It exports `createAnimator`, `animatorFor`, `useAnimator`,
+`toSpring`, `solveSpring`, `rubberBand`, `rubberBandInverse`, `cubicBezier`,
+`prefersReducedMotion`, `resolveMotion` and the table as the read-only `uikit` namespace. The
+gestures have their own, `@astryxdesign/core/gestures/experimental`.
 
 ## Animator
 
@@ -167,6 +195,8 @@ Chromium and WebKit on the phone profile.
   end.
 - A dialog's `::backdrop` follows the curve when seeked and holds its end
   state.
+- A theme that retunes `springs.sheetPresent` changes the curve the engine
+  plays for an element in its scope, and only there.
 
 ```
 pnpm test:interaction packages/core/src/motion
