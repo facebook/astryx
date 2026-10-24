@@ -24,6 +24,7 @@ import {createRef, Profiler, useState} from 'react';
 import userEvent from '@testing-library/user-event';
 import {Tokenizer} from './Tokenizer';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 import type {SearchSource, SearchableItem} from '../Typeahead/types';
 import {TestIcon} from '../__tests__/TestIcon';
 import {InternationalizationProvider} from '../i18n';
@@ -307,6 +308,230 @@ describe('Tokenizer', () => {
     expect(onChange).toHaveBeenCalledWith([users[1]], {
       item: users[0],
       type: 'remove',
+    });
+  });
+
+  // UIKit's search tokens take two Deletes on a touch screen: the first selects
+  // the last token, the second removes it (measured on iOS 26.2).
+  describe('Delete on a touch screen', () => {
+    function stubPointer(coarse: boolean) {
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn((query: string) => ({
+          matches: query.includes('pointer: coarse') ? coarse : false,
+          media: query,
+          onchange: null,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        })),
+      );
+    }
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    function Controlled({
+      onChange,
+    }: {
+      onChange: (items: SearchableItem[]) => void;
+    }) {
+      const [items, setItems] = useState([users[0], users[1]]);
+      return (
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={items}
+          onChange={next => {
+            setItems(next);
+            onChange(next);
+          }}
+        />
+      );
+    }
+
+    const tokenNamed = (name: string) =>
+      screen.getByRole('button', {name: `Remove ${name}`}).parentElement!;
+
+    it('selects the last token on the first Delete and removes it on the second', async () => {
+      stubPointer(true);
+      const onChange = vi.fn();
+      render(<Controlled onChange={onChange} />);
+      const input = screen.getByRole('combobox');
+      act(() => input.focus());
+
+      fireEvent.keyDown(input, {key: 'Backspace'});
+      expect(onChange).not.toHaveBeenCalled();
+      expect(tokenNamed('Bob')).toHaveAttribute('data-selected', 'true');
+      expect(tokenNamed('Alice')).not.toHaveAttribute('data-selected');
+      await waitFor(() => {
+        expect(politeRegion()?.textContent).toBe(
+          'Bob selected. Delete again to remove it.',
+        );
+      });
+
+      fireEvent.keyDown(input, {key: 'Backspace'});
+      expect(onChange).toHaveBeenLastCalledWith([users[0]]);
+      expect(
+        screen.queryByRole('button', {name: 'Remove Bob'}),
+      ).not.toBeInTheDocument();
+      expect(tokenNamed('Alice')).not.toHaveAttribute('data-selected');
+    });
+
+    it('announces the selection to screen readers, then the removal', async () => {
+      stubPointer(true);
+      render(<Controlled onChange={vi.fn()} />);
+      const input = screen.getByRole('combobox');
+      act(() => input.focus());
+      fireEvent.keyDown(input, {key: 'Backspace'});
+      await waitFor(() => {
+        expect(politeRegion()?.textContent).toBe(
+          'Bob selected. Delete again to remove it.',
+        );
+      });
+      fireEvent.keyDown(input, {key: 'Backspace'});
+      await waitFor(() => {
+        expect(politeRegion()?.textContent).toBe('Removed Bob');
+      });
+    });
+
+    it('keeps the selected token when another key is typed', () => {
+      stubPointer(true);
+      const onChange = vi.fn();
+      render(<Controlled onChange={onChange} />);
+      const input = screen.getByRole('combobox');
+      act(() => input.focus());
+      fireEvent.keyDown(input, {key: 'Backspace'});
+      expect(tokenNamed('Bob')).toHaveAttribute('data-selected', 'true');
+
+      fireEvent.keyDown(input, {key: 'Shift'});
+      expect(tokenNamed('Bob')).toHaveAttribute('data-selected', 'true');
+      fireEvent.keyDown(input, {key: 'a'});
+      expect(tokenNamed('Bob')).not.toHaveAttribute('data-selected');
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('drops the selection when focus leaves the field', () => {
+      stubPointer(true);
+      render(<Controlled onChange={vi.fn()} />);
+      const input = screen.getByRole('combobox');
+      act(() => input.focus());
+      fireEvent.keyDown(input, {key: 'Backspace'});
+      expect(tokenNamed('Bob')).toHaveAttribute('data-selected', 'true');
+      act(() => input.blur());
+      expect(tokenNamed('Bob')).not.toHaveAttribute('data-selected');
+    });
+
+    it('removes at once on a touch screen when tokens are custom-rendered (no selected look)', () => {
+      stubPointer(true);
+      const onChange = vi.fn();
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[users[0], users[1]]}
+          onChange={onChange}
+          renderToken={(item, onRemove) => (
+            <button type="button" onClick={onRemove}>
+              {item.label}
+            </button>
+          )}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      act(() => input.focus());
+      fireEvent.keyDown(input, {key: 'Backspace'});
+      expect(onChange).toHaveBeenCalledWith([users[0]], {
+        item: users[1],
+        type: 'remove',
+      });
+    });
+
+    it('removes the last token on the first Delete under a mouse, as before', () => {
+      stubPointer(false);
+      const onChange = vi.fn();
+      render(<Controlled onChange={onChange} />);
+      const input = screen.getByRole('combobox');
+      act(() => input.focus());
+      fireEvent.keyDown(input, {key: 'Backspace'});
+      expect(onChange).toHaveBeenLastCalledWith([users[0]]);
+    });
+  });
+
+  // A touch keyboard rises when the field focuses its input during a tap, so a
+  // finger that only removes a token while the keyboard is down must leave
+  // focus where it was. Every other removal keeps focusing the input.
+  describe('focus after a removal', () => {
+    beforeEach(() => {
+      __resetInteractionModalityForTest();
+    });
+
+    function renderPair(onChange = vi.fn()) {
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[users[0], users[1]]}
+          onChange={onChange}
+        />,
+      );
+      return {
+        input: screen.getByRole('combobox'),
+        remove: screen.getByRole('button', {name: 'Remove Alice'}),
+        onChange,
+      };
+    }
+
+    it('leaves the input unfocused after a finger removes a token with the keyboard down', () => {
+      const {input, remove, onChange} = renderPair();
+      fireEvent.pointerDown(remove, {pointerType: 'touch'});
+      fireEvent.click(remove);
+      expect(onChange).toHaveBeenCalledWith([users[1]], {
+        item: users[0],
+        type: 'remove',
+      });
+      expect(input).not.toHaveFocus();
+    });
+
+    it('keeps the input focused after a finger removes a token while typing', () => {
+      const {input, remove} = renderPair();
+      act(() => input.focus());
+      fireEvent.pointerDown(remove, {pointerType: 'touch'});
+      fireEvent.click(remove);
+      expect(input).toHaveFocus();
+    });
+
+    it('focuses the input after a mouse removes a token', () => {
+      const {input, remove} = renderPair();
+      fireEvent.pointerDown(remove, {pointerType: 'mouse'});
+      fireEvent.click(remove);
+      expect(input).toHaveFocus();
+    });
+
+    it('focuses the input after a key press removes a token, even after an earlier touch', () => {
+      const {input, remove} = renderPair();
+      fireEvent.pointerDown(remove, {pointerType: 'touch'});
+      fireEvent.keyDown(remove, {key: 'Enter'});
+      fireEvent.click(remove, {detail: 0});
+      expect(input).toHaveFocus();
+    });
+
+    it('does not pull focus onto the input when a finger focuses a remove button', () => {
+      const {input, remove} = renderPair();
+      fireEvent.pointerDown(remove, {pointerType: 'touch'});
+      act(() => remove.focus());
+      expect(remove).toHaveFocus();
+      expect(input).not.toHaveFocus();
+    });
+
+    it('still moves keyboard focus that lands on a remove button to the input', () => {
+      const {input, remove} = renderPair();
+      fireEvent.keyDown(document.body, {key: 'Tab'});
+      act(() => remove.focus());
+      expect(input).toHaveFocus();
     });
   });
 

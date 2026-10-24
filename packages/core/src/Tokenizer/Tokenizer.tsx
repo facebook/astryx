@@ -60,6 +60,7 @@ import {OverflowList} from '../OverflowList';
 import {useLayer} from '../Layer/useLayer';
 import {useTooltip} from '../Tooltip';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useTouchPresentation} from '../utils/touchPresentation';
 import {
   colorVars,
   spacingVars,
@@ -68,6 +69,10 @@ import {
 } from '../theme/tokens.stylex';
 import type {SearchableItem, SearchSource} from '../Typeahead/types';
 import {mergeProps} from '../utils';
+import {
+  getInteractionModality,
+  useInteractionModalityTracking,
+} from '../utils/interactionModality';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
@@ -308,6 +313,13 @@ const styles = stylex.create({
     position: 'relative',
     zIndex: 1,
   },
+  // A token selected by the first Delete on a touch screen: the accent fill
+  // and its text colour, as a UIKit search token's selected look (iOS 26.2:
+  // the tint fill with white text), with no animation.
+  tokenSelected: {
+    backgroundColor: colorVars['--color-accent'],
+    color: colorVars['--color-on-accent'],
+  },
   token: {
     display: 'flex',
     flexShrink: 0,
@@ -442,7 +454,9 @@ const CREATABLE_ID_PREFIX = '__xds_create__';
  *
  * Composes BaseTypeahead for search and Token for selected items.
  * Tokens render inline before the text input. Selecting an item adds a token
- * and clears the query. Backspace on empty input removes the last token.
+ * and clears the query. Backspace on empty input removes the last token; on a
+ * touch screen the first Backspace selects it and the second removes it, as
+ * UIKit's search tokens do.
  *
  * @example
  * ```
@@ -603,6 +617,39 @@ export function Tokenizer<T extends SearchableItem>({
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
+  // The last press that started inside the field: whether a finger (or a pen)
+  // made it, and whether the input already had focus when it began. A touch
+  // keyboard rises whenever this field focuses its input during a tap, so a
+  // tap on a token's own control (its remove button) must not move focus to
+  // the input unless the input had it, and the keyboard was up, already.
+  // `getInteractionModality()` says whether that press is still the latest
+  // interaction: any key press since then hands focus decisions back to the
+  // keyboard rules.
+  useInteractionModalityTracking();
+  const lastPressRef = useRef<{
+    isTouch: boolean;
+    inputHadFocus: boolean;
+  } | null>(null);
+  const handlePointerDownCapture = useCallback((e: React.PointerEvent) => {
+    lastPressRef.current = {
+      isTouch: e.pointerType === 'touch' || e.pointerType === 'pen',
+      inputHadFocus:
+        inputRef.current != null &&
+        inputRef.current.ownerDocument.activeElement === inputRef.current,
+    };
+  }, []);
+  // True while the latest interaction is a touch press that began with the
+  // input unfocused (so the touch keyboard is down).
+  const isTouchPressWithKeyboardDown = useCallback(() => {
+    const press = lastPressRef.current;
+    return (
+      press != null &&
+      press.isTouch &&
+      !press.inputHadFocus &&
+      getInteractionModality() === 'pointer'
+    );
+  }, []);
+
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
   // tooltip listeners attach to the input wrapper and the typeahead input stays
   // perceivable via aria-disabled instead of the disabled attribute. Input is
@@ -696,19 +743,29 @@ export function Tokenizer<T extends SearchableItem>({
       if (comingFromOutside) {
         onFocus?.(e);
         // Redirect to the input so the user doesn't have to tab through
-        // every token remove button.
-        if (e.target !== inputRef.current) {
+        // every token remove button. Not for a finger landing on a token's
+        // control while the keyboard is down: where the browser focuses the
+        // pressed button (Android Chrome), moving focus on to the input would
+        // raise the keyboard for a tap that only meant to remove a token.
+        if (e.target !== inputRef.current && !isTouchPressWithKeyboardDown()) {
           inputRef.current?.focus();
         }
       }
     },
-    [isLayerMode, layer, isFocusInTokenizer, onFocus],
+    [
+      isLayerMode,
+      layer,
+      isFocusInTokenizer,
+      onFocus,
+      isTouchPressWithKeyboardDown,
+    ],
   );
 
   const handleBlurCapture = useCallback(
     (e: React.FocusEvent) => {
       if (!isFocusInTokenizer(e.relatedTarget)) {
         setIsFocusedWithin(false);
+        setSelectedId(null);
         onBlur?.(e);
         if (isLayerMode) {
           layer.hide();
@@ -861,9 +918,16 @@ export function Tokenizer<T extends SearchableItem>({
       const newItems = value.filter(v => v.id !== item.id);
       onChange(newItems, {item, type: 'remove'});
       announce(t('@astryx.tokenizer.tokenRemoved', {label: item.label}));
-      inputRef.current?.focus();
+      // Focus goes to the input, where typing continues, except after a tap
+      // that began with the keyboard down: focusing the input inside that tap
+      // would raise the touch keyboard, which removing a token never asks for.
+      // A keyboard removal, a mouse click, or a tap made while the input was
+      // focused still lands on the input.
+      if (!isTouchPressWithKeyboardDown()) {
+        inputRef.current?.focus();
+      }
     },
-    [value, onChange, announce, t],
+    [value, onChange, announce, t, isTouchPressWithKeyboardDown],
   );
 
   // Handle clearing all items
@@ -877,7 +941,16 @@ export function Tokenizer<T extends SearchableItem>({
     inputRef.current?.focus();
   }, [value, onChange]);
 
-  // Handle backspace on empty input — remove last token
+  // Backspace (the keyboard's Delete key) on the empty input removes the
+  // last token. On a touch screen it takes two presses, as with UIKit's
+  // search tokens (measured on iOS 26.2): the first selects the last token,
+  // the second removes it. Typing anything else while a token is selected
+  // keeps the token and goes on after it.
+  const {isTouch} = useTouchPresentation();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // A selection only lives while it names a current token.
+  const selectedItem =
+    selectedId == null ? null : (value.find(v => v.id === selectedId) ?? null);
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (
@@ -886,11 +959,28 @@ export function Tokenizer<T extends SearchableItem>({
         value.length > 0
       ) {
         e.preventDefault();
-        const lastItem = value[value.length - 1];
-        handleRemove(lastItem);
+        // A custom `renderToken` draws no selected look, so it keeps the
+        // one-press removal.
+        if (isTouch && renderToken == null && selectedItem == null) {
+          const lastItem = value[value.length - 1];
+          setSelectedId(lastItem.id);
+          announce(
+            t('@astryx.tokenizer.tokenSelected', {label: lastItem.label}),
+          );
+          return;
+        }
+        setSelectedId(null);
+        handleRemove(selectedItem ?? value[value.length - 1]);
+        return;
+      }
+      if (
+        selectedItem != null &&
+        !['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)
+      ) {
+        setSelectedId(null);
       }
     },
-    [value, handleRemove],
+    [value, handleRemove, isTouch, renderToken, selectedItem, announce, t],
   );
 
   // Click wrapper to focus input
@@ -939,7 +1029,11 @@ export function Tokenizer<T extends SearchableItem>({
         size={size}
         onRemove={isDisabled ? undefined : onRemoveItem}
         isDisabled={isDisabled}
-        xstyle={styles.token}
+        data-selected={item.id === selectedItem?.id || undefined}
+        xstyle={[
+          styles.token,
+          item.id === selectedItem?.id && styles.tokenSelected,
+        ]}
       />
     );
   });
@@ -965,6 +1059,7 @@ export function Tokenizer<T extends SearchableItem>({
       role="group"
       aria-label={label}
       onClick={handleWrapperClick}
+      onPointerDownCapture={handlePointerDownCapture}
       onFocusCapture={handleFocusCapture}
       onBlurCapture={handleBlurCapture}
       // Keys on the field's other controls (clear button, tokens) reach a

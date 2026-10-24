@@ -1599,6 +1599,10 @@
     "defaultMessage": "Removed {label}",
     "description": "Polite screen-reader announcement after a token is removed from a Tokenizer, by its × button or by Backspace. Live-region text, never shown on screen; `{label}` is the token's visible text."
   },
+  "@astryx.tokenizer.tokenSelected": {
+    "defaultMessage": "{label} selected. Delete again to remove it.",
+    "description": "Polite screen-reader announcement on a touch screen when Backspace (the keyboard's Delete key) on an empty Tokenizer input selects the last token instead of removing it; a second Delete removes it. Live-region text, never shown on screen; `{label}` is the token's visible text."
+  },
   "@astryx.lightbox.imagePosition": {
     "defaultMessage": "Image {index, number} of {total, number}",
     "description": "Polite screen-reader announcement when a Lightbox moves to a media item that has no alt text. Live-region text, never shown on screen; `{index}` is 1-based, example: `Image 3 of 12`."
