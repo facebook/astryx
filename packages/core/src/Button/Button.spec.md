@@ -205,10 +205,12 @@ Consumer migration instructions belong in consumer docs and release notes.
   disabled Buttons MUST expose `aria-disabled="true"` on the focusable element
   (`spec:AST-085` FR5). Implementation gap: a disabled Button without a tooltip
   exposes native `disabled` instead (FR10).
-- **AR6 — Target size.** Every Button is at least 28 CSS pixels tall. An
-  icon-only Button is at least 28 by 28; a labelled Button can shrink in a
-  crowded row only down to its 24 CSS pixels of inline padding. Both meet the
-  WCAG 2.5.8 24 by 24 minimum.
+- **AR6 — Target size.** Every Button is at least 28 CSS pixels tall. With the
+  default square aspect and no `width`, an icon-only Button is at least 28 by
+  28; a labelled Button can shrink in a crowded row only down to its 24 CSS
+  pixels of inline padding. Both meet the WCAG 2.5.8 24 by 24 minimum. A caller
+  `width` or a theme icon-only aspect that makes a Button narrower than 24 CSS
+  pixels leaves its target size to that caller or theme.
 
 ## Design relationships
 
