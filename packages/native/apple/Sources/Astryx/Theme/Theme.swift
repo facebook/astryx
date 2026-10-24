@@ -226,8 +226,25 @@ extension EnvironmentValues {
 
 extension View {
   /// Paints this subtree with a theme. Components follow the color scheme and
-  /// the person's text size either way.
+  /// the person's text size either way. The theme also sets SwiftUI's own
+  /// tint and foreground styles, so stock controls and plain text in the
+  /// subtree carry the brand (theme environment spec, E2).
   public func astryxTheme(_ theme: Theme = .default) -> some View {
-    environment(\.astryxTheme, theme)
+    modifier(AstryxThemeModifier(theme: theme))
+  }
+}
+
+/// Sets the theme and writes the SwiftUI values a theme has an equivalent for,
+/// in the subtree's color scheme.
+private struct AstryxThemeModifier: ViewModifier {
+  let theme: Theme
+  @Environment(\.colorScheme) private var colorScheme
+
+  func body(content: Content) -> some View {
+    let color = (colorScheme == .dark ? theme.dark : theme.light).color
+    content
+      .tint(color.accent)
+      .foregroundStyle(color.textPrimary, color.textSecondary, color.textDisabled)
+      .environment(\.astryxTheme, theme)
   }
 }
