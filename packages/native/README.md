@@ -145,8 +145,23 @@ files are ignored on `main`.
 Boundaries, checked by `pnpm check:package-boundaries`:
 
 - `@astryxdesign/core` never imports this package.
-- This package's source never imports core. It reads core's documentation
-  files as data at build time.
+- No file in this package, in any folder, imports core, apart from the
+  build-time reads AST-082 FR16 lists until core's portable entry ships: the
+  theme generator in `scripts/` may import `@astryxdesign/core/theme` and
+  `@astryxdesign/core/theme/tokens`; `scripts/swift-ios-strings.mjs` may
+  read core's locale catalogs (`@astryxdesign/core/locales/*.json`); and
+  `scripts/core-docs.mjs` reads core's component documentation and built-in
+  icon names as data.
+- The check reads source text in every folder except `node_modules`, `dist`,
+  `.build`, and `.swiftpm`. It flags any other module specifier that names
+  core (`import`, `require`, `require.resolve`, `import.meta.resolve`, or a
+  relative path into `packages/core`). It also flags a path to core's package,
+  written as adjacent string segments (`'@astryxdesign', 'core'`,
+  `'node_modules', '@astryxdesign/core'`, `'packages', 'core'`) or inside one
+  string (`node_modules/@astryxdesign/core`, `packages/core`). In
+  `scripts/core-docs.mjs` it allows exactly one such path, the `CORE_ROOT`
+  definition, and only the listed reads under `CORE_ROOT`. It does not follow
+  paths computed in other ways.
 
 ## Experiment matrix
 
