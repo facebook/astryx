@@ -204,11 +204,11 @@ const styles = stylex.create({
       '@media (prefers-reduced-motion: reduce)': 'none',
     },
   },
-  // Backdrop using ::backdrop pseudo-element
+  // Backdrop using ::backdrop pseudo-element: the theme's modal dim, one flat
+  // colour (`--color-background-backdrop`), never blurred.
   backdrop: {
     '::backdrop': {
-      backgroundColor: colorVars['--color-overlay'],
-      backdropFilter: 'blur(2px)',
+      backgroundColor: colorVars['--color-background-backdrop'],
     },
   },
   fullscreen: {

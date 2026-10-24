@@ -168,6 +168,12 @@ export const stoneTheme = defineTheme({
       withAlpha(neutral.light[15], '80'),
       withAlpha(neutral.dark[15], 'cc'),
     ],
+    // The modal dim (a dialog, drawer or sheet ::backdrop) keeps the overlay
+    // this theme already dimmed with.
+    '--color-background-backdrop': [
+      withAlpha(neutral.light[15], '80'),
+      withAlpha(neutral.dark[15], 'cc'),
+    ],
     '--color-overlay-hover': [
       withAlpha(neutral.light[15], '0d'),
       withAlpha(neutral.dark[95], '0d'),

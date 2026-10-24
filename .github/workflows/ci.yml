@@ -1478,6 +1478,18 @@ jobs:
       - name: Run modal close visibility guard
         run: node .github/scripts/modal-close-visibility.js --storybook-dir apps/storybook/dist
 
+      # Every modal surface dims the page with one theme colour,
+      # --color-background-backdrop, and never blurs it. jsdom computes no
+      # ::backdrop and drops backdrop-filter, so only a real engine shows the
+      # dim a theme asked for. Its own --output directory, as the contracts
+      # below.
+      - name: Run modal dim contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/__tests__/ModalBackdrop.a11y.browser.spec.ts \
+            --project chromium \
+            --output modal-dim-output
+
       # A public component var can be documented, read, and emitted into the
       # theme CSS and still be unreachable — an inline write or an unlayered
       # declaration outranks `@layer astryx-theme` (#4530). jsdom resolves no
