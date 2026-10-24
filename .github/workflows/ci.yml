@@ -1536,6 +1536,17 @@ jobs:
             --project chromium \
             --output reorder-grip-pinch-zoom-output
 
+      # Slider places its thumbs and fill by translate in container units;
+      # jsdom computes neither, so only a real engine shows whether they sit
+      # where their values put them, inside the control, under LTR, RTL and
+      # mixed-direction regions.
+      - name: Run Slider geometry contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/Slider/__tests__/SliderGeometry.a11y.chromium.spec.ts \
+            --project chromium \
+            --output slider-geometry-output
+
       # Table merges a consumer min-width with its column floors through CSS
       # max(). jsdom keeps any string, so only a real engine shows whether the
       # emitted declaration parses; an invalid one drops the floors entirely.

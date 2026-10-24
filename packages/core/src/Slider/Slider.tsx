@@ -5,7 +5,7 @@
 /**
  * @file Slider.tsx
  * @input Uses React, useId, useRef, useCallback, useEffect, Field, Tooltip, useTooltip, VisuallyHidden
- * @output Exports Slider and its props; unfilled marks share the track token; modifier-only key presses do not restore the thumb focus ring; a drag belongs to the pointer that started it; the thumbs and the filled range travel by `translate` from a progress custom property in the control's container units, so a value change never lays out
+ * @output Exports Slider and its props; unfilled marks share the track token; modifier-only key presses do not restore the thumb focus ring; a drag belongs to the pointer that started it; the thumbs and the filled range travel by `translate` from a progress custom property in the control's container units, so moving them never lays out (a value tooltip or text display still does)
  * @position Core implementation; consumed by index.ts, tested by Slider.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -166,9 +166,9 @@ const THUMB_SIZE = 20;
 /**
  * Where a thumb sits, as its progress along the travel (0 at `min`, 1 at
  * `max`), written inline on the thumb. Its translate is computed from it in
- * CSS against the control's size (container units), so a value change
- * restyles and composites but never lays out, and the server renders the
- * right place.
+ * CSS against the control's size (container units), so moving the thumb
+ * restyles and composites but never lays out (a value tooltip or text display
+ * still lays out as its text changes), and the server renders the right place.
  */
 const THUMB_PROGRESS = '--_slider-progress';
 /** Half a thumb: the inset of the thumb's travel at each end of the track. */
@@ -305,7 +305,7 @@ const styles = stylex.create({
   fillMoverRangeHorizontal: {
     translate: {
       default: `calc(${THUMB_INSET_PX}px + var(${FILL_START}) * (100cqi - ${THUMB_SIZE}px)) 0`,
-      ':is([dir="rtl"] *)': `calc(-${THUMB_INSET_PX}px - var(${FILL_START}) * (100cqi - ${THUMB_SIZE}px)) 0`,
+      ':dir(rtl)': `calc(-${THUMB_INSET_PX}px - var(${FILL_START}) * (100cqi - ${THUMB_SIZE}px)) 0`,
     },
   },
   fillMoverRangeVertical: {
@@ -329,7 +329,7 @@ const styles = stylex.create({
   filledTrackSingleHorizontal: {
     translate: {
       default: `calc(${THUMB_INSET_PX}px + var(${FILL_END}) * (100cqi - ${THUMB_SIZE}px) - 100cqi) 0`,
-      ':is([dir="rtl"] *)': `calc(100cqi - ${THUMB_INSET_PX}px - var(${FILL_END}) * (100cqi - ${THUMB_SIZE}px)) 0`,
+      ':dir(rtl)': `calc(100cqi - ${THUMB_INSET_PX}px - var(${FILL_END}) * (100cqi - ${THUMB_SIZE}px)) 0`,
     },
   },
   filledTrackSingleVertical: {
@@ -340,7 +340,7 @@ const styles = stylex.create({
   filledTrackRangeHorizontal: {
     translate: {
       default: `calc((var(${FILL_END}) - var(${FILL_START})) * (100cqi - ${THUMB_SIZE}px) - 100cqi) 0`,
-      ':is([dir="rtl"] *)': `calc(100cqi - (var(${FILL_END}) - var(${FILL_START})) * (100cqi - ${THUMB_SIZE}px)) 0`,
+      ':dir(rtl)': `calc(100cqi - (var(${FILL_END}) - var(${FILL_START})) * (100cqi - ${THUMB_SIZE}px)) 0`,
     },
   },
   filledTrackRangeVertical: {
@@ -375,7 +375,7 @@ const styles = stylex.create({
     // marks. `translate` is physical, so it flips its sign under RTL.
     translate: {
       default: `calc(var(${THUMB_PROGRESS}) * (100cqi - ${THUMB_SIZE}px)) 0`,
-      ':is([dir="rtl"] *)': `calc(var(${THUMB_PROGRESS}) * (${THUMB_SIZE}px - 100cqi)) 0`,
+      ':dir(rtl)': `calc(var(${THUMB_PROGRESS}) * (${THUMB_SIZE}px - 100cqi)) 0`,
     },
   },
   thumbVertical: {
