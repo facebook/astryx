@@ -22,12 +22,9 @@ struct AXNode {
 @MainActor
 func accessibilityTree<V: View>(of view: V) -> [AXNode] {
   let host = UIHostingController(rootView: view.astryxTheme())
-  let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 400))
-  window.rootViewController = host
-  window.makeKeyAndVisible()
+  host.view.frame = CGRect(x: 0, y: 0, width: 390, height: 400)
   host.view.setNeedsLayout()
   host.view.layoutIfNeeded()
-  RunLoop.main.run(until: Date().addingTimeInterval(0.2))
 
   var nodes: [AXNode] = []
   var seen = Set<ObjectIdentifier>()
@@ -57,7 +54,6 @@ func accessibilityTree<V: View>(of view: V) -> [AXNode] {
     }
   }
   visit(host.view)
-  window.isHidden = true
   return nodes
 }
 
@@ -92,5 +88,32 @@ func describe(_ nodes: [AXNode]) -> String {
   let button = nodes.first { $0.traits.contains(.button) }
   #expect(button?.label == "Save", "\(describe(nodes))")
   #expect(button?.value.isEmpty == true, "\(describe(nodes))")
+}
+
+// Temporary probes: which parts of the tree a hostless test can read.
+@MainActor @Test func probeTreeIsNotEmpty() {
+  #expect(!accessibilityTree(of: AstryxButton(label: "Save") {}).isEmpty)
+}
+@MainActor @Test func probeHostViewCountsElements() {
+  let host = UIHostingController(rootView: AstryxButton(label: "Save") {})
+  host.view.frame = CGRect(x: 0, y: 0, width: 390, height: 400)
+  host.view.layoutIfNeeded()
+  let count = host.view.accessibilityElementCount()
+  #expect(count != NSNotFound && count > 0)
+}
+@MainActor @Test func probeHostViewHasElementsArray() {
+  let host = UIHostingController(rootView: AstryxButton(label: "Save") {})
+  host.view.frame = CGRect(x: 0, y: 0, width: 390, height: 400)
+  host.view.layoutIfNeeded()
+  #expect((host.view.accessibilityElements ?? []).isEmpty == false)
+}
+@MainActor @Test func probeSomeLabelIsSave() {
+  #expect(accessibilityTree(of: AstryxButton(label: "Save") {}).contains { $0.label == "Save" })
+}
+@MainActor @Test func probeSomeTraitIsButton() {
+  #expect(accessibilityTree(of: AstryxButton(label: "Save") {}).contains { $0.traits.contains(.button) })
+}
+@MainActor @Test func probePlainTextIsReadable() {
+  #expect(accessibilityTree(of: Text("Hello")).contains { $0.label == "Hello" })
 }
 #endif
