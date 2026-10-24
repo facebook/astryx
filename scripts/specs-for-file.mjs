@@ -31,6 +31,7 @@ const require = createRequire(import.meta.url);
 const {componentPackage} = require('./component-packages.cjs');
 const {
   classifyComponentKnowledgePath,
+  classifyPlatformComponentKnowledgePath,
 } = require('../.github/scripts/knowledge-paths.cjs');
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -48,6 +49,8 @@ const INHERITED_REFERENCE_FIELDS = [
   'system_specs',
   'references',
   'parent_component',
+  // A platform component record implements its core record's shared contract.
+  'platform_of',
 ];
 
 /**
@@ -144,6 +147,7 @@ export function loadKnowledgeIndex(root = DEFAULT_ROOT) {
       authority: frontmatter.get('authority'),
       frontmatter,
       classified: classifyComponentKnowledgePath(filePath),
+      platform: classifyPlatformComponentKnowledgePath(filePath),
       pathPatterns: asList(
         parsePathApplicabilityBlock(content, filePath).config?.paths,
       ).filter(pattern => typeof pattern === 'string'),
@@ -253,6 +257,17 @@ function placementMatches(index, filePath, location) {
           record,
           via: 'placement',
           detail: `theme record for packages/themes/${theme[1]}/`,
+        });
+      }
+      continue;
+    }
+    if (record.platform) {
+      const platformRoot = `${record.platform.componentTree}/${record.platform.componentRoot}/`;
+      if (filePath.startsWith(platformRoot)) {
+        matches.push({
+          record,
+          via: 'placement',
+          detail: `platform component record for ${platformRoot}`,
         });
       }
       continue;

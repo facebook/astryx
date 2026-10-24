@@ -1,8 +1,9 @@
 ---
-schema_version: 3
-template_version: 7
+schema_version: 5
+template_version: 8
 kind: component
 id: component:<Name>
+platform_of: null
 authority: draft
 archive_reason: null
 superseded_by: null
@@ -22,6 +23,8 @@ system_specs: [spec:AST-000/DEC-0]
 # <Name> component contract
 
 <!-- Describe the system, not the project: present tense, what it does. No proposals, history, pull requests, or research in the record; see docs/contributing/spec-writing.md and report its rubric results in the pull request. -->
+
+<!-- `platform_of` is null for a Core or Lab record. A platform implementation's record (id `component:<language>/<Name>`, beside the platform's code) names its core component in `platform_of` (`component:<Name>`), states only what the platform adds or must do differently, and has no anatomy-theming block; the core record, or until it exists the core component's source and docs, keeps the shared contract and anatomy (architecture:knowledge-contracts DEC-13). -->
 
 ## Contract at a glance
 
