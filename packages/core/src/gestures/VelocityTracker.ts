@@ -18,16 +18,12 @@
  *   It reacts a frame late to an acceleration, includes a hold before the
  *   first move, and never decays: a finger at rest sends no events, so a
  *   release after a pause reports the last moving value, as UIKit does.
- * - `lsq2`: a least-squares quadratic fit over the last 100 ms (20 samples at
- *   most), differentiated at the newest sample (Android's and Flutter's
- *   default). Smoother; not UIKit.
- * - `iosFling`: Flutter's `IOSScrollViewFlingVelocityTracker` (weights 0.6 /
- *   0.35 / 0.05 on the last three instantaneous velocities, oldest first).
  * - `window`: the two-point speed over the last 100 ms that BottomSheet's
- *   gesture used, kept for comparison.
+ *   gesture uses on main, for a path that keeps main's behavior (a release
+ *   off iOS that must stay byte-identical). Not UIKit.
  *
  * Feed the `uikit` filter one sample per input event (coalesced samples
- * would change its timing); the others take every sample.
+ * would change its timing); `window` takes every sample.
  *
  * SYNC: When modified, update VelocityTracker.test.ts.
  */
@@ -40,7 +36,7 @@ import type {Point, TouchSample} from './types';
  * header describes, `uikit` by default.
  * @experimental
  */
-export type VelocityStrategy = 'uikit' | 'lsq2' | 'iosFling' | 'window';
+export type VelocityStrategy = 'uikit' | 'window';
 
 export interface VelocityTrackerOptions {
   /** @default 'uikit' */
@@ -49,8 +45,6 @@ export interface VelocityTrackerOptions {
   horizon?: number;
   /** At most this many samples are kept. */
   maxSamples?: number;
-  /** For `lsq2`: a gap this long (ms) between samples separates two motions. */
-  assumeStopped?: number;
 }
 
 const ZERO: Point = {x: 0, y: 0};
@@ -59,7 +53,6 @@ export class VelocityTracker {
   readonly strategy: VelocityStrategy;
   private readonly horizon: number;
   private readonly maxSamples: number;
-  private readonly assumeStopped: number;
   private samples: TouchSample[] = [];
 
   constructor(options: VelocityTrackerOptions = {}) {
@@ -67,8 +60,6 @@ export class VelocityTracker {
     this.horizon = options.horizon ?? UIKIT_GESTURES.velocity.horizon.value;
     this.maxSamples =
       options.maxSamples ?? UIKIT_GESTURES.velocity.maxSamples.value;
-    this.assumeStopped =
-      options.assumeStopped ?? UIKIT_GESTURES.velocity.assumeStopped.value;
   }
 
   /** Forget every sample (a new gesture). */
@@ -115,144 +106,10 @@ export class VelocityTracker {
     switch (this.strategy) {
       case 'uikit':
         return uikitVelocity(this.samples);
-      case 'iosFling':
-        return iosFlingVelocity(this.recentSamples(newest));
       case 'window':
         return windowVelocity(this.samples, newest, this.horizon);
-      case 'lsq2':
-        return leastSquaresVelocity(this.recentSamples(newest), newest.time);
     }
   }
-
-  /**
-   * The samples that describe continuous recent motion: within the horizon
-   * of the newest, and stopping at the first gap longer than the
-   * assume-stopped window (motion before a rest is not this motion).
-   */
-  private recentSamples(newest: TouchSample): TouchSample[] {
-    const recent: TouchSample[] = [];
-    let previous = newest;
-    for (let i = this.samples.length - 1; i >= 0; i--) {
-      const sample = this.samples[i];
-      if (
-        newest.time - sample.time > this.horizon ||
-        previous.time - sample.time > this.assumeStopped
-      ) {
-        break;
-      }
-      recent.unshift(sample);
-      previous = sample;
-    }
-    return recent;
-  }
-}
-
-/**
- * Least-squares fit of x(t) and y(t) by a polynomial of degree
- * min(2, n - 1), with t measured from the newest sample; the velocity is the
- * linear coefficient (the derivative at t = 0).
- */
-function leastSquaresVelocity(
-  samples: ReadonlyArray<TouchSample>,
-  newestTime: number,
-): Point {
-  const n = samples.length;
-  if (n < 2) {
-    return ZERO;
-  }
-  const degree = Math.min(2, n - 1);
-  const times = samples.map(sample => sample.time - newestTime);
-  const vx = polynomialSlope(
-    times,
-    samples.map(sample => sample.x),
-    degree,
-  );
-  const vy = polynomialSlope(
-    times,
-    samples.map(sample => sample.y),
-    degree,
-  );
-  if (vx == null || vy == null) {
-    // Degenerate timing (every sample at one instant): fall back to a line.
-    const lx = degree > 1 ? polynomialSlope(times, xs(samples), 1) : null;
-    const ly = degree > 1 ? polynomialSlope(times, ys(samples), 1) : null;
-    return lx == null || ly == null ? ZERO : {x: lx * 1000, y: ly * 1000};
-  }
-  return {x: vx * 1000, y: vy * 1000};
-}
-
-function xs(samples: ReadonlyArray<TouchSample>): number[] {
-  return samples.map(sample => sample.x);
-}
-
-function ys(samples: ReadonlyArray<TouchSample>): number[] {
-  return samples.map(sample => sample.y);
-}
-
-/**
- * The coefficient of t in the least-squares polynomial of `degree` through
- * (t, v), by the normal equations with partial pivoting. Times are a few
- * hundred ms at most, so the system is well conditioned in doubles. Null when
- * the system is singular.
- */
-function polynomialSlope(
-  times: ReadonlyArray<number>,
-  values: ReadonlyArray<number>,
-  degree: number,
-): number | null {
-  const size = degree + 1;
-  // Normal matrix A[i][j] = sum t^(i+j), right side b[i] = sum v * t^i.
-  const matrix: number[][] = [];
-  for (let i = 0; i < size; i++) {
-    matrix.push(new Array<number>(size + 1).fill(0));
-  }
-  for (let k = 0; k < times.length; k++) {
-    const t = times[k];
-    const powers = [1];
-    for (let p = 1; p <= 2 * degree; p++) {
-      powers.push(powers[p - 1] * t);
-    }
-    for (let i = 0; i < size; i++) {
-      for (let j = 0; j < size; j++) {
-        matrix[i][j] += powers[i + j];
-      }
-      matrix[i][size] += values[k] * powers[i];
-    }
-  }
-  const solution = solveLinearSystem(matrix);
-  return solution == null ? null : solution[1];
-}
-
-/** Gaussian elimination with partial pivoting on an augmented matrix. */
-function solveLinearSystem(matrix: number[][]): number[] | null {
-  const size = matrix.length;
-  for (let column = 0; column < size; column++) {
-    let pivot = column;
-    for (let row = column + 1; row < size; row++) {
-      if (Math.abs(matrix[row][column]) > Math.abs(matrix[pivot][column])) {
-        pivot = row;
-      }
-    }
-    if (Math.abs(matrix[pivot][column]) < 1e-9) {
-      return null;
-    }
-    [matrix[column], matrix[pivot]] = [matrix[pivot], matrix[column]];
-    for (let row = column + 1; row < size; row++) {
-      const factor = matrix[row][column] / matrix[column][column];
-      for (let k = column; k <= size; k++) {
-        matrix[row][k] -= factor * matrix[column][k];
-      }
-    }
-  }
-  const solution = new Array<number>(size).fill(0);
-  for (let row = size - 1; row >= 0; row--) {
-    let sum = matrix[row][size];
-    for (let k = row + 1; k < size; k++) {
-      sum -= matrix[row][k] * solution[k];
-    }
-    solution[row] = sum / matrix[row][row];
-  }
-  return solution;
 }
 
 const UIKIT_CURRENT_WEIGHT = UIKIT_GESTURES.velocity.currentWeight.value;
@@ -288,27 +145,6 @@ function pairVelocity(start: TouchSample, end: TouchSample): Point {
   return {
     x: ((end.x - start.x) / dt) * 1000,
     y: ((end.y - start.y) / dt) * 1000,
-  };
-}
-
-/**
- * Flutter's IOSScrollViewFlingVelocityTracker: 0.6 x the velocity two pairs
- * back, 0.35 x one pair back, 0.05 x the newest pair. A pair that does not
- * exist contributes zero, as it does there.
- */
-function iosFlingVelocity(samples: ReadonlyArray<TouchSample>): Point {
-  const n = samples.length;
-  const pair = (back: number): Point => {
-    const end = samples[n - 1 - back];
-    const start = samples[n - 2 - back];
-    return end == null || start == null ? ZERO : pairVelocity(start, end);
-  };
-  const older = pair(2);
-  const previous = pair(1);
-  const latest = pair(0);
-  return {
-    x: older.x * 0.6 + previous.x * 0.35 + latest.x * 0.05,
-    y: older.y * 0.6 + previous.y * 0.35 + latest.y * 0.05,
   };
 }
 
