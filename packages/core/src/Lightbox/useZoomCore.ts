@@ -33,7 +33,7 @@
 import {useCallback, useEffect, useMemo, useRef, type RefObject} from 'react';
 import type {Point} from '../gestures/types';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
-import type {Animator} from '../motion/animator';
+import type {Animator, MotionCurve, MotionValues} from '../motion/animator';
 import {resolveMotion} from '../motion/resolveMotion';
 import {registerReducedMotionCrossFade} from '../motion/uikit/timing';
 import {zoomMedia} from '../motion/uikit/zoomMedia';
@@ -100,6 +100,14 @@ export interface UseZoomCoreOptions {
   onDragStart?: () => void;
 }
 
+/** A box in client px. */
+export interface ZoomBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 /** What Lightbox calls: the photo's ref and the keyboard's zoom and pan. */
 export interface ZoomStage {
   /** Callback ref for the photo element the stage moves and scales. */
@@ -118,6 +126,34 @@ export interface ZoomStage {
    * such a drag, as an outer paging scroll view does.
    */
   isAtEdge(direction: PanDirection): boolean;
+  /** The photo's fitted box (its transform's reference), client px. */
+  fittedBox(): ZoomBox | null;
+  /** Where the photo shows now (its transform applied), client px. */
+  shownBox(): ZoomBox | null;
+  /**
+   * Plays curves on the photo (a transition into or out of the viewer). With
+   * `start: 'presented'` the photo shows each curve's first value until the
+   * curves start.
+   */
+  play: Animator['play'];
+  /** The photo at its fitted size, opaque, at once (after a transition). */
+  rest(): void;
+}
+
+/** Each curve's first value: where an element waiting for its curves shows. */
+export function firstValues(
+  curves: Partial<Record<keyof MotionValues, MotionCurve>>,
+): MotionValues {
+  const values: MotionValues = {};
+  for (const [property, curve] of Object.entries(curves) as [
+    keyof MotionValues,
+    MotionCurve | undefined,
+  ][]) {
+    if (curve != null) {
+      values[property] = curve.at(0);
+    }
+  }
+  return values;
 }
 
 /** The core as the touch layer drives it. */
@@ -131,6 +167,8 @@ export interface ZoomCore {
   readonly targetRef: {current: ZoomTransform};
   readonly zoomedRef: {current: boolean};
   readonly optionsRef: {current: UseZoomCoreOptions};
+  /** Client px of the stage's top-left corner when last measured. */
+  readonly originRef: {current: Point};
   /** Reads the stage and the photo (layout): when a step begins. */
   measure(): ZoomGeometry | null;
   /** Client px to stage px, from the last measure. */
@@ -530,8 +568,60 @@ export function useZoomCore(options: UseZoomCoreOptions): ZoomCore {
         }
         return isAtEdgeOf(geometry, direction);
       },
+      fittedBox: () => {
+        const geometry = measure();
+        if (geometry == null) {
+          return null;
+        }
+        const origin = originRef.current;
+        return {
+          x: origin.x + geometry.fit.x,
+          y: origin.y + geometry.fit.y,
+          width: geometry.fit.width,
+          height: geometry.fit.height,
+        };
+      },
+      shownBox: () => {
+        const geometry = measure();
+        if (geometry == null) {
+          return null;
+        }
+        const origin = originRef.current;
+        const {x, y, scale} = current();
+        return {
+          x: origin.x + geometry.fit.x + x,
+          y: origin.y + geometry.fit.y + y,
+          width: geometry.fit.width * scale,
+          height: geometry.fit.height * scale,
+        };
+      },
+      play: (curves, playOptions) => {
+        targetRef.current = IDENTITY;
+        // A presented start leaves the photo at rest for two frames: at rest
+        // it shows where the curves start, so no frame shows it elsewhere.
+        if (playOptions?.start === 'presented') {
+          animator.set(firstValues(curves));
+        }
+        return animator.play(curves, playOptions);
+      },
+      rest: () => {
+        animator.stop();
+        animator.set({x: 0, y: 0, scale: 1, opacity: 1});
+        targetRef.current = IDENTITY;
+        setZoomed(false);
+      },
     }),
-    [contentRef, isAtEdgeOf, measure, settleTo, zoomIn, zoomOut],
+    [
+      animator,
+      contentRef,
+      current,
+      isAtEdgeOf,
+      measure,
+      setZoomed,
+      settleTo,
+      zoomIn,
+      zoomOut,
+    ],
   );
 
   // One object for the component's lifetime: every member is stable.
@@ -543,6 +633,7 @@ export function useZoomCore(options: UseZoomCoreOptions): ZoomCore {
       targetRef,
       zoomedRef,
       optionsRef,
+      originRef,
       measure,
       toStage,
       current,

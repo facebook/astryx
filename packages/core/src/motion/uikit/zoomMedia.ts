@@ -8,7 +8,8 @@
  *   law of the return from an overshoot and of `zoom(to:animated:)`, and
  *   Photos' double-tap and maximum zoom, the gap between its pages, and
  *   its drag-to-dismiss (the shrink and fades by travel, the release rule,
- *   the dismissal's and the cancel's springs)
+ *   the dismissal's and the cancel's springs), and the zoom transition from
+ *   a source (its springs and the two portals' fades)
  * @position A component domain of the UIKit constants table (motion/uikit);
  *   read by Lightbox's zoom stage (Lightbox/zoomStage.ts) and its touch
  *   module. Internal constants: touch motion has no theme surface
@@ -205,5 +206,47 @@ export const zoomMedia = {
      *   Oct 24 2026
      */
     cancelSizeSpring: {mass: 1, stiffness: 955.23, damping: 61.81},
+  },
+  transition: {
+    /**
+     * The zoom transition's opening (iOS 18 `.zoom`): one critically damped
+     * spring drives both portals' frames and fades. Against the logged
+     * frames it fits within 1.9 pt RMS, the motion starting about 13 ms
+     * before the first frame that shows it.
+     * @source measured: UIKit lab, iOS 26.2 simulator, iPhone 17 Pro, a
+     *   modal and a push with `preferredTransition = .zoom` from a 118 pt
+     *   cell, the `UIViewSpringAnimationBehavior` UIKit logged (damping
+     *   ratio 1.0, response 0.34) and both portals' frames, Oct 24 2026
+     */
+    openSpring: {response: 0.34, dampingRatio: 1},
+    /**
+     * The closing frame's spring: a small undershoot into the cell (117.8 pt
+     * then 118 for a 118 pt cell).
+     * @source measured: UIKit lab, iOS 26.2 simulator, iPhone 17 Pro, the
+     *   close of the same transition, behavior 0.92 / 0.34, Oct 24 2026
+     */
+    closeSpring: {response: 0.34, dampingRatio: 0.92},
+    /**
+     * The closing fades' spring.
+     * @source measured: UIKit lab, iOS 26.2 simulator, iPhone 17 Pro, the
+     *   same close, behavior 1.0 / 0.34, Oct 24 2026
+     */
+    closeFadeSpring: {response: 0.34, dampingRatio: 1},
+    /**
+     * The detail's opacity is min(1, gain × progress): 0.318 / 0.675 /
+     * 0.829 at 33 / 67 / 83 ms, opaque by about 0.12 s.
+     * @source measured: UIKit lab, iOS 26.2 simulator, iPhone 17 Pro, the
+     *   detail portal's effective opacity per frame against the spring's
+     *   progress, Oct 24 2026
+     */
+    detailFadeGain: 1.56,
+    /**
+     * The source portal's opacity is min(1, gain × (1 − progress)): 0.863 /
+     * 0.577 / 0.295 / 0.143 at 67 / 100 / 150 / 200 ms.
+     * @source measured: UIKit lab, iOS 26.2 simulator, iPhone 17 Pro, the
+     *   source portal's effective opacity per frame against the spring's
+     *   progress, Oct 24 2026
+     */
+    sourceFadeGain: 1.5,
   },
 } as const;

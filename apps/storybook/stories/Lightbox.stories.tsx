@@ -1,7 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useState} from 'react';
+import {useRef, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
+import {Dialog} from '@astryxdesign/core/Dialog';
 import {Lightbox, useLightbox} from '@astryxdesign/core/Lightbox';
 
 const meta: Meta<typeof Lightbox> = {
@@ -172,6 +173,162 @@ export const GalleryKeepsIndex: Story = {
           media={GALLERY_MEDIA}
           index={0}
           onIndexChange={() => {}}
+          hasZoom
+        />
+      </>
+    );
+  },
+};
+
+/**
+ * Photos open from their thumbnails and close back into the one showing:
+ * `sourceFor` hands the viewer each item's thumbnail, and the photo zooms
+ * out of it (UIKit's zoom transition). Page to another photo and close, or
+ * drag it down: it lands in its own thumbnail.
+ */
+export const ZoomFromThumbnails: Story = {
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [index, setIndex] = useState(0);
+    const thumbnails = useRef<(HTMLImageElement | null)[]>([]);
+    return (
+      <>
+        <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
+          {GALLERY_MEDIA.map((item, i) => (
+            <button
+              key={item.src}
+              type="button"
+              aria-label={`Open ${item.alt}`}
+              style={{padding: 0, border: 0, background: 'none'}}
+              onClick={() => {
+                setIndex(i);
+                setIsOpen(true);
+              }}>
+              <img
+                ref={element => {
+                  thumbnails.current[i] = element;
+                }}
+                src={item.src}
+                alt=""
+                style={{
+                  display: 'block',
+                  width: 96,
+                  height: 96,
+                  objectFit: 'cover',
+                  borderRadius: 8,
+                }}
+              />
+            </button>
+          ))}
+        </div>
+        <Lightbox
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          media={GALLERY_MEDIA}
+          index={index}
+          onIndexChange={setIndex}
+          sourceFor={i => thumbnails.current[i] ?? null}
+          hasZoom
+        />
+      </>
+    );
+  },
+};
+
+/**
+ * A viewer the page renders only while it is open: closing it, by any path,
+ * gives the thumbnail back.
+ */
+export const MountedWhileOpen: Story = {
+  render: () => {
+    const [openIndex, setOpenIndex] = useState<number | null>(null);
+    const thumbnails = useRef<(HTMLImageElement | null)[]>([]);
+    return (
+      <>
+        <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
+          {GALLERY_MEDIA.map((item, i) => (
+            <button
+              key={item.src}
+              type="button"
+              aria-label={`Open ${item.alt}`}
+              style={{padding: 0, border: 0, background: 'none'}}
+              onClick={() => setOpenIndex(i)}>
+              <img
+                ref={element => {
+                  thumbnails.current[i] = element;
+                }}
+                src={item.src}
+                alt=""
+                style={{
+                  display: 'block',
+                  width: 96,
+                  height: 96,
+                  objectFit: 'cover',
+                  borderRadius: 8,
+                }}
+              />
+            </button>
+          ))}
+        </div>
+        {openIndex != null && (
+          <Lightbox
+            isOpen
+            onOpenChange={open => {
+              if (!open) {
+                setOpenIndex(null);
+              }
+            }}
+            media={GALLERY_MEDIA}
+            index={openIndex}
+            onIndexChange={setOpenIndex}
+            sourceFor={i => thumbnails.current[i] ?? null}
+            hasZoom
+          />
+        )}
+      </>
+    );
+  },
+};
+
+/**
+ * A photo opened from a dialog: Escape closes the photo first, and while it
+ * zooms back into its thumbnail the dialog stays.
+ */
+export const InsideADialog: Story = {
+  render: () => {
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isOpen, setIsOpen] = useState(false);
+    const thumbnail = useRef<HTMLImageElement | null>(null);
+    return (
+      <>
+        <button onClick={() => setIsDialogOpen(true)}>Open dialog</button>
+        <Dialog isOpen={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <div style={{padding: 16}}>
+            <button
+              type="button"
+              aria-label="Open Forest path"
+              style={{padding: 0, border: 0, background: 'none'}}
+              onClick={() => setIsOpen(true)}>
+              <img
+                ref={thumbnail}
+                src={SAMPLE_IMAGE}
+                alt=""
+                style={{
+                  display: 'block',
+                  width: 96,
+                  height: 96,
+                  objectFit: 'cover',
+                  borderRadius: 8,
+                }}
+              />
+            </button>
+          </div>
+        </Dialog>
+        <Lightbox
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          media={{src: SAMPLE_IMAGE, alt: 'Forest path'}}
+          sourceFor={() => thumbnail.current}
           hasZoom
         />
       </>

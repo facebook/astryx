@@ -273,6 +273,51 @@ describe('Lightbox', () => {
       expect(onOpenChange).not.toHaveBeenCalled();
     });
 
+    it('asks sourceFor for the item opening and the item showing at close', () => {
+      const sourceFor = vi.fn((): HTMLElement | null => null);
+      const {rerender} = render(
+        <Lightbox
+          isOpen={false}
+          onOpenChange={() => {}}
+          media={media}
+          index={0}
+          sourceFor={sourceFor}
+        />,
+      );
+      expect(sourceFor).not.toHaveBeenCalled();
+      rerender(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={media}
+          index={0}
+          sourceFor={sourceFor}
+        />,
+      );
+      expect(sourceFor).toHaveBeenLastCalledWith(0);
+      rerender(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={media}
+          index={2}
+          sourceFor={sourceFor}
+        />,
+      );
+      rerender(
+        <Lightbox
+          isOpen={false}
+          onOpenChange={() => {}}
+          media={media}
+          index={2}
+          sourceFor={sourceFor}
+        />,
+      );
+      expect(sourceFor).toHaveBeenLastCalledWith(2);
+      // No source box to zoom into: the dialog closes at once.
+      expect(HTMLDialogElement.prototype.close).toHaveBeenCalled();
+    });
+
     it('shows gallery counter', () => {
       render(
         <Lightbox
@@ -839,6 +884,33 @@ describe('Lightbox', () => {
       <Lightbox isOpen={true} onOpenChange={() => {}} media={[]} />,
     );
     expect(container.querySelector('dialog')).not.toBeInTheDocument();
+  });
+
+  describe('while a closing photo lands', () => {
+    it('Close, a backdrop click, a cancel and the arrow keys neither close it again nor page it', () => {
+      // The landing: the caller has closed the viewer, and its dialog stays
+      // open until the photo is back in its source.
+      HTMLDialogElement.prototype.close = vi.fn();
+      const onOpenChange = vi.fn();
+      const onIndexChange = vi.fn();
+      const media = [
+        {src: '/a.jpg', alt: 'Image A'},
+        {src: '/b.jpg', alt: 'Image B'},
+        {src: '/c.jpg', alt: 'Image C'},
+      ];
+      const props = {onOpenChange, onIndexChange, media, index: 1};
+      const {rerender} = render(<Lightbox isOpen {...props} />);
+      rerender(<Lightbox isOpen={false} {...props} />);
+      const dialog = document.querySelector('dialog')!;
+      expect(dialog.open).toBe(true);
+      fireEvent.click(screen.getByLabelText('Close'));
+      fireEvent.click(dialog.firstElementChild!);
+      dialog.dispatchEvent(new Event('cancel', {cancelable: true}));
+      fireEvent.keyDown(dialog, {key: 'ArrowRight'});
+      fireEvent.keyDown(dialog, {key: 'ArrowLeft'});
+      expect(onOpenChange).not.toHaveBeenCalled();
+      expect(onIndexChange).not.toHaveBeenCalled();
+    });
   });
 
   describe('backdrop dismiss', () => {

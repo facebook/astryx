@@ -290,6 +290,11 @@ shrink and fades by travel, the release rule and the springs; the cancel
 distance is M-ZM3). A zoomed pan flicked into an edge coasts and bounces like
 any scroll view (`scroll.*`).
 
+During a `.zoom` push's interactive dismissal (UIKit lab, iOS 26.2, Oct 24 2026) the detail follows the finger through a 0.85 / 0.08 tracking spring,
+about a frame behind, and UIKit tracks the drag's progress at 0.92 / 0.34.
+Lightbox's drag follows Photos' own dismissal instead, so the table keeps
+none of it.
+
 | ID    | What                         | App and gesture                                                                    | Extract                                                                   | Method |
 | ----- | ---------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------ |
 | M-ZM1 | Double tap on a filled photo | Photos: double tap a photo with the screen's aspect (402 × 874) at the fitted size | the zoom it lands on (aspect fill gives 1)                                | B, C   |

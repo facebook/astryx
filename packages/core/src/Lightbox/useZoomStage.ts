@@ -96,6 +96,7 @@ import {
 } from './zoomStage';
 import {
   ZOOM_DRAGGING_ATTRIBUTE,
+  type ZoomBox,
   type ZoomCore,
   type ZoomStage,
 } from './useZoomCore';
@@ -135,6 +136,11 @@ export interface ZoomStageDismiss {
   onRelease: (dismisses: boolean) => void;
   /** The dismissed photo has left the stage. */
   onDismissed: () => void;
+  /**
+   * Where a dismissed photo goes, in client px: the box it shrinks into (its
+   * thumbnail's), or null to carry on down.
+   */
+  target?: () => ZoomBox | null;
 }
 
 /** The touch layer's additions to the core's API. */
@@ -563,6 +569,47 @@ export function useZoomStage(
       dismiss?.onRelease(dismisses);
       const shown = current();
       if (dismisses) {
+        leavingRef.current = true;
+        const done = (handle: {finished: Promise<boolean>}) =>
+          void handle.finished.then(() => {
+            if (leavingRef.current) {
+              optionsRef.current.dismiss?.onDismissed();
+            }
+          });
+        const box = dismiss?.target?.() ?? null;
+        if (box != null) {
+          // Into its thumbnail, as Photos does: the photo's width onto the
+          // cell's, centred on it, on the dismissal's springs, fading out as
+          // the cell's picture fades in over it.
+          const origin = core.originRef.current;
+          const scale = box.width / geometry.fit.width;
+          const to = {
+            x: box.x - origin.x - geometry.fit.x,
+            y:
+              box.y -
+              origin.y -
+              geometry.fit.y +
+              (box.height - geometry.fit.height * scale) / 2,
+            scale,
+          };
+          setTarget(to);
+          animator.animate(
+            {scale: to.scale, opacity: 0},
+            {spring: zoomMedia.dismiss.dismissSizeSpring},
+            {crossfadeAs: 'exit', touchRelease: true},
+          );
+          done(
+            animator.animate(
+              {x: to.x, y: to.y},
+              {
+                spring: zoomMedia.dismiss.dismissPositionSpring,
+                velocity: {x: velocity.x, y: velocity.y},
+              },
+              {crossfadeAs: 'exit', touchRelease: true},
+            ),
+          );
+          return;
+        }
         // No thumbnail to return to: straight on down, on the dismissal's
         // position spring, from the release velocity, until it leaves the
         // screen (a stage that only hugs the photo sits above its bottom).
@@ -575,21 +622,17 @@ export function useZoomStage(
             ? view.innerHeight - stageElement.getBoundingClientRect().top
             : geometry.height,
         );
-        leavingRef.current = true;
         setTarget({...shown, y});
-        const handle = animator.animate(
-          {x: shown.x, y},
-          {
-            spring: zoomMedia.dismiss.dismissPositionSpring,
-            velocity: {x: velocity.x, y: velocity.y},
-          },
-          {crossfadeAs: 'exit', touchRelease: true},
+        done(
+          animator.animate(
+            {x: shown.x, y},
+            {
+              spring: zoomMedia.dismiss.dismissPositionSpring,
+              velocity: {x: velocity.x, y: velocity.y},
+            },
+            {crossfadeAs: 'exit', touchRelease: true},
+          ),
         );
-        void handle.finished.then(() => {
-          if (leavingRef.current) {
-            optionsRef.current.dismiss?.onDismissed();
-          }
-        });
         return;
       }
       setTarget(IDENTITY);
@@ -632,6 +675,13 @@ export function useZoomStage(
         animator.stop();
         animator.set({x: 0, y: 0, scale: 1, opacity: 1});
         setTarget(IDENTITY);
+      },
+      rest: () => {
+        leavingRef.current = false;
+        dismissRef.current = null;
+        pinchRef.current = null;
+        panRef.current = null;
+        api.rest();
       },
     }),
     [animator, api, setTarget],

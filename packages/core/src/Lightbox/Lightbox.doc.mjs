@@ -117,6 +117,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'sourceFor',
+      type: '(index: number) => HTMLElement | null',
+      description:
+        "The element an item opens from and closes into, usually its thumbnail: the photo zooms out of it on open and back into it on close (for the item showing then), and a photo dragged down lands in it. Return null when there is none or it is off screen. Without it, the element that opened the viewer is the opened item's source when it shows a picture. Proposed; pending owner review.",
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -218,6 +224,12 @@ export const docsZh = {
       default: 'false',
     },
     {
+      name: 'sourceFor',
+      type: '(index: number) => HTMLElement | null',
+      description:
+        '某一项打开时放大自、关闭时缩回的元素（通常是其缩略图）；向下拖动的照片也会落入其中。没有或不在屏幕上时返回 null。未提供时，若打开查看器的元素显示图片，则它是所打开项的来源。提议中，待负责人审核。',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -302,6 +314,8 @@ export const docsDense = {
       'Callback when gallery index changes (buttons, keys or a swipe).',
     hasZoom:
       'Enable zoom (pinch, double-tap or double-click, Enter/Space, or +/-) and pan (drag or arrow keys) for images.',
+    sourceFor:
+      'The element an item zooms out of on open and back into on close (its thumbnail).',
     xstyle: 'StyleX styles for layout customization.',
   },
 };
