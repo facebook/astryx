@@ -20,9 +20,14 @@ function politeText(): string {
   );
 }
 
+interface BusyProps {
+  isBusy: boolean;
+  message?: string;
+}
+
 function renderBusy() {
-  return renderHook(
-    ({isBusy, message = 'Loading'}: {isBusy: boolean; message?: string}) =>
+  return renderHook<() => void, BusyProps>(
+    ({isBusy, message = 'Loading'}) =>
       useBusyAnnouncement(isBusy, message, useRef(null)),
     {initialProps: {isBusy: true}},
   );
