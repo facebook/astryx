@@ -254,7 +254,7 @@ test('a slow drag follows the finger and settles on the nearest detent', async (
   const script = slowDragTo(handle, dy);
   const lastMove =
     toTouchEvents(script).filter(e => e.type === 'touchMove').length - 1;
-  const tops: number[] = [];
+  const tracked: {top: number; finger: number}[] = [];
   let moves = 0;
   let restingTop = NaN;
   const started = Date.now();
@@ -263,20 +263,25 @@ test('a slow drag follows the finger and settles on the nearest detent', async (
       if (step.type !== 'touchMove') {
         return;
       }
-      // Read right away (moves are paced at 60 Hz), and once more after the
-      // last move has been presented: the finger rests 150 ms before lifting.
-      tops.push(await sheetTop(sheet));
+      // A frame after each move, so the page has handled it (Chromium hands
+      // touch moves over on the next animation frame), and once more after
+      // the last move: the finger rests 150 ms before lifting.
+      await frames(page, 1);
+      tracked.push({
+        top: await sheetTop(sheet),
+        finger: step.changed[0].y - handle.y,
+      });
       if (moves++ === lastMove) {
         await frames(page, 1);
         restingTop = await sheetTop(sheet);
       }
     },
   });
-  // The sheet tracked the finger: monotonic, and 1:1 once out of the
-  // starting detent's 40 px magnet.
-  expect(tops.every((top, i) => i === 0 || top >= tops[i - 1] - 0.5)).toBe(
-    true,
-  );
+  // 1:1 with the finger at every move, no pull toward a detent (within the
+  // pixel WebKit rounds touch positions to).
+  for (const {top, finger} of tracked) {
+    expect(Math.abs(top - tallTop - finger)).toBeLessThanOrEqual(1);
+  }
   expect(restingTop).toBeCloseTo(tallTop + dy, 0);
   await waitForRest(sheet);
   expect(await sheetTop(sheet)).toBeCloseTo(halfTop, 0);
@@ -284,6 +289,30 @@ test('a slow drag follows the finger and settles on the nearest detent', async (
   expect(await readLongTasks(page, {from: started, to: Date.now()})).toEqual(
     [],
   );
+});
+
+test('pulled up past the tallest detent, the sheet holds', async ({page}) => {
+  const {driver, sheet, tallTop, handle} = await openSheet(page);
+  const tops: number[] = [];
+  await driver.play(
+    drag(handle, {x: handle.x, y: handle.y - 120}, {durationMs: 400, hz: 60}),
+    {
+      onEvent: async step => {
+        if (step.type === 'touchMove') {
+          tops.push(await sheetTop(sheet));
+        }
+      },
+    },
+  );
+  // UIKit's sheet doesn't stretch past its largest detent (iOS 26.2): no
+  // move lifts it, and the lift leaves nothing to settle.
+  expect(tops.length).toBeGreaterThan(10);
+  for (const top of tops) {
+    expect(top).toBeCloseTo(tallTop, 0);
+  }
+  await frames(page, 2);
+  expect(await sheet.evaluate(el => el.getAnimations().length)).toBe(0);
+  expect(await sheetTop(sheet)).toBeCloseTo(tallTop, 0);
 });
 
 test('a downward flick lands on the next detent, and from there dismisses', async ({
