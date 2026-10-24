@@ -32,14 +32,26 @@ export const docs = {
     {
       name: 'density',
       type: "'compact' | 'balanced' | 'spacious'",
-      description: 'Spacing density for items.',
+      description: 'Spacing density for items. On a touch screen (a coarse primary pointer), rows are at least 52px tall, 62px with a description, and never shorter than 44px in compact density, as iOS table rows are.',
       default: "'balanced'",
     },
     {
       name: 'hasDividers',
       type: 'boolean',
-      description: 'Show dividers between items.',
+      description: 'Show dividers between items. A touch press hides the dividers on either side of the pressed row until the finger lifts.',
       default: 'false',
+    },
+    {
+      name: 'hasAnimatedChanges',
+      type: 'boolean',
+      description: 'On a touch screen, animate changes to the rows the way an iOS table does: when rows are inserted, removed or reordered, the rows that stay slide to their new places and new rows fade in. Rows need stable keys. With a mouse nothing moves.',
+      default: 'false',
+    },
+    {
+      name: 'followingContent',
+      type: "'moves' | 'stays'",
+      description: "With hasAnimatedChanges, page content below the list moves with its rows (a transient translate, cleared at rest) instead of jumping when the list changes height. Use 'stays' to keep it still when the app manages that area itself.",
+      default: "'moves'",
     },
     {
       name: 'edge',

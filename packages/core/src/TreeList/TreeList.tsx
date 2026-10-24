@@ -65,6 +65,15 @@ export interface TreeListProps extends BaseProps<HTMLDivElement> {
   variant?: TreeListVariant;
 
   /**
+   * On a touch screen a row's expand and collapse slide the rows below it,
+   * and page content below the tree moves with them (a transient
+   * `translate`, cleared at rest). `'stays'` keeps the content below the tree
+   * still, for apps that manage that area themselves.
+   * @default 'moves'
+   */
+  followingContent?: 'moves' | 'stays';
+
+  /**
    * Header content rendered above the tree list.
    * Semantically associated via aria-labelledby.
    */
@@ -187,6 +196,7 @@ export function TreeList({
   items,
   density = 'balanced',
   variant = 'lineGuides',
+  followingContent = 'moves',
   header,
   xstyle,
   className,
@@ -264,6 +274,9 @@ export function TreeList({
       onToggleExpand: handleToggle,
       onActivate: activateItem,
       hasRovingTabIndex: true,
+      // Rows still sliding away after a collapse sit in an inert group
+      // (useTreeExpansionMotion): arrow keys skip them, as if already gone.
+      itemSelector: '[role="treeitem"]:not([inert] *)',
       // Rows are named by their label (AR1); typeahead matches that label, not
       // the chevron toggle, start content or description.
       matchLabelledBy: true,
@@ -316,14 +329,16 @@ export function TreeList({
         ? [...ancestorsIsLast, isLast]
         : ancestorsIsLast;
 
-      const renderedChildren =
-        isExpanded && hasChildren
-          ? renderItems(
+      // Rendered by the row when it shows them: while expanded, and while
+      // they slide away after a collapse (useTreeExpansionMotion).
+      const renderChildren = hasChildren
+        ? (): ReactNode =>
+            renderItems(
               item.children ?? [],
               nestedLevel + 1,
               ancestorsIsLastForChildren,
             )
-          : undefined;
+        : undefined;
 
       return (
         <TreeListItem
@@ -350,7 +365,8 @@ export function TreeList({
           onToggle={handleToggle}
           density={density}
           variant={variant}
-          renderedChildren={renderedChildren}
+          followingContent={followingContent}
+          renderChildren={renderChildren}
           posInSet={index + 1}
           setSize={items.length}
           isTabbable={item.id === initialTabbableId}
