@@ -255,4 +255,71 @@ describe('upgrade protected-file contract', () => {
     expect(second.envelope.data.complete).toBe(true);
     expect(second.envelope.data.filesChanged).toBe(0);
   });
+
+  it('skips a vendored file that does not parse and completes the upgrade', () => {
+    seed();
+    write('.gitattributes', 'vendor/** linguist-vendored\n');
+    const bundle =
+      "/* minified */ import {useResizable} from '@astryxdesign/core';\n" +
+      'export const x = useResizable({minSizePx: 200;\n';
+    write('vendor/bundle.js', bundle);
+    rmGenerated();
+
+    const applied = run([...ARGS, '--apply']);
+
+    expect(applied.status, applied.stderr).toBe(0);
+    expect(applied.envelope).toMatchObject({
+      type: 'upgrade.run',
+      data: {
+        complete: true,
+        modifiedFiles: ['src/owned.tsx'],
+        protectedFiles: [],
+        declinedCandidates: [
+          {
+            file: 'vendor/bundle.js',
+            location: '2:46',
+            reason:
+              'unparseable protected file (linguist-vendored in .gitattributes:1): Unexpected token, expected ","',
+          },
+        ],
+      },
+    });
+    expect(applied.envelope.data.errors ?? []).toEqual([]);
+    expect(fs.readFileSync(path.join(root, 'src/owned.tsx'), 'utf8')).toContain(
+      'minSize: 200',
+    );
+    expect(fs.readFileSync(path.join(root, 'vendor/bundle.js'), 'utf8')).toBe(
+      bundle,
+    );
+
+    const text = spawnSync(process.execPath, [CLI, 'upgrade', ...ARGS], {
+      cwd: root,
+      encoding: 'utf8',
+      timeout: 60_000,
+      env: {...process.env, FORCE_COLOR: '0', CI: ''},
+    });
+    expect(text.status, text.stderr).toBe(0);
+    expect(`${text.stdout}${text.stderr}`).toContain(
+      '1 protected file was skipped because it does not parse',
+    );
+  });
+
+  it('still fails when an owned file does not parse', () => {
+    seed();
+    write(
+      'lib/broken.js',
+      "import {useResizable} from '@astryxdesign/core';\n" +
+        'export const x = useResizable({minSizePx: 200;\n',
+    );
+    rmGenerated();
+
+    const applied = run([...ARGS, '--apply']);
+
+    expect(applied.status).toBe(1);
+    expect(applied.envelope).toMatchObject({code: 'ERR_CODEMOD_FAILED'});
+  });
 });
+
+function rmGenerated() {
+  fs.rmSync(path.join(root, 'generated'), {recursive: true, force: true});
+}

@@ -93,6 +93,22 @@ function summarizeProtectedFiles(rows) {
     .sort((a, b) => a.file.localeCompare(b.file));
 }
 
+/**
+ * Collapse per-codemod declined candidates into one row per file, in the
+ * receipt's `{file, location?, reason}` shape.
+ * @param {Array<{file: string, codemod: string, location?: string, reason: string}>} rows
+ * @returns {Array<{file: string, location?: string, reason: string}>}
+ */
+function summarizeDeclinedCandidates(rows) {
+  /** @type {Map<string, {file: string, location?: string, reason: string}>} */
+  const byFile = new Map();
+  for (const {file, location, reason} of rows) {
+    if (byFile.has(file)) continue;
+    byFile.set(file, {file, ...(location ? {location} : {}), reason});
+  }
+  return [...byFile.values()].sort((a, b) => a.file.localeCompare(b.file));
+}
+
 /** @param {string} cwd */
 function loadFileProtection(cwd) {
   try {
@@ -116,7 +132,7 @@ function loadFileProtection(cwd) {
  * report nothing changed while the files it lists remain modified
  * (spec:AST-040 FR7).
  *
- * @param {{from: string, to: string, codemods: number, integrations: string[], sourcePathFound: boolean, cwd: string, changedFiles: string[], transformsApplied: number, protectedRows: Array<{file: string, codemod: string, reason: string, declaration: string, generated: boolean, command?: string}>, errors: Array<{file: string, codemod: string, error: string}>, errorCode: string, cliBehindCore?: import('../upgrade.type.mjs').CliBehindCore | null, registryCompositions?: import('../upgrade.type.mjs').RegistryCompositionSummary}} facts
+ * @param {{from: string, to: string, codemods: number, integrations: string[], sourcePathFound: boolean, cwd: string, changedFiles: string[], transformsApplied: number, protectedRows: Array<{file: string, codemod: string, reason: string, declaration: string, generated: boolean, command?: string}>, errors: Array<{file: string, codemod: string, error: string}>, declinedRows?: Array<{file: string, codemod: string, location?: string, reason: string}>, errorCode: string, cliBehindCore?: import('../upgrade.type.mjs').CliBehindCore | null, registryCompositions?: import('../upgrade.type.mjs').RegistryCompositionSummary}} facts
  * @returns {import('../upgrade.type.mjs').UpgradeRunResponse['data']}
  */
 function stoppedReceipt({
@@ -130,6 +146,7 @@ function stoppedReceipt({
   transformsApplied,
   protectedRows,
   errors,
+  declinedRows = [],
   errorCode,
   cliBehindCore,
   registryCompositions,
@@ -156,7 +173,7 @@ function stoppedReceipt({
     transformsApplied,
     modifiedFiles,
     protectedFiles: summarizeProtectedFiles(protectedRows),
-    declinedCandidates: [],
+    declinedCandidates: summarizeDeclinedCandidates(declinedRows),
     complete: false,
     errorCode,
     errors,
@@ -405,7 +422,9 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
             path.relative(cwd, file).split(path.sep).join('/'),
           ),
           protectedFiles,
-          declinedCandidates: [],
+          declinedCandidates: summarizeDeclinedCandidates(
+            coreResult?.declinedCandidates ?? [],
+          ),
           complete: false,
           errorCode: 'ERR_CODEMOD_PROTECTED',
           errors: coreResult?.errors ?? [],
@@ -459,6 +478,7 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
           ...(coreResult?.errors ?? []),
           {file: '.', codemod: 'config', error: configErr.message},
         ],
+        declinedRows: coreResult?.declinedCandidates ?? [],
         errorCode: ERROR_CODES.ERR_INVALID_ARGUMENT,
         cliBehindCore,
       });
@@ -678,6 +698,10 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
               ...mergedErrors,
               {file: '.', codemod: 'post-codemod-hook', error: msg},
             ],
+            declinedRows: [
+              ...(coreResult?.declinedCandidates ?? []),
+              ...(integrationResult?.declinedCandidates ?? []),
+            ],
             errorCode: ERROR_CODES.ERR_CODEMOD_FAILED,
             cliBehindCore,
             ...(registryResult
@@ -730,6 +754,10 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
         errors: [
           ...mergedErrors,
           {file: '.', codemod: 'file-protection', error: err.message},
+        ],
+        declinedRows: [
+          ...(coreResult?.declinedCandidates ?? []),
+          ...(integrationResult?.declinedCandidates ?? []),
         ],
         errorCode: err.code,
         cliBehindCore,
@@ -804,7 +832,10 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
     ...hookModifiedFiles,
   ]).map(file => path.relative(cwd, file).split(path.sep).join('/'));
   receipt.protectedFiles = protectedFiles;
-  receipt.declinedCandidates = [];
+  receipt.declinedCandidates = summarizeDeclinedCandidates([
+    ...(coreResult?.declinedCandidates ?? []),
+    ...(integrationResult?.declinedCandidates ?? []),
+  ]);
   receipt.complete = protectedFiles.length === 0 && finalErrors.length === 0;
   if (protectedFiles.length > 0) {
     receipt.errorCode = 'ERR_CODEMOD_PROTECTED';

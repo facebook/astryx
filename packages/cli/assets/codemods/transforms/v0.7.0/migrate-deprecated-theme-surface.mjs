@@ -27,6 +27,7 @@ import {
   importedComponents,
   resolveImportedComponent,
 } from '../../transform-prop.mjs';
+import {parseCss, processSelector} from '../../parse.mjs';
 import {migrateAstryxThemeSelectors} from '../v0.6.0/migrate-astryx-theme-selectors-to-data-attrs.mjs';
 import {
   V06_THEME_SELECTOR_DYNAMIC_AXES,
@@ -204,7 +205,7 @@ function ownerScope(owner) {
 function unclassifiedBareClasses(selectorText) {
   /** @type {Set<string>} */
   const found = new Set();
-  selectorParser(selectors => {
+  processSelector(selectorText, selectors => {
     selectors.walk((/** @type {any} */ node) => {
       if (node.type !== 'selector') return;
       /** @type {any[][]} */
@@ -232,15 +233,15 @@ function unclassifiedBareClasses(selectorText) {
         }
       }
     });
-  }).processSync(selectorText, {lossless: true});
+  });
   return [...found].sort();
 }
 
 /** @param {string} selector */
 function finishSelectorText(selector) {
-  return selectorParser(selectors => {
+  return processSelector(selector, selectors => {
     selectors.each(finishSelectorMigration);
-  }).processSync(selector, {lossless: true});
+  });
 }
 
 /** @param {string} params */
@@ -294,7 +295,7 @@ function finishScopeParams(params) {
 /** @param {string} source @param {string} from */
 function migrateCss(source, from) {
   const migrated = migrateAstryxThemeSelectors(source, from, SELECTOR_DATA);
-  const root = postcss.parse(migrated, {from});
+  const root = parseCss(migrated, {from});
   /** @type {Set<string>} */
   const existingComments = new Set();
   root.walkComments(comment => {
