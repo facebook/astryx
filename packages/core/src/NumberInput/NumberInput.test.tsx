@@ -9,6 +9,7 @@
  * SYNC: When NumberInput.tsx changes, update tests to match new behavior
  */
 
+import {readFileSync} from 'node:fs';
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {act, useState} from 'react';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
@@ -2589,5 +2590,23 @@ describe('NumberInput stepper padding coupling', () => {
     const css = generateThemeTestCSS(theme);
     expect(css).toContain('--_field-radius: 2px');
     expect(css).toContain('border-radius: 2px');
+  });
+});
+
+describe('NumberInput stepper column under a held finger', () => {
+  it('declares the selection, callout and touch-action opt-outs in source', () => {
+    // iOS Safari reads the prefixed declarations (the published CSS is not
+    // autoprefixed) and Chromium reads only the unprefixed one and ignores the
+    // callout, so the browser spec cannot catch a lost prefix: pin all four.
+    const source = readFileSync(
+      'packages/core/src/NumberInput/NumberInput.tsx',
+      'utf8',
+    );
+    const start = source.indexOf('  numberSteppers: {');
+    const column = source.slice(start, source.indexOf('\n  },', start));
+    expect(column).toContain("WebkitTouchCallout: 'none',");
+    expect(column).toContain("WebkitUserSelect: 'none',");
+    expect(column).toContain("userSelect: 'none',");
+    expect(column).toContain("touchAction: 'manipulation',");
   });
 });
