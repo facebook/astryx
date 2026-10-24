@@ -12,7 +12,9 @@
  *   new places, the row crossing the others riding above them with the
  *   surface behind it; content below the
  *   list moves with its rows, the button a finger tapped included; a change
- *   while rows still move makes no jump; Reduce Motion keeps the motion; a
+ *   while rows still move makes no jump; under reduced motion a removal, an
+ *   insert and a reorder cross-fade, opacity only, within 200 ms
+ *   (`design:reduced-motion`); a
  *   theme's table spring times it; a removed row collapses in place, its
  *   bottom edge on the next row's top every frame, and a row swiped away
  *   collapses the same way while the rows below close the gap; the rows keep
@@ -47,6 +49,7 @@ import {
 import {solveSpring, toSpring} from '../../motion/spring';
 import {list} from '../../motion/uikit/list';
 import {openStoryAs} from './iosIdiom';
+import {expectReducedMotionCrossFade} from './reducedMotion';
 import {blockBehindBeacon, installBeacon, sampleVideoPoints} from './rowPixels';
 
 const storybook = withStorybook(test);
@@ -438,31 +441,27 @@ test("a theme's table spring (a motion role) times the update", async ({
   await expect.poll(async () => translateY(drafts)).toBe(0);
 });
 
-test('Reduce Motion keeps the update motion: UIKit runs the same table spring', async ({
+test('under reduced motion a removal, an insert and a reorder cross-fade: opacity only, within 200 ms', async ({
   page,
 }) => {
+  // design:reduced-motion DR1 and DR2, under a finger: no row travels or
+  // collapses; a removed row fades out where it is, a new one fades in.
   await page.emulateMedia({reducedMotion: 'reduce'});
   await open(page);
-  const drafts = row(page, 'Drafts');
-  await press(page, 'Remove the second row');
-  await expect(row(page, 'Sent')).toHaveCount(0);
-  await holdAnimations(page);
-  const gap = await drafts.evaluate(el => {
-    // The row above, never a removed row's ghost.
-    let previous = el.previousElementSibling as HTMLElement | null;
-    while (previous?.hasAttribute('data-astryx-leaving') === true) {
-      previous = previous.previousElementSibling as HTMLElement | null;
-    }
-    return previous == null
-      ? 0
-      : (el as HTMLElement).offsetTop - previous.offsetTop;
-  });
-  for (const t of [0, SETTLE_MS / 4, SETTLE_MS / 2]) {
-    await seekAnimations(page, t);
-    expect(await translateY(drafts)).toBeCloseTo(gap * (1 - progress(t)), 0);
+  for (const change of [
+    'Remove the second row',
+    'Insert a row second',
+    'Move the last row first',
+  ]) {
+    await press(page, change);
+    expectReducedMotionCrossFade(await holdAnimations(page));
+    await releaseAnimations(page, {finish: true});
+    await expect
+      .poll(async () =>
+        page.locator('#storybook-root [data-astryx-leaving]').count(),
+      )
+      .toBe(0);
   }
-  await releaseAnimations(page, {finish: true});
-  await expect.poll(async () => translateY(drafts)).toBe(0);
 });
 
 test('a row swiped away with a removal action collapses in place: the rows below slide up into its gap', async ({
