@@ -279,3 +279,15 @@ configuration) in a UIKit host app; Settings for the built-in check.
 | ID     | Scene                | Gesture                                                                                                           | Extract                                                                                                                                                                                                      | Method |
 | ------ | -------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
 | M-LI01 | † list L (all three) | touch a cell, hold 1 s, lift; programmatic `deselectRow(at:animated: true)` and `deselectItem(at:animated: true)` | every `CAAnimation` added in the cell's subtree at highlight, unhighlight and deselect (key path, from / to, duration, timing function, fill); selected-background alpha per frame for 600 ms after the lift | A, C   |
+
+## Reorder (UITableView edit-mode reorder)
+
+Subject "table T": a plain `UITableView` in editing mode with reorder controls
+only, 40 rows of 44 pt (rows 6 and 9 at 88 pt where noted), in the UIKit lab
+app. Measured so far (F4 batches 32, 32b, 32c): the claim, tracking, the
+crossing rule, the slides, the drop, the autoscroll steps, Reduce Motion.
+
+| ID     | Scene                     | Gesture                                                                                                      | Extract                                                                                                                         | Method |
+| ------ | ------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| M-RO26 | table T, one row at 88 pt | drag the 88 pt row to edge depths 0 to 44 pt and hold; 44 pt rows held 4, 6, 8, 10 pt inside the bottom edge | autoscroll step per 20 ms tick by depth: indexed by the edge depth in points or by a fraction of the row; the exact start inset | C      |
+| M-RO07 | table T                   | a system touch cancel mid-drag (a call or Control Center); `reloadData` mid-drag                             | does the row return to its origin or move to its slot; positions per frame                                                      | C      |

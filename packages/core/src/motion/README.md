@@ -22,6 +22,7 @@ FR4), not from this table.
 | `uikit/gestures.ts`                              | Gesture recognizer thresholds, the velocity filter and haptic stand-ins, as `{value, unit}` entries (sources in JSDoc).                                              |
 | `roles.ts`                                       | Motion roles: each spring, duration and curve of a registered table, named by its path, and its CSS variable.                                                        |
 | `resolveMotion.ts`                               | A role's value under an element's theme, read once when a motion starts.                                                                                             |
+| `uikit/reorder.ts`                               | UITableView edit-mode reorder: the reorder control's claim, the slides, the drop's settle and the edge autoscroll.                                                   |
 | `MEASUREMENTS.md`                                | The UIKit reference captures each unconfirmed value still needs.                                                                                                     |
 | `spring.ts`                                      | Closed-form damped spring, every Apple parameterization, settling duration, a spring chasing a moving target.                                                        |
 | `decay.ts`                                       | UIScrollView's momentum coast.                                                                                                                                       |
