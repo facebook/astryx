@@ -171,6 +171,54 @@ describe('generate-pr-comment base sizes', () => {
     }
   });
 
+  it('never reports a delta for an unmeasured size', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-base-null-'));
+    try {
+      const baseFile = path.join(dir, 'size-base.json');
+      fs.writeFileSync(
+        baseFile,
+        JSON.stringify({
+          baseComponentStats: {
+            Card: {
+              package: '@astryxdesign/charts',
+              esmSize: null,
+              esmBytes: null,
+            },
+          },
+          baseBundlePackages: [
+            {package: '@astryxdesign/core', gzipSize: null, gzipBytes: null},
+          ],
+        }),
+      );
+      const out = runComment(
+        {
+          ...sized,
+          componentStats: {
+            Card: {
+              package: '@astryxdesign/charts',
+              esmSize: null,
+              esmBytes: null,
+            },
+          },
+          bundlePackages: [
+            {
+              package: '@astryxdesign/core',
+              esmSize: '900B',
+              gzipSize: '300B',
+              gzipBytes: 300,
+            },
+          ],
+        },
+        ['--base-stats', baseFile],
+      );
+      expect(out).toContain('| Entry File (ESM) | N/A | N/A | N/A |');
+      expect(out).toContain('| @astryxdesign/core | 900B | N/A | 300B | N/A |');
+      expect(out).not.toMatch(/\| [+-]?0B \|/);
+    } finally {
+      fs.rmSync(dir, {recursive: true, force: true});
+    }
+  });
+
   it('keeps N/A without base stats', () => {
     const out = runComment(sized);
     expect(out).toContain('| Entry File (ESM) | N/A | 160B | N/A |');

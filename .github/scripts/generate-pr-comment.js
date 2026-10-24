@@ -86,6 +86,17 @@ function extLink(text, url) {
   return `<a href="${String(url).replace(/"/g, '%22')}" target="_blank" rel="noopener noreferrer">${text}</a>`;
 }
 
+// Difference of two measured byte counts, or null when either side was not
+// measured. A missing size is never treated as 0.
+function bytesDelta(after, before) {
+  return typeof after === 'number' &&
+    Number.isFinite(after) &&
+    typeof before === 'number' &&
+    Number.isFinite(before)
+    ? after - before
+    : null;
+}
+
 // Build component stats section
 let componentSection = '';
 if (analysis.newComponents && analysis.newComponents.length > 0) {
@@ -134,11 +145,7 @@ if (analysis.modifiedComponents && analysis.modifiedComponents.length > 0) {
     componentSection += `<details>\n<summary><strong>${inline(comp)}</strong>${pkgBadge}${sbBadge}${newBadge}</summary>\n\n`;
     componentSection += `| Metric | Before | After | Delta |\n|--------|--------|-------|-------|\n`;
 
-    const esmDelta =
-      Number.isFinite(Number(stats.esmBytes)) &&
-      Number.isFinite(Number(baseStats.esmBytes))
-        ? Number(stats.esmBytes) - Number(baseStats.esmBytes)
-        : null;
+    const esmDelta = bytesDelta(stats.esmBytes, baseStats.esmBytes);
     const esmDeltaStr =
       esmDelta !== null
         ? esmDelta > 0
@@ -187,15 +194,12 @@ const baseBundles = analysis.baseBundlePackages;
 const signedBytes = delta =>
   delta === null ? 'N/A' : delta > 0 ? `+${delta}B` : `${delta}B`;
 if (bundlePackages.length > 0 && Array.isArray(baseBundles)) {
-  bundleSection += `| Package | Entry (ESM) | Gzipped before | Gzipped after | Delta |\n`;
-  bundleSection += `|---------|-------------|----------------|---------------|-------|\n`;
+  bundleSection += `Gzip figures measure each package's entry file, not the code an import pulls in.\n\n`;
+  bundleSection += `| Package | Entry (ESM) | Entry gzip before | Entry gzip after | Delta |\n`;
+  bundleSection += `|---------|-------------|-------------------|------------------|-------|\n`;
   for (const b of bundlePackages) {
     const base = baseBundles.find(entry => entry.package === b.package) || {};
-    const delta =
-      Number.isFinite(Number(b.gzipBytes)) &&
-      Number.isFinite(Number(base.gzipBytes))
-        ? Number(b.gzipBytes) - Number(base.gzipBytes)
-        : null;
+    const delta = bytesDelta(b.gzipBytes, base.gzipBytes);
     bundleSection += `| ${inline(b.package)} | ${inline(b.esmSize) || 'N/A'} | ${inline(base.gzipSize) || 'N/A'} | ${inline(b.gzipSize) || 'N/A'} | ${signedBytes(delta)} |\n`;
   }
   bundleSection += `\n`;
