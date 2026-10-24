@@ -107,8 +107,8 @@ prop vocabulary or extensibility rule changes.
 
 ## Behavioral and layout contract
 
-The requirements below describe the current implementation and its additive
-frame target contract.
+The requirements below describe the current implementation, its additive
+frame target contract, and FR9's accepted status-colour target.
 
 | ID  | Invariant                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Basis                                                    | Contract state           |
 | --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ------------------------ |
