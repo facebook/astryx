@@ -514,6 +514,7 @@ function StandaloneBottomSheet({
           onDismiss={dismissOnLightInteraction}
           onScrimOpacity={handleScrimOpacity}
           onScrimTracking={hasScrim ? handleScrimTracking : undefined}
+          hasSpringPresentation
           onElementChange={handlePanelElementChange}
           onMotionComplete={handleMotionComplete}>
           <LayerDepthProvider>{children}</LayerDepthProvider>
