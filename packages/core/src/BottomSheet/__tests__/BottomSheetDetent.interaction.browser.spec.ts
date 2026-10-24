@@ -65,6 +65,7 @@ import {
   waitForAnimation,
   waitForRest,
   writeEvidence,
+  type CastFrame,
   type InputRecord,
   type TimedValue,
   type TouchDriver,
@@ -436,6 +437,144 @@ test('the dim follows the sheet: at once under the finger, in lockstep with the 
       dimAt(top),
       2,
     );
+  }
+});
+
+/**
+ * The luminance (0-255) around a viewport point in each screencast frame,
+ * decoded in a scratch page of the same browser (as trackMarker does), so the
+ * dim can be read while the page's main thread is blocked.
+ */
+async function luminanceAt(
+  page: Page,
+  frames: ReadonlyArray<CastFrame>,
+  point: {x: number; y: number},
+): Promise<{t: number; lum: number}[]> {
+  const scratch = await page.context().newPage();
+  try {
+    const out: {t: number; lum: number}[] = [];
+    for (let i = 0; i < frames.length; i += 12) {
+      const batch = frames.slice(i, i + 12);
+      const values = await scratch.evaluate(
+        async ({items, p}) => {
+          const results: number[] = [];
+          for (const item of items) {
+            const blob = await (
+              await fetch(`data:image/${item.format};base64,${item.data}`)
+            ).blob();
+            const bitmap = await createImageBitmap(blob);
+            const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+            const context = canvas.getContext('2d');
+            if (context == null) {
+              throw new Error('no 2d context');
+            }
+            context.drawImage(bitmap, 0, 0);
+            const x = Math.round((p.x * bitmap.width) / item.viewportWidth);
+            const y = Math.round((p.y * bitmap.height) / item.viewportHeight);
+            const {data} = context.getImageData(x - 2, y - 2, 5, 5);
+            let sum = 0;
+            for (let k = 0; k < data.length; k += 4) {
+              sum +=
+                0.2126 * data[k] + 0.7152 * data[k + 1] + 0.0722 * data[k + 2];
+            }
+            results.push(sum / (data.length / 4));
+          }
+          return results;
+        },
+        {
+          items: batch.map(f => ({
+            data: f.data,
+            format: f.format,
+            viewportWidth: f.viewportWidth,
+            viewportHeight: f.viewportHeight,
+          })),
+          p: point,
+        },
+      );
+      values.forEach((lum, k) => out.push({t: batch[k].t, lum}));
+    }
+    return out;
+  } finally {
+    await scratch.close();
+  }
+}
+
+test('the dim keeps its lockstep with the release while the main thread is blocked', async ({
+  page,
+}, testInfo) => {
+  const {driver, sheet, tallTop, halfTop, handle} = await openSheet(page);
+  const viewport = page.viewportSize();
+  if (viewport == null) {
+    throw new Error('no viewport');
+  }
+  // Below the half detent the dim depends on where the sheet is: let go
+  // there slowly and the sheet settles back to half, the dim deepening with
+  // it. The drag is slow enough (~340 px/s at the lift, a frame after its
+  // last move) that the release projects back to half rather than to
+  // dismissal. The block starts once the release (sheet and dim) is running.
+  const dy = Math.round(halfTop - tallTop + (viewport.height - halfTop) * 0.3);
+  await markElement(sheet);
+  const cast = await startScreencast(page);
+  await driver.play(
+    drag(
+      handle,
+      {x: handle.x, y: handle.y + dy},
+      {durationMs: 1200, hz: 60, restMs: 16},
+    ),
+  );
+  const [settle] = await waitForAnimation(sheet, {minProgressMs: 16});
+  const block = await blockMainThread(page, 700);
+  await page.waitForTimeout(150);
+  const castFrames = await cast.stop();
+  // A point of the backdrop above the sheet at every stop.
+  const lum = await luminanceAt(page, castFrames, {
+    x: viewport.width - 24,
+    y: Math.max(8, tallTop / 2),
+  });
+  const tracked = await trackMarker(page, castFrames);
+  // Judged while the dim still changes by more than the screencast resolves
+  // per frame: until the backdrop is within 3 luminance steps of where it
+  // rests (WebKit sends ~90 frames a second, so near the end of the spring
+  // consecutive frames can round to the same value).
+  const resting = (
+    lum.filter(s => s.t >= block.to).at(-1) ?? lum[lum.length - 1]
+  ).lum;
+  const blocked = lum.filter(
+    s => s.t >= block.from + 20 && s.t <= Math.min(block.to, settle.to),
+  );
+  const during = blocked.filter(s => s.lum > resting + 3);
+  await writeEvidence(
+    'busy-main-thread/bottomsheet-dim',
+    {
+      [`${testInfo.project.name}.json`]: JSON.stringify(
+        {
+          block,
+          settle,
+          resting,
+          frames: castFrames.map(f => ({
+            t: +(f.t - block.from).toFixed(1),
+            lum: +(lum.find(s => s.t === f.t)?.lum ?? -1).toFixed(1),
+            y: tracked.find(s => s.t === f.t)?.box?.y ?? null,
+          })),
+        },
+        null,
+        1,
+      ),
+    },
+    testInfo,
+  );
+  // Through the block the backdrop darkens frame after frame (the dim keeps
+  // rising with the sheet) and never lightens.
+  expect(during.length).toBeGreaterThanOrEqual(5);
+  const changed = during.filter(
+    (s, i) => i > 0 && during[i - 1].lum - s.lum >= 0.5,
+  ).length;
+  expect(changed).toBeGreaterThanOrEqual(during.length - 2);
+  for (let i = 1; i < blocked.length; i++) {
+    expect(
+      blocked[i].lum,
+      `t=${blocked[i].t - block.from}`,
+    ).toBeLessThanOrEqual(blocked[i - 1].lum + 1);
   }
 });
 
