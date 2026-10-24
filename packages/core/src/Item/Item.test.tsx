@@ -31,6 +31,7 @@ import {rulesDeclaredFor} from '../__tests__/pressState';
 import userEvent from '@testing-library/user-event';
 import {Item} from './Item';
 import {ItemDescriptionContext} from './ItemDescriptionContext';
+import {emulateTouch} from './__tests__/emulateTouch';
 
 /**
  * Item in delegation mode: `interactiveRef` points at a nested control that
@@ -686,8 +687,14 @@ describe('swipeActions', () => {
   // The panels and the gesture are loaded lazily (React.lazy + Suspense), so
   // the first row with swipe actions renders them a tick after it mounts.
   // Mount one once up front: the resolved module is cached on the lazy
-  // component, and every row below renders its panels synchronously.
+  // component, and every row below renders its panels synchronously. The
+  // module is imported first: a cold import compiles the gesture and motion
+  // modules it brings, which can outlast waitFor's one second on a busy
+  // machine, while the import itself is awaited for as long as it takes.
   beforeAll(async () => {
+    await import('./ItemSwipeLayer');
+    // Under a finger: the swipe loads only there.
+    emulateTouch();
     render(
       <Item
         label="Warm"
@@ -701,11 +708,20 @@ describe('swipeActions', () => {
       ).not.toBeNull();
     });
     cleanup();
+    vi.unstubAllGlobals();
   });
 
+  // The gesture system outlives a test (one per document) and keeps the time
+  // of the touches it has seen; a document clock never runs backwards, so
+  // each test's fake clock starts after the last one's.
+  let epoch = 0;
   beforeEach(() => {
-    // The gesture reads the clock for its fling test and its settle timers:
-    // fake both, and space the moves out the way a finger does.
+    // The swipe exists under a finger (a coarse primary pointer), the same on
+    // every touch device; the suite runs there, and `under a fine pointer`
+    // below checks that nothing of it exists there.
+    emulateTouch();
+    // The gesture reads touch times, and the springs run on the document
+    // clock and finish on timers: fake them all and move them together.
     vi.useFakeTimers({
       toFake: [
         'setTimeout',
@@ -716,54 +732,134 @@ describe('swipeActions', () => {
         'performance',
       ],
     });
+    epoch += 100_000;
+    vi.advanceTimersByTime(epoch);
   });
   afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
 
-  /** The first finger down: the primary touch pointer. */
-  function touch(
-    element: Element,
-    type: 'pointerDown' | 'pointerMove' | 'pointerUp' | 'pointerCancel',
-    x: number,
-    y = 10,
-  ) {
-    vi.advanceTimersByTime(50);
-    fireEvent[type](element, {
-      clientX: x,
-      clientY: y,
-      isPrimary: true,
-      pointerId: 7,
-      pointerType: 'touch',
-    });
+  interface Contact {
+    id: number;
+    x: number;
+    y: number;
+    target: Element;
   }
 
-  /** A second finger: a touch pointer that is not the primary one. */
-  function secondFinger(
-    element: Element,
-    type: 'pointerDown' | 'pointerMove' | 'pointerUp' | 'pointerCancel',
-    x: number,
-    y = 10,
-  ) {
-    vi.advanceTimersByTime(10);
-    fireEvent[type](element, {
-      clientX: x,
-      clientY: y,
-      isPrimary: false,
-      pointerId: 8,
-      pointerType: 'touch',
+  /** The fingers down on the page, for each touch event's `touches`. */
+  const down = new Map<number, Contact>();
+
+  /**
+   * A touch event as a phone sends it, stamped with the document clock. The
+   * gesture system reads touches from touch events (jsdom has `ontouchstart`,
+   * as a phone does), so a finger here is its touch events.
+   */
+  function sendTouch(
+    type: 'touchstart' | 'touchmove' | 'touchend' | 'touchcancel',
+    contact: Contact,
+    cancelable = type !== 'touchcancel',
+  ): Event {
+    const event = new Event(type, {
+      bubbles: true,
+      cancelable,
+      composed: true,
     });
+    const toTouch = (c: Contact) => ({
+      identifier: c.id,
+      clientX: c.x,
+      clientY: c.y,
+      target: c.target,
+    });
+    Object.defineProperty(event, 'changedTouches', {
+      value: [toTouch(contact)],
+    });
+    Object.defineProperty(event, 'touches', {
+      value: [...down.values()].map(toTouch),
+    });
+    Object.defineProperty(event, 'timeStamp', {value: performance.now()});
+    contact.target.dispatchEvent(event);
+    return event;
   }
 
-  /** The time a settle takes, plus the frame before it. */
-  const settled = () => void act(() => vi.advanceTimersByTime(250));
+  /**
+   * One finger: `down` lands it, `move` slides it (16 ms per step, a frame),
+   * `rest` holds it still, `up` lifts it (a frame later, or at once for a
+   * flick that is still moving when it lifts). Each returns the event it
+   * sent, so a test can ask whether the row cancelled it. A resting finger
+   * keeps reporting where it is, which is what brings UIKit's velocity
+   * filter (the gesture system's) down to rest: it never decays on its own.
+   */
+  function finger(target: Element, id = 1) {
+    let contact: Contact = {id, x: 0, y: 10, target};
+    const send = (
+      type: Parameters<typeof sendTouch>[0],
+      cancelable?: boolean,
+    ) => {
+      let event: Event | undefined;
+      act(() => {
+        event = sendTouch(type, contact, cancelable);
+      });
+      return event as Event;
+    };
+    return {
+      down(x: number, y = 10) {
+        void act(() => vi.advanceTimersByTime(16));
+        contact = {id, x, y, target};
+        down.set(id, contact);
+        return send('touchstart');
+      },
+      /** `cancelable: false`: the browser is already panning or zooming with this finger. */
+      move(x: number, y = contact.y, {cancelable = true} = {}) {
+        void act(() => vi.advanceTimersByTime(16));
+        contact = {...contact, x, y};
+        down.set(id, contact);
+        return send('touchmove', cancelable);
+      },
+      rest(ms = 320) {
+        for (let t = 0; t < ms; t += 16) {
+          void act(() => vi.advanceTimersByTime(16));
+          send('touchmove');
+        }
+      },
+      up({afterMs = 16} = {}) {
+        void act(() => vi.advanceTimersByTime(afterMs));
+        down.delete(id);
+        return send('touchend');
+      },
+      cancel() {
+        down.delete(id);
+        return send('touchcancel');
+      },
+    };
+  }
+  afterEach(() => {
+    down.clear();
+  });
 
-  const travelOf = (row: HTMLElement) =>
-    row.style.getPropertyValue('--_item-swipe-travel');
+  /** Long enough for any settle to finish, and for what it lands to render. */
+  const settled = async () => {
+    await act(async () => {
+      vi.advanceTimersByTime(1500);
+    });
+  };
+
+  /**
+   * The travel the row's transforms read, in physical px. The gesture writes
+   * it once per frame, so a frame passes first.
+   */
+  const xOf = (row: HTMLElement) => {
+    void act(() => vi.advanceTimersByTime(16));
+    return parseFloat(
+      row.style.getPropertyValue('--_item-swipe-travel') || '0',
+    );
+  };
 
   /** The panel of a side: the out-of-flow child on the root carrying it. */
   const panelOf = (row: HTMLElement, side: 'leading' | 'trailing') =>
-    row.querySelector(`[data-swipe-panel="${side}"]`);
+    row.querySelector<HTMLElement>(`[data-swipe-panel="${side}"]`);
+  const entriesOf = (row: HTMLElement, side: 'leading' | 'trailing') =>
+    panelOf(row, side)?.firstElementChild as HTMLElement;
 
   /**
    * jsdom lays nothing out: give the row a width and each side's entries a
@@ -771,12 +867,14 @@ describe('swipeActions', () => {
    */
   function layOut(row: HTMLElement) {
     Object.defineProperty(row, 'clientWidth', {configurable: true, value: 300});
-    for (const panel of row.querySelectorAll('[data-swipe-panel]')) {
-      const entries = panel.firstElementChild as HTMLElement;
-      Object.defineProperty(entries, 'offsetWidth', {
-        configurable: true,
-        value: 72 * entries.childElementCount,
-      });
+    for (const side of ['leading', 'trailing'] as const) {
+      const entries = panelOf(row, side) == null ? null : entriesOf(row, side);
+      if (entries != null) {
+        Object.defineProperty(entries, 'offsetWidth', {
+          configurable: true,
+          value: 72 * entries.childElementCount,
+        });
+      }
     }
   }
 
@@ -811,6 +909,22 @@ describe('swipeActions', () => {
     const row = screen.getByTestId('row');
     layOut(row);
     return {row, onClick};
+  }
+
+  /**
+   * A drag toward the leading side (rightward) by `travel` px of swipe, past
+   * the 25 px the pan needs to begin, held still, then lifted.
+   */
+  function dragLeading(row: HTMLElement, travel: number) {
+    const f = finger(row);
+    f.down(10);
+    f.move(20);
+    f.move(35); // 25 px: the swipe begins here, at 0
+    f.move(35 + travel / 2);
+    f.move(35 + travel);
+    f.rest();
+    f.up();
+    return f;
   }
 
   it('is served on a role-less row and a listitem, and not on a row whose role forbids interactive descendants', () => {
@@ -905,222 +1019,246 @@ describe('swipeActions', () => {
     expect(
       rulesDeclaredFor(panel).some(r => r.includes('width: max(0px')),
     ).toBe(true);
-    expect(travelOf(row)).toBe('');
+    expect(row.style.getPropertyValue('--_item-swipe-travel')).toBe('');
   });
 
-  it('claims a sideways drag, writes the travel on the root, and tells the browser the row owns the drag', () => {
+  it("claims the touch at 8 px, before a browser would scroll it, and moves the row only past UIKit's 25 px, from 0", () => {
     const {row} = renderRow();
-    const touchMove = (x: number, y = 10) =>
-      fireEvent.touchMove(row, {
-        cancelable: true,
-        touches: [{clientX: x, clientY: y}],
-      });
-    touch(row, 'pointerDown', 10);
-    // Before the axis is decided the scroller may still take the gesture:
-    // the default stands (fireEvent answers false once it is prevented).
-    expect(touchMove(14)).toBe(true);
-    touch(row, 'pointerMove', 14);
-    expect(touchMove(14)).toBe(true);
-    expect(travelOf(row)).toBe('');
-    // Past the lock and more horizontal than vertical: the row's. Every
-    // further touchmove is cancelled, which is what keeps iOS Safari's pan
-    // from taking a drag that is not perfectly level.
-    touch(row, 'pointerMove', 22, 18);
-    expect(touchMove(22, 18)).toBe(false);
-    void act(() => vi.advanceTimersByTime(20));
-    expect(travelOf(row)).toBe('12px');
-    expect(row.style.getPropertyValue('--_item-swipe-dir')).toBe('1');
-    expect(row.style.getPropertyValue('--_item-swipe-duration')).toBe('0s');
-    touch(row, 'pointerMove', 50, 20);
-    void act(() => vi.advanceTimersByTime(20));
-    expect(travelOf(row)).toBe('40px');
-    touch(row, 'pointerUp', 50, 20);
-    settled();
+    const f = finger(row);
+    f.down(10);
+    // Short of the claim the scroller may still take the touch: the
+    // default stands.
+    expect(f.move(15).defaultPrevented).toBe(false);
+    // 10 px, mostly sideways: the row's. Every further touchmove is
+    // cancelled, which is what keeps a browser (iOS Safari commits at about
+    // 10 px) from scrolling a drag that is not perfectly level.
+    expect(f.move(20, 12).defaultPrevented).toBe(true);
+    // The swipe itself has not begun: the row has not moved.
+    expect(f.move(34, 13).defaultPrevented).toBe(true);
+    expect(xOf(row)).toBe(0);
+    // 25 px: the swipe begins, at 0 (the threshold's travel is not part of
+    // it, as in UIKit).
+    expect(f.move(35, 14).defaultPrevented).toBe(true);
+    expect(xOf(row)).toBe(0);
+    expect(f.move(55, 16).defaultPrevented).toBe(true);
+    expect(xOf(row)).toBe(20);
+    // The row owned the touch, so the lift is cancelled too: no click is
+    // synthesized from it.
+    expect(f.up().defaultPrevented).toBe(true);
+  });
+
+  it('counts the swipe from where the finger crossed the threshold, so coming back past the start moves nothing', () => {
+    const {row} = renderRow();
+    const f = finger(row);
+    f.down(10);
+    f.move(20);
+    f.move(35);
+    f.move(60);
+    expect(xOf(row)).toBe(25);
+    // Back to 10 px short of the touch-down point: the row is home, and
+    // stays there rather than counting the threshold the other way.
+    f.move(20);
+    expect(xOf(row)).toBe(0);
+    f.move(4);
+    expect(xOf(row)).toBe(0);
+    f.up();
+  });
+
+  describe('under a fine pointer (a mouse, a touchscreen laptop’s trackpad)', () => {
+    // The rest of the suite answers as a touch device; here the primary
+    // pointer is fine, so the touch work costs nothing.
+    beforeEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('loads nothing of the swipe: no panels, no gesture, the plain row', async () => {
+      // A fine primary pointer in this context, before anything is checked.
+      expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+      const {row} = renderRow();
+      await settled();
+      expect(panelOf(row, 'leading')).toBeNull();
+      const f = finger(row);
+      f.down(10);
+      expect(f.move(40).defaultPrevented).toBe(false);
+      expect(f.move(120).defaultPrevented).toBe(false);
+      expect(row.style.getPropertyValue('translate')).toBe('');
+      expect(f.up().defaultPrevented).toBe(false);
+    });
+  });
+
+  it('leaves the row as it was when a claimed touch lifts before the swipe begins', async () => {
+    const {row} = renderRow();
+    const f = finger(row);
+    f.down(10);
+    f.move(30);
+    expect(f.up().defaultPrevented).toBe(true);
+    expect(xOf(row)).toBe(0);
+    expect(panelOf(row, 'leading')).toHaveAttribute('inert');
+    // An open row stays open, its panel live.
+    dragLeading(row, 45);
+    await settled();
+    expect(xOf(row)).toBe(72);
+    const g = finger(row);
+    g.down(150);
+    g.move(135);
+    g.up();
+    await settled();
+    expect(xOf(row)).toBe(72);
+    expect(panelOf(row, 'leading')).not.toHaveAttribute('inert');
+  });
+
+  it('springs back when the browser cancels a swipe in progress', async () => {
+    const onActivate = vi.fn();
+    const {row} = renderRow({leading: [{label: 'Unread', onActivate}]});
+    const f = finger(row);
+    f.down(10);
+    f.move(20);
+    f.move(35);
+    f.move(95);
+    expect(xOf(row)).toBe(60);
+    f.cancel();
+    expect(xOf(row)).toBe(0);
+    await settled();
+    expect(xOf(row)).toBe(0);
+    expect(panelOf(row, 'leading')).toHaveAttribute('inert');
+    expect(onActivate).not.toHaveBeenCalled();
   });
 
   it('leaves a mostly vertical drag to the scroller and never cancels its touchmove', () => {
     const {row} = renderRow();
-    touch(row, 'pointerDown', 10, 10);
-    touch(row, 'pointerMove', 14, 40);
-    expect(
-      fireEvent.touchMove(row, {
-        cancelable: true,
-        touches: [{clientX: 14, clientY: 40}],
-      }),
-    ).toBe(true);
-    touch(row, 'pointerMove', 120, 200);
-    expect(travelOf(row)).toBe('');
-    touch(row, 'pointerUp', 120, 200);
+    const f = finger(row);
+    f.down(10, 10);
+    expect(f.move(14, 40).defaultPrevented).toBe(false);
+    expect(f.move(60, 200).defaultPrevented).toBe(false);
+    expect(xOf(row)).toBe(0);
+    expect(f.up().defaultPrevented).toBe(false);
   });
 
   it('ignores a mouse', () => {
     const {row} = renderRow();
-    fireEvent.pointerDown(row, {
-      clientX: 10,
-      clientY: 10,
-      pointerId: 1,
-      pointerType: 'mouse',
-    });
-    fireEvent.pointerMove(row, {
-      clientX: 60,
-      clientY: 10,
-      pointerId: 1,
-      pointerType: 'mouse',
-    });
-    void act(() => vi.advanceTimersByTime(20));
-    expect(travelOf(row)).toBe('');
-    fireEvent.pointerUp(row, {
-      clientX: 60,
-      clientY: 10,
-      pointerId: 1,
-      pointerType: 'mouse',
-    });
-  });
-
-  describe('a pinch', () => {
-    /** A touchmove listing both fingers; true when the row cancelled it. */
-    const pinchMoveCancelled = (row: Element, x: number) =>
-      !fireEvent.touchMove(row, {
-        cancelable: true,
-        touches: [
-          {clientX: x, clientY: 10},
-          {clientX: 300 - x, clientY: 10},
-        ],
+    const mouse = (type: string, x: number) =>
+      act(() => {
+        row.dispatchEvent(
+          new PointerEvent(type, {
+            bubbles: true,
+            button: 0,
+            buttons: type === 'pointerup' ? 0 : 1,
+            clientX: x,
+            clientY: 10,
+            pointerId: 1,
+            pointerType: 'mouse',
+          }),
+        );
       });
-
-    it('lets the touch go when a second finger lands on the row before the axis is decided, and cancels nothing', () => {
-      const {row} = renderRow();
-      touch(row, 'pointerDown', 100);
-      secondFinger(row, 'pointerDown', 60);
-      // The fingers spread apart; the first one travels toward the leading
-      // side far past the axis lock.
-      touch(row, 'pointerMove', 130);
-      secondFinger(row, 'pointerMove', 30);
-      touch(row, 'pointerMove', 160);
-      expect(pinchMoveCancelled(row, 160)).toBe(false);
-      void act(() => vi.advanceTimersByTime(20));
-      expect(travelOf(row)).toBe('');
-      // The browser takes the pinch.
-      touch(row, 'pointerCancel', 160);
-      secondFinger(row, 'pointerCancel', 0);
-      settled();
-      expect(travelOf(row)).toBe('');
-    });
-
-    it('lets the touch go when the second finger lands off the row', () => {
-      const {row} = renderRow();
-      touch(row, 'pointerDown', 100);
-      secondFinger(document.body, 'pointerDown', 60, 200);
-      touch(row, 'pointerMove', 130);
-      touch(row, 'pointerMove', 160);
-      expect(pinchMoveCancelled(row, 160)).toBe(false);
-      void act(() => vi.advanceTimersByTime(20));
-      expect(travelOf(row)).toBe('');
-      touch(row, 'pointerCancel', 160);
-    });
-
-    it('never starts a drag from a finger that is not the first one down', () => {
-      const {row} = renderRow();
-      // The first finger is somewhere else on the page; this one lands on
-      // the row and travels sideways.
-      secondFinger(row, 'pointerDown', 100);
-      secondFinger(row, 'pointerMove', 130);
-      secondFinger(row, 'pointerMove', 160);
-      expect(pinchMoveCancelled(row, 160)).toBe(false);
-      void act(() => vi.advanceTimersByTime(20));
-      expect(travelOf(row)).toBe('');
-      secondFinger(row, 'pointerUp', 160);
-    });
-
-    it('keeps a drag the row already owns when a second finger lands', () => {
-      const {row} = renderRow();
-      touch(row, 'pointerDown', 10);
-      touch(row, 'pointerMove', 30);
-      touch(row, 'pointerMove', 45);
-      void act(() => vi.advanceTimersByTime(20));
-      expect(travelOf(row)).toBe('35px');
-      secondFinger(row, 'pointerDown', 200);
-      touch(row, 'pointerMove', 60);
-      expect(pinchMoveCancelled(row, 60)).toBe(true);
-      void act(() => vi.advanceTimersByTime(20));
-      expect(travelOf(row)).toBe('50px');
-      touch(row, 'pointerUp', 60);
-      secondFinger(row, 'pointerUp', 200);
-      settled();
-      expect(travelOf(row)).toBe('72px');
-    });
-
-    it('stops listening to the document once the axis is decided or the touch ends', () => {
-      const add = vi.spyOn(document, 'addEventListener');
-      const remove = vi.spyOn(document, 'removeEventListener');
-      try {
-        const {row} = renderRow();
-        const watching = () =>
-          add.mock.calls.filter(([type]) => type === 'pointerdown').length -
-          remove.mock.calls.filter(([type]) => type === 'pointerdown').length;
-        const before = watching();
-        touch(row, 'pointerDown', 10);
-        expect(watching()).toBe(before + 1);
-        touch(row, 'pointerMove', 40);
-        expect(watching()).toBe(before);
-        touch(row, 'pointerUp', 40);
-        settled();
-        touch(row, 'pointerDown', 10);
-        expect(watching()).toBe(before + 1);
-        touch(row, 'pointerUp', 12);
-        expect(watching()).toBe(before);
-      } finally {
-        add.mockRestore();
-        remove.mockRestore();
-      }
-    });
+    mouse('pointerdown', 10);
+    mouse('pointermove', 60);
+    mouse('pointermove', 120);
+    expect(xOf(row)).toBe(0);
+    mouse('pointerup', 120);
   });
 
   it('does not move toward a side without entries', () => {
     const {row} = renderRow({
       leading: [{label: 'Unread', onActivate: vi.fn()}],
     });
-    touch(row, 'pointerDown', 200);
-    touch(row, 'pointerMove', 150);
-    void act(() => vi.advanceTimersByTime(20));
-    expect(travelOf(row)).toBe('');
-    touch(row, 'pointerUp', 150);
+    const f = finger(row);
+    f.down(200);
+    f.move(180);
+    expect(f.move(150).defaultPrevented).toBe(false);
+    expect(xOf(row)).toBe(0);
+    f.up();
+  });
+
+  describe('a pinch', () => {
+    it('lets the touch go when a second finger lands before the swipe begins', () => {
+      const {row} = renderRow();
+      const first = finger(row, 1);
+      const second = finger(row, 2);
+      first.down(100);
+      second.down(60);
+      // The fingers spread apart; the first one travels toward the leading
+      // side far past the threshold.
+      first.move(130);
+      second.move(30);
+      expect(first.move(160).defaultPrevented).toBe(false);
+      expect(xOf(row)).toBe(0);
+      first.up();
+      second.up();
+    });
+
+    it('lets the touch go when the second finger lands off the row and the browser zooms', () => {
+      const {row} = renderRow();
+      const first = finger(row, 1);
+      const second = finger(document.body, 2);
+      first.down(100);
+      second.down(60, 200);
+      // The browser starts its pinch: it cancels the fingers' pointers, as
+      // Chromium does, and from here on no longer asks the page whether it
+      // may (the moves arrive uncancelable).
+      act(() => {
+        const cancel = new PointerEvent('pointercancel', {
+          bubbles: true,
+          clientX: 100,
+          clientY: 10,
+          pointerId: 99,
+          pointerType: 'touch',
+        });
+        Object.defineProperty(cancel, 'timeStamp', {value: performance.now()});
+        row.dispatchEvent(cancel);
+      });
+      first.move(110, 10, {cancelable: false});
+      first.move(130, 10, {cancelable: false});
+      first.move(160, 10, {cancelable: false});
+      expect(xOf(row)).toBe(0);
+      first.up();
+      second.up();
+    });
+
+    it('keeps a begun swipe when a second finger lands: the row stays on its finger, which it keeps from the browser (spec:AST-094 FR10)', async () => {
+      const {row} = renderRow();
+      const first = finger(row, 1);
+      const second = finger(row, 2);
+      first.down(10);
+      first.move(20);
+      first.move(35);
+      first.move(55);
+      expect(xOf(row)).toBe(20);
+      second.down(200);
+      // A second finger neither cancels nor redirects a claimed drag: the
+      // row's finger is still the row's, its moves still cancelled.
+      expect(first.move(75).defaultPrevented).toBe(true);
+      expect(xOf(row)).toBe(40);
+      second.up();
+      first.rest();
+      first.up();
+      await settled();
+      // Released held at 40 px of a 72 px panel: past half, it rests open.
+      expect(xOf(row)).toBe(72);
+    });
   });
 
   describe('reveal (the default)', () => {
-    it('springs back when released short of half the panel, on the settle clock', () => {
+    it('springs back when released short of half the panel', async () => {
       const {row} = renderRow();
-      touch(row, 'pointerDown', 10);
-      touch(row, 'pointerMove', 30);
-      touch(row, 'pointerMove', 40);
-      touch(row, 'pointerUp', 40);
-      // 30 px of a 72 px panel: short. The spring back runs on the clock the
-      // transforms read, then every inline property is gone.
-      expect(row.style.getPropertyValue('--_item-swipe-duration')).toBe(
-        '200ms',
-      );
-      expect(travelOf(row)).toBe('0px');
-      settled();
-      expect(travelOf(row)).toBe('');
-      expect(row.style.getPropertyValue('--_item-swipe-dir')).toBe('');
+      dragLeading(row, 30);
+      // 30 px of a 72 px panel, released at rest: short.
+      expect(xOf(row)).toBe(0);
+      await settled();
+      expect(xOf(row)).toBe(0);
       expect(panelOf(row, 'leading')).toHaveAttribute('inert');
     });
 
-    it('rests open past half the panel, with every entry a real button, and fires a tapped entry', () => {
+    it('rests open past half the panel, with every entry a real button, and fires a tapped entry', async () => {
       const onActivate = vi.fn();
       const onClick = vi.fn();
       const {row} = renderRow({
         leading: [{label: 'Unread', onActivate}],
         onClick,
       });
-      touch(row, 'pointerDown', 10);
-      touch(row, 'pointerMove', 30);
-      touch(row, 'pointerMove', 45);
-      touch(row, 'pointerMove', 60);
-      touch(row, 'pointerUp', 60);
-      settled();
+      dragLeading(row, 45);
+      await settled();
       // Resting at the panel's width; the panel is live.
-      expect(travelOf(row)).toBe('72px');
+      expect(xOf(row)).toBe(72);
       const panel = panelOf(row, 'leading') as HTMLElement;
       expect(panel).not.toHaveAttribute('inert');
       const button = screen.getByRole('button', {name: 'Unread'});
@@ -1128,68 +1266,89 @@ describe('swipeActions', () => {
       // A tap fires it at once; without `hasRemoval` the row closes.
       fireEvent.click(button);
       expect(onActivate).toHaveBeenCalledTimes(1);
-      settled();
-      expect(travelOf(row)).toBe('');
+      await settled();
+      expect(xOf(row)).toBe(0);
       expect(panel).toHaveAttribute('inert');
       // The row's own primary never fired.
       expect(onClick).not.toHaveBeenCalled();
     });
 
-    it('holds the row out after a tapped entry with hasRemoval', () => {
+    it('holds the row out after a tapped entry with hasRemoval', async () => {
       const onActivate = vi.fn();
       const {row} = renderRow({
         trailing: [{label: 'Archive', onActivate, hasRemoval: true}],
         leading: [],
       });
-      touch(row, 'pointerDown', 200);
-      touch(row, 'pointerMove', 180);
-      touch(row, 'pointerMove', 160);
-      touch(row, 'pointerMove', 140);
-      touch(row, 'pointerUp', 140);
-      settled();
-      expect(travelOf(row)).toBe('-72px');
+      const f = finger(row);
+      f.down(200);
+      f.move(185);
+      f.move(170);
+      f.move(150);
+      f.move(130);
+      f.rest();
+      f.up();
+      await settled();
+      expect(xOf(row)).toBe(-72);
       fireEvent.click(screen.getByRole('button', {name: 'Archive'}));
       expect(onActivate).toHaveBeenCalledTimes(1);
-      settled();
+      await settled();
       // Out past the edge it travelled toward, and staying there: the
       // caller removes the row, or it sits off-screen (their bug).
-      expect(travelOf(row)).toBe('-324px');
-      settled();
-      expect(travelOf(row)).toBe('-324px');
+      expect(xOf(row)).toBe(-324);
+      await settled();
+      expect(xOf(row)).toBe(-324);
+      // A row that is out takes no swipe.
+      const g = finger(row);
+      g.down(100);
+      g.move(130);
+      expect(g.move(160).defaultPrevented).toBe(false);
+      g.up();
     });
 
-    it('closes a resting row on a pointer outside it, and on Escape with focus inside', () => {
+    it('keeps the other side’s panel inert while the row rests open: only the open side’s entries are in the tab order and the accessibility tree', async () => {
+      const {row} = renderRow({
+        leading: [{label: 'Unread', onActivate: vi.fn()}],
+        trailing: [
+          {label: 'Delete', onActivate: vi.fn(), variant: 'destructive'},
+        ],
+      });
+      dragLeading(row, 45);
+      await settled();
+      expect(xOf(row)).toBe(72);
+      expect(panelOf(row, 'leading')).not.toHaveAttribute('inert');
+      // The trailing panel is out of sight behind the row: nothing in it
+      // takes focus or reaches assistive technology.
+      expect(panelOf(row, 'trailing')).toHaveAttribute('inert');
+    });
+
+    it('closes a resting row on a pointer outside it, and on Escape with focus inside', async () => {
       const {row} = renderRow();
-      const open = () => {
-        touch(row, 'pointerDown', 10);
-        touch(row, 'pointerMove', 30);
-        touch(row, 'pointerMove', 45);
-        touch(row, 'pointerMove', 60);
-        touch(row, 'pointerUp', 60);
-        settled();
-        expect(travelOf(row)).toBe('72px');
+      const open = async () => {
+        dragLeading(row, 45);
+        await settled();
+        expect(xOf(row)).toBe(72);
       };
-      open();
+      await open();
       // A drag on a neighbour is a pointer outside this row.
       fireEvent.pointerDown(document.body, {
         pointerId: 9,
         pointerType: 'touch',
       });
-      settled();
-      expect(travelOf(row)).toBe('');
-      open();
+      await settled();
+      expect(xOf(row)).toBe(0);
+      await open();
       const button = screen.getByRole('button', {name: 'Unread'});
       button.focus();
       fireEvent.keyDown(button, {key: 'Escape'});
-      settled();
-      expect(travelOf(row)).toBe('');
+      await settled();
+      expect(xOf(row)).toBe(0);
       // Focus lands on the row's own content, not on a now-inert button.
       expect(document.activeElement).toBe(
         screen.getByRole('button', {name: 'Conversation'}),
       );
     });
 
-    it('fires the outermost entry and no other on a drag past the commit point, then springs back', () => {
+    it('fires the outermost entry and no other on a drag past the commit point, then springs back', async () => {
       const inner = vi.fn();
       const outer = vi.fn();
       const {row} = renderRow({
@@ -1198,32 +1357,32 @@ describe('swipeActions', () => {
           {label: 'Pin', onActivate: outer},
         ],
       });
-      touch(row, 'pointerDown', 10);
-      touch(row, 'pointerMove', 40);
       // Two entries: a 144 px panel; the commit point is 192 (panel + 48),
       // past half the 300 px row.
-      touch(row, 'pointerMove', 210);
-      touch(row, 'pointerUp', 210);
+      dragLeading(row, 200);
       expect(outer).not.toHaveBeenCalled();
       // One beat: the slide out, then the entry fires.
-      expect(travelOf(row)).toBe('324px');
-      settled();
+      expect(xOf(row)).toBe(324);
+      await settled();
       expect(outer).toHaveBeenCalledTimes(1);
       expect(inner).not.toHaveBeenCalled();
       // No `hasRemoval`: back home.
-      settled();
-      expect(travelOf(row)).toBe('');
+      await settled();
+      expect(xOf(row)).toBe(0);
     });
 
-    it('commits on a fling short of the commit point', () => {
+    it('commits on a fling short of the commit point', async () => {
       const onActivate = vi.fn();
       const {row} = renderRow({leading: [{label: 'Unread', onActivate}]});
-      touch(row, 'pointerDown', 10);
-      touch(row, 'pointerMove', 30);
-      // 50 px in the 50 ms step: well past the fling speed.
-      touch(row, 'pointerMove', 80);
-      touch(row, 'pointerUp', 80);
-      settled();
+      const f = finger(row);
+      f.down(10);
+      f.move(20);
+      f.move(35);
+      f.move(55);
+      // 45 px of swipe, still moving fast when it lifts.
+      f.move(80);
+      f.up({afterMs: 0});
+      await settled();
       expect(onActivate).toHaveBeenCalledTimes(1);
     });
 
@@ -1238,9 +1397,8 @@ describe('swipeActions', () => {
           {label: 'Delete', onActivate: vi.fn(), variant: 'destructive'},
         ],
       });
-      const leading = panelOf(row, 'leading')?.firstElementChild as HTMLElement;
-      const trailing = panelOf(row, 'trailing')
-        ?.firstElementChild as HTMLElement;
+      const leading = entriesOf(row, 'leading');
+      const trailing = entriesOf(row, 'trailing');
       expect(
         rulesDeclaredFor(leading).some(r =>
           r.includes('flex-direction: row-reverse'),
@@ -1253,17 +1411,17 @@ describe('swipeActions', () => {
       ).toBe(false);
       // The panel wears its outermost entry's colour, so a slide-out fills
       // the row with it.
-      const outerVariant = (panelOf(row, 'trailing') as HTMLElement).className;
-      const deleteVariant = (trailing.lastElementChild as HTMLElement)
+      const trackClasses = (panelOf(row, 'trailing') as HTMLElement).className;
+      const deleteClasses = (trailing.lastElementChild as HTMLElement)
         .className;
-      expect(outerVariant.split(' ').some(c => deleteVariant.includes(c))).toBe(
+      expect(trackClasses.split(' ').some(c => deleteClasses.includes(c))).toBe(
         true,
       );
     });
   });
 
   describe('commit', () => {
-    it('slides out and fires on a release past the commit point; nothing rests', () => {
+    it('slides out and fires on a release past the commit point; nothing rests', async () => {
       const onActivate = vi.fn();
       const {row} = renderRow({
         behavior: 'commit',
@@ -1273,50 +1431,56 @@ describe('swipeActions', () => {
       // Presentational at all times: nothing in it is ever tappable.
       expect(panel).toHaveAttribute('aria-hidden', 'true');
       expect(panel.querySelector('button')).toBeNull();
-      touch(row, 'pointerDown', 10);
-      touch(row, 'pointerMove', 40);
       // One entry: 72 px panel; the commit point is half the 300 px row.
-      touch(row, 'pointerMove', 160);
-      touch(row, 'pointerUp', 160);
-      expect(travelOf(row)).toBe('324px');
-      settled();
+      dragLeading(row, 160);
+      expect(xOf(row)).toBe(324);
+      await settled();
       expect(onActivate).toHaveBeenCalledTimes(1);
-      settled();
-      expect(travelOf(row)).toBe('');
+      await settled();
+      expect(xOf(row)).toBe(0);
       expect(panel).toHaveAttribute('aria-hidden', 'true');
     });
 
-    it('springs back from any release short of the commit point, even past the panel', () => {
+    it('springs back from any release short of the commit point, even past the panel', async () => {
       const onActivate = vi.fn();
       const {row} = renderRow({
         behavior: 'commit',
         leading: [{label: 'Unread', onActivate}],
       });
-      touch(row, 'pointerDown', 10);
-      touch(row, 'pointerMove', 40);
-      touch(row, 'pointerMove', 65);
-      touch(row, 'pointerMove', 90);
-      touch(row, 'pointerMove', 100);
-      touch(row, 'pointerUp', 100);
-      settled();
+      dragLeading(row, 100);
+      await settled();
       expect(onActivate).not.toHaveBeenCalled();
-      expect(travelOf(row)).toBe('');
+      expect(xOf(row)).toBe(0);
     });
 
-    it('holds out after a committed entry with hasRemoval', () => {
+    it('commits on a fling short of the commit point', async () => {
+      const onActivate = vi.fn();
+      const {row} = renderRow({
+        behavior: 'commit',
+        leading: [{label: 'Unread', onActivate}],
+      });
+      const f = finger(row);
+      f.down(10);
+      f.move(25);
+      f.move(40);
+      f.move(60);
+      f.move(80);
+      f.up({afterMs: 0});
+      await settled();
+      expect(onActivate).toHaveBeenCalledTimes(1);
+    });
+
+    it('holds out after a committed entry with hasRemoval', async () => {
       const onActivate = vi.fn();
       const {row} = renderRow({
         behavior: 'commit',
         leading: [{label: 'Archive', onActivate, hasRemoval: true}],
       });
-      touch(row, 'pointerDown', 10);
-      touch(row, 'pointerMove', 40);
-      touch(row, 'pointerMove', 160);
-      touch(row, 'pointerUp', 160);
-      settled();
+      dragLeading(row, 160);
+      await settled();
       expect(onActivate).toHaveBeenCalledTimes(1);
-      settled();
-      expect(travelOf(row)).toBe('324px');
+      await settled();
+      expect(xOf(row)).toBe(324);
     });
 
     it('warns in development when a committing side has more than one entry', () => {
@@ -1338,23 +1502,7 @@ describe('swipeActions', () => {
     });
   });
 
-  it('swallows the click the browser synthesizes after a drag, so the primary does not fire', () => {
-    const onClick = vi.fn();
-    const {row} = renderRow({onClick});
-    touch(row, 'pointerDown', 10);
-    touch(row, 'pointerMove', 30);
-    touch(row, 'pointerMove', 40);
-    touch(row, 'pointerUp', 40);
-    fireEvent.click(screen.getByRole('button', {name: 'Conversation'}));
-    expect(onClick).not.toHaveBeenCalled();
-    settled();
-    // A later tap is a tap.
-    vi.advanceTimersByTime(500);
-    fireEvent.click(screen.getByRole('button', {name: 'Conversation'}));
-    expect(onClick).toHaveBeenCalledTimes(1);
-  });
-
-  it('reads the direction logically under RTL: leading is toward the inline end, and the sign rides the root', () => {
+  it('reads the direction logically under RTL: leading is toward the inline end, and the sign rides the root', async () => {
     // jsdom resolves `direction` only on the element that carries `dir`; a
     // browser inherits it down to the row, so resolve that inheritance by
     // hand for this test.
@@ -1386,29 +1534,33 @@ describe('swipeActions', () => {
       const row = screen.getByTestId('row');
       layOut(row);
       // Toward the inline end is leftward: the finger moves to smaller x.
-      touch(row, 'pointerDown', 200);
-      touch(row, 'pointerMove', 180);
-      touch(row, 'pointerMove', 160);
-      touch(row, 'pointerMove', 140);
-      void act(() => vi.advanceTimersByTime(20));
-      expect(row.style.getPropertyValue('--_item-swipe-dir')).toBe('-1');
+      const f = finger(row);
+      f.down(200);
+      f.move(190);
+      f.move(175);
+      f.move(155);
+      f.move(135);
       // Physical travel is negative; the transforms multiply by the sign.
-      expect(travelOf(row)).toBe('-60px');
-      touch(row, 'pointerUp', 140);
-      settled();
-      expect(travelOf(row)).toBe('-72px');
+      expect(xOf(row)).toBe(-40);
+      expect(row.style.getPropertyValue('--_item-swipe-dir')).toBe('-1');
+      f.rest();
+      f.up();
+      await settled();
+      expect(xOf(row)).toBe(-72);
       // Rightward from a closed row is toward the inline start: no trailing
       // entries, so it is not claimed.
       fireEvent.pointerDown(document.body, {
         pointerId: 9,
         pointerType: 'touch',
       });
-      settled();
-      touch(row, 'pointerDown', 10);
-      touch(row, 'pointerMove', 60);
-      void act(() => vi.advanceTimersByTime(20));
-      expect(travelOf(row)).toBe('');
-      touch(row, 'pointerUp', 60);
+      await settled();
+      expect(xOf(row)).toBe(0);
+      const g = finger(row);
+      g.down(10);
+      g.move(40);
+      expect(g.move(70).defaultPrevented).toBe(false);
+      expect(xOf(row)).toBe(0);
+      g.up();
     } finally {
       spy.mockRestore();
     }

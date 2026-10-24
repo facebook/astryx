@@ -12,10 +12,12 @@
  *   fling toward the trailing side firing the outermost entry
  * @position Browser-only regression test for Item's swipeActions. jsdom can
  *   hold the declared rules but not the paint or the geometry, and a real
- *   device has already disagreed with jsdom once on this gesture.
+ *   device has already disagreed with jsdom once on this gesture. The swipe
+ *   is the one touch model on every touch device, under a finger (a coarse
+ *   primary pointer): the context's touchscreen gives Chromium one.
  */
 
-import {expect, test, type Locator} from '@playwright/test';
+import {expect, test, type Locator, type Page} from '@playwright/test';
 // @ts-expect-error -- pngjs ships no declarations; runtime support is pinned.
 import {PNG} from 'pngjs';
 import {
@@ -40,6 +42,14 @@ test.afterAll(async () => {
 // a context that has a touchscreen. A phone-sized viewport keeps the commit
 // point within a finger's reach.
 test.use({hasTouch: true, viewport: {height: 800, width: 420}});
+
+/** Opens the story under a finger: the context's touchscreen makes the primary pointer coarse. */
+async function openUnderFinger(page: Page, url: string) {
+  await page.goto(url, {waitUntil: 'load'});
+  expect(
+    await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+  ).toBe(true);
+}
 
 type Rgb = [number, number, number];
 
@@ -117,9 +127,9 @@ async function boxOf(locator: Locator): Promise<Box> {
 test('paints no panel at rest, keeps the panel fixed while the row moves, rests open on a real button, and springs back with the panel', async ({
   page,
 }) => {
-  await page.goto(
+  await openUnderFinger(
+    page,
     `${storybook.origin}/iframe.html?id=core-item--swipe-actions&viewMode=story`,
-    {waitUntil: 'load'},
   );
   const row = page.locator('.astryx-item').first();
   await expect(row).toBeVisible();
@@ -154,8 +164,9 @@ test('paints no panel at rest, keeps the panel fixed while the row moves, rests 
   };
 
   await touch('touchStart', startX);
-  // Past the axis lock and clearly horizontal, short of the commit point.
-  await dragTo([6, 14, 28, 44, 60]);
+  // Past the 25 px the swipe needs to begin and clearly horizontal, short of
+  // the commit point: the swipe is the travel past those 25 px.
+  await dragTo([6, 14, 28, 50, 70, 90]);
 
   // Under the drag: the row has moved by the travel, the panel is fixed at
   // the row's resting edge (counter-translated) and exactly as wide as the
@@ -170,13 +181,13 @@ test('paints no panel at rest, keeps the panel fixed while the row moves, rests 
 
   // Back to the start and past it without lifting: the row is home and the
   // panel is a zero-width box again, so nothing of it paints.
-  await dragTo([40, 20, 4, -6]);
+  await dragTo([60, 30, 10, -6]);
   await expect.poll(async () => translationOf(row)).toBe(0);
   await expect.poll(async () => paintedAtEdge(await shoot())).toBe(0);
 
   // Out again past half the panel, then released: the row rests open at the
   // panel's width with its entry a real, focusable button.
-  await dragTo([10, 30, 45, 60]);
+  await dragTo([30, 60, 90, 110]);
   await touch('touchEnd');
   await expect(panel).not.toHaveAttribute('inert');
   const entry = panel.getByRole('button', {name: 'Read'});
@@ -214,7 +225,7 @@ test('paints no panel at rest, keeps the panel fixed while the row moves, rests 
   // slides home on its clock and the panel's width runs on the same one, so
   // mid-flight the gap the row has not yet covered is still the panel.
   await touch('touchStart', startX);
-  await dragTo([8, 16, 24, 30]);
+  await dragTo([10, 30, 45, 55]);
   await expect.poll(async () => translationOf(row)).toBeGreaterThan(20);
   await touch('touchEnd');
   const midFlight = await row.evaluate(
@@ -242,9 +253,9 @@ test('paints no panel at rest, keeps the panel fixed while the row moves, rests 
 test('fires the outermost trailing entry on a fling and the row leaves', async ({
   page,
 }) => {
-  await page.goto(
+  await openUnderFinger(
+    page,
     `${storybook.origin}/iframe.html?id=core-item--swipe-actions&viewMode=story`,
-    {waitUntil: 'load'},
   );
   const rows = page.locator('.astryx-item');
   const row = rows.first();
@@ -283,9 +294,9 @@ test('fires the outermost trailing entry on a fling and the row leaves', async (
 test('the trailing panel: Delete is outermost and the panel wears its colour', async ({
   page,
 }) => {
-  await page.goto(
+  await openUnderFinger(
+    page,
     `${storybook.origin}/iframe.html?id=core-item--swipe-actions&viewMode=story`,
-    {waitUntil: 'load'},
   );
   const row = page.locator('.astryx-item').first();
   const panel = row.locator('[data-swipe-panel="trailing"]');
@@ -299,7 +310,7 @@ test('the trailing panel: Delete is outermost and the panel wears its colour', a
     touchPoints: [{x: startX, y}],
     type: 'touchStart',
   });
-  for (const dx of [6, 14, 28, 44, 60, 80]) {
+  for (const dx of [6, 14, 28, 44, 60, 80, 100]) {
     await cdp.send('Input.dispatchTouchEvent', {
       touchPoints: [{x: startX - dx, y}],
       type: 'touchMove',
