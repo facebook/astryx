@@ -467,6 +467,17 @@ function fillKeyframes(
     ]),
   ].sort((x, y) => x - y);
   const frames = times.map(t => ({t, ...fillTurns(t === 1 ? to : at(t))}));
+  // The sample at a crossing sits exactly on half, where the left half reads
+  // as hidden. Give it the side the arc is leaving instead, so the left half
+  // steps at once both ways: shrinking through half, it used to fade out
+  // from the sample before, while it still drew part of the arc (a lighter
+  // band between the end cap and 6 o'clock for a frame).
+  const onHalf = new Set(crossings);
+  for (let i = 1; i < frames.length; i += 1) {
+    if (onHalf.has(frames[i].t) || (frames[i].t === 1 && to === 0.5)) {
+      frames[i].leftShown = frames[i - 1].leftShown;
+    }
+  }
   return {
     right: frames.map(f => ({
       offset: f.t,

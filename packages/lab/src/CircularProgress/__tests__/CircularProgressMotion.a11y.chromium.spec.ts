@@ -539,6 +539,120 @@ test('at rest the ring draws what the stroked circle drew', async ({
   }
 });
 
+test("a shrinking change keeps the arc solid as it crosses 6 o'clock", async ({
+  page,
+}) => {
+  // 80% back to 20%, on the theme's easing: the left half-ring must be fully
+  // opaque whenever it draws part of the arc (turned past 180deg), and hide
+  // at once as the arc passes 6 o'clock. It used to fade out over the sample
+  // before the crossing, drawing a lighter band between the end cap and 6
+  // o'clock for a frame.
+  await open(page, 80);
+  // Linear over 300 ms, so the crossing falls exactly on one of the
+  // animation's samples (where the old code read the arc as already hidden).
+  await page.addStyleTag({
+    content:
+      '.astryx-circular-progress-fill{transition-timing-function:linear!important;transition-duration:300ms!important}',
+  });
+  await changeAndPause(page, 20);
+  const duration = await page.evaluate(() =>
+    Number(document.getAnimations()[0]?.effect?.getTiming().duration),
+  );
+  expect(duration).toBe(300);
+  const samples: {time: number; angle: number; opacity: number}[] = [];
+  for (let t = 0; t <= duration; t += duration / 300) {
+    await seek(page, t);
+    samples.push({
+      time: t,
+      ...(await page.evaluate(() => {
+        const [, left] = Array.from(
+          document.querySelectorAll<HTMLElement>(
+            '.astryx-circular-progress-fill > span > span',
+          ),
+        );
+        const style = getComputedStyle(left);
+        const m = new DOMMatrix(style.transform);
+        const angle = ((Math.atan2(m.b, m.a) * 180) / Math.PI + 360) % 360;
+        return {angle, opacity: Number(style.opacity)};
+      })),
+    });
+  }
+  const showing = samples.filter(s => s.angle > 180.5);
+  expect(showing.length).toBeGreaterThan(0);
+  for (const {time, angle, opacity} of showing) {
+    expect(
+      opacity,
+      `at ${time.toFixed(1)} ms, turned ${angle.toFixed(1)}deg`,
+    ).toBe(1);
+  }
+  // It ends hidden, below half.
+  expect(samples[samples.length - 1].opacity).toBe(0);
+});
+
+test("below half nothing of the left half-ring shows at 6 o'clock", async ({
+  page,
+}) => {
+  // The left half-ring parks 4deg short of 6 o'clock until the value passes
+  // half, inside the right half, which its own half clips away: no hairline
+  // or sliver may show just left of 6 o'clock, at any size.
+  await open(page, 0);
+  const palette = await colors(page);
+  for (const size of ['sm', 'md', 'lg'] as const) {
+    // (Below 45% the end cap stays clear of the center line.)
+    for (const value of [1, 10, 25, 40]) {
+      await setArgs(page, {value, size});
+      await page.waitForTimeout(400);
+      const shot = (await page.getByRole('progressbar').screenshot()).toString(
+        'base64',
+      );
+      const scratch = await page.context().newPage();
+      try {
+        const stray = await scratch.evaluate(
+          async ({item, fill, track}) => {
+            const bitmap = await createImageBitmap(
+              await (await fetch(`data:image/png;base64,${item}`)).blob(),
+            );
+            const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+            const context = canvas.getContext('2d');
+            if (context == null) {
+              throw new Error('no 2d context');
+            }
+            context.drawImage(bitmap, 0, 0);
+            const {data, width, height} = context.getImageData(
+              0,
+              0,
+              bitmap.width,
+              bitmap.height,
+            );
+            const d = (i: number, c: number[]) =>
+              Math.abs(data[i] - c[0]) +
+              Math.abs(data[i + 1] - c[1]) +
+              Math.abs(data[i + 2] - c[2]);
+            // The ring's bottom band, from a quarter of the way in to just
+            // left of the center line: where a parked half-ring's end would
+            // leak.
+            let count = 0;
+            const center = width / 2;
+            for (let y = Math.floor(height * 0.8); y < height; y += 1) {
+              for (let x = Math.floor(width * 0.25); x < center - 1; x += 1) {
+                const i = (y * width + x) * 4;
+                if (d(i, fill) < d(i, track)) {
+                  count += 1;
+                }
+              }
+            }
+            return count;
+          },
+          {item: shot, ...palette},
+        );
+        expect(stray, `${size} at ${value}%`).toBe(0);
+      } finally {
+        await scratch.close();
+      }
+    }
+  }
+});
+
 test("the arc stays one piece as it crosses 6 o'clock", async ({page}) => {
   await open(page, 20);
   const palette = await colors(page);

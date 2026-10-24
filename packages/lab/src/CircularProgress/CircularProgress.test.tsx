@@ -321,6 +321,62 @@ describe('CircularProgress', () => {
     }
   });
 
+  it('steps the left half at once when the arc shrinks through 6 o\u2019clock', () => {
+    const calls: Keyframe[][] = [];
+    const original = Element.prototype.animate;
+    const originalStyle = window.getComputedStyle;
+    Element.prototype.animate = function (
+      this: Element,
+      keyframes: Keyframe[],
+    ) {
+      calls.push(keyframes);
+      return {
+        cancel() {},
+        playState: 'running',
+        effect: {getComputedTiming: () => ({progress: 0})},
+        onfinish: null,
+      } as unknown as Animation;
+    } as typeof Element.prototype.animate;
+    window.getComputedStyle = ((element: Element) => {
+      const real = originalStyle(element);
+      if (element.classList.contains('astryx-circular-progress-fill')) {
+        return {
+          ...real,
+          transitionDuration: '300ms',
+          transitionTimingFunction: 'linear',
+        } as CSSStyleDeclaration;
+      }
+      return real;
+    }) as typeof window.getComputedStyle;
+    try {
+      const {rerender} = render(
+        <CircularProgress value={80} size="md" label="Progress" />,
+      );
+      rerender(<CircularProgress value={20} size="md" label="Progress" />);
+      const [, left] = calls;
+      const angle = (frame: Keyframe) =>
+        Number(/rotate\(([-\d.]+)deg\)/.exec(String(frame.transform))?.[1]);
+      // Fully shown wherever it still draws part of the arc...
+      for (const frame of left) {
+        if (angle(frame) > 180) {
+          expect(frame.opacity, `at ${frame.offset}`).toBe(1);
+        }
+      }
+      // ...and hidden at once, never faded across a sample interval.
+      for (let i = 1; i < left.length; i += 1) {
+        if (left[i].opacity !== left[i - 1].opacity) {
+          expect(
+            Number(left[i].offset) - Number(left[i - 1].offset),
+          ).toBeLessThanOrEqual(1e-4);
+        }
+      }
+      expect(left.at(-1)!.opacity).toBe(0);
+    } finally {
+      Element.prototype.animate = original;
+      window.getComputedStyle = originalStyle;
+    }
+  });
+
   it('restarts an interrupted eased change from where its arc is drawn', () => {
     const calls: Keyframe[][] = [];
     const original = Element.prototype.animate;
