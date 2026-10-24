@@ -228,6 +228,65 @@ test('collapse: the children slide back under the parent, then leave, with no ju
   expect((await below.boundingBox())?.y ?? 0).toBeCloseTo(belowCollapsed, 0);
 });
 
+test('content below the tree moves with the rows, out and back, with no jump', async ({
+  page,
+}) => {
+  await openStory(page, storybook(), 'core-treelist--with-content-below');
+  const touch = await page.evaluate(
+    () => matchMedia('(pointer: coarse)').matches,
+  );
+  test.skip(!touch, 'the expansion moves on a touch screen only');
+  const button = page.getByRole('button', {name: 'Open folder'});
+  const {group, below} = parts(page);
+  await expect(button).toBeVisible();
+  const rest = (await button.boundingBox())?.y ?? 0;
+  await tapToggle(page);
+  await holdAnimations(page);
+  await seekAnimations(page, 0);
+  const height = await group.evaluate(el => (el as HTMLElement).offsetHeight);
+  // On screen where it was: its new layout, one group height back up.
+  expect(await translateY(button)).toBeCloseTo(-height, 0);
+  // In step with the rows below inside the tree.
+  await seekAnimations(page, SETTLE_MS / 4);
+  expect(await translateY(button)).toBeCloseTo(await translateY(below), 1);
+  await releaseAnimations(page, {finish: true});
+  await expect.poll(async () => translateY(button)).toBe(0);
+  expect(((await button.boundingBox())?.y ?? 0) - rest).toBeCloseTo(height, 0);
+
+  await tapToggle(page);
+  await holdAnimations(page);
+  await seekAnimations(page, SETTLE_MS / 3);
+  const midway = await translateY(button);
+  expect(midway).toBeLessThan(-1);
+  expect(midway).toBeGreaterThan(-height + 1);
+  await releaseAnimations(page, {finish: true});
+  await expect(group).toHaveCount(0);
+  expect(await translateY(button)).toBe(0);
+  expect((await button.boundingBox())?.y ?? 0).toBeCloseTo(rest, 0);
+});
+
+test(
+  'storyboard: content below the tree moving with an expansion',
+  {tag: '@storyboard'},
+  async ({page}, testInfo) => {
+    await openStory(page, storybook(), 'core-treelist--with-content-below');
+    const touch = await page.evaluate(
+      () => matchMedia('(pointer: coarse)').matches,
+    );
+    test.skip(!touch, 'the expansion moves on a touch screen only');
+    await tapToggle(page);
+    const {storyboard} = await animationStoryboard(page, {
+      name: 'tree-list-expand-content-below',
+      clip: {x: 0, y: 0, width: 402, height: 600},
+      times: [0, 33, 67, 100, 150, 200, 267, Math.round(SETTLE_MS)],
+      columns: 8,
+      cellScale: 0.45,
+    });
+    await releaseAnimations(page, {finish: true});
+    await storyboard.write(testInfo);
+  },
+);
+
 test('the rows below keep moving on every frame while the main thread is blocked', async ({
   page,
   browserName,

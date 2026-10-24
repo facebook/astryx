@@ -368,6 +368,8 @@ export interface TreeListItemInternalProps {
    * guide element).
    */
   variant: TreeListVariant;
+  /** Whether page content below the tree moves with an expansion. */
+  followingContent: 'moves' | 'stays';
   /**
    * Renders the children subtree (the parent recursion), called while the
    * row shows its children: expanded, or sliding them away after a collapse.
@@ -412,13 +414,17 @@ export function TreeListItem({
   onToggle,
   density,
   variant,
+  followingContent,
   renderChildren,
   posInSet,
   setSize,
   isTabbable,
 }: TreeListItemInternalProps) {
   const pressable = usePressFeedback();
-  const {showsChildren, groupRef} = useTreeExpansionMotion(isExpanded);
+  const {showsChildren, groupRef} = useTreeExpansionMotion(
+    isExpanded,
+    followingContent,
+  );
   const renderedChildren = showsChildren ? renderChildren?.() : undefined;
   const t = useTranslator();
   const labelId = useId();
