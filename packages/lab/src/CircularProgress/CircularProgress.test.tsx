@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect} from 'vitest';
+import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {CircularProgress} from './CircularProgress';
 
@@ -318,6 +318,69 @@ describe('CircularProgress', () => {
     } finally {
       Element.prototype.animate = original;
       window.getComputedStyle = originalStyle;
+    }
+  });
+
+  it('restarts an interrupted eased change from where its arc is drawn', () => {
+    const calls: Keyframe[][] = [];
+    const original = Element.prototype.animate;
+    const originalStyle = window.getComputedStyle;
+    // An ease-in curve (t²) evaluated the way the component probes it.
+    class EaseInEffect {
+      time = 0;
+      getComputedTiming() {
+        return {progress: this.time * this.time};
+      }
+    }
+    class Probe {
+      constructor(private effect: EaseInEffect) {}
+      set currentTime(ms: number) {
+        this.effect.time = ms / 1000;
+      }
+    }
+    vi.stubGlobal('KeyframeEffect', EaseInEffect);
+    vi.stubGlobal('Animation', Probe);
+    Element.prototype.animate = function (
+      this: Element,
+      keyframes: Keyframe[],
+    ) {
+      calls.push(keyframes);
+      // Every running change is half way through its time.
+      return {
+        cancel() {},
+        playState: 'running',
+        effect: {getComputedTiming: () => ({progress: 0.5})},
+        onfinish: null,
+      } as unknown as Animation;
+    } as typeof Element.prototype.animate;
+    window.getComputedStyle = ((element: Element) => {
+      const real = originalStyle(element);
+      if (element.classList.contains('astryx-circular-progress-fill')) {
+        return {
+          ...real,
+          transitionDuration: '400ms',
+          transitionTimingFunction: 'ease-in',
+        } as CSSStyleDeclaration;
+      }
+      return real;
+    }) as typeof window.getComputedStyle;
+    try {
+      const {rerender} = render(
+        <CircularProgress value={0} size="md" label="Progress" />,
+      );
+      rerender(<CircularProgress value={100} size="md" label="Progress" />);
+      calls.length = 0;
+      rerender(<CircularProgress value={50} size="md" label="Progress" />);
+      const cap = calls[2];
+      const angle = (frame: Keyframe) =>
+        Number(/rotate\(([-\d.]+)deg\)/.exec(String(frame.transform))?.[1]);
+      // Half its time into 0% → 100% on ease-in, the arc is drawn at 25%
+      // (90deg), not at the 50% its time fraction would give.
+      expect(angle(cap[0])).toBeCloseTo(90, 5);
+    } finally {
+      Element.prototype.animate = original;
+      window.getComputedStyle = originalStyle;
+      vi.unstubAllGlobals();
     }
   });
 

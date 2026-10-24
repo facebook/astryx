@@ -589,7 +589,10 @@ export function CircularProgress({
         first != null && first.playState !== 'finished'
           ? Number(timing?.progress ?? 1)
           : 1;
-      from = running.from + (running.to - running.from) * progress;
+      // `progress` is the running change's linear time fraction; the arc is
+      // drawn on that change's easing, so the eased position is where it is.
+      from =
+        running.from + (running.to - running.from) * running.ease(progress);
       for (const animation of running.animations) {
         animation.cancel();
       }
