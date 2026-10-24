@@ -1014,6 +1014,45 @@ describe('DropdownMenuRadioGroup title', () => {
     }
   });
 
+  it('titled groups read their titles through one shared observer, not one each', async () => {
+    const Original = globalThis.MutationObserver;
+    const observedBy = new Map<Node, MutationObserver>();
+    class Recording extends Original {
+      observe(target: Node, options?: MutationObserverInit) {
+        observedBy.set(target, this);
+        super.observe(target, options);
+      }
+    }
+    globalThis.MutationObserver = Recording;
+    try {
+      await openMenu(
+        <>
+          <DropdownMenuRadioGroup
+            value="name"
+            onChange={() => {}}
+            title="Sort by">
+            <DropdownMenuRadioItem value="name" label="Name" />
+          </DropdownMenuRadioGroup>
+          <DropdownMenuRadioGroup
+            value="kind"
+            onChange={() => {}}
+            title="Group by">
+            <DropdownMenuRadioItem value="kind" label="Kind" />
+          </DropdownMenuRadioGroup>
+        </>,
+      );
+      const headings = Array.from(
+        document.querySelectorAll('.astryx-dropdown-menu-section-heading'),
+      );
+      expect(headings).toHaveLength(2);
+      const [first, second] = headings.map(heading => observedBy.get(heading));
+      expect(first).toBeDefined();
+      expect(second).toBe(first);
+    } finally {
+      globalThis.MutationObserver = Original;
+    }
+  });
+
   it('a focusable node in the title is not reachable by the arrow keys, as in a DropdownMenuGroup heading', async () => {
     await openMenu(
       <DropdownMenuRadioGroup

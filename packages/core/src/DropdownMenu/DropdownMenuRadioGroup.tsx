@@ -43,6 +43,7 @@ import {themeProps} from '../utils/themeProps';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {isRenderable} from '../utils/isRenderable';
+import {observeContent} from '../utils/sharedMutationObserver';
 import type {BaseProps} from '../BaseProps';
 import {
   DropdownMenuRadioGroupContext,
@@ -191,20 +192,16 @@ export function DropdownMenuRadioGroup({
       setMeasuredTitleText(text);
     }
   });
+  // Content changes come from the shared observer (one for every observed
+  // element, `architecture:react-component-runtime` INV7), not one per group.
   useIsomorphicLayoutEffect(() => {
     const heading = headingRef.current;
-    if (heading == null || typeof MutationObserver === 'undefined') {
+    if (heading == null) {
       return;
     }
-    const observer = new MutationObserver(() => {
+    return observeContent(heading, () => {
       setMeasuredTitleText(headingText(heading));
     });
-    observer.observe(heading, {
-      childList: true,
-      characterData: true,
-      subtree: true,
-    });
-    return () => observer.disconnect();
   }, [isTitleGiven]);
   const titleHasText = measuredTitleText !== '';
   const hasTitle = isTitleGiven && titleHasText;
