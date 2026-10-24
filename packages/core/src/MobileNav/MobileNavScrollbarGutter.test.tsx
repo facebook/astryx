@@ -64,7 +64,7 @@ describe('MobileNav scrollbar gutter', () => {
       </MobileNav>,
     );
 
-    expect(document.documentElement.style.overflow).toBe('clip');
+    expect(document.documentElement.style.overflow).toBe('hidden');
     expect(rootGutter()).toBe('stable');
 
     view.unmount();
@@ -102,7 +102,7 @@ describe('MobileNav scrollbar gutter', () => {
       </MobileNav>,
     );
 
-    expect(document.documentElement.style.overflow).toBe('clip');
+    expect(document.documentElement.style.overflow).toBe('hidden');
     expect(rootGutter()).toBe('');
     expect(document.documentElement.style.paddingRight).toBe('');
   });

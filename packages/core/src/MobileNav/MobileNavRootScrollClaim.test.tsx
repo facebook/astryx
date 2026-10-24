@@ -37,13 +37,13 @@ afterEach(() => {
 const rootOverflow = () => document.documentElement.style.overflow;
 
 describe('MobileNav root scroll claim', () => {
-  it('clips the page while open and gives it back on close', () => {
+  it('locks the page while open and gives it back on close', () => {
     const nav = render(
       <MobileNav isOpen onOpenChange={() => {}}>
         Nav
       </MobileNav>,
     );
-    expect(rootOverflow()).toBe('clip');
+    expect(rootOverflow()).toBe('hidden');
 
     nav.rerender(
       <MobileNav isOpen={false} onOpenChange={() => {}}>
