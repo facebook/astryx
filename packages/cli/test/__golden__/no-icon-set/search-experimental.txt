@@ -1,4 +1,9 @@
-Results for "experimental" (3)
+Results for "experimental" (4)
+name:        useListReorder
+domain:      hook
+package:     @astryxdesign/core
+import:      @astryxdesign/core/List/experimental
+command:     pnpm exec astryx hook useListReorder
 name:        authoring/field-reference
 section:     config
 domain:      doc
