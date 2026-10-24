@@ -5,11 +5,16 @@
 /**
  * @file ListItem.tsx
  * @input Uses React, ReactNode, StyleXStyles, theme tokens, the List row edge
- *   treatment, CheckboxInput, and the marker or task checkbox a
+ *   treatment, the press layer (dividers beside a touch-pressed or held row
+ *   hide and the layer reaches over the row's own), the touch row heights
+ *   (listRow.stylex.ts), CheckboxInput, and the marker or task checkbox a
  *   ListMarkerScope sets (Markdown's nested lists and the task items of mixed
  *   lists)
  * @output Exports ListItem component, ListItemProps type
  * @position Core implementation; consumed by List, index.ts, tested by List.test.tsx
+ *
+ * In a List with `onReorder` (List/useListReorder.ts), each row ends with a
+ * ListReorderHandle, or keeps its place with `isReorderDisabled`.
  *
  * Composes Item for the shared start content + label + description + end content layout
  * and the invisible button/anchor interactive pattern.
@@ -34,10 +39,13 @@ import {
 import type {BaseProps} from '../BaseProps';
 import {ListContext, type ListMarker} from './ListContext';
 import {CheckboxInput} from '../CheckboxInput';
-import {mergeProps} from '../utils';
+import {isRenderable, mergeProps} from '../utils';
 import {Item} from '../Item';
 import type {ItemAlign, ItemSwipeActions, ItemSwipeBehavior} from '../Item';
 import {themeProps} from '../utils/themeProps';
+import {listRowStyles} from './listRow.stylex';
+import {ListReorderHandle} from './ListReorderHandle';
+import {FIXED_ROW_ATTRIBUTE, ListReorderContext} from './useListReorder';
 
 // =============================================================================
 // Types
@@ -129,6 +137,14 @@ export interface ListItemProps extends BaseProps<HTMLLIElement> {
   isSelected?: boolean;
 
   /**
+   * In a List with `onReorder`, this row has no reorder handle and keeps its
+   * place: other rows cannot be dragged or moved past it, so it splits the
+   * list into groups that each reorder on their own. No effect elsewhere.
+   * @default false
+   */
+  isReorderDisabled?: boolean;
+
+  /**
    * Swipe actions for touch, passed through to `Item` unchanged: the verbs a
    * sideways drag uncovers on each side. See `Item.swipeActions`; `List`
    * clips the rows in the inline axis for them.
@@ -186,13 +202,41 @@ const styles = stylex.create({
   withDivider: {
     borderBlockEndWidth: borderVars['--border-width'],
     borderBlockEndStyle: 'solid',
-    borderBlockEndColor: colorVars['--color-border'],
+    // A touch press hides this row's divider and the one above it, in the
+    // frame the press is believed, with no transition, as a highlighted
+    // UIKit cell hides its separators; both come back in the first frame of
+    // the release, while the press is still fading. A selection hold (the row
+    // kept selected through a navigation push) hides them the same way until
+    // it ends.
+    borderBlockEndColor: {
+      default: colorVars['--color-border'],
+      '[data-astryx-press="on"]': 'transparent',
+      '[data-astryx-press="held"]': 'transparent',
+      ':has(+ [data-astryx-press="on"])': 'transparent',
+      ':has(+ [data-astryx-press="held"])': 'transparent',
+    },
     // A longhand, not the `borderBlockEnd` shorthand: StyleX's default
     // property-specificity mode drops border shorthands silently, so the
     // shorthand never reached the shipped CSS and the last item kept its
     // divider.
     ':last-child': {
       borderBlockEndWidth: 0,
+    },
+    // While its divider is hidden, the press layer (utils/pressLayer.stylex.ts)
+    // reaches over it, so the whole row is pressed. The last row has no
+    // divider to cover.
+    '::before': {
+      insetBlockEnd: {
+        default: null,
+        '[data-astryx-press="on"]': {
+          default: `calc(-1 * ${borderVars['--border-width']})`,
+          ':last-child': 0,
+        },
+        '[data-astryx-press="held"]': {
+          default: `calc(-1 * ${borderVars['--border-width']})`,
+          ':last-child': 0,
+        },
+      },
     },
   },
 });
@@ -283,6 +327,11 @@ const NUMBER_STYLES = {
   'lower-roman': markerStyles.lowerRoman,
 } as const;
 
+/**
+ * A row's height on a touch screen (primary pointer coarse): UIKit's table
+ * rows (`list.metrics`), at least that tall, never shorter than the
+ * platform's control size. A theme's `min-height` on `list-item` replaces it.
+ */
 const embeddedStyles = stylex.create({
   noRadius: {
     borderRadius: 0,
@@ -319,6 +368,7 @@ export function ListItem({
   rel,
   isDisabled = false,
   isSelected = false,
+  isReorderDisabled = false,
   align,
   xstyle,
   className,
@@ -327,6 +377,9 @@ export function ListItem({
   ...restProps
 }: ListItemProps) {
   const ctx = use(ListContext);
+  // In a List with `onReorder`: a trailing handle, or a row that stays put.
+  const isReorderable = use(ListReorderContext) != null;
+  const hasReorderHandle = isReorderable && !isReorderDisabled;
   const density = ctx?.density ?? 'balanced';
   const hasDividers = ctx?.hasDividers ?? false;
   const edge = ctx?.edge ?? 'padded';
@@ -376,7 +429,16 @@ export function ListItem({
       startContent={startContent}
       label={label}
       description={description}
-      endContent={endContent}
+      endContent={
+        hasReorderHandle ? (
+          <>
+            {endContent}
+            <ListReorderHandle label={label} isDisabled={isDisabled} />
+          </>
+        ) : (
+          endContent
+        )
+      }
       onClick={onClick}
       interactiveRef={interactiveRef}
       href={href}
@@ -391,6 +453,11 @@ export function ListItem({
           hasMarkers && styles.withCounter,
           hasDividers && styles.withDivider,
           hasDividers && embeddedStyles.noRadius,
+          density === 'compact'
+            ? listRowStyles.touchCompact
+            : isRenderable(description)
+              ? listRowStyles.touchTwoLine
+              : listRowStyles.touchOneLine,
           edge === 'flush' && styles.edgeFlush,
           edge === 'outset' && styles.edgeOutset,
           edge === 'bleed' && styles.edgeBleed,
@@ -398,6 +465,9 @@ export function ListItem({
         ] as StyleXStyles
       }
       {...mergeProps(themeProps('list-item'), {className, style})}
+      {...(isReorderable && isReorderDisabled
+        ? {[FIXED_ROW_ATTRIBUTE]: ''}
+        : null)}
       {...restProps}
     />
   );

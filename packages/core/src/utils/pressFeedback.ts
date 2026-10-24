@@ -107,7 +107,20 @@ const TIMER_EVENT = {
   onset: 'onset',
 } as const;
 
+/**
+ * A press state the controller did not write is its owner's: a selection
+ * hold's `held` (selectionHold.ts) keeps a row selected through a navigation
+ * push, so neither a new press nor a release's end overwrites or clears it.
+ */
+function ownedElsewhere(element: HTMLElement): boolean {
+  const value = element.getAttribute(PRESSED_ATTRIBUTE);
+  return value != null && value !== 'on' && value !== 'fading';
+}
+
 function paintElement(element: HTMLElement, paint: PressPaint): void {
+  if (ownedElsewhere(element)) {
+    return;
+  }
   if (paint === 'none') {
     element.removeAttribute(PRESSED_ATTRIBUTE);
     return;
@@ -241,7 +254,9 @@ function finish(): void {
     return;
   }
   clearTimer();
-  live.element.removeAttribute(PRESSED_ATTRIBUTE);
+  if (!ownedElsewhere(live.element)) {
+    live.element.removeAttribute(PRESSED_ATTRIBUTE);
+  }
   live = null;
 }
 
