@@ -2188,6 +2188,28 @@ describe('useSheetGestures: the release on the compositor', () => {
     await expect(exit?.finished).resolves.toBe(true);
   });
 
+  it('keeps a fast throw onto the tallest detent within the reserve below the screen', () => {
+    const {hook} = setup({
+      snapHeights: () => [200],
+      offscreenBlockEndInset: 48,
+    });
+    const t = makeTarget();
+    const played = recordAnimations(t);
+    down(hook, 0, 0, t);
+    stream(hook, t, {from: 0, to: 150, t0: 0, t1: 600});
+    // Thrown back up at 3000 px/s, released 5 px below fully open.
+    stream(hook, t, {from: 150, to: 5, t0: 600, t1: 648});
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(pointerEvent(5, 650, t)),
+    );
+    expect(hook.result.current.settledOffset).toBe(0);
+    const release = played.at(-1) as Played;
+    // The sheet extends 48 px below the screen: it never rises past that.
+    for (let ms = 0; ms <= 600; ms += 4) {
+      expect(travelAt(release, ms)).toBeGreaterThanOrEqual(-48.5);
+    }
+  });
+
   it('settles a drag dismissal as unfinished when the sheet unmounts mid-exit', async () => {
     const snapHeights = () => [200];
     // A host that closes when asked, as the sheet's own host does.
