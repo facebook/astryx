@@ -4,8 +4,9 @@
 
 /**
  * @file TextInput.tsx
- * @input Uses React, useId, ChangeEvent, Field, Icon, InputGroupContext
- * @output Exports TextInput component, TextInputProps
+ * @input Uses React, useId, ChangeEvent, Field, Icon, InputGroupContext,
+ *   textEntryTraits (the touch-keyboard trait props)
+ * @output Exports TextInput component, TextInputProps, TextInputType
  * @position Core implementation; consumed by index.ts, tested by TextInput.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -48,6 +49,10 @@ import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {getInputARIA, isImeKeyEvent} from '../utils';
+import {
+  textEntryTraitAttributes,
+  type TextEntryTraitProps,
+} from '../Field/textEntryTraits';
 
 const styles = stylex.create({
   input: {
@@ -120,16 +125,24 @@ import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
-export type TextInputType = 'text' | 'password' | 'email';
+/**
+ * The HTML input type. Beyond their meaning, `email`, `tel`, `url` and
+ * `password` choose a touch keyboard (email, phone pad, URL) and its
+ * capitalization; `search` makes the field a search box.
+ */
+export type TextInputType =
+  'text' | 'password' | 'email' | 'search' | 'tel' | 'url';
 
-export interface TextInputProps extends Omit<
-  FieldInputBaseProps,
-  'onChange' | 'defaultValue'
-> {
+export interface TextInputProps
+  extends
+    Omit<FieldInputBaseProps, 'onChange' | 'defaultValue'>,
+    TextEntryTraitProps {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLInputElement>;
   /**
-   * The HTML input type.
+   * The HTML input type. `email`, `tel` and `url` also bring up the matching
+   * touch keyboard (email, phone pad, URL); `search` makes the field a search
+   * box (pair it with `enterKeyHint="search"` for a Search key).
    * @default 'text'
    */
   type?: TextInputType;
@@ -279,6 +292,12 @@ export interface TextInputProps extends Omit<
    * session-scoped field that must not reuse a prior value).
    */
   autoComplete?: React.InputHTMLAttributes<HTMLInputElement>['autoComplete'];
+  /**
+   * Whether misspelled words are underlined (the native `spellcheck`).
+   * Turning it off also stops iOS from replacing quotes and dashes with their
+   * typographic forms. Unset, the browser decides.
+   */
+  hasSpellCheck?: boolean;
 }
 
 /**
@@ -315,6 +334,11 @@ export function TextInput({
   htmlName,
   onEnter,
   onKeyDown,
+  enterKeyHint,
+  inputMode,
+  autoCapitalize,
+  hasAutoCorrect,
+  hasSpellCheck,
   width,
   containerXstyle,
   containerClassName,
@@ -481,6 +505,13 @@ export function TextInput({
         id={id}
         name={isDisabled ? undefined : htmlName}
         type={type}
+        {...textEntryTraitAttributes({
+          enterKeyHint,
+          inputMode,
+          autoCapitalize,
+          hasAutoCorrect,
+        })}
+        spellCheck={hasSpellCheck}
         value={optimisticValue}
         onChange={handleChange}
         onKeyDown={
