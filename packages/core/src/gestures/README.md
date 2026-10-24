@@ -360,6 +360,13 @@ and cancels the touch's moves for its whole length if so. A second finger is
 never cancelled, so pinch-zoom keeps working. With no hold, the listener is
 gone and every touch scrolls as without the system.
 
+A gesture that takes over an edge of the page itself (a pull to refresh on
+the document) changes the page's `overscroll-behavior-y` (the root's and
+the body's) through `claimRootScrollStyle` (`../hooks/rootScrollStyles.ts`),
+never by writing the style: each property keeps a claim stack, so a scroll
+lock and a pull compose. `isScrollLockActive` and `subscribeScrollLock` tell
+such a gesture to stand down while a lock holds the page.
+
 ### Multiple fingers
 
 A drag a recognizer has claimed keeps its finger: a second finger never

@@ -19,6 +19,14 @@ export {GestureHost, getGestureHost} from './GestureHost';
 export {isFingerScroll, watchFingerScrolls} from './fingerScroll';
 export {holdPageScroll} from './pageHold';
 export type {PageScrollDecision} from './pageHold';
+// The page's scroll styles, shared with the scroll lock: a gesture that takes
+// an edge of the page claims them here.
+export {
+  claimRootScrollStyle,
+  isScrollLockActive,
+  subscribeScrollLock,
+} from '../hooks/rootScrollStyles';
+export type {RootScrollStyle} from '../hooks/rootScrollStyles';
 export type {
   AttachOptions,
   DelegatedConsumerType,
