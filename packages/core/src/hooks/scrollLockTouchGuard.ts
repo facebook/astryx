@@ -151,9 +151,10 @@ export function installScrollLockTouchGuard(): () => void {
         return;
       }
       // The browser picks the scroller once per gesture; so does the guard.
-      verdict = isPanAbsorbedBeforePage(event.target, dx, dy)
-        ? 'pass'
-        : 'cancel';
+      // A document listener sees a touch inside a shadow root retargeted to
+      // its host, so the walk starts from the innermost node of the path.
+      const origin = event.composedPath()[0] ?? event.target;
+      verdict = isPanAbsorbedBeforePage(origin, dx, dy) ? 'pass' : 'cancel';
     }
     if (verdict === 'cancel' && event.cancelable) {
       event.preventDefault();
