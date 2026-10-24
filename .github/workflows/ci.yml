@@ -3794,6 +3794,14 @@ jobs:
       - name: Run Build CSS-layer cascade guard
         run: node .github/scripts/theme-layer-cascade.js
 
+      # A compile-time ancestor selector on another workspace package's marker
+      # (lab's rule on core's indicatorScope) matches in a real browser: see
+      # scripts/stylex-module-resolution.cjs.
+      - name: Run cross-package StyleX marker browser check
+        env:
+          ASTRYX_STYLEX_BROWSER: '1'
+        run: pnpm vitest run scripts/stylex-module-resolution.browser.test.mjs --project node --maxWorkers=1
+
   # Guest token boundaries cross portals and the host light/dark cascade. This
   # requires a production browser render; source and jsdom checks cannot prove
   # which custom properties paint the portaled surfaces.
