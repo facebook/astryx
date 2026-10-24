@@ -275,6 +275,20 @@ Rejected: keeping spacing in `px` while type is `rem` (text grows into fixed
 boxes); converting author-written `px` in custom themes (a theme's own
 decision).
 
+### DEC-2 — Info status roles reuse retired names
+
+**Decider:** `cixzhang`, `2026-10-24`
+
+The Info roles of INV11 use the grammar's names, including
+`--color-info-muted`, which shipped with a purple meaning until v0.0.8. The
+v0.0.8 upgrade transform still rewrites that name to `--color-background-purple`.
+It runs only when a project upgrades from a version before v0.0.8, whose code
+used the retired meaning, so the reuse does not change a released contract for
+any supported project. Bare `--color-info` stays unused.
+
+Rejected: an off-grammar name such as `--color-information-muted`, which INV10
+cannot name.
+
 ## Verification
 
 | Invariant                    | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Failure signal                                                                                                                                                                                                                                             |
