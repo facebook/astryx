@@ -3,7 +3,7 @@
 'use client';
 /**
  * @file BaseTable.tsx
- * @input React, types.ts, columnUtils.ts
+ * @input React, canonical identity/admission, private window planning and stable plugin state
  * @output Exports BaseTable component
  * @position Core structural component; wrapped by Table.tsx
  *
@@ -14,7 +14,26 @@
  * - /packages/cli/assets/templates/blocks/components/Table/ (showcase blocks)
  */
 
-import {memo, useRef, type ReactElement, type ReactNode, type Ref} from 'react';
+import {
+  memo,
+  useRef,
+  useMemo,
+  useEffect,
+  useSyncExternalStore,
+  type ReactElement,
+  type ReactNode,
+  type Ref,
+} from 'react';
+import {createTableRuntime, TableRuntimeContext} from './tableRuntime';
+import {resolveTableIdentity, resolveTableAdmission} from './tableIdentity';
+import {useTableWindow} from './plugins/virtualization/useTableWindow';
+import {getTableVirtualizationConfig} from './plugins/virtualization/useTableVirtualization';
+import {TableContext} from './TableContext';
+import {use} from 'react';
+import {TableRowFocusContext} from './tableRowFocus';
+import {finalizeRowActivation} from './tableRowActivation';
+import {isFixedHeightColumn} from './tableColumnAdmission';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import type {
@@ -30,6 +49,8 @@ import type {
   TableRowComponentProps,
   TableCellComponentProps,
   TableHeaderCellComponentProps,
+  TableRowContext,
+  TableRenderContext,
 } from './types';
 import {
   generateColumns,
@@ -50,6 +71,13 @@ import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
 const styles = stylex.create({
+  spacer: (height: number) => ({
+    height,
+    padding: 0,
+    borderWidth: 0,
+    lineHeight: 0,
+  }),
+  fixedRow: (height: number) => ({height}),
   table: {
     width: '100%',
     borderCollapse: 'collapse',
@@ -141,6 +169,14 @@ interface TableRowProps<T extends Record<string, unknown>> {
    * case no `aria-rowindex` is emitted (native table semantics).
    */
   ariaRowIndex?: number;
+  contextIdentity: {
+    key: string | number | undefined;
+    identityStatus: TableRowContext['identityStatus'];
+  };
+  renderContext: TableRenderContext;
+  rowHeight?: number;
+  onRowFocus?: (key: string | number) => void;
+  onRowBlur?: () => void;
 }
 
 /**
@@ -158,7 +194,46 @@ function TableRowInner<T extends Record<string, unknown>>({
   RowComponent,
   CellComponent,
   ariaRowIndex,
+  contextIdentity,
+  renderContext,
+  rowHeight,
+  onRowFocus,
+  onRowBlur,
 }: TableRowProps<T>): ReactElement {
+  const rowRef = useRef<HTMLTableRowElement | null>(null);
+  const ownedLayerOpen = useRef(false);
+  const rowFocus = useMemo(
+    () => ({
+      onOpenChange(open: boolean) {
+        ownedLayerOpen.current = open;
+        if (open && contextIdentity.key != null) {
+          onRowFocus?.(contextIdentity.key);
+        }
+        if (!open) {
+          queueMicrotask(() => {
+            const row = rowRef.current;
+            if (row != null && !row.contains(row.ownerDocument.activeElement)) {
+              onRowBlur?.();
+            }
+          });
+        }
+      },
+    }),
+    [contextIdentity.key, onRowFocus, onRowBlur],
+  );
+  // Context is retained by mounted rows only; complete data is validated once by the parent.
+  const context = useMemo<TableRowContext>(
+    () => ({
+      key: contextIdentity.key,
+      identityStatus: contextIdentity.identityStatus,
+      kind: renderContext.rowModel === 'flat' ? 'product' : 'unknown',
+      logicalIndex: rowIndex,
+      logicalRowCount: renderContext.logicalRowCount,
+      headerRowCount: renderContext.headerRowCount,
+      render: renderContext,
+    }),
+    [contextIdentity, rowIndex, renderContext],
+  );
   // Build cells first
   const cells = columns.map((col, columnIndex) => {
     // Apply column alignment to body cells
@@ -181,6 +256,7 @@ function TableRowInner<T extends Record<string, unknown>>({
       item,
       columnIndex,
       columns,
+      context,
     );
 
     const isDefaultRenderer = !col.renderCell;
@@ -225,24 +301,63 @@ function TableRowInner<T extends Record<string, unknown>>({
   // Apply plugin transforms for row (with pre-rendered children).
   // Seed `aria-rowindex` (when the table opts into ARIA row indexing) as a
   // base htmlProp so plugins compose over it and can still override.
-  const rowRenderProps = applyPlugins(
-    plugins,
-    p => p.transformBodyRow,
-    {
-      htmlProps: ariaRowIndex == null ? {} : {'aria-rowindex': ariaRowIndex},
-      xstyle: [],
-      children: <>{cells}</>,
-    } satisfies BodyRowRenderProps,
-    item,
-    rowIndex,
+  const rowRenderProps = finalizeRowActivation(
+    applyPlugins(
+      plugins,
+      p => p.transformBodyRow,
+      {
+        htmlProps: ariaRowIndex == null ? {} : {'aria-rowindex': ariaRowIndex},
+        xstyle: [],
+        children: <>{cells}</>,
+      } satisfies BodyRowRenderProps,
+      item,
+      rowIndex,
+      context,
+    ),
   );
 
+  const rowHtml = rowRenderProps.htmlProps;
   const row = (
     <RowComponent
       key={rowKey}
-      ref={rowRenderProps.ref}
-      {...rowRenderProps.htmlProps}
-      xstyle={rowRenderProps.xstyle}>
+      ref={useMergedRefs(rowRenderProps.ref, rowRef)}
+      {...rowHtml}
+      data-table-logical-index={rowHeight == null ? undefined : rowIndex}
+      data-table-final-row={
+        rowHeight == null
+          ? undefined
+          : rowIndex === (context?.logicalRowCount ?? 0) - 1
+            ? 'true'
+            : 'false'
+      }
+      onFocus={
+        onRowFocus == null
+          ? rowHtml.onFocus
+          : event => {
+              rowHtml.onFocus?.(event);
+              if (context?.key != null) {
+                onRowFocus(context.key);
+              }
+            }
+      }
+      onBlur={
+        onRowBlur == null
+          ? rowHtml.onBlur
+          : event => {
+              rowHtml.onBlur?.(event);
+              if (
+                !ownedLayerOpen.current &&
+                !event.currentTarget.contains(event.relatedTarget)
+              ) {
+                onRowBlur();
+              }
+            }
+      }
+      xstyle={
+        rowHeight == null
+          ? rowRenderProps.xstyle
+          : [...rowRenderProps.xstyle, styles.fixedRow(rowHeight)]
+      }>
       {rowRenderProps.children}
     </RowComponent>
   );
@@ -258,7 +373,11 @@ function TableRowInner<T extends Record<string, unknown>>({
     );
   }
 
-  return row;
+  return onRowFocus == null ? (
+    row
+  ) : (
+    <TableRowFocusContext value={rowFocus}>{row}</TableRowFocusContext>
+  );
 }
 
 /**
@@ -274,6 +393,17 @@ function areRowPropsEqual<T extends Record<string, unknown>>(
   prevProps: TableRowProps<T>,
   nextProps: TableRowProps<T>,
 ): boolean {
+  if (
+    prevProps.contextIdentity.key !== nextProps.contextIdentity.key ||
+    prevProps.contextIdentity.identityStatus !==
+      nextProps.contextIdentity.identityStatus ||
+    prevProps.renderContext !== nextProps.renderContext ||
+    prevProps.rowHeight !== nextProps.rowHeight ||
+    prevProps.onRowFocus !== nextProps.onRowFocus ||
+    prevProps.onRowBlur !== nextProps.onRowBlur
+  ) {
+    return false;
+  }
   if (prevProps.rowKey !== nextProps.rowKey) {
     return false;
   }
@@ -346,7 +476,8 @@ function BaseTableInner<T extends Record<string, unknown>>({
   idKey,
   plugins: pluginsProp,
   children,
-  textOverflow = 'wrap',
+  textOverflow: textOverflowProp,
+  virtualization,
   scrollWrapper: ScrollWrapper,
   emptyState,
   rowIndexStart,
@@ -369,6 +500,73 @@ function BaseTableInner<T extends Record<string, unknown>>({
   // `rowIndexStart` (default 1); a windowed/paginated view passes the offset
   // of its first visible row. `aria-rowcount` is `rowCount` when known, or
   // `-1` (ARIA's "unknown count") for a windowed view with an unknown total.
+  // Resolve admission before sections or module-owned loading affect rendering.
+  const runtime = useMemo(createTableRuntime, []);
+  const admission = useMemo(() => resolveTableAdmission(plugins), [plugins]);
+  const mode = children ? 'children' : 'data';
+  const usesCanonicalIdentity =
+    admission.usesCanonicalIdentity || virtualization != null;
+  const cachedIdentity = useMemo(
+    () =>
+      usesCanonicalIdentity
+        ? resolveTableIdentity(data ?? [], idKey, true)
+        : [],
+    [data, idKey, usesCanonicalIdentity],
+  );
+  const identity = usesCanonicalIdentity
+    ? cachedIdentity
+    : resolveTableIdentity(data ?? [], idKey, false);
+  const keys = useMemo(
+    () => identity.map((row, index) => row.key ?? index),
+    [identity],
+  );
+  const loadingSource = useMemo(() => {
+    const sources = plugins.flatMap(plugin =>
+      plugin.renderState ? [plugin.renderState] : [],
+    );
+    return {
+      subscribe(fn: () => void) {
+        const cleanups = sources.map(source => source.subscribe(fn));
+        return () => cleanups.forEach(cleanup => cleanup());
+      },
+      getSnapshot: () => sources.some(source => source.getSnapshot().isLoading),
+      getServerSnapshot: () =>
+        sources.some(source => source.getServerSnapshot().isLoading),
+    };
+  }, [plugins]);
+  const isLoading =
+    useSyncExternalStore(
+      loadingSource.subscribe,
+      loadingSource.getSnapshot,
+      loadingSource.getServerSnapshot,
+    ) &&
+    mode === 'data' &&
+    ScrollWrapper != null &&
+    admission.canLoad;
+  useEffect(() => {
+    if (admission.hasOwnerConflict) {
+      devError(
+        'Table',
+        'Conflicting whole-row owners; activation is inactive.',
+      );
+    }
+    if (
+      (admission.usesCanonicalIdentity || virtualization != null) &&
+      identity.some(row => row.identityStatus !== 'valid')
+    ) {
+      devError(
+        'Table',
+        'Explicit unique string or finite-number idKey is required by activation/windowing.',
+      );
+    }
+  }, [
+    admission.hasOwnerConflict,
+    admission.usesCanonicalIdentity,
+    identity,
+    virtualization,
+  ]);
+
+  // Legacy non-windowed row metadata is not silently changed.
   const ariaRowIndexingEnabled = rowIndexStart != null || rowCount != null;
   const firstRowAriaIndex = rowIndexStart ?? 1;
   const ariaRowCount = ariaRowIndexingEnabled ? (rowCount ?? -1) : undefined;
@@ -401,6 +599,62 @@ function BaseTableInner<T extends Record<string, unknown>>({
     resolvedColumnsRef.current = transformedColumns;
   }
   const resolvedColumns = resolvedColumnsRef.current;
+  const headerRowCount = resolvedColumns.length > 0 ? 1 : 0;
+  const renderContext = useMemo<TableRenderContext>(
+    () => ({
+      mode,
+      rowModel: admission.rowModel,
+      canActivate: mode === 'data' && admission.canActivate,
+      canLoad: mode === 'data' && ScrollWrapper != null && admission.canLoad,
+      logicalRowCount: data?.length ?? 0,
+      headerRowCount,
+      viewport: runtime.viewport,
+      blockViewport: virtualization == null ? undefined : runtime.viewport,
+    }),
+    [
+      mode,
+      admission,
+      data?.length,
+      headerRowCount,
+      ScrollWrapper,
+      runtime,
+      virtualization,
+    ],
+  );
+  const config = getTableVirtualizationConfig(virtualization);
+  const windowAdmitted = useMemo(
+    () =>
+      mode === 'data' &&
+      ScrollWrapper != null &&
+      admission.rowModel === 'flat' &&
+      identity.every(row => row.identityStatus === 'valid') &&
+      textOverflowProp !== 'wrap' &&
+      rowIndexStart == null &&
+      rowCount == null &&
+      resolvedColumns.every(isFixedHeightColumn),
+    [
+      mode,
+      ScrollWrapper,
+      admission.rowModel,
+      identity,
+      textOverflowProp,
+      rowIndexStart,
+      rowCount,
+      resolvedColumns,
+    ],
+  );
+  const windowPlan = useTableWindow({
+    capability: virtualization,
+    data: data ?? [],
+    keys,
+    isAdmitted: windowAdmitted,
+    viewport: runtime.viewport,
+    body: runtime.body,
+    table: runtime.table,
+    geometry: runtime.geometry,
+  });
+  const textOverflow =
+    textOverflowProp ?? (windowPlan.isWindowed ? 'truncate' : 'wrap');
 
   // Resolve all column widths in a single pass — produces per-column
   // inline styles and the aggregate table min-width.
@@ -532,8 +786,12 @@ function BaseTableInner<T extends Record<string, unknown>>({
 
   let tableElement: ReactNode = (
     <table
-      ref={ref}
-      {...(ariaRowCount != null ? {'aria-rowcount': ariaRowCount} : null)}
+      ref={useMergedRefs(ref, runtime.setTable)}
+      {...(windowPlan.isWindowed
+        ? {'aria-rowcount': headerRowCount + (data?.length ?? 0)}
+        : ariaRowCount != null
+          ? {'aria-rowcount': ariaRowCount}
+          : null)}
       {...tableRenderProps.htmlProps}
       {...mergeProps(
         themeProps('table'),
@@ -552,42 +810,81 @@ function BaseTableInner<T extends Record<string, unknown>>({
             <TableHeader>
               <RowComponent
                 {...headerRowRenderProps.htmlProps}
+                aria-rowindex={
+                  windowPlan.isWindowed
+                    ? 1
+                    : headerRowRenderProps.htmlProps['aria-rowindex']
+                }
                 isHeaderRow
                 xstyle={headerRowRenderProps.xstyle}>
                 {headerRowRenderProps.children}
               </RowComponent>
             </TableHeader>
           )}
-          <TableBody>
+          <TableBody ref={runtime.setBody}>
             {hasData
-              ? data.map((item, rowIndex) => {
-                  const rowKey =
-                    idKey == null
-                      ? rowIndex
-                      : typeof idKey === 'function'
-                        ? idKey(item)
-                        : String(item[idKey]);
-                  return (
-                    <MemoizedTableRow<T>
-                      key={rowKey}
-                      item={item}
-                      rowIndex={rowIndex}
-                      rowKey={rowKey}
-                      columns={resolvedColumns}
-                      plugins={plugins}
-                      textOverflow={textOverflow}
-                      RowComponent={RowComponent}
-                      CellComponent={CellComponent}
-                      ariaRowIndex={
-                        ariaRowIndexingEnabled
-                          ? firstRowAriaIndex + rowIndex
-                          : undefined
-                      }
-                    />
-                  );
+              ? windowPlan.segments.flatMap<ReactNode>(segment => {
+                  if (segment.type === 'gap') {
+                    return [
+                      <tr
+                        key={`gap:${segment.start}:${segment.end}`}
+                        aria-hidden="true">
+                        <td
+                          colSpan={resolvedColumns.length}
+                          {...stylex.props(styles.spacer(segment.height))}
+                        />
+                      </tr>,
+                    ];
+                  }
+                  const rows: ReactNode[] = [];
+                  for (
+                    let rowIndex = segment.start;
+                    rowIndex < segment.end;
+                    rowIndex++
+                  ) {
+                    const item = data[rowIndex];
+                    const rowIdentity = identity[rowIndex];
+                    rows.push(
+                      <MemoizedTableRow<T>
+                        key={rowIdentity.reactKey}
+                        item={item}
+                        rowIndex={rowIndex}
+                        rowKey={rowIdentity.reactKey}
+                        contextIdentity={rowIdentity}
+                        renderContext={renderContext}
+                        columns={resolvedColumns}
+                        plugins={plugins}
+                        textOverflow={textOverflow}
+                        RowComponent={RowComponent}
+                        CellComponent={CellComponent}
+                        rowHeight={
+                          windowPlan.isWindowed ? config?.rowHeight : undefined
+                        }
+                        onRowFocus={
+                          windowPlan.isWindowed
+                            ? windowPlan.onRowFocus
+                            : undefined
+                        }
+                        onRowBlur={
+                          windowPlan.isWindowed
+                            ? windowPlan.onRowBlur
+                            : undefined
+                        }
+                        ariaRowIndex={
+                          windowPlan.isWindowed
+                            ? headerRowCount + rowIndex + 1
+                            : ariaRowIndexingEnabled
+                              ? firstRowAriaIndex + rowIndex
+                              : undefined
+                        }
+                      />,
+                    );
+                  }
+                  return rows;
                 })
               : data != null &&
-                emptyState !== false && (
+                emptyState !== false &&
+                !(isLoading && emptyState == null) && (
                   <tr>
                     <td colSpan={resolvedColumns.length}>
                       {emptyState ?? (
@@ -621,6 +918,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
         htmlProps: {},
         xstyle: [],
       } satisfies ScrollWrapperRenderProps,
+      renderContext,
     );
 
     tableElement = (
@@ -649,7 +947,30 @@ function BaseTableInner<T extends Record<string, unknown>>({
     }
   }
 
-  return tableElement as ReactElement;
+  const parentAppearance = use(TableContext);
+  const effectiveAppearance = useMemo(
+    () =>
+      parentAppearance == null ? null : {...parentAppearance, textOverflow},
+    [parentAppearance, textOverflow],
+  );
+  const runtimeValue = useMemo(
+    () => ({
+      ...runtime,
+      viewportHeight: windowPlan.isWindowed
+        ? config?.viewportHeight
+        : undefined,
+    }),
+    [runtime, windowPlan.isWindowed, config?.viewportHeight],
+  );
+  return (
+    <TableRuntimeContext value={runtimeValue}>
+      {effectiveAppearance == null ? (
+        tableElement
+      ) : (
+        <TableContext value={effectiveAppearance}>{tableElement}</TableContext>
+      )}
+    </TableRuntimeContext>
+  );
 }
 
 /**

@@ -16,6 +16,7 @@ import {useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, typeScaleVars} from '../../../theme/tokens.stylex';
 
+import {registerFixedHeightColumn} from '../../tableColumnAdmission';
 import type {TableColumn, TablePlugin} from '../../types';
 
 /**
@@ -89,6 +90,7 @@ export function useTableRowIndex<T extends Record<string, unknown>>(
   // props — not on data directly — so it stays as stable as its inputs allow.
   return useMemo(
     (): TablePlugin<T> => ({
+      rowModel: 'flat',
       transformColumns(columns) {
         const indexColumn: TableColumn<T> = {
           key: '__rowIndex',
@@ -106,6 +108,7 @@ export function useTableRowIndex<T extends Record<string, unknown>>(
             );
           },
         };
+        registerFixedHeightColumn(indexColumn, startFrom === 1);
         return [indexColumn, ...columns];
       },
     }),
