@@ -498,7 +498,7 @@ export const MobileSwipeToDismiss: StoryObj = {
   render: () => (
     <MobileCanvas
       title="Swipe dismissal"
-      description="Swipe is an enhancement only; the surface fades as it approaches the edge, and the visible close button remains the simple alternative.">
+      description="Swipe is an enhancement only: as with iOS notification banners, the card follows the finger after a short distance at about half its speed, a quick flick dismisses it, and the visible close button remains the simple alternative.">
       <ToastViewport position="topEnd" isTopLayer={false} maxVisible={2}>
         <MockCard>
           <Text type="supporting" color="secondary">
