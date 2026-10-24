@@ -212,9 +212,12 @@ Platform-specific details stay inside that compiler.
     mode.
   - `--color-<status>-emphasized` is the status hue, adjusted only as far as
     needed for the theme's `--color-on-<status>` to reach 4.5:1 on it.
-  - `--color-<status>-muted` is the status hue at Core's pale-fill strength,
-    20% opacity in light mode and 25% in dark mode, and `--color-on-<status>-muted` is the status hue at the
-    lightness that reaches 4.5:1 on that fill over the default surface.
+  - `--color-info-muted` is the Info hue at Core's pale-fill strength, 20%
+    opacity in light mode and 25% in dark mode. The released
+    `--color-success-muted`, `--color-warning-muted`, and `--color-error-muted`
+    keep their values and are never derived.
+  - `--color-on-<status>-muted` is the status hue at the lightness that reaches
+    4.5:1 on the theme's pale status fill over the default surface.
 
   The status hue is the theme's base status colour for success, warning, and
   error. For Info it is the theme's accent when the accent is chromatic, and the
