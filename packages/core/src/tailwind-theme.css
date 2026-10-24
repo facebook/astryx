@@ -67,6 +67,9 @@
 
   /* --- Interactive --- */
   --color-accent-bg: var(--color-accent);
+  --color-info-emphasized: var(--color-info-emphasized);
+  --color-info-muted: var(--color-info-muted);
+  --color-on-info: var(--color-on-info);
   --color-accent-muted: var(--color-accent-muted);
   --color-on-accent: var(--color-on-accent);
   --color-neutral: var(--color-neutral);
@@ -84,6 +87,21 @@
   --color-warning: var(--color-warning);
   --color-warning-muted: var(--color-warning-muted);
   --color-on-warning: var(--color-on-warning);
+  /* Surface-specific status roles (architecture:theme-tokens INV11). The
+   * released bg-/text-/border-success keys above keep resolving to the base
+   * tokens. text-status-* reads the status text role; icons and borders use
+   * the same colour by default. */
+  --color-success-emphasized: var(--color-success-emphasized);
+  --color-warning-emphasized: var(--color-warning-emphasized);
+  --color-error-emphasized: var(--color-error-emphasized);
+  --color-status-info: var(--color-text-info);
+  --color-status-success: var(--color-text-success);
+  --color-status-warning: var(--color-text-warning);
+  --color-status-error: var(--color-text-error);
+  --color-on-info-muted: var(--color-on-info-muted);
+  --color-on-success-muted: var(--color-on-success-muted);
+  --color-on-warning-muted: var(--color-on-warning-muted);
+  --color-on-error-muted: var(--color-on-error-muted);
 
   /* --- Borders --- */
   --color-border: var(--color-border);
@@ -217,7 +235,8 @@
    * The system has a richer duration/easing scale than Tailwind's defaults.
    * We map the primary durations and expose the standard easing.
    * ========================================================================= */
-  --transition-property-colors: color, background-color, border-color, text-decoration-color, fill, stroke;
+  --transition-property-colors:
+    color, background-color, border-color, text-decoration-color, fill, stroke;
   --transition-property-opacity: opacity;
   --transition-property-shadow: box-shadow;
   --transition-property-transform: transform;

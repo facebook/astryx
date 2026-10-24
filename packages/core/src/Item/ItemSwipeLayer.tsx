@@ -173,7 +173,7 @@ const swipeVariantStyles = stylex.create({
     color: colorVars['--color-on-accent'],
   },
   destructive: {
-    backgroundColor: colorVars['--color-error'],
+    backgroundColor: colorVars['--color-error-emphasized'],
     color: colorVars['--color-on-error'],
   },
 });

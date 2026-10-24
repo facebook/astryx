@@ -27,6 +27,9 @@ const sameNameColorTokens = [
   '--color-overlay-hover',
   '--color-overlay-pressed',
   '--color-tint-hover',
+  '--color-info-emphasized',
+  '--color-info-muted',
+  '--color-on-info',
   '--color-success',
   '--color-success-muted',
   '--color-on-success',
@@ -36,6 +39,13 @@ const sameNameColorTokens = [
   '--color-warning',
   '--color-warning-muted',
   '--color-on-warning',
+  '--color-success-emphasized',
+  '--color-warning-emphasized',
+  '--color-error-emphasized',
+  '--color-on-info-muted',
+  '--color-on-success-muted',
+  '--color-on-warning-muted',
+  '--color-on-error-muted',
   '--color-border',
   '--color-on-dark',
   '--color-on-light',
@@ -68,6 +78,10 @@ async function compileBridge(): Promise<string> {
       token => `rounded-${suffix(token, '--radius-')}`,
     ),
     'bg-surface',
+    'text-status-info',
+    'text-status-success',
+    'text-status-warning',
+    'text-status-error',
   ]);
 }
 
@@ -97,6 +111,10 @@ describe('Tailwind theme bridge', () => {
     const css = await compileBridge();
 
     expect(css).toContain('background-color: var(--color-background-surface);');
+    expect(css).toContain('color: var(--color-text-info);');
+    expect(css).toContain('color: var(--color-text-success);');
+    expect(css).toContain('color: var(--color-text-warning);');
+    expect(css).toContain('color: var(--color-text-error);');
     expect(css).not.toContain('background-color: var(--color-surface);');
   });
 });

@@ -146,6 +146,7 @@ describe('generateOnMediaCSS', () => {
     expect(css).toContain('[data-astryx-media="dark"]');
     expect(css).toContain('color-scheme: dark');
     expect(css).toContain('var(--color-on-dark)');
+    expect(css).not.toContain('--color-info-emphasized: var(--color-accent);');
   });
 
   it('emits light media rules', () => {
@@ -153,6 +154,203 @@ describe('generateOnMediaCSS', () => {
     const css = generateOnMediaCSS(theme);
     expect(css).toContain('[data-astryx-media="light"]');
     expect(css).toContain('color-scheme: light');
+  });
+
+  it('keeps concrete root roles while rebinding default aliases on media surfaces', () => {
+    const concrete = defineTheme({
+      name: 'status-role-media',
+      tokens: {
+        '--color-accent': '#0074E2',
+        '--color-info-emphasized': '#6D9CFE',
+      },
+      onDark: {tokens: {'--color-accent': '#FFFFFF'}},
+    });
+    const concreteCss = generateOnMediaCSS(concrete);
+
+    expect(concreteCss).toContain('--color-accent: #FFFFFF;');
+    expect(concreteCss).not.toContain(
+      '--color-info-emphasized: var(--color-accent);',
+    );
+
+    const canonical = defineTheme({
+      name: 'status-role-media-alias',
+      tokens: {
+        '--color-accent': '#0074E2',
+        '--color-info-emphasized': 'var(--color-accent)',
+      },
+      onDark: {
+        tokens: {
+          '--color-accent': '#FFFFFF',
+          '--color-on-accent': '#000000',
+        },
+      },
+    });
+    const canonicalCss = generateOnMediaCSS(canonical);
+
+    expect(canonicalCss).toContain('--color-accent: #FFFFFF;');
+    expect(canonicalCss).toContain(
+      '--color-info-emphasized: var(--color-accent);',
+    );
+  });
+
+  it.each([
+    'VAR( /*x*/ --color-accent ) !important',
+    'v\\61r(--color-accent)',
+    'var( --color-accent )',
+    'var(--color-accent) !important',
+  ])('rebinds a semantically equivalent authored root alias: %s', info => {
+    const theme = defineTheme({
+      name: 'status-role-media-equivalent-alias',
+      tokens: {
+        '--color-accent': '#0074E2',
+        '--color-info-emphasized': info,
+      },
+      onDark: {
+        tokens: {
+          '--color-accent': '#FFFFFF',
+          '--color-on-accent': '#000000',
+        },
+      },
+    });
+
+    expect(generateOnMediaCSS(theme)).toContain(
+      '--color-info-emphasized: var(--color-accent);',
+    );
+  });
+
+  it('does not let a media alias override an adaptation-authored role', () => {
+    const theme = defineTheme({
+      name: 'status-role-media-adaptation',
+      adaptations: {
+        rules: [
+          {
+            when: {contrast: 'more'},
+            value: {tokens: {'--color-info-emphasized': '#123456'}},
+          },
+        ],
+      },
+      onDark: {
+        tokens: {
+          '--color-accent': '#FFFFFF',
+          '--color-on-accent': '#000000',
+        },
+      },
+    });
+    const css = generateOnMediaCSS(theme);
+
+    expect(css).toContain('--color-accent: #FFFFFF;');
+    expect(css).toContain('--color-info-emphasized: var(--color-accent);');
+    expect(css).toContain('--color-info-emphasized: inherit;');
+    expect(
+      css.lastIndexOf('--color-info-emphasized: inherit;'),
+    ).toBeGreaterThan(
+      css.lastIndexOf('--color-info-emphasized: var(--color-accent);'),
+    );
+  });
+
+  it('inherits non-default adaptation roles instead of re-resolving them locally', () => {
+    const theme = defineTheme({
+      name: 'status-role-media-inherit',
+      tokens: {'--color-text-purple': '#123456'},
+      adaptations: {
+        rules: [
+          {
+            when: {contrast: 'more'},
+            value: {
+              tokens: {'--color-info-emphasized': 'var(--color-text-purple)'},
+            },
+          },
+        ],
+      },
+      onDark: {
+        tokens: {
+          '--color-text-purple': '#ffffff',
+          '--color-accent': '#ffffff',
+          '--color-on-accent': '#000000',
+        },
+      },
+    });
+    const css = generateOnMediaCSS(theme);
+
+    expect(css).toContain('--color-info-emphasized: inherit;');
+    expect(css).not.toContain(
+      '--color-info-emphasized: var(--color-text-purple);',
+    );
+  });
+
+  it('avoids a descendant-local cycle while replaying an adaptation role', () => {
+    const theme = defineTheme({
+      name: 'status-role-media-replay-cycle',
+      adaptations: {
+        rules: [
+          {
+            when: {contrast: 'more'},
+            value: {
+              tokens: {'--color-info-emphasized': 'var(--color-text-blue)'},
+            },
+          },
+        ],
+      },
+      onDark: {tokens: {'--color-text-blue': 'var(--color-info-emphasized)'}},
+    });
+    const css = generateOnMediaCSS(theme);
+    const darkBlocks = Array.from(
+      css.matchAll(/\[data-astryx-media="dark"\] \{([\s\S]*?)\n\s*\}/g),
+      match => match[1],
+    );
+
+    expect(darkBlocks.length).toBeGreaterThan(0);
+    for (const block of darkBlocks) {
+      expect(block).not.toContain(
+        '--color-info-emphasized: var(--color-accent);',
+      );
+      expect(block).not.toContain(
+        '--color-info-emphasized: var(--color-text-blue);',
+      );
+    }
+  });
+
+  it('uses inheritance when multiple local role replays would form a cycle', () => {
+    const theme = defineTheme({
+      name: 'status-role-multi-replay-cycle',
+      adaptations: {
+        rules: [
+          {
+            when: {contrast: 'more'},
+            value: {
+              tokens: {
+                '--color-info-emphasized': 'var(--color-on-info-muted)',
+                '--color-on-info-muted': 'var(--color-text-green)',
+              },
+            },
+          },
+        ],
+      },
+      onDark: {
+        tokens: {
+          '--color-text-blue': '#ffffff',
+          '--color-text-green': 'var(--color-info-emphasized)',
+        },
+      },
+    });
+    const css = generateOnMediaCSS(theme);
+    const alias = '--color-on-info-muted: var(--color-text-blue);';
+    const restoration = '--color-on-info-muted: inherit;';
+    expect(css).toContain(alias);
+    expect(css).toContain(restoration);
+    expect(css.lastIndexOf(restoration)).toBeGreaterThan(
+      css.lastIndexOf(alias),
+    );
+  });
+
+  it('stringifies a legacy non-string media status source without throwing', () => {
+    const theme = defineTheme({
+      name: 'legacy-media-status-source',
+      onDark: {tokens: {'--color-accent': null as never}},
+    });
+
+    expect(() => generateOnMediaCSS(theme)).not.toThrow();
+    expect(generateOnMediaCSS(theme)).toContain('--color-accent: null;');
   });
 
   it('emits component override rules', () => {

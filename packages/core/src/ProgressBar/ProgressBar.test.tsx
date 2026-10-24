@@ -8,8 +8,15 @@
  */
 
 import {describe, it, expect, beforeAll} from 'vitest';
+import * as stylex from '@stylexjs/stylex';
 import {render, screen, waitFor} from '@testing-library/react';
+import {colorVars} from '../theme/tokens.stylex';
 import {ProgressBar} from './ProgressBar';
+
+const semanticRoleStyles = stylex.create({
+  onInfo: {backgroundColor: colorVars['--color-on-info']},
+  onAccent: {backgroundColor: colorVars['--color-on-accent']},
+});
 
 // A labeled mark wraps the tick in a lazily-loaded Tooltip (React.lazy +
 // Suspense). Preload that chunk once so the Tooltip (and its
@@ -529,6 +536,34 @@ describe('ProgressBar', () => {
       const offMarks = off.querySelectorAll<HTMLElement>(MARK);
       expect(styleClasses(offMarks[0])).not.toBe(styleClasses(liveMarks[0]));
       expect(styleClasses(offMarks[1])).not.toBe(styleClasses(liveMarks[1]));
+    });
+
+    it('pairs the accent fill with the info on-color', () => {
+      const {container} = render(
+        <>
+          <ProgressBar
+            value={60}
+            variant="accent"
+            label="A"
+            marks={[{value: 20, label: 'On fill'}]}
+          />
+          <span
+            data-testid="on-info-reference"
+            {...stylex.props(semanticRoleStyles.onInfo)}
+          />
+          <span
+            data-testid="on-accent-reference"
+            {...stylex.props(semanticRoleStyles.onAccent)}
+          />
+        </>,
+      );
+      const mark = container.querySelector<HTMLElement>(MARK)!;
+      const onInfoClass = styleClasses(screen.getByTestId('on-info-reference'));
+      const onAccentClass = styleClasses(
+        screen.getByTestId('on-accent-reference'),
+      );
+      expect(mark).toHaveClass(onInfoClass);
+      expect(mark).not.toHaveClass(onAccentClass);
     });
 
     it('recolors marks per variant when they sit on the fill', () => {

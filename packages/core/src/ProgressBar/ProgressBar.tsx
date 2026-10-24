@@ -288,16 +288,16 @@ const styles = stylex.create({
 
 const variantStyles = stylex.create({
   accent: {
-    backgroundColor: colorVars['--color-accent'],
+    backgroundColor: colorVars['--color-info-emphasized'],
   },
   success: {
-    backgroundColor: colorVars['--color-success'],
+    backgroundColor: colorVars['--color-success-emphasized'],
   },
   warning: {
-    backgroundColor: colorVars['--color-warning'],
+    backgroundColor: colorVars['--color-warning-emphasized'],
   },
   error: {
-    backgroundColor: colorVars['--color-error'],
+    backgroundColor: colorVars['--color-error-emphasized'],
   },
   neutral: {
     backgroundColor: colorVars['--color-text-disabled'],
@@ -321,7 +321,7 @@ const variantStyles = stylex.create({
 // grayed-out component.
 const markOnFillStyles = stylex.create({
   accent: {
-    backgroundColor: colorVars['--color-on-accent'],
+    backgroundColor: colorVars['--color-on-info'],
   },
   success: {
     backgroundColor: colorVars['--color-on-success'],

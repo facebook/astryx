@@ -13,10 +13,10 @@
  * and a matching glyph (see below); it never recolors the connector/track.
  *
  * Plain string values aligned with the global token semantics:
- * - 'accent'  → `--color-accent`  (default emphasis / in-progress; color only)
- * - 'success' → `--color-success` (green check-circle glyph)
- * - 'warning' → `--color-warning` (shared Input `warning` glyph)
- * - 'error'   → `--color-error`   (shared Input `error` glyph)
+ * - 'accent'  → `--color-icon-info` (informational icon only)
+ * - 'success' → `--color-icon-success` (green check-circle glyph)
+ * - 'warning' → `--color-icon-warning` (shared Input `warning` glyph)
+ * - 'error'   → `--color-icon-error` (shared Input `error` glyph)
  *
  * `status` is intentionally NOT a lifecycle enum (completed/active/etc.) — the
  * step's progress is derived from the parent's `activeStep`. The current

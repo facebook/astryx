@@ -95,6 +95,74 @@ describe('theme build adaptations', () => {
     );
   });
 
+  it('emits scoped status aliases in built CSS and preserves child extension parity', async () => {
+    const {defineTheme, generateThemeCSS} =
+      await import('@astryxdesign/core/theme');
+    const project = path.join(tmpDir, 'project');
+    const themesDir = path.join(project, 'themes');
+    const input = {
+      name: 'status-aliases',
+      tokens: {
+        '--color-accent': '#225bff',
+        '--color-on-accent': '#ffffff',
+        '--color-text-blue': '#203a6c',
+      },
+      adaptations: {
+        rules: [
+          {
+            when: {contrast: 'more'},
+            value: {
+              tokens: {'--color-text-success': '#123456'},
+            },
+          },
+          {
+            when: {pointer: 'coarse'},
+            value: {tokens: {'--color-text-green': '#abcdef'}},
+          },
+        ],
+      },
+      onDark: {
+        tokens: {
+          '--color-accent': '#fefefe',
+          '--color-on-accent': '#101010',
+        },
+      },
+    };
+    const themeFile = writeTheme(themesDir, input.name, JSON.stringify(input));
+
+    const result = await build(project, themeFile);
+    expect(result.code, result.stderr).toBe(0);
+
+    const css = fs.readFileSync(
+      path.join(themesDir, 'status-aliases.css'),
+      'utf8',
+    );
+    const infoAlias = '--color-info-emphasized: var(--color-accent);';
+    const adaptationAlias = '--color-text-success: var(--color-text-green);';
+    const authoredRole = '--color-text-success: #123456;';
+    expect(css).toContain('--color-on-info: var(--color-on-accent);');
+    expect(css).toContain('--color-text-info: var(--color-text-blue);');
+    expect(css).toContain('--color-on-info-muted: var(--color-text-blue);');
+    expect(css.split(infoAlias).length - 1).toBeGreaterThanOrEqual(2);
+    expect(css).toContain(adaptationAlias);
+    expect(css.split(authoredRole).length - 1).toBeGreaterThanOrEqual(2);
+    expect(css.lastIndexOf(authoredRole)).toBeGreaterThan(
+      css.lastIndexOf(adaptationAlias),
+    );
+
+    const {statusAliasesTheme: builtTheme} = await import(
+      pathToFileURL(path.join(themesDir, 'status-aliases.js')).href
+    );
+    const source = defineTheme(input);
+    const childInput = {
+      name: 'status-alias-child',
+      tokens: {'--color-text-blue': '#345678'},
+    };
+    const fromSource = defineTheme({...childInput, extends: source});
+    const fromBuilt = defineTheme({...childInput, extends: builtTheme});
+    expect(generateThemeCSS(fromBuilt)).toEqual(generateThemeCSS(fromSource));
+  });
+
   it.each([
     ['defined', writeTheme],
     ['plain', writePlainTheme],

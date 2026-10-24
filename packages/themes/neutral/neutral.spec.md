@@ -5,7 +5,7 @@ kind: theme
 id: theme:neutral
 authority: current
 approved_by: rubyycheung
-approved_at: 2026-09-04
+approved_at: 2026-10-17
 review_triggers:
   [tokens, palette-values, component-mappings, contrast, artifacts]
 verified_by: [scripts/check-badge-contrast.test.mjs]
@@ -53,49 +53,25 @@ vocabulary remains owned by `architecture:theme-tokens`.
 
 ## Theme-local role definitions
 
-Neutral's candidate implementation owns the approved accent role and proposes
-the related roles below for exact-head review:
+Neutral emits theme-local status roles as compatibility contracts for Neutral
+extensions. They use named palette stops and are not portable Core tokens:
 
-| Exact name                                             | Neutral-only meaning                                | Proposed value               | Status   |
-| ------------------------------------------------------ | --------------------------------------------------- | ---------------------------- | -------- |
-| `--astryx-theme-neutral-color-status-fill-accent`      | Filled accent status                                | `['#0074e2', '#6d9cfe']`     | Approved |
-| `--astryx-theme-neutral-color-status-fill-success`     | Filled success status                               | `['#198100', '#64af4c']`     | Proposed |
-| `--astryx-theme-neutral-color-status-fill-warning`     | Filled warning status                               | `'#ffce2f'`                  | Proposed |
-| `--astryx-theme-neutral-color-status-fill-error`       | Filled error status                                 | `['#c9303a', '#ff705d']`     | Proposed |
-| `--astryx-theme-neutral-color-on-tint-neutral`         | Neutral content placed on a semantic tinted surface | `['#fafafa4D', '#0a0a0a4D']` | Proposed |
-| `--astryx-theme-neutral-color-on-tint-overlay-hover`   | Hover overlay placed on a semantic tinted surface   | `['#fafafa1A', '#0a0a0a1A']` | Proposed |
-| `--astryx-theme-neutral-color-on-tint-overlay-pressed` | Pressed overlay placed on a semantic tinted surface | `['#fafafa33', '#0a0a0a33']` | Proposed |
+| Exact name                                                 | Neutral-only meaning                         | Value                                                             |
+| ---------------------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------------- |
+| `--astryx-theme-neutral-color-status-fill-accent`          | Filled accent status                         | `['#0074e2', '#6d9cfe']`                                          |
+| `--astryx-theme-neutral-color-status-fill-success`         | Filled success status                        | `[green.light[45], green.dark[65]]`                               |
+| `--astryx-theme-neutral-color-status-fill-warning`         | Filled warning status                        | `[yellow.light[85], yellow.dark[85]]`                             |
+| `--astryx-theme-neutral-color-status-fill-error`           | Filled error status                          | `[red.light[50], red.dark[65]]`                                   |
+| `--astryx-theme-neutral-color-status-muted-accent`         | Pale accent status surface                   | `[blue.light[85], withAlpha(blue.dark[75], '3D')]`                |
+| `--astryx-theme-neutral-color-on-tint-neutral`             | Neutral content on a semantic tinted surface | `['#fafafa4D', '#0a0a0a4D']`                                      |
+| `--astryx-theme-neutral-color-on-tint-overlay-hover`       | Hover overlay on a semantic tinted surface   | `['#fafafa1A', '#0a0a0a1A']`                                      |
+| `--astryx-theme-neutral-color-on-tint-overlay-pressed`     | Pressed overlay on a semantic tinted surface | `['#fafafa33', '#0a0a0a33']`                                      |
+| `--astryx-theme-neutral-color-destructive-overlay-hover`   | Hover overlay on a pale destructive Button   | `[withAlpha(red.light[70], '0D'), withAlpha(red.dark[65], '0D')]` |
+| `--astryx-theme-neutral-color-destructive-overlay-pressed` | Pressed overlay on a pale destructive Button | `[withAlpha(red.light[70], '1A'), withAlpha(red.dark[65], '1A')]` |
 
-AST-006 is current and accepted, and its implementation is proposed separately
-in the parent local-token PR. This stacked candidate authors and consumes exact
-names without aliases:
-
-```ts
-localTokens: {
-  '--astryx-theme-neutral-color-status-fill-accent': ['#0074e2', '#6d9cfe'],
-},
-components: {
-  badge: {
-    'variant:info': {
-      backgroundColor:
-        'var(--astryx-theme-neutral-color-status-fill-accent)',
-    },
-  },
-},
-```
-
-The `localTokens` key, component `var(...)` reference, `DefinedTheme` map, and
-emitted custom property use the same complete name. The proposed value prefers
-the approved `[light, dark]` `TokenValue` tuple, which normalizes exactly as the
-same tuple does under existing `tokens`. Opt-in uses Neutral's existing
-`name: 'neutral'` byte-for-byte; it is already a valid stable lower-kebab
-identifier, so no name normalization occurs.
-
-Once shipped, the exact name and filled-accent-status meaning are a public
-Neutral-family compatibility contract. The role is not portable to other themes
-and is not intended for Core component source. Its length is acceptable because
-it accurately names the context in which it may be applied; output alone does
-not authorize a broader meaning.
+The exact names and meanings are public Neutral-family compatibility contracts.
+Core components consume the portable `--color-*` semantic roles instead; no
+Core implementation depends on these Neutral-local aliases.
 
 ## Tonal palette definitions
 
@@ -115,10 +91,12 @@ tone coordinates.
 
 ## Component and state mappings
 
-The candidate maps the shared status-fill roles across Badge, StatusDot,
-AvatarStatusDot, Stepper indicators, and ProgressBar wherever the existing state
-already has the same semantic meaning. Banner uses the proposed tint-content and
-interaction roles. Every mapping remains subject to exact-head theme review and
+Core components choose semantic roles by surface (`architecture:theme-tokens`
+INV11): strong fills use `--color-*-emphasized` with `--color-on-*`, pale
+surfaces use `--color-*-muted` with `--color-on-*-muted`, and status text,
+icons, and borders on the default surfaces use `--color-text-*`,
+`--color-icon-*`, and `--color-border-*`. The candidate supplies Neutral values
+for those roles; every mapping remains subject to exact-head theme review and
 rendered light/dark evidence; shared color alone is not enough.
 
 This work does not add component states. It intentionally excludes
@@ -204,20 +182,18 @@ remain subject to the specific approval gates stated in their decisions.
 
 **Reference:** `theme:neutral/DEC-1`
 **System-boundary decider:** `cixzhang`, `2026-08-31`
-**Final Neutral adoption decider:** `rubyycheung`, after OQ1 passes and exact-head review
+**Final Neutral adoption decider:** `rubyycheung`, `2026-10-17`
 
-Neutral owns theme-local definitions in this colocated theme spec. It may adopt
-`--astryx-theme-neutral-color-status-fill-accent` for filled accent status using
-its exact stable `name: 'neutral'`. The exact name and semantic meaning become a
-public Neutral-family compatibility contract when shipped, despite not being
-portable across themes or intended for Core component source. The long name is
-acceptable because it precisely states the role.
+Neutral owns theme-local definitions in this colocated theme spec.
+`--astryx-theme-neutral-color-status-fill-accent` represents filled accent
+status under the stable `name: 'neutral'`. Its exact name, meaning, and
+`['#0074e2', '#6d9cfe']` value are a public Neutral-family
+compatibility contract, despite not being portable across themes or consumed by
+Core.
 
 The token may be applied only where the mapped context genuinely means filled
-accent status. Each added mapping is a theme-spec compatibility review and needs
-rendered evidence for its actual light/dark and relevant interaction states.
-Neither the proposed value nor any mapping is authorized until OQ1 passes and
-`rubyycheung` ratifies the exact record head.
+accent status. A new component mapping requires rendered light/dark evidence for
+its actual interaction states.
 
 Rejected: treating the role as global, treating it as disposable private output,
 or applying it merely because two contexts currently share a color.
@@ -267,8 +243,10 @@ changing semantic token mappings in the palette-value change.
 
 Neutral's semantic, categorical, syntax, and color-bearing effect values use
 named palette-stop references when an approved match exists. Token names and
-meanings remain unchanged. Alpha variants derive from the referenced stop
-rather than duplicating its hex value.
+meanings remain unchanged: the released `--color-success`, `--color-warning`,
+and `--color-error` keep their Neutral values, and the status roles of
+`architecture:theme-tokens` INV11 carry the surface-specific values. Alpha
+variants derive from the referenced stop rather than duplicating its hex value.
 
 The mapping is role-aware rather than a blind nearest-color conversion. Very
 dark foregrounds preserve their darker role, ordinary backgrounds do not become
@@ -299,15 +277,7 @@ hex values still match the approved palette.
 
 ## Open questions
 
-- **OQ1 — Is rendered light/dark evidence complete for the proposed tuple and
-  Badge mapping, and for every later mapping's relevant interaction states?**
-  (`checkable`) Neutral promotion and implementation remain blocked until the
-  actual pairings meet the applicable current contrast methodology, each mapped
-  context is visibly verified, and `rubyycheung` ratifies that exact record head.
-- **OQ2 — Do the proposed success, warning, error, and tint roles have stable
-  meanings across every listed component mapping?** (`checkable`) The additional
-  names remain proposals until reviewers confirm each mapping represents the
-  same semantic role rather than merely sharing a current color value.
+None.
 
 ## Content boundary
 
