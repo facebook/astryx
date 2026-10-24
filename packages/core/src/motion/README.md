@@ -9,19 +9,20 @@ import it by path.
 
 ## Files
 
-| File                  | What it is                                                                                                              |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `uikit/`              | THE constants table: every spring, duration, deceleration rate, rubber-band constant and curve, with its source.        |
-| `uikit/springs.ts`    | Interaction springs (navigation, sheets, alerts, menus, controls, keyboard, banners) and the SwiftUI / UIKit presets.   |
-| `uikit/scroll.ts`     | UIScrollView: deceleration rates, rubber band, bounce-back spring, paging, `delaysContentTouches`, scroll to top.       |
-| `uikit/timing.ts`     | Non-spring clocks and curves: press highlight, Core Animation's named curves, keyboard, Reduced Motion cross-fade.      |
-| `uikit/navigation.ts` | UINavigationController: push velocity, parallax, dimming, transition clock, interactive pop finish rule.                |
-| `uikit/gestures.ts`   | Gesture recognizer thresholds, the velocity filter and the haptic stand-ins, as typed entries the gesture system reads. |
-| `MEASUREMENTS.md`     | The UIKit reference captures each unconfirmed value still needs.                                                        |
-| `spring.ts`           | Closed-form damped spring, every Apple parameterization, settling duration, a spring chasing a moving target.           |
-| `decay.ts`            | UIScrollView's momentum coast.                                                                                          |
-| `rubberBand.ts`       | UIScrollView's resistance past an edge, and its inverse.                                                                |
-| `projection.ts`       | Release targets: the rest point nearest the projected coast; paging.                                                    |
+| File                    | What it is                                                                                                              |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `uikit/`                | THE constants table: every spring, duration, deceleration rate, rubber-band constant and curve, with its source.        |
+| `uikit/springs.ts`      | Interaction springs (navigation, sheets, alerts, menus, controls, keyboard, banners) and the SwiftUI / UIKit presets.   |
+| `uikit/scroll.ts`       | UIScrollView: deceleration rates, rubber band, bounce-back spring, paging, `delaysContentTouches`, scroll to top.       |
+| `uikit/timing.ts`       | Non-spring clocks and curves: press highlight, Core Animation's named curves, keyboard, Reduced Motion cross-fade.      |
+| `uikit/navigation.ts`   | UINavigationController: push velocity, parallax, dimming, transition clock, interactive pop finish rule.                |
+| `uikit/swipeActions.ts` | Swipe actions on a list row: the claim and swipe thresholds, the tracking and settle spring, the release rule.          |
+| `uikit/gestures.ts`     | Gesture recognizer thresholds, the velocity filter and the haptic stand-ins, as typed entries the gesture system reads. |
+| `MEASUREMENTS.md`       | The UIKit reference captures each unconfirmed value still needs.                                                        |
+| `spring.ts`             | Closed-form damped spring, every Apple parameterization, settling duration, a spring chasing a moving target.           |
+| `decay.ts`              | UIScrollView's momentum coast.                                                                                          |
+| `rubberBand.ts`         | UIScrollView's resistance past an edge, and its inverse.                                                                |
+| `projection.ts`         | Release targets: the rest point nearest the projected coast; paging.                                                    |
 
 Component-specific values (a sheet's detents, a switch's geometry, a context
 menu's timeline) live in a domain file per component, `uikit/<component>.ts`,
