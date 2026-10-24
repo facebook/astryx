@@ -44,7 +44,7 @@ export const docs = {
     {
       name: 'hasAnimatedChanges',
       type: 'boolean',
-      description: 'On an iPhone or iPad under a finger, animate changes to the rows the way an iOS table does: when rows are inserted, removed or reordered, the rows that stay slide to their new places and new rows fade in once the rows sliding past have cleared them; a row that crosses rows moving the other way rides above them with the surface color behind it. Rows need stable keys. On other touch screens and with a mouse nothing moves.',
+      description: 'On an iPhone or iPad under a finger, animate changes to the rows the way an iOS table does: when rows are inserted, removed or reordered, the rows that stay slide to their new places, a removed row collapses in place, and new rows fade in once the rows sliding past have cleared them; a row that crosses rows moving the other way rides above them with the surface color behind it. Rows need stable keys. On other touch screens and with a mouse nothing moves.',
       default: 'false',
     },
     {

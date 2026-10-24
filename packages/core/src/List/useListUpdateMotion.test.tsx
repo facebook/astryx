@@ -6,7 +6,8 @@
  *   WebKit for iOS, an Android finger, a mouse) and stubbed row positions
  *   (jsdom lays nothing out)
  * @output Unit tests for when List's update motion moves rows: survivors whose
- *   place changed get a motion in the iOS idiom; a new row shows nothing
+ *   place changed get a motion in the iOS idiom; a removed row collapses in
+ *   place as a ghost, the row below glued to its edge; a new row shows nothing
  *   until the row it displaced has cleared its band; a row crossing rows
  *   that move the other way rides above them; nothing moves with an Android
  *   finger or a mouse, without `hasAnimatedChanges`, on the first render, or
@@ -36,7 +37,12 @@ beforeAll(() => {
       if (this.tagName !== 'LI' || parent == null) {
         return 0;
       }
-      return Array.from(parent.children).indexOf(this) * rowHeight;
+      // A removed row's ghost is out of flow: it takes no place.
+      return (
+        Array.from(parent.children)
+          .filter(child => !child.hasAttribute('data-astryx-leaving'))
+          .indexOf(this) * rowHeight
+      );
     },
   });
   Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
@@ -148,6 +154,47 @@ describe('List update motion', () => {
     expect(presentation(inserted, 'opacity', at + 600)).toBe(1);
   });
 
+  it('a removed row collapses in place, the row below glued to its bottom edge, then goes', async () => {
+    stubIdiom('ios');
+    const {rerender} = render(<Rows labels={['A', 'B', 'C']} />);
+    await act(async () => undefined);
+    const removed = rowOf('B');
+    // One instant for the whole commit, as a browser's frame gives every
+    // motion started in it (here each would start when it is created).
+    const at = motionNow();
+    const clock = vi.spyOn(performance, 'now').mockReturnValue(at);
+    rerender(<Rows labels={['A', 'C']} />);
+    clock.mockRestore();
+    // B is back for its exit, in a ghost hidden from assistive tech, at its
+    // old place.
+    expect(removed.isConnected).toBe(true);
+    const ghost = removed.parentElement as HTMLElement;
+    expect(ghost.hasAttribute('data-astryx-leaving')).toBe(true);
+    expect(ghost.getAttribute('aria-hidden')).toBe('true');
+    expect(ghost.inert).toBe(true);
+    expect(ghost.nextElementSibling).toBe(rowOf('C'));
+    const next = rowOf('C');
+    for (let t = 0; t <= 600; t += 10) {
+      const ghostY = presentation(ghost, 'y', at + t);
+      // B's content stays where it was while the clip closes over it.
+      expect(ghostY + presentation(removed, 'y', at + t), `t=${t}`).toBeCloseTo(
+        0,
+        6,
+      );
+      // The clip's bottom edge (B's old top + its height + the ghost's
+      // offset) is C's top (its new place + its offset), every frame.
+      expect(ROW + ROW + ghostY, `t=${t}`).toBeCloseTo(
+        ROW + presentation(next, 'y', at + t),
+        6,
+      );
+    }
+    expect(presentation(ghost, 'y', at + 600)).toBeCloseTo(-ROW, 1);
+    // Gone once it rests.
+    await vi.waitFor(() => expect(ghost.isConnected).toBe(false), {
+      timeout: 3000,
+    });
+  });
+
   it('a row that slides across rows moving the other way rides above them for its slide', async () => {
     stubIdiom('ios');
     const {rerender} = render(<Rows labels={['A', 'B', 'C', 'D']} />);
@@ -248,10 +295,14 @@ describe('List update motion', () => {
     // resizes.
     rowHeight = 52;
     notify();
+    // Read at the commit's own instant (the removal's exit takes a moment).
+    const now = motionNow();
+    const clock = vi.spyOn(performance, 'now').mockReturnValue(now);
     rerender(<Rows labels={['A', 'C']} />);
     // C sat two 52 px rows down and now sits one down: it starts 52 px below
     // its new place, not the 28 px the first commit's layout would say.
-    expect(presentation(rowOf('C'), 'y', motionNow())).toBeCloseTo(52, 0);
+    expect(presentation(rowOf('C'), 'y', now)).toBeCloseTo(52, 0);
+    clock.mockRestore();
   });
 
   it('leaves a list a reorder session owns to the reorder', async () => {

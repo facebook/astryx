@@ -69,9 +69,9 @@ export interface ListProps extends BaseProps<
    * that stay slide from where they were to where they are and new rows fade
    * in once the rows sliding past have cleared them, on UIKit's table update
    * spring. A row that crosses rows moving the other way rides above them
-   * with the surface color behind it. A row swiped away with a removal
-   * action leaves only its gap to close. Off by default; elsewhere (another
-   * touch screen, a mouse) nothing moves.
+   * with the surface color behind it. A removed row collapses in place, a
+   * swiped one with its action showing, while the rows below close its gap.
+   * Off by default; elsewhere (another touch screen, a mouse) nothing moves.
    * @default false
    */
   hasAnimatedChanges?: boolean;

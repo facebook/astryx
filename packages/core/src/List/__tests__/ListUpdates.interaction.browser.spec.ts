@@ -13,8 +13,9 @@
  *   surface behind it; content below the
  *   list moves with its rows, the button a finger tapped included; a change
  *   while rows still move makes no jump; Reduce Motion keeps the motion; a
- *   theme's table spring times it; a row swiped away leaves only its gap to
- *   close; the rows keep
+ *   theme's table spring times it; a removed row collapses in place, its
+ *   bottom edge on the next row's top every frame, and a row swiped away
+ *   collapses the same way while the rows below close the gap; the rows keep
  *   moving while the main thread is blocked, with no Layout or Paint; a
  *   storyboard of a removal
  * @position Interaction evidence for List/useListUpdateMotion.ts, in the iOS
@@ -57,8 +58,14 @@ const progress = (t: number) =>
 const SETTLE_MS =
   solveSpring(SPRING, {from: 0, to: 1}).settleTime(0.001) * 1000;
 
+// A row of the list, never a removed row's ghost (or the row inside it).
 const row = (page: Page, label: string) =>
-  page.locator('#storybook-root li').filter({hasText: label}).first();
+  page
+    .locator(
+      '#storybook-root li:not([data-astryx-leaving], [data-astryx-leaving] li)',
+    )
+    .filter({hasText: label})
+    .first();
 
 const translateY = async (element: Locator) =>
   element.evaluate(el => {
@@ -129,7 +136,11 @@ test('a removal: the rows below start where they were and slide up on the table 
   await holdAnimations(page);
   const after = await layoutTop();
   const gap = await drafts.evaluate(el => {
-    const previous = el.previousElementSibling as HTMLElement | null;
+    // The row above, never a removed row's ghost.
+    let previous = el.previousElementSibling as HTMLElement | null;
+    while (previous?.hasAttribute('data-astryx-leaving') === true) {
+      previous = previous.previousElementSibling as HTMLElement | null;
+    }
     return previous == null
       ? 0
       : (el as HTMLElement).offsetTop - previous.offsetTop;
@@ -161,6 +172,47 @@ test('a removal: the rows below start where they were and slide up on the table 
     0.5,
   );
   await expect.poll(async () => translateY(drafts)).toBe(0);
+});
+
+test("a removal: the removed row collapses in place, its bottom edge on the next row's top every frame, then goes", async ({
+  page,
+}) => {
+  await open(page);
+  const sent = row(page, 'Sent');
+  const before = await sent.boundingBox();
+  if (before == null) {
+    throw new Error('no row');
+  }
+  await press(page, 'Remove the second row');
+  await holdAnimations(page);
+  const ghost = page.locator('#storybook-root [data-astryx-leaving]');
+  await expect(ghost).toHaveCount(1);
+  expect(await ghost.getAttribute('aria-hidden')).toBe('true');
+  const inside = ghost.locator('li').filter({hasText: 'Sent'});
+  const drafts = row(page, 'Drafts');
+  const heights: number[] = [];
+  for (const t of [0, 40, 80, 120, 200, 300]) {
+    await seekAnimations(page, t);
+    const [clip, content, next] = await Promise.all([
+      ghost.evaluate(el => el.getBoundingClientRect().toJSON() as DOMRect),
+      inside.boundingBox(),
+      drafts.boundingBox(),
+    ]);
+    if (content == null || next == null) {
+      throw new Error('no box');
+    }
+    // Its content stays where it was while its bottom edge rises with the
+    // next row's top: one motion, as UIKit collapses a deleted cell.
+    expect(content.y, `t=${t}`).toBeCloseTo(before.y, 0);
+    expect(clip.bottom, `t=${t}`).toBeCloseTo(next.y, 0);
+    heights.push(clip.bottom - before.y);
+  }
+  expect(heights[0]).toBeCloseTo(before.height, 0);
+  for (let i = 1; i < heights.length; i++) {
+    expect(heights[i], JSON.stringify(heights)).toBeLessThan(heights[i - 1]);
+  }
+  await releaseAnimations(page, {finish: true});
+  await expect(ghost).toHaveCount(0);
 });
 
 test('an insert: the rows below slide down, and the new row fades in once they have cleared its band', async ({
@@ -324,7 +376,11 @@ test('a change while rows still move: no jump, they keep moving to their new pla
     () => (window as unknown as {__tops: number[]}).__tops,
   );
   const rowHeight = await row(page, 'Archive').evaluate(el => {
-    const previous = el.previousElementSibling as HTMLElement | null;
+    // The row above, never a removed row's ghost.
+    let previous = el.previousElementSibling as HTMLElement | null;
+    while (previous?.hasAttribute('data-astryx-leaving') === true) {
+      previous = previous.previousElementSibling as HTMLElement | null;
+    }
     return previous == null
       ? 0
       : (el as HTMLElement).offsetTop - previous.offsetTop;
@@ -360,7 +416,11 @@ test("a theme's table spring (a motion role) times the update", async ({
   await expect(row(page, 'Sent')).toHaveCount(0);
   await holdAnimations(page);
   const gap = await drafts.evaluate(el => {
-    const previous = el.previousElementSibling as HTMLElement | null;
+    // The row above, never a removed row's ghost.
+    let previous = el.previousElementSibling as HTMLElement | null;
+    while (previous?.hasAttribute('data-astryx-leaving') === true) {
+      previous = previous.previousElementSibling as HTMLElement | null;
+    }
     return previous == null
       ? 0
       : (el as HTMLElement).offsetTop - previous.offsetTop;
@@ -388,7 +448,11 @@ test('Reduce Motion keeps the update motion: UIKit runs the same table spring', 
   await expect(row(page, 'Sent')).toHaveCount(0);
   await holdAnimations(page);
   const gap = await drafts.evaluate(el => {
-    const previous = el.previousElementSibling as HTMLElement | null;
+    // The row above, never a removed row's ghost.
+    let previous = el.previousElementSibling as HTMLElement | null;
+    while (previous?.hasAttribute('data-astryx-leaving') === true) {
+      previous = previous.previousElementSibling as HTMLElement | null;
+    }
     return previous == null
       ? 0
       : (el as HTMLElement).offsetTop - previous.offsetTop;
@@ -401,7 +465,7 @@ test('Reduce Motion keeps the update motion: UIKit runs the same table spring', 
   await expect.poll(async () => translateY(drafts)).toBe(0);
 });
 
-test('a row swiped away with a removal action leaves only its gap: the rows below slide up into it', async ({
+test('a row swiped away with a removal action collapses in place: the rows below slide up into its gap', async ({
   page,
   browserName,
 }) => {
@@ -427,7 +491,11 @@ test('a row swiped away with a removal action leaves only its gap: the rows belo
     throw new Error('no row');
   }
   const gap = await drafts.evaluate(el => {
-    const previous = el.previousElementSibling as HTMLElement | null;
+    // The row above, never a removed row's ghost.
+    let previous = el.previousElementSibling as HTMLElement | null;
+    while (previous?.hasAttribute('data-astryx-leaving') === true) {
+      previous = previous.previousElementSibling as HTMLElement | null;
+    }
     return previous == null
       ? 0
       : (el as HTMLElement).offsetTop - previous.offsetTop;
@@ -442,7 +510,11 @@ test('a row swiped away with a removal action leaves only its gap: the rows belo
     const samples: number[] = [];
     (window as unknown as {__ys: number[]}).__ys = samples;
     const tick = () => {
-      if (sentRow?.isConnected !== true) {
+      // Sent leaves its place: gone, or collapsing in its ghost.
+      if (
+        sentRow?.isConnected !== true ||
+        sentRow.closest('[data-astryx-leaving]') != null
+      ) {
         const value = getComputedStyle(target).translate;
         const [, y = '0px'] = value.split(' ');
         samples.push(value === 'none' ? 0 : Number.parseFloat(y));
@@ -543,7 +615,11 @@ test('WebKit: the rows keep moving while the main thread is blocked (video)', as
   await open(page);
   const drafts = row(page, 'Drafts');
   const gap = await drafts.evaluate(el => {
-    const previous = el.previousElementSibling as HTMLElement | null;
+    // The row above, never a removed row's ghost.
+    let previous = el.previousElementSibling as HTMLElement | null;
+    while (previous?.hasAttribute('data-astryx-leaving') === true) {
+      previous = previous.previousElementSibling as HTMLElement | null;
+    }
     return previous == null
       ? 0
       : (el as HTMLElement).offsetTop - previous.offsetTop;
