@@ -439,6 +439,73 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2)', () => {
     await expect(input).toBeChecked();
   });
 
+  test('P11 · under a mouse the switch keeps its desktop look: the track’s fill and padding, the thumb’s size and slide', async ({
+    browser,
+  }) => {
+    // A context with no touch screen: the primary pointer is not coarse (a
+    // headless box reports no pointer at all), so no touch presentation rule
+    // applies and the switch must look as it always has (a later style that
+    // names a property replaces all of it).
+    // (Contexts made here inherit the project's phone options unless
+    // they are named.)
+    const context = await browser.newContext({
+      viewport: {width: 480, height: 320},
+      screen: {width: 480, height: 320},
+      deviceScaleFactor: 1,
+      isMobile: false,
+      hasTouch: false,
+    });
+    try {
+      const page = await context.newPage();
+      await openStory(page, storybook(), 'core-switch--default');
+      expect(
+        await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+      ).toBe(false);
+      const read = async () =>
+        page.evaluate(() => {
+          const track = document.querySelector<HTMLElement>(
+            '#storybook-root .astryx-switch',
+          );
+          const thumb = track?.querySelector<HTMLElement>(
+            '.astryx-switch-thumb',
+          );
+          const layer = track?.firstElementChild;
+          if (track == null || thumb == null || layer == null) {
+            throw new Error('the switch has no track, thumb or on layer');
+          }
+          const t = getComputedStyle(track);
+          const box = thumb.getBoundingClientRect();
+          return {
+            fill: t.backgroundColor,
+            padding: t.paddingTop,
+            fade: t.transitionDuration,
+            size: [box.width, box.height],
+            slide: getComputedStyle(thumb).transitionProperty,
+            layer: getComputedStyle(layer).display,
+          };
+        });
+      const off = await read();
+      expect(off.fill).not.toBe('rgba(0, 0, 0, 0)');
+      expect(off.padding).toBe('4px');
+      expect(off.fade).not.toBe('0s');
+      expect(off.size).toEqual([16, 16]);
+      expect(off.slide).toBe('transform, width, height');
+      expect(off.layer).toBe('none');
+
+      const input = page.locator('#storybook-root').getByRole('switch');
+      await input.click({force: true});
+      await expect(input).toBeChecked();
+      // The thumb slides and grows over the theme's fast duration.
+      await page.waitForTimeout(500);
+      const on = await read();
+      expect(on.fill).not.toBe('rgba(0, 0, 0, 0)');
+      expect(on.fill).not.toBe(off.fill);
+      expect(on.size).toEqual([20, 20]);
+    } finally {
+      await context.close();
+    }
+  });
+
   test('P12 · Reduce Motion keeps the lift, as UISwitch does: a hold grows the lens and the release toggles', async ({
     page,
   }) => {

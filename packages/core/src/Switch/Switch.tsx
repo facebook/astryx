@@ -95,36 +95,41 @@ const inputSizeStyles = stylex.create({
   },
 });
 
+// Under a finger every touch value sits in the same property as the mouse
+// value (a nested condition), never in a later style: a later style that
+// names a property replaces all of it, mouse value included.
 const trackSizeStyles = stylex.create({
   sm: {
     width: 32,
     height: 20,
-    padding: 2,
+    // Container units resolve against the content box: no padding.
+    padding: {default: 2, [TOUCH]: 0},
   },
   md: {
     width: 40,
     height: 24,
-    padding: 4,
+    padding: {default: 4, [TOUCH]: 0},
   },
 });
 
+// Under a finger the themed thumb fills the box useSwitchTouch moves.
 const thumbOffSizeStyles = stylex.create({
   sm: {
-    width: 14,
-    height: 14,
-    transform: 'translateX(0)',
+    width: {default: 14, [TOUCH]: '100%'},
+    height: {default: 14, [TOUCH]: '100%'},
+    transform: {default: 'translateX(0)', [TOUCH]: 'none'},
   },
   md: {
-    width: 16,
-    height: 16,
-    transform: 'translateX(0)',
+    width: {default: 16, [TOUCH]: '100%'},
+    height: {default: 16, [TOUCH]: '100%'},
+    transform: {default: 'translateX(0)', [TOUCH]: 'none'},
   },
 });
 
 const thumbOnSizeStyles = stylex.create({
   sm: {
-    width: 16,
-    height: 16,
+    width: {default: 16, [TOUCH]: '100%'},
+    height: {default: 16, [TOUCH]: '100%'},
     // The thumb rests at the inline-start edge (flex-start, which flexbox
     // already mirrors under RTL). The on-state travel toward the inline-end
     // edge is a physical translateX, so it must flip sign under RTL — right
@@ -132,15 +137,17 @@ const thumbOnSizeStyles = stylex.create({
     // iOS): off-thumb on the reading-start side, on-thumb on the reading-end.
     transform: {
       default: 'translateX(12px)',
-      ':is([dir="rtl"] *)': 'translateX(-12px)',
+      ':is([dir="rtl"] *)': {default: 'translateX(-12px)', [TOUCH]: 'none'},
+      [TOUCH]: 'none',
     },
   },
   md: {
-    width: 20,
-    height: 20,
+    width: {default: 20, [TOUCH]: '100%'},
+    height: {default: 20, [TOUCH]: '100%'},
     transform: {
       default: 'translateX(14px)',
-      ':is([dir="rtl"] *)': 'translateX(-14px)',
+      ':is([dir="rtl"] *)': {default: 'translateX(-14px)', [TOUCH]: 'none'},
+      [TOUCH]: 'none',
     },
   },
 });
@@ -229,10 +236,17 @@ const styles = stylex.create({
   track: {
     display: 'flex',
     alignItems: 'center',
+    // Under a finger the on layer and the thumb box sit in the track, sized
+    // in its container units.
+    position: {default: null, [TOUCH]: 'relative'},
+    containerType: {default: null, [TOUCH]: 'size'},
     borderRadius: radiusVars['--radius-full'],
     transitionProperty: 'background-color',
+    // Under a finger the track's own fill never changes (the on layer fades
+    // in over it). Reduce Motion stays the last key so it holds everywhere.
     transitionDuration: {
       default: durationVars['--duration-fast'],
+      [TOUCH]: '0s',
       '@media (prefers-reduced-motion: reduce)': '0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -300,6 +314,12 @@ const styles = stylex.create({
       [stylex.when.ancestor(':hover', switchScope)]: {
         '@media (hover: hover) and (forced-colors: none)': `color-mix(in srgb, ${colorVars['--color-background-gray']}, ${colorVars['--color-tint-hover']} 5%)`,
       },
+      // Under a finger the track is the off colour in both states; the on
+      // layer fades the on colour in over it.
+      [TOUCH]: {
+        default: colorVars['--color-background-gray'],
+        '@media (forced-colors: active)': 'Canvas',
+      },
     },
   },
   trackOn: {
@@ -310,6 +330,11 @@ const styles = stylex.create({
       // flatten the Highlight track to white under the HighlightText thumb.
       [stylex.when.ancestor(':hover', switchScope)]: {
         '@media (hover: hover) and (forced-colors: none)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
+      },
+      // See trackOff: the on layer carries the on colour under a finger.
+      [TOUCH]: {
+        default: colorVars['--color-background-gray'],
+        '@media (forced-colors: active)': 'Canvas',
       },
     },
   },
@@ -330,7 +355,12 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radiusVars['--radius-full'],
-    transitionProperty: 'transform, width, height',
+    // Under a finger the thumb fills a box useSwitchTouch moves on the
+    // compositor: nothing of its own transitions.
+    transitionProperty: {
+      default: 'transform, width, height',
+      [TOUCH]: 'none',
+    },
     transitionDuration: {
       default: durationVars['--duration-fast'],
       '@media (prefers-reduced-motion: reduce)': '0s',
@@ -372,22 +402,11 @@ const styles = stylex.create({
   // thumb is a constant-size capsule in a box that useSwitchTouch moves and
   // lifts on the compositor (translate / scale / opacity only). Its geometry
   // is UIKit's (a 37 × 24 thumb in a 63 × 28 track) in proportion to the
-  // track, in container units so it follows the track's box.
+  // track, in container units so it follows the track's box. Where a touch
+  // value shares a property with the mouse (the track's fill, padding and
+  // fade; the thumb's size, travel and transition) it is a nested condition
+  // of that property above; the parts below exist only under a finger.
   // ---------------------------------------------------------------------
-  trackTouch: {
-    position: {default: null, [TOUCH]: 'relative'},
-    // Container units resolve against the content box: no padding.
-    padding: {default: null, [TOUCH]: 0},
-    containerType: {default: null, [TOUCH]: 'size'},
-    backgroundColor: {
-      default: null,
-      [TOUCH]: {
-        default: colorVars['--color-background-gray'],
-        '@media (forced-colors: active)': 'Canvas',
-      },
-    },
-    transitionDuration: {default: null, [TOUCH]: '0s'},
-  },
   trackOnLayer: {
     display: {default: 'none', [TOUCH]: 'block'},
     position: 'absolute',
@@ -421,13 +440,6 @@ const styles = stylex.create({
       default: null,
       [TOUCH]: 'calc(41.2698cqw - 7.1429cqh)',
     },
-  },
-  // The themed thumb is the box's opaque fill under a finger.
-  thumbTouch: {
-    width: {default: null, [TOUCH]: '100%'},
-    height: {default: null, [TOUCH]: '100%'},
-    transform: {default: null, [TOUCH]: 'none'},
-    transitionProperty: {default: null, [TOUCH]: 'none'},
   },
   // The clear lens the lifted thumb becomes: a faint fill, a bright rim and
   // UIKit's lifted shadow (y 7, radius 3, alpha 0.12 in pt, divided by the
@@ -814,7 +826,6 @@ export function Switch({
             styles.trackFocus,
             isDisabled && styles.trackDisabled,
             isDisabled && !isOn && styles.trackDisabledOff,
-            styles.trackTouch,
           ),
         )}>
         <span
@@ -841,7 +852,6 @@ export function Switch({
                 styles.thumb,
                 isOn ? thumbOnSizeStyles[size] : thumbOffSizeStyles[size],
                 isOn ? styles.thumbOn : styles.thumbOff,
-                styles.thumbTouch,
               ),
             )}>
             {isBusy && <Spinner size="sm" />}

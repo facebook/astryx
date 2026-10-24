@@ -996,6 +996,60 @@ describe('Switch', () => {
     });
   });
 
+  describe('mouse look', () => {
+    // jsdom applies no `@media (pointer: coarse)` rule, so these are the
+    // styles a mouse gets: the touch presentation must override none of
+    // them (a later style that names a property replaces all of it).
+    const look = (container: HTMLElement) => {
+      const track = container.querySelector<HTMLElement>('.astryx-switch');
+      const thumb = container.querySelector<HTMLElement>(
+        '.astryx-switch-thumb',
+      );
+      if (track == null || thumb == null) {
+        throw new Error('the switch has no track or thumb');
+      }
+      const t = getComputedStyle(track);
+      const h = getComputedStyle(thumb);
+      return {
+        fill: t.backgroundColor,
+        padding: t.paddingTop,
+        fade: [t.transitionProperty, t.transitionDuration],
+        size: [h.width, h.height],
+        slide: [h.transitionProperty.replace(/\s/g, ''), h.transitionDuration],
+        travel: h.transform,
+      };
+    };
+
+    it('keeps the track fill, padding and colour fade, and the thumb size and slide', () => {
+      const {container, rerender} = render(
+        <Switch label="Wi-Fi" value={false} onChange={() => {}} />,
+      );
+      const off = look(container);
+      expect(off.fill).toContain('--color-background-gray');
+      expect(off.padding).toBe('4px');
+      expect(off.fade[0]).toBe('background-color');
+      expect(off.fade[1]).not.toMatch(/^(0s)?$/);
+      expect(off.size).toEqual(['16px', '16px']);
+      expect(off.slide[0]).toBe('transform,width,height');
+      expect(off.slide[1]).not.toMatch(/^(0s)?$/);
+
+      rerender(<Switch label="Wi-Fi" value onChange={() => {}} />);
+      const on = look(container);
+      expect(on.fill).toContain('--color-accent');
+      expect(on.size).toEqual(['20px', '20px']);
+      expect(on.travel).toBe('translateX(14px)');
+    });
+
+    it('keeps the small size’s padding and thumb', () => {
+      const {container} = render(
+        <Switch label="Wi-Fi" size="sm" value={false} onChange={() => {}} />,
+      );
+      const off = look(container);
+      expect(off.padding).toBe('2px');
+      expect(off.size).toEqual(['14px', '14px']);
+    });
+  });
+
   describe('coarse pointer and RTL hit-target positioning', () => {
     it.each([
       ['sm', 'ltr'],
