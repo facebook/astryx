@@ -195,8 +195,9 @@ re-implements theme logic.
 
 - `packages/native/apple/` is one Swift package with the `AstryxNative`
   product (generated contract types) and the `Astryx` product (SwiftUI views).
-- The package's generator writes core's default theme only, as string-keyed
-  token dictionaries; this spec describes the generator it grows into.
+- The generator writes the typed `Tokens.swift` and one theme file for core's
+  defaults and each published theme package (`Theme.default`, `Theme.neutral`,
+  and so on), under `apple/Sources/Astryx/Theme/Generated/`.
 - Core's `resolveThemeTokens` returns shared tokens per mode and no local
   tokens; neutral declares local tokens, stored as `light-dark(…)` strings.
 - Published theme packages: butter, chocolate, gothic, matcha, neutral, stone,

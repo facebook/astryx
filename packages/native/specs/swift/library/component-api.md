@@ -114,9 +114,11 @@ same generated contract.
   the core prop it maps to where one exists; a declaration with no core prop
   (an initializer, a content slot, a style or modifier) names the contract
   part it serves.
-- **A9 — Layout SwiftUI already provides is not offered.** Astryx's HStack
-  and VStack are not offered in Swift; apps use SwiftUI's stacks with token
-  spacing (`theme.space.s4`).
+- **A9 — Layout SwiftUI already provides is not offered.** The Swift public
+  API offers no HStack or VStack view; apps use SwiftUI's own stacks with
+  token spacing (`theme.space.s4`). A logic-core tree on an Apple host keeps
+  its `HStack` and `VStack` wire nodes (AST-082 FR19), which the logic host
+  draws with SwiftUI's stacks.
 
 ## Acceptance checks
 
@@ -134,7 +136,7 @@ same generated contract.
 | A6          | A source check finds no public SwiftUI `Color`, `Font`, `CGFloat` padding, or `*Style` parameter on a component; the contract's own visual props are allowed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | A7          | A UI test finds the view by its `id` and does not find it when `isHidden` is true.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | A8          | DocC builds with no missing-documentation warning for a public component symbol.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| A9          | The package declares no `HStack` or `VStack` view.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| A9          | The `Astryx` product declares no public `HStack` or `VStack` view; the logic host draws `HStack` and `VStack` wire nodes with SwiftUI's stacks.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
 ## Current state
 
