@@ -860,16 +860,22 @@ describe('swipeActions', () => {
 
   /**
    * jsdom lays nothing out: give the row a width and each side's entries a
-   * natural width of 72 px per entry, as the real panel measures them.
+   * natural width of 72 px per entry, as the real panel measures them. The
+   * entries are two groups: the others, then the outermost on its own.
    */
   function layOut(row: HTMLElement) {
     Object.defineProperty(row, 'clientWidth', {configurable: true, value: 300});
     for (const side of ['leading', 'trailing'] as const) {
       const entries = panelOf(row, side) == null ? null : entriesOf(row, side);
       if (entries != null) {
+        const [inner, outer] = Array.from(entries.children);
         Object.defineProperty(entries, 'offsetWidth', {
           configurable: true,
-          value: 72 * entries.childElementCount,
+          value: 72 * (inner.childElementCount + outer.childElementCount),
+        });
+        Object.defineProperty(outer, 'offsetWidth', {
+          configurable: true,
+          value: 72,
         });
       }
     }
@@ -1178,6 +1184,27 @@ describe('swipeActions', () => {
       fireEvent.pointerDown(document.body);
       await settled();
       expect(xOf(row)).toBe(0);
+    });
+
+    it("arms past its own commit point with resistance and fires on release, with no full swipe's run-ahead", async () => {
+      const onActivate = vi.fn();
+      const {row} = renderRow({leading: [{label: 'Unread', onActivate}]});
+      const f = finger(row);
+      f.down(10);
+      f.move(20);
+      f.move(100);
+      // The commit point: 48 px past the 72 px panel, or half the 300 px
+      // row, whichever is further: 150 px.
+      f.move(160);
+      expect(xOf(row)).toBe(150);
+      // Past it the row resists (0.35 per px) instead of running ahead to
+      // UIKit's confirmation offset.
+      f.move(260);
+      expect(xOf(row)).toBeCloseTo(185);
+      f.rest();
+      f.up();
+      await settled();
+      expect(onActivate).toHaveBeenCalledTimes(1);
     });
 
     it('settles at once under Reduce Motion, as the row always has', async () => {
@@ -1580,7 +1607,7 @@ describe('swipeActions', () => {
       elsewhere.remove();
     });
 
-    it('fires the outermost entry and no other on a drag past the commit point, then springs back', async () => {
+    it('fires the outermost entry and no other on a confirmed full swipe, then springs back', async () => {
       const inner = vi.fn();
       const outer = vi.fn();
       const {row} = renderRow({
@@ -1589,9 +1616,9 @@ describe('swipeActions', () => {
           {label: 'Pin', onActivate: outer},
         ],
       });
-      // Two entries: a 144 px panel; the commit point is 192 (panel + 48),
-      // past half the 300 px row.
-      dragLeading(row, 200);
+      // Two entries: a 144 px panel. The full swipe confirms 0.69 of the way
+      // from it to 271 px (the 300 px row less 29): about 232 px.
+      dragLeading(row, 240);
       expect(outer).not.toHaveBeenCalled();
       // One beat: the slide out, then the entry fires.
       expect(xOf(row)).toBe(324);
@@ -1601,6 +1628,114 @@ describe('swipeActions', () => {
       // No `hasRemoval`: back home.
       await settled();
       expect(xOf(row)).toBe(0);
+    });
+
+    describe('the full swipe', () => {
+      const twoEntries = () =>
+        renderRow({
+          leading: [
+            {label: 'Unread', onActivate: vi.fn()},
+            {label: 'Pin', onActivate: vi.fn()},
+          ],
+        });
+      /** The two groups of a side's entries: the others, and the outermost. */
+      const groupsOf = (row: HTMLElement) => {
+        const [inner, outer] = Array.from(entriesOf(row, 'leading').children);
+        return {inner: inner as HTMLElement, outer: outer as HTMLElement};
+      };
+
+      it('lets the entries ride the row past the open width, the outermost stretching to the edge', () => {
+        const {row} = twoEntries();
+        const f = finger(row);
+        f.down(10);
+        f.move(20);
+        f.move(35);
+        f.move(35 + 100);
+        // Short of the open width: pinned at the outer edge.
+        expect(xOf(entriesOf(row, 'leading'))).toBe(144 - 100);
+        f.move(35 + 200);
+        // Past it: beside the row, the track's colour filling out to the edge.
+        expect(xOf(entriesOf(row, 'leading'))).toBe(0);
+        f.up();
+      });
+
+      it("confirms on the finger's travel: the row runs ahead to the confirmation offset, the outermost entry covers the space, and the others fade", () => {
+        const {row} = twoEntries();
+        const {inner, outer} = groupsOf(row);
+        const f = finger(row);
+        f.down(10);
+        f.move(20);
+        f.move(35);
+        f.move(35 + 220);
+        // Not yet: the row follows the finger.
+        expect(xOf(row)).toBe(220);
+        expect(xOf(outer)).toBe(0);
+        f.move(35 + 240);
+        // Confirmed: ahead to 271 px (the 300 px row less 29), the outermost
+        // slid past the other to the row's edge, the other faded.
+        expect(xOf(row)).toBe(271);
+        expect(xOf(outer)).toBe(72);
+        expect(inner.style.getPropertyValue('opacity')).toBe('0');
+        // Backed out: the look undone, the row on the finger again.
+        f.move(35 + 200);
+        expect(xOf(row)).toBe(200);
+        expect(xOf(outer)).toBe(0);
+        expect(inner.style.getPropertyValue('opacity')).toBe('1');
+        f.up();
+      });
+
+      it('closes a swipe that confirmed and backed out, even at rest past half the panel, and fires nothing', async () => {
+        const onActivate = vi.fn();
+        const {row} = renderRow({leading: [{label: 'Unread', onActivate}]});
+        const f = finger(row);
+        f.down(10);
+        f.move(20);
+        f.move(35);
+        f.move(35 + 230);
+        f.move(35 + 150);
+        f.rest();
+        f.up();
+        await settled();
+        expect(xOf(row)).toBe(0);
+        expect(onActivate).not.toHaveBeenCalled();
+      });
+
+      it('fires from a confirmed release whatever its velocity, even moving back', async () => {
+        const onActivate = vi.fn();
+        const {row} = renderRow({leading: [{label: 'Unread', onActivate}]});
+        const f = finger(row);
+        f.down(10);
+        f.move(20);
+        f.move(35);
+        f.move(35 + 150);
+        f.move(35 + 260);
+        // Coming back fast, still past the confirm point when it lifts.
+        f.move(35 + 240);
+        f.move(35 + 222);
+        f.up({afterMs: 0});
+        await settled();
+        expect(onActivate).toHaveBeenCalledTimes(1);
+      });
+
+      it('never confirms toward a disabled outermost entry', async () => {
+        const onActivate = vi.fn();
+        const {row} = renderRow({
+          leading: [{label: 'Unread', onActivate, isDisabled: true}],
+        });
+        const f = finger(row);
+        f.down(10);
+        f.move(20);
+        f.move(35);
+        f.move(35 + 260);
+        // No run ahead: the row stays on the finger.
+        expect(xOf(row)).toBe(260);
+        f.rest();
+        f.up();
+        await settled();
+        expect(onActivate).not.toHaveBeenCalled();
+        // A slow release past half the panel rests open.
+        expect(xOf(row)).toBe(72);
+      });
     });
 
     it('lays the entries outermost last: at the leading edge the row of entries runs in reverse', () => {
@@ -1627,10 +1762,11 @@ describe('swipeActions', () => {
         ),
       ).toBe(false);
       // The track wears its outermost entry's colour, so a slide-out fills
-      // the row with it.
+      // the row with it. The outermost is alone in the group at the outer end.
       const trackClasses = trackOf(row, 'trailing').className;
-      const deleteClasses = (trailing.lastElementChild as HTMLElement)
-        .className;
+      const deleteClasses = (
+        trailing.lastElementChild?.firstElementChild as HTMLElement
+      ).className;
       expect(trackClasses.split(' ').some(c => deleteClasses.includes(c))).toBe(
         true,
       );
@@ -1638,7 +1774,7 @@ describe('swipeActions', () => {
   });
 
   describe('commit', () => {
-    it('slides out and fires on a release past the commit point; nothing rests', async () => {
+    it('slides out and fires on a confirmed full swipe; nothing rests', async () => {
       const onActivate = vi.fn();
       const {row} = renderRow({
         behavior: 'commit',
@@ -1648,8 +1784,8 @@ describe('swipeActions', () => {
       // Presentational at all times: nothing in it is ever tappable.
       expect(panel).toHaveAttribute('aria-hidden', 'true');
       expect(panel.querySelector('button')).toBeNull();
-      // One entry: 72 px panel; the commit point is half the 300 px row.
-      dragLeading(row, 160);
+      // One entry: a 72 px panel; the full swipe confirms at about 209 px.
+      dragLeading(row, 220);
       expect(xOf(row)).toBe(324);
       await settled();
       expect(onActivate).toHaveBeenCalledTimes(1);
@@ -1694,7 +1830,7 @@ describe('swipeActions', () => {
         behavior: 'commit',
         leading: [{label: 'Archive', onActivate, hasRemoval: true}],
       });
-      dragLeading(row, 160);
+      dragLeading(row, 220);
       await settled();
       expect(onActivate).toHaveBeenCalledTimes(1);
       await settled();

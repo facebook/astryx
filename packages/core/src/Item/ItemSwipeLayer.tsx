@@ -112,19 +112,16 @@ const styles = stylex.create({
     insetInlineStart: '100%',
   },
   // The entries at their natural width at the track's edge next to the row,
-  // translated back so they stay pinned at the row's outer edge. The
-  // outermost entry is the last, at that outer edge: on the leading side that
-  // is the inline start, so the row of entries runs in reverse.
+  // translated back so they stay pinned at the row's outer edge until the
+  // row has uncovered them all, then riding the row. The outermost entry is
+  // the last, at the outer edge: on the leading side that is the inline
+  // start, so the row of entries runs in reverse.
   swipeEntries: {
     position: 'absolute',
     insetBlock: 0,
     display: 'flex',
     width: 'max-content',
     pointerEvents: 'auto',
-    // The entries sit on the surface, not on the track's own colour: the
-    // neutral variant is translucent and would otherwise take the outermost
-    // entry's colour through it.
-    backgroundColor: colorVars['--color-background-surface'],
   },
   swipeEntriesLeading: {
     insetInlineEnd: 0,
@@ -132,6 +129,20 @@ const styles = stylex.create({
   },
   swipeEntriesTrailing: {
     insetInlineStart: 0,
+  },
+  // The entries other than the outermost, and the outermost on its own: each
+  // group sits on the surface, not on the track's own colour (the neutral
+  // variant is translucent and would otherwise take the outermost entry's
+  // colour through it). On a confirmed full swipe the outermost slides to the
+  // row's edge and the others fade with their surface, so the outermost's
+  // colour covers the space.
+  swipeEntryGroup: {
+    display: 'flex',
+    height: '100%',
+    backgroundColor: colorVars['--color-background-surface'],
+  },
+  swipeEntryGroupLeading: {
+    flexDirection: 'row-reverse',
   },
   swipeEntry: {
     display: 'flex',
@@ -205,6 +216,13 @@ export default function ItemSwipeLayer({
   const swipe = useSwipeAction({
     behavior,
     idiom,
+    // A disabled outermost entry cannot fire, so a full swipe never confirms
+    // toward it.
+    canConfirm: side => {
+      const entries = entriesRef.current[side];
+      const entry = entries[entries.length - 1];
+      return entry != null && entry.isDisabled !== true;
+    },
     fireOutermost: side => {
       const entries = entriesRef.current[side];
       const entry = entries[entries.length - 1];
@@ -254,6 +272,54 @@ export default function ItemSwipeLayer({
     const isCommit = behavior === 'commit';
     const isLive = isSwipeResting && !isCommit;
     const refs = swipe.panelRefs[side];
+    const renderEntry = (entry: ItemSwipeAction) => {
+      const variant = entry.variant ?? 'accent';
+      const content = (
+        <>
+          {entry.icon}
+          <span>{entry.label}</span>
+        </>
+      );
+      const entryStyle = stylex.props(
+        styles.swipeEntry,
+        swipeVariantStyles[variant],
+        entry.isDisabled === true && styles.swipeEntryDisabled,
+      );
+      if (isCommit) {
+        return (
+          <span
+            key={entry.id ?? entry.label}
+            {...mergeProps(
+              themeProps('item-swipe-action', {variant}),
+              entryStyle,
+            )}>
+            {content}
+          </span>
+        );
+      }
+      return (
+        <button
+          key={entry.id ?? entry.label}
+          type="button"
+          disabled={entry.isDisabled === true}
+          onClick={() =>
+            swipe.activateEntry(() => {
+              void entry.onActivate();
+              return entry.hasRemoval === true;
+            })
+          }
+          {...mergeProps(
+            themeProps('item-swipe-action', {variant}),
+            focusOutlineProps.focusVisible(
+              styles.swipeEntry,
+              swipeVariantStyles[variant],
+              entry.isDisabled === true && styles.swipeEntryDisabled,
+            ),
+          )}>
+          {content}
+        </button>
+      );
+    };
     return (
       <div
         key={side}
@@ -283,54 +349,17 @@ export default function ItemSwipeLayer({
                 ? styles.swipeEntriesLeading
                 : styles.swipeEntriesTrailing,
             )}>
-            {entries.map(entry => {
-              const variant = entry.variant ?? 'accent';
-              const content = (
-                <>
-                  {entry.icon}
-                  <span>{entry.label}</span>
-                </>
-              );
-              const entryStyle = stylex.props(
-                styles.swipeEntry,
-                swipeVariantStyles[variant],
-                entry.isDisabled === true && styles.swipeEntryDisabled,
-              );
-              if (isCommit) {
-                return (
-                  <span
-                    key={entry.id ?? entry.label}
-                    {...mergeProps(
-                      themeProps('item-swipe-action', {variant}),
-                      entryStyle,
-                    )}>
-                    {content}
-                  </span>
-                );
-              }
-              return (
-                <button
-                  key={entry.id ?? entry.label}
-                  type="button"
-                  disabled={entry.isDisabled === true}
-                  onClick={() =>
-                    swipe.activateEntry(() => {
-                      void entry.onActivate();
-                      return entry.hasRemoval === true;
-                    })
-                  }
-                  {...mergeProps(
-                    themeProps('item-swipe-action', {variant}),
-                    focusOutlineProps.focusVisible(
-                      styles.swipeEntry,
-                      swipeVariantStyles[variant],
-                      entry.isDisabled === true && styles.swipeEntryDisabled,
-                    ),
-                  )}>
-                  {content}
-                </button>
-              );
-            })}
+            <div
+              ref={refs.inner}
+              {...stylex.props(
+                styles.swipeEntryGroup,
+                side === 'leading' && styles.swipeEntryGroupLeading,
+              )}>
+              {entries.slice(0, -1).map(renderEntry)}
+            </div>
+            <div ref={refs.outer} {...stylex.props(styles.swipeEntryGroup)}>
+              {renderEntry(outer)}
+            </div>
           </div>
         </div>
       </div>

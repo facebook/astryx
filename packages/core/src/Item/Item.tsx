@@ -114,13 +114,16 @@ export interface ItemSwipeActions {
 }
 
 /**
- * `reveal`: every entry of a resting row is a real button, and a long drag
- * fires the outermost. On iOS, as in a UIKit list, a fast release goes the
- * way it moves (a flick opens the row, a flick back closes it) and a slow one
- * rests the row open past half the panel; elsewhere a release past half the
- * panel rests it open and a fling fires the outermost, as before. `commit`: a
- * release past the commit point slides the row out and fires the outermost
- * entry; nothing rests, and the panel is presentational.
+ * `reveal`: every entry of a resting row is a real button. On iOS, as in a
+ * UIKit list, a fast release goes the way it moves (a flick opens the row, a
+ * flick back closes it) and a slow one rests the row open past half the
+ * panel, and a full swipe fires the outermost: dragged on past the confirm
+ * point, the row runs ahead and the outermost entry covers its place, and
+ * letting go there fires it; backing out closes the row. Elsewhere a release
+ * past half the panel rests it open, and a long drag or a fling fires the
+ * outermost, as before. `commit`: only a release that fires (a full swipe on
+ * iOS, a long drag elsewhere) does anything, sliding the row out; nothing
+ * rests, and the panel is presentational.
  */
 export type ItemSwipeBehavior = 'reveal' | 'commit';
 
@@ -355,10 +358,10 @@ export interface ItemProps extends BaseProps<HTMLElement> {
 
   /**
    * What a swipe does: `reveal` rests the row open with every entry tappable
-   * (on iOS a flick opens it and a flick back closes it; elsewhere a fling
-   * fires the outermost, as before) and fires the outermost on a long drag;
-   * `commit` slides the row out and fires the outermost on a release past
-   * the commit point. `commit` fits one entry per side.
+   * (on iOS a flick opens it, a flick back closes it, and a full swipe fires
+   * the outermost; elsewhere a long drag or a fling fires it, as before);
+   * `commit` only fires the outermost (a full swipe on iOS, a long drag
+   * elsewhere), sliding the row out. `commit` fits one entry per side.
    * @default 'reveal'
    */
   swipeBehavior?: ItemSwipeBehavior;

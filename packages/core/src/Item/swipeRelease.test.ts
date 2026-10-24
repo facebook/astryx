@@ -3,9 +3,8 @@
 /**
  * @file swipeRelease.test.ts
  * @input vitest; swipeRelease.ts and the UIKit constants table
- * @output The release rule against the UIKit lab's releases; the commit
- *   point and the resistance past it; the swipe spring is the one UIKit
- *   reported
+ * @output The release rule against the UIKit lab's releases; where a full
+ *   swipe confirms; the swipe spring is the one UIKit reported
  * @position Unit tests of packages/core/src/Item/swipeRelease.ts
  */
 
@@ -18,10 +17,10 @@ import {
 } from '../motion/spring';
 import {swipeActions} from '../motion/uikit';
 import {
-  commitPoint,
+  confirmedOffset,
+  confirmPoint,
   defaultCommitPoint,
   defaultResistedTravel,
-  resistedTravel,
   resolveDefaultRelease,
   resolveRelease,
 } from './swipeRelease';
@@ -35,7 +34,6 @@ describe('resolveRelease', () => {
   // toward open. A scripted "closing" release can still be opening when it
   // lifts (the 36 pt one at +458), so the reported values are the inputs.
   const OPEN_WIDTH = 156.67;
-  const FAR = 373;
   const RELEASES: [travel: number, velocity: number, lands: string][] = [
     [35, -19, 'closed'],
     [65, 490, 'open'],
@@ -92,10 +90,11 @@ describe('resolveRelease', () => {
       expect(
         resolveRelease({
           behavior: 'reveal',
-          commitAt: FAR,
+          isConfirmed: false,
           openWidth: OPEN_WIDTH,
           travel: Math.max(0, travel),
           velocity,
+          wasConfirmed: false,
         }),
       ).toBe(lands);
     },
@@ -106,9 +105,10 @@ describe('resolveRelease', () => {
     // are the pan's at its end, as UIKit read them.
     const base = {
       behavior: 'reveal' as const,
-      commitAt: 325,
+      isConfirmed: false,
       openWidth: 204.67,
       travel: 143,
+      wasConfirmed: false,
     };
     for (const velocity of [-19.9, -21.2, -35.7, -40.7, 0, 56.1]) {
       expect(resolveRelease({...base, velocity})).toBe('open');
@@ -125,10 +125,11 @@ describe('resolveRelease', () => {
     expect(
       resolveRelease({
         behavior: 'reveal',
-        commitAt: 325,
+        isConfirmed: false,
         openWidth: 204.67,
         travel: 305,
         velocity: -300,
+        wasConfirmed: false,
       }),
     ).toBe('closed');
     // The same release at rest, or still opening, stays open.
@@ -136,50 +137,98 @@ describe('resolveRelease', () => {
       expect(
         resolveRelease({
           behavior: 'reveal',
-          commitAt: 325,
+          isConfirmed: false,
           openWidth: 204.67,
           travel: 305,
           velocity,
+          wasConfirmed: false,
         }),
       ).toBe('open');
     }
   });
 
-  it('fires under reveal on a release past the commit point, whatever the velocity, and never on a flick short of it', () => {
-    const base = {behavior: 'reveal' as const, commitAt: 192, openWidth: 144};
-    expect(resolveRelease({...base, travel: 192, velocity: 0})).toBe('perform');
-    expect(resolveRelease({...base, travel: 200, velocity: -2000})).toBe(
-      'perform',
-    );
-    expect(resolveRelease({...base, travel: 44, velocity: 3000})).toBe('open');
-    expect(resolveRelease({...base, travel: 191, velocity: 3000})).toBe('open');
+  it('fires on a confirmed release at any velocity, and never on one that has not confirmed', () => {
+    const base = {behavior: 'reveal' as const, openWidth: 204.67, travel: 340};
+    for (const velocity of [0, 1000, -1000]) {
+      expect(
+        resolveRelease({
+          ...base,
+          isConfirmed: true,
+          velocity,
+          wasConfirmed: true,
+        }),
+      ).toBe('perform');
+    }
+    expect(
+      resolveRelease({
+        ...base,
+        isConfirmed: false,
+        travel: 44,
+        velocity: 3000,
+        wasConfirmed: false,
+      }),
+    ).toBe('open');
   });
 
-  it('fires under commit only past the commit point, and never rests', () => {
-    const base = {behavior: 'commit' as const, commitAt: 150, openWidth: 72};
-    expect(resolveRelease({...base, travel: 150, velocity: 0})).toBe('perform');
-    expect(resolveRelease({...base, travel: 160, velocity: -1000})).toBe(
-      'perform',
-    );
-    expect(resolveRelease({...base, travel: 100, velocity: 0})).toBe('closed');
-    expect(resolveRelease({...base, travel: 40, velocity: 3000})).toBe(
-      'closed',
-    );
+  it('closes a swipe that confirmed and backed out, even at rest past half the panel (batch 38)', () => {
+    expect(
+      resolveRelease({
+        behavior: 'reveal',
+        isConfirmed: false,
+        openWidth: 204.67,
+        travel: 275,
+        velocity: 0,
+        wasConfirmed: true,
+      }),
+    ).toBe('closed');
+  });
+
+  it('fires under commit only when confirmed, and never rests', () => {
+    const base = {behavior: 'commit' as const, openWidth: 72};
+    expect(
+      resolveRelease({
+        ...base,
+        isConfirmed: true,
+        travel: 250,
+        velocity: -1000,
+        wasConfirmed: true,
+      }),
+    ).toBe('perform');
+    expect(
+      resolveRelease({
+        ...base,
+        isConfirmed: false,
+        travel: 100,
+        velocity: 0,
+        wasConfirmed: false,
+      }),
+    ).toBe('closed');
+    expect(
+      resolveRelease({
+        ...base,
+        isConfirmed: false,
+        travel: 40,
+        velocity: 3000,
+        wasConfirmed: false,
+      }),
+    ).toBe('closed');
   });
 });
 
-describe('commitPoint and resistedTravel', () => {
-  it('commits past the panel, or past the fraction of the row when that is further', () => {
-    expect(commitPoint(72, 300)).toBe(150);
-    expect(commitPoint(144, 300)).toBe(192);
+describe('confirmPoint', () => {
+  it('lands inside the brackets UIKit gave: (315, 335] at a 204.67 pt open width and (275, 315] at 156.67, on 402 pt rows', () => {
+    const wide = confirmPoint(204.67, 402);
+    expect(wide).toBeGreaterThan(315);
+    expect(wide).toBeLessThanOrEqual(335);
+    const narrow = confirmPoint(156.67, 402);
+    expect(narrow).toBeGreaterThan(275);
+    expect(narrow).toBeLessThanOrEqual(315);
   });
 
-  it('follows the finger up to the commit point and resists past it', () => {
-    expect(resistedTravel(150, 150)).toBe(150);
-    expect(resistedTravel(250, 150)).toBeCloseTo(
-      150 + 100 * swipeActions.overdragResistance,
-      10,
-    );
+  it('is never short of the open width, and the confirmed row sits the inset short of its far edge', () => {
+    expect(confirmPoint(390, 402)).toBe(390);
+    expect(confirmedOffset(402)).toBe(373);
+    expect(confirmedOffset(375)).toBe(346);
   });
 });
 
