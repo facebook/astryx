@@ -2,7 +2,8 @@
 
 /**
  * @file animator.ts
- * @input An element, target values, and a spring or a decay
+ * @input An element, target values, and a spring, a decay or any closed-form
+ *   curve
  * @output Exports `createAnimator`: a compositor animator for translate,
  *   rotate, scale and opacity, with presentation values and velocities read
  *   from the analytic curves, velocity-preserving retargeting, freeze-in-place
@@ -15,7 +16,8 @@
  *
  * Each animated value (x, y, rotate, scaleX, scaleY, opacity) follows a
  * closed-form curve: a spring (spring.ts), a UIScrollView coast with an edge
- * bounce (decay.ts), or a Reduced Motion cross-fade. The curves are baked into
+ * bounce (decay.ts), a curve handed to `play` (a spring chasing a moving
+ * target, a fitted UIKit curve), or a Reduced Motion cross-fade. The curves are baked into
  * Web Animations keyframes on the individual transform properties (`translate`,
  * `rotate`, `scale`) and `opacity`, sampled adaptively until linear
  * interpolation between keyframes is within a fraction of a pixel, and played
@@ -54,17 +56,24 @@
  * animators up). Keyframes are sampled from that time, so a value that keeps
  * moving through a rebuild stays on its curve to the frame.
  *
- * Reduced Motion (law M5): UIKit replaces travel with a cross-fade. With
- * `prefers-reduced-motion: reduce`, an `animate` that moves something
- * (x, y, rotate, scale) by default (`reducedMotion: 'crossfade'`):
+ * Reduced Motion (law M5): with `prefers-reduced-motion: reduce`, UIKit's
+ * Reduce Motion with Prefer Cross-Fade Transitions replaces travel with a
+ * cross-fade. An `animate` or `play` that moves something (x, y, rotate,
+ * scale) by default (`reducedMotion: 'crossfade'`):
  * - entering (opacity rises in the same call): jumps to the new place and
  *   fades in;
  * - leaving (opacity falls): fades out in place, then jumps;
  * - otherwise: dips (fades out, jumps at the midpoint, fades back in).
- * The fade runs `timing.reducedMotionCrossFadeMs` on `timing.curves.easeInOut`.
+ * The fade runs `timing.reducedMotionCrossFadeMs` on `timing.curves.easeInOut`
+ * (a navigation push or pop), or on the spring given as `crossfade` (a sheet,
+ * a full-screen modal or an alert fades on its presentation spring).
  * `'instant'` jumps without a fade; `'keep'` plays the motion unchanged (for
  * direct manipulation that UIKit keeps under Reduce Motion). Decays keep their
  * motion: they follow a finger's throw.
+ *
+ * A pseudo-element (`options.pseudoElement`, a dialog's `::backdrop`) has no
+ * inline style: its end value is held by a static filling animation (after a
+ * curve ends, and after `set`) until the next animation replaces it.
  *
  * SSR-safe: nothing touches `window` or `document` at module scope, and an
  * animator created without an element only keeps state until one is attached.
@@ -77,7 +86,12 @@
 
 import {cubicBezier} from './bezier';
 import {solveDecay} from './decay';
-import {solveSpring, toSpring, type SpringDescription} from './spring';
+import {
+  solveSpring,
+  toSpring,
+  type SpringCurve,
+  type SpringDescription,
+} from './spring';
 import {scroll} from './uikit/scroll';
 import {timing} from './uikit/timing';
 
@@ -117,9 +131,39 @@ export interface AnimateOptions {
   at?: number;
   /** Reduced Motion substitution; see the file header. */
   reducedMotion?: 'crossfade' | 'instant' | 'keep';
+  /**
+   * The substituted cross-fade's curve. By default a timed fade
+   * (`timing.reducedMotionCrossFadeMs` on easeInOut: UIKit's navigation
+   * cross-fade); with a spring the fade follows it, as UIKit fades a sheet, a
+   * full-screen modal or an alert on the presentation's own spring.
+   */
+  crossfade?: SpringDescription;
+}
+
+/**
+ * Any closed-form curve to play on the compositor (`Animator.play`): a
+ * spring chasing a moving target, a piecewise curve, a fitted UIKit curve.
+ * Times are seconds from the curve's start; the value at `duration` is the
+ * end state. Start it at the property's presentation value (`get`) to
+ * continue without a jump.
+ */
+export interface MotionCurve {
+  /** Length, s. */
+  readonly duration: number;
+  /** Value `t` seconds after the start (0 ≤ t ≤ duration). */
+  at(t: number): number;
+  /** Velocity `t` seconds after the start, units/s. */
+  velocity(t: number): number;
 }
 
 export interface AnimatorOptions {
+  /**
+   * Animates a pseudo-element of the element instead (`'::backdrop'` of a
+   * native dialog). A pseudo-element has no inline style, so every animation
+   * fills both ways and stays in effect until the next one replaces it, and
+   * `set` holds its value with a static animation.
+   */
+  pseudoElement?: string;
   /** Starting values; identity by default. Never read from the DOM. */
   initial?: MotionValues;
   /** Clock in ms on the document timeline's time base. */
@@ -173,6 +217,18 @@ export interface Animator {
   animate(
     to: MotionValues,
     transition: SpringTransition,
+    options?: AnimateOptions,
+  ): MotionHandle;
+  /**
+   * Plays given curves (`scale` drives both axes), baked like a spring:
+   * presentation values, velocities, `stop`, `finished` and the shared
+   * clock work the same, and a later `animate` starts from the curve's
+   * value and velocity. Reduced Motion treats a curve that moves x, y, rotate
+   * or scale as travel (`reducedMotion`, `'crossfade'` by default). Its
+   * handle has no spring of its own: `retarget` needs one.
+   */
+  play(
+    curves: Partial<Record<MotionProperty | 'scale', MotionCurve>>,
     options?: AnimateOptions,
   ): MotionHandle;
   /** Coasts with `velocity` like a released scroll view. */
@@ -357,6 +413,7 @@ export function createAnimator(
   options: AnimatorOptions = {},
 ): Animator {
   const now = options.now ?? defaultNow;
+  const pseudoElement = options.pseudoElement;
   const prefersReducedMotion =
     options.prefersReducedMotion ?? defaultPrefersReducedMotion;
   const resting: Record<MotionProperty, number> = {
@@ -418,7 +475,7 @@ export function createAnimator(
     channel: Channel,
     value: (property: MotionProperty) => number,
   ) => {
-    if (target == null) {
+    if (target == null || pseudoElement != null) {
       return;
     }
     touched.add(channel);
@@ -479,11 +536,32 @@ export function createAnimator(
     return times;
   };
 
+  /** A pseudo-element's resting value, held by a static filling animation. */
+  const hold = (channel: Channel, time: number) => {
+    if (target == null) {
+      return;
+    }
+    const value = format(channel, finalValue);
+    const animation = target.animate([{[channel]: value}, {[channel]: value}], {
+      duration: 1,
+      fill: 'both',
+      pseudoElement,
+    });
+    animation.startTime = time;
+    running.set(channel, animation);
+  };
+
   const rebuild = (channel: Channel, time: number) => {
-    running.get(channel)?.cancel();
+    const previous = running.get(channel);
     running.delete(channel);
     clearTimeout(retireTimers.get(channel));
     retireTimers.delete(channel);
+    // An element's inline style holds the end state, so its old animation can
+    // go first. A pseudo-element has none: its old animation keeps holding the
+    // value until the new one exists (same task, no frame in between).
+    if (pseudoElement == null) {
+      previous?.cancel();
+    }
     const properties = CHANNELS[channel];
     // Settled curves become resting values.
     for (const property of properties) {
@@ -495,11 +573,15 @@ export function createAnimator(
     }
     writeInline(channel, finalValue);
     const moving = properties.filter(p => segments.has(p));
-    if (
-      target == null ||
-      moving.length === 0 ||
-      typeof target.animate !== 'function'
-    ) {
+    if (target == null || typeof target.animate !== 'function') {
+      previous?.cancel();
+      return;
+    }
+    if (moving.length === 0) {
+      if (pseudoElement != null) {
+        hold(channel, time);
+      }
+      previous?.cancel();
       return;
     }
     const end = Math.min(
@@ -513,6 +595,10 @@ export function createAnimator(
       ),
     );
     if (end <= time) {
+      if (pseudoElement != null) {
+        hold(channel, time);
+      }
+      previous?.cancel();
       return;
     }
     const collect = (scale: number) => {
@@ -575,19 +661,29 @@ export function createAnimator(
       // inline style already holds the same values, so that changes no pixel.
       fill: 'both',
       easing: 'linear',
+      ...(pseudoElement != null ? {pseudoElement} : {}),
     });
     // One clock: the keyframes were sampled from `time`.
     animation.startTime = time;
     running.set(channel, animation);
+    previous?.cancel();
+    // Once the main thread runs after the curve's end, the animation leaves
+    // the running state: an element's inline style already shows the end
+    // values; a pseudo-element's end value moves to a static holding
+    // animation, created before the long one goes.
     retireTimers.set(
       channel,
       setTimeout(
         () => {
           retireTimers.delete(channel);
-          if (running.get(channel) === animation) {
-            animation.cancel();
-            running.delete(channel);
+          if (running.get(channel) !== animation) {
+            return;
           }
+          running.delete(channel);
+          if (pseudoElement != null) {
+            hold(channel, now());
+          }
+          animation.cancel();
         },
         Math.max(0, end - now()),
       ),
@@ -766,6 +862,102 @@ export function createAnimator(
     }
   };
 
+  /**
+   * Reduced Motion: travel becomes UIKit's cross-fade (see the file header).
+   * Returns each property's new segment, or null to put it in place at once.
+   */
+  const crossfade = (
+    owner: HandleState,
+    time: number,
+    targets: Partial<Record<MotionProperty, number>>,
+    properties: MotionProperty[],
+    mode: 'crossfade' | 'instant',
+    fadeSpring?: SpringDescription,
+  ): Partial<Record<MotionProperty, Segment | null>> => {
+    const next: Partial<Record<MotionProperty, Segment | null>> = {};
+    const opacityNow = valueAt('opacity', time);
+    const opacityTo = targets.opacity ?? opacityNow;
+    const entering = opacityTo > opacityNow + 1e-6;
+    const leaving = opacityTo < opacityNow - 1e-6;
+    // The fade, and when the travel lands (ms after `time`): at once for an
+    // entrance, after the fade out for an exit, at the bottom of a dip.
+    let opacity: Segment | null = null;
+    let landsAt = 0;
+    if (mode === 'crossfade' && fadeSpring == null) {
+      const fade = timing.reducedMotionCrossFadeMs;
+      if (entering || leaving) {
+        opacity = fadeSegment(owner, time, [
+          {at: 0, value: opacityNow},
+          {at: fade, value: opacityTo},
+        ]);
+        landsAt = entering ? 0 : fade;
+      } else {
+        opacity = fadeSegment(owner, time, [
+          {at: 0, value: opacityNow},
+          {at: fade / 2, value: 0},
+          {at: fade, value: opacityTo},
+        ]);
+        landsAt = fade / 2;
+      }
+    } else if (mode === 'crossfade' && fadeSpring != null) {
+      const spring = toSpring(fadeSpring);
+      const settle = (curve: SpringCurve) =>
+        Math.min(
+          MAX_DURATION_MS / 2,
+          curve.settleTime(SETTLE_THRESHOLD.opacity) * 1000,
+        );
+      if (entering || leaving) {
+        const curve = solveSpring(spring, {from: opacityNow, to: opacityTo});
+        const duration = settle(curve);
+        opacity = {
+          start: time,
+          duration,
+          target: opacityTo,
+          at: t => curve.value(t / 1000),
+          speed: t => curve.velocity(t / 1000),
+          jumps: [],
+          owner,
+        };
+        landsAt = entering ? 0 : duration;
+      } else {
+        const out = solveSpring(spring, {from: opacityNow, to: 0});
+        const back = solveSpring(spring, {from: 0, to: opacityTo});
+        const half = settle(out);
+        opacity = {
+          start: time,
+          duration: half + settle(back),
+          target: opacityTo,
+          at: t =>
+            t < half ? out.value(t / 1000) : back.value((t - half) / 1000),
+          speed: t =>
+            t < half
+              ? out.velocity(t / 1000)
+              : back.velocity((t - half) / 1000),
+          jumps: [],
+          owner,
+        };
+        landsAt = half;
+      }
+    }
+    for (const property of properties) {
+      if (!TRAVEL.includes(property)) {
+        continue;
+      }
+      next[property] =
+        landsAt === 0
+          ? null // in place at once
+          : jumpSegment(
+              owner,
+              time,
+              valueAt(property, time),
+              targets[property] as number,
+              landsAt,
+            );
+    }
+    next.opacity = opacity;
+    return next;
+  };
+
   const animator: Animator = {
     get element() {
       return target;
@@ -839,39 +1031,17 @@ export function createAnimator(
       const next: Partial<Record<MotionProperty, Segment | null>> = {};
 
       if (reduce) {
-        const fade = timing.reducedMotionCrossFadeMs;
-        const opacityNow = valueAt('opacity', time);
-        const opacityTo = targets.opacity ?? opacityNow;
-        const entering = opacityTo > opacityNow + 1e-6;
-        const leaving = opacityTo < opacityNow - 1e-6;
-        for (const property of properties) {
-          if (!TRAVEL.includes(property)) {
-            continue;
-          }
-          const from = valueAt(property, time);
-          const toValue = targets[property] as number;
-          if (mode === 'instant' || entering) {
-            next[property] = null; // in place at once (and fade in)
-          } else if (leaving) {
-            next[property] = jumpSegment(owner, time, from, toValue, fade); // fade out, then move
-          } else {
-            next[property] = jumpSegment(owner, time, from, toValue, fade / 2); // dip
-          }
-        }
-        if (mode === 'instant') {
-          next.opacity = null;
-        } else if (entering || leaving) {
-          next.opacity = fadeSegment(owner, time, [
-            {at: 0, value: opacityNow},
-            {at: fade, value: opacityTo},
-          ]);
-        } else {
-          next.opacity = fadeSegment(owner, time, [
-            {at: 0, value: opacityNow},
-            {at: fade / 2, value: 0},
-            {at: fade, value: opacityTo},
-          ]);
-        }
+        Object.assign(
+          next,
+          crossfade(
+            owner,
+            time,
+            targets,
+            properties,
+            mode === 'instant' ? 'instant' : 'crossfade',
+            animateOptions.crossfade,
+          ),
+        );
       } else {
         for (const property of properties) {
           const velocity = velocities[property] ?? velocityAt(property, time);
@@ -886,6 +1056,86 @@ export function createAnimator(
         }
       }
 
+      const changed: MotionProperty[] = [];
+      for (const [property, segment] of Object.entries(next) as [
+        MotionProperty,
+        Segment | null,
+      ][]) {
+        interrupt(property, time);
+        changed.push(property);
+        if (segment == null) {
+          segments.delete(property);
+          resting[property] = targets[property] ?? valueAt(property, time);
+        } else {
+          segments.set(property, segment);
+        }
+      }
+      commit(changed, time);
+      return makeHandle(owner, changed, finished, time);
+    },
+
+    play(curves, playOptions = {}) {
+      const time = playOptions.at ?? now();
+      const {owner, finished} = newOwner();
+      const byProperty: Partial<Record<MotionProperty, MotionCurve>> = {};
+      for (const [key, curve] of Object.entries(curves) as [
+        MotionProperty | 'scale',
+        MotionCurve | undefined,
+      ][]) {
+        if (curve == null) {
+          continue;
+        }
+        if (!Number.isFinite(curve.duration) || curve.duration < 0) {
+          throw new RangeError(
+            `animator: a curve needs a finite duration ≥ 0 (got ${curve.duration})`,
+          );
+        }
+        for (const property of expandList([key])) {
+          byProperty[property] = curve;
+        }
+      }
+      const properties = Object.keys(byProperty) as MotionProperty[];
+      const targets: Partial<Record<MotionProperty, number>> = {};
+      for (const property of properties) {
+        const curve = byProperty[property] as MotionCurve;
+        targets[property] = curve.at(curve.duration);
+      }
+      const mode = playOptions.reducedMotion ?? 'crossfade';
+      const travels = properties.some(
+        p =>
+          TRAVEL.includes(p) &&
+          ((byProperty[p] as MotionCurve).duration > 0 ||
+            Math.abs((targets[p] as number) - valueAt(p, time)) > 1e-9),
+      );
+      const next: Partial<Record<MotionProperty, Segment | null>> =
+        mode !== 'keep' && travels && prefersReducedMotion()
+          ? crossfade(
+              owner,
+              time,
+              targets,
+              properties,
+              mode === 'instant' ? 'instant' : 'crossfade',
+              playOptions.crossfade,
+            )
+          : {};
+      for (const property of properties) {
+        if (property in next) {
+          continue;
+        }
+        const curve = byProperty[property] as MotionCurve;
+        next[property] =
+          curve.duration === 0
+            ? null
+            : {
+                start: time,
+                duration: Math.min(MAX_DURATION_MS, curve.duration * 1000),
+                target: targets[property] as number,
+                at: t => curve.at(t / 1000),
+                speed: t => curve.velocity(t / 1000),
+                jumps: [],
+                owner,
+              };
+      }
       const changed: MotionProperty[] = [];
       for (const [property, segment] of Object.entries(next) as [
         MotionProperty,

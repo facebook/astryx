@@ -23,7 +23,7 @@ from the package entry point; components import it by path.
 | `rubberBand.ts`       | UIScrollView's resistance past an edge, and its inverse.                                                                |
 | `projection.ts`       | Release targets: the rest point nearest the projected coast; paging.                                                    |
 | `bezier.ts`           | Cubic-bézier timing functions (Core Animation's named curves).                                                          |
-| `animator.ts`         | Compositor animator: springs and decays compiled to Web Animations, read back analytically.                             |
+| `animator.ts`         | Compositor animator: springs, decays and any closed-form curve compiled to Web Animations, read back analytically.      |
 
 Component-specific values (a sheet's detents, a switch's geometry, a context
 menu's timeline) live in a domain file per component, `uikit/<component>.ts`,
@@ -33,6 +33,7 @@ under the same rules.
 
 ```
 import {createAnimator} from '../motion/animator';
+import {solveSpringTowardRamp, toSpring} from '../motion/spring';
 import {springs} from '../motion/uikit';
 
 const animator = createAnimator(sheet);
@@ -51,6 +52,15 @@ animator.stop(['y']); // freezes at the value on screen
 // A throw on a scroll-like surface, with an edge:
 animator.decay({x: velocityX}, {bounds: {x: {min: -maxScroll, max: 0}}});
 
+// Any closed-form curve, here a press that keeps deepening: the target
+// scale falls at 0.16/s and the platter follows it on a spring.
+const ramp = solveSpringTowardRamp(toSpring(springs.contextMenuLift), {
+  from: 1,
+  target: 1,
+  slope: -0.16,
+});
+animator.play({scale: {duration: 0.266, at: ramp.value, velocity: ramp.velocity}});
+
 await handle.finished; // true if it ran to the end, false if interrupted
 ```
 
@@ -58,6 +68,9 @@ await handle.finished; // true if it ran to the end, false if interrupted
   `opacity`, through the individual CSS properties `translate`, `rotate`,
   `scale` and `opacity`. The element's `transform` stays the component's.
 - `get` / `getVelocity` evaluate the curves; the DOM is never read.
+- `play` bakes any curve given as value and velocity functions of time (a
+  spring chasing a moving target from `solveSpringTowardRamp`, a fitted UIKit
+  curve) exactly like a spring.
 - `animate` always starts from the presentation value with the presentation
   velocity unless a velocity is handed in, so retargeting is continuous
   (`handle.retarget(to)` keeps the call's spring).
@@ -66,9 +79,13 @@ await handle.finished; // true if it ran to the end, false if interrupted
 - Reduced Motion (`prefers-reduced-motion: reduce`): travel becomes UIKit's
   cross-fade (Reduce Motion with Prefer Cross-Fade Transitions). An entrance
   lands and fades in, an exit fades out then moves, any other move dips (fade
-  out, move, fade in), over `timing.reducedMotionCrossFadeMs` (UIKit's
-  navigation cross-fade). `{reducedMotion: 'keep'}` keeps the motion (direct
-  manipulation), `'instant'` jumps.
+  out, move, fade in), over `timing.reducedMotionCrossFadeMs` (a navigation
+  push or pop) or on the spring passed as `{crossfade}` (a sheet, a modal or
+  an alert fades on its presentation spring). `{reducedMotion: 'keep'}` keeps
+  the motion (direct manipulation), `'instant'` jumps.
+- `createAnimator(dialog, {pseudoElement: '::backdrop'})` drives a
+  pseudo-element; with no inline style to hold it, a static filling animation
+  holds its end value until the next animation replaces it.
 
 ### How it stays on the compositor
 
