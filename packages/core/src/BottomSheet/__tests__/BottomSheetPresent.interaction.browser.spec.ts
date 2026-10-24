@@ -10,7 +10,8 @@
  *   sampled frame by frame against an independent spring oracle (from the
  *   sheet's resting top to the bottom of the screen and back), the dim on the
  *   same spring's progress, the entrance advancing every frame through a
- *   blocked main thread, a fade on the spring instead under Reduce Motion,
+ *   blocked main thread, a fade in place of 200 ms or less under reduced
+ *   motion (design:reduced-motion DR2),
  *   an exit whose clock starts when the browser commits it, and a storyboard
  *   of the entrance. On Android (no iOS idiom) the stylesheet's entrance and
  *   exit run as today, Reduce Motion's included.
@@ -323,7 +324,7 @@ test('the entrance keeps advancing every frame while the main thread is blocked'
   expect(proof.monotonic).toBe(true);
 });
 
-test('under Reduce Motion the sheet fades in on the sheet spring instead of sliding', async ({
+test('under reduced motion the sheet fades in place, 200 ms or less (design:reduced-motion DR2)', async ({
   page,
 }) => {
   await page.emulateMedia({reducedMotion: 'reduce'});
@@ -332,28 +333,39 @@ test('under Reduce Motion the sheet fades in on the sheet spring instead of slid
   await expect(sheet).toBeVisible();
   const [fade] = await waitForAnimation(sheet);
   await holdAnimations(page, dialog);
-  const opacity = await sheet.evaluate((element, ts) => {
-    const held =
-      (window as unknown as {__harnessHeld?: Animation[]}).__harnessHeld ?? [];
-    return ts.map(t => {
-      for (const animation of held) {
-        animation.currentTime = t;
-      }
-      const style = getComputedStyle(element);
-      const translate =
-        style.translate === 'none'
-          ? 0
-          : Number.parseFloat(style.translate.split(' ')[1] ?? '0');
-      return {t, opacity: Number(style.opacity), translate};
-    });
-  }, timeline(fade.durationMs));
+  const samples = await sheet.evaluate(
+    (element, ts) => {
+      const held =
+        (window as unknown as {__harnessHeld?: Animation[]}).__harnessHeld ??
+        [];
+      return ts.map(t => {
+        for (const animation of held) {
+          animation.currentTime = t;
+        }
+        const style = getComputedStyle(element);
+        const translate =
+          style.translate === 'none'
+            ? 0
+            : Number.parseFloat(style.translate.split(' ')[1] ?? '0');
+        return {t, opacity: Number(style.opacity), translate};
+      });
+    },
+    [0, 25, 50, 75, 100, 125, 150, 175, 200, 250, 400],
+  );
   await releaseAnimations(page);
-  // In place from the first frame, rising on the spring.
-  const rising = sheetSpring(springs.sheetPresent, 0, 1);
-  for (const s of opacity) {
-    expect(s.translate, `t=${s.t}`).toBe(0);
-    expect(s.opacity, `t=${s.t}`).toBeCloseTo(rising(s.t), 1);
+  // The curve, without its held end value.
+  expect(fade.durationMs).toBeLessThanOrEqual(200.5);
+  // In place from the first frame, rising from clear to full by 200 ms.
+  expect(samples[0].opacity).toBeCloseTo(0, 1);
+  for (let i = 0; i < samples.length; i++) {
+    expect(samples[i].translate, `t=${samples[i].t}`).toBe(0);
+    if (i > 0) {
+      expect(samples[i].opacity).toBeGreaterThanOrEqual(
+        samples[i - 1].opacity - 1e-6,
+      );
+    }
   }
+  expect(samples.find(s => s.t === 200)?.opacity).toBeCloseTo(1, 2);
 });
 
 test(
