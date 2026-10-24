@@ -8,7 +8,7 @@ export const docs = {
   displayName: 'Dropdown Menu Submenu',
   isHiddenFromOverview: true,
   description:
-    'A single menu row that reveals a nested flyout of its own items. The row adopts DropdownMenuItem semantics (label / icon / description / isDisabled); its children become the flyout content. Opens inline-end with viewport auto-flip; Right/Enter/Space opens and focuses the first item, Left/Escape closes and returns focus to the trigger (Right/Left swap in RTL). On a phone (a coarse pointer, decided when the menu opened) the row drills in instead: its rows replace the menu\'s rows in the same box, led by a Back row named "Back to <parent>", and Back, Escape or ArrowLeft return to the row. Host attributes and DOM event handlers (aria-*, data-*, id) reach the trigger row, the element carrying role="menuitem" and aria-haspopup="menu"; a caller\'s handlers run after the row\'s own, except for the keys that open the flyout (the open arrow, Enter, Space) and a click on a disabled row. For data-driven menus, give a menu item a nested `items` array instead of using this component directly.',
+    'A single menu row that reveals a nested flyout of its own items. The row adopts DropdownMenuItem semantics (label / icon / description / isDisabled); its children become the flyout content. Opens inline-end with viewport auto-flip; Right/Enter/Space opens and focuses the first item, Left/Escape closes and returns focus to the trigger (Right/Left swap in RTL). On a phone (a coarse pointer, decided when the menu opened) the row drills in instead: its rows replace the menu\'s rows in the same box, led by a header that shows the row\'s label with its chevron turned down and is named "Back to <parent>", and the header, Escape or ArrowLeft return to the row. As on iOS, the menu\'s box grows to the sub-menu from the edge it is anchored by while the parent stays behind as a slightly smaller card, and going back reverses it. Host attributes and DOM event handlers (aria-*, data-*, id) reach the trigger row, the element carrying role="menuitem" and aria-haspopup="menu"; a caller\'s handlers run after the row\'s own, except for the keys that open the flyout (the open arrow, Enter, Space) and a click on a disabled row. For data-driven menus, give a menu item a nested `items` array instead of using this component directly.',
   playground: {
     defaults: {label: 'Move to'},
   },
@@ -73,13 +73,13 @@ export const docs = {
       name: 'header',
       type: 'ReactNode',
       description:
-        'Content above the sub-menu\'s rows and outside its menu, a field that filters them, say. It keeps its own keys and presses. With a header or footer the sub-menu\'s surface (the flyout, or the drilled-in view on a phone) is a modal dialog named by the row, beside the menu rather than inside it: the row says aria-haspopup="dialog", Tab and Shift+Tab move through the header, the rows and the footer and wrap, Escape returns to the row, and a pointer leaving the flyout closes it only once focus leaves too. A ContextMenu does not show it.',
+        "Content above the sub-menu's rows and outside its menu, a field that filters them, say. It keeps its own keys and presses. With a header or footer the sub-menu's surface (the flyout, or the drilled-in view on a phone) is a modal dialog named by the row, beside the menu rather than inside it: the row says aria-haspopup=\"dialog\", Tab and Shift+Tab move through the header, the rows and the footer and wrap, Escape returns to the row, and a pointer leaving the flyout closes it only once focus leaves too. In the bottom sheet, a data item's header shows above that level's actions, and a level with a header or footer of its own shows neither of the menu's. A ContextMenu does not show it.",
     },
     {
       name: 'footer',
       type: 'ReactNode',
       description:
-        "Content below the sub-menu's rows and outside its menu, a door to where the options are managed, say. Same rules as header.",
+        "Content below the sub-menu's rows and outside its menu, a door to where the options are managed, say. Same rules as header: in the bottom sheet a level with only a footer also shows no menu header.",
     },
     {
       name: 'menuDataTestId',
