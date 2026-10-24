@@ -12,8 +12,9 @@
  *   cancels on the same clock, sliding out at full opacity; a cancel
  *   mid-activation turns around from where the parts are; the activation
  *   keeps advancing every frame through a blocked main thread and does no
- *   Layout or Paint; Reduce Motion keeps the travel; storyboards of the
- *   activation and the cancel
+ *   Layout or Paint; Reduce Motion keeps the travel; right to left it
+ *   narrows from the left; under a mouse every part takes its place at once;
+ *   storyboards of the activation and the cancel
  * @position Interaction proof for lab SearchField (SearchField.tsx,
  *   searchFieldModel.ts); shape copied from the harness exemplar,
  *   BottomSheetDetent.interaction.browser.spec.ts
@@ -362,6 +363,15 @@ test('a tap on the field during the cancel re-activates from where the parts are
   expect(again.to - again.from).toBeLessThan(ACTIVATION_MS);
   await waitForRest(end(page));
   expect(await translateX(end(page))).toBeCloseTo(-NARROWING, 1);
+  // The close button is back, past the time the cancel would have ended.
+  await page.waitForTimeout(ACTIVATION_MS);
+  await waitForRest(close(page));
+  expect(
+    await close(page).evaluate(element =>
+      Number(getComputedStyle(element).opacity),
+    ),
+  ).toBe(1);
+  expect(await translateX(close(page))).toBeCloseTo(0, 1);
 });
 
 // Polling a page whose input has focus repaints its document every frame in
@@ -454,6 +464,60 @@ test('the activation does no Layout or Paint per frame', async ({
     .map(e => `${e.name}@${Math.round(e.t - slide.from)}`);
   expect(during.Layout ?? 0, JSON.stringify({during, when})).toBe(0);
   expect(during.Paint ?? 0, JSON.stringify({during, when})).toBe(0);
+});
+
+test('right to left: the field narrows from the left and the close button slides in from there', async ({
+  page,
+}) => {
+  const {driver, field} = await openField(page, 'right-to-left');
+  await driver.tap(await centerOf(field));
+  const [activation] = await waitForAnimation(end(page));
+  await holdAnimations(page);
+  const mid = activation.from + (activation.to - activation.from) / 2;
+  const samples = await sampleCurve(close(page), [
+    0,
+    (mid - activation.from) * 0.5,
+  ]);
+  await releaseAnimations(page, {finish: true});
+  // The close button starts past its place on the left (negative x) and
+  // moves right, toward it.
+  expect(samples[0].transform.translateX).toBeCloseTo(-CLOSE_TRAVEL, 0);
+  expect(samples[1].transform.translateX).toBeGreaterThan(-CLOSE_TRAVEL);
+  expect(samples[1].transform.translateX).toBeLessThan(0);
+  await waitForRest(end(page));
+  // The trailing end is on the left: it moves right by what the field
+  // gives up.
+  expect(await translateX(end(page))).toBeCloseTo(NARROWING, 1);
+  expect(await translateX(close(page))).toBeCloseTo(0, 1);
+});
+
+test.describe('with a mouse', () => {
+  test.use({hasTouch: false, isMobile: false});
+
+  test('a click puts every part at its end at once, with no animation', async ({
+    page,
+  }) => {
+    await openStory(page, storybook(), 'lab-searchfield--default');
+    const field = page.getByRole('searchbox', {name: 'Search'});
+    await expect(field).toBeVisible();
+    await field.click();
+    await expect(root(page)).toHaveAttribute(
+      'data-search-field-active',
+      'true',
+    );
+    const running = await page.evaluate(
+      () =>
+        document
+          .querySelector('[role="search"]')
+          ?.getAnimations({subtree: true}).length ?? 0,
+    );
+    expect(running).toBe(0);
+    expect(await translateX(end(page))).toBeCloseTo(-NARROWING, 1);
+    expect(await translateX(close(page))).toBeCloseTo(0, 1);
+    await close(page).click();
+    await expect(root(page)).not.toHaveAttribute('data-search-field-active');
+    expect(await translateX(end(page))).toBeCloseTo(0, 1);
+  });
 });
 
 test.describe('with Reduce Motion', () => {
