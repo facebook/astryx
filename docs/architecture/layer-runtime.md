@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-08-30
+approved_at: 2026-10-24
 owners: [cixzhang, imdreamrunner]
 applies_to:
   [
@@ -368,8 +368,9 @@ layers use Layer rendering without joining Escape/platform dismissal.
   itself, never by resolving placement through the provider, and a layer with
   no provider renders as one under a provider with the default inset.
 - **INV11 — One viewport gutter.** The gutter, the viewport caps, and the
-  app-declared inset have one definition in the runtime; every anchor-mode layer
-  inherits them, the layer box never exceeds the caps, the toast viewport reads
+  app-declared inset have one definition in the runtime, and the caps account
+  for the on-screen keyboard height (`spec:AST-099` FR3); every anchor-mode
+  layer inherits them, the layer box never exceeds the caps, the toast viewport reads
   the same inset, no consumer defines its own, no size is capped to the span
   beside the trigger, and a consumer minimum is clamped by the runtime's cap.
 - **INV12 — The first frame is the settled frame.** No input to a layer's
