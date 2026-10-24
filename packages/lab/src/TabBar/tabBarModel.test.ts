@@ -6,17 +6,27 @@
  * @output Checks the TabBar's geometry against UIKit's measured layouts on
  *   iOS 26.2 (iPhone 17 Pro): the capsule's natural width, the items' shared
  *   width and their centres, for two to five tabs with and without the
- *   search tab, and the right-to-left mirror
+ *   search tab, and the right-to-left mirror; the item a lift commits
+ *   (nearest, ties to the leading item), the lens's rubber band past the
+ *   ends, the lifted lens's size, and that the selected copy's
+ *   counter-transform undoes the lens's transform exactly
  * @position Testing; pure math, no DOM
  */
 
 import {describe, expect, it} from 'vitest';
+import {uikit} from '@astryxdesign/core/motion/experimental';
 import {
+  copyTransform,
   itemCenters,
   itemWidth,
   itemWidthCss,
+  lensTarget,
+  liftScale,
   naturalWidth,
+  nearestIndex,
 } from './tabBarModel';
+
+const {tabBar} = uikit;
 
 /**
  * UIKit's layouts: capsule width, then the items' screen x and width (the
@@ -104,5 +114,94 @@ describe('itemWidth and itemCenters', () => {
     expect(itemWidthCss(4)).toBe(
       'min(1.0659 * 100cqw / 4 + 0.0436 * 100cqw - 14.61px, 100cqw - 8px)',
     );
+  });
+});
+
+describe('nearestIndex: the item a lift commits', () => {
+  const centers = itemCenters(290, 4);
+
+  it('picks the nearest centre', () => {
+    expect(nearestIndex(centers[2] + 20, centers)).toBe(2);
+    expect(nearestIndex(centers[1] - 30, centers)).toBe(1);
+  });
+
+  it('gives a tie to the leading (earlier) item, as UIKit did between items 2 and 3', () => {
+    const midpoint = (centers[1] + centers[2]) / 2;
+    expect(nearestIndex(midpoint, centers)).toBe(1);
+    // In a right-to-left capsule the earlier item is on the right.
+    const rtl = itemCenters(290, 4, true);
+    expect(nearestIndex((rtl[1] + rtl[2]) / 2, rtl)).toBe(1);
+  });
+
+  it('commits the last item for a finger 60 px past it, and the first before it', () => {
+    expect(nearestIndex(centers[3] + 60, centers)).toBe(3);
+    expect(nearestIndex(-40, centers)).toBe(0);
+  });
+});
+
+describe('lensTarget', () => {
+  const centers = itemCenters(290, 4);
+
+  it('follows the finger between the first and last centres', () => {
+    expect(lensTarget(150, centers)).toBe(150);
+  });
+
+  it('rubber-bands past the ends: 60 px past the last item leaves the lens ~8 px past it', () => {
+    expect(lensTarget(centers[3] + 60, centers) - centers[3]).toBeCloseTo(
+      7.98,
+      1,
+    );
+    expect(lensTarget(centers[0] - 60, centers) - centers[0]).toBeCloseTo(
+      -7.98,
+      1,
+    );
+  });
+
+  it('never passes the rubber band’s dimension however far the finger goes', () => {
+    expect(lensTarget(centers[3] + 10_000, centers) - centers[3]).toBeLessThan(
+      tabBar.lensEdgeDimension,
+    );
+  });
+});
+
+describe('liftScale', () => {
+  it('grows a 76 × 54 lens to 92 × 70, and a 98 px one to 114 px', () => {
+    const lifted = liftScale(76);
+    expect(76 * lifted.x).toBeCloseTo(92, 6);
+    expect(tabBar.itemHeight * lifted.y).toBeCloseTo(70, 6);
+    expect(98 * liftScale(98).x).toBeCloseTo(114, 6);
+  });
+});
+
+describe('copyTransform', () => {
+  it('undoes the lens’s translate and scale about the same origin', () => {
+    // A point p in the copy maps to the lens as O + T_c + S_c (p − O), then
+    // to the capsule as O + T + S (q − O); the composition must be p.
+    const origin = {x: 38, y: 27};
+    const lifted = liftScale(76);
+    for (const [x, sx, sy] of [
+      [0, 1, 1],
+      [42.5, 1, 1],
+      [-80, lifted.x, lifted.y],
+      [13.25, 1.31, 0.87],
+    ]) {
+      const copy = copyTransform(x, sx, sy);
+      for (const p of [
+        {x: 0, y: 0},
+        {x: 120, y: 31},
+        {x: -55.5, y: 9},
+      ]) {
+        const q = {
+          x: origin.x + copy.x + copy.scaleX * (p.x - origin.x),
+          y: origin.y + copy.scaleY * (p.y - origin.y),
+        };
+        const onScreen = {
+          x: origin.x + x + sx * (q.x - origin.x),
+          y: origin.y + sy * (q.y - origin.y),
+        };
+        expect(onScreen.x).toBeCloseTo(p.x, 9);
+        expect(onScreen.y).toBeCloseTo(p.y, 9);
+      }
+    }
   });
 });

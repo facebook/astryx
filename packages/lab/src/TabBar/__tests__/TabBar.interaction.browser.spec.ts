@@ -25,6 +25,7 @@ import {
   busyWindowProof,
   castStoryboard,
   countBetween,
+  drag,
   holdAnimations,
   markElement,
   openStory,
@@ -33,7 +34,9 @@ import {
   sampleRects,
   springStep,
   startScreencast,
+  tap as tapScript,
   touchDriver,
+  touchStoryboard,
   traceRendering,
   trackMarker,
   waitForAnimation,
@@ -46,6 +49,18 @@ const storybook = withStorybook(test);
 
 /** UIKit's lens travel on iOS 26.2 (uikit/tabBar.ts `lensTravel`). */
 const LENS_TRAVEL = {response: 0.4, dampingFraction: 0.85};
+/** The lift (`lift`), the flex while pressed and after (`flexPress`, `flexRelease`). */
+const LIFT = {response: 0.25, dampingFraction: 1};
+const FLEX_PRESS = {response: 0.314, dampingFraction: 0.625};
+const FLEX_RELEASE = {response: 0.36, dampingFraction: 0.6};
+const FLEX_SCALE = 1.0488;
+/** The lifted lens's scale: the resting lens grown by 8 px on every side. */
+async function liftedScale(page: Page) {
+  const width = await lensBody(page).evaluate(
+    element => (element as HTMLElement).offsetWidth,
+  );
+  return {x: (width + 16) / width, y: 70 / 54};
+}
 
 async function openBar(page: Page, story = 'default') {
   await openStory(page, storybook(), `lab-tabbar--${story}`);
@@ -86,13 +101,35 @@ const translateX = async (locator: Locator) =>
     return value === 'none' ? 0 : parseFloat(value);
   });
 
-test('a tap on another tab slides the lens on UIKit’s spring, the selected copy counter-moving', async ({
+/** A presented scale (the animator drives `scale`). */
+const scaleOf = async (locator: Locator) =>
+  locator.evaluate(element => {
+    const value = getComputedStyle(element).scale;
+    if (value === 'none') {
+      return {x: 1, y: 1};
+    }
+    const [x, y = x] = value.split(' ').map(Number);
+    return {x, y};
+  });
+
+/** The capsule's left edge on screen, before its flex (its root is unscaled). */
+async function capsuleLeft(page: Page) {
+  return page.getByRole('tablist').evaluate(element => {
+    const root = element.parentElement?.getBoundingClientRect();
+    return (root?.left ?? 0) + (element as HTMLElement).offsetLeft;
+  });
+}
+
+test('a selection made with the keys slides the lens on UIKit’s spring, the selected copy counter-moving', async ({
   page,
 }, testInfo) => {
-  const {driver} = await openBar(page);
+  await openBar(page);
   const from = await itemCenter(page, 'Home');
   const to = await itemCenter(page, 'Browse');
-  await driver.tap(to);
+  await tab(page, 'Home').focus();
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('Enter');
   await expect(tab(page, 'Browse')).toHaveAttribute('aria-selected', 'true');
   const body = lensBody(page);
   await waitForAnimation(body);
@@ -150,10 +187,10 @@ test('a second tap mid-slide turns the lens around from where it is, without a j
   // Every frame's lens position, sampled in the page while the taps land.
   const sampling = sampleRects(lensBody(page), 1300);
   await driver.tap(profile);
-  // Where the second tap finds the lens is read directly: in software-rendered
-  // WebKit the page can draw no frame for most of a second around these taps,
-  // so the frame samples may skip it.
-  await waitForAnimation(lensBody(page), {minProgressMs: 90});
+  // Well past Library on its way to Profile. Where the second tap finds it
+  // is read directly: in software-rendered WebKit the page can draw no frame
+  // for most of a second around these taps, so the frame samples may skip it.
+  await waitForAnimation(lensBody(page), {minProgressMs: 150});
   const turning = await lensCenterX(page);
   await driver.tap(library);
   await expect(tab(page, 'Library')).toHaveAttribute('aria-selected', 'true');
@@ -164,8 +201,9 @@ test('a second tap mid-slide turns the lens around from where it is, without a j
   );
   // It headed for Profile, turned around before reaching it and came back to
   // Library, never jumping: a jump to either end would cover the whole
-  // remaining distance (over 100 px) in one frame. Only consecutive frames
-  // are compared, never samples a stall kept apart.
+  // remaining distance (over 100 px) in one frame. (A frame the second tap
+  // makes long, as it reports the first tap to the app, can cover 60.) Only
+  // consecutive frames are compared, never samples a stall kept apart.
   const steps = samples
     .slice(1)
     .flatMap((sample, i) =>
@@ -174,26 +212,59 @@ test('a second tap mid-slide turns the lens around from where it is, without a j
   expect(
     Math.max(...steps.map(Math.abs)),
     JSON.stringify(samples),
-  ).toBeLessThan(60);
+  ).toBeLessThan(90);
   const centers = samples.map(sample => sample.x);
-  expect(turning).toBeGreaterThan(library.x + 20);
+  expect(turning).toBeGreaterThan(library.x + 5);
   expect(Math.max(turning, ...centers)).toBeLessThan(profile.x - 20);
   expect(Math.min(...centers)).toBeGreaterThan(home.x - 1);
   await waitForRest(lensBody(page));
   expect(Math.abs((await lensCenterX(page)) - library.x)).toBeLessThan(0.5);
 });
 
-test('choosing the selected tab again reselects and moves nothing', async ({
+test('a finger landing before the last lift reaches the app keeps the lens heading for it', async ({
   page,
 }) => {
   const {driver} = await openBar(page);
-  await driver.tap(await itemCenter(page, 'Home'));
-  await expect(page.getByTestId('reselects')).toHaveText('Reselected 1 times');
-  const animations = await lensBody(page).evaluate(
-    element => element.getAnimations({subtree: true}).length,
+  const profile = await itemCenter(page, 'Profile');
+  const library = await itemCenter(page, 'Library');
+  const sampling = sampleRects(lensBody(page), 1400);
+  // A tap on Profile, then a finger held on Library from 20 ms after that
+  // lift: inside the frames before the tap's choice reaches the app, which
+  // then moves the lens's resting place under the held finger.
+  await driver.play([
+    {t: 0, fingers: [{id: 0, ...profile}]},
+    {t: 60, fingers: []},
+    {t: 80, fingers: [{id: 1, ...library}]},
+    {t: 580, fingers: []},
+  ]);
+  await expect(tab(page, 'Library')).toHaveAttribute('aria-selected', 'true');
+  const centers = (await sampling)
+    .filter(sample => sample.box != null)
+    .map(sample => (sample.box?.x ?? 0) + (sample.box?.width ?? 0) / 2);
+  const steps = centers.slice(1).map((x, i) => x - centers[i]);
+  expect(
+    Math.max(...steps.map(Math.abs)),
+    JSON.stringify(centers),
+  ).toBeLessThan(90);
+  // The lens turned back for the held finger and never reached Profile.
+  expect(Math.max(...centers), JSON.stringify(centers)).toBeLessThan(
+    profile.x - 30,
   );
-  expect(animations).toBe(0);
+  await waitForRest(lensBody(page));
+  expect(Math.abs((await lensCenterX(page)) - library.x)).toBeLessThan(0.5);
+});
+
+test('a tap on the selected tab reselects it: the lens lifts and settles back', async ({
+  page,
+}) => {
+  const {driver} = await openBar(page);
+  const home = await itemCenter(page, 'Home');
+  await driver.tap(home);
+  await expect(page.getByTestId('reselects')).toHaveText('Reselected 1 times');
   await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+  await waitForRest(page.getByRole('tablist'));
+  expect(Math.abs((await lensCenterX(page)) - home.x)).toBeLessThan(0.5);
+  expect(await scaleOf(lensBody(page))).toEqual({x: 1, y: 1});
 });
 
 test('badges appear, change and clear without animating', async ({page}) => {
@@ -224,6 +295,236 @@ test('badges appear, change and clear without animating', async ({page}) => {
   expect(box?.width ?? 0).toBeGreaterThan(18.5);
   await page.getByRole('button', {name: 'Clear'}).click();
   await expect(badge).toHaveCount(0);
+});
+
+test('a finger landing lifts the lens and flexes the bar on UIKit’s springs, the lens heading for the finger', async ({
+  page,
+}, testInfo) => {
+  const {driver} = await openBar(page);
+  const home = await itemCenter(page, 'Home');
+  const browse = await itemCenter(page, 'Browse');
+  const capsule = page.getByRole('tablist');
+  const LIFTED = await liftedScale(page);
+  const times = Array.from({length: 31}, (_, i) => i * 16.667);
+  let samples: {
+    t: number;
+    flex: number;
+    liftX: number;
+    liftY: number;
+    glass: number;
+    x: number;
+  }[] = [];
+  await driver.play(tapScript(browse, {holdMs: 1200}), {
+    onEvent: async (_step, index) => {
+      if (index !== 0) {
+        return;
+      }
+      await waitForAnimation(capsule);
+      await holdAnimations(page);
+      const flex = await sampleCurve(capsule, times);
+      const body = await sampleCurve(lensBody(page), times);
+      const glass = await sampleCurve(
+        page.locator('[data-tab-bar-lens-glass]'),
+        times,
+      );
+      samples = times.map((t, i) => ({
+        t: +t.toFixed(1),
+        flex: flex[i].transform.scaleX,
+        liftX: body[i].transform.scaleX,
+        liftY: body[i].transform.scaleY,
+        glass: glass[i].opacity,
+        x: body[i].transform.translateX,
+      }));
+      await releaseAnimations(page);
+    },
+  });
+  await writeEvidence(
+    'curves/tabbar-press',
+    {[`${testInfo.project.name}.json`]: JSON.stringify(samples, null, 1)},
+    testInfo,
+  );
+  const travel = browse.x - home.x;
+  for (const s of samples) {
+    const lift = springStep(LIFT, s.t);
+    const where = JSON.stringify(s);
+    expect(
+      Math.abs(s.flex - (1 + (FLEX_SCALE - 1) * springStep(FLEX_PRESS, s.t))),
+      where,
+    ).toBeLessThan(0.002);
+    expect(Math.abs(s.liftX - (1 + (LIFTED.x - 1) * lift)), where).toBeLessThan(
+      0.005,
+    );
+    expect(Math.abs(s.liftY - (1 + (LIFTED.y - 1) * lift)), where).toBeLessThan(
+      0.005,
+    );
+    expect(Math.abs(s.glass - lift), where).toBeLessThan(0.01);
+    expect(
+      Math.abs(s.x - travel * springStep(LENS_TRAVEL, s.t)),
+      where,
+    ).toBeLessThan(0.5);
+  }
+  // The lift commits Browse.
+  await expect(tab(page, 'Browse')).toHaveAttribute('aria-selected', 'true');
+});
+
+test('the lift settles the lens and relaxes the lift and the flex on UIKit’s springs', async ({
+  page,
+}) => {
+  const {driver} = await openBar(page);
+  const browse = await itemCenter(page, 'Browse');
+  const capsule = page.getByRole('tablist');
+  const LIFTED = await liftedScale(page);
+  // Held long enough for the press springs to settle.
+  await driver.play(tapScript(browse, {holdMs: 1200}));
+  // The choice reaches the app three frames after the lift and restarts the
+  // lens's travel from its new resting place; hold the curves after that, so
+  // no held animation is one the animator has since replaced.
+  await expect(tab(page, 'Browse')).toHaveAttribute('aria-selected', 'true');
+  await waitForAnimation(capsule);
+  await holdAnimations(page);
+  const times = Array.from({length: 37}, (_, i) => i * 16.667);
+  const flex = await sampleCurve(capsule, times);
+  const body = await sampleCurve(lensBody(page), times);
+  await releaseAnimations(page, {finish: true});
+  times.forEach((t, i) => {
+    const where = JSON.stringify({t, flex: flex[i].transform.scaleX});
+    expect(
+      Math.abs(
+        flex[i].transform.scaleX -
+          (FLEX_SCALE + (1 - FLEX_SCALE) * springStep(FLEX_RELEASE, t)),
+      ),
+      where,
+    ).toBeLessThan(0.002);
+    expect(
+      Math.abs(
+        body[i].transform.scaleX -
+          (LIFTED.x + (1 - LIFTED.x) * springStep(LIFT, t)),
+      ),
+      where,
+    ).toBeLessThan(0.005);
+  });
+  await waitForRest(lensBody(page));
+  expect(Math.abs((await lensCenterX(page)) - browse.x)).toBeLessThan(0.5);
+});
+
+test('a drag chases the finger and the lift commits the item nearest it', async ({
+  page,
+}) => {
+  const {driver} = await openBar(page);
+  const home = await itemCenter(page, 'Home');
+  const profile = await itemCenter(page, 'Profile');
+  const left = await capsuleLeft(page);
+  const lags: number[] = [];
+  let atRest = Infinity;
+  const script = drag(home, profile, {durationMs: 600, restMs: 400});
+  await driver.play(script, {
+    onEvent: async (step, index) => {
+      const finger = step.fingers[0]?.x;
+      if (finger == null) {
+        return;
+      }
+      // The body's offset is in the capsule's own coordinates, from Home.
+      const lens = (await translateX(lensBody(page))) + (home.x - left);
+      lags.push(finger - left - lens);
+      if (index === script.length - 2) {
+        await page.waitForTimeout(350);
+        atRest =
+          finger -
+          left -
+          ((await translateX(lensBody(page))) + (home.x - left));
+      }
+    },
+  });
+  // The lens trails a moving finger but keeps up with it, and catches up
+  // once it rests.
+  const moving = lags.slice(3, -2);
+  expect(Math.max(...moving)).toBeGreaterThan(1);
+  expect(Math.max(...moving.map(Math.abs))).toBeLessThan(40);
+  expect(Math.abs(atRest)).toBeLessThan(1);
+  await expect(tab(page, 'Profile')).toHaveAttribute('aria-selected', 'true');
+  await waitForRest(page.getByRole('tablist'));
+  expect(Math.abs((await lensCenterX(page)) - profile.x)).toBeLessThan(0.5);
+});
+
+test('a lift between two items commits the nearer one (an exact tie goes to the leading one: tabBarModel.test.ts)', async ({
+  page,
+}) => {
+  const {driver} = await openBar(page);
+  const library = await itemCenter(page, 'Library');
+  const browse = await itemCenter(page, 'Browse');
+  const midpoint = (library.x + browse.x) / 2;
+  await driver.play(tapScript({x: midpoint + 3, y: library.y}, {holdMs: 120}));
+  await expect(tab(page, 'Browse')).toHaveAttribute('aria-selected', 'true');
+  await driver.play(tapScript({x: midpoint - 3, y: library.y}, {holdMs: 120}));
+  await expect(tab(page, 'Library')).toHaveAttribute('aria-selected', 'true');
+});
+
+test('a drag that leaves the bar upward still commits where it lifts', async ({
+  page,
+}) => {
+  const {driver} = await openBar(page);
+  const home = await itemCenter(page, 'Home');
+  const library = await itemCenter(page, 'Library');
+  const across = [...drag(home, library, {durationMs: 300})];
+  const lift = across.pop();
+  const last = across[across.length - 1];
+  const up = Array.from({length: 10}, (_, i) => ({
+    t: last.t + (i + 1) * 16.7,
+    fingers: [{id: 0, x: library.x, y: library.y - (i + 1) * 8}],
+  }));
+  const end = up[up.length - 1].t + 16.7;
+  await driver.play([...across, ...up, {t: end, fingers: lift?.fingers ?? []}]);
+  await expect(tab(page, 'Library')).toHaveAttribute('aria-selected', 'true');
+});
+
+test('past the last item the lens rubber-bands about 8 px beyond it, and the lift commits the last item', async ({
+  page,
+}) => {
+  const {driver} = await openBar(page);
+  const home = await itemCenter(page, 'Home');
+  const profile = await itemCenter(page, 'Profile');
+  const left = await capsuleLeft(page);
+  const script = drag(
+    home,
+    {x: profile.x + 60, y: profile.y},
+    {
+      durationMs: 500,
+      restMs: 900,
+    },
+  );
+  let past = NaN;
+  await driver.play(script, {
+    onEvent: async (_step, index) => {
+      if (index === script.length - 2) {
+        await page.waitForTimeout(800);
+        const lens = (await translateX(lensBody(page))) + (home.x - left);
+        past = lens - (profile.x - left);
+      }
+    },
+  });
+  // UIKit: a finger 60 pt past the last item leaves the lens 7.98 pt past it.
+  expect(past).toBeGreaterThan(7.4);
+  expect(past).toBeLessThan(8.5);
+  await expect(tab(page, 'Profile')).toHaveAttribute('aria-selected', 'true');
+});
+
+test('a vertical drag that starts on the bar never scrolls the page', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(
+    browserName !== 'chromium',
+    'native scrolling from injected touches is Chromium-only in Playwright',
+  );
+  const {driver} = await openBar(page);
+  const library = await itemCenter(page, 'Library');
+  const before = await page.evaluate(() => window.scrollY);
+  await driver.play(
+    drag(library, {x: library.x, y: library.y - 300}, {durationMs: 300}),
+  );
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => window.scrollY)).toBe(before);
+  await expect(tab(page, 'Library')).toHaveAttribute('aria-selected', 'true');
 });
 
 test('the slide keeps advancing every frame while the main thread is blocked', async ({
@@ -281,29 +582,32 @@ test('the slide keeps advancing every frame while the main thread is blocked', a
   ).toBe(true);
 });
 
-test('the slide does no Layout or Paint per frame', async ({
+test('a press, its lift, flex and travel, does no Layout or Paint per frame', async ({
   page,
   browserName,
 }) => {
   test.skip(browserName !== 'chromium', 'rendering traces are Chromium-only');
   const {driver} = await openBar(page);
-  const body = lensBody(page);
+  const capsule = page.getByRole('tablist');
   const target = await itemCenter(page, 'Profile');
-  let slide = {from: 0, to: 0};
+  let press = {from: 0, to: 0};
+  // Held for 700 ms: the lens travels, lifts and the bar flexes with no
+  // render at all. Counted while every curve is moving: the first frame
+  // composites the layers, and each animation's end may repaint once as its
+  // layer is folded back (the lift ends at ~0.39 s).
   const trace = await traceRendering(page, async () => {
-    await driver.tap(target);
-    [slide] = await waitForAnimation(body);
-    await waitForRest(body);
+    const playing = driver.play(tapScript(target, {holdMs: 700}));
+    [press] = await waitForAnimation(capsule);
+    await playing;
+    await waitForRest(capsule);
   });
-  // The spring is within a pixel of rest by ~0.55 s; its first frame (the
-  // selection's render) may lay out.
-  expect(slide.to - slide.from).toBeGreaterThan(500);
-  const during = countBetween(trace, slide.from + 80, slide.from + 500);
+  const during = countBetween(trace, press.from + 50, press.from + 340);
   const when = trace.events
     .filter(e => e.name === 'Layout' || e.name === 'Paint')
-    .map(e => `${e.name}@${Math.round(e.t - slide.from)}`);
+    .map(e => `${e.name}@${Math.round(e.t - press.from)}`);
   expect(during.Layout ?? 0, JSON.stringify({during, when})).toBe(0);
   expect(during.Paint ?? 0, JSON.stringify({during, when})).toBe(0);
+  await expect(tab(page, 'Profile')).toHaveAttribute('aria-selected', 'true');
 });
 
 test.describe('with Reduce Motion', () => {
@@ -327,11 +631,16 @@ test.describe('with Reduce Motion', () => {
 });
 
 test(
-  'storyboard: a tap slides the lens',
+  'storyboard: a selection from rest slides the lens (a touch first moves it under the finger: see the press storyboard)',
   {tag: '@storyboard'},
   async ({page}, testInfo) => {
-    const {driver, bar} = await openBar(page);
-    await driver.tap(await itemCenter(page, 'Profile'));
+    const {bar} = await openBar(page);
+    await tab(page, 'Home').focus();
+    for (let i = 0; i < 3; i += 1) {
+      await page.keyboard.press('ArrowRight');
+    }
+    await page.keyboard.press('Enter');
+    await expect(tab(page, 'Profile')).toHaveAttribute('aria-selected', 'true');
     await waitForAnimation(lensBody(page));
     const box = await bar.boundingBox();
     if (box == null) {
@@ -355,5 +664,48 @@ test(
     const xs = storyboard.frames.map(f => (f.data as {x: number}).x);
     expect(xs[0]).toBeLessThan(-200);
     expect(Math.abs(xs.at(-1) ?? Infinity)).toBeLessThan(2);
+  },
+);
+
+test(
+  'storyboard: a finger lands, drags across the bar and lifts',
+  {tag: '@storyboard'},
+  async ({page}, testInfo) => {
+    const {driver, bar} = await openBar(page);
+    const home = await itemCenter(page, 'Home');
+    const browse = await itemCenter(page, 'Browse');
+    const box = await bar.boundingBox();
+    if (box == null) {
+      throw new Error('no bar');
+    }
+    const storyboard = await touchStoryboard(
+      page,
+      driver,
+      drag(home, browse, {durationMs: 400, hz: 20, holdMs: 250, restMs: 250}),
+      {
+        name: 'tabbar-press-drag',
+        clip: {
+          x: 0,
+          y: box.y - 16,
+          width: box.x * 2 + box.width,
+          height: box.height + 32,
+        },
+        measure: async () => ({
+          x: await translateX(lensBody(page)),
+          lift: (await scaleOf(lensBody(page))).x,
+          flex: (await scaleOf(bar)).x,
+        }),
+        columns: 5,
+        cellScale: 0.6,
+      },
+    );
+    await storyboard.write(testInfo);
+    await expect(tab(page, 'Browse')).toHaveAttribute('aria-selected', 'true');
+    const frames = storyboard.frames.map(
+      f => f.data as {lift: number; flex: number},
+    );
+    // Lifted and flexed while the finger is down.
+    expect(Math.max(...frames.map(f => f.lift))).toBeGreaterThan(1.1);
+    expect(Math.max(...frames.map(f => f.flex))).toBeGreaterThan(1.03);
   },
 );

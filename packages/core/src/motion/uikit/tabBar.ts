@@ -4,7 +4,8 @@
  * @file tabBar.ts
  * @input Nothing; data only
  * @output Exports `tabBar`: the iOS 26 floating tab bar's geometry, its
- *   badge, the selection lens's slide and its Reduce Motion behaviour
+ *   badge, the selection lens's springs and values (lift, bar flex,
+ *   magnification, edge rubber band) and its Reduce Motion behaviour
  * @position The tab-bar domain of the UIKit constants table (motion/uikit);
  *   read by the lab TabBar's touch presentation
  *
@@ -15,8 +16,20 @@
  * behaviours UIKit attached, and HID touches. Geometry is in points, the
  * bar's own coordinates unless a value says otherwise.
  *
- * The selection lens rests over the selected item and slides to a newly
- * selected one on `lensTravel`.
+ * How the selection lens moves (all of it measured):
+ * - A finger landing on the bar sends the lens toward the finger on
+ *   `lensTravel` and lifts it on `lift`: it grows by `liftOutset` on every
+ *   side, its resting fill gives way to clear glass and the selected copy of
+ *   the items under it is magnified by `liftMagnification`. The whole bar
+ *   flexes to `flexScale` on `flexPress`.
+ * - A dragging finger is chased on `lensTrack`; past the first or last item
+ *   the lens rubber-bands (`lensEdgeDimension`).
+ * - The lift commits the item whose centre is nearest the finger (ties go to
+ *   the leading item, no projection, and leaving the bar does not cancel);
+ *   the lens settles onto it on `lensSettle` while the lift and the flex
+ *   relax (`lift`, `flexRelease`).
+ * - A selection set without a finger (keys, the app) slides the lens on
+ *   `lensTravel` without lifting it.
  *
  * Every leaf carries one or more `@source`; uikit.test.ts enforces it.
  * Springs stay in UIKit's vocabulary (response in seconds, damping ratio).
@@ -167,6 +180,85 @@ export const tabBar = {
    *   three programmatic changes (rms 0.28 to 0.77 pt), Oct 23 2026
    */
   lensTravel: {response: 0.4, dampingRatio: 0.85},
+  /**
+   * The lens chasing a dragging finger.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, UIViewSpringAnimationBehavior tracking response 0.15,
+   *   damping ratio 1, and a spring-chasing-the-finger fit of the lens over
+   *   a 600 ms drag (rms 0.83 pt) and a 150 ms drag (rms 1.6 pt),
+   *   Oct 23 2026
+   */
+  lensTrack: {response: 0.15, dampingRatio: 1},
+  /**
+   * The lens settling onto the committed item after the finger lifts,
+   * starting from its velocity on screen.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, UIViewSpringAnimationBehavior (dampingRatio 1,
+   *   response 0.5) attached at the lift, and a fit of the settle after a
+   *   drag released at 1500 pt/s (rms 0.67 pt), Oct 23 2026
+   */
+  lensSettle: {response: 0.5, dampingRatio: 1},
+  /**
+   * The lift, as one progress from rest (0) to lifted (1): the lens's
+   * outset, its resting fill fading out and the magnification all follow
+   * it, on the press and on the release alike.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, UIViewSpringAnimationBehavior (dampingRatio 1,
+   *   response 0.25) attached at touch-down and at the lift; the fill's
+   *   opacity fits it with rms 0.0004 (press) and 0.0013 (release), the
+   *   outset with rms 0.2 pt, Oct 23 2026
+   */
+  lift: {response: 0.25, dampingRatio: 1},
+  /**
+   * How far the lifted lens grows past the item on every side, in the bar's
+   * own coordinates: 76 × 54 becomes 92 × 70.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, the lens held still for 1 s: 91.9 × 70.15 in the
+   *   bar's coordinates (96.4 × 73.6 on screen under the flex), Oct 23 2026
+   */
+  liftOutset: 8,
+  /**
+   * The selected copy of the items under the lifted lens grows by this
+   * factor about each item's centre (the copy outside the lens does not).
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, the selected `_UITabButton`'s scale reads 1.16 while
+   *   held and follows 1 + 0.16 × the lift progress (1.0990 at a progress
+   *   of 0.619, 1.1356 at 0.848), Oct 23 2026
+   */
+  liftMagnification: 1.16,
+  /**
+   * While a finger is on the bar the whole capsule grows about its centre
+   * by this factor (290 × 62 becomes 304.1 × 65.0).
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, `_UITabBarPlatterView` 304.14 × 65.02 while held,
+   *   Oct 23 2026
+   */
+  flexScale: 1.0488,
+  /**
+   * The flex growing while the finger is down.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, UIViewSpringAnimationBehavior tracking damping ratio
+   *   0.625, response 0.314; the capsule's scale fits it with rms 0.00009,
+   *   Oct 23 2026
+   */
+  flexPress: {response: 0.314, dampingRatio: 0.625},
+  /**
+   * The flex relaxing after the lift.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, UIViewSpringAnimationBehavior (dampingRatio 0.6,
+   *   response 0.36); the capsule's scale fits it with rms 0.0002,
+   *   Oct 23 2026
+   */
+  flexRelease: {response: 0.36, dampingRatio: 0.6},
+  /**
+   * Past the first or last item's centre the lens rubber-bands with UIKit's
+   * formula (c = 0.55) over this dimension: a finger 60 pt past the last
+   * item leaves the lens 8 pt past it.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, a drag held 60 pt past the last item: the lens rests
+   *   7.98 pt past its centre, Oct 23 2026
+   */
+  lensEdgeDimension: 10.5,
   /**
    * Reduce Motion changes nothing: taps, drags and the lift animate as
    * usual (no cross-fade substitution).

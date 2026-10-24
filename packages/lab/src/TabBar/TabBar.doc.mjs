@@ -18,7 +18,7 @@ export const docs = {
     'badge',
   ],
   description:
-    "The bottom tab bar of a phone app, as on iOS 26: the app's top-level sections as a floating capsule above the bottom edge, with a selection lens that slides to the chosen tab. Each tab has an icon, a label and an optional badge. Under a finger the lens moves on the spring iOS uses; under a mouse it follows the theme's motion. Choosing the selected tab again is reported separately, so a screen can return to its root as iOS does. Experimental: lands in lab first.",
+    "The bottom tab bar of a phone app, as on iOS 26: the app's top-level sections as a floating capsule above the bottom edge, with a selection lens that slides to the chosen tab. Each tab has an icon, a label and an optional badge. Under a finger it behaves like iOS: the lens lifts into glass as a finger lands, follows a finger dragged across the tabs and settles on the tab nearest where it lifts, while the bar flexes; under a mouse the lens follows the theme's motion. Choosing the selected tab again is reported separately, so a screen can return to its root as iOS does. Experimental: lands in lab first.",
   components: [
     {
       name: 'TabBar',
@@ -36,7 +36,7 @@ export const docs = {
           name: 'onChange',
           type: '(value: string) => void',
           description:
-            "Called with a tab's value when a different tab is chosen (a tap, a click, or Enter or Space on a focused tab).",
+            "Called with a tab's value when a different tab is chosen: a finger lifted over it (after a tap or a drag across the bar), a click, or Enter or Space on a focused tab.",
           required: true,
         },
         {
