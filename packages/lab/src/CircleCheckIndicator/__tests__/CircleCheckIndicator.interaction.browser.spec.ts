@@ -229,3 +229,55 @@ test.describe('CircleCheckIndicator under a finger', () => {
     }
   });
 });
+
+test.describe('CircleCheckIndicator in forced colors', () => {
+  test('the ring falls back to a 1px system-coloured border, and the check stays visible', async ({
+    page,
+  }) => {
+    /** The circle and check of the first row whose checkbox is `checked`. */
+    const read = async (checked: boolean) =>
+      page.evaluate(
+        ({want, circleSelector}) => {
+          const input = Array.from(
+            document.querySelectorAll<HTMLInputElement>(
+              '#storybook-root input[type="checkbox"]',
+            ),
+          ).find(el => el.checked === want);
+          const row = input?.closest('li, .astryx-item');
+          const circle = row?.querySelector<HTMLElement>(circleSelector);
+          const check = row?.querySelector<SVGElement>(
+            '.astryx-circle-check-indicator-check',
+          );
+          if (circle == null || check == null) {
+            return null;
+          }
+          const ring = getComputedStyle(circle);
+          const mark = getComputedStyle(check);
+          return {
+            borderStyle: ring.borderTopStyle,
+            borderWidth: ring.borderTopWidth,
+            boxShadow: ring.boxShadow,
+            checkDisplay: mark.display,
+            checkVisibility: mark.visibility,
+          };
+        },
+        {want: checked, circleSelector: CIRCLE},
+      );
+    await openStory(page, storybook(), STORY);
+    // Default: the empty circle's ring is the inset shadow, with no border.
+    const normal = await read(false);
+    expect(normal).not.toBeNull();
+    expect(normal?.borderStyle).toBe('none');
+    expect(normal?.boxShadow).toContain('inset');
+    // Forced colors drops shadows: the ring comes back as a 1px border.
+    await page.emulateMedia({forcedColors: 'active'});
+    const forced = await read(false);
+    expect(forced?.borderStyle).toBe('solid');
+    expect(forced?.borderWidth).toBe('1px');
+    // A checked circle still shows its check.
+    const checked = await read(true);
+    expect(checked).not.toBeNull();
+    expect(checked?.checkDisplay).not.toBe('none');
+    expect(checked?.checkVisibility).toBe('visible');
+  });
+});
