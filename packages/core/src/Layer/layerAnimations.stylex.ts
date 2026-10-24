@@ -82,6 +82,13 @@ const enterStartRtl = stylex.keyframes({
   to: {opacity: 1, transform: 'translateX(0) scale(1)'},
 });
 
+// Reduce Motion under a finger: the same entrance without its travel. A touch
+// presentation substitutes a cross-fade for motion, never a jump.
+const fadeIn = stylex.keyframes({
+  from: {opacity: 0},
+  to: {opacity: 1},
+});
+
 const animationBase = {
   animationDuration: durationVars['--duration-fast-max'],
   animationTimingFunction: easeVars['--ease-standard'],
@@ -96,13 +103,17 @@ const animationBase = {
  *
  * Each entry disables its keyframe animation under
  * `prefers-reduced-motion: reduce` so the layer appears instantly instead of
- * translating/scaling in (infra-6).
+ * translating/scaling in (infra-6). Under a finger (the primary pointer is
+ * coarse) it fades in instead, with no travel and no scale: on a touch screen
+ * Reduce Motion replaces motion with a cross-fade rather than a jump, as iOS
+ * does for its menus, popovers and tips.
  */
 export const layerAnimations = stylex.create({
   below: {
     animationName: {
       default: enterBelow,
       '@media (prefers-reduced-motion: reduce)': 'none',
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)': fadeIn,
     },
     ...animationBase,
   },
@@ -110,6 +121,7 @@ export const layerAnimations = stylex.create({
     animationName: {
       default: enterAbove,
       '@media (prefers-reduced-motion: reduce)': 'none',
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)': fadeIn,
     },
     ...animationBase,
   },
@@ -118,6 +130,7 @@ export const layerAnimations = stylex.create({
       default: enterEnd,
       ':is([dir="rtl"] *)': enterEndRtl,
       '@media (prefers-reduced-motion: reduce)': 'none',
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)': fadeIn,
     },
     ...animationBase,
   },
@@ -126,6 +139,7 @@ export const layerAnimations = stylex.create({
       default: enterStart,
       ':is([dir="rtl"] *)': enterStartRtl,
       '@media (prefers-reduced-motion: reduce)': 'none',
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)': fadeIn,
     },
     ...animationBase,
   },
