@@ -1409,6 +1409,25 @@ jobs:
           EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD_SHA"
 
+      # A contract step added on main after this PR branched names a spec file
+      # the PR head does not have, and would fail with "No tests found". The
+      # wrapper, sourced into every later step, drops such files from
+      # `pnpm exec playwright test` with a notice and passes a step left with
+      # none. It comes from the merge commit these steps come from (an older PR
+      # head lacks it, and the PR's recorded base can lag main).
+      - name: Skip contract specs the PR head predates
+        if: github.event_name == 'pull_request'
+        env:
+          WORKFLOW_SHA: ${{ github.sha }}
+        run: |
+          wrapper="$RUNNER_TEMP/skip-absent-specs.sh"
+          if git fetch --quiet --no-tags --depth=1 origin "$WORKFLOW_SHA" \
+            && git show "$WORKFLOW_SHA:.github/scripts/skip-absent-specs.sh" > "$wrapper"; then
+            echo "BASH_ENV=$wrapper" >> "$GITHUB_ENV"
+          else
+            echo "::warning::Could not load the spec wrapper from the merge commit; contract steps run unwrapped."
+          fi
+
       # Dependencies are installed later, together with the Playwright browser,
       # because the analysis artifact has to be downloaded first.
       - name: Setup Node and pnpm
@@ -1517,6 +1536,17 @@ jobs:
             --project chromium \
             --output multiselector-disabled-focus-output
 
+      # In a right-to-left page Lightbox's Next button sits on the left, and
+      # the arrow keys must move toward the button on their side. The
+      # direction reaches the top-layer dialog through the engine's own
+      # cascade, which jsdom does not inherit.
+      - name: Run Lightbox arrow-key direction contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/Lightbox/LightboxKeyboard.a11y.browser.spec.ts \
+            --project chromium \
+            --output lightbox-keyboard-output
+
       # The same guard for Selector and ComplexSelector triggers.
       - name: Run disabled trigger focus contract
         run: |
@@ -1524,6 +1554,17 @@ jobs:
             packages/core/src/__tests__/DisabledTriggerFocus.a11y.chromium.spec.ts \
             --project chromium \
             --output disabled-trigger-focus-output
+
+      # A pinch that starts on, or reaches, a Lab reorder grip (ListInput,
+      # TransferList) must zoom the page (WCAG 1.4.4), while a one-finger drag
+      # on the grip still reorders. touch-action and pinch-zoom only exist in a
+      # real engine with two-finger touch input.
+      - name: Run Lab reorder grip pinch-zoom contract
+        run: |
+          pnpm exec playwright test \
+            packages/lab/src/__tests__/ReorderGripPinchZoom.a11y.chromium.spec.ts \
+            --project chromium \
+            --output reorder-grip-pinch-zoom-output
 
       # Table merges a consumer min-width with its column floors through CSS
       # max(). jsdom keeps any string, so only a real engine shows whether the
@@ -1575,6 +1616,17 @@ jobs:
             --project chromium \
             --output menu-press-shadow-root-output
 
+      # A two-finger pinch over an open picker wheel must zoom the page (WCAG
+      # 1.4.4) while one finger still scrolls the wheel. jsdom computes no
+      # touch-action, so only a real engine shows which gesture the browser
+      # keeps.
+      - name: Run picker wheel pinch-zoom contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/DateInput/__tests__/WheelPinchZoom.a11y.chromium.spec.ts \
+            --project chromium \
+            --output wheel-pinch-zoom-output
+
       # A sub-menu with a header or footer is a modal dialog beside the root's
       # menu, outside every role="menu" element. Its Tab order, a header radio
       # group the browser moves focus in after the pointer leaves, the
@@ -1585,6 +1637,18 @@ jobs:
             packages/core/src/DropdownMenu/__tests__/SubMenuHeaderFooter.a11y.chromium.spec.ts \
             --project chromium \
             --output submenu-header-footer-output
+
+      # Tooltip and HoverCard answer a touch only once it is a tap: they open
+      # when the finger lifts, never for a touch that turns into a scroll, and
+      # a tap-opened layer closes when a tap outside lifts. Whether a touch is
+      # a tap, a scroll or a long press is the engine's own gesture decision,
+      # which only real touch input reaches.
+      - name: Run hover layer touch contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/Layer/__tests__/TouchTrigger.a11y.chromium.spec.ts \
+            --project chromium \
+            --output hover-layer-touch-output
 
       # A pointer that crosses from a Tooltip's trigger onto the tooltip in one
       # step must not lose it (WCAG 1.4.13 hoverable). The defect is in the
@@ -1617,6 +1681,17 @@ jobs:
             packages/core/src/TopNav/__tests__/TopNavMobileLongHeading.a11y.chromium.spec.ts \
             --project chromium \
             --output top-nav-mobile-long-heading-output
+
+      # A pinch that starts on a row with swipe actions must zoom the page
+      # (WCAG 1.4.4) and leave the row where it is, whichever finger lands
+      # first, while a one-finger sideways drag still swipes. Pinch-zoom and
+      # touch-action only exist in a real engine with two-finger touch input.
+      - name: Run Item swipe pinch-zoom contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/Item/__tests__/ItemSwipePinchZoom.a11y.chromium.spec.ts \
+            --project chromium \
+            --output item-swipe-pinch-zoom-output
 
       # The RichTextEditor "Markdown parity" stories render one Markdown
       # document with core Markdown and RichTextEditor and measure where each
@@ -2619,7 +2694,13 @@ jobs:
           COMPONENTS=$(node .github/scripts/a11y-pr-scope.mjs analysis.json)
           case ",${COMPONENTS}," in
             *,core/Markdown,*)
-              echo 'should_run=true' >> "$GITHUB_OUTPUT"
+              # An older PR head can lack the spec (the wrapper then skips
+              # it), and it would leave nothing for the upload to find.
+              if [ -e packages/core/src/Markdown/plugins/headingLinks.a11y.chromium.spec.ts ]; then
+                echo 'should_run=true' >> "$GITHUB_OUTPUT"
+              else
+                echo 'should_run=false' >> "$GITHUB_OUTPUT"
+              fi
               pnpm exec playwright test \
                 packages/core/src/Markdown/plugins/headingLinks.a11y.chromium.spec.ts \
                 --project chromium \
@@ -3121,6 +3202,70 @@ jobs:
           path: |
             dropdown-menu-radio-group-a11y-report.json
             dropdown-menu-radio-group-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
+      # DropdownMenuRadioItem owns one menuitemradio row: its checked state,
+      # decorative radio marker, icon, description, end content, disabled
+      # paint, and composition of caller handlers with row activation. The
+      # group owns value propagation; DropdownMenu owns keyboard navigation.
+      - name: Run DropdownMenuRadioItem audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuRadioItem:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output dropdown-menu-radio-item-a11y-report.json \
+            --components DropdownMenuRadioItem \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/DropdownMenu/__tests__/DropdownMenuRadioItemAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload DropdownMenuRadioItem audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuRadioItem:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: dropdown-menu-radio-item-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            dropdown-menu-radio-item-a11y-report.json
+            dropdown-menu-radio-item-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
+      # DropdownMenuSubMenu owns one menuitem row that reveals its own rows: the
+      # popup state and wiring, the flyout beside the row, the drilled-in view,
+      # the caret or spinner, and disabled paint. DropdownMenu owns the root
+      # surface, the drill-in stack, and root keyboard navigation.
+      - name: Run DropdownMenuSubMenu audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuSubMenu:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output dropdown-menu-submenu-a11y-report.json \
+            --components DropdownMenuSubMenu \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/DropdownMenu/__tests__/DropdownMenuSubMenuAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload DropdownMenuSubMenu audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuSubMenu:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: dropdown-menu-submenu-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            dropdown-menu-submenu-a11y-report.json
+            dropdown-menu-submenu-audit-evidence/
           retention-days: 30
           if-no-files-found: error
 
