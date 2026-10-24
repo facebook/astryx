@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: imdreamrunner
-approved_at: 2026-10-21
+approved_at: 2026-10-24
 owners: [cixzhang]
 review_triggers: [theming, layout, public-api]
 verified_by:
@@ -177,6 +177,7 @@ a decision that they must remain unthemeable.
   and records that sheets retain local scrim and swipe behavior.
 - `spec:AST-025` owns effective scroll measurement, overflow and containment,
   automatic keyboard-owner selection, and focus continuity.
+- BottomSheet consumes the shared on-screen keyboard module (`spec:AST-099`).
 - `family:overlay-dismissal` owns shared Escape and platform-close ordering. A
   standalone BottomSheet registers with the shared stack while it is presented;
   a switcher-hosted sheet is covered by BottomSheetSwitcher's registration.
