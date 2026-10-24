@@ -114,7 +114,9 @@ export type MenuPressEffect<T> =
   /**
    * The gesture ended without a row acting. `stray` says whether the browser
    * will still report a `click` for this gesture that must not act; `dismiss`
-   * says the menu should close (a mouse released outside it).
+   * says the menu should close: a mouse released outside it, or the browser
+   * took a finger's tentative press-open (`touchOpen: 'press'`) for a scroll
+   * or a pinch before the finger reached the menu.
    */
   | {type: 'settle'; stray: boolean; dismiss: boolean};
 
