@@ -100,6 +100,7 @@ import {
   type UIEvent as ReactUIEvent,
 } from 'react';
 import {VelocityTracker} from '../gestures/VelocityTracker';
+import {readTouchPresentation} from './sheetTouch';
 import {useMediaQuery} from '../hooks';
 import {
   createAnimator,
@@ -113,7 +114,11 @@ import {
   themeCurve,
   type ReleaseMotion,
 } from './releaseMotion';
-import {resolveSheetRelease} from './sheetRelease';
+import {
+  DEFAULT_DISMISS_OVERSHOOT_RATIO,
+  resolveDefaultRelease,
+  resolveSheetRelease,
+} from './sheetRelease';
 import {
   computeDetentOffsets,
   peekOffsetFor,
@@ -129,16 +134,26 @@ interface SheetDetents {
   peekOffset: number | null;
 }
 
-// Where a release is judged, and how it moves, is UIKit's: sheetRelease.ts.
-// One consequence is used below: a sheet released at rest dismisses once it
-// is more than halfway from its shortest detent to gone, so that is where the
-// scrim reaches clear.
+// Where a release is judged, and how it moves, follows the idiom
+// (releaseMotion.ts, sheetRelease.ts). In iOS's it is UIKit's, and a sheet
+// released at rest dismisses once it is more than halfway from its shortest
+// detent to gone; everywhere else today's rule dismisses past
+// DEFAULT_DISMISS_OVERSHOOT_RATIO of that height. Either way that line is
+// where the scrim reaches clear.
 function restingDismissOffset(
   maxOffset: number,
   shortestDetentHeight: number,
+  isUIKit: boolean,
 ): number {
-  return maxOffset + shortestDetentHeight / 2;
+  return (
+    maxOffset +
+    shortestDetentHeight * (isUIKit ? 0.5 : DEFAULT_DISMISS_OVERSHOOT_RATIO)
+  );
 }
+// Outside iOS's idiom the release speed is today's: the finger's speed over
+// its last stretch, not between its last two samples (one slow sample before
+// the lift must not cancel a throw), and none after a pause before the lift.
+const VELOCITY_WINDOW_MS = 100;
 // Within this many px of a detent, the live drag is magnetically eased toward
 // it so it "clicks" into place instead of hovering just off the mark.
 const MAGNET_RANGE = 40;
@@ -640,6 +655,11 @@ export function useSheetGestures({
     // The finger's positions on the timestamps their events carry, for the
     // release velocity (the gesture foundation's estimator, UIKit's filter).
     tracker: VelocityTracker;
+    // Today's estimator, outside iOS's idiom: the samples of the last
+    // VELOCITY_WINDOW_MS, the speed over them (px/ms) and the last move's time.
+    samples: {t: number; y: number}[];
+    windowVelocity: number;
+    lastTime: number;
     height: number;
     baseOffset: number;
     baseLayoutOffset: number;
@@ -885,7 +905,11 @@ export function useSheetGestures({
       scrimOpacityForOffset(
         target,
         offsets,
-        restingDismissOffset(maxOffset, shortestDetentHeight),
+        restingDismissOffset(
+          maxOffset,
+          shortestDetentHeight,
+          readTouchPresentation().idiom === 'ios',
+        ),
         peekOffset,
       ),
     );
@@ -1049,6 +1073,7 @@ export function useSheetGestures({
       const dismissOffset = restingDismissOffset(
         maxOffset,
         shortestDetentHeight,
+        releaseMotionRef.current.kind === 'uikit',
       );
       onScrimOpacityRef.current?.(
         scrimOpacityForOffset(
@@ -1081,6 +1106,7 @@ export function useSheetGestures({
     (
       offset: number,
       velocity: number,
+      today: {direction: number; travel: number; velocity: number},
       height: number,
       baseOffset: number,
       baseLayoutOffset: number,
@@ -1095,18 +1121,32 @@ export function useSheetGestures({
         maxOffset,
         offscreenBlockEndInsetRef.current,
       );
+      const isUIKit = releaseMotionRef.current.kind === 'uikit';
       const dismissOffset = restingDismissOffset(
         maxOffset,
         shortestDetentHeight,
+        isUIKit,
       );
       // Gone: the top of the sheet at the bottom of the screen.
       const dismissedOffset = maxOffset + shortestDetentHeight;
-      const release = resolveSheetRelease({
-        detents: offsets,
-        dismissedOffset: canDismissRef.current ? dismissedOffset : null,
-        position: offset,
-        velocity,
-      });
+      // UIKit's rule in iOS's idiom; today's everywhere else (sheetRelease.ts).
+      const release = isUIKit
+        ? resolveSheetRelease({
+            detents: offsets,
+            dismissedOffset: canDismissRef.current ? dismissedOffset : null,
+            position: offset,
+            velocity,
+          })
+        : resolveDefaultRelease({
+            detents: offsets,
+            shortestDetentHeight,
+            dismissible: canDismissRef.current,
+            position: offset,
+            velocity: today.velocity,
+            travel: today.travel,
+            direction: today.direction,
+            startOffset: baseOffset,
+          });
 
       if (release.kind === 'dismiss') {
         prepareScrollAreaSettle(
@@ -1253,6 +1293,9 @@ export function useSheetGestures({
         pointerId: event.pointerId,
         startCoord: start,
         tracker,
+        samples: [{t: event.timeStamp, y: event.clientY}],
+        windowVelocity: 0,
+        lastTime: event.timeStamp,
         height: sheetHeight,
         baseOffset,
         baseLayoutOffset,
@@ -1337,6 +1380,23 @@ export function useSheetGestures({
       // event's own timestamp: when the finger was there, however late a busy
       // main thread gets to the event.
       state.tracker.add(0, event.clientY, event.timeStamp);
+      if (event.timeStamp > state.lastTime) {
+        state.lastTime = event.timeStamp;
+        state.samples.push({t: event.timeStamp, y: event.clientY});
+        // Drop what fell out of the window while a partner remains: a throw
+        // that begins after a rest reads its own speed.
+        while (
+          state.samples.length > 2 &&
+          event.timeStamp - state.samples[0].t > VELOCITY_WINDOW_MS
+        ) {
+          state.samples.shift();
+        }
+        const first = state.samples[0];
+        // A lone partner older than the window says only where the finger
+        // rested; the move it precedes is read as if it took the window.
+        const span = Math.min(event.timeStamp - first.t, VELOCITY_WINDOW_MS);
+        state.windowVelocity = span > 0 ? (event.clientY - first.y) / span : 0;
+      }
       const {offsets, peekOffset} = resolveDetents(state.height);
 
       const raw = state.baseOffset + delta;
@@ -1390,6 +1450,7 @@ export function useSheetGestures({
       const dismissOffset = restingDismissOffset(
         floorOffset,
         shortestDetentHeight,
+        releaseMotionRef.current.kind === 'uikit',
       );
       onScrimOpacityRef.current?.(
         scrimOpacityForOffset(next, offsets, dismissOffset, peekOffset),
@@ -1422,6 +1483,15 @@ export function useSheetGestures({
         state.tracker.add(0, event.clientY, event.timeStamp);
       }
       const velocity = state.tracker.velocity().y;
+      // Today's inputs, for a release outside iOS's idiom.
+      const today = {
+        direction: delta === 0 ? 0 : delta > 0 ? 1 : -1,
+        travel: Math.abs(delta),
+        velocity:
+          event.timeStamp - state.lastTime < VELOCITY_WINDOW_MS
+            ? state.windowVelocity * 1000
+            : 0,
+      };
       dragStateRef.current = null;
       if (!state.syntheticTouch) {
         target.releasePointerCapture?.(event.pointerId);
@@ -1431,6 +1501,7 @@ export function useSheetGestures({
       settleFromDrag(
         offset,
         velocity,
+        today,
         state.height || 1,
         state.baseOffset,
         state.baseLayoutOffset,

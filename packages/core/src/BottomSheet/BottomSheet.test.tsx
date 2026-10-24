@@ -255,6 +255,15 @@ function measureTallSheet() {
   );
 }
 
+// What the panel's stylesheet gives the sheet's transform in a browser (jsdom
+// applies no StyleX): under a mouse, a release plays this timing on the
+// animator (releaseMotion.ts).
+function giveThemeTransition(sheet: HTMLElement) {
+  sheet.style.transitionProperty = 'transform';
+  sheet.style.transitionDuration = '410ms';
+  sheet.style.transitionTimingFunction = 'cubic-bezier(0.24, 1, 0.4, 1)';
+}
+
 // A slow drag on the handle that rests before the lift: released at rest.
 function dragSlowly(handle: HTMLElement, y: number) {
   fireTimedPointer(handle, 'pointerdown', {time: 0, y: 0});
@@ -953,6 +962,7 @@ describe('BottomSheet', () => {
         );
       });
 
+      giveThemeTransition(sheet);
       fireTimedPointer(getHandle(), 'pointerdown', {time: 0, y: 0});
       fireTimedPointer(getHandle(), 'pointermove', {time: 1000, y: 240});
 
@@ -961,7 +971,7 @@ describe('BottomSheet', () => {
       expect(sheet.style.transition).toBe('none');
 
       fireTimedPointer(getHandle(), 'pointerup', {time: 2000, y: 240});
-      // Release remains transform-only until the snap finishes: the spring
+      // Release remains transform-only until the snap finishes: the settle
       // runs on the travel channel (jsdom has no Web Animations, so its end
       // value is what shows). p50 is a visible 400px sheet: 784 - 48 - 400 =
       // 336px offset.
@@ -1070,6 +1080,7 @@ describe('BottomSheet', () => {
       });
 
       // Start at the middle 400px detent.
+      giveThemeTransition(sheet);
       fireTimedPointer(getHandle(), 'pointerdown', {time: 0, y: 0});
       fireTimedPointer(getHandle(), 'pointermove', {time: 1000, y: 240});
       fireTimedPointer(getHandle(), 'pointerup', {time: 2000, y: 240});

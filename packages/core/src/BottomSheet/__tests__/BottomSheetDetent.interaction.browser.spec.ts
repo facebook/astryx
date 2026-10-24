@@ -12,7 +12,9 @@
  *   velocity (critically damped below `sheet.release.fastSpeed`, 80 % damped
  *   above); a finger catches the settling sheet where it is; the settle keeps
  *   advancing every frame through a blocked main thread; it does no Layout or
- *   Paint per frame; storyboards of the drag, the settle and a flick.
+ *   Paint per frame; storyboards of the drag, the settle and a flick. Outside
+ *   iOS's idiom (a finger on Android) a release keeps today's rule and the
+ *   theme's timing, and Reduce Motion's.
  * @position The exemplar for `*.interaction.browser.spec.ts`: component lanes
  *   copy this shape. Each test names the instrument it uses from
  *   @astryxdesign/interaction-harness, so the evidence layer is explicit.
@@ -20,6 +22,10 @@
  * The sheet moves on the `translate` property while a gesture or its release
  * runs (the motion foundation's animator; its resting position is the
  * element's `transform`), so curves are sampled from both (`sampleTravel`).
+ *
+ * UIKit's release belongs to iOS's idiom (WebKit on iOS under a finger), so
+ * the UIKit cases run under `emulateIosWebKit`; the Android cases run without
+ * it, as Chromium answers on its own.
  */
 
 import {expect, test, type Locator, type Page} from '@playwright/test';
@@ -61,8 +67,10 @@ import {
   type TimedValue,
   type TouchDriver,
 } from '@astryxdesign/interaction-harness';
+import {END_HOLD_MS} from './specConstants';
 import {sheet as sheetTable} from '../../motion/uikit/sheet';
 import {springs} from '../../motion/uikit/springs';
+import {emulateIosWebKit} from './emulateIosWebKit';
 
 const storybook = withStorybook(test);
 
@@ -75,7 +83,13 @@ interface OpenSheet {
   handle: {x: number; y: number};
 }
 
-async function openSheet(page: Page): Promise<OpenSheet> {
+async function openSheet(
+  page: Page,
+  {idiom = 'ios'}: {idiom?: 'ios' | 'android'} = {},
+): Promise<OpenSheet> {
+  if (idiom === 'ios') {
+    await emulateIosWebKit(page);
+  }
   await installLongTaskLog(page);
   await installInputLog(page);
   await openStory(page, storybook(), 'core-bottomsheet--snap-points');
@@ -699,3 +713,71 @@ test(
     expect(tops.at(-1)).toBeCloseTo(halfTop, 0);
   },
 );
+
+/** The duration the sheet's stylesheet gives its `transform` transition, ms. */
+async function themeDurationMs(sheet: Locator): Promise<number> {
+  return sheet.evaluate(el => {
+    const style = getComputedStyle(el);
+    const properties = style.transitionProperty.split(',').map(p => p.trim());
+    const index = Math.max(0, properties.indexOf('transform'));
+    const items = style.transitionDuration.split(',');
+    const value = items[index % items.length].trim();
+    return value.endsWith('ms')
+      ? Number.parseFloat(value)
+      : Number.parseFloat(value) * 1000;
+  });
+}
+
+/** The duration of each animation running on the sheet, ms. */
+async function runningDurations(sheet: Locator): Promise<number[]> {
+  return sheet.evaluate(el =>
+    el
+      .getAnimations()
+      .map(a => Number(a.effect?.getComputedTiming().duration ?? 0)),
+  );
+}
+
+test("outside iOS a finger keeps today's rule and the theme's timing (a finger on Android)", async ({
+  page,
+}) => {
+  const {driver, sheet, tallTop, halfTop, handle} = await openSheet(page, {
+    idiom: 'android',
+  });
+  const theme = await themeDurationMs(sheet);
+  expect(theme).toBeGreaterThan(100);
+  // Two thirds of the way to half, resting before the lift: today's rule
+  // reads no speed after the rest and lands on half, on the theme's curve.
+  await driver.play(slowDragTo(handle, Math.round((halfTop - tallTop) * 0.66)));
+  const settle = await runningDurations(sheet);
+  expect(settle).toHaveLength(1);
+  expect(Math.abs(settle[0] - END_HOLD_MS - theme)).toBeLessThan(5);
+  await waitForRest(sheet);
+  expect(await sheetTop(sheet)).toBeCloseTo(halfTop, 0);
+});
+
+test("outside iOS the flick UIKit lands on half dismisses, by today's rule (a finger on Android)", async ({
+  page,
+}) => {
+  const {driver, handle} = await openSheet(page, {idiom: 'android'});
+  // 2000 px/s for 80 ms from tall: UIKit projects 160 + 228 px, onto half;
+  // today's rule projects 160 + 2 × 499 px, past the dismiss line.
+  await driver.play(
+    flick(handle, {velocity: {x: 0, y: 2000}, durationMs: 80, hz: 120}),
+  );
+  await expect(page.getByRole('dialog', {name: 'Nearby places'})).toBeHidden();
+});
+
+test("under Reduce Motion a finger on Android takes the stylesheet's reduced timing", async ({
+  page,
+}) => {
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  const {driver, sheet, tallTop, halfTop, handle} = await openSheet(page, {
+    idiom: 'android',
+  });
+  await driver.play(slowDragTo(handle, Math.round((halfTop - tallTop) * 0.66)));
+  // Today's Reduce Motion rule (0.01 s), not UIKit's springs.
+  const settle = await runningDurations(sheet);
+  expect(settle.every(ms => ms - END_HOLD_MS <= 20)).toBe(true);
+  await waitForRest(sheet);
+  expect(await sheetTop(sheet)).toBeCloseTo(halfTop, 0);
+});

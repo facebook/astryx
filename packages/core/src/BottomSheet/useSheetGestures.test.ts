@@ -80,6 +80,30 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+/**
+ * iOS's idiom: a coarse primary pointer in an engine that supports
+ * `-webkit-touch-callout` (WebKit on iOS). Releases take UIKit's rule and
+ * springs there and today's everywhere else, a finger on Android included
+ * (releaseMotion.ts, sheetRelease.ts).
+ */
+function stubIosIdiom({reducedMotion = false}: {reducedMotion?: boolean} = {}) {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((query: string) => ({
+      matches:
+        query.includes('pointer: coarse') ||
+        (reducedMotion && query.includes('prefers-reduced-motion')),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })),
+  );
+  vi.stubGlobal('CSS', {
+    supports: (condition: string) =>
+      condition.includes('-webkit-touch-callout'),
+    escape: (value: string) => value,
+  });
+}
+
 /** Lets every running spring reach its end (the animator's clock and timers). */
 function land() {
   act(() => {
@@ -236,7 +260,9 @@ describe('useSheetGestures', () => {
     expect(hook.result.current.settledOffset).toBe(0);
   });
 
-  describe('release projection', () => {
+  describe("release projection in iOS's idiom (UIKit's rule)", () => {
+    beforeEach(() => stubIosIdiom());
+
     // A release is judged where the sheet would be after
     // sheet.release.projectionSeconds at the finger's velocity, not where the
     // finger left it; the dismissed position (gone below the screen) counts
@@ -337,7 +363,106 @@ describe('useSheetGestures', () => {
     });
   });
 
+  describe("release projection outside iOS's idiom (today's rule)", () => {
+    // Under a mouse or a finger on Android, a release is judged where the
+    // sheet would coast to at the finger's speed (0.998 per ms), in the
+    // drag's direction, as today.
+    it('dismisses on a medium throw released short of the dismiss line', () => {
+      const {hook, onDismiss} = setup({snapHeights: () => [200]});
+      const t = makeTarget();
+      down(hook, 0, 0, t);
+      // 150px in 150ms = 1px/ms. The finger stops at 150, well short of the
+      // 280px line; a surface moving at that speed coasts far past it.
+      move(hook, 50, 50, t);
+      move(hook, 100, 100, t);
+      move(hook, 150, 150, t);
+      up(hook, 150, 152, t);
+      expect(onDismiss).toHaveBeenCalledTimes(1);
+    });
+
+    it('lands a gentle throw on the next detent, not back where it started', () => {
+      const onSnap = vi.fn();
+      const {hook, onDismiss} = setup({snapHeights: () => [200], onSnap});
+      const t = makeTarget();
+      down(hook, 0, 0, t);
+      // 60px in 200ms = 0.3px/ms: too slow to be a flick, too short to reach
+      // the 200px detent by position. The coast carries it there.
+      move(hook, 30, 100, t);
+      move(hook, 60, 200, t);
+      up(hook, 60, 202, t);
+      expect(onDismiss).not.toHaveBeenCalled();
+      expect(hook.result.current.settledOffset).toBe(200);
+      expect(onSnap).toHaveBeenLastCalledWith(200);
+    });
+
+    it('reads the release speed over the last stretch, so one slow sample does not cancel a throw', () => {
+      const {hook, onDismiss} = setup({snapHeights: () => [200]});
+      const t = makeTarget();
+      down(hook, 0, 0, t);
+      move(hook, 60, 20, t); // 3px/ms
+      move(hook, 62, 90, t); // the lift's own last, slow sample
+      up(hook, 62, 92, t);
+      expect(onDismiss).toHaveBeenCalledTimes(1);
+    });
+
+    it('reads a throw that begins after a hold at its own speed, not the average since touch-down', () => {
+      const {hook, onDismiss} = setup({snapHeights: () => [200]});
+      const t = makeTarget();
+      down(hook, 0, 0, t);
+      move(hook, 0, 250, t); // a still hold on the handle
+      move(hook, 30, 275, t); // then 60px in 50ms
+      move(hook, 60, 300, t);
+      up(hook, 60, 302, t);
+      expect(onDismiss).toHaveBeenCalledTimes(1);
+    });
+
+    it('reads a single move after a hold as a move, not as the whole hold', () => {
+      const {hook, onDismiss} = setup({snapHeights: () => [200]});
+      const t = makeTarget();
+      down(hook, 0, 0, t);
+      move(hook, 60, 300, t); // one sample, 300ms after touch-down
+      up(hook, 60, 302, t);
+      expect(onDismiss).toHaveBeenCalledTimes(1);
+    });
+
+    it('releases no throw from a finger that rested before lifting', () => {
+      const {hook, onDismiss} = setup({snapHeights: () => [200]});
+      const t = makeTarget();
+      down(hook, 0, 0, t);
+      move(hook, 60, 20, t); // 3px/ms ...
+      up(hook, 60, 400, t); // ... then 380ms of rest, then the lift
+      expect(onDismiss).not.toHaveBeenCalled();
+      expect(hook.result.current.settledOffset).toBe(0);
+    });
+
+    it('settles a throw that would coast past the line at the shortest detent when canDismiss is false', () => {
+      const {hook, onDismiss} = setup({
+        canDismiss: false,
+        snapHeights: () => [200],
+      });
+      const t = makeTarget();
+      down(hook, 0, 0, t);
+      move(hook, 50, 50, t);
+      move(hook, 100, 100, t);
+      up(hook, 100, 102, t);
+      expect(onDismiss).not.toHaveBeenCalled();
+      expect(hook.result.current.settledOffset).toBe(200);
+    });
+  });
+
   it('does not flick-dismiss on a fast but short nudge', () => {
+    const {hook, onDismiss} = setup({snapHeights: () => [200]});
+    const t = makeTarget();
+    // Fast (20px/10ms = 2px/ms) but only 20px of travel — under the distance
+    // floor, so nothing is projected and it settles rather than dismissing.
+    down(hook, 0, 0, t);
+    move(hook, 20, 10, t);
+    up(hook, 20, 12, t);
+    expect(onDismiss).not.toHaveBeenCalled();
+  });
+
+  it("projects a fast short nudge onto the next detent in iOS's idiom", () => {
+    stubIosIdiom();
     const {hook, onDismiss} = setup({snapHeights: () => [200]});
     const t = makeTarget();
     // Fast (2000 px/s) but only 20px of travel: projected 20 + 228 = 248,
@@ -467,6 +592,23 @@ describe('useSheetGestures', () => {
   });
 
   it('uses the visible shortest detent height for the dismiss overshoot', () => {
+    const {hook, onDismiss} = setup({
+      snapHeights: () => [200],
+      offscreenBlockEndInset: 48,
+    });
+    const t = makeTarget();
+
+    // Visible full height is 352px, so the 200px stop is offset 152. Its 40%
+    // dismiss overshoot ends at 232px; the hidden reserve must not extend it.
+    down(hook, 0, 0, t);
+    move(hook, 235, 1000, t);
+    up(hook, 235, 2000, t);
+
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses the visible shortest detent height for the halfway line in iOS's idiom", () => {
+    stubIosIdiom();
     const {hook, onDismiss} = setup({
       snapHeights: () => [200],
       offscreenBlockEndInset: 48,
@@ -1744,8 +1886,8 @@ describe('useSheetGestures', () => {
 });
 
 describe('useSheetGestures: the release on the compositor', () => {
-  // A finger: the primary pointer is coarse, so releases run on UIKit's
-  // springs (D-01; releaseMotion.ts).
+  // A finger in iOS's idiom: releases run on UIKit's springs
+  // (releaseMotion.ts). A mouse keeps the theme's timing.
   function stubPointer({
     coarse,
     reducedMotion = false,
@@ -1753,6 +1895,10 @@ describe('useSheetGestures: the release on the compositor', () => {
     coarse: boolean;
     reducedMotion?: boolean;
   }) {
+    if (coarse) {
+      stubIosIdiom({reducedMotion});
+      return;
+    }
     vi.stubGlobal(
       'matchMedia',
       vi.fn((query: string) => ({
@@ -2002,9 +2148,10 @@ describe('useSheetGestures: the release on the compositor', () => {
       'cubic-bezier(0.24, 1, 0.4, 1), cubic-bezier(0.24, 1, 0.4, 1)';
     const played = recordAnimations(t);
     down(hook, 0, 0, t);
-    stream(hook, t, {from: 0, to: 60, t0: 0, t1: 100}); // 600 px/s
+    // 200 px/s: today's rule projects 60 + 0.2 × 499 = 160, onto 200.
+    stream(hook, t, {from: 0, to: 60, t0: 0, t1: 300});
     act(() =>
-      hook.result.current.handleProps.onPointerUp(pointerEvent(60, 102, t)),
+      hook.result.current.handleProps.onPointerUp(pointerEvent(60, 302, t)),
     );
     expect(played).toHaveLength(1);
     // 410 ms of curve, then the animator's end-state hold.
@@ -2033,6 +2180,79 @@ describe('useSheetGestures: the release on the compositor', () => {
       expect(travelAt(played[0], ms)).toBeCloseTo(60 + 140 * ease(ms / 410), 1);
     }
     expect(travel(t)).toBe(200);
+  });
+
+  /** A finger on Android: coarse, in an engine without `-webkit-touch-callout`. */
+  function stubAndroidFinger({reducedMotion = false} = {}) {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => ({
+        matches:
+          query.includes('pointer: coarse') ||
+          (reducedMotion && query.includes('prefers-reduced-motion')),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    );
+    vi.stubGlobal('CSS', {supports: () => false, escape: (v: string) => v});
+  }
+
+  it("keeps today's rule and the theme timing under a finger on Android", () => {
+    stubAndroidFinger();
+    const {hook, onDismiss} = setup({snapHeights: () => [200]});
+    const t = makeTarget();
+    t.style.transitionProperty = 'transform';
+    t.style.transitionDuration = '410ms';
+    t.style.transitionTimingFunction = 'cubic-bezier(0.24, 1, 0.4, 1)';
+    const played = recordAnimations(t);
+    down(hook, 0, 0, t);
+    // 600 px/s over 100 px: today's rule projects 100 + 0.6 × 499 = 399, past
+    // the dismiss line (200 + 0.4 × 200 = 280). UIKit's would land on 200
+    // (100 + 0.114 × 600 = 168).
+    stream(hook, t, {from: 0, to: 100, t0: 0, t1: 167});
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(pointerEvent(100, 169, t)),
+    );
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+    // The host's exit runs from where the sheet is; no release spring.
+    expect(played).toHaveLength(0);
+
+    // A slow drag settles on the theme's 410 ms curve, not a spring.
+    const second = setup({snapHeights: () => [200]});
+    const t2 = makeTarget();
+    t2.style.transitionProperty = 'transform';
+    t2.style.transitionDuration = '410ms';
+    t2.style.transitionTimingFunction = 'cubic-bezier(0.24, 1, 0.4, 1)';
+    const played2 = recordAnimations(t2);
+    down(second.hook, 0, 0, t2);
+    stream(second.hook, t2, {from: 0, to: 60, t0: 0, t1: 300});
+    act(() =>
+      second.hook.result.current.handleProps.onPointerUp(
+        pointerEvent(60, 302, t2),
+      ),
+    );
+    expect(played2).toHaveLength(1);
+    expect((played2[0].options.duration as number) - END_HOLD_MS).toBeCloseTo(
+      410,
+      0,
+    );
+  });
+
+  it("takes the stylesheet's reduced timing under Reduce Motion on Android", () => {
+    stubAndroidFinger({reducedMotion: true});
+    const {hook} = setup({snapHeights: () => [200]});
+    const t = makeTarget();
+    // Today's Reduce Motion rule turns the sheet's transitions off.
+    t.style.transitionProperty = 'none';
+    const played = recordAnimations(t);
+    down(hook, 0, 0, t);
+    stream(hook, t, {from: 0, to: 60, t0: 0, t1: 300});
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(pointerEvent(60, 302, t)),
+    );
+    // No spring and no curve: the sheet goes to the detent at once.
+    expect(played).toHaveLength(0);
+    expect(hook.result.current.settledOffset).toBe(200);
   });
 
   it('leaves a drag-dismissed sheet to the host exit under a mouse, from where it was', () => {
@@ -2093,16 +2313,7 @@ describe('useSheetGestures: a finger on the drawn sheet during a release', () =>
   // moving at its un-animated position: a touch on the moving sheet arrives
   // on whatever sat there when the release began (here, the dialog: the
   // scrim). The hook maps it through the sheet's drawn rect instead.
-  beforeEach(() => {
-    vi.stubGlobal(
-      'matchMedia',
-      vi.fn((query: string) => ({
-        matches: query.includes('pointer: coarse'),
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-      })),
-    );
-  });
+  beforeEach(() => stubIosIdiom());
 
   interface Played {
     keyframes: Keyframe[];

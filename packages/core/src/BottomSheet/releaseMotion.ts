@@ -9,12 +9,12 @@
  * @position Internal to BottomSheet; read once per gesture by
  *   useSheetGestures
  *
- * Under a finger the sheet moves the way a UIKit sheet does: its release runs
- * on UIKit's springs, handed the finger's velocity. Under a mouse it keeps the
- * theme's motion: the duration and easing its stylesheet gives `transform`
- * (D-01: touch presentations read the UIKit table; the theme's duration and
- * easing tokens keep governing pointer presentations). Either way the curve
- * plays on the compositor, through the same animator.
+ * In iOS's idiom (WebKit on iOS under a finger, `readTouchPresentation`) the
+ * sheet moves the way a UIKit sheet does: its release runs on UIKit's
+ * springs, handed the finger's velocity. Everywhere else (a mouse, a finger
+ * on Android) it keeps the theme's motion: the duration and easing its
+ * stylesheet gives `transform`, as today, until a Material variant exists.
+ * Either way the curve plays on the compositor, through the same animator.
  *
  * The theme timing is read from the element's computed transition when a
  * drag begins, before the drag turns transitions off, so a theme, a Reduced
@@ -94,17 +94,17 @@ function parseEasing(value: string): ((progress: number) => number) | null {
 }
 
 /**
- * The timing a release of `element` runs on: UIKit's under a coarse primary
- * pointer, else the duration and easing its stylesheet transitions
- * `transform` with. Falls back to UIKit's when that cannot be read.
+ * The timing a release of `element` runs on: UIKit's in iOS's idiom, else
+ * the duration and easing its stylesheet transitions `transform` with. An
+ * easing it cannot read (`steps()`) plays linearly over that duration; no
+ * element or no readable duration settles at once.
  */
 export function readReleaseMotion(element: HTMLElement | null): ReleaseMotion {
-  if (
-    element == null ||
-    typeof getComputedStyle !== 'function' ||
-    readTouchPresentation().isTouch
-  ) {
+  if (readTouchPresentation().idiom === 'ios') {
     return UIKIT;
+  }
+  if (element == null || typeof getComputedStyle !== 'function') {
+    return {kind: 'theme', durationMs: 0, easing: progress => progress};
   }
   const style = getComputedStyle(element);
   if (style.transitionProperty === 'none') {
@@ -123,10 +123,12 @@ export function readReleaseMotion(element: HTMLElement | null): ReleaseMotion {
   };
   const duration = parseTime(pick(style.transitionDuration));
   const delay = parseTime(pick(style.transitionDelay)) ?? 0;
-  const easing = parseEasing(pick(style.transitionTimingFunction));
-  if (duration == null || easing == null) {
-    return UIKIT;
+  if (duration == null) {
+    return {kind: 'theme', durationMs: 0, easing: progress => progress};
   }
+  const easing =
+    parseEasing(pick(style.transitionTimingFunction)) ??
+    ((progress: number) => progress);
   return {kind: 'theme', durationMs: Math.max(0, duration + delay), easing};
 }
 

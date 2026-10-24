@@ -3,16 +3,18 @@
 /**
  * @file releaseMotion.test.ts
  * @input vitest, jsdom, readReleaseMotion and themeCurve
- * @output Which timing a sheet's release runs on: UIKit's under a finger,
- *   the stylesheet's transform transition under a mouse (lists, keywords,
- *   transitions turned off, unreadable values); the theme curve's values
+ * @output Which timing a sheet's release runs on: UIKit's in iOS's idiom,
+ *   the stylesheet's transform transition under a mouse or a finger on
+ *   Android (lists, keywords, transitions turned off, unreadable values);
+ *   the theme curve's values
  * @position Testing; validates releaseMotion.ts
  */
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {readReleaseMotion, themeCurve} from './releaseMotion';
 
-function pointer(coarse: boolean) {
+/** A finger or a mouse; with `ios`, in WebKit on iOS (iOS's idiom). */
+function pointer(coarse: boolean, {ios = false}: {ios?: boolean} = {}) {
   vi.stubGlobal(
     'matchMedia',
     vi.fn((query: string) => ({
@@ -21,7 +23,17 @@ function pointer(coarse: boolean) {
       removeEventListener: vi.fn(),
     })),
   );
+  vi.stubGlobal('CSS', {
+    supports: (condition: string) =>
+      ios && condition.includes('-webkit-touch-callout'),
+  });
 }
+
+const THEME = {
+  transitionProperty: 'transform',
+  transitionDuration: '410ms',
+  transitionTimingFunction: 'cubic-bezier(0.24, 1, 0.4, 1)',
+};
 
 function sheet(style: Partial<CSSStyleDeclaration>): HTMLElement {
   const element = document.createElement('div');
@@ -33,13 +45,20 @@ beforeEach(() => pointer(false));
 afterEach(() => vi.unstubAllGlobals());
 
 describe('readReleaseMotion', () => {
-  it('runs on UIKit springs under a finger', () => {
+  it("runs on UIKit springs under a finger in iOS's idiom", () => {
+    pointer(true, {ios: true});
+    expect(readReleaseMotion(sheet(THEME))).toEqual({kind: 'uikit'});
+  });
+
+  it('keeps the theme timing under a finger outside iOS (Android)', () => {
     pointer(true);
-    expect(
-      readReleaseMotion(
-        sheet({transitionProperty: 'transform', transitionDuration: '410ms'}),
-      ),
-    ).toEqual({kind: 'uikit'});
+    const motion = readReleaseMotion(sheet(THEME));
+    expect(motion).toMatchObject({kind: 'theme', durationMs: 410});
+  });
+
+  it("keeps the theme timing under a mouse in WebKit on iOS's engine", () => {
+    pointer(false, {ios: true});
+    expect(readReleaseMotion(sheet(THEME))).toMatchObject({kind: 'theme'});
   });
 
   it('reads the transform transition under a mouse, from a list', () => {
@@ -78,17 +97,20 @@ describe('readReleaseMotion', () => {
     expect(notTransform).toMatchObject({kind: 'theme', durationMs: 0});
   });
 
-  it('falls back to UIKit when the timing cannot be read', () => {
-    expect(
-      readReleaseMotion(
-        sheet({
-          transitionProperty: 'transform',
-          transitionDuration: '410ms',
-          transitionTimingFunction: 'steps(4, end)',
-        }),
-      ),
-    ).toEqual({kind: 'uikit'});
-    expect(readReleaseMotion(null)).toEqual({kind: 'uikit'});
+  it('plays an unreadable easing linearly, and settles at once without an element', () => {
+    const motion = readReleaseMotion(
+      sheet({
+        transitionProperty: 'transform',
+        transitionDuration: '410ms',
+        transitionTimingFunction: 'steps(4, end)',
+      }),
+    );
+    expect(motion).toMatchObject({kind: 'theme', durationMs: 410});
+    expect(motion.kind === 'theme' && motion.easing(0.3)).toBeCloseTo(0.3, 9);
+    expect(readReleaseMotion(null)).toMatchObject({
+      kind: 'theme',
+      durationMs: 0,
+    });
   });
 });
 
