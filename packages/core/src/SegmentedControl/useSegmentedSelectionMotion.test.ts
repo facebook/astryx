@@ -142,6 +142,13 @@ function expectHidden(segment: HTMLElement): void {
 }
 
 /** The segment paints its own surface again: nothing inline, the stylesheet's paint. */
+/** No inline surface override is left on the segment. */
+function expectNoOverride(segment: HTMLElement): void {
+  expect(segment.style.getPropertyValue('background-color')).toBe('');
+  expect(segment.style.getPropertyValue('background-image')).toBe('');
+  expect(segment.style.getPropertyValue('box-shadow')).toBe('');
+}
+
 function expectOwnSurface(segment: HTMLElement): void {
   expect(segment.style.getPropertyValue('background-color')).toBe('');
   expect(segment.style.getPropertyValue('box-shadow')).toBe('');
@@ -213,11 +220,15 @@ describe('the selection slide', () => {
     expect(ctx.animator.get('x')).toBeCloseTo(xBefore, 6);
     expect(ctx.animator.getVelocity('x')).toBeCloseTo(vBefore, 3);
     expect(ctx.animator.get('scaleX') * 100).toBeCloseTo(widthBefore, 6);
-    // The proxy now carries the new destination's surface and size; the
-    // abandoned destination shows its own (unselected) paint again.
+    // The proxy now carries the new destination's surface and size. The
+    // abandoned destination paints nothing of its own until the lens lands:
+    // its tap may still be fading, and that paint would cover the lens.
     expect(ctx.proxy.style.width).toBe('100px');
     expect(ctx.segments.table.style.getPropertyValue('background-color')).toBe(
-      '',
+      'transparent',
+    );
+    expect(ctx.segments.table.style.getPropertyValue('background-image')).toBe(
+      'none',
     );
     expect(ctx.segments.list.style.getPropertyValue('background-color')).toBe(
       'transparent',
@@ -226,6 +237,23 @@ describe('the selection slide', () => {
     expect(ctx.animator.get('x')).toBe(xOf('list'));
     expect(ctx.motion.isSliding).toBe(false);
     expectOwnSurface(ctx.segments.list);
+    expectNoOverride(ctx.segments.table);
+  });
+
+  it('a change back to the abandoned segment takes it as the destination again', async () => {
+    const ctx = setup('grid');
+    select(ctx, 'grid', 'table');
+    await advance(80);
+    select(ctx, 'table', 'list');
+    await advance(40);
+    select(ctx, 'list', 'table');
+    expect(ctx.segments.table.style.getPropertyValue('background-color')).toBe(
+      'transparent',
+    );
+    await advance(3000);
+    expect(ctx.animator.get('x')).toBe(xOf('table'));
+    expectOwnSurface(ctx.segments.table);
+    expectNoOverride(ctx.segments.list);
   });
 
   it('settle() hands the surface back at once (resize, unmount, presentation change)', () => {

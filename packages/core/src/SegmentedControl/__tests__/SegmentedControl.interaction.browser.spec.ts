@@ -416,6 +416,57 @@ test('a second tap mid-flight retargets from what is on screen, keeping its velo
   expect(second.keyframes.at(-1)?.x).toBeCloseTo(list.x, 1);
 });
 
+test('a change mid-flight paints no press over the lens on the segment it leaves', async ({
+  page,
+}) => {
+  const control = await openControl(page);
+  await control.tapSegment('table');
+  // The app changes the selection while the lens is still on its way and the
+  // tap on Table is still fading (a second touch would end that fade itself).
+  const paint = await control.group.evaluate(async group => {
+    const segment = (value: string): HTMLElement => {
+      const element = group.querySelector<HTMLElement>(
+        `[data-value="${value}"]`,
+      );
+      if (element == null) {
+        throw new Error(`no segment ${value}`);
+      }
+      return element;
+    };
+    const proxy = group.querySelector<HTMLElement>('[data-selection-proxy]');
+    if (proxy == null) {
+      throw new Error('no selection proxy');
+    }
+    segment('list').click();
+    // The layout effect that retargets has run once the frame is drawn.
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    const table = segment('table');
+    const style = getComputedStyle(table);
+    return {
+      press: table.getAttribute('data-astryx-press'),
+      image: style.backgroundImage,
+      color: style.backgroundColor,
+      lensVisible: getComputedStyle(proxy).visibility === 'visible',
+    };
+  });
+  await expect(control.segment('list')).toHaveAttribute('aria-checked', 'true');
+  expect(paint.press, 'the tap on Table is still fading').not.toBeNull();
+  expect(paint.lensVisible).toBe(true);
+  // Table paints nothing of its own until the lens lands: its press would
+  // cover the lens, which sits under the segments' backgrounds.
+  expect(paint.image).toBe('none');
+  expect(paint.color).toBe('rgba(0, 0, 0, 0)');
+  // Once the lens lands, Table gets its own styles back.
+  await expect(control.proxy).toHaveCSS('visibility', 'hidden', {
+    timeout: 3000,
+  });
+  await expect
+    .poll(async () =>
+      control.segment('table').evaluate(element => element.style.cssText),
+    )
+    .toBe('');
+});
+
 test('an arrow key and a programmatic change slide the selection too', async ({
   page,
 }) => {

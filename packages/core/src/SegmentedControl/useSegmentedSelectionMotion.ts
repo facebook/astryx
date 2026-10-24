@@ -269,6 +269,13 @@ function timedCurve(
 export class SegmentedSelectionMotion {
   private proxy: HTMLElement | null = null;
   private slide: Slide | null = null;
+  /**
+   * Segments the lens was headed for when a change turned it elsewhere. They
+   * stay surface-hidden until it lands: a tap's press is still fading on such
+   * a segment, and its paint would cover the lens (which sits under the
+   * segments' backgrounds) while the lens is still crossing it.
+   */
+  private readonly abandoned = new Set<HTMLElement>();
   private readonly fades = new Map<HTMLElement, TitleFade>();
   private readonly renderings = new WeakMap<HTMLElement, TitleRendering>();
 
@@ -343,6 +350,10 @@ export class SegmentedSelectionMotion {
     this.slide = null;
     this.animator.stop();
     showSurface(slide.destination);
+    for (const segment of this.abandoned) {
+      showSurface(segment);
+    }
+    this.abandoned.clear();
     if (this.proxy != null) {
       this.proxy.style.visibility = 'hidden';
       this.proxy.style.removeProperty('transform-origin');
@@ -413,7 +424,7 @@ export class SegmentedSelectionMotion {
       velocityX = this.animator.getVelocity('x', at);
       velocityWidth = current.width * this.animator.getVelocity('scaleX', at);
       if (current.destination !== destination) {
-        showSurface(current.destination);
+        this.abandoned.add(current.destination);
       }
     } else {
       const from = boxOf(origin as HTMLElement);
@@ -422,6 +433,7 @@ export class SegmentedSelectionMotion {
     }
     copySurface(destination, proxy);
     hideSurface(destination);
+    this.abandoned.delete(destination);
     proxy.style.top = `${to.y}px`;
     proxy.style.width = `${to.width}px`;
     proxy.style.height = `${to.height}px`;
@@ -448,10 +460,11 @@ export class SegmentedSelectionMotion {
   private fadeIn(proxy: HTMLElement, destination: HTMLElement, to: Box): void {
     const current = this.slide;
     if (current != null && current.destination !== destination) {
-      showSurface(current.destination);
+      this.abandoned.add(current.destination);
     }
     copySurface(destination, proxy);
     hideSurface(destination);
+    this.abandoned.delete(destination);
     proxy.style.top = `${to.y}px`;
     proxy.style.width = `${to.width}px`;
     proxy.style.height = `${to.height}px`;
