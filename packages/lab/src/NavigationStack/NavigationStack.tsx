@@ -4,7 +4,8 @@
 
 /**
  * @file NavigationStack.tsx
- * @input React, StyleX, core's compositor animator and the UIKit table
+ * @input React, StyleX, core's holdSelection (the pushing row's selection),
+ *   core's compositor animator and the UIKit table
  *   (`@astryxdesign/core/motion/experimental`), its gesture recognizers
  *   (`@astryxdesign/core/gestures/experimental`), navigationTransition.ts
  *   for the math
@@ -49,6 +50,12 @@
  * the incoming screen fades in where it lands while the outgoing one fades
  * out, with no travel. The back swipe still tracks the finger.
  *
+ * A list row (Item, ListItem, TreeList) that pushes a screen stays
+ * selected while that screen covers it and deselects as it pops (core's
+ * holdSelection): over the pop's first 0.35 s, linearly, on the same clock
+ * as the cards, or with a back swipe's progress; a cancelled swipe selects
+ * it again.
+ *
  * Accessibility: covered screens are `inert`. A push moves focus to the new
  * screen's title; a pop returns it to the control that pushed the screen.
  * The back button is a real button named by the screen it returns to.
@@ -88,6 +95,7 @@ import {
   useTouchIdiom,
 } from '@astryxdesign/core/gestures/experimental';
 import {useTranslator} from '@astryxdesign/core/i18n';
+import {holdSelection, type SelectionHold} from '@astryxdesign/core/utils';
 import {Icon} from '@astryxdesign/core/Icon';
 import {
   colorVars,
@@ -567,6 +575,12 @@ export function NavigationStack<T>({
 
   // Sources of pushes, by screen key (focus returns there on the pop).
   const sourcesRef = useRef(new Map<string, Element | null>());
+  // The list row each push came from, kept selected while the pushed
+  // screen covers it and deselected as that screen pops (CH-01), by the
+  // pushed screen's key, with the key of the screen the row lives in.
+  const holdsRef = useRef(
+    new Map<string, {hold: SelectionHold; from: string}>(),
+  );
   // The last control activated inside the stack: what a push it starts came
   // from.
   const lastActivationRef = useRef<{target: Element; at: number} | null>(null);
@@ -684,13 +698,14 @@ export function NavigationStack<T>({
       dp: number | undefined,
       reducedMotion: 'crossfade' | 'keep',
       kind: 'push' | 'pop' | 'cancel',
+      startAt?: number,
     ): Promise<boolean> => {
       const width = cardsRef.current?.clientWidth ?? 0;
       const direction = writingDirection(containerRef.current);
       const values = layersAt(to, width, direction);
       const velocity =
         dp == null ? null : layerVelocities(dp, width, direction);
-      const at = performance.now();
+      const at = startAt ?? performance.now();
       const topLayers = layersOf(top);
       const underLayers = layersOf(under);
       const handles = [];
@@ -854,8 +869,14 @@ export function NavigationStack<T>({
         return;
       }
       if (kind === 'pop') {
+        const hold = holdsRef.current.get(key)?.hold;
+        holdsRef.current.delete(key);
         const source = sourcesRef.current.get(key);
         sourcesRef.current.delete(key);
+        if (hold != null && hold.element.isConnected) {
+          hold.focus({preventScroll: true});
+          return;
+        }
         if (source instanceof HTMLElement && source.isConnected) {
           source.focus({preventScroll: true});
           return;
@@ -883,6 +904,31 @@ export function NavigationStack<T>({
     runningRef.current = {id, done: false};
     const release = releaseRef.current;
     releaseRef.current = null;
+    // Screens gone from the stack. The row a pop reveals is the one in the
+    // screen it returns to, which pushed the first screen above it: it
+    // deselects alongside the pop. Every other popped screen's row is out of
+    // view (a multi-level pop drops the screens between) and is released at
+    // once, as are rows of screens a replaced path removed.
+    const present = new Set(view.models.map(model => model.key));
+    let revealedKey: string | null = null;
+    if (transition.kind === 'pop') {
+      for (const [key, entry] of holdsRef.current) {
+        if (!present.has(key) && entry.from === under) {
+          revealedKey = key;
+        }
+      }
+    }
+    for (const [key, entry] of holdsRef.current) {
+      if (!present.has(key) && key !== revealedKey) {
+        entry.hold.end(true);
+        holdsRef.current.delete(key);
+      }
+    }
+    const hold =
+      revealedKey == null
+        ? null
+        : (holdsRef.current.get(revealedKey)?.hold ?? null);
+    const at = performance.now();
     let promise: Promise<boolean>;
     if (transition.kind === 'push') {
       if (!wasRunning) {
@@ -900,6 +946,13 @@ export function NavigationStack<T>({
       );
     } else if (release != null) {
       fadeItems('pop', top, under);
+      // The row finishes deselecting on the cards' spring, from the swipe's
+      // velocity.
+      void hold?.animate(1, {
+        spring: springs.navigationInteractivePopFinish,
+        velocity: release.velocity,
+        startTime: at,
+      });
       promise = animateProgress(
         1,
         top,
@@ -908,12 +961,15 @@ export function NavigationStack<T>({
         release.velocity,
         'keep',
         'pop',
+        at,
       );
     } else {
       if (!wasRunning) {
         setProgress(0, top, under);
       }
       fadeItems('pop', top, under);
+      // UIKit's in-transition deselect (350 ms linear) from the pop's start.
+      void hold?.animate(1, {startTime: at});
       promise = animateProgress(
         1,
         top,
@@ -922,6 +978,7 @@ export function NavigationStack<T>({
         wasRunning ? undefined : programmaticVelocity('pop'),
         'crossfade',
         'pop',
+        at,
       );
     }
     void promise.then(finished => {
@@ -936,9 +993,13 @@ export function NavigationStack<T>({
         setView(current =>
           current.transition.id === id ? {...current, leaving: null} : current,
         );
+        hold?.end(true);
         if (under != null) {
           settle(under, 'top');
-          focusAfter('pop', top);
+          focusAfter('pop', revealedKey ?? top);
+        }
+        if (revealedKey != null) {
+          holdsRef.current.delete(revealedKey);
         }
       } else {
         if (under != null) {
@@ -961,17 +1022,32 @@ export function NavigationStack<T>({
   pathRef.current = path;
   const onPathChangeRef = useRef(onPathChange);
   onPathChangeRef.current = onPathChange;
+  const getKeyRef = useRef(getKey);
+  getKeyRef.current = getKey;
 
   const api = useMemo<NavigationStackApi<T>>(
     () => ({
       push: (entry, options) => {
         const last = lastActivationRef.current;
-        pendingSourceRef.current =
+        const source =
           options?.source !== undefined
             ? options.source
             : last != null && performance.now() - last.at < 1000
               ? last.target
               : null;
+        pendingSourceRef.current = source;
+        // In the same task as the activation, before the row's own press
+        // release fades it: the row stays selected under the pushed screen.
+        const hold = holdSelection(source);
+        if (hold != null) {
+          const index = pathRef.current.length;
+          const keyOf = (value: T, at: number) =>
+            `screen-${getKeyRef.current ? getKeyRef.current(value, at) : at}`;
+          // The row lives in the screen on top before this push.
+          const from =
+            index === 0 ? 'root' : keyOf(pathRef.current[index - 1], index - 1);
+          holdsRef.current.set(keyOf(entry, index), {hold, from});
+        }
         onPathChangeRef.current([...pathRef.current, entry]);
       },
       pop: () => {
@@ -1059,6 +1135,7 @@ export function NavigationStack<T>({
           runningRef.current = null;
           swipeRef.current = {start, top, under, velocities: []};
           setProgress(start, top, under);
+          holdsRef.current.get(top)?.hold.setProgress(start);
           break;
         }
         case 'changed': {
@@ -1072,16 +1149,14 @@ export function NavigationStack<T>({
           const along =
             (direction === 'rtl' ? -1 : 1) * recognizer.translation().x;
           const travel = Math.max(0, along - deadZone);
-          setProgress(
-            progressFromTravel(
-              swipe.start,
-              (direction === 'rtl' ? -1 : 1) * travel,
-              width,
-              direction,
-            ),
-            swipe.top,
-            swipe.under,
+          const p = progressFromTravel(
+            swipe.start,
+            (direction === 'rtl' ? -1 : 1) * travel,
+            width,
+            direction,
           );
+          setProgress(p, swipe.top, swipe.under);
+          holdsRef.current.get(swipe.top)?.hold.setProgress(p);
           break;
         }
         case 'ended':
@@ -1112,6 +1187,20 @@ export function NavigationStack<T>({
           } else {
             const id = (runningRef.current?.id ?? 0) + 0.5;
             runningRef.current = {id, done: false};
+            const at = performance.now();
+            const hold = holdsRef.current.get(swipe.top)?.hold;
+            // The row reselects on the same spring as the cards return.
+            void hold
+              ?.animate(0, {
+                spring: springs.navigationInteractivePopFinish,
+                velocity: v,
+                startTime: at,
+              })
+              .then(arrived => {
+                if (arrived) {
+                  hold.end(false);
+                }
+              });
             void animateProgress(
               0,
               swipe.top,
@@ -1120,6 +1209,7 @@ export function NavigationStack<T>({
               v,
               'keep',
               'cancel',
+              at,
             ).then(finished => {
               if (runningRef.current?.id === id) {
                 runningRef.current = {id, done: true};
