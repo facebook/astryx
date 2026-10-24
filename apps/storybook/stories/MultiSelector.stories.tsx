@@ -4,6 +4,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {expect, userEvent, waitFor, within} from 'storybook/test';
 import {useState} from 'react';
 import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
 import {IconButton} from '@astryxdesign/core/IconButton';
 import {InputGroup, InputGroupText} from '@astryxdesign/core/InputGroup';
 import {MultiSelector} from '@astryxdesign/core/MultiSelector';
@@ -870,6 +871,51 @@ export const CreateFromQuery: Story = {
         hasSearch
         hasCreate
         triggerDisplay="badges"
+        isDefaultOpen
+      />
+    );
+  },
+};
+
+// The trigger is the caller's, so no Field renders: a refused creation is
+// said in the panel, under the search row.
+export const TriggerPanelStatus: Story = {
+  render: () => {
+    const [options, setOptions] = useState([
+      {value: 'bug', label: 'Bug'},
+      {value: 'feature', label: 'Feature'},
+    ]);
+    const [value, setValue] = useState<string[]>([]);
+    const [refusal, setRefusal] = useState<string | null>(null);
+    return (
+      <MultiSelector
+        label="Labels"
+        options={options}
+        value={value}
+        onChange={(next, change) => {
+          if (change?.type === 'create' && change.query.length > 12) {
+            setRefusal('A label name can be at most 12 characters.');
+            return;
+          }
+          if (change?.type === 'create') {
+            setOptions(current => [
+              ...current,
+              {value: change.query, label: change.query},
+            ]);
+          }
+          setRefusal(null);
+          setValue(next);
+        }}
+        hasSearch
+        hasCreate
+        status={refusal != null ? {type: 'error', message: refusal} : undefined}
+        renderTrigger={props => (
+          <IconButton
+            icon={<Icon icon="moreHorizontal" />}
+            label="Labels"
+            {...props}
+          />
+        )}
         isDefaultOpen
       />
     );

@@ -43,6 +43,7 @@ import {
 import {useKeepLayerOpenProps} from '../Layer/useLayer';
 import {InternalInputClearButton} from '../Field/InputClearButton';
 import {Divider} from '../Divider';
+import {FieldStatus} from '../FieldStatus/FieldStatus';
 import {Spinner} from '../Spinner';
 import {PanelSearchInput} from '../Field/PanelSearchInput';
 import {CheckboxInput} from '../CheckboxInput';
@@ -334,6 +335,11 @@ const styles = stylex.create({
   },
   listbox: {
     outline: 'none',
+  },
+  // The status message in the panel, on the search row's gutter.
+  panelStatus: {
+    paddingInline: spacingVars['--spacing-1'],
+    paddingBlockEnd: spacingVars['--spacing-1'],
   },
 
   // Popover container (for anchor positioning)
@@ -794,7 +800,11 @@ export interface MultiSelectorProps<
   variant?: MultiSelectorVariant;
 
   /**
-   * Status indicator for the selector.
+   * Status indicator for the selector. With `renderTrigger` no field
+   * renders, so the message shows in the open panel instead, under the
+   * search row (above the list without one), describing the search input,
+   * which an error marks invalid, or, without search, the list;
+   * `statusVariant` does not apply there.
    */
   status?: MultiSelectorStatus;
   /**
@@ -947,9 +957,10 @@ export interface MultiSelectorProps<
    * an icon button — instead of the selector's own field and button. Spread
    * the given props onto it; the listbox is then anchored to and labelled by
    * that control, and `label` names the listbox for assistive technology.
-   * The field chrome (`Field`, status, clear button, spinner) is not
-   * rendered; the caller owns the opener. Pair with `handleRef` to open the
-   * panel from a keystroke elsewhere.
+   * The field chrome (`Field`, clear button, spinner) is not rendered, and a
+   * `status` message shows in the open panel instead; the caller owns the
+   * opener. Pair with `handleRef` to open the panel from a keystroke
+   * elsewhere.
    *
    * Hover and pressed paint stay yours. The open state reaches your control
    * as `aria-expanded` on the given props, so style it from the rendered
@@ -1181,6 +1192,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const inputLabelId = useId();
   const readOnlyDescriptionId = useId();
   const searchId = useId();
+  const panelStatusId = useId();
   // Read by the live region above so it speaks what this element renders.
   const emptyStateRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLElement>(null);
@@ -1452,6 +1464,20 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const {popover} = surface;
   const hideSurface = surface.hide;
   const isSurfaceOpen = surface.isOpen;
+
+  // With the caller's own trigger no Field renders, so a status message has
+  // its home in the open panel: under the search row, or above the list
+  // without one. It mounts with the open panel, so FieldStatus routes it to
+  // its live region while the panel shows.
+  const statusType = status?.type;
+  const statusMessage = status?.message;
+  const panelStatus = useMemo(
+    () =>
+      hasExternalTrigger && isSurfaceOpen && statusType != null && statusMessage
+        ? {type: statusType, message: statusMessage}
+        : null,
+    [hasExternalTrigger, isSurfaceOpen, statusType, statusMessage],
+  );
 
   // AR2: the caller's control must carry its own name. Checked against the
   // rendered DOM in development, never by reading the node.
@@ -1951,6 +1977,10 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         aria-controls={listboxId}
         aria-autocomplete="list"
         aria-activedescendant={activeDescendantId}
+        // The panel's status message, when the caller's trigger leaves no
+        // Field to carry it, describes the field the person is typing in.
+        aria-describedby={panelStatus != null ? panelStatusId : undefined}
+        aria-invalid={panelStatus?.type === 'error' ? true : undefined}
         value={searchQuery}
         onValueChange={handleSearchChange}
         onContainerKeyDown={e => {
@@ -2038,6 +2068,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     isGrid,
     createQuery,
     commitCreate,
+    panelStatus,
+    panelStatusId,
     t,
   ]);
 
@@ -2365,23 +2397,19 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const listboxOwnsKeyboard =
     surface.activePresentation === 'bottom-sheet' || hasExternalTrigger;
 
-  const panelContent = hasSearch ? (
-    <div>
-      {renderSearch()}
-      <Divider />
-      <div {...stylex.props(styles.dropdown)}>
-        <div
-          ref={listboxRef}
-          id={listboxId}
-          role={isGrid ? 'grid' : 'listbox'}
-          aria-multiselectable="true"
-          {...listboxLabelProps}
-          {...stylex.props(styles.listbox)}>
-          {renderOptions()}
-        </div>
+  const panelStatusNode =
+    panelStatus != null ? (
+      <div {...stylex.props(styles.panelStatus)}>
+        <FieldStatus
+          id={panelStatusId}
+          type={panelStatus.type}
+          message={panelStatus.message}
+          variant="detached"
+        />
       </div>
-    </div>
-  ) : (
+    ) : null;
+
+  const renderListWithoutSearch = () => (
     <div {...stylex.props(styles.dropdown)}>
       <div
         ref={listboxRef}
@@ -2396,6 +2424,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         {...(surface.activePresentation === 'bottom-sheet'
           ? {'aria-label': label}
           : listboxLabelProps)}
+        // Without a search field the listbox takes focus, so it is the one
+        // the panel's status message describes.
+        aria-describedby={panelStatus != null ? panelStatusId : undefined}
         aria-activedescendant={activeDescendantId}
         tabIndex={listboxOwnsKeyboard ? 0 : undefined}
         onKeyDown={listboxOwnsKeyboard ? onKeyDown : undefined}
@@ -2403,6 +2434,34 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         {renderOptions()}
       </div>
     </div>
+  );
+
+  const panelContent = hasSearch ? (
+    <div>
+      {renderSearch()}
+      {panelStatusNode}
+      <Divider />
+      <div {...stylex.props(styles.dropdown)}>
+        <div
+          ref={listboxRef}
+          id={listboxId}
+          role={isGrid ? 'grid' : 'listbox'}
+          aria-multiselectable="true"
+          {...listboxLabelProps}
+          {...stylex.props(styles.listbox)}>
+          {renderOptions()}
+        </div>
+      </div>
+    </div>
+  ) : hasExternalTrigger ? (
+    // The wrapper stays for the panel's lifetime, whether or not a message
+    // shows, so setting or clearing one never replaces the focused list.
+    <div>
+      {panelStatusNode}
+      {renderListWithoutSearch()}
+    </div>
+  ) : (
+    renderListWithoutSearch()
   );
 
   let selectionSurface: ReactNode = null;
@@ -2474,8 +2533,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
 
   if (renderTrigger != null) {
     // Anchor-only mode: the caller renders the opener and spreads these props
-    // on it. No Field, no status, no clear button — the caller owns the
-    // control; the selector owns the panel, its anchor, and focus return.
+    // on it. No Field and no clear button — the caller owns the control; the
+    // selector owns the panel, its anchor, and focus return, and shows a
+    // status message inside that panel.
     const triggerProps: MultiSelectorRenderTriggerProps = {
       // Base props reach the caller's control, the primary semantic control
       // in this mode; the selector's own wiring below wins over them.
