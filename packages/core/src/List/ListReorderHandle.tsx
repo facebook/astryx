@@ -11,8 +11,9 @@
  *   a button that drags its row (held still for a moment by a finger, at
  *   once by a mouse), moves it with the arrow keys, and, activated without a
  *   drag, opens its moves (a DropdownMenu anchored to the handle)
- * @position Internal to List; ListItem renders it at the end of each row of
- *   a List with `onReorder`
+ * @position ListItem renders it at the end of each row of a List with
+ *   `onReorder`; also exported, experimental, from the List experimental
+ *   subpath for rows that are not ListItems
  *
  * UIKit's reorder control (iOS 26.2, measured): the three gray lines at the
  * trailing edge of a row in edit mode. A finger held still on it for the
@@ -186,6 +187,7 @@ function useHandleGestures(
   );
 }
 
+/** @experimental */
 export interface ListReorderHandleProps {
   /** The row's label: a string names the handle after it. */
   readonly label: ReactNode;
@@ -195,15 +197,22 @@ export interface ListReorderHandleProps {
    * (spec:AST-085).
    */
   readonly isDisabled?: boolean;
+  /**
+   * The handle's whole accessible name, for a row whose label does not name
+   * it (a record of fields: "Reorder guest 2"). Replaces "Reorder {label}".
+   */
+  readonly 'aria-label'?: string;
 }
 
 /**
- * The reorder handle of a List row. Renders nothing outside a List with
- * `onReorder`.
+ * The reorder handle of a list row. Renders nothing outside a reorder
+ * session (`ListReorderContext` with `useListReorder`'s value).
+ * @experimental
  */
 export function ListReorderHandle({
   label,
   isDisabled = false,
+  'aria-label': ariaLabel,
 }: ListReorderHandleProps) {
   const context = use(ListReorderContext);
   const ref = useRef<HTMLButtonElement>(null);
@@ -225,7 +234,16 @@ export function ListReorderHandle({
   useHandleGestures(ref, controller, isDisabled, () => {
     draggedRef.current = true;
   });
-  const named = typeof label === 'string' || typeof label === 'number';
+  const labelText =
+    typeof label === 'string' || typeof label === 'number'
+      ? String(label)
+      : null;
+  const name =
+    ariaLabel ??
+    (labelText == null
+      ? undefined
+      : t('@astryx.list.reorderHandle', {label: labelText}));
+  const named = name != null;
   // A row without a text label is named after its place, read from the DOM
   // after each commit (the row does not know its index). A passive effect:
   // the list's own ref is attached after its rows' layout effects run.
@@ -245,9 +263,6 @@ export function ListReorderHandle({
   }
   const rowMoves = () =>
     controller?.movesFor(controller.rowOf(ref.current)) ?? [];
-  const name = named
-    ? t('@astryx.list.reorderHandle', {label: String(label)})
-    : undefined;
   // Activating the handle — a tap, a click, a screen reader's double tap —
   // opens its moves: a way to reorder with a single pointer and no drag
   // (WCAG 2.5.7). The keys keep their own moves (Space picks up).

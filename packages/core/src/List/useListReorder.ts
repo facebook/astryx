@@ -15,8 +15,11 @@
  *   with the finger, the rows it passes slide out of its way, the list
  *   autoscrolls near the scroll edges, and the drop springs the row into its
  *   slot and reports the move; the handle's arrow keys move a row one place
- * @position Internal interaction controller for List; ListReorderHandle
- *   drives it from each row's handle
+ * @position Interaction controller for List; ListReorderHandle drives it
+ *   from each row's handle. `useListReorder`, `ListReorderContext` and the
+ *   fixed-row attribute are also exported, experimental, from
+ *   `@astryxdesign/core/List/experimental` (List/experimental.ts) for lists
+ *   whose rows are not ListItems
  *
  * UIKit's edit-mode reorder (iOS 26.2, measured), which this follows: nothing
  * changes when the drag begins (no lift); the row follows the finger one to
@@ -86,7 +89,11 @@ import {
 
 /** On the list root while a drag session owns its rows. */
 export const REORDERING_ATTRIBUTE = 'data-astryx-reordering';
-/** On a row that keeps its place (ListItem `isReorderDisabled`). */
+/**
+ * On a row that keeps its place: it has no handle and no row moves past it
+ * (ListItem `isReorderDisabled` sets it).
+ * @experimental
+ */
 export const FIXED_ROW_ATTRIBUTE = 'data-astryx-reorder-fixed';
 /** On each row's reorder handle. */
 export const HANDLE_ATTRIBUTE = 'data-astryx-list-reorder';
@@ -123,7 +130,10 @@ function rangeOf(
   );
 }
 
-/** A move a handle offers without a drag, and the slot it takes the row to. */
+/**
+ * A move a handle offers without a drag, and the slot it takes the row to.
+ * @experimental
+ */
 export interface ReorderMove {
   readonly kind: 'up' | 'down' | 'top' | 'bottom';
   readonly to: number;
@@ -302,7 +312,10 @@ function messagesFrom(t: TranslatorFn): ReorderMessages {
   };
 }
 
-/** What a gesture listener hands the controller. */
+/**
+ * What a gesture listener hands the controller.
+ * @experimental
+ */
 export interface ReorderGestureEvent {
   readonly state: 'began' | 'changed' | 'ended' | 'cancelled';
   /** The finger's (or pointer's) y in the viewport. */
@@ -311,7 +324,9 @@ export interface ReorderGestureEvent {
 
 /**
  * The reorder session of one List. One instance per List; every handle in it
- * reports its gestures and keys here.
+ * reports its gestures and keys here. Reached through `ListReorderContextValue`
+ * by `ListReorderHandle` only: its members are not an API and may change.
+ * @experimental
  */
 /** A long press's state as a reorder gesture's; null while it waits. */
 function gestureStateOf(
@@ -1152,20 +1167,37 @@ function sameOrder(
   );
 }
 
+/**
+ * A list's reorder session, as `useListReorder` returns it; opaque. Provide
+ * it to the rows through `ListReorderContext`.
+ * @experimental
+ */
 export interface ListReorderContextValue {
   readonly controller: ListReorderController;
   /** The id of the list's reorder instructions, for each handle. */
   readonly hintId: string;
 }
 
+/**
+ * Hands a list's reorder session to the `ListReorderHandle` in each of its
+ * rows. Provide `useListReorder`'s value.
+ * @experimental
+ */
 export const ListReorderContext = createContext<ListReorderContextValue | null>(
   null,
 );
 ListReorderContext.displayName = 'ListReorderContext';
 
 /**
- * The reorder session of a List with `onReorder`; null without one. Call it
- * after `useListUpdateMotion`, so its commit effect runs after that pass.
+ * The reorder session of a list: null without `onReorder`. The rows are the
+ * direct children of the element behind `listRef`, each with a
+ * `ListReorderHandle` unless it keeps its place (the fixed-row attribute).
+ * Provide the value through `ListReorderContext`, and give the element with
+ * id `hintId` the instructions (`@astryx.list.reorderHint`). `onReorder`
+ * receives the move and must commit the new order, rows keyed by item, in the
+ * same task. List calls it after `useListUpdateMotion`, so its commit effect
+ * runs after that pass.
+ * @experimental
  */
 export function useListReorder(
   listRef: RefObject<HTMLElement | null>,
