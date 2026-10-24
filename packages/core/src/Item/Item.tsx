@@ -114,12 +114,14 @@ export interface ItemSwipeActions {
 }
 
 /**
- * `reveal`: every entry of a resting row is a real button, and a long drag
- * fires the outermost. As in a UIKit list, a fast release goes the way it
- * moves (a flick opens the row, a flick back closes it) and a slow one rests
- * the row open past half the panel. `commit`: a
- * release past the commit point slides the row out and fires the outermost
- * entry; nothing rests, and the panel is presentational.
+ * `reveal`: every entry of a resting row is a real button. As in a UIKit
+ * list, a fast release goes the way it moves (a flick opens the row, a flick
+ * back closes it) and a slow one rests the row open past half the panel, and
+ * a full swipe fires the outermost: dragged on past the confirm point, the
+ * row runs ahead and the outermost entry covers its place, and letting go
+ * there fires it; backing out closes the row. `commit`: only a full swipe
+ * does anything, sliding the row out; nothing rests, and the panel is
+ * presentational.
  */
 export type ItemSwipeBehavior = 'reveal' | 'commit';
 
@@ -297,10 +299,9 @@ export interface ItemProps extends BaseProps<HTMLElement> {
 
   /**
    * What a swipe does: `reveal` rests the row open with every entry tappable
-   * (a flick opens it and a flick back closes it, as in a UIKit list) and
-   * fires the outermost on a long drag;
-   * `commit` slides the row out and fires the outermost on a release past
-   * the commit point. `commit` fits one entry per side.
+   * (a flick opens it, a flick back closes it, and a full swipe fires the
+   * outermost, as in a UIKit list); `commit` only fires the outermost on a
+   * full swipe, sliding the row out. `commit` fits one entry per side.
    * @default 'reveal'
    */
   swipeBehavior?: ItemSwipeBehavior;

@@ -24,8 +24,11 @@
  * to it, a track inside it that moves with the row and clips the entries to
  * the space the row vacates, and the entries, each translated to stay pinned
  * at the outer edge. Past the open width the outermost entry's colour,
- * painted beside it, fills the rest out to that edge. No wrapper holds the
- * entries (minimal DOM, `architecture:component-style-authoring` INV7).
+ * painted beside it, fills the rest out to that edge; on a confirmed full
+ * swipe it slides to the row's edge while the others fade over the track's
+ * fill of its colour. No wrapper holds the entries (minimal DOM,
+ * `architecture:component-style-authoring` INV7): the colours are
+ * pseudo-elements.
  */
 
 import {useEffect, useRef} from 'react';
@@ -95,8 +98,11 @@ const styles = stylex.create({
   // vacates, and the entries show only there. Twice the row's width covers
   // every travel, the slide-out included. The entries run in a row from its
   // edge next to the row, each translated back so they stay pinned at the
-  // row's outer edge, on the surface it paints: the neutral variant is
-  // translucent and shows what is under it.
+  // row's outer edge until the row has uncovered them all, then riding the
+  // row, on the surface it paints: the neutral variant is translucent and
+  // shows what is under it. Its `::before` is the confirm fill: the
+  // outermost entry's colour, hidden until a full swipe confirms, which then
+  // shows through the others as they fade (swipeTrackFillStyles).
   swipeTrack: {
     position: 'absolute',
     insetBlock: 0,
@@ -104,7 +110,16 @@ const styles = stylex.create({
     overflow: 'clip',
     borderRadius: 'inherit',
     display: 'flex',
+    isolation: 'isolate',
     backgroundColor: colorVars['--color-background-surface'],
+    '::before': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      zIndex: -1,
+      opacity: 0,
+      pointerEvents: 'none',
+    },
   },
   // The outermost entry is the last, at the outer edge: on the leading side
   // that is the inline start, so the row of entries runs in reverse from the
@@ -115,35 +130,6 @@ const styles = stylex.create({
   },
   swipeTrackTrailing: {
     insetInlineStart: '100%',
-  },
-  swipeEntry: {
-    flexShrink: 0,
-    pointerEvents: 'auto',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacingVars['--spacing-1'],
-    minWidth: 72,
-    height: '100%',
-    paddingInline: spacingVars['--spacing-3'],
-    boxSizing: 'border-box',
-    margin: 0,
-    borderWidth: 0,
-    borderStyle: 'none',
-    appearance: 'none',
-    cursor: {
-      default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'default',
-    },
-    fontFamily: typographyVars['--font-family-body'],
-    fontSize: typeScaleVars['--text-supporting-size'],
-    fontWeight: fontWeightVars['--font-weight-medium'],
-    lineHeight: typeScaleVars['--text-supporting-leading'],
-    whiteSpace: 'nowrap',
-  },
-  swipeEntryDisabled: {
-    opacity: 0.5,
   },
   // The outermost entry: its colour, painted beside it out to the row's
   // outer edge, fills whatever the row uncovers past the open width (the
@@ -174,6 +160,37 @@ const styles = stylex.create({
       pointerEvents: 'none',
     },
   },
+  swipeEntry: {
+    flexShrink: 0,
+    pointerEvents: 'auto',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacingVars['--spacing-1'],
+    minWidth: 72,
+    height: '100%',
+    paddingInline: spacingVars['--spacing-3'],
+    boxSizing: 'border-box',
+    margin: 0,
+    borderWidth: 0,
+    borderStyle: 'none',
+    appearance: 'none',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    whiteSpace: 'nowrap',
+  },
+  // Half strength as a filter, so the entry's own opacity stays free for the
+  // full swipe's fade.
+  swipeEntryDisabled: {
+    filter: 'opacity(0.5)',
+  },
 });
 
 // A verb's colour: ordinary, the one you mean, the dangerous one. The
@@ -190,6 +207,20 @@ const swipeVariantStyles = stylex.create({
   destructive: {
     backgroundColor: colorVars['--color-error'],
     color: colorVars['--color-on-error'],
+  },
+});
+
+// The track's confirm fill: the outermost entry's colour (a disabled one
+// never confirms, so it has none to show).
+const swipeTrackFillStyles = stylex.create({
+  neutral: {
+    '::before': {backgroundColor: colorVars['--color-neutral']},
+  },
+  accent: {
+    '::before': {backgroundColor: colorVars['--color-accent']},
+  },
+  destructive: {
+    '::before': {backgroundColor: colorVars['--color-error']},
   },
 });
 
@@ -219,6 +250,13 @@ export default function ItemSwipeLayer({
     behavior,
     // An open row's root takes no press.
     onOpenChange,
+    // A disabled outermost entry cannot fire, so a full swipe never confirms
+    // toward it.
+    canConfirm: side => {
+      const entries = entriesRef.current[side];
+      const entry = entries[entries.length - 1];
+      return entry != null && entry.isDisabled !== true;
+    },
     fireOutermost: side => {
       const entries = entriesRef.current[side];
       const entry = entries[entries.length - 1];
@@ -259,6 +297,61 @@ export default function ItemSwipeLayer({
     const isCommit = behavior === 'commit';
     const isLive = isSwipeResting && swipe.state.side === side && !isCommit;
     const refs = swipe.panelRefs[side];
+    const renderEntry = (entry: ItemSwipeAction) => {
+      const variant = entry.variant ?? 'accent';
+      const key = entry.id ?? entry.label;
+      // The outermost entry is the full swipe's moving part itself.
+      const isOuter = entry === outer;
+      const ref = isOuter ? refs.outer : refs.entry(key);
+      const content = (
+        <>
+          {entry.icon}
+          <span>{entry.label}</span>
+        </>
+      );
+      const entryStyles = [
+        styles.swipeEntry,
+        swipeVariantStyles[variant],
+        entry.isDisabled === true && styles.swipeEntryDisabled,
+        isOuter && styles.swipeOuterEntry,
+        isOuter &&
+          (side === 'leading'
+            ? styles.swipeOuterEntryLeading
+            : styles.swipeOuterEntryTrailing),
+      ];
+      if (isCommit) {
+        return (
+          <span
+            key={key}
+            ref={ref}
+            {...mergeProps(
+              themeProps('item-swipe-action', {variant}),
+              stylex.props(...entryStyles),
+            )}>
+            {content}
+          </span>
+        );
+      }
+      return (
+        <button
+          key={key}
+          ref={ref}
+          type="button"
+          disabled={entry.isDisabled === true}
+          onClick={() =>
+            swipe.activateEntry(() => {
+              void entry.onActivate();
+              return entry.hasRemoval === true;
+            })
+          }
+          {...mergeProps(
+            themeProps('item-swipe-action', {variant}),
+            focusOutlineProps.focusVisible(...entryStyles),
+          )}>
+          {content}
+        </button>
+      );
+    };
     return (
       <div
         key={side}
@@ -276,61 +369,10 @@ export default function ItemSwipeLayer({
               side === 'leading'
                 ? styles.swipeTrackLeading
                 : styles.swipeTrackTrailing,
+              swipeTrackFillStyles[outer.variant ?? 'accent'],
             ),
           )}>
-          {entries.map(entry => {
-            const variant = entry.variant ?? 'accent';
-            const key = entry.id ?? entry.label;
-            const isOuter = entry === outer;
-            const content = (
-              <>
-                {entry.icon}
-                <span>{entry.label}</span>
-              </>
-            );
-            const entryStyles = [
-              styles.swipeEntry,
-              swipeVariantStyles[variant],
-              entry.isDisabled === true && styles.swipeEntryDisabled,
-              isOuter && styles.swipeOuterEntry,
-              isOuter &&
-                (side === 'leading'
-                  ? styles.swipeOuterEntryLeading
-                  : styles.swipeOuterEntryTrailing),
-            ];
-            if (isCommit) {
-              return (
-                <span
-                  key={key}
-                  ref={refs.entry(key)}
-                  {...mergeProps(
-                    themeProps('item-swipe-action', {variant}),
-                    stylex.props(...entryStyles),
-                  )}>
-                  {content}
-                </span>
-              );
-            }
-            return (
-              <button
-                key={key}
-                ref={refs.entry(key)}
-                type="button"
-                disabled={entry.isDisabled === true}
-                onClick={() =>
-                  swipe.activateEntry(() => {
-                    void entry.onActivate();
-                    return entry.hasRemoval === true;
-                  })
-                }
-                {...mergeProps(
-                  themeProps('item-swipe-action', {variant}),
-                  focusOutlineProps.focusVisible(...entryStyles),
-                )}>
-                {content}
-              </button>
-            );
-          })}
+          {entries.map(renderEntry)}
         </div>
       </div>
     );
