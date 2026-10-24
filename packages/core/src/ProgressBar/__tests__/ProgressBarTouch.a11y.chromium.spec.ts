@@ -508,3 +508,257 @@ test('storyboard: 10% to 90% under a finger @storyboard', async ({
     expect(delta).toBeCloseTo(deltas[0], 0);
   }
 });
+
+// -----------------------------------------------------------------------------
+// Indeterminate: iOS Safari's own `<progress>` with no value
+// -----------------------------------------------------------------------------
+
+const INDETERMINATE = 'core-progressbar--indeterminate';
+const WEB = progress.indeterminateWebProgress;
+
+async function openIndeterminate(page: Page, dir: 'ltr' | 'rtl' = 'ltr') {
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=${INDETERMINATE}&viewMode=story`,
+  );
+  await expect(page.getByRole('progressbar')).toBeVisible();
+  // The story's own root sets `dir`; flip the closest one, as an app would.
+  await page.evaluate(d => {
+    const track = document.querySelector('[role="progressbar"]') as Element;
+    (track.closest('[dir]') ?? document.documentElement).setAttribute('dir', d);
+  }, dir);
+  await page.waitForTimeout(300);
+}
+
+/**
+ * Pauses the indeterminate fill's animation and reads the segment (left and
+ * right edges as track fractions) and its opacity at each time (ms).
+ */
+async function sampleIndeterminate(page: Page, times: number[]) {
+  return page.evaluate(at => {
+    const track = document.querySelector('[role="progressbar"]') as Element;
+    const fill = track.firstElementChild as Element;
+    const [animation] = fill.getAnimations();
+    animation.pause();
+    const t = track.getBoundingClientRect();
+    return {
+      timing: {
+        name: (animation as CSSAnimation).animationName,
+        duration: Number(animation.effect?.getTiming().duration),
+        // A CSS animation's timing function applies per keyframe, so read
+        // the declared value rather than the effect's (always linear).
+        easing: getComputedStyle(fill).animationTimingFunction,
+        direction: animation.effect?.getTiming().direction,
+      },
+      samples: at.map(time => {
+        animation.currentTime = time;
+        const f = fill.getBoundingClientRect();
+        return {
+          time,
+          left: (f.left - t.left) / t.width,
+          right: (f.right - t.left) / t.width,
+          opacity: Number(getComputedStyle(fill).opacity),
+        };
+      }),
+    };
+  }, times);
+}
+
+test('indeterminate: a quarter of the track sweeps linearly end to end, 1 s each way', async ({
+  page,
+}) => {
+  await openIndeterminate(page);
+  const {timing, samples} = await sampleIndeterminate(
+    page,
+    [0, 250, 500, 750, 999, 1250, 1500, 1999],
+  );
+  expect(timing.duration).toBe(WEB.sweepMs);
+  expect(timing.easing).toBe('linear');
+  expect(timing.direction).toBe('alternate');
+  const travel = 1 - WEB.segmentFraction;
+  for (const {time, left, right, opacity} of samples) {
+    expect(right - left, `width at ${time}`).toBeCloseTo(
+      WEB.segmentFraction,
+      2,
+    );
+    // Back and forth: out over one sweep, home over the next.
+    const phase = (time % (2 * WEB.sweepMs)) / WEB.sweepMs;
+    const along = phase <= 1 ? phase : 2 - phase;
+    expect(left, `left at ${time}`).toBeCloseTo(travel * along, 2);
+    expect(left).toBeGreaterThanOrEqual(-0.001);
+    expect(right).toBeLessThanOrEqual(1.001);
+    expect(opacity).toBe(1);
+  }
+});
+
+test('indeterminate: in RTL the sweep starts from the right', async ({
+  page,
+}) => {
+  await openIndeterminate(page, 'rtl');
+  const {samples} = await sampleIndeterminate(page, [0, 500, 999]);
+  const travel = 1 - WEB.segmentFraction;
+  expect(samples[0].right).toBeCloseTo(1, 2);
+  expect(samples[1].right).toBeCloseTo(1 - travel / 2, 2);
+  expect(samples[2].left).toBeCloseTo(0, 2);
+});
+
+for (const dir of ['ltr', 'rtl'] as const) {
+  test(`indeterminate with reduced motion: the whole bar pulses, no travel (${dir})`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({reducedMotion: 'reduce'});
+    await openIndeterminate(page, dir);
+    const {timing, samples} = await sampleIndeterminate(
+      page,
+      [0, 500, 999, 1500],
+    );
+    expect(timing.duration).toBe(WEB.reducedMotionPulseMs);
+    expect(timing.easing).toBe('linear');
+    expect(timing.direction).toBe('alternate');
+    const [low, high] = WEB.reducedMotionAlpha;
+    const expected = [low, (low + high) / 2, high, (low + high) / 2];
+    // The bar is the fill at that alpha over the page: no track color.
+    expect(
+      await page.evaluate(
+        () =>
+          getComputedStyle(
+            document.querySelector('[role="progressbar"]') as Element,
+          ).backgroundColor,
+      ),
+    ).toBe('rgba(0, 0, 0, 0)');
+    samples.forEach(({time, left, right, opacity}, i) => {
+      expect(left, `left at ${time}`).toBeCloseTo(0, 3);
+      expect(right, `right at ${time}`).toBeCloseTo(1, 3);
+      expect(opacity, `opacity at ${time}`).toBeCloseTo(expected[i], 2);
+    });
+  });
+}
+
+test('indeterminate: the segment keeps moving while a script holds the main thread', async ({
+  page,
+}) => {
+  await openIndeterminate(page);
+  const box = await page.getByRole('progressbar').boundingBox();
+  if (box == null) {
+    throw new Error('no track');
+  }
+  const cdp = await page.context().newCDPSession(page);
+  const raw: {t: number; data: string}[] = [];
+  cdp.on('Page.screencastFrame', frame => {
+    raw.push({
+      t: (frame.metadata.timestamp ?? Date.now() / 1000) * 1000,
+      data: frame.data,
+    });
+    cdp
+      .send('Page.screencastFrameAck', {sessionId: frame.sessionId})
+      .catch(() => {});
+  });
+  await cdp.send('Page.startScreencast', {
+    format: 'png',
+    maxWidth: 402 * DPR,
+    maxHeight: 200 * DPR,
+    everyNthFrame: 1,
+  });
+  await page.waitForTimeout(300);
+  const busy = await page.evaluate(
+    async () =>
+      new Promise<{from: number; to: number}>(resolve => {
+        requestAnimationFrame(() =>
+          setTimeout(() => {
+            const from = performance.timeOrigin + performance.now();
+            const end = performance.now() + 700;
+            while (performance.now() < end) {
+              // hold
+            }
+            resolve({from, to: performance.timeOrigin + performance.now()});
+          }),
+        );
+      }),
+  );
+  await page.waitForTimeout(200);
+  await cdp.send('Page.stopScreencast');
+  await cdp.detach().catch(() => {});
+  const inside = raw.filter(f => f.t >= busy.from + 20 && f.t <= busy.to - 20);
+  // The segment's left edge per frame, along the track's middle row.
+  const scratch = await page.context().newPage();
+  let lefts: number[];
+  try {
+    lefts = await scratch.evaluate(
+      async ({items, track}) => {
+        const out: number[] = [];
+        for (const item of items) {
+          const bitmap = await createImageBitmap(
+            await (await fetch(`data:image/png;base64,${item}`)).blob(),
+          );
+          const scale = bitmap.width / 402;
+          const w = Math.round(track.width * scale);
+          const canvas = new OffscreenCanvas(w, 1);
+          const context = canvas.getContext('2d');
+          if (context == null) {
+            throw new Error('no 2d context');
+          }
+          context.drawImage(
+            bitmap,
+            Math.round(track.x * scale),
+            Math.round((track.y + track.height / 2) * scale),
+            w,
+            1,
+            0,
+            0,
+            w,
+            1,
+          );
+          const {data} = context.getImageData(0, 0, w, 1);
+          // The darkest run is the segment.
+          let first = -1;
+          let darkest = 255 * 3;
+          for (let x = 0; x < w; x += 1) {
+            darkest = Math.min(
+              darkest,
+              data[x * 4] + data[x * 4 + 1] + data[x * 4 + 2],
+            );
+          }
+          for (let x = 0; x < w; x += 1) {
+            if (
+              data[x * 4] + data[x * 4 + 1] + data[x * 4 + 2] <
+              darkest + 60
+            ) {
+              first = x;
+              break;
+            }
+          }
+          out.push(first / scale);
+        }
+        return out;
+      },
+      {items: inside.map(f => f.data), track: box},
+    );
+  } finally {
+    await scratch.close();
+  }
+  expect(inside.length).toBeGreaterThanOrEqual(30);
+  expect(new Set(lefts.map(Math.round)).size).toBeGreaterThanOrEqual(20);
+});
+
+test.describe('indeterminate with a mouse or trackpad', () => {
+  test.use({hasTouch: false, isMobile: false});
+
+  test('keeps its 40% slide, 1.5 s eased, and the reduced-motion slowdown', async ({
+    page,
+  }) => {
+    await openIndeterminate(page);
+    expect(
+      await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+    ).toBe(false);
+    const normal = await sampleIndeterminate(page, [0]);
+    expect(normal.timing.duration).toBe(1500);
+    expect(normal.timing.easing).toBe('ease-in-out');
+    expect(normal.samples[0].right - normal.samples[0].left).toBeCloseTo(
+      0.4,
+      2,
+    );
+    await page.emulateMedia({reducedMotion: 'reduce'});
+    await openIndeterminate(page);
+    const reduced = await sampleIndeterminate(page, [0]);
+    expect(reduced.timing.duration).toBe(3000);
+  });
+});

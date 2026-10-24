@@ -118,7 +118,10 @@ export interface ProgressBarProps extends BaseProps<HTMLDivElement> {
    * When true, renders an animated indeterminate progress indicator.
    * Use when the progress amount is unknown (e.g. loading, processing).
    * The `value` and `hasValueLabel` props are ignored in this mode.
-   * Respects `prefers-reduced-motion` by slowing the animation.
+   * Respects `prefers-reduced-motion` by slowing the animation. On a touch
+   * screen it draws iOS Safari's own indeterminate bar instead: a quarter of
+   * the track sweeping back and forth, 1 s per sweep; with reduced motion
+   * the whole bar pulses in place.
    * @default false
    */
   isIndeterminate?: boolean;
@@ -168,6 +171,39 @@ const indeterminateSlideRtl = stylex.keyframes({
   },
   '100%': {
     transform: 'translateX(-250%)',
+  },
+});
+
+// Under a finger the indeterminate bar is iOS Safari's own `<progress>` with
+// no value (motion/uikit `progress.indeterminateWebProgress`): a quarter of
+// the track sweeping linearly end to end, 1 s per sweep, back and forth,
+// inside the rounded track. With Reduce Motion it does not travel: the whole
+// bar pulses between two opacities, 1 s each way. Both run on the
+// compositor (transform, opacity; linear, so Safari accelerates them too).
+const touchSweep = stylex.keyframes({
+  '0%': {
+    transform: 'translateX(0%)',
+  },
+  '100%': {
+    transform: 'translateX(300%)',
+  },
+});
+
+const touchSweepRtl = stylex.keyframes({
+  '0%': {
+    transform: 'translateX(0%)',
+  },
+  '100%': {
+    transform: 'translateX(-300%)',
+  },
+});
+
+const touchPulse = stylex.keyframes({
+  '0%': {
+    opacity: 0.3,
+  },
+  '100%': {
+    opacity: 0.6,
   },
 });
 
@@ -236,6 +272,19 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-full'],
     overflow: 'hidden',
   },
+  // Safari's reduced-motion indeterminate bar draws the whole track in the
+  // fill color at the pulsing alpha, over the page: under a finger with
+  // Reduce Motion the track's own color steps aside for the pulse. (The
+  // query lists its features in the other order from the fill's: sharing the
+  // fill's media text, this rule made the test runtime's injection lose the
+  // fill's rules under it; the compiled CSS kept both.)
+  trackIndeterminate: {
+    backgroundColor: {
+      default: null,
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+        'transparent',
+    },
+  },
   // The determinate fill spans the whole track and slides along it with a
   // transform, so a value change animates on the compositor and keeps moving
   // while a script runs; animating `width` would lay out and repaint on the
@@ -281,19 +330,49 @@ const styles = stylex.create({
   fillEmpty: {
     opacity: {default: null, '@media (pointer: coarse)': 0},
   },
+  // The touch keys come last: StyleX makes a later media condition win over
+  // an earlier one (it negates the later ones into the earlier), so under a
+  // finger they replace the reduced-motion slowdown.
   indeterminateFill: {
     height: '100%',
-    width: '40%',
+    width: {
+      default: '40%',
+      '@media (pointer: coarse)': '25%',
+      '@media (pointer: coarse) and (prefers-reduced-motion: reduce)': '100%',
+    },
     borderRadius: radiusVars['--radius-full'],
+    willChange: {
+      default: null,
+      '@media (pointer: coarse)': 'transform',
+      '@media (pointer: coarse) and (prefers-reduced-motion: reduce)':
+        'opacity',
+    },
     animationName: {
       default: indeterminateSlide,
       ':is([dir="rtl"] *)': indeterminateSlideRtl,
+      '@media (pointer: coarse)': {
+        default: touchSweep,
+        ':is([dir="rtl"] *)': touchSweepRtl,
+      },
+      // Named for RTL too, so the pointer's RTL slide above never outranks it.
+      '@media (pointer: coarse) and (prefers-reduced-motion: reduce)': {
+        default: touchPulse,
+        ':is([dir="rtl"] *)': touchPulse,
+      },
     },
     animationDuration: {
       default: '1.5s',
       '@media (prefers-reduced-motion: reduce)': '3s',
+      '@media (pointer: coarse)': '1s',
     },
-    animationTimingFunction: 'ease-in-out',
+    animationTimingFunction: {
+      default: 'ease-in-out',
+      '@media (pointer: coarse)': 'linear',
+    },
+    animationDirection: {
+      default: null,
+      '@media (pointer: coarse)': 'alternate',
+    },
     animationIterationCount: 'infinite',
   },
   // A mark is a vertical tick centered on the track via their shared positioning container.
@@ -588,7 +667,10 @@ export function ProgressBar({
           aria-valuetext={isIndeterminate ? undefined : valueText}
           {...mergeProps(
             themeProps('progress-bar-track'),
-            stylex.props(styles.track),
+            stylex.props(
+              styles.track,
+              isIndeterminate && styles.trackIndeterminate,
+            ),
           )}>
           {isIndeterminate ? (
             <div
