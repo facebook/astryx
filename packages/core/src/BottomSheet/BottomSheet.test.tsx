@@ -800,9 +800,9 @@ describe('BottomSheet', () => {
   });
 
   describe('under a finger', () => {
-    // A finger in iOS's idiom (WebKit on iOS): the sheet opens and closes on
-    // UIKit's sheet spring, played on the travel channel (useSheetGestures
-    // present/dismiss). On Android it keeps today's transitions.
+    // A finger, on every touch device (one touch model): the sheet opens and
+    // closes on UIKit's sheet spring, played on the travel channel
+    // (useSheetGestures present/dismiss).
     function stubFinger({ios}: {ios: boolean}) {
       vi.stubGlobal(
         'matchMedia',
@@ -828,7 +828,7 @@ describe('BottomSheet', () => {
       vi.stubGlobal('innerHeight', 800);
     });
 
-    it("keeps today's entrance and exit on Android: no spring, no hold", async () => {
+    it('opens on the spring on Android too, holding input (one touch model)', async () => {
       stubFinger({ios: false});
       const played: Keyframe[][] = [];
       Object.defineProperty(Element.prototype, 'animate', {
@@ -849,13 +849,16 @@ describe('BottomSheet', () => {
           Content
         </BottomSheet>,
       );
+      vi.spyOn(getSheet(), 'getBoundingClientRect').mockReturnValue(
+        rect({top: 300, bottom: 848}),
+      );
       await act(async () => {
         await Promise.resolve();
       });
-      // No spring on the travel channel and no input hold: the stylesheet's
-      // entrance runs, as today.
-      expect(played.flat().some(frame => frame.translate != null)).toBe(false);
-      expect(document.querySelector('[data-astryx-sheet-hold]')).toBeNull();
+      // The spring on the travel channel, and the input hold over the page,
+      // as on iOS.
+      expect(played.flat().some(frame => frame.translate != null)).toBe(true);
+      expect(document.querySelector('[data-astryx-sheet-hold]')).not.toBeNull();
     });
 
     function recordAnimate() {

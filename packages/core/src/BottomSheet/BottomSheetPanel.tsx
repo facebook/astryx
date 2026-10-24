@@ -323,7 +323,7 @@ interface BottomSheetPanelProps extends BaseProps<HTMLDivElement> {
   /** Given by a host whose scrim is the dialog's ::backdrop; see useSheetGestures. */
   onScrimTracking?: (tracking: boolean) => void;
   /**
-   * In iOS's idiom (WebKit on iOS under a finger), the sheet opens and closes
+   * Under a finger (any touch device), the sheet opens and closes
    * on UIKit's sheet spring (useSheetGestures `present` / `dismiss`) instead
    * of the stylesheet's entrance and exit. Set by the standalone sheet.
    */
@@ -499,10 +499,11 @@ export function BottomSheetPanel({
   const isClosing = state.kind === 'exiting';
   const isFading = isRetained && state.motion === 'fading';
   const alignmentOffset = isRetained ? state.alignmentOffset : 0;
-  // In iOS's idiom (WebKit on iOS under a finger) the standalone sheet opens
-  // and closes on UIKit's spring; everywhere else on today's transitions.
-  const {idiom} = useTouchPresentation();
-  const springsPresentation = hasSpringPresentation && idiom === 'ios';
+  // Under a finger, on every touch device (one touch model), the standalone
+  // sheet opens and closes on UIKit's spring; under a mouse on today's
+  // transitions.
+  const {isTouch} = useTouchPresentation();
+  const springsPresentation = hasSpringPresentation && isTouch;
 
   // Everything derived from the snap points keys off their identity, not the
   // array's: the resolver's identity is the hook's signal that the stops

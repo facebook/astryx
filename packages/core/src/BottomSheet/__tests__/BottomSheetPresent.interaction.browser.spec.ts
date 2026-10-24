@@ -13,8 +13,8 @@
  *   blocked main thread, a fade in place of 200 ms or less under reduced
  *   motion (design:reduced-motion DR2),
  *   an exit whose clock starts when the browser commits it, and a storyboard
- *   of the entrance. On Android (no iOS idiom) the stylesheet's entrance and
- *   exit run as today, Reduce Motion's included.
+ *   of the entrance. A finger on Android gets the same (one touch model,
+ *   AST-094).
  * @position Interaction proof for BottomSheet's presentation, in the shape of
  *   BottomSheetDetent.interaction.browser.spec.ts
  *
@@ -22,9 +22,9 @@
  * animator) from its resting `transform`; the dim is the dialog's
  * `::backdrop` opacity, animated by the same animator.
  *
- * UIKit's presentation belongs to iOS's idiom (WebKit on iOS under a finger),
- * so the UIKit cases run under `emulateIosWebKit`; the Android cases run
- * without it.
+ * UIKit's presentation belongs to every finger (one touch model), so most
+ * cases run under `emulateIosWebKit` and the Android cases without it, to
+ * show the same behavior without WebKit on iOS.
  */
 
 import {expect, test, type Locator, type Page} from '@playwright/test';
@@ -54,6 +54,7 @@ import {
   type TimedValue,
   type TouchDriver,
 } from '@astryxdesign/interaction-harness';
+import {END_HOLD_MS} from './specConstants';
 import {springs} from '../../motion/uikit/springs';
 import {emulateIosWebKit} from './emulateIosWebKit';
 
@@ -324,49 +325,60 @@ test('the entrance keeps advancing every frame while the main thread is blocked'
   expect(proof.monotonic).toBe(true);
 });
 
-test('under reduced motion the sheet fades in place, 200 ms or less (design:reduced-motion DR2)', async ({
-  page,
-}) => {
-  await page.emulateMedia({reducedMotion: 'reduce'});
-  const {dialog, sheet, tapTrigger} = await story(page);
-  await tapTrigger();
-  await expect(sheet).toBeVisible();
-  const [fade] = await waitForAnimation(sheet);
-  await holdAnimations(page, dialog);
-  const samples = await sheet.evaluate(
-    (element, ts) => {
-      const held =
-        (window as unknown as {__harnessHeld?: Animation[]}).__harnessHeld ??
-        [];
-      return ts.map(t => {
-        for (const animation of held) {
-          animation.currentTime = t;
-        }
-        const style = getComputedStyle(element);
-        const translate =
-          style.translate === 'none'
-            ? 0
-            : Number.parseFloat(style.translate.split(' ')[1] ?? '0');
-        return {t, opacity: Number(style.opacity), translate};
-      });
-    },
-    [0, 25, 50, 75, 100, 125, 150, 175, 200, 250, 400],
-  );
-  await releaseAnimations(page);
-  // The curve, without its held end value.
-  expect(fade.durationMs).toBeLessThanOrEqual(200.5);
-  // In place from the first frame, rising from clear to full by 200 ms.
-  expect(samples[0].opacity).toBeCloseTo(0, 1);
-  for (let i = 0; i < samples.length; i++) {
-    expect(samples[i].translate, `t=${samples[i].t}`).toBe(0);
-    if (i > 0) {
-      expect(samples[i].opacity).toBeGreaterThanOrEqual(
-        samples[i - 1].opacity - 1e-6,
-      );
+for (const idiom of ['ios', 'android'] as const) {
+  test(`under reduced motion the sheet fades in place, 200 ms or less (${idiom}; design:reduced-motion DR2)`, async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName === 'webkit',
+      "Playwright WebKit commits no frame while a dialog's entrance runs, so an entrance that starts on its first committed frame never starts there; the iOS simulator's reduced-motion recording is the WebKit proof",
+    );
+    await page.emulateMedia({reducedMotion: 'reduce'});
+    const {dialog, sheet, tapTrigger} = await story(page, {idiom});
+    await tapTrigger();
+    await expect(sheet).toBeVisible();
+    const [fade] = await waitForAnimation(sheet);
+    await holdAnimations(page, dialog);
+    const samples = await sheet.evaluate(
+      (element, ts) => {
+        const held =
+          (window as unknown as {__harnessHeld?: Animation[]}).__harnessHeld ??
+          [];
+        return ts.map(t => {
+          for (const animation of held) {
+            animation.currentTime = t;
+          }
+          const style = getComputedStyle(element);
+          const translate =
+            style.translate === 'none'
+              ? 0
+              : Number.parseFloat(style.translate.split(' ')[1] ?? '0');
+          return {t, opacity: Number(style.opacity), translate};
+        });
+      },
+      [0, 25, 50, 75, 100, 125, 150, 175, 200, 250, 400],
+    );
+    await releaseAnimations(page);
+    // The fade, without the animator's held end value.
+    const fadeMs =
+      fade.durationMs > END_HOLD_MS
+        ? fade.durationMs - END_HOLD_MS
+        : fade.durationMs;
+    expect(fadeMs).toBeLessThanOrEqual(200.5);
+    // In place from the first frame, rising from clear to full by 200 ms.
+    expect(samples[0].opacity).toBeCloseTo(0, 1);
+    for (let i = 0; i < samples.length; i++) {
+      expect(samples[i].translate, `t=${samples[i].t}`).toBe(0);
+      if (i > 0) {
+        expect(samples[i].opacity).toBeGreaterThanOrEqual(
+          samples[i - 1].opacity - 1e-6,
+        );
+      }
     }
-  }
-  expect(samples.find(s => s.t === 200)?.opacity).toBeCloseTo(1, 2);
-});
+    expect(samples.find(s => s.t === 200)?.opacity).toBeCloseTo(1, 2);
+  });
+}
 
 test(
   'storyboard: the sheet opens on its spring',
@@ -447,37 +459,21 @@ test('the exit starts when the browser commits it, not when it is called', async
   await expect(dialog).not.toHaveAttribute('open');
 });
 
-test("on Android the sheet keeps today's entrance and exit", async ({page}) => {
+test('on Android the sheet opens on the spring too, holding input (one touch model)', async ({
+  page,
+}) => {
   const {dialog, sheet, tapTrigger} = await story(page, {idiom: 'android'});
   await tapTrigger();
   await expect(sheet).toBeVisible();
-  // The stylesheet's transition carries it in: no spring on the travel
-  // channel, and no input hold over the page.
+  // The animator's spring on the travel channel, and the input hold over the
+  // page while it presents, as on iOS.
   const kinds = await sheet.evaluate(el =>
     el.getAnimations().map(a => a.constructor.name),
   );
-  expect(kinds).not.toContain('Animation');
-  expect(await page.locator('[data-astryx-sheet-hold]').count()).toBe(0);
+  expect(kinds).toContain('Animation');
   await waitForRest(sheet);
   const restTop = await sheetTop(sheet);
   const viewport = page.viewportSize() ?? {width: 402, height: 714};
   await page.mouse.click(viewport.width / 2, restTop / 2);
   await expect(dialog).not.toHaveAttribute('open');
-});
-
-test("under Reduce Motion on Android the entrance takes the stylesheet's reduced timing", async ({
-  page,
-}) => {
-  await page.emulateMedia({reducedMotion: 'reduce'});
-  const {sheet, tapTrigger} = await story(page, {idiom: 'android'});
-  await tapTrigger();
-  await expect(sheet).toBeVisible();
-  // Today's Reduce Motion rule: 0.01 s, not UIKit's fade on the spring.
-  const durations = await sheet.evaluate(el =>
-    el
-      .getAnimations()
-      .map(a => Number(a.effect?.getComputedTiming().duration ?? 0)),
-  );
-  expect(durations.every(ms => ms <= 20)).toBe(true);
-  await waitForRest(sheet);
 });
