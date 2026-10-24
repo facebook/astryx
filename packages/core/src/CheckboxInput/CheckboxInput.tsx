@@ -4,7 +4,8 @@
 
 /**
  * @file CheckboxInput.tsx
- * @input Uses React, useId, ChangeEvent, FieldLabel, FieldStatus, IconType, InputStatus, useTooltip
+ * @input Uses React, useId, ChangeEvent, FieldLabel, FieldStatus, IconType, InputStatus, useTooltip,
+ *   CheckboxRowPressContext (a row around the checkbox that owns its press)
  * @output Exports CheckboxInput component, CheckboxInputProps
  * @position Core implementation; consumed by index.ts, tested by CheckboxInput.test.tsx
  *
@@ -17,6 +18,7 @@
  */
 
 import {
+  use,
   useId,
   useCallback,
   useOptimistic,
@@ -55,6 +57,8 @@ import {useIndicator} from '../Indicator';
 import {themeProps} from '../utils/themeProps';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {CheckboxRowPressContext} from './CheckboxRowPressContext';
+import {checkboxRowPressScope} from './checkboxRowPress.markers.stylex';
 
 // The touch press's paint, declared by the shared overlay styles on the
 // element the controller writes to (`pressedAlpha`) at the press's strength,
@@ -84,7 +88,8 @@ const styles = stylex.create({
   // Two pointers, two press models (see interactionOverlay.stylex.ts): a
   // mouse keeps `:active`; under a coarse pointer that arm is dropped and the
   // touch press controller writes `data-astryx-press` on the row, which this layer
-  // reads off the same scope marker as the hover tint.
+  // reads off the same scope marker as the hover tint — or, under a row that
+  // owns the press (CheckboxRowPressContext), off that row's marker.
   indicatorPressOverlay: {
     '::after': {
       content: '""',
@@ -114,6 +119,20 @@ const styles = stylex.create({
             default: null,
             '@media (pointer: coarse)': pressedOverlayImage,
           },
+        [stylex.when.ancestor(
+          '[data-astryx-press="on"]',
+          checkboxRowPressScope,
+        )]: {
+          default: null,
+          '@media (pointer: coarse)': pressedOverlayImage,
+        },
+        [stylex.when.ancestor(
+          '[data-astryx-press="fading"]',
+          checkboxRowPressScope,
+        )]: {
+          default: null,
+          '@media (pointer: coarse)': pressedOverlayImage,
+        },
       },
     },
   },
@@ -341,6 +360,16 @@ export function CheckboxInput({
   // The row is the pressable: the overlay's pressed arm reads the row's
   // scope marker, the way the indicator's hover tint does.
   const pressable = usePressFeedback();
+  // A row around the checkbox that answers a press anywhere on it (a
+  // CheckboxListItem) owns the touch press instead: it carries the press
+  // marker and checkboxRowPressScope, so a finger on the label, the
+  // description or the box presses one surface, and the overlay below paints
+  // from that row's press.
+  const isRowPressSurface = use(CheckboxRowPressContext);
+  // A checkbox that cannot change paints no press: disabled, or read-only,
+  // whose value is shown but refuses every change.
+  const paintsPress = !isDisabled && !isReadOnly;
+  const ownsPress = paintsPress && !isRowPressSurface;
   const generatedId = useId();
   const id = idProp || generatedId;
   const descriptionID = useId();
@@ -436,7 +465,7 @@ export function CheckboxInput({
           // unconditionally is safe.
           disabledMessageTooltip.interactionRef(el);
         }}
-        {...(isDisabled ? undefined : pressable)}
+        {...(ownsPress ? pressable : undefined)}
         {...stylex.props(
           styles.container,
           isLabelHidden && styles.containerLabelHidden,
@@ -445,14 +474,15 @@ export function CheckboxInput({
           !isDisabled && indicatorScope,
           // The touch press's strength and release live on the row the
           // controller writes to; the layer over the checkbox box inherits
-          // and paints it.
-          !isDisabled && interactionOverlayStyles.pressedAlpha,
+          // and paints it. Under a row that owns the press, the box inherits
+          // that row's strength instead.
+          ownsPress && interactionOverlayStyles.pressedAlpha,
         )}>
         <div
           {...stylex.props(
             styles.checkboxWrapper,
             wrapperSizeStyles[size],
-            !isDisabled && styles.indicatorPressOverlay,
+            paintsPress && styles.indicatorPressOverlay,
           )}
           {...focusProps}>
           <input
