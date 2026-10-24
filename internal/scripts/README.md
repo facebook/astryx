@@ -4,10 +4,11 @@ Internal build-time scripts. Not shipped, not part of any package.
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
-| File                             | Purpose                                                                                                                                                                                                                               |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `upload-crowdin-screenshots.mjs` | Build storybook, capture in-context screenshots for i18n catalog keys, upload to Crowdin, and POST tag positions so each screenshot pixel-links to the matching source string.                                                        |
-| `lib/crowdin-strategies.mjs`     | Declarative measurement strategies (visibleText, textRun, option, placeholder, ariaLabel, chipOperator, filterInput, footerButton, srOnlyLabel, srOnlyReveal, liveRegionReveal) used by the upload script to resolve tag coordinates. |
+| File                             | Purpose                                                                                                                                                                                                                                                                   |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `upload-crowdin-screenshots.mjs` | Build storybook, capture in-context screenshots for i18n catalog keys, upload to Crowdin, and POST tag positions so each screenshot pixel-links to the matching source string.                                                                                            |
+| `lib/crowdin-strategies.mjs`     | Declarative measurement strategies (visibleText, textRun, option, placeholder, ariaLabel, chipOperator, filterInput, footerButton, srOnlyLabel, srOnlyReveal, liveRegionReveal) used by the upload script to resolve tag coordinates.                                     |
+| `bottom-sheet-safari-check.mjs`  | Manual real-Safari check (W3C WebDriver over `safaridriver`, no dependencies) for BottomSheet stacking, replace, non-modal popover hosting, toast order and focus return against a deployed Storybook; prints a pass/fail/not-driven table and writes JSON + screenshots. |
 
 The file-level context Crowdin shows beside every string in the catalog is a
 field on the file record, not something `crowdin.yml` can declare; a step in
@@ -92,3 +93,14 @@ Crowdin's built-in `--auto-tag` uses fuzzy text matching, which produces false p
 - After adding a new story that better exposes existing keys.
 
 `--replace-tags` handles the "just update the pixel positions" case cleanly.
+
+## bottom-sheet-safari-check.mjs
+
+Real-Safari evidence for the BottomSheet stacking and replace behaviour, which Linux CI (Chromium, Playwright WebKit) cannot produce. On a Mac with Safari ▸ Develop ▸ Allow Remote Automation enabled:
+
+```bash
+safaridriver --port 4799 &
+node internal/scripts/bottom-sheet-safari-check.mjs <storybook base URL> <label> <out dir>
+```
+
+Each run writes `<label>-results.json` (every per-frame sample), `<label>-summary.md` and screenshots, and exits 1 if a check fails. A story the deployment lacks is recorded as `skipped`; a check Safari's WebDriver cannot drive reliably (hover) is `not-driven`, never faked. macOS Safari evidence informs but does not satisfy an iOS Safari claim (spec AST-013).

@@ -247,7 +247,10 @@ stack. Tooltip and HoverCard report current DOM presence; Popover and
 DropdownMenu register through `useFocusTrap`; Dialog, Lightbox, MobileNav,
 BottomSheet, BottomSheetSwitcher, and Drawer additionally ask
 `shouldDismissOnCloseRequest()` before acting on native platform close
-requests. Other family members still use local Escape handling as listed in
+requests. A BottomSheet covered by, or being replaced by, another sheet of its
+stack reports itself absent to the shared stack while that lasts
+(`component:BottomSheet` FR7), so the order among sheets is the sheet stack's
+and the shared stack stays one registry. Other family members still use local Escape handling as listed in
 `family:overlay-dismissal`.
 
 Outside interaction is not coordinated by the shared stack. Current paths are
@@ -314,15 +317,37 @@ it.
 
 ToastViewport uses `popover="manual"` for top-layer promotion. Each open modal
 Dialog and each open scrim BottomSheet supplies its `<dialog>` as an outlet
-through the private `Layer/modalOutlet.ts` registry. A BottomSheet releases its
-outlet when it starts closing: its dialog stays modal through the exit
-animation, but inert. A top-layer viewport renders into a host element
+through the private `Layer/modalOutlet.ts` registry (`spec:AST-003` FR18:
+every active native modal supplies one, a covered sheet included); a modal
+BottomSheetSwitcher flow supplies its active step's dialog, following each
+handoff. Which
+outlet is the latest — the one a global host renders into — follows the
+sheet stack's order among sheets, not the order they were supplied in: the
+top sheet is the latest, so a toast lands in the top sheet and never in a
+covered, inert one, and when the top sheet closes the sheet it reveals is the
+latest again and takes the host back; a sheet is raised only among sheet
+outlets, so a Dialog opened from a sheet and supplied later stays the latest
+until it closes. A BottomSheet releases its outlet when it starts
+closing: its dialog stays modal through the exit animation, but inert. A top-layer viewport renders into a host element
 it owns, moves that host into the latest open outlet, returns it to the
 viewport's tree position when no outlet is open, and enters the top layer again
 after each move. Toasts therefore paint above the modal and stay operable inside
 it. Moving the host does not remount the rows, so entries, timers, and focus
-handoff survive. Toast state lives inside the viewport. A viewport rendered with
-`isTopLayer={false}` stays in place.
+handoff survive. The rule is one of order, not of modality, and it reaches
+the surfaces that tell the registry they entered the top layer: the modal
+outlets, and a non-modal top-layer surface that blocks nothing and announces
+itself — a `hasScrim={false}` BottomSheet shown as a manual popover (one
+shown while a modal that does not contain it is open stays beneath that
+modal, by `show()`, and enters the top layer — announcing then — once that
+modal has gone). Such a surface is not an outlet; it announces its entry through the same registry
+and the viewport leaves and re-enters the top layer in place, keeping focus
+inside it, so toasts paint above it too. A non-modal top-layer surface that
+does not announce itself is outside the rule: a `hasScrim={false}` Drawer
+(`popover="manual"`, `showPopover()`) shown after the viewport covers toasts
+raised while it is open; the rule does not cover it. In a stack of scrim BottomSheets the latest outlet
+is the top sheet, so toasts paint above the whole stack. Toast state
+lives inside the viewport. A viewport rendered with `isTopLayer={false}` stays
+in place.
 
 CommandPalette composes native Dialog. Its normal launcher presentation therefore
 uses `showModal()`; its documentation/showcase `isInline` path does not. The
@@ -395,7 +420,7 @@ Current gaps are observable facts, not current target behavior:
 - Backdrop, manual outside, touch, and swipe paths do not share the existing
   gesture claim or one association model.
 - Toast's root and fallback hosts remain behind the other native modals:
-  Lightbox, MobileNav, and a scrim BottomSheetSwitcher.
+  Lightbox and MobileNav.
 - The reduced browser fallback is not documented as non-equivalent.
 - Existing tests simulate Popover `toggle` and DOM nesting; they do not prove
   native pointer light dismissal, top-layer/modal ordering, real anchor geometry,
