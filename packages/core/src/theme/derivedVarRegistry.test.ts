@@ -91,6 +91,13 @@ const STRUCTURAL_VARS = new Set([
   // Private counterpart of the public token above: one ancestor Section's
   // padding, propagated down the tree. Structural, never authored by a theme.
   '--_section-padding-propagated',
+  // ProgressBar's filled share of the track, written inline from `value` on
+  // every render and read by the fill's transform. Runtime state, never
+  // authored by a theme.
+  '--_progress-bar-fill',
+  // How long the touch fill takes to reach a new value, written inline from
+  // the size of the change (UIKit's 1 s per whole track). Runtime state too.
+  '--_progress-bar-change',
 ]);
 
 /**
