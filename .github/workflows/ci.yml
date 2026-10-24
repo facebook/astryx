@@ -1541,6 +1541,16 @@ jobs:
             --project chromium \
             --output table-min-width-output
 
+      # A SegmentedControl selection must not move or resize any segment: the
+      # selected title is heavier, and only a real engine lays out the title's
+      # width-reserving twin; jsdom has no layout.
+      - name: Run SegmentedControl width contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/SegmentedControl/__tests__/SegmentedWidth.a11y.chromium.spec.ts \
+            --project chromium \
+            --output segmented-width-output
+
       # A CodeBlock diff row's tint has to follow a long line to the end of its
       # scroll width; jsdom has no layout, so only a real engine shows whether
       # the paint stops at the viewport edge when the reader scrolls.
