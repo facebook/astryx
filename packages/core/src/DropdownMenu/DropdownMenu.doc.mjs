@@ -201,7 +201,7 @@ export const docs = {
       name: 'presentation',
       type: "'popover' | 'bottom-sheet' | 'adaptive'",
       description:
-        "Presentation surface for data-driven items. 'popover' stays anchored, 'bottom-sheet' always renders the actions in a modal BottomSheet, and 'adaptive' uses a BottomSheet on compact coarse-pointer layouts while remaining anchored elsewhere. Compound children currently support popover only.",
+        "Presentation surface for data-driven items. 'popover' stays anchored, 'bottom-sheet' always renders the actions in a modal BottomSheet, and 'adaptive' uses a BottomSheet on compact coarse-pointer layouts while remaining anchored elsewhere. On a phone, a 'bottom-sheet' of plain actions (no sub-menus, links, rich labels, header or footer) presents the way iOS 26 presents an action sheet: a centered alert-style card with Cancel last, which a tap outside dismisses. Compound children currently support popover only.",
       default: "'popover'",
     },
     {

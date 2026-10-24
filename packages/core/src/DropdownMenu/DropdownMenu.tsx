@@ -112,6 +112,10 @@ import {
   MenuBottomSheet,
   MenuBottomSheetActionList,
 } from './lazyMenuBottomSheet';
+import {
+  MenuActionSheetCard,
+  isActionSheetCardEligible,
+} from './MenuActionSheetCard';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {
@@ -735,6 +739,23 @@ function DropdownMenuBottomSheet({
   const currentTitle = currentSubmenu?.label ?? button.label;
   const sheetLabel =
     typeof currentTitle === 'string' ? currentTitle : button.label;
+  // On a phone, an action sheet of plain actions presents the way iOS 26
+  // presents one: an alert-style card (MenuActionSheetCard). Decided as the
+  // menu opens, so it never changes shape while open.
+  const {isCompactTouch} = useTouchPresentation();
+  const [presentsAsCard, setPresentsAsCard] = useState(false);
+  const [cardDecidedFor, setCardDecidedFor] = useState(false);
+  if (cardDecidedFor !== isOpen) {
+    setCardDecidedFor(isOpen);
+    if (isOpen) {
+      setPresentsAsCard(
+        isCompactTouch &&
+          isActionSheetCardEligible(items, {
+            hasRegions: isRenderable(header) || isRenderable(footer),
+          }),
+      );
+    }
+  }
 
   const setOpen = useCallback(
     (nextIsOpen: boolean) => {
@@ -900,76 +921,97 @@ function DropdownMenuBottomSheet({
         />
       )}
 
-      <MenuBottomSheet
-        isOpen={isOpen}
-        onOpenChange={setOpen}
-        finalFocusRef={buttonRef}
-        label={sheetLabel}>
-        <div
-          ref={actionListRef}
-          id={sheetId}
-          {...rest}
-          {...mergeProps(
-            themeProps('dropdown-menu', {presentation: 'bottom-sheet'}),
-            stylex.props(bottomSheetStyles.content, xstyle),
-            className,
-            style,
-          )}>
-          <div {...stylex.props(bottomSheetStyles.header)}>
-            {submenuPath.length > 0 && (
-              <Button
-                label={backLabel}
-                variant="ghost"
-                size="sm"
-                icon={
-                  <Icon
-                    icon="chevronLeft"
-                    size="sm"
-                    xstyle={rtlStyles.mirror}
-                  />
-                }
-                isIconOnly
-                onClick={() => setSubmenuPath(path => path.slice(0, -1))}
-              />
+      {presentsAsCard ? (
+        <MenuActionSheetCard
+          isOpen={isOpen}
+          onOpenChange={setOpen}
+          label={button.label}
+          items={items}
+          onSelect={handleSelect}
+          cancelLabel={t('@astryx.alertDialog.cancel')}
+          contentProps={{
+            id: sheetId,
+            ...rest,
+            ...mergeProps(
+              themeProps('dropdown-menu', {presentation: 'action-sheet'}),
+              stylex.props(xstyle),
+              className,
+              style,
+            ),
+          }}
+        />
+      ) : (
+        <MenuBottomSheet
+          isOpen={isOpen}
+          onOpenChange={setOpen}
+          finalFocusRef={buttonRef}
+          label={sheetLabel}>
+          <div
+            ref={actionListRef}
+            id={sheetId}
+            {...rest}
+            {...mergeProps(
+              themeProps('dropdown-menu', {presentation: 'bottom-sheet'}),
+              stylex.props(bottomSheetStyles.content, xstyle),
+              className,
+              style,
+            )}>
+            <div {...stylex.props(bottomSheetStyles.header)}>
+              {submenuPath.length > 0 && (
+                <Button
+                  label={backLabel}
+                  variant="ghost"
+                  size="sm"
+                  icon={
+                    <Icon
+                      icon="chevronLeft"
+                      size="sm"
+                      xstyle={rtlStyles.mirror}
+                    />
+                  }
+                  isIconOnly
+                  onClick={() => setSubmenuPath(path => path.slice(0, -1))}
+                />
+              )}
+              <Heading
+                ref={viewHeadingRef}
+                level={3}
+                tabIndex={-1}
+                xstyle={[
+                  bottomSheetStyles.viewHeading,
+                  submenuPath.length === 0 && bottomSheetStyles.rootHeading,
+                ]}>
+                {currentTitle}
+              </Heading>
+            </div>
+            {isRenderable(levelHeader) && (
+              <div
+                key={`header-${regionsKey}`}
+                {...stylex.props(bottomSheetStyles.region)}>
+                {levelHeader}
+              </div>
             )}
-            <Heading
-              ref={viewHeadingRef}
-              level={3}
-              tabIndex={-1}
-              xstyle={[
-                bottomSheetStyles.viewHeading,
-                submenuPath.length === 0 && bottomSheetStyles.rootHeading,
-              ]}>
-              {currentTitle}
-            </Heading>
+            <MenuBottomSheetActionList
+              items={currentItems}
+              onSelect={handleSelect}
+              showsLevelRegions
+              onOpenSubmenu={item =>
+                setSubmenuPath(path => [
+                  ...path,
+                  openSheetLevel(currentItems, item),
+                ])
+              }
+            />
+            {isRenderable(levelFooter) && (
+              <div
+                key={`footer-${regionsKey}`}
+                {...stylex.props(bottomSheetStyles.region)}>
+                {levelFooter}
+              </div>
+            )}
           </div>
-          {isRenderable(levelHeader) && (
-            <div
-              key={`header-${regionsKey}`}
-              {...stylex.props(bottomSheetStyles.region)}>
-              {levelHeader}
-            </div>
-          )}
-          <MenuBottomSheetActionList
-            items={currentItems}
-            onSelect={handleSelect}
-            showsLevelRegions
-            onOpenSubmenu={item =>
-              setSubmenuPath(path => [
-                ...path,
-                openSheetLevel(currentItems, item),
-              ])
-            }
-          />
-          {isRenderable(levelFooter) && (
-            <div
-              key={`footer-${regionsKey}`}
-              {...stylex.props(bottomSheetStyles.region)}>
-              {levelFooter}
-            </div>
-          )}
-        </div>
-      </MenuBottomSheet>
+        </MenuBottomSheet>
+      )}
     </>
   );
 }
