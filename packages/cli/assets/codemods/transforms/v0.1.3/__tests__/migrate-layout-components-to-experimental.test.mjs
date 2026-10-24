@@ -292,6 +292,31 @@ export default config;
     await expect(applyTransform(input)).rejects.toThrow(/statically analyze/);
   });
 
+  it('throws when a const-bound config is mutated after its declaration', async () => {
+    const input = `const config = {};
+config.layout = { components: { KpiCard: '@/components/KpiCard' } };
+export default config;
+`;
+    await expect(applyTransform(input)).rejects.toThrow(/statically analyze/);
+  });
+
+  it('throws when a const-bound config is passed to another call', async () => {
+    const input = `const config = {};
+Object.assign(config, { layout: { components: { KpiCard: '@/components/KpiCard' } } });
+export default config;
+`;
+    await expect(applyTransform(input)).rejects.toThrow(/statically analyze/);
+  });
+
+  it('throws when a const-bound config is aliased', async () => {
+    const input = `const config = {};
+const alias = config;
+alias.layout = { components: { KpiCard: '@/components/KpiCard' } };
+export default config;
+`;
+    await expect(applyTransform(input)).rejects.toThrow(/statically analyze/);
+  });
+
   it('throws when the default export is bound by a reassignable let', async () => {
     const input = `let config = { layout: { components: { KpiCard: '@/components/KpiCard' } } };
 export default config;
@@ -405,6 +430,58 @@ export default config;
 
       expect(result.errors).toHaveLength(0);
       expect(result.filesChanged).toBe(0);
+      expect(
+        fs.readFileSync(path.join(tmpDir, 'astryx.config.mjs'), 'utf-8'),
+      ).toBe(configSource);
+    } finally {
+      process.chdir(originalCwd);
+      fs.rmSync(tmpDir, {recursive: true, force: true});
+    }
+  });
+
+  it('reports an error, not success, for a mutated const-bound config', async () => {
+    const {runConfigCodemod} = await import('../../../run-codemod.mjs');
+    const {default: transform, meta} = await import(
+      '../migrate-layout-components-to-experimental.mjs'
+    );
+    const jscodeshift = (await import('jscodeshift')).default;
+
+    const originalCwd = process.cwd();
+    const tmpDir = fs.mkdtempSync(
+      path.join(process.cwd(), '.astryx-v013-codemod-test-'),
+    );
+    const configSource = `const config = {};
+config.layout = { components: { KpiCard: '@/components/KpiCard' } };
+export default config;
+`;
+    try {
+      process.chdir(tmpDir);
+      fs.writeFileSync(
+        path.join(tmpDir, 'package.json'),
+        JSON.stringify({name: 'consumer'}),
+      );
+      fs.writeFileSync(path.join(tmpDir, 'astryx.config.mjs'), configSource);
+
+      const entry = {
+        id: 'migrate-layout-components-to-experimental',
+        type: 'config',
+        codemod: {title: meta.title, transform},
+        package: 'core',
+        version: '0.1.3',
+      };
+      const log = {
+        step() {},
+        info() {},
+        success() {},
+        warn() {},
+        error() {},
+        message() {},
+      };
+      const result = runConfigCodemod(entry, {apply: true, log, jscodeshift});
+
+      expect(result.filesChanged).toBe(0);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].error).toMatch(/statically analyze/);
       expect(
         fs.readFileSync(path.join(tmpDir, 'astryx.config.mjs'), 'utf-8'),
       ).toBe(configSource);

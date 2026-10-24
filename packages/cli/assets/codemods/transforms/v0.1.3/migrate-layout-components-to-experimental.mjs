@@ -32,8 +32,10 @@
  * (`export default { ... }`), a `createConfig({ ... })` call wrapping an object
  * literal (`export default createConfig({ ... })`), or an identifier bound by a
  * top-level `const` to either form (`const config = { ... }; export default
- * config;`, the shape generated configs use). Anything else is not statically
- * analyzable and the transform THROWS with a clear
+ * config;`, the shape generated configs use) when the default export is the
+ * binding's only reference, so nothing can mutate the object after its
+ * declaration. Anything else is not statically analyzable and the transform
+ * THROWS with a clear
  * migrate-manually message (the unified config-codemod contract has no
  * structured-error return — `runConfigCodemod` surfaces a thrown `err.message`
  * as `{file, codemod, error}`).
@@ -85,7 +87,7 @@ export default function transformer(file, api) {
   const configObject = resolveConfigObject(
     j,
     j.Identifier.check(declaration)
-      ? findTopLevelConstInit(j, root, declaration.name)
+      ? findTopLevelConstInit(j, root, declaration)
       : declaration,
   );
   if (!configObject) {
@@ -188,12 +190,16 @@ function resolveConfigObject(/** @type {any} */ j, /** @type {any} */ declaratio
 }
 
 /**
- * Find the initializer of a top-level `const <name> = <init>` declaration
- * (optionally `export const`). `let`/`var` bindings can be reassigned, so they
- * are not treated as statically analyzable.
+ * Find the initializer of the top-level `const <name> = <init>` declaration
+ * (optionally `export const`) that the default-exported identifier refers to.
+ * `let`/`var` bindings can be reassigned, so they are not treated as
+ * statically analyzable. Neither is a binding referenced anywhere besides its
+ * declaration and the default export: a member write, an alias or a call
+ * argument could change the object after its initializer.
  * @returns {any} the initializer node, or null if there is no such binding
  */
-function findTopLevelConstInit(/** @type {any} */ j, /** @type {any} */ root, /** @type {string} */ name) {
+function findTopLevelConstInit(/** @type {any} */ j, /** @type {any} */ root, /** @type {any} */ exported) {
+  const name = exported.name;
   for (const statement of root.get().node.program.body) {
     const declaration = j.ExportNamedDeclaration.check(statement)
       ? statement.declaration
@@ -210,11 +216,47 @@ function findTopLevelConstInit(/** @type {any} */ j, /** @type {any} */ root, /*
         j.Identifier.check(declarator.id) &&
         declarator.id.name === name
       ) {
-        return declarator.init ?? null;
+        return hasOtherReference(j, root, name, [declarator.id, exported])
+          ? null
+          : declarator.init ?? null;
       }
     }
   }
   return null;
+}
+
+/**
+ * Whether any identifier named `name`, other than the `allowed` nodes, could
+ * refer to the binding. Non-computed member properties (`x.name`) and object
+ * keys (`{ name: 1 }`) name a property, not the binding, so they don't count;
+ * every other occurrence (including a shadowing one) does.
+ * @returns {boolean}
+ */
+function hasOtherReference(/** @type {any} */ j, /** @type {any} */ root, /** @type {string} */ name, /** @type {any[]} */ allowed) {
+  return root
+    .find(j.Identifier, {name})
+    .some((/** @type {any} */ path) => {
+      const node = path.node;
+      if (allowed.includes(node)) return false;
+      const parent = path.parent?.node;
+      if (
+        (j.MemberExpression.check(parent) ||
+          j.OptionalMemberExpression.check(parent)) &&
+        parent.property === node &&
+        !parent.computed
+      ) {
+        return false;
+      }
+      if (
+        (j.ObjectProperty.check(parent) || j.Property.check(parent)) &&
+        parent.key === node &&
+        !parent.computed &&
+        !parent.shorthand
+      ) {
+        return false;
+      }
+      return true;
+    });
 }
 
 /**
