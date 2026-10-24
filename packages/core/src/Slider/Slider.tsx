@@ -5,7 +5,7 @@
 /**
  * @file Slider.tsx
  * @input Uses React, useId, useRef, useCallback, useEffect, Field, Tooltip, useTooltip, VisuallyHidden
- * @output Exports Slider and its props; unfilled marks share the track token; modifier-only key presses do not restore the thumb focus ring; a drag belongs to the pointer that started it
+ * @output Exports Slider and its props; unfilled marks share the track token; modifier-only key presses do not restore the thumb focus ring; a drag belongs to the pointer that started it; the thumbs and the filled range travel by `translate` from a progress custom property in the control's container units, so a value change never lays out
  * @position Core implementation; consumed by index.ts, tested by Slider.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -163,6 +163,25 @@ export type SliderProps = SliderSingleProps | SliderRangeProps;
 const TRACK_SIZE = 4;
 const THUMB_SIZE = 20;
 
+/**
+ * Where a thumb sits, as its progress along the travel (0 at `min`, 1 at
+ * `max`), written inline on the thumb. Its translate is computed from it in
+ * CSS against the control's size (container units), so a value change
+ * restyles and composites but never lays out, and the server renders the
+ * right place.
+ */
+const THUMB_PROGRESS = '--_slider-progress';
+/** Half a thumb: the inset of the thumb's travel at each end of the track. */
+const THUMB_INSET_PX = THUMB_SIZE / 2;
+/** The filled range's ends as progress, written inline on the fill parts. */
+const FILL_START = '--_slider-fill-start';
+const FILL_END = '--_slider-fill-end';
+
+// The private progress properties a thumb and the fill parts publish inline.
+type ThumbStyle = React.CSSProperties & Record<typeof THUMB_PROGRESS, number>;
+type FillStyle = React.CSSProperties &
+  Record<typeof FILL_START | typeof FILL_END, number>;
+
 // =============================================================================
 // Styles
 // =============================================================================
@@ -181,6 +200,10 @@ const styles = stylex.create({
     touchAction: 'none',
     userSelect: 'none',
     isolation: 'isolate',
+    // The thumbs and the fill travel in container units of this box
+    // (`cqi` / `cqb`). Its size never depends on its content: the parts are
+    // all absolutely positioned and the box has a fixed block size.
+    containerType: 'size',
   },
   trackContainerHorizontal: {
     height: THUMB_SIZE,
@@ -240,18 +263,88 @@ const styles = stylex.create({
     bottom: 0,
     width: TRACK_SIZE,
   },
-  filledTrack: {
+  // The filled range is a full-length bar moved into place inside two
+  // clips, so it travels by translate alone: the clip has the track's shape
+  // (it rounds the start of a single slider's fill), the mover's start edge
+  // cuts the fill at the range's start, and the fill's own end sits at the
+  // range's end. Both ends of a range hide under its thumbs.
+  fillClip: {
     position: 'absolute',
-    backgroundColor: colorVars['--color-accent'],
+    overflow: 'hidden',
     borderRadius: radiusVars['--radius-full'],
+    pointerEvents: 'none',
   },
-  filledTrackHorizontal: {
+  fillClipHorizontal: {
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
     height: TRACK_SIZE,
     top: '50%',
     transform: 'translateY(-50%)',
   },
-  filledTrackVertical: {
+  fillClipVertical: {
+    top: 0,
+    bottom: 0,
     width: TRACK_SIZE,
+  },
+  fillMover: {
+    position: 'absolute',
+    inset: 0,
+    overflow: 'hidden',
+  },
+  // A range's start is round, like the track's ends (the clip already
+  // rounds a single slider's start); it shows through a disabled thumb's
+  // translucent fill.
+  fillMoverRangeStartHorizontal: {
+    borderStartStartRadius: radiusVars['--radius-full'],
+    borderEndStartRadius: radiusVars['--radius-full'],
+  },
+  fillMoverRangeStartVertical: {
+    borderEndStartRadius: radiusVars['--radius-full'],
+    borderEndEndRadius: radiusVars['--radius-full'],
+  },
+  fillMoverRangeHorizontal: {
+    translate: {
+      default: `calc(${THUMB_INSET_PX}px + var(${FILL_START}) * (100cqi - ${THUMB_SIZE}px)) 0`,
+      ':is([dir="rtl"] *)': `calc(-${THUMB_INSET_PX}px - var(${FILL_START}) * (100cqi - ${THUMB_SIZE}px)) 0`,
+    },
+  },
+  fillMoverRangeVertical: {
+    translate: `0 calc(-${THUMB_INSET_PX}px - var(${FILL_START}) * (100cqb - ${THUMB_SIZE}px))`,
+  },
+  filledTrack: {
+    position: 'absolute',
+    inset: 0,
+    backgroundColor: colorVars['--color-accent'],
+  },
+  // The fill's end is round too, under the thumb.
+  filledTrackHorizontal: {
+    borderStartEndRadius: radiusVars['--radius-full'],
+    borderEndEndRadius: radiusVars['--radius-full'],
+  },
+  filledTrackVertical: {
+    borderStartStartRadius: radiusVars['--radius-full'],
+    borderStartEndRadius: radiusVars['--radius-full'],
+  },
+  // A single slider's fill runs from the track's start to the thumb's center.
+  filledTrackSingleHorizontal: {
+    translate: {
+      default: `calc(${THUMB_INSET_PX}px + var(${FILL_END}) * (100cqi - ${THUMB_SIZE}px) - 100cqi) 0`,
+      ':is([dir="rtl"] *)': `calc(100cqi - ${THUMB_INSET_PX}px - var(${FILL_END}) * (100cqi - ${THUMB_SIZE}px)) 0`,
+    },
+  },
+  filledTrackSingleVertical: {
+    translate: `0 calc(100cqb - ${THUMB_INSET_PX}px - var(${FILL_END}) * (100cqb - ${THUMB_SIZE}px))`,
+  },
+  // A range's fill runs from the lower thumb's center to the upper's; the
+  // mover already sits at the lower one.
+  filledTrackRangeHorizontal: {
+    translate: {
+      default: `calc((var(${FILL_END}) - var(${FILL_START})) * (100cqi - ${THUMB_SIZE}px) - 100cqi) 0`,
+      ':is([dir="rtl"] *)': `calc(100cqi - (var(${FILL_END}) - var(${FILL_START})) * (100cqi - ${THUMB_SIZE}px)) 0`,
+    },
+  },
+  filledTrackRangeVertical: {
+    translate: `0 calc(100cqb - (var(${FILL_END}) - var(${FILL_START})) * (100cqb - ${THUMB_SIZE}px))`,
   },
   thumb: {
     position: 'absolute',
@@ -259,7 +352,6 @@ const styles = stylex.create({
     height: THUMB_SIZE,
     borderRadius: radiusVars['--radius-full'],
     backgroundColor: colorVars['--color-accent'],
-    transform: 'translate(-50%, -50%)',
     transitionProperty: 'background-color, box-shadow',
     transitionDuration: {
       default: durationVars['--duration-fast'],
@@ -275,14 +367,20 @@ const styles = stylex.create({
   },
   thumbHorizontal: {
     top: '50%',
-    // The thumb is positioned via logical `insetInlineStart`, which resolves
-    // from the right edge under RTL. The centering translate is a physical
-    // (screen-space) transform, so it must flip its X direction under RTL to
-    // keep the thumb centered on the value point.
-    transform: {
-      default: 'translate(-50%, -50%)',
-      ':is([dir="rtl"] *)': 'translate(50%, -50%)',
+    insetInlineStart: 0,
+    transform: 'translateY(-50%)',
+    // The thumb starts at the track's inline start (the right edge under
+    // RTL) and travels by its progress along the track minus its own size,
+    // so its center lands where `insetPosition` places the fill and the
+    // marks. `translate` is physical, so it flips its sign under RTL.
+    translate: {
+      default: `calc(var(${THUMB_PROGRESS}) * (100cqi - ${THUMB_SIZE}px)) 0`,
+      ':is([dir="rtl"] *)': `calc(var(${THUMB_PROGRESS}) * (${THUMB_SIZE}px - 100cqi)) 0`,
     },
+  },
+  thumbVertical: {
+    bottom: 0,
+    translate: `0 calc(var(${THUMB_PROGRESS}) * (${THUMB_SIZE}px - 100cqb))`,
   },
   thumbHover: {
     backgroundColor: {
@@ -431,12 +529,6 @@ const THUMB_INSET = THUMB_SIZE / 2;
 
 function insetPosition(percent: number): string {
   return cssLength(percent, THUMB_INSET - (percent / 100) * THUMB_SIZE);
-}
-
-/** Distance between two inset positions; the inset itself cancels out. */
-function insetSpan(fromPercent: number, toPercent: number): string {
-  const delta = toPercent - fromPercent;
-  return cssLength(delta, -(delta / 100) * THUMB_SIZE);
 }
 
 /** Inverse of `insetPosition`: an offset from the box start back to 0–1. */
@@ -961,9 +1053,7 @@ export function Slider({ref, ...props}: SliderProps) {
     const val = values[thumbIndex];
     const percent = getPercent(val, min, max);
 
-    const positionStyle = isHorizontal
-      ? {insetInlineStart: insetPosition(percent)}
-      : {bottom: insetPosition(percent), left: '50%'};
+    const positionStyle: ThumbStyle = {[THUMB_PROGRESS]: percent / 100};
 
     // In range mode each thumb keeps a short individual name that composes
     // with the group label (announced via the group's aria-labelledby), per
@@ -1032,7 +1122,7 @@ export function Slider({ref, ...props}: SliderProps) {
             styles.thumb,
             isHorizontal
               ? styles.thumbHorizontal
-              : rtlStyles.centerInline('50%'),
+              : [styles.thumbVertical, rtlStyles.centerInline('0px')],
             !isDisabled && styles.thumbHover,
             !isDisabled && draggingThumb === thumbIndex && styles.thumbPressed,
             keyboardFocusThumb === thumbIndex &&
@@ -1062,24 +1152,11 @@ export function Slider({ref, ...props}: SliderProps) {
     return thumbElement;
   };
 
-  // Filled track position — ends at the thumb centre, so it uses the same
-  // inset mapping as the thumb.
-  const filledStyle = (() => {
-    if (isRange) {
-      const [v0, v1] = values;
-      const p0 = getPercent(v0, min, max);
-      const p1 = getPercent(v1, min, max);
-      if (isHorizontal) {
-        return {insetInlineStart: insetPosition(p0), width: insetSpan(p0, p1)};
-      }
-      return {bottom: insetPosition(p0), height: insetSpan(p0, p1)};
-    }
-    const p = getPercent(values[0], min, max);
-    if (isHorizontal) {
-      return {insetInlineStart: '0%', width: insetPosition(p)};
-    }
-    return {bottom: '0%', height: insetPosition(p)};
-  })();
+  // The filled range's ends as progress: it ends at the thumb centers, so it
+  // uses the same inset travel as the thumbs (see styles.fillClip).
+  const fillStart = isRange ? getPercent(values[0], min, max) / 100 : 0;
+  const fillEnd = getPercent(values[isRange ? 1 : 0], min, max) / 100;
+  const fillStyle: FillStyle = {[FILL_START]: fillStart, [FILL_END]: fillEnd};
 
   // Text value display
   const textDisplay =
@@ -1199,16 +1276,49 @@ export function Slider({ref, ...props}: SliderProps) {
           {/* Filled track */}
           <div
             aria-hidden="true"
-            {...mergeProps(
-              stylex.props(
-                styles.filledTrack,
-                isHorizontal
-                  ? styles.filledTrackHorizontal
-                  : [styles.filledTrackVertical, rtlStyles.centerInline('0px')],
-              ),
-              {style: filledStyle},
-            )}
-          />
+            {...stylex.props(
+              styles.fillClip,
+              isHorizontal
+                ? styles.fillClipHorizontal
+                : [styles.fillClipVertical, rtlStyles.centerInline('0px')],
+            )}>
+            <div
+              {...mergeProps(
+                stylex.props(
+                  styles.fillMover,
+                  isRange &&
+                    (isHorizontal
+                      ? [
+                          styles.fillMoverRangeHorizontal,
+                          styles.fillMoverRangeStartHorizontal,
+                        ]
+                      : [
+                          styles.fillMoverRangeVertical,
+                          styles.fillMoverRangeStartVertical,
+                        ]),
+                ),
+                {style: fillStyle},
+              )}>
+              <div
+                {...mergeProps(
+                  stylex.props(
+                    styles.filledTrack,
+                    isHorizontal
+                      ? styles.filledTrackHorizontal
+                      : styles.filledTrackVertical,
+                    isRange
+                      ? isHorizontal
+                        ? styles.filledTrackRangeHorizontal
+                        : styles.filledTrackRangeVertical
+                      : isHorizontal
+                        ? styles.filledTrackSingleHorizontal
+                        : styles.filledTrackSingleVertical,
+                  ),
+                  {style: fillStyle},
+                )}
+              />
+            </div>
+          </div>
 
           {/* Marks */}
           {marks && (
