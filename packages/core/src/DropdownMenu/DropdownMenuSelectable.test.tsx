@@ -549,6 +549,38 @@ describe('DropdownMenuRadioGroup / RadioItem', () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
+  it('composes caller root inputs without replacing the row semantics', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Sort'}}>
+        <DropdownMenuRadioGroup
+          value="newest"
+          onChange={() => {}}
+          label="Sort by">
+          <DropdownMenuRadioItem
+            value="newest"
+            label="Newest"
+            data-owner="consumer"
+            aria-describedby="sort-hint"
+            className="consumer-row"
+            style={{inlineSize: 240}}
+          />
+        </DropdownMenuRadioGroup>
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Sort/}));
+    const item = screen.getByRole('menuitemradio', {
+      name: 'Newest',
+      hidden: true,
+    });
+    expect(item).toHaveAttribute('data-owner', 'consumer');
+    expect(item).toHaveAttribute('aria-describedby', 'sort-hint');
+    expect(item).toHaveAttribute('aria-checked', 'true');
+    expect(item).toHaveClass('consumer-row');
+    expect(item).toHaveClass('astryx-dropdown-menu-item');
+    expect(item).toHaveStyle({inlineSize: '240px'});
+  });
+
   it('throws when a radio item is used outside a group', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     expect(() =>
