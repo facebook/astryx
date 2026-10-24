@@ -6,7 +6,7 @@
  * @file useScrollSettle.ts
  * @input A scroll container ref and a settle callback
  * @output Calls back once, after scrolling (including momentum) stops
- * @position Internal behavior hook; consumed by Wheel.tsx and MonthScroller.tsx
+ * @position Internal behavior hook; consumed by MonthScroller.tsx
  *
  * A snap scroller commits its value when it comes to rest, so it needs a
  * "scrolling stopped" signal. `scrollend` is that signal, but it is recent
