@@ -74,6 +74,7 @@ import {
 } from './utils';
 import {useCombobox, useSelectedItemOffset} from './hooks';
 import {useMenuPress} from '../hooks/useMenuPress';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import type {MenuPressPointerType} from '../hooks/menuPressGesture';
 import {useMenuOverflow} from '../DropdownMenu/useMenuOverflow';
 import {useTypeahead} from '../hooks/useTypeahead';
@@ -547,8 +548,6 @@ const itemSizeStyles = stylex.create({
  * a hold at the same distance).
  */
 const PRESS_ROW_SLOP_PX = 10;
-/** The row under the press is not yet known: the list has reported no row. */
-const PRESS_ROW_UNRESOLVED = -2;
 
 const STATUS_ICON_MAP: Record<SelectorStatusType, IconName> = {
   warning: 'warning',
@@ -1421,19 +1420,19 @@ export function Selector<T extends SelectorOptionType>(
     clientX: number;
     clientY: number;
     /**
-     * The index of the row the list placed under the press: resolved by
-     * hit-testing the press point once the positioned list reports a row
-     * (FR2 clamps the list to the viewport, so near an edge it is not the
-     * selected row); -1 for none, `PRESS_ROW_UNRESOLVED` until then.
+     * The overlay's row (the selected option, else the first; -1 without the
+     * overlay): the row under the press where the document lays nothing out.
      */
-    pressRowIndex: number;
-    /** The overlay's row (the selected option, else the first), the fallback where the document cannot hit-test. */
     overlayRowIndex: number;
     /** Whether the highlight has visited another row since the open. */
     leftPressRow: boolean;
     /** The press itself, handed to a caller's `onClick` when it opens the list. */
     event: React.PointerEvent<HTMLElement>;
   } | null>(null);
+  // Whether the gesture in progress is the one that pressed the trigger, read
+  // from the press model's own gesture identity: the opening press's data is
+  // scoped to that gesture, with no listeners of Selector's own to expire it.
+  const isTriggerGestureRef = useRef<() => boolean>(() => false);
   const handleTriggerPress = useCallback(
     (pointerType: MenuPressPointerType): boolean => {
       pressActedRef.current = false;
@@ -1482,8 +1481,8 @@ export function Selector<T extends SelectorOptionType>(
       }
       // With the default placement the list opens with that row over the
       // trigger, under the pressing pointer (FR2), unless the viewport
-      // clamped it: the row under the press is hit-tested once the list
-      // reports one.
+      // clamped it: the rows the press model reports are matched against the
+      // press point (`isUnderPress`).
       if (openingPressRef.current != null) {
         openingPressRef.current.overlayRowIndex = shouldOverlaySelectedItem
           ? Math.max(selectedIndex, 0)
@@ -1511,8 +1510,8 @@ export function Selector<T extends SelectorOptionType>(
   );
 
   // The trigger's own pointerdown, ahead of the model's: remember where a
-  // mouse pressed, and forget it a task after the release (the model's `act`
-  // runs inside the release itself).
+  // mouse pressed. The record counts only during the gesture that made it
+  // (`isTriggerGestureRef`), so nothing has to expire it.
   const handleTriggerPointerDown = useCallback(
     (event: React.PointerEvent<HTMLElement>) => {
       if (event.pointerType !== 'mouse' || event.button !== 0) {
@@ -1521,23 +1520,40 @@ export function Selector<T extends SelectorOptionType>(
       openingPressRef.current = {
         clientX: event.clientX,
         clientY: event.clientY,
-        pressRowIndex: PRESS_ROW_UNRESOLVED,
         overlayRowIndex: -1,
         leftPressRow: false,
         event,
       };
-      const doc = event.currentTarget.ownerDocument;
-      const onPressEnd = () => {
-        doc.removeEventListener('pointerup', onPressEnd, true);
-        doc.removeEventListener('pointercancel', onPressEnd, true);
-        doc.defaultView?.setTimeout(() => {
-          openingPressRef.current = null;
-        }, 0);
-      };
-      doc.addEventListener('pointerup', onPressEnd, true);
-      doc.addEventListener('pointercancel', onPressEnd, true);
     },
     [],
+  );
+
+  /**
+   * Whether `row`, a row the press model reported, lies under the point the
+   * opening press went down on: FR2's overlay puts a row there, or another
+   * where the viewport clamped the list. Where the document lays nothing out
+   * (no row has a box), the overlay's row is the one under the press.
+   */
+  const isUnderPress = useCallback(
+    (
+      row: HTMLElement,
+      press: NonNullable<typeof openingPressRef.current>,
+    ): boolean => {
+      const box = row.getBoundingClientRect();
+      if (box.width === 0 && box.height === 0) {
+        return (
+          press.overlayRowIndex >= 0 &&
+          optionIndexFromRow(row) === press.overlayRowIndex
+        );
+      }
+      return (
+        press.clientX >= box.left &&
+        press.clientX < box.right &&
+        press.clientY >= box.top &&
+        press.clientY < box.bottom
+      );
+    },
+    [optionIndexFromRow],
   );
 
   /**
@@ -1549,42 +1565,15 @@ export function Selector<T extends SelectorOptionType>(
    * when it is already the value, once the mouse moved past the slop; the
    * row under the press never selects a value nobody chose.
    */
-  /**
-   * The row under the press point, read once the positioned list reports a
-   * row: a hit test at the press coordinates, or, where the document cannot
-   * hit-test, the overlay's row.
-   */
-  const resolvePressRow = useCallback(
-    (press: NonNullable<typeof openingPressRef.current>): void => {
-      if (press.pressRowIndex !== PRESS_ROW_UNRESOLVED) {
-        return;
-      }
-      const listbox = listboxRef.current;
-      const doc = listbox?.ownerDocument;
-      if (listbox == null || typeof doc?.elementFromPoint !== 'function') {
-        press.pressRowIndex = press.overlayRowIndex;
-        return;
-      }
-      const hit = doc.elementFromPoint(press.clientX, press.clientY);
-      const row = hit?.closest<HTMLElement>('[role="option"]') ?? null;
-      press.pressRowIndex =
-        row != null && listbox.contains(row) ? optionIndexFromRow(row) : -1;
-    },
-    [optionIndexFromRow],
-  );
-
   const isOpeningReleaseOnPressRow = useCallback(
     (row: HTMLElement, release: PointerEvent): boolean => {
       const press = openingPressRef.current;
-      if (press == null) {
-        return false;
-      }
-      resolvePressRow(press);
-      if (press.pressRowIndex < 0 || press.leftPressRow) {
-        return false;
-      }
-      const index = optionIndexFromRow(row);
-      if (index !== press.pressRowIndex) {
+      if (
+        press == null ||
+        press.leftPressRow ||
+        !isTriggerGestureRef.current() ||
+        !isUnderPress(row, press)
+      ) {
         return false;
       }
       const moved =
@@ -1592,10 +1581,11 @@ export function Selector<T extends SelectorOptionType>(
           release.clientX - press.clientX,
           release.clientY - press.clientY,
         ) > PRESS_ROW_SLOP_PX;
-      const isValueRow = filteredItems[index]?.value === optimisticValue;
+      const isValueRow =
+        filteredItems[optionIndexFromRow(row)]?.value === optimisticValue;
       return !(moved && isValueRow);
     },
-    [filteredItems, optimisticValue, optionIndexFromRow, resolvePressRow],
+    [filteredItems, isUnderPress, optimisticValue, optionIndexFromRow],
   );
 
   const listboxPress = useMenuPress({
@@ -1605,14 +1595,13 @@ export function Selector<T extends SelectorOptionType>(
     onTriggerPress: handleTriggerPress,
     onHighlight: row => {
       const press = openingPressRef.current;
-      if (press != null && row != null) {
-        resolvePressRow(press);
-        if (
-          press.pressRowIndex >= 0 &&
-          optionIndexFromRow(row) !== press.pressRowIndex
-        ) {
-          press.leftPressRow = true;
-        }
+      if (
+        press != null &&
+        row != null &&
+        isTriggerGestureRef.current() &&
+        !isUnderPress(row, press)
+      ) {
+        press.leftPressRow = true;
       }
       if (row == null) {
         setHighlightedIndex(-1);
@@ -1641,6 +1630,9 @@ export function Selector<T extends SelectorOptionType>(
     },
     onDismiss: surface.hide,
   });
+  useIsomorphicLayoutEffect(() => {
+    isTriggerGestureRef.current = listboxPress.isTriggerClickFromPress;
+  }, [listboxPress]);
 
   // The press already opened or closed the list; its click is spent. A
   // finger's press acts on nothing here, so its click toggles as it always

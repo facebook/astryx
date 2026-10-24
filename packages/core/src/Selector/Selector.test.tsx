@@ -4988,20 +4988,26 @@ describe('Selector press model', () => {
   });
 
   it('near a viewport edge the clamped list puts another option under the press: an unmoved release on it acts on nothing', () => {
-    // jsdom cannot hit-test; the document answers the press point with the
-    // option the clamped list placed there, as a browser's would.
+    // jsdom lays nothing out; Cherry gets the box the clamped list gave it,
+    // over the press point, as a browser's would.
     vi.useFakeTimers();
-    const doc = document as Document & {
-      elementFromPoint?: (x: number, y: number) => Element | null;
-    };
-    const original = doc.elementFromPoint;
     try {
       const onChange = vi.fn();
       render(<Selector label="Fruit" options={OPTIONS} onChange={onChange} />);
       const trigger = screen.getByRole('combobox');
       fireEvent.pointerDown(trigger, {...mouse, clientX: 10, clientY: 10});
       const cherry = screen.getByRole('option', {name: /Cherry/, ...h});
-      doc.elementFromPoint = () => cherry;
+      cherry.getBoundingClientRect = () => ({
+        x: 0,
+        y: 0,
+        left: 0,
+        top: 0,
+        right: 200,
+        bottom: 40,
+        width: 200,
+        height: 40,
+        toJSON: () => ({}),
+      });
       act(() => {
         vi.advanceTimersByTime(400);
       });
@@ -5011,9 +5017,135 @@ describe('Selector press model', () => {
       expect(onChange).not.toHaveBeenCalled();
       expect(trigger).toHaveAttribute('aria-expanded', 'true');
     } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('reads the rows from the press model alone: Selector hit-tests nothing itself', () => {
+    vi.useFakeTimers();
+    const doc = document as Document & {
+      elementFromPoint?: (x: number, y: number) => Element | null;
+    };
+    const original = doc.elementFromPoint;
+    try {
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={onChange}
+        />,
+      );
+      const trigger = screen.getByRole('combobox');
+      fireEvent.pointerDown(trigger, {...mouse, clientX: 10, clientY: 10});
+      act(() => {
+        vi.advanceTimersByTime(400);
+      });
+      const banana = screen.getByRole('option', {name: /Banana/, ...h});
+      const cherry = screen.getByRole('option', {name: /Cherry/, ...h});
+      // The document answers each point the press model asks about, as a
+      // browser's would: Banana up top, Cherry below.
+      const elementFromPoint = vi.fn((_x: number, y: number) =>
+        y < 40 ? banana : cherry,
+      );
+      doc.elementFromPoint = elementFromPoint;
+      fireEvent.pointerMove(banana, {...mouse, clientX: 12, clientY: 12});
+      fireEvent.pointerMove(cherry, {...mouse, clientX: 12, clientY: 60});
+      fireEvent.pointerUp(cherry, {...mouse, clientX: 12, clientY: 60});
+      expect(onChange).toHaveBeenCalledWith('Cherry');
+      // Only the pointer's own positions were asked about, never the press
+      // point.
+      expect(elementFromPoint).not.toHaveBeenCalledWith(10, 10);
+    } finally {
       doc.elementFromPoint = original;
       vi.useRealTimers();
     }
+  });
+
+  it('holds no document pointer listener of its own at rest, before or after a press', () => {
+    const added = new Map<string, Set<EventListenerOrEventListenerObject>>();
+    const addSpy = vi.spyOn(document, 'addEventListener');
+    const removeSpy = vi.spyOn(document, 'removeEventListener');
+    addSpy.mockImplementation(function (
+      this: Document,
+      type,
+      listener,
+      options,
+    ) {
+      if (
+        listener != null &&
+        type.startsWith('pointer') &&
+        type !== 'pointerdown'
+      ) {
+        (added.get(type) ?? added.set(type, new Set()).get(type)!).add(
+          listener,
+        );
+      }
+      return EventTarget.prototype.addEventListener.call(
+        this,
+        type,
+        listener,
+        options,
+      );
+    });
+    removeSpy.mockImplementation(function (
+      this: Document,
+      type,
+      listener,
+      options,
+    ) {
+      if (listener != null) {
+        added.get(type)?.delete(listener);
+      }
+      return EventTarget.prototype.removeEventListener.call(
+        this,
+        type,
+        listener,
+        options,
+      );
+    });
+    vi.useFakeTimers();
+    try {
+      render(<Selector label="Fruit" options={OPTIONS} onChange={() => {}} />);
+      const atRest = () =>
+        [...added.values()].reduce((count, set) => count + set.size, 0);
+      expect(atRest()).toBe(0);
+      const trigger = screen.getByRole('combobox');
+      fireEvent.pointerDown(trigger, mouse);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      fireEvent.pointerUp(trigger, mouse);
+      act(() => {
+        vi.advanceTimersByTime(0);
+      });
+      expect(atRest()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+      addSpy.mockRestore();
+      removeSpy.mockRestore();
+    }
+  });
+
+  it('a later press on the row the opening press landed on picks it: the opening record counts only in its own gesture', () => {
+    const onChange = vi.fn();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={onChange}
+      />,
+    );
+    const trigger = screen.getByRole('combobox');
+    // A click on the trigger opens the list with Banana under the pointer.
+    fireEvent.pointerDown(trigger, mouse);
+    const banana = screen.getByRole('option', {name: /Banana/, ...h});
+    fireEvent.pointerUp(banana, mouse);
+    expect(onChange).not.toHaveBeenCalled();
+    // Straight away, a new press on Banana is a pick.
+    fireEvent.pointerDown(banana, mouse);
+    fireEvent.pointerUp(banana, mouse);
+    expect(onChange).toHaveBeenCalledWith('Banana');
   });
 
   it('a release on the selected row after moving past the slop picks it, as a native pop-up does: the list closes, the value kept', () => {
