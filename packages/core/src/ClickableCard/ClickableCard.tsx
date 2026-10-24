@@ -47,7 +47,7 @@ import type {BaseProps} from '../BaseProps';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
-import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {pressLayerStyles} from '../utils/pressLayer.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
@@ -56,11 +56,6 @@ import {disabledInteractionProps} from '../utils/disabledInteraction';
 // Styles — only the interactive layer, Card handles everything else
 // =============================================================================
 
-// The touch press's paint, declared by the shared overlay styles on the
-// element the controller writes to (`pressedAlpha`) at the press's strength,
-// 1 while on and 1 → 0 over the release, and inherited resolved by the
-// `::after` that paints it. See interactionOverlay.stylex.ts.
-const pressedOverlayImage = 'var(--_press-paint-image)';
 /** Written by the press controller while it paints a press. */
 const PRESSED_ON = '[data-astryx-press="on"]';
 /** Written by the press controller for the press's release. */
@@ -84,12 +79,13 @@ const styles = stylex.create({
     // `--_press-overlay`, which their arms set on the element itself (same
     // enabled guard as the shared overlay utility). The press the controller
     // paints (a finger's, and on a touch-first device a mouse's or a key's)
-    // is the same layer's image, keyed on the `data-astryx-press` attribute
-    // the controller writes. Every arm of that press is a plain property of
-    // the `::after`, which outranks the layer's own defaults in a layered
-    // stylesheet and a flat one alike. A custom property's attribute arm
-    // does not: a layered build emits the property's default outside the
-    // priority layers its attribute arms land in, and the default wins.
+    // is the same layer's image, from `pressLayerStyles.controlOver`, which
+    // also releases it on the compositor (the `::after`'s opacity). Every arm
+    // of that press is a plain property of the `::after`, which outranks the
+    // layer's own defaults in a layered stylesheet and a flat one alike. A
+    // custom property's attribute arm does not: a layered build emits the
+    // property's default outside the priority layers its attribute arms land
+    // in, and the default wins.
     '--_press-overlay': {
       default: 'transparent',
       ':where(:not(:disabled,[aria-disabled="true"]))': {
@@ -112,9 +108,9 @@ const styles = stylex.create({
       inset: 0,
       pointerEvents: 'none',
       // A press the controller paints shows on its first frame and fades on
-      // its strength's own animation, so the colour it replaces drops out at
-      // once rather than crossfading: no transition while it paints. The
-      // mouse states keep the fast fade.
+      // its own release, so the colour it replaces drops out at once rather
+      // than crossfading: no transition while it paints. The mouse states
+      // keep the fast fade.
       transitionProperty: {
         default: 'background-color',
         [PRESSED_ON]: 'none',
@@ -129,16 +125,6 @@ const styles = stylex.create({
         default: 'var(--_press-overlay)',
         [PRESSED_ON]: 'transparent',
         [PRESSED_FADING]: 'transparent',
-      },
-      // The press at its strength, which the card's `pressedAlpha` arms own:
-      // 1 on the first frame of a believed press, then 1 → 0 over the
-      // release. The `::after` inherits the resolved paint and repaints with
-      // it on every frame of the fade. Read only inside this element's own
-      // arms, so a pressed ancestor's strength never paints here.
-      backgroundImage: {
-        default: null,
-        [PRESSED_ON]: pressedOverlayImage,
-        [PRESSED_FADING]: pressedOverlayImage,
       },
     },
   },
@@ -373,9 +359,9 @@ export function ClickableCard({
           styles.interactive,
           hasBorder ? styles.bordered : styles.borderless,
           !isDisabled && styles.overlay,
-          // The touch press's strength and release, on the element the
-          // controller writes to; the `::after` above paints off it.
-          !isDisabled && interactionOverlayStyles.pressedAlpha,
+          // The press the controller writes, painted on the `::after` above
+          // and released on the compositor.
+          !isDisabled && pressLayerStyles.controlOver,
           !isDisabled && hasBorder && styles.borderedHoverOnPointer,
           isDisabled && styles.disabled,
           xstyleProp,

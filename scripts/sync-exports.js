@@ -177,6 +177,11 @@ const STATIC_EXPORTS = {
     types: './dist/utils/interactionOverlay.stylex.d.ts',
     default: './dist/utils/interactionOverlay.stylex.js',
   },
+  './utils/pressLayer.stylex': {
+    source: './src/utils/pressLayer.stylex.ts',
+    types: './dist/utils/pressLayer.stylex.d.ts',
+    default: './dist/utils/pressLayer.stylex.js',
+  },
   './docs.mjs': './docs.mjs',
   './groups.doc.mjs': './groups.doc.mjs',
   // Rich authoring catalogs keep their existing JSON paths. Generated string

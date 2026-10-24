@@ -6,10 +6,10 @@ import userEvent from '@testing-library/user-event';
 import {Thumbnail} from './Thumbnail';
 import {
   afterPaintsPress,
-  hasReleaseFade,
   pressArmsShadowedByDefault,
-  readsPressStrength,
+  releasesOnLayer,
 } from '../__tests__/pressState';
+import {button as uikitButton} from '../motion/uikit/button';
 
 describe('Thumbnail', () => {
   it('renders an image when src is provided', () => {
@@ -264,11 +264,15 @@ describe('Thumbnail pressed state (touch)', () => {
     if (surface == null) {
       throw new Error('the interactive thumbnail carries no pressable marker');
     }
-    expect(hasReleaseFade(surface)).toBe(true);
-    expect(readsPressStrength(surface, '[data-astryx-press="on"]')).toBe(true);
-    expect(readsPressStrength(surface)).toBe(true);
+    // The controller writes the container; its `::after` paints the pressed token
+    // as its image on both arms, its hover and mouse colour yielding, and
+    // releases it by the `::after`'s opacity on a control's clock (the
+    // compositor), with no main-thread release on the element itself.
     expect(afterPaintsPress(surface, '[data-astryx-press="on"]')).toBe(true);
     expect(afterPaintsPress(surface)).toBe(true);
+    expect(
+      releasesOnLayer(surface, '::after', uikitButton.highlight.releaseMs),
+    ).toBe(true);
     // In a layered stylesheet a press arm on a custom property the container
     // also declares without it never applies.
     expect(pressArmsShadowedByDefault(surface)).toEqual([]);

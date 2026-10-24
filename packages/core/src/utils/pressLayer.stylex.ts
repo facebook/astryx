@@ -4,10 +4,13 @@
  * @file pressLayer.stylex.ts
  * @input Uses StyleX and the pressed overlay color token
  * @output Exports `pressLayerStyles` (the touch press painted on a compositor
- *   layer; `cell` for list rows) and `pressLayerConsts` (the build-time mirror
- *   of the cell release clock and curve in motion/uikit/list.ts)
- * @position Internal styling utility; Item and TreeList rows compose it after
- *   their interactionOverlayStyles variant
+ *   layer: `cell` for list rows, `control` for buttons, `controlOver` for
+ *   cards whose overlay sits above their content) and `pressLayerConsts` (the
+ *   build-time mirror of the release clocks and curves in
+ *   motion/uikit/list.ts and motion/uikit/button.ts)
+ * @position Internal styling utility; Item and TreeList rows, Button, and the
+ *   cards (ClickableCard, SelectableCard, Thumbnail) compose it after their
+ *   interactionOverlayStyles variant or their own overlay
  *
  * WHY A LAYER. The shared overlays (interactionOverlay.stylex.ts) paint the
  * touch press as a gradient whose strength is a registered custom property,
@@ -40,9 +43,23 @@
  * on the row it keeps selected through a navigation push: the layer shows at
  * full strength, and the hold's own Web Animations move it from there.
  *
+ * ABOVE THE CONTENT. A card's overlay is its own `::after`, painted over its
+ * content (a thumbnail's image would hide a layer below it). `controlOver`
+ * paints the press there instead: the pressed token at full strength as the
+ * `::after`'s image while the press is on, and an opacity release of the
+ * whole `::after` on the fading arm. The card keeps that `::after`'s
+ * geometry, its hover and mouse colour, and the colour's yield to the press.
+ *
+ * ONE CLOCK PER PROFILE. The marker's value is the press's profile: a row is
+ * a `cell` and releases on UIKit's cell deselect; everything else is a
+ * control and releases on UIButton's highlight release. The controller
+ * removes the release attribute on the same clock (the profile table in
+ * gestures), and pressLayer.test.ts holds the two together.
+ *
  * SYNC: When modified, update pressGesture.ts (PRESS_FADE_MS removes the
- * attribute on the same clock), motion/uikit/list.ts (the clock and curve),
- * selectionHold.ts (the held state), pressLayer.test.ts and
+ * attribute on the same clock), motion/uikit/list.ts and
+ * motion/uikit/button.ts (the clocks and curves), selectionHold.ts (the held
+ * state), pressLayer.test.ts and
  * scripts/build-css.test.mjs.
  */
 
@@ -50,18 +67,24 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 
 /**
- * The cell release, mirrored for the stylesheet: StyleX evaluates a style at
+ * The releases, mirrored for the stylesheet: StyleX evaluates a style at
  * build time and cannot read the constants table, so these are the table's
- * `list.highlight` values, and pressLayer.test.ts fails if they drift.
+ * `list.highlight` and `button.highlight` values, and pressLayer.test.ts
+ * fails if they drift.
  */
 export const pressLayerConsts = stylex.defineConsts({
   /** `list.highlight.releaseMs`, in ms. */
   cellReleaseMs: 200,
   /** `list.highlight.releaseCurve`, as CSS. */
   cellReleaseEase: 'cubic-bezier(0, 0, 0.2, 1)',
+  /** `button.highlight.releaseMs`, in ms. */
+  controlReleaseMs: 250,
+  /** `button.highlight.releaseCurve`, as CSS. */
+  controlReleaseEase: 'cubic-bezier(0.42, 0, 0.58, 1)',
 });
 
 const CELL_RELEASE = `${pressLayerConsts.cellReleaseMs}ms`;
+const CONTROL_RELEASE = `${pressLayerConsts.controlReleaseMs}ms`;
 
 /** Opacity 1 → 0: the layer leaves; the fading arm runs it. */
 const release = stylex.keyframes({
@@ -79,6 +102,9 @@ const PRESSED_FADING = '[data-astryx-press="fading"]';
  * through a navigation push; the controller never overwrites it.
  */
 const PRESSED_HELD = '[data-astryx-press="held"]';
+
+/** The pressed token as an image layer, at full strength. */
+const pressedImage = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
 
 export const pressLayerStyles = stylex.create({
   /**
@@ -118,6 +144,79 @@ export const pressLayerStyles = stylex.create({
       animationTimingFunction: {
         default: null,
         [PRESSED_FADING]: pressLayerConsts.cellReleaseEase,
+      },
+      animationFillMode: {default: null, [PRESSED_FADING]: 'both'},
+    },
+  },
+  /**
+   * A control whose press lives on its own surface: Button (and the
+   * IconButton and ToggleButton built on it). The release is UIButton's
+   * (`button.highlight`).
+   */
+  control: {
+    // As for a cell: the overlay variant's touch paint goes transparent and
+    // its main-thread release is dropped; the layer paints the press.
+    '--_press-paint': 'transparent',
+    animationName: null,
+    animationDuration: null,
+    animationTimingFunction: null,
+    animationFillMode: null,
+    isolation: 'isolate',
+    '::before': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      zIndex: -1,
+      borderRadius: 'inherit',
+      pointerEvents: 'none',
+      backgroundColor: colorVars['--color-overlay-pressed'],
+      opacity: {
+        default: 0,
+        [ENABLED]: {default: null, [PRESSED_ON]: 1},
+      },
+      animationName: {
+        default: null,
+        [ENABLED]: {default: null, [PRESSED_FADING]: release},
+      },
+      animationDuration: {default: null, [PRESSED_FADING]: CONTROL_RELEASE},
+      animationTimingFunction: {
+        default: null,
+        [PRESSED_FADING]: pressLayerConsts.controlReleaseEase,
+      },
+      animationFillMode: {default: null, [PRESSED_FADING]: 'both'},
+    },
+  },
+  /**
+   * A control whose overlay is a `::after` over its content: the cards. The
+   * card owns that `::after` (its box, its hover and mouse colour, and that
+   * colour yielding to a press); this paints the press on it at full
+   * strength and releases it by the `::after`'s opacity, on the control
+   * clock.
+   */
+  controlOver: {
+    // A release of the strength on the element, if an overlay variant
+    // brought one, is dropped: nothing reads it here.
+    animationName: null,
+    animationDuration: null,
+    animationTimingFunction: null,
+    animationFillMode: null,
+    '::after': {
+      backgroundImage: {
+        default: null,
+        [ENABLED]: {
+          default: null,
+          [PRESSED_ON]: pressedImage,
+          [PRESSED_FADING]: pressedImage,
+        },
+      },
+      animationName: {
+        default: null,
+        [ENABLED]: {default: null, [PRESSED_FADING]: release},
+      },
+      animationDuration: {default: null, [PRESSED_FADING]: CONTROL_RELEASE},
+      animationTimingFunction: {
+        default: null,
+        [PRESSED_FADING]: pressLayerConsts.controlReleaseEase,
       },
       animationFillMode: {default: null, [PRESSED_FADING]: 'both'},
     },

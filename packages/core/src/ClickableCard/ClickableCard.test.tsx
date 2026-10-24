@@ -6,10 +6,10 @@ import userEvent from '@testing-library/user-event';
 import {ClickableCard} from './ClickableCard';
 import {
   afterPaintsPress,
-  hasReleaseFade,
   pressArmsShadowedByDefault,
-  readsPressStrength,
+  releasesOnLayer,
 } from '../__tests__/pressState';
+import {button as uikitButton} from '../motion/uikit/button';
 
 describe('ClickableCard', () => {
   it('renders children', () => {
@@ -261,14 +261,15 @@ describe('ClickableCard pressed state (touch)', () => {
     if (card == null) {
       throw new Error('the card carries no pressable marker');
     }
-    // The controller writes the card; the card owns the strength and its
-    // release, and its `::after` paints the pressed token at that strength
-    // as its image on both arms, its hover and mouse colour yielding.
-    expect(hasReleaseFade(card)).toBe(true);
-    expect(readsPressStrength(card, '[data-astryx-press="on"]')).toBe(true);
-    expect(readsPressStrength(card)).toBe(true);
+    // The controller writes the card; its `::after` paints the pressed token
+    // as its image on both arms, its hover and mouse colour yielding, and
+    // releases it by the `::after`'s opacity on a control's clock (the
+    // compositor), with no main-thread release on the element itself.
     expect(afterPaintsPress(card, '[data-astryx-press="on"]')).toBe(true);
     expect(afterPaintsPress(card)).toBe(true);
+    expect(
+      releasesOnLayer(card, '::after', uikitButton.highlight.releaseMs),
+    ).toBe(true);
     // No press arm sits on a custom property the card also declares without
     // it: in a layered stylesheet that declaration wins and the press never
     // paints.

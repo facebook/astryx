@@ -13,10 +13,10 @@ import {render, screen, fireEvent} from '@testing-library/react';
 import {SelectableCard} from './SelectableCard';
 import {
   afterPaintsPress,
-  hasReleaseFade,
   pressArmsShadowedByDefault,
-  readsPressStrength,
+  releasesOnLayer,
 } from '../__tests__/pressState';
+import {button as uikitButton} from '../motion/uikit/button';
 
 describe('SelectableCard', () => {
   it('renders children', () => {
@@ -204,11 +204,15 @@ describe('SelectableCard pressed state (touch)', () => {
     if (card == null) {
       throw new Error('the card carries no pressable marker');
     }
-    expect(hasReleaseFade(card)).toBe(true);
-    expect(readsPressStrength(card, '[data-astryx-press="on"]')).toBe(true);
-    expect(readsPressStrength(card)).toBe(true);
+    // The controller writes the card; its `::after` paints the pressed token
+    // as its image on both arms, its hover and mouse colour yielding, and
+    // releases it by the `::after`'s opacity on a control's clock (the
+    // compositor), with no main-thread release on the element itself.
     expect(afterPaintsPress(card, '[data-astryx-press="on"]')).toBe(true);
     expect(afterPaintsPress(card)).toBe(true);
+    expect(
+      releasesOnLayer(card, '::after', uikitButton.highlight.releaseMs),
+    ).toBe(true);
     // In a layered stylesheet a press arm on a custom property the card also
     // declares without it never applies.
     expect(pressArmsShadowedByDefault(card)).toEqual([]);

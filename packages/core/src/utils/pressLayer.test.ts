@@ -2,8 +2,9 @@
 
 /**
  * @file pressLayer.test.ts
- * @input vitest, the UIKit constants table (motion/uikit/list.ts), the press
- *   layer styles and the rows that compose them (Item, TreeList)
+ * @input vitest, the UIKit constants table (motion/uikit/list.ts and
+ *   button.ts), the press layer styles and the rows that compose them (Item,
+ *   TreeList)
  * @output Holds the layer's build-time clock to the constants table, and
  *   asserts what a row ships for the touch press: the pressed token on a
  *   `::before` shown at once on the on arm, an opacity release on the fading
@@ -16,6 +17,7 @@
 import {createElement} from 'react';
 import {render, screen} from '@testing-library/react';
 import {describe, expect, it} from 'vitest';
+import {button} from '../motion/uikit/button';
 import {list} from '../motion/uikit/list';
 import {Item} from '../Item';
 import {TreeList} from '../TreeList';
@@ -57,6 +59,13 @@ describe('press layer clock', () => {
 
   it('runs on the clock the controller removes the attribute on', () => {
     expect(pressLayerConsts.cellReleaseMs).toBe(PRESS_FADE_MS);
+  });
+
+  it('is the constants table’s control release (UIButton), mirrored for the stylesheet', () => {
+    expect(pressLayerConsts.controlReleaseMs).toBe(button.highlight.releaseMs);
+    expect(pressLayerConsts.controlReleaseEase).toBe(
+      `cubic-bezier(${button.highlight.releaseCurve.join(', ')})`,
+    );
   });
 });
 

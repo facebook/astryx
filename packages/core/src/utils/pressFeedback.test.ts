@@ -19,6 +19,7 @@
 import * as stylex from '@stylexjs/stylex';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {PRESS_PROFILES} from '../gestures/PressTracker';
+import {button} from '../motion/uikit/button';
 import {timing} from '../motion/uikit/timing';
 import {list} from '../motion/uikit/list';
 import {
@@ -40,7 +41,6 @@ import {
   pressableProps,
   pressReleaseMs,
 } from './pressFeedback';
-import {PRESS_FADE_MS} from './pressGesture';
 
 const CONTROL_RELEASE_MS = PRESS_PROFILES.control.releaseMs;
 const CELL_RELEASE_MS = PRESS_PROFILES.cell.releaseMs;
@@ -418,8 +418,9 @@ describe('the release fades: the arms the controller writes to', () => {
     );
   });
 
-  it("the machine's clock is the stylesheet's constant: one number", () => {
-    expect(PRESS_FADE_MS).toBe(pressConsts.releaseMs);
+  it("each profile's clock is the stylesheet's constant: one number each", () => {
+    expect(pressConsts.releaseMs).toBe(list.highlight.releaseMs);
+    expect(pressConsts.controlReleaseMs).toBe(button.highlight.releaseMs);
     expect(hasReleaseFade(surface(interactionOverlayStyles.pressedAlpha))).toBe(
       true,
     );

@@ -112,12 +112,22 @@ export const pressVars = stylex.defineVars({
  * cannot drift apart.
  */
 export const pressConsts = stylex.defineConsts({
-  /** How long the release takes, in ms. UIKit's deselect clock. */
+  /**
+   * How long a cell's release takes, in ms: UIKit's deselect clock
+   * (`list.highlight.releaseMs`), for a surface marked as a `cell`.
+   */
   releaseMs: 200,
+  /**
+   * How long a control's release takes, in ms: UIButton's highlight release
+   * (`button.highlight.releaseMs`), for every other surface.
+   */
+  controlReleaseMs: 250,
 });
 
-/** The release's clock as CSS. */
+/** The cell release's clock as CSS. */
 const PRESS_RELEASE_DURATION = `${pressConsts.releaseMs}ms`;
+/** The control release's clock as CSS. */
+const CONTROL_RELEASE_DURATION = `${pressConsts.controlReleaseMs}ms`;
 
 const ENABLED = ':where(:not(:disabled,[aria-disabled="true"]))';
 const HOVER_HOVER = '@media (hover: hover)';
@@ -175,6 +185,12 @@ const pressRelease = stylex.keyframes({
 const RELEASE_EASE = 'cubic-bezier(0, 0, 0.2, 1)';
 
 /**
+ * A control's release curve: UIButton's, UIKit's easeInEaseOut
+ * (`button.highlight.releaseCurve`).
+ */
+const CONTROL_RELEASE_EASE = 'cubic-bezier(0.42, 0, 0.58, 1)';
+
+/**
  * The touch press's strength and its release, on the element the controller
  * writes to. Every variant below carries both, as `[PRESS_ALPHA]:
  * pressStrength` and `...pressReleaseAnimation`; `pressedAlpha` is the pair
@@ -203,13 +219,21 @@ const pressReleaseAnimation = {
     default: null,
     '[data-astryx-press="fading"]': pressRelease,
   },
+  // The marker's value is the press's profile: a `cell` releases on the
+  // deselect clock, every other surface on a control's.
   animationDuration: {
     default: null,
-    '[data-astryx-press="fading"]': PRESS_RELEASE_DURATION,
+    '[data-astryx-press="fading"]': {
+      default: CONTROL_RELEASE_DURATION,
+      '[data-astryx-pressable="cell"]': PRESS_RELEASE_DURATION,
+    },
   },
   animationTimingFunction: {
     default: null,
-    '[data-astryx-press="fading"]': RELEASE_EASE,
+    '[data-astryx-press="fading"]': {
+      default: CONTROL_RELEASE_EASE,
+      '[data-astryx-pressable="cell"]': RELEASE_EASE,
+    },
   },
   animationFillMode: {default: null, '[data-astryx-press="fading"]': 'both'},
 };
