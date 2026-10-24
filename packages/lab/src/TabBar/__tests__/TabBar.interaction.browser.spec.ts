@@ -1549,3 +1549,50 @@ test(
     await releaseAnimations(page, {finish: true});
   },
 );
+
+test.describe('More tab', () => {
+  test('six tabs: the bar shows the first four and More at the five-tab layout, as UIKit does', async ({
+    page,
+  }) => {
+    await openBar(page, 'more-tab');
+    const tabs = page.getByRole('tab');
+    await expect(tabs).toHaveCount(5);
+    await expect(tabs.last()).toHaveAccessibleName('More');
+    // iOS 26.2 on a 402 pt screen: five 77 pt items at x 25, 93.75, 162.5,
+    // 231.25 and 300.
+    const viewport = page.viewportSize();
+    const lefts: number[] = [];
+    for (let index = 0; index < 5; index += 1) {
+      const box = await tabs.nth(index).locator('span').first().boundingBox();
+      if (box == null) {
+        throw new Error('no item');
+      }
+      // Within the item-width fit's 1 px (tabBar.ts `itemWidth`).
+      expect(Math.abs(box.width - 77)).toBeLessThan(1);
+      lefts.push(box.x);
+    }
+    if (viewport?.width === 402) {
+      [25, 93.75, 162.5, 231.25, 300].forEach((x, index) => {
+        expect(Math.abs(lefts[index] - x)).toBeLessThan(1);
+      });
+    }
+  });
+
+  test('a section chosen in More opens inside it, More staying selected; More again returns to the list', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'more-tab');
+    const more = await itemCenter(page, 'More');
+    await driver.tap(more);
+    await expect(tab(page, 'More')).toHaveAttribute('aria-selected', 'true');
+    const settings = page.getByRole('button', {name: /Settings/});
+    await expect(settings).toBeVisible();
+    await settings.click();
+    await expect(page.getByRole('heading', {name: 'Settings'})).toBeVisible();
+    await expect(tab(page, 'More')).toHaveAttribute('aria-selected', 'true');
+    await waitForRest(page.getByRole('tablist'));
+    expect(Math.abs((await lensCenterX(page)) - more.x)).toBeLessThan(0.5);
+    await driver.tap(more);
+    await expect(page.getByRole('heading', {name: 'More'})).toBeVisible();
+  });
+});

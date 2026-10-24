@@ -182,6 +182,10 @@
         },
         {
           "kind": "component",
+          "name": "TabBarMoreList"
+        },
+        {
+          "kind": "component",
           "name": "TabBarSearchTab"
         },
         {

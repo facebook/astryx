@@ -339,9 +339,11 @@ export {
 export {
   TabBar,
   TabBarItem,
+  TabBarMoreList,
   TabBarSearchTab,
   type TabBarAccessoryPlacement,
   type TabBarItemProps,
+  type TabBarMoreListProps,
   type TabBarProps,
   type TabBarSearchTabProps,
 } from './TabBar';

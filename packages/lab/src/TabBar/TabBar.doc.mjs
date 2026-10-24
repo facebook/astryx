@@ -20,6 +20,8 @@ export const docs = {
     'bottom accessory',
     'mini player',
     'search tab',
+    'more tab',
+    'overflow tabs',
   ],
   description:
     "The bottom tab bar of a phone app, as on iOS 26: the app's top-level sections as a floating capsule above the bottom edge, with a selection lens that slides to the chosen tab. Each tab has an icon, a label and an optional badge. Under a finger it behaves like iOS: the lens lifts into glass as a finger lands, follows a finger dragged across the tabs and settles on the tab nearest where it lifts, while the bar flexes; under a mouse the lens follows the theme's motion. It can collapse into a small circle while the page scrolls down, and hold a search tab apart at its trailing end. Choosing the selected tab again is reported separately, so a screen can return to its root as iOS does. Experimental: lands in lab first.",
@@ -71,8 +73,15 @@ export const docs = {
           name: 'children',
           type: 'ReactNode',
           description:
-            'The tabs: TabBarItem elements, in order, as direct children, and at most one TabBarSearchTab.',
+            'The tabs: TabBarItem elements, in order, as direct children, and at most one TabBarSearchTab. With more than five, the bar shows the first four and a More tab that holds the rest.',
           required: true,
+        },
+        {
+          name: 'moreValue',
+          type: 'string',
+          description:
+            "The More tab's value, with more than five tabs. Choosing More calls onChange with it (and onReselect while More holds a tab, to return to its list); More reads as selected while value is moreValue or any tab past the fourth. Render TabBarMoreList while value is moreValue, and a section chosen there inside More's own navigation stack.",
+          default: "'more'",
         },
       ],
     },
@@ -126,6 +135,32 @@ export const docs = {
           description:
             'Shows the tab dimmed and keeps it from being chosen: a tap, the arrow keys and a lift of the lens over it leave the selection as it is.',
           default: 'false',
+        },
+      ],
+    },
+    {
+      name: 'TabBarMoreList',
+      displayName: 'Tab Bar More List',
+      description:
+        "The More tab's screen, as on iOS: one row per tab past the fourth, with its icon, its label and a disclosure chevron. Give it the same TabBarItem children as TabBar. Rearranging the tabs (iOS's Edit) is not available yet.",
+      props: [
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description: 'The same TabBarItem elements given to TabBar.',
+          required: true,
+        },
+        {
+          name: 'onChoose',
+          type: '(value: string) => void',
+          description:
+            "Called with a row's value when it is chosen: show that section inside More, which stays selected in the bar.",
+          required: true,
+        },
+        {
+          name: 'value',
+          type: 'string',
+          description: "The selected tab's value: its row reads as selected.",
         },
       ],
     },
@@ -217,6 +252,11 @@ export const docs = {
         guidance: true,
         description:
           'Add a TabBarSearchTab when search is a section of the app on its own; cancel should return to the tab it was chosen from.',
+      },
+      {
+        guidance: true,
+        description:
+          'Keep to five tabs where you can; with more, put the sections people use most first, since the rest move into More.',
       },
       {
         guidance: false,

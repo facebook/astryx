@@ -18,6 +18,7 @@ import {afterEach, describe, expect, it, vi} from 'vitest';
 import {useRef, useState} from 'react';
 import {act, fireEvent, render, screen} from '@testing-library/react';
 import {TabBar, TabBarItem, TabBarSearchTab, type TabBarProps} from './TabBar';
+import {TabBarMoreList} from './TabBarMoreList';
 
 function Glyph({name}: {name: string}) {
   return <svg data-testid={`icon-${name}`} />;
@@ -639,5 +640,84 @@ describe('TabBar disabled tab', () => {
     home.focus();
     fireEvent.keyDown(home, {key: 'ArrowRight'});
     expect(screen.getByRole('tab', {name: 'Profile'})).toHaveFocus();
+  });
+});
+
+describe('TabBar More tab', () => {
+  const SIX = ['home', 'library', 'browse', 'profile', 'settings', 'help'];
+  const tabs = SIX.map(value => (
+    <TabBarItem
+      key={value}
+      value={value}
+      label={value[0].toUpperCase() + value.slice(1)}
+      icon={<Glyph name={value} />}
+    />
+  ));
+
+  it('shows the first four tabs and More when there are more than five', () => {
+    render(
+      <TabBar value="home" onChange={() => {}} label="Sections">
+        {tabs}
+      </TabBar>,
+    );
+    expect(screen.getAllByRole('tab').map(tab => tab.textContent)).toEqual([
+      'Home',
+      'Library',
+      'Browse',
+      'Profile',
+      'More',
+    ]);
+  });
+
+  it('selects More for a tab it holds, and chooses More with its value', () => {
+    const onChange = vi.fn();
+    const {rerender} = render(
+      <TabBar value="settings" onChange={onChange} label="Sections">
+        {tabs}
+      </TabBar>,
+    );
+    expect(screen.getByRole('tab', {name: 'More'})).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    rerender(
+      <TabBar value="home" onChange={onChange} label="Sections">
+        {tabs}
+      </TabBar>,
+    );
+    fireEvent.click(screen.getByRole('tab', {name: 'More'}));
+    expect(onChange).toHaveBeenCalledWith('more');
+  });
+
+  it('More again while it holds a tab is a reselect, back to its list', () => {
+    const onChange = vi.fn();
+    const onReselect = vi.fn();
+    render(
+      <TabBar
+        value="help"
+        onChange={onChange}
+        onReselect={onReselect}
+        label="Sections">
+        {tabs}
+      </TabBar>,
+    );
+    fireEvent.click(screen.getByRole('tab', {name: 'More'}));
+    expect(onReselect).toHaveBeenCalledWith('more');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('lists the tabs past the fourth, and a row chooses its tab', () => {
+    const onChoose = vi.fn();
+    render(
+      <TabBarMoreList value="help" onChoose={onChoose}>
+        {tabs}
+      </TabBarMoreList>,
+    );
+    const list = screen.getByRole('list', {name: 'More'});
+    expect(list).toHaveTextContent('Settings');
+    expect(list).toHaveTextContent('Help');
+    expect(list).not.toHaveTextContent('Profile');
+    fireEvent.click(screen.getByRole('button', {name: /Settings/}));
+    expect(onChoose).toHaveBeenCalledWith('settings');
   });
 });
