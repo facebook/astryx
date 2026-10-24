@@ -53,15 +53,14 @@ apple/
   that also imports SwiftUI, write `Astryx.Button` and `SwiftUI.Button`. A
   component's parameters use core's prop names
   and values (`variant: .primary`, `size: .lg`, `isLoading`), so code reads
-  the same across web and native. `Text`, `Heading`, and `Card` take the
-  generated `TextProps`, `HeadingProps`, and `CardProps`, as AST-093 FR5 asks;
-  the others keep four exceptions, the interim shape FR5 exempts until they move onto the generated
-  contracts:
+  the same across web and native. `Text`, `Heading`, `Card`, and `TextInput`
+  take the generated `TextProps`, `HeadingProps`, `CardProps`, and
+  `TextInputProps`, as AST-093 FR5 asks; `Button` keeps three exceptions, the
+  interim shape FR5 exempts until it moves onto its generated contract:
   - `Button` takes `action` where core has `onClick`.
   - `Button` takes `fillsWidth` where core has `width="100%"`.
   - `Button` takes `icon` as a shared icon name (`"search"`), which the
     generated `ButtonProps` does not carry yet.
-  - `TextInput` takes a `Binding` where core has `value` and `onChange`.
 - **`Templates/`** holds one folder per page template, named after the
   `astryx template` id. Templates are clone-only, as on the web: you copy a
   template's folder into your app and own it from then on. They are a

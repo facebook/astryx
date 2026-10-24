@@ -82,16 +82,19 @@ struct LoginTemplateContent: View {
 
           TextInput(
             label: "Email",
-            value: $form.email,
+            value: form.email,
             type: .email,
+            onChange: { form.email = $0 },
             size: .lg,
             placeholder: "you@example.com"
           )
           TextInput(
             label: "Password",
-            value: $form.password,
+            value: form.password,
             type: .password,
+            onChange: { form.password = $0 },
             size: .lg,
+            onEnter: signIn,
             placeholder: "Enter your password"
           )
           Button(
