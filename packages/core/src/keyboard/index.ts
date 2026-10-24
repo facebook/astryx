@@ -15,6 +15,7 @@
  */
 
 export {
+  claimTapFocus,
   findTextEntryControl,
   getMobileKeyboardHeight,
   isKeyboardMeasurable,
@@ -24,6 +25,7 @@ export {
   subscribeMobileKeyboard,
   useKeyboardHeight,
   useMobileKeyboard,
+  type ClaimTapFocusOptions,
   type MobileKeyboardEvent,
   type RefuseFocusRevealOptions,
 } from './useMobileKeyboard';

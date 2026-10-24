@@ -4,8 +4,8 @@
 
 /**
  * @file useChatKeyboard.ts
- * @input React refs, the keyboard module (useKeyboardHeight), the keyboard
- *   layout guide, the animator, the gesture system's tap recognizer,
+ * @input React refs, the keyboard module (useKeyboardHeight,
+ *   claimTapFocus), the keyboard layout guide, the animator,
  *   `springs.keyboard`
  * @output Exports useChatKeyboard: the lift ChatLayout lays its dock and
  *   keyboard spacer out with, and the refs it puts on its dock, message area
@@ -32,10 +32,10 @@
  * - A tap on the composer's text while it is not focused focuses it without
  *   Safari's reveal (`preventScroll`), which would otherwise scroll the
  *   whole page up to show a field that the keyboard is about to cover, and
- *   puts the caret where the finger lifted. The tap is the gesture system's:
- *   recognizing it cancels the browser's own focus for that touch. Taps on
- *   anything else in the composer, and taps once the text has focus, are
- *   the browser's.
+ *   puts the caret where the finger lifted. The tap is the keyboard module's
+ *   tap route (claimTapFocus): its end cancels the browser's own focus for
+ *   that touch. Taps on anything else in the composer, and taps once the
+ *   text has focus, are the browser's.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/ChatLayout.tsx and ChatLayout.doc.mjs
@@ -45,9 +45,9 @@
 import {useRef, useState, useSyncExternalStore, type RefObject} from 'react';
 import {useAnimator} from '../motion/useAnimator';
 import {springs} from '../motion/uikit';
-import {TapGestureRecognizer, useGestureRecognizer} from '../gestures';
 import {
   bringsUpKeyboard,
+  claimTapFocus,
   getKeyboardLayoutGuide,
   getMobileKeyboardHeight,
   useKeyboardHeight,
@@ -366,27 +366,19 @@ export function useChatKeyboard({
     }
   }, [lift, scrollRef, dock.animator, messages.animator]);
 
-  useGestureRecognizer(
-    composerRef,
-    () =>
-      new TapGestureRecognizer({
-        name: 'chat-composer-focus',
-        allowedPointerTypes: ['touch'],
-        shouldReceiveTouch: (_recognizer, touch) =>
-          editableToClaim(touch.target) != null,
-      }),
-    tap => {
-      if (tap.state !== 'ended') {
-        return;
-      }
-      const {x, y} = tap.location();
-      const target = composerRef.current?.ownerDocument.elementFromPoint(x, y);
-      const editable = editableToClaim(target);
-      if (editable != null) {
-        focusAtPoint(editable, x, y);
-      }
-    },
-  );
+  // A tap on the composer's text that would bring up the keyboard is the
+  // keyboard module's tap route (spec:AST-099 FR4): focused here without
+  // Safari's reveal, with the caret where the finger lifted.
+  useIsomorphicLayoutEffect(() => {
+    const composer = composerRef.current;
+    if (composer == null) {
+      return undefined;
+    }
+    return claimTapFocus(composer, {
+      claim: editableToClaim,
+      deliver: focusAtPoint,
+    });
+  }, []);
 
   return {
     lift,

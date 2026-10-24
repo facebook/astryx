@@ -16,6 +16,7 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, renderHook} from '@testing-library/react';
 import {getKeyboardLayoutGuide} from './keyboardLayoutGuide';
 import {
+  claimTapFocus,
   getMobileKeyboardHeight,
   isKeyboardMeasurable,
   measureKeyboardHeight,
@@ -259,5 +260,102 @@ describe('the focus refusal (FR4)', () => {
     stop();
     first.remove();
     second.remove();
+  });
+});
+
+describe('the tap route (FR4)', () => {
+  // A touch event as the browser raises it: its fingers, and cancelable.
+  const touchEvent = (
+    type: string,
+    points: {x: number; y: number}[],
+    changed = points,
+  ) => {
+    const event = new Event(type, {bubbles: true, cancelable: true});
+    const list = (ps: {x: number; y: number}[]) =>
+      ps.map((p, identifier) => ({identifier, clientX: p.x, clientY: p.y}));
+    Object.assign(event, {
+      touches: list(points),
+      changedTouches: list(changed),
+    });
+    return event;
+  };
+
+  function setup() {
+    const region = document.createElement('div');
+    const field = document.createElement('div');
+    region.append(field);
+    document.body.append(region);
+    const deliver = vi.fn();
+    const stop = claimTapFocus(region, {
+      claim: target => (target === field ? field : null),
+      deliver,
+    });
+    return {region, field, deliver, stop};
+  }
+
+  it('delivers a tap on a claimed field itself, and cancels the browser\u2019s', () => {
+    const {region, field, deliver, stop} = setup();
+    field.dispatchEvent(touchEvent('touchstart', [{x: 10, y: 10}]));
+    const end = touchEvent('touchend', [], [{x: 12, y: 11}]);
+    field.dispatchEvent(end);
+    expect(end.defaultPrevented).toBe(true);
+    expect(deliver).toHaveBeenCalledWith(field, 12, 11);
+    stop();
+    region.remove();
+  });
+
+  it('leaves a touch that moves past the scroll slop, or a second finger, to the browser', () => {
+    const {region, field, deliver, stop} = setup();
+    field.dispatchEvent(touchEvent('touchstart', [{x: 10, y: 10}]));
+    field.dispatchEvent(touchEvent('touchmove', [{x: 10, y: 30}]));
+    const moved = touchEvent('touchend', [], [{x: 10, y: 30}]);
+    field.dispatchEvent(moved);
+    expect(moved.defaultPrevented).toBe(false);
+
+    field.dispatchEvent(
+      touchEvent('touchstart', [
+        {x: 10, y: 10},
+        {x: 40, y: 10},
+      ]),
+    );
+    const pinch = touchEvent('touchend', [], [{x: 10, y: 10}]);
+    field.dispatchEvent(pinch);
+    expect(pinch.defaultPrevented).toBe(false);
+    expect(deliver).not.toHaveBeenCalled();
+    stop();
+    region.remove();
+  });
+
+  it('listens on the region only, and follows a touch only while it is down', () => {
+    const {region, field, stop} = setup();
+    const add = vi.spyOn(region, 'addEventListener');
+    const remove = vi.spyOn(region, 'removeEventListener');
+    const documentAdd = vi.spyOn(document, 'addEventListener');
+    field.dispatchEvent(touchEvent('touchstart', [{x: 10, y: 10}]));
+    expect(add.mock.calls.map(([type]) => type)).toEqual([
+      'touchmove',
+      'touchend',
+      'touchcancel',
+    ]);
+    field.dispatchEvent(touchEvent('touchend', [], [{x: 10, y: 10}]));
+    expect(remove.mock.calls.map(([type]) => type)).toEqual([
+      'touchmove',
+      'touchend',
+      'touchcancel',
+    ]);
+    expect(documentAdd).not.toHaveBeenCalled();
+    stop();
+    region.remove();
+  });
+
+  it('leaves a touch outside what the caller claims to the browser', () => {
+    const {region, deliver, stop} = setup();
+    region.dispatchEvent(touchEvent('touchstart', [{x: 10, y: 10}]));
+    const end = touchEvent('touchend', [], [{x: 10, y: 10}]);
+    region.dispatchEvent(end);
+    expect(end.defaultPrevented).toBe(false);
+    expect(deliver).not.toHaveBeenCalled();
+    stop();
+    region.remove();
   });
 });

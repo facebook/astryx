@@ -28,7 +28,11 @@ exported from the package entry.
   capture-phase `blur` before the browser's own focus step, so the browser
   never reveals a field by scrolling the document. Focus that leaves for
   nothing (the keyboard's Done) can be parked so the next tap is a transition
-  again.
+  again. A tap on a field when nothing has focus raises no blur:
+  `claimTapFocus(region, {claim, deliver})` is that route. It follows one
+  finger with listeners on the region, only while the touch is down, and on a
+  tap (within 10 px) prevents the touch's default and delivers the focus
+  itself (ChatLayout puts the caret where the finger lifted).
 - **BottomSheet's hook (FR4, FR5):** `useMobileKeyboard(options)` gives a
   fully expanded Tall sheet its keyboard scroll range, claims focus moves into
   it, puts back a document scroll while the page is locked, and dismisses the
@@ -106,7 +110,7 @@ at any time, for something that appears while the keyboard moves.
 
 | File                     | What it holds                                                                              |
 | ------------------------ | ------------------------------------------------------------------------------------------ |
-| `useMobileKeyboard.ts`   | The keyboard module: the height, its listeners, the focus refusal, BottomSheet's hook.     |
+| `useMobileKeyboard.ts`   | The keyboard module: the height, its listeners, the focus routes, BottomSheet's hook.      |
 | `keyboardModel.ts`       | The clock-free core of the guide: transitions from keyboard reports and focus changes.     |
 | `keyboardLayoutGuide.ts` | One guide per window, fed by the keyboard module: the frame watch, the verification timer. |
 | `index.ts`               | Entry point.                                                                               |

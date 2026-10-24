@@ -8,7 +8,8 @@
  * @output Exports the on-screen keyboard module: measureKeyboardHeight,
  *   isKeyboardMeasurable, subscribeMobileKeyboard, getMobileKeyboardHeight,
  *   useKeyboardHeight, isTextEntryControl, findTextEntryControl,
- *   refuseFocusReveal, and BottomSheet's useMobileKeyboard hook
+ *   refuseFocusReveal, claimTapFocus, and BottomSheet's useMobileKeyboard
+ *   hook
  * @position Core's one source for the on-screen keyboard (spec:AST-099,
  *   architecture:react-component-runtime INV11). Internal to core: nothing
  *   here is exported from the package. BottomSheet, ChatLayout and the
@@ -30,7 +31,8 @@
  * focus transition over on the capture-phase blur, deliver it with
  * preventScroll, and bring the control into view with the surface's own
  * scroller afterwards. Every route in (a tap, the keyboard's Next, Tab, a
- * programmatic focus()) passes through that one transition.
+ * programmatic focus()) passes through that one transition. A tap on a field
+ * when nothing has focus raises no blur; `claimTapFocus` takes that route.
  *
  * BottomSheet's hook (`useMobileKeyboard`) gives a fully expanded, explicitly
  * Tall sheet a keyboard-aware internal scroll range while leaving the sheet
@@ -323,6 +325,100 @@ export function refuseFocusReveal(
   doc.addEventListener('blur', onBlur, true);
   return () => {
     doc.removeEventListener('blur', onBlur, true);
+  };
+}
+
+// A touch that moves this far is the browser's to scroll (Safari claims a
+// touch for scrolling past 10 px), not a tap on a field.
+const TAP_SLOP_PX = 10;
+
+/** The caller's rules for claimTapFocus. */
+export interface ClaimTapFocusOptions {
+  /** The control a touch on `target` would focus, when this caller claims it. */
+  claim: (target: EventTarget | null) => HTMLElement | null;
+  /** Focuses the claimed control for a tap that ended at (x, y). */
+  deliver: (control: HTMLElement, x: number, y: number) => void;
+}
+
+/**
+ * FR4's tap route: a one-finger tap on `region` that `claim` accepts (a
+ * field without focus) is delivered by `deliver` instead of by the browser,
+ * whose own focus would reveal the field by scrolling the document. The tap's
+ * default is prevented at its end, which also cancels the click it would
+ * make; a touch that moves past the scroll slop, or a second finger, is left
+ * to the browser. Returns a cleanup.
+ *
+ * @example
+ * ```
+ * const stop = claimTapFocus(composer, {
+ *   claim: target => editableWithoutFocus(target),
+ *   deliver: (field, x, y) => focusAtPoint(field, x, y),
+ * });
+ * ```
+ */
+export function claimTapFocus(
+  region: HTMLElement,
+  {claim, deliver}: ClaimTapFocusOptions,
+): () => void {
+  // The touch being followed, and the listeners that follow it: on the
+  // region only, and only while that touch is down.
+  let start: {x: number; y: number; control: HTMLElement} | null = null;
+  const stopFollowing = () => {
+    start = null;
+    region.removeEventListener('touchmove', onMove);
+    region.removeEventListener('touchend', onEnd);
+    region.removeEventListener('touchcancel', stopFollowing);
+  };
+  function onMove(event: TouchEvent) {
+    const touch = event.touches[0];
+    if (
+      start == null ||
+      event.touches.length !== 1 ||
+      touch == null ||
+      Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > TAP_SLOP_PX
+    ) {
+      stopFollowing();
+    }
+  }
+  function onEnd(event: TouchEvent) {
+    const touch = event.changedTouches[0];
+    const tap = start;
+    stopFollowing();
+    // Still the same field, still without focus.
+    if (
+      tap == null ||
+      touch == null ||
+      !event.cancelable ||
+      claim(tap.control) !== tap.control
+    ) {
+      return;
+    }
+    event.preventDefault();
+    deliver(tap.control, touch.clientX, touch.clientY);
+  }
+  const onStart = (event: TouchEvent) => {
+    if (start != null) {
+      // Another finger joined the one being followed: not a tap.
+      stopFollowing();
+      return;
+    }
+    const touch = event.touches[0];
+    const control =
+      event.touches.length === 1 && touch != null ? claim(event.target) : null;
+    if (control == null || touch == null) {
+      return;
+    }
+    start = {x: touch.clientX, y: touch.clientY, control};
+    region.addEventListener('touchmove', onMove, {passive: true});
+    // Not passive: only the end of the touch can still cancel the browser's
+    // focus and its reveal.
+    region.addEventListener('touchend', onEnd);
+    region.addEventListener('touchcancel', stopFollowing);
+  };
+  region.addEventListener('touchstart', onStart, {passive: true});
+  return () => {
+    stopFollowing();
+    region.removeEventListener('touchstart', onStart);
   };
 }
 

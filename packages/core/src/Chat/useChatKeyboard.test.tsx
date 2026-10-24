@@ -13,6 +13,9 @@
  *   are proven in Mobile Safari; see the pull request evidence)
  */
 
+import fs from 'node:fs';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, render, screen} from '@testing-library/react';
 import {ChatLayout} from './ChatLayout';
@@ -237,5 +240,15 @@ describe('the taps the composer claims', () => {
       '<div contenteditable="true" id="editor"><p id="text">Hello</p></div>';
     document.getElementById('editor')!.focus();
     expect(editableToClaim(document.getElementById('text'))).toBeNull();
+  });
+});
+
+describe('what ChatLayout loads for the keyboard', () => {
+  it('imports no gesture system: the composer tap is the keyboard module\u2019s focus route', () => {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    for (const file of ['ChatLayout.tsx', 'useChatKeyboard.ts']) {
+      const source = fs.readFileSync(path.join(here, file), 'utf8');
+      expect(source, file).not.toMatch(/from '\.\.\/gestures/);
+    }
   });
 });
