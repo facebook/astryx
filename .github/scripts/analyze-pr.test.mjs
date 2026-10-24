@@ -360,6 +360,8 @@ describe('analyze-pr base and head sizes', () => {
       expect(analysis.componentStats.Card.esmBytes).toBe(160);
       expect(analysis.componentStats.Card.cjsBytes).toBeNull();
       expect(analysis.baseComponentStats.Card.esmBytes).toBe(100);
+      expect(analysis.componentStats.Card.importGzipBytes).toBeGreaterThan(0);
+      expect(analysis.baseComponentStats.Card.importGzipBytes).toBeGreaterThan(0);
       const [headBundle] = analysis.bundlePackages;
       const [baseBundle] = analysis.baseBundlePackages;
       expect(headBundle.package).toBe('@astryxdesign/core');

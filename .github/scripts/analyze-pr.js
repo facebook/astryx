@@ -15,6 +15,11 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { execSync } = require('node:child_process');
 const {
+  gzipBytes: gzipTextBytes,
+  measureComponentImport,
+  packageStylesheetPath,
+} = require('./lib/component-size');
+const {
   COMPONENT_PACKAGES,
   componentExportsFromBarrel,
   documentedComponentNames,
@@ -500,6 +505,24 @@ function getComplexity(pkg, componentName) {
   }
 }
 
+// A package's prebuilt stylesheet text, read once per tree.
+const stylesheetCache = new Map();
+function packageStylesheet(pkg) {
+  const file = packageStylesheetPath(path.join(process.cwd(), pkg.dir));
+  if (!file) return null;
+  if (!stylesheetCache.has(file)) stylesheetCache.set(file, fs.readFileSync(file, 'utf8'));
+  return stylesheetCache.get(file);
+}
+
+// The dist module a component's import resolves to: `dist/<Name>/index.js` in
+// a nested package, `dist/<Name>.js` in a flat one.
+function componentImportEntry(pkg, componentName) {
+  const dist = path.join(process.cwd(), pkgDist(pkg));
+  return pkg.layout === 'flat'
+    ? path.join(dist, `${componentName}.js`)
+    : path.join(dist, componentName, 'index.js');
+}
+
 // Get component stats
 function getComponentStats(pkg, componentName) {
   // Per-component dist sizing only applies to nested packages that emit a
@@ -512,9 +535,18 @@ function getComponentStats(pkg, componentName) {
   const entries = distDir ? resolveEntries(distDir, pkg) : { esmPath: null, cjsPath: null };
   const loc = getComponentLOC(pkg, componentName);
   const complexity = getComplexity(pkg, componentName);
+  // What the component's import costs: the gzip JavaScript it pulls in,
+  // transitive modules included, and the gzip CSS of the stylesheet rules
+  // that JavaScript references (spec:AST-080 FR8, INV6).
+  const importSize = measureComponentImport(
+    componentImportEntry(pkg, componentName),
+    packageStylesheet(pkg),
+  );
 
   return {
     package: pkg.name,
+    importGzipBytes: importSize.importGzipBytes,
+    cssGzipBytes: importSize.cssGzipBytes,
     esmSize: getFileSize(entries.esmPath),
     esmBytes: getFileSizeBytes(entries.esmPath),
     cjsSize: getFileSize(entries.cjsPath),
@@ -545,6 +577,10 @@ function getPackageBundleStats(pkg) {
     cjsBytes: getFileSizeBytes(cjsPath),
     gzipSize: formatBytes(gzipBytes),
     gzipBytes,
+    stylesheetGzipBytes: (() => {
+      const css = packageStylesheet(pkg);
+      return css === null ? null : gzipTextBytes(css);
+    })(),
   };
 }
 

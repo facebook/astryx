@@ -97,6 +97,26 @@ function bytesDelta(after, before) {
     : null;
 }
 
+// A measured byte count as text, or N/A. Only numbers reach the output.
+function sizeText(bytes) {
+  if (typeof bytes !== 'number' || !Number.isFinite(bytes)) return 'N/A';
+  if (Math.abs(bytes) < 1024) return `${bytes}B`;
+  return `${(bytes / 1024).toFixed(1)}KB`;
+}
+
+function signedSizeText(delta) {
+  if (delta === null) return 'N/A';
+  return delta > 0 ? `+${sizeText(delta)}` : sizeText(delta);
+}
+
+// Touch-only budget per component (architecture:component-style-authoring
+// INV6, spec:AST-080 FR8): 2 KB gzip JavaScript, 1 KB gzip CSS. The report
+// cannot tell whether growth runs only on a coarse pointer, so it flags any
+// growth over budget and asks the author.
+const JS_BUDGET_BYTES = 2 * 1024;
+const CSS_BUDGET_BYTES = 1024;
+const budgetFlags = [];
+
 // Build component stats section
 let componentSection = '';
 if (analysis.newComponents && analysis.newComponents.length > 0) {
@@ -110,6 +130,8 @@ if (analysis.newComponents && analysis.newComponents.length > 0) {
       : '';
     componentSection += `<details>\n<summary><strong>${inline(comp)}</strong>${pkgBadge}${sbBadge}</summary>\n\n`;
     componentSection += `| Metric | Value |\n|--------|-------|\n`;
+    componentSection += `| Import (gzip, transitive) | ${sizeText(stats.importGzipBytes)} |\n`;
+    componentSection += `| CSS (gzip) | ${sizeText(stats.cssGzipBytes)} |\n`;
     componentSection += `| Entry File (ESM) | ${inline(stats.esmSize) || 'N/A'} |\n`;
     if (stats.cjsSize)
       componentSection += `| Entry File (CJS) | ${inline(stats.cjsSize)} |\n`;
@@ -153,11 +175,37 @@ if (analysis.modifiedComponents && analysis.modifiedComponents.length > 0) {
           : `${esmDelta}B`
         : 'N/A';
 
+    const importDelta = bytesDelta(
+      stats.importGzipBytes,
+      baseStats.importGzipBytes,
+    );
+    const cssDelta = bytesDelta(stats.cssGzipBytes, baseStats.cssGzipBytes);
+    const jsOver = importDelta !== null && importDelta > JS_BUDGET_BYTES;
+    const cssOver = cssDelta !== null && cssDelta > CSS_BUDGET_BYTES;
+    if (jsOver || cssOver)
+      budgetFlags.push({comp, importDelta, cssDelta, jsOver, cssOver});
+
+    componentSection += `| Import (gzip, transitive) | ${sizeText(baseStats.importGzipBytes)} | ${sizeText(stats.importGzipBytes)} | ${signedSizeText(importDelta)}${jsOver ? ' ⚠️' : ''} |\n`;
+    componentSection += `| CSS (gzip) | ${sizeText(baseStats.cssGzipBytes)} | ${sizeText(stats.cssGzipBytes)} | ${signedSizeText(cssDelta)}${cssOver ? ' ⚠️' : ''} |\n`;
     componentSection += `| Entry File (ESM) | ${inline(baseStats.esmSize) || 'N/A'} | ${inline(stats.esmSize) || 'N/A'} | ${esmDeltaStr} |\n`;
     componentSection += `| Lines of Code | ${inline(baseStats.linesOfCode) || 'N/A'} | ${inline(stats.linesOfCode) || 'N/A'} | - |\n`;
     componentSection += `| Complexity | ${inline(baseStats.complexityRating) || 'N/A'} | ${inline(stats.complexityRating) || 'N/A'} (${num(stats.complexity)}) | - |\n`;
     componentSection += `\n</details>\n\n`;
   }
+}
+
+// Components whose growth passes the touch-only budget.
+let budgetSection = '';
+if (budgetFlags.length > 0) {
+  budgetSection += '### ⚠️ Touch-only size budget\n\n';
+  budgetSection +=
+    'These components grew past the touch-only budget (2 KB gzip JavaScript or 1 KB gzip CSS per component). If the growth runs only on a coarse pointer, load its JavaScript lazily so the import does not carry it, or justify the cost in the pull request description; CSS stays in the package stylesheet, so justify it.\n\n';
+  budgetSection +=
+    '| Component | JavaScript | CSS |\n|-----------|------------|-----|\n';
+  for (const flag of budgetFlags) {
+    budgetSection += `| ${inline(flag.comp)} | ${signedSizeText(flag.importDelta)}${flag.jsOver ? ' ⚠️' : ''} | ${signedSizeText(flag.cssDelta)}${flag.cssOver ? ' ⚠️' : ''} |\n`;
+  }
+  budgetSection += '\n';
 }
 
 // Build accessibility section using shared module
@@ -203,6 +251,19 @@ if (bundlePackages.length > 0 && Array.isArray(baseBundles)) {
     bundleSection += `| ${inline(b.package)} | ${inline(b.esmSize) || 'N/A'} | ${inline(base.gzipSize) || 'N/A'} | ${inline(b.gzipSize) || 'N/A'} | ${signedBytes(delta)} |\n`;
   }
   bundleSection += `\n`;
+  const sheets = bundlePackages.filter(
+    b => typeof b.stylesheetGzipBytes === 'number',
+  );
+  if (sheets.length > 0) {
+    bundleSection += `| Package stylesheet | Gzip before | Gzip after | Delta |\n`;
+    bundleSection += `|--------------------|-------------|------------|-------|\n`;
+    for (const b of sheets) {
+      const base = baseBundles.find(entry => entry.package === b.package) || {};
+      const delta = bytesDelta(b.stylesheetGzipBytes, base.stylesheetGzipBytes);
+      bundleSection += `| ${inline(b.package)} | ${sizeText(base.stylesheetGzipBytes)} | ${sizeText(b.stylesheetGzipBytes)} | ${signedSizeText(delta)} |\n`;
+    }
+    bundleSection += `\n`;
+  }
 } else if (bundlePackages.length > 0) {
   bundleSection += `| Package | Size (ESM) | Size (CJS) | Gzipped |\n`;
   bundleSection += `|---------|------------|------------|----------|\n`;
@@ -271,7 +332,7 @@ const body = `## PR Analysis Report
 <!-- astryx-pr-analysis -->
 
 ${diffModeCaveat}${previewAvailabilitySection}${storybookSection}${sandboxSection}${componentSection || '_No new or modified components detected._\n\n'}
-${bundleSection}
+${budgetSection}${bundleSection}
 ${a11ySection}
 ${visualSection}---
 
