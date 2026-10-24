@@ -212,6 +212,20 @@ export const EndContentHeaderless: Story = {
   },
 };
 
+// A taller caller control (the default IconButton size) still sits centred on
+// the first line of a headerless one-line block.
+export const EndContentTall: Story = {
+  args: {
+    code: 'npm install @astryxdesign/core',
+    language: 'bash',
+    hasLanguageLabel: false,
+    endContent: (
+      <IconButton label="Run in terminal" variant="ghost" icon={terminalIcon} />
+    ),
+    width: '360px',
+  },
+};
+
 export const JSON: Story = {
   args: {
     code: `{
