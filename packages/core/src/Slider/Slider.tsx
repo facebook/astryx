@@ -5,7 +5,7 @@
 /**
  * @file Slider.tsx
  * @input Uses React, useId, useRef, useCallback, useEffect, Field, useTooltip, VisuallyHidden; the touch presentation resolver and useSliderTouch (UISlider's touch tracking)
- * @output Exports Slider and its props; unfilled marks share the track token; modifier-only key presses do not restore the thumb focus ring; a drag belongs to the pointer that started it; the thumbs and the filled range travel by `translate` from a progress custom property in container units of a box filling the control's padding box, so moving them never lays out (a value tooltip or text display still does) and padding on the control moves no part; the value tooltip anchors to a box layout places at the value; under a finger on iOS (the touch presentation's iOS idiom) only the thumbs' touch targets take touches, tracked as UISlider does, while a mouse and every other touch screen (Android's) keep the pointer handlers
+ * @output Exports Slider and its props; unfilled marks share the track token; modifier-only key presses do not restore the thumb focus ring; a drag belongs to the pointer that started it; the thumbs and the filled range travel by `translate` from a progress custom property in container units of a box filling the control's padding box, so moving them never lays out (a value tooltip or text display still does) and padding on the control moves no part; the value tooltip anchors to a box layout places at the value; under a finger (a coarse primary pointer, on every touch device) only the thumbs' touch targets take a drag, tracked as UISlider does, and a tap on the track sets the value on its lift, while a mouse or a trackpad keeps the pointer handlers
  * @position Core implementation; consumed by index.ts, tested by Slider.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -210,7 +210,7 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     flexGrow: 1,
-    // Under the touch presentation (iOS) the gesture host sets the touch
+    // Under the touch presentation (a finger) the gesture host sets the touch
     // targets' and the track's touch-action as their recognizers need it
     // (the track's tap leaves the page its scrolling), and turns text
     // selection and the callout off where a finger is held.
@@ -734,14 +734,11 @@ export function Slider({ref, ...props}: SliderProps) {
   const draggingThumbRef = useRef<number | null>(null);
   const [draggingThumb, setDraggingThumb] = useState<number | null>(null);
 
-  // Under a finger on iOS the thumbs track touches as UISlider does
-  // (useSliderTouch); a mouse keeps the pointer handlers below. UISlider's
-  // tracking is the iOS idiom: Android's Material slider moves the thumb to a
-  // tap on the track and has no momentum, so every other touch screen keeps
-  // the pointer handlers too.
-  const touchPresentation = useTouchPresentation();
-  const isTouchPresentation =
-    touchPresentation.isTouch && touchPresentation.idiom === 'ios';
+  // Under a finger the thumbs track touches as UISlider does
+  // (useSliderTouch): one touch model on every touch device, a coarse
+  // primary pointer whatever the platform (spec:AST-094). A mouse or a
+  // trackpad keeps the pointer handlers below.
+  const isTouchPresentation = useTouchPresentation().isTouch;
   const hasTouchTargets = isTouchPresentation && !isDisabled;
   // Whether the touch presentation takes touches (useSliderTouch): the
   // pointer handlers then leave a finger or a pen to it.

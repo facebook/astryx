@@ -9,10 +9,11 @@
  * @output Exports `SliderTouchController` (UISlider's touch tracking),
  *   `sliderCoastCurve` (the release coast as a closed-form curve) and the
  *   `SliderTouchModel` and `SliderTouchParts` types
- * @position Internal to Slider: its touch presentation on iOS (a finger or a
- *   pen under the touch presentation's iOS idiom), loaded by useSliderTouch
- *   only once that presentation applies. A mouse, and every other touch
- *   screen (Android's), keeps Slider's own pointer handlers. The coast
+ * @position Internal to Slider: its touch presentation (a finger, or a pen
+ *   on a thumb, under a coarse primary pointer: one touch model on every
+ *   touch device, spec:AST-094), loaded by useSliderTouch only once that
+ *   presentation applies. A mouse or a trackpad keeps Slider's own pointer
+ *   handlers. The coast
  *   spring is the `slider.releaseSpring` motion role, resolved under the
  *   thumb's theme.
  *

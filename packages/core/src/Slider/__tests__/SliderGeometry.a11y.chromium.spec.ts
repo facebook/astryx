@@ -443,7 +443,7 @@ test('padding on the control keeps the thumb on the track, the fill and the mark
 
 // Desktop keeps the pointer model: no touch targets, the control's own
 // touch-action and user-select, and none of the touch presentation's inline
-// styles (the gesture host sets those only on iOS, while a finger is down).
+// styles (the gesture host sets those only under a finger, while it is down).
 test('a desktop slider keeps its pointer styles: no touch targets, no inline touch styles', async ({
   page,
 }) => {

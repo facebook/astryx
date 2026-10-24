@@ -137,16 +137,8 @@ function dragThumb(
   return t;
 }
 
-/**
- * A coarse or fine primary pointer, on iOS's engine (the only one with
- * `-webkit-touch-callout`, the touch presentation's iOS gate) or another
- * (Android).
- */
-function stubMatchMedia(coarse: boolean, engine: 'ios' | 'other' = 'ios') {
-  vi.stubGlobal('CSS', {
-    supports: (condition: string) =>
-      engine === 'ios' && condition.includes('-webkit-touch-callout'),
-  });
+/** A coarse (a finger) or a fine (a mouse) primary pointer. */
+function stubMatchMedia(coarse: boolean) {
   vi.stubGlobal(
     'matchMedia',
     vi.fn((query: string) => ({
@@ -322,12 +314,15 @@ describe('Slider touch presentation (UISlider tracking)', () => {
     }
   });
 
-  it('keeps today’s slider on a touch screen that is not iOS: no touch targets, a finger on the track moves the value', async () => {
-    stubMatchMedia(true, 'other');
+  it('gives every touch screen the same touch presentation, whatever its engine (one touch model)', async () => {
+    stubMatchMedia(true);
+    // No -webkit-touch-callout here, as on Android's Chromium: the touch
+    // presentation keys on the coarse pointer alone.
+    vi.stubGlobal('CSS', {supports: () => false});
     stubControlGeometry();
     const onChange = vi.fn();
     await renderTouch(<Controlled initial={50} onChange={onChange} />);
-    expect(hitOf(screen.getByRole('slider'))).toBeNull();
+    expect(hitOf(screen.getByRole('slider'))).not.toBeNull();
     const control = document.querySelector(
       '.astryx-slider-control',
     ) as HTMLElement;
@@ -338,8 +333,8 @@ describe('Slider touch presentation (UISlider tracking)', () => {
       clientY: 12,
     });
     fireEvent.pointerUp(control, {pointerId: 1, pointerType: 'touch'});
-    expect(onChange).toHaveBeenCalled();
-    expect(onChange.mock.lastCall?.[0]).toBeGreaterThan(50);
+    // The pointer handlers leave the finger to the touch presentation.
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it('ignores a finger on the track, while a mouse still moves the value there', async () => {
