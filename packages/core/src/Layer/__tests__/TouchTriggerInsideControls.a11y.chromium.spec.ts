@@ -6,10 +6,11 @@
  *   Storybook, driven by real Chromium touch input (CDP) in a phone-sized
  *   viewport.
  * @output Real-engine proof that a tap on a hover-layer trigger sitting inside
- *   a control goes to the control alone: a truncated Link follows its href and
- *   a ClickableCard opens once, with no truncation or name tooltip, while a
- *   truncated label in running text still opens its tooltip on a tap. Writes a
- *   storyboard (contact sheet + JSON trace) of the card tap to
+ *   a control goes to the control alone: a truncated Link follows its href (the
+ *   story prints the fragment it went to) and a ClickableCard opens once, with
+ *   no truncation or name tooltip, while a truncated label in running text
+ *   still opens its tooltip on a tap. Writes a storyboard (contact sheet + JSON
+ *   trace) of the card tap to
  *   test-results/touch-trigger-inside-controls/.
  * @position Run with `pnpm test:a11y-contract`. Which element a real tap
  *   lands on, and where its click goes, needs a real engine; the unit suites
@@ -63,6 +64,9 @@ async function openStory(page: Page): Promise<Finger> {
   await page.goto(`${storybook.origin}/iframe.html?id=${STORY}&viewMode=story`);
   await expect(page.getByTestId('card-opens')).toHaveText(
     'Card opened 0 times',
+  );
+  await expect(page.getByTestId('link-followed')).toHaveText(
+    'Link followed: not yet',
   );
   // A truncated Text mounts its tooltip once it has measured the overflow,
   // and that tooltip describes the text. Every trigger is armed before a tap.
@@ -136,6 +140,11 @@ test.describe('a tap on a hover-layer trigger inside a control', () => {
     await expect
       .poll(async () => page.evaluate(() => location.hash))
       .toBe('#quarterly-report');
+    // The story prints where the link went, which is what a video of this tap
+    // shows.
+    await expect(page.getByTestId('link-followed')).toHaveText(
+      'Link followed: #quarterly-report',
+    );
     await page.waitForTimeout(300);
     await expect(page.locator(TOOLTIP)).toHaveCount(0);
   });

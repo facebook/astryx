@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {Tooltip, useTooltip} from '@astryxdesign/core/Tooltip';
 import {Avatar} from '@astryxdesign/core/Avatar';
@@ -263,19 +263,31 @@ export const TouchTriggers: Story = {
 export const TouchTriggersInsideControls: Story = {
   render: function TouchTriggersInsideControlsStory() {
     const [cardOpens, setCardOpens] = useState(0);
+    // Where the link went, so following it shows on the page.
+    const [followed, setFollowed] = useState<string | null>(null);
+    useEffect(() => {
+      const read = () => setFollowed(window.location.hash || null);
+      window.addEventListener('hashchange', read);
+      return () => window.removeEventListener('hashchange', read);
+    }, []);
     return (
       <div data-testid="touch-stage" style={{padding: 24, maxWidth: 320}}>
         <VStack gap={6}>
           {/* A truncated link: its label carries the truncation tooltip. The
               link fills its 200px box so the label can truncate. */}
-          <div style={{width: 200}}>
-            <Link
-              href="#quarterly-report"
-              maxLines={1}
-              style={{display: 'block'}}>
-              Quarterly revenue report for the board, final version
-            </Link>
-          </div>
+          <VStack gap={1}>
+            <div style={{width: 200}}>
+              <Link
+                href="#quarterly-report"
+                maxLines={1}
+                style={{display: 'block'}}>
+                Quarterly revenue report for the board, final version
+              </Link>
+            </div>
+            <Text type="supporting" data-testid="link-followed">
+              Link followed: {followed ?? 'not yet'}
+            </Text>
+          </VStack>
           {/* A clickable card: a truncated ID and a name avatar inside it. */}
           <ClickableCard
             label="Open deployment"
