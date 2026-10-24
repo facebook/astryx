@@ -13,6 +13,7 @@ import type {MotionRoleKind} from './roles';
 
 export const MOTION_ROLE_KINDS: Readonly<Record<string, MotionRoleKind>> = {
   'navigation.transitionMs': 'duration',
+  'picker.tapSpin.durationMs': 'duration',
   'scroll.bounce': 'spring',
   'scroll.paging.snap': 'spring',
   'springs.actionSheetDismiss': 'spring',
