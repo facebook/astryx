@@ -112,16 +112,13 @@ export function rowOrigin(geometry: DrumGeometry): string {
 }
 
 /**
- * The band copy's strip translation for `offset`. A looping strip carries
- * three cycles of rows and translates within the middle one.
+ * The band copy's strip translation for `offset`. The strip's rows sit at
+ * their positions along the wheel (position × row height, a looping wheel's
+ * positions running past either end), so the strip moves with the offset
+ * itself, unfolded.
  */
-export function stripTranslation(offset: number, layout: WheelLayout): number {
-  if (!layout.looping) {
-    return -offset;
-  }
-  const cycle = layout.rowCount * layout.rowHeight;
-  const folded = offset - cycle * Math.floor(offset / cycle);
-  return -(folded + cycle);
+export function stripTranslation(offset: number): number {
+  return -offset;
 }
 
 /**
@@ -268,23 +265,12 @@ export function rowKeyframes(
 export function stripKeyframes(
   samples: ReadonlyArray<CurveSample>,
   duration: number,
-  layout: WheelLayout,
 ): {offset: number; transform: string}[] {
   const frames: {offset: number; transform: string}[] = [];
-  let previous: number | null = null;
-  const cycle = layout.rowCount * layout.rowHeight;
   for (const sample of samples) {
-    const y = stripTranslation(sample.value, layout);
+    const y = stripTranslation(sample.value);
     const offset = duration > 0 ? Math.min(1, sample.t / duration) : 1;
-    if (
-      previous != null &&
-      layout.looping &&
-      Math.abs(y - previous) > cycle / 2
-    ) {
-      frames.push({offset, transform: `translateY(${round(previous, 3)}px)`});
-    }
     frames.push({offset, transform: `translateY(${round(y, 3)}px)`});
-    previous = y;
   }
   if (frames.length === 1) {
     frames.push({offset: 1, transform: frames[0].transform});

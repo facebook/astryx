@@ -38,6 +38,7 @@ import {
   sampleCurve,
   stripKeyframes,
   stripTranslation,
+  type CurveSample,
   type DrumGeometry,
 } from './wheelDrum';
 import {
@@ -65,8 +66,11 @@ interface RunningMotion {
   readonly curve: WheelCurve;
   /** document.timeline time the curve's t = 0 maps to, ms. */
   origin: number;
-  readonly animations: Animation[];
-  readonly promoted: HTMLElement[];
+  /** The curve's samples, kept to bake rows that mount while it plays. */
+  readonly samples: ReadonlyArray<CurveSample>;
+  /** The animations by row index, and the strip's. */
+  readonly rowAnimations: Map<number, Animation>;
+  stripAnimation: Animation | null;
   readonly timers: number[];
   readonly ticks: boolean;
   readonly onEnd?: (outcome: WheelMotionOutcome, offset: number) => void;
@@ -80,6 +84,43 @@ function now(): number {
   return typeof time === 'number' ? time : performance.now();
 }
 
+/**
+ * One element's animation along a curve lasting `duration` seconds, its last
+ * keyframe held for `END_HOLD_MS` past the end, the element promoted to its
+ * own layer while it plays.
+ */
+function bake(
+  element: HTMLElement,
+  frames: ReadonlyArray<{offset: number; transform: string}>,
+  duration: number,
+): Animation {
+  const durationMs = duration * 1000;
+  const totalMs = durationMs + END_HOLD_MS;
+  const scale = durationMs / totalMs;
+  const keyframes: Keyframe[] = frames.map(frame => ({
+    offset: frame.offset * scale,
+    transform: frame.transform,
+  }));
+  keyframes.push({offset: 1, transform: frames[frames.length - 1].transform});
+  element.style.willChange = 'transform';
+  return element.animate(keyframes, {duration: totalMs, easing: 'linear'});
+}
+
+/** The element an animation moves. */
+function targetOf(animation: Animation): Element | null {
+  const effect = animation.effect;
+  return effect instanceof KeyframeEffect ? effect.target : null;
+}
+
+/** Cancel an animation and drop its element's layer. */
+function release(animation: Animation): void {
+  animation.cancel();
+  const target = targetOf(animation);
+  if (target instanceof HTMLElement) {
+    target.style.willChange = '';
+  }
+}
+
 function canAnimate(element: Element): boolean {
   return typeof (element as HTMLElement).animate === 'function';
 }
@@ -90,7 +131,7 @@ function canAnimate(element: Element): boolean {
  * @example
  * ```
  * const motion = new WheelMotion({rowHeight: 32, rowCount: 60});
- * motion.attach(rows, strip);
+ * motion.attach(new Map([[29, row29], [30, row30], [31, row31]]), strip);
  * motion.setOffset(30 * 32);
  * motion.play(planRelease(motion.offset(), 900, layout).curve, {ticks: true});
  * ```
@@ -98,12 +139,13 @@ function canAnimate(element: Element): boolean {
 export class WheelMotion {
   private layout: WheelLayout;
   private geometry: DrumGeometry;
-  private rows: HTMLElement[] = [];
+  /** The mounted rows by option index (the Wheel mounts a window of them). */
+  private rows: ReadonlyMap<number, HTMLElement> = new Map();
   private strip: HTMLElement | null = null;
   private restingOffset = 0;
   private motion: RunningMotion | null = null;
   /** Last angle written per row, so a frame writes only what changed. */
-  private written: (number | null)[] = [];
+  private written = new Map<number, number>();
   private lastTick = -Infinity;
   /** Last offset a drag frame showed, for its ticks. */
   private dragPrevious: number | null = null;
@@ -114,23 +156,60 @@ export class WheelMotion {
   }
 
   /**
-   * The drum's rows (one per option, in order) and the band's strip. Handed
-   * the same nodes again (an owner re-rendered, say with other rows
-   * disabled), a running motion keeps playing on them; new nodes stop it.
+   * The drum's mounted rows, by option index, and the band's strip. A
+   * running motion carries on through a re-attach: the rows it already
+   * animates keep their animations (an owner re-rendered, say with other
+   * rows disabled), rows that unmounted lose theirs, and rows that mounted
+   * join it in step.
    */
-  attach(rows: HTMLElement[], strip: HTMLElement | null): void {
-    const sameNodes =
-      strip === this.strip &&
-      rows.length === this.rows.length &&
-      rows.every((row, index) => row === this.rows[index]);
-    if (!sameNodes) {
-      this.stop();
-    }
+  attach(
+    rows: ReadonlyMap<number, HTMLElement>,
+    strip: HTMLElement | null,
+  ): void {
     this.rows = rows;
     this.strip = strip;
-    this.written = rows.map(() => null);
-    if (this.motion == null) {
+    this.written = new Map();
+    const motion = this.motion;
+    if (motion == null) {
       this.render(this.restingOffset);
+      return;
+    }
+    for (const [index, animation] of motion.rowAnimations) {
+      if (rows.get(index) !== targetOf(animation)) {
+        release(animation);
+        motion.rowAnimations.delete(index);
+      }
+    }
+    for (const [index, row] of rows) {
+      if (motion.rowAnimations.has(index)) {
+        continue;
+      }
+      // The end state inline first, as for every row of a motion.
+      const angle = rowAngle(
+        rowDistance(index, motion.curve.to, this.layout),
+        this.geometry,
+      );
+      row.style.transform = rowTransform(angle);
+      this.written.set(index, angle);
+      const animation = this.animateRow(motion, index, row);
+      if (animation != null) {
+        animation.startTime = motion.origin;
+        motion.rowAnimations.set(index, animation);
+      }
+    }
+    if (
+      motion.stripAnimation != null &&
+      targetOf(motion.stripAnimation) !== strip
+    ) {
+      release(motion.stripAnimation);
+      motion.stripAnimation = null;
+    }
+    if (motion.stripAnimation == null && strip != null) {
+      strip.style.transform = `translateY(${stripTranslation(motion.curve.to)}px)`;
+      motion.stripAnimation = this.animateStrip(motion, strip);
+      if (motion.stripAnimation != null) {
+        motion.stripAnimation.startTime = motion.origin;
+      }
     }
   }
 
@@ -143,7 +222,7 @@ export class WheelMotion {
     this.layout = layout;
     this.geometry = drumGeometry(layout.rowHeight);
     if (changed) {
-      this.written = this.rows.map(() => null);
+      this.written = new Map();
     }
   }
 
@@ -222,73 +301,34 @@ export class WheelMotion {
       onEnd?.('arrived', curve.to);
       return;
     }
-    const durationMs = curve.duration * 1000;
-    const totalMs = durationMs + END_HOLD_MS;
-    const scale = durationMs / totalMs;
-    const samples = sampleCurve(curve);
-    const animations: Animation[] = [];
-    const promoted: HTMLElement[] = [];
     // The end state goes inline first: whatever the animations do, the rows
     // rest there once they are gone.
     this.restingOffset = curve.to;
     this.render(curve.to);
-    const animated = this.rows.length > 0 && canAnimate(this.rows[0]);
-    if (animated) {
-      this.rows.forEach((row, index) => {
-        const frames = rowKeyframes(
-          index,
-          samples,
-          curve.duration,
-          this.layout,
-          this.geometry,
-        );
-        if (frames == null) {
-          return;
-        }
-        row.style.willChange = 'transform';
-        promoted.push(row);
-        const keyframes: Keyframe[] = frames.map(frame => ({
-          offset: frame.offset * scale,
-          transform: frame.transform,
-        }));
-        keyframes.push({
-          offset: 1,
-          transform: frames[frames.length - 1].transform,
-        });
-        animations.push(
-          row.animate(keyframes, {duration: totalMs, easing: 'linear'}),
-        );
-      });
-      if (this.strip != null && canAnimate(this.strip)) {
-        const frames = stripKeyframes(samples, curve.duration, this.layout);
-        const keyframes: Keyframe[] = frames.map(frame => ({
-          offset: frame.offset * scale,
-          transform: frame.transform,
-        }));
-        keyframes.push({
-          offset: 1,
-          transform: frames[frames.length - 1].transform,
-        });
-        this.strip.style.willChange = 'transform';
-        promoted.push(this.strip);
-        animations.push(
-          this.strip.animate(keyframes, {duration: totalMs, easing: 'linear'}),
-        );
-      }
-    }
     const motion: RunningMotion = {
       curve,
       origin: now(),
-      animations,
-      promoted,
+      samples: sampleCurve(curve),
+      rowAnimations: new Map(),
+      stripAnimation: null,
       timers: [],
       ticks,
       onEnd,
     };
     this.motion = motion;
+    this.rows.forEach((row, index) => {
+      const animation = this.animateRow(motion, index, row);
+      if (animation != null) {
+        motion.rowAnimations.set(index, animation);
+      }
+    });
+    if (this.strip != null) {
+      motion.stripAnimation = this.animateStrip(motion, this.strip);
+    }
     // The browser starts animations created in one task together, when it
     // commits them; read that start back so `offset()` follows the screen.
-    const first = animations[0];
+    const first =
+      motion.rowAnimations.values().next().value ?? motion.stripAnimation;
     if (first != null) {
       first.ready?.then(
         () => {
@@ -310,6 +350,39 @@ export class WheelMotion {
       this.finish(motion);
       this.restingOffset = offset;
     }
+  }
+
+  /** Row `index`'s animation along `motion`, or null when it stays parked. */
+  private animateRow(
+    motion: RunningMotion,
+    index: number,
+    row: HTMLElement,
+  ): Animation | null {
+    if (!canAnimate(row)) {
+      return null;
+    }
+    const frames = rowKeyframes(
+      index,
+      motion.samples,
+      motion.curve.duration,
+      this.layout,
+      this.geometry,
+    );
+    return frames == null ? null : bake(row, frames, motion.curve.duration);
+  }
+
+  /** The band strip's animation along `motion`. */
+  private animateStrip(
+    motion: RunningMotion,
+    strip: HTMLElement,
+  ): Animation | null {
+    return canAnimate(strip)
+      ? bake(
+          strip,
+          stripKeyframes(motion.samples, motion.curve.duration),
+          motion.curve.duration,
+        )
+      : null;
   }
 
   private shiftOrigin(motion: RunningMotion, origin: number): void {
@@ -365,11 +438,13 @@ export class WheelMotion {
     for (const timer of motion.timers) {
       clearTimeout(timer);
     }
-    for (const animation of motion.animations) {
-      animation.cancel();
+    for (const animation of motion.rowAnimations.values()) {
+      release(animation);
     }
-    for (const element of motion.promoted) {
-      element.style.willChange = '';
+    motion.rowAnimations.clear();
+    if (motion.stripAnimation != null) {
+      release(motion.stripAnimation);
+      motion.stripAnimation = null;
     }
   }
 
@@ -388,16 +463,16 @@ export class WheelMotion {
   /** Write every row (and the strip) for `offset`; only what changed. */
   private render(offset: number, force = false): void {
     const {layout, geometry} = this;
-    for (let index = 0; index < this.rows.length; index++) {
+    for (const [index, row] of this.rows) {
       const angle = rowAngle(rowDistance(index, offset, layout), geometry);
-      if (!force && this.written[index] === angle) {
+      if (!force && this.written.get(index) === angle) {
         continue;
       }
-      this.written[index] = angle;
-      this.rows[index].style.transform = rowTransform(angle);
+      this.written.set(index, angle);
+      row.style.transform = rowTransform(angle);
     }
     if (this.strip != null) {
-      this.strip.style.transform = `translateY(${stripTranslation(offset, layout)}px)`;
+      this.strip.style.transform = `translateY(${stripTranslation(offset)}px)`;
     }
   }
 }

@@ -22,14 +22,7 @@
  * - /packages/core/src/DateInput/Wheel.test.tsx
  */
 
-import {
-  createContext,
-  use,
-  useMemo,
-  useRef,
-  type ReactNode,
-  type RefObject,
-} from 'react';
+import {createContext, use, useMemo, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars} from '../theme/tokens.stylex';
 import {wheelGeometry} from './tokens.stylex';
@@ -58,8 +51,13 @@ const styles = stylex.create({
 });
 
 interface WheelGroupContextValue {
-  /** The group's element: its centre is every column's vanishing point. */
-  readonly groupRef: RefObject<HTMLDivElement | null>;
+  /**
+   * The group's element, once mounted: its centre is every column's
+   * vanishing point. Handed over through state, so a Wheel re-places its
+   * vanishing point when the element arrives (its own layout effects run
+   * before the group's ref is attached).
+   */
+  readonly element: HTMLDivElement | null;
 }
 
 const WheelGroupContext = createContext<WheelGroupContextValue | null>(null);
@@ -82,16 +80,16 @@ export interface WheelGroupProps {
  * ```
  * <WheelGroup>
  *   <Wheel label="Hour" options={hours} value={hour} onChange={setHour} />
- *   <Wheel label="Minute" options={minutes} value={minute} onChange={setMinute} looping />
+ *   <Wheel label="Minute" options={minutes} value={minute} onChange={setMinute} isLooping />
  * </WheelGroup>
  * ```
  */
 export function WheelGroup({children}: WheelGroupProps) {
-  const groupRef = useRef<HTMLDivElement | null>(null);
-  const value = useMemo(() => ({groupRef}), []);
+  const [element, setElement] = useState<HTMLDivElement | null>(null);
+  const value = useMemo(() => ({element}), [element]);
   return (
     <WheelGroupContext value={value}>
-      <div ref={groupRef} {...stylex.props(styles.group)}>
+      <div ref={setElement} {...stylex.props(styles.group)}>
         <div
           aria-hidden="true"
           data-wheel-band=""

@@ -13,6 +13,9 @@
  */
 
 import {act, fireEvent, render, screen} from '@testing-library/react';
+import {readFileSync} from 'node:fs';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {createRef} from 'react';
 import {afterAll, afterEach, beforeAll, describe, expect, it, vi} from 'vitest';
 import {
@@ -121,7 +124,12 @@ function renderWheel(
   });
   const option = (label: string): HTMLElement =>
     screen.getByRole('option', {name: label});
-  return {...view, onChange, column, option};
+  /** The row as drawn on the drum (mounted only inside the window). */
+  const row = (label: string): HTMLElement =>
+    column.querySelector<HTMLElement>(
+      `[data-wheel-drum] [data-label="${label}"]`,
+    )!;
+  return {...view, onChange, column, option, row};
 }
 
 /** Each finger gets its own identifier, as a new contact does. */
@@ -198,32 +206,32 @@ describe('Wheel — at rest', () => {
   });
 
   it('parks the committed row under the band, the others on the cylinder', () => {
-    const {option, column} = renderWheel();
-    expect(option('10').style.transform).toBe(rowTransform(0));
-    expect(angleOf(option('11'))).toBeCloseTo(ROW / RADIUS, 4);
-    expect(angleOf(option('09'))).toBeCloseTo(-ROW / RADIUS, 4);
+    const {option, column, row} = renderWheel();
+    expect(row('10').style.transform).toBe(rowTransform(0));
+    expect(angleOf(row('11'))).toBeCloseTo(ROW / RADIUS, 4);
+    expect(angleOf(row('09'))).toBeCloseTo(-ROW / RADIUS, 4);
     expect(column.getAttribute('aria-activedescendant')).toBe(option('10').id);
   });
 
   it('shows a value set from outside without motion', () => {
-    const {rerender, option, onChange} = renderWheel();
+    const {rerender, onChange, row} = renderWheel();
     rerender(
       <Wheel label="Hour" options={HOURS} value={14} onChange={onChange} />,
     );
-    expect(option('14').style.transform).toBe(rowTransform(0));
+    expect(row('14').style.transform).toBe(rowTransform(0));
   });
 });
 
 describe('Wheel — a finger', () => {
   it('drags the rows with it, without committing until the wheel rests', () => {
-    const {column, option, onChange} = renderWheel();
+    const {column, onChange, row} = renderWheel();
     touch('touchstart', column, 150);
     for (let i = 1; i <= 8; i++) {
       advance(16);
       touch('touchmove', column, 150 - i * 6);
     }
     // 48 px of travel, 10 of it the pan's hysteresis: 38 px up.
-    expect(angleOf(option('10'))).toBeCloseTo(-38 / RADIUS, 3);
+    expect(angleOf(row('10'))).toBeCloseTo(-38 / RADIUS, 3);
     expect(onChange).not.toHaveBeenCalled();
     touch('touchend', column, 102);
     advance(2000);
@@ -239,7 +247,7 @@ describe('Wheel — a finger', () => {
   });
 
   it('turns on to the minimum after resting below it, and commits that', () => {
-    const {column, option, onChange} = renderWheel();
+    const {column, onChange, row} = renderWheel();
     // Down 3 rows (+10 px of hysteresis): the wheel rests on 07, disabled.
     drag(column, 60, 60 + 10 + 3 * ROW, {steps: 30, interval: 40, hold: 300});
     advance(100);
@@ -247,7 +255,7 @@ describe('Wheel — a finger', () => {
     advance(2000);
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange).toHaveBeenCalledWith(9);
-    expect(option('09').style.transform).toBe(rowTransform(0));
+    expect(row('09').style.transform).toBe(rowTransform(0));
   });
 
   it('flings across several rows before committing', () => {
@@ -265,7 +273,7 @@ describe('Wheel — a finger', () => {
   });
 
   it('rubber-bands past the last row and returns to it', () => {
-    const {column, option, onChange} = renderWheel({value: 17});
+    const {column, onChange, row} = renderWheel({value: 17});
     // Up far past hour 23.
     drag(column, 200, 20, {steps: 30, interval: 30, hold: 300});
     // Past the end, the last row has moved above the band by less than the
@@ -274,27 +282,27 @@ describe('Wheel — a finger', () => {
     // It rests on 23 (disabled), then turns back onto 17.
     advance(2000);
     expect(onChange).not.toHaveBeenCalledWith(23);
-    expect(option('17').style.transform).toBe(rowTransform(0));
+    expect(row('17').style.transform).toBe(rowTransform(0));
   });
 
   it('is stopped where it is by a finger that lands on it, and commits nothing', () => {
-    const {column, option, onChange} = renderWheel({
+    const {column, onChange, row} = renderWheel({
       options: MINUTES,
       value: 10,
       label: 'Minute',
     });
     drag(column, 180, 60, {steps: 6, interval: 16});
     advance(150);
-    const caught = angleOf(option('10'));
+    const caught = angleOf(row('10'));
     touch('touchstart', column, 100);
     advance(50);
-    expect(angleOf(option('10'))).toBeCloseTo(caught, 1);
+    expect(angleOf(row('10'))).toBeCloseTo(caught, 1);
     touch('touchend', column, 100);
     // A catch is not a tap: no turn onto the touched row, only the snap.
     advance(1000);
     expect(onChange).toHaveBeenCalledTimes(1);
     const rested = onChange.mock.calls[0][0] as number;
-    expect(Math.abs(angleOf(option(String(rested).padStart(2, '0'))))).toBe(0);
+    expect(Math.abs(angleOf(row(String(rested).padStart(2, '0'))))).toBe(0);
   });
 
   it('turns onto a tapped row and commits it on arrival', () => {
@@ -318,12 +326,12 @@ describe('Wheel — a finger', () => {
   });
 
   it('ignores fingers while hidden', () => {
-    const {column, option, onChange} = renderWheel({isActive: false});
-    const before = option('10').style.transform;
+    const {column, onChange, row} = renderWheel({isActive: false});
+    const before = row('10').style.transform;
     drag(column, 150, 60, {steps: 10, interval: 16});
     advance(3000);
     expect(onChange).not.toHaveBeenCalled();
-    expect(option('10').style.transform).toBe(before);
+    expect(row('10').style.transform).toBe(before);
   });
 });
 
@@ -385,14 +393,14 @@ describe('Wheel — mechanics for its owners', () => {
   });
 
   it('loops: the first row follows the last', () => {
-    const {column, option, onChange} = renderWheel({
+    const {column, onChange, row} = renderWheel({
       options: MINUTES,
       value: 59,
       label: 'Minute',
       isLooping: true,
     });
     // Minute 00 is drawn just below 59.
-    expect(angleOf(option('00'))).toBeCloseTo(ROW / RADIUS, 4);
+    expect(angleOf(row('00'))).toBeCloseTo(ROW / RADIUS, 4);
     fireEvent.keyDown(column, {key: 'ArrowDown'});
     expect(onChange).toHaveBeenLastCalledWith(0);
   });
@@ -462,6 +470,183 @@ describe('Wheel — mechanics for its owners', () => {
     // It came to rest on a row and committed it, as without the re-render.
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0][0]).toBeGreaterThan(15);
+  });
+});
+
+describe('Wheel — a window of rows', () => {
+  /** Years 1900-2099: a 200-row wheel. */
+  const YEARS: WheelOption[] = Array.from({length: 200}, (_, i) => ({
+    value: 1900 + i,
+    label: String(1900 + i),
+  }));
+  /** Option indices drawn on the drum, and positions on the band strip. */
+  const drumIndices = (column: HTMLElement) =>
+    [...column.querySelectorAll<HTMLElement>('[data-wheel-drum] > *')].map(
+      row => Number(row.dataset.index),
+    );
+  const stripLabels = (column: HTMLElement) =>
+    [
+      ...column.querySelectorAll<HTMLElement>(
+        '[data-wheel-strip] [data-label]',
+      ),
+    ].map(label => label.dataset.label);
+
+  it('draws only the rows around the band, and lists every option', () => {
+    const {column} = renderWheel({options: YEARS, value: 2000, label: 'Year'});
+    const drawn = drumIndices(column);
+    // The cylinder's front half (5 rows each side) and a buffer of 6.
+    expect(drawn).toHaveLength(23);
+    expect(Math.min(...drawn)).toBe(89);
+    expect(Math.max(...drawn)).toBe(111);
+    expect(stripLabels(column)).toHaveLength(23);
+    expect(screen.getAllByRole('option')).toHaveLength(200);
+    expect(column.getAttribute('aria-activedescendant')).toBe(
+      screen.getByRole('option', {name: '2000'}).id,
+    );
+  });
+
+  it('stops the window at the first and last rows', () => {
+    const {column} = renderWheel({options: YEARS, value: 1900, label: 'Year'});
+    expect(drumIndices(column)).toEqual(
+      Array.from({length: 12}, (_, index) => index),
+    );
+  });
+
+  it('draws every row a fling will pass before it plays, then settles back', () => {
+    const {column, onChange} = renderWheel({
+      options: YEARS,
+      value: 2000,
+      label: 'Year',
+    });
+    drag(column, 180, 60, {steps: 6, interval: 16});
+    const during = drumIndices(column);
+    expect(Math.max(...during)).toBeGreaterThan(111);
+    advance(5000);
+    const rest = onChange.mock.calls[0][0] - 1900;
+    expect(rest).toBeGreaterThan(100);
+    // Every row from the start to past the rest was drawn for the coast.
+    expect(Math.min(...during)).toBeLessThanOrEqual(100 - 5);
+    expect(Math.max(...during)).toBeGreaterThanOrEqual(rest + 5);
+    const after = drumIndices(column);
+    expect(after).toHaveLength(23);
+    expect(Math.min(...after)).toBe(rest - 11);
+  });
+
+  it('moves the window ahead of a drag', () => {
+    const {column} = renderWheel({options: YEARS, value: 2000, label: 'Year'});
+    // A slow drag up 10 rows: the rows past the start's window are drawn
+    // before the finger brings them into sight.
+    touch('touchstart', column, 200);
+    for (let i = 1; i <= 40; i++) {
+      advance(40);
+      touch('touchmove', column, 200 - i * 8);
+    }
+    expect(Math.max(...drumIndices(column))).toBeGreaterThanOrEqual(110 + 5);
+    advance(40);
+    touch('touchend', column, 200 - 320);
+  });
+
+  it('wraps a looping wheel window past its ends', () => {
+    const {column} = renderWheel({
+      options: MINUTES,
+      value: 59,
+      label: 'Minute',
+      isLooping: true,
+    });
+    const drawn = drumIndices(column);
+    // 59 ± 11, wrapping: 48-59, then 00-10.
+    expect(drawn).toHaveLength(23);
+    expect(drawn).toContain(0);
+    expect(drawn).toContain(10);
+    expect(drawn).toContain(48);
+    expect(drawn).not.toContain(11);
+    expect(drawn).not.toContain(47);
+    // The band strip runs on past 59 into 00, 01…
+    const labels = stripLabels(column);
+    expect(labels.indexOf('00')).toBe(labels.indexOf('59') + 1);
+  });
+
+  it('reaches every option by keys, past the window', () => {
+    const {column, onChange} = renderWheel({
+      options: YEARS,
+      value: 2000,
+      label: 'Year',
+    });
+    fireEvent.keyDown(column, {key: 'End'});
+    expect(onChange).toHaveBeenLastCalledWith(2099);
+    advance(400);
+    expect(drumIndices(column)).toContain(199);
+  });
+});
+
+describe('Wheel — in a group, and under a held finger', () => {
+  it('places its vanishing point at the group centre once the group mounts, without ResizeObserver', () => {
+    const left: Record<string, number> = {Hour: 17, Minute: 140, 'AM/PM': 262};
+    const spy = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function (this: HTMLElement) {
+        const label = this.getAttribute('aria-label');
+        const isGroup =
+          this.querySelector(':scope > [data-wheel-band]') != null;
+        const x = label != null && label in left ? left[label] : 0;
+        const width = label != null && label in left ? 123 : isGroup ? 402 : 0;
+        return {
+          x,
+          y: 0,
+          left: x,
+          top: 0,
+          right: x + width,
+          bottom: 216,
+          width,
+          height: 216,
+          toJSON() {},
+        };
+      });
+    try {
+      expect(typeof ResizeObserver).toBe('undefined');
+      render(
+        <WheelGroup>
+          <Wheel label="Hour" options={HOURS} value={10} onChange={() => {}} />
+          <Wheel
+            label="Minute"
+            options={MINUTES}
+            value={0}
+            onChange={() => {}}
+          />
+          <Wheel
+            label="AM/PM"
+            options={[
+              {value: 0, label: 'AM'},
+              {value: 1, label: 'PM'},
+            ]}
+            value={0}
+            onChange={() => {}}
+          />
+        </WheelGroup>,
+      );
+      const origin = (label: string) =>
+        screen
+          .getByRole('listbox', {name: label})
+          .querySelector<HTMLElement>('[data-wheel-drum]')!.style
+          .perspectiveOrigin;
+      // The group's centre is 201 px.
+      expect(origin('Hour')).toBe('184px 50%');
+      expect(origin('AM/PM')).toBe('-61px 50%');
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('neither selects text nor opens the callout under a held finger', () => {
+    const source = readFileSync(
+      path.join(path.dirname(fileURLToPath(import.meta.url)), 'Wheel.tsx'),
+      'utf8',
+    );
+    const open = source.indexOf('  column: {');
+    const column = source.slice(open, source.indexOf('\n  },', open));
+    expect(column).toContain("userSelect: 'none'");
+    expect(column).toContain("WebkitUserSelect: 'none'");
+    expect(column).toContain("WebkitTouchCallout: 'none'");
   });
 });
 

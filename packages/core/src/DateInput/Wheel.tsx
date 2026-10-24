@@ -39,9 +39,20 @@
  * in perspective above and below the band (wheelDrum.ts), and flat and
  * magnified inside it.
  *
+ * Both drawings mount only a window of rows, as UIPickerView lays out only
+ * the cells it shows: the cylinder's front half (±90° from the band) and a
+ * buffer on each side, so showing a wheel costs the same for 12 rows or 200.
+ * A motion mounts every row it will show before it plays (its cost follows
+ * the distance it travels, not the list), a drag moves the window when the
+ * finger nears its edge, and the window settles back around the rest. The
+ * listbox's options are separate, plain and complete: one per row, stacked
+ * transparent over the band, so assistive technology meets every option and
+ * its cursor sits on the band.
+ *
  * Accessibility: a listbox, one tab stop, `aria-activedescendant` on the
  * row at rest under the band. Arrow keys, Page Up/Down, Home and End move to
- * the next enabled row, commit it at once and turn the wheel to it.
+ * the next enabled row, commit it at once and turn the wheel to it; a click
+ * on an option (assistive technology) commits it the same way.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/DateInput/Wheel.test.tsx
@@ -60,6 +71,7 @@ import {
   useState,
   type Ref,
 } from 'react';
+import {flushSync} from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
 import {PanGestureRecognizer} from '../gestures/PanGestureRecognizer';
 import {TapGestureRecognizer} from '../gestures/TapGestureRecognizer';
@@ -88,8 +100,10 @@ import {
   snapCurve,
   spinCurve,
   wrapIndex,
+  type WheelCurve,
   type WheelLayout,
 } from './wheelPhysics';
+import type {PlayOptions} from './wheelMotion';
 import {useWheelGroup, wheelGroupStyles} from './WheelGroup';
 
 /** UIKit's row pitch, px: the wheel's geometry is UIPickerView's. */
@@ -97,6 +111,13 @@ const ROW_HEIGHT = picker.geometry.rowHeight;
 const GEOMETRY = drumGeometry(ROW_HEIGHT);
 /** Wheel events stop moving the wheel after this long without one, ms. */
 const WHEEL_IDLE_MS = 160;
+/**
+ * Rows on each side of the band that can show: the cylinder's front half,
+ * ±90° (rows past it are parked out of sight).
+ */
+const VISIBLE_REACH = Math.ceil(((Math.PI / 2) * GEOMETRY.radius) / ROW_HEIGHT);
+/** Rows mounted past the visible ones on each side. */
+const WINDOW_BUFFER = 6;
 
 const styles = stylex.create({
   column: {
@@ -108,6 +129,9 @@ const styles = stylex.create({
     outline: 'none',
     userSelect: 'none',
     WebkitUserSelect: 'none',
+    // A held finger (a catch, a slow drag) neither selects text nor opens
+    // the callout.
+    WebkitTouchCallout: 'none',
     WebkitTapHighlightColor: 'transparent',
   },
   standalone: {
@@ -146,6 +170,29 @@ const styles = stylex.create({
   rowDisabled: {
     color: colorVars['--color-text-disabled'],
   },
+  // Both drawings carry their text as generated content, so the listbox's
+  // options hold each label once: text searches, find-in-page and assistive
+  // technology meet only the options.
+  rowLabel: {
+    '::before': {
+      content: 'attr(data-label)',
+    },
+  },
+  /** The options: every row, plain, stacked transparent over the band. */
+  options: {
+    position: 'absolute',
+    insetInline: 0,
+    insetBlockStart: `calc(50% - ${wheelGeometry.bandHeight} / 2)`,
+    blockSize: wheelGeometry.bandHeight,
+    opacity: 0,
+    pointerEvents: 'none',
+  },
+  option: {
+    position: 'absolute',
+    inset: 0,
+    overflow: 'hidden',
+    whiteSpace: 'nowrap',
+  },
   /** The band's copy: flat, opaque and magnified, clipped to the band. */
   bandCopy: {
     position: 'absolute',
@@ -159,6 +206,8 @@ const styles = stylex.create({
     insetBlockStart: `calc(50% - ${wheelGeometry.rowHalfHeight})`,
   },
   stripRow: {
+    position: 'absolute',
+    insetInline: 0,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -170,9 +219,8 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     whiteSpace: 'nowrap',
   },
-  // The band copy's text is generated content, so the listbox holds each
-  // label once: text searches, find-in-page and assistive technology meet
-  // only the options.
+  /** A strip row at its position along the wheel. */
+  stripRowAt: (top: string) => ({insetBlockStart: top}),
   stripLabel: {
     display: 'inline-block',
     scale: wheelGeometry.bandMagnification,
@@ -305,6 +353,55 @@ function nearestPosition(
   return row + cycles * layout.rowCount;
 }
 
+/** A run of positions along the drum (row units, inclusive). */
+interface RowWindow {
+  readonly from: number;
+  readonly to: number;
+}
+
+/**
+ * The window around positions `lo` to `hi`: every row that can show while
+ * the wheel is between them, and the buffer. A finite wheel's window stops
+ * at its rows; a looping wheel's positions run past either end.
+ */
+function windowAround(lo: number, hi: number, layout: WheelLayout): RowWindow {
+  const reach = VISIBLE_REACH + WINDOW_BUFFER;
+  const from = Math.floor(Math.min(lo, hi)) - reach;
+  const to = Math.ceil(Math.max(lo, hi)) + reach;
+  return layout.looping
+    ? {from, to}
+    : {from: Math.max(0, from), to: Math.min(layout.rowCount - 1, to)};
+}
+
+/** Whether `window` mounts every row that can show between `lo` and `hi`. */
+function covers(
+  window: RowWindow,
+  lo: number,
+  hi: number,
+  layout: WheelLayout,
+): boolean {
+  let from = Math.floor(Math.min(lo, hi)) - VISIBLE_REACH;
+  let to = Math.ceil(Math.max(lo, hi)) + VISIBLE_REACH;
+  if (!layout.looping) {
+    from = Math.max(0, from);
+    to = Math.min(layout.rowCount - 1, to);
+  }
+  return window.from <= from && window.to >= to;
+}
+
+/** The lowest and highest positions a curve passes (row units). */
+function curveSpan(curve: WheelCurve, rowHeight: number): [number, number] {
+  let lo = Math.min(curve.value(0), curve.to);
+  let hi = Math.max(curve.value(0), curve.to);
+  const steps = Math.max(8, Math.ceil(curve.duration * 60));
+  for (let step = 1; step < steps; step++) {
+    const value = curve.value((curve.duration * step) / steps);
+    lo = Math.min(lo, value);
+    hi = Math.max(hi, value);
+  }
+  return [lo / rowHeight, hi / rowHeight];
+}
+
 interface DragState {
   /** The finger's offset at the pan's start, before any rubber band. */
   readonly start: number;
@@ -353,6 +450,12 @@ export function Wheel({
   // The row at rest under the band: the listbox's active descendant. It
   // changes at rest only; nothing renders while the wheel moves.
   const [restIndex, setRestIndex] = useState(selectedIndex);
+  // The mounted rows. `windowRef` runs ahead of the render: it is what the
+  // next commit mounts.
+  const [rowWindow, setRowWindow] = useState(() =>
+    windowAround(selectedIndex, selectedIndex, layout),
+  );
+  const windowRef = useRef(rowWindow);
   const dragRef = useRef<DragState | null>(null);
   /** A finger landed on a moving wheel and stopped it. */
   const caughtRef = useRef(false);
@@ -361,6 +464,59 @@ export function Wheel({
   useIsomorphicLayoutEffect(() => {
     latestRef.current = {options, value, onChange, resolveRest, layout};
   });
+
+  // Mount every row that can show between positions `lo` and `hi`, at once
+  // when a motion or a drag frame is about to show them.
+  const showRows = useCallback(
+    (lo: number, hi: number, {now = false}: {now?: boolean} = {}) => {
+      const currentLayout = latestRef.current.layout;
+      if (covers(windowRef.current, lo, hi, currentLayout)) {
+        return;
+      }
+      const next = windowAround(lo, hi, currentLayout);
+      windowRef.current = next;
+      if (now) {
+        // A motion's animations are baked per mounted row as it starts, and
+        // a drag frame writes the mounted rows: both need the rows now.
+        // eslint-disable-next-line @eslint-react/dom-no-flush-sync, @eslint-react/set-state-in-effect -- see above; never called from an effect with `now`
+        flushSync(() => setRowWindow(next));
+      } else {
+        // eslint-disable-next-line @eslint-react/set-state-in-effect -- the window follows the offset, which only exists in the motion engine
+        setRowWindow(next);
+      }
+    },
+    [],
+  );
+
+  // At rest, the window settles back around the rest.
+  const settleRows = useCallback((offset: number) => {
+    const currentLayout = latestRef.current.layout;
+    const position = offset / currentLayout.rowHeight;
+    const next = windowAround(position, position, currentLayout);
+    const current = windowRef.current;
+    if (next.from !== current.from || next.to !== current.to) {
+      windowRef.current = next;
+      setRowWindow(next);
+    }
+  }, []);
+
+  // Every motion: its rows mounted first, the window settled after.
+  const play = useCallback(
+    (curve: WheelCurve, options: PlayOptions = {}) => {
+      const [lo, hi] = curveSpan(curve, ROW_HEIGHT);
+      showRows(lo, hi, {now: true});
+      motion.play(curve, {
+        ...options,
+        onEnd: (outcome, end) => {
+          options.onEnd?.(outcome, end);
+          if (outcome === 'arrived' && !motion.isMoving()) {
+            settleRows(end);
+          }
+        },
+      });
+    },
+    [motion, showRows, settleRows],
+  );
 
   // The wheel came to rest at `offset`: commit, or turn on to the row the
   // rest rule names first.
@@ -378,7 +534,7 @@ export function Wheel({
         : nearestEnabledIndex(current.options, row, committed);
       if (resolved !== row && current.options[resolved] != null) {
         const target = position + (resolved - row);
-        motion.play(spinCurve(offset, target * ROW_HEIGHT), {
+        play(spinCurve(offset, target * ROW_HEIGHT), {
           onEnd: (outcome, end) => {
             if (outcome === 'arrived') {
               arrive(end);
@@ -397,7 +553,7 @@ export function Wheel({
         current.onChange(option.value);
       }
     },
-    [motion],
+    [play],
   );
 
   const onEnd = useCallback(
@@ -409,18 +565,18 @@ export function Wheel({
     [arrive],
   );
 
-  // Hand the rows to the motion engine whenever they are rendered anew.
+  // Hand the mounted rows to the motion engine whenever they are rendered
+  // anew.
   useIsomorphicLayoutEffect(() => {
     motion.setLayout(layout);
-    const drum = drumRef.current;
-    const rows =
-      drum == null
-        ? []
-        : Array.from(drum.children).filter(
-            (child): child is HTMLElement => child instanceof HTMLElement,
-          );
+    const rows = new Map<number, HTMLElement>();
+    for (const child of drumRef.current?.children ?? []) {
+      if (child instanceof HTMLElement) {
+        rows.set(Number(child.dataset.index), child);
+      }
+    }
     motion.attach(rows, stripRef.current);
-  }, [motion, layout, options]);
+  }, [motion, layout, options, rowWindow]);
 
   useEffect(() => () => motion.dispose(), [motion]);
 
@@ -432,12 +588,13 @@ export function Wheel({
       return;
     }
     const position = nearestPosition(selectedIndex, motion.offset(), layout);
+    showRows(position, position);
     if (Math.abs(motion.offset() - position * ROW_HEIGHT) > 0.01) {
       motion.setOffset(position * ROW_HEIGHT);
     }
     // eslint-disable-next-line @eslint-react/set-state-in-effect -- the active row follows the wheel's resting offset, which only exists in the motion engine
     setRestIndex(selectedIndex);
-  }, [isActive, selectedIndex, layout, motion]);
+  }, [isActive, selectedIndex, layout, motion, showRows]);
 
   // A hidden wheel keeps no motion running.
   useEffect(() => {
@@ -457,8 +614,7 @@ export function Wheel({
     }
     const place = () => {
       const columnBox = column.getBoundingClientRect();
-      const groupBox =
-        group?.groupRef.current?.getBoundingClientRect() ?? columnBox;
+      const groupBox = group?.element?.getBoundingClientRect() ?? columnBox;
       const centre = groupBox.left + groupBox.width / 2;
       drum.style.perspectiveOrigin = `${centre - columnBox.left}px 50%`;
       const shift =
@@ -472,9 +628,8 @@ export function Wheel({
     }
     const observer = new ResizeObserver(place);
     observer.observe(column);
-    const groupElement = group?.groupRef.current;
-    if (groupElement != null) {
-      observer.observe(groupElement);
+    if (group?.element != null) {
+      observer.observe(group.element);
     }
     return () => observer.disconnect();
   }, [group, isActive]);
@@ -502,9 +657,9 @@ export function Wheel({
         velocity,
         latestRef.current.layout,
       );
-      motion.play(plan.curve, {ticks: true, onEnd});
+      play(plan.curve, {ticks: true, onEnd});
     },
-    [motion, onEnd],
+    [motion, onEnd, play],
   );
 
   const pan = useGestureRecognizer(
@@ -529,13 +684,12 @@ export function Wheel({
             previous: -recognizer.velocity().y,
           };
           motion.resetDrag();
-          motion.setOffset(
-            dragOffset(
-              dragRef.current.start - recognizer.translation().y,
-              currentLayout,
-            ),
-            {ticks: true},
+          const offset = dragOffset(
+            dragRef.current.start - recognizer.translation().y,
+            currentLayout,
           );
+          showRows(offset / ROW_HEIGHT, offset / ROW_HEIGHT, {now: true});
+          motion.setOffset(offset, {ticks: true});
           break;
         }
         case 'changed': {
@@ -545,10 +699,12 @@ export function Wheel({
           }
           drag.previous = drag.current;
           drag.current = -recognizer.velocity().y;
-          motion.setOffset(
-            dragOffset(drag.start - recognizer.translation().y, currentLayout),
-            {ticks: true},
+          const offset = dragOffset(
+            drag.start - recognizer.translation().y,
+            currentLayout,
           );
+          showRows(offset / ROW_HEIGHT, offset / ROW_HEIGHT, {now: true});
+          motion.setOffset(offset, {ticks: true});
           break;
         }
         case 'ended': {
@@ -616,7 +772,7 @@ export function Wheel({
         return;
       }
       const target = nearestPosition(row, offset, currentLayout);
-      motion.play(spinCurve(offset, target * ROW_HEIGHT), {onEnd});
+      play(spinCurve(offset, target * ROW_HEIGHT), {onEnd});
     },
     {isEnabled: isActive},
   );
@@ -644,15 +800,15 @@ export function Wheel({
             : event.deltaY;
       const {min, max} = offsetBounds(currentLayout);
       const shown = motion.isMoving() ? motion.stop() : motion.offset();
-      motion.setOffset(Math.min(max, Math.max(min, shown + delta)), {
-        ticks: true,
-      });
+      const next = Math.min(max, Math.max(min, shown + delta));
+      showRows(next / ROW_HEIGHT, next / ROW_HEIGHT, {now: true});
+      motion.setOffset(next, {ticks: true});
       window.clearTimeout(idle);
       idle = window.setTimeout(() => {
         const offset = motion.offset();
         const target =
           nearestIndex(offset, latestRef.current.layout) * ROW_HEIGHT;
-        motion.play(snapCurve(offset, target, 1), {onEnd});
+        play(snapCurve(offset, target, 1), {onEnd});
       }, WHEEL_IDLE_MS);
     };
     column.addEventListener('wheel', onWheel, {passive: false});
@@ -660,14 +816,14 @@ export function Wheel({
       column.removeEventListener('wheel', onWheel);
       window.clearTimeout(idle);
     };
-  }, [isActive, motion, onEnd]);
+  }, [isActive, motion, onEnd, play, showRows]);
 
   const spinTo = useCallback(
     async (index: number, spin: WheelSpinOptions = {}): Promise<boolean> =>
       new Promise(resolve => {
         const offset = motion.offset();
         const target = nearestPosition(index, offset, latestRef.current.layout);
-        motion.play(
+        play(
           spinCurve(offset, target * ROW_HEIGHT, spin.duration, spin.curve),
           {
             onEnd: (outcome, end) => {
@@ -679,7 +835,7 @@ export function Wheel({
           },
         );
       }),
-    [motion, arrive],
+    [motion, arrive, play],
   );
 
   useImperativeHandle(ref, () => ({spinTo}), [spinTo]);
@@ -735,9 +891,9 @@ export function Wheel({
       if (option.value !== current.value) {
         current.onChange(option.value);
       }
-      motion.play(spinCurve(offset, target * ROW_HEIGHT));
+      play(spinCurve(offset, target * ROW_HEIGHT));
     },
-    [motion],
+    [motion, play],
   );
 
   // A click on a row (assistive technology, a keyboard, a test, a mouse the
@@ -757,9 +913,9 @@ export function Wheel({
         current.onChange(option.value);
       }
       const target = nearestPosition(row, offset, current.layout);
-      motion.play(spinCurve(offset, target * ROW_HEIGHT));
+      play(spinCurve(offset, target * ROW_HEIGHT));
     },
-    [motion],
+    [motion, play],
   );
 
   const handleKeyDown = useCallback(
@@ -797,7 +953,20 @@ export function Wheel({
     [moveBy, restIndex],
   );
 
-  const stripCopies = loops ? 3 : 1;
+  // The mounted rows: each option index once on the drum (a looping wheel
+  // shows a row at its copy nearest the band), and each position of the
+  // window on the band's strip.
+  const positions: number[] = [];
+  for (let position = rowWindow.from; position <= rowWindow.to; position++) {
+    positions.push(position);
+  }
+  const rowIndexAt = (position: number) =>
+    loops ? wrapIndex(position, rowCount) : position;
+  const drumRows = [
+    ...new Set(
+      positions.map(rowIndexAt).filter(index => index >= 0 && index < rowCount),
+    ),
+  ].sort((a, b) => a - b);
 
   return (
     <div
@@ -820,7 +989,7 @@ export function Wheel({
           {...stylex.props(wheelGroupStyles.band)}
         />
       )}
-      <div ref={drumRef} {...stylex.props(styles.drum)}>
+      <div role="presentation" {...stylex.props(styles.options)}>
         {options.map((option, index) => (
           <div
             key={option.value}
@@ -829,25 +998,48 @@ export function Wheel({
             aria-selected={option.value === value}
             aria-disabled={option.isDisabled || undefined}
             onClick={() => activateRow(index)}
-            {...stylex.props(
-              styles.row,
-              option.isDisabled && styles.rowDisabled,
-            )}>
+            {...stylex.props(styles.option)}>
             {option.label}
           </div>
         ))}
+      </div>
+      <div
+        ref={drumRef}
+        aria-hidden="true"
+        data-wheel-drum=""
+        {...stylex.props(styles.drum)}>
+        {drumRows.map(index => {
+          const option = options[index];
+          return (
+            <div
+              key={option.value}
+              data-index={index}
+              data-label={option.label}
+              {...stylex.props(
+                styles.row,
+                styles.rowLabel,
+                option.isDisabled && styles.rowDisabled,
+              )}
+            />
+          );
+        })}
       </div>
       <div
         ref={bandCopyRef}
         aria-hidden="true"
         {...stylex.props(styles.bandCopy)}>
         <div ref={stripRef} data-wheel-strip="" {...stylex.props(styles.strip)}>
-          {Array.from({length: stripCopies}, (_, copy) =>
-            options.map(option => (
+          {positions.map(position => {
+            const option = options[rowIndexAt(position)];
+            if (option == null) {
+              return null;
+            }
+            return (
               <div
-                key={`${copy}-${option.value}`}
+                key={position}
                 {...stylex.props(
                   styles.stripRow,
+                  styles.stripRowAt(`${position * ROW_HEIGHT}px`),
                   option.isDisabled && styles.rowDisabled,
                 )}>
                 <span
@@ -855,8 +1047,8 @@ export function Wheel({
                   {...stylex.props(styles.stripLabel)}
                 />
               </div>
-            )),
-          )}
+            );
+          })}
         </div>
       </div>
     </div>
