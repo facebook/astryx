@@ -4,8 +4,8 @@
 
 /**
  * @file Slider.tsx
- * @input Uses React, useId, useRef, useCallback, useEffect, Field, Tooltip, useTooltip, VisuallyHidden
- * @output Exports Slider and its props; unfilled marks share the track token; modifier-only key presses do not restore the thumb focus ring; a drag belongs to the pointer that started it; the thumbs and the filled range travel by `translate` from a progress custom property in the control's container units, so moving them never lays out (a value tooltip or text display still does)
+ * @input Uses React, useId, useRef, useCallback, useEffect, Field, useTooltip, VisuallyHidden
+ * @output Exports Slider and its props; unfilled marks share the track token; modifier-only key presses do not restore the thumb focus ring; a drag belongs to the pointer that started it; the thumbs and the filled range travel by `translate` from a progress custom property in container units of a box filling the control's padding box, so moving them never lays out (a value tooltip or text display still does) and padding on the control moves no part; the value tooltip anchors to a box layout places at the value
  * @position Core implementation; consumed by index.ts, tested by Slider.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -23,9 +23,13 @@ import {
   useRef,
   useState,
   useCallback,
+  type CSSProperties,
   type FocusEvent,
   type KeyboardEvent,
   type PointerEvent,
+  type ReactElement,
+  type ReactNode,
+  type Ref,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -38,7 +42,6 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {Field} from '../Field/Field';
-import {Tooltip} from '../Tooltip/Tooltip';
 import {useTooltip} from '../Tooltip';
 import {VisuallyHidden} from '../VisuallyHidden';
 import type {InputStatus} from '../Field/types';
@@ -200,10 +203,25 @@ const styles = stylex.create({
     touchAction: 'none',
     userSelect: 'none',
     isolation: 'isolate',
-    // The thumbs and the fill travel in container units of this box
-    // (`cqi` / `cqb`). Its size never depends on its content: the parts are
-    // all absolutely positioned and the box has a fixed block size.
+  },
+  // Every part of the control sits in this box, which fills the control's
+  // padding box, so padding on the control (a theme rule, `controlStyle`)
+  // moves no part. The thumbs and the fill travel in container units of it
+  // (`cqi` / `cqb`); its size never depends on its content.
+  travelBox: {
+    position: 'absolute',
+    inset: 0,
     containerType: 'size',
+  },
+  // Where layout places a thumb at its value: the value tooltip's position
+  // anchor. CSS anchor positioning reads the anchor's layout box, which the
+  // thumb's `translate` does not move in every engine, so the tooltip anchors
+  // here while hover and focus stay on the thumb.
+  valueAnchor: {
+    position: 'absolute',
+    width: THUMB_SIZE,
+    height: THUMB_SIZE,
+    pointerEvents: 'none',
   },
   trackContainerHorizontal: {
     height: THUMB_SIZE,
@@ -562,6 +580,51 @@ function cssLength(percent: number, px: number): string {
  * <Slider label="Price range" value={[20, 80]} onChange={setRange} />
  * ```
  */
+/**
+ * A thumb's value tooltip: hover and focus on the thumb, position from a
+ * thumb-sized anchor that layout places at the value (styles.valueAnchor).
+ */
+function SliderValueTooltip({
+  content,
+  placement,
+  isOpen,
+  anchorStyle,
+  thumbRef,
+  children,
+}: {
+  content: ReactNode;
+  placement: 'above' | 'start';
+  isOpen: boolean | undefined;
+  anchorStyle: CSSProperties;
+  thumbRef: Ref<HTMLDivElement> | undefined;
+  children: (trigger: {
+    ref: Ref<HTMLDivElement>;
+    describedBy: string;
+  }) => ReactElement;
+}): ReactElement {
+  const tooltip = useTooltip({
+    placement,
+    delay: 0,
+    focusTrigger: 'always',
+    isOpen,
+  });
+  const triggerRef = useMergedRefs<HTMLDivElement>(
+    thumbRef,
+    tooltip.interactionRef,
+  );
+  return (
+    <>
+      <span
+        aria-hidden="true"
+        ref={tooltip.positionRef}
+        {...mergeProps(stylex.props(styles.valueAnchor), {style: anchorStyle})}
+      />
+      {children({ref: triggerRef, describedBy: tooltip.describedBy})}
+      {tooltip.renderTooltip(content)}
+    </>
+  );
+}
+
 export function Slider({ref, ...props}: SliderProps) {
   const {
     label,
@@ -664,7 +727,7 @@ export function Slider({ref, ...props}: SliderProps) {
   }, []);
 
   // Disabled-reason tooltip. This is a *separate* useTooltip instance from the
-  // per-thumb value bubble (the `<Tooltip>` component below): it anchors to the
+  // per-thumb value bubble (SliderValueTooltip below): it anchors to the
   // track container and fires on hover/focus of the whole control. Disabled
   // controls swallow pointer events, so the thumb stays perceivable via
   // aria-disabled while pointer/keyboard handlers early-return on isDisabled.
@@ -1082,10 +1145,12 @@ export function Slider({ref, ...props}: SliderProps) {
     const tooltipPlacement = isHorizontal ? 'above' : 'start';
 
     const thumbElement = (
+      trigger: {ref: Ref<HTMLDivElement>; describedBy: string} | null,
+    ) => (
       <div
         key={thumbIndex}
         {...(!isRange ? rest : undefined)}
-        ref={!isRange ? ref : undefined}
+        ref={trigger != null ? trigger.ref : !isRange ? ref : undefined}
         id={!isRange ? id : undefined}
         role="slider"
         // A disabled thumb keeps its Tab stop (spec:AST-085 FR1).
@@ -1100,7 +1165,11 @@ export function Slider({ref, ...props}: SliderProps) {
         aria-label={thumbLabel}
         aria-labelledby={!isRange ? labelID : undefined}
         aria-describedby={
-          [!isRange ? ariaDescribedByProp : undefined, ariaDescribedBy]
+          [
+            !isRange ? ariaDescribedByProp : undefined,
+            ariaDescribedBy,
+            trigger?.describedBy,
+          ]
             .filter(Boolean)
             .join(' ') || undefined
         }
@@ -1136,20 +1205,31 @@ export function Slider({ref, ...props}: SliderProps) {
     );
 
     if (useValueTooltip) {
+      const anchorAt = `calc(${insetPosition(percent)} - ${THUMB_SIZE / 2}px)`;
       return (
-        <Tooltip
+        <SliderValueTooltip
           key={thumbIndex}
           content={displayValue(val)}
           placement={tooltipPlacement}
-          delay={0}
-          focusTrigger="always"
-          isOpen={draggingThumb === thumbIndex ? true : undefined}>
+          isOpen={draggingThumb === thumbIndex ? true : undefined}
+          anchorStyle={
+            isHorizontal
+              ? {
+                  insetInlineStart: anchorAt,
+                  top: `calc(50% - ${THUMB_SIZE / 2}px)`,
+                }
+              : {
+                  bottom: anchorAt,
+                  insetInlineStart: `calc(50% - ${THUMB_SIZE / 2}px)`,
+                }
+          }
+          thumbRef={!isRange ? ref : undefined}>
           {thumbElement}
-        </Tooltip>
+        </SliderValueTooltip>
       );
     }
 
-    return thumbElement;
+    return thumbElement(null);
   };
 
   // The filled range's ends as progress: it ends at the thumb centers, so it
@@ -1259,128 +1339,130 @@ export function Slider({ref, ...props}: SliderProps) {
             controlClassName,
             controlStyle,
           )}>
-          {/* Background track */}
-          <div
-            aria-hidden="true"
-            {...mergeProps(
-              themeProps('slider-track', {orientation}),
-              stylex.props(
-                styles.track,
-                isHorizontal
-                  ? styles.trackHorizontal
-                  : [styles.trackVertical, rtlStyles.centerInline('0px')],
-              ),
-            )}
-          />
-
-          {/* Filled track */}
-          <div
-            aria-hidden="true"
-            {...stylex.props(
-              styles.fillClip,
-              isHorizontal
-                ? styles.fillClipHorizontal
-                : [styles.fillClipVertical, rtlStyles.centerInline('0px')],
-            )}>
+          <div {...stylex.props(styles.travelBox)}>
+            {/* Background track */}
             <div
+              aria-hidden="true"
               {...mergeProps(
+                themeProps('slider-track', {orientation}),
                 stylex.props(
-                  styles.fillMover,
-                  isRange &&
-                    (isHorizontal
-                      ? [
-                          styles.fillMoverRangeHorizontal,
-                          styles.fillMoverRangeStartHorizontal,
-                        ]
-                      : [
-                          styles.fillMoverRangeVertical,
-                          styles.fillMoverRangeStartVertical,
-                        ]),
+                  styles.track,
+                  isHorizontal
+                    ? styles.trackHorizontal
+                    : [styles.trackVertical, rtlStyles.centerInline('0px')],
                 ),
-                {style: fillStyle},
+              )}
+            />
+
+            {/* Filled track */}
+            <div
+              aria-hidden="true"
+              {...stylex.props(
+                styles.fillClip,
+                isHorizontal
+                  ? styles.fillClipHorizontal
+                  : [styles.fillClipVertical, rtlStyles.centerInline('0px')],
               )}>
               <div
                 {...mergeProps(
                   stylex.props(
-                    styles.filledTrack,
-                    isHorizontal
-                      ? styles.filledTrackHorizontal
-                      : styles.filledTrackVertical,
-                    isRange
-                      ? isHorizontal
-                        ? styles.filledTrackRangeHorizontal
-                        : styles.filledTrackRangeVertical
-                      : isHorizontal
-                        ? styles.filledTrackSingleHorizontal
-                        : styles.filledTrackSingleVertical,
+                    styles.fillMover,
+                    isRange &&
+                      (isHorizontal
+                        ? [
+                            styles.fillMoverRangeHorizontal,
+                            styles.fillMoverRangeStartHorizontal,
+                          ]
+                        : [
+                            styles.fillMoverRangeVertical,
+                            styles.fillMoverRangeStartVertical,
+                          ]),
                   ),
                   {style: fillStyle},
-                )}
-              />
+                )}>
+                <div
+                  {...mergeProps(
+                    stylex.props(
+                      styles.filledTrack,
+                      isHorizontal
+                        ? styles.filledTrackHorizontal
+                        : styles.filledTrackVertical,
+                      isRange
+                        ? isHorizontal
+                          ? styles.filledTrackRangeHorizontal
+                          : styles.filledTrackRangeVertical
+                        : isHorizontal
+                          ? styles.filledTrackSingleHorizontal
+                          : styles.filledTrackSingleVertical,
+                    ),
+                    {style: fillStyle},
+                  )}
+                />
+              </div>
             </div>
-          </div>
 
-          {/* Marks */}
-          {marks && (
-            <div
-              aria-hidden="true"
-              {...stylex.props(
-                styles.marksContainer,
-                isHorizontal
-                  ? styles.marksContainerHorizontal
-                  : styles.marksContainerVertical,
-              )}>
-              {marks.map(mark => {
-                const percent = getPercent(mark.value, min, max);
-                const markPos = isHorizontal
-                  ? {insetInlineStart: insetPosition(percent)}
-                  : {bottom: insetPosition(percent)};
-                // Marks at or inside the filled region take the fill color:
-                // at or behind the thumb in single mode, between the thumbs
-                // in range mode.
-                const isFilled = isRange
-                  ? mark.value >= values[0] && mark.value <= values[1]
-                  : mark.value <= values[0];
-                return (
-                  <div key={mark.value}>
-                    <div
-                      data-testid="slider-mark"
-                      data-mark-value={mark.value}
-                      {...mergeProps(
-                        stylex.props(
-                          styles.mark,
-                          isHorizontal
-                            ? styles.markHorizontal
-                            : styles.markVertical,
-                          isFilled && styles.markFilled,
-                        ),
-                        {style: markPos},
-                      )}
-                    />
-                    {mark.label && (
-                      <span
-                        data-testid="slider-mark-label"
+            {/* Marks */}
+            {marks && (
+              <div
+                aria-hidden="true"
+                {...stylex.props(
+                  styles.marksContainer,
+                  isHorizontal
+                    ? styles.marksContainerHorizontal
+                    : styles.marksContainerVertical,
+                )}>
+                {marks.map(mark => {
+                  const percent = getPercent(mark.value, min, max);
+                  const markPos = isHorizontal
+                    ? {insetInlineStart: insetPosition(percent)}
+                    : {bottom: insetPosition(percent)};
+                  // Marks at or inside the filled region take the fill color:
+                  // at or behind the thumb in single mode, between the thumbs
+                  // in range mode.
+                  const isFilled = isRange
+                    ? mark.value >= values[0] && mark.value <= values[1]
+                    : mark.value <= values[0];
+                  return (
+                    <div key={mark.value}>
+                      <div
+                        data-testid="slider-mark"
                         data-mark-value={mark.value}
                         {...mergeProps(
                           stylex.props(
-                            styles.markLabel,
+                            styles.mark,
                             isHorizontal
-                              ? styles.markLabelHorizontal
-                              : styles.markLabelVertical,
+                              ? styles.markHorizontal
+                              : styles.markVertical,
+                            isFilled && styles.markFilled,
                           ),
                           {style: markPos},
-                        )}>
-                        {mark.label}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                        )}
+                      />
+                      {mark.label && (
+                        <span
+                          data-testid="slider-mark-label"
+                          data-mark-value={mark.value}
+                          {...mergeProps(
+                            stylex.props(
+                              styles.markLabel,
+                              isHorizontal
+                                ? styles.markLabelHorizontal
+                                : styles.markLabelVertical,
+                            ),
+                            {style: markPos},
+                          )}>
+                          {mark.label}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
-          {/* Thumbs */}
-          {values.map((_, i) => renderThumb(i))}
+            {/* Thumbs */}
+            {values.map((_, i) => renderThumb(i))}
+          </div>
         </div>
 
         {textDisplay}

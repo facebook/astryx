@@ -59,6 +59,15 @@ beforeEach(() => {
   };
 });
 
+/** A thumb's control (the track container), where the pointer handlers live. */
+function controlOf(thumb: HTMLElement): HTMLElement {
+  const control = thumb.closest<HTMLElement>('.astryx-slider-control');
+  if (control == null) {
+    throw new Error('no slider control');
+  }
+  return control;
+}
+
 describe('Slider', () => {
   // --- Aria labels ---
 
@@ -173,7 +182,7 @@ describe('Slider', () => {
         isDisabled
       />,
     );
-    const control = screen.getByRole('slider').parentElement;
+    const control = controlOf(screen.getByRole('slider'));
     expect(control).not.toBeNull();
     expect(control).toHaveClass('astryx-slider-control');
     expect(control).toHaveAttribute('data-orientation', 'vertical');
@@ -423,7 +432,7 @@ describe('Slider', () => {
       />,
     );
     const slider = screen.getByRole('slider');
-    const trackContainer = slider.parentElement!;
+    const trackContainer = controlOf(slider);
 
     trackContainer.getBoundingClientRect = () => ({
       left: 0,
@@ -654,7 +663,7 @@ describe('Slider', () => {
       />,
     );
     const slider = screen.getByRole('slider');
-    const trackContainer = slider.parentElement!;
+    const trackContainer = controlOf(slider);
 
     trackContainer.getBoundingClientRect = () => ({
       left: 0,
@@ -687,7 +696,7 @@ describe('Slider', () => {
       <Slider label="Volume" value={50} min={0} max={100} onChange={vi.fn()} />,
     );
     const slider = screen.getByRole('slider');
-    const trackContainer = slider.parentElement!;
+    const trackContainer = controlOf(slider);
 
     trackContainer.getBoundingClientRect = () => ({
       left: 0,
@@ -728,7 +737,7 @@ describe('Slider', () => {
         onChange={handleChange}
       />,
     );
-    const track = screen.getByRole('slider').parentElement!;
+    const track = controlOf(screen.getByRole('slider'));
     track.getBoundingClientRect = () => ({
       left: 0,
       top: 0,
@@ -760,7 +769,7 @@ describe('Slider', () => {
         onChange={handleChange}
       />,
     );
-    const track = screen.getByRole('slider').parentElement!;
+    const track = controlOf(screen.getByRole('slider'));
     track.getBoundingClientRect = () => ({
       left: 0,
       top: 0,
@@ -807,7 +816,7 @@ describe('Slider', () => {
       />,
     );
     const thumb = screen.getByRole('slider');
-    const track = thumb.parentElement!;
+    const track = controlOf(thumb);
     const realGetComputedStyle = window.getComputedStyle;
     const gcsSpy = vi
       .spyOn(window, 'getComputedStyle')
@@ -845,7 +854,7 @@ describe('Slider', () => {
       />,
     );
     const thumb = screen.getByRole('slider');
-    const track = thumb.parentElement!;
+    const track = controlOf(thumb);
     const realGetComputedStyle = window.getComputedStyle;
     const gcsSpy = vi
       .spyOn(window, 'getComputedStyle')
@@ -1025,7 +1034,7 @@ describe('Slider', () => {
     const h = {hidden: true} as const;
 
     function getTrack(): HTMLElement {
-      return screen.getByRole('slider').parentElement!;
+      return controlOf(screen.getByRole('slider'));
     }
 
     it('shows the reason tooltip on hover when disabled with a reason', async () => {
@@ -1192,7 +1201,7 @@ describe('Slider', () => {
 
     // The track has no layout in jsdom; pointer maths needs a real rect.
     const grabTrack = (thumb: HTMLElement) => {
-      const track = thumb.parentElement!;
+      const track = controlOf(thumb);
       track.getBoundingClientRect = () => ({
         left: 0,
         top: 0,
@@ -1378,7 +1387,7 @@ describe('one pointer per drag', () => {
   }
 
   function trackOf(thumb: HTMLElement): HTMLElement {
-    const track = thumb.parentElement!;
+    const track = controlOf(thumb);
     track.getBoundingClientRect = () => ({
       left: 0,
       top: 0,
@@ -1500,7 +1509,7 @@ describe('pressed state', () => {
       <Slider label="Volume" value={50} min={0} max={100} onChange={vi.fn()} />,
     );
     const thumb = screen.getByRole('slider');
-    const trackContainer = thumb.parentElement!;
+    const trackContainer = controlOf(thumb);
     trackContainer.getBoundingClientRect = () => ({
       left: 0,
       top: 0,
@@ -1612,7 +1621,7 @@ describe('pressed state', () => {
   it('does not press a disabled slider', () => {
     render(<Slider label="Volume" value={50} isDisabled onChange={vi.fn()} />);
     const thumb = screen.getByRole('slider');
-    fireEvent.pointerDown(thumb.parentElement!, {
+    fireEvent.pointerDown(controlOf(thumb), {
       clientX: 20,
       clientY: 10,
       pointerId: 1,
