@@ -869,6 +869,124 @@ export const LabRadioGroup: Story = {
   },
 };
 
+// Radio cells: a radio item given children is a cell, laid out by the caller.
+const radioCellStyles = stylex.create({
+  swatchGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, max-content)',
+    gap: spacingVars['--spacing-1'],
+  },
+  swatch: {
+    display: 'block',
+    width: 24,
+    height: 24,
+    borderRadius: '50%',
+  },
+  swatchColor: (color: string) => ({
+    backgroundColor: color,
+  }),
+  tileGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: spacingVars['--spacing-1'],
+  },
+  tile: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-0-5'],
+    paddingBlock: spacingVars['--spacing-1'],
+  },
+  tileIcon: {
+    width: 20,
+    height: 20,
+  },
+});
+
+const RADIO_CELL_SWATCHES = [
+  {value: 'red', label: 'Red', color: '#e5484d'},
+  {value: 'orange', label: 'Orange', color: '#f76b15'},
+  {value: 'green', label: 'Green', color: '#30a46c'},
+  {value: 'blue', label: 'Blue', color: '#0090ff'},
+  {value: 'purple', label: 'Purple', color: '#8e4ec6'},
+  {value: 'pink', label: 'Pink', color: '#d6409f'},
+  {value: 'teal', label: 'Teal', color: '#12a594'},
+  {value: 'gray', label: 'Gray', color: '#8b8d98'},
+];
+
+const RADIO_CELL_TILES = [
+  {value: 'pencil', label: 'Pencil', Icon: PencilIcon},
+  {value: 'share', label: 'Share', Icon: ShareIcon},
+  {value: 'archive', label: 'Archive', Icon: ArchiveBoxIcon},
+  {value: 'person', label: 'Person', Icon: UserIcon},
+  {value: 'gear', label: 'Gear', Icon: Cog6ToothIcon},
+  {value: 'search', label: 'Search', Icon: MagnifyingGlassIcon},
+];
+
+export const RadioCells: Story = {
+  render: function RadioCellsStory() {
+    const [color, setColor] = useState('blue');
+    const [icon, setIcon] = useState('default');
+    return (
+      <DropdownMenu button={{label: 'Customize'}}>
+        <DropdownMenuRadioGroup
+          value={color}
+          onChange={setColor}
+          label="Color"
+          xstyle={radioCellStyles.swatchGrid}>
+          {RADIO_CELL_SWATCHES.map(swatch => (
+            <DropdownMenuRadioItem
+              key={swatch.value}
+              value={swatch.value}
+              label={swatch.label}>
+              <span
+                aria-hidden="true"
+                {...stylex.props(
+                  radioCellStyles.swatch,
+                  radioCellStyles.swatchColor(swatch.color),
+                )}
+              />
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+        <DropdownMenuDivider />
+        <DropdownMenuSubMenu label="Tab icon">
+          <DropdownMenuRadioGroup
+            value={icon}
+            onChange={setIcon}
+            label="Tab icon"
+            hasCloseOnSelect={false}>
+            <DropdownMenuRadioItem value="default" label="Default icon">
+              <span>Default icon</span>
+            </DropdownMenuRadioItem>
+            <div {...stylex.props(radioCellStyles.tileGrid)}>
+              {RADIO_CELL_TILES.map(({value, label, Icon}) => (
+                <DropdownMenuRadioItem key={value} value={value} label={label}>
+                  <span {...stylex.props(radioCellStyles.tile)}>
+                    <Icon
+                      aria-hidden="true"
+                      {...stylex.props(radioCellStyles.tileIcon)}
+                    />
+                    {label}
+                  </span>
+                </DropdownMenuRadioItem>
+              ))}
+            </div>
+          </DropdownMenuRadioGroup>
+        </DropdownMenuSubMenu>
+      </DropdownMenu>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A DropdownMenuRadioItem given children is a cell: the children are the tile, with no radio mark, the label names it, and the checked cell carries an accent border. The caller lays cells out: here the colour group is a grid, and the tab-icon tiles sit in a grid inside their group, after a cell drawn as a row. The arrow keys move through cells in DOM order, as through rows.',
+      },
+    },
+  },
+};
+
 export const LabSelectableSizes: Story = {
   render: function LabSelectableSizesStory() {
     const [sm, setSm] = useState('a');
