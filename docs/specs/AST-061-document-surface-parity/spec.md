@@ -157,6 +157,10 @@ FR5 wrap; RichText already wraps fenced code. RichText's editing surface is
 line that wraps close to the available width can take one more line in edit
 mode than in read mode, against FR9; at phone width a long fenced code line
 does.
+`Markdown`, through `component:CodeBlock`, and the RichText surfaces draw the
+header over every fence that names a language and float Copy over the code
+when none does; both adopt the FR8 frame, the one-line row and the corner
+cluster that `component:CodeBlock` FR11 places.
 
 ## Verification
 
