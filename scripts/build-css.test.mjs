@@ -405,4 +405,31 @@ describe('build-css astryx.css', () => {
       expect(weight(shown)).toBeGreaterThan(weight(resting));
     });
   });
+
+  describe("the list rows' touch arms (List, TreeList)", () => {
+    /**
+     * A rule the build puts inside the touch gate (TOUCH_QUERY,
+     * utils/touchPresentation.ts): a coarse primary pointer, iOS and Android
+     * alike, never a mouse. No engine condition: one touch model.
+     */
+    const TOUCH_GATED = /^@media \(pointer: coarse\)\{(?!@supports)/;
+    const rules = () => astryxCss.split('\n').map(line => line.trim());
+    /** Rules that hide a divider or reach the press layer over one. */
+    const dividerArms = state =>
+      rules().filter(
+        rule =>
+          rule.includes(`[data-astryx-press="${state}"]`) &&
+          (rule.includes('{border-bottom-color:transparent}') ||
+            rule.includes('::before{bottom:')),
+      );
+
+    it('hides the dividers beside a pressed row, and reaches its layer over them, only under a finger', () => {
+      const arms = dividerArms('on');
+      // Its own divider, the one above, the layer's reach, the last row's.
+      expect(arms.length).toBeGreaterThanOrEqual(4);
+      for (const rule of arms) {
+        expect(rule).toMatch(TOUCH_GATED);
+      }
+    });
+  });
 });
