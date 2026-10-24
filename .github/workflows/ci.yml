@@ -1523,6 +1523,17 @@ jobs:
             --project chromium \
             --output multiselector-disabled-focus-output
 
+      # In a right-to-left page Lightbox's Next button sits on the left, and
+      # the arrow keys must move toward the button on their side. The
+      # direction reaches the top-layer dialog through the engine's own
+      # cascade, which jsdom does not inherit.
+      - name: Run Lightbox arrow-key direction contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/Lightbox/LightboxKeyboard.a11y.browser.spec.ts \
+            --project chromium \
+            --output lightbox-keyboard-output
+
       # The same guard for Selector and ComplexSelector triggers.
       - name: Run disabled trigger focus contract
         run: |
