@@ -28,8 +28,9 @@ places as on the web, read by VoiceOver in the same order.
     wider form for a content slot with the same meaning, as the web
     accepts a React node. The component's native additions still name the Astryx
     components the core slot holds, and whether it holds one or many (a list item's `startContent` holds one of `Icon`, `Avatar`, or `CheckboxInput`; a card holds many).
-    Text and icon slots take no wider form (no attributed or localized text, no
-    image), so they mean the same thing on Swift as in the core. A free-form web
+    Text and icon slots take no wider form (no attributed text, no image), so
+    they mean the same thing on Swift as in the core; a localized text
+    spelling stays outside this record, as above. A free-form web
     prop with no slot kind stays in the web contract only.
 - **S2 — Icon names are a string-backed type with the built-ins as members.**
   `IconName` is a `RawRepresentable`, `ExpressibleByStringLiteral`,
