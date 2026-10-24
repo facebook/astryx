@@ -39,6 +39,22 @@ describe('spec-only change scope', () => {
     expect(result.specOnly).toBe(false);
   });
 
+  it('treats a platform component record as a spec record', () => {
+    const result = classifyChanges([
+      {filename: 'packages/native/apple/Sources/Astryx/Button/Button.spec.md'},
+    ]);
+    expect(result.touchesKnowledgeRecords).toBe(true);
+    expect(result.specOnly).toBe(true);
+  });
+
+  it('owner-gates package records like architecture records', () => {
+    const result = classifyChanges([
+      {filename: 'packages/native/specs/swift/accessibility.spec.md'},
+    ]);
+    expect(result.touchesKnowledgeRecords).toBe(true);
+    expect(result.specOnly).toBe(false);
+  });
+
   it('owner-gates normative design assets without granting the spec-only fast path', () => {
     const result = classifyChanges([
       {filename: 'docs/design/assets/selector/alignment.png'},

@@ -1,8 +1,9 @@
 ---
-schema_version: 3
+schema_version: 5
 template_version: 4
 kind: component
 id: component:FileInput
+platform_of: null
 authority: current
 archive_reason: null
 superseded_by: null
