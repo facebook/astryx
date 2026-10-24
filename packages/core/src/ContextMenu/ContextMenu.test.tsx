@@ -793,6 +793,107 @@ describe('ContextMenu touch: UIKit’s long-press timeline', () => {
     expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
     press.up();
   });
+
+  /** A finger's pointer event, stamped on the faked clock like its touches. */
+  function dispatchPointer(
+    type: 'pointerdown' | 'pointermove' | 'pointerup',
+    target: EventTarget,
+    {pointerId, x, y}: {pointerId: number; x: number; y: number},
+  ): void {
+    const event = new PointerEvent(type, {
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      pointerId,
+      pointerType: 'touch',
+      clientX: x,
+      clientY: y,
+      button: 0,
+      buttons: type === 'pointerup' ? 0 : 1,
+    });
+    Object.defineProperty(event, 'timeStamp', {value: performance.now()});
+    target.dispatchEvent(event);
+  }
+
+  /** A menu with two rows, held open by a finger that is still down. */
+  function holdUntilTheMenuShows() {
+    const onCopy = vi.fn();
+    const onShare = vi.fn();
+    render(
+      <ContextMenu
+        items={[
+          {label: 'Copy', onClick: onCopy},
+          {label: 'Share', onClick: onShare},
+        ]}
+        data-testid="ctx">
+        <div>Long-press me</div>
+      </ContextMenu>,
+    );
+    const trigger = screen.getByTestId('ctx');
+    const contact = {id: 1, x: 20, y: 20};
+    // A finger's pointer comes first, then its touch, as browsers send them.
+    dispatchPointer('pointerdown', trigger, {pointerId: 7, x: 20, y: 20});
+    dispatchTouch('touchstart', trigger, [contact], [contact]);
+    advance(contextMenu.press.menuDisplayMs);
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalledTimes(1);
+    const row = (name: string) =>
+      screen.getByRole('menuitem', {hidden: true, name});
+    const lift = (target: EventTarget, x: number, y: number) => {
+      dispatchPointer('pointerup', target, {pointerId: 7, x, y});
+      dispatchTouch('touchend', trigger, [{...contact, x, y}], []);
+    };
+    return {trigger, onCopy, onShare, row, lift};
+  }
+
+  it('lets the finger the menu showed under slide onto a row and pick it on the lift', () => {
+    const {onCopy, onShare, row, lift} = holdUntilTheMenuShows();
+    // UIMenu's handoff counts from the first sample the menu receives.
+    dispatchPointer('pointermove', row('Share'), {pointerId: 7, x: 20, y: 30});
+    dispatchPointer('pointermove', row('Share'), {pointerId: 7, x: 20, y: 45});
+    expect(row('Share')).toHaveFocus();
+    act(() => {
+      lift(row('Share'), 20, 45);
+    });
+    expect(onShare).toHaveBeenCalledTimes(1);
+    expect(onCopy).not.toHaveBeenCalled();
+  });
+
+  it('picks nothing when the finger lifts before UIMenu’s handoff, and leaves the menu open', () => {
+    const {onCopy, onShare, row, lift} = holdUntilTheMenuShows();
+    dispatchPointer('pointermove', row('Share'), {pointerId: 7, x: 20, y: 26});
+    act(() => {
+      lift(row('Share'), 20, 26);
+    });
+    expect(onShare).not.toHaveBeenCalled();
+    expect(onCopy).not.toHaveBeenCalled();
+    expect(HTMLElement.prototype.hidePopover).not.toHaveBeenCalled();
+  });
+
+  it('hands nothing over when the menu opens at the lift: the finger is gone', () => {
+    const onShare = vi.fn();
+    render(
+      <ContextMenu
+        items={[{label: 'Share', onClick: onShare}]}
+        data-testid="ctx">
+        <div>Long-press me</div>
+      </ContextMenu>,
+    );
+    const trigger = screen.getByTestId('ctx');
+    const contact = {id: 1, x: 20, y: 20};
+    dispatchPointer('pointerdown', trigger, {pointerId: 7, x: 20, y: 20});
+    dispatchTouch('touchstart', trigger, [contact], [contact]);
+    advance(500);
+    act(() => {
+      dispatchPointer('pointerup', trigger, {pointerId: 7, x: 20, y: 20});
+      dispatchTouch('touchend', trigger, [contact], []);
+    });
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalledTimes(1);
+    // A later finger on a row is a new press of its own (a tap), not this one.
+    const row = screen.getByRole('menuitem', {hidden: true, name: 'Share'});
+    dispatchPointer('pointermove', row, {pointerId: 7, x: 20, y: 60});
+    expect(row).not.toHaveFocus();
+    expect(onShare).not.toHaveBeenCalled();
+  });
 });
 
 describe('ContextMenu items', () => {

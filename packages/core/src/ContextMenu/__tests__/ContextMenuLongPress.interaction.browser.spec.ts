@@ -12,7 +12,10 @@
  *   drift within the tolerance still opens, past it on one axis (or a drag
  *   after the commit) opens nothing; the menu's anchor sits under the
  *   finger, on screen and as laid out, while the trigger is grown, and the
- *   menu stays put; the press feedback's presented scale
+ *   menu stays put; a finger held until the menu shows slides onto a row
+ *   (the highlight follows it) and picks it on the lift, and picks nothing
+ *   when it lifts before UIMenu's handoff; the press feedback's presented
+ *   scale
  *   follows UIKit's measured frames; it keeps advancing every frame through a
  *   blocked main thread; it does no Layout or Paint; the page does not scroll
  *   under the held finger; a storyboard of the press
@@ -40,6 +43,7 @@ import {
   tap,
   thawTimers,
   timeline,
+  toTouchEvents,
   touchDriver,
   trackMarker,
   traceRendering,
@@ -258,6 +262,75 @@ test('the menu’s anchor sits under the finger, on screen and as laid out, whil
     expect(later.menu?.x, detail).toBeCloseTo(first.menu?.x ?? NaN, 0);
     expect(later.menu?.y, detail).toBeCloseTo(first.menu?.y ?? NaN, 0);
   }
+});
+
+/** The Share row's center: open the menu once with a held press, measure, close. */
+async function shareRowCenter(
+  page: Page,
+  driver: TouchDriver,
+  at: {x: number; y: number},
+): Promise<{x: number; y: number}> {
+  const menu = page.getByRole('menu', {name: 'Photo actions'});
+  await driver.play(hold(at, menuDisplayMs + 100));
+  await expect(menu).toBeVisible();
+  const row = await page.getByRole('menuitem', {name: 'Share'}).boundingBox();
+  if (row == null) {
+    throw new Error('no Share row');
+  }
+  await page.keyboard.press('Escape');
+  await expect(menu).toBeHidden();
+  // Let the trigger return to its size before the next press.
+  await page.waitForTimeout(1200);
+  return {x: row.x + row.width / 2, y: row.y + row.height / 2};
+}
+
+test('a finger held until the menu shows slides onto a row, which follows it, and picks it on the lift', async ({
+  page,
+}) => {
+  const {driver, center} = await openTouchStory(page);
+  const share = await shareRowCenter(page, driver, center);
+  const script = drag(center, share, {
+    holdMs: menuDisplayMs + 100,
+    durationMs: 250,
+    restMs: 120,
+  });
+  const lastMove =
+    toTouchEvents(script).filter(e => e.type === 'touchMove').length - 1;
+  let moves = 0;
+  let highlighted: string | null = null;
+  await driver.play(script, {
+    onEvent: async step => {
+      if (step.type === 'touchMove' && moves++ === lastMove) {
+        highlighted = await page.evaluate(
+          () => document.activeElement?.textContent ?? null,
+        );
+      }
+    },
+  });
+  expect(highlighted).toContain('Share');
+  await expect(page.getByTestId('touch-context-menu-last')).toHaveText(
+    'Last action: Share',
+  );
+  await expect(page.getByRole('menu', {name: 'Photo actions'})).toBeHidden();
+});
+
+test('a lift before UIMenu’s handoff picks nothing and leaves the menu open', async ({
+  page,
+}) => {
+  const {driver, center} = await openTouchStory(page);
+  // 6 px after the menu shows: short of the 10 pt handoff.
+  await driver.play(
+    drag(
+      center,
+      {x: center.x, y: center.y + 6},
+      {holdMs: menuDisplayMs + 100, durationMs: 100, restMs: 120},
+    ),
+  );
+  await page.waitForTimeout(300);
+  await expect(page.getByRole('menu', {name: 'Photo actions'})).toBeVisible();
+  await expect(page.getByTestId('touch-context-menu-last')).toHaveText(
+    'No action yet',
+  );
 });
 
 test('a drag past the tolerance after the commit opens nothing', async ({

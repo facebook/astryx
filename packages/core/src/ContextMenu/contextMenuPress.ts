@@ -21,7 +21,8 @@
  *   past `allowableMovement` still ends it with no menu (`cancelled`), and
  *   a lift shows it at once (`ended` without `isMenuDue`).
  * - `changed` with `isMenuDue` at `menuDisplayMs`: the finger is still
- *   down and the menu shows. From then on the finger moves freely.
+ *   down and the menu shows. From then on the finger moves freely, and the
+ *   menu's press model follows it (a slide onto a row picks it on the lift).
  *
  * It is a LongPressGestureRecognizer whose duration is the commit, so the
  * foundation gives it the begin time (exact under a blocked main thread),

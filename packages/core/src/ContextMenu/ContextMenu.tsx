@@ -76,10 +76,10 @@ import {
 import {useMenuOverflow} from '../DropdownMenu/useMenuOverflow';
 import {useMenuDrillIn} from '../DropdownMenu/useMenuDrillIn';
 import {useListFocus} from '../hooks/useListFocus';
-import {useMenuPress} from '../hooks/useMenuPress';
+import {useMenuPress, type UseMenuPressReturn} from '../hooks/useMenuPress';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useScrollLock} from '../hooks/useScrollLock';
-import {playHaptic, useGestureRecognizer} from '../gestures';
+import {getGestureHost, playHaptic, useGestureRecognizer} from '../gestures';
 import {contextMenu} from '../motion/uikit';
 import {ContextMenuPressRecognizer} from './contextMenuPress';
 import {useContextMenuPressFeedback} from './contextMenuPressFeedback';
@@ -664,10 +664,14 @@ export function ContextMenu({
   // lift sends no click and no compatibility mouse events). The menu opens
   // where the finger landed: at `menuDisplayMs` if it is still down, or at
   // the lift. A lift before the commit, a second finger, a scroll, or a drift
-  // past the tolerance before the menu shows gets no menu.
+  // past the tolerance before the menu shows gets no menu. A finger still down
+  // when the menu shows goes on into it: a slide onto a row picks it on the
+  // lift (the menu's press model, `useMenuPress`).
   const [isTouchOpen, setIsTouchOpen] = useState(false);
   // Whether the press in flight has opened its menu.
   const hasPressOpenedRef = useRef(false);
+  // The menu's press model (below), for the finger the menu shows under.
+  const menuPressRef = useRef<UseMenuPressReturn | null>(null);
   // The press feedback (contextMenuPressFeedback.ts): the trigger grows from
   // the onset, springs back if the press fails, and stays grown while the
   // menu it opened is up. Not shown on an inline trigger.
@@ -709,6 +713,26 @@ export function ContextMenu({
         case 'changed':
           if (recognizer.isMenuDue && !hasPressOpenedRef.current) {
             open();
+            // The finger is still down, so it goes on into the menu, as
+            // UIKit's touch continuation does: once it has travelled UIMenu's
+            // handoff distance the highlight follows it, and the row under its
+            // lift acts. A lift before that picks nothing.
+            const touch = recognizer.trackedTouches[0];
+            const doc = triggerRef.current?.ownerDocument;
+            const pointerId =
+              touch != null && doc != null
+                ? getGestureHost(doc).pointerIdOf(touch)
+                : null;
+            if (touch != null && pointerId != null) {
+              const {x, y} = recognizer.location();
+              menuPressRef.current?.continueGesture({
+                pointerId,
+                pointerType: touch.pointerType,
+                x,
+                y,
+                time: Date.now(),
+              });
+            }
           }
           break;
         case 'ended':
@@ -800,6 +824,7 @@ export function ContextMenu({
     onDismiss: closeMenu,
     isEnabled: !usesBottomSheet,
   });
+  menuPressRef.current = menuPress;
 
   const renderedMenu = (
     <div
