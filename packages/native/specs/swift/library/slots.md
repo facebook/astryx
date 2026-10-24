@@ -19,7 +19,7 @@ places as on the web, read by VoiceOver in the same order.
   - A **text** slot is a `String`, the contract's exact type (AST-093 FR5). A
     localizable spelling waits on the component API spec's open question about
     SwiftUI spellings.
-  - An **icon** slot is an `AstryxIconName` (S2).
+  - An **icon** slot is an `IconName` (S2).
   - A **content** slot holds named Astryx components. Its component's native
     additions list which ones it accepts, and whether it holds one or many
     (a row's start holds one of `Avatar`, `Icon`, `Thumbnail`; a card holds
@@ -29,7 +29,7 @@ places as on the web, read by VoiceOver in the same order.
     the same thing on Swift as in the core. A free-form web prop with no slot
     kind stays in the web contract only.
 - **S2 — Icon names are a string-backed type with the built-ins as members.**
-  `AstryxIconName` is a `RawRepresentable`, `ExpressibleByStringLiteral`,
+  `IconName` is a `RawRepresentable`, `ExpressibleByStringLiteral`,
   `Hashable`, `Codable`, `Sendable` value. Every built-in semantic name is a
   static member (`.search`, `.close`), generated from core's icon registry. A
   namespaced name (`"acme:rocket"`) is valid once the app registers it in code
