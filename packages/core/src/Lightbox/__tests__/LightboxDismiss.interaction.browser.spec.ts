@@ -413,7 +413,10 @@ test('the dismissal keeps changing the screen every frame while the main thread 
   const window = {from: block.from + 20, to: Math.min(block.to, settled) - 1};
   const stats = frameStats(signal, window, 0.05);
   const cadence = cadenceOutside(castFrames, block);
-  const expected = Math.floor((window.to - window.from) / cadence);
+  // At the recording's own pace (Linux WebKit composites in software on the
+  // CPU the blocked main thread spins on: 1.5 times that pace there).
+  const pace = cadence * (browserName === 'webkit' ? 1.5 : 1.15);
+  const expected = Math.floor((window.to - window.from) / pace);
   await writeEvidence(
     'busy-main-thread/lightbox-dismiss',
     {
@@ -426,11 +429,7 @@ test('the dismissal keeps changing the screen every frame while the main thread 
     testInfo,
   );
   expect(window.to - window.from).toBeGreaterThan(100);
-  // At the recording's own pace (Linux WebKit composites in software on the
-  // CPU the blocked main thread spins on: 1.5 times that pace there).
-  expect(stats.medianFrameMs).toBeLessThanOrEqual(
-    Math.max(20, cadence * (browserName === 'webkit' ? 1.5 : 1.15)),
-  );
+  expect(stats.medianFrameMs).toBeLessThanOrEqual(Math.max(20, pace));
   expect(stats.changed).toBeGreaterThanOrEqual(expected - 2);
   expect(stats.longestStallMs).toBeLessThan(cadence * 2.5);
   await expect(v.dialog).toBeHidden();

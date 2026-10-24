@@ -11,7 +11,8 @@
  *   animator, usePager (a gallery pages like Photos: a UIKit paging scroll view with Photos'
  *   40 pt gap), and the compositor animator for Photos' drag to dismiss (the
  *   backdrop and the controls' layers fade with the drag), zoomFromSource (UIKit's
- *   zoom transition between a source, `sourceFor`, and the photo)
+ *   zoom transition between a source, `sourceFor`, and the photo), zoomStage's chrome
+ *   curves (a tap on the photo hides the controls, as Photos' chrome)
  * @output Exports Lightbox component, LightboxProps, LightboxMedia
  * @position Core implementation; consumed by index.ts
  *
@@ -24,6 +25,7 @@
  * - /packages/core/src/Lightbox/__tests__/LightboxPaging.interaction.browser.spec.ts (gallery paging proofs)
  * - /packages/core/src/Lightbox/__tests__/LightboxDismiss.interaction.browser.spec.ts (drag to dismiss proofs)
  * - /packages/core/src/Lightbox/__tests__/LightboxZoomTransition.interaction.browser.spec.ts (zoom transition proofs)
+ * - /packages/core/src/Lightbox/__tests__/LightboxChrome.interaction.browser.spec.ts (controls hidden by a tap)
  * - /packages/core/src/Lightbox/zoomFromSource.ts (the transition driver)
  * - /packages/core/src/Lightbox/index.ts (exports if types change)
  * - /packages/core/src/Layer/useLayerDismissal.ts (dismissal stack)
@@ -66,7 +68,8 @@ import {useZoomCore} from './useZoomCore';
 import {usePager} from '../hooks/usePager';
 import {UIKIT_TAP} from '../motion/uikit/gestures';
 import {zoomMedia} from '../motion/uikit/zoomMedia';
-import {useZoomStage} from './useZoomStage';
+import {useZoomStage, type ZoomStage} from './useZoomStage';
+import {lightboxScope} from './lightbox.markers.stylex';
 import {useTouchPresentation} from '../utils/touchPresentation';
 import {isCoarsePointer} from '../gestures/coarsePointer';
 import {animatorFor, type Animator} from '../motion/animator';
@@ -76,7 +79,12 @@ import {
   sourceBoxOf,
   zoomFromSource,
 } from './zoomFromSource';
-import {dismissBackdropAlpha, dismissChromeAlpha} from './zoomStage';
+import {
+  chromeBackgroundCurve,
+  chromeFadeCurve,
+  dismissBackdropAlpha,
+  dismissChromeAlpha,
+} from './zoomStage';
 /**
  * Media type for lightbox items.
  */
@@ -371,7 +379,24 @@ const styles = stylex.create({
   },
   controlButton: {
     color: colorVars['--color-on-dark'],
-    pointerEvents: 'auto',
+    // Hidden by a tap on the photo, they take no taps: one where a control
+    // was reaches the viewer (and shows them again).
+    pointerEvents: {
+      default: 'auto',
+      [stylex.when.ancestor('[data-chrome-hidden]', lightboxScope)]: 'none',
+    },
+  },
+  // The black the viewer turns as a tap hides the controls, as Photos'
+  // background does: under the photo (and a source's picture), over the
+  // backdrop. The colour that reads on light surfaces is black in every
+  // theme; a theme that retints it retints this.
+  blackout: {
+    position: 'absolute',
+    inset: 0,
+    zIndex: -1,
+    backgroundColor: colorVars['--color-on-light'],
+    opacity: 0,
+    pointerEvents: 'none',
   },
   // The controls sit in layers over the viewer that pass clicks through. A
   // drag to dismiss fades the layers, which carry no transition of their own
@@ -392,6 +417,18 @@ const pageStyles = stylex.create({
     insetInlineStart: `calc(${index} * (100% + ${zoomMedia.viewer.pageGap}px))`,
   }),
 });
+
+/** Touch and pen hide the controls (Photos is a touch viewer). */
+function isTouchInput(input: string): boolean {
+  return input === 'touch' || input === 'pen';
+}
+
+/** A control layer or a caption: what a tap on the photo hides. */
+function isChromeElement(element: HTMLElement | null): boolean {
+  return (
+    element?.matches('[data-lightbox-chrome], [data-lightbox-caption]') === true
+  );
+}
 
 /**
  * How long an opening waits for its photo to decode before it zooms (ms):
@@ -472,7 +509,6 @@ export function Lightbox({
 }: LightboxProps) {
   const t = useTranslator();
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const mergedDialogRef = useMergedRefs(ref, dialogRef);
   const containerRef = useRef<HTMLDivElement>(null);
   const imageWrapperRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -618,6 +654,10 @@ export function Lightbox({
   if (isOpen && !isPresented) {
     setIsPresented(true);
   }
+  // Latched during render when the viewer opens, as `viewedItem` is.
+  if (isOpen && !isPresented) {
+    setIsPresented(true);
+  }
   const {shouldDismissOnCloseRequest} = useLayerDismissal({
     isActive: isOpen || isPresented,
     escapeBehavior: isOpen ? 'close' : 'block',
@@ -675,10 +715,17 @@ export function Lightbox({
   // the photo still fires a click there, which is no click (UIKit's tap
   // movement limit).
   const pressRef = useRef<{x: number; y: number} | null>(null);
+  // With the controls hidden, a click or tap where the stage does not take
+  // it (a video page, the dark area beside a photo the stage only hugs)
+  // brings them back instead of closing the viewer unseen.
+  const showHiddenChromeRef = useRef<() => boolean>(() => false);
   const handleBackdropClick = useCallback(
     (e: ReactMouseEvent<HTMLDialogElement>) => {
       if (didDragRef.current) {
         didDragRef.current = false;
+        return;
+      }
+      if (showHiddenChromeRef.current()) {
         return;
       }
       if (e.target === e.currentTarget || e.target === containerRef.current) {
@@ -780,6 +827,132 @@ export function Lightbox({
   const dismissalAnsweredRef = useRef(false);
   const [, renderAfterDismissal] = useReducer((n: number) => n + 1, 0);
 
+  // Photos hides its controls (the chrome) for a tap on the photo and as a
+  // zoom by touch passes the fitted size, and shows them for the next tap and
+  // as the photo returns to it. The background turns black with them and
+  // stays black while the photo is zoomed, when a tap toggles only the
+  // controls. Both run on Photos' measured curves (zoomMedia.chrome). The
+  // controls read the state from an attribute on the container, so a toggle
+  // in the middle of a gesture renders nothing.
+  const chromeHiddenRef = useRef(false);
+  const immersiveRef = useRef(false);
+  const blackoutRef = useRef<HTMLDivElement>(null);
+  /** The last input: a pointer type, or 'keyboard'. */
+  const lastInputRef = useRef<string>('mouse');
+  const chromeElements = useCallback((): HTMLElement[] => {
+    const container = containerRef.current;
+    return container == null
+      ? []
+      : [
+          ...container.querySelectorAll<HTMLElement>(
+            '[data-lightbox-chrome], [data-lightbox-caption]',
+          ),
+        ];
+  }, []);
+  const blackoutAnimator = useCallback((): Animator | null => {
+    const blackout = blackoutRef.current;
+    return blackout == null
+      ? null
+      : animatorFor(blackout, {initial: {opacity: 0}});
+  }, []);
+  const setChrome = useCallback(
+    ({hidden, immersive}: {hidden: boolean; immersive: boolean}) => {
+      if (chromeHiddenRef.current !== hidden) {
+        chromeHiddenRef.current = hidden;
+        containerRef.current?.toggleAttribute('data-chrome-hidden', hidden);
+        for (const element of chromeElements()) {
+          const animator = animatorFor(element);
+          animator.play({
+            opacity: chromeFadeCurve(animator.get('opacity'), hidden),
+          });
+        }
+      }
+      if (immersiveRef.current !== immersive) {
+        immersiveRef.current = immersive;
+        const blackout = blackoutAnimator();
+        blackout?.play({
+          opacity: chromeBackgroundCurve(blackout.get('opacity'), immersive),
+        });
+      }
+    },
+    [blackoutAnimator, chromeElements],
+  );
+  /** The controls and the background as an opened viewer has them. */
+  const restChrome = useCallback(() => {
+    if (!chromeHiddenRef.current && !immersiveRef.current) {
+      return;
+    }
+    chromeHiddenRef.current = false;
+    immersiveRef.current = false;
+    containerRef.current?.removeAttribute('data-chrome-hidden');
+    blackoutAnimator()?.set({opacity: 0});
+    for (const element of chromeElements()) {
+      animatorFor(element).set({opacity: 1});
+    }
+  }, [blackoutAnimator, chromeElements]);
+  // Which input came last decides whether a zoom hides the controls (only
+  // touch does, as Photos); a keyboard focus on a hidden control shows them.
+  // Attached with the dialog node itself (a callback ref): a viewer whose
+  // first render had no item mounts its dialog later.
+  const inputListenersRef = useRef<(() => void) | null>(null);
+  const attachInputListeners = useCallback(
+    (dialog: HTMLDialogElement | null) => {
+      inputListenersRef.current?.();
+      inputListenersRef.current = null;
+      if (dialog == null) {
+        return;
+      }
+      const onPointerDown = (event: PointerEvent) => {
+        lastInputRef.current = event.pointerType;
+      };
+      const onKeyDown = () => {
+        lastInputRef.current = 'keyboard';
+      };
+      const onFocusIn = (event: FocusEvent) => {
+        const target = event.target instanceof Element ? event.target : null;
+        if (
+          chromeHiddenRef.current &&
+          lastInputRef.current === 'keyboard' &&
+          target?.closest('[data-lightbox-chrome]') != null
+        ) {
+          setChrome({hidden: false, immersive: immersiveRef.current});
+        }
+      };
+      dialog.addEventListener('pointerdown', onPointerDown, true);
+      dialog.addEventListener('keydown', onKeyDown, true);
+      dialog.addEventListener('focusin', onFocusIn);
+      inputListenersRef.current = () => {
+        dialog.removeEventListener('pointerdown', onPointerDown, true);
+        dialog.removeEventListener('keydown', onKeyDown, true);
+        dialog.removeEventListener('focusin', onFocusIn);
+      };
+    },
+    [setChrome],
+  );
+  const mergedDialogRef = useMergedRefs(ref, dialogRef, attachInputListeners);
+
+  // An item that is not a zoom target (a video) has no stage to tap: the
+  // controls a photo hid come back when the viewer shows it.
+  useIsomorphicLayoutEffect(() => {
+    if (!isZoomTarget && (chromeHiddenRef.current || immersiveRef.current)) {
+      setChrome({hidden: false, immersive: false});
+    }
+  }, [isZoomTarget, viewedItem, setChrome]);
+
+  // Paging with the controls hidden: the next photo's caption arrives
+  // hidden too, before it paints.
+  useIsomorphicLayoutEffect(() => {
+    if (!chromeHiddenRef.current) {
+      return;
+    }
+    for (const element of chromeElements()) {
+      const animator = animatorFor(element);
+      if (animator.get('opacity') !== 0 && !element.getAnimations().length) {
+        animator.set({opacity: 0});
+      }
+    }
+  });
+
   // Drag to dismiss, as in Photos: the backdrop and, faster, the controls
   // and the neighbouring photos fade with the drag's travel; a dismissal
   // fades them out on its spring and closes once the photo has left.
@@ -810,6 +983,8 @@ export function Lightbox({
     };
   }, []);
 
+  // The stage, for callbacks that run before this render returns it.
+  const stageApiRef = useRef<ZoomStage | null>(null);
   // The zoom stage for every pointer (the keyboard, a mouse double-click and
   // drag) and, under a finger, its touch layer: one touch model on every
   // touch device (the shared touch resolver), whose pinch and pan give past
@@ -831,6 +1006,9 @@ export function Lightbox({
             ? t('@astryx.lightbox.zoomedIn')
             : t('@astryx.lightbox.zoomedOut'),
         );
+        if (isTouchInput(lastInputRef.current)) {
+          setChrome({hidden: next, immersive: next});
+        }
       }
     },
     onDragStart,
@@ -840,17 +1018,53 @@ export function Lightbox({
     surfaceRef: isGallery ? trackRef : imageWrapperRef,
     isEnabled: isOpen && isZoomTarget && isTouch,
     itemKey: viewedItem,
-    onTapOutside: handleClose,
+    onPinchZoomed: next => {
+      // Photos hides them as the pinch passes the fitted size, not at the
+      // lift; the return shows them once the photo is back at it.
+      if (next && isTouchInput(lastInputRef.current)) {
+        setChrome({hidden: true, immersive: true});
+      }
+    },
+    onTapPhoto: () => {
+      if (!isTouchInput(lastInputRef.current)) {
+        return;
+      }
+      const hidden = !chromeHiddenRef.current;
+      // Zoomed, a tap toggles only the controls: the black stays.
+      setChrome({
+        hidden,
+        immersive: stageApiRef.current?.isZoomed() === true ? true : hidden,
+      });
+    },
+    // With the controls hidden, a tap beside the photo brings them back
+    // (Photos' tap on the background) rather than closing unseen.
+    onTapOutside: () => {
+      if (chromeHiddenRef.current) {
+        setChrome({
+          hidden: false,
+          immersive: stageApiRef.current?.isZoomed() === true,
+        });
+      } else {
+        handleClose();
+      }
+    },
     onDragStart,
     dismiss: {
       isEnabled: isOpen && !isVideo,
       onDrag: travel => {
         const {backdrop, chrome} = dismissFades();
         markFaded(backdrop == null ? chrome : [backdrop, ...chrome]);
-        backdrop?.set({opacity: dismissBackdropAlpha(travel)});
+        const backdropAlpha = dismissBackdropAlpha(travel);
+        backdrop?.set({opacity: backdropAlpha});
         const opacity = dismissChromeAlpha(travel);
+        const hidden = chromeHiddenRef.current;
         for (const animator of chrome) {
-          animator.set({opacity});
+          animator.set({
+            opacity: hidden && isChromeElement(animator.element) ? 0 : opacity,
+          });
+        }
+        if (immersiveRef.current) {
+          blackoutAnimator()?.set({opacity: backdropAlpha});
         }
       },
       target: () => sourceBoxOf(sourceElementFor(index)),
@@ -885,11 +1099,32 @@ export function Lightbox({
         const spring = dismisses
           ? zoomMedia.dismiss.dismissSizeSpring
           : zoomMedia.dismiss.cancelSizeSpring;
+        // A cancel brings hidden controls back as Photos does, on their own
+        // fade; the black stays.
+        const returning = !dismisses && chromeHiddenRef.current;
+        if (returning) {
+          chromeHiddenRef.current = false;
+          containerRef.current?.removeAttribute('data-chrome-hidden');
+        }
         const opacity = dismisses ? 0 : 1;
         for (const animator of backdrop == null
           ? chrome
           : [backdrop, ...chrome]) {
-          animator.animate({opacity}, {spring}, {touchRelease: true});
+          if (returning && isChromeElement(animator.element)) {
+            animator.play(
+              {opacity: chromeFadeCurve(animator.get('opacity'), false)},
+              {touchRelease: true},
+            );
+          } else {
+            animator.animate({opacity}, {spring}, {touchRelease: true});
+          }
+        }
+        if (immersiveRef.current) {
+          blackoutAnimator()?.animate(
+            {opacity},
+            {spring},
+            {touchRelease: true},
+          );
         }
       },
       onDismissed: () => {
@@ -902,6 +1137,14 @@ export function Lightbox({
       },
     },
   });
+  stageApiRef.current = stage;
+  showHiddenChromeRef.current = () => {
+    if (!chromeHiddenRef.current) {
+      return false;
+    }
+    setChrome({hidden: false, immersive: stage.isZoomed()});
+    return true;
+  };
 
   // Open and close the dialog. With a source (`sourceFor`, or the element
   // that opened the viewer for the opened item), the photo zooms out of it on
@@ -913,6 +1156,8 @@ export function Lightbox({
   const transitionRef = useRef({
     stage,
     dismissFades,
+    restChrome,
+    blackoutAnimator,
     sourceElementFor,
     index,
     src: currentItem?.src ?? '',
@@ -921,6 +1166,8 @@ export function Lightbox({
   transitionRef.current = {
     stage,
     dismissFades,
+    restChrome,
+    blackoutAnimator,
     sourceElementFor,
     index,
     src: currentItem?.src ?? '',
@@ -951,9 +1198,32 @@ export function Lightbox({
       return;
     }
     const now = transitionRef.current;
+    // What fades with the transition: the backdrop and what shows over it
+    // (hidden controls stay hidden; the black, when shown, goes with the
+    // backdrop).
     const fadesNow = () => {
       const {backdrop, chrome} = now.dismissFades();
-      return backdrop == null ? chrome : [backdrop, ...chrome];
+      const hidden = chromeHiddenRef.current;
+      const fades = chrome.filter(
+        animator => !(hidden && isChromeElement(animator.element)),
+      );
+      if (backdrop != null) {
+        fades.unshift(backdrop);
+      }
+      const blackout = immersiveRef.current ? now.blackoutAnimator() : null;
+      if (blackout != null) {
+        fades.push(blackout);
+      }
+      return fades;
+    };
+    const restFades = () => {
+      const {backdrop, chrome} = now.dismissFades();
+      for (const animator of backdrop == null
+        ? chrome
+        : [backdrop, ...chrome]) {
+        animator.set({opacity: 1});
+      }
+      now.restChrome();
     };
     // The transition starting now takes over from the one in flight, which
     // is let go once the new one has read where the photo shows (a close
@@ -974,6 +1244,7 @@ export function Lightbox({
       restoreLanded();
       if (restoreFaded()) {
         now.stage.rest();
+        restFades();
       }
       if (dialog.open) {
         return;
@@ -1047,7 +1318,9 @@ export function Lightbox({
       dialog.close();
       if (restoreFaded()) {
         now.stage.rest();
+        restFades();
       }
+      now.restChrome();
       if (triggerElementRef.current instanceof HTMLElement) {
         triggerElementRef.current.focus();
       }
@@ -1095,6 +1368,7 @@ export function Lightbox({
       restoreLanded();
       stage.rest();
       restoreFaded();
+      restChrome();
     }
   });
 
@@ -1272,7 +1546,15 @@ export function Lightbox({
       {...props}>
       <LayerDepthProvider>
         <LayerContentBoundary>
-          <div ref={containerRef} {...stylex.props(styles.container)}>
+          <div
+            ref={containerRef}
+            {...stylex.props(styles.container, lightboxScope)}>
+            <div
+              ref={blackoutRef}
+              data-lightbox-blackout=""
+              aria-hidden
+              {...stylex.props(styles.blackout)}
+            />
             <div data-lightbox-chrome="" {...stylex.props(styles.chromeLayer)}>
               {/* Close button */}
               <IconButton

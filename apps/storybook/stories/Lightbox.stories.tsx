@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useRef, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {Dialog} from '@astryxdesign/core/Dialog';
 import {Lightbox, useLightbox} from '@astryxdesign/core/Lightbox';
@@ -351,6 +351,67 @@ export const WithCaption: Story = {
             caption:
               'A beautiful forest path winding through tall trees on a misty morning',
           }}
+        />
+      </>
+    );
+  },
+};
+
+/**
+ * Photos and a video in one gallery: the video page has no zoom, and the
+ * controls a photo's tap hid come back on it.
+ */
+export const GalleryWithVideo: Story = {
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [index, setIndex] = useState(0);
+    return (
+      <>
+        <button onClick={() => setIsOpen(true)}>
+          Open gallery with a video
+        </button>
+        <Lightbox
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          media={[
+            GALLERY_MEDIA[0],
+            {
+              src: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm',
+              alt: 'Flower blooming',
+              type: 'video',
+            },
+          ]}
+          index={index}
+          onIndexChange={setIndex}
+          hasZoom
+        />
+      </>
+    );
+  },
+};
+
+/**
+ * Media that arrive after the page mounts the viewer (loaded later): it
+ * behaves as one given its media from the start.
+ */
+export const MediaArrivesLater: Story = {
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [media, setMedia] = useState<typeof GALLERY_MEDIA>([]);
+    useEffect(() => {
+      const timer = setTimeout(() => setMedia(GALLERY_MEDIA), 300);
+      return () => clearTimeout(timer);
+    }, []);
+    return (
+      <>
+        <button disabled={media.length === 0} onClick={() => setIsOpen(true)}>
+          Open the loaded gallery
+        </button>
+        <Lightbox
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          media={media}
+          hasZoom
         />
       </>
     );
