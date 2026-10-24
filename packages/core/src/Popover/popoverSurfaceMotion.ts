@@ -9,9 +9,9 @@
  *   layer runtime's exit copy
  * @output Exports `popoverCollapsedState` (where the popover meets its source
  *   and the shape it grows from), `popoverFrame` (the transform and opacity
- *   at a progress of the spring), `POPOVER_EXIT_COPY_ATTRIBUTE` and
- *   `createPopoverSurfaceMotion` (the touch presentation's present and
- *   dismiss)
+ *   at a progress of the spring), `POPOVER_EXIT_COPY_ATTRIBUTE`,
+ *   `POPOVER_HOLD_ATTRIBUTE` and `createPopoverSurfaceMotion` (the touch
+ *   presentation's present and dismiss)
  * @position Internal to Popover: under a finger the popover is presented
  *   and dismissed the way UIPopoverPresentationController does it
  *
@@ -46,6 +46,14 @@
  * `timing.reducedMotionCrossFadeMs`; on any other pointer it changes at once.
  * UIKit itself fades a popover on its presentation springs, about half a
  * second; the current record caps a touch cross-fade at 200 ms.
+ *
+ * UIKit ignores every touch while the popover is presented: a tap outside
+ * 60 ms in neither dismisses it nor reaches what is under it, and the
+ * presentation finishes. The browser's light dismiss cannot be cancelled from
+ * an event, so for the length of the present spring a transparent manual
+ * popover nested in the layer covers the viewport (`POPOVER_HOLD_ATTRIBUTE`):
+ * in the top layer it is above everything, and as a descendant of the layer a
+ * tap on it is a tap inside the popover, which the browser leaves open.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Popover/popoverSurfaceFrame.ts
@@ -91,6 +99,71 @@ export type {
 
 /** Marks the static copy the dismissal plays on. */
 export const POPOVER_EXIT_COPY_ATTRIBUTE = 'data-astryx-popover-exit';
+
+/** The attribute on the hold that takes every touch during a presentation. */
+export const POPOVER_HOLD_ATTRIBUTE = 'data-astryx-popover-hold';
+
+// The hold covers the viewport, transparent, and lets no touch start a pan;
+// a pinch still zooms the page (spec:AST-094 FR35, FR10, FR18).
+const HOLD_STYLE: Readonly<Record<string, string>> = {
+  position: 'fixed',
+  inset: '0',
+  width: 'auto',
+  height: 'auto',
+  'max-width': 'none',
+  'max-height': 'none',
+  margin: '0',
+  padding: '0',
+  border: '0',
+  background: 'transparent',
+  overflow: 'hidden',
+  'touch-action': 'pinch-zoom',
+};
+
+const preventDefault = (event: Event) => event.preventDefault();
+
+/**
+ * Places the hold in `layer` and shows it; null where the browser has no
+ * popovers (the touch then reaches the page, as before).
+ */
+function placePresentationHold(layer: HTMLElement): HTMLElement | null {
+  const hold = layer.ownerDocument.createElement('div');
+  if (typeof hold.showPopover !== 'function') {
+    return null;
+  }
+  hold.setAttribute(POPOVER_HOLD_ATTRIBUTE, '');
+  hold.setAttribute('popover', 'manual');
+  hold.setAttribute('aria-hidden', 'true');
+  hold.setAttribute(
+    'style',
+    Object.entries(HOLD_STYLE)
+      .map(([property, value]) => `${property}: ${value}`)
+      .join('; '),
+  );
+  // A tap on the hold is ignored without a trace, as UIKit ignores it: it
+  // moves no focus (the control the popover focused keeps it) and fires no
+  // click. Pointer events still reach the light dismiss, which counts the
+  // hold as inside the popover.
+  hold.addEventListener('mousedown', preventDefault);
+  hold.addEventListener('touchend', preventDefault, {passive: false});
+  layer.append(hold);
+  try {
+    hold.showPopover();
+  } catch {
+    hold.remove();
+    return null;
+  }
+  return hold;
+}
+
+function releasePresentationHold(hold: HTMLElement) {
+  try {
+    hold.hidePopover();
+  } catch {
+    // Already hidden with its layer.
+  }
+  hold.remove();
+}
 
 /**
  * The curves from `from` to `to` on `spring`, its progress starting with
@@ -224,6 +297,15 @@ export function createPopoverSurfaceMotion(
   let presentHandle: MotionHandle | null = null;
   // The dismissal in progress: its copy and the copy's animator.
   let exiting: {copy: HTMLElement; animator: Animator} | null = null;
+  // The hold that takes every touch while the presentation runs.
+  let hold: HTMLElement | null = null;
+
+  const releaseHold = () => {
+    if (hold != null) {
+      releasePresentationHold(hold);
+      hold = null;
+    }
+  };
 
   const endExit = () => {
     if (exiting == null) {
@@ -238,6 +320,7 @@ export function createPopoverSurfaceMotion(
     collapsed = null;
     measured = null;
     presentHandle = null;
+    releaseHold();
     endExit();
     animator.set({scaleX: 1, scaleY: 1, opacity: 1});
     for (const property of MOTION_STYLE_PROPERTIES) {
@@ -290,14 +373,19 @@ export function createPopoverSurfaceMotion(
       ),
     );
     presentHandle = handle;
+    // No touch reaches the page, or dismisses the popover, until it is in.
+    releaseHold();
+    hold = placePresentationHold(element);
     void handle.finished.then(() => {
       if (presentHandle === handle) {
         presentHandle = null;
+        releaseHold();
       }
     });
   };
 
   const exit = () => {
+    releaseHold();
     const target = collapsed;
     if (target == null || exiting != null) {
       return;
