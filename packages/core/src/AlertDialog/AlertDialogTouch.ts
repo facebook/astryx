@@ -4,8 +4,8 @@
 
 /**
  * @file AlertDialogTouch.ts
- * @input useActionGroupTracking, useAlertMotion and the alert entries of the
- *   UIKit constants table (motion/uikit/alert.ts)
+ * @input useActionGroupTracking, useAlertMotion, useAlertActionLayout and
+ *   the alert entries of the UIKit constants table (motion/uikit/alert.ts)
  * @output useAlertDialogTouch: everything AlertDialog does only under a
  *   finger or a pen
  * @position AlertDialog's touch layer, imported once, by AlertDialog.tsx
@@ -17,7 +17,9 @@
  * lands on the message can slide onto an action; the backdrop, where a touch
  * targets the dialog itself, is not part of the group. Under a finger the
  * alert also appears and leaves the way UIKit's alert does (useAlertMotion),
- * and a touch during either transition reaches nothing. A mouse, the
+ * and a touch during either transition reaches nothing. On a compact screen
+ * its two actions share a row, Cancel leading, when each label fits its half
+ * (useAlertActionLayout), as UIKit lays them out. A mouse, the
  * keyboard and assistive technology keep each button's own click and the
  * theme's motion, so a build for pointers alone can replace this module
  * with one that does nothing.
@@ -34,6 +36,10 @@ import {
   registerAlertControllerTable,
 } from '../motion/uikit/alert';
 import {registerSpringsTable} from '../motion/uikit/springs';
+import {
+  useAlertActionLayout,
+  type AlertActionLayout,
+} from './useAlertActionLayout';
 import {useAlertMotion, type AlertMotion} from './useAlertMotion';
 
 export interface AlertDialogTouchOptions {
@@ -47,6 +53,12 @@ export interface AlertDialogTouchOptions {
   itemSelector: string;
   /** The content's scroller (the title and the message). */
   bodyRef: RefObject<HTMLElement | null>;
+  /** Both a coarse pointer and a compact viewport: UIKit's action layout. */
+  isCompactTouch: boolean;
+  /** The element that holds the actions in a row or a stack. */
+  actionRowRef: RefObject<HTMLElement | null>;
+  /** The actions' labels; a change re-measures the layout. */
+  labels: ReadonlyArray<string>;
 }
 
 export interface AlertDialogTouch {
@@ -60,12 +72,23 @@ export interface AlertDialogTouch {
   isBodyScrollable: boolean;
   /** The alert's presentation under a finger (useAlertMotion). */
   motion: AlertMotion;
+  /** UIKit's layout of the actions under a finger on a compact screen. */
+  actionLayout: AlertActionLayout;
 }
 
 /** AlertDialog's touch layer: the action-group tracking and the motion. */
 export function useAlertDialogTouch(
   surfaceRef: RefObject<HTMLDialogElement | null>,
-  {isOpen, isInline, isTouch, itemSelector, bodyRef}: AlertDialogTouchOptions,
+  {
+    isOpen,
+    isInline,
+    isTouch,
+    itemSelector,
+    bodyRef,
+    isCompactTouch,
+    actionRowRef,
+    labels,
+  }: AlertDialogTouchOptions,
 ): AlertDialogTouch {
   const isDriving = isTouch && !isInline;
   // The alert's motion roles (its springs, and its presentation and dismissal
@@ -95,5 +118,10 @@ export function useAlertDialogTouch(
     // long-press styles stay off, and its selection lock covers a finger.
     manageStyle: false,
   });
-  return {isTracking, isBodyScrollable, motion};
+  const actionLayout = useAlertActionLayout(actionRowRef, {
+    isCompact: isCompactTouch,
+    itemSelector,
+    labels,
+  });
+  return {isTracking, isBodyScrollable, motion, actionLayout};
 }

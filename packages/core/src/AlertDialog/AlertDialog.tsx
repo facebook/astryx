@@ -94,6 +94,11 @@ const styles = stylex.create({
   stackedAction: {
     width: '100%',
   },
+  // A compact row: the two actions split it evenly, as UIKit's do.
+  sharedRowAction: {
+    flexGrow: 1,
+    flexBasis: 0,
+  },
 });
 
 export interface AlertDialogProps extends BaseProps<HTMLDialogElement> {
@@ -214,9 +219,13 @@ export function AlertDialog({
   const cancelLabel = cancelLabelFromProps ?? t('@astryx.alertDialog.cancel');
   const titleId = useId();
   const descriptionId = useId();
-  // Width stays delegated to Dialog: this query exists only so AlertDialog can
-  // keep narrow visual, DOM, and tab order aligned for its destructive/cancel
-  // semantics without coupling action order to pointer or hover capability.
+  // Width stays delegated to Dialog. These queries exist only so AlertDialog
+  // can keep its visual, DOM and tab order aligned for its destructive/cancel
+  // semantics. Under a finger on a compact viewport the alert takes UIKit's
+  // layout (the touch layer's useAlertActionLayout): a row, Cancel leading,
+  // when each label fits its half; a stack, Cancel at the bottom, when one
+  // does not. With a mouse the actions stack at 640px and below, the action
+  // above Cancel, and that breakpoint follows the width alone.
   const isSmallScreen = useMediaQuery(SMALL_SCREEN_QUERY);
 
   // A finger is tracked across both actions as one group (UIKit's alert
@@ -226,22 +235,30 @@ export function AlertDialog({
   // at the lift. Under a finger the alert also appears and leaves the way
   // UIKit's does (the touch layer's useAlertMotion): it stays presented while
   // it fades out, and touches during either transition are taken and dropped.
-  const {isTouch} = useTouchPresentation();
+  const {isTouch, isCompact} = useTouchPresentation();
+  // UIKit's action layout needs both a finger and a compact viewport (the
+  // active theme's compact definition).
+  const isCompactTouch = isTouch && isCompact;
   // UIKit's alert width under a finger (alertController.width), so the
   // presentation's 1.2 start stays on screen; with a mouse Dialog's 400.
   const width = widthProp ?? (isTouch ? alertController.width : 400);
   const surfaceRef = useRef<HTMLDialogElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
-  const {isTracking, isBodyScrollable, motion} = useAlertDialogTouch(
-    surfaceRef,
-    {
+  const actionRowRef = useRef<HTMLElement>(null);
+  const {isTracking, isBodyScrollable, motion, actionLayout} =
+    useAlertDialogTouch(surfaceRef, {
       isOpen,
       isInline: isInline === true,
       isTouch,
+      isCompactTouch,
       itemSelector: `[${ACTION_ATTRIBUTE}]`,
       bodyRef,
-    },
-  );
+      actionRowRef,
+      labels: [cancelLabel, actionLabel],
+    });
+  const isStacked = isCompactTouch ? actionLayout === 'stack' : isSmallScreen;
+  // The actions fill the footer: a stack, or UIKit's shared row.
+  const isFullWidth = isCompactTouch || isSmallScreen;
   // While the alert leaves (closed by the caller, still presented while it
   // fades out under a finger), UIKit delivers no input to it: a click, Enter
   // or an assistive-technology activation on an action, and Escape, do
@@ -276,7 +293,7 @@ export function AlertDialog({
 
   const buttonActionStyle = [
     styles.action,
-    isSmallScreen && styles.stackedAction,
+    isFullWidth && (isStacked ? styles.stackedAction : styles.sharedRowAction),
   ];
   const cancelButton = (
     <Button
@@ -345,15 +362,17 @@ export function AlertDialog({
         footer={
           <LayoutFooter>
             {/* Generic Dialog footers should wrap, but their consumers own
-                action semantics and order. AlertDialog keeps this
-                destructive-above-Cancel narrow order because confirmation
-                actions have component-specific meaning here. */}
+                action semantics and order. AlertDialog keeps Cancel leading
+                in a row and the destructive action above Cancel in a stack
+                (UIKit's rule under a finger on a compact screen), because
+                confirmation actions have component-specific meaning here. */}
             <Stack
-              direction={isSmallScreen ? 'vertical' : 'horizontal'}
+              ref={actionRowRef}
+              direction={isStacked ? 'vertical' : 'horizontal'}
               gap={2}
-              hAlign={isSmallScreen ? 'stretch' : 'end'}
-              wrap={isSmallScreen ? 'nowrap' : 'wrap'}>
-              {isSmallScreen
+              hAlign={isFullWidth ? 'stretch' : 'end'}
+              wrap={isFullWidth ? 'nowrap' : 'wrap'}>
+              {isStacked
                 ? [actionButton, cancelButton]
                 : [cancelButton, actionButton]}
             </Stack>

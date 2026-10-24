@@ -4,9 +4,9 @@
  * @file alert.ts
  * @input The motion role registry (registerMotionTable)
  * @output Exports `alertController`: how UIAlertController (`.alert`)
- *   appears and leaves, and how it tracks a finger across its actions; and
- *   `registerAlertControllerTable`, which makes its presentation and
- *   dismissal durations motion roles a theme may retune
+ *   appears and leaves, lays out its actions, and tracks a finger across
+ *   them; and `registerAlertControllerTable`, which makes its presentation
+ *   and dismissal durations motion roles a theme may retune
  *   (`alertController.present.durationMs`, `alertController.dismiss.durationMs`)
  * @position The alert domain of the UIKit constants table (motion/uikit);
  *   its springs are `springs.alertPresent` and `springs.alertDismiss`
@@ -92,6 +92,20 @@ export const alertController = {
     durationMs: 404,
   },
   actions: {
+    /**
+     * Two actions share a row when each title fits its own share of the row
+     * (this fraction of the row, less the gap) on one line, and stack when
+     * one does not: per title, never the sum (titles 114 and 111 pt wide share
+     * a row; 137.6 and 53.7 pt stack). Cancel leads a row, mirrored in a
+     * right-to-left layout, and ends a stack. Three or more actions always
+     * stack; a single action fills the row.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+     *   iPhone 17 Pro, two-action alerts with growing titles (a row up to a
+     *   115.0 pt title next to Cancel, a stack from 119.0 pt; 140 pt capsules
+     *   in a 288 pt row with an 8 pt gap), add orders swapped, forced
+     *   right-to-left, Oct 23 2026
+     */
+    rowShare: 0.5,
     /**
      * How long after touch-down the touched action highlights: none, it is
      * highlighted in the touch-down frame (a tap and a 300 ms hold alike).
