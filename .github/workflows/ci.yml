@@ -1684,6 +1684,17 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+      # With fill height, AppShell's main region is a Tab stop only while it
+      # scrolls overflowing content, and Tab entry moves on to its first link;
+      # jsdom has no layout, so only a real engine shows the stop appear on a
+      # long page and stay away from a short one.
+      - name: Run AppShell main keyboard contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/AppShell/__tests__/AppShellMainKeyboard.a11y.browser.spec.ts \
+            --project chromium \
+            --output appshell-main-keyboard-output
+
       # Outline owns real DOM focus through roving tabindex. Computed paint,
       # pointer modality, clipping, forced colors, and exact pixels require the
       # same real Chromium artifact this blocking accessibility lane already owns.

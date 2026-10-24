@@ -11,7 +11,8 @@
  * Geometry and style signals coalesce into one full measurement per frame. A
  * scroll only moves the offset, so its event re-derives the logical edges
  * from box geometry: no computed-style read and no extra frame while the
- * user scrolls.
+ * user scrolls. A viewport may be its own content box (no inner wrapper):
+ * its direct children's sizes are then watched as well.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/useScrollableArea.doc.mjs
@@ -353,6 +354,29 @@ export function useScrollableArea({
     const stopObservingViewport = observeResize(viewport, scheduleMeasure);
     const stopObservingContent = observeResize(content, scheduleMeasure);
 
+    // A viewport that is its own content box (no inner wrapper) does not
+    // resize when its content grows; its children do. Watch each direct
+    // child's size, following childList changes.
+    const childObservers = new Map<Element, () => void>();
+    const syncChildObservers = () => {
+      if (content !== viewport) {
+        return;
+      }
+      const children = new Set(Array.from(viewport.children));
+      for (const [child, stop] of childObservers) {
+        if (!children.has(child)) {
+          stop();
+          childObservers.delete(child);
+        }
+      }
+      for (const child of children) {
+        if (!childObservers.has(child)) {
+          childObservers.set(child, observeResize(child, scheduleMeasure));
+        }
+      }
+    };
+    syncChildObservers();
+
     viewport.addEventListener('scroll', onScroll, {passive: true});
     window.addEventListener('resize', scheduleMeasure);
     window.visualViewport?.addEventListener('resize', scheduleMeasure);
@@ -367,7 +391,10 @@ export function useScrollableArea({
     const mutationObserver =
       typeof MutationObserver === 'undefined'
         ? null
-        : new MutationObserver(scheduleMeasure);
+        : new MutationObserver(() => {
+            syncChildObservers();
+            scheduleMeasure();
+          });
     mutationObserver?.observe(viewport, {
       attributes: true,
       attributeFilter: ['class', 'dir', 'hidden', 'style'],
@@ -397,6 +424,9 @@ export function useScrollableArea({
       unregisterScrollOwner(viewport);
       stopObservingViewport();
       stopObservingContent();
+      for (const stop of childObservers.values()) {
+        stop();
+      }
       mutationObserver?.disconnect();
       viewport.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', scheduleMeasure);
