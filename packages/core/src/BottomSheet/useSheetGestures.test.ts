@@ -11,6 +11,10 @@
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {act, renderHook} from '@testing-library/react';
+import {useState} from 'react';
+import {END_HOLD_MS} from '../motion/animator';
+import {solveSpring, toSpring} from '../motion/spring';
+import {sheet, springs} from '../motion/uikit';
 import {
   useSheetGestures,
   type UseSheetGesturesOptions,
@@ -57,11 +61,71 @@ beforeEach(() => {
       removeEventListener: vi.fn(),
     }),
   );
+  // The release springs run on the motion foundation's animator, whose clock
+  // is performance.now() and whose curves end on a timer: fake both, so a
+  // test decides when a spring has landed.
+  vi.useFakeTimers({
+    toFake: [
+      'performance',
+      'setTimeout',
+      'clearTimeout',
+      'requestAnimationFrame',
+      'cancelAnimationFrame',
+    ],
+  });
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
+
+/** Lets every running spring reach its end (the animator's clock and timers). */
+function land() {
+  act(() => {
+    vi.advanceTimersByTime(2000);
+  });
+}
+
+/** The sheet's travel channel (`translate`), in px down. */
+function travel(el: HTMLElement): number {
+  const [, y = '0px'] = el.style.translate.split(' ');
+  return Number.parseFloat(y);
+}
+
+/**
+ * A finger moving from `from` to `to` (px) between `t0` and `t1` (ms) on
+ * pointer events every `step` ms (60 Hz by default): the estimator reads
+ * gaps longer than its assume-stopped window as a finger at rest, so a
+ * throw is a stream, not two samples.
+ */
+function stream(
+  hook: Hook,
+  target: HTMLElement,
+  {
+    from,
+    to,
+    t0,
+    t1,
+    step = 1000 / 60,
+  }: {
+    from: number;
+    to: number;
+    t0: number;
+    t1: number;
+    step?: number;
+  },
+) {
+  const count = Math.max(1, Math.round((t1 - t0) / step));
+  for (let i = 1; i <= count; i++) {
+    move(
+      hook,
+      from + ((to - from) * i) / count,
+      t0 + ((t1 - t0) * i) / count,
+      target,
+    );
+  }
+}
 
 function setup(options: Partial<UseSheetGesturesOptions> = {}) {
   const onDismiss = vi.fn();
@@ -100,10 +164,25 @@ function move(hook: Hook, y: number, t: number, target: HTMLElement) {
     hook.result.current.handleProps.onPointerMove(pointerEvent(y, t, target)),
   );
 }
+/**
+ * The finger comes to rest at `y`: two still moves after it gets there.
+ * UIKit's velocity filter (0.2 × the newest event's speed + 0.8 × the one
+ * before) only reads zero after two of them, and never decays on its own: a
+ * finger that stops sending events keeps its last speed.
+ */
+function restAt(hook: Hook, y: number, t: number, target: HTMLElement) {
+  move(hook, y, t, target);
+  move(hook, y, t + 50, target);
+  move(hook, y, t + 100, target);
+}
+
 function up(hook: Hook, y: number, t: number, target: HTMLElement) {
   act(() =>
     hook.result.current.handleProps.onPointerUp(pointerEvent(y, t, target)),
   );
+  // The release spring lands before the test goes on, as a finger that lifts
+  // and comes back later would find it.
+  land();
 }
 
 describe('useSheetGestures', () => {
@@ -158,86 +237,101 @@ describe('useSheetGestures', () => {
   });
 
   describe('release projection', () => {
-    // A release is judged where the sheet would coast to at the finger's
-    // speed, the way a thrown scroll view is, not where the finger left it.
-    it('dismisses on a medium throw released short of the dismiss line', () => {
+    // A release is judged where the sheet would be after
+    // sheet.release.projectionSeconds at the finger's velocity, not where the
+    // finger left it; the dismissed position (gone below the screen) counts
+    // as one of the positions (sheetRelease.ts). Here: detents at 0 and 200,
+    // gone at 400.
+    it('dismisses a throw released short of halfway to gone', () => {
       const {hook, onDismiss} = setup({snapHeights: () => [200]});
       const t = makeTarget();
       down(hook, 0, 0, t);
-      // 150px in 150ms = 1px/ms. The finger stops at 150, well short of the
-      // 280px line; a surface moving at that speed coasts far past it.
-      move(hook, 50, 50, t);
-      move(hook, 100, 100, t);
-      move(hook, 150, 150, t);
-      up(hook, 150, 152, t);
+      // 1500 px/s: the finger stops at 150, but the release projects to
+      // 150 + 1500 × 0.114 = 321, nearer gone (400) than the detent (200).
+      stream(hook, t, {from: 0, to: 150, t0: 0, t1: 100});
+      up(hook, 150, 102, t);
       expect(onDismiss).toHaveBeenCalledTimes(1);
     });
 
-    it('lands a gentle throw on the next detent, not back where it started', () => {
+    it('lands a throw on the next detent once it projects past halfway', () => {
       const onSnap = vi.fn();
       const {hook, onDismiss} = setup({snapHeights: () => [200], onSnap});
       const t = makeTarget();
       down(hook, 0, 0, t);
-      // 60px in 200ms = 0.3px/ms: too slow to be a flick, too short to reach
-      // the 200px detent by position. The coast carries it there.
-      move(hook, 30, 100, t);
-      move(hook, 60, 200, t);
-      up(hook, 60, 202, t);
+      // 600 px/s from 60: projected 60 + 68 = 128, past halfway to 200.
+      stream(hook, t, {from: 0, to: 60, t0: 0, t1: 100});
+      up(hook, 60, 102, t);
       expect(onDismiss).not.toHaveBeenCalled();
       expect(hook.result.current.settledOffset).toBe(200);
       expect(onSnap).toHaveBeenLastCalledWith(200);
     });
 
-    it('reads the release speed over the last stretch, so one slow sample does not cancel a throw', () => {
-      const {hook, onDismiss} = setup({snapHeights: () => [200]});
+    it('returns a gentle throw that does not project past halfway', () => {
+      const {hook} = setup({snapHeights: () => [200]});
       const t = makeTarget();
       down(hook, 0, 0, t);
-      move(hook, 60, 20, t); // 3px/ms
-      move(hook, 62, 90, t); // the lift's own last, slow sample
-      up(hook, 62, 92, t);
-      expect(onDismiss).toHaveBeenCalledTimes(1);
+      // 300 px/s from 60: projected 94, still nearer the open detent.
+      stream(hook, t, {from: 0, to: 60, t0: 0, t1: 200});
+      up(hook, 60, 202, t);
+      expect(hook.result.current.settledOffset).toBe(0);
     });
 
     it('reads a throw that begins after a hold at its own speed, not the average since touch-down', () => {
-      const {hook, onDismiss} = setup({snapHeights: () => [200]});
+      const {hook} = setup({snapHeights: () => [200]});
       const t = makeTarget();
       down(hook, 0, 0, t);
       move(hook, 0, 250, t); // a still hold on the handle
-      move(hook, 30, 275, t); // then 60px in 50ms
-      move(hook, 60, 300, t);
+      // then 1200 px/s: projected 60 + 137 = 197 → the 200 detent. The
+      // average since touch-down (200 px/s) would have projected 83 → open.
+      stream(hook, t, {from: 0, to: 60, t0: 250, t1: 300});
       up(hook, 60, 302, t);
-      expect(onDismiss).toHaveBeenCalledTimes(1);
+      expect(hook.result.current.settledOffset).toBe(200);
     });
 
-    it('reads a single move after a hold as a move, not as the whole hold', () => {
+    it('reads the velocity from the timestamps the events carry, not from when they are handled', () => {
+      // The same throw, handled late and all at once: the release still
+      // projects at the speed the finger moved.
       const {hook, onDismiss} = setup({snapHeights: () => [200]});
       const t = makeTarget();
       down(hook, 0, 0, t);
-      move(hook, 60, 300, t); // one sample, 300ms after touch-down
-      up(hook, 60, 302, t);
+      vi.advanceTimersByTime(500); // a busy main thread, then the batch
+      stream(hook, t, {from: 0, to: 150, t0: 0, t1: 100});
+      up(hook, 150, 102, t);
       expect(onDismiss).toHaveBeenCalledTimes(1);
     });
 
-    it('releases no throw from a finger that rested before lifting', () => {
+    it('keeps the throw through a rest before the lift, as UIKit does', () => {
+      // UIKit reports the last moving velocity at the lift however long the
+      // finger rested: a still finger sends no events to lower it.
       const {hook, onDismiss} = setup({snapHeights: () => [200]});
       const t = makeTarget();
       down(hook, 0, 0, t);
-      move(hook, 60, 20, t); // 3px/ms ...
+      stream(hook, t, {from: 0, to: 60, t0: 0, t1: 20}); // 3000 px/s ...
       up(hook, 60, 400, t); // ... then 380ms of rest, then the lift
+      // Projected 60 + 3000 × 0.114 = 402: gone.
+      expect(onDismiss).toHaveBeenCalledTimes(1);
+    });
+
+    it('releases no throw from a finger that came to rest before lifting', () => {
+      const {hook, onDismiss} = setup({snapHeights: () => [200]});
+      const t = makeTarget();
+      down(hook, 0, 0, t);
+      stream(hook, t, {from: 0, to: 60, t0: 0, t1: 20});
+      restAt(hook, 60, 100, t);
+      up(hook, 60, 400, t);
       expect(onDismiss).not.toHaveBeenCalled();
       expect(hook.result.current.settledOffset).toBe(0);
     });
 
-    it('settles a throw that would coast past the line at the shortest detent when canDismiss is false', () => {
+    it('settles a throw that would project past halfway to gone at the shortest detent when canDismiss is false', () => {
       const {hook, onDismiss} = setup({
         canDismiss: false,
         snapHeights: () => [200],
       });
       const t = makeTarget();
       down(hook, 0, 0, t);
-      move(hook, 50, 50, t);
-      move(hook, 100, 100, t);
-      up(hook, 100, 102, t);
+      stream(hook, t, {from: 0, to: 150, t0: 0, t1: 100});
+      up(hook, 150, 102, t);
       expect(onDismiss).not.toHaveBeenCalled();
       expect(hook.result.current.settledOffset).toBe(200);
     });
@@ -246,12 +340,13 @@ describe('useSheetGestures', () => {
   it('does not flick-dismiss on a fast but short nudge', () => {
     const {hook, onDismiss} = setup({snapHeights: () => [200]});
     const t = makeTarget();
-    // Fast (20px/10ms = 2px/ms) but only 20px of travel — under the distance
-    // floor, so nothing is projected and it settles rather than dismissing.
+    // Fast (2000 px/s) but only 20px of travel: projected 20 + 228 = 248,
+    // which lands on the 200 detent; gone (400) is further.
     down(hook, 0, 0, t);
     move(hook, 20, 10, t);
     up(hook, 20, 12, t);
     expect(onDismiss).not.toHaveBeenCalled();
+    expect(hook.result.current.settledOffset).toBe(200);
   });
 
   it('settles to the nearest detent on a slow drag', () => {
@@ -365,6 +460,7 @@ describe('useSheetGestures', () => {
     const t = makeTarget();
     down(hook, 0, 0, t);
     move(hook, 320, 700, t);
+    restAt(hook, 320, 800, t);
     up(hook, 320, 1100, t);
     expect(hook.result.current.settledOffset).toBe(340);
     expect(hook.result.current.settledLayoutOffset).toBe(0);
@@ -377,12 +473,19 @@ describe('useSheetGestures', () => {
     });
     const t = makeTarget();
 
-    // Visible full height is 352px, so the 200px stop is offset 152. Its 40%
-    // dismiss overshoot ends at 232px; the hidden reserve must not extend it.
+    // Visible full height is 352px, so the 200px stop is offset 152 and the
+    // sheet is gone at 352. Released at rest, it dismisses past halfway
+    // between them (252px); the hidden reserve must not move that line.
     down(hook, 0, 0, t);
-    move(hook, 235, 1000, t);
-    up(hook, 235, 2000, t);
+    move(hook, 250, 1000, t);
+    restAt(hook, 250, 1100, t);
+    up(hook, 250, 2000, t);
+    expect(onDismiss).not.toHaveBeenCalled();
 
+    down(hook, 152, 3000, t);
+    move(hook, 254, 4000, t);
+    restAt(hook, 254, 4100, t);
+    up(hook, 254, 5000, t);
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
@@ -470,6 +573,7 @@ describe('useSheetGestures', () => {
     down(hook, 0, 0, t);
     move(hook, 170, 400, t);
     move(hook, 340, 900, t);
+    restAt(hook, 340, 1000, t);
     up(hook, 340, 1400, t);
     expect(hook.result.current.settledOffset).toBe(340);
     // Last reported opacity (on settle) is the peek floor, not fully hidden —
@@ -499,9 +603,9 @@ describe('useSheetGestures', () => {
     move(hook, 50, 100, t);
     expect(liveOffset(hook)).toBe(50);
     expect(hook.result.current.isDragging).toBe(true);
-    // Written to the element, not rendered: the move costs one style write
-    // and no commit.
-    expect(t.style.transform).toBe('translateY(50px)');
+    // Written to the element's travel channel, not rendered: the move costs
+    // one style write and no commit.
+    expect(travel(t)).toBe(50);
   });
 
   it('renders nothing for a move that keeps the layout split', () => {
@@ -520,7 +624,7 @@ describe('useSheetGestures', () => {
     move(hook, 30, 50, t);
     move(hook, 60, 100, t);
     move(hook, 90, 150, t);
-    expect(t.style.transform).toBe('translateY(90px)');
+    expect(travel(t)).toBe(90);
     // One render announces that the sheet is traveling; the moves after it
     // render nothing.
     expect(renders - rendersAtDown).toBeLessThanOrEqual(1);
@@ -540,8 +644,8 @@ describe('useSheetGestures', () => {
     down(hook, 200, 1000, t);
     move(hook, 150, 1100, t);
     expect(liveOffset(hook)).toBe(150);
-    expect(liveOffset(hook)).toBe(150);
-    expect(t.style.transform).toBe('translateY(150px)');
+    // The full height is back (layout 0), so the travel carries all 150px.
+    expect(travel(t)).toBe(150);
   });
 
   it('returns to the settled detent when a context menu interrupts a drag', () => {
@@ -1175,7 +1279,7 @@ describe('useSheetGestures', () => {
       expect(pull?.defaultPrevented).toBe(true);
       expect(hook.result.current.isDragging).toBe(true);
       expect(liveOffset(hook)).toBe(60);
-      expect(body.style.transform).toBe('translateY(60px)');
+      expect(travel(body)).toBe(60);
     });
 
     it('chains to a scrolled body before the sheet when the nested box is at its top', () => {
@@ -1407,6 +1511,8 @@ describe('useSheetGestures', () => {
       // things moving at once is the failure mode; the sheet yields.
       expect(hook.result.current.isDragging).toBe(false);
       expect(hook.result.current.settledOffset).toBe(200);
+      // The sheet springs back to its detent while the content scrolls.
+      land();
 
       act(() => {
         el.scrollTop = 600; // scrolled back to the end
@@ -1634,5 +1740,350 @@ describe('useSheetGestures', () => {
 
       expect(hook.result.current.sheetHeight).toBe(876);
     });
+  });
+});
+
+describe('useSheetGestures: the release on the compositor', () => {
+  // A finger: the primary pointer is coarse, so releases run on UIKit's
+  // springs (D-01; releaseMotion.ts).
+  function stubPointer({
+    coarse,
+    reducedMotion = false,
+  }: {
+    coarse: boolean;
+    reducedMotion?: boolean;
+  }) {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => ({
+        matches:
+          (coarse && query.includes('pointer: coarse')) ||
+          (reducedMotion && query.includes('prefers-reduced-motion')),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    );
+  }
+  beforeEach(() => stubPointer({coarse: true}));
+
+  interface Played {
+    keyframes: Keyframe[];
+    options: KeyframeAnimationOptions;
+  }
+  /** Records the Web Animations the animator plays on `el` (jsdom has none). */
+  function recordAnimations(el: HTMLElement): Played[] {
+    const played: Played[] = [];
+    el.animate = vi.fn((keyframes, options) => {
+      played.push({
+        keyframes: keyframes as Keyframe[],
+        options: options as KeyframeAnimationOptions,
+      });
+      return {cancel: vi.fn(), startTime: 0} as unknown as Animation;
+    });
+    return played;
+  }
+  /** The travel (px) a played animation has at `ms` after its start. */
+  function travelAt(animation: Played, ms: number): number {
+    const duration = animation.options.duration as number;
+    const frames = animation.keyframes.map(frame => ({
+      t: (frame.offset as number) * duration,
+      y: Number.parseFloat(String(frame.translate).split(' ')[1]),
+    }));
+    for (let i = 1; i < frames.length; i++) {
+      if (ms <= frames[i].t) {
+        const a = frames[i - 1];
+        const b = frames[i];
+        return a.y + ((b.y - a.y) * (ms - a.t)) / (b.t - a.t);
+      }
+    }
+    return frames[frames.length - 1].y;
+  }
+
+  it('springs to the detent on the slow-release spring, handed the finger velocity', () => {
+    const {hook} = setup({snapHeights: () => [200]});
+    const t = makeTarget();
+    const played = recordAnimations(t);
+    down(hook, 0, 0, t);
+    // 600 px/s, released at 60: lands on the 200 detent (sheetRelease).
+    stream(hook, t, {from: 0, to: 60, t0: 0, t1: 100});
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(pointerEvent(60, 102, t)),
+    );
+    expect(played).toHaveLength(1);
+    const curve = solveSpring(toSpring(springs.sheetDetent), {
+      from: 60,
+      to: 200,
+      velocity: 600,
+    });
+    // On the closed-form spring, frame by frame ...
+    for (const ms of [0, 16, 50, 100, 200, 300, 400]) {
+      expect(travelAt(played[0], ms)).toBeCloseTo(curve.value(ms / 1000), 1);
+    }
+    // ... which is the spring handed the finger's 600 px/s (M3): one
+    // started at rest would trail it by more than 5 px 16 ms in.
+    const atRest = solveSpring(toSpring(springs.sheetDetent), {
+      from: 60,
+      to: 200,
+      velocity: 0,
+    });
+    expect(travelAt(played[0], 16) - atRest.value(0.016)).toBeGreaterThan(5);
+    // Composited: keyframes played linearly on one Web Animation, so the
+    // main thread is not involved.
+    expect(played[0].options).toMatchObject({easing: 'linear'});
+    expect(travel(t)).toBe(200);
+  });
+
+  it('takes a fast release on the 80 % damped spring', () => {
+    const {hook} = setup({snapHeights: () => [200]});
+    const t = makeTarget();
+    const played = recordAnimations(t);
+    down(hook, 200, 0, t);
+    // Rest at 0; a fast upward pull past the top settles back at 0 on the
+    // fast spring (|v| ≥ sheet.release.fastSpeed).
+    const speed = sheet.release.fastSpeed + 300;
+    stream(hook, t, {from: 200, to: 200 - speed * 0.05, t0: 0, t1: 50});
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(
+        pointerEvent(200 - speed * 0.05, 51, t),
+      ),
+    );
+    const from = travelAt(played.at(-1) as Played, 0);
+    const curve = solveSpring(toSpring(springs.sheetReleaseFast), {
+      from,
+      to: 0,
+      velocity: -speed,
+    });
+    for (const ms of [16, 50, 100, 200]) {
+      expect(travelAt(played.at(-1) as Played, ms)).toBeCloseTo(
+        curve.value(ms / 1000),
+        1,
+      );
+    }
+  });
+
+  it('lets a finger catch the settling sheet where the curve has it, without a jump', () => {
+    const {hook} = setup({snapHeights: () => [200]});
+    const t = makeTarget();
+    down(hook, 0, 0, t);
+    stream(hook, t, {from: 0, to: 60, t0: 0, t1: 100});
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(pointerEvent(60, 102, t)),
+    );
+    const curve = solveSpring(toSpring(springs.sheetDetent), {
+      from: 60,
+      to: 200,
+      velocity: 600,
+    });
+    act(() => {
+      vi.advanceTimersByTime(80);
+    });
+    const onScreen = curve.value(0.08);
+    // The finger lands 80 ms into the settle and holds still.
+    act(() =>
+      hook.result.current.handleProps.onPointerDown(pointerEvent(500, 1000, t)),
+    );
+    expect(hook.result.current.isDragging).toBe(true);
+    expect(liveOffset(hook)).toBeCloseTo(onScreen, 0);
+    expect(travel(t)).toBeCloseTo(onScreen, 0);
+    // And it drags from there.
+    move(hook, 480, 1050, t);
+    expect(liveOffset(hook)).toBeCloseTo(onScreen - 20, 0);
+  });
+
+  it('carries a drag-dismissed sheet off screen on the release spring, for the host to wait on', async () => {
+    // A host that closes when asked.
+    const onDismiss = vi.fn();
+    const snapHeights = () => [200];
+    const hook = renderHook(() => {
+      const [isOpen, setIsOpen] = useState(true);
+      return useSheetGestures({
+        isOpen,
+        snapHeights,
+        onDismiss: () => {
+          onDismiss();
+          setIsOpen(false);
+        },
+      });
+    });
+    const t = makeTarget();
+    const played = recordAnimations(t);
+    down(hook, 0, 0, t);
+    stream(hook, t, {from: 0, to: 150, t0: 0, t1: 100}); // 1500 px/s
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(pointerEvent(150, 102, t)),
+    );
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+    const exit = hook.result.current.gestureExitRef.current;
+    expect(exit).not.toBeNull();
+    // Rested at the open detent, so the resting transform is none.
+    expect(exit?.transform).toBe('none');
+    // Gone: the sheet's whole 400px below where it rests open.
+    expect(travel(t)).toBe(400);
+    const curve = solveSpring(toSpring(springs.sheetDismissSwipe), {
+      from: 150,
+      to: 400,
+      velocity: 1500,
+    });
+    expect(travelAt(played[0], 50)).toBeCloseTo(curve.value(0.05), 1);
+    // The exit ends when the spring lands.
+    vi.advanceTimersByTime(2000);
+    await expect(exit?.finished).resolves.toBe(true);
+  });
+
+  it('springs back to the detent when the host keeps a drag-dismissed sheet open', () => {
+    // A controlled host that does not close: isOpen stays true.
+    const {hook, onDismiss} = setup({snapHeights: () => [200]});
+    const t = makeTarget();
+    down(hook, 0, 0, t);
+    stream(hook, t, {from: 0, to: 150, t0: 0, t1: 100});
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(pointerEvent(150, 102, t)),
+    );
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+    // The commit after the request finds the sheet still open.
+    expect(hook.result.current.gestureExitRef.current).toBeNull();
+    expect(travel(t)).toBe(0);
+    land();
+    expect(travel(t)).toBe(0);
+    expect(hook.result.current.settledOffset).toBe(0);
+  });
+
+  it('keeps the release springs under Reduce Motion, as UIKit does', () => {
+    // Reduce Motion (with or without Prefer Cross-Fade) leaves a UIKit
+    // sheet's drag releases unchanged: same springs, same dismissal.
+    stubPointer({coarse: true, reducedMotion: true});
+    const snapHeights = () => [200];
+    const onDismiss = vi.fn();
+    const hook = renderHook(() => {
+      const [isOpen, setIsOpen] = useState(true);
+      return useSheetGestures({
+        isOpen,
+        snapHeights,
+        onDismiss: () => {
+          onDismiss();
+          setIsOpen(false);
+        },
+      });
+    });
+    const t = makeTarget();
+    const played = recordAnimations(t);
+    down(hook, 0, 0, t);
+    stream(hook, t, {from: 0, to: 60, t0: 0, t1: 100});
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(pointerEvent(60, 102, t)),
+    );
+    expect(hook.result.current.settledOffset).toBe(200);
+    expect(played).toHaveLength(1);
+    const curve = solveSpring(toSpring(springs.sheetDetent), {
+      from: 60,
+      to: 200,
+      velocity: 600,
+    });
+    expect(travelAt(played[0], 100)).toBeCloseTo(curve.value(0.1), 1);
+    land();
+    // A drag dismissal leaves on its release spring too.
+    down(hook, 200, 1000, t);
+    stream(hook, t, {from: 200, to: 350, t0: 1000, t1: 1100});
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(pointerEvent(350, 1102, t)),
+    );
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+    expect(hook.result.current.gestureExitRef.current).not.toBeNull();
+  });
+
+  it('keeps the theme timing under a mouse, without the velocity hand-off', () => {
+    stubPointer({coarse: false});
+    const {hook} = setup({snapHeights: () => [200]});
+    const t = makeTarget();
+    // What the panel's stylesheet gives the sheet's transform.
+    t.style.transitionProperty = 'transform, opacity';
+    t.style.transitionDuration = '410ms, 410ms';
+    t.style.transitionTimingFunction =
+      'cubic-bezier(0.24, 1, 0.4, 1), cubic-bezier(0.24, 1, 0.4, 1)';
+    const played = recordAnimations(t);
+    down(hook, 0, 0, t);
+    stream(hook, t, {from: 0, to: 60, t0: 0, t1: 100}); // 600 px/s
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(pointerEvent(60, 102, t)),
+    );
+    expect(played).toHaveLength(1);
+    // 410 ms of curve, then the animator's end-state hold.
+    expect((played[0].options.duration as number) - END_HOLD_MS).toBeCloseTo(
+      410,
+      0,
+    );
+    // The theme's easing from 60 to 200, whatever the finger's speed.
+    const ease = (p: number) => {
+      // cubic-bezier(0.24, 1, 0.4, 1), by bisection on x.
+      const bez = (a: number, b: number, u: number) =>
+        3 * a * u * (1 - u) ** 2 + 3 * b * u * u * (1 - u) + u ** 3;
+      let lo = 0;
+      let hi = 1;
+      for (let i = 0; i < 60; i++) {
+        const mid = (lo + hi) / 2;
+        if (bez(0.24, 0.4, mid) < p) {
+          lo = mid;
+        } else {
+          hi = mid;
+        }
+      }
+      return bez(1, 1, (lo + hi) / 2);
+    };
+    for (const ms of [0, 50, 100, 200, 300, 409]) {
+      expect(travelAt(played[0], ms)).toBeCloseTo(60 + 140 * ease(ms / 410), 1);
+    }
+    expect(travel(t)).toBe(200);
+  });
+
+  it('leaves a drag-dismissed sheet to the host exit under a mouse, from where it was', () => {
+    stubPointer({coarse: false});
+    const {hook, onDismiss} = setup({snapHeights: () => [200]});
+    const t = makeTarget();
+    t.style.transitionProperty = 'transform';
+    t.style.transitionDuration = '410ms';
+    t.style.transitionTimingFunction = 'ease';
+    down(hook, 0, 0, t);
+    stream(hook, t, {from: 0, to: 150, t0: 0, t1: 100});
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(pointerEvent(150, 102, t)),
+    );
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+    expect(hook.result.current.gestureExitRef.current).toBeNull();
+    // The travel is folded into the transform the host's exit runs from.
+    expect(t.style.transform).toBe('translateY(150px)');
+    expect(travel(t)).toBe(0);
+  });
+
+  it('reads touch velocity from the touch events, however late they are handled', () => {
+    const {hook, onDismiss} = setup({snapHeights: () => [200]});
+    const el = document.createElement('div');
+    Object.defineProperties(el, {
+      scrollTop: {value: 0, writable: true},
+      clientHeight: {value: 200},
+      scrollHeight: {value: 800},
+    });
+    el.getBoundingClientRect = () => ({height: SHEET_HEIGHT}) as DOMRect;
+    act(() => hook.result.current.sheetRef(el));
+    act(() => hook.result.current.bodyProps.ref(el));
+    const touch = (type: string, y: number, timeStamp: number) => {
+      const ev = new Event(type, {bubbles: true, cancelable: true});
+      Object.defineProperty(ev, 'changedTouches', {
+        value: [{identifier: 1, clientY: y}],
+      });
+      Object.defineProperty(ev, 'touches', {
+        value: type === 'touchend' ? [] : [{identifier: 1, clientY: y}],
+      });
+      Object.defineProperty(ev, 'timeStamp', {value: timeStamp});
+      el.dispatchEvent(ev);
+    };
+    // A pull down at 1500 px/s, every event delivered in one late batch.
+    act(() => {
+      touch('touchstart', 0, 0);
+      for (let i = 1; i <= 6; i++) {
+        touch('touchmove', i * 25, (i * 100) / 6);
+      }
+      touch('touchend', 150, 101);
+    });
+    expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 });
