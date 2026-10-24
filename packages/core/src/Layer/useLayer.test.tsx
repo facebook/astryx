@@ -18,6 +18,7 @@ import {
   waitFor,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {useEffect} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   useKeepLayerOpenProps,
@@ -1823,6 +1824,57 @@ describe('a layer that keeps its anchor clear (spec:AST-059 FR4)', () => {
     // Re-armed on the new rect.
     expect(move?.disconnected).toBe(true);
     expect(observers.length).toBe(before + 1);
+    vi.unstubAllGlobals();
+  });
+
+  it('moves its open-state observers to a trigger the caller replaces while it is open', async () => {
+    const observed: Element[] = [];
+    const disconnected: Element[][] = [];
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        targets: Element[] = [];
+        observe(target: Element) {
+          this.targets.push(target);
+          observed.push(target);
+        }
+        disconnect() {
+          disconnected.push(this.targets);
+        }
+        unobserve() {}
+      },
+    );
+    function ReplacingHarness({generation}: {generation: number}) {
+      const layer = useLayerInternal({
+        mode: 'context',
+        keepsAnchorClear: true,
+      });
+      useEffect(() => {
+        layer.show();
+      }, [layer]);
+      return (
+        <>
+          <button type="button" key={generation} ref={layer.ref}>
+            {`Trigger ${generation}`}
+          </button>
+          {layer.render(<span>Layer content</span>)}
+        </>
+      );
+    }
+    placeBoxes(TRIGGER, rect(200, 350, 100, 200));
+    const {getByText, rerender} = render(<ReplacingHarness generation={1} />);
+    await waitFor(() => {
+      expect(observed).toContain(getByText('Trigger 1'));
+    });
+    const first = getByText('Trigger 1');
+
+    rerender(<ReplacingHarness generation={2} />);
+
+    await waitFor(() => {
+      expect(observed).toContain(getByText('Trigger 2'));
+    });
+    // The observer that watched the first trigger was disconnected.
+    expect(disconnected.some(targets => targets.includes(first))).toBe(true);
     vi.unstubAllGlobals();
   });
 

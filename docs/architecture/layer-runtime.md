@@ -196,18 +196,21 @@ pass no fallbacks of their own to an anchor-mode layer.
 
 Every one of these inputs is resolved by the browser's style and layout in the
 same frame as the render that produced it; apart from the one case below, the
-runtime measures nothing after paint to apply them. Anchor visibility is read synchronously in a layout effect
-before the layer's first paint and then observed while the layer is open, so a
-layer opened with its anchor already out of view holds from its first frame.
-Whether a layer that keeps its anchor clear covers its anchor, and whether
-its content overflows, is read inside `show()` and the open-remount path right
-after the popover is shown, and again while it is open from ResizeObserver
-callbacks and scroll and resize events, all of which run before the frame
-paints. An anchor that moves in layout without resizing is reported only by an
-intersection observer on the anchor, whose root is the viewport shrunk to the
-anchor's rectangle and which re-arms on each report; it reports after paint,
-so that one correction lands a frame late. Apart from that, a layer never
-paints at a geometry it is about to correct.
+runtime measures nothing after paint to apply them. Anchor visibility is read
+synchronously in a layout effect before the layer's first paint and then
+observed while the layer is open, so a layer opened with its anchor already out
+of view holds from its first frame. Whether a layer that keeps its anchor clear
+covers its anchor, and whether its content overflows, is read inside `show()`
+and the open-remount path right after the popover is shown, and again while it
+is open from ResizeObserver callbacks and scroll and resize events, all of
+which run before the frame paints; the observers move to the replacement when
+the caller replaces the anchor element while the layer stays open. An anchor
+that moves in layout without resizing is reported only by an intersection
+observer on the anchor, whose root is the viewport shrunk to the anchor's
+rectangle and which re-arms on each report; it reports after paint, so on that
+one path at most one painted frame shows the layer over its anchor before it is
+corrected. Apart from that, a layer never paints at a geometry it is about to
+correct.
 
 ### Current browser support behavior
 
@@ -393,9 +396,10 @@ layers use Layer rendering without joining Escape/platform dismissal.
   whether its content overflows; each is read before first paint and, while
   the layer is open, from callbacks that run before the frame paints. The
   exception is an anchor that moves in layout without resizing or scrolling,
-  which only an intersection observer reports, after paint: that correction
-  lands one frame late. Otherwise a layer never paints at a geometry it is
-  about to correct, and the runtime polls nothing.
+  which only an intersection observer reports, after paint: at most one
+  painted frame shows the layer over its anchor before the correction.
+  Otherwise a layer never paints at a geometry it is about to correct, and the
+  runtime polls nothing.
 
 This record does not make future eligible-owner, branch-association, global-host,
 or browser-support requirements current. It does not own component focus entry or

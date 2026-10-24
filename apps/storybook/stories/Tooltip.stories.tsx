@@ -242,6 +242,59 @@ export const TallContentMovingHost: Story = {
   },
 };
 
+/**
+ * A tooltip held open while its caller replaces the trigger element with
+ * another one in the same place. The replacement is the anchor from then on,
+ * and the tooltip must keep it clear as it moves or resizes.
+ */
+export const TallContentReplacedTrigger: Story = {
+  parameters: {layout: 'fullscreen'},
+  render: function TallContentReplacedTriggerExample() {
+    const [generation, setGeneration] = useState(0);
+    const tooltip = useTooltip({placement: 'above', isOpen: true});
+    return (
+      <div style={{minHeight: '100vh'}}>
+        <div
+          style={{
+            position: 'fixed',
+            insetBlockStart: 16,
+            insetInlineStart: 16,
+          }}>
+          <Button
+            label="Replace the trigger"
+            onClick={() => setGeneration(value => value + 1)}>
+            Replace the trigger
+          </Button>
+        </div>
+        {/* The trigger's bottom edge sits 682px down, so it grows upward. */}
+        <div
+          style={{
+            blockSize: 682,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'flex-end',
+          }}>
+          <Button
+            key={generation}
+            label={`Trigger ${generation + 1}`}
+            ref={tooltip.ref}
+            aria-describedby={tooltip.describedBy}>
+            {`Trigger ${generation + 1}`}
+          </Button>
+        </div>
+        {tooltip.renderTooltip(
+          <div>
+            <div>A tooltip that stays open</div>
+            {Array.from({length: 17}, (_, i) => (
+              <div key={i}>{`Line ${i + 1}`}</div>
+            ))}
+          </div>,
+        )}
+      </div>
+    );
+  },
+};
+
 export const MultipleTooltips: Story = {
   render: () => (
     <div style={{padding: 100}}>

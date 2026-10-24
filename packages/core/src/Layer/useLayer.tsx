@@ -427,7 +427,7 @@ interface InternalLayerFields {
  */
 interface InternalContextLayerOptions extends ContextLayerOptions {
   /**
-   * The layer must never cover its anchor (spec:AST-059 FR4). When the
+   * The layer must never settle over its anchor (spec:AST-059 FR4). When the
    * standard fallback list settles it over its anchor, it switches to its
    * anchor-clear list: beside the trigger, then the roomier block side sized
    * to its room. For a hover-summoned layer, which the hover on its trigger
@@ -444,8 +444,8 @@ function toCssLength(value: number | string): string {
 }
 
 /**
- * For a layer that must never cover its anchor (spec:AST-059 FR4): read where
- * its fallback list settled it and, if its box covers the anchor, switch it to
+ * For a layer that must never settle over its anchor (spec:AST-059 FR4): read
+ * where its fallback list settled it and, if its box covers the anchor, switch it to
  * its anchor-clear list; then let it scroll only if its content overflows the
  * box it was given (FR3). The runtime calls this in the same task as every
  * show and remount, and while the layer is open whenever its size, its
@@ -1029,6 +1029,13 @@ function useLayerImplementation(
   const showRef = useRef(show);
   showRef.current = show;
 
+  // The anchor element as state, for a layer that keeps its anchor clear: its
+  // open-state geometry observers must follow the element when a caller
+  // replaces its trigger while the layer stays open. Other layers never set
+  // it, so their renders are unchanged.
+  const [clearAnchorElement, setClearAnchorElement] =
+    useState<HTMLElement | null>(null);
+
   // Stable ref for the trigger element (context mode only).
   const contextRef = useCallback(
     (el: HTMLElement | null) => {
@@ -1043,8 +1050,11 @@ function useLayerImplementation(
       }
 
       triggerRef.current = el;
+      if (keepsAnchorClear) {
+        setClearAnchorElement(el);
+      }
     },
-    [anchorId],
+    [anchorId, keepsAnchorClear],
   );
 
   // Arm only when the dismissing gesture's click is still ahead of us. Some
@@ -1272,20 +1282,23 @@ function useLayerImplementation(
   // painted late; an anchor that moves without resizing is only reported by
   // an intersection observer, after paint, so that switch lands in the next
   // frame (FR8). The layer element changes when a moved render call remounts
-  // it, which changes `contextMount`.
+  // it, which changes `contextMount`; the anchor element changes when a caller
+  // replaces its trigger, which changes `clearAnchorElement`. Either change
+  // disconnects the observers and binds new ones, whose first reports re-read
+  // the geometry.
   useIsomorphicLayoutEffect(() => {
     if (!keepsAnchorClear || !isOpen || mode !== 'context') {
       return;
     }
     const layer = popoverRef.current;
-    const anchor = triggerRef.current;
+    const anchor = clearAnchorElement;
     const view = layer?.ownerDocument.defaultView;
     if (!layer || !anchor || !view) {
       return;
     }
     const reread = () => {
-      if (popoverRef.current === layer) {
-        keepAnchorClear(layer, triggerRef.current);
+      if (popoverRef.current === layer && triggerRef.current === anchor) {
+        keepAnchorClear(layer, anchor);
       }
     };
     const onScroll = (event: Event) => {
@@ -1312,7 +1325,7 @@ function useLayerImplementation(
       view.removeEventListener('scroll', onScroll, {capture: true});
       view.removeEventListener('resize', reread);
     };
-  }, [keepsAnchorClear, isOpen, mode, contextMount]);
+  }, [keepsAnchorClear, isOpen, mode, contextMount, clearAnchorElement]);
 
   // Render function for context mode
   const renderContext = useCallback(
