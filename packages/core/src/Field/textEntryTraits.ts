@@ -31,7 +31,10 @@
  * What the Return key of a touch keyboard says. iOS gives `done`, `go`,
  * `next`, `search` and `send` their own key (a glyph on iOS 26: a checkmark,
  * an arrow, a chevron, a magnifier, an up arrow); `enter` and `previous` keep
- * the plain Return key.
+ * the plain Return key. Chrome on Android (Gboard) gives every value its own
+ * key; with no hint, a single-line field's key reads Next while another field
+ * follows and Go on the last one, a multi-line field's keeps Return, and a
+ * `type="url"` field shows Next instead of `go` while another field follows.
  */
 export type TextEntryEnterKeyHint =
   'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send';

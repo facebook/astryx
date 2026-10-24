@@ -266,7 +266,7 @@ export const docs = {
       name: 'enterKeyHint',
       type: "'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send'",
       description:
-        'What the Return key of a touch keyboard says (the native `enterkeyhint`). iOS gives `done`, `go`, `next`, `search` and `send` their own key (a glyph on iOS 26: a checkmark, an arrow, a chevron, a magnifier, an up arrow); `enter` and `previous` keep the plain Return key. It only labels the key: what Enter does stays with your handlers.',
+        'What the Return key of a touch keyboard says (the native `enterkeyhint`). iOS gives `done`, `go`, `next`, `search` and `send` their own key (a glyph on iOS 26: a checkmark, an arrow, a chevron, a magnifier, an up arrow); `enter` and `previous` keep the plain Return key. Chrome on Android (Gboard) gives every value its own key; with no hint a TextArea keeps Return. It only labels the key: what Enter does stays with your handlers.',
     },
     {
       name: 'inputMode',
@@ -569,7 +569,7 @@ export const docsZh = {
       name: 'enterKeyHint',
       type: "'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send'",
       description:
-        '触屏键盘回车键上显示的内容（原生 `enterkeyhint`）。iOS 为 `done`、`go`、`next`、`search` 和 `send` 显示各自的按键（iOS 26 上为图标：对勾、箭头、右尖括号、放大镜、上箭头）；`enter` 和 `previous` 保留普通的回车键。它只改变按键的标签：按下回车做什么仍由你的处理函数决定。',
+        '触屏键盘回车键上显示的内容（原生 `enterkeyhint`）。iOS 为 `done`、`go`、`next`、`search` 和 `send` 显示各自的按键（iOS 26 上为图标：对勾、箭头、右尖括号、放大镜、上箭头）；`enter` 和 `previous` 保留普通的回车键。Android 上的 Chrome（Gboard）为每个值显示各自的按键；未设置时 TextArea 保留回车键。它只改变按键的标签：按下回车做什么仍由你的处理函数决定。',
     },
     {
       name: 'inputMode',

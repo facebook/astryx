@@ -12,7 +12,7 @@ export const docs = {
       name: 'type',
       type: "'text' | 'password' | 'email' | 'search' | 'tel' | 'url'",
       description:
-        'The HTML input type. `email`, `tel` and `url` also bring up the matching touch keyboard (email, phone pad, URL); `search` makes the field a search box (pair it with `enterKeyHint="search"` for a Search key).',
+        'The HTML input type. `email`, `tel` and `url` also bring up the matching touch keyboard (email, phone pad, URL); `search` makes the field a search box (pair it with `enterKeyHint="search"` for a Search key on iOS; Chrome on Android shows one for `type="search"` alone).',
       default: "'text'",
     },
     {
@@ -174,13 +174,13 @@ export const docs = {
       name: 'enterKeyHint',
       type: "'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send'",
       description:
-        'What the Return key of a touch keyboard says (the native `enterkeyhint`). iOS gives `done`, `go`, `next`, `search` and `send` their own key (a glyph on iOS 26: a checkmark, an arrow, a chevron, a magnifier, an up arrow); `enter` and `previous` keep the plain Return key. It only labels the key: what Enter does stays with your handlers.',
+        'What the Return key of a touch keyboard says (the native `enterkeyhint`). iOS gives `done`, `go`, `next`, `search` and `send` their own key (a glyph on iOS 26: a checkmark, an arrow, a chevron, a magnifier, an up arrow); `enter` and `previous` keep the plain Return key. Chrome on Android (Gboard) gives every value its own key, `enter` and `previous` included; with no hint the key reads Next while another field follows and Go on the last one, and a `type="url"` field shows Next instead of `go` while another field follows. It only labels the key: what Enter does stays with your handlers.',
     },
     {
       name: 'inputMode',
       type: "'none' | 'text' | 'decimal' | 'numeric' | 'tel' | 'search' | 'email' | 'url'",
       description:
-        'Which touch keyboard the field asks for (the native `inputmode`) without changing what it accepts: `numeric` brings up the number pad, `decimal` the decimal pad, `tel` the phone pad, `search` the web-search keyboard (whose Return key reads Go on iOS even with `enterKeyHint="search"`).',
+        'Which touch keyboard the field asks for (the native `inputmode`) without changing what it accepts: `numeric` brings up the number pad, `decimal` the decimal pad, `tel` the phone pad, `search` the web-search keyboard (whose Return key reads Go on iOS even with `enterKeyHint="search"`; Chrome on Android shows the Enter key for `inputMode="search"` alone).',
     },
     {
       name: 'autoCapitalize',
@@ -273,7 +273,7 @@ export const docsZh = {
       name: 'type',
       type: "'text' | 'password' | 'email' | 'search' | 'tel' | 'url'",
       description:
-        'HTML 输入框类型。`email`、`tel` 和 `url` 还会调出对应的触屏键盘（邮箱、电话键盘、URL）；`search` 让字段成为搜索框（配合 `enterKeyHint="search"` 显示搜索键）。',
+        'HTML 输入框类型。`email`、`tel` 和 `url` 还会调出对应的触屏键盘（邮箱、电话键盘、URL）；`search` 让字段成为搜索框（在 iOS 上配合 `enterKeyHint="search"` 显示搜索键；Android 上的 Chrome 单独设置 `type="search"` 即显示搜索键）。',
       default: "'text'",
     },
     {
@@ -417,13 +417,13 @@ export const docsZh = {
       name: 'enterKeyHint',
       type: "'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send'",
       description:
-        '触屏键盘回车键上显示的内容（原生 `enterkeyhint`）。iOS 为 `done`、`go`、`next`、`search` 和 `send` 显示各自的按键（iOS 26 上为图标：对勾、箭头、右尖括号、放大镜、上箭头）；`enter` 和 `previous` 保留普通的回车键。它只改变按键的标签：按下回车做什么仍由你的处理函数决定。',
+        '触屏键盘回车键上显示的内容（原生 `enterkeyhint`）。iOS 为 `done`、`go`、`next`、`search` 和 `send` 显示各自的按键（iOS 26 上为图标：对勾、箭头、右尖括号、放大镜、上箭头）；`enter` 和 `previous` 保留普通的回车键。Android 上的 Chrome（Gboard）为每个值显示各自的按键，包括 `enter` 和 `previous`；未设置时，后面还有字段则显示“下一项”，最后一个字段显示“前往”；`type="url"` 的字段后面还有字段时，即使设为 `go` 也显示“下一项”。它只改变按键的标签：按下回车做什么仍由你的处理函数决定。',
     },
     {
       name: 'inputMode',
       type: "'none' | 'text' | 'decimal' | 'numeric' | 'tel' | 'search' | 'email' | 'url'",
       description:
-        '字段请求的触屏键盘（原生 `inputmode`），不改变字段接受的内容：`numeric` 显示数字键盘，`decimal` 显示带小数点的数字键盘，`tel` 显示电话键盘，`search` 显示网页搜索键盘（即使设置了 `enterKeyHint="search"`，iOS 上它的回车键仍显示为“前往”）。',
+        '字段请求的触屏键盘（原生 `inputmode`），不改变字段接受的内容：`numeric` 显示数字键盘，`decimal` 显示带小数点的数字键盘，`tel` 显示电话键盘，`search` 显示网页搜索键盘（即使设置了 `enterKeyHint="search"`，iOS 上它的回车键仍显示为“前往”；Android 上的 Chrome 对单独的 `inputMode="search"` 显示回车键）。',
     },
     {
       name: 'autoCapitalize',
