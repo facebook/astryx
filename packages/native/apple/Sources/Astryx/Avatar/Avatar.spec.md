@@ -1,0 +1,184 @@
+---
+schema_version: 5
+template_version: 8
+kind: component
+id: component:swift/Avatar
+platform_of: component:Avatar
+authority: draft
+archive_reason: null
+superseded_by: null
+approved_by: null
+approved_at: null
+owners: [cixzhang]
+review_triggers: [public-api, behavior, layout, theming, accessibility]
+verified_by:
+  [
+    packages/native/apple/Tests/AstryxTests/AvatarTests.swift,
+    packages/native/src/contract/contracts.test.ts,
+  ]
+modules: []
+families: []
+design_specs: []
+architecture: []
+contributing: []
+system_specs: [spec:AST-082, spec:AST-093]
+---
+
+# Avatar (Swift) component contract
+
+## Contract at a glance
+
+| Area                    | Contract                                                                                                                                                                                                                                                |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | `Avatar(_ name: String? = nil, src:, fallbackSrc:, alt:, size: AvatarSize?, shape: AvatarShape?, href:, onClick:)` and `Avatar(_ props: AvatarProps)`, a SwiftUI `View` in module `Astryx`. `size` is the named sizes `xsm` to `xl`.                    |
+| Behavior                | Draws the image at `src`, else `fallbackSrc`, else initials from `name` on the theme's neutral plate, else a person symbol, clipped to its shape. With `href` it is a SwiftUI `Link`; with only `onClick` it is a button; it draws the same either way. |
+| End-user impact         | A person sees the same picture, initials, and shape as on the web, and VoiceOver reads the avatar's name, or skips a decorative one.                                                                                                                    |
+| Builder impact          | An app passes a name and an image URL. Pixel sizes, `status`, `tooltip`, `target`, and `rel` have no Swift form.                                                                                                                                        |
+| Compatibility/readiness | Additive: a new view and generated `AvatarProps`. Draft; built and tested on macOS and the iOS Simulator; device captures are attached to the change.                                                                                                   |
+| Review checks           | Reject a size or shape beyond the contract, a disabled state, a link or button that draws differently from the static avatar, a layout that grows for the touch target, or a static avatar VoiceOver reads without a name.                              |
+| Governing rules         | `spec:AST-082` FR3, FR4, FR7; `spec:AST-093` FR1–FR5; the Swift component API (A1–A9), theme environment, and accessibility records under `packages/native/specs/swift/library/`.                                                                       |
+
+This table is a review projection; the body below is authoritative.
+
+## Intent
+
+Avatar on Apple platforms shows a person's or an entity's picture with core's
+fallback order, sizes, shapes, and naming, drawn with SwiftUI's own image
+loading and link and button controls.
+
+## Compatibility and migration
+
+- Released default preserved: `not yet released`
+- Compatibility class: additive
+- Controlled/uncontrolled behavior: not applicable
+- Migration decision: none
+
+Consumer migration instructions belong in consumer docs and release notes.
+
+## Ownership boundary
+
+**Owns**
+
+- Loading `src`, then `fallbackSrc`, with SwiftUI `AsyncImage`.
+- Initials, the person symbol, the plate color, and the shape clip.
+- Switching to a SwiftUI `Link` or `Button` for `href` or `onClick` without
+  changing the drawing.
+- The avatar's VoiceOver name and its touch target.
+
+**Does not own / non-goals**
+
+- The meaning of the props, the initials rule, and the size scale — owned by
+  `component:Avatar`.
+- Status dots and avatar groups, which have no Swift view.
+
+## Public concepts
+
+| Concept | Closed values or states                        | Meaning                                           | Availability by variant/orientation/state | Default  | Owner                    | Stability    | Invalid-value behavior                                           |
+| ------- | ---------------------------------------------- | ------------------------------------------------- | ----------------------------------------- | -------- | ------------------------ | ------------ | ---------------------------------------------------------------- |
+| size    | `xsm`, `sm`, `md`, `lg`, `xl`                  | 20, 24, 36, 48, 128 points                        | always                                    | `md`     | `component:Avatar`       | experimental | core's pixel sizes have no Swift form                            |
+| shape   | `circle`, `rounded`, `square`                  | full round, the theme's element radius, no radius | always                                    | `circle` | `component:Avatar`       | experimental | none                                                             |
+| picture | image, fallback image, initials, person symbol | the first that is available, in that order        | always                                    | —        | `component:Avatar`       | experimental | an empty or unloadable URL moves to the next                     |
+| control | static, link (`href`), button (`onClick`)      | how a tap behaves; the drawing is the same        | always                                    | static   | `component:swift/Avatar` | experimental | an `href` that is not a URL leaves the avatar static or a button |
+
+## Behavioral and layout contract
+
+| ID  | Candidate invariant                                                                                                                                                                                                                                                                  | Basis                                             | Draft review state |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------- | ------------------ |
+| FR1 | The view MUST show the image at `src`; when it is absent or fails, the image at `fallbackSrc`; then initials from a `name` that is not blank; then a person symbol. While an image loads, the next picture in that order shows.                                                      | core `Avatar` fallback order; `spec:AST-093` FR2  | verify             |
+| FR2 | Initials MUST follow core's rule: the first letter, digit, or emoji of the first and last words that have one, uppercased, skipping leading punctuation, keeping a whole emoji, flag, or joined emoji sequence. A name with none shows the person symbol and still names the avatar. | core `Avatar` initials                            | verify             |
+| FR3 | The avatar MUST be a square of 20, 24, 36, 48, or 128 points for `xsm` to `xl`, clipped to a circle, to the theme's `radius.element`, or to a square. Its size does not follow Dynamic Type, as core's pixel sizes do not follow the root font size.                                 | core `Avatar` sizes and shapes                    | verify             |
+| FR4 | Initials and the person symbol MUST draw in `color.textSecondary` on `color.neutral`; initials use the theme's body family at medium weight and 40% of the side.                                                                                                                     | core `Avatar` fallback styles; `spec:AST-093` FR4 | verify             |
+| FR5 | With an `href` that is a URL, the avatar MUST be a SwiftUI `Link` that the system opens, running `onClick` as it opens; with only `onClick`, a SwiftUI `Button`. Either draws exactly as the static avatar, and the avatar has no disabled state.                                    | Swift component API A4                            | verify             |
+| FR6 | Both initializers MUST build the same `AvatarProps`; `name` is the unlabeled first parameter and `onClick` the last, so it can be a trailing closure. Base props come through `AvatarProps`: with `isHidden` the view draws nothing; `id` becomes the accessibility identifier.      | Swift component API A2–A4, A7; `spec:AST-082` FR7 | verify             |
+
+### Allowed variation
+
+- **AV1 — Loading.** While an image loads, the fallback shows instead of an
+  empty plate.
+- **AV2 — Glyph.** The person symbol is the SF Symbol `person.fill`, not core's
+  SVG.
+
+### Representative states
+
+| State                          | Required invariant                     | Allowed variation |
+| ------------------------------ | -------------------------------------- | ----------------- |
+| image                          | the image fills the shape              | image content     |
+| failed image with a fallback   | the fallback image                     | none              |
+| initials, every size and shape | initials centered on the neutral plate | glyph metrics     |
+| no name                        | the person symbol at 60% of the side   | none              |
+| link and button                | the same drawing as static             | none              |
+| light and dark, two themes     | each theme's plate and text color      | none              |
+
+### Transformation and precedence order
+
+- **ORD1 — Picture.** `src` → `fallbackSrc` → initials → person symbol.
+- **ORD2 — Name.** `alt` → `name` → none, where a blank string is none.
+- **ORD3 — Control.** `href` (link) → `onClick` (button) → static.
+
+### Performance and resources
+
+- **PR1 — System loading.** Images load through `AsyncImage` and the system
+  URL cache; the view keeps no image cache of its own.
+
+## Accessibility contract
+
+- **AR1 — Named or decorative.** A static avatar with a name is one image
+  element named by `alt`, else `name`; without one it is hidden from VoiceOver.
+  A link or button avatar is one element with the link or button trait and the
+  same name (Swift accessibility X1, X5).
+- **AR2 — Touch target.** A link or button avatar answers taps across at least
+  44 by 44 points without changing its drawn size or layout (X7).
+- **AR3 — Rendered tree not measured.** Tests assert what the view sets; the
+  rendered accessibility tree and the hit region are not measured until an
+  app-hosted target exists.
+
+## Design relationships
+
+| Anatomy or state | Design requirement                       | Representation authority | Hierarchy role | Component contract |
+| ---------------- | ---------------------------------------- | ------------------------ | -------------- | ------------------ |
+| Photo, initials  | Apple Human Interface Guidelines, Images | prescribed by core       | prominent      | FR1–FR4            |
+
+The component implements design requirements without copying their rationale.
+
+Platform controls: SwiftUI `AsyncImage` for the images, SwiftUI `Link` for
+`href`, and SwiftUI `Button` for `onClick` (`spec:AST-093` FR2). SwiftUI has no
+avatar control, so the plate, initials, and clip are drawn here. Guideline
+pages: Images, Buttons, and Accessibility in the Apple Human Interface
+Guidelines.
+
+Theme values read: `color.neutral`, `color.textSecondary`, `radius.element`,
+`font.familyBody`, `font.weightMedium`, and Bold Text.
+
+## Family and system relationships
+
+- `component:Avatar` owns the props, the sizes, the initials rule, and the
+  fallback order; this record states only how Swift draws them.
+- An owner that holds an Avatar in a slot leaves an unsized Avatar at `md`
+  (Swift slots S4).
+
+## Verification map
+
+| Contract | Verification                                                          | Representative states                             | Mutation or failure expectation                                        | Audit section                |
+| -------- | --------------------------------------------------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------- | ---------------------------- |
+| FR1, FR2 | `AvatarTests.swift` initials and fallback tests                       | core's initials cases; blank and symbol names     | a wrong initial or a missing person symbol fails                       | `audit:swift/Avatar/picture` |
+| FR3, FR4 | `AvatarTests.swift` size, shape, and two-theme renders                | each size; circle and square; light, dark, butter | a wrong side, an unclipped corner, or a color of its own fails         | `audit:swift/Avatar/look`    |
+| FR5      | `AvatarTests.swift` link and button renders; `linkURL` test           | static, link, button; empty `href`                | a link or button that draws differently fails                          | `audit:swift/Avatar/control` |
+| FR6      | `AvatarTests.swift` initializer and hidden tests; `contracts.test.ts` | both initializers; `isHidden`; named sizes        | differing props, a drawn hidden avatar, or a pixel size in Swift fails | `audit:swift/Avatar/api`     |
+| AR1      | `AvatarTests.swift` naming tests                                      | `alt`, `name`, blank, none                        | a wrong name or a named decorative avatar fails                        | `audit:swift/Avatar/a11y`    |
+
+## Decision log
+
+No component-local decision is recorded.
+
+## Open questions
+
+- **OQ1 — How does `tooltip` reach Swift?** (`human-api`) `spec:AST-082` FR3
+  keeps `tooltip` in the core, but its web type, `string | boolean`, has no
+  portable form, so the generated contract leaves it on the web.
+- **OQ2 — Status dots.** (`human-api`) `status` holds `AvatarStatusDot`, which
+  has no Swift view, so it stays on the web until one exists.
+
+## Content boundary
+
+This file does not duplicate consumer prop tables/examples, current audit
+results, implementation steps, or family/system rules. It links to their owners.
