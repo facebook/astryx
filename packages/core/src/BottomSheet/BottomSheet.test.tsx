@@ -767,6 +767,23 @@ describe('BottomSheet', () => {
     });
 
     it('pins the scrim easing while a drag moves the dim, and hands it back when the sheet lands', async () => {
+      // iOS's idiom: a finger in WebKit on iOS (useSheetGestures.ts).
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn((query: string) => ({
+          matches: query.includes('pointer: coarse'),
+          media: query,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+        })),
+      );
+      vi.stubGlobal('CSS', {
+        supports: (condition: string) =>
+          condition.includes('-webkit-touch-callout'),
+        escape: (value: string) => value,
+      });
       render(
         <BottomSheet isOpen onOpenChange={vi.fn()} label="Filters">
           Content

@@ -2562,17 +2562,9 @@ describe('useSheetGestures: the release on the compositor', () => {
 });
 
 describe('useSheetGestures: the dim follows the sheet', () => {
-  // A finger: the release runs on UIKit's springs (releaseMotion.ts).
-  beforeEach(() => {
-    vi.stubGlobal(
-      'matchMedia',
-      vi.fn((query: string) => ({
-        matches: query.includes('pointer: coarse'),
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-      })),
-    );
-  });
+  // A finger in iOS's idiom: the release runs on UIKit's springs and the dim
+  // follows the sheet (releaseMotion.ts); outside it, today's dim.
+  beforeEach(() => stubIosIdiom());
 
   interface Played {
     keyframes: Keyframe[];
@@ -2810,44 +2802,43 @@ describe('useSheetGestures: the dim follows the sheet', () => {
     }
   });
 
-  it("hands a drag dismissal's dim to the host's exit under a mouse", () => {
-    vi.stubGlobal(
-      'matchMedia',
-      vi.fn(() => ({
-        matches: false,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-      })),
-    );
-    const order: string[] = [];
-    const onScrimOpacity = vi.fn((o: number) => order.push(`dim ${o}`));
-    const onScrimTracking = vi.fn((on: boolean) => order.push(`track ${on}`));
-    const onDismiss = vi.fn(() => order.push('dismiss'));
-    const {hook} = setup({
-      snapHeights: () => [200],
-      onScrimOpacity,
-      onScrimTracking,
-      onDismiss,
-    });
-    const {target} = inDialog();
-    target.style.transitionProperty = 'transform';
-    target.style.transitionDuration = '410ms';
-    target.style.transitionTimingFunction = 'ease';
-    down(hook, 0, 0, target);
-    stream(hook, target, {from: 0, to: 360, t0: 0, t1: 300});
-    act(() =>
-      hook.result.current.handleProps.onPointerUp(
-        pointerEvent(360, 302, target),
-      ),
-    );
-    expect(onDismiss).toHaveBeenCalledTimes(1);
-    // The dim is handed back where it is, unpinned, before the host closes.
-    const handBack = order.indexOf('track false');
-    expect(handBack).toBeGreaterThan(-1);
-    expect(handBack).toBeLessThan(order.indexOf('dismiss'));
-    expect(order[handBack - 1]).toMatch(/^dim /);
-    expect(Number(order[handBack - 1].slice(4))).toBeCloseTo(dimAt(360), 9);
-  });
+  it.each([
+    ['a mouse', {coarse: false}],
+    ['a finger on Android', {coarse: true}],
+  ])(
+    "keeps today's dim under %s: the host eases it, clear 40 %% below the shortest detent",
+    (_, {coarse}) => {
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn((query: string) => ({
+          matches: coarse && query.includes('pointer: coarse'),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+        })),
+      );
+      vi.stubGlobal('CSS', {supports: () => false, escape: (v: string) => v});
+      const onScrimOpacity = vi.fn();
+      const onScrimTracking = vi.fn();
+      const {hook} = setup({
+        snapHeights: () => [200],
+        onScrimOpacity,
+        onScrimTracking,
+      });
+      const {dialog, target} = inDialog();
+      const played = recordAnimations(dialog);
+      down(hook, 0, 0, target);
+      // 40 px below the 200 px detent: today's dim clears 80 px below it.
+      move(hook, 240, 500, target);
+      expect(onScrimOpacity).toHaveBeenLastCalledWith(expect.closeTo(0.5, 9));
+      restAt(hook, 240, 600, target);
+      up(hook, 240, 1000, target);
+      // Never pinned, and no dim played on the backdrop: the host's own
+      // easing carries it, as today.
+      expect(onScrimTracking).not.toHaveBeenCalled();
+      expect(played).toHaveLength(0);
+      expect(onScrimOpacity).toHaveBeenLastCalledWith(1);
+    },
+  );
 });
 
 describe('useSheetGestures: a finger on the drawn sheet during a release', () => {
