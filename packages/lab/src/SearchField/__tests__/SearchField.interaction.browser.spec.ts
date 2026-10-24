@@ -225,6 +225,27 @@ async function recordActivationStart(locator: Locator) {
   };
 }
 
+/**
+ * Waits for an animation on `locator` that started after `after` (epoch ms,
+ * an earlier animation's `from`): a reversal starts on the first presented
+ * frame after the tap, so the move it replaces runs on for those frames.
+ */
+async function waitForNewAnimation(locator: Locator, after: number) {
+  const deadline = Date.now() + 5_000;
+  for (;;) {
+    const fresh = (await waitForAnimation(locator)).filter(
+      a => a.from > after + 1,
+    );
+    if (fresh.length > 0) {
+      return fresh;
+    }
+    if (Date.now() > deadline) {
+      throw new Error('no new animation started');
+    }
+    await locator.page().waitForTimeout(8);
+  }
+}
+
 /** A presented translateX, px (the animator drives `translate`). */
 const translateX = async (locator: Locator) =>
   locator.evaluate(element => {
@@ -458,12 +479,12 @@ test('a cancel mid-activation turns around from where the parts are, without a j
 }) => {
   const {driver, field} = await openField(page);
   await driver.tap(await centerOf(field));
-  await waitForAnimation(end(page), {minProgressMs: 150});
+  const [forward] = await waitForAnimation(end(page), {minProgressMs: 150});
   const before = await translateX(end(page));
   expect(before).toBeLessThan(-2);
   expect(before).toBeGreaterThan(-NARROWING + 2);
   await driver.tap(await centerOf(close(page)));
-  const [reverse] = await waitForAnimation(end(page));
+  const [reverse] = await waitForNewAnimation(end(page), forward.from);
   await holdAnimations(page);
   await expect(root(page)).not.toHaveAttribute('data-search-field-active');
   const samples = await sampleCurve(end(page), times);
@@ -491,12 +512,12 @@ test('a tap on the field during the cancel re-activates from where the parts are
   await waitForRest(end(page));
   await waitForRest(close(page));
   await driver.tap(await centerOf(close(page)));
-  await waitForAnimation(end(page), {minProgressMs: 150});
+  const [cancel] = await waitForAnimation(end(page), {minProgressMs: 150});
   const before = await translateX(end(page));
   expect(before).toBeGreaterThan(-NARROWING + 2);
   expect(before).toBeLessThan(-2);
   await driver.tap(await centerOf(field));
-  const [again] = await waitForAnimation(end(page));
+  const [again] = await waitForNewAnimation(end(page), cancel.from);
   await holdAnimations(page);
   const samples = await sampleCurve(end(page), times);
   await releaseAnimations(page, {finish: true});
@@ -873,9 +894,9 @@ test(
   async ({page}, testInfo) => {
     const {driver, field} = await openField(page);
     await driver.tap(await centerOf(field));
-    await waitForAnimation(end(page), {minProgressMs: 120});
+    const [forward] = await waitForAnimation(end(page), {minProgressMs: 120});
     await driver.tap(await centerOf(close(page)));
-    await waitForAnimation(end(page));
+    await waitForNewAnimation(end(page), forward.from);
     const box = await root(page).boundingBox();
     if (box == null) {
       throw new Error('no field');

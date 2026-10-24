@@ -95,6 +95,35 @@ function curve(
 }
 
 /**
+ * Runs `start` on the first frame the page has presented, by the rule the
+ * field starts its activation with (lab's presentedFrame.ts): the second of
+ * two frames less than 40 ms apart, at most 1 s later. Run from the same
+ * commit as the field's, it starts on the field's frame.
+ */
+function onPresentedFrame(win: Window, start: () => void): () => void {
+  const begin = win.performance.now();
+  let previous: number | null = null;
+  let id = 0;
+  let done = false;
+  const step = (time: number) => {
+    if ((previous != null && time - previous < 40) || time - begin > 1000) {
+      done = true;
+      start();
+      return;
+    }
+    previous = time;
+    id = win.requestAnimationFrame(step);
+  };
+  id = win.requestAnimationFrame(step);
+  return () => {
+    if (!done) {
+      done = true;
+      win.cancelAnimationFrame(id);
+    }
+  };
+}
+
+/**
  * The host's half of a lift, as a navigation bar does it (NavigationStack
  * runs the real one): the content rises with the field by `lift` on the
  * field's clock, and the large title fades as UIKit's does (opacity
@@ -120,36 +149,44 @@ function useLiftedHost(isActive: boolean, lift: number) {
     }
     settled.current = target;
     const element = content.animator.element;
-    const seconds = resolveMotion(element, uikit.search, 'activationMs') / 1000;
-    const ease = cubicBezier(
-      resolveMotion(element, uikit.search.activationCurve),
-    );
-    // A reversal starts where the content is, on the rest of the clock.
-    const fromY = content.animator.get('y');
-    const remaining = Math.min(1, Math.abs(y - fromY) / lift);
-    const duration = seconds * remaining;
-    const start = 1 - remaining;
-    const progress = (t: number) =>
-      start +
-      remaining *
-        ease(duration > 0 ? Math.min(1, Math.max(0, t / duration)) : 1);
-    // `p` is the activation's progress (1 = active), whichever way it runs.
-    const activation = (p: number) => (target ? p : 1 - p);
-    content.animator.play({
-      y: curve(duration, p => -lift * activation(p), progress),
-    });
-    title.animator.play({
-      opacity: curve(
-        duration,
-        p => {
-          const a = activation(p);
-          return target
-            ? Math.max(0, 1 - a / 0.35) ** 2
-            : Math.min(1, Math.max(0, (1 - a - 0.65) / 0.35));
-        },
-        progress,
-      ),
-    });
+    const win = element?.ownerDocument.defaultView;
+    if (element == null || win == null) {
+      return;
+    }
+    return onPresentedFrame(win, () => move(element));
+    function move(element: HTMLElement) {
+      const seconds =
+        resolveMotion(element, uikit.search, 'activationMs') / 1000;
+      const ease = cubicBezier(
+        resolveMotion(element, uikit.search.activationCurve),
+      );
+      // A reversal starts where the content is, on the rest of the clock.
+      const fromY = content.animator.get('y');
+      const remaining = Math.min(1, Math.abs(y - fromY) / lift);
+      const duration = seconds * remaining;
+      const start = 1 - remaining;
+      const progress = (t: number) =>
+        start +
+        remaining *
+          ease(duration > 0 ? Math.min(1, Math.max(0, t / duration)) : 1);
+      // `p` is the activation's progress (1 = active), whichever way it runs.
+      const activation = (p: number) => (target ? p : 1 - p);
+      content.animator.play({
+        y: curve(duration, p => -lift * activation(p), progress),
+      });
+      title.animator.play({
+        opacity: curve(
+          duration,
+          p => {
+            const a = activation(p);
+            return target
+              ? Math.max(0, 1 - a / 0.35) ** 2
+              : Math.min(1, Math.max(0, (1 - a - 0.65) / 0.35));
+          },
+          progress,
+        ),
+      });
+    }
   }, [isActive, lift, idiom, content, title]);
   return {contentRef: content.ref, titleRef: title.ref};
 }

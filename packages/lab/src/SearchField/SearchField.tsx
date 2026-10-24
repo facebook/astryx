@@ -90,6 +90,7 @@ import {
   textSizeVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {mergeProps, themeProps} from '@astryxdesign/core/utils';
+import {onPresentedFrame} from '../presentedFrame';
 import {
   activationTiming,
   easedCurve,
@@ -459,79 +460,95 @@ export function SearchField({
   const isAnimating = useRef(false);
   useLayoutEffect(() => {
     const target = isActive;
-    const shape = geometry();
-    const to = poseFor(target, shape);
     if (settledRef.current === null || !playsUIKit) {
       // First layout, or outside the iOS idiom: take the places at once.
       settledRef.current = target;
-      place(to);
+      place(poseFor(target, geometry()));
       return;
     }
     if (settledRef.current === target && !isAnimating.current) {
-      place(to);
+      place(poseFor(target, geometry()));
       return;
     }
     settledRef.current = target;
-    const from = poseFor(!target, shape);
-    const current = presented();
-    // The clock and curve under the field's theme, read as the move starts.
-    const timing = activationTiming(rootAnimator.animator.element);
-    const duration = timing.seconds * remainingFraction(current, from, to);
-    const options = {reducedMotion: search.reducedMotion};
     isAnimating.current = true;
-    const handles = [
-      play(
-        rootAnimator.animator,
-        {y: easedCurve(current.y, to.y, duration, timing.ease)},
-        options,
-      ),
-      play(
-        middleAnimator.animator,
-        {
-          scaleX: easedCurve(
-            current.middleScale,
-            to.middleScale,
-            duration,
-            timing.ease,
-          ),
-        },
-        options,
-      ),
-      play(
-        endAnimator.animator,
-        {x: easedCurve(current.endX, to.endX, duration, timing.ease)},
-        options,
-      ),
-      play(
-        closeAnimator.animator,
-        {
-          x: easedCurve(current.closeX, to.closeX, duration, timing.ease),
-          // Cancel slides the close button out at the opacity it has and
-          // removes it at the end, as UIKit does.
-          opacity: target
-            ? easedCurve(
-                current.closeOpacity,
-                to.closeOpacity,
-                duration,
-                timing.ease,
-              )
-            : heldCurve(current.closeOpacity, to.closeOpacity, duration),
-        },
-        options,
-      ),
-    ];
     let cancelled = false;
-    const playing = handles.filter(
-      (handle): handle is MotionHandle => handle != null,
-    );
-    void Promise.all(playing.map(handle => handle.finished)).then(results => {
-      if (cancelled || !results.every(Boolean)) {
-        return;
-      }
-      isAnimating.current = false;
-    });
+    const run = () => {
+      const shape = geometry();
+      const to = poseFor(target, shape);
+      const from = poseFor(!target, shape);
+      const current = presented();
+      // The clock and curve under the field's theme, read as the move starts.
+      const timing = activationTiming(rootAnimator.animator.element);
+      const duration = timing.seconds * remainingFraction(current, from, to);
+      const options = {reducedMotion: search.reducedMotion};
+      const handles = [
+        play(
+          rootAnimator.animator,
+          {y: easedCurve(current.y, to.y, duration, timing.ease)},
+          options,
+        ),
+        play(
+          middleAnimator.animator,
+          {
+            scaleX: easedCurve(
+              current.middleScale,
+              to.middleScale,
+              duration,
+              timing.ease,
+            ),
+          },
+          options,
+        ),
+        play(
+          endAnimator.animator,
+          {x: easedCurve(current.endX, to.endX, duration, timing.ease)},
+          options,
+        ),
+        play(
+          closeAnimator.animator,
+          {
+            x: easedCurve(current.closeX, to.closeX, duration, timing.ease),
+            // Cancel slides the close button out at the opacity it has and
+            // removes it at the end, as UIKit does.
+            opacity: target
+              ? easedCurve(
+                  current.closeOpacity,
+                  to.closeOpacity,
+                  duration,
+                  timing.ease,
+                )
+              : heldCurve(current.closeOpacity, to.closeOpacity, duration),
+          },
+          options,
+        ),
+      ];
+      const playing = handles.filter(
+        (handle): handle is MotionHandle => handle != null,
+      );
+      void Promise.all(playing.map(handle => handle.finished)).then(results => {
+        if (cancelled || !results.every(Boolean)) {
+          return;
+        }
+        isAnimating.current = false;
+      });
+    };
+    // The move starts on the first frame the page presents after this
+    // commit, fresh (onPresentedFrame): Mobile Safari brings the keyboard up
+    // with no frame for ~150 ms after the focus, and a motion created before
+    // that stall would jump a third of the way when frames resume. A host
+    // that moves with the field (a navigation bar) starts through the same
+    // helper, so both start on the same frame.
+    const win = rootAnimator.animator.element?.ownerDocument.defaultView;
+    let cancelStart = () => {};
+    if (win == null) {
+      run();
+    } else {
+      cancelStart = onPresentedFrame(win, run);
+    }
     return () => {
       cancelled = true;
+      cancelStart();
     };
     // `geometry` changes with `lift`; a lift change while settled re-places
     // the field through the same path.

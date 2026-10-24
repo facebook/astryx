@@ -7,8 +7,9 @@
  * @output Proofs that the activation reads its clock and curve as motion
  *   roles under the field's theme: a theme's `--motion-search-activation-ms`
  *   and `--motion-search-activation-curve` time the activation the field
- *   plays, and without a theme it keeps UIKit's 383 ms ease-in-ease-out; a
- *   finger outside iOS plays none (the iOS idiom gate)
+ *   plays, and without a theme it keeps UIKit's 383 ms ease-in-ease-out; the
+ *   activation waits for a presented frame; a finger outside iOS plays none
+ *   (the iOS idiom gate)
  * @position Testing; validates SearchField.tsx and searchFieldModel.ts with a
  *   stubbed computed style (as core's resolveMotion.test.ts does)
  */
@@ -55,9 +56,36 @@ vi.mock('@astryxdesign/core/motion/experimental', async importOriginal => {
 /** Theme variables by scope element, as the stubbed computed style reports. */
 let variables: Map<Element, Record<string, string>>;
 
+/** Frames the test delivers: the activation starts on a presented one. */
+let frameCallbacks: Map<number, FrameRequestCallback>;
+let frameTime = 0;
+function deliverFrames(count: number) {
+  for (let k = 0; k < count; k++) {
+    frameTime += 16.7;
+    const waiting = [...frameCallbacks.values()];
+    frameCallbacks.clear();
+    act(() => {
+      for (const callback of waiting) {
+        callback(frameTime);
+      }
+    });
+  }
+}
+
 beforeEach(() => {
   played.length = 0;
   variables = new Map();
+  frameCallbacks = new Map();
+  frameTime = performance.now();
+  let nextFrame = 1;
+  vi.spyOn(window, 'requestAnimationFrame').mockImplementation(callback => {
+    const id = nextFrame++;
+    frameCallbacks.set(id, callback);
+    return id;
+  });
+  vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(id => {
+    frameCallbacks.delete(id);
+  });
   vi.spyOn(window, 'getComputedStyle').mockImplementation(
     (element: Element) =>
       ({
@@ -128,6 +156,9 @@ describe('SearchField motion roles', () => {
     render(<SearchField label="Search" />, {container: scope});
     const input = screen.getByRole('searchbox');
     act(() => input.focus());
+    // Nothing plays until the page has presented a frame (two at cadence).
+    expect(played).toEqual([]);
+    deliverFrames(2);
     expect(played.length).toBeGreaterThan(0);
     for (const curves of played) {
       for (const duration of Object.values(curves)) {
@@ -139,6 +170,7 @@ describe('SearchField motion roles', () => {
   it('keeps UIKit’s 383 ms activation without a theme', () => {
     render(<SearchField label="Search" />);
     act(() => screen.getByRole('searchbox').focus());
+    deliverFrames(2);
     expect(played.length).toBeGreaterThan(0);
     for (const curves of played) {
       for (const duration of Object.values(curves)) {
@@ -152,6 +184,7 @@ describe('SearchField motion roles', () => {
     themed({'--motion-search-activation-ms': '600ms'});
     render(<SearchField label="Search" />);
     act(() => screen.getByRole('searchbox').focus());
+    deliverFrames(3);
     expect(played).toEqual([]);
   });
 });
