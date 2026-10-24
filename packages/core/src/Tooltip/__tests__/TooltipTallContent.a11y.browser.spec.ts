@@ -759,3 +759,145 @@ test('a tooltip that switches lists after it has painted is placed afresh, not l
     expect(tooltip.bottom).toBeLessThanOrEqual(720);
   }
 });
+
+/**
+ * Open the held-open TallContent story with `content` at `viewport`, with the
+ * trigger's centre at `triggerY`.
+ */
+async function openHeldTooltip(
+  page: Page,
+  viewport: {width: number; height: number},
+  content: string,
+  triggerY: number,
+) {
+  await page.setViewportSize(viewport);
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-tooltip--tall-content&viewMode=story&args=isOpen:!true${content ? `;content:${content}` : ''}`,
+  );
+  await holdMotionStill(page);
+  await expect(page.getByRole('tooltip')).toBeVisible();
+  await page.evaluate(
+    ([sel, y]) => {
+      const el = document.querySelector(sel as string) as HTMLElement;
+      const r = el.getBoundingClientRect();
+      window.scrollBy(0, r.top + r.height / 2 - (y as number));
+    },
+    [TRIGGER, triggerY],
+  );
+  await page.waitForTimeout(300);
+}
+
+async function hasSwitched(page: Page): Promise<boolean | undefined> {
+  return page.evaluate(
+    sel =>
+      document.querySelector(sel)?.hasAttribute('data-astryx-clears-anchor'),
+    TOOLTIP,
+  );
+}
+
+test('a scroll never switches a tooltip that fits, so it still flips below when it grows', async ({
+  page,
+  browserName,
+}) => {
+  // A short tooltip opened by keyboard focus above a trigger near the top.
+  await page.setViewportSize({width: 1280, height: 720});
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-tooltip--tall-content&viewMode=story&args=content:A+short+tooltip`,
+  );
+  await holdMotionStill(page);
+  const button = page.getByRole('button', {name: 'Hover for details'});
+  await expect(button).toBeVisible();
+  await page.evaluate(sel => {
+    const el = document.querySelector(sel) as HTMLElement;
+    const r = el.getBoundingClientRect();
+    window.scrollBy(0, r.top + r.height / 2 - 200);
+  }, TRIGGER);
+  await button.focus();
+  await expect(page.getByRole('tooltip')).toBeVisible();
+  await page.waitForTimeout(200);
+  const atOpen = await hasSwitched(page);
+  // Small scroll steps, each one painted, with the tooltip open throughout.
+  for (let i = 0; i < 10; i++) {
+    await page.evaluate(() => window.scrollBy(0, 6));
+    await page.waitForTimeout(40);
+  }
+  await page.waitForTimeout(200);
+  expect(await hasSwitched(page)).toBe(atOpen);
+  // Grown past the room above, it stays clear of its trigger and in view.
+  await page.evaluate(sel => {
+    const content = document.querySelector(sel)?.firstElementChild;
+    for (let i = 1; i <= 12; i++) {
+      const line = document.createElement('div');
+      line.textContent = `Line ${i}`;
+      content?.appendChild(line);
+    }
+  }, TOOLTIP);
+  await page.waitForTimeout(300);
+  const tooltip = await rect(page, TOOLTIP);
+  const trigger = await rect(page, TRIGGER);
+  expect(overlaps(tooltip, trigger)).toBe(false);
+  expect(tooltip.top).toBeGreaterThanOrEqual(0);
+  expect(tooltip.bottom).toBeLessThanOrEqual(720);
+  if (browserName === 'chromium') {
+    // On the standard list it flips below, as any layer does, rather than
+    // moving beside its trigger. (WebKit's first layout of a just-shown
+    // popover reads a few pixels over its trigger, so there the short
+    // tooltip has switched since it opened and moves beside instead.)
+    expect(atOpen).toBe(false);
+    expect(tooltip.top).toBeGreaterThanOrEqual(trigger.bottom);
+    expect(tooltip.left).toBeLessThan(trigger.right);
+    expect(await hasSwitched(page)).toBe(false);
+  }
+});
+
+test('a scroll that moves a tall tooltip’s trigger never leaves the tooltip over it past the first painted frame, and it ends on the roomier side', async ({
+  page,
+}) => {
+  // The 60-line tooltip, switched and below a trigger in the upper half of a
+  // phone; the page scrolls in steps that carry the trigger down the screen,
+  // past the middle, until the room above is the larger.
+  await openHeldTooltip(page, {width: 390, height: 700}, '', 150);
+  expect(await hasSwitched(page)).toBe(true);
+  for (let step = 0; step < 4; step++) {
+    const frames = await page.evaluate(
+      async ({sel, tip}) => {
+        const box = (el: Element) => {
+          const r = el.getBoundingClientRect();
+          return {top: r.top, bottom: r.bottom, left: r.left, right: r.right};
+        };
+        window.scrollBy(0, -110);
+        const out: {tooltip: Box; trigger: Box}[] = [];
+        for (let i = 0; i < 4; i++) {
+          await new Promise<void>(resolve => {
+            requestAnimationFrame(() => {
+              const channel = new MessageChannel();
+              channel.port1.onmessage = () => resolve();
+              channel.port2.postMessage(null);
+            });
+          });
+          const t = document.querySelector(tip);
+          const a = document.querySelector(sel);
+          if (t != null && a != null) {
+            out.push({tooltip: box(t), trigger: box(a)});
+          }
+        }
+        return out;
+      },
+      {sel: TRIGGER, tip: TOOLTIP},
+    );
+    expect(frames.length).toBe(4);
+    for (const [i, frame] of frames.entries()) {
+      if (i === 0) {
+        continue;
+      }
+      expect(
+        overlaps(frame.tooltip, frame.trigger),
+        `scroll step ${step + 1}, painted frame ${i + 1} covers the trigger`,
+      ).toBe(false);
+    }
+  }
+  const trigger = await rect(page, TRIGGER);
+  const tooltip = await rect(page, TOOLTIP);
+  expect(trigger.top).toBeGreaterThan(700 - trigger.bottom);
+  expect(tooltip.bottom).toBeLessThanOrEqual(trigger.top);
+});

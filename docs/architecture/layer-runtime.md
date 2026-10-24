@@ -197,7 +197,9 @@ roomier instead of shrinking it. A browser also keeps a laid-out layer on its
 last option when its list changes, so a switch after the layer has painted takes
 the layer out of rendering for one forced layout in the same task (no frame
 paints, the popover stays open, no toggle event fires), and the engine places it
-afresh from the new list. Chromium tries no more than five
+afresh from the new list; a later read that finds it failing again does the
+same, since no engine re-runs the list when a scroll carries the anchor.
+Chromium tries no more than five
 options, so the second list replaces the first rather than extending it.
 Once the anchor has left the viewport the runtime pins the layer's
 self-alignment `unsafe` toward the anchor, so the layer holds the position its
@@ -212,18 +214,16 @@ observed while the layer is open, so a layer opened with its anchor already out
 of view holds from its first frame. Whether a layer that keeps its anchor clear
 covers its anchor or leaves the viewport, and whether its content overflows, is
 read inside `show()` and the open-remount path right after the popover is shown,
-and again while it is open from ResizeObserver callbacks and scroll and resize
-events, all of which run before the frame paints (a scroll event reads only
-coverage, since the layer has not yet followed its anchor); the observers move
-to the replacement when the caller replaces the anchor element while the layer
-stays open. An anchor
-that moves in layout without resizing is reported only by an intersection
-observer on the anchor, whose root is the viewport shrunk to the anchor's
-rectangle and which re-arms on each report; it reports after paint, so on that
-one path at most one painted frame shows the layer over its anchor before it is
-corrected, and the same report catches a box that a scroll leaves past the
-viewport. Apart from those, a layer never paints at a geometry it is about to
-correct.
+and again while it is open from ResizeObserver callbacks and resize events, all
+of which run before the frame paints; the observers move to the replacement when
+the caller replaces the anchor element while the layer stays open. An anchor
+that moves on screen without resizing, in layout or by a scroll, is reported
+only by an intersection observer on the anchor, whose root is the viewport
+shrunk to the anchor's rectangle and which re-arms on each report; it reports
+after paint, so on that one path at most one painted frame shows the layer over
+its anchor before it is corrected. Scroll events are not read: one fires before
+the layer has followed its anchor. Apart from that, a layer never paints at a
+geometry it is about to correct.
 
 ### Current browser support behavior
 
@@ -403,16 +403,16 @@ layers use Layer rendering without joining Escape/platform dismissal.
   the same inset, no consumer defines its own, no size is capped to the span
   beside the trigger, and a consumer minimum is clamped by the runtime's cap.
 - **INV12 — The first frame is the settled frame.** No input to a layer's
-  viewport geometry is measured after paint and then applied, with the
-  exceptions below. The runtime observes anchor visibility for every layer, and,
+  viewport geometry is measured after paint and then applied, with one
+  exception. The runtime observes anchor visibility for every layer, and,
   for a layer that keeps its anchor clear, whether it covers its anchor or
   leaves the viewport and whether its content overflows; each is read before
   first paint and, while the layer is open, from callbacks that run before the
-  frame paints. The exceptions: an anchor that moves in layout without resizing
-  or scrolling, which only an intersection observer reports, after paint: at
-  most one painted frame shows the layer over its anchor before the correction;
-  the same report catches, a frame late, a box that a scroll leaves past the
-  viewport. Otherwise a layer never paints at a geometry it is about to correct,
+  frame paints. The exception is a same-size anchor that moves on screen, in
+  layout or by a scroll, which only an intersection observer reports, after
+  paint: at most one painted frame shows the layer over its anchor before the
+  correction. Otherwise a layer never paints at a geometry it is about to
+  correct,
   and the runtime polls nothing.
 
 This record does not make future eligible-owner, branch-association, global-host,

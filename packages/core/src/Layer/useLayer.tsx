@@ -451,22 +451,18 @@ function toCssLength(value: number | string): string {
  * the box it was given (FR3). Engines differ in where they leave a box that
  * fits no option: Chromium shifts it into the viewport, over the anchor; WebKit
  * keeps it at its preferred position, partly off-screen. Either way the
- * standard list has failed it. During a scroll event the anchor has moved but
- * the layer anchored to it not yet, so a scroll reads only for coverage
- * (`checkViewport` false); the anchor-move observer, which reports after the
- * frame has painted the scrolled geometry, reads the viewport. The runtime
- * calls this in the same task as every show and remount, and while the layer is
- * open whenever its size, its content's size, its anchor's size, a scroll
- * position or the viewport changes. Each of those reads lands before the next
- * frame paints (FR8). Only a box that overlaps the anchor counts; a layer flush
- * against it does not. Once switched, a layer keeps its anchor-clear list until
+ * standard list has failed it. The runtime calls this in the same task as
+ * every show and remount, and while the layer is open whenever its size, its
+ * content's size, its anchor's size or the viewport changes; each of those
+ * reads lands before the next frame paints. A same-size anchor that moves on
+ * screen, in layout or because something scrolled, is read after paint, from
+ * the anchor-move observer (FR8). Scroll events are not read: during one the
+ * anchor has moved but the layer anchored to it not yet, so the read would
+ * compare a moved anchor with a stale layer. Only a box that overlaps the
+ * anchor counts; a layer flush against it does not. Once switched, a layer keeps its anchor-clear list until
  * it next opens, so it never jumps back over its trigger while open.
  */
-function keepAnchorClear(
-  layer: HTMLElement,
-  anchor: HTMLElement | null,
-  checkViewport = true,
-): void {
+function keepAnchorClear(layer: HTMLElement, anchor: HTMLElement | null): void {
   if (anchor) {
     const a = anchor.getBoundingClientRect();
     const l = layer.getBoundingClientRect();
@@ -481,21 +477,17 @@ function keepAnchorClear(
     const viewportBlock = layer.ownerDocument.documentElement.clientHeight;
     const anchorInView = a.bottom > 0 && a.top < viewportBlock;
     const leavesViewport =
-      checkViewport &&
-      hasBox &&
-      anchorInView &&
-      (l.top < 0 || l.bottom > viewportBlock);
-    if (
-      (covers || leavesViewport) &&
-      !layer.hasAttribute(LAYER_CLEARS_ANCHOR_ATTRIBUTE)
-    ) {
+      hasBox && anchorInView && (l.top < 0 || l.bottom > viewportBlock);
+    if (covers || leavesViewport) {
       layer.setAttribute(LAYER_CLEARS_ANCHOR_ATTRIBUTE, '');
       // A browser keeps a laid-out layer on the position option it last used,
-      // even one the new list does not contain, until the layer stops being
-      // rendered. Taking it out of rendering for one forced layout, in the
-      // same task, makes the engine place it afresh from the new list: no
-      // frame paints in between, and the popover stays open, so no toggle
-      // event fires and focus and hover are untouched.
+      // even one the new list does not contain or one a scroll has since made
+      // fail, until the layer stops being rendered. Taking it out of rendering
+      // for one forced layout, in the same task, makes the engine place it
+      // afresh from its list, on the first switch and on any later read that
+      // finds it failing again: no frame paints in between, and the popover
+      // stays open, so no toggle event fires and focus and hover are
+      // untouched.
       const display = layer.style.display;
       layer.style.display = 'none';
       layer.getBoundingClientRect();
@@ -511,9 +503,9 @@ function keepAnchorClear(
 }
 
 /**
- * Call `onMove` when an element moves in layout without changing size or the
- * page scrolling — a sibling above it grows, a margin changes. Nothing else
- * reports that: ResizeObserver sees only size. The element is observed by an
+ * Call `onMove` when an element moves on screen without changing size: in
+ * layout (a sibling above it grows, a margin changes) or because something
+ * scrolled. ResizeObserver sees only size. The element is observed by an
  * IntersectionObserver whose root is the viewport shrunk, through
  * `rootMargin`, to the element's own rectangle, so any move changes the
  * intersection ratio and fires the callback, which then re-arms on the new
@@ -577,9 +569,9 @@ function observeMove(element: HTMLElement, onMove: () => void): () => void {
  * Watch an open layer that keeps its anchor clear, and its anchor, for every
  * change that can re-settle the layer over the anchor or give it a scroll
  * range (spec:AST-059 FR4, FR8): the layer, its content or the anchor
- * resizing (ResizeObserver, before paint), a scroll or viewport resize (before
- * paint), and the anchor moving in layout without resizing (`observeMove`,
- * after paint). Each calls `keepAnchorClear` for this layer and anchor while
+ * resizing (ResizeObserver, before paint), the viewport resizing (before
+ * paint), and the anchor moving on screen without resizing, in layout or by a
+ * scroll (`observeMove`, after paint). Each calls `keepAnchorClear` for this layer and anchor while
  * `isCurrent` says they are still the live pair. Returns the function that
  * removes every observer and listener it added.
  */
@@ -597,12 +589,6 @@ function observeAnchorClearance(
       keepAnchorClear(layer, anchor);
     }
   };
-  const onScroll = (event: Event) => {
-    // The layer's own scrolling moves nothing else.
-    if (event.target !== layer && isCurrent()) {
-      keepAnchorClear(layer, anchor, false);
-    }
-  };
   let observer: ResizeObserver | null = null;
   if (typeof ResizeObserver !== 'undefined') {
     observer = new ResizeObserver(reread);
@@ -613,12 +599,10 @@ function observeAnchorClearance(
     observer.observe(anchor);
   }
   const stopObservingMove = observeMove(anchor, reread);
-  view.addEventListener('scroll', onScroll, {capture: true, passive: true});
   view.addEventListener('resize', reread);
   return () => {
     observer?.disconnect();
     stopObservingMove();
-    view.removeEventListener('scroll', onScroll, {capture: true});
     view.removeEventListener('resize', reread);
   };
 }
@@ -1372,8 +1356,8 @@ function useLayerImplementation(
   }, [isOpen, mode, updateAnchorInView]);
 
   // A layer that keeps its anchor clear (FR4) re-reads its geometry while it
-  // is open: content that grows, an anchor that resizes or moves, a scroll or
-  // a viewport resize can each re-settle the standard list over the anchor or
+  // is open: content that grows, an anchor that resizes or moves (in layout or
+  // by a scroll) or a viewport resize can each re-settle the standard list over the anchor or
   // give the layer a scroll range (`observeAnchorClearance`). The external
   // systems are those browser observers and listeners; this effect binds them
   // while the layer is open and removes them when it closes, unmounts or is

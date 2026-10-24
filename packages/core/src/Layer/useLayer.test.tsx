@@ -1730,12 +1730,20 @@ describe('a layer that keeps its anchor clear (spec:AST-059 FR4)', () => {
     expect(
       onToggle.mock.calls.map(([e]) => (e as ToggleEvent).newState),
     ).not.toContain('closed');
-    // A later read that still finds it covering does not take it out again.
+    // A later read that finds it failing again places it afresh again; one
+    // that finds it clear leaves it alone.
     displays.length = 0;
     act(() => {
       window.dispatchEvent(new Event('resize'));
     });
-    expect(displays).not.toContain('none');
+    expect(displays).toContain('none');
+    vi.restoreAllMocks();
+    placeBoxes(TRIGGER, rect(200, 350, 100, 200));
+    const spy = vi.spyOn(layerEl.style, 'display', 'set');
+    act(() => {
+      window.dispatchEvent(new Event('resize'));
+    });
+    expect(spy).not.toHaveBeenCalled();
   });
 
   it('switches to the clear list when the shown layer leaves the viewport on the block axis while its trigger is in view', async () => {
@@ -1761,19 +1769,21 @@ describe('a layer that keeps its anchor clear (spec:AST-059 FR4)', () => {
     expect(layerEl).not.toHaveAttribute('data-astryx-clears-anchor');
   });
 
-  it('reads only for coverage during a scroll, when the layer has not followed its anchor yet', async () => {
+  it('does not read on scroll events, when the layer has not followed its anchor yet', async () => {
     const user = userEvent.setup();
     viewport720();
     const spy = placeBoxes(TRIGGER, rect(200, 350, 100, 200));
     const {container} = render(<ClearHarness />);
     await user.click(container.querySelector('button')!);
     const layerEl = container.querySelector('[popover]') as HTMLElement;
-    // Mid-scroll: the trigger has moved, the layer still reads where it was,
-    // partly past the viewport, clear of the trigger.
+    // Mid-scroll: the trigger has moved under the layer's stale box, which
+    // reads as covering it and past the viewport. A scroll is read only once
+    // it has painted, by the anchor-move observer.
     spy.mockRestore();
-    placeBoxes(TRIGGER, rect(-40, 350, 100, 200));
+    placeBoxes(rect(-40, 380, 30, 100), rect(-60, 350, 100, 200));
     act(() => {
       window.dispatchEvent(new Event('scroll'));
+      document.dispatchEvent(new Event('scroll'));
     });
     expect(layerEl).not.toHaveAttribute('data-astryx-clears-anchor');
   });
