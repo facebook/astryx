@@ -6,7 +6,7 @@ id: component:BottomSheet
 authority: current
 archive_reason: null
 superseded_by: null
-approved_by: imdreamrunner
+approved_by: cixzhang
 approved_at: 2026-10-24
 owners: [cixzhang]
 review_triggers: [theming, layout, public-api]
@@ -30,7 +30,7 @@ architecture:
     architecture:layer-runtime,
   ]
 contributing: []
-system_specs: [spec:AST-025]
+system_specs: [spec:AST-025, spec:AST-099]
 ---
 
 # BottomSheet component contract
