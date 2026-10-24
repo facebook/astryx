@@ -77,6 +77,38 @@ export const navigation = {
    *   iPhone 17 Pro, the pop decision method over 61 releases, Oct 23 2026
    */
   interactivePopFinishThreshold: 0.5,
+  /**
+   * Travel, in px, before the full-width content swipe (iOS 26's back swipe
+   * from anywhere in the content) begins.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, UINavigationController.contentSwipe began after 27–30 pt
+   *   of travel for drags at or under 600 pt/s, Oct 23 2026
+   * At 1000 pt/s it began on the first move event (~8 pt), so above some
+   * speed between 600 and 1000 pt/s it begins sooner.
+   * @measure M-N4
+   */
+  contentPopHysteresis: 27,
+  /**
+   * The interactive pop's release velocity is the mean of the pan's last
+   * this-many velocities (each velocity(in:).x / width, one per finger move
+   * and one at the lift). It does not decay while the finger rests: a pause
+   * keeps the last value, and only moving back lowers it.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, UIPercentDrivenInteractiveTransition averageVelocity =
+   *   (prev_n + prev_n−1 + prev_n−2) / 3 at every update to 4 decimals; held
+   *   0–400 ms before the lift it stays 0.73–0.75, Oct 23 2026
+   */
+  interactivePopVelocitySamples: 3,
+  /**
+   * On a push, the covered screen's inline title slides toward the leading
+   * edge (`springs.navigationCoveredTitle`) and is removed this many ms after
+   * the push starts.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, the covered title label per frame: full opacity while
+   *   it slides 179 → 58.6 pt, gone from the hierarchy at ~0.54 s (F4 batch
+   *   27), Oct 23 2026
+   */
+  coveredTitleRemovedMs: 540,
 } as const;
 
 /**

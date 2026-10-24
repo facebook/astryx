@@ -24,6 +24,17 @@ export {
 // InfoTip — accessible info-icon help affordance (RFC facebook/astryx#3349)
 export {InfoTip, type InfoTipProps, type InfoTipSize} from './InfoTip';
 
+// NavigationStack — push/pop drill-down navigation with UIKit's transitions
+// and back swipes
+export {
+  NavigationScreen,
+  NavigationStack,
+  useNavigationStack,
+  type NavigationScreenProps,
+  type NavigationStackApi,
+  type NavigationStackProps,
+} from './NavigationStack';
+
 // EmojiPicker — standalone searchable emoji panel
 export {
   EmojiPicker,
