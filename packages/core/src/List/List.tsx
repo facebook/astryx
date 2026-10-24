@@ -53,12 +53,17 @@ export interface ListProps extends BaseProps<
    * - 'compact': Tighter spacing for dense UIs
    * - 'balanced': Standard spacing
    * - 'spacious': Extra spacing for readability
+   *
+   * On a touch screen (a coarse primary pointer), rows are at least 52px
+   * tall, 62px with a description, and never shorter than 44px in compact
+   * density, as iOS table rows are.
    * @default 'balanced'
    */
   density?: ListDensity;
 
   /**
-   * Whether to show dividers between list items.
+   * Whether to show dividers between list items. A touch press hides the
+   * dividers on either side of the pressed row until the finger lifts.
    * @default false
    */
   hasDividers?: boolean;
