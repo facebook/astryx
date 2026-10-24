@@ -109,12 +109,12 @@ depends only on runtimes it can maintain.
     belong to the web contract and to any platform contract whose implementation
     runs React; the core expresses content as a typed slot instead. A **text**
     slot is a string. An **icon** slot is a shared icon name (FR17), which each
-    platform resolves the way FR17 says; in a development build an unknown name
-    stops with a message that names the icon, and in a release build it draws
-    nothing. A **content** slot holds named Astryx components. A platform
-    contract may accept a wider form for the same slot, such as a React node on
-    the web; the slot keeps one meaning, and the core form is what every
-    platform accepts.
+    platform resolves the way FR17 says; on a native platform, in a development
+    build an unknown name stops with a message that names the icon, and in a
+    release build it draws nothing. A **content** slot holds named Astryx
+    components. A platform contract may accept a wider form for the same slot,
+    such as a React node on the web; the slot keeps one meaning, and the core
+    form is what every native platform accepts.
 - **FR5 — Platform props are platform-scoped types.** `@astryxdesign/core`
   exposes the core contracts and the web contracts; its default types are the web
   contracts, unchanged for web callers. `@astryxdesign/native` exposes the native
@@ -276,7 +276,9 @@ depends only on runtimes it can maintain.
   mounted rules, and rendered web markup are byte-identical whether or not the
   native package is installed. The web contract keeps every prop and base prop it
   has today. A removal that FR7 or FR8 implies for a web caller is a breaking
-  change and ships only in a planned minor under `spec:AST-017`.
+  change and ships only in a planned minor under `spec:AST-017`, and so does
+  making an existing web prop an icon slot where the web renders a string as
+  text today.
 - **FR15 — Native support ships on the canary channel until a platform is
   supported.** `@astryxdesign/native` is a private, canary-only package
   (`spec:AST-033/FR4`): it publishes only to the canary channel and never as a
