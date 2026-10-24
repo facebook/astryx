@@ -260,15 +260,12 @@ const styles = stylex.create({
     width: spacingVars['--spacing-4'],
     height: spacingVars['--spacing-4'],
     fontSize: spacingVars['--spacing-4'],
-    // The turn eases on the theme's tokens; in the iOS idiom (a finger on
-    // WebKit for iOS, the keys of IOS_TOUCH_STYLE_KEYS) the expansion turns
-    // it on UIKit's spring instead (useTreeExpansionMotion).
+    // The turn eases on the theme's tokens; under a finger (a coarse
+    // primary pointer, TOUCH_QUERY) the expansion turns it on UIKit's spring
+    // instead (useTreeExpansionMotion).
     transitionProperty: {
       default: 'transform',
-      '@media (pointer: coarse)': {
-        default: null,
-        '@supports (-webkit-touch-callout: none)': 'none',
-      },
+      '@media (pointer: coarse)': 'none',
     },
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -372,6 +369,8 @@ export interface TreeListItemInternalProps {
    * guide element).
    */
   variant: TreeListVariant;
+  /** Whether page content below the tree moves with an expansion. */
+  followingContent: 'moves' | 'stays';
   /**
    * Renders the children subtree (the parent recursion), called while the
    * row shows its children: expanded, or sliding them away after a collapse.
@@ -416,6 +415,7 @@ export function TreeListItem({
   onToggle,
   density,
   variant,
+  followingContent,
   renderChildren,
   posInSet,
   setSize,
@@ -425,7 +425,10 @@ export function TreeListItem({
   // A selection hold returns focus to this row after a pop; its ring follows
   // how the user last interacted (List/selectionHold.ts).
   useInteractionModalityTracking();
-  const {showsChildren, groupRef} = useTreeExpansionMotion(isExpanded);
+  const {showsChildren, groupRef} = useTreeExpansionMotion(
+    isExpanded,
+    followingContent,
+  );
   const renderedChildren = showsChildren ? renderChildren?.() : undefined;
   const t = useTranslator();
   const labelId = useId();

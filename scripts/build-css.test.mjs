@@ -453,11 +453,12 @@ describe('build-css astryx.css', () => {
       ).toBe(true);
     });
 
-    it("leaves the tree chevron's transition off only on iOS under a finger, where the expansion turns it", () => {
+    it("leaves the tree chevron's transition off only under a finger, where the expansion turns it", () => {
       expect(
         rules().some(
           rule =>
-            IOS_GATED.test(rule) && rule.includes('{transition-property:none}'),
+            TOUCH_GATED.test(rule) &&
+            rule.includes('{transition-property:none}'),
         ),
       ).toBe(true);
     });
