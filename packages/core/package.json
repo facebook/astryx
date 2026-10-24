@@ -61,6 +61,21 @@
       "types": "./dist/naming.d.ts",
       "default": "./dist/naming.js"
     },
+    "./motion/experimental": {
+      "source": "./src/motion/experimental.ts",
+      "types": "./dist/motion/experimental.d.ts",
+      "default": "./dist/motion/experimental.js"
+    },
+    "./gestures/experimental": {
+      "source": "./src/gestures/experimental.ts",
+      "types": "./dist/gestures/experimental.d.ts",
+      "default": "./dist/gestures/experimental.js"
+    },
+    "./keyboard/experimental": {
+      "source": "./src/keyboard/experimental.ts",
+      "types": "./dist/keyboard/experimental.d.ts",
+      "default": "./dist/keyboard/experimental.js"
+    },
     "./theme/tokens": {
       "source": "./src/theme/tokens.ts",
       "types": "./dist/theme/tokens.d.ts",
@@ -808,6 +823,7 @@
   },
   "devDependencies": {
     "@astryxdesign/a11y-spec": "workspace:*",
+    "@astryxdesign/interaction-harness": "workspace:*",
     "@astryxdesign/cli": "workspace:*",
     "@babel/cli": "catalog:",
     "@babel/core": "catalog:",
