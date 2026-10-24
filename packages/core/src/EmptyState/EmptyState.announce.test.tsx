@@ -167,10 +167,11 @@ describe('EmptyState announcement (spec:AST-086 FR2)', () => {
     await act(async () => root.unmount());
   });
 
-  it('leaves text inside a hidden element out of the message', () => {
-    const element = document.createElement('p');
-    element.innerHTML = 'Try again.<span hidden> Hidden</span>';
-    expect(renderedText(element)).toBe('Try again.');
+  it('reads blocks apart and leaves hidden text out of the message', () => {
+    const element = document.createElement('div');
+    element.innerHTML =
+      '<p>Try again.</p><p>Later.</p><span hidden>Hidden</span>';
+    expect(renderedText(element)).toBe('Try again. Later.');
   });
 
   it('stays silent while hidden or revealed during load; announces once when shown later (FR12)', async () => {

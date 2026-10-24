@@ -49,11 +49,13 @@ import {useIsHydrating} from './useIsHydrating';
 
 const LIVE_CONTAINER =
   '[role="log"], [role="status"], [role="alert"], [aria-live="polite"], [aria-live="assertive"]';
+const HIDDEN = '[aria-hidden="true"], [hidden]';
+const BLOCKS = 'p, div, li, br, h1, h2, h3, h4, h5, h6';
 
 /** Each child element's rendered text as its own block, joined by spaces. */
 function blockText(element: HTMLElement): string {
   return Array.from(element.children)
-    .filter(child => !child.matches('[aria-hidden="true"], [hidden]'))
+    .filter(child => !child.matches(HIDDEN))
     .map(child => renderedText(child as HTMLElement))
     .filter(part => part !== '')
     .join(' ');
@@ -65,7 +67,7 @@ export interface AnnounceRenderedTextOptions {
    * hydrating) is not announced; text that appears or changes later is, once
    * (`spec:AST-086` FR11). Content inside a mounted live container is left to
    * that container (FR4). Each child element is read as its own block. A
-   * reveal by script outside React is read on the next render (INV5).
+   * script reveal outside React is read on the next render (FR13, INV5, INV10).
    */
   skipFirstRender?: boolean;
 }
@@ -75,11 +77,8 @@ export function renderedText(element: HTMLElement): string {
   // Clone so removing the hidden parts cannot disturb what is on screen. The
   // clone is never attached to the document.
   const copy = element.cloneNode(true) as HTMLElement;
-  for (const hidden of copy.querySelectorAll(
-    '[aria-hidden="true"], [hidden]',
-  )) {
-    hidden.remove();
-  }
+  copy.querySelectorAll(HIDDEN).forEach(node => node.remove());
+  copy.querySelectorAll(BLOCKS).forEach(node => node.after(' ')); // blocks apart
   return (copy.textContent ?? '').replace(/\s+/g, ' ').trim();
 }
 
