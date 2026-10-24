@@ -2090,5 +2090,9 @@
   "@astryx.comments.postFailed": {
     "defaultMessage": "Your comment couldn't be posted.",
     "description": "Error shown above the new-comment composer of a lab Comments panel when posting failed; the draft is kept and a Retry action follows."
+  },
+  "@astryx.navigationStack.back": {
+    "defaultMessage": "Back",
+    "description": "Label of the back button in a NavigationStack's bar when the screen it returns to has no title of its own. Returns to the previous screen; keep it short, as on an iOS navigation bar."
   }
 }
