@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-08-30
+approved_at: 2026-10-24
 owners: [cixzhang, imdreamrunner]
 applies_to:
   [
@@ -31,6 +31,7 @@ deciding_specs:
     spec:AST-012/DEC-1,
     spec:AST-012/DEC-2,
     spec:AST-071/DEC-1,
+    spec:AST-012/DEC-6,
   ]
 ---
 
@@ -146,6 +147,11 @@ guidance owns the process used to propose and test APIs.
   `<part>Style` together, reaching that element and composing as INV6 describes.
   No public prop accepts StyleX styles for an element that cannot also take a
   class name and inline styles, following `spec:AST-071/DEC-1`.
+- **INV17 — Compact has one shared definition.** A component that chooses a
+  presentation by screen size uses the theme's compact definition: width below
+  the effective `md` point or height below 500, with the same numbers on every
+  platform (`spec:AST-012` FR9). It keeps no compact numbers of its own, as
+  INV14 keeps no parallel breakpoint table.
 
 This record applies to stable public packages. Lab components are not stable
 public promises until promotion.
@@ -177,7 +183,8 @@ public promises until promotion.
   evidence required by the release process.
 - A component exposing a named theme width point uses the fixed vocabulary and
   exclusive upper-edge behavior from `spec:AST-012`; it does not maintain a
-  parallel hardcoded breakpoint table.
+  parallel hardcoded breakpoint table. A component that chooses a presentation
+  by screen size uses the compact definition (INV17).
 - Changes to a family-owned API update the family contract rather than copying
   its rule into this record or every component.
 - A component that accepts or derives a navigation destination follows
@@ -202,6 +209,7 @@ public promises until promotion.
   theme width names and inclusive-`from`/exclusive-`below` edge meanings.
 - `spec:AST-071/DEC-1` — every styling input works from every styling system,
   so a part's styling inputs come as a set.
+- `spec:AST-012/DEC-6` — compact is one definition, the same on every platform.
 
 Transition Action sequencing and pending behavior belong to their component or
 family contract. This record links that owner once it is current; it does not
@@ -209,18 +217,19 @@ copy the component matrix.
 
 ## Verification
 
-| Invariant               | Evidence                                                                     | Failure signal                                                                                                           |
-| ----------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| INV1, INV8              | Export, public-subpath, prop, and ref checks                                 | A promised component/type cannot be imported or its ref cannot reach the contract element                                |
-| INV2                    | Naming and logical-direction lint/tests                                      | Equivalent concepts use conflicting names or physical direction leaks into public API                                    |
-| INV3, INV4              | Historical API review benchmark and `spec:AST-002` evidence                  | A prop combines unrelated axes or exposes a derivable implementation choice                                              |
-| INV5, INV6, INV7        | BaseProps/passthrough lint and representative runtime tests                  | Consumer ARIA/data/style/events are dropped, clobber component semantics, or fail to compose                             |
-| INV9                    | Published-surface, Changeset, migration, and public-type checks              | A released API changes without explicit compatibility evidence                                                           |
-| INV11                   | Public-API admission review plus owning theming/component tests              | A public semantic custom property exposes derivable or unsupported implementation detail                                 |
-| INV12, INV13            | Generated declaration/export/behavior inventory plus canonical-owner mapping | A reachable supporting type or behavior is called internal, or mechanical evidence is treated as permission to accept it |
-| INV14                   | `AppShell.test.tsx`                                                          | A component hardcodes a divergent point or treats equality as below                                                      |
-| INV15                   | Public-API review of the generated declaration inventory                     | A part or StyleX-typed styling prop ships without class-name and inline-style counterparts on the same element           |
-| Consumer-doc projection | `docPropReferences.test.ts` and `docPropLiterals.test.ts`                    | Docs name a nonexistent prop or omit public literal choices                                                              |
+| Invariant               | Evidence                                                                     | Failure signal                                                                                                                                         |
+| ----------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| INV1, INV8              | Export, public-subpath, prop, and ref checks                                 | A promised component/type cannot be imported or its ref cannot reach the contract element                                                              |
+| INV2                    | Naming and logical-direction lint/tests                                      | Equivalent concepts use conflicting names or physical direction leaks into public API                                                                  |
+| INV3, INV4              | Historical API review benchmark and `spec:AST-002` evidence                  | A prop combines unrelated axes or exposes a derivable implementation choice                                                                            |
+| INV5, INV6, INV7        | BaseProps/passthrough lint and representative runtime tests                  | Consumer ARIA/data/style/events are dropped, clobber component semantics, or fail to compose                                                           |
+| INV9                    | Published-surface, Changeset, migration, and public-type checks              | A released API changes without explicit compatibility evidence                                                                                         |
+| INV11                   | Public-API admission review plus owning theming/component tests              | A public semantic custom property exposes derivable or unsupported implementation detail                                                               |
+| INV12, INV13            | Generated declaration/export/behavior inventory plus canonical-owner mapping | A reachable supporting type or behavior is called internal, or mechanical evidence is treated as permission to accept it                               |
+| INV14                   | `AppShell.test.tsx`                                                          | A component hardcodes a divergent point or treats equality as below                                                                                    |
+| INV15                   | Public-API review of the generated declaration inventory                     | A part or StyleX-typed styling prop ships without class-name and inline-style counterparts on the same element                                         |
+| INV17                   | Resolver tests at the compact edges plus public-API review                   | A component that chooses a presentation by screen size with its own numbers, or disagrees with the theme compact definition at width 768 or height 500 |
+| Consumer-doc projection | `docPropReferences.test.ts` and `docPropLiterals.test.ts`                    | Docs name a nonexistent prop or omit public literal choices                                                                                            |
 
 Known verification gaps:
 
