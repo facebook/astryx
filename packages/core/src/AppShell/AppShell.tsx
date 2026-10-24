@@ -171,8 +171,10 @@ export interface MobileNavConfig {
   /**
    * SSR hint: whether the initial render should assume mobile layout.
    * Seeds the breakpoint state so the server-rendered HTML matches
-   * the client on mobile devices, avoiding a layout flash. Ignored when
-   * `breakpoint` is `none`, which is always non-mobile.
+   * the client on mobile devices, avoiding a layout flash. The breakpoint
+   * seed is ignored when `breakpoint` is `none`, which is always non-mobile.
+   * With `height="adaptive"` it also seeds the touch-pointer assumption of
+   * the server render (the page scrolls), whatever the breakpoint.
    *
    * Derive from the User-Agent header or a device-detection cookie
    * in a server component, then pass down.
@@ -471,7 +473,7 @@ const styles = stylex.create({
  * top navigation, side navigation, and main content area.
  *
  * Slot-based API with `topNav`, `sideNav`, `banner`, and `children`.
- * Supports two height modes (`fill` and `auto`), responsive side nav
+ * Supports three height modes (`fill`, `auto` and `adaptive`), responsive side nav
  * collapse, and mobile overlay with backdrop.
  *
  * @example
