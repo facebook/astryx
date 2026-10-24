@@ -6,7 +6,9 @@
  * @output Exports `zoomMedia`: UIScrollView zooming as a photo viewer uses
  *   it — the overshoot past the zoom limits, the eased curve and duration
  *   law of the return from an overshoot and of `zoom(to:animated:)`, and
- *   Photos' double-tap and maximum zoom and the gap between its pages
+ *   Photos' double-tap and maximum zoom, the gap between its pages, and
+ *   its drag-to-dismiss (the shrink and fades by travel, the release rule,
+ *   the dismissal's and the cancel's springs)
  * @position A component domain of the UIKit constants table (motion/uikit);
  *   read by Lightbox's zoom stage (Lightbox/zoomStage.ts)
  *
@@ -119,5 +121,80 @@ export const zoomMedia = {
      *   pager's contentOffset per page, Oct 23 2026
      */
     pageGap: 40,
+  },
+  dismiss: {
+    /**
+     * While a photo at its fitted size is dragged down, it shrinks about its
+     * centre by 1 − k·d², d the drag's downward travel in pt (its centre
+     * follows the finger): 0.997 / 0.978 / 0.942 / 0.899 at 25 / 65 / 105 /
+     * 145 pt (k the least-squares fit, within 0.004).
+     * @source measured: Photos, iOS 26.2 simulator, iPhone 17 Pro, a 3000 ×
+     *   2000 photo at its fitted size dragged down 25–145 pt, the zoom
+     *   view's bounds per frame, Oct 24 2026
+     */
+    scalePerTravelSquared: 4.91e-6,
+    /**
+     * The viewer's backdrop fades by 1 − k·d²: 1.0 / 0.95 / 0.86 / 0.71 at
+     * 25 / 65 / 105 / 145 pt (k the least-squares fit, within 0.009).
+     * @source measured: Photos, iOS 26.2 simulator, iPhone 17 Pro, the same
+     *   drags, the backdrop view's alpha per frame, Oct 24 2026
+     */
+    backdropAlphaPerTravelSquared: 1.35e-5,
+    /**
+     * The neighbouring photos and the controls fade faster, linearly once
+     * the drag passes `chromeFadeStart`: 1 − k·(d − start), 0.96 / 0.76 /
+     * 0.52 / 0.33 at 25 / 65 / 105 / 145 pt (fitted within 0.016).
+     * @source measured: Photos, iOS 26.2 simulator, iPhone 17 Pro, the same
+     *   drags, the neighbouring pages' and the chrome's alpha per frame,
+     *   Oct 24 2026
+     */
+    chromeAlphaPerPoint: 0.00533,
+    /**
+     * Travel, pt, before the controls start to fade (see
+     * `chromeAlphaPerPoint`).
+     * @source measured: Photos, iOS 26.2 simulator, iPhone 17 Pro, the
+     *   intercept of the same fit, Oct 24 2026
+     */
+    chromeFadeStart: 17.8,
+    /**
+     * A release within this distance of where the drag started cancels, as
+     * a release moving up does; any other release dismisses, however short
+     * the pull (20, 40 and 60 pt pulls held still, then lifted, dismiss; a
+     * pull brought back to about 5 pt cancels).
+     * @source GUESS — between the measured 5 pt (cancels) and 20 pt
+     *   (dismisses); Photos, iOS 26.2 simulator, Oct 24 2026
+     * @measure M-ZM3
+     */
+    cancelTravel: 10,
+    /**
+     * The dismissal's position spring (critically damped, response about
+     * 0.21 s): the photo leaves along it.
+     * @source measured: Photos, iOS 26.2 simulator, iPhone 17 Pro, a
+     *   committed drag-to-dismiss, the zoom view's position animation
+     *   (`CASpringAnimation` mass 1, stiffness 918.09, damping 60.60),
+     *   Oct 24 2026
+     */
+    dismissPositionSpring: {mass: 1, stiffness: 918.09, damping: 60.6},
+    /**
+     * The dismissal's spring for size and opacity (critically damped).
+     * @source measured: Photos, iOS 26.2 simulator, iPhone 17 Pro, the same
+     *   dismissal, the bounds and opacity animations (stiffness 947.14,
+     *   damping 61.55), Oct 24 2026
+     */
+    dismissSizeSpring: {mass: 1, stiffness: 947.14, damping: 61.55},
+    /**
+     * A cancelled drag's return, position (critically damped).
+     * @source measured: Photos, iOS 26.2 simulator, iPhone 17 Pro, a pull
+     *   flicked back up, the position animation (stiffness 877.63, damping
+     *   59.25), Oct 24 2026
+     */
+    cancelPositionSpring: {mass: 1, stiffness: 877.63, damping: 59.25},
+    /**
+     * A cancelled drag's return, size and opacity (critically damped).
+     * @source measured: Photos, iOS 26.2 simulator, iPhone 17 Pro, the same
+     *   return, the bounds animation (stiffness 955.23, damping 61.81),
+     *   Oct 24 2026
+     */
+    cancelSizeSpring: {mass: 1, stiffness: 955.23, damping: 61.81},
   },
 } as const;

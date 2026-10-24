@@ -61,9 +61,7 @@ function stubStageLayout(): () => void {
   // The zoom stage: a single item's photo box, or a gallery page's.
   const isStage = (element: Element) =>
     element.hasAttribute('data-lightbox-page-media') ||
-    (element.getAttribute('role') === 'button' &&
-      element.getAttribute('aria-label') === 'Zoom' &&
-      element.querySelector('[data-lightbox-page]') == null);
+    element.querySelector(':scope > img') != null;
   define(HTMLElement.prototype, 'offsetWidth', element =>
     isPhoto(element) ? 400 : 0,
   );
@@ -950,6 +948,74 @@ describe('Lightbox touch zoom (synthetic touches)', () => {
     expect(x()).toBeCloseTo(beforeLift - 40, 6);
     expect(parseFloat(photoTransform(img).scale)).toBeCloseTo(scaled, 6);
     touch('touchend', stage, [], [a], 20 * 16);
+  });
+
+  // Times on the arena's clock: velocities read the gap since the last sample.
+  let clock = 0;
+
+  /** A one-finger drag down by `dy` in 10 px steps. */
+  function dragDown(
+    stage: Element,
+    dy: number,
+  ): {x: number; y: number; id: number} {
+    clock = performance.now();
+    let finger = {id: 1, x: 200, y: 300};
+    touch('touchstart', stage, [finger], [finger], clock);
+    for (let i = 1; i <= dy / 10; i++) {
+      finger = {...finger, y: 300 + 10 * i};
+      touch('touchmove', stage, [finger], [finger], clock + i * 16);
+    }
+    clock += (dy / 10) * 16;
+    return finger;
+  }
+
+  it('carries a photo dragged down, shrinking it, and the release dismisses', async () => {
+    const onOpenChange = vi.fn();
+    render(
+      <Lightbox
+        isOpen={true}
+        onOpenChange={onOpenChange}
+        media={{src: '/photo.jpg', alt: 'Photo'}}
+      />,
+    );
+    const img = screen.getByAltText('Photo');
+    const stage = img.parentElement!;
+    const finger = dragDown(stage, 100);
+    // The travel past the pan's 10 px threshold is 90 px: the photo's centre
+    // moved 90 px down, and it shrank to 1 − 4.91e-6 × 90².
+    const scale = 1 - 4.91e-6 * 90 * 90;
+    expect(parseFloat(photoTransform(img).scale)).toBeCloseTo(scale, 4);
+    const [tx, ty] = photoTransform(img).translate.split(' ').map(parseFloat);
+    expect(tx).toBeCloseTo(((1 - scale) * 400) / 2, 2);
+    expect(ty).toBeCloseTo(90 + ((1 - scale) * 200) / 2, 2);
+    expect(onOpenChange).not.toHaveBeenCalled();
+    touch('touchend', stage, [], [finger], clock + 16);
+    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
+  });
+
+  it('springs back when the finger lifts moving up', async () => {
+    const onOpenChange = vi.fn();
+    render(
+      <Lightbox
+        isOpen={true}
+        onOpenChange={onOpenChange}
+        media={{src: '/photo.jpg', alt: 'Photo'}}
+        hasZoom
+      />,
+    );
+    const img = screen.getByAltText('Photo');
+    const stage = img.parentElement!;
+    let finger = dragDown(stage, 100);
+    for (let i = 1; i <= 6; i++) {
+      finger = {...finger, y: finger.y - 10};
+      touch('touchmove', stage, [finger], [finger], clock + i * 16);
+    }
+    touch('touchend', stage, [], [finger], clock + 7 * 16);
+    // The return's end state is in place at once (it springs there on the
+    // compositor).
+    expect(photoTransform(img)).toEqual({translate: '0px 0px', scale: '1 1'});
+    await new Promise(resolve => setTimeout(resolve, 50));
+    expect(onOpenChange).not.toHaveBeenCalled();
   });
 });
 

@@ -414,3 +414,67 @@ export function transformForResize(
     scale,
   });
 }
+
+// ---------------------------------------------------------------------------
+// Drag to dismiss (Photos)
+
+/**
+ * The photo under a drag to dismiss, from its fitted size: its centre
+ * follows the finger (dx, dy) and it shrinks about that centre by
+ * `zoomMedia.dismiss.scalePerTravelSquared` × the downward travel².
+ */
+export function dismissTransform(
+  geometry: ZoomGeometry,
+  dx: number,
+  dy: number,
+): ZoomTransform {
+  const travel = Math.max(0, dy);
+  const scale = Math.max(
+    0,
+    1 - zoomMedia.dismiss.scalePerTravelSquared * travel * travel,
+  );
+  return {
+    x: dx + ((1 - scale) * geometry.fit.width) / 2,
+    y: dy + ((1 - scale) * geometry.fit.height) / 2,
+    scale,
+  };
+}
+
+/** The backdrop's opacity at a drag's downward travel (pt). */
+export function dismissBackdropAlpha(travel: number): number {
+  const t = Math.max(0, travel);
+  return Math.min(
+    1,
+    Math.max(0, 1 - zoomMedia.dismiss.backdropAlphaPerTravelSquared * t * t),
+  );
+}
+
+/** The controls' and neighbouring photos' opacity at a drag's travel (pt). */
+export function dismissChromeAlpha(travel: number): number {
+  const {chromeAlphaPerPoint, chromeFadeStart} = zoomMedia.dismiss;
+  return Math.min(
+    1,
+    Math.max(0, 1 - chromeAlphaPerPoint * (travel - chromeFadeStart)),
+  );
+}
+
+/**
+ * Whether a released drag to dismiss dismisses: any release does, unless
+ * the finger was moving up when it lifted or came back within
+ * `zoomMedia.dismiss.cancelTravel` of where it started.
+ */
+export function dismissCommits(travel: number, velocityY: number): boolean {
+  return velocityY >= 0 && travel > zoomMedia.dismiss.cancelTravel;
+}
+
+/**
+ * Where a dismissed photo goes with no thumbnail to return to: straight on
+ * down until its top passes the stage's bottom edge (a stage px offset for
+ * the transform's y).
+ */
+export function dismissExitY(
+  geometry: ZoomGeometry,
+  shown: ZoomTransform,
+): number {
+  return Math.max(shown.y, geometry.height - geometry.fit.y) + 1;
+}

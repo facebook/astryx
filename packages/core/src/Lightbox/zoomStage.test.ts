@@ -7,7 +7,8 @@
  *   overshoot law past the limits (and its inverse), the settle's duration
  *   law and eased curve, Photos' aspect-fill double tap and maximum zoom, the
  *   point kept under the fingers, the resting place for a scale, the rubber
- *   band of a drag and the transform kept across a resize
+ *   band of a drag, the transform kept across a resize, and Photos'
+ *   drag to dismiss (the shrink and fades by travel, the release rule)
  * @position Testing; zoomStage.ts without a browser
  */
 
@@ -17,6 +18,11 @@ import {rubberBand} from '../motion/rubberBand';
 import {zoomMedia} from '../motion/uikit/zoomMedia';
 import {
   IDENTITY,
+  dismissBackdropAlpha,
+  dismissChromeAlpha,
+  dismissCommits,
+  dismissExitY,
+  dismissTransform,
   doubleTapScaleFor,
   doubleTapTarget,
   draggedTransform,
@@ -343,5 +349,67 @@ describe('a resize while zoomed (rotation)', () => {
     const before = landscape();
     const after = landscape({width: 500});
     expect(transformForResize(before, after, IDENTITY)).toEqual(IDENTITY);
+  });
+});
+
+describe("Photos' drag to dismiss (iOS 26.2)", () => {
+  // Photos, a 3000 × 2000 photo at its fitted size dragged down: travel →
+  // photo scale, backdrop alpha, neighbours' and controls' alpha.
+  const measured = [
+    {travel: 25, scale: 0.997, backdrop: 1.0, chrome: 0.96},
+    {travel: 65, scale: 0.978, backdrop: 0.95, chrome: 0.76},
+    {travel: 105, scale: 0.942, backdrop: 0.86, chrome: 0.52},
+    {travel: 145, scale: 0.899, backdrop: 0.71, chrome: 0.33},
+  ];
+
+  it('shrinks the photo about its centre, which follows the finger', () => {
+    const geometry = landscape();
+    for (const row of measured) {
+      const t = dismissTransform(geometry, 12, row.travel);
+      expect(t.scale).toBeCloseTo(row.scale, 2);
+      // The fitted box's centre moved by exactly the finger's travel.
+      const centre = shown(geometry, t, 201, 134);
+      expect(centre.x).toBeCloseTo(geometry.fit.x + 201 + 12, 6);
+      expect(centre.y).toBeCloseTo(geometry.fit.y + 134 + row.travel, 6);
+    }
+    // Above where the drag started, the photo follows without shrinking.
+    expect(dismissTransform(geometry, 0, -30)).toEqual({
+      x: 0,
+      y: -30,
+      scale: 1,
+    });
+  });
+
+  it('fades the backdrop and, faster, the controls', () => {
+    for (const row of measured) {
+      expect(dismissBackdropAlpha(row.travel)).toBeCloseTo(row.backdrop, 1);
+      expect(
+        Math.abs(dismissChromeAlpha(row.travel) - row.chrome),
+      ).toBeLessThan(0.02);
+    }
+    expect(dismissBackdropAlpha(-10)).toBe(1);
+    expect(dismissChromeAlpha(0)).toBe(1);
+    expect(dismissChromeAlpha(1000)).toBe(0);
+  });
+
+  it('dismisses on any release unless moving up or back at the start', () => {
+    // b30c: 20 / 40 / 60 pt pulls held still, then lifted, dismiss; a 60 pt
+    // flick and a slow downward release dismiss.
+    expect(dismissCommits(20, 0)).toBe(true);
+    expect(dismissCommits(60, 1500)).toBe(true);
+    expect(dismissCommits(100, 40)).toBe(true);
+    // A pull flicked back up cancels, as does one brought back to ~5 pt.
+    expect(dismissCommits(150, -800)).toBe(false);
+    expect(dismissCommits(5, 0)).toBe(false);
+    expect(zoomMedia.dismiss.cancelTravel).toBeGreaterThan(5);
+    expect(zoomMedia.dismiss.cancelTravel).toBeLessThan(20);
+  });
+
+  it('sends a dismissed photo below the stage with no thumbnail to return to', () => {
+    const geometry = landscape();
+    const t = dismissTransform(geometry, 0, 100);
+    const exit = dismissExitY(geometry, t);
+    expect(geometry.fit.y + exit).toBeGreaterThan(geometry.height);
+    expect(exit).toBeGreaterThan(t.y);
   });
 });

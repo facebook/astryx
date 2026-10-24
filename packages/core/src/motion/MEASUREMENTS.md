@@ -279,10 +279,13 @@ and Photos, iOS 26.2 simulator, Oct 23 2026; tagged `measured:`): the
 overshoot past the limits, the settle curve and its duration law, the absence
 of scale momentum and of a two-finger-tap action, the content point under the
 centroid staying put, Photos' aspect-fill double tap and its maximum zoom
-(M-ZM2), and the 40 pt gap between Photos' pages. A zoomed pan flicked into an edge coasts and bounces like any scroll
-view (`scroll.*`).
+(M-ZM2), the 40 pt gap between Photos' pages, and its drag-to-dismiss (the
+shrink and fades by travel, the release rule and the springs; the cancel
+distance is M-ZM3). A zoomed pan flicked into an edge coasts and bounces like
+any scroll view (`scroll.*`).
 
 | ID    | What                         | App and gesture                                                                    | Extract                                                                   | Method |
 | ----- | ---------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------ |
 | M-ZM1 | Double tap on a filled photo | Photos: double tap a photo with the screen's aspect (402 × 874) at the fitted size | the zoom it lands on (aspect fill gives 1)                                | B, C   |
 | M-ZM2 | Maximum zoom                 | Photos: pinch a 4032 × 3024 and a 1200 × 800 photo as far as it goes               | the zoom it settles on against the photo's pixel size and the fitted size | B, C   |
+| M-ZM3 | Dismiss cancel distance      | Photos: pull a photo down 6–19 pt, bring it back to N pt and lift without moving   | the largest N that still cancels                                          | B, C   |
