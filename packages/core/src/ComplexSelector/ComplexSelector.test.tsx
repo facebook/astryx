@@ -13,6 +13,7 @@ import React from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {Button} from '../Button/Button';
 import {ComplexSelector, type ComplexSelectorHandle} from './ComplexSelector';
 
 const originalMatches = HTMLElement.prototype.matches;
@@ -623,6 +624,24 @@ describe('ComplexSelector trigger semantics', () => {
     await user.keyboard('{ArrowDown}');
     expect(opener).toHaveAttribute('aria-expanded', 'false');
     expect(onClick).not.toHaveBeenCalled();
+  });
+});
+
+describe('ComplexSelector trigger semantics with a Button control', () => {
+  it('keeps the disabled and busy state on an Astryx Button control', () => {
+    render(
+      <ComplexSelector
+        label="Assignee"
+        value={[]}
+        isDisabled
+        isLoading
+        renderTrigger={props => <Button label="Assign" {...props} />}>
+        {() => <button type="button">Apply</button>}
+      </ComplexSelector>,
+    );
+    const opener = screen.getByRole('combobox', {name: 'Assignee'});
+    expect(opener).toHaveAttribute('aria-disabled', 'true');
+    expect(opener).toHaveAttribute('aria-busy', 'true');
   });
 });
 
