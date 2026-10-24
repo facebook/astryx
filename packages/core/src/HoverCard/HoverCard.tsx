@@ -157,8 +157,10 @@ export interface HoverCardProps extends Pick<
 
   /**
    * What a tap does on a touch pointer, where there is no hover:
-   * - `auto`: tap opens the card, unless the trigger performs an action of its
-   *   own (a button, a link, a form control) — that tap belongs to the control
+   * - `auto`: tap opens the card, unless the tap already performs an action:
+   *   the trigger's own (a button, a link, a form control) or that of a
+   *   control the trigger sits inside (a link, an option, a clickable row or
+   *   card). That tap belongs to the control
    * - `tap`: tap always opens the card, even on a trigger that acts
    * - `none`: touch never opens the card
    *

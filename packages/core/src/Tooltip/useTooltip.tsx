@@ -119,9 +119,11 @@ export interface TooltipOptions {
 
   /**
    * What a tap does on a touch pointer, where there is no hover:
-   * - `auto`: tap opens the tooltip, unless the trigger performs an action of
-   *   its own (a button, a link, a form control) — that tap belongs to the
-   *   control, and a hint about a control the user just operated is noise
+   * - `auto`: tap opens the tooltip, unless the tap already performs an
+   *   action: the trigger's own (a button, a link, a form control) or that of
+   *   a control the trigger sits inside (a link around a truncated label, an
+   *   option, a clickable row or card). That tap belongs to the control, and
+   *   a hint about a control the user just operated is noise
    * - `tap`: tap always opens the tooltip. This is what an info icon rendered
    *   as a button wants: it looks like an action to the DOM, but revealing the
    *   tooltip is the only thing it does

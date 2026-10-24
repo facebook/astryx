@@ -418,6 +418,103 @@ describe('Tooltip', () => {
       expect(onOpenChange).not.toHaveBeenCalledWith(true);
     });
 
+    it('stays shut on a tap of a trigger inside a link, and the link gets the tap', async () => {
+      const onOpenChange = vi.fn();
+      const onLinkClick = vi.fn((event: React.MouseEvent) =>
+        event.preventDefault(),
+      );
+      render(
+        <a href="#report" onClick={onLinkClick}>
+          <Tooltip
+            content="Quarterly revenue report, final"
+            onOpenChange={onOpenChange}
+            delay={0}>
+            Quarterly revenue report…
+          </Tooltip>
+        </a>,
+      );
+
+      tap(screen.getByText('Quarterly revenue report…'));
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(onOpenChange).not.toHaveBeenCalledWith(true);
+      // One tap, one answer: the link's.
+      expect(onLinkClick).toHaveBeenCalledTimes(1);
+    });
+
+    it('stays shut on a tap of a trigger inside an option or a clickable row', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <>
+          <div role="listbox" aria-label="Files">
+            <div role="option" aria-selected="false">
+              <Tooltip content="report-final.pdf" onOpenChange={onOpenChange}>
+                report-fi…
+              </Tooltip>
+            </div>
+          </div>
+          {/* The mark useClickableContainer puts on a row or card it makes
+              clickable without an interactive role. */}
+          <div data-pressable-container="true">
+            <Tooltip content="ID 8f3a2c91" onOpenChange={onOpenChange}>
+              8f3a…
+            </Tooltip>
+          </div>
+        </>,
+      );
+
+      tap(screen.getByText('report-fi…'));
+      tap(screen.getByText('8f3a…'));
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(onOpenChange).not.toHaveBeenCalledWith(true);
+    });
+
+    it('still opens on a tap of a trigger inside a container that does nothing', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <ul>
+          <li>
+            {/* Scenery: the role says this button is not a control. */}
+            <button type="button" role="presentation">
+              <Tooltip
+                content="Web Content Accessibility Guidelines"
+                onOpenChange={onOpenChange}>
+                WCAG
+              </Tooltip>
+            </button>
+          </li>
+        </ul>,
+      );
+
+      tap(screen.getByText('WCAG'));
+
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+    });
+
+    it('opens on a tap inside a link when touchTrigger is "tap"', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <a href="#report" onClick={event => event.preventDefault()}>
+          <Tooltip
+            content="Quarterly revenue report, final"
+            onOpenChange={onOpenChange}
+            touchTrigger="tap"
+            delay={0}>
+            Quarterly revenue report…
+          </Tooltip>
+        </a>,
+      );
+
+      tap(screen.getByText('Quarterly revenue report…'));
+
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+    });
+
     it('opens on a tap of an action trigger when touchTrigger is "tap"', async () => {
       const onOpenChange = vi.fn();
       render(

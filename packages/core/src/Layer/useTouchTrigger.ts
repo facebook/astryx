@@ -19,11 +19,15 @@
  * What the trigger DOES decides which of those the tap deserves. A trigger
  * that performs an action — a button, a link, a form control — keeps its tap:
  * the layer stays shut, because the tap already has somewhere to go and a hint
- * about a control the user just operated is noise. A trigger that performs no
- * action — an info icon, an abbreviation, a truncated label — has nothing to
- * lose, so the tap opens the layer and the next tap outside dismisses it. That
- * is `auto`; `tap` and `none` state the choice outright, which is what an
- * icon-button whose only job is to reveal the layer needs.
+ * about a control the user just operated is noise. So does a trigger sitting
+ * inside such a control — a truncated label in a link, a name in a list row
+ * or a clickable card — because the tap's `click` reaches that control too,
+ * and a layer opening alongside would answer one tap twice. A trigger that
+ * performs no action and sits in none — an info icon, an abbreviation, a
+ * truncated label in running text — has nothing to lose, so the tap opens the
+ * layer and the next tap outside dismisses it. That is `auto`; `tap` and
+ * `none` state the choice outright, which is what an icon-button whose only
+ * job is to reveal the layer needs.
  *
  * A touch decides nothing until it is a tap. A finger landing on the trigger
  * may be starting a scroll, a pinch or a long press, and only the browser
@@ -39,6 +43,7 @@
 
 import {useCallback, useEffect, useRef, type RefObject} from 'react';
 import {currentGesture} from './gestureCounter';
+import {PRESSABLE_CONTAINER_ATTRIBUTE} from '../hooks/useClickableContainer';
 import {
   getInteractionModality,
   useInteractionModalityTracking,
@@ -47,7 +52,8 @@ import {
 /**
  * How a hover layer behaves on a touch pointer.
  *
- * - `auto`: tap-to-open, unless the trigger performs an action of its own
+ * - `auto`: tap-to-open, unless the tap already performs an action: the
+ *   trigger's own, or that of a control the trigger sits inside
  * - `tap`: always tap-to-open, even on a trigger that performs an action
  * - `none`: never open on touch
  */
@@ -131,6 +137,34 @@ function isEditable(element: HTMLElement): boolean {
   }
   const attribute = element.getAttribute('contenteditable');
   return attribute != null && attribute !== 'false';
+}
+
+/**
+ * Whether a tap on the trigger already has somewhere to go: the trigger is an
+ * action itself (see `isActionTrigger`), or an ancestor is one — a link around
+ * a truncated label, an option or menu item, a clickable row or card. Those
+ * last two are containers `useClickableContainer` makes clickable without an
+ * interactive role, and it marks them for exactly this kind of question. The
+ * tap's `click` bubbles to whichever of them it lands in, so a layer opening
+ * too would answer one tap twice.
+ *
+ * Exported for its unit test only; Layer/index.ts does not re-export it.
+ */
+export function tapHasDestination(trigger: Element): boolean {
+  for (
+    let node: Element | null = trigger;
+    node != null;
+    node = node.parentElement
+  ) {
+    if (
+      node instanceof HTMLElement &&
+      (isActionTrigger(node) ||
+        node.hasAttribute(PRESSABLE_CONTAINER_ATTRIBUTE))
+    ) {
+      return true;
+    }
+  }
+  return false;
 }
 
 export interface UseTouchTriggerOptions {
@@ -326,7 +360,7 @@ export function useTouchTrigger(
     const trigger = triggerRef.current;
     const mode =
       touchTrigger === 'auto'
-        ? trigger != null && isActionTrigger(trigger)
+        ? trigger != null && tapHasDestination(trigger)
           ? 'none'
           : 'tap'
         : touchTrigger;

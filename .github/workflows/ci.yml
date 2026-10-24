@@ -1650,6 +1650,17 @@ jobs:
             --project chromium \
             --output hover-layer-touch-output
 
+      # A tap on a hover-layer trigger that sits inside a control (a truncated
+      # Link, a name or an ID on a ClickableCard) goes to that control alone:
+      # no tooltip opens alongside it. Where a real tap lands, and where its
+      # click goes, only real touch input in a real engine shows.
+      - name: Run hover layer touch-inside-control contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/Layer/__tests__/TouchTriggerInsideControls.a11y.chromium.spec.ts \
+            --project chromium \
+            --output hover-layer-touch-inside-control-output
+
       # A pointer that crosses from a Tooltip's trigger onto the tooltip in one
       # step must not lose it (WCAG 1.4.13 hoverable). The defect is in the
       # order the engine dispatches mouseout and mouseleave on that step, which
