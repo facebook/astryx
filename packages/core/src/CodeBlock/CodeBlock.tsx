@@ -406,14 +406,26 @@ const styles = stylex.create({
   // even space above and below, and a block that grows keeps the button where
   // it was. The first line's centre is the code's block padding plus half its
   // line box (font size × leading for the block's size).
-  copyButtonCorner: {
+  // The controls of a headerless block: caller controls, then Copy, in the
+  // second column, centred on the first line of code (cornerClusterMd/Sm).
+  cornerCluster: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
     alignSelf: 'start',
     marginInline: spacingVars['--spacing-2'],
   },
-  copyButtonCornerMd: {
+  // The header's controls: caller controls, then Copy.
+  headerControls: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+    flexShrink: 0,
+  },
+  cornerClusterMd: {
     marginBlockStart: `calc(${spacingVars['--spacing-3']} + ${typeScaleVars['--text-code-size']} * ${typeScaleVars['--text-code-leading']} / 2 - ${sizeVars['--size-element-sm']} / 2)`,
   },
-  copyButtonCornerSm: {
+  cornerClusterSm: {
     marginBlockStart: `calc(${spacingVars['--spacing-3']} + ${typeScaleVars['--text-supporting-size']} * ${typeScaleVars['--text-code-leading']} / 2 - ${sizeVars['--size-element-sm']} / 2)`,
   },
 });
@@ -545,6 +557,14 @@ export interface CodeBlockProps extends BaseProps<HTMLPreElement> {
   isDiff?: boolean;
   hasCopyButton?: boolean;
   onCopy?: () => void;
+  /**
+   * Your own controls, shown just before Copy: in the header when the block
+   * has one, otherwise beside the code in the top inline-end corner, never
+   * over it. It never creates a header, and activating it never collapses the
+   * block. You own each control's label, state, and action; ghost `sm`
+   * IconButtons match Copy.
+   */
+  endContent?: React.ReactNode;
   isWrapped?: boolean;
   maxHeight?: number | string;
   isCollapsible?: boolean;
@@ -898,6 +918,7 @@ export function CodeBlock({
   isDiff = false,
   hasCopyButton = true,
   onCopy,
+  endContent,
   isWrapped = false,
   maxHeight,
   isCollapsible = false,
@@ -1020,6 +1041,9 @@ export function CodeBlock({
         }
       : undefined;
 
+  // Caller controls render before Copy; together they are the block's controls,
+  // in the header when there is one and in the corner cluster otherwise.
+  const hasControls = hasCopyButton || endContent != null;
   const copyButtonEl = hasCopyButton ? (
     <IconButton
       variant="ghost"
@@ -1038,14 +1062,7 @@ export function CodeBlock({
         e.stopPropagation();
         void handleCopy();
       }}
-      xstyle={[
-        styles.copyButton,
-        !showHeader && styles.copyButtonCorner,
-        !showHeader &&
-          (size === 'sm'
-            ? styles.copyButtonCornerSm
-            : styles.copyButtonCornerMd),
-      ]}
+      xstyle={styles.copyButton}
       {...themeProps('code-block-copy-button')}
     />
   ) : null;
@@ -1107,7 +1124,12 @@ export function CodeBlock({
           {languageLabel}
         </span>
       </div>
-      {copyButtonEl}
+      {hasControls ? (
+        <div {...stylex.props(styles.headerControls)}>
+          {endContent}
+          {copyButtonEl}
+        </div>
+      ) : null}
     </div>
   ) : null;
 
@@ -1159,7 +1181,7 @@ export function CodeBlock({
         themeProps('code-block', {size, language, container}),
         stylex.props(
           styles.root,
-          hasCopyButton && !showHeader && styles.rootCorner,
+          hasControls && !showHeader && styles.rootCorner,
           dynamicStyles.width(widthProp),
           containerStyles[container],
           xstyle,
@@ -1187,7 +1209,16 @@ export function CodeBlock({
       ) : (
         codeBody
       )}
-      {!showHeader && copyButtonEl}
+      {hasControls && !showHeader ? (
+        <div
+          {...stylex.props(
+            styles.cornerCluster,
+            size === 'sm' ? styles.cornerClusterSm : styles.cornerClusterMd,
+          )}>
+          {endContent}
+          {copyButtonEl}
+        </div>
+      ) : null}
     </pre>
   );
 
