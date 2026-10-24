@@ -14,13 +14,15 @@
  * out of its anchor on UIKit's present spring and shrinks back into it on the
  * dismiss spring (popoverSurfaceMotion.ts). A mouse, and a finger elsewhere
  * (Android), keep the layer's own entrance and the theme's motion tokens
- * (D-01).
+ * (D-01). A popover that would run under the software keyboard shrinks to
+ * stay above it, on every touch screen.
  *
  * For hover-triggered overlays, use HoverCard instead.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Popover/Popover.test.tsx
  * - /packages/core/src/Popover/usePopoverSurfaceMotion.ts
+ * - /packages/core/src/Popover/usePopoverKeyboardAvoidance.ts
  * - /packages/core/src/Popover/index.ts
  * - /apps/storybook/stories/Popover.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/Popover/ (showcase blocks)
@@ -41,6 +43,7 @@ import type {BaseProps} from '../BaseProps';
 import {usePopover} from './usePopover';
 import {usePopoverSurfaceMotion} from './usePopoverSurfaceMotion';
 import {usePanOutsideDismiss} from '../Layer/usePanOutsideDismiss';
+import {usePopoverKeyboardAvoidance} from './usePopoverKeyboardAvoidance';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {layerViewportInset} from '../Layer/layerViewportInset.stylex';
@@ -452,6 +455,10 @@ export function Popover({
     inside: panInsideRefs,
     onDismiss: popover.hide,
   });
+
+  // A popover that would run under the software keyboard shrinks to stay
+  // above it, as on iOS (usePopoverKeyboardAvoidance.ts).
+  usePopoverKeyboardAvoidance(popover.isOpen, surfaceRef);
 
   const measureOverflow = useCallback(() => {
     const surface = popover.contentRef.current;

@@ -4,7 +4,8 @@
  * @file popover.ts
  * @input Nothing; data only
  * @output Exports `popover`: the shape a popover grows out of and shrinks
- *   back into as it is presented and dismissed
+ *   back into as it is presented and dismissed, and how far above the
+ *   software keyboard it stays
  * @position The popover domain of the UIKit constants table (motion/uikit);
  *   its springs are `springs.popoverPresent` and `springs.popoverDismiss`
  *
@@ -48,4 +49,17 @@ export const popover = {
    *   dismiss animates back to the same 100 pt
    */
   collapsedLengthPx: 100,
+  /**
+   * How far above the software keyboard a popover that would run under it
+   * ends: UIKit shrinks the popover's height, keeping the edge on its source,
+   * so its far edge stays this far above the keyboard, and grows it back
+   * when the keyboard goes down. Its content scrolls in the shorter box.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, presentation frames and CABasicAnimation dumps, Oct 23
+   *   2026: a 320 × 533 popover below a source at y 160 (top 204) shrank to
+   *   325 pt, its bottom at 529 with the keyboard's top at about 539, from
+   *   UIKeyboardWillShow over the keyboard's 0.3833 s, and grew back the same
+   *   way on the hide; a 320 × 240 popover clear of the keyboard did not move
+   */
+  keyboardClearancePx: 10,
 } as const;
