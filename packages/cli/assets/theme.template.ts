@@ -201,7 +201,7 @@ export const myTheme = defineTheme({
   // moving away from.
   //
   // The families, so you know what exists:
-  //   --color-*        accent, on-accent · background-{body,surface,card,popover,
+  //   --color-*        accent, on-accent · background-{body,surface,card,popover,glass,
   //                    muted,inverted} · text-* · icon-* · border,
   //                    border-emphasized · overlay{,-hover,-pressed} ·
   //                    success/warning/error (+ -muted, on-*) · skeleton, track,

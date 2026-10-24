@@ -145,6 +145,11 @@ export const docs = {
               "#28292C"
             ],
             [
+              "--color-background-glass",
+              "color-mix(in srgb, var(--color-background-surface) 85%, transparent)",
+              "color-mix(in srgb, var(--color-background-surface) 85%, transparent)"
+            ],
+            [
               "--color-background-inverted",
               "#0A1317",
               "#FFFFFF"

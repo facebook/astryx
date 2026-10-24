@@ -53,6 +53,12 @@ export const colorDefaults = {
   // Surface variants
   '--color-background-card': 'light-dark(#FFFFFF, #1F1F22)',
   '--color-background-popover': 'light-dark(#FFFFFF, #28292C)',
+  // The capsule behind bar buttons on a touch screen, the iOS 26 bar's glass
+  // platter: the theme's surface at 85 %, so content scrolling under the bar
+  // still shows faintly through it. iOS 26.2 paints it rgb(251, 251, 255) over
+  // its light bar and rgb(25, 25, 25) over its dark one; no blur.
+  '--color-background-glass':
+    'color-mix(in srgb, var(--color-background-surface) 85%, transparent)',
   '--color-background-inverted': 'light-dark(#0A1317, #FFFFFF)',
   '--color-background-error-inverted': 'light-dark(#AA071E, #E3193B)',
 
