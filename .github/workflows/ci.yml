@@ -1729,6 +1729,17 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
+      # A finger resting on a NumberInput stepper must press it, not select
+      # the field's label: the stepper column opts out of text selection and
+      # takes touch-action: manipulation, and a scroll that starts on it must
+      # still scroll. Computed styles and the browser's pan need a real engine.
+      - name: Run NumberInput stepper long-press contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/NumberInput/__tests__/NumberInput.stepper-press.a11y.chromium.spec.ts \
+            --project chromium \
+            --output number-input-stepper-press-output
+
       # The toggle-button contract's pressed state, keyboard and pointer round
       # trips, aborted press, focus, and unavailable state are accessibility-tree
       # and engine facts that jsdom cannot observe. Run the contract's own
