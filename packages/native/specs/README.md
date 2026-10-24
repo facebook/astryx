@@ -38,7 +38,11 @@ the same everywhere. A native spec never renames or changes it.
    can land on its own or with the component it describes.
 
 Pull requests that change only `packages/native/`, written entirely by the
-native group listed in AST-093 FR6, are approved once required checks pass.
+native group listed in AST-093 FR6, are approved once required checks pass, the
+review app finds no defect on the exact head, and a review against AST-082,
+AST-093, and the specs of the components they touch finds every defined
+requirement met. Behavior no spec defines does not block; it is recorded as a
+spec gap.
 
 ## Test and validation
 

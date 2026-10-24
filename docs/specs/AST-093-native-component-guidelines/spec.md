@@ -100,16 +100,22 @@ validating, and reviewing individual native components while
     and brand claims rest on these captures, never on source or style values
     (`spec:AST-082/FR12`). A claim that could not be captured is reported as not
     measured.
-- **FR6 — Native changes from the native group are approved on sight.** A pull
-  request whose every changed file is under `packages/native/`, and whose author
-  and every commit author are members of the native group, is approved by an
-  engineering owner on its exact head once its required checks pass, without a
-  separate code or design review. The native group is the GitHub accounts
-  `cixzhang`, `ejc3`, `ejhammond`, `ernestt`, `imdreamrunner`, and `vjeux`. A
-  pull request that changes any file outside `packages/native/`, or that carries
-  a commit from anyone else, follows the repository's normal review gate. A
-  request for changes from any reviewer still blocks the merge. Changing the
-  group is a change to this record.
+- **FR6 — Native changes from the native group are approved after a spec
+  review.** A pull request whose every changed file is under `packages/native/`,
+  and whose author and every commit author are members of the native group, is
+  approved by an engineering owner on its exact head, without a separate code or
+  design review, once all three hold: its required checks pass; the review app
+  has reviewed that exact head and names no defect; and a review of the change
+  against `spec:AST-082`, this record, and the native spec of every component it
+  touches finds every requirement they define met. Behavior a spec defines must
+  match it, and a change that breaks such a requirement is not approved.
+  Behavior no spec defines yet does not block approval, as in the lab package:
+  the review records each such behavior as a spec gap so a spec can follow. The
+  native group is the GitHub accounts `cixzhang`, `ejc3`, `ejhammond`,
+  `ernestt`, `imdreamrunner`, and `vjeux`. A pull request that changes any file
+  outside `packages/native/`, or that carries a commit from anyone else, follows
+  the repository's normal review gate. A request for changes from any reviewer
+  still blocks the merge. Changing the group is a change to this record.
 
 ### Platform support
 
@@ -131,14 +137,14 @@ validating, and reviewing individual native components while
 
 ## Verification
 
-| Contract | Verification                                                                            | Representative states                                                                            | Mutation or failure expectation                                                                                       |
-| -------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| FR1      | Review of the spec's path and sections against the template                             | a spec per language; a spec for a component with no core contract                                | A spec outside `packages/native/specs/<language>/`, missing a template section, or renaming a core prop passes review |
-| FR2      | The spec's native-control section and the state captures                                | a component built on a platform control; a component with no platform control                    | A component draws its own control where a platform control fits, with no reason in its spec                           |
-| FR3      | The spec's guideline section and the captures                                           | hit target size; largest Dynamic Type; Reduce Motion; VoiceOver focus                            | A capture shows a hit target below the platform minimum or text that does not scale                                   |
-| FR4      | Theme test with two themes, plus source review for literals                             | default theme; a second theme with different color, type, and shape                              | A brand value stays the same across both themes, or a platform-only visual prop is added                              |
-| FR5      | The package's tests on every supported platform and the captures attached to the change | light; dark; largest text; every state the core contract names                                   | A change merges without tests, without captures, or with a capture-based claim backed only by source                  |
-| FR6      | The pull request's changed paths, commit authors, and approval                          | all native paths by group members; a path outside `packages/native/`; a commit from someone else | An out-of-scope pull request is approved without review, or an in-scope one waits on a separate review                |
+| Contract | Verification                                                                                                    | Representative states                                                                                                                                        | Mutation or failure expectation                                                                                                                                                                                                           |
+| -------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1      | Review of the spec's path and sections against the template                                                     | a spec per language; a spec for a component with no core contract                                                                                            | A spec outside `packages/native/specs/<language>/`, missing a template section, or renaming a core prop passes review                                                                                                                     |
+| FR2      | The spec's native-control section and the state captures                                                        | a component built on a platform control; a component with no platform control                                                                                | A component draws its own control where a platform control fits, with no reason in its spec                                                                                                                                               |
+| FR3      | The spec's guideline section and the captures                                                                   | hit target size; largest Dynamic Type; Reduce Motion; VoiceOver focus                                                                                        | A capture shows a hit target below the platform minimum or text that does not scale                                                                                                                                                       |
+| FR4      | Theme test with two themes, plus source review for literals                                                     | default theme; a second theme with different color, type, and shape                                                                                          | A brand value stays the same across both themes, or a platform-only visual prop is added                                                                                                                                                  |
+| FR5      | The package's tests on every supported platform and the captures attached to the change                         | light; dark; largest text; every state the core contract names                                                                                               | A change merges without tests, without captures, or with a capture-based claim backed only by source                                                                                                                                      |
+| FR6      | Changed paths, commit authors, the review app's exact-head review, the spec review's findings, and the approval | all native paths by group members; a spec-defined requirement unmet; behavior no spec defines; a path outside `packages/native/`; a commit from someone else | An approval without an exact-head review-app pass or a spec review, an approval with a spec-defined requirement unmet, an out-of-scope pull request approved without review, or an in-scope one blocked only for behavior no spec defines |
 
 ## Decision log
 
@@ -156,15 +162,22 @@ every surface.
 Rejected: matching the web rendering pixel for pixel, because it overrides the
 platform conventions the person relies on.
 
-### DEC-2 — Native changes from the native group do not wait on review
+### DEC-2 — Native changes from the native group merge on a spec review
 
 **Reference:** `spec:AST-093/DEC-2`
 **Decider:** cixzhang, 2026-10-23
 
 `@astryxdesign/native` publishes only to the canary channel, so no stable user
 receives a native change. While the experiment runs, the people building it
-need to collect specs and land components quickly; required checks, captures,
-and any reviewer's request for changes still protect the branch.
+need to land components quickly, so a native change waits on no separate code
+or design review. The specs stay the contract: every change is reviewed against
+them before approval, and a spec-defined requirement it breaks blocks it.
+Behavior no spec covers yet is welcome, as in the lab package, and becomes a
+spec gap to close rather than a reason to wait. Required checks, captures, and
+any reviewer's request for changes still protect the branch.
+
+Rejected: approving on passing checks alone, because a change that breaks a
+spec would merge unreviewed.
 
 ## Open questions
 
