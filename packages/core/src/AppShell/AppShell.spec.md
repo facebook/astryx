@@ -73,10 +73,12 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **The banner stays pinned in `auto`.** The `banner` prop's API docs say it
   scrolls away with the page in `auto`; the shipped header, which holds both the
   banner and the top nav, is sticky, so the banner stays pinned (FR6).
-- **A header added after mount is not measured.** In `auto`, the header height
-  is measured only when the height mode is set; a banner or top nav that first
-  renders later is never measured, so the side region sticks at the top edge and
-  its first rows slide under the sticky header.
+- **A header region that first renders after mount is not measured.** In
+  `auto`, AppShell measures, and re-measures on resize, only a header region
+  present when `auto` takes effect; a header region that first renders later,
+  such as a banner or top nav on a page that had neither, is never measured, so
+  the side region sticks at the top edge and its first rows slide under the
+  sticky header.
 - **A raw `content` drawer leaves the toggle pointing at nothing.**
   `mobileNav.content` accepts raw children; AppShell renders them as given while
   the auto toggle still renders, so its `aria-controls` names no element and its
@@ -281,16 +283,16 @@ reachability, not a decision that it must stay unthemeable.
 | FR9–FR12            | `AppShell.test.tsx` mobile suites; `MobileNavCloseEdgeCases.test.tsx` AppShell drawer suites | Sidenav only; both navs; heading-only TopNav; custom node                           | A missing toggle, duplicated items, a stale drawer, or an early hide fails.      | `audit:AppShell/behavior`      |
 | FR13, AR3           | `AppShell.test.tsx` keyboard drawer and `useAppShellMobile` suites                           | Outside a shell; inside, closed and open                                            | A wrong id link or stale state fails.                                            | `audit:AppShell/accessibility` |
 | FR14, AR4           | `AppShell.test.tsx` breakpoint continuity test                                               | Desktop to mobile and back with a focused input                                     | Remounting content loses the value or focus.                                     | `audit:AppShell/behavior`      |
-| FR7, FR16           | `AppShell.stories.tsx` and visual baselines                                                  | `elevated` with both navs and with the mobile nav                                   | A changed `elevated` background or missing corner shows in visual review.        | `audit:AppShell/visual`        |
+| FR7, FR16           | `AppShell.stories.tsx` and visual baselines                                                  | `elevated` with both navs, at desktop width                                         | A changed `elevated` background or missing corner shows in visual review.        | `audit:AppShell/visual`        |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                                                                | Consumer anatomy and current targets                                                | Missing, extra, stale, or multiply assigned mappings fail repository validation. | `audit:AppShell/theming`       |
 
 Read from source, with no focused test or baseline yet:
 
 - FR1: the placement of the three targets, other DOM props reaching the root,
-  and the drawer rendering last.
-- FR2: `false` and `''` slots counting as absent, and a slot that renders
+  the header, side, and content order, and the drawer rendering last.
+- FR2: `null`, `true`, `false`, and `''` slots counting as absent, and a slot that renders
   nothing counting as present.
-- FR3: `banner` above `topNav`.
+- FR3: `banner` above `topNav`, and no header region with only `sideNav`.
 - FR4: the `contentPadding` value and its `0` default, and no focus ring on main.
 - FR5: the skip link's visual hiding until focus; AR2: its shared focus outline.
 - FR6: root sizing and region scrolling in each height mode, and the sticky side
@@ -305,7 +307,8 @@ Read from source, with no focused test or baseline yet:
   requests while disabled.
 - FR12: the `mobileNav={false}`, string-node, `content`, and `hasToggle: false`
   branches, and full-mode TopNav beside a drawer node.
-- FR13: the open and close actions and `hasAutoToggle`.
+- FR13 and AR3: the open and close actions, `hasAutoToggle`, and the shared
+  drawer id on a MobileNav passed as `content` or as the node.
 - FR15, FR16's no-corner branch, and PR2.
 
 ## Decision log
