@@ -122,3 +122,101 @@ export const Pushed: Story = {
   name: 'Pushed two levels',
   render: () => <DeepStack />,
 };
+
+// =============================================================================
+// Edge cases the stack must handle
+// =============================================================================
+
+/**
+ * A pushed screen with a horizontal strip: a sideways drag on the strip
+ * scrolls it while it can still scroll that way; elsewhere it pops.
+ */
+function CarouselStack() {
+  const [path, setPath] = useState<string[]>(['General']);
+  return (
+    <div style={{height: '100vh'}}>
+      <NavigationStack
+        label="Settings"
+        root={
+          <NavigationScreen title="Settings">
+            <Rows title="Settings" />
+          </NavigationScreen>
+        }
+        path={path}
+        onPathChange={setPath}
+        getKey={entry => entry}
+        renderScreen={entry => (
+          <NavigationScreen title={entry}>
+            <div
+              data-testid="carousel"
+              style={{
+                display: 'flex',
+                gap: 12,
+                padding: 16,
+                overflowX: 'auto',
+              }}>
+              {SECTIONS.Settings.concat(SECTIONS.General).map(label => (
+                <div
+                  key={label}
+                  style={{
+                    flex: '0 0 140px',
+                    height: 96,
+                    borderRadius: 12,
+                    border: '1px solid currentColor',
+                    padding: 8,
+                  }}>
+                  {label}
+                </div>
+              ))}
+            </div>
+            <Rows title={entry} />
+          </NavigationScreen>
+        )}
+        data-testid="navigation-stack"
+      />
+    </div>
+  );
+}
+
+export const Carousel: Story = {
+  name: 'Pushed screen with a carousel',
+  render: () => <CarouselStack />,
+};
+
+/**
+ * An app that declines pops (it keeps its path, as one guarding unsaved
+ * edits would): a released back swipe springs back.
+ */
+function DeclinesPopsStack() {
+  const [path, setPath] = useState<string[]>(['General']);
+  return (
+    <div style={{height: '100vh'}}>
+      <NavigationStack
+        label="Settings"
+        root={
+          <NavigationScreen title="Settings">
+            <Rows title="Settings" />
+          </NavigationScreen>
+        }
+        path={path}
+        onPathChange={next => {
+          if (next.length >= path.length) {
+            setPath(next);
+          }
+        }}
+        getKey={entry => entry}
+        renderScreen={entry => (
+          <NavigationScreen title={entry}>
+            <Rows title={entry} />
+          </NavigationScreen>
+        )}
+        data-testid="navigation-stack"
+      />
+    </div>
+  );
+}
+
+export const DeclinesPops: Story = {
+  name: 'Declines pops',
+  render: () => <DeclinesPopsStack />,
+};

@@ -67,7 +67,7 @@ interface Stack {
  */
 async function openStack(
   page: Page,
-  story: 'settings' | 'pushed',
+  story: 'settings' | 'pushed' | 'carousel' | 'declines-pops',
   {
     standalone = false,
     idiom = 'ios',
@@ -729,6 +729,183 @@ test.describe('the bars ride with their screens, as UIKit’s', () => {
       // An rgb() colour has no alpha; rgba(…, 0) would let the title show.
       expect(bar.background, JSON.stringify(bar)).toMatch(/^rgb\(/);
     }
+  });
+});
+
+test.describe('edge cases (review findings)', () => {
+  test('a keyboard Back returns focus to the row that pushed', async ({
+    page,
+  }) => {
+    await openStack(page, 'settings', {idiom: 'default'});
+    const general = page.getByRole('button', {name: 'General'}).first();
+    await general.focus();
+    await page.keyboard.press('Enter');
+    await waitForRest(card(page, 'screen-General'));
+    await page.locator('[data-navigation-back]').focus();
+    await page.keyboard.press('Enter');
+    await expect(card(page, 'screen-General')).toHaveCount(0);
+    await waitForRest(card(page, 'root'));
+    // Focus is on the General row itself, not left on the page body.
+    await expect
+      .poll(async () =>
+        page.evaluate(() => {
+          const active = document.activeElement;
+          return active == null || active === document.body
+            ? 'body'
+            : (active
+                .closest('li, button, [role="button"]')
+                ?.textContent?.trim() ?? active.tagName);
+        }),
+      )
+      .toBe('General');
+  });
+
+  test('after a keyboard push the focused title shows the focus indicator', async ({
+    page,
+  }) => {
+    await openStack(page, 'settings', {idiom: 'default'});
+    await page.getByRole('button', {name: 'General'}).first().focus();
+    await page.keyboard.press('Enter');
+    await waitForRest(card(page, 'screen-General'));
+    const title = page.locator('[data-navigation-bar="screen-General"] h2');
+    await expect(title).toBeFocused();
+    const ring = await title.evaluate(element => {
+      const style = getComputedStyle(element);
+      return {
+        visible: element.matches(':focus-visible'),
+        outline: style.outlineStyle,
+        width: parseFloat(style.outlineWidth),
+        shadow: style.boxShadow,
+      };
+    });
+    expect(ring.visible).toBe(true);
+    // An outline or a ring shadow: something shows where focus is.
+    expect(
+      (ring.outline !== 'none' && ring.width > 0) || ring.shadow !== 'none',
+      JSON.stringify(ring),
+    ).toBe(true);
+  });
+
+  test('after a tap push the focused title shows no focus ring', async ({
+    page,
+  }) => {
+    const {driver} = await openStack(page, 'settings');
+    await driver.tap(await rowCenter(page, 'General'));
+    await waitForRest(card(page, 'screen-General'));
+    const title = page.locator('[data-navigation-bar="screen-General"] h2');
+    await expect(title).toBeFocused();
+    // Programmatic focus after pointer input keeps the pointer's modality
+    // (interaction-modality INV1): no ring.
+    expect(
+      await title.evaluate(element => element.matches(':focus-visible')),
+    ).toBe(false);
+  });
+
+  test('after a pop the screen underneath keeps its content and its bar', async ({
+    page,
+  }) => {
+    const {driver} = await openStack(page, 'pushed');
+    await page.locator('[data-navigation-back]').click();
+    await waitForRest(card(page, 'screen-General'));
+    await expect(card(page, 'screen-About')).toHaveCount(0);
+    // General is on top; the root lies under it, ready for a back swipe.
+    const root = await card(page, 'root').evaluate(
+      element => getComputedStyle(element).contentVisibility,
+    );
+    expect(root).not.toBe('hidden');
+    await expect(page.locator('[data-navigation-bar="root"]')).toHaveCount(1);
+    void driver;
+  });
+
+  test('a push during a running push slides the new screen in', async ({
+    page,
+  }) => {
+    const {driver, width} = await openStack(page, 'settings');
+    await driver.tap(await rowCenter(page, 'General'));
+    await page.waitForTimeout(80);
+    const stop = await traceBars(page);
+    const about = await page
+      .locator('[data-navigation-screen="screen-General"]')
+      .getByRole('button', {name: 'About'})
+      .boundingBox();
+    if (about == null) {
+      throw new Error('no About row');
+    }
+    await driver.tap({
+      x: about.x + about.width / 2,
+      y: about.y + about.height / 2,
+    });
+    await page.waitForTimeout(700);
+    const frames = await stop();
+    const first = frames.find(f => f.cards['screen-About'] != null);
+    // A lone push starts the card off screen: so does one that interrupts.
+    expect(
+      first?.cards['screen-About'] ?? 0,
+      JSON.stringify(first),
+    ).toBeGreaterThan(width * 0.5);
+  });
+
+  test('a sideways drag on a strip that can still scroll scrolls it instead of popping', async ({
+    page,
+    browserName,
+  }) => {
+    const {driver} = await openStack(page, 'carousel');
+    const strip = page.getByTestId('carousel');
+    await strip.evaluate(element => {
+      element.scrollLeft = 300;
+    });
+    const box = await strip.boundingBox();
+    if (box == null) {
+      throw new Error('no strip');
+    }
+    await driver.play(
+      drag(
+        {x: box.x + 40, y: box.y + box.height / 2},
+        {x: box.x + 200, y: box.y + box.height / 2},
+        {durationMs: 400, restMs: 100},
+      ),
+    );
+    await page.waitForTimeout(800);
+    // Desktop WebKit does not scroll for an emulated touch drag; Chromium
+    // does, so there the strip's own scroll shows too.
+    if (browserName === 'chromium') {
+      expect(await strip.evaluate(element => element.scrollLeft)).toBeLessThan(
+        250,
+      );
+    }
+    await expect(card(page, 'screen-General')).toHaveCount(1);
+    expect(await translateX(card(page, 'screen-General'))).toBe(0);
+  });
+
+  test('a released swipe the app declines springs back', async ({page}) => {
+    const {driver, width, left} = await openStack(page, 'declines-pops');
+    await driver.play(
+      drag(
+        {x: left + width * 0.2, y: 420},
+        {x: left + width * 0.8, y: 420},
+        {durationMs: 300},
+      ),
+    );
+    await page.waitForTimeout(900);
+    await expect(card(page, 'screen-General')).toHaveCount(1);
+    expect(
+      Math.abs(await translateX(card(page, 'screen-General'))),
+    ).toBeLessThan(0.5);
+  });
+
+  test('a screen contains overscroll only while it overflows', async ({
+    page,
+  }) => {
+    await openStack(page, 'settings');
+    const contain = async () =>
+      card(page, 'root').evaluate(
+        element => getComputedStyle(element).overscrollBehaviorY,
+      );
+    // Four rows in a full-height stack: nothing to scroll, so a scroll
+    // chains to the page as usual.
+    expect(await contain()).toBe('auto');
+    await page.setViewportSize({width: 400, height: 200});
+    await expect.poll(contain).toBe('contain');
   });
 });
 
