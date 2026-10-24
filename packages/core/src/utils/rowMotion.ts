@@ -16,8 +16,8 @@
  * @position Internal utility for row motion (TreeList's expansion, List's
  *   update motion),
  *   shared by any code that moves a list row, so two motions never drive one
- *   row through two animators. A shim with the signature of the motion
- *   foundation's coming per-element `animatorFor`: the swap is one import.
+ *   row through two animators: every motion goes through the motion
+ *   foundation's shared per-element `animatorFor`.
  *
  * FLIP, compositor only: when a commit moves an element, its old place is put
  * back with an inverse `translate` in the same frame, and the animator springs
@@ -28,11 +28,7 @@
  * utils/useListUpdateMotion.ts.
  */
 
-import {
-  createAnimator,
-  type Animator,
-  type MotionHandle,
-} from '../motion/animator';
+import {animatorFor, type MotionHandle} from '../motion/animator';
 import type {SpringDescription} from '../motion/spring';
 
 /**
@@ -44,10 +40,12 @@ import type {SpringDescription} from '../motion/spring';
 const REDUCED_MOTION = 'keep' as const;
 
 /**
- * The animator of each element that moves, shared by every motion that moves
- * it: two animators on one element would fight over the same channel.
+ * The elements a row motion here has moved. Every motion drives an element
+ * through its one shared animator (the motion foundation's `animatorFor`),
+ * so two motions never fight over a channel; this set only tells which
+ * elements this module has touched without creating an animator for others.
  */
-const animators = new WeakMap<HTMLElement, Animator>();
+const moved = new WeakSet<HTMLElement>();
 type RowProperty = 'y' | 'rotate' | 'opacity';
 
 /** A motion started through this module: its handle and the spring it runs. */
@@ -59,15 +57,8 @@ export interface RowMotion {
 /** The running motion of each element, per property, until it rests. */
 const motions = new WeakMap<HTMLElement, Map<RowProperty, RowMotion>>();
 
-/** The element's shared animator, created on first use. */
-export function animatorFor(element: HTMLElement): Animator {
-  let animator = animators.get(element);
-  if (animator == null) {
-    animator = createAnimator(element);
-    animators.set(element, animator);
-  }
-  return animator;
-}
+/** The element's shared animator (one per element, for every lane). */
+export {animatorFor};
 
 /** Whether a motion started here still runs on the element. */
 export function isMoving(element: HTMLElement): boolean {
@@ -120,9 +111,10 @@ export function animateRow(
   element: HTMLElement,
   to: Partial<Record<RowProperty, number>>,
   spring: SpringDescription,
-  options: {at: number; velocity?: Partial<Record<RowProperty, number>>},
+  options: {at?: number; velocity?: Partial<Record<RowProperty, number>>},
 ): MotionHandle {
   const properties = Object.keys(to) as RowProperty[];
+  moved.add(element);
   return track(
     element,
     properties,
@@ -141,21 +133,22 @@ export function presentation(
   property: RowProperty,
   at: number,
 ): number {
-  const animator = animators.get(element);
-  if (animator == null) {
+  if (!moved.has(element)) {
     return property === 'opacity' ? 1 : 0;
   }
-  return animator.get(property, at);
+  return animatorFor(element).get(property, at);
 }
+
+/** Below this speed (units per second) a property counts as resting. */
+const MOVING_VELOCITY = 0.001;
 
 /**
  * Springs `element`'s `property` to its resting value (0, or 1 for opacity)
- * after moving it by `shift` (the layout just moved it the other way),
- * keeping the velocity it has on screen. A layout shift never changes a
- * running motion's curve: if a motion started here still runs on the
- * property, its spring continues (springs are memoryless, so the curve goes
- * on exactly); `spring` applies to an element at rest. Resolves true when it
- * arrives.
+ * after moving it by `shift` (the layout just moved it the other way). A
+ * layout shift never changes a running motion's curve: a moving property is
+ * rebased (`animator.rebase`: same spring, velocity and target), and
+ * `spring` applies only to an element at rest. Resolves true when a motion
+ * started here arrives.
  */
 export async function springHome(
   element: HTMLElement,
@@ -165,17 +158,30 @@ export async function springHome(
   at: number,
 ): Promise<boolean> {
   const animator = animatorFor(element);
-  const value = animator.get(property, at);
-  const velocity = animator.getVelocity(property, at);
-  const curve = motionOf(element, property)?.spring ?? spring;
+  const running = motionOf(element, property);
+  const moving =
+    running != null ||
+    Math.abs(animator.getVelocity(property, at)) > MOVING_VELOCITY;
   if (shift !== 0) {
-    animator.set({[property]: value + shift});
+    // A layout shift never changes a running motion's curve: a moving
+    // property restarts from its value + shift with the same spring,
+    // velocity and target; a resting one just takes the offset.
+    animator.rebase({[property]: shift}, {at});
   }
+  if (moving) {
+    // Another lane's motion (a drop, a swipe) settles on its own; only ours
+    // reports its arrival to the caller.
+    return running == null
+      ? animator.atRest([property]).then(() => false)
+      : running.handle.finished;
+  }
+  // From rest, the browser's commit sets the start, so a busy first frame
+  // cannot skip the curve.
   return animateRow(
     element,
     {[property]: property === 'opacity' ? 1 : 0},
-    curve,
-    {at, velocity: {[property]: velocity}},
+    spring,
+    {},
   ).finished;
 }
 
@@ -186,7 +192,10 @@ export async function springTo(
   spring: SpringDescription,
   at: number,
 ): Promise<boolean> {
-  return animateRow(element, {y: to}, spring, {at}).finished;
+  const running = motionOf(element, 'y');
+  return animateRow(element, {y: to}, spring, {
+    at: running == null ? undefined : at,
+  }).finished;
 }
 
 /**
@@ -204,13 +213,52 @@ export function releaseMotion(
     return;
   }
   for (const property of properties) {
-    element.style.removeProperty(property);
+    if (isIdentity(property, element.style.getPropertyValue(property))) {
+      element.style.removeProperty(property);
+    }
   }
+}
+
+/**
+ * Whether an inline value is the property's resting value: another lane may
+ * hold the same channel off rest (a swipe's x on `translate`), and only
+ * identity values are ours to clear.
+ */
+function isIdentity(property: string, value: string): boolean {
+  if (value === '' || value === 'none') {
+    return true;
+  }
+  if (property === 'opacity') {
+    return Number(value) === 1;
+  }
+  return value.split(/\s+/).every(part => Number.parseFloat(part) === 0);
 }
 
 /** The time the motion clock reads (`performance.now()`'s time base). */
 export function motionNow(): number {
   return typeof performance === 'undefined' ? Date.now() : performance.now();
+}
+
+/**
+ * Whether an animation running on an element drives its `translate`, the
+ * one channel this module writes (`transform`, `scale` and `rotate`
+ * compose with it).
+ */
+function translatesElement(animation: Animation): boolean {
+  if (
+    typeof CSSTransition !== 'undefined' &&
+    animation instanceof CSSTransition
+  ) {
+    return animation.transitionProperty === 'translate';
+  }
+  const effect = animation.effect;
+  if (
+    typeof KeyframeEffect === 'undefined' ||
+    !(effect instanceof KeyframeEffect)
+  ) {
+    return false;
+  }
+  return effect.getKeyframes().some(frame => 'translate' in frame);
 }
 
 function isScrollContainer(element: HTMLElement): boolean {
@@ -249,14 +297,17 @@ export function contentBelow(component: HTMLElement): HTMLElement[] {
       ) {
         continue;
       }
-      // Ours from a motion still running, or untouched: anything else has
-      // an owner that a translate of ours would fight.
-      const ours = animators.has(next);
+      // Ours from a motion still running, or not translated by anyone: an
+      // element another owner translates has an owner our translate would
+      // fight. Other animations compose with it on their own channels (a
+      // tapped button's press feedback scales it through `transform`), so
+      // they are no reason to leave it behind.
+      const ours = moved.has(next);
       if (
         !ours &&
         ((style.translate !== '' && style.translate !== 'none') ||
           (typeof next.getAnimations === 'function' &&
-            next.getAnimations().length > 0))
+            next.getAnimations().some(translatesElement)))
       ) {
         continue;
       }

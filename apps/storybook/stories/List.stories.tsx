@@ -565,3 +565,43 @@ export const AnimatedChanges: Story = {
     },
   },
 };
+
+function AnimatedChangesSwipeDemo() {
+  const [rows, setRows] = useState(['Inbox', 'Sent', 'Drafts', 'Archive']);
+  return (
+    <List hasAnimatedChanges hasDividers>
+      {rows.map(label => (
+        <ListItem
+          key={label}
+          label={label}
+          onClick={() => {}}
+          swipeActions={{
+            trailing: [
+              {
+                label: 'Delete',
+                variant: 'destructive',
+                hasRemoval: true,
+                onActivate: () =>
+                  setRows(current => current.filter(row => row !== label)),
+              },
+            ],
+          }}
+        />
+      ))}
+    </List>
+  );
+}
+
+export const AnimatedChangesSwipe: Story = {
+  render: () => <AnimatedChangesSwipeDemo />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'With `hasAnimatedChanges`, a row swiped away with a removal ' +
+          'action leaves only its gap to close: the rows below slide up ' +
+          'into it on UIKit’s table update spring.',
+      },
+    },
+  },
+};

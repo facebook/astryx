@@ -9,7 +9,9 @@
  *   after a removal the rows below start where they were and slide up on the
  *   table spring; after an insert the new row fades in and the rows below
  *   slide down; a reorder moves rows to their new places; content below the
- *   list moves with its rows; the rows keep
+ *   list moves with its rows, the button a finger tapped included; a change
+ *   while rows still move makes no jump; Reduce Motion keeps the motion; a
+ *   row swiped away leaves only its gap to close; the rows keep
  *   moving while the main thread is blocked, with no Layout or Paint; a
  *   storyboard of a removal
  * @position Interaction evidence for List/useListUpdateMotion.ts
@@ -28,7 +30,9 @@ import {
   releaseAnimations,
   seekAnimations,
   startScreencast,
+  tap,
   timeline,
+  touchDriver,
   trackMarker,
   traceRendering,
   waitForAnimation,
@@ -184,6 +188,187 @@ test('content below the list moves with its rows and lands with no jump', async 
   expect(await translateY(button)).toBeCloseTo(await translateY(spam), 1);
   await releaseAnimations(page, {finish: true});
   await expect.poll(async () => translateY(button)).toBe(0);
+});
+
+test('the button a finger taps below the list moves with it too', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(
+    browserName !== 'chromium',
+    "Playwright's WebKit touch taps do not synthesize the click; Chromium's do",
+  );
+  await open(page);
+  const driver = await touchDriver(page);
+  const button = page.getByRole('button', {name: 'Remove the second row'});
+  const box = await button.boundingBox();
+  if (box == null) {
+    throw new Error('no button');
+  }
+  // A real touch: the button runs its own press feedback while the list
+  // changes, which must not leave it behind.
+  await driver.play(
+    tap({x: box.x + box.width / 2, y: box.y + box.height / 2}, {holdMs: 80}),
+  );
+  await expect(row(page, 'Sent')).toHaveCount(0);
+  await holdAnimations(page);
+  await seekAnimations(page, 0);
+  const start = await translateY(button);
+  expect(start).toBeGreaterThan(1);
+  await releaseAnimations(page, {finish: true});
+  await expect.poll(async () => translateY(button)).toBe(0);
+});
+
+test('a change while rows still move: no jump, they keep moving to their new places', async ({
+  page,
+}) => {
+  await open(page);
+  // Archive's on-screen top, every frame, from the first change to rest.
+  await page.evaluate(() => {
+    const target = [...document.querySelectorAll('#storybook-root li')].find(
+      li => li.textContent?.trim() === 'Archive',
+    ) as HTMLElement;
+    const tops: number[] = [];
+    (window as unknown as {__tops: number[]}).__tops = tops;
+    const tick = () => {
+      tops.push(target.getBoundingClientRect().top);
+      if (tops.length < 90) {
+        requestAnimationFrame(tick);
+      }
+    };
+    requestAnimationFrame(tick);
+  });
+  await press(page, 'Remove the second row');
+  // A second removal while Archive is still sliding up from the first.
+  await page.waitForTimeout(90);
+  await press(page, 'Remove the second row');
+  await page.waitForTimeout(1200);
+  const tops = await page.evaluate(
+    () => (window as unknown as {__tops: number[]}).__tops,
+  );
+  const rowHeight = await row(page, 'Archive').evaluate(el => {
+    const previous = el.previousElementSibling as HTMLElement | null;
+    return previous == null
+      ? 0
+      : (el as HTMLElement).offsetTop - previous.offsetTop;
+  });
+  const steps = tops.slice(1).map((top, i) => top - tops[i]);
+  // Up two rows in all, never back down, and no frame jumps by a row.
+  expect(tops[0] - (tops.at(-1) ?? 0)).toBeCloseTo(2 * rowHeight, 0);
+  for (const step of steps) {
+    expect(step, JSON.stringify(tops)).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(step), JSON.stringify(tops)).toBeLessThan(rowHeight / 2);
+  }
+  await expect.poll(async () => translateY(row(page, 'Archive'))).toBe(0);
+});
+
+test('Reduce Motion keeps the update motion: UIKit runs the same table spring', async ({
+  page,
+}) => {
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  await open(page);
+  const drafts = row(page, 'Drafts');
+  await press(page, 'Remove the second row');
+  await expect(row(page, 'Sent')).toHaveCount(0);
+  await holdAnimations(page);
+  const gap = await drafts.evaluate(el => {
+    const previous = el.previousElementSibling as HTMLElement | null;
+    return previous == null
+      ? 0
+      : (el as HTMLElement).offsetTop - previous.offsetTop;
+  });
+  for (const t of [0, SETTLE_MS / 4, SETTLE_MS / 2]) {
+    await seekAnimations(page, t);
+    expect(await translateY(drafts)).toBeCloseTo(gap * (1 - progress(t)), 0);
+  }
+  await releaseAnimations(page, {finish: true});
+  await expect.poll(async () => translateY(drafts)).toBe(0);
+});
+
+test('a row swiped away with a removal action leaves only its gap: the rows below slide up into it', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(
+    browserName !== 'chromium',
+    'the swipe is driven with Chromium touch events (CDP)',
+  );
+  await openStory(page, storybook(), 'core-list--animated-changes-swipe');
+  const touch = await page.evaluate(
+    () => matchMedia('(pointer: coarse)').matches,
+  );
+  test.skip(!touch, 'list changes move on a touch screen only');
+  const sent = row(page, 'Sent');
+  const drafts = row(page, 'Drafts');
+  await expect(sent).toBeVisible();
+  const box = await sent.boundingBox();
+  if (box == null) {
+    throw new Error('no row');
+  }
+  const gap = await drafts.evaluate(el => {
+    const previous = el.previousElementSibling as HTMLElement | null;
+    return previous == null
+      ? 0
+      : (el as HTMLElement).offsetTop - previous.offsetTop;
+  });
+  // Drafts' translate every frame from the frame Sent leaves the page.
+  await page.evaluate(() => {
+    const rows = [...document.querySelectorAll('#storybook-root li')];
+    const sentRow = rows.find(li => li.textContent?.trim() === 'Sent');
+    const target = rows.find(
+      li => li.textContent?.trim() === 'Drafts',
+    ) as HTMLElement;
+    const samples: number[] = [];
+    (window as unknown as {__ys: number[]}).__ys = samples;
+    const tick = () => {
+      if (sentRow?.isConnected !== true) {
+        const value = getComputedStyle(target).translate;
+        const [, y = '0px'] = value.split(' ');
+        samples.push(value === 'none' ? 0 : Number.parseFloat(y));
+      }
+      if (samples.length < 40) {
+        requestAnimationFrame(tick);
+      }
+    };
+    requestAnimationFrame(tick);
+  });
+  // The gesture arrives with the lazily loaded swipe layer; its panel is the
+  // sign the row can be dragged.
+  await expect(sent.locator('[data-swipe-panel="trailing"]')).toBeAttached();
+  // Toward the inline start: a slow start claims the drag, then a fling
+  // fires the outermost entry, Delete, whose removal holds the row out until
+  // the story removes it from the data.
+  const cdp = await page.context().newCDPSession(page);
+  const y = box.y + box.height / 2;
+  const startX = box.x + box.width - 24;
+  const finger = async (x: number, type: 'touchStart' | 'touchMove') =>
+    cdp.send('Input.dispatchTouchEvent', {touchPoints: [{x, y}], type});
+  await finger(startX, 'touchStart');
+  for (const dx of [6, 14, 28]) {
+    await finger(startX - dx, 'touchMove');
+    await page.waitForTimeout(40);
+  }
+  await finger(startX - 44, 'touchMove');
+  await finger(startX - 90, 'touchMove');
+  await cdp.send('Input.dispatchTouchEvent', {
+    touchPoints: [],
+    type: 'touchEnd',
+  });
+  await expect(sent).toHaveCount(0, {timeout: 5000});
+  await expect
+    .poll(async () =>
+      page.evaluate(() => (window as unknown as {__ys: number[]}).__ys.length),
+    )
+    .toBeGreaterThan(10);
+  const ys = await page.evaluate(
+    () => (window as unknown as {__ys: number[]}).__ys,
+  );
+  // Starts one row low (where it was) and slides up to its place.
+  expect(ys[0], JSON.stringify(ys)).toBeCloseTo(gap, 0);
+  for (let i = 1; i < ys.length; i++) {
+    expect(ys[i], JSON.stringify(ys)).toBeLessThanOrEqual(ys[i - 1] + 0.01);
+  }
+  await expect.poll(async () => translateY(drafts)).toBe(0);
 });
 
 test('the rows keep moving on every frame while the main thread is blocked', async ({
