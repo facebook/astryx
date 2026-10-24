@@ -7,7 +7,8 @@
  * @input React, the shared touch resolver and popoverSurfaceMotion
  * @output Exports `usePopoverSurfaceMotion`: the call Popover makes as it
  *   opens, which presents the popover the UIKit way in the iOS idiom and
- *   leaves the layer's own entrance to a mouse and to other touch screens
+ *   leaves the layer's own entrance to a mouse and to other touch screens,
+ *   and whether the popover is under a finger
  * @position Internal to Popover; glue between the component and
  *   popoverSurfaceMotion.ts
  *
@@ -25,7 +26,7 @@
  * - /packages/core/src/Popover/Popover.test.tsx
  */
 
-import {useCallback, useEffect, useRef} from 'react';
+import {useCallback, useEffect, useMemo, useRef} from 'react';
 import {readTouchPresentation} from '../utils/touchPresentation';
 import {
   createPopoverSurfaceMotion,
@@ -43,14 +44,17 @@ function boxOf(element: Element): PopoverSurfaceRect {
   };
 }
 
-/**
- * Returns `present(layer, source)`, to call as the popover opens (right after
- * the browser shows it, before it paints).
- */
-export function usePopoverSurfaceMotion(): (
-  layer: HTMLElement | null,
-  source: HTMLElement | null,
-) => void {
+export interface PopoverSurfaceMotionControls {
+  /**
+   * To call as the popover opens (right after the browser shows it, before
+   * it paints): presents it the iOS way or leaves the layer's entrance.
+   */
+  present: (layer: HTMLElement | null, source: HTMLElement | null) => void;
+  /** Whether the open popover is under a finger, on any platform. */
+  isTouchPresentation: () => boolean;
+}
+
+export function usePopoverSurfaceMotion(): PopoverSurfaceMotionControls {
   const motionRef = useRef<{
     element: HTMLElement;
     motion: PopoverSurfaceMotion;
@@ -58,6 +62,9 @@ export function usePopoverSurfaceMotion(): (
   } | null>(null);
   // Whether the presentation in progress is the iOS one.
   const isIosPresentationRef = useRef(false);
+  // Whether the open popover is under a finger, on any platform: a pan that
+  // starts outside it dismisses it (usePanOutsideDismiss).
+  const isTouchRef = useRef(false);
 
   const motionFor = useCallback((element: HTMLElement) => {
     const current = motionRef.current;
@@ -94,14 +101,16 @@ export function usePopoverSurfaceMotion(): (
     [],
   );
 
-  return useCallback(
+  const present = useCallback(
     (layer: HTMLElement | null, source: HTMLElement | null) => {
       if (layer == null) {
         return;
       }
-      const isIos =
-        source != null &&
-        readTouchPresentation(layer.ownerDocument.defaultView).idiom === 'ios';
+      const presentation = readTouchPresentation(
+        layer.ownerDocument.defaultView,
+      );
+      isTouchRef.current = presentation.isTouch;
+      const isIos = source != null && presentation.idiom === 'ios';
       isIosPresentationRef.current = isIos;
       const motion = motionFor(layer);
       if (!isIos || source == null) {
@@ -111,5 +120,10 @@ export function usePopoverSurfaceMotion(): (
       motion.enter(() => ({surface: boxOf(layer), source: boxOf(source)}));
     },
     [motionFor],
+  );
+  const isTouchPresentation = useCallback(() => isTouchRef.current, []);
+  return useMemo(
+    () => ({present, isTouchPresentation}),
+    [present, isTouchPresentation],
   );
 }

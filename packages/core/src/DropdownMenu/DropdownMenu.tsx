@@ -102,6 +102,7 @@ import {
 } from './lazyMenuBottomSheet';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
+import {usePanOutsideDismiss} from '../Layer/usePanOutsideDismiss';
 import {
   spacingVars,
   colorVars,
@@ -1222,46 +1223,19 @@ function DropdownMenuPopover({
   // A pan that starts outside the open menu, in its touch presentation,
   // dismisses it as the pan begins, and the same touch goes on to scroll the
   // page; a tap or a hold outside dismisses at the lift (the browser's light
-  // dismiss already acts there). UIKit's popovers on iOS 26.2 behave this
-  // way. The browser announces that it took the touch for a pan with a
-  // pointercancel, which its light dismiss ignores.
-  const isPopoverOpen = popover.isOpen;
-  useEffect(() => {
-    if (!isPopoverOpen || !isTouchPresentationRef.current) {
-      return;
-    }
-    const doc = contentRef.current?.ownerDocument ?? document;
-    const outside = new Set<number>();
-    const isInsideMenu = (target: EventTarget | null) => {
-      const node = target instanceof Node ? target : null;
-      return (
-        node != null &&
-        (contentRef.current?.contains(node) === true ||
-          buttonRef.current?.contains(node) === true)
-      );
-    };
-    const handleDown = (event: PointerEvent) => {
-      if (event.pointerType !== 'mouse' && !isInsideMenu(event.target)) {
-        outside.add(event.pointerId);
-      }
-    };
-    const handleEnd = (event: PointerEvent) => {
-      outside.delete(event.pointerId);
-    };
-    const handleCancel = (event: PointerEvent) => {
-      if (outside.delete(event.pointerId)) {
-        closeMenu();
-      }
-    };
-    doc.addEventListener('pointerdown', handleDown, true);
-    doc.addEventListener('pointerup', handleEnd, true);
-    doc.addEventListener('pointercancel', handleCancel, true);
-    return () => {
-      doc.removeEventListener('pointerdown', handleDown, true);
-      doc.removeEventListener('pointerup', handleEnd, true);
-      doc.removeEventListener('pointercancel', handleCancel, true);
-    };
-  }, [isPopoverOpen, closeMenu]);
+  // dismiss already acts there), as UIKit's popovers do on iOS 26.2. A touch
+  // that starts in the menu or on its trigger is the menu's own.
+  const readIsTouchPresentation = useCallback(
+    () => isTouchPresentationRef.current,
+    [],
+  );
+  const panInsideRefs = useMemo(() => [contentRef, buttonRef], []);
+  usePanOutsideDismiss({
+    isOpen: popover.isOpen,
+    isTouchPresentation: readIsTouchPresentation,
+    inside: panInsideRefs,
+    onDismiss: closeMenu,
+  });
 
   // Single keyboard navigation path for both modes.
   // The selector matches plain items plus selectable items

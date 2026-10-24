@@ -28,6 +28,7 @@
 
 import React, {
   useCallback,
+  useMemo,
   useRef,
   useState,
   type ReactElement,
@@ -39,6 +40,7 @@ import {devWarn} from '../utils/devWarning';
 import type {BaseProps} from '../BaseProps';
 import {usePopover} from './usePopover';
 import {usePopoverSurfaceMotion} from './usePopoverSurfaceMotion';
+import {usePanOutsideDismiss} from '../Layer/usePanOutsideDismiss';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {layerViewportInset} from '../Layer/layerViewportInset.stylex';
@@ -381,7 +383,8 @@ export function Popover({
   // The element the popover is anchored to, whichever way it was attached:
   // the touch presentation grows the popover out of it.
   const anchorElementRef = useRef<HTMLElement | null>(null);
-  const presentSurface = usePopoverSurfaceMotion();
+  const {present: presentSurface, isTouchPresentation} =
+    usePopoverSurfaceMotion();
   // Runs as the popover opens, before it paints; set once `usePopover` has
   // returned the surface it presents.
   const presentSurfaceRef = useRef<() => void>(() => {});
@@ -434,6 +437,21 @@ export function Popover({
       );
     };
   }, [presentSurface, surfaceRef]);
+
+  // A pan that starts outside the touch-presented popover dismisses it as
+  // the pan begins, and the same touch goes on to scroll the page; a tap or a
+  // hold outside dismisses at the lift (the browser's light dismiss), as
+  // UIKit's popovers do on iOS 26.2. Escape-only popovers keep it.
+  const panInsideRefs = useMemo(
+    () => [surfaceRef, anchorElementRef],
+    [surfaceRef],
+  );
+  usePanOutsideDismiss({
+    isOpen: popover.isOpen && hasLightDismiss,
+    isTouchPresentation,
+    inside: panInsideRefs,
+    onDismiss: popover.hide,
+  });
 
   const measureOverflow = useCallback(() => {
     const surface = popover.contentRef.current;

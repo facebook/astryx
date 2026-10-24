@@ -13,7 +13,8 @@
  *   advancing through a blocked main thread; neither does Layout or Paint
  *   per frame; Reduce Motion fades on the same springs; outside iOS
  *   (Chromium as an Android phone) a finger keeps the layer's own entrance;
- *   storyboards of both
+ *   a pan that starts outside dismisses it as it begins, on iOS and
+ *   elsewhere; storyboards of both
  * @position Evidence for Popover's touch presentation; the model itself is
  *   unit-tested in popoverSurfaceMotion.test.ts
  */
@@ -26,6 +27,7 @@ import {
   castStoryboard,
   compareCurve,
   countBetween,
+  drag,
   freezeTimers,
   holdAnimations,
   installLongTaskLog,
@@ -35,6 +37,7 @@ import {
   readLongTasks,
   releaseAnimations,
   startScreencast,
+  tap,
   thawTimers,
   timeline,
   touchDriver,
@@ -207,6 +210,128 @@ async function openWithTap(story: OpenStory) {
   await story.driver.tap(story.center);
   await expect(story.trigger).toHaveAttribute('aria-expanded', 'true');
 }
+
+/** Page-side log of the touches and the popover: performance.now() times. */
+async function installTouchLog(page: Page) {
+  await page.evaluate(() => {
+    const log = {
+      down: [] as number[],
+      up: [] as number[],
+      cancel: [] as number[],
+      closed: [] as number[],
+    };
+    (window as unknown as {__touchLog: typeof log}).__touchLog = log;
+    const push = (list: number[]) => () => list.push(performance.now());
+    document.addEventListener('pointerdown', push(log.down), true);
+    document.addEventListener('pointerup', push(log.up), true);
+    document.addEventListener('pointercancel', push(log.cancel), true);
+    document.addEventListener(
+      'toggle',
+      event => {
+        if (event.newState === 'closed') {
+          log.closed.push(performance.now());
+        }
+      },
+      true,
+    );
+  });
+}
+
+const readTouchLog = async (page: Page) =>
+  page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          __touchLog: {
+            down: number[];
+            up: number[];
+            cancel: number[];
+            closed: number[];
+          };
+        }
+      ).__touchLog,
+  );
+
+test('a pan that starts outside dismisses it as the pan begins; a tap outside dismisses at the lift', async ({
+  page,
+}) => {
+  const story = await openDefault(page);
+  test.skip(
+    !story.driver.drivesNativeGestures,
+    'scripted touches do not start native pans in this engine (iOS evidence: the simulator run)',
+  );
+  await installTouchLog(page);
+  // Room to scroll, so the pan is a page scroll the browser takes.
+  await page.evaluate(() => {
+    const spacer = document.createElement('div');
+    spacer.style.height = '2000px';
+    document.body.append(spacer);
+  });
+  await openWithTap(story);
+  await waitForRest(story.layer);
+  const viewport = page.viewportSize()!;
+  const from = {x: viewport.width - 40, y: viewport.height - 120};
+  const before = await readTouchLog(page);
+  await story.driver.play(
+    drag(from, {x: from.x, y: from.y - 100}, {durationMs: 250, hz: 60}),
+  );
+  await expect(story.trigger).toHaveAttribute('aria-expanded', 'false');
+  const log = await readTouchLog(page);
+  const panDown = log.down.at(-1)!;
+  const closedAt = log.closed[before.closed.length];
+  // The browser took the pan (no lift reached the page) and the popover
+  // closed as it did, while the finger was still moving.
+  expect(log.cancel.length).toBeGreaterThan(before.cancel.length);
+  expect(log.up.filter(t => t > panDown)).toEqual([]);
+  expect(closedAt - panDown).toBeLessThan(250);
+  expect(closedAt).toBeGreaterThanOrEqual(log.cancel.at(-1)! - 1);
+  // A tap outside: the browser's light dismiss, at the lift. The pan
+  // scrolled the page: back to the top, where the trigger was measured.
+  await expect(exitCopyOf(page)).toHaveCount(0);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect.poll(async () => page.evaluate(() => window.scrollY)).toBe(0);
+  await openWithTap(story);
+  await waitForRest(story.layer);
+  const beforeTap = await readTouchLog(page);
+  await story.driver.play(
+    tap({x: viewport.width - 40, y: viewport.height - 40}, {holdMs: 300}),
+  );
+  await expect(story.trigger).toHaveAttribute('aria-expanded', 'false');
+  const afterTap = await readTouchLog(page);
+  expect(afterTap.closed[beforeTap.closed.length]).toBeGreaterThanOrEqual(
+    afterTap.up.at(-1)! - 1,
+  );
+});
+
+test('outside iOS (Chromium as an Android phone), a pan that starts outside dismisses it too', async ({
+  page,
+}) => {
+  const story = await openDefault(page, {ios: false});
+  test.skip(
+    !story.driver.drivesNativeGestures,
+    'scripted touches do not start native pans in this engine',
+  );
+  await installTouchLog(page);
+  await page.evaluate(() => {
+    const spacer = document.createElement('div');
+    spacer.style.height = '2000px';
+    document.body.append(spacer);
+  });
+  await openWithTap(story);
+  await waitForRest(story.layer);
+  const viewport = page.viewportSize();
+  if (viewport == null) {
+    throw new Error('no viewport');
+  }
+  const from = {x: viewport.width - 40, y: viewport.height - 120};
+  await story.driver.play(
+    drag(from, {x: from.x, y: from.y - 100}, {durationMs: 250, hz: 60}),
+  );
+  await expect(story.trigger).toHaveAttribute('aria-expanded', 'false');
+  const log = await readTouchLog(page);
+  expect(log.cancel.length).toBeGreaterThan(0);
+  expect(log.closed.length).toBe(1);
+});
 
 test('outside iOS (Chromium as an Android phone), a finger keeps the layer\u2019s own entrance and the popover closes at once', async ({
   page,

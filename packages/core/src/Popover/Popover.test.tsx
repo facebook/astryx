@@ -1201,6 +1201,42 @@ describe('Popover touch presentation', () => {
     expect(copy!.hasAttribute('inert')).toBe(true);
   });
 
+  it('under a finger, closes as soon as a pan that starts outside takes the touch', () => {
+    isCoarse = true;
+    open();
+    const trigger = screen.getByRole('button', {name: 'Filter'});
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    // The browser takes a touch on the page for a scroll: no lift follows.
+    fireEvent.pointerDown(document.body, {pointerType: 'touch', pointerId: 7});
+    fireEvent.pointerCancel(document.body, {
+      pointerType: 'touch',
+      pointerId: 7,
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('a popover that only closes explicitly stays open through a pan outside', () => {
+    isCoarse = true;
+    recorded = [];
+    render(
+      <Popover
+        content={<span>Steps</span>}
+        label="Steps"
+        hasLightDismiss={false}>
+        <button type="button">Tour</button>
+      </Popover>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Tour'});
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.pointerDown(document.body, {pointerType: 'touch', pointerId: 8});
+    fireEvent.pointerCancel(document.body, {
+      pointerType: 'touch',
+      pointerId: 8,
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
   it('under a mouse, keeps the layer\u2019s own entrance and plays nothing', () => {
     isCoarse = false;
     isIosEngine = true;
@@ -1209,13 +1245,22 @@ describe('Popover touch presentation', () => {
     expect(recorded.filter(animation => animation.target === layer)).toEqual(
       [],
     );
+    fireEvent.pointerDown(document.body, {pointerType: 'touch', pointerId: 9});
+    fireEvent.pointerCancel(document.body, {
+      pointerType: 'touch',
+      pointerId: 9,
+    });
+    expect(screen.getByRole('button', {name: 'Filter'})).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
     fireEvent.click(screen.getByRole('button', {name: 'Filter'}));
     expect(
       layer.parentElement!.querySelector('[data-astryx-popover-exit]'),
     ).toBeNull();
   });
 
-  it('under a finger outside iOS (Android), keeps the layer\u2019s own entrance and closes at once', () => {
+  it('under a finger outside iOS (Android), keeps the layer\u2019s own entrance, and a pan outside closes it at once', () => {
     isCoarse = true;
     isIosEngine = false;
     const layer = open();
@@ -1223,7 +1268,16 @@ describe('Popover touch presentation', () => {
     expect(recorded.filter(animation => animation.target === layer)).toEqual(
       [],
     );
-    fireEvent.click(screen.getByRole('button', {name: 'Filter'}));
+    // The pan outside is universal: it dismisses on every touch screen.
+    fireEvent.pointerDown(document.body, {pointerType: 'touch', pointerId: 10});
+    fireEvent.pointerCancel(document.body, {
+      pointerType: 'touch',
+      pointerId: 10,
+    });
+    expect(screen.getByRole('button', {name: 'Filter'})).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
     expect(
       layer.parentElement!.querySelector('[data-astryx-popover-exit]'),
     ).toBeNull();
