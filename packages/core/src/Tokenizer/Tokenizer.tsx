@@ -4,10 +4,10 @@
 
 /**
  * @file Tokenizer.tsx
- * @input Uses React, BaseTypeahead, Field, Token, useAnnounce
- * @output Exports Tokenizer multi-select typeahead component
- * @position Composed component; forwards DOM ref and exposes focus control via
- *   handleRef
+ * @input Uses React, TokenizerBaseTypeahead, Field, Token, announcement hooks
+ * @output Exports Tokenizer with committed-selection retention and token editing
+ * @position Composed component; forwards the combobox ref and exposes focus
+ *   control via handleRef
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Tokenizer/index.ts
@@ -40,7 +40,7 @@ import {
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import type {SizeValue} from '../utils/types';
-import {BaseTypeahead} from '../Typeahead/BaseTypeahead';
+import {TokenizerBaseTypeahead} from '../Typeahead/BaseTypeahead';
 import {useSize} from '../SizeContext/SizeContext';
 import {
   Field,
@@ -60,6 +60,7 @@ import {OverflowList} from '../OverflowList';
 import {useLayer} from '../Layer/useLayer';
 import {useTooltip} from '../Tooltip';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {
   colorVars,
   spacingVars,
@@ -175,7 +176,11 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
   maxEntries?: number;
   /** Placeholder text (shown when no tokens selected). */
   placeholder?: string;
-  /** Show results on focus before typing. @default false */
+  /**
+   * Show bootstrap results on focus before typing. After a committed bootstrap
+   * selection, the menu keeps the remaining loaded choices open and active.
+   * @default false
+   */
   hasEntriesOnFocus?: boolean;
   /** Max dropdown items. @default 10 */
   maxMenuItems?: number;
@@ -436,6 +441,10 @@ const layerPlaceholderSizeStyles = stylex.create({
 // Sentinel prefix for creatable items — used to distinguish
 // "Create: X" suggestions from real search results.
 const CREATABLE_ID_PREFIX = '__xds_create__';
+const excludeSelected = <T extends SearchableItem>(
+  results: T[],
+  selectedIds: ReadonlySet<string>,
+): T[] => results.filter(item => !selectedIds.has(item.id));
 
 /**
  * Multi-select input with token chips and typeahead search.
@@ -725,6 +734,14 @@ export function Tokenizer<T extends SearchableItem>({
     () => new Set(value.map(item => item.id)),
     [value],
   );
+  const selectedIdsRef = useRef(selectedIds);
+  useIsomorphicLayoutEffect(() => {
+    selectedIdsRef.current = selectedIds;
+  }, [selectedIds]);
+  const projectCommittedResults = useCallback(
+    (results: T[]) => excludeSelected(results, selectedIds),
+    [selectedIds],
+  );
 
   // Selected labels, lowercased, for the Create entry's duplicate check. The
   // typed text is a label, not an id: real selections usually carry an opaque
@@ -737,19 +754,24 @@ export function Tokenizer<T extends SearchableItem>({
     () => new Set(value.map(item => item.label.toLowerCase())),
     [value],
   );
+  const selectedLabelsRef = useRef(selectedLabels);
+  useIsomorphicLayoutEffect(() => {
+    selectedLabelsRef.current = selectedLabels;
+  }, [selectedLabels]);
 
   const filteredSource: SearchSource<T> = useMemo(
     () => ({
       search: async (query: string) => {
         const results = await searchSource.search(query);
-        return results.filter(item => !selectedIds.has(item.id));
+        return excludeSelected(results, selectedIdsRef.current);
       },
       bootstrap: async () => {
         const results = await searchSource.bootstrap();
-        return results.filter(item => !selectedIds.has(item.id));
+        return excludeSelected(results, selectedIdsRef.current);
       },
+      cancel: () => searchSource.cancel?.(),
     }),
-    [searchSource, selectedIds],
+    [searchSource],
   );
 
   /**
@@ -767,8 +789,8 @@ export function Tokenizer<T extends SearchableItem>({
         return [];
       }
       const alreadyExists =
-        selectedIds.has(trimmed) ||
-        selectedLabels.has(trimmed.toLowerCase()) ||
+        selectedIdsRef.current.has(trimmed) ||
+        selectedLabelsRef.current.has(trimmed.toLowerCase()) ||
         results.some(
           item => item.label.toLowerCase() === trimmed.toLowerCase(),
         );
@@ -783,15 +805,7 @@ export function Tokenizer<T extends SearchableItem>({
         } as unknown as T,
       ];
     },
-    [hasCreate, selectedIds, selectedLabels],
-  );
-
-  const emptySource: SearchSource<T> = useMemo(
-    () => ({
-      search: async () => [],
-      bootstrap: async () => [],
-    }),
-    [],
+    [hasCreate],
   );
 
   // Announce token add/remove politely via the persistent live region.
@@ -803,10 +817,7 @@ export function Tokenizer<T extends SearchableItem>({
   // Handle adding an item — detect creatable synthetic items
   const handleAdd = useCallback(
     (item: T | null) => {
-      if (!item) {
-        return;
-      }
-      if (isAtMax) {
+      if (!item || isDisabled || isAtMax) {
         return;
       }
 
@@ -845,6 +856,7 @@ export function Tokenizer<T extends SearchableItem>({
       value,
       onChange,
       isAtMax,
+      isDisabled,
       selectedIds,
       selectedLabels,
       hasCreate,
@@ -858,12 +870,15 @@ export function Tokenizer<T extends SearchableItem>({
   // announcement covers both.
   const handleRemove = useCallback(
     (item: T) => {
+      if (isDisabled) {
+        return;
+      }
       const newItems = value.filter(v => v.id !== item.id);
       onChange(newItems, {item, type: 'remove'});
       announce(t('@astryx.tokenizer.tokenRemoved', {label: item.label}));
       inputRef.current?.focus();
     },
-    [value, onChange, announce, t],
+    [value, onChange, announce, t, isDisabled],
   );
 
   // Handle clearing all items
@@ -1020,17 +1035,22 @@ export function Tokenizer<T extends SearchableItem>({
           button rather than as a second one inside the base. */}
       <BusyIndicatorLaneProvider value={busyLane}>
         <TrailingKeyDownContext value={onKeyDown}>
-          <BaseTypeahead
+          <TokenizerBaseTypeahead
             {...rest}
             ref={useMergedRefs(inputRef, ref)}
-            searchSource={isAtMax ? emptySource : filteredSource}
+            searchSource={filteredSource}
             value={null}
             onChange={handleAdd}
+            tokenizerBehavior={{
+              projectResults: projectCommittedResults,
+              selectedCount: value.length,
+              maxEntries,
+            }}
             renderItem={renderItem}
             // A space keeps :placeholder-shown available as the CSS-only empty
             // query signal without painting placeholder text beside tokens.
             placeholder={value.length === 0 ? placeholder : ' '}
-            hasEntriesOnFocus={isAtMax ? false : hasEntriesOnFocus}
+            hasEntriesOnFocus={hasEntriesOnFocus}
             maxMenuItems={maxMenuItems}
             menuWidth={menuWidth}
             minQueryLength={minQueryLength}
