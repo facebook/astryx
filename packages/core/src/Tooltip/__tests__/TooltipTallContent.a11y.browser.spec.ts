@@ -901,3 +901,69 @@ test('a scroll that moves a tall tooltip’s trigger never leaves the tooltip ov
   expect(trigger.top).toBeGreaterThan(700 - trigger.bottom);
   expect(tooltip.bottom).toBeLessThanOrEqual(trigger.top);
 });
+
+test('placing a shown tooltip afresh never replays its entry animation', async ({
+  page,
+  browserName,
+}) => {
+  // Motion allowed: the entry fade plays once, at open. A keyboard-focused
+  // short tooltip grows, then its trigger moves up so the old option leaves
+  // it past the top of the viewport: it switches lists after it has painted,
+  // and that re-placement must not fade it in again.
+  await page.setViewportSize({width: 1280, height: 720});
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-tooltip--tall-content&viewMode=story&args=content:A+short+tooltip`,
+  );
+  const button = page.getByRole('button', {name: 'Hover for details'});
+  await expect(button).toBeVisible();
+  await page.evaluate(sel => {
+    const el = document.querySelector(sel) as HTMLElement;
+    window.scrollBy(0, el.getBoundingClientRect().top - 650);
+  }, TRIGGER);
+  await button.focus();
+  await expect(page.getByRole('tooltip')).toBeVisible();
+  // Let the entry fade finish.
+  await page.waitForTimeout(600);
+  await page.evaluate(sel => {
+    const content = document.querySelector(sel)?.firstElementChild;
+    for (let i = 1; i <= 17; i++) {
+      const line = document.createElement('div');
+      line.textContent = `Line ${i}`;
+      content?.appendChild(line);
+    }
+  }, TOOLTIP);
+  await page.waitForTimeout(300);
+  const opacities = await page.evaluate(
+    async ({sel, tip}) => {
+      const trigger = document.querySelector(sel) as HTMLElement;
+      const tooltip = document.querySelector(tip) as HTMLElement;
+      trigger.style.position = 'relative';
+      trigger.style.insetBlockStart = '-310px';
+      const out: number[] = [];
+      for (let i = 0; i < 12; i++) {
+        await new Promise<void>(resolve => {
+          requestAnimationFrame(() => {
+            const channel = new MessageChannel();
+            channel.port1.onmessage = () => resolve();
+            channel.port2.postMessage(null);
+          });
+        });
+        out.push(Number(getComputedStyle(tooltip).opacity));
+      }
+      return {
+        out,
+        switched: tooltip.hasAttribute('data-astryx-clears-anchor'),
+      };
+    },
+    {sel: TRIGGER, tip: TOOLTIP},
+  );
+  if (browserName === 'chromium') {
+    // WebKit switches this tooltip when it opens (its first layout of a
+    // just-shown popover reads a few pixels over the trigger), before the
+    // fade, so only Chromium switches it here, after paint.
+    expect(opacities.switched).toBe(true);
+  }
+  for (const [i, opacity] of opacities.out.entries()) {
+    expect(opacity, `painted frame ${i + 1}`).toBe(1);
+  }
+});

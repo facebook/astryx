@@ -443,6 +443,53 @@ function toCssLength(value: number | string): string {
   return typeof value === 'number' ? `${value}px` : value;
 }
 
+/** What identifies a CSS animation or transition across a restart. */
+function animationKey(animation: Animation): string {
+  const named = animation as Animation & {
+    animationName?: string;
+    transitionProperty?: string;
+  };
+  return named.animationName ?? named.transitionProperty ?? '';
+}
+
+/**
+ * Make the engine choose a shown layer's position option afresh: a browser
+ * keeps a laid-out layer on the option it last used until the layer stops
+ * being rendered, so the layer is taken out of rendering for one forced
+ * layout and restored, in the same task. No frame paints in between and the
+ * popover stays open, so no toggle event fires and focus and hover are
+ * untouched. Leaving rendering also restarts the layer's CSS animations, so
+ * each one is put back where it was: one that was running resumes at its
+ * time, and one that had already finished (an entry fade that has played)
+ * is finished again, so the re-placement never replays it.
+ */
+function placeAfresh(layer: HTMLElement): void {
+  const canAnimate = typeof layer.getAnimations === 'function';
+  const times = new Map<string, CSSNumberish | null>();
+  if (canAnimate) {
+    for (const animation of layer.getAnimations()) {
+      times.set(animationKey(animation), animation.currentTime);
+    }
+  }
+  const display = layer.style.display;
+  layer.style.display = 'none';
+  layer.getBoundingClientRect();
+  layer.style.display = display;
+  if (canAnimate) {
+    for (const animation of layer.getAnimations()) {
+      const key = animationKey(animation);
+      if (!times.has(key)) {
+        animation.finish();
+      } else {
+        const time = times.get(key);
+        if (time != null) {
+          animation.currentTime = time;
+        }
+      }
+    }
+  }
+}
+
 /**
  * For a layer that must never settle over its anchor (spec:AST-059 FR4): read
  * where its fallback list settled it and, if its box covers the anchor or,
@@ -480,18 +527,10 @@ function keepAnchorClear(layer: HTMLElement, anchor: HTMLElement | null): void {
       hasBox && anchorInView && (l.top < 0 || l.bottom > viewportBlock);
     if (covers || leavesViewport) {
       layer.setAttribute(LAYER_CLEARS_ANCHOR_ATTRIBUTE, '');
-      // A browser keeps a laid-out layer on the position option it last used,
-      // even one the new list does not contain or one a scroll has since made
-      // fail, until the layer stops being rendered. Taking it out of rendering
-      // for one forced layout, in the same task, makes the engine place it
-      // afresh from its list, on the first switch and on any later read that
-      // finds it failing again: no frame paints in between, and the popover
-      // stays open, so no toggle event fires and focus and hover are
-      // untouched.
-      const display = layer.style.display;
-      layer.style.display = 'none';
-      layer.getBoundingClientRect();
-      layer.style.display = display;
+      // The engine keeps the option it last used, even one the new list does
+      // not contain or one a scroll has since made fail: place it afresh, on
+      // the first switch and on any later read that finds it failing again.
+      placeAfresh(layer);
     }
   }
   // A layer that fits has no scroll range and stays a plain box, so a wheel
