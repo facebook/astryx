@@ -30,6 +30,7 @@ import type {SearchSource, SearchableItem} from '../Typeahead';
 import {useCombobox} from '../Selector';
 import type {SelectorOptionData} from '../Selector';
 import {CommandPaletteContext} from './CommandPaletteContext';
+import {BusyStartSettleContext} from './busyStartSettle';
 import {CommandPaletteList} from './CommandPaletteList';
 import {CommandPaletteItem} from './CommandPaletteItem';
 import {CommandPaletteGroup} from './CommandPaletteGroup';
@@ -602,7 +603,6 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
       onClose: handleClose,
       isOpen,
       isBusy,
-      registerBusyAnnouncementSettle,
     }),
     [
       optimisticSearch,
@@ -621,7 +621,6 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
       handleClose,
       isOpen,
       isBusy,
-      registerBusyAnnouncementSettle,
     ],
   );
 
@@ -681,7 +680,9 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
           defaultHasDividers
           header={
             <LayoutHeader hasDivider padding={0}>
-              {input ?? <CommandPaletteInput />}
+              <BusyStartSettleContext value={registerBusyAnnouncementSettle}>
+                {input ?? <CommandPaletteInput />}
+              </BusyStartSettleContext>
             </LayoutHeader>
           }
           content={
