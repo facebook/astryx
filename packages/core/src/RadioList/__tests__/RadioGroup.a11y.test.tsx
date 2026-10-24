@@ -199,9 +199,11 @@ describe('the radio-group binding inventory', () => {
   it('locks which bindings expose a visible label for the bound subject', () => {
     const wrong = RADIO_GROUP_BINDING_STATES.filter(state => {
       const expected =
-        state.binding !== 'SegmentedControl' &&
-        state.binding !== 'DropdownMenuRadioGroup' &&
-        state.id !== 'segmented-option-selected-hidden-label';
+        state.id === 'menu-group-titled' ||
+        state.id === 'menu-group-titled-labelled' ||
+        (state.binding !== 'SegmentedControl' &&
+          state.binding !== 'DropdownMenuRadioGroup' &&
+          state.id !== 'segmented-option-selected-hidden-label');
       return state.facts.visibleLabel !== expected;
     }).map(state => state.id);
     expect(wrong).toEqual([]);

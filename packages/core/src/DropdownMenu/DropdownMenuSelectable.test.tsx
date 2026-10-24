@@ -9,9 +9,9 @@
  *   outcomes live in their reusable contracts; Menu retains navigation.
  */
 
-import {useState} from 'react';
+import {createElement, Fragment, useState} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {act, render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {DropdownMenu} from './DropdownMenu';
 import {DropdownMenuCheckboxItem} from './DropdownMenuCheckboxItem';
@@ -473,5 +473,438 @@ describe('selectable item refs', () => {
     expect(ref).toHaveBeenCalledWith(
       screen.getByRole('menuitemradio', {name: 'Newest', hidden: true}),
     );
+  });
+});
+
+describe('DropdownMenuRadioGroup title', () => {
+  const h = {hidden: true} as const;
+
+  async function openMenu(group: React.ReactNode) {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Filter'}}>
+        <DropdownMenuCheckboxItem
+          label="Show drafts"
+          value
+          onChange={() => {}}
+        />
+        {group}
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Filter/}));
+    // A pointer open focuses the menu itself; let that land first.
+    const menu = screen.getByRole('menu', h);
+    await waitFor(() => expect(menu).toHaveFocus());
+    return user;
+  }
+
+  it('names the group by a visible heading, so a titled radio set is one group with one name', async () => {
+    await openMenu(
+      <DropdownMenuRadioGroup
+        value="hide"
+        onChange={() => {}}
+        title="Hidden files">
+        <DropdownMenuRadioItem value="hide" label="Hide hidden files" />
+        <DropdownMenuRadioItem value="show" label="Show hidden files" />
+      </DropdownMenuRadioGroup>,
+    );
+    const groups = screen.getAllByRole('group', h);
+    expect(groups).toHaveLength(1);
+    const [group] = groups;
+    expect(group).toHaveAccessibleName('Hidden files');
+    expect(group).not.toHaveAttribute('aria-label');
+    const heading = screen.getByText('Hidden files');
+    expect(group).toHaveAttribute('aria-labelledby', heading.id);
+    // The heading is the menu's section heading: same theme target as a
+    // DropdownMenuGroup's, and not a row.
+    expect(heading).toHaveClass('astryx-dropdown-menu-section-heading');
+    expect(heading).not.toHaveAttribute('role');
+    expect(group.firstElementChild).toBe(heading);
+    expect(
+      screen
+        .getAllByRole('menuitemradio', h)
+        .map(item => item.getAttribute('aria-checked')),
+    ).toEqual(['true', 'false']);
+  });
+
+  it('skips the heading in arrow-key order and typeahead', async () => {
+    const user = await openMenu(
+      <DropdownMenuRadioGroup
+        value="hide"
+        onChange={() => {}}
+        title="Hidden files">
+        <DropdownMenuRadioItem value="hide" label="Hide hidden files" />
+        <DropdownMenuRadioItem value="show" label="Show hidden files" />
+      </DropdownMenuRadioGroup>,
+    );
+    const drafts = screen.getByRole('menuitemcheckbox', {
+      name: 'Show drafts',
+      ...h,
+    });
+    act(() => drafts.focus());
+    await user.keyboard('{ArrowDown}');
+    expect(
+      screen.getByRole('menuitemradio', {name: 'Hide hidden files', ...h}),
+    ).toHaveFocus();
+    // Typing the heading's first letter lands on a row starting with it.
+    act(() => drafts.focus());
+    await user.keyboard('h');
+    expect(
+      screen.getByRole('menuitemradio', {name: 'Hide hidden files', ...h}),
+    ).toHaveFocus();
+  });
+
+  it.each([
+    ['a label', {label: 'Hidden files visibility'}],
+    ['an aria-label', {'aria-label': 'Hidden files visibility'}],
+  ])(
+    'with %s too, the visible title still names the group, and the other name warns in development',
+    async (_prop, nameProps) => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        await openMenu(
+          <DropdownMenuRadioGroup
+            value="hide"
+            onChange={() => {}}
+            title="Hidden files"
+            {...nameProps}>
+            <DropdownMenuRadioItem value="hide" label="Hide hidden files" />
+          </DropdownMenuRadioGroup>,
+        );
+        const group = screen.getByRole('group', h);
+        // The name holds the heading a speech-input user reads.
+        expect(group).toHaveAccessibleName('Hidden files');
+        expect(group).toHaveAttribute(
+          'aria-labelledby',
+          screen.getByText('Hidden files').id,
+        );
+        expect(group).not.toHaveAttribute('aria-label');
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining('The title names the group'),
+        );
+      } finally {
+        warn.mockRestore();
+      }
+    },
+  );
+
+  it('a label that repeats the title does not warn', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      await openMenu(
+        <DropdownMenuRadioGroup
+          value="hide"
+          onChange={() => {}}
+          label="Hidden files"
+          title="Hidden files">
+          <DropdownMenuRadioItem value="hide" label="Hide hidden files" />
+        </DropdownMenuRadioGroup>,
+      );
+      expect(screen.getByRole('group', h)).toHaveAccessibleName('Hidden files');
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('without a title nothing changes: the label names the group and no heading renders', async () => {
+    await openMenu(
+      <DropdownMenuRadioGroup
+        value="newest"
+        onChange={() => {}}
+        label="Sort by">
+        <DropdownMenuRadioItem value="newest" label="Newest" />
+      </DropdownMenuRadioGroup>,
+    );
+    const group = screen.getByRole('group', h);
+    expect(group).toHaveAttribute('aria-label', 'Sort by');
+    expect(group).not.toHaveAttribute('aria-labelledby');
+    expect(
+      group.querySelector('.astryx-dropdown-menu-section-heading'),
+    ).toBeNull();
+  });
+
+  it("names the group by a caller's aria-label when label is omitted and there is no title, and does not warn", async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      await openMenu(
+        <DropdownMenuRadioGroup
+          value="hide"
+          onChange={() => {}}
+          aria-label="Hidden files visibility">
+          <DropdownMenuRadioItem value="hide" label="Hide hidden files" />
+        </DropdownMenuRadioGroup>,
+      );
+      const group = screen.getByRole('group', h);
+      expect(group).toHaveAccessibleName('Hidden files visibility');
+      expect(group).not.toHaveAttribute('aria-labelledby');
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it("reads a caller's aria-labelledby after the title, which still names the group first", async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <span id="radio-set-name">Visibility</span>
+        <DropdownMenu button={{label: 'Filter'}}>
+          <DropdownMenuRadioGroup
+            value="hide"
+            onChange={() => {}}
+            aria-labelledby="radio-set-name"
+            title="Hidden files">
+            <DropdownMenuRadioItem value="hide" label="Hide hidden files" />
+          </DropdownMenuRadioGroup>
+        </DropdownMenu>
+      </>,
+    );
+    await user.click(screen.getByRole('button', {name: /Filter/}));
+    const group = await screen.findByRole('group', h);
+    expect(group).toHaveAttribute(
+      'aria-labelledby',
+      `${screen.getByText('Hidden files').id} radio-set-name`,
+    );
+    expect(group).toHaveAccessibleName('Hidden files Visibility');
+  });
+
+  function NoTitle() {
+    return null;
+  }
+  it.each([
+    ['true', true, 'Give the group a label or a title'],
+    [
+      'an empty fragment',
+      createElement(Fragment),
+      'The title renders no text, so it does not name the group',
+    ],
+    [
+      'a component that returns null',
+      createElement(NoTitle),
+      'The title renders no text, so it does not name the group',
+    ],
+  ])(
+    'a title that renders no text, %s, counts as no title: the label names the group, no heading shows, and an unnamed group warns',
+    async (_case, title, unnamedWarning) => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        const {unmount} = render(
+          <DropdownMenu button={{label: 'Filter'}}>
+            <DropdownMenuRadioGroup
+              value="hide"
+              onChange={() => {}}
+              label="Hidden files"
+              title={title}>
+              <DropdownMenuRadioItem value="hide" label="Hide hidden files" />
+            </DropdownMenuRadioGroup>
+          </DropdownMenu>,
+        );
+        await userEvent
+          .setup()
+          .click(screen.getByRole('button', {name: /Filter/}));
+        const group = await screen.findByRole('group', h);
+        expect(group).toHaveAccessibleName('Hidden files');
+        expect(group).not.toHaveAttribute('aria-labelledby');
+        const heading = group.querySelector(
+          '.astryx-dropdown-menu-section-heading',
+        );
+        // The heading, when one mounts to be read, shows nothing.
+        if (heading != null) {
+          expect(getComputedStyle(heading).display).toBe('none');
+        }
+        // Beside a title that counts, a different label would warn.
+        expect(warn).not.toHaveBeenCalledWith(
+          expect.stringContaining('The title names the group'),
+        );
+        unmount();
+
+        await openMenu(
+          <DropdownMenuRadioGroup
+            value="hide"
+            onChange={() => {}}
+            title={title}>
+            <DropdownMenuRadioItem value="hide" label="Hide hidden files" />
+          </DropdownMenuRadioGroup>,
+        );
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining(unnamedWarning),
+        );
+      } finally {
+        warn.mockRestore();
+      }
+    },
+  );
+
+  it.each([
+    ['the same text', 'Hidden files', false],
+    ['the same text with other spacing', ' Hidden   files ', false],
+    ['other text', 'Hidden files visibility', true],
+  ])(
+    "compares a label with the title's rendered text: a node title with %s warns only when they differ",
+    async (_case, label, warns) => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        await openMenu(
+          <DropdownMenuRadioGroup
+            value="hide"
+            onChange={() => {}}
+            label={label}
+            title={
+              <span>
+                Hidden <b>files</b>
+              </span>
+            }>
+            <DropdownMenuRadioItem value="hide" label="Hide hidden files" />
+          </DropdownMenuRadioGroup>,
+        );
+        expect(screen.getByRole('group', h)).toHaveAccessibleName(
+          'Hidden files',
+        );
+        const warned = warn.mock.calls.some(call =>
+          String(call[0]).includes('The title names the group'),
+        );
+        expect(warned).toBe(warns);
+      } finally {
+        warn.mockRestore();
+      }
+    },
+  );
+
+  it('reads the title again on each render, so a title that starts rendering text names the group', async () => {
+    function LateTitle({text}: {text: string | null}) {
+      return text;
+    }
+    function Menu({text}: {text: string | null}) {
+      return (
+        <DropdownMenu button={{label: 'Filter'}}>
+          <DropdownMenuRadioGroup
+            value="hide"
+            onChange={() => {}}
+            label="Hidden files"
+            title={<LateTitle text={text} />}>
+            <DropdownMenuRadioItem value="hide" label="Hide hidden files" />
+          </DropdownMenuRadioGroup>
+        </DropdownMenu>
+      );
+    }
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const {rerender} = render(<Menu text={null} />);
+      await userEvent
+        .setup()
+        .click(screen.getByRole('button', {name: /Filter/}));
+      const group = await screen.findByRole('group', h);
+      expect(group).toHaveAccessibleName('Hidden files');
+
+      rerender(<Menu text="Hidden files" />);
+      await waitFor(() =>
+        expect(group).toHaveAttribute(
+          'aria-labelledby',
+          screen.getByText('Hidden files').id,
+        ),
+      );
+      expect(
+        getComputedStyle(screen.getByText('Hidden files')).display,
+      ).not.toBe('none');
+      expect(group).not.toHaveAttribute('aria-label');
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('re-reads a title that changes its own text, through its own state, while the menu shows', async () => {
+    let setTitleText!: (text: string | null) => void;
+    function SelfUpdatingTitle() {
+      const [text, setText] = useState<string | null>(null);
+      setTitleText = setText;
+      return text;
+    }
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      await openMenu(
+        <DropdownMenuRadioGroup
+          value="hide"
+          onChange={() => {}}
+          label="Hidden files"
+          title={<SelfUpdatingTitle />}>
+          <DropdownMenuRadioItem value="hide" label="Hide hidden files" />
+        </DropdownMenuRadioGroup>,
+      );
+      const group = screen.getByRole('group', h);
+      expect(group).toHaveAccessibleName('Hidden files');
+
+      // Text arrives without the group rendering: the title names the group.
+      await act(async () => setTitleText('Sort by'));
+      await waitFor(() => expect(group).toHaveAccessibleName('Sort by'));
+      expect(getComputedStyle(screen.getByText('Sort by')).display).not.toBe(
+        'none',
+      );
+      expect(group).not.toHaveAttribute('aria-label');
+
+      // Text goes away: the label names the group again, and the heading
+      // shows nothing.
+      await act(async () => setTitleText(null));
+      await waitFor(() => expect(group).toHaveAccessibleName('Hidden files'));
+      const heading = group.querySelector(
+        '.astryx-dropdown-menu-section-heading',
+      );
+      expect(heading).not.toBeNull();
+      expect(getComputedStyle(heading!).display).toBe('none');
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('a focusable node in the title is not reachable by the arrow keys, as in a DropdownMenuGroup heading', async () => {
+    await openMenu(
+      <DropdownMenuRadioGroup
+        value="hide"
+        onChange={() => {}}
+        title={
+          <>
+            Hidden files <button type="button">Info</button>
+          </>
+        }>
+        <DropdownMenuRadioItem value="hide" label="Hide hidden files" />
+        <DropdownMenuRadioItem value="show" label="Show hidden files" />
+      </DropdownMenuRadioGroup>,
+    );
+    const menu = screen.getByRole('menu', h);
+    const info = screen.getByRole('button', {name: 'Info', ...h});
+    const hide = screen.getByRole('menuitemradio', {
+      name: 'Hide hidden files',
+      ...h,
+    });
+    const show = screen.getByRole('menuitemradio', {
+      name: 'Show hidden files',
+      ...h,
+    });
+
+    hide.focus();
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(show).toHaveFocus();
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(info).not.toHaveFocus();
+    fireEvent.keyDown(menu, {key: 'ArrowUp'});
+    expect(info).not.toHaveFocus();
+  });
+
+  it('warns in development when the group has neither a label nor a title', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      await openMenu(
+        <DropdownMenuRadioGroup value="a" onChange={() => {}}>
+          <DropdownMenuRadioItem value="a" label="A" />
+        </DropdownMenuRadioGroup>,
+      );
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'DropdownMenuRadioGroup: Give the group a label or a title',
+        ),
+      );
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

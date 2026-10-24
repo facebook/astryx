@@ -1618,6 +1618,16 @@ jobs:
             --project chromium \
             --output top-nav-mobile-long-heading-output
 
+      # A DropdownMenuRadioGroup with a title is one group named by its heading,
+      # and the heading is not a row. The accessibility tree that results only
+      # exists in a real engine.
+      - name: Run DropdownMenu radio group title contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/DropdownMenu/__tests__/RadioGroupTitle.a11y.chromium.spec.ts \
+            --project chromium \
+            --output radio-group-title-output
+
       # The RichTextEditor "Markdown parity" stories render one Markdown
       # document with core Markdown and RichTextEditor and measure where each
       # block lands; geometry, the read/edit switch and the scroll anchor only
