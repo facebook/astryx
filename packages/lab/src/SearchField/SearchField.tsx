@@ -26,8 +26,9 @@
  * ACTIVATION
  *
  * Focusing the field (a tap, or the host calling `handleRef.focus()` inside
- * its own tap so the keyboard rises) activates it. Under a finger (touch
- * presentation) the field then plays UIKit's activation, all on one clock
+ * its own tap so the keyboard rises) activates it. In the iOS idiom (WebKit
+ * on iOS or iPadOS under a finger) the field then plays UIKit's activation,
+ * all on one clock
  * (`search.activationMs`, 383 ms on `search.activationCurve`, the
  * UIViewPropertyAnimator UIKit uses; both are motion roles a theme may
  * retune, read when each move starts): it rises by the host's `lift`, it
@@ -43,7 +44,9 @@
  * the opacity it has, then hiding. Escape does the same. A change of mind
  * mid-flight starts from where every part is. Reduce Motion keeps the
  * travel and adds no cross-fade, as iOS does (`search.reducedMotion`).
- * Under a mouse (pointer presentation) the parts take their places at once.
+ * Anywhere else (an Android finger, a mouse) the parts take their places at
+ * once, and the close button is a plain round button instead of glass: the
+ * motion and the glass are iOS's idiom.
  *
  * Search with the keyboard's Search key (Enter) calls `onSubmit`; focus and
  * the keyboard stay, as UIKit leaves them to the app. A tap outside ends
@@ -281,9 +284,29 @@ const styles = stylex.create({
     padding: 0,
     borderWidth: 0,
     borderRadius: radiusVars['--radius-full'],
-    backgroundColor: `color-mix(in srgb, ${colorVars['--color-background-popover']} 78%, transparent)`,
-    backdropFilter: 'blur(16px) saturate(180%)',
-    boxShadow: shadowVars['--shadow-med'],
+    // Glass in the iOS idiom only (nested as IOS_TOUCH_STYLE_KEYS spells
+    // it); elsewhere a plain round button in the field's own fill.
+    backgroundColor: {
+      default: colorVars['--color-background-muted'],
+      '@media (pointer: coarse)': {
+        default: colorVars['--color-background-muted'],
+        '@supports (-webkit-touch-callout: none)': `color-mix(in srgb, ${colorVars['--color-background-popover']} 78%, transparent)`,
+      },
+    },
+    backdropFilter: {
+      default: 'none',
+      '@media (pointer: coarse)': {
+        default: 'none',
+        '@supports (-webkit-touch-callout: none)': 'blur(16px) saturate(180%)',
+      },
+    },
+    boxShadow: {
+      default: 'none',
+      '@media (pointer: coarse)': {
+        default: 'none',
+        '@supports (-webkit-touch-callout: none)': shadowVars['--shadow-med'],
+      },
+    },
     color: colorVars['--color-text-primary'],
     cursor: {
       default: 'pointer',
@@ -353,9 +376,11 @@ export function SearchField({
   const middleAnimator = useAnimator();
   const endAnimator = useAnimator();
   const closeAnimator = useAnimator();
-  // UIKit's activation under a finger; the parts take their places at once
-  // under a mouse.
-  const {isTouch} = useTouchPresentation();
+  // UIKit's activation in the iOS idiom (WebKit on iOS or iPadOS under a
+  // finger); anywhere else (an Android finger, a mouse) the parts take their
+  // places at once.
+  const {idiom} = useTouchPresentation();
+  const playsUIKit = idiom === 'ios';
 
   const setValue = useCallback(
     (next: string) => {
@@ -436,8 +461,8 @@ export function SearchField({
     const target = isActive;
     const shape = geometry();
     const to = poseFor(target, shape);
-    if (settledRef.current === null || !isTouch) {
-      // First layout, or a pointer presentation: take the places at once.
+    if (settledRef.current === null || !playsUIKit) {
+      // First layout, or outside the iOS idiom: take the places at once.
       settledRef.current = target;
       place(to);
       return;
@@ -512,7 +537,7 @@ export function SearchField({
     // the field through the same path.
   }, [
     isActive,
-    isTouch,
+    playsUIKit,
     geometry,
     place,
     presented,

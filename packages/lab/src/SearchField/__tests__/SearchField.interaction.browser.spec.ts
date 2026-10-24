@@ -14,8 +14,12 @@
  *   keeps advancing every frame through a blocked main thread and does no
  *   Layout or Paint; Reduce Motion keeps the travel; right to left it
  *   narrows from the left; under a mouse every part takes its place at once;
- *   a theme's search.activationMs role times the activation; storyboards of
- *   the activation and the cancel
+ *   a theme's search.activationMs role times the activation; all of that in
+ *   the iOS idiom (emulated: `CSS.supports` and the `@supports` rules answer
+ *   `-webkit-touch-callout`, as only WebKit on iOS does), where the close
+ *   button is glass; outside it (an Android finger, Reduce Motion or not)
+ *   every part takes its place at once and the close button is plain;
+ *   storyboards of the activation and the cancel
  * @position Interaction proof for lab SearchField (SearchField.tsx,
  *   searchFieldModel.ts); shape copied from the harness exemplar,
  *   BottomSheetDetent.interaction.browser.spec.ts
@@ -47,6 +51,67 @@ import {
 
 const storybook = withStorybook(test);
 
+/**
+ * Makes the page take the iOS idiom, as WebKit on iOS does: `CSS.supports`
+ * answers `-webkit-touch-callout` (which only WebKit on iOS implements) from
+ * before the app loads, so the field gates in its first render. Neither
+ * Playwright engine is iOS; real iOS is the simulator (pull request
+ * evidence).
+ */
+async function emulateIosIdiom(page: Page) {
+  await page.addInitScript(() => {
+    const original = CSS.supports.bind(CSS);
+    CSS.supports = ((condition: string, value?: string) =>
+      `${condition}${value ?? ''}`.includes('-webkit-touch-callout') ||
+      (value === undefined
+        ? original(condition)
+        : original(condition, value))) as typeof CSS.supports;
+  });
+}
+
+/**
+ * The style side of the same gate: every `@supports (-webkit-touch-callout:
+ * none)` rule becomes a condition the engine meets, keeping the touch query
+ * around it (C07's rewrite).
+ */
+async function emulateIosStyles(page: Page) {
+  await page.evaluate(() => {
+    const visit = (owner: CSSStyleSheet | CSSGroupingRule) => {
+      const rules = owner.cssRules;
+      for (let i = 0; i < rules.length; i += 1) {
+        const rule = rules[i];
+        if (
+          rule instanceof CSSSupportsRule &&
+          rule.conditionText.includes('-webkit-touch-callout')
+        ) {
+          const inner = Array.from(rule.cssRules, r => r.cssText).join('\n');
+          owner.deleteRule(i);
+          owner.insertRule(`@supports (display: block) {${inner}}`, i);
+        } else if (rule instanceof CSSGroupingRule) {
+          visit(rule);
+        }
+      }
+    };
+    for (const sheet of Array.from(document.styleSheets)) {
+      try {
+        visit(sheet);
+      } catch {
+        // a cross-origin sheet
+      }
+    }
+  });
+}
+
+/** Tests under this describe title run outside iOS (no emulated idiom). */
+const OUTSIDE_IOS = 'outside iOS (an Android finger)';
+
+// Every proof but the outside-iOS ones runs in the iOS idiom.
+test.beforeEach(async ({page}, testInfo) => {
+  if (!testInfo.titlePath.includes(OUTSIDE_IOS)) {
+    await emulateIosIdiom(page);
+  }
+});
+
 // The first page of a fresh WebKit worker stops presenting frames for about
 // a second after its first composited animation starts (the engine setting up
 // compositing), long enough to swallow a 383 ms activation. One throwaway
@@ -57,7 +122,11 @@ test.beforeAll(async ({browser, browserName}) => {
   }
   const context = await browser.newContext(phone);
   const page = await context.newPage();
+  await emulateIosIdiom(page);
   await openStory(page, storybook(), 'lab-searchfield--default');
+  // With the glass styles too: their backdrop filter is part of what WebKit
+  // sets up on that first composited frame.
+  await emulateIosStyles(page);
   const field = page.getByRole('searchbox', {name: 'Search'});
   const box = await field.boundingBox();
   if (box != null) {
@@ -85,6 +154,9 @@ const progress = (t: number) => ease(Math.min(1, t / ACTIVATION_MS));
 
 async function openField(page: Page, story = 'default') {
   await openStory(page, storybook(), `lab-searchfield--${story}`);
+  if (!test.info().titlePath.includes(OUTSIDE_IOS)) {
+    await emulateIosStyles(page);
+  }
   const driver = await touchDriver(page);
   const field = page.getByRole('searchbox', {name: 'Search'});
   await expect(field).toBeVisible();
@@ -509,6 +581,76 @@ test('a theme’s activation clock (the search.activationMs role) times the acti
   expect(activation.to - activation.from).toBeGreaterThan(595);
   expect(activation.to - activation.from).toBeLessThan(605);
   expect(await translateX(end(page))).toBeCloseTo(-NARROWING, 1);
+});
+
+test('in the iOS idiom the close button is glass', async ({page}) => {
+  await openField(page);
+  const style = await close(page).evaluate(element => {
+    const computed = getComputedStyle(element);
+    return {
+      backdrop: computed.backdropFilter,
+      shadow: computed.boxShadow,
+    };
+  });
+  expect(style.backdrop).toContain('blur');
+  expect(style.shadow).not.toBe('none');
+});
+
+test.describe(OUTSIDE_IOS, () => {
+  /** Opens the field, taps it, and reads what moved and how it looks. */
+  async function activate(page: Page) {
+    const {driver, field} = await openField(page);
+    await driver.tap(await centerOf(field));
+    await expect(root(page)).toHaveAttribute(
+      'data-search-field-active',
+      'true',
+    );
+    return page.evaluate(() => {
+      const element = document.querySelector('[role="search"]') as HTMLElement;
+      const closeButton = element.querySelector(
+        '[data-search-field-close]',
+      ) as HTMLElement;
+      const computed = getComputedStyle(closeButton);
+      return {
+        animations: element.getAnimations({subtree: true}).length,
+        backdrop: computed.backdropFilter,
+        shadow: computed.boxShadow,
+        fill: computed.backgroundColor,
+      };
+    });
+  }
+
+  test('every part takes its active place at once, and the close button is plain', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(browserName !== 'chromium', 'Android browsers are Chromium');
+    const state = await activate(page);
+    expect(state.animations).toBe(0);
+    expect(await translateX(end(page))).toBeCloseTo(-NARROWING, 1);
+    expect(await translateX(close(page))).toBeCloseTo(0, 1);
+    expect(state.backdrop).toBe('none');
+    expect(state.shadow).toBe('none');
+    expect(state.fill).not.toBe('rgba(0, 0, 0, 0)');
+    // The close button cancels the same way, at once.
+    await (await touchDriver(page)).tap(await centerOf(close(page)));
+    await expect(root(page)).not.toHaveAttribute('data-search-field-active');
+    expect(await translateX(end(page))).toBeCloseTo(0, 1);
+  });
+
+  test('with Reduce Motion as well: no animation, the close button keeps its plain fill', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(browserName !== 'chromium', 'Android browsers are Chromium');
+    await page.emulateMedia({reducedMotion: 'reduce'});
+    const state = await activate(page);
+    expect(state.animations).toBe(0);
+    expect(await translateX(end(page))).toBeCloseTo(-NARROWING, 1);
+    expect(state.backdrop).toBe('none');
+    expect(state.shadow).toBe('none');
+    expect(state.fill).not.toBe('rgba(0, 0, 0, 0)');
+  });
 });
 
 test.describe('with a mouse', () => {
