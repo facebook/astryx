@@ -297,7 +297,7 @@ export const docs = {
     ],
     anatomy,
     description:
-      'A draggable control for selecting a numeric value or range within defined bounds. Supports single value and range selection, tick marks, custom value formatting, and vertical orientation. Use it when users need to explore a continuous range, such as volume, price, or percentage. On touch screens it tracks a finger as iOS does: only the thumb takes the finger, through a target larger than it, the value follows the finger’s travel rather than jumping to it, a release coasts on before `onChangeEnd`, and a tap on the track does nothing.',
+      'A draggable control for selecting a numeric value or range within defined bounds. Supports single value and range selection, tick marks, custom value formatting, and vertical orientation. Use it when users need to explore a continuous range, such as volume, price, or percentage. On iOS it tracks a finger as UISlider does: only the thumb takes the finger, through a target larger than it, the value follows the finger’s travel rather than jumping to it, a release coasts on before `onChangeEnd`, and a tap on the track does nothing. Other touch screens, Android’s included, keep the pointer behavior: a tap on the track moves the thumb there.',
     bestPractices: [
       {
         guidance: true,
@@ -510,7 +510,7 @@ export const docsZh = {
   usage: {
     anatomy,
     description:
-      'A draggable control for selecting a numeric value or range within defined bounds. Supports single value and range selection, tick marks, custom value formatting, and vertical orientation. Use it when users need to explore a continuous range, such as volume, price, or percentage. On touch screens it tracks a finger as iOS does: only the thumb takes the finger, through a target larger than it, the value follows the finger’s travel rather than jumping to it, a release coasts on before `onChangeEnd`, and a tap on the track does nothing.',
+      'A draggable control for selecting a numeric value or range within defined bounds. Supports single value and range selection, tick marks, custom value formatting, and vertical orientation. Use it when users need to explore a continuous range, such as volume, price, or percentage. On iOS it tracks a finger as UISlider does: only the thumb takes the finger, through a target larger than it, the value follows the finger’s travel rather than jumping to it, a release coasts on before `onChangeEnd`, and a tap on the track does nothing. Other touch screens, Android’s included, keep the pointer behavior: a tap on the track moves the thumb there.',
     bestPractices: [
       {
         guidance: true,
@@ -546,7 +546,7 @@ export const docsDense = {
   usage: {
     anatomy,
     description:
-      'A draggable control for selecting a numeric value or range within defined bounds. Supports single value and range selection, tick marks, custom value formatting, and vertical orientation. Use it when users need to explore a continuous range, such as volume, price, or percentage. On touch screens it tracks a finger as iOS does: only the thumb takes the finger, through a target larger than it, the value follows the finger’s travel rather than jumping to it, a release coasts on before `onChangeEnd`, and a tap on the track does nothing.',
+      'A draggable control for selecting a numeric value or range within defined bounds. Supports single value and range selection, tick marks, custom value formatting, and vertical orientation. Use it when users need to explore a continuous range, such as volume, price, or percentage. On iOS it tracks a finger as UISlider does: only the thumb takes the finger, through a target larger than it, the value follows the finger’s travel rather than jumping to it, a release coasts on before `onChangeEnd`, and a tap on the track does nothing. Other touch screens, Android’s included, keep the pointer behavior: a tap on the track moves the thumb there.',
     bestPractices: [
       {
         guidance: true,
