@@ -3,12 +3,14 @@
 /**
  * @file CheckboxListPress.a11y.chromium.spec.ts
  * @input The CheckboxList Default story in a built Storybook (a layered
- *   stylesheet) and real touch input through CDP
+ *   stylesheet), editable and with `isReadOnly`, and real touch input through
+ *   CDP
  * @output Real-engine proof that a finger on a CheckboxList row's label and a
  *   finger on its box press the same surface and paint the same pixels (the
- *   row and the box over it), and that nothing but the row's own press paints
- *   its box: not a pen on a fine-pointer page, not a pressed ClickableCard,
- *   not an outer row around a list placed in a row's content
+ *   row and the box over it), that nothing but the row's own press paints
+ *   its box (not a pen on a fine-pointer page, not a pressed ClickableCard,
+ *   not an outer row around a list placed in a row's content), and that a
+ *   read-only row paints no press
  * @position Run with `pnpm test:a11y-contract`. Browser layer of the row's
  *   press surface; the jsdom layer is CheckboxList.test.tsx ("CheckboxListItem
  *   press surface").
@@ -434,6 +436,32 @@ test.describe('CheckboxList row press', () => {
       expect(held.nested).toEqual(rest.nested);
     } finally {
       await row.close();
+    }
+  });
+
+  test('a read-only row paints no press, on the row or on the box', async ({
+    browser,
+  }) => {
+    for (const where of ['label', 'box'] as const) {
+      const row = await openRow(
+        browser,
+        'core-checkboxlist--default&args=isReadOnly:!true',
+        'SMS',
+      );
+      try {
+        const rest = {
+          box: await pixel(row.page, row.boxSample),
+          row: await pixel(row.page, row.rowSample),
+        };
+        await row.press(row[where]);
+        await row.page.waitForTimeout(HOLD_MS);
+        expect(await pressedSurface(row.page)).toBeNull();
+        expect(await pixel(row.page, row.boxSample)).toEqual(rest.box);
+        expect(await pixel(row.page, row.rowSample)).toEqual(rest.row);
+        await row.lift(row[where]);
+      } finally {
+        await row.close();
+      }
     }
   });
 });

@@ -368,7 +368,10 @@ export function CheckboxInput({
   // row for a finger on the label, the description or the box, and the
   // overlay below paints that row's press.
   const isRowPressSurface = use(CheckboxRowPressContext);
-  const ownsPress = !isDisabled && !isRowPressSurface;
+  // A checkbox that cannot change paints no press: disabled, or read-only,
+  // whose value is shown but refuses every change.
+  const paintsPress = !isDisabled && !isReadOnly;
+  const ownsPress = paintsPress && !isRowPressSurface;
   const generatedId = useId();
   const id = idProp || generatedId;
   const descriptionID = useId();
@@ -481,8 +484,8 @@ export function CheckboxInput({
           {...stylex.props(
             styles.checkboxWrapper,
             wrapperSizeStyles[size],
-            !isDisabled && styles.indicatorPressOverlay,
-            !isDisabled && isRowPressSurface && styles.indicatorRowPressOverlay,
+            paintsPress && styles.indicatorPressOverlay,
+            paintsPress && isRowPressSurface && styles.indicatorRowPressOverlay,
           )}
           {...focusProps}>
           <input
