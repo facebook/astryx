@@ -32,13 +32,13 @@ export const docs = {
     {
       name: 'density',
       type: "'compact' | 'balanced' | 'spacious'",
-      description: 'Spacing density for items.',
+      description: 'Spacing density for items. On a touch screen (a coarse primary pointer), rows are at least 52px tall, 62px with a description, and never shorter than 44px in compact density, as iOS table rows are.',
       default: "'balanced'",
     },
     {
       name: 'hasDividers',
       type: 'boolean',
-      description: 'Show dividers between items.',
+      description: 'Show dividers between items. A touch press hides the dividers on either side of the pressed row until the finger lifts.',
       default: 'false',
     },
     {
