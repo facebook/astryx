@@ -11,11 +11,11 @@
  *   own checkbox, read by CheckboxInput
  *
  * A row that answers a press anywhere on it (a CheckboxListItem whose surface
- * clicks are delegated to its checkbox) owns the touch press: it carries the
- * press marker and `checkboxRowPressScope`, so the checkbox registers no press
- * marker of its own. A finger on the label, on the description, or on the box
- * itself then presses the same surface, and the box's overlay paints from that
- * row's press.
+ * clicks are delegated to its checkbox) owns the touch press. The press is
+ * the shared one (utils/pressFeedback.ts): the row carries the press marker
+ * and the checkbox carries none, so the controller's innermost-wins rule finds
+ * the row for a finger on the label, on the description, or on the box
+ * itself, and the box's overlay paints the row's inherited press paint.
  *
  * Layer-scoped, so content a layer portals out of the row (a popover opened
  * from the row's end content) starts from the default, and provided only

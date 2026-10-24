@@ -4,9 +4,8 @@
 
 /**
  * @file CheckboxListItem.tsx
- * @input Uses React, CheckboxInput, ListItem, CheckboxListContext, the press
- *   marker and the row press scope (the row owns its checkbox's touch press
- *   through CheckboxRowPressContext)
+ * @input Uses React, CheckboxInput, ListItem, CheckboxListContext,
+ *   CheckboxRowPressContext (the row owns its checkbox's touch press)
  * @output Exports CheckboxListItem component, CheckboxListItemProps
  * @position Core implementation; consumed by index.ts, tested by CheckboxList.test.tsx
  *
@@ -27,8 +26,6 @@ import type {BaseProps} from '../BaseProps';
 import {CheckboxInput} from '../CheckboxInput/CheckboxInput';
 import type {CheckboxInputProps} from '../CheckboxInput/CheckboxInput';
 import {CheckboxRowPressContext} from '../CheckboxInput/CheckboxRowPressContext';
-import {usePressFeedback} from '../hooks/usePressFeedback';
-import {checkboxRowPressScope} from '../CheckboxInput/checkboxRowPress.markers.stylex';
 import {ListItem} from '../List/ListItem';
 import {ListContext} from '../List/ListContext';
 import {CheckboxListContext} from './CheckboxListContext';
@@ -269,13 +266,10 @@ export function CheckboxListItem({
   const hasRowInteraction = isInteractive || onClickProp != null;
 
   // A row that delegates its surface clicks is the option's one press
-  // surface: a finger on the label, the description or the box itself
-  // presses the row, and the box's overlay paints from the row's press
-  // (CheckboxRowPressContext), the way a radio row's circle does. Item marks
-  // an interactive row itself; naming the row here as well keeps the row
-  // press scope it now carries verifiably reachable by the touch press
-  // controller (pressableCoverage.test.ts).
-  const pressable = usePressFeedback();
+  // surface: Item marks it pressable and declares its press paint, and its
+  // own checkbox carries no press marker (CheckboxRowPressContext), so a
+  // finger on the label, the description or the box itself presses the row,
+  // and the box paints the row's press, the way a radio row's circle does.
   const rowOwnsPress = hasRowInteraction && !effectiveDisabled;
 
   // A read-only checkbox carries aria-readonly, which the row's clickable
@@ -317,7 +311,6 @@ export function CheckboxListItem({
   return (
     <ListItem
       {...restProps}
-      {...(rowOwnsPress ? pressable : undefined)}
       ref={ref}
       label={namesFromVisibleLabel ? <span id={labelID}>{label}</span> : label}
       description={description}
@@ -333,9 +326,6 @@ export function CheckboxListItem({
       aria-busy={isBusy || undefined}
       xstyle={
         [
-          // The overlay over the box reads the row's touch press through this
-          // ancestor marker.
-          rowOwnsPress && checkboxRowPressScope,
           resolvedChecked === true &&
             !effectiveDisabled &&
             !effectiveReadOnly &&

@@ -58,7 +58,6 @@ import {themeProps} from '../utils/themeProps';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {CheckboxRowPressContext} from './CheckboxRowPressContext';
-import {checkboxRowPressScope} from './checkboxRowPress.markers.stylex';
 
 // The touch press's paint, declared by the shared overlay styles on the
 // element the controller writes to (`pressedAlpha`) at the press's strength,
@@ -89,8 +88,8 @@ const styles = stylex.create({
   // mouse keeps `:active`; under a coarse pointer that arm is dropped and the
   // touch press controller writes `data-astryx-press` on the row, which this layer
   // reads off the same scope marker as the hover tint — or, for the row's own
-  // checkbox under a row that owns the press (CheckboxRowPressContext), off
-  // that row's marker too (indicatorRowPressOverlay).
+  // checkbox under a row that owns the press (CheckboxRowPressContext), paints
+  // that row's own press paint (indicatorRowPressOverlay).
   indicatorPressOverlay: {
     '::after': {
       content: '""',
@@ -124,38 +123,16 @@ const styles = stylex.create({
     },
   },
   // The row's own checkbox, under a row that owns the press
-  // (CheckboxRowPressContext): the same layer, also read off that row's
-  // marker. Only that checkbox takes it, so a CheckboxInput placed in the
-  // row's content keeps its own press. It restates the scope arms because a
-  // later style replaces the whole property.
+  // (CheckboxRowPressContext): the layer paints the row's press paint, which
+  // the row's shared overlay style declares at the press's strength and the
+  // layer inherits (interactionOverlay.stylex.ts). It stays transparent until
+  // the touch press controller presses that row, then fades with it, so the
+  // row and the box are one press. A checkbox placed in the row's content
+  // declares its own paint and keeps its own press. It replaces the scope
+  // arms: this checkbox's own container is never pressed.
   indicatorRowPressOverlay: {
     '::after': {
-      backgroundImage: {
-        default: null,
-        [stylex.when.ancestor('[data-astryx-press="on"]', indicatorScope)]: {
-          default: null,
-          '@media (pointer: coarse)': pressedOverlayImage,
-        },
-        [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
-          {
-            default: null,
-            '@media (pointer: coarse)': pressedOverlayImage,
-          },
-        [stylex.when.ancestor(
-          '[data-astryx-press="on"]',
-          checkboxRowPressScope,
-        )]: {
-          default: null,
-          '@media (pointer: coarse)': pressedOverlayImage,
-        },
-        [stylex.when.ancestor(
-          '[data-astryx-press="fading"]',
-          checkboxRowPressScope,
-        )]: {
-          default: null,
-          '@media (pointer: coarse)': pressedOverlayImage,
-        },
-      },
+      backgroundImage: pressedOverlayImage,
     },
   },
   // Holds only the indicator, so the focus ring has one unambiguous target.
@@ -383,10 +360,10 @@ export function CheckboxInput({
   // scope marker, the way the indicator's hover tint does.
   const pressable = usePressFeedback();
   // A row around the checkbox that answers a press anywhere on it (a
-  // CheckboxListItem) owns the touch press instead: it carries the press
-  // marker and checkboxRowPressScope, so a finger on the label, the
-  // description or the box presses one surface, and the overlay below paints
-  // from that row's press.
+  // CheckboxListItem) owns the touch press instead: the checkbox carries no
+  // press marker of its own, so the controller's innermost-wins rule finds the
+  // row for a finger on the label, the description or the box, and the
+  // overlay below paints that row's press.
   const isRowPressSurface = use(CheckboxRowPressContext);
   const ownsPress = !isDisabled && !isRowPressSurface;
   const generatedId = useId();
