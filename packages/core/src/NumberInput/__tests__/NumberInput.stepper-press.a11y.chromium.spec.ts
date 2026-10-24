@@ -110,14 +110,14 @@ test('a tap on a stepper still steps the value', async ({page}) => {
   ).toHaveAttribute('aria-valuenow', '3');
 });
 
-test('a finger held 1.6 s, longer than a tap, selects nothing', async ({
+test('a finger held 1.6 s selects nothing and keeps stepping', async ({
   page,
 }) => {
-  // Without the fix iOS Safari selects the field's label here, and past 1.5 s
-  // (UIKit's tap maximum) it makes no click, so nothing steps. Chromium does
-  // not select on a long press and still clicks once after it: this pins what
-  // both engines share (no selection, never more than that one click); the
-  // iOS outcome is shown on the simulator.
+  // Without the column's selection opt-out iOS Safari selects the field's
+  // label here. The steppers track the finger (stepperTracking.ts), so a hold
+  // repeats from 0.5 s as UIStepper does, and the click an engine may send
+  // after the lift adds nothing. (Chromium does not select on a long press;
+  // the selection is proven on the iOS simulator.)
   await open(page);
   const input = page.getByRole('spinbutton', {name: 'Quantity'});
   const box = await page
@@ -139,5 +139,8 @@ test('a finger held 1.6 s, longer than a tap, selects nothing', async ({
   });
   await page.waitForTimeout(300);
   expect(await page.evaluate(() => String(getSelection()))).toBe('');
-  expect(['2', '3']).toContain(await input.getAttribute('aria-valuenow'));
+  // The steps at 0.5, 1 and 1.5 s; one more if the lift comes after 2 s.
+  const value = Number(await input.getAttribute('aria-valuenow'));
+  expect(value).toBeGreaterThanOrEqual(4);
+  expect(value).toBeLessThanOrEqual(6);
 });

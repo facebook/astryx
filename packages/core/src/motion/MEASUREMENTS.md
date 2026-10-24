@@ -207,6 +207,26 @@ Bookmarks sheet.
 | M-SG18 | iPad S1 (touch; pointer if available)                                                                                                       | tap, hold, drag; hover                                                                                                                                                                                                                                                                                                                                                                            | differences from iPhone                                                                                                                               | B      |
 | M-SG19 | Safari showing the segmented stories vs S1                                                                                                  | the segmented storyboards side by side                                                                                                                                                                                                                                                                                                                                                            | synced recordings (parity proof)                                                                                                                      | B      |
 
+## Stepper (UIStepper)
+
+Subject: a `UIStepper` (value 5, range 0 to 10, step 1) on a plain view of
+the lab's host app, and inside a vertical `UIScrollView` where a scroll view
+is needed. iOS 26 draws the stepper with SwiftUI (`DesignLibraryStepper`), so
+its pressed state is read from rendered frames, not view properties.
+
+Done (iOS 26.2 simulator, Oct 23–24 2026; in the stepper's own table,
+`uikit/stepper.ts`): the tap at the lift, the autorepeat delay and its
+count-based phases, the cadence across a slide between the halves, leaving
+and re-entering the frame after a repeat, bounds and wraps, the delayed
+delivery inside a scroll view, the tracking area (the frame, no margin), the
+pressed fill (one frame on, one frame off, no animation) and the haptics
+(none). Still open:
+
+| ID      | Scene                   | Gesture                                                                                                              | Extract                                                                                             | Method |
+| ------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------ |
+| M-STP05 | stepper on a plain view | hold + with one finger, then press and hold − with a second (a device or an XCUITest: the HID path drives one touch) | which half steps, and whether the second touch is ignored                                           | C      |
+| M-STP16 | stepper on a plain view | hold +, leave the frame at 200 ms, come back at 300 ms; again coming back at 700 ms                                  | step times: a return before the first repeat keeps the press's clock, restarts it, or steps at once | C      |
+
 ## Sheets (UISheetPresentationController)
 
 Probe app "SheetProbe" on an iPhone 16 Pro (iPad Pro 11" for M-SH11 / M-SH20 /

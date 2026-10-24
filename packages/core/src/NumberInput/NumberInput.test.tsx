@@ -2344,9 +2344,11 @@ describe('NumberInput stepping', () => {
     });
 
     // UIStepper never becomes first responder, and focusing the field on a
-    // phone brings up the on-screen keyboard.
-    it.each(['touch', 'pen'])(
-      'steps the value without focusing the input on a %s tap',
+    // phone brings up the on-screen keyboard. A tracked finger or pen steps
+    // through the gesture system (NumberInput.stepperTouch.test.tsx); a touch
+    // click the steppers did not track still steps, without focus.
+    it.each(['touch'])(
+      'steps the value without focusing the input on an untracked %s click',
       pointerType => {
         const onChange = vi.fn();
         render(

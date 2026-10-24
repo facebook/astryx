@@ -31,4 +31,5 @@ export {
 export {navigation} from './navigation';
 export {scroll} from './scroll';
 export {springs} from './springs';
+export {stepper} from './stepper';
 export {timing} from './timing';
