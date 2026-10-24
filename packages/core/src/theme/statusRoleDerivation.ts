@@ -196,20 +196,33 @@ function deriveForMode(
   resolved: Record<string, string>,
   mode: ResolvedThemeMode,
 ): ModeRoles | null {
-  // A source that does not resolve to a concrete colour (an oklch() value, an
-  // unknown reference) keeps the scoped alias to it instead of a guess.
-  if (parseConcreteColor(resolved[statusSourceToken(status)]) === null) {
-    return null;
-  }
+  // Every colour the computations measure must be concrete. When one is not
+  // (an oklch() value, an unknown reference), the status keeps its scoped
+  // aliases instead of a guess (architecture:theme-compilation INV17).
+  const source = parseConcreteColor(resolved[statusSourceToken(status)]);
   const hue = statusHue(status, resolved, mode);
   const surface = parseConcreteColor(resolved['--color-background-surface']);
-  if (hue === null || surface === null) {
+  const cardColor = parseConcreteColor(resolved['--color-background-card']);
+  const on = parseConcreteColor(
+    resolved[`--color-on-${status}`] ??
+      (status === 'info' ? resolved['--color-on-accent'] : undefined),
+  );
+  const muted =
+    status === 'info'
+      ? hue && {...hue, a: PALE_ALPHA[mode]}
+      : parseConcreteColor(resolved[`--color-${status}-muted`]);
+  if (
+    source === null ||
+    hue === null ||
+    surface === null ||
+    cardColor === null ||
+    on === null ||
+    muted === null
+  ) {
     return null;
   }
   const opaqueSurface = opaqueOver(surface, {r: 255, g: 255, b: 255, a: 1});
-  const cardColor = parseConcreteColor(resolved['--color-background-card']);
-  const card =
-    cardColor === null ? opaqueSurface : opaqueOver(cardColor, opaqueSurface);
+  const card = opaqueOver(cardColor, opaqueSurface);
   const roles: ModeRoles = {};
 
   const text = solveLightness(hue, [opaqueSurface, card], SOLVE_RATIO);
@@ -217,42 +230,27 @@ function deriveForMode(
     roles.text = text;
   }
 
-  const on = parseConcreteColor(
-    resolved[`--color-on-${status}`] ??
-      (status === 'info' ? resolved['--color-on-accent'] : undefined),
-  );
-  if (on !== null) {
-    const onOpaque = opaqueOver(on, hue);
-    // A source that already carries its content keeps the scoped alias to
-    // that source; only a source that needs adjusting, or a grey Info accent,
-    // gets a concrete value.
-    if (
-      contrastRatio(onOpaque, hue) < TEXT_RATIO ||
-      !sourceIsHue(status, resolved)
-    ) {
-      const emphasized = solveLightness(hue, [onOpaque], SOLVE_RATIO);
-      if (emphasized !== null) {
-        roles.emphasized = emphasized;
-      }
+  const onOpaque = opaqueOver(on, hue);
+  // A source that already carries its content keeps the scoped alias to
+  // that source; only a source that needs adjusting, or a grey Info accent,
+  // gets a concrete value.
+  if (
+    contrastRatio(onOpaque, hue) < TEXT_RATIO ||
+    !sourceIsHue(status, resolved)
+  ) {
+    const emphasized = solveLightness(hue, [onOpaque], SOLVE_RATIO);
+    if (emphasized !== null) {
+      roles.emphasized = emphasized;
     }
   }
 
-  const muted =
-    status === 'info'
-      ? {...hue, a: PALE_ALPHA[mode]}
-      : parseConcreteColor(resolved[`--color-${status}-muted`]);
   if (status === 'info') {
-    roles.muted = {...hue, a: PALE_ALPHA[mode]};
+    roles.muted = muted;
   }
-  if (muted !== null) {
-    const fill = composite(
-      muted.a < 1 ? muted : {...muted, a: 1},
-      opaqueSurface,
-    );
-    const onMuted = solveLightness(hue, [fill], SOLVE_RATIO);
-    if (onMuted !== null) {
-      roles.onMuted = onMuted;
-    }
+  const fill = composite(muted.a < 1 ? muted : {...muted, a: 1}, opaqueSurface);
+  const onMuted = solveLightness(hue, [fill], SOLVE_RATIO);
+  if (onMuted !== null) {
+    roles.onMuted = onMuted;
   }
   return roles;
 }

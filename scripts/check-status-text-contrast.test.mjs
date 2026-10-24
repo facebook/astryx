@@ -241,6 +241,21 @@ describe('theme generation derives a complete status set (INV17)', () => {
     expect(emitted).not.toHaveProperty('--color-on-success-muted');
   });
 
+  it('keeps aliases when a measured surface is not a concrete colour', () => {
+    const theme = defineTheme({
+      name: 'status-unresolved-card',
+      tokens: {
+        '--color-success': '#3FB950',
+        '--color-background-card': 'var(--host-card)',
+      },
+    });
+    const emitted = emittedRootTokens(theme);
+    expect(emitted['--color-text-success'] ?? 'alias').not.toMatch(
+      /^light-dark\(#/,
+    );
+    expect(emitted['--color-success-emphasized']).toBe('var(--color-success)');
+  });
+
   it('counts a role inherited through extends as set', () => {
     const parent = defineTheme({
       name: 'status-parent',
