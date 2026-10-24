@@ -8,16 +8,16 @@
  *   useSwipeAction, theme tokens
  * @output Exports ItemSwipeLayer (default) — the panels of a row's swipe
  *   actions and the gesture that uncovers them — and the ItemSwipeBridge type
- *   through which the root reaches the gesture's handlers
+ *   through which the root reaches the gesture's key handler
  * @position Internal to Item, reached only through a dynamic import from
  *   Item.tsx when `swipeActions` is set, so a row without them never loads
  *   the gesture. Tested through Item.test.tsx and Item.source-build.test.mjs.
  *
  * The row's root stays Item's: it carries the swipe root styles and forwards
- * its pointer, click-capture and key events into the bridge this layer fills.
- * This layer renders the two panels as out-of-flow children of that root and
- * runs the gesture against it, so the DOM is the one Item rendered before the
- * split — no element is added for the swipe (spec AST-057, FR2).
+ * its key events into the bridge this layer fills; the gesture attaches to
+ * the root itself. This layer renders the two panels as out-of-flow children
+ * of that root, so the DOM is the one Item rendered before the split — no
+ * element is added for the swipe (spec AST-057, FR2).
  */
 
 import {useEffect, useRef, type RefObject} from 'react';
@@ -33,11 +33,7 @@ import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useMediaQuery} from '../hooks/useMediaQuery';
-import {
-  useSwipeAction,
-  type SwipeHandlers,
-  type SwipeSide,
-} from './useSwipeAction';
+import {useSwipeAction, type SwipeSide} from './useSwipeAction';
 import type {ItemSwipeAction, ItemSwipeBehavior} from './Item';
 
 // =============================================================================
@@ -45,13 +41,12 @@ import type {ItemSwipeAction, ItemSwipeBehavior} from './Item';
 // =============================================================================
 
 /**
- * What the root needs from the gesture: the handlers it forwards its events
- * into, and the test for the click the browser synthesizes after a drag. The
- * layer writes it on every render; the root reads it on every event.
+ * What the root needs from the gesture: the key handler it forwards its key
+ * events into (Escape closes a resting row). The layer writes it on every
+ * render; the root reads it on every event.
  */
 export interface ItemSwipeBridge {
-  handlers: SwipeHandlers;
-  shouldSuppressClick: () => boolean;
+  onKeyDown: (event: React.KeyboardEvent) => void;
 }
 
 export interface ItemSwipeLayerProps {
@@ -201,7 +196,6 @@ export default function ItemSwipeLayer({
     return entries[entries.length - 1];
   };
   const swipe = useSwipeAction({
-    isEnabled: true,
     behavior,
     sides: {
       leading: leading.length > 0,
@@ -221,15 +215,12 @@ export default function ItemSwipeLayer({
     isReducedMotion,
     rootRef,
   });
-  // The root forwards its events into what this publishes. Published from an
-  // effect, like the gesture's own latest-callback refs: React flushes
-  // effects before it delivers a discrete event, so a handler never meets a
-  // stale bridge; and withdrawn when the layer leaves.
+  // The root forwards its key events into what this publishes. Published
+  // from an effect, like the gesture's own latest-callback refs: React
+  // flushes effects before it delivers a discrete event, so a handler never
+  // meets a stale bridge; and withdrawn when the layer leaves.
   useEffect(() => {
-    onBridge({
-      handlers: swipe.handlers,
-      shouldSuppressClick: swipe.shouldSuppressClick,
-    });
+    onBridge({onKeyDown: swipe.onKeyDown});
     return () => {
       onBridge(null);
     };
@@ -238,18 +229,20 @@ export default function ItemSwipeLayer({
 
   // A side's panel: entries as real buttons under `reveal`, presentational
   // blocks under `commit`. Out of the accessibility tree and the tab order
-  // except while the row rests open, so the row keeps one tab stop and a
-  // pointer that can hover never meets it.
+  // except while the row rests open on its side, so the row keeps one tab
+  // stop, the other side's entries (out of sight behind the row) are never
+  // reached, and a pointer that can hover never meets it.
   const renderSwipePanel = (side: SwipeSide, entries: ItemSwipeAction[]) => {
     if (entries.length === 0) {
       return null;
     }
     const outer = entries[entries.length - 1];
     const isCommit = behavior === 'commit';
-    const isLive = isSwipeResting && !isCommit;
+    const isLive = isSwipeResting && swipe.state.side === side && !isCommit;
     return (
       <div
         key={side}
+        ref={swipe.panelRef}
         data-swipe-panel={side}
         inert={isLive ? undefined : true}
         aria-hidden={isCommit ? true : undefined}

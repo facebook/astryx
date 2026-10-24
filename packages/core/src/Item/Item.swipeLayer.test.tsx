@@ -9,10 +9,11 @@
  */
 
 import {createElement, type ReactNode} from 'react';
-import {describe, expect, it, vi} from 'vitest';
+import {afterEach, describe, expect, it, vi} from 'vitest';
 import {act, render, screen, waitFor} from '@testing-library/react';
 import {Item} from './Item';
 import type {ItemSwipeLayerProps} from './ItemSwipeLayer';
+import {emulateTouch} from './__tests__/emulateTouch';
 
 const {layerRenders} = vi.hoisted(() => ({layerRenders: vi.fn()}));
 
@@ -30,6 +31,10 @@ vi.mock('./ItemSwipeLayer', async importOriginal => {
 });
 
 describe('Item and the swipe layer', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it('renders a row without swipe actions with no swipe layer at all', async () => {
     render(
       <ul>
@@ -51,7 +56,34 @@ describe('Item and the swipe layer', () => {
     expect(screen.getByTestId('row').childElementCount).toBe(1);
   });
 
-  it('renders the swipe layer into the root of a row with swipe actions', async () => {
+  it('renders the swipe layer under a fine primary pointer too: a finger swipes on every device', async () => {
+    // A touchscreen laptop: a fine primary pointer, and a finger beside it.
+    // The gesture reads each touch's pointer (`spec:AST-057`), so the layer
+    // is there; a mouse never starts it (Item.test.tsx).
+    // A fine primary pointer in this context, before anything is checked.
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+    await import('./ItemSwipeLayer');
+    layerRenders.mockClear();
+    render(
+      <Item
+        label="Inbox"
+        data-testid="row"
+        swipeActions={{trailing: [{label: 'Archive', onActivate: () => {}}]}}
+      />,
+    );
+    const row = screen.getByTestId('row');
+    await waitFor(() => {
+      expect(row.querySelector('[data-swipe-panel="trailing"]')).not.toBeNull();
+    });
+    expect(layerRenders).toHaveBeenCalled();
+  });
+
+  it("renders the swipe layer into the root of a row with swipe actions on a phone's pointer", async () => {
+    // The layer's module first: a cold import compiles the gesture and motion
+    // modules it brings, which can outlast waitFor's one second on a busy
+    // machine, while the import itself is awaited for as long as it takes.
+    await import('./ItemSwipeLayer');
+    emulateTouch();
     render(
       <Item
         label="Inbox"

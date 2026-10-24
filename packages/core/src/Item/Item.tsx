@@ -11,10 +11,10 @@
  * The swipe actions live in ItemSwipeLayer, reached only through a dynamic
  * import when `swipeActions` is set: this module imports nothing of the
  * gesture, so a row without swipe actions ships none of it. The root here
- * still carries the swipe styles and forwards its events into the bridge the
- * layer fills, so a swipeable row keeps the DOM and the event model it had
- * when the gesture was imported here (Item.source-build.test.mjs pins the
- * import graph).
+ * still carries the swipe styles and forwards its key events into the bridge
+ * the layer fills; the layer attaches the gesture to the root itself, so a
+ * swipeable row keeps the DOM it had when the gesture was imported here
+ * (Item.source-build.test.mjs pins the import graph).
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Item/Item.doc.mjs
@@ -281,6 +281,9 @@ export interface ItemProps extends BaseProps<HTMLElement> {
    * radio). The element containing the rows clips in the inline axis
    * (`overflow-inline: clip`): `List` does; any other host does it once.
    *
+   * The swipe is a touch behaviour, the same on every device: the gesture
+   * reads each touch's pointer, so a finger swipes the row whatever the
+   * primary pointer (a touchscreen laptop's included) and a mouse never does.
    * The gesture and its panels are loaded on demand, the first time a row has
    * swipe actions, so a row without them ships none of it; a row with them is
    * drawn at once and becomes swipeable as soon as that module has loaded.
@@ -626,19 +629,23 @@ export function Item({
   // a row that is the enlarged target of a nested control are not served.
   const leadingSwipe = swipeActions?.leading ?? [];
   const trailingSwipe = swipeActions?.trailing ?? [];
-  const hasSwipe =
+  const isSwipeServed =
     swipeActions != null &&
     (leadingSwipe.length > 0 || trailingSwipe.length > 0) &&
     !isDisabled &&
     !isDelegate &&
     !isLinkRoot &&
     (role == null || SWIPE_ROLES.has(role));
+  // The swipe is a touch behaviour, the same on every device: the gesture
+  // reads each touch's pointer (`spec:AST-057`), so a finger swipes whatever
+  // the primary pointer and a mouse never starts the drag.
+  const hasSwipe = isSwipeServed;
   useDevWarning(
     'Item',
     '`swipeBehavior="commit"` fires only the outermost entry of a side; the ' +
       'other entries have no touch path. Give a committing side one entry, ' +
       'or use `swipeBehavior="reveal"`.',
-    hasSwipe &&
+    isSwipeServed &&
       swipeBehavior === 'commit' &&
       (leadingSwipe.length > 1 || trailingSwipe.length > 1),
   );
@@ -819,8 +826,8 @@ export function Item({
     hasSwipe ? swipeRootRef : undefined,
   );
 
-  // The row's own primary, which the click the browser synthesizes after a
-  // drag must not fire.
+  // The row's own primary. The click the browser synthesizes after a swipe
+  // never reaches it: the gesture system swallows it.
   const primaryOnClick = isDelegate
     ? delegatedOnClick
     : hasParentRole
@@ -828,35 +835,15 @@ export function Item({
       : isInteractive
         ? handleContainerClick
         : undefined;
-  const rootOnClick =
-    hasSwipe && primaryOnClick != null
-      ? (event: React.MouseEvent<HTMLElement>) => {
-          if (swipeBridgeRef.current?.shouldSuppressClick() === true) {
-            return;
-          }
-          primaryOnClick(event);
-        }
-      : primaryOnClick;
 
-  // The gesture's handlers, forwarded from the root into the bridge the swipe
-  // layer fills: the root keeps the event model it had before the split — React's
-  // own pointer, click-capture and key events on the row's root — while the
-  // gesture itself lives in the lazily loaded layer. Until the layer has
-  // mounted the bridge is empty and each forwarder does nothing.
+  // Escape on a resting row, forwarded from the root into the bridge the swipe
+  // layer fills: React's own key event on the row's root, so the row keeps the
+  // event model it had before the split. Until the layer has mounted the
+  // bridge is empty and the forwarder does nothing.
   const swipeHandlers = hasSwipe
     ? {
-        onPointerDown: (event: React.PointerEvent) =>
-          swipeBridgeRef.current?.handlers.onPointerDown(event),
-        onPointerMove: (event: React.PointerEvent) =>
-          swipeBridgeRef.current?.handlers.onPointerMove(event),
-        onPointerUp: (event: React.PointerEvent) =>
-          swipeBridgeRef.current?.handlers.onPointerUp(event),
-        onPointerCancel: (event: React.PointerEvent) =>
-          swipeBridgeRef.current?.handlers.onPointerCancel(event),
-        onClickCapture: (event: React.MouseEvent) =>
-          swipeBridgeRef.current?.handlers.onClickCapture(event),
         onKeyDown: (event: React.KeyboardEvent) =>
-          swipeBridgeRef.current?.handlers.onKeyDown(event),
+          swipeBridgeRef.current?.onKeyDown(event),
       }
     : undefined;
 
@@ -897,7 +884,7 @@ export function Item({
         style,
       )}
       role={role}
-      onClick={rootOnClick}>
+      onClick={primaryOnClick}>
       <ItemDescriptionContext
         value={hasRenderableDescription ? descriptionID : null}>
         {innerContent}
