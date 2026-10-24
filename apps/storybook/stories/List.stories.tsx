@@ -491,3 +491,63 @@ export const SelectionHold: Story = {
     },
   },
 };
+
+function AnimatedChangesDemo() {
+  const [rows, setRows] = useState([
+    'Inbox',
+    'Sent',
+    'Drafts',
+    'Archive',
+    'Spam',
+  ]);
+  const [next, setNext] = useState(1);
+  return (
+    <VStack gap={4}>
+      <List hasAnimatedChanges hasDividers>
+        {rows.map(label => (
+          <ListItem key={label} label={label} onClick={() => {}} />
+        ))}
+      </List>
+      <Button
+        label="Insert a row second"
+        onClick={() => {
+          setRows(current => [
+            current[0],
+            `Folder ${next}`,
+            ...current.slice(1),
+          ]);
+          setNext(n => n + 1);
+        }}
+      />
+      <Button
+        label="Remove the second row"
+        onClick={() =>
+          setRows(current => current.filter((_, index) => index !== 1))
+        }
+      />
+      <Button
+        label="Move the last row first"
+        onClick={() =>
+          setRows(current => [
+            current[current.length - 1],
+            ...current.slice(0, -1),
+          ])
+        }
+      />
+    </VStack>
+  );
+}
+
+export const AnimatedChanges: Story = {
+  render: () => <AnimatedChangesDemo />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'With `hasAnimatedChanges`, on a touch screen, rows that stay slide ' +
+          'to their new places and new rows fade in when the list changes, ' +
+          'on UIKit’s table update spring.',
+      },
+    },
+  },
+};

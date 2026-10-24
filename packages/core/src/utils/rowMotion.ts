@@ -7,12 +7,14 @@
  * @input The motion foundation's animator and the springs of list updates
  *   (motion/uikit/list.ts)
  * @output The moves list rows share: one animator per element for every
- *   lane that moves it (`animatorFor`, `motionOf` for its latest motion),
+ *   lane that moves it (`animatorFor`; `animateRow` starts a recorded
+ *   spring, `motionOf` reads the running one and its spring),
  *   `springHome` (spring a property to its resting value after the layout
  *   moved the element, keeping the velocity on screen), `springTo`,
  *   `releaseMotion` (clear the identity inline values once it rests) and
  *   `contentBelow` (the page content layout moves along with a component)
- * @position Internal utility for row motion (TreeList's expansion today),
+ * @position Internal utility for row motion (TreeList's expansion, List's
+ *   update motion),
  *   shared by any code that moves a list row, so two motions never drive one
  *   row through two animators. A shim with the signature of the motion
  *   foundation's coming per-element `animatorFor`: the swap is one import.
@@ -22,7 +24,8 @@
  * it home. A row moved again mid-motion keeps its velocity, so consecutive
  * updates blend instead of restarting.
  *
- * SYNC: When modified, update TreeList/useTreeExpansionMotion.ts.
+ * SYNC: When modified, update TreeList/useTreeExpansionMotion.ts and
+ * utils/useListUpdateMotion.ts.
  */
 
 import {
@@ -45,8 +48,16 @@ const REDUCED_MOTION = 'keep' as const;
  * it: two animators on one element would fight over the same channel.
  */
 const animators = new WeakMap<HTMLElement, Animator>();
-/** The latest motion started on each element through this module. */
-const motions = new WeakMap<HTMLElement, MotionHandle>();
+type RowProperty = 'y' | 'rotate' | 'opacity';
+
+/** A motion started through this module: its handle and the spring it runs. */
+export interface RowMotion {
+  handle: MotionHandle;
+  spring: SpringDescription;
+}
+
+/** The running motion of each element, per property, until it rests. */
+const motions = new WeakMap<HTMLElement, Map<RowProperty, RowMotion>>();
 
 /** The element's shared animator, created on first use. */
 export function animatorFor(element: HTMLElement): Animator {
@@ -58,30 +69,76 @@ export function animatorFor(element: HTMLElement): Animator {
   return animator;
 }
 
-/** Whether this module has moved the element and it has not rested yet. */
+/** Whether a motion started here still runs on the element. */
 export function isMoving(element: HTMLElement): boolean {
-  return motions.has(element);
+  return (motions.get(element)?.size ?? 0) > 0;
 }
 
-/** The latest motion started on the element here, if it has not rested. */
-export function motionOf(element: HTMLElement): MotionHandle | undefined {
-  return motions.get(element);
+/**
+ * The motion running on the element's `property`, started here, with the
+ * spring it runs on; undefined once it rests.
+ */
+export function motionOf(
+  element: HTMLElement,
+  property: RowProperty = 'y',
+): RowMotion | undefined {
+  return motions.get(element)?.get(property);
 }
 
-function track(element: HTMLElement, handle: MotionHandle): MotionHandle {
-  motions.set(element, handle);
+function track(
+  element: HTMLElement,
+  properties: ReadonlyArray<RowProperty>,
+  handle: MotionHandle,
+  spring: SpringDescription,
+): MotionHandle {
+  let running = motions.get(element);
+  if (running == null) {
+    running = new Map();
+    motions.set(element, running);
+  }
+  const motion = {handle, spring};
+  for (const property of properties) {
+    running.set(property, motion);
+  }
+  const record = running;
   void handle.finished.then(() => {
-    if (motions.get(element) === handle) {
-      motions.delete(element);
+    for (const property of properties) {
+      if (record.get(property) === motion) {
+        record.delete(property);
+      }
     }
   });
   return handle;
 }
 
+/**
+ * Starts a spring on the element's shared animator and records it, so a
+ * later layout shift keeps its curve (see `springHome`). For any code that
+ * moves a list row: a drop, a slide to make room, an exit.
+ */
+export function animateRow(
+  element: HTMLElement,
+  to: Partial<Record<RowProperty, number>>,
+  spring: SpringDescription,
+  options: {at: number; velocity?: Partial<Record<RowProperty, number>>},
+): MotionHandle {
+  const properties = Object.keys(to) as RowProperty[];
+  return track(
+    element,
+    properties,
+    animatorFor(element).animate(
+      to,
+      {spring, velocity: options.velocity},
+      {at: options.at, reducedMotion: REDUCED_MOTION},
+    ),
+    spring,
+  );
+}
+
 /** Where the element's `property` is on screen at `at`, from its curve. */
 export function presentation(
   element: HTMLElement,
-  property: 'y' | 'rotate' | 'opacity',
+  property: RowProperty,
   at: number,
 ): number {
   const animator = animators.get(element);
@@ -94,11 +151,15 @@ export function presentation(
 /**
  * Springs `element`'s `property` to its resting value (0, or 1 for opacity)
  * after moving it by `shift` (the layout just moved it the other way),
- * keeping the velocity it has on screen. Resolves true when it arrives.
+ * keeping the velocity it has on screen. A layout shift never changes a
+ * running motion's curve: if a motion started here still runs on the
+ * property, its spring continues (springs are memoryless, so the curve goes
+ * on exactly); `spring` applies to an element at rest. Resolves true when it
+ * arrives.
  */
 export async function springHome(
   element: HTMLElement,
-  property: 'y' | 'rotate' | 'opacity',
+  property: RowProperty,
   shift: number,
   spring: SpringDescription,
   at: number,
@@ -106,16 +167,15 @@ export async function springHome(
   const animator = animatorFor(element);
   const value = animator.get(property, at);
   const velocity = animator.getVelocity(property, at);
+  const curve = motionOf(element, property)?.spring ?? spring;
   if (shift !== 0) {
     animator.set({[property]: value + shift});
   }
-  return track(
+  return animateRow(
     element,
-    animator.animate(
-      {[property]: property === 'opacity' ? 1 : 0},
-      {spring, velocity: {[property]: velocity}},
-      {at, reducedMotion: REDUCED_MOTION},
-    ),
+    {[property]: property === 'opacity' ? 1 : 0},
+    curve,
+    {at, velocity: {[property]: velocity}},
   ).finished;
 }
 
@@ -126,14 +186,7 @@ export async function springTo(
   spring: SpringDescription,
   at: number,
 ): Promise<boolean> {
-  return track(
-    element,
-    animatorFor(element).animate(
-      {y: to},
-      {spring},
-      {at, reducedMotion: REDUCED_MOTION},
-    ),
-  ).finished;
+  return animateRow(element, {y: to}, spring, {at}).finished;
 }
 
 /**
@@ -147,7 +200,7 @@ export function releaseMotion(
   element: HTMLElement,
   ...properties: ReadonlyArray<'translate' | 'rotate' | 'opacity'>
 ): void {
-  if (motions.has(element)) {
+  if (isMoving(element)) {
     return;
   }
   for (const property of properties) {
