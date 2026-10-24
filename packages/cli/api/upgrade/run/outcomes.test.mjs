@@ -100,6 +100,16 @@ afterEach(() => {
 
 const APPLY = {from: '0.1.0', apply: true, path: 'src'};
 
+/** @param {Promise<unknown>} promise */
+async function rejection(promise) {
+  try {
+    await promise;
+  } catch (err) {
+    return /** @type {any} */ (err);
+  }
+  throw new Error('expected upgrade() to reject');
+}
+
 describe('manual migrations in the upgrade receipt', () => {
   it('are listed, never errors, and leave the run complete', async () => {
     const result = await upgrade(APPLY, {cwd: dir});
@@ -148,16 +158,25 @@ describe('manual migrations in the upgrade receipt', () => {
 });
 
 describe('regeneration in the upgrade receipt', () => {
-  it('keeps the run incomplete with ERR_CODEMOD_PROTECTED and the command', async () => {
+  it('reports a file nothing protects as a codemod error, never ERR_CODEMOD_PROTECTED', async () => {
     write('src/theme.ts', '// STALE\n');
 
-    const result = await upgrade(APPLY, {cwd: dir});
+    const err = await rejection(upgrade(APPLY, {cwd: dir}));
 
-    expect(result.data).toMatchObject({
+    // No protected file blocks this change, so ERR_CODEMOD_PROTECTED would
+    // misstate it; it keeps the code a failed required change has.
+    expect(err.code).toBe('ERR_CODEMOD_FAILED');
+    expect(err.receipt).toMatchObject({
       complete: false,
-      errorCode: 'ERR_CODEMOD_PROTECTED',
-      errors: [],
+      errorCode: 'ERR_CODEMOD_FAILED',
       protectedFiles: [],
+      errors: [
+        {
+          file: 'src/theme.ts',
+          codemod: 'core:report-raw',
+          error: 'Out of date.',
+        },
+      ],
       regenerate: [
         {
           file: 'src/theme.ts',
@@ -167,6 +186,30 @@ describe('regeneration in the upgrade receipt', () => {
         },
       ],
       manualActions: [expect.objectContaining({file: 'src/chart.ts'})],
+    });
+  });
+
+  it('keeps a file to regenerate in the receipt when astryx.config also fails validation', async () => {
+    fs.rmSync(path.join(dir, 'src/index.ts'));
+    write('src/theme.ts', '// STALE\n');
+    write('astryx.config.mjs', "export default {theme: 'neutral'};\n");
+
+    const err = await rejection(upgrade(APPLY, {cwd: dir}));
+
+    expect(err.code).toBe('ERR_INVALID_ARGUMENT');
+    expect(err.receipt).toMatchObject({
+      complete: false,
+      modifiedFiles: [],
+      regenerate: [
+        expect.objectContaining({
+          file: 'src/theme.ts',
+          commands: ['gen theme'],
+        }),
+      ],
+      errors: expect.arrayContaining([
+        expect.objectContaining({file: 'src/theme.ts'}),
+        expect.objectContaining({codemod: 'config'}),
+      ]),
     });
   });
   it('lists a reported file the project protects in protectedFiles too, with its declaration', async () => {
@@ -197,7 +240,7 @@ describe('regeneration in the upgrade receipt', () => {
 
   it('does not say the code is up to date when the only findings are outcomes', async () => {
     fs.rmSync(path.join(dir, 'src/index.ts'));
-    write('src/theme.ts', '// STALE\n');
+    write('src/theme.ts', '// @generated\n// STALE\n');
     logger.setSilent(false);
     const out = vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -209,19 +252,28 @@ describe('regeneration in the upgrade receipt', () => {
     expect(stdout).not.toMatch(/No changes needed/);
     expect(stdout).toMatch(/Upgrade incomplete/);
   });
+
+  it('does not say Done when another codemod changed a file and a regeneration is pending', async () => {
+    write('src/theme.ts', '// @generated\n// STALE\n');
+    logger.setSilent(false);
+    const out = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const result = await upgrade(APPLY, {cwd: dir});
+
+    const text = [...out.mock.calls, ...err.mock.calls]
+      .map(c => c.join(' '))
+      .join('\n');
+    expect(result.data.modifiedFiles).toEqual(['src/index.ts']);
+    expect(text).not.toMatch(/Done!/);
+    expect(text).toMatch(
+      /Applied 1 owned change across 1 file; generated files to regenerate remain/,
+    );
+    expect(text).toMatch(/Upgrade incomplete/);
+  });
 });
 
 describe('a failure beside outcomes', () => {
-  /** @param {Promise<unknown>} promise */
-  async function rejection(promise) {
-    try {
-      await promise;
-    } catch (err) {
-      return /** @type {any} */ (err);
-    }
-    throw new Error('expected upgrade() to reject');
-  }
-
   it('still rejects with ERR_CODEMOD_FAILED, and its receipt keeps the manual actions', async () => {
     write('src/broken.ts', 'const boom = 1;\n');
 
@@ -258,8 +310,8 @@ describe('a failure beside outcomes', () => {
     );
   });
 
-  it('with a file to regenerate, returns the incomplete receipt as for a protected file', async () => {
-    write('src/theme.ts', '// STALE\n');
+  it('with a protected file to regenerate, returns the incomplete receipt as for a protected file', async () => {
+    write('src/theme.ts', '// @generated\n// STALE\n');
     write('src/broken.ts', 'const boom = 1;\n');
 
     const result = await upgrade(APPLY, {cwd: dir});

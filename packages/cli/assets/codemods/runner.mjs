@@ -715,6 +715,13 @@ export async function runCodemods(
     );
   }
 
+  // A generated file a transform reported out of date keeps the run from
+  // looking done, as a blocked protected file does.
+  const pendingRegeneration = (outcomes ?? []).some(
+    outcome =>
+      /** @type {{kind?: string} | null} */ (outcome)?.kind === 'regenerate',
+  );
+
   if (
     totalFilesChanged === 0 &&
     errors.length === 0 &&
@@ -725,9 +732,9 @@ export async function runCodemods(
     if (coversTarget && !(outcomes && outcomes.length > 0)) {
       log.success('No changes needed — your code is already up to date!');
     }
-  } else if (apply && protectedFiles.length > 0) {
+  } else if (apply && (protectedFiles.length > 0 || pendingRegeneration)) {
     log.warn(
-      `Applied ${totalTransformsApplied} owned change${totalTransformsApplied === 1 ? '' : 's'} across ${totalFilesChanged} file${totalFilesChanged === 1 ? '' : 's'}; protected changes remain.`,
+      `Applied ${totalTransformsApplied} owned change${totalTransformsApplied === 1 ? '' : 's'} across ${totalFilesChanged} file${totalFilesChanged === 1 ? '' : 's'}; ${protectedFiles.length > 0 ? 'protected changes remain' : 'generated files to regenerate remain'}.`,
     );
   } else if (apply) {
     log.success(

@@ -229,6 +229,34 @@ function regenerationProtectionRows(outcomes, protection, cwd) {
 }
 
 /**
+ * Error rows for generated outputs a codemod reported out of date that nothing
+ * protects. No protected consumer file blocks such a change, so it is not an
+ * ERR_CODEMOD_PROTECTED outcome: the codemod required a change it could not
+ * make, which is a codemod failure (ERR_CODEMOD_FAILED), as it was before the
+ * outcome was typed. The file stays in `regenerate` with its command.
+ * @param {import('../_adapter.mjs').CodemodOutcomeRecord[]} outcomes
+ * @param {{classify: (file: string) => import('../../../foundation/fs/file-protection.mjs').FileProtection[]}} protection
+ * @param {string} cwd
+ * @returns {Array<{file: string, codemod: string, error: string}>}
+ */
+function regenerationErrors(outcomes, protection, cwd) {
+  /** @type {Array<{file: string, codemod: string, error: string}>} */
+  const rows = [];
+  for (const outcome of outcomes) {
+    if (outcome.kind !== 'regenerate') continue;
+    if (protection.classify(path.resolve(cwd, outcome.file)).length > 0) {
+      continue;
+    }
+    rows.push({
+      file: outcome.file,
+      codemod: outcome.codemod,
+      error: outcome.message,
+    });
+  }
+  return rows;
+}
+
+/**
  * The receipt of a run that stopped after codemods ran. Whatever the codemods
  * already wrote stays on disk, so the error the run throws carries this
  * receipt (`failWithReceipt`): a caller that reads only the error would
@@ -504,12 +532,14 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
       ...(coreResult?.protectedFiles ?? []),
       ...regenerationProtectionRows(initialOutcomes.outcomes, protection, cwd),
     ];
-    const pendingRegeneration = initialOutcomes.outcomes.some(
-      outcome => outcome.kind === 'regenerate',
+    const staleErrors = regenerationErrors(
+      initialOutcomes.outcomes,
+      protection,
+      cwd,
     );
-    // A file to regenerate blocks the run exactly like a protected file, so
-    // it keeps this incomplete result rather than the config error.
-    if (allProtected.length > 0 || pendingRegeneration) {
+    // A protected file to regenerate blocks the run like any protected file,
+    // so it keeps this incomplete result rather than the config error.
+    if (allProtected.length > 0) {
       const protectedFiles = summarizeProtectedFiles(allProtected);
       const regenerate = summarizeRegenerate(
         protectedFiles,
@@ -521,8 +551,14 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
       for (const item of protectedFiles) {
         logger.error(`  ${item.file} — ${item.declarations.join('; ')}`);
       }
-      for (const item of regenerate) {
-        if (!protectedFiles.some(row => row.file === item.file)) {
+      const unprotected = regenerate.filter(
+        item => !protectedFiles.some(row => row.file === item.file),
+      );
+      if (unprotected.length > 0) {
+        logger.error(
+          `${unprotected.length} generated file${unprotected.length === 1 ? '' : 's'} must be regenerated:`,
+        );
+        for (const item of unprotected) {
           logger.error(`  ${item.file} — ${item.messages.join(' ')}`);
         }
       }
@@ -556,7 +592,7 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
           regenerate,
           complete: false,
           errorCode: 'ERR_CODEMOD_PROTECTED',
-          errors: coreResult?.errors ?? [],
+          errors: [...(coreResult?.errors ?? []), ...staleErrors],
           ...(cliBehindCore ? {cliBehindCore} : {}),
         },
       };
@@ -590,8 +626,12 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
     // Genuine config error: abort.
     logger.error(configErr.message);
     logger.log('Aborted\n');
-    if ((coreResult?.writtenFiles.length ?? 0) > 0) {
-      // Core codemods already wrote: the error carries what they changed.
+    if (
+      (coreResult?.writtenFiles.length ?? 0) > 0 ||
+      initialOutcomes.outcomes.length > 0
+    ) {
+      // Core codemods already wrote, or reported files to regenerate or
+      // migrate by hand: the error carries what they changed and found.
       if (cliBehindCore) logCliBehindCore(cliBehindCore, targetVersion);
       const stopped = stoppedReceipt({
         from: currentVersion,
@@ -606,6 +646,7 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
         outcomes: initialOutcomes.outcomes,
         errors: [
           ...(coreResult?.errors ?? []),
+          ...staleErrors,
           {file: '.', codemod: 'config', error: configErr.message},
         ],
         errorCode: ERROR_CODES.ERR_INVALID_ARGUMENT,
@@ -814,7 +855,12 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
       const hookErr = /** @type {Error} */ (err);
       const msg = `Post-codemod hook failed: ${hookErr.message}`;
       logger.error(msg);
-      if (initialProtected.length === 0 && reportedRegeneration.length === 0) {
+      const protectedRegeneration = regenerationProtectionRows(
+        initialOutcomes.outcomes,
+        protection,
+        cwd,
+      );
+      if (initialProtected.length === 0 && protectedRegeneration.length === 0) {
         logger.log('Upgrade failed\n');
         throw failWithReceipt(
           msg,
@@ -828,14 +874,11 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
             cwd,
             changedFiles: mergedChangedFiles,
             transformsApplied: mergedTransformsApplied,
-            protectedRows: regenerationProtectionRows(
-              initialOutcomes.outcomes,
-              protection,
-              cwd,
-            ),
+            protectedRows: [],
             outcomes: initialOutcomes.outcomes,
             errors: [
               ...mergedErrors,
+              ...regenerationErrors(initialOutcomes.outcomes, protection, cwd),
               {file: '.', codemod: 'post-codemod-hook', error: msg},
             ],
             errorCode: ERROR_CODES.ERR_CODEMOD_FAILED,
@@ -899,6 +942,7 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
         outcomes: initialOutcomes.outcomes,
         errors: [
           ...mergedErrors,
+          ...regenerationErrors(initialOutcomes.outcomes, protection, cwd),
           {file: '.', codemod: 'file-protection', error: err.message},
         ],
         errorCode: err.code,
@@ -985,9 +1029,14 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
   const regenerate = summarizeRegenerate(protectedFiles, finalOutcomes);
   receipt.manualActions = manualActions;
   receipt.regenerate = regenerate;
-  // A generated file to rebuild blocks the run exactly like a protected file
-  // (spec:AST-040 FR6); a manual action never does.
-  const blocked = protectedFiles.length > 0 || regenerate.length > 0;
+  // A protected file to rebuild blocks the run like any protected file
+  // (spec:AST-040 FR6). An unprotected one is a required change the codemod
+  // could not make: a codemod error. A manual action never blocks.
+  finalErrors = [
+    ...finalErrors,
+    ...regenerationErrors(finalOutcomes, finalProtection, cwd),
+  ];
+  const blocked = protectedFiles.length > 0;
   receipt.complete = !blocked && finalErrors.length === 0;
   if (blocked) {
     receipt.errorCode = 'ERR_CODEMOD_PROTECTED';
@@ -1017,7 +1066,7 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
   const staleOutputs = regenerate.filter(item => !protectedSet.has(item.file));
   if (staleOutputs.length > 0) {
     logger.error(
-      `${ERROR_CODES.ERR_CODEMOD_PROTECTED}: ${staleOutputs.length} generated file${staleOutputs.length === 1 ? '' : 's'} must be regenerated:`,
+      `${staleOutputs.length} generated file${staleOutputs.length === 1 ? '' : 's'} must be regenerated:`,
     );
     for (const item of staleOutputs) {
       logger.error(`  ${item.file} — ${item.messages.join(' ')}`);
@@ -1082,14 +1131,12 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
   logger.log(
     protectedFiles.length > 0
       ? 'Upgrade incomplete: protected changes remain\n'
-      : regenerate.length > 0
-        ? 'Upgrade incomplete: regenerate the files listed above, then run the same upgrade again\n'
-        : !registryOk
-          ? 'Upgrade finished with unresolved registry items\n'
-          : sourcePathFound
-            ? done + manualNote + '\n'
-            : `${done}${manualNote}, but ${path.relative(cwd, path_) || '.'} does not exist, so no source files were scanned. ` +
-              `Pass --path <your source directory> if your code does not live in ./src.\n`,
+      : !registryOk
+        ? 'Upgrade finished with unresolved registry items\n'
+        : sourcePathFound
+          ? done + manualNote + '\n'
+          : `${done}${manualNote}, but ${path.relative(cwd, path_) || '.'} does not exist, so no source files were scanned. ` +
+            `Pass --path <your source directory> if your code does not live in ./src.\n`,
   );
   return {
     type: 'upgrade.run',
