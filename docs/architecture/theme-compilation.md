@@ -194,7 +194,7 @@ Platform-specific details stay inside that compiler.
   token, the alias is emitted inside the theme scope where its semantic source is
   effective, including reachable adaptation and media combinations. A media
   surface's unpaired `--color-accent` collapse is presentation context, not an
-  authored Info pair, so it does not rebind `--color-info`; authoring both
+  authored Info pair, so it does not rebind `--color-info-emphasized`; authoring both
   `--color-accent` and `--color-on-accent` makes that media pair eligible. A nested
   theme derives from its nearest provider rather than retaining its parent's alias.
   Authored destination roles, source order, `!important`, `inherit`, concrete

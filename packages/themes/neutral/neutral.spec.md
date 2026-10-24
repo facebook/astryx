@@ -87,10 +87,10 @@ tone coordinates.
 
 ## Component and state mappings
 
-Core components choose semantic roles by surface: strong fills use the base
-semantic color with `--color-on-*`, pale surfaces use `--color-*-muted` with
-`--color-on-*-muted`, and plain-surface text, icons, and boundaries use
-`--color-status-foreground-*`. Neutral supplies named palette-stop values for
+Core components choose semantic roles by surface: strong fills use
+`--color-*-emphasized` with `--color-on-*`, pale surfaces use `--color-*-muted`
+with `--color-on-*-muted`, and status text, icons, and borders on the default
+surfaces use `--color-text-*`. Neutral supplies named palette-stop values for
 those public roles. Component-local Neutral mappings exist only when the theme
 intentionally differs from Core behavior.
 
@@ -218,10 +218,11 @@ changing semantic token mappings in the palette-value change.
 
 Neutral's semantic, categorical, syntax, and color-bearing effect values use
 named palette-stop references when an approved match exists. Token names remain
-stable. Under the status-role contract, the base `--color-info`, `--color-success`,
-`--color-warning`, and `--color-error` tokens mean strong fills paired with their
-`--color-on-*` content; plain-surface foregrounds use
-`--color-status-foreground-*`, and pale surfaces use the muted/on-muted pairs.
+stable. The released `--color-success`, `--color-warning`, and `--color-error`
+keep their Neutral values. Under the status-role contract
+(`architecture:theme-tokens` INV11), strong fills use `--color-*-emphasized`
+with their `--color-on-*` content, status text, icons, and borders use
+`--color-text-*`, and pale surfaces use the muted/on-muted pairs.
 Alpha variants derive from the referenced stop rather than duplicating its hex
 value.
 
