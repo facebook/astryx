@@ -3138,7 +3138,6 @@ jobs:
             --storybook-dir apps/storybook/dist \
             --output dropdown-menu-radio-item-a11y-report.json \
             --components DropdownMenuRadioItem \
-            --ready-selector '[role="menu"]' \
             --baseline .github/a11y-baseline.json \
             --fail-on-new || status=1
           pnpm exec playwright test \
