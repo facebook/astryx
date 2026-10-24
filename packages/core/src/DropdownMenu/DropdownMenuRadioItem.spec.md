@@ -78,7 +78,9 @@ Consumer migration instructions belong in consumer docs and release notes.
   group value.
 - Selection order: disabled guard, group `onChange(value)`, optional close, then
   the caller click handler.
-- The decorative shared radio marker, its size, and its inline placement.
+- The decorative shared radio marker, its size, and its inline placement, at
+  the edge a group's `indicatorPosition` names when set (proposed
+  `component:DropdownMenu` FR18).
 - Label, description, icon, and end content composition through Item.
 - Disabled state exposure and paint, and hover focus for enabled rows.
 - Root composition of ref, supported host inputs, `className`, `style`, and
@@ -116,7 +118,7 @@ intentional decision.
 | FR3 | Enabled activation, by pointer or by the parent's synthesized Enter/Space click, MUST call the group `onChange` with the row value, then ask DropdownMenu to close when the group's close policy is on, then call the caller `onClick`.                                                | Released behavior; `architecture:public-component-api/INV7`; focused tests | verify             |
 | FR4 | A disabled row MUST expose `aria-disabled="true"`, render no `tabindex`, take no hover focus, and on any activation, including an assistive-technology click, MUST NOT call `onChange`, close the menu, or call the caller `onClick`. It paints at half opacity with a default cursor. | Current source, focused tests, and browser evidence                        | verify             |
 | FR5 | Ref, supported host attributes and handlers, `className`, `style`, and `xstyle` MUST reach or compose on the row root. Caller `onPointerMove` MUST run after the row's hover focus, and caller handlers MUST NOT replace the row's own behavior.                                       | `architecture:public-component-api/INV5–INV8`; focused tests               | verify             |
-| FR6 | The marker MUST be the shared radio Indicator, hidden from assistive technology, never the pointer target, sized `sm` in a small menu and `md` otherwise, at the row's inline start on a fine pointer and its inline end on a coarse pointer.                                          | Current source, focused tests, and browser evidence                        | verify             |
+| FR6 | The marker MUST be the shared radio Indicator, hidden from assistive technology, never the pointer target, sized `sm` in a small menu and `md` otherwise; unless proposed `component:DropdownMenu` FR18 places it, at the inline start on a fine pointer, the end on a coarse one.     | Current source, focused tests, and browser evidence                        | verify             |
 | FR7 | The row MUST carry the `dropdown-menu-item` target with the menu size and the marker MUST carry the `dropdown-menu-radio` target with size, checked, and disabled reflections.                                                                                                         | `architecture:component-theming-surface/INV4–INV6`; current source/docs    | verify             |
 | FR8 | The row MUST add no key handler or tab stop of its own: enabled rows are `tabindex="-1"` for the parent's roving focus, and keyboard selection arrives as the parent's synthesized click.                                                                                              | `architecture:interaction-modality`; parent keyboard tests                 | verify             |
 
@@ -138,7 +140,7 @@ intentional decision.
 | Unchecked      | `aria-checked=false`; the marker shows an empty circle.                   | Content, size, theme, and mode.                                |
 | Focused        | The row holds focus.                                                      | Pointer hover or keyboard arrival; focus paint is the AR4 gap. |
 | Disabled       | `aria-disabled=true`, no tab stop, half opacity, and no activation.       | Checked or unchecked value.                                    |
-| Coarse pointer | The marker sits at the inline end of the row.                             | Direction mirrors the placement.                               |
+| Coarse pointer | The marker sits at the inline end of the row, unless FR18 places it.      | Direction mirrors the placement.                               |
 | RTL / narrow   | Content and marker follow logical order with no horizontal page overflow. | Parent menu placement and width.                               |
 
 ### Transformation and precedence order
@@ -187,7 +189,8 @@ No new component-local visual decision is settled by this draft.
 
 - `component:DropdownMenuRadioGroup` owns value, change callback, and close policy.
 - `component:DropdownMenu` owns keyboard navigation, the press model, the
-  `dropdown-menu-item` and `dropdown-menu-radio` target inventory, disabled
+  `dropdown-menu-item` and `dropdown-menu-radio` target inventory, the edge a
+  group's `indicatorPosition` gives the marker (its proposed FR18), disabled
   keyboard discoverability (its OQ1), and forced-colors row focus together with
   `component:DropdownMenuItem` (its OQ2).
 - `architecture:public-component-api` owns root input and handler composition.
