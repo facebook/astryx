@@ -102,7 +102,10 @@ No normative assets are included.
 
 ## Component contract links
 
-No component-specific contract links are introduced.
+- `spec:AST-057` FR5 implements DR2 and DR3 for a swiped row's slide out,
+  spring back, and hold-out.
+- `component:BottomSheetSwitcher` FR3 and ORD1 implement DR2 and DR3 for a
+  handoff between sheets.
 
 ### Verification
 
