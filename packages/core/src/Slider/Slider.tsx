@@ -4,8 +4,8 @@
 
 /**
  * @file Slider.tsx
- * @input Uses React, useId, useRef, useCallback, useEffect, Field, Tooltip, useTooltip, VisuallyHidden
- * @output Exports Slider and its props; unfilled marks share the track token; modifier-only key presses do not restore the thumb focus ring; a drag belongs to the pointer that started it
+ * @input Uses React, useId, useRef, useCallback, useEffect, Field, Tooltip, useTooltip, VisuallyHidden; the touch presentation resolver and useSliderTouch (UISlider's touch tracking)
+ * @output Exports Slider and its props; unfilled marks share the track token; modifier-only key presses do not restore the thumb focus ring; a drag belongs to the pointer that started it; the thumbs and the filled range travel by `translate` from a progress custom property in the control's container units, so moving them never lays out (a value tooltip or text display still does); under a finger on iOS (the touch presentation's iOS idiom) only the thumbs' touch targets take touches, tracked as UISlider does, while a mouse and every other touch screen (Android's) keep the pointer handlers
  * @position Core implementation; consumed by index.ts, tested by Slider.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -27,6 +27,7 @@ import {
   type KeyboardEvent,
   type PointerEvent,
 } from 'react';
+import {flushSync} from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -55,6 +56,14 @@ import {
 } from '../Field/fieldParts';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {useTouchPresentation} from '../utils/touchPresentation';
+import {slider as UIKIT_SLIDER} from '../motion/uikit/slider';
+import {
+  SLIDER_HIT_ATTRIBUTE,
+  useSliderTouch,
+  type SliderTouchModel,
+  type SliderTouchParts,
+} from './useSliderTouch';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
@@ -163,6 +172,25 @@ export type SliderProps = SliderSingleProps | SliderRangeProps;
 const TRACK_SIZE = 4;
 const THUMB_SIZE = 20;
 
+/**
+ * Where a thumb sits, as its progress along the travel (0 at `min`, 1 at
+ * `max`), written inline on the thumb. Its translate is computed from it in
+ * CSS against the control's size (container units), so moving the thumb
+ * restyles and composites but never lays out (a value tooltip or text display
+ * still lays out as its text changes), and the server renders the right place.
+ */
+const THUMB_PROGRESS = '--_slider-progress';
+/** Half a thumb: the inset of the thumb's travel at each end of the track. */
+const THUMB_INSET_PX = THUMB_SIZE / 2;
+/** The filled range's ends as progress, written inline on the fill parts. */
+const FILL_START = '--_slider-fill-start';
+const FILL_END = '--_slider-fill-end';
+
+// The private progress properties a thumb and the fill parts publish inline.
+type ThumbStyle = React.CSSProperties & Record<typeof THUMB_PROGRESS, number>;
+type FillStyle = React.CSSProperties &
+  Record<typeof FILL_START | typeof FILL_END, number>;
+
 // =============================================================================
 // Styles
 // =============================================================================
@@ -178,9 +206,41 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     flexGrow: 1,
-    touchAction: 'none',
+    // Under a finger on iOS only the thumbs take touches (their touch
+    // targets set their own touch-action); the track leaves the page its
+    // scrolling. The gate is the touch presentation resolver's
+    // IOS_TOUCH_STYLE_KEYS, nested as it spells them: elsewhere, Android
+    // included, the whole control takes the finger as it always has.
+    touchAction: {
+      default: 'none',
+      '@media (pointer: coarse)': {
+        default: 'none',
+        '@supports (-webkit-touch-callout: none)': 'manipulation',
+      },
+    },
     userSelect: 'none',
+    // Safari reads only the prefixed forms: without them a finger held on a
+    // thumb starts a text selection (and its loupe) before the drag begins.
+    // A UISlider selects nothing.
+    WebkitUserSelect: {
+      default: null,
+      '@media (pointer: coarse)': {
+        default: null,
+        '@supports (-webkit-touch-callout: none)': 'none',
+      },
+    },
+    WebkitTouchCallout: {
+      default: null,
+      '@media (pointer: coarse)': {
+        default: null,
+        '@supports (-webkit-touch-callout: none)': 'none',
+      },
+    },
     isolation: 'isolate',
+    // The thumbs and the fill travel in container units of this box
+    // (`cqi` / `cqb`). Its size never depends on its content: the parts are
+    // all absolutely positioned and the box has a fixed block size.
+    containerType: 'size',
   },
   trackContainerHorizontal: {
     height: THUMB_SIZE,
@@ -240,18 +300,88 @@ const styles = stylex.create({
     bottom: 0,
     width: TRACK_SIZE,
   },
-  filledTrack: {
+  // The filled range is a full-length bar moved into place inside two
+  // clips, so it travels by translate alone: the clip has the track's shape
+  // (it rounds the start of a single slider's fill), the mover's start edge
+  // cuts the fill at the range's start, and the fill's own end sits at the
+  // range's end. Both ends of a range hide under its thumbs.
+  fillClip: {
     position: 'absolute',
-    backgroundColor: colorVars['--color-accent'],
+    overflow: 'hidden',
     borderRadius: radiusVars['--radius-full'],
+    pointerEvents: 'none',
   },
-  filledTrackHorizontal: {
+  fillClipHorizontal: {
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
     height: TRACK_SIZE,
     top: '50%',
     transform: 'translateY(-50%)',
   },
-  filledTrackVertical: {
+  fillClipVertical: {
+    top: 0,
+    bottom: 0,
     width: TRACK_SIZE,
+  },
+  fillMover: {
+    position: 'absolute',
+    inset: 0,
+    overflow: 'hidden',
+  },
+  // A range's start is round, like the track's ends (the clip already
+  // rounds a single slider's start); it shows through a disabled thumb's
+  // translucent fill.
+  fillMoverRangeStartHorizontal: {
+    borderStartStartRadius: radiusVars['--radius-full'],
+    borderEndStartRadius: radiusVars['--radius-full'],
+  },
+  fillMoverRangeStartVertical: {
+    borderEndStartRadius: radiusVars['--radius-full'],
+    borderEndEndRadius: radiusVars['--radius-full'],
+  },
+  fillMoverRangeHorizontal: {
+    translate: {
+      default: `calc(${THUMB_INSET_PX}px + var(${FILL_START}) * (100cqi - ${THUMB_SIZE}px)) 0`,
+      ':dir(rtl)': `calc(-${THUMB_INSET_PX}px - var(${FILL_START}) * (100cqi - ${THUMB_SIZE}px)) 0`,
+    },
+  },
+  fillMoverRangeVertical: {
+    translate: `0 calc(-${THUMB_INSET_PX}px - var(${FILL_START}) * (100cqb - ${THUMB_SIZE}px))`,
+  },
+  filledTrack: {
+    position: 'absolute',
+    inset: 0,
+    backgroundColor: colorVars['--color-accent'],
+  },
+  // The fill's end is round too, under the thumb.
+  filledTrackHorizontal: {
+    borderStartEndRadius: radiusVars['--radius-full'],
+    borderEndEndRadius: radiusVars['--radius-full'],
+  },
+  filledTrackVertical: {
+    borderStartStartRadius: radiusVars['--radius-full'],
+    borderStartEndRadius: radiusVars['--radius-full'],
+  },
+  // A single slider's fill runs from the track's start to the thumb's center.
+  filledTrackSingleHorizontal: {
+    translate: {
+      default: `calc(${THUMB_INSET_PX}px + var(${FILL_END}) * (100cqi - ${THUMB_SIZE}px) - 100cqi) 0`,
+      ':dir(rtl)': `calc(100cqi - ${THUMB_INSET_PX}px - var(${FILL_END}) * (100cqi - ${THUMB_SIZE}px)) 0`,
+    },
+  },
+  filledTrackSingleVertical: {
+    translate: `0 calc(100cqb - ${THUMB_INSET_PX}px - var(${FILL_END}) * (100cqb - ${THUMB_SIZE}px))`,
+  },
+  // A range's fill runs from the lower thumb's center to the upper's; the
+  // mover already sits at the lower one.
+  filledTrackRangeHorizontal: {
+    translate: {
+      default: `calc((var(${FILL_END}) - var(${FILL_START})) * (100cqi - ${THUMB_SIZE}px) - 100cqi) 0`,
+      ':dir(rtl)': `calc(100cqi - (var(${FILL_END}) - var(${FILL_START})) * (100cqi - ${THUMB_SIZE}px)) 0`,
+    },
+  },
+  filledTrackRangeVertical: {
+    translate: `0 calc(100cqb - (var(${FILL_END}) - var(${FILL_START})) * (100cqb - ${THUMB_SIZE}px))`,
   },
   thumb: {
     position: 'absolute',
@@ -259,7 +389,6 @@ const styles = stylex.create({
     height: THUMB_SIZE,
     borderRadius: radiusVars['--radius-full'],
     backgroundColor: colorVars['--color-accent'],
-    transform: 'translate(-50%, -50%)',
     transitionProperty: 'background-color, box-shadow',
     transitionDuration: {
       default: durationVars['--duration-fast'],
@@ -275,14 +404,31 @@ const styles = stylex.create({
   },
   thumbHorizontal: {
     top: '50%',
-    // The thumb is positioned via logical `insetInlineStart`, which resolves
-    // from the right edge under RTL. The centering translate is a physical
-    // (screen-space) transform, so it must flip its X direction under RTL to
-    // keep the thumb centered on the value point.
-    transform: {
-      default: 'translate(-50%, -50%)',
-      ':is([dir="rtl"] *)': 'translate(50%, -50%)',
+    insetInlineStart: 0,
+    transform: 'translateY(-50%)',
+    // The thumb starts at the track's inline start (the right edge under
+    // RTL) and travels by its progress along the track minus its own size,
+    // so its center lands where `insetPosition` places the fill and the
+    // marks. `translate` is physical, so it flips its sign under RTL.
+    translate: {
+      default: `calc(var(${THUMB_PROGRESS}) * (100cqi - ${THUMB_SIZE}px)) 0`,
+      ':dir(rtl)': `calc(var(${THUMB_PROGRESS}) * (${THUMB_SIZE}px - 100cqi)) 0`,
     },
+  },
+  // A thumb's touch target under a finger (UISlider's hit area): invisible,
+  // centered on the thumb, larger than it.
+  thumbHit: {
+    position: 'absolute',
+    top: '50%',
+    pointerEvents: 'auto',
+  },
+  thumbHitSize: (size: number) => ({
+    width: size,
+    height: size,
+  }),
+  thumbVertical: {
+    bottom: 0,
+    translate: `0 calc(var(${THUMB_PROGRESS}) * (${THUMB_SIZE}px - 100cqb))`,
   },
   thumbHover: {
     backgroundColor: {
@@ -433,12 +579,6 @@ function insetPosition(percent: number): string {
   return cssLength(percent, THUMB_INSET - (percent / 100) * THUMB_SIZE);
 }
 
-/** Distance between two inset positions; the inset itself cancels out. */
-function insetSpan(fromPercent: number, toPercent: number): string {
-  const delta = toPercent - fromPercent;
-  return cssLength(delta, -(delta / 100) * THUMB_SIZE);
-}
-
 /** Inverse of `insetPosition`: an offset from the box start back to 0–1. */
 function travelFraction(offset: number, size: number): number {
   const travel = size - THUMB_SIZE;
@@ -543,8 +683,20 @@ export function Slider({ref, ...props}: SliderProps) {
   const requiredID = useId();
 
   const trackRef = useRef<HTMLDivElement>(null);
+  const fillMoverRef = useRef<HTMLDivElement>(null);
+  const fillRef = useRef<HTMLDivElement>(null);
   const draggingThumbRef = useRef<number | null>(null);
   const [draggingThumb, setDraggingThumb] = useState<number | null>(null);
+
+  // Under a finger on iOS the thumbs track touches as UISlider does
+  // (useSliderTouch); a mouse keeps the pointer handlers below. UISlider's
+  // tracking is the iOS idiom: Android's Material slider moves the thumb to a
+  // tap on the track and has no momentum, so every other touch screen keeps
+  // the pointer handlers too.
+  const touchPresentation = useTouchPresentation();
+  const isTouchPresentation =
+    touchPresentation.isTouch && touchPresentation.idiom === 'ios';
+  const hasTouchTargets = isTouchPresentation && !isDisabled;
 
   // A thumb is a div[role="slider"], and `handlePointerDown` focuses it from
   // script after preventDefault — which Chromium treats as focus-visible, so
@@ -748,6 +900,11 @@ export function Slider({ref, ...props}: SliderProps) {
       if (isDisabled) {
         return;
       }
+      // A finger or a pen under the touch presentation belongs to the thumbs'
+      // touch targets; the track ignores it, as UISlider's does.
+      if (isTouchPresentation && e.pointerType !== 'mouse') {
+        return;
+      }
       e.preventDefault();
       if (draggingThumbRef.current !== null) {
         return;
@@ -793,7 +950,13 @@ export function Slider({ref, ...props}: SliderProps) {
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
       }
     },
-    [isDisabled, getValueFromPosition, getClosestThumb, updateValue],
+    [
+      isDisabled,
+      isTouchPresentation,
+      getValueFromPosition,
+      getClosestThumb,
+      updateValue,
+    ],
   );
 
   const handlePointerMove = useCallback(
@@ -847,6 +1010,82 @@ export function Slider({ref, ...props}: SliderProps) {
     doc.addEventListener('lostpointercapture', onLostCapture);
     return () => doc.removeEventListener('lostpointercapture', onLostCapture);
   }, [endDrag]);
+
+  // The touch presentation's value model (useSliderTouch reads it fresh).
+  const updateValueRef = useRef(updateValue);
+  updateValueRef.current = updateValue;
+  const touchModel: SliderTouchModel = {
+    min,
+    max,
+    isRange,
+    isHorizontal,
+    isDisabled: isDisabled ?? false,
+    thumbSize: THUMB_SIZE,
+    values: () => valuesRef.current,
+    // The value updateValue would report for this thumb.
+    constrain: (index, raw) => {
+      const next = clamp(snapToStep(raw, min, step), min, max);
+      if (!isRange) {
+        return next;
+      }
+      const minGap = minStepsBetweenThumbs * step;
+      const [v0, v1] = valuesRef.current;
+      return index === 0
+        ? clamp(Math.min(next, v1 - minGap), min, max)
+        : clamp(Math.max(next, v0 + minGap), min, max);
+    },
+    bounds: index => {
+      if (!isRange) {
+        return [min, max];
+      }
+      const minGap = minStepsBetweenThumbs * step;
+      const [v0, v1] = valuesRef.current;
+      return index === 0
+        ? [min, clamp(v1 - minGap, min, max)]
+        : [clamp(v0 + minGap, min, max), max];
+    },
+    change: (index, next) => updateValueRef.current(index, next),
+    // A finger paints the thumb pressed and opens its value tooltip; it does
+    // not focus it (no keyboard follows a touch).
+    press: index => setDraggingThumb(index),
+    // The touch interaction ended, in the handler that ended it (the lift, a
+    // cancel, the coast's last frame). The owner renders the last value now,
+    // so the controller can hand the parts back to the stylesheet and
+    // onChangeEnd carries the value the owner rendered (FR5), from that same
+    // handler.
+    commit: (index, next) => {
+      // eslint-disable-next-line @eslint-react/dom-no-flush-sync -- the owner must render the interaction's last value before the parts return to the stylesheet and onChangeEnd reads it
+      flushSync(() => {
+        if (next !== null) {
+          updateValueRef.current(index, next);
+        }
+        setDraggingThumb(null);
+      });
+    },
+    reportEnd: () => fireChangeEnd(),
+  };
+  useSliderTouch({
+    isEnabled: hasTouchTargets,
+    model: touchModel,
+    thumbCount: values.length,
+    getParts: (): SliderTouchParts | null => {
+      const control = trackRef.current;
+      if (control == null) {
+        return null;
+      }
+      return {
+        control,
+        thumbs: Array.from(
+          control.querySelectorAll<HTMLElement>('[role="slider"]'),
+        ),
+        hits: Array.from(
+          control.querySelectorAll<HTMLElement>(`[${SLIDER_HIT_ATTRIBUTE}]`),
+        ),
+        fillMover: fillMoverRef.current,
+        fill: fillRef.current,
+      };
+    },
+  });
 
   // Keyboard handler
   const handleKeyDown = useCallback(
@@ -961,9 +1200,7 @@ export function Slider({ref, ...props}: SliderProps) {
     const val = values[thumbIndex];
     const percent = getPercent(val, min, max);
 
-    const positionStyle = isHorizontal
-      ? {insetInlineStart: insetPosition(percent)}
-      : {bottom: insetPosition(percent), left: '50%'};
+    const positionStyle: ThumbStyle = {[THUMB_PROGRESS]: percent / 100};
 
     // In range mode each thumb keeps a short individual name that composes
     // with the group label (announced via the group's aria-labelledby), per
@@ -1032,7 +1269,7 @@ export function Slider({ref, ...props}: SliderProps) {
             styles.thumb,
             isHorizontal
               ? styles.thumbHorizontal
-              : rtlStyles.centerInline('50%'),
+              : [styles.thumbVertical, rtlStyles.centerInline('0px')],
             !isDisabled && styles.thumbHover,
             !isDisabled && draggingThumb === thumbIndex && styles.thumbPressed,
             keyboardFocusThumb === thumbIndex &&
@@ -1041,8 +1278,19 @@ export function Slider({ref, ...props}: SliderProps) {
           ),
           undefined,
           positionStyle,
+        )}>
+        {hasTouchTargets && (
+          <span
+            aria-hidden="true"
+            {...{[SLIDER_HIT_ATTRIBUTE]: ''}}
+            {...stylex.props(
+              styles.thumbHit,
+              rtlStyles.centerInline('-50%'),
+              styles.thumbHitSize(UIKIT_SLIDER.thumbHitTarget),
+            )}
+          />
         )}
-      />
+      </div>
     );
 
     if (useValueTooltip) {
@@ -1062,24 +1310,11 @@ export function Slider({ref, ...props}: SliderProps) {
     return thumbElement;
   };
 
-  // Filled track position — ends at the thumb centre, so it uses the same
-  // inset mapping as the thumb.
-  const filledStyle = (() => {
-    if (isRange) {
-      const [v0, v1] = values;
-      const p0 = getPercent(v0, min, max);
-      const p1 = getPercent(v1, min, max);
-      if (isHorizontal) {
-        return {insetInlineStart: insetPosition(p0), width: insetSpan(p0, p1)};
-      }
-      return {bottom: insetPosition(p0), height: insetSpan(p0, p1)};
-    }
-    const p = getPercent(values[0], min, max);
-    if (isHorizontal) {
-      return {insetInlineStart: '0%', width: insetPosition(p)};
-    }
-    return {bottom: '0%', height: insetPosition(p)};
-  })();
+  // The filled range's ends as progress: it ends at the thumb centers, so it
+  // uses the same inset travel as the thumbs (see styles.fillClip).
+  const fillStart = isRange ? getPercent(values[0], min, max) / 100 : 0;
+  const fillEnd = getPercent(values[isRange ? 1 : 0], min, max) / 100;
+  const fillStyle: FillStyle = {[FILL_START]: fillStart, [FILL_END]: fillEnd};
 
   // Text value display
   const textDisplay =
@@ -1199,16 +1434,51 @@ export function Slider({ref, ...props}: SliderProps) {
           {/* Filled track */}
           <div
             aria-hidden="true"
-            {...mergeProps(
-              stylex.props(
-                styles.filledTrack,
-                isHorizontal
-                  ? styles.filledTrackHorizontal
-                  : [styles.filledTrackVertical, rtlStyles.centerInline('0px')],
-              ),
-              {style: filledStyle},
-            )}
-          />
+            {...stylex.props(
+              styles.fillClip,
+              isHorizontal
+                ? styles.fillClipHorizontal
+                : [styles.fillClipVertical, rtlStyles.centerInline('0px')],
+            )}>
+            <div
+              ref={fillMoverRef}
+              {...mergeProps(
+                stylex.props(
+                  styles.fillMover,
+                  isRange &&
+                    (isHorizontal
+                      ? [
+                          styles.fillMoverRangeHorizontal,
+                          styles.fillMoverRangeStartHorizontal,
+                        ]
+                      : [
+                          styles.fillMoverRangeVertical,
+                          styles.fillMoverRangeStartVertical,
+                        ]),
+                ),
+                {style: fillStyle},
+              )}>
+              <div
+                ref={fillRef}
+                {...mergeProps(
+                  stylex.props(
+                    styles.filledTrack,
+                    isHorizontal
+                      ? styles.filledTrackHorizontal
+                      : styles.filledTrackVertical,
+                    isRange
+                      ? isHorizontal
+                        ? styles.filledTrackRangeHorizontal
+                        : styles.filledTrackRangeVertical
+                      : isHorizontal
+                        ? styles.filledTrackSingleHorizontal
+                        : styles.filledTrackSingleVertical,
+                  ),
+                  {style: fillStyle},
+                )}
+              />
+            </div>
+          </div>
 
           {/* Marks */}
           {marks && (
