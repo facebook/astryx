@@ -105,6 +105,17 @@ import Testing
 }
 
 @MainActor
+@Test func aDarkSectionInALightThemeGetsDarkColors() {
+  let swatches = SwiftUI.HStack(spacing: 0) {
+    Rectangle().fill(.tint).frame(width: 20, height: 20)
+    Rectangle().fill(.primary).frame(width: 20, height: 20)
+  }
+  let pixels = Pixels(swatches.environment(\.colorScheme, .dark), theme: .butter, scheme: .light)
+  #expect(close(pixels.at(10, 10), rgba(Theme.butter.dark.color.accent)))
+  #expect(close(pixels.at(30, 10), rgba(Theme.butter.dark.color.textPrimary)))
+}
+
+@MainActor
 @Test func anInnerThemeReplacesTheOuterTint() {
   let swatch = Rectangle().fill(.tint).frame(width: 20, height: 20).astryxTheme(.neutral)
   let pixels = Pixels(swatch, theme: .butter)
