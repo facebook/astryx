@@ -79,8 +79,10 @@ export interface ListProps extends BaseProps<
   /**
    * With `hasAnimatedChanges`, page content below the list moves with its
    * rows (a transient `translate`, cleared at rest) instead of jumping when
-   * the list changes height. `'stays'` keeps it still, for apps that manage
-   * that area themselves.
+   * the list changes height, each piece by what layout moved it. While it
+   * moves, that `translate` makes it the containing block of any
+   * `position: fixed` element inside it. `'stays'` keeps it still, for apps
+   * that manage that area themselves.
    * @default 'moves'
    */
   followingContent?: 'moves' | 'stays';
