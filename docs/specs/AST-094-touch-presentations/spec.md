@@ -35,7 +35,7 @@ not targeted.
 ## Non-goals
 
 - Pointer (desktop) presentations. Their timing and easing stay with the
-  theme's motion tokens (`architecture:theme-tokens`).
+  theme's duration and easing tokens (`architecture:theme-tokens`).
 - WebKit embedded in a native app and the native Swift package. This record
   governs the web components themselves.
 - Scroll physics. Scrolling stays native on every platform: on iOS an overflow
@@ -70,14 +70,22 @@ not targeted.
   measures (0.55 for a scroll view and a sheet), and a release MUST pick its
   rest point by projecting its velocity the way its UIKit counterpart does:
   with a deceleration rate, or with a measured projection time.
-- **FR4 — Physics are not themable in touch presentations.** A touch
-  presentation MUST read its motion from the table on every theme. Themes keep
-  color, shape, type and spacing; the theme's duration and easing tokens keep
-  governing pointer presentations. **Proposed; pending owner review:** this
-  narrows `architecture:theme-tokens` (owners: cixzhang, imdreamrunner) to
-  pointer presentations, and departs from the draft `design:motion` DR3
-  (owners: ernestt, cixzhang) wherever UIKit settles with an overshoot or
-  stretches with a rubber band.
+- **FR4 — Touch motion is configured through the theme.** Every spring,
+  duration and curve a touch presentation plays MUST be a theme value: a role
+  named by its table path (`sheet.present`, `timing.curves.easeInOut`) that a
+  theme sets through `motion`, at its root or in an adaptation rule, and that
+  reads its table value when no theme sets it. The table stays the one measured
+  source of every default. A theme value MUST reach the motion at its start,
+  without changing how the motion runs (FR5, FR6). Gesture thresholds, the
+  velocity filter, the timings that decide who gets a touch (the content-touch
+  delay, the scroll brake, momentum memory) and haptics are not motion and
+  stay table constants. An adaptation condition selects the iOS profile (iOS
+  WebKit with a coarse pointer), so the table's values can stay iOS's while
+  other platforms get their own. **Proposed; pending owner review:** this adds
+  motion roles to `architecture:theme-tokens` and an adaptation condition to
+  `architecture:theme-authoring-contract` (owners: cixzhang, imdreamrunner),
+  and departs from the draft `design:motion` DR3 (owners: ernestt, cixzhang)
+  wherever UIKit settles with an overshoot or stretches with a rubber band.
 
 ### Motion
 
@@ -233,8 +241,11 @@ not targeted.
 
 ## Current-state impact
 
-- `architecture:theme-tokens`: the duration and easing tokens govern pointer
-  presentations (FR4; pending owner review).
+- `architecture:theme-tokens`: motion roles join the token families; the
+  duration and easing tokens keep governing pointer presentations (FR4;
+  pending owner review).
+- `architecture:theme-authoring-contract`: `motion` takes role values and
+  adaptations gain an iOS condition (FR4; pending owner review).
 - `architecture:interaction-modality`: the shared touch-presentation resolver
   (FR13; pending owner review).
 - `family:buttons`: the control and cell press profiles (FR11; pending owner
@@ -249,22 +260,22 @@ not targeted.
 
 ## Verification
 
-| Contract   | Verification                                                                                                                   | Representative states                                                                                       | Mutation or failure expectation                                                           |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| FR1, FR2   | Table check over every domain of the table                                                                                     | every entry; a guess and its measurement task                                                               | an unsourced value, an unknown source kind, or a guess without a listed measurement fails |
-| FR3        | Unit tests of the spring, decay, rubber band and projection math against an independent integration and values read from UIKit | under-, critically and overdamped springs; release velocities; both rates; overscroll depths                | changing a formula or a constant breaks the agreement with UIKit's values                 |
-| FR4        | Component tests on two themes                                                                                                  | the same touch transition under different motion tokens                                                     | a touch curve that follows a theme token fails                                            |
-| FR5        | Browser proof: an animation keeps advancing frame by frame through a 1 s main-thread block, with no layout or paint per frame  | Chromium phone emulation; WebKit                                                                            | a script-driven or layout-animating implementation freezes or lays out                    |
-| FR6        | Unit and browser tests catching an animation mid-flight and retargeting it                                                     | catch at peak velocity; retarget with a new spring                                                          | a layout read, a jump, or a lost velocity fails                                           |
-| FR7, FR8   | Component browser tests and storyboards with and without Reduce Motion                                                         | entrance, exit, move                                                                                        | a substitution other than UIKit's, or a missing exit, fails                               |
-| FR9, FR10  | Recognizer unit tests on synthetic streams and browser tests with real touch input                                             | drag, second finger, pinch, page zoom, main-thread block                                                    | a second finger that breaks a drag, or a blocked page pinch, fails                        |
-| FR11, FR12 | Press and long-press tests on synthetic streams with explicit timestamps                                                       | inside and outside a scroll view; drag out and back                                                         | the wrong profile's timing fails                                                          |
-| FR13       | Resolver unit tests                                                                                                            | coarse and fine pointer; narrow and wide                                                                    | a component-owned media query diverges                                                    |
-| FR14       | Browser tests of a sheet over a scrolled list                                                                                  | scrolled and at its top                                                                                     | a midway handoff fails                                                                    |
-| FR15–FR17  | Recognizer unit tests on synthetic streams with explicit timestamps                                                            | exclusive, simultaneous, require-to-fail, nested; a blocked main thread; a pan at 10 pt per axis            | a wrong winner, a late deadline, or a translation that keeps the hysteresis fails         |
-| FR18–FR22  | Browser tests with real touch input                                                                                            | per-axis pans beside native scrolling, page zoom, cancelled touches, clicks after taps, keyboard activation | a ghost click, a blocked scroll or zoom, or a cancelled unowned touchmove fails           |
-| FR23       | Haptics tests on the recorded moments                                                                                          | tap, drag, lift                                                                                             | a haptic outside a UIKit moment fails                                                     |
-| all        | iOS simulator: the UIKit reference capture and the same gesture in Safari                                                      | per component                                                                                               | an unmatched curve or timing is a parity defect                                           |
+| Contract   | Verification                                                                                                                   | Representative states                                                                                               | Mutation or failure expectation                                                           |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| FR1, FR2   | Table check over every domain of the table                                                                                     | every entry; a guess and its measurement task                                                                       | an unsourced value, an unknown source kind, or a guess without a listed measurement fails |
+| FR3        | Unit tests of the spring, decay, rubber band and projection math against an independent integration and values read from UIKit | under-, critically and overdamped springs; release velocities; both rates; overscroll depths                        | changing a formula or a constant breaks the agreement with UIKit's values                 |
+| FR4        | Theme unit tests and a browser test of a themed spring                                                                         | a theme writing a spring, a duration and a curve, at its root and in an iOS adaptation; a touch transition under it | a role that ignores the theme, or a value that differs from the table without one, fails  |
+| FR5        | Browser proof: an animation keeps advancing frame by frame through a 1 s main-thread block, with no layout or paint per frame  | Chromium phone emulation; WebKit                                                                                    | a script-driven or layout-animating implementation freezes or lays out                    |
+| FR6        | Unit and browser tests catching an animation mid-flight and retargeting it                                                     | catch at peak velocity; retarget with a new spring                                                                  | a layout read, a jump, or a lost velocity fails                                           |
+| FR7, FR8   | Component browser tests and storyboards with and without Reduce Motion                                                         | entrance, exit, move                                                                                                | a substitution other than UIKit's, or a missing exit, fails                               |
+| FR9, FR10  | Recognizer unit tests on synthetic streams and browser tests with real touch input                                             | drag, second finger, pinch, page zoom, main-thread block                                                            | a second finger that breaks a drag, or a blocked page pinch, fails                        |
+| FR11, FR12 | Press and long-press tests on synthetic streams with explicit timestamps                                                       | inside and outside a scroll view; drag out and back                                                                 | the wrong profile's timing fails                                                          |
+| FR13       | Resolver unit tests                                                                                                            | coarse and fine pointer; narrow and wide                                                                            | a component-owned media query diverges                                                    |
+| FR14       | Browser tests of a sheet over a scrolled list                                                                                  | scrolled and at its top                                                                                             | a midway handoff fails                                                                    |
+| FR15–FR17  | Recognizer unit tests on synthetic streams with explicit timestamps                                                            | exclusive, simultaneous, require-to-fail, nested; a blocked main thread; a pan at 10 pt per axis                    | a wrong winner, a late deadline, or a translation that keeps the hysteresis fails         |
+| FR18–FR22  | Browser tests with real touch input                                                                                            | per-axis pans beside native scrolling, page zoom, cancelled touches, clicks after taps, keyboard activation         | a ghost click, a blocked scroll or zoom, or a cancelled unowned touchmove fails           |
+| FR23       | Haptics tests on the recorded moments                                                                                          | tap, drag, lift                                                                                                     | a haptic outside a UIKit moment fails                                                     |
+| all        | iOS simulator: the UIKit reference capture and the same gesture in Safari                                                      | per component                                                                                                       | an unmatched curve or timing is a parity defect                                           |
 
 ## Decision log
 
@@ -278,8 +289,9 @@ designing its own, because the people using it already know that behavior
 from every other app on their phone. The values are measured, not
 remembered: a number enters the table only with a citable source.
 
-Rejected: tuning touch motion per theme, because the feel would then differ
-from the platform the person is holding.
+The table supplies the defaults and a theme may retune any role (FR4): a
+product can soften a spring or move to another platform's profile without
+forking a component, and the measured values stay the ones it starts from.
 
 ### DEC-2 — Recognizers track fingers; the compositor plays releases
 
