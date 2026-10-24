@@ -10,7 +10,7 @@ approved_by: cixzhang
 approved_at: 2026-10-24
 owners: [cixzhang]
 review_triggers: [motion, interaction, accessibility]
-verified_by: []
+verified_by: [scripts/check-knowledge.mjs]
 architecture: [architecture:interaction-modality]
 components: []
 families: []
@@ -77,7 +77,9 @@ trackpad, or keyboard the change is immediate.
 Content that moves with the person's own pointer or finger during a drag
 follows it as direct manipulation and is not a DR1 transition; a transition a
 component starts after release, such as a swiped row sliding out or returning
-(`spec:AST-057` FR5), follows DR2 or DR3.
+(`spec:AST-057` FR5) or one sheet handing off to another
+(`component:BottomSheetSwitcher` FR3), follows DR2 on a coarse primary pointer
+and DR3 otherwise.
 
 ## Accessibility intent
 
