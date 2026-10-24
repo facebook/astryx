@@ -632,6 +632,9 @@ export function Carousel({
         layer.render(
           <>
             <div
+              // A hidden button is never a Tab stop or in the a11y tree; its
+              // disabled state alone keeps it focusable (spec:AST-085 FR1).
+              inert={!canScrollStart || undefined}
               {...stylex.props(
                 styles.buttonPill,
                 styles.buttonPillStart,
@@ -651,18 +654,20 @@ export function Carousel({
                 size="sm"
                 isIconOnly
                 // Disabled when there's nothing to scroll toward. Keeps the
-                // button mounted (stable layout) but removes it from the tab
-                // order and a11y tree while it's visually hidden, so keyboard
-                // users don't land on an invisible control. The Effect above
-                // hands focus to the scroll area when the state behind this
-                // one flips it disabled.
+                // button mounted (stable layout); the inert pill takes it out
+                // of the tab order and a11y tree while it's visually hidden, so
+                // keyboard users don't land on an invisible control. The Effect
+                // above hands focus to the scroll area when the state behind
+                // this one flips it disabled.
                 isDisabled={!canScrollStart}
                 onFocus={() => {
                   focusedNavRef.current = 'start';
                 }}
                 onBlur={event => {
                   // A disabled button was blurred by the commit, not the person.
-                  if (!event.currentTarget.disabled) {
+                  if (
+                    event.currentTarget.getAttribute('aria-disabled') !== 'true'
+                  ) {
                     focusedNavRef.current = null;
                   }
                 }}
@@ -671,6 +676,9 @@ export function Carousel({
               />
             </div>
             <div
+              // A hidden button is never a Tab stop or in the a11y tree; its
+              // disabled state alone keeps it focusable (spec:AST-085 FR1).
+              inert={!canScrollEnd || undefined}
               {...stylex.props(
                 styles.buttonPill,
                 styles.buttonPillEnd,
@@ -697,7 +705,9 @@ export function Carousel({
                 }}
                 onBlur={event => {
                   // A disabled button was blurred by the commit, not the person.
-                  if (!event.currentTarget.disabled) {
+                  if (
+                    event.currentTarget.getAttribute('aria-disabled') !== 'true'
+                  ) {
                     focusedNavRef.current = null;
                   }
                 }}

@@ -432,10 +432,10 @@ describe('Pagination', () => {
         );
         expect(
           screen.getByRole('button', {name: 'Go to first page'}),
-        ).toBeDisabled();
+        ).toHaveAttribute('aria-disabled', 'true');
         expect(
           screen.getByRole('button', {name: 'Go to last page'}),
-        ).not.toBeDisabled();
+        ).not.toHaveAttribute('aria-disabled');
 
         rerender(
           <Pagination
@@ -448,10 +448,10 @@ describe('Pagination', () => {
         );
         expect(
           screen.getByRole('button', {name: 'Go to first page'}),
-        ).not.toBeDisabled();
+        ).not.toHaveAttribute('aria-disabled');
         expect(
           screen.getByRole('button', {name: 'Go to last page'}),
-        ).toBeDisabled();
+        ).toHaveAttribute('aria-disabled', 'true');
       });
 
       it('omits first/last when the total page count is unknown', async () => {
@@ -1093,10 +1093,10 @@ describe('Pagination', () => {
         );
         expect(
           screen.getByRole('button', {name: 'Go to first page'}),
-        ).toBeDisabled();
+        ).toHaveAttribute('aria-disabled', 'true');
         expect(
           screen.getByRole('button', {name: 'Go to last page'}),
-        ).not.toBeDisabled();
+        ).not.toHaveAttribute('aria-disabled');
 
         rerender(
           <Pagination
@@ -1109,10 +1109,10 @@ describe('Pagination', () => {
         );
         expect(
           screen.getByRole('button', {name: 'Go to last page'}),
-        ).toBeDisabled();
+        ).toHaveAttribute('aria-disabled', 'true');
         expect(
           screen.getByRole('button', {name: 'Go to first page'}),
-        ).not.toBeDisabled();
+        ).not.toHaveAttribute('aria-disabled');
       });
 
       it('hides first/last when hasFirstLast is false', () => {
@@ -1573,34 +1573,34 @@ describe('Pagination', () => {
       render(<Pagination page={1} onChange={() => {}} totalPages={5} />);
       expect(
         screen.getByRole('button', {name: 'Go to previous page'}),
-      ).toBeDisabled();
+      ).toHaveAttribute('aria-disabled', 'true');
     });
 
     it('disables next button on last page', () => {
       render(<Pagination page={5} onChange={() => {}} totalPages={5} />);
       expect(
         screen.getByRole('button', {name: 'Go to next page'}),
-      ).toBeDisabled();
+      ).toHaveAttribute('aria-disabled', 'true');
     });
 
     it('enables both buttons on middle page', () => {
       render(<Pagination page={3} onChange={() => {}} totalPages={5} />);
       expect(
         screen.getByRole('button', {name: 'Go to previous page'}),
-      ).not.toBeDisabled();
+      ).not.toHaveAttribute('aria-disabled');
       expect(
         screen.getByRole('button', {name: 'Go to next page'}),
-      ).not.toBeDisabled();
+      ).not.toHaveAttribute('aria-disabled');
     });
 
     it('disables both buttons when only one page', () => {
       render(<Pagination page={1} onChange={() => {}} totalPages={1} />);
       expect(
         screen.getByRole('button', {name: 'Go to previous page'}),
-      ).toBeDisabled();
+      ).toHaveAttribute('aria-disabled', 'true');
       expect(
         screen.getByRole('button', {name: 'Go to next page'}),
-      ).toBeDisabled();
+      ).toHaveAttribute('aria-disabled', 'true');
     });
   });
 
@@ -1613,28 +1613,28 @@ describe('Pagination', () => {
       render(<Pagination page={1} onChange={() => {}} hasMore />);
       expect(
         screen.getByRole('button', {name: 'Go to next page'}),
-      ).not.toBeDisabled();
+      ).not.toHaveAttribute('aria-disabled');
     });
 
     it('disables next when hasMore is false', () => {
       render(<Pagination page={3} onChange={() => {}} hasMore={false} />);
       expect(
         screen.getByRole('button', {name: 'Go to next page'}),
-      ).toBeDisabled();
+      ).toHaveAttribute('aria-disabled', 'true');
     });
 
     it('disables previous on first page with hasMore', () => {
       render(<Pagination page={1} onChange={() => {}} hasMore />);
       expect(
         screen.getByRole('button', {name: 'Go to previous page'}),
-      ).toBeDisabled();
+      ).toHaveAttribute('aria-disabled', 'true');
     });
 
     it('enables previous on page > 1 with hasMore', () => {
       render(<Pagination page={2} onChange={() => {}} hasMore />);
       expect(
         screen.getByRole('button', {name: 'Go to previous page'}),
-      ).not.toBeDisabled();
+      ).not.toHaveAttribute('aria-disabled');
     });
   });
 
@@ -1681,12 +1681,14 @@ describe('Pagination', () => {
       );
       expect(
         screen.getByRole('button', {name: 'Go to previous page'}),
-      ).toBeDisabled();
+      ).toHaveAttribute('aria-disabled', 'true');
       expect(
         screen.getByRole('button', {name: 'Go to next page'}),
-      ).toBeDisabled();
+      ).toHaveAttribute('aria-disabled', 'true');
       // Page buttons should also be disabled
-      expect(screen.getByRole('button', {name: 'Go to page 1'})).toBeDisabled();
+      expect(
+        screen.getByRole('button', {name: 'Go to page 1'}),
+      ).toHaveAttribute('aria-disabled', 'true');
     });
 
     it('does not call onChange when disabled', async () => {

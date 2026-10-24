@@ -163,8 +163,14 @@ describe('ButtonGroup', () => {
     );
 
     expect(screen.getByRole('group')).toHaveAttribute('aria-disabled', 'true');
-    expect(screen.getByRole('button', {name: 'Copy'})).toBeDisabled();
-    expect(screen.getByRole('button', {name: 'Cut'})).toBeDisabled();
+    expect(screen.getByRole('button', {name: 'Copy'})).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    expect(screen.getByRole('button', {name: 'Cut'})).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
   });
 
   it('does not set aria-disabled when not disabled', () => {
@@ -975,7 +981,9 @@ describe('ButtonGroup', () => {
       expect(screen.getByRole('button', {name: 'after'})).toHaveFocus();
     });
 
-    it('contributes no tab stop when the whole group is disabled', async () => {
+    it('keeps its one tab stop when the whole group is disabled', async () => {
+      // spec:AST-085 FR1/FR7: a group disabled as a whole keeps the focus order
+      // it has when enabled, so it still contributes exactly one tab stop.
       const user = userEvent.setup();
       render(
         bracketed(
@@ -988,6 +996,11 @@ describe('ButtonGroup', () => {
 
       await user.tab();
       expect(screen.getByRole('button', {name: 'before'})).toHaveFocus();
+
+      await user.tab();
+      const copy = screen.getByRole('button', {name: 'Copy'});
+      expect(copy).toHaveFocus();
+      expect(copy).toHaveAttribute('aria-disabled', 'true');
 
       await user.tab();
       expect(screen.getByRole('button', {name: 'after'})).toHaveFocus();

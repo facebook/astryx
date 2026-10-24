@@ -1385,7 +1385,9 @@ export function ListInput<T>({
     item: T,
     index: number,
   ) => {
-    if (event.altKey || event.ctrlKey || event.metaKey) {
+    // A disabled or loading list never reorders: the handle stays focusable
+    // (spec:AST-085 FR1) but no key moves a row (FR2).
+    if (mutationsDisabled || event.altKey || event.ctrlKey || event.metaKey) {
       return;
     }
     const activeState = reorderStateRef.current;

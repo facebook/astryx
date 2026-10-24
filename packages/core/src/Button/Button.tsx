@@ -641,11 +641,9 @@ export function Button({
   // (credit @AKnassa, #4879), which is exactly the bug this PR fixes.
   const renderAsLink = href != null && !isTrueDisabled;
 
-  // Use aria-disabled (button stays focusable) when busy-only, or when a
-  // tooltip is present so keyboard users can still reach it. A genuinely
-  // isDisabled/group-disabled button (not busy) keeps native disabled.
-  const useAriaDisabled =
-    buttonDisabled && (isBusyOnlyDisabled || tooltip != null);
+  // Per AST-085 FR1, disabled controls stay focusable: render no native
+  // disabled attribute, expose aria-disabled="true", and keep enabled focus order.
+  const useAriaDisabled = buttonDisabled;
 
   // Attach tooltip behavior via the hook rather than wrapping the button in a
   // <Tooltip> element. The hook adds hover/focus triggers to the button itself,
@@ -664,13 +662,12 @@ export function Button({
       e.preventDefault();
       // A native `disabled` element never dispatches a click at all, so it
       // never reaches a wrapping element's own handler either. An
-      // aria-disabled button (busy-only, or with a tooltip) is still a real,
-      // interactive element the DOM keeps dispatching clicks on —
-      // preventDefault alone only cancels the button's OWN default action
-      // (form submit, link navigation), not propagation. Without this, an
-      // unavailable Button inside a clickable row/card/backdrop still
-      // triggers that ancestor's action, which the previously native-disabled
-      // control never did.
+      // aria-disabled button is still a real, interactive element the DOM
+      // keeps dispatching clicks on — preventDefault alone only cancels the
+      // button's OWN default action (form submit, link navigation), not
+      // propagation. Without this, an unavailable Button inside a clickable
+      // row/card/backdrop still triggers that ancestor's action, which the
+      // previously native-disabled control never did (AST-085 FR2).
       e.stopPropagation();
       return;
     }
@@ -688,7 +685,7 @@ export function Button({
   };
 
   // When aria-disabled, suppress activation keys (Enter/Space) but allow
-  // other keys (Escape, arrows) to reach consumer handlers.
+  // other keys (Escape, arrows) to reach consumer handlers (AST-085 FR2).
   const handleKeyDown = useAriaDisabled
     ? (e: React.KeyboardEvent<HTMLButtonElement>) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -850,10 +847,10 @@ export function Button({
       <button
         ref={mergedButtonRef}
         type={type}
-        disabled={useAriaDisabled ? undefined : buttonDisabled}
         {...sharedMergedProps}
         {...pressFeedback}
         {...props}
+        {...(isTrueDisabled ? {name: undefined} : null)}
         {...ariaLabelProp}
         {...describedByProp}
         {...edgeCompAttr}

@@ -970,7 +970,10 @@ describe('ListInput', () => {
 
     renderListInput({maxItems: 2, onChange});
 
-    expect(screen.getByRole('button', {name: 'Add guest'})).toBeDisabled();
+    expect(screen.getByRole('button', {name: 'Add guest'})).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
     const remove = screen.getByRole('button', {name: 'Remove guest 1'});
     expect(remove).toBeEnabled();
 
@@ -1351,10 +1354,13 @@ describe('ListInput', () => {
     for (const field of screen.getAllByRole('textbox')) {
       expect(field).toBeDisabled();
     }
-    expect(screen.getByRole('button', {name: /add guest/i})).toBeDisabled();
+    expect(screen.getByRole('button', {name: /add guest/i})).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
     expect(
       screen.getByRole('button', {name: 'Reorder guest 1'}),
-    ).toBeDisabled();
+    ).toHaveAttribute('aria-disabled', 'true');
     // Remove carries a tooltip, so it is disabled via aria and stays focusable
     // rather than dropping out of the tab order with its explanation.
     expect(
@@ -1362,6 +1368,15 @@ describe('ListInput', () => {
     ).toHaveAttribute('aria-disabled', 'true');
 
     // The values stay readable — a disabled list still communicates content.
+    expect(screen.getAllByRole('textbox')[0]).toHaveValue('Ada');
+
+    // The focusable reorder handle moves nothing from the keyboard
+    // (spec:AST-085 FR2).
+    const handle = screen.getByRole('button', {name: 'Reorder guest 1'});
+    fireEvent.keyDown(handle, {key: 'ArrowDown'});
+    fireEvent.keyDown(handle, {key: ' '});
+    fireEvent.keyDown(handle, {key: 'ArrowDown'});
+    expect(handle).not.toHaveAttribute('aria-pressed');
     expect(screen.getAllByRole('textbox')[0]).toHaveValue('Ada');
     expect(onChange).not.toHaveBeenCalled();
   });
@@ -1389,7 +1404,7 @@ describe('ListInput', () => {
     expect(addButton).toHaveAttribute('aria-busy', 'true');
     expect(
       screen.getByRole('button', {name: 'Reorder guest 1'}),
-    ).toBeDisabled();
+    ).toHaveAttribute('aria-disabled', 'true');
     expect(
       screen.getByRole('button', {name: 'Remove guest 1'}),
     ).toHaveAttribute('aria-disabled', 'true');
