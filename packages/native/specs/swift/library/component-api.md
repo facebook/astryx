@@ -47,9 +47,8 @@ same generated contract.
   module, an unqualified name means the Astryx type, so every use of a SwiftUI
   type that Astryx also names is written with its own module. The Astryx
   names visible under `import SwiftUI` today are `Button`, `ContextMenu`,
-  `Divider`, `Grid`, `HStack`, `Layout`, `Link`, `List`, `Section`, `Slider`,
-  `Stepper`, `Tab`, `Table`, `TableRow`, `Text`, and `VStack` (written
-  `SwiftUI.<Name>`), `Calendar` and `Timer` (written `Foundation.<Name>`), and
+  `Divider`, `Grid`, `Layout`, `Link`, `List`, `Section`, `Slider`, `Stepper`,
+  `Tab`, `Table`, `TableRow`, and `Text` (written `SwiftUI.<Name>`), `Calendar` and `Timer` (written `Foundation.<Name>`), and
   `Selector` (written `ObjectiveC.Selector`); a new component whose name any of
   those modules declares joins this list.
 - **A1c — Modifiers keep the prefix.** View modifiers live on SwiftUI's `View`
@@ -90,9 +89,12 @@ same generated contract.
   - Parameters without defaults come before those with defaults, except a
     required action, which comes last so it can be a trailing closure.
   - A prop whose native form is a different SwiftUI control switches the
-    control: with `href` set, Button, Avatar, and Item draw a SwiftUI `Link`
-    styled with the Astryx button style, so the system opens it and VoiceOver
-    reads it as a link.
+    control: with `href` set on an enabled view, Button, Avatar, and Item
+    draw a SwiftUI `Link`, so the system opens it and VoiceOver reads it as a
+    link. Each keeps its own look: Button through the Astryx button style,
+    Avatar and Item as they draw without `href`. A disabled view with `href`
+    draws its disabled control, not a link, as core draws a disabled Button
+    with `href` as a disabled button.
 - **A5 — Words and values take the contract's types.** A word prop is the
   contract's `String`, and a value prop and its change callback are the
   contract's two parameters, as AST-093 FR5 requires. A localizable spelling
@@ -126,7 +128,7 @@ same generated contract.
 | A2          | A source check fails when a components file declares an `enum` with the same cases as a generated enum, or a public parameter that is neither a prop of the generated `<Name>Props`, the `<Name>Props` value itself, nor a content slot of the contract.                                                                                                                                                                                                                                                                                                                                                                                |
 | A2          | A compile test builds every view from its generated `<Name>Props` with every prop set, plus each content slot's generated node type, and through the labeled initializer with a builder for each content slot, on iOS and on macOS. A source check finds no parameter that a view accepts and ignores; Switch's `size` exists on macOS only.                                                                                                                                                                                                                                                                                            |
 | A3          | A test builds a view through each initializer with the same arguments and finds every `<Name>Props` field the same in both, comparing callbacks by invoking them.                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| A4          | `AnyView` does not appear in the components module. A Button with `href` set is a `Link` in the view tree and reads as a link to VoiceOver.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| A4          | `AnyView` does not appear in the components module. An enabled Button with `href` is a `Link` in the view tree and reads as a link to VoiceOver; a disabled Button with `href` reads as a dimmed button; an Avatar with `href` draws the same as without it.                                                                                                                                                                                                                                                                                                                                                                            |
 | A5          | The A2 source check passes: no public parameter outside the generated `<Name>Props` and the contract's content slots.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | A6          | A source check finds no public SwiftUI `Color`, `Font`, `CGFloat` padding, or `*Style` parameter on a component; the contract's own visual props are allowed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | A7          | A UI test finds the view by its `id` and does not find it when `isHidden` is true.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
@@ -135,12 +137,12 @@ same generated contract.
 
 ## Current state
 
-- On `main`, the only Swift package is `packages/native/apple`, whose product
-  and module are `AstryxNative`: generated contract types and no SwiftUI views.
-  Under A1 the library product apps depend on is `Astryx`, the module that
-  holds the views and re-exports the contract module.
-- The generated contracts already use core names unprefixed (`ButtonProps`,
-  `ButtonVariant`).
+- `packages/native/apple/` is one Swift package with the `Astryx` product
+  (SwiftUI views, prefixed `AstryxButton` and so on) and the `AstryxNative`
+  product (generated contract types). The generated contracts already use core
+  names unprefixed (`ButtonProps`, `ButtonVariant`).
+- The generated iOS `SwitchProps` still declares `size`, and `HStackProps` and
+  `VStackProps` are still generated for iOS and macOS.
 
 ## Open questions
 
