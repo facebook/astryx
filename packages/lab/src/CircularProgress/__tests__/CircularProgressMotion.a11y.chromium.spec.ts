@@ -877,6 +877,35 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
   });
 }
 
+test('without its animations the indeterminate arc rests as a quarter turn from 12 o\u2019clock', async ({
+  page,
+}) => {
+  await openIndeterminate(page);
+  const palette = await colors(page);
+  // What renders without script (or before the animations start): the
+  // layers' own inline turns.
+  await page.evaluate(() => {
+    for (const animation of document.getAnimations()) {
+      animation.cancel();
+    }
+  });
+  const shot = await page.getByRole('progressbar').screenshot();
+  fs.mkdirSync(EVIDENCE, {recursive: true});
+  fs.writeFileSync(
+    path.join(EVIDENCE, 'circular-progress-indeterminate-rest.png'),
+    shot,
+  );
+  const [row] = await inkByDegree(page, [shot.toString('base64')], palette);
+  const arc = arcOf(row);
+  // The round caps reach half the stroke past each end.
+  const cap = (STROKE / 2 / ((DIAMETER - STROKE) / 2)) * (180 / Math.PI);
+  expect(arc.pieces).toBe(1);
+  expect(Math.abs(((arc.start + cap + 180) % 360) - 180)).toBeLessThanOrEqual(
+    2,
+  );
+  expect(Math.abs(arc.length - (90 + 2 * cap))).toBeLessThanOrEqual(3);
+});
+
 test('storyboard: one indeterminate cycle @storyboard', async ({page}) => {
   await openIndeterminate(page);
   await page.evaluate(() => {
