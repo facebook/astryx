@@ -51,6 +51,8 @@ function touchGatedRules(el: Element): {touch: string[]; other: string[]} {
 import {List} from './List';
 import {ListItem} from './ListItem';
 import {ListMarkerScope} from './ListContext';
+import {listRowConsts} from './listRow.stylex';
+import {list} from '../motion/uikit/list';
 
 describe('List', () => {
   it('forwards ListItem align to its Item row unchanged', () => {
@@ -588,6 +590,82 @@ describe('List', () => {
         rule.slice(0, rule.indexOf('{')).includes(':has(+ [data-astryx-press'),
       ),
     ).toBe(false);
+  });
+
+  // ===========================================================================
+  // Touch row heights
+  // ===========================================================================
+
+  /**
+   * The row's min-heights split by the touch gate: inside
+   * `@media (pointer: coarse)` (TOUCH_QUERY), or anywhere else.
+   */
+  function minHeights(el: Element): {touch: string[]; other: string[]} {
+    const classes = el.className
+      .split(/\s+/)
+      .filter(Boolean)
+      .map(name => `.${name}`);
+    const out = {touch: [] as string[], other: [] as string[]};
+    const visit = (rules: CSSRuleList, touch: boolean) => {
+      for (const rule of Array.from(rules)) {
+        if (rule instanceof CSSStyleRule) {
+          if (
+            classes.some(cls => rule.selectorText.startsWith(cls)) &&
+            rule.style.minHeight !== ''
+          ) {
+            (touch ? out.touch : out.other).push(rule.style.minHeight);
+          }
+          continue;
+        }
+        const nested = (rule as CSSGroupingRule).cssRules;
+        if (nested == null) {
+          continue;
+        }
+        const condition = (rule as CSSConditionRule).conditionText ?? '';
+        visit(nested, touch || condition.includes('pointer: coarse'));
+      }
+    };
+    for (const sheet of Array.from(document.styleSheets)) {
+      visit(sheet.cssRules, false);
+    }
+    return out;
+  }
+
+  it('mirrors the constants table’s touch row heights for the stylesheet', () => {
+    expect(listRowConsts.touchRowHeight).toBe(`${list.metrics.rowHeight}px`);
+    expect(listRowConsts.touchSubtitleRowHeight).toBe(
+      `${list.metrics.subtitleRowHeight}px`,
+    );
+    expect(listRowConsts.touchControlSize).toBe(
+      `${list.metrics.controlSize}px`,
+    );
+  });
+
+  it('gives rows UIKit’s table heights under a finger only, on every touch platform', () => {
+    render(
+      <>
+        <List>
+          <ListItem label="One line" />
+          <ListItem label="Two lines" description="A description" />
+        </List>
+        <List density="compact">
+          <ListItem label="Compact" description="Still the control size" />
+        </List>
+        <List density="spacious">
+          <ListItem label="Spacious" />
+          <ListItem label="Spacious two" description="A description" />
+        </List>
+      </>,
+    );
+    const row = (text: string) => screen.getByText(text).closest('li')!;
+    expect(minHeights(row('One line')).touch).toEqual(['52px']);
+    expect(minHeights(row('Two lines')).touch).toEqual(['62px']);
+    expect(minHeights(row('Compact')).touch).toEqual(['44px']);
+    // Spacious keeps its own padding over the same minimums.
+    expect(minHeights(row('Spacious')).touch).toEqual(['52px']);
+    expect(minHeights(row('Spacious two')).touch).toEqual(['62px']);
+    // Nothing outside the touch gate: a mouse keeps today's heights.
+    expect(minHeights(row('One line')).other).toEqual([]);
   });
 
   // ===========================================================================

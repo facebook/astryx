@@ -5,8 +5,9 @@
 /**
  * @file ListItem.tsx
  * @input Uses React, ReactNode, StyleXStyles, theme tokens, the List row edge
- *   treatment, the press layer (dividers beside a touch-pressed row hide and
- *   the layer reaches over the row's own), CheckboxInput, and the marker or task checkbox a
+ *   treatment, the press layer (dividers beside a touch-pressed or held row
+ *   hide and the layer reaches over the row's own), the touch row heights
+ *   (listRow.stylex.ts), CheckboxInput, and the marker or task checkbox a
  *   ListMarkerScope sets (Markdown's nested lists and the task items of mixed
  *   lists)
  * @output Exports ListItem component, ListItemProps type
@@ -35,10 +36,11 @@ import {
 import type {BaseProps} from '../BaseProps';
 import {ListContext, type ListMarker} from './ListContext';
 import {CheckboxInput} from '../CheckboxInput';
-import {mergeProps} from '../utils';
+import {isRenderable, mergeProps} from '../utils';
 import {Item} from '../Item';
 import type {ItemAlign, ItemSwipeActions, ItemSwipeBehavior} from '../Item';
 import {themeProps} from '../utils/themeProps';
+import {listRowStyles} from './listRow.stylex';
 
 // =============================================================================
 // Types
@@ -430,6 +432,15 @@ export function ListItem({
           hasMarkers && styles.withCounter,
           hasDividers && styles.withDivider,
           hasDividers && embeddedStyles.noRadius,
+          // A list with markers is running text (bullets, numbers, a
+          // Markdown list), not a table: its rows keep their own height, and
+          // each marker stays on its text's first line.
+          !hasMarkers &&
+            (density === 'compact'
+              ? listRowStyles.touchCompact
+              : isRenderable(description)
+                ? listRowStyles.touchTwoLine
+                : listRowStyles.touchOneLine),
           edge === 'flush' && styles.edgeFlush,
           edge === 'outset' && styles.edgeOutset,
           edge === 'bleed' && styles.edgeBleed,

@@ -445,5 +445,21 @@ describe('build-css astryx.css', () => {
         expect(rule).toMatch(TOUCH_GATED);
       }
     });
+
+    it('raises the rows to the iOS table heights only under a finger', () => {
+      const heights = rules().filter(rule =>
+        /\{min-height:(52|62)px\}/.test(rule),
+      );
+      expect(heights).toHaveLength(2);
+      for (const rule of heights) {
+        expect(rule).toMatch(TOUCH_GATED);
+      }
+      // The compact row's floor, the control size, sits beside them.
+      expect(
+        rules().some(
+          rule => TOUCH_GATED.test(rule) && rule.includes('{min-height:44px}'),
+        ),
+      ).toBe(true);
+    });
   });
 });
