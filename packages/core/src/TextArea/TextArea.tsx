@@ -4,7 +4,8 @@
 
 /**
  * @file TextArea.tsx
- * @input Uses React, useId, ChangeEvent, ClipboardEvent, FocusEvent, Field, Icon, Spinner
+ * @input Uses React, useId, ChangeEvent, ClipboardEvent, FocusEvent, Field, Icon, Spinner,
+ *   textEntryTraits (the touch-keyboard trait props)
  * @output Exports TextArea component, TextAreaProps, TextAreaStatus, TextAreaStatusType
  * @position Core implementation; consumed by index.ts, tested by TextArea.test.tsx
  *
@@ -61,6 +62,10 @@ import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
 import {characterCount} from '../utils/characters';
+import {
+  textEntryTraitAttributes,
+  type TextEntryTraitProps,
+} from '../Field/textEntryTraits';
 import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
@@ -200,10 +205,10 @@ export interface TextAreaStatus {
   message?: string;
 }
 
-export interface TextAreaProps extends Omit<
-  FieldInputBaseProps,
-  'onChange' | 'defaultValue'
-> {
+export interface TextAreaProps
+  extends
+    Omit<FieldInputBaseProps, 'onChange' | 'defaultValue'>,
+    TextEntryTraitProps {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLTextAreaElement>;
   /**
@@ -320,7 +325,8 @@ export interface TextAreaProps extends Omit<
    */
   startIcon?: ReactNode | IconType;
   /**
-   * Whether to enable browser spell checking.
+   * Whether to enable browser spell checking. Turning it off also stops iOS
+   * from replacing quotes and dashes with their typographic forms.
    * @default true
    */
   hasSpellCheck?: boolean;
@@ -400,6 +406,10 @@ export function TextArea({
   labelTooltip,
   startIcon,
   hasSpellCheck = true,
+  enterKeyHint,
+  inputMode,
+  autoCapitalize,
+  hasAutoCorrect,
   onPaste,
   maxLength,
   hasAutoFocus = false,
@@ -635,6 +645,12 @@ export function TextArea({
           onBlur={onBlur}
           placeholder={placeholder}
           rows={rows}
+          {...textEntryTraitAttributes({
+            enterKeyHint,
+            inputMode,
+            autoCapitalize,
+            hasAutoCorrect,
+          })}
           // A disabled textarea keeps its place in the tab order
           // (spec:AST-085): aria-disabled instead of the native attribute,
           // with readOnly + the handleChange guard keeping the value from
