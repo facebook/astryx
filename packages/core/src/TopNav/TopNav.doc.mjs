@@ -131,6 +131,7 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Include a product logo and name in the heading slot to clearly identify the application.'},
       {guidance: true, description: 'Limit primary navigation items to 5 or fewer for quick scanning and minimal cognitive load.'},
+      {guidance: true, description: 'Prefer icon-only buttons in `endContent`. In the phone bar under a finger, the end items sit together on one capsule painted with the theme’s surface, as iOS 26 bar buttons do.'},
       {guidance: false, description: 'Avoid using TopNav to filter page content; use Tabs or filter controls instead.'},
       {guidance: false, description: 'Avoid deeply nested navigation hierarchies; keep menus to one level of depth.'},
     ],
@@ -172,6 +173,7 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Include a product logo and name in the heading slot to clearly identify the application.'},
       {guidance: true, description: 'Limit primary navigation items to 5 or fewer for quick scanning and minimal cognitive load.'},
+      {guidance: true, description: 'Phone bar under a finger: end items share one capsule painted with the theme’s surface; prefer icon-only buttons there.'},
       {guidance: false, description: 'Avoid using TopNav to filter page content; use Tabs or filter controls instead.'},
       {guidance: false, description: 'Avoid deeply nested navigation hierarchies; keep menus to one level of depth.'},
     ],

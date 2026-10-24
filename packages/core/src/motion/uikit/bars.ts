@@ -5,7 +5,8 @@
  * @input Nothing; data only
  * @output Exports `bars`: when the iOS 26 scroll edge effect under a
  *   navigation bar appears and leaves, the springs it fades on, how far it
- *   reaches below the bar, and the shape of its veil
+ *   reaches below the bar, and the shape of its veil; the bar's height and
+ *   the geometry of the capsules its buttons sit on
  * @position The bars domain of the UIKit constants table (motion/uikit)
  *
  * On iOS 26.2 a navigation bar paints no background of its own: its
@@ -32,6 +33,96 @@
 import {registerMotionTable} from '../roles';
 
 export const bars = {
+  /**
+   * The navigation bar under the status bar, with an inline title: this many
+   * pt tall. Its buttons' capsules sit at its top edge and the title is
+   * centred on them, leaving 10 pt below.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, `UIKit.NavigationBarPlatterContainer` frame
+   *   (0, 62, 402, 54) under an inline title, every MR-9 configuration,
+   *   Oct 23 2026
+   */
+  heightPt: 54,
+  /**
+   * iOS 26 bar buttons sit on glass capsules
+   * (`_UINavigationBarPlatterGlassView`): image items side by side share
+   * one capsule, every other item gets its own, and a fixed space splits a
+   * run. The glass has no shadow layer, and its colour follows the content
+   * behind it rather than the appearance (white over a white list, #191919
+   * over a black one, in light and dark mode alike); on the web the
+   * capsule paints the theme's general surface, opaque, with nothing
+   * blurred.
+   */
+  buttonCapsules: {
+    /**
+     * Every capsule is this many pt tall, with a corner radius of half that
+     * (22): a lone image item is a 44 × 44 circle.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+     *   iPhone 17 Pro, platter and glass view frames for a lone image item,
+     *   two image items, image + text, a fixed space and `.prominent` (all
+     *   44 tall, cornerRadius 22, at the bar's top y 62), Oct 23 2026
+     */
+    heightPt: 44,
+    /**
+     * The outermost capsule keeps this many pt from the screen's edge, on
+     * both sides.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+     *   iPhone 17 Pro, the trailing capsule's right edge at x 386 on a
+     *   402-wide screen in every configuration, and the back button's circle
+     *   at x 16, Oct 23 2026
+     */
+    edgeInsetPt: 16,
+    /**
+     * Neighbouring capsules are this many pt apart.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+     *   iPhone 17 Pro, a fixed space between two image items (44 circles at
+     *   x 286 and 342) and an image item beside "Edit" (x 267.67 + 44, then
+     *   323.67), Oct 23 2026
+     */
+    gapPt: 12,
+    /**
+     * Inside a capsule, the items' cells start this many pt in from each
+     * end.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+     *   iPhone 17 Pro, one `_UIButtonBarButton` per item, the first starting
+     *   4 pt in from the capsule's end (batch 18c), Oct 24 2026
+     */
+    cellInsetPt: 4,
+    /**
+     * Each item's cell is this many pt tall, centred on the capsule (4 pt
+     * above and below).
+     * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+     *   iPhone 17 Pro, `_UIButtonBarButton` 36 pt tall at y 66 inside the
+     *   44 pt glass view at y 62 (batch 18c), Oct 24 2026
+     */
+    cellHeightPt: 36,
+    /**
+     * Cells in one capsule are this many pt apart.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+     *   iPhone 17 Pro, two image items (cells at x 282.67, 41 wide, and
+     *   339.67) and three (4 + 39.33 + 16 + 41 + 16 + 42.33 + 4 = 162.67)
+     *   (batch 18c), Oct 24 2026
+     */
+    cellGapPt: 16,
+    /**
+     * An image item's cell is its glyph's width plus this many pt on each
+     * side, and at least `cellHeightPt` wide: a lone image is a 36 pt cell,
+     * so its capsule is the 44 pt circle.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+     *   iPhone 17 Pro, glyphs 27 and 28.33 pt wide in cells 41 and 42.33,
+     *   and a lone image's 36 × 36 cell (batch 18c), Oct 24 2026
+     */
+    imagePaddingPt: 7,
+    /**
+     * A text item's cell is its label plus this many pt on each side:
+     * "Edit" (SF Medium 17, 30.33 wide) is a 54.33 pt cell in a 62.33 pt
+     * capsule.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+     *   iPhone 17 Pro, the "Edit" label 30.33 wide in a 54.33 cell
+     *   (batch 18c), Oct 24 2026
+     */
+    textPaddingPt: 12,
+  },
   scrollEdgeEffect: {
     /**
      * The soft top edge effect is off while the content sits at most this
