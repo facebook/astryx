@@ -4,7 +4,8 @@
 
 /**
  * @file CheckboxInput.tsx
- * @input Uses React, useId, ChangeEvent, FieldLabel, FieldStatus, IconType, InputStatus, useTooltip
+ * @input Uses React, useId, ChangeEvent, FieldLabel, FieldStatus, IconType, InputStatus, useTooltip,
+ *   the touch target floor (Indicator/touchTarget.stylex.ts)
  * @output Exports CheckboxInput component, CheckboxInputProps
  * @position Core implementation; consumed by index.ts, tested by CheckboxInput.test.tsx
  *
@@ -52,6 +53,7 @@ import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useIndicator} from '../Indicator';
+import {touchTargetStyles} from '../Indicator/touchTarget.stylex';
 import {themeProps} from '../utils/themeProps';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
@@ -134,12 +136,6 @@ const styles = stylex.create({
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     zIndex: 1,
-  },
-  inputCoarse: {
-    '@media (pointer: coarse)': {
-      minInlineSize: 24,
-      minBlockSize: 24,
-    },
   },
   inputDisabled: {
     cursor: 'default',
@@ -262,9 +258,11 @@ export interface CheckboxInputProps extends Omit<BaseProps, 'onChange'> {
    */
   width?: SizeValue;
   /**
-   * The size of the checkbox.
-   * - 'sm': Compact size (28px row height)
-   * - 'md': Default size (36px row height)
+   * The size of the checkbox box: 20 px for 'sm', 24 px for 'md'. The row is
+   * as tall as its label. Under a coarse pointer the row is at least 44 px
+   * and the checkbox's target at least 44 × 44 px, centred on the box.
+   * - 'sm': Compact size
+   * - 'md': Default size
    * @default 'md'
    */
   size?: CheckboxInputSize;
@@ -438,6 +436,8 @@ export function CheckboxInput({
         }}
         {...(isDisabled ? undefined : pressable)}
         {...stylex.props(
+          // Under a finger the row is at least as tall as an iOS control.
+          touchTargetStyles.row,
           styles.container,
           isLabelHidden && styles.containerLabelHidden,
           // Hover and focus reach the checkbox visual through this ancestor
@@ -503,7 +503,9 @@ export function CheckboxInput({
             {...stylex.props(
               styles.input,
               rtlStyles.centerInline('-50%'),
-              styles.inputCoarse,
+              // Under a finger the input is the control's whole target, 44
+              // pt each way like an iOS control, centred on the box.
+              touchTargetStyles.control,
               wrapperSizeStyles[size],
               isDisabled && styles.inputDisabled,
             )}
