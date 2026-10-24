@@ -16,6 +16,8 @@ import {rulesDeclaredFor} from '../__tests__/pressState';
 import {List} from './List';
 import {ListItem} from './ListItem';
 import {ListMarkerScope} from './ListContext';
+import {listRowConsts} from './listRow.stylex';
+import {list} from '../motion/uikit/list';
 
 describe('List', () => {
   it('forwards ListItem align to its Item row unchanged', () => {
@@ -543,6 +545,72 @@ describe('List', () => {
         rule.slice(0, rule.indexOf('{')).includes(':has(+ [data-astryx-press'),
       ),
     ).toBe(false);
+  });
+
+  // ===========================================================================
+  // Touch row heights
+  // ===========================================================================
+
+  /**
+   * The element's own min-height declarations, split by whether they sit
+   * under the touch media query.
+   */
+  function minHeights(el: Element): {touch: string[]; other: string[]} {
+    const classes = el.className
+      .split(/\s+/)
+      .filter(Boolean)
+      .map(name => `.${name}`);
+    const out = {touch: [] as string[], other: [] as string[]};
+    const visit = (rules: CSSRuleList, touch: boolean) => {
+      for (const rule of Array.from(rules)) {
+        if (rule instanceof CSSMediaRule) {
+          visit(
+            rule.cssRules,
+            touch || rule.conditionText.includes('pointer: coarse'),
+          );
+        } else if (
+          rule instanceof CSSStyleRule &&
+          classes.some(cls => rule.selectorText.startsWith(cls)) &&
+          rule.style.minHeight !== ''
+        ) {
+          (touch ? out.touch : out.other).push(rule.style.minHeight);
+        }
+      }
+    };
+    for (const sheet of Array.from(document.styleSheets)) {
+      visit(sheet.cssRules, false);
+    }
+    return out;
+  }
+
+  it('mirrors the constants table’s touch row heights for the stylesheet', () => {
+    expect(listRowConsts.touchRowHeight).toBe(`${list.metrics.rowHeight}px`);
+    expect(listRowConsts.touchSubtitleRowHeight).toBe(
+      `${list.metrics.subtitleRowHeight}px`,
+    );
+    expect(listRowConsts.touchControlSize).toBe(
+      `${list.metrics.controlSize}px`,
+    );
+  });
+
+  it('gives rows UIKit’s table heights on a touch screen only', () => {
+    render(
+      <>
+        <List>
+          <ListItem label="One line" />
+          <ListItem label="Two lines" description="A description" />
+        </List>
+        <List density="compact">
+          <ListItem label="Compact" description="Still the control size" />
+        </List>
+      </>,
+    );
+    const row = (text: string) => screen.getByText(text).closest('li')!;
+    expect(minHeights(row('One line')).touch).toEqual(['52px']);
+    expect(minHeights(row('Two lines')).touch).toEqual(['62px']);
+    expect(minHeights(row('Compact')).touch).toEqual(['44px']);
+    // Nothing outside the touch query: a mouse-driven list is unchanged.
+    expect(minHeights(row('One line')).other).toEqual([]);
   });
 
   // ===========================================================================
