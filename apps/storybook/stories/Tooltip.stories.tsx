@@ -1,9 +1,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {Tooltip, useTooltip} from '@astryxdesign/core/Tooltip';
+import {Avatar} from '@astryxdesign/core/Avatar';
 import {Button} from '@astryxdesign/core/Button';
-import {HStack} from '@astryxdesign/core/Layout';
+import {ClickableCard} from '@astryxdesign/core/ClickableCard';
+import {HStack, VStack} from '@astryxdesign/core/Layout';
+import {Link} from '@astryxdesign/core/Link';
+import {Text} from '@astryxdesign/core/Text';
 
 const meta: Meta<typeof Tooltip> = {
   title: 'Core/Tooltip',
@@ -36,7 +41,7 @@ const meta: Meta<typeof Tooltip> = {
       control: 'select',
       options: ['auto', 'tap', 'none'],
       description:
-        'What a tap does where there is no hover: auto (tap unless the trigger acts), tap, or none',
+        'What a tap does where there is no hover: auto (tap unless the trigger, or a control it sits in, acts), tap, or none',
     },
   },
 };
@@ -246,4 +251,55 @@ export const TouchTriggers: Story = {
       </HStack>
     </div>
   ),
+};
+
+/**
+ * A hint inside a control does not answer the tap: the control does. Tap the
+ * truncated link and it follows the link; tap the ID or the avatar on the
+ * card and the card opens. Only the truncated label in running text, which
+ * sits in no control, opens its tooltip on a tap. Try these on a phone, or in
+ * a device emulator with touch emulation on.
+ */
+export const TouchTriggersInsideControls: Story = {
+  render: function TouchTriggersInsideControlsStory() {
+    const [cardOpens, setCardOpens] = useState(0);
+    return (
+      <div data-testid="touch-stage" style={{padding: 24, maxWidth: 320}}>
+        <VStack gap={6}>
+          {/* A truncated link: its label carries the truncation tooltip. The
+              link fills its 200px box so the label can truncate. */}
+          <div style={{width: 200}}>
+            <Link
+              href="#quarterly-report"
+              maxLines={1}
+              style={{display: 'block'}}>
+              Quarterly revenue report for the board, final version
+            </Link>
+          </div>
+          {/* A clickable card: a truncated ID and a name avatar inside it. */}
+          <ClickableCard
+            label="Open deployment"
+            onClick={() => setCardOpens(count => count + 1)}>
+            <HStack gap={3}>
+              <Avatar name="Jane Doe" size="sm" />
+              <div style={{minWidth: 0, width: 160}}>
+                <Text maxLines={1}>
+                  deployment-8f3a2c91-b7e4-4d19-a0c2-5e6f7a8b9c0d
+                </Text>
+              </div>
+            </HStack>
+          </ClickableCard>
+          <Text type="supporting" data-testid="card-opens">
+            Card opened {cardOpens} {cardOpens === 1 ? 'time' : 'times'}
+          </Text>
+          {/* Running text: the truncated label sits in no control. */}
+          <div style={{width: 200}}>
+            <Text maxLines={1}>
+              A long note that does not fit on one line of this narrow box
+            </Text>
+          </div>
+        </VStack>
+      </div>
+    );
+  },
 };

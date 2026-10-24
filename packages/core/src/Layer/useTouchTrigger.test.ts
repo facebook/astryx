@@ -2,8 +2,9 @@
 
 /**
  * @file useTouchTrigger.test.ts
- * @input Uses vitest, isActionTrigger
- * @output Unit tests for the action-trigger rule behind touchTrigger="auto"
+ * @input Uses vitest, isActionTrigger, tapHasDestination
+ * @output Unit tests for the action rules behind touchTrigger="auto": the
+ *   trigger's own action, and a control the trigger sits inside
  * @position Testing; validates useTouchTrigger.ts implementation
  *
  * SYNC: When useTouchTrigger.ts changes, update tests to match new behavior
@@ -14,7 +15,7 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {isActionTrigger} from './useTouchTrigger';
+import {isActionTrigger, tapHasDestination} from './useTouchTrigger';
 
 function element(html: string): HTMLElement {
   const host = document.createElement('div');
@@ -66,5 +67,44 @@ describe('isActionTrigger', () => {
   it('treats a contenteditable surface as an action', () => {
     const editable = element('<div contenteditable="true"></div>');
     expect(isActionTrigger(editable)).toBe(true);
+  });
+});
+
+/** The innermost element of `html`, marked with `data-trigger`. */
+function triggerIn(html: string): HTMLElement {
+  const host = document.createElement('div');
+  host.innerHTML = html;
+  return host.querySelector('[data-trigger]') as HTMLElement;
+}
+
+describe('tapHasDestination', () => {
+  it.each([
+    // A truncated Link: the label is a span inside the anchor.
+    ['<a href="/doc"><span data-trigger>A very long title</span></a>'],
+    ['<button type="button"><span data-trigger>Label</span></button>'],
+    // An option or a menu item with a truncated label.
+    ['<div role="option"><span data-trigger>Option</span></div>'],
+    ['<div role="menuitem"><span><span data-trigger>Item</span></span></div>'],
+    // A checkbox row: tapping its label toggles the box.
+    [
+      '<label><input type="checkbox" /><span data-trigger>Notify</span></label>',
+    ],
+    // A row or card that useClickableContainer made clickable, with no role.
+    ['<div data-pressable-container="true"><span data-trigger>ID</span></div>'],
+    // The trigger itself is still covered.
+    ['<button type="button" data-trigger>Save</button>'],
+  ])('gives the tap to the control around %s', html => {
+    expect(tapHasDestination(triggerIn(html))).toBe(true);
+  });
+
+  it.each([
+    ['<p>Read the <span data-trigger>WCAG</span> notes.</p>'],
+    ['<ul><li><span data-trigger>A static row</span></li></ul>'],
+    // An anchor without href goes nowhere.
+    ['<a><span data-trigger>Not a link</span></a>'],
+    // Scenery: the role says this is not the control it looks like.
+    ['<button role="presentation"><span data-trigger>x</span></button>'],
+  ])('leaves the tap to the trigger in %s', html => {
+    expect(tapHasDestination(triggerIn(html))).toBe(false);
   });
 });
