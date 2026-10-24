@@ -291,7 +291,13 @@ describe('Markdown FR23 helper overhead', () => {
        Atomics.notify(workerData, 0);`,
       {eval: true, workerData: flag},
     );
+    // A worker that dies before it finishes must fail the test, not hang it.
+    const deadline = Date.now() + 10_000;
     while (Atomics.load(flag, 0) === 0) {
+      if (Date.now() > deadline) {
+        await worker.terminate();
+        throw new Error('The CPU-spinning worker did not finish in 10 s');
+      }
       Atomics.wait(flag, 0, 0, 50);
     }
     const thread = mainThreadCpuTime() - threadBefore;
