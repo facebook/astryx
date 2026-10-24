@@ -13,7 +13,14 @@
  * - /packages/cli/assets/templates/blocks/components/CommandPalette/ (showcase blocks)
  */
 
-import {useCallback, useEffect, useRef, useState, type ReactNode} from 'react';
+import {
+  use,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
@@ -25,6 +32,7 @@ import {
   typographyVars,
 } from '../theme/tokens.stylex';
 import {useCommandPaletteContext} from './CommandPaletteContext';
+import {BusyStartSettleContext} from './busyStartSettle';
 import {useDialogContext} from '../Dialog/DialogContext';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
@@ -199,7 +207,10 @@ export function CommandPaletteInput({
     t('@astryx.commandPalette.loading'),
     inputRef,
   );
-  const registerSettle = ctx?.registerBusyAnnouncementSettle;
+  // Keeps the palette holding this input's settle function, so the palette can
+  // drop a busy start not yet announced when a search's outcome is about to be
+  // announced (spec:AST-086 FR8).
+  const registerSettle = use(BusyStartSettleContext);
   useEffect(() => {
     if (registerSettle == null) {
       return;
