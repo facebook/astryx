@@ -42,6 +42,11 @@ export interface CommandPaletteContextValue {
   isOpen: boolean;
   /** Whether an async search is in flight. */
   isBusy: boolean;
+  /**
+   * The input's way to drop a busy start not yet announced; the palette
+   * calls it when a query's outcome is about to be announced (spec:AST-086 FR8).
+   */
+  registerBusyAnnouncementSettle?: (settle: (() => void) | null) => void;
 }
 
 export const CommandPaletteContext =
