@@ -69,6 +69,37 @@ function touch(
   });
 }
 
+/** One pen event (pointer events only: a pen sends no touch events). */
+function pen(
+  type: 'pointerdown' | 'pointermove' | 'pointerup',
+  target: Element,
+  x: number,
+  y: number,
+  time: number,
+): void {
+  const event = new Event(type, {
+    bubbles: true,
+    cancelable: true,
+    composed: true,
+  });
+  Object.defineProperties(event, {
+    pointerId: {value: 7},
+    pointerType: {value: 'pen'},
+    isPrimary: {value: true},
+    clientX: {value: x},
+    clientY: {value: y},
+    button: {value: type === 'pointermove' ? -1 : 0},
+    buttons: {value: type === 'pointerup' ? 0 : 1},
+    pressure: {value: type === 'pointerup' ? 0 : 0.5},
+    width: {value: 1},
+    height: {value: 1},
+    timeStamp: {value: time},
+  });
+  act(() => {
+    target.dispatchEvent(event);
+  });
+}
+
 /**
  * Event timestamps keep increasing across tests: the document's gesture
  * host outlives each render, and its velocity filter reads the timestamps.
@@ -449,6 +480,30 @@ describe('Slider touch presentation (UISlider tracking)', () => {
       />,
     );
     expect(onChangeEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('takes a pen on a thumb as it takes a finger, and ignores a pen on the track', () => {
+    stubMatchMedia(true);
+    stubControlGeometry();
+    const onChange = vi.fn();
+    render(<Controlled initial={50} onChange={onChange} />);
+    const control = document.querySelector(
+      '.astryx-slider-control',
+    ) as HTMLElement;
+    let t = nextStart();
+    pen('pointerdown', control, 280, 12, t);
+    pen('pointerup', control, 280, 12, t + 60);
+    expect(onChange).not.toHaveBeenCalled();
+    // On the thumb the value follows the pen's travel past the threshold:
+    // 50 + (60 - 10) / 300 × 100.
+    const hit = hitOf(screen.getByRole('slider'));
+    t = nextStart();
+    pen('pointerdown', hit, 150, 12, t);
+    for (let i = 1; i <= 10; i++) {
+      pen('pointermove', hit, 150 + 6 * i, 12, t + 16 * i);
+    }
+    expect(onChange).toHaveBeenLastCalledWith(67);
+    pen('pointerup', hit, 210, 12, t + 200);
   });
 
   it('ends a touch silently when the slider unmounts or is disabled mid-drag', () => {
