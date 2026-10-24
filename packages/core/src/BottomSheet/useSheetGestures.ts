@@ -42,8 +42,8 @@
  * and easing instead of UIKit's springs (releaseMotion.ts), on the same
  * channel. Under a finger the host also presents and dismisses the sheet on
  * that channel (`present` / `dismiss`): UIKit's sheet spring from below the
- * screen and back, the dim on the same spring's progress, a fade on it under
- * Reduce Motion.
+ * screen and back, the dim on the same spring's progress; under reduced
+ * motion a fade in place (design:reduced-motion).
  *
  * Those are pixels, and the stops behind them are relative to the viewport, so
  * a sheet at rest re-resolves its detent on `resize` / `orientationchange`,
@@ -458,7 +458,7 @@ export interface UseSheetGesturesResult {
   /**
    * Presents the sheet the way UIKit does under a finger: from below the
    * screen to its detent on `springs.sheetPresent`, the dim on the same
-   * curve (a fade on that spring under Reduce Motion). Call from an effect
+   * curve (under reduced motion, a fade in place). Call from an effect
    * as the sheet opens, before its dialog is shown (a child's effect runs
    * before its host's): the dim is taken over at once, and the travel starts
    * in a microtask, once every effect has run and the dialog has laid out.
@@ -1597,8 +1597,9 @@ export function useSheetGestures({
   // damped spring (sheetPresent / sheetDismiss) and its dimming view's colour
   // on the same spring, from clear to its resting dim and back (so the dim
   // follows the spring's progress, not the drag's position map). Under
-  // Reduce Motion with Prefer Cross-Fade the sheet fades on that spring
-  // instead (the animator's crossfadeAs). Under a finger only.
+  // reduced motion the sheet fades in or out in place instead, on the
+  // animator's own cross-fade (crossfadeAs; design:reduced-motion DR2), and
+  // the dim with it. Under a finger only.
   const present = useCallback((): boolean => {
     if (!readTouchPresentation().isTouch) {
       return false;
@@ -1644,7 +1645,7 @@ export function useSheetGestures({
       const handle = animator.animate(
         {y: 0},
         {spring: springs.sheetPresent},
-        {crossfade: springs.sheetPresent, crossfadeAs: 'entrance'},
+        {crossfadeAs: 'entrance'},
       );
       const curve = solveSpring(toSpring(springs.sheetPresent), {
         from: distance,
@@ -1682,7 +1683,6 @@ export function useSheetGestures({
     endScrimTracking,
     followScrim,
     measureHeight,
-    settledOffset,
   ]);
 
   const startDismiss = useCallback((): SheetGestureExit | null => {
@@ -1725,7 +1725,7 @@ export function useSheetGestures({
     const handle = animator.animate(
       {y: from + distance},
       {spring: springs.sheetDismiss},
-      {crossfade: springs.sheetDismiss, crossfadeAs: 'exit'},
+      {crossfadeAs: 'exit'},
     );
     const curve = solveSpring(toSpring(springs.sheetDismiss), {
       from,

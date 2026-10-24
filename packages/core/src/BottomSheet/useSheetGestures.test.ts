@@ -3097,9 +3097,9 @@ describe('useSheetGestures: present and dismiss under a finger', () => {
     });
   });
 
-  it('fades in on the sheet spring under Reduce Motion instead of sliding', async () => {
+  it('fades in place under reduced motion, 200 ms or less (design:reduced-motion DR2)', async () => {
     stubMedia({reducedMotion: true});
-    const {hook, sheetAnimations} = presentedSheet();
+    const {hook, sheetAnimations, backdrop} = presentedSheet();
     act(() => {
       hook.result.current.present();
     });
@@ -3107,21 +3107,48 @@ describe('useSheetGestures: present and dismiss under a finger', () => {
       await Promise.resolve();
     });
     const fade = sheetAnimations.find(a =>
-      a.keyframes.some(frame => frame.opacity != null),
+      changedProperties(a).includes('opacity'),
     );
     expect(fade).toBeDefined();
     const opacity = fade as Played;
     expect(valueAt(opacity, 0, opacityOf)).toBeCloseTo(0, 2);
-    expect(
-      valueAt(opacity, opacity.options.duration as number, opacityOf),
-    ).toBeCloseTo(1, 2);
-    // No frame of it slides: the travel lands at once.
-    for (const animation of sheetAnimations) {
-      for (const frame of animation.keyframes) {
-        if (frame.translate != null) {
-          expect(travelOf(frame)).toBe(0);
-        }
-      }
+    expect(valueAt(opacity, 200, opacityOf)).toBeCloseTo(1, 2);
+    // Nothing runs longer than 200 ms: no spring, the dim included.
+    for (const animation of [...sheetAnimations, ...backdrop]) {
+      expect(settledMs(animation)).toBeLessThanOrEqual(200.5);
+    }
+  });
+
+  it('fades out in place under reduced motion, 200 ms or less', async () => {
+    stubMedia({reducedMotion: true});
+    const {hook, sheetAnimations, backdrop} = presentedSheet();
+    act(() => {
+      hook.result.current.present();
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const before = sheetAnimations.length;
+    act(() => {
+      hook.result.current.dismiss();
+    });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    const exit = sheetAnimations
+      .slice(before)
+      .find(a => changedProperties(a).includes('opacity'));
+    expect(exit).toBeDefined();
+    expect(valueAt(exit as Played, 0, opacityOf)).toBeCloseTo(1, 2);
+    for (const animation of [...sheetAnimations, ...backdrop]) {
+      expect(settledMs(animation)).toBeLessThanOrEqual(200.5);
     }
   });
 
