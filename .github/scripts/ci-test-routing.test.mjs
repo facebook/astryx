@@ -266,6 +266,63 @@ describe.each(Object.entries(WORKFLOWS))(
   },
 );
 
+describe('ci.yml pr-a11y steps against an older PR head', () => {
+  const steps = load('ci.yml').jobs['pr-a11y'].steps;
+  /** The spec files each `pnpm exec playwright test` in a step names. */
+  const specsOf = step =>
+    (step.run ?? '')
+      .replace(/\\\n/g, ' ')
+      .split('\n')
+      .filter(line => /pnpm exec playwright test\b/.test(line))
+      .flatMap(line =>
+        line
+          .trim()
+          .split(/\s+/)
+          .filter(token => /\.spec\.(ts|tsx|js|mjs)$/.test(token)),
+      );
+  const playwright = steps.filter(step => specsOf(step).length > 0);
+
+  // The wrapper skips spec files a PR head lacks, so a step that named a file
+  // missing on main would pass silently everywhere. Main's steps must name
+  // files that exist; only an older head skips anything.
+  it('names only spec files that exist', () => {
+    expect(playwright.length).toBeGreaterThan(0);
+    for (const step of playwright) {
+      for (const spec of specsOf(step)) {
+        expect(
+          fs.existsSync(path.join(root, spec)),
+          `${step.name}: ${spec}`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it("sources the base's absent-spec wrapper before every Playwright step", () => {
+    const index = steps.findIndex(
+      step => step.name === 'Skip contract specs the PR head predates',
+    );
+    expect(index).toBeGreaterThan(-1);
+    const wrapper = steps[index];
+    expect(wrapper.if).toBe("github.event_name == 'pull_request'");
+    expect(wrapper.env.BASE_SHA).toBe(
+      '${{ github.event.pull_request.base.sha }}',
+    );
+    expect(wrapper.run).toContain(
+      'git show "$BASE_SHA:.github/scripts/skip-absent-specs.sh" > "$wrapper"',
+    );
+    expect(wrapper.run).toContain('echo "BASH_ENV=$wrapper" >> "$GITHUB_ENV"');
+    expect(
+      fs.existsSync(path.join(root, '.github/scripts/skip-absent-specs.sh')),
+    ).toBe(true);
+    for (const step of playwright) {
+      expect(steps.indexOf(step), step.name).toBeGreaterThan(index);
+      // BASH_ENV reaches bash steps only, and only calls through the function.
+      expect(step.shell ?? 'bash', step.name).toMatch(/^bash/);
+      expect(step.run, step.name).not.toMatch(/\b(exec|command) pnpm\b/);
+    }
+  });
+});
+
 describe('ci.yml RTL package sharding', () => {
   const workflow = load('ci.yml');
   const shard = workflow.jobs['pr-rtl-shard'];
