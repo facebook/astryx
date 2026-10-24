@@ -100,8 +100,8 @@ released one.
   scrolling is a custom `code` renderer.
 - Default-path headerless layout (`component:CodeBlock` FR11), visual and not
   breaking: a fence with no language label shows Copy in its own column beside
-  the code, so long lines wrap before it. A fence that names a language keeps
-  its header at every line count. Text, copy output, syntax colours, the
+  the code, so long lines wrap before it. A fence that names a language other than
+  `plaintext` keeps its header at every line count. Text, copy output, syntax colours, the
   viewport name, and a supplied `code` renderer's contract are unchanged.
 - Default-path layout change (FR26–FR28): a default table's columns may become
   wider than the released fixed buckets, never narrower; header labels wrap
