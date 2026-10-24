@@ -59,8 +59,7 @@ connection between the closed trigger and its selection surface.
   `popover`.
 - `adaptive`'s compact test becomes `spec:AST-012` FR9 (width below the
   effective `md` point or height below 500) in place of the shipped
-  `(max-width: 768px)` query: a coarse-pointer screen exactly 768 pixels wide
-  opens the popover, and a coarse-pointer screen at least 768 wide but under
+  `(max-width: 768px)` query: a coarse-pointer screen exactly 768 pixels wide and at least 500 tall opens the popover, and a coarse-pointer screen at least 768 wide but under
   500 tall opens the bottom sheet. Both surfaces keep selection working, so no
   caller must change source and the change is not breaking under
   `spec:AST-017` FR1; `popover` and `bottom-sheet` pin one surface. It is

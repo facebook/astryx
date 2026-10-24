@@ -243,8 +243,7 @@ The theme exports no compact definition, and `when` has no `height` field.
 Selector's, MultiSelector's, ContextMenu's, and DropdownMenu's `adaptive`
 presentation (MoreMenu forwards to DropdownMenu) and DropdownMenu's compact-touch
 sub-menu decisions use `(max-width: 768px) and (pointer: coarse)`, and the
-ContextMenu and MoreMenu consumer docs describe it as "768px and below": a coarse-pointer screen exactly 768
-pixels wide counts as compact, and a landscape phone at least 768 pixels wide
+ContextMenu and MoreMenu consumer docs describe it as "768px and below": a coarse-pointer screen exactly 768 pixels wide and at least 500 tall counts as compact, and a landscape phone at least 768 pixels wide
 but under 500 tall does not. Under FR9 the first opens the popover and the
 second the bottom sheet; the release note for that change names `presentation`
 as the way to keep a surface. `PortableTheme` carries no compact definition, and `@astryxdesign/native` has no compact resolver yet; it adopts FR9 when it gains one.
