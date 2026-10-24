@@ -197,6 +197,18 @@ const calmTheme = defineTheme({
               '350ms',
             ],
             [
+              'list.update.outlineSpring',
+              '--motion-list-update-outline-spring',
+              'spring',
+              '0.25s 0.00000985016',
+            ],
+            [
+              'list.update.tableSpring',
+              '--motion-list-update-table-spring',
+              'spring',
+              '0.3s 0',
+            ],
+            [
               'navigation.transitionMs',
               '--motion-navigation-transition-ms',
               'duration',

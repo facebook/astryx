@@ -5,9 +5,9 @@
  * @input The list domain of the UIKit constants table (list.ts) and the
  *   motion role registry (motion/roles.ts)
  * @output Proof that the list table registers its motion roles: the
- *   deselect's clock and curve are roles named by their paths, and the cell
- *   highlight's release (read by the press layer's stylesheet at build time)
- *   is not
+ *   deselect's clock and curve and the update springs are roles named by
+ *   their paths, and the cell highlight's release (read by the press layer's
+ *   stylesheet at build time) and the row heights are not
  * @position Testing for /packages/core/src/motion/uikit/list.ts
  */
 
@@ -34,6 +34,25 @@ describe('the list table’s motion roles', () => {
       kind: 'curve',
       variable: '--motion-list-deselect-navigation-pop-curve',
     });
+  });
+
+  it('makes the outline and table update springs roles', () => {
+    expect(motionRoleOf(list.update.outlineSpring)).toMatchObject({
+      id: 'list.update.outlineSpring',
+      kind: 'spring',
+      variable: '--motion-list-update-outline-spring',
+    });
+    expect(motionRoleOf(list.update.tableSpring)).toMatchObject({
+      id: 'list.update.tableSpring',
+      kind: 'spring',
+      variable: '--motion-list-update-table-spring',
+    });
+  });
+
+  it('leaves the row heights out: lengths, not motion', () => {
+    for (const key of Object.keys(list.metrics)) {
+      expect(motionRoleIn(list.metrics, key)).toBeUndefined();
+    }
   });
 
   it('leaves the highlight’s release out: the press layer reads it at build time', () => {

@@ -182,12 +182,35 @@ export async function sampleVideo(
   probe: {x: number; y: number},
   viewport: {width: number; height: number},
 ): Promise<VideoSample[]> {
+  const frames = await sampleVideoPoints(videoPath, [probe], viewport);
+  return frames.map(({t, values, beacon}) => ({t, value: values[0], beacon}));
+}
+
+export interface VideoPointsSample {
+  /** Video time, s. */
+  readonly t: number;
+  /** Mean of the RGB channels at each probe, 0–255, in the probes' order. */
+  readonly values: ReadonlyArray<number>;
+  /** Whether each probe shows the harness marker colour (magenta). */
+  readonly marker: ReadonlyArray<boolean>;
+  readonly beacon: 'before' | 'blocked' | 'after';
+}
+
+/**
+ * Like `sampleVideo`, at several probe points per frame: a marker moving
+ * through them reads as the index of the probe it covers.
+ */
+export async function sampleVideoPoints(
+  videoPath: string,
+  probes: ReadonlyArray<{x: number; y: number}>,
+  viewport: {width: number; height: number},
+): Promise<VideoPointsSample[]> {
   const webm = (await readFile(videoPath)).toString('base64');
   const decoder = await chromium.launch();
   try {
     const player = await decoder.newPage();
     return await player.evaluate(
-      async ({at, data, beaconAt}) => {
+      async ({points, data, beaconAt}) => {
         const element = document.createElement('video');
         element.muted = true;
         element.src = URL.createObjectURL(
@@ -210,7 +233,8 @@ export async function sampleVideo(
         }) as CanvasRenderingContext2D;
         const out: {
           t: number;
-          value: number;
+          values: number[];
+          marker: boolean[];
           beacon: 'before' | 'blocked' | 'after';
         }[] = [];
         const duration = Number.isFinite(element.duration)
@@ -222,7 +246,9 @@ export async function sampleVideo(
             element.addEventListener('seeked', r, {once: true}),
           );
           context2d.drawImage(element, 0, 0);
-          const px = context2d.getImageData(at.x, at.y, 1, 1).data;
+          const pixels = points.map(
+            p => context2d.getImageData(p.x, p.y, 1, 1).data,
+          );
           const b = context2d.getImageData(beaconAt.x, beaconAt.y, 1, 1).data;
           const beacon =
             b[2] > 180 && b[0] < 80
@@ -230,12 +256,17 @@ export async function sampleVideo(
               : b[1] > 150 && b[2] < 80
                 ? 'after'
                 : 'before';
-          out.push({t, value: (px[0] + px[1] + px[2]) / 3, beacon});
+          out.push({
+            t,
+            values: pixels.map(px => (px[0] + px[1] + px[2]) / 3),
+            marker: pixels.map(px => px[0] > 200 && px[1] < 80 && px[2] > 200),
+            beacon,
+          });
         }
         return out;
       },
       {
-        at: probe,
+        points: probes,
         data: webm,
         beaconAt: {
           x: viewport.width - BEACON / 2,
