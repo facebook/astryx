@@ -6,7 +6,7 @@
  * @output Exports `zoomMedia`: UIScrollView zooming as a photo viewer uses
  *   it — the overshoot past the zoom limits, the eased curve and duration
  *   law of the return from an overshoot and of `zoom(to:animated:)`, and
- *   Photos' double-tap and maximum zoom
+ *   Photos' double-tap and maximum zoom and the gap between its pages
  * @position A component domain of the UIKit constants table (motion/uikit);
  *   read by Lightbox's zoom stage (Lightbox/zoomStage.ts)
  *
@@ -111,5 +111,13 @@ export const zoomMedia = {
      *   2000 × 3000 photos, Oct 23 2026
      */
     maxPixelZoomMultiple: 6,
+    /**
+     * Space between photos while they page, pt: the pager's stride is the
+     * screen's width plus this (442 on the 402 pt screen). It shows only
+     * while a page moves.
+     * @source measured: Photos, iOS 26.2 simulator, iPhone 17 Pro, the
+     *   pager's contentOffset per page, Oct 23 2026
+     */
+    pageGap: 40,
   },
 } as const;
