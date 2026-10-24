@@ -657,7 +657,12 @@ test('captures built-in hover, focus, pressed, and open states', async ({
     );
 
     await page.mouse.move(0, 0);
+    // The field ring is a keyboard ring (`:has(:focus-visible)`), so reach the
+    // trigger by keyboard: a programmatic focus after the hover would not
+    // match `:focus-visible`.
     await trigger.focus();
+    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('Tab');
     await expect(trigger).toBeFocused();
     const focusPaint = await owner.evaluate(element => {
       const style = getComputedStyle(element);
