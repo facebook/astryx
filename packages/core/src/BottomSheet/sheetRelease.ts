@@ -6,8 +6,8 @@
  *   the motion foundation's snap-point projection
  * @output Exports resolveSheetRelease, which says where a released sheet goes
  *   and on which spring, and the SheetRelease type
- * @position Internal to BottomSheet; pure (no DOM, no React). The rule a
- *   drag's release follows; no gesture calls it yet.
+ * @position Internal to BottomSheet; pure (no DOM, no React). Called by
+ *   useSheetGestures when a drag ends.
  *
  * A released sheet goes where UISheetPresentationController sends it. The
  * dismissed position (the sheet fully below the screen) counts as one of the
@@ -29,9 +29,11 @@
  * finger's velocity.
  *
  * Offsets are px down from the tallest detent (0 = fully open), velocities
- * px/s with positive meaning downward.
+ * px/s with positive meaning downward, as useSheetGestures measures them.
  *
- * SYNC: When modified, update /packages/core/src/BottomSheet/sheetRelease.test.ts
+ * SYNC: When modified, update these files to stay in sync:
+ * - /packages/core/src/BottomSheet/sheetRelease.test.ts
+ * - /packages/core/src/BottomSheet/useSheetGestures.ts
  */
 
 import {selectSnapPoint} from '../motion/projection';
