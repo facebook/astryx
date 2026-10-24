@@ -102,7 +102,7 @@ describe('motion roles', () => {
   it('lists every registered role, and its kind, in the generated role kinds', () => {
     // The shared tables (other tests here register tables of their own).
     const shared = listMotionRoles().filter(role =>
-      ['springs', 'scroll', 'timing', 'navigation'].includes(
+      ['springs', 'scroll', 'timing', 'navigation', 'search'].includes(
         role.id.split('.')[0],
       ),
     );
