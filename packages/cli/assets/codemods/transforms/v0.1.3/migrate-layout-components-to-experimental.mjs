@@ -32,9 +32,9 @@
  * (`export default { ... }`), a `createConfig({ ... })` call wrapping an object
  * literal (`export default createConfig({ ... })`), or an identifier bound by a
  * top-level `const` to either form (`const config = { ... }; export default
- * config;`, the shape generated configs use) when the default export is the
- * binding's only reference, so nothing can mutate the object after its
- * declaration. Anything else is not statically analyzable and the transform
+ * config;`, the shape generated configs use) when the binding is not
+ * exported any other way and the default export is its only reference, so
+ * nothing can mutate the object after its declaration. Anything else is not statically analyzable and the transform
  * THROWS with a clear
  * migrate-manually message (the unified config-codemod contract has no
  * structured-error return — `runConfigCodemod` surfaces a thrown `err.message`
@@ -190,27 +190,29 @@ function resolveConfigObject(/** @type {any} */ j, /** @type {any} */ declaratio
 }
 
 /**
- * Find the initializer of the top-level `const <name> = <init>` declaration
- * (optionally `export const`) that the default-exported identifier refers to.
- * `let`/`var` bindings can be reassigned, so they are not treated as
- * statically analyzable. Neither is a binding referenced anywhere besides its
- * declaration and the default export: a member write, an alias or a call
- * argument could change the object after its initializer.
+ * Find the initializer of the top-level, non-exported `const <name> = <init>`
+ * declaration that the default-exported identifier refers to. `let`/`var`
+ * bindings can be reassigned, so they are not treated as statically
+ * analyzable. Neither is a binding exported any other way (`export const`,
+ * `export { name }`, `export { name as other }`), since another module could
+ * import and mutate it, nor one referenced anywhere besides its declaration
+ * and the default export: a member write, an alias or a call argument could
+ * change the object after its initializer. A named export specifier is such a
+ * reference, so `hasOtherReference` rejects it.
  * @returns {any} the initializer node, or null if there is no such binding
  */
 function findTopLevelConstInit(/** @type {any} */ j, /** @type {any} */ root, /** @type {any} */ exported) {
   const name = exported.name;
   for (const statement of root.get().node.program.body) {
-    const declaration = j.ExportNamedDeclaration.check(statement)
-      ? statement.declaration
-      : statement;
+    // `export const` is skipped on purpose: another module can import the
+    // binding and mutate the object.
     if (
-      !j.VariableDeclaration.check(declaration) ||
-      declaration.kind !== 'const'
+      !j.VariableDeclaration.check(statement) ||
+      statement.kind !== 'const'
     ) {
       continue;
     }
-    for (const declarator of declaration.declarations) {
+    for (const declarator of statement.declarations) {
       if (
         j.VariableDeclarator.check(declarator) &&
         j.Identifier.check(declarator.id) &&

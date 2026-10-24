@@ -317,6 +317,35 @@ export default config;
     await expect(applyTransform(input)).rejects.toThrow(/statically analyze/);
   });
 
+  it('throws when the const-bound config is also exported with export const', async () => {
+    const input = `export const config = {
+  layout: { components: { KpiCard: '@/components/KpiCard' } },
+};
+export default config;
+`;
+    await expect(applyTransform(input)).rejects.toThrow(/statically analyze/);
+  });
+
+  it('throws when the const-bound config is also exported by name', async () => {
+    const input = `const config = {
+  layout: { components: { KpiCard: '@/components/KpiCard' } },
+};
+export { config };
+export default config;
+`;
+    await expect(applyTransform(input)).rejects.toThrow(/statically analyze/);
+  });
+
+  it('throws when the const-bound config is also exported under another name', async () => {
+    const input = `const config = {
+  layout: { components: { KpiCard: '@/components/KpiCard' } },
+};
+export { config as baseConfig };
+export default config;
+`;
+    await expect(applyTransform(input)).rejects.toThrow(/statically analyze/);
+  });
+
   it('throws when the default export is bound by a reassignable let', async () => {
     const input = `let config = { layout: { components: { KpiCard: '@/components/KpiCard' } } };
 export default config;
