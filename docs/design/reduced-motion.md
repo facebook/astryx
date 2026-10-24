@@ -19,6 +19,14 @@ deciding_specs: []
 
 # Reduced motion design specification
 
+<!-- path-applicability:v1 -->
+
+```json
+{
+  "paths": ["packages/core/src/**"]
+}
+```
+
 ## User intent
 
 A person who asks their device to reduce motion still sees every change Astryx
@@ -45,11 +53,11 @@ trackpad, or keyboard the change is immediate.
 
 ## State representation
 
-| State                             | Required representation                         | Allowed variation                            |
-| --------------------------------- | ----------------------------------------------- | -------------------------------------------- |
-| reduced motion, coarse pointer    | Opacity-only cross-fade of 200 ms or less (DR2) | A shorter cross-fade, or an immediate change |
-| reduced motion, any other pointer | Immediate change (DR3)                          | None                                         |
-| no reduced-motion preference      | Outside this record                             | Component and theme motion                   |
+| State                             | Required representation                         | Allowed variation          |
+| --------------------------------- | ----------------------------------------------- | -------------------------- |
+| reduced motion, coarse pointer    | Opacity-only cross-fade of 200 ms or less (DR2) | A shorter cross-fade       |
+| reduced motion, any other pointer | Immediate change (DR3)                          | None                       |
+| no reduced-motion preference      | Outside this record                             | Component and theme motion |
 
 ## Responsive and input behavior
 
@@ -68,7 +76,8 @@ trackpad, or keyboard the change is immediate.
 
 Content that moves with the person's own pointer or finger during a drag
 follows it as direct manipulation and is not a DR1 transition; a transition a
-component starts after release follows DR2 or DR3.
+component starts after release, such as a swiped row sliding out or returning
+(`spec:AST-057` FR5), follows DR2 or DR3.
 
 ## Accessibility intent
 
@@ -95,11 +104,11 @@ No component-specific contract links are introduced.
 
 ### Verification
 
-| Contract | Verification                                                          | Representative states                                                                              | Failure signal                                                                                 |
-| -------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| DR1, DR2 | Real-browser computed animations under reduced motion, coarse pointer | Layer entrance and exit (Tooltip, Popover, menu); Dialog; modal BottomSheet; a presentation switch | An animated transform, size, or position; a spring; a property other than opacity; over 200 ms |
-| DR1, DR3 | Real-browser computed animations under reduced motion, fine pointer   | The same components                                                                                | Any animated property, or a frame where the change is partly applied                           |
-| DR4      | Component prop and theme review plus the browser checks above         | A component with a motion prop or theme motion value set                                           | A prop or theme value that restores travel or a longer animation under reduced motion          |
+| Contract | Verification                                                          | Representative states                                                                              | Failure signal                                                                                                              |
+| -------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| DR1, DR2 | Real-browser computed animations under reduced motion, coarse pointer | Layer entrance and exit (Tooltip, Popover, menu); Dialog; modal BottomSheet; a presentation switch | An animated transform, size, or position; a spring; a property other than opacity; over 200 ms; a change with no cross-fade |
+| DR1, DR3 | Real-browser computed animations under reduced motion, fine pointer   | The same components                                                                                | Any animated property, or a frame where the change is partly applied                                                        |
+| DR4      | Component prop and theme review plus the browser checks above         | A component with a motion prop or theme motion value set                                           | A prop or theme value that restores travel or a longer animation under reduced motion                                       |
 
 ## Decision log
 
