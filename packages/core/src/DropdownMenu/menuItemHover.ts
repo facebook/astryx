@@ -11,6 +11,8 @@
  * highlight source. Mouse hover moves focus onto the pointed-at item so the
  * one focus highlight follows the pointer — instead of a separate `:hover`
  * background leaving the keyboard-focused item highlighted at the same time.
+ * That focus is the mouse's, never the keyboard's: it never matches
+ * `:focus-visible` (`architecture:interaction-modality` INV1).
  *
  * SYNC: When modified, update the item components that use it:
  * - /packages/core/src/DropdownMenu/DropdownMenuItem.tsx
@@ -39,6 +41,10 @@ export function focusMenuItemOnHover(
     // stationary pointer, whose next pointerenter focuses it again — a
     // runaway auto-scroll loop. Keyboard navigation scrolls via its own
     // highlight handling; hover must never scroll.
-    el.focus({preventScroll: true});
+    // focusVisible false: a plain focus() inherits :focus-visible from the
+    // element focused before it (the menu after a pointer open, the row a key
+    // reached), so every keyboard-only focus style would paint on the row
+    // under the mouse. A key pressed afterwards moves focus with it again.
+    el.focus({preventScroll: true, focusVisible: false});
   }
 }

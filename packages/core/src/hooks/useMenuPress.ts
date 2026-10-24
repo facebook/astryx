@@ -423,7 +423,9 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
       }
       // In a menu the highlight IS focus. A row whose root takes no
       // focus is highlighted through the control inside it; over nothing,
-      // the menu root holds focus so no row is lit.
+      // the menu root holds focus so no row is lit. The pointer moved it, so
+      // it never matches :focus-visible (`architecture:interaction-modality`
+      // INV1), which a plain focus() would inherit from the focus before it.
       const target =
         row == null
           ? menuRef.current
@@ -431,7 +433,7 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
             ? row
             : row.querySelector<HTMLElement>(INNER_CONTROL_SELECTOR);
       if (target != null && target !== getDocument().activeElement) {
-        target.focus({preventScroll: true});
+        target.focus({preventScroll: true, focusVisible: false});
       }
     },
     [getDocument],

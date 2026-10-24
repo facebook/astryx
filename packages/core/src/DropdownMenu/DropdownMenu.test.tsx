@@ -2262,12 +2262,16 @@ describe('DropdownMenu keyboard access for menuitemradio/menuitemcheckbox (#3829
     // focus-driven highlight follows the pointer instead of leaving two.
     // Focus must be scroll-free: scrolling the focused item into view moves
     // the next item under the stationary pointer, which re-highlights and
-    // scrolls again — a runaway auto-scroll loop.
+    // scrolls again — a runaway auto-scroll loop. And it is the mouse's focus,
+    // so it asks the browser not to match :focus-visible.
     const focusSpy = vi.spyOn(del, 'focus');
     fireEvent.pointerMove(del, {pointerType: 'mouse'});
     expect(del).toHaveFocus();
     expect(edit).not.toHaveFocus();
-    expect(focusSpy).toHaveBeenCalledWith({preventScroll: true});
+    expect(focusSpy).toHaveBeenCalledWith({
+      preventScroll: true,
+      focusVisible: false,
+    });
   });
 
   it('does not move focus on hover for a disabled item', async () => {

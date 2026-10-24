@@ -14,6 +14,7 @@ verified_by:
   [
     packages/core/src/DropdownMenu/DropdownMenu.test.tsx,
     packages/core/src/DropdownMenu/__tests__/Menu.a11y.test.tsx,
+    packages/core/src/DropdownMenu/__tests__/MenuHoverFocus.a11y.chromium.spec.ts,
     packages/core/src/theme/themingTargets.test.ts,
     apps/storybook/stories/DropdownMenuItem.stories.tsx,
     apps/storybook/rtl-audit/verified-not-applicable.json,
@@ -114,6 +115,7 @@ intentional decision.
 | FR6 | Ref, supported host attributes and handlers, `className`, `style`, and `xstyle` MUST reach or compose on the row root without replacing owned role, tab stop, disabled behavior, destination handling, or activation order.                          | `architecture:public-component-api/INV5–INV9`; focused tests     | verify                                                       |
 | FR7 | Disabled menu rows remain inert. Whether the menu keyboard model should visit them is unresolved at the shared owner and MUST NOT be changed by a component-local audit.                                                                             | WAI-ARIA menu pattern; parent `component:DropdownMenu/OQ1`       | human API decision                                           |
 | FR8 | Keyboard focus MUST remain perceivable, including in forced-colors mode. The current background-only treatment is an objective gap; a remediation must preserve modality and row-content visibility without inventing new ordinary-theme appearance. | WCAG 2.2 SC 1.4.11 and 2.4.7; current rendered behavior          | objective gap; owner must confirm the shared visual boundary |
+| FR9 | Hover focus MUST NOT show the keyboard focus indicator: the row the mouse rests on takes focus without matching `:focus-visible`, after a pointer or a keyboard open, and a key pressed afterwards moves focus with it.                              | `architecture:interaction-modality` INV1; browser tests          | Proposed; verified in jsdom and Chromium; owner review       |
 
 ### Allowed variation
 
@@ -134,6 +136,7 @@ intentional decision.
 | Destination            | One anchor root preserves safe destination and browser activation behavior.         | Target, rel, router provider, and content.   |
 | Destructive            | Error-role paint applies to label, icon, and description without changing behavior. | Other row content remains consumer-authored. |
 | Keyboard focus         | Parent focus lands on the row and remains visible.                                  | Exact theme-owned paint may vary.            |
+| Pointer hover          | Focus follows the mouse onto the row without `:focus-visible`.                      | A key press afterwards shows it.             |
 | RTL / narrow viewport  | Logical insets and start alignment follow direction without horizontal overflow.    | Menu placement remains parent-owned.         |
 
 ### Transformation and precedence order
@@ -190,6 +193,7 @@ No new component-local visual decision is settled by this draft.
 | FR5, FR8, AR4    | theming-target tests; exact-head Neutral/Butter/RTL/narrow/focus/hover frames | default, destructive, disabled, focus, hover               | Target/state reflection disappears, paint is absent, or focus becomes unobservable                                    | `audit:DropdownMenuItem/§2,§5`    |
 | FR6              | root/ref/handler tests; lint and typecheck                                    | ref, host attributes, class/style/xstyle, pointer handlers | An accepted input is dropped or overrides component-owned semantics                                                   | `audit:DropdownMenuItem/§3`       |
 | RTL / responsive | source-hashed verified-N/A receipt plus exact-head browser frames             | LTR, RTL, 320px                                            | Physical direction leaks into the row or narrow layout overflows                                                      | `audit:DropdownMenuItem/§9,§10`   |
+| FR9              | `MenuHoverFocus.a11y.chromium.spec.ts`; hover test                            | pointer open, keyboard open, then a key                    | Hover focus matching `:focus-visible`, or a key press after it that does not, fails                                   | `audit:DropdownMenuItem/§1,§4,§6` |
 
 ## Decision log
 
