@@ -161,6 +161,11 @@
       "types": "./dist/utils/interactionOverlay.stylex.d.ts",
       "default": "./dist/utils/interactionOverlay.stylex.js"
     },
+    "./utils/pressLayer.stylex": {
+      "source": "./src/utils/pressLayer.stylex.ts",
+      "types": "./dist/utils/pressLayer.stylex.d.ts",
+      "default": "./dist/utils/pressLayer.stylex.js"
+    },
     "./docs.mjs": "./docs.mjs",
     "./groups.doc.mjs": "./groups.doc.mjs",
     "./locales/*.json": "./locales/*.json",
@@ -808,6 +813,7 @@
   },
   "devDependencies": {
     "@astryxdesign/a11y-spec": "workspace:*",
+    "@astryxdesign/interaction-harness": "workspace:*",
     "@astryxdesign/cli": "workspace:*",
     "@babel/cli": "catalog:",
     "@babel/core": "catalog:",
