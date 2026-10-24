@@ -95,7 +95,7 @@ export const docs = {
       name: 'isReorderable',
       type: 'boolean',
       description:
-        'Shows a vertical grip beside the first field of each record. The grip is a bare six-dot glyph with no button fill. It hangs in the inline-start gutter, outside the fields, so the fields and their labels never move, and it appears while the record is hovered or holds keyboard focus and stays visible on touch screens. Grip and clearance take 16px, so the grip sits inside the standard 16px container padding; give the list that much free inline-start space in a clipping or edge-to-edge container. During pointer reordering, list rows stay stationary while the source row and a free-moving duplicate that follows the pointer on both axes appear at 50% opacity as a temporary drag-only state; full opacity returns immediately on drop or cancel. Vertical pointer position determines the accent insertion line and final list placement. The controlled order commits and affected rows animate with Astryx motion tokens only on release. When the grip is focused, Arrow Up or Arrow Down immediately moves the record one position. Space or Enter starts lift mode for Arrow, Home, or End previewing; Space or Enter drops and Escape cancels. Focus and live announcements are preserved.',
+        "Gives each record core List's reorder handle at the end of its row, after Remove, as UIKit's reorder control ends an editing row. The handle appears while the record is hovered or holds keyboard focus and stays visible on touch screens. On a touch screen, hold the handle for a moment, then drag: the record follows the finger, the records it passes slide out of its way, the list autoscrolls near the edges, and the drop springs the record into place; a flick on the handle scrolls and a pinch zooms the page. A mouse drags at once, without motion. When the handle is focused, Arrow Up or Arrow Down moves the record one position and Home or End to an end; Space picks it up and Escape puts it back. Each move calls onChange once with reorder metadata. In a disabled or loading list the handles stay focusable but move nothing.",
       default: 'false',
     },
     {
@@ -167,7 +167,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Let the floating pointer preview follow both axes while using vertical position alone for insertion. Keep list rows stationary and commit the controlled value once on release. Focused handles move immediately with Arrow Up or Arrow Down while preserving lift, move, drop, and cancel behavior.',
+          'Let records reorder through the handle: a drag commits once on release, each key move commits at once, and focus stays on the handle.',
       },
       {
         guidance: true,
@@ -219,7 +219,7 @@ export const docs = {
         name: 'Reorder handle',
         required: false,
         description:
-          "A bare six-dot grip beside the first field of the record, with an accessible label and no hover tooltip or button fill. Its target is 8px wide and as tall as the field, with 8px of clearance to the field, which keeps it within WCAG 2.5.8 through the spacing exception; the glyph uses the primary icon color and shows the standard focus ring. It hangs in the inline-start gutter, outside the fields, so the fields and their labels keep their positions, and grip plus clearance fit the standard 16px container padding. It is revealed while the record is hovered or contains keyboard focus and stays visible on touch screens. At rest it is transparent but stays in the tab order. While a record is being reordered its grip stays visible, and a pointer drag keeps the other records' grips hidden. In the stacked layout, the grip hangs beside the first field and Remove sits on the other side of that field at the top of the record. Pointer dragging keeps the list stationary, fades both source and duplicate preview to 50%, lets the duplicate follow freely on both axes, and uses vertical position for the insertion line before committing and animating on release. A focused grip moves one position with Arrow Up or Arrow Down; Space or Enter also enables lift mode with Arrow, Home, End, drop, and Escape controls.",
+          "Core List's reorder handle, three lines at the end of the record after Remove, with an accessible label naming the record and its position and no hover tooltip. Its target is at least 44 by 44 px. It is revealed while the record is hovered or contains keyboard focus and stays visible on touch screens; at rest it is transparent but stays in the tab order. In the stacked layout it sits at the top of the record beside Remove. A finger holds it a moment, then drags; a mouse drags at once; a focused handle moves the record with Arrow Up, Arrow Down, Home and End, and Space and Escape pick it up and put it back.",
       },
       {
         name: 'Empty state',
@@ -583,7 +583,7 @@ export const docsDense = {
     getFieldStatus:
       'Per-field resolver; complete status plus tooltip variant are forwarded to the rendered input.',
     isReorderable:
-      'Adds a bare six-dot grip that hangs in the inline-start gutter beside the first field (fields never move; grip plus clearance take 16px, inside standard container padding), revealed on record hover or focus and always shown on touch, without a tooltip. During the temporary drag state, source and free-moving preview use 50% opacity while the list stays stationary; full opacity returns on drop/cancel and tokenized motion animates the committed order. Vertical position controls insertion. Focused Arrow Up/Down moves immediately, and keyboard lift/move/drop/cancel is also supported.',
+      "Adds core List's reorder handle at each record's end (after Remove), revealed on hover/focus, shown on touch: hold then drag (touch), drag (mouse), Arrow/Home/End/Space/Escape (keys); passed records slide aside and the drop springs into place; onChange once per move; handles stay focusable but inert while disabled or loading.",
     isDisabled: 'Disables collection, actions, and rendered inputs.',
     isLoading: 'Marks busy and prevents changes.',
     maxItems: 'Makes Add unavailable at the limit.',
@@ -607,7 +607,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Follow pointer X and Y in the floating preview, use Y for insertion, and commit once on release; focused Arrow Up/Down moves immediately, with lift mode available for extended keyboard control.',
+          'Reorder through the handle; one onChange per drop or key move; focus stays on the handle.',
       },
       {
         guidance: true,

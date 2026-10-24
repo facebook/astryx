@@ -32,14 +32,32 @@ export const docs = {
     {
       name: 'density',
       type: "'compact' | 'balanced' | 'spacious'",
-      description: 'Spacing density for items.',
+      description: 'Spacing density for items. On a touch screen (a coarse primary pointer), rows are at least 52px tall, 62px with a description, and never shorter than 44px in compact density, as iOS table rows are.',
       default: "'balanced'",
     },
     {
       name: 'hasDividers',
       type: 'boolean',
-      description: 'Show dividers between items.',
+      description: 'Show dividers between items. A touch press hides the dividers on either side of the pressed row until the finger lifts.',
       default: 'false',
+    },
+    {
+      name: 'hasAnimatedChanges',
+      type: 'boolean',
+      description: 'On a touch screen, animate changes to the rows the way an iOS table does: when rows are inserted, removed or reordered, the rows that stay slide to their new places and new rows fade in. Rows need stable keys. With a mouse nothing moves.',
+      default: 'false',
+    },
+    {
+      name: 'followingContent',
+      type: "'moves' | 'stays'",
+      description: "With hasAnimatedChanges, page content below the list moves with its rows (a transient translate, cleared at rest) instead of jumping when the list changes height. Use 'stays' to keep it still when the app manages that area itself.",
+      default: "'moves'",
+    },
+    {
+      name: 'onReorder',
+      type: '(fromIndex: number, toIndex: number) => void',
+      description:
+        "Makes the rows reorderable: each row gets a reorder handle at its end, and a ListItem with isReorderDisabled keeps its place instead. Called with a row's index before and after a move; render the rows in the new order to apply it. On a touch screen, a finger held still on a handle for a moment picks up its row (a flick on it still scrolls): the row follows the finger, the rows it passes slide out of its way, the page scrolls near the edges, and on release the row settles into its new place, as an iOS table reorders. A mouse drags a handle at once. From the keyboard, a handle's arrow keys move its row one place, Home and End to either end; Space picks it up and Escape puts it back. A disabled row's handle stays focusable but moves nothing.",
     },
     {
       name: 'edge',

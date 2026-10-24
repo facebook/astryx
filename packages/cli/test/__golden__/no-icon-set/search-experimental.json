@@ -3,8 +3,23 @@
   "type": "search",
   "data": {
     "query": "experimental",
-    "matchCount": 3,
+    "matchCount": 4,
     "results": [
+      {
+        "domain": "hook",
+        "name": "useListReorder",
+        "package": "@astryxdesign/core",
+        "score": "<text>",
+        "reason": "<text>",
+        "description": "<text>",
+        "import": "@astryxdesign/core/List/experimental",
+        "command": "astryx hook useListReorder",
+        "mentions": [
+          "@astryxdesign/core/List/experimental",
+          "Experimental: this hook and everything exported from `@astryxdesign/core/List/experimental` are outside the stable compatibility promise and may change or be removed in a patch release.",
+          "keyword \"experimental\""
+        ]
+      },
       {
         "domain": "doc",
         "name": "authoring/field-reference",
