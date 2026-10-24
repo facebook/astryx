@@ -159,6 +159,9 @@ does.
 `Markdown`, through `component:CodeBlock`, and the RichText surfaces float
 Copy over the code of a fence that names no language; both adopt the FR8
 corner cluster that `component:CodeBlock` FR11 places.
+RichText code blocks colour with `component:CodeBlock`'s tokenizer and read the
+same `CodeLanguageProvider` (`component:CodeBlock` FR13), so read and edit paint
+the same languages.
 
 ## Verification
 
