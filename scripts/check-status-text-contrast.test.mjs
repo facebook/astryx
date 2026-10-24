@@ -217,6 +217,33 @@ describe('theme generation derives a complete status set (INV17)', () => {
     }
   });
 
+  it("falls back to Core's hue when a base status colour is grey", () => {
+    const grey = defineTheme({
+      name: 'status-grey-success',
+      tokens: {'--color-success': 'light-dark(#666666, #AAAAAA)'},
+    });
+    for (const mode of MODES) {
+      const t = effectiveTokens(grey, mode);
+      expect(isChromatic(color(t, '--color-text-success'))).toBe(true);
+      expect(isChromatic(color(t, '--color-success-emphasized'))).toBe(true);
+    }
+  });
+
+  it('counts a role inherited through extends as set', () => {
+    const parent = defineTheme({
+      name: 'status-parent',
+      tokens: {'--color-success': '#3FB950', '--color-text-success': '#0A5C2E'},
+    });
+    const child = defineTheme({
+      name: 'status-child',
+      extends: parent,
+      tokens: {'--color-error': '#D1242F'},
+    });
+    const emitted = emittedRootTokens(child);
+    expect(emitted['--color-text-success']).toBe('#0A5C2E');
+    expect(emitted['--color-icon-success']).toBe('var(--color-text-success)');
+  });
+
   it('never derives the released muted tokens', () => {
     const emitted = emittedRootTokens(minimal);
     expect(emitted).not.toHaveProperty('--color-success-muted');
