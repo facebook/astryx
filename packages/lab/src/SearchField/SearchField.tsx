@@ -671,20 +671,28 @@ SearchField.displayName = 'SearchField';
 // =============================================================================
 
 /**
- * Plays the given curves, leaving out any that does not move: an animation
- * with no visible change runs on the main thread in Chromium and would cost
- * a frame of work each frame.
+ * Plays the given curves. A curve that does not move is put in place instead
+ * (`set`), which also ends whatever that property was still playing (a
+ * cancel's held opacity that a re-activation keeps at 1 would otherwise drop
+ * to 0 when the cancel's clock ends); an animation with no visible change
+ * would also run on the main thread in Chromium.
  */
 function play(
   animator: Animator,
   curves: Partial<Record<'x' | 'y' | 'scaleX' | 'opacity', MotionCurve>>,
   options: {reducedMotion: 'keep' | 'crossfade' | 'instant'},
 ): MotionHandle | null {
-  const moving = Object.fromEntries(
-    Object.entries(curves).filter(
-      ([, curve]) => Math.abs(curve.at(curve.duration) - curve.at(0)) > 1e-6,
-    ),
-  );
+  const moving: typeof curves = {};
+  for (const [key, curve] of Object.entries(curves) as [
+    keyof typeof curves,
+    MotionCurve,
+  ][]) {
+    if (Math.abs(curve.at(curve.duration) - curve.at(0)) > 1e-6) {
+      moving[key] = curve;
+    } else {
+      animator.set({[key]: curve.at(0)});
+    }
+  }
   if (Object.keys(moving).length === 0) {
     return null;
   }
