@@ -48,7 +48,7 @@ connection between the closed trigger and its selection surface.
 ## Compatibility and migration
 
 - Released defaults and behavior are unchanged except the `presentation`
-  default, which DEC-1 sets.
+  default, which DEC-1 sets, and `adaptive`'s compact test (below).
 - `indicatorPosition` defaults to `end`; a rendered selection mark occupies
   space at that logical edge, while an empty resolved indicator occupies none.
 - `presentation` defaults to `adaptive` (DEC-1): the modal bottom sheet on
@@ -59,7 +59,7 @@ connection between the closed trigger and its selection surface.
   `popover`.
 - `adaptive`'s compact test becomes `spec:AST-012` FR9 (width below the
   effective `md` point or height below 500) in place of the shipped
-  `(max-width: 768px)` query: a coarse-pointer screen exactly 768 pixels wide and at least 500 tall opens the popover, and a coarse-pointer screen at least 768 wide but under
+  `(max-width: 768px)` query: a coarse-pointer screen exactly 768 pixels wide and at least 500 tall opens the popover, and a coarse-pointer screen wider than 768 but under
   500 tall opens the bottom sheet. Both surfaces keep selection working, so no
   caller must change source and the change is not breaking under
   `spec:AST-017` FR1; `popover` and `bottom-sheet` pin one surface. It is
