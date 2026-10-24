@@ -68,8 +68,24 @@ interface Stack {
 async function openStack(
   page: Page,
   story: 'settings' | 'pushed',
-  {standalone = false}: {standalone?: boolean} = {},
+  {
+    standalone = false,
+    idiom = 'ios',
+  }: {standalone?: boolean; idiom?: 'ios' | 'default'} = {},
 ) {
+  if (idiom === 'ios') {
+    // The back swipes are iOS-only (useTouchIdiom: a coarse pointer in an
+    // engine with -webkit-touch-callout, which only iOS WebKit implements).
+    // Neither Playwright engine is iOS WebKit, so the engine test answers as
+    // Mobile Safari would; the pointer stays the emulated finger.
+    await page.addInitScript(() => {
+      const supports = CSS.supports.bind(CSS);
+      CSS.supports = ((...args: [string] | [string, string]) =>
+        args.join(':').includes('-webkit-touch-callout')
+          ? true
+          : supports(...(args as [string, string]))) as typeof CSS.supports;
+    });
+  }
   if (standalone) {
     await page.addInitScript(() => {
       Object.defineProperty(Navigator.prototype, 'standalone', {
@@ -448,6 +464,92 @@ test('a push keeps advancing every frame while the main thread is blocked', asyn
   expect(proof.frames).toBeGreaterThanOrEqual(proof.expectedFrames - 2);
   expect(proof.changed).toBeGreaterThanOrEqual(proof.frames - 3);
   expect(proof.longestStallMs).toBeLessThan(40);
+});
+
+test('the covered title is removed on time while the main thread is blocked', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(
+    browserName !== 'chromium',
+    'screencast frame evidence is Chromium-only in Playwright (WebKit: the iOS simulator rig)',
+  );
+  const {driver} = await openStack(page, 'settings');
+  // The root's bar title slides away under a push and is removed 0.54 s in
+  // (navigation.coveredTitleRemovedMs); a marker at its trailing end (clear
+  // of the pushed screen's back button) goes with it.
+  await page.locator('[data-navigation-bar="root"] h2').evaluate(title => {
+    const element = title as HTMLElement;
+    element.style.position = 'relative';
+    const chip = document.createElement('div');
+    chip.setAttribute('aria-hidden', 'true');
+    chip.style.cssText =
+      'position:absolute;top:4px;right:0;width:10px;height:10px;background:rgb(255,0,255);pointer-events:none;';
+    element.append(chip);
+  });
+  const cast = await startScreencast(page);
+  await driver.tap(await rowCenter(page, 'General'));
+  const [push] = await waitForAnimation(card(page, 'screen-General'), {
+    minProgressMs: 16,
+  });
+  // Blocked well past the removal: the removal must not wait for it.
+  const block = await blockMainThread(page, 900);
+  await page.waitForTimeout(150);
+  const frames = await cast.stop();
+  const tracked = await trackMarker(page, frames);
+  const removeAt = push.from + 540;
+  expect(block.to).toBeGreaterThan(removeAt + 150);
+  const before = tracked.filter(
+    f => f.t > push.from + 50 && f.t < removeAt - 50,
+  );
+  expect(before.length).toBeGreaterThan(3);
+  expect(
+    before.every(f => f.box != null),
+    JSON.stringify(
+      before.map(f => [Math.round(f.t - push.from), f.box?.x ?? null]),
+    ),
+  ).toBe(true);
+  // The screencast sends a frame only when the screen changes, so the last
+  // frame before the block ends is the screen as the block leaves it: it
+  // must come from after the removal and show no title.
+  const last = tracked.filter(f => f.t < block.to - 20).at(-1);
+  const trace = JSON.stringify(
+    tracked.map(f => [Math.round(f.t - push.from), f.box?.x ?? null]),
+  );
+  expect(last?.box ?? null, trace).toBeNull();
+  expect(last?.t ?? 0, trace).toBeGreaterThan(removeAt - 10);
+});
+
+test('on Android the back swipes stay off: the system back owns both edges', async ({
+  page,
+}) => {
+  // As an Android phone: a finger, and no -webkit-touch-callout. Even in a
+  // home-screen app neither the edge swipe nor the content swipe pops.
+  const {driver, left, width} = await openStack(page, 'pushed', {
+    standalone: true,
+    idiom: 'default',
+  });
+  const top = card(page, 'screen-About');
+  const before = await top.boundingBox();
+  await driver.play(
+    drag(
+      {x: left + 4, y: 400},
+      {x: left + width * 0.7, y: 400},
+      {durationMs: 500, restMs: 100},
+    ),
+  );
+  await driver.play(
+    drag(
+      {x: left + width * 0.3, y: 400},
+      {x: left + width * 0.95, y: 400},
+      {durationMs: 500, restMs: 100},
+    ),
+  );
+  await page.waitForTimeout(400);
+  expect((await top.boundingBox())?.x).toBeCloseTo(before?.x ?? NaN, 0);
+  // Back is the bar's button.
+  await page.locator('[data-navigation-back]').last().click();
+  await expect(top).toHaveCount(0);
 });
 
 test('a push does no Layout or Paint per frame', async ({
