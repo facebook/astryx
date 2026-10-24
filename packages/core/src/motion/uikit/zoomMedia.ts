@@ -8,7 +8,8 @@
  *   law of the return from an overshoot and of `zoom(to:animated:)`, and
  *   Photos' double-tap and maximum zoom, the gap between its pages, and
  *   its drag-to-dismiss (the shrink and fades by travel, the release rule,
- *   the dismissal's and the cancel's springs)
+ *   the dismissal's and the cancel's springs), and the zoom transition from
+ *   a source (its springs and the two portals' fades)
  * @position A component domain of the UIKit constants table (motion/uikit);
  *   read by Lightbox's zoom stage (Lightbox/zoomStage.ts)
  *
@@ -196,5 +197,76 @@ export const zoomMedia = {
      *   Oct 24 2026
      */
     cancelSizeSpring: {mass: 1, stiffness: 955.23, damping: 61.81},
+  },
+  transition: {
+    /**
+     * The zoom transition's opening (iOS 18 `.zoom`): one critically damped
+     * spring drives both portals' frames and fades. Against the logged
+     * frames it fits within 1.9 pt RMS, the motion starting about 13 ms
+     * before the first frame that shows it.
+     * @source measured: UIKit lab, iOS 26.2 simulator, iPhone 17 Pro, a
+     *   modal and a push with `preferredTransition = .zoom` from a 118 pt
+     *   cell, the `UIViewSpringAnimationBehavior` UIKit logged (damping
+     *   ratio 1.0, response 0.34) and both portals' frames, Oct 24 2026
+     */
+    openSpring: {response: 0.34, dampingRatio: 1},
+    /**
+     * The closing frame's spring: a small undershoot into the cell (117.8 pt
+     * then 118 for a 118 pt cell).
+     * @source measured: UIKit lab, iOS 26.2 simulator, iPhone 17 Pro, the
+     *   close of the same transition, behavior 0.92 / 0.34, Oct 24 2026
+     */
+    closeSpring: {response: 0.34, dampingRatio: 0.92},
+    /**
+     * The closing fades' spring.
+     * @source measured: UIKit lab, iOS 26.2 simulator, iPhone 17 Pro, the
+     *   same close, behavior 1.0 / 0.34, Oct 24 2026
+     */
+    closeFadeSpring: {response: 0.34, dampingRatio: 1},
+    /**
+     * The detail's opacity is min(1, gain × progress): 0.318 / 0.675 /
+     * 0.829 at 33 / 67 / 83 ms, opaque by about 0.12 s.
+     * @source measured: UIKit lab, iOS 26.2 simulator, iPhone 17 Pro, the
+     *   detail portal's effective opacity per frame against the spring's
+     *   progress, Oct 24 2026
+     */
+    detailFadeGain: 1.56,
+    /**
+     * The source portal's opacity is min(1, gain × (1 − progress)): 0.863 /
+     * 0.577 / 0.295 / 0.143 at 67 / 100 / 150 / 200 ms.
+     * @source measured: UIKit lab, iOS 26.2 simulator, iPhone 17 Pro, the
+     *   source portal's effective opacity per frame against the spring's
+     *   progress, Oct 24 2026
+     */
+    sourceFadeGain: 1.5,
+    /**
+     * A pushed screen's navigation bar fades in place with the progress
+     * (opacity = gain × progress): 0.849 at 167 ms, 0.988 at 333 ms.
+     * @source measured: UIKit lab, iOS 26.2 simulator, iPhone 17 Pro, the
+     *   bar's portal (402 × 54 at y 62) during the zoom push, Oct 24 2026
+     */
+    barFadeGain: 1,
+    /**
+     * An interactive dismissal (a drag down on the zoomed-in screen) shrinks
+     * it about its centre by this much per pt of its own travel: 0.975 /
+     * 0.935 / 0.887 / 0.830 at 33 / 84 / 142 / 208 pt.
+     * @source measured: UIKit lab, iOS 26.2 simulator, iPhone 17 Pro, a
+     *   250 pt drag down on the presented detail, its portal's frame per
+     *   frame, Oct 24 2026
+     */
+    dragScalePerPoint: 0.0008,
+    /**
+     * The spring through which the dragged screen follows the finger: its
+     * centre trails the finger by about one frame.
+     * @source measured: UIKit lab, iOS 26.2 simulator, iPhone 17 Pro, the
+     *   same drag, tracking behavior 0.85 / 0.08, Oct 24 2026
+     */
+    dragFollowSpring: {response: 0.08, dampingRatio: 0.85},
+    /**
+     * The spring UIKit tracks the drag's progress with.
+     * @source measured: UIKit lab, iOS 26.2 simulator, iPhone 17 Pro, the
+     *   same drag, tracking behavior 0.92 / 0.34, Oct 24 2026
+     */
+    dragTrackingSpring: {response: 0.34, dampingRatio: 0.92},
   },
 } as const;

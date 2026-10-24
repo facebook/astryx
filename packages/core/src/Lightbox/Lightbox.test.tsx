@@ -273,6 +273,51 @@ describe('Lightbox', () => {
       expect(onOpenChange).not.toHaveBeenCalled();
     });
 
+    it('asks sourceFor for the item opening and the item showing at close', () => {
+      const sourceFor = vi.fn((): HTMLElement | null => null);
+      const {rerender} = render(
+        <Lightbox
+          isOpen={false}
+          onOpenChange={() => {}}
+          media={media}
+          index={0}
+          sourceFor={sourceFor}
+        />,
+      );
+      expect(sourceFor).not.toHaveBeenCalled();
+      rerender(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={media}
+          index={0}
+          sourceFor={sourceFor}
+        />,
+      );
+      expect(sourceFor).toHaveBeenLastCalledWith(0);
+      rerender(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={media}
+          index={2}
+          sourceFor={sourceFor}
+        />,
+      );
+      rerender(
+        <Lightbox
+          isOpen={false}
+          onOpenChange={() => {}}
+          media={media}
+          index={2}
+          sourceFor={sourceFor}
+        />,
+      );
+      expect(sourceFor).toHaveBeenLastCalledWith(2);
+      // No source box to zoom into: the dialog closes at once.
+      expect(HTMLDialogElement.prototype.close).toHaveBeenCalled();
+    });
+
     it('shows gallery counter', () => {
       render(
         <Lightbox

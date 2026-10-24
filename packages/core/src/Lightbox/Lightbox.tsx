@@ -8,7 +8,8 @@
  *   isRtlElement (gallery arrow keys follow the rendered direction), useZoomStage (pinch, double
  *   tap and pan on the gesture recognizers, moved by the compositor animator), usePager (a gallery
  *   pages like Photos: a UIKit paging scroll view with Photos' 40 pt gap), and the compositor
- *   animator for Photos' drag to dismiss (the backdrop and the controls' layers fade with the drag)
+ *   animator for Photos' drag to dismiss (the backdrop and the controls' layers fade with the drag),
+ *   zoomFromSource (UIKit's zoom transition between a source, `sourceFor`, and the photo)
  * @output Exports Lightbox component, LightboxProps, LightboxMedia
  * @position Core implementation; consumed by index.ts
  *
@@ -18,6 +19,9 @@
  * - /packages/core/src/Lightbox/useZoomStage.ts (zoom and pan driver)
  * - /packages/core/src/Lightbox/__tests__/LightboxZoom.interaction.browser.spec.ts (touch zoom proofs)
  * - /packages/core/src/Lightbox/__tests__/LightboxPaging.interaction.browser.spec.ts (gallery paging proofs)
+ * - /packages/core/src/Lightbox/__tests__/LightboxDismiss.interaction.browser.spec.ts (drag to dismiss proofs)
+ * - /packages/core/src/Lightbox/__tests__/LightboxZoomTransition.interaction.browser.spec.ts (zoom transition proofs)
+ * - /packages/core/src/Lightbox/zoomFromSource.ts (the transition driver)
  * - /packages/core/src/Lightbox/index.ts (exports if types change)
  * - /packages/core/src/Layer/useLayerDismissal.ts (dismissal stack)
  * - /apps/storybook/stories/Lightbox.stories.tsx (storybook stories)
@@ -58,6 +62,7 @@ import {usePager} from '../hooks/usePager';
 import {animatorFor, type Animator} from '../motion/animator';
 import {zoomMedia} from '../motion/uikit/zoomMedia';
 import {useZoomStage} from './useZoomStage';
+import {showSourcePortal, sourceBoxOf, zoomFromSource} from './zoomFromSource';
 import {dismissBackdropAlpha, dismissChromeAlpha} from './zoomStage';
 /**
  * Media type for lightbox items.
@@ -124,6 +129,17 @@ export interface LightboxProps extends BaseProps<HTMLDialogElement> {
    * @default false
    */
   hasAutoPlay?: boolean;
+  /**
+   * The element an item's photo opens from and closes into, usually its
+   * thumbnail: the viewer zooms out of it on open and back into it on close
+   * (UIKit's zoom transition), for whichever item shows then. Return null
+   * when there is none, or it is off screen. Without it, the element that
+   * opened the viewer is the opened item's source when it shows a picture
+   * (an image, or a button or link around one).
+   *
+   * Proposed; pending owner review.
+   */
+  sourceFor?: (index: number) => HTMLElement | null;
 }
 
 // =============================================================================
@@ -337,6 +353,12 @@ const pageStyles = stylex.create({
 });
 
 /**
+ * How long an opening waits for its photo to decode before it zooms (ms):
+ * the photo stays hidden meanwhile, and opens plainly past it.
+ */
+const OPEN_DECODE_WAIT_MS = 300;
+
+/**
  * Pan distance (px) per arrow-key press while zoomed. Offsets move the
  * viewport in the arrow's direction — pressing ArrowRight reveals content to
  * the right, so the image itself shifts left (negative x), matching how
@@ -397,6 +419,7 @@ export function Lightbox({
   onIndexChange,
   hasZoom = false,
   hasAutoPlay = false,
+  sourceFor,
   xstyle,
   className,
   style,
@@ -414,6 +437,14 @@ export function Lightbox({
   // A gallery's zoom stage: the current page's photo box.
   const pageMediaRef = useRef<HTMLDivElement>(null);
   const triggerElementRef = useRef<Element | null>(null);
+  /** The item the viewer opened on (the opener is its source). */
+  const openedIndexRef = useRef<number | null>(null);
+  /** A dismissed photo landed in its thumbnail: the picture over it. */
+  const landedRef = useRef<{
+    portal: HTMLElement;
+    source: HTMLElement;
+    visibility: string;
+  } | null>(null);
 
   // Index state (controlled + uncontrolled)
   const isControlled = controlledIndex !== undefined;
@@ -493,27 +524,29 @@ export function Lightbox({
     );
   }, [index, isOpen, announce, mediaArray, t]);
 
-  // Open/close dialog
-  useIsomorphicLayoutEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) {
-      return;
-    }
-
-    if (isOpen && !dialog.open) {
-      triggerElementRef.current = document.activeElement;
-      dialog.showModal();
-    } else if (!isOpen && dialog.open) {
-      dialog.close();
-      if (triggerElementRef.current instanceof HTMLElement) {
-        triggerElementRef.current.focus();
-      }
-    }
-  }, [isOpen]);
-
   const handleClose = useCallback(() => {
     onOpenChange(false);
   }, [onOpenChange]);
+
+  // An item's source: the caller's, or for the opened item the element that
+  // opened the viewer when it shows a picture (a thumbnail, or a button or
+  // link around one); a text button opens and closes plainly.
+  const sourceElementFor = useCallback(
+    (i: number): HTMLElement | null => {
+      if (sourceFor != null) {
+        return sourceFor(i);
+      }
+      const opener = triggerElementRef.current;
+      return i === openedIndexRef.current &&
+        opener instanceof HTMLElement &&
+        opener !== opener.ownerDocument.body &&
+        (opener instanceof HTMLImageElement ||
+          opener.querySelector('img') != null)
+        ? opener
+        : null;
+    },
+    [sourceFor],
+  );
 
   const {shouldDismissOnCloseRequest} = useLayerDismissal({
     isActive: isOpen,
@@ -593,8 +626,12 @@ export function Lightbox({
   // arrow keys pan while zoomed. A tap on the dark area around the photo
   // closes, as a click on the backdrop does.
   const isZoomTarget = hasZoom && !isVideo;
-  // The backdrop and the controls carry a dismissal's fade.
+  // The photo, the backdrop and the controls carry a dismissal's or a
+  // transition's last values: they go back to rest when the viewer next
+  // opens or closes.
   const fadedRef = useRef(false);
+  // The photo was dismissed: the viewer closes without zooming.
+  const dismissedRef = useRef(false);
 
   // Drag to dismiss, as in Photos: the backdrop and, faster, the controls
   // and the neighbouring photos fade with the drag's travel; a dismissal
@@ -633,9 +670,13 @@ export function Lightbox({
     itemKey: viewedItem,
     onZoomedChange: next => {
       setIsZoomed(next);
-      announce(
-        next ? t('@astryx.lightbox.zoomedIn') : t('@astryx.lightbox.zoomedOut'),
-      );
+      if (dialogRef.current?.open === true && isOpen) {
+        announce(
+          next
+            ? t('@astryx.lightbox.zoomedIn')
+            : t('@astryx.lightbox.zoomedOut'),
+        );
+      }
     },
     onTapOutside: handleClose,
     onDragStart: () => {
@@ -652,7 +693,37 @@ export function Lightbox({
           animator.set({opacity});
         }
       },
+      target: () => sourceBoxOf(sourceElementFor(index)),
       onRelease: dismisses => {
+        if (dismisses) {
+          dismissedRef.current = true;
+          // A photo shrinking into its thumbnail lands on the thumbnail's
+          // picture, which fades in over it while the cell stays hidden.
+          const source = sourceElementFor(index);
+          const box = sourceBoxOf(source);
+          const container = containerRef.current;
+          if (source != null && box != null && container != null) {
+            const portal = showSourcePortal(
+              container,
+              source,
+              box,
+              currentItem?.src ?? '',
+            );
+            const portalAnimator = animatorFor(portal);
+            portalAnimator.set({opacity: 0});
+            portalAnimator.animate(
+              {opacity: 1},
+              {spring: zoomMedia.dismiss.dismissSizeSpring},
+              {reducedMotion: 'keep'},
+            );
+            landedRef.current = {
+              portal,
+              source,
+              visibility: source.style.visibility,
+            };
+            source.style.visibility = 'hidden';
+          }
+        }
         const {backdrop, chrome} = dismissFades();
         const spring = dismisses
           ? zoomMedia.dismiss.dismissSizeSpring
@@ -668,25 +739,156 @@ export function Lightbox({
     },
   });
 
-  // Opening again after a dismissal: the photo, the backdrop and the
-  // controls are back. Only then: a write promotes the layers, and their
-  // release later would repaint mid-gesture.
-  const stageForOpenRef = useRef(stage);
-  stageForOpenRef.current = stage;
+  // Open and close the dialog. With a source (`sourceFor`, or the element
+  // that opened the viewer for the opened item), the photo zooms out of it on
+  // open and back into the current item's on close (UIKit's zoom
+  // transition); the dialog stays open, the page inert, until the photo has
+  // landed. Opening again after a dismissal or a transition puts the photo,
+  // the backdrop and the controls back first. Only then: a write promotes
+  // the layers, and their release later would repaint mid-gesture.
+  const transitionRef = useRef({
+    stage,
+    dismissFades,
+    sourceElementFor,
+    index,
+    src: currentItem?.src ?? '',
+    isImage: !isVideo,
+  });
+  transitionRef.current = {
+    stage,
+    dismissFades,
+    sourceElementFor,
+    index,
+    src: currentItem?.src ?? '',
+    isImage: !isVideo,
+  };
+  const closeTokenRef = useRef(0);
+  const openTokenRef = useRef(0);
+  const openTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   useIsomorphicLayoutEffect(() => {
-    if (!isOpen) {
+    const dialog = dialogRef.current;
+    if (dialog == null) {
       return;
     }
-    stageForOpenRef.current.reset();
-    if (!fadedRef.current) {
+    const now = transitionRef.current;
+    const fadesNow = () => {
+      const {backdrop, chrome} = now.dismissFades();
+      return backdrop == null ? chrome : [backdrop, ...chrome];
+    };
+    const restore = () => {
+      const landed = landedRef.current;
+      if (landed != null) {
+        landed.portal.remove();
+        landed.source.style.visibility = landed.visibility;
+        landedRef.current = null;
+      }
+    };
+    if (isOpen) {
+      // A close still landing is called off: the viewer stays.
+      closeTokenRef.current += 1;
+      dismissedRef.current = false;
+      restore();
+      if (fadedRef.current) {
+        fadedRef.current = false;
+        now.stage.rest();
+        for (const animator of fadesNow()) {
+          animator.set({opacity: 1});
+        }
+      }
+      if (dialog.open) {
+        return;
+      }
+      triggerElementRef.current = document.activeElement;
+      openedIndexRef.current = now.index;
+      dialog.showModal();
+      const source = now.isImage ? now.sourceElementFor(now.index) : null;
+      const container = containerRef.current;
+      const img = container?.querySelector<HTMLImageElement>(
+        '[data-current] img, :scope > [data-lightbox-media] img',
+      );
+      if (source != null && container != null && img != null) {
+        const token = ++openTokenRef.current;
+        const start = () => {
+          if (openTokenRef.current !== token) {
+            return;
+          }
+          openTokenRef.current += 1;
+          clearTimeout(openTimerRef.current);
+          img.style.opacity = '';
+          const opening = zoomFromSource({
+            kind: 'open',
+            source,
+            container,
+            stage: now.stage,
+            fades: fadesNow(),
+            src: now.src,
+          });
+          if (opening != null) {
+            fadedRef.current = true;
+          }
+        };
+        if (img.complete && img.naturalWidth > 0) {
+          start();
+        } else {
+          // Not decoded yet: the photo stays hidden (the thumbnail shows)
+          // until it can zoom, at most a moment.
+          img.style.opacity = '0';
+          img.decode().then(start, start);
+          openTimerRef.current = setTimeout(start, OPEN_DECODE_WAIT_MS);
+        }
+      }
       return;
     }
-    fadedRef.current = false;
-    const {backdrop, chrome} = dismissFades();
-    for (const animator of backdrop == null ? chrome : [backdrop, ...chrome]) {
-      animator.set({opacity: 1});
+    // A zoom-in still waiting for its photo is called off.
+    openTokenRef.current += 1;
+    clearTimeout(openTimerRef.current);
+    if (!dialog.open) {
+      return;
     }
-  }, [isOpen, dismissFades]);
+    const finish = () => {
+      restore();
+      dismissedRef.current = false;
+      dialog.close();
+      if (fadedRef.current) {
+        fadedRef.current = false;
+        now.stage.rest();
+        for (const animator of fadesNow()) {
+          animator.set({opacity: 1});
+        }
+      }
+      if (triggerElementRef.current instanceof HTMLElement) {
+        triggerElementRef.current.focus();
+      }
+    };
+    // A dismissed photo has already landed (or left): close now.
+    const container = containerRef.current;
+    const source =
+      !dismissedRef.current && now.isImage
+        ? now.sourceElementFor(now.index)
+        : null;
+    const closing =
+      source != null && container != null
+        ? zoomFromSource({
+            kind: 'close',
+            source,
+            container,
+            stage: now.stage,
+            fades: fadesNow(),
+            src: now.src,
+          })
+        : null;
+    if (closing == null) {
+      finish();
+      return;
+    }
+    fadedRef.current = true;
+    const token = ++closeTokenRef.current;
+    void closing.then(() => {
+      if (closeTokenRef.current === token) {
+        finish();
+      }
+    });
+  }, [isOpen]);
 
   // A gallery pages like Photos: a drag or flick moves between items on a
   // UIKit paging scroll view's release (one page at most, Photos' 40 pt

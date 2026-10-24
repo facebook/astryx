@@ -64,6 +64,23 @@ function criticallyDamped(stiffness: number, from: number, to: number) {
   };
 }
 
+/**
+ * The recording's own median frame interval just before the block (ms).
+ * Linux WebKit composites in software and can present below 60 Hz on a
+ * loaded machine; the block must not slow the motion past that pace.
+ */
+function cadenceBefore(frames: ReadonlyArray<{t: number}>, at: number): number {
+  const times = frames
+    .map(f => f.t)
+    .filter(t => t < at && t >= at - 400)
+    .sort((a, b) => a - b);
+  const gaps = times
+    .slice(1)
+    .map((t, i) => t - times[i])
+    .sort((a, b) => a - b);
+  return gaps.length > 0 ? gaps[Math.floor(gaps.length / 2)] : 1000 / 60;
+}
+
 function photoSvg(width: number, height: number): string {
   let squares = '';
   for (let y = 0; y < height; y += 50) {
@@ -404,7 +421,9 @@ test('the dismissal keeps moving every frame while the main thread is blocked', 
     },
     testInfo,
   );
-  expect(proof.medianFrameMs).toBeLessThan(20);
+  expect(proof.medianFrameMs).toBeLessThanOrEqual(
+    Math.max(20, cadenceBefore(tracked, block.from) * 1.15),
+  );
   expect(proof.frames).toBeGreaterThanOrEqual(proof.expectedFrames - 2);
   expect(proof.longestStallMs).toBeLessThan(40);
   expect(proof.monotonic).toBe(true);

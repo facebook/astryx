@@ -284,8 +284,11 @@ shrink and fades by travel, the release rule and the springs; the cancel
 distance is M-ZM3). A zoomed pan flicked into an edge coasts and bounces like
 any scroll view (`scroll.*`).
 
-| ID    | What                         | App and gesture                                                                    | Extract                                                                   | Method |
-| ----- | ---------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------ |
-| M-ZM1 | Double tap on a filled photo | Photos: double tap a photo with the screen's aspect (402 × 874) at the fitted size | the zoom it lands on (aspect fill gives 1)                                | B, C   |
-| M-ZM2 | Maximum zoom                 | Photos: pinch a 4032 × 3024 and a 1200 × 800 photo as far as it goes               | the zoom it settles on against the photo's pixel size and the fitted size | B, C   |
-| M-ZM3 | Dismiss cancel distance      | Photos: pull a photo down 6–19 pt, bring it back to N pt and lift without moving   | the largest N that still cancels                                          | B, C   |
+| ID    | What                         | App and gesture                                                                                          | Extract                                                                   | Method |
+| ----- | ---------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------ |
+| M-ZM1 | Double tap on a filled photo | Photos: double tap a photo with the screen's aspect (402 × 874) at the fitted size                       | the zoom it lands on (aspect fill gives 1)                                | B, C   |
+| M-ZM2 | Maximum zoom                 | Photos: pinch a 4032 × 3024 and a 1200 × 800 photo as far as it goes                                     | the zoom it settles on against the photo's pixel size and the fitted size | B, C   |
+| M-ZM3 | Dismiss cancel distance      | Photos: pull a photo down 6–19 pt, bring it back to N pt and lift without moving                         | the largest N that still cancels                                          | B, C   |
+| M-ZT1 | Zoom dismiss release rule    | Probe app: interactive dismissals of a `.zoom` push released after 20–250 pt, moving down, still, and up | which releases zoom back into the cell                                    | B, C   |
+| M-ZT2 | Zoom release velocity        | The same, released at 200–2000 pt/s                                                                      | the closing spring's initial velocity against the finger's                | B, C   |
+| M-ZT3 | Zoom with no source          | Probe app: pop a `.zoom` push whose source cell was removed or scrolled away                             | the detail's frames and opacity on the way out                            | B, C   |

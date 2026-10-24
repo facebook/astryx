@@ -81,7 +81,7 @@ import {TapGestureRecognizer} from '../gestures/TapGestureRecognizer';
 import type {Point} from '../gestures/types';
 import {useGestureRecognizer} from '../gestures/useGestureRecognizer';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
-import type {AnimateOptions} from '../motion/animator';
+import type {AnimateOptions, Animator} from '../motion/animator';
 import {decayRestDistance} from '../motion/decay';
 import {pagingReleaseVelocity} from '../motion/paging';
 import {paging} from '../motion/uikit/paging';
@@ -157,6 +157,19 @@ export interface ZoomStageDismiss {
   onRelease: (dismisses: boolean) => void;
   /** The dismissed photo has left the stage. */
   onDismissed: () => void;
+  /**
+   * Where a dismissed photo goes, in client px: the box it shrinks into (its
+   * thumbnail's), or null to carry on down.
+   */
+  target?: () => ZoomBox | null;
+}
+
+/** A box in client px. */
+export interface ZoomBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 export interface ZoomStage {
@@ -178,6 +191,14 @@ export interface ZoomStage {
   isAtEdge(direction: PanDirection): boolean;
   /** A dismissed photo back at its fitted size at once (the viewer opens again). */
   reset(): void;
+  /** The photo's fitted box (its transform's reference), client px. */
+  fittedBox(): ZoomBox | null;
+  /** Where the photo shows now (its transform applied), client px. */
+  shownBox(): ZoomBox | null;
+  /** Plays curves on the photo (a transition into or out of the viewer). */
+  play: Animator['play'];
+  /** The photo at its fitted size, opaque, at once (after a transition). */
+  rest(): void;
 }
 
 interface PinchSession {
@@ -774,24 +795,61 @@ export function useZoomStage(options: UseZoomStageOptions): ZoomStage {
       dismiss?.onRelease(dismisses);
       const shown = current();
       if (dismisses) {
+        leavingRef.current = true;
+        const done = (handle: {finished: Promise<boolean>}) =>
+          void handle.finished.then(() => {
+            if (leavingRef.current) {
+              optionsRef.current.dismiss?.onDismissed();
+            }
+          });
+        const box = dismiss?.target?.() ?? null;
+        if (box != null) {
+          // Into its thumbnail, as Photos does: the photo's width onto the
+          // cell's, centred on it, on the dismissal's springs, fading out as
+          // the cell's picture fades in over it.
+          const origin = originRef.current;
+          const scale = box.width / geometry.fit.width;
+          const to = {
+            x: box.x - origin.x - geometry.fit.x,
+            y:
+              box.y -
+              origin.y -
+              geometry.fit.y +
+              (box.height - geometry.fit.height * scale) / 2,
+            scale,
+          };
+          targetRef.current = to;
+          animator.animate(
+            {scale: to.scale, opacity: 0},
+            {spring: zoomMedia.dismiss.dismissSizeSpring},
+            {crossfadeAs: 'exit'},
+          );
+          done(
+            animator.animate(
+              {x: to.x, y: to.y},
+              {
+                spring: zoomMedia.dismiss.dismissPositionSpring,
+                velocity: {x: velocity.x, y: velocity.y},
+              },
+              {crossfadeAs: 'exit'},
+            ),
+          );
+          return;
+        }
         // No thumbnail to return to: straight on down, on the dismissal's
         // position spring, from the release velocity.
         const y = dismissExitY(geometry, shown);
-        leavingRef.current = true;
         targetRef.current = {...shown, y};
-        const handle = animator.animate(
-          {x: shown.x, y},
-          {
-            spring: zoomMedia.dismiss.dismissPositionSpring,
-            velocity: {x: velocity.x, y: velocity.y},
-          },
-          {crossfadeAs: 'exit'},
+        done(
+          animator.animate(
+            {x: shown.x, y},
+            {
+              spring: zoomMedia.dismiss.dismissPositionSpring,
+              velocity: {x: velocity.x, y: velocity.y},
+            },
+            {crossfadeAs: 'exit'},
+          ),
         );
-        void handle.finished.then(() => {
-          if (leavingRef.current) {
-            optionsRef.current.dismiss?.onDismissed();
-          }
-        });
         return;
       }
       targetRef.current = IDENTITY;
@@ -913,7 +971,58 @@ export function useZoomStage(options: UseZoomStageOptions): ZoomStage {
         animator.set({x: 0, y: 0, scale: 1, opacity: 1});
         targetRef.current = IDENTITY;
       },
+      fittedBox: () => {
+        const geometry = measure();
+        if (geometry == null) {
+          return null;
+        }
+        const origin = originRef.current;
+        return {
+          x: origin.x + geometry.fit.x,
+          y: origin.y + geometry.fit.y,
+          width: geometry.fit.width,
+          height: geometry.fit.height,
+        };
+      },
+      shownBox: () => {
+        const geometry = measure();
+        if (geometry == null) {
+          return null;
+        }
+        const origin = originRef.current;
+        const {x, y, scale} = current();
+        return {
+          x: origin.x + geometry.fit.x + x,
+          y: origin.y + geometry.fit.y + y,
+          width: geometry.fit.width * scale,
+          height: geometry.fit.height * scale,
+        };
+      },
+      play: (curves, options) => {
+        targetRef.current = IDENTITY;
+        return animator.play(curves, options);
+      },
+      rest: () => {
+        leavingRef.current = false;
+        dismissRef.current = null;
+        pinchRef.current = null;
+        panRef.current = null;
+        animator.stop();
+        animator.set({x: 0, y: 0, scale: 1, opacity: 1});
+        targetRef.current = IDENTITY;
+        setZoomed(false);
+      },
     }),
-    [animator, contentRef, isAtEdgeOf, measure, settleTo, zoomIn, zoomOut],
+    [
+      animator,
+      contentRef,
+      current,
+      isAtEdgeOf,
+      measure,
+      setZoomed,
+      settleTo,
+      zoomIn,
+      zoomOut,
+    ],
   );
 }
