@@ -19,7 +19,13 @@
  *   BottomSheetDetent.interaction.browser.spec.ts
  */
 
-import {expect, test, type Locator, type Page} from '@playwright/test';
+import {
+  expect,
+  test,
+  type Browser,
+  type Locator,
+  type Page,
+} from '@playwright/test';
 import {
   animationStoryboard,
   blockMainThread,
@@ -61,29 +67,44 @@ interface Stack {
 }
 
 /**
+ * A page under a real mouse: no touch and no mobile viewport, so script and
+ * CSS both read a fine pointer. (The phone project's own page stays coarse
+ * for CSS whatever script is told.) Close its context when done.
+ */
+async function newFinePage(browser: Browser) {
+  const context = await browser.newContext({
+    hasTouch: false,
+    isMobile: false,
+    viewport: {width: 402, height: 714},
+  });
+  return {context, page: await context.newPage()};
+}
+
+/**
  * Opens a story. `standalone` makes the page a home-screen web app
  * (`navigator.standalone`), where no browser back swipe owns the screen
- * edge, so the stack's own edge swipe runs.
+ * edge, so the stack's own edge swipe runs. `pointer: 'mouse'` needs a page
+ * from `newFinePage`, and fails before any check if the page reads coarse.
  */
 async function openStack(
   page: Page,
   story: 'settings' | 'pushed' | 'carousel' | 'declines-pops',
   {
     standalone = false,
-    idiom = 'ios',
-  }: {standalone?: boolean; idiom?: 'ios' | 'default'} = {},
+    pointer = 'touch',
+  }: {standalone?: boolean; pointer?: 'touch' | 'mouse'} = {},
 ) {
-  if (idiom === 'ios') {
-    // The back swipes are iOS-only (useTouchIdiom: a coarse pointer in an
-    // engine with -webkit-touch-callout, which only iOS WebKit implements).
-    // Neither Playwright engine is iOS WebKit, so the engine test answers as
-    // Mobile Safari would; the pointer stays the emulated finger.
+  // One touch model (AST-094): touch behaviour keys on a coarse primary
+  // pointer, on every engine. Under a finger, script reads coarse whatever
+  // the engine emulates (the input is the emulated finger); under a mouse
+  // the page itself is fine (newFinePage).
+  if (pointer === 'touch') {
     await page.addInitScript(() => {
-      const supports = CSS.supports.bind(CSS);
-      CSS.supports = ((...args: [string] | [string, string]) =>
-        args.join(':').includes('-webkit-touch-callout')
-          ? true
-          : supports(...(args as [string, string]))) as typeof CSS.supports;
+      const matchMedia = window.matchMedia.bind(window);
+      window.matchMedia = (query: string) =>
+        query.replace(/\s/g, '') === '(pointer:coarse)'
+          ? matchMedia('(min-width: 0px)')
+          : matchMedia(query);
     });
   }
   if (standalone) {
@@ -95,6 +116,16 @@ async function openStack(
     });
   }
   await openStory(page, storybook(), `lab-navigationstack--${story}`);
+  if (pointer === 'mouse') {
+    expect(
+      await page.evaluate(
+        () =>
+          matchMedia('(pointer: fine)').matches &&
+          !matchMedia('(pointer: coarse)').matches,
+      ),
+      'a page under a mouse reads a fine pointer (newFinePage)',
+    ).toBe(true);
+  }
   const driver = await touchDriver(page);
   const stack = page.getByTestId('navigation-stack');
   await expect(stack).toBeVisible();
@@ -610,36 +641,55 @@ test('the incoming bar covers the old title while the main thread is blocked', a
   expect(during.at(-1)?.box ?? null, trace).toBeNull();
 });
 
-test('on Android the back swipes stay off: the system back owns both edges', async ({
+test('under a mouse the back swipes stay off: Back is the bar’s button', async ({
+  browser,
+}) => {
+  // A fine pointer: touch work costs nothing and nothing swipes, even in a
+  // home-screen app.
+  const {context, page} = await newFinePage(browser);
+  try {
+    const {left, width} = await openStack(page, 'pushed', {
+      standalone: true,
+      pointer: 'mouse',
+    });
+    const top = card(page, 'screen-About');
+    const before = await top.boundingBox();
+    // A mouse drag from the edge, then one across the content.
+    for (const [from, to] of [
+      [left + 4, left + width * 0.7],
+      [left + width * 0.3, left + width * 0.95],
+    ]) {
+      await page.mouse.move(from, 400);
+      await page.mouse.down();
+      await page.mouse.move(to, 400, {steps: 30});
+      await page.mouse.up();
+    }
+    await page.waitForTimeout(400);
+    expect((await top.boundingBox())?.x).toBeCloseTo(before?.x ?? NaN, 0);
+    await page.locator('[data-navigation-back]').last().click();
+    await expect(top).toHaveCount(0);
+  } finally {
+    await context.close();
+  }
+});
+
+test('a finger swipes back on an engine that is not iOS WebKit (one touch model)', async ({
   page,
 }) => {
-  // As an Android phone: a finger, and no -webkit-touch-callout. Even in a
-  // home-screen app neither the edge swipe nor the content swipe pops.
-  const {driver, left, width} = await openStack(page, 'pushed', {
-    standalone: true,
-    idiom: 'default',
-  });
-  const top = card(page, 'screen-About');
-  const before = await top.boundingBox();
+  const {driver, left, width} = await openStack(page, 'pushed');
+  // Neither Playwright engine implements -webkit-touch-callout (iOS WebKit
+  // only): the swipe does not depend on it.
+  expect(
+    await page.evaluate(() => CSS.supports('-webkit-touch-callout', 'none')),
+  ).toBe(false);
   await driver.play(
     drag(
-      {x: left + 4, y: 400},
-      {x: left + width * 0.7, y: 400},
-      {durationMs: 500, restMs: 100},
+      {x: left + width * 0.3, y: 420},
+      {x: left + width * 0.9, y: 420},
+      {durationMs: 300},
     ),
   );
-  await driver.play(
-    drag(
-      {x: left + width * 0.3, y: 400},
-      {x: left + width * 0.95, y: 400},
-      {durationMs: 500, restMs: 100},
-    ),
-  );
-  await page.waitForTimeout(400);
-  expect((await top.boundingBox())?.x).toBeCloseTo(before?.x ?? NaN, 0);
-  // Back is the bar's button.
-  await page.locator('[data-navigation-back]').last().click();
-  await expect(top).toHaveCount(0);
+  await expect(card(page, 'screen-About')).toHaveCount(0);
 });
 
 test.describe('the bars ride with their screens, as UIKit’s', () => {
@@ -734,56 +784,66 @@ test.describe('the bars ride with their screens, as UIKit’s', () => {
 
 test.describe('edge cases (review findings)', () => {
   test('a keyboard Back returns focus to the row that pushed', async ({
-    page,
+    browser,
   }) => {
-    await openStack(page, 'settings', {idiom: 'default'});
-    const general = page.getByRole('button', {name: 'General'}).first();
-    await general.focus();
-    await page.keyboard.press('Enter');
-    await waitForRest(card(page, 'screen-General'));
-    await page.locator('[data-navigation-back]').focus();
-    await page.keyboard.press('Enter');
-    await expect(card(page, 'screen-General')).toHaveCount(0);
-    await waitForRest(card(page, 'root'));
-    // Focus is on the General row itself, not left on the page body.
-    await expect
-      .poll(async () =>
-        page.evaluate(() => {
-          const active = document.activeElement;
-          return active == null || active === document.body
-            ? 'body'
-            : (active
-                .closest('li, button, [role="button"]')
-                ?.textContent?.trim() ?? active.tagName);
-        }),
-      )
-      .toBe('General');
+    const {context, page} = await newFinePage(browser);
+    try {
+      await openStack(page, 'settings', {pointer: 'mouse'});
+      const general = page.getByRole('button', {name: 'General'}).first();
+      await general.focus();
+      await page.keyboard.press('Enter');
+      await waitForRest(card(page, 'screen-General'));
+      await page.locator('[data-navigation-back]').focus();
+      await page.keyboard.press('Enter');
+      await expect(card(page, 'screen-General')).toHaveCount(0);
+      await waitForRest(card(page, 'root'));
+      // Focus is on the General row itself, not left on the page body.
+      await expect
+        .poll(async () =>
+          page.evaluate(() => {
+            const active = document.activeElement;
+            return active == null || active === document.body
+              ? 'body'
+              : (active
+                  .closest('li, button, [role="button"]')
+                  ?.textContent?.trim() ?? active.tagName);
+          }),
+        )
+        .toBe('General');
+    } finally {
+      await context.close();
+    }
   });
 
   test('after a keyboard push the focused title shows the focus indicator', async ({
-    page,
+    browser,
   }) => {
-    await openStack(page, 'settings', {idiom: 'default'});
-    await page.getByRole('button', {name: 'General'}).first().focus();
-    await page.keyboard.press('Enter');
-    await waitForRest(card(page, 'screen-General'));
-    const title = page.locator('[data-navigation-bar="screen-General"] h2');
-    await expect(title).toBeFocused();
-    const ring = await title.evaluate(element => {
-      const style = getComputedStyle(element);
-      return {
-        visible: element.matches(':focus-visible'),
-        outline: style.outlineStyle,
-        width: parseFloat(style.outlineWidth),
-        shadow: style.boxShadow,
-      };
-    });
-    expect(ring.visible).toBe(true);
-    // An outline or a ring shadow: something shows where focus is.
-    expect(
-      (ring.outline !== 'none' && ring.width > 0) || ring.shadow !== 'none',
-      JSON.stringify(ring),
-    ).toBe(true);
+    const {context, page} = await newFinePage(browser);
+    try {
+      await openStack(page, 'settings', {pointer: 'mouse'});
+      await page.getByRole('button', {name: 'General'}).first().focus();
+      await page.keyboard.press('Enter');
+      await waitForRest(card(page, 'screen-General'));
+      const title = page.locator('[data-navigation-bar="screen-General"] h2');
+      await expect(title).toBeFocused();
+      const ring = await title.evaluate(element => {
+        const style = getComputedStyle(element);
+        return {
+          visible: element.matches(':focus-visible'),
+          outline: style.outlineStyle,
+          width: parseFloat(style.outlineWidth),
+          shadow: style.boxShadow,
+        };
+      });
+      expect(ring.visible).toBe(true);
+      // An outline or a ring shadow: something shows where focus is.
+      expect(
+        (ring.outline !== 'none' && ring.width > 0) || ring.shadow !== 'none',
+        JSON.stringify(ring),
+      ).toBe(true);
+    } finally {
+      await context.close();
+    }
   });
 
   test('after a tap push the focused title shows no focus ring', async ({
@@ -970,6 +1030,33 @@ test.describe('with Reduce Motion', () => {
     expect(samples.length).toBeGreaterThan(10);
     // UIKit's cross-fade has no dimming: the 10 % shade belongs to the slide.
     expect(Math.max(...samples), JSON.stringify(samples)).toBeLessThan(0.01);
+  });
+
+  test('under a mouse a push completes at once', async ({browser}) => {
+    const {context, page} = await newFinePage(browser);
+    try {
+      await page.emulateMedia({reducedMotion: 'reduce'});
+      await openStack(page, 'settings', {pointer: 'mouse'});
+      await page.getByRole('button', {name: 'General'}).first().click();
+      const top = card(page, 'screen-General');
+      await expect(top).toHaveCount(1);
+      // design:reduced-motion DR3: a fine pointer changes at once.
+      const first = await top.evaluate(
+        element =>
+          new Promise<{x: string; opacity: number}>(resolve =>
+            requestAnimationFrame(() =>
+              resolve({
+                x: getComputedStyle(element).translate,
+                opacity: Number(getComputedStyle(element).opacity),
+              }),
+            ),
+          ),
+      );
+      expect(first.x === 'none' || parseFloat(first.x) === 0).toBe(true);
+      expect(first.opacity).toBe(1);
+    } finally {
+      await context.close();
+    }
   });
 
   test('a push cross-fades in place instead of sliding', async ({page}) => {
