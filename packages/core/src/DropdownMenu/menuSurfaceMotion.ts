@@ -33,11 +33,12 @@
  *
  * The close outlives the popover: the browser hides a popover the moment it
  * closes (a pick, Escape, or its own light dismiss), so the close plays on a
- * static copy of the surface taken as it closes — same place, same size,
- * same inherited theme — that is `inert`, hidden from assistive technology,
- * takes no pointer events, and is removed when the spring settles. Nothing
- * on the main thread runs per frame while it collapses (a discrete
- * `display` transition would restyle the element every frame).
+ * static copy of the surface taken as it closes (the layer runtime's
+ * `placeLayerExitCopy`) — same place, same size, same
+ * inherited theme — that is `inert`, hidden from assistive technology, takes
+ * no pointer events, and is removed when the spring settles. Nothing on the
+ * main thread runs per frame while it collapses (a discrete `display`
+ * transition would restyle the element every frame).
  *
  * Under Reduce Motion (the web's preference is UIKit's Reduce Motion with
  * Prefer Cross-Fade Transitions) the animator substitutes a cross-fade: the
@@ -61,6 +62,7 @@ import {
   type SpringDescription,
 } from '../motion/spring';
 import {menu, springs} from '../motion/uikit';
+import {placeLayerExitCopy} from '../Layer/layerExitCopy';
 
 /** A box in viewport px. */
 export interface MenuSurfaceRect {
@@ -176,53 +178,6 @@ function defaultPrefersReducedMotion(): boolean {
     typeof window.matchMedia === 'function' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
   );
-}
-
-/**
- * A static copy of the surface where it stands, for the close to play on:
- * no ids, no popover, out of the accessibility tree and out of reach.
- */
-function createExitGhost(
-  element: HTMLElement,
-  box: MenuSurfaceRect,
-): HTMLElement {
-  const ghost = element.cloneNode(true) as HTMLElement;
-  ghost.removeAttribute('id');
-  ghost.removeAttribute('popover');
-  for (const node of ghost.querySelectorAll('[id]')) {
-    node.removeAttribute('id');
-  }
-  ghost.setAttribute(MENU_EXIT_GHOST_ATTRIBUTE, '');
-  ghost.setAttribute('aria-hidden', 'true');
-  ghost.setAttribute('inert', '');
-  const {style} = ghost;
-  for (const property of [
-    'position-anchor',
-    'position-area',
-    'position-try-fallbacks',
-    'inset',
-    'right',
-    'bottom',
-    'scale',
-    'opacity',
-    'transition',
-  ]) {
-    style.removeProperty(property);
-  }
-  style.setProperty('position', 'fixed');
-  style.setProperty('margin', '0');
-  style.setProperty('left', `${box.left}px`);
-  style.setProperty('top', `${box.top}px`);
-  style.setProperty('width', `${box.width}px`);
-  style.setProperty('height', `${box.height}px`);
-  style.setProperty('box-sizing', 'border-box');
-  style.setProperty('z-index', '2147483647');
-  style.setProperty('pointer-events', 'none');
-  style.setProperty('animation-name', 'none');
-  // The UA's popover styles no longer apply: keep it visible as it was.
-  style.setProperty('display', 'block');
-  style.setProperty('overflow', 'visible');
-  return ghost;
 }
 
 export function createMenuSurfaceMotion(
@@ -357,34 +312,11 @@ export function createMenuSurfaceMotion(
       opacity: animator.getVelocity('opacity'),
     };
     openHandle = null;
-    const ghost = createExitGhost(element, box);
+    const ghost = placeLayerExitCopy(element, box, MENU_EXIT_GHOST_ATTRIBUTE);
     ghost.style.setProperty(
       'transform-origin',
       `${target.originX}px ${target.originY}px`,
     );
-    element.after(ghost);
-    // An ancestor that is a containing block for fixed boxes (a transform, a
-    // filter) moves the copy: put it back where the surface is.
-    const landed = ghost.getBoundingClientRect();
-    if (Math.abs(landed.left - box.left) > 0.01) {
-      ghost.style.setProperty(
-        'left',
-        `${box.left + (box.left - landed.left)}px`,
-      );
-    }
-    if (Math.abs(landed.top - box.top) > 0.01) {
-      ghost.style.setProperty('top', `${box.top + (box.top - landed.top)}px`);
-    }
-    // Scrolled content stays where it was scrolled to.
-    const sources = element.querySelectorAll('*');
-    const copies = ghost.querySelectorAll('*');
-    sources.forEach((source, index) => {
-      const copy = copies[index];
-      if (copy != null && (source.scrollTop !== 0 || source.scrollLeft !== 0)) {
-        copy.scrollTop = source.scrollTop;
-        copy.scrollLeft = source.scrollLeft;
-      }
-    });
     const closing = createAnimator(ghost, {
       now: options.now,
       prefersReducedMotion,
