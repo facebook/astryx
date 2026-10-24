@@ -358,6 +358,40 @@ describe('upgrade protected-file contract', () => {
       },
     });
   });
+
+  it('lists a generated file the hook regenerates into bytes that do not parse', () => {
+    seed();
+    const broken =
+      "// @generated\nimport {useResizable} from '@astryxdesign/core';\n" +
+      'export const usePanel = () => useResizable({minSizePx: 200;\n';
+    write(
+      'astryx.config.mjs',
+      `export default {hooks: {postCodemod: [{name: 'regenerate', buildCommand: () => ({command: process.execPath, args: ['-e', ${JSON.stringify(`require('node:fs').writeFileSync('generated/panel.tsx', ${JSON.stringify(broken)})`)}]})}]}};\n`,
+    );
+
+    const applied = run([...ARGS, '--apply']);
+
+    expect(applied.status, applied.stderr).toBe(0);
+    expect(applied.envelope).toMatchObject({
+      type: 'upgrade.run',
+      data: {
+        complete: true,
+        protectedFiles: [],
+        declinedCandidates: [
+          {
+            file: 'generated/panel.tsx',
+            location: expect.stringMatching(/^3:\d+$/),
+            reason: expect.stringMatching(
+              /^unparseable protected file \(generated\): /,
+            ),
+          },
+        ],
+      },
+    });
+    expect(
+      fs.readFileSync(path.join(root, 'generated/panel.tsx'), 'utf8'),
+    ).toBe(broken);
+  });
 });
 
 function rmGenerated() {
