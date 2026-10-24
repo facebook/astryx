@@ -265,3 +265,18 @@ fades in, with Prefer Cross-Fade Transitions on or off.
 | M-CM4 | Reduce Motion press feedback    | Probe app with Reduce Motion on: long press, then dismiss                                                                   | press feedback, lift and dismiss animations under Reduce Motion                                                                                                                           | A, B   |
 | M-CM5 | Commit haptic stand-in          | An Android device: `navigator.vibrate` patterns against the platform's HapticFeedbackConstants for the context-click moment | the pattern that matches; not a UIKit parity value (as M-G18)                                                                                                                             | H      |
 | M-CM6 | Press thresholds                | Probe app: repeated long presses at random vsync phases                                                                     | from touch receipt and from the HID timestamp, the tick before and the tick at the press observer's began and at the click commit; the intersection pins the 150 ms and 400 ms thresholds | C      |
+
+## Zoom media (UIScrollView zooming, Photos)
+
+Values Lightbox's zoom stage reads (`uikit/zoomMedia.ts`). Done (UIKit lab
+and Photos, iOS 26.2 simulator, Oct 23 2026; tagged `measured:`): the
+overshoot past the limits, the settle curve and its duration law, the absence
+of scale momentum and of a two-finger-tap action, the content point under the
+centroid staying put, Photos' aspect-fill double tap and its maximum zoom
+(M-ZM2). A zoomed pan flicked into an edge coasts and bounces like any scroll
+view (`scroll.*`).
+
+| ID    | What                         | App and gesture                                                                    | Extract                                                                   | Method |
+| ----- | ---------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------ |
+| M-ZM1 | Double tap on a filled photo | Photos: double tap a photo with the screen's aspect (402 × 874) at the fitted size | the zoom it lands on (aspect fill gives 1)                                | B, C   |
+| M-ZM2 | Maximum zoom                 | Photos: pinch a 4032 × 3024 and a 1200 × 800 photo as far as it goes               | the zoom it settles on against the photo's pixel size and the fitted size | B, C   |

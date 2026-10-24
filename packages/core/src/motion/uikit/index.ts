@@ -32,3 +32,4 @@ export {navigation} from './navigation';
 export {scroll} from './scroll';
 export {springs} from './springs';
 export {timing} from './timing';
+export {zoomMedia} from './zoomMedia';
