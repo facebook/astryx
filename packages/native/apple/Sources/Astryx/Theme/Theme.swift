@@ -274,21 +274,36 @@ extension View {
   }
 }
 
-/// Sets the theme and writes the SwiftUI values a theme has an equivalent for.
-/// The colors resolve where they are drawn, so a subtree with its own color
-/// scheme gets that mode's colors (theme environment spec, E3).
+/// Sets the theme and writes the SwiftUI values a theme has an equivalent for,
+/// only where they stay legible (theme environment spec, E2). The colors
+/// resolve where they are drawn, so a subtree with its own color scheme gets
+/// that mode's colors (E3).
 private struct AstryxThemeModifier: ViewModifier {
   let theme: Theme
 
   func body(content: Content) -> some View {
     content
-      .tint(AstryxThemeColor(theme: theme, role: .accent))
-      .foregroundStyle(
-        AstryxThemeColor(theme: theme, role: .textPrimary),
-        AstryxThemeColor(theme: theme, role: .textSecondary),
-        AstryxThemeColor(theme: theme, role: .textDisabled)
-      )
+      .tint(AstryxThemeColor(theme: theme, role: .tint))
+      .foregroundStyle(AstryxThemeColor(theme: theme, role: .textPrimary))
       .environment(\.astryxTheme, theme)
+      .astryxSingleModeScheme(theme.singleMode)
+  }
+}
+
+extension View {
+  /// A single-mode theme sets its subtree's color scheme, so stock controls
+  /// inside draw the appearance its grounds belong to.
+  @ViewBuilder fileprivate func astryxSingleModeScheme(_ scheme: ColorScheme?) -> some View {
+    if let scheme { environment(\.colorScheme, scheme) } else { self }
+  }
+}
+
+extension Theme {
+  /// The mode a theme with the same tokens in light and dark belongs to, by
+  /// its page ground: dark for a dark ground. Nil for a theme with both modes.
+  var singleMode: ColorScheme? {
+    guard light == dark else { return nil }
+    return astryxLuminance(light.color.backgroundBody) < 0.5 ? .dark : .light
   }
 }
 
@@ -296,7 +311,7 @@ private struct AstryxThemeModifier: ViewModifier {
 /// drawn.
 struct AstryxThemeColor: ShapeStyle {
   enum Role: Sendable {
-    case accent, textPrimary, textSecondary, textDisabled
+    case tint, textPrimary
   }
 
   let theme: Theme
@@ -305,10 +320,28 @@ struct AstryxThemeColor: ShapeStyle {
   func resolve(in environment: EnvironmentValues) -> Color {
     let color = (environment.colorScheme == .dark ? theme.dark : theme.light).color
     switch role {
-    case .accent: return color.accent
+    case .tint: return astryxStockTint(color.accent)
     case .textPrimary: return color.textPrimary
-    case .textSecondary: return color.textSecondary
-    case .textDisabled: return color.textDisabled
     }
   }
+}
+
+/// The tint stock controls get from an accent: the accent where the white
+/// those controls draw on their tint meets 3:1 against it, as the system's own
+/// dark-mode blue does, and the system tint otherwise.
+func astryxStockTint(_ accent: Color) -> Color {
+  astryxContrast(.white, accent) >= 3 ? accent : .accentColor
+}
+
+/// WCAG relative luminance of an opaque sRGB color.
+func astryxLuminance(_ color: Color) -> Double {
+  let resolved = color.resolve(in: EnvironmentValues())
+  return 0.2126 * Double(resolved.linearRed) + 0.7152 * Double(resolved.linearGreen)
+    + 0.0722 * Double(resolved.linearBlue)
+}
+
+/// WCAG contrast ratio between two opaque colors.
+func astryxContrast(_ a: Color, _ b: Color) -> Double {
+  let (la, lb) = (astryxLuminance(a), astryxLuminance(b))
+  return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
 }
