@@ -1575,6 +1575,17 @@ jobs:
             --project chromium \
             --output menu-press-shadow-root-output
 
+      # A two-finger pinch over an open picker wheel must zoom the page (WCAG
+      # 1.4.4) while one finger still scrolls the wheel. jsdom computes no
+      # touch-action, so only a real engine shows which gesture the browser
+      # keeps.
+      - name: Run picker wheel pinch-zoom contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/DateInput/__tests__/WheelPinchZoom.a11y.chromium.spec.ts \
+            --project chromium \
+            --output wheel-pinch-zoom-output
+
       # A sub-menu with a header or footer is a modal dialog beside the root's
       # menu, outside every role="menu" element. Its Tab order, a header radio
       # group the browser moves focus in after the pointer leaves, the
@@ -1585,6 +1596,18 @@ jobs:
             packages/core/src/DropdownMenu/__tests__/SubMenuHeaderFooter.a11y.chromium.spec.ts \
             --project chromium \
             --output submenu-header-footer-output
+
+      # Tooltip and HoverCard answer a touch only once it is a tap: they open
+      # when the finger lifts, never for a touch that turns into a scroll, and
+      # a tap-opened layer closes when a tap outside lifts. Whether a touch is
+      # a tap, a scroll or a long press is the engine's own gesture decision,
+      # which only real touch input reaches.
+      - name: Run hover layer touch contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/Layer/__tests__/TouchTrigger.a11y.chromium.spec.ts \
+            --project chromium \
+            --output hover-layer-touch-output
 
       # A pointer that crosses from a Tooltip's trigger onto the tooltip in one
       # step must not lose it (WCAG 1.4.13 hoverable). The defect is in the
