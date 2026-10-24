@@ -33,7 +33,7 @@ import {
   easeVars,
   sizeVars,
 } from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
+import {isRenderable, mergeProps} from '../utils';
 import {useClipboard} from '../hooks/useClipboard';
 import {useScrollableArea} from '../hooks/useScrollableArea';
 import {Icon} from '../Icon';
@@ -402,12 +402,8 @@ const styles = stylex.create({
     // reaches it via the `code-block-copy-button` target on the Button.
     color: 'var(--color-syntax-comment)',
   },
-  // Centred on the first line of code: a one-line block reads as one row with
-  // even space above and below, and a block that grows keeps the button where
-  // it was. The first line's centre is the code's block padding plus half its
-  // line box (font size × leading for the block's size).
   // The controls of a headerless block: caller controls, then Copy, in the
-  // second column, centred on the first line of code (cornerClusterMd/Sm).
+  // second column (cornerClusterMd/Sm give its height).
   cornerCluster: {
     display: 'flex',
     alignItems: 'center',
@@ -422,11 +418,16 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-1'],
     flexShrink: 0,
   },
+  // The cluster is exactly as tall as the first line's row (its block padding
+  // on both sides plus its line box), and centres its controls in it, so any
+  // control height sits on the first line: a one-line block reads as one row
+  // with even space above and below, and a block that grows keeps its
+  // controls where they were.
   cornerClusterMd: {
-    marginBlockStart: `calc(${spacingVars['--spacing-3']} + ${typeScaleVars['--text-code-size']} * ${typeScaleVars['--text-code-leading']} / 2 - ${sizeVars['--size-element-sm']} / 2)`,
+    blockSize: `calc(2 * ${spacingVars['--spacing-3']} + ${typeScaleVars['--text-code-size']} * ${typeScaleVars['--text-code-leading']})`,
   },
   cornerClusterSm: {
-    marginBlockStart: `calc(${spacingVars['--spacing-3']} + ${typeScaleVars['--text-supporting-size']} * ${typeScaleVars['--text-code-leading']} / 2 - ${sizeVars['--size-element-sm']} / 2)`,
+    blockSize: `calc(2 * ${spacingVars['--spacing-3']} + ${typeScaleVars['--text-supporting-size']} * ${typeScaleVars['--text-code-leading']})`,
   },
 });
 
@@ -1043,7 +1044,8 @@ export function CodeBlock({
 
   // Caller controls render before Copy; together they are the block's controls,
   // in the header when there is one and in the corner cluster otherwise.
-  const hasControls = hasCopyButton || endContent != null;
+  const hasEndContent = isRenderable(endContent);
+  const hasControls = hasCopyButton || hasEndContent;
   const copyButtonEl = hasCopyButton ? (
     <IconButton
       variant="ghost"
@@ -1126,7 +1128,7 @@ export function CodeBlock({
       </div>
       {hasControls ? (
         <div {...stylex.props(styles.headerControls)}>
-          {endContent}
+          {hasEndContent ? endContent : null}
           {copyButtonEl}
         </div>
       ) : null}
@@ -1215,7 +1217,7 @@ export function CodeBlock({
             styles.cornerCluster,
             size === 'sm' ? styles.cornerClusterSm : styles.cornerClusterMd,
           )}>
-          {endContent}
+          {hasEndContent ? endContent : null}
           {copyButtonEl}
         </div>
       ) : null}

@@ -252,3 +252,38 @@ test('with a header, caller controls sit before Copy in the header', async ({
   const copy = await box(copyButton(page));
   expect(run.x).toBeLessThan(copy.x);
 });
+
+test('a taller caller control still centres on the first line of a one-line block', async ({
+  page,
+}) => {
+  await page.setViewportSize({width: 600, height: 400});
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-codeblock--end-content-tall&viewMode=story`,
+  );
+  await expect(
+    page.getByRole('button', {name: 'Run in terminal'}),
+  ).toBeVisible();
+  const geometry = await page.evaluate(() => {
+    const rect = (selector: string) => {
+      const node = document.querySelector(selector);
+      if (!node) {
+        throw new Error(`missing ${selector}`);
+      }
+      return node.getBoundingClientRect();
+    };
+    const action = rect('[aria-label="Run in terminal"]');
+    const copy = rect('[aria-label="Copy code"]');
+    const line = rect('pre.astryx-code-block [data-line="1"]');
+    const root = rect('pre.astryx-code-block');
+    return {
+      action: action.top + action.height / 2,
+      copy: copy.top + copy.height / 2,
+      line: line.top + line.height / 2,
+      above: line.top - root.top,
+      below: root.bottom - line.bottom,
+    };
+  });
+  expect(Math.abs(geometry.action - geometry.line)).toBeLessThanOrEqual(1);
+  expect(Math.abs(geometry.copy - geometry.line)).toBeLessThanOrEqual(1);
+  expect(Math.abs(geometry.above - geometry.below)).toBeLessThanOrEqual(1);
+});

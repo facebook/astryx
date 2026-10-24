@@ -389,6 +389,16 @@ describe('CodeBlock', () => {
       expect(header).toHaveAttribute('aria-expanded', 'true');
     });
 
+    it('treats a falsy endContent as absent: no corner column without Copy', () => {
+      const {container} = render(
+        <CodeBlock code="npm test" hasCopyButton={false} endContent={false} />,
+      );
+      const root = container.querySelector('pre');
+      // Only the code viewport: no empty cluster beside it.
+      expect(root?.children).toHaveLength(1);
+      expect(screen.queryAllByRole('button')).toHaveLength(0);
+    });
+
     it('leaves caller controls unnamed and unstyled by CodeBlock', () => {
       render(<CodeBlock code="npm test" language="bash" endContent={run()} />);
       const action = screen.getByRole('button', {name: 'Run in terminal'});
