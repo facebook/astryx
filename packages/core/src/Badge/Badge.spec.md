@@ -143,12 +143,13 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Accessibility contract
 
-- **AR1 — Static text.** The root carries no role, is not focusable, and exposes
-  its label as ordinary text in reading order. Badge creates no live region, so
-  a changed label is not announced.
-- **AR2 — Meaning in text.** The required label carries the badge's meaning;
-  tone color supplements the text and is never the only carrier of the status
-  Badge renders.
+- **AR1 — Static text.** Badge adds no role, tab stop, or live region of its
+  own and exposes its label as ordinary text in reading order, so a changed
+  label is not announced. A caller `role` or `tabIndex` passes through (FR7).
+- **AR2 — Meaning in text.** Badge renders `label` as text, and tone color
+  supplements that text. An empty label renders a color-only badge with nothing
+  in the accessibility tree; supplying a meaningful label is the callsite's
+  responsibility.
 - **AR3 — Icon exposure is delegated.** Badge adds no name, role, or
   `aria-hidden` to the supplied icon; its exposure is the supplied node's own
   (an Icon without a label is decorative under `component:Icon`).
@@ -179,13 +180,14 @@ supplied icon keeps its own styling and inherits the badge text color.
 
 ## Verification map
 
-| Contract      | Verification                                        | Representative states                        | Mutation or failure expectation                                                                       | Audit section          |
-| ------------- | --------------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ---------------------- |
-| FR2, FR5, FR7 | `Badge.test.tsx`                                    | Default, semantic and color tones, icon, ref | Dropping the icon, the ref, a passthrough prop, or variant reflection fails DOM assertions.           | `audit:Badge/behavior` |
-| FR4, AR4      | `Badge.test.tsx` full-label suite                   | String, number, rich, and empty labels       | Setting `title` from a rich or empty label, or dropping it for a string or number, fails.             | `audit:Badge/a11y`     |
-| FR1, FR3      | `Badge.stories.tsx` long-label fixture in a browser | Long labels in tight space                   | A label that wraps or escapes the badge is visible in the rendered fixture.                           | `audit:Badge/layout`   |
-| FR6           | `extensibleAxes.test.ts`, `themingTargets.test.ts`  | `BadgeVariantMap`, `badge` target            | Removing `variant` from the target reflection or the doc's `visualProps` fails the structural checks. | `audit:Badge/theming`  |
-| FR8, PR1      | `serverSafeComponents.test.ts`                      | Import graph                                 | Adding a hook or a client-only import to Badge fails the server-safety invariant.                     | `audit:Badge/behavior` |
+| Contract | Verification                                                                                  | Representative states                                  | Mutation or failure expectation                                                                                                                                                                             | Audit section          |
+| -------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| FR2, FR7 | `Badge.test.tsx`                                                                              | Icon, ref, passthrough                                 | Dropping the icon, the ref, or a passthrough prop fails DOM assertions.                                                                                                                                     | `audit:Badge/behavior` |
+| FR5      | `Badge.test.tsx` `data-variant` assertions; `Badge.stories.tsx` variant fixtures in a browser | `success` and `purple` reflection; every tone rendered | A lost `data-variant` for those tones fails. Gap: no automated check covers the `neutral` default's reflection or any tone's paint; a paint change is visible only in the rendered fixtures.                | `audit:Badge/theming`  |
+| FR4, AR4 | `Badge.test.tsx` full-label suite                                                             | String, number, rich, and empty labels                 | Setting `title` from a rich or empty label, or dropping it for a string or number, fails.                                                                                                                   | `audit:Badge/a11y`     |
+| FR1, FR3 | `Badge.stories.tsx` long-label fixture in a browser                                           | Long labels in tight space                             | A label that wraps or escapes the badge is visible in the rendered fixture.                                                                                                                                 | `audit:Badge/layout`   |
+| FR6      | `extensibleAxes.test.ts`, `themingTargets.test.ts`                                            | `BadgeVariantMap`, `badge` target                      | Removing `variant` from the target reflection or the doc's `visualProps` fails the structural checks. Gap: no test renders a theme-added value, so the unthemed fallback is verified by source review only. | `audit:Badge/theming`  |
+| FR8, PR1 | `serverSafeComponents.test.ts`                                                                | Import graph                                           | Adding a hook or a client-only import to Badge fails the server-safety invariant.                                                                                                                           | `audit:Badge/behavior` |
 
 ## Decision log
 
