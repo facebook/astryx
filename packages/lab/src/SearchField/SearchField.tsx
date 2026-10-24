@@ -509,9 +509,12 @@ export function SearchField({
           data-search-field-middle=""
           {...stylex.props(styles.piece, styles.middle(cap))}
         />
-        <span aria-hidden {...stylex.props(styles.magnifier)}>
-          <Icon icon="search" size="sm" color="inherit" />
-        </span>
+        <Icon
+          icon="search"
+          size="sm"
+          color="inherit"
+          xstyle={styles.magnifier}
+        />
         <input
           ref={inputRef}
           type="text"

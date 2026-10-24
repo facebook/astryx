@@ -99,6 +99,18 @@ describe('SearchField', () => {
     expect(box()).not.toHaveFocus();
   });
 
+  it('draws its magnifier as the icon itself, with no wrapper element', () => {
+    render(<Field />);
+    const input = box();
+    // The first svg in the field is the magnifier: the Icon's own root sits
+    // directly in the field, beside the input, with nothing around it.
+    const field = input.parentElement as HTMLElement;
+    const icon = (field.querySelector('svg') as SVGElement)
+      .parentElement as HTMLElement;
+    expect(icon.parentElement).toBe(field);
+    expect(icon).toHaveAttribute('aria-hidden', 'true');
+  });
+
   it('server-renders the resting close button transparent and out of place, before hydration', () => {
     // No effects run: this is the markup and CSS a server-rendered page
     // paints first.
