@@ -12,7 +12,7 @@ import {
 } from '../contract';
 import {checkAccessibilitySpec, type ExpectationResult} from '../check';
 import {JSDOM_OBSERVES, createJsdomHarness} from '../harness/jsdom';
-import {TABLE_PATTERN} from './table';
+import {TABLE_PATTERN, composeTablePattern} from './table';
 import {
   CONFORMING_TABLE_FIXTURES,
   TABLE_CELL_SELECTOR,
@@ -114,36 +114,53 @@ describe('Table contract — completeness', () => {
   });
 });
 
-describe('Table contract — sorted fixtures are truthful tables', () => {
-  // A sort claim is only a positive proof when the rows follow it; the
-  // violating twins keep the same rows so only the exposed state is wrong.
-  const sorted = TABLE_FIXTURES.filter(target => target.facts.sort.length > 0);
+describe('Table contract — module composition', () => {
+  const MODULE = {
+    module: 'useExampleModule',
+    scope: 'an example outcome.',
+    expectations: [
+      {
+        ...TABLE_PATTERN.expectations[0]!,
+        id: 'table.example.exposed',
+      },
+    ],
+  };
 
-  it.each(sorted.map(target => [target.id, target] as const))(
-    '%s renders its rows in the declared order',
-    (_id, target) => {
-      const container = document.createElement('div');
-      container.innerHTML = target.html;
-      const table = container.querySelector(TABLE_SUBJECT_SELECTOR)!;
-      for (const {column, direction} of target.facts.sort) {
-        const values = [...table.querySelectorAll(':scope > tbody > tr')].map(
-          row => row.children[column]?.textContent ?? '',
-        );
-        const ordered = [...values].sort();
-        if (direction === 'descending') {
-          ordered.reverse();
-        }
-        expect(values.length).toBeGreaterThan(1);
-        expect(values).toEqual(ordered);
-      }
-    },
-  );
+  it('adds a module’s expectations to the base and keeps the base exemptions', () => {
+    const composed = composeTablePattern(MODULE);
+    expect(composed.pattern).toBe('table');
+    expect(composed.expectations.map(expectation => expectation.id)).toEqual([
+      ...TABLE_PATTERN.expectations.map(expectation => expectation.id),
+      'table.example.exposed',
+    ]);
+    expect(composed.exemptions).toEqual(TABLE_PATTERN.exemptions);
+    expect(composed.scope).toContain('useExampleModule');
+  });
+
+  it('keeps module semantics out of the base contract', () => {
+    expect(
+      TABLE_PATTERN.expectations.map(expectation => expectation.id),
+    ).not.toContain('table.example.exposed');
+  });
+
+  it('refuses a module expectation outside the table pattern', () => {
+    expect(() =>
+      composeTablePattern({
+        ...MODULE,
+        expectations: [
+          {...MODULE.expectations[0]!, id: 'grid.example.exposed'},
+        ],
+      }),
+    ).toThrow(/does not belong to pattern table/);
+  });
 });
 
 describe('Table contract — the jsdom harness stays within its evidence boundary', () => {
-  it('runs DOM expectations and reports accessibility-tree expectations as unrun', async () => {
+  it('runs no base expectation, since each is an accessibility-tree fact', async () => {
+    // The base contract reads only the accessibility tree; DOM-layer module
+    // expectations (sort) prove themselves beside their module.
     const results = await resultsFor(tableFixture('conforming-labelled'));
-    expect(results.some(result => result.status === 'pass')).toBe(true);
+    expect(results.some(result => result.status === 'pass')).toBe(false);
     const unrun = results.filter(result => result.status === 'unrun');
     expect(unrun.length).toBeGreaterThan(0);
     for (const result of unrun) {

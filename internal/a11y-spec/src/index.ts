@@ -177,8 +177,11 @@ export {
   type LinkStateFacts,
 } from './patterns/link';
 export {
+  TABLE_AST_020_FR15,
   TABLE_PATTERN,
-  type TableSortDirection,
+  composeTablePattern,
+  tableApgRequirement,
+  type TableModuleContract,
   type TableStateFacts,
 } from './patterns/table';
 export {TOOLBAR_PATTERN, type ToolbarStateFacts} from './patterns/toolbar';

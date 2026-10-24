@@ -1,8 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** AST-021 state inventory for the Table binding to the shared Table contract. */
+/**
+ * AST-021 state inventory for the Table binding to the shared Table contract.
+ * A state rendered with a Table module also binds that module's contract
+ * (`Table.a11y.contracts.ts`); the others bind the base contract alone.
+ */
 
 import type {TableStateFacts} from '@astryxdesign/a11y-spec';
+import type {TableSortFacts} from '../plugins/sortable/__tests__/useTableSortable.a11y';
 
 export interface TableA11yState {
   readonly id:
@@ -12,7 +17,9 @@ export interface TableA11yState {
     | 'empty-data';
   readonly mode: 'data-driven' | 'children';
   readonly summary: string;
-  readonly facts: TableStateFacts;
+  /** The Table modules the state renders with; each adds its own contract. */
+  readonly modules: ReadonlyArray<'sort'>;
+  readonly facts: TableStateFacts | (TableStateFacts & TableSortFacts);
   readonly storyId: string;
 }
 
@@ -26,13 +33,13 @@ export const TABLE_A11Y_STATES = [
     mode: 'data-driven',
     summary:
       'a labelled data-driven table with three column headers and data rows',
+    modules: [],
     facts: {
       label: 'Team members',
       columnHeaders: ['Name', 'Role', 'Location'],
       rows: 3,
       rowHeaders: [],
       cells: 3,
-      sort: [],
     },
     storyId: story('data-columns'),
   },
@@ -41,6 +48,7 @@ export const TABLE_A11Y_STATES = [
     mode: 'data-driven',
     summary:
       'every column sortable through useTableSortable, sorted by Name descending',
+    modules: ['sort'],
     facts: {
       label: 'Team members',
       columnHeaders: [
@@ -60,13 +68,13 @@ export const TABLE_A11Y_STATES = [
     mode: 'children',
     summary:
       'a composed right-to-left table named by a visible heading, with a row header per row',
+    modules: [],
     facts: {
       label: 'Quarterly totals',
       columnHeaders: ['Region', 'Q1', 'Q2'],
       rows: 3,
       rowHeaders: ['North', 'South'],
       cells: 2,
-      sort: [],
     },
     storyId: story('children-row-headers-rtl'),
   },
@@ -75,13 +83,13 @@ export const TABLE_A11Y_STATES = [
     mode: 'data-driven',
     summary:
       'a labelled data-driven table with no rows, whose default empty state is one spanning data cell',
+    modules: [],
     facts: {
       label: 'Team members',
       columnHeaders: ['Name', 'Role', 'Location'],
       rows: 2,
       rowHeaders: [],
       cells: 1,
-      sort: [],
     },
     storyId: story('empty-data'),
   },

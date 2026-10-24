@@ -2,7 +2,7 @@
 
 /** Plain-HTML positive and mutation fixtures for the Table contract. */
 
-import type {TableSortDirection, TableStateFacts} from './table';
+import type {TableStateFacts} from './table';
 
 export const TABLE_SUBJECT_SELECTOR = '[data-a11y-table]';
 export const TABLE_COLUMN_HEADER_SELECTOR = '[data-a11y-table-column-header]';
@@ -51,10 +51,6 @@ interface Options {
    * keeping its role and name, so only its place in the subject table is wrong.
    */
   readonly otherTable?: 'row' | 'column-header' | 'row-header' | 'cell';
-  /** `aria-sort` per column header index, as authored. */
-  readonly ariaSort?: Readonly<Record<number, string>>;
-  /** Render the body rows in descending Name order (Grace, then Ada). */
-  readonly descendingRows?: boolean;
 }
 
 function attr(name: string, value: string | null | undefined): string {
@@ -73,17 +69,13 @@ function html(options: Options = {}): string {
     const role = attr('role', options.columnHeaderRole);
     const rename =
       index === 1 ? attr('aria-label', options.columnHeaderRename) : '';
-    const sort = attr('aria-sort', options.ariaSort?.[index]);
     const designated =
       index === 2 && options.otherTable === 'column-header'
         ? ''
         : 'data-a11y-table-column-header';
-    return `<th ${designated} scope="col" ${role} ${rename} ${sort}>${column}</th>`;
+    return `<th ${designated} scope="col" ${role} ${rename}>${column}</th>`;
   }).join('');
-  const body = ROWS.map((authoredRow, rowIndex) => {
-    const row = options.descendingRows
-      ? (ROWS[ROWS.length - 1 - rowIndex] ?? authoredRow)
-      : authoredRow;
+  const body = ROWS.map((row, rowIndex) => {
     const cells = row
       .map((value, cellIndex) => {
         if (options.rowHeaders && cellIndex === 0) {
@@ -160,15 +152,11 @@ function facts(overrides: Partial<TableStateFacts> = {}): TableStateFacts {
     rows: 3,
     rowHeaders: [],
     cells: 1,
-    sort: [],
     ...overrides,
   };
 }
 
 const ROW_HEADERS = ROWS.map(row => row[0]);
-const SORTED: TableStateFacts['sort'] = [
-  {column: 0, direction: 'descending' as TableSortDirection},
-];
 
 export const TABLE_FIXTURES: readonly TableFixture[] = [
   {
@@ -182,13 +170,6 @@ export const TABLE_FIXTURES: readonly TableFixture[] = [
     summary: 'a table named by a visible heading, with a row header per row',
     facts: facts({label: 'Crew roster', rowHeaders: ROW_HEADERS}),
     html: html({label: null, labelledBy: 'Crew roster', rowHeaders: true}),
-  },
-  {
-    id: 'conforming-sorted',
-    summary:
-      'a table sorted by one column, with an explicit none on an unsorted header',
-    facts: facts({sort: SORTED}),
-    html: html({ariaSort: {0: 'descending', 2: 'none'}, descendingRows: true}),
   },
   {
     id: 'conforming-unlabelled',
@@ -290,24 +271,6 @@ export const TABLE_FIXTURES: readonly TableFixture[] = [
     facts: facts(),
     html: html({cellOutside: true}),
   },
-  {
-    id: 'violating-sort-missing',
-    summary: 'the sorted column header exposes no sort state',
-    facts: facts({sort: SORTED}),
-    html: html({descendingRows: true}),
-  },
-  {
-    id: 'violating-sort-direction',
-    summary: 'the sorted column header exposes the opposite direction',
-    facts: facts({sort: SORTED}),
-    html: html({ariaSort: {0: 'ascending'}, descendingRows: true}),
-  },
-  {
-    id: 'violating-sort-stale',
-    summary: 'an unsorted column header still claims a sort direction',
-    facts: facts(),
-    html: html({ariaSort: {1: 'ascending'}}),
-  },
 ];
 
 export const CONFORMING_TABLE_FIXTURES = TABLE_FIXTURES.filter(fixture =>
@@ -336,11 +299,6 @@ export const TABLE_MUTATIONS: Readonly<Record<string, readonly string[]>> = {
     'violating-cell-as-header',
     'violating-cell-outside',
     'violating-cell-other-table',
-  ],
-  'table.sort.exposed': [
-    'violating-sort-missing',
-    'violating-sort-direction',
-    'violating-sort-stale',
   ],
 };
 

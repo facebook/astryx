@@ -10,7 +10,6 @@ import {
   type Page,
 } from '@playwright/test';
 import {
-  TABLE_PATTERN,
   blockingResults,
   checkAccessibilitySpec,
   formatFailures,
@@ -28,6 +27,7 @@ import {
   type StaticServer,
 } from '@astryxdesign/a11y-spec/storybook';
 import {TABLE_A11Y_STATES, type TableA11yRow} from './Table.a11y.states';
+import {tableContractFor} from './Table.a11y.contracts';
 
 const SUBJECT_SELECTOR = '[data-a11y-table]';
 const ROWS = `${SUBJECT_SELECTOR} > thead > tr, ${SUBJECT_SELECTOR} > tbody > tr`;
@@ -69,7 +69,7 @@ async function runState(
   state: TableA11yRow,
 ): Promise<BindingResult> {
   return checkAccessibilitySpec({
-    spec: TABLE_PATTERN,
+    spec: tableContractFor(state),
     binding: 'Table',
     state: state.id,
     facts: state.facts,
@@ -114,7 +114,7 @@ for (const state of TABLE_A11Y_STATES) {
   test(`Table [${state.id}] — ${state.summary}`, async ({page}) => {
     const cdp = await page.context().newCDPSession(page);
     const result = await runState(page, cdp, state);
-    const report = summarize(TABLE_PATTERN, [result]);
+    const report = summarize(tableContractFor(state), [result]);
     expect(formatFailures(blockingResults([result]))).toBe('');
     expect(
       result.results

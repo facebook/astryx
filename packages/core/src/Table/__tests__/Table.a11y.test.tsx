@@ -6,7 +6,6 @@
 import {cleanup, render} from '@testing-library/react';
 import {describe, expect, it} from 'vitest';
 import {
-  TABLE_PATTERN,
   checkAccessibilitySpec,
   createJsdomHarness,
   expectAccessibilitySpec,
@@ -14,6 +13,12 @@ import {
   type BindingResult,
 } from '@astryxdesign/a11y-spec';
 import {TABLE_A11Y_RENDERS} from './Table.a11y.renders';
+import {
+  tableContractFor,
+  tableSortFor,
+  tableUsesSort,
+} from './Table.a11y.contracts';
+import {TABLE_SORTABLE_PATTERN} from '../plugins/sortable/__tests__/useTableSortable.a11y';
 import {
   TABLE_A11Y_EXCLUSIONS,
   TABLE_A11Y_STATES,
@@ -59,7 +64,7 @@ function relatedFor(state: TableA11yRow): Record<string, Element> {
 
 async function checkState(state: TableA11yRow): Promise<BindingResult> {
   return checkAccessibilitySpec({
-    spec: TABLE_PATTERN,
+    spec: tableContractFor(state),
     binding: 'Table',
     state: state.id,
     facts: state.facts,
@@ -81,7 +86,7 @@ describe('the shared Table pattern, jsdom lane', () => {
     ),
   )('%s — %s', async (_id, _summary, state) => {
     await expectAccessibilitySpec({
-      spec: TABLE_PATTERN,
+      spec: tableContractFor(state),
       binding: 'Table',
       state: state.id,
       facts: state.facts,
@@ -99,7 +104,9 @@ describe('the shared Table pattern, jsdom lane', () => {
     for (const state of TABLE_A11Y_STATES) {
       results.push(await checkState(state));
     }
-    const report = summarize(TABLE_PATTERN, results);
+    // The sortable contract is the base plus the sort module, so it reports
+    // every expectation any state ran.
+    const report = summarize(TABLE_SORTABLE_PATTERN, results);
     expect(report.counts.pass).toBeGreaterThan(0);
     expect(report.unrunLayers).toEqual(['accessibility-tree']);
     expect(report.counts.unexpectedPass).toBe(0);
@@ -125,9 +132,9 @@ describe('the Table binding inventory', () => {
     expect(
       TABLE_A11Y_STATES.some(state => state.facts.rowHeaders.length > 0),
     ).toBe(true);
-    expect(TABLE_A11Y_STATES.some(state => state.facts.sort.length > 0)).toBe(
-      true,
-    );
+    expect(
+      TABLE_A11Y_STATES.some(state => tableSortFor(state).length > 0),
+    ).toBe(true);
     expect(TABLE_A11Y_STATES.map(state => state.id)).toContain('empty-data');
   });
 
@@ -135,7 +142,7 @@ describe('the Table binding inventory', () => {
     // useTableSortable exposes aria-sort but never reorders data, so a binding
     // can claim a direction its own rows contradict.
     for (const state of TABLE_A11Y_STATES) {
-      for (const {column, direction} of state.facts.sort) {
+      for (const {column, direction} of tableSortFor(state)) {
         render(TABLE_A11Y_RENDERS[state.id]());
         const values = [
           ...subjectFor().querySelectorAll(':scope > tbody > tr'),
@@ -148,6 +155,18 @@ describe('the Table binding inventory', () => {
         expect(values, `${state.id} column ${column}`).toEqual(ordered);
         cleanup();
       }
+    }
+  });
+
+  it('composes the sort module only for states rendered with useTableSortable', () => {
+    for (const state of TABLE_A11Y_STATES) {
+      const ids = tableContractFor(state).expectations.map(
+        expectation => expectation.id,
+      );
+      expect(ids.includes('table.sort.exposed'), state.id).toBe(
+        tableUsesSort(state),
+      );
+      expect('sort' in state.facts, state.id).toBe(tableUsesSort(state));
     }
   });
 
