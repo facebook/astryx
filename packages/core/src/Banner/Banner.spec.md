@@ -40,7 +40,7 @@ separately targetable surface. The status and content targets remain unchanged.
 ## Compatibility and migration
 
 - Released default preserved: `no` — Banner no longer derives a live-region role from visual status
-- Compatibility class: breaking accessibility-semantic correction; visual output, DOM structure, props, theming targets, and interaction behavior are unchanged
+- Compatibility class: breaking accessibility-semantic correction for the live-region change (DEP-0007), whose visual output, DOM structure, props, theming targets, and interaction behavior are unchanged. FR9's accepted target is a visual change: the Info status surface fills with `--color-info-muted` and built-in content takes the on-muted roles; props, DOM structure, and theming targets stay the same
 - Controlled/uncontrolled behavior: unchanged
 - Migration decision: announce async outcomes in their transition handler with `useAnnounce`; add an explicit `role="status"` only for a persistent semantic mirror, and reserve `role="alert"` for genuinely urgent interruption. Inside a mounted live container, `spec:AST-086` FR4 applies instead.
 
