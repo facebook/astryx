@@ -189,10 +189,16 @@ the app reaches every layer instead of the components that happen to read it.
   side, partly off-screen), an above or below layer tries instead beside the
   anchor on the inline end, then on the inline
   start, each at its content's inline size and capped to the viewport, then
-  the block side with more room, then the other block side, each sized to the
-  room on that side. It scrolls what it cannot show, and only then, so a
-  layer that fits stays a plain box (FR3). Once switched, it keeps the second
-  list until it next opens. Chromium tries no more than five position
+  the preferred block side, then the other, each only while it is the side
+  with more room and sized to the room on that side. No option in the second
+  list is sized to whatever room is left, because a browser keeps an open
+  layer on the option it last used for as long as that option still fits:
+  when its anchor moves, the layer moves to the side that is now roomier
+  rather than shrinking to a sliver. It scrolls what it cannot show, and only
+  then, so a layer that fits stays a plain box (FR3). Once switched, it keeps
+  the second list until it next opens; a switch after the layer has painted
+  places it afresh from the second list in the same frame, without closing it.
+  Chromium tries no more than five position
   options, so this is a second list that replaces the first, not an extension
   of it. The runtime authors both orders; a component passes no fallbacks of
   its own to an anchor-mode layer.

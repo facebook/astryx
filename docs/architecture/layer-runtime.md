@@ -187,10 +187,17 @@ list beside the first: when it finds the first list settled the box over the
 anchor or, while the anchor is in view, past the viewport on the block axis
 (Chromium shifts a box that fits no option over the anchor; WebKit leaves it on
 its preferred side, partly off-screen), it switches to beside the anchor on the
-inline end, then the inline start, at the content's inline size, then the block
-side with more room, then
-the other, each sized to the room there, keeps that list until it next opens,
-and scrolls only while its content overflows. Chromium tries no more than five
+inline end, then the inline start, at the content's inline size, then the
+preferred block side, then the other, each only while it is the roomier side and
+sized to the room there, keeps that list until it next opens, and scrolls only
+while its content overflows. No option in that list is sized to whatever room
+is left: a browser keeps an open layer on the option it last used while that
+option still fits, so an anchor that moves takes the layer to the side now
+roomier instead of shrinking it. A browser also keeps a laid-out layer on its
+last option when its list changes, so a switch after the layer has painted takes
+the layer out of rendering for one forced layout in the same task (no frame
+paints, the popover stays open, no toggle event fires), and the engine places it
+afresh from the new list. Chromium tries no more than five
 options, so the second list replaces the first rather than extending it.
 Once the anchor has left the viewport the runtime pins the layer's
 self-alignment `unsafe` toward the anchor, so the layer holds the position its

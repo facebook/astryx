@@ -429,9 +429,9 @@ interface InternalContextLayerOptions extends ContextLayerOptions {
   /**
    * The layer must never settle over its anchor (spec:AST-059 FR4). When the
    * standard fallback list settles it over its anchor, it switches to its
-   * anchor-clear list: beside the trigger, then the roomier block side sized
-   * to its room. For a hover-summoned layer, which the hover on its trigger
-   * keeps open.
+   * anchor-clear list: beside the trigger, then whichever block side is
+   * roomier, sized to its room. For a hover-summoned layer, which the hover on
+   * its trigger keeps open.
    */
   keepsAnchorClear?: boolean;
 }
@@ -449,18 +449,18 @@ function toCssLength(value: number | string): string {
  * while the anchor is in view, leaves the viewport on the block axis, switch it
  * to its anchor-clear list; then let it scroll only if its content overflows
  * the box it was given (FR3). Engines differ in where they leave a box that
- * fits no option: Chromium shifts it into the viewport, over the anchor;
- * WebKit keeps it at its preferred position, partly off-screen. Either way the
+ * fits no option: Chromium shifts it into the viewport, over the anchor; WebKit
+ * keeps it at its preferred position, partly off-screen. Either way the
  * standard list has failed it. During a scroll event the anchor has moved but
  * the layer anchored to it not yet, so a scroll reads only for coverage
  * (`checkViewport` false); the anchor-move observer, which reports after the
- * frame has painted the scrolled geometry, reads the viewport. The runtime calls this in the same task as every
- * show and remount, and while the layer is open whenever its size, its
- * content's size, its anchor's size, a scroll position or the viewport
- * changes. Each of those reads lands before the next frame paints (FR8). Only
- * a box that overlaps the anchor counts; a layer flush against it does not.
- * Once switched, a layer keeps its anchor-clear list until it next opens, so
- * it never jumps back over its trigger while open.
+ * frame has painted the scrolled geometry, reads the viewport. The runtime
+ * calls this in the same task as every show and remount, and while the layer is
+ * open whenever its size, its content's size, its anchor's size, a scroll
+ * position or the viewport changes. Each of those reads lands before the next
+ * frame paints (FR8). Only a box that overlaps the anchor counts; a layer flush
+ * against it does not. Once switched, a layer keeps its anchor-clear list until
+ * it next opens, so it never jumps back over its trigger while open.
  */
 function keepAnchorClear(
   layer: HTMLElement,
@@ -485,8 +485,21 @@ function keepAnchorClear(
       hasBox &&
       anchorInView &&
       (l.top < 0 || l.bottom > viewportBlock);
-    if (covers || leavesViewport) {
+    if (
+      (covers || leavesViewport) &&
+      !layer.hasAttribute(LAYER_CLEARS_ANCHOR_ATTRIBUTE)
+    ) {
       layer.setAttribute(LAYER_CLEARS_ANCHOR_ATTRIBUTE, '');
+      // A browser keeps a laid-out layer on the position option it last used,
+      // even one the new list does not contain, until the layer stops being
+      // rendered. Taking it out of rendering for one forced layout, in the
+      // same task, makes the engine place it afresh from the new list: no
+      // frame paints in between, and the popover stays open, so no toggle
+      // event fires and focus and hover are untouched.
+      const display = layer.style.display;
+      layer.style.display = 'none';
+      layer.getBoundingClientRect();
+      layer.style.display = display;
     }
   }
   // A layer that fits has no scroll range and stays a plain box, so a wheel

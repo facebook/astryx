@@ -1626,12 +1626,12 @@ describe('a layer that keeps its anchor clear (spec:AST-059 FR4)', () => {
     vi.restoreAllMocks();
   });
 
-  it('lists beside the trigger first, then the roomier block side sized to its room, then the other side', () => {
+  it('lists beside the trigger first, then the preferred and the other block side, each only where it is the roomier side', () => {
     expect(getAnchorClearFallbacks('above')).toBe(
-      '--astryx-layer-beside-end, --astryx-layer-beside-start, --astryx-layer-fit-above-roomier, --astryx-layer-fit-below',
+      '--astryx-layer-beside-end, --astryx-layer-beside-start, --astryx-layer-fit-above, --astryx-layer-fit-below',
     );
     expect(getAnchorClearFallbacks('below')).toBe(
-      '--astryx-layer-beside-end, --astryx-layer-beside-start, --astryx-layer-fit-below-roomier, --astryx-layer-fit-above',
+      '--astryx-layer-beside-end, --astryx-layer-beside-start, --astryx-layer-fit-below, --astryx-layer-fit-above',
     );
     // Side placements already slide along the block axis at full height.
     expect(getAnchorClearFallbacks('start')).toBe('');
@@ -1658,14 +1658,22 @@ describe('a layer that keeps its anchor clear (spec:AST-059 FR4)', () => {
     expect(css).toMatch(
       /@position-try --astryx-layer-beside-start\{[^}]*inline-size:max-content;\}/,
     );
-    // Fit: sized to the room on its side; the roomier variant is never less
-    // than half of the room the trigger leaves on the block axis.
-    expect(css).toMatch(
-      /@position-try --astryx-layer-fit-below\{position-area:self-block-end span-all;[^}]*block-size:calc\(100% - var\(--_astryx-layer-clearance, 0px\) - /,
-    );
-    expect(css).toMatch(
-      /@position-try --astryx-layer-fit-above-roomier\{position-area:self-block-start span-all;[^}]*block-size:max\(calc\(100% - [^}]*anchor-size\(block\)[^}]*100dvb/,
-    );
+    // Fit: sized to the room on its side and never less than half of the
+    // room the trigger leaves on the block axis, so it fits only on the
+    // roomier side. No option is sized to whatever room is left: a browser
+    // keeps an open layer on its last option while that still fits.
+    for (const [side, area] of [
+      ['above', 'self-block-start'],
+      ['below', 'self-block-end'],
+    ]) {
+      expect(css).toMatch(
+        new RegExp(
+          `@position-try --astryx-layer-fit-${side}\\{position-area:${area} span-all;[^}]*block-size:max\\(calc\\(100% - [^}]*anchor-size\\(block\\)[^}]*100dvb`,
+        ),
+      );
+    }
+    expect(css).not.toMatch(/--astryx-layer-fit-[a-z]+-roomier/);
+    expect(css.match(/@position-try --astryx-layer-fit-/g)).toHaveLength(2);
     expect(css).toContain(
       '[data-astryx-clears-anchor]{--_astryx-layer-try-fallbacks:var(--_astryx-layer-clear-fallbacks);}',
     );
@@ -1691,6 +1699,43 @@ describe('a layer that keeps its anchor clear (spec:AST-059 FR4)', () => {
     await user.click(container.querySelector('button')!);
     const layerEl = container.querySelector('[popover]') as HTMLElement;
     expect(layerEl).toHaveAttribute('data-astryx-clears-anchor');
+  });
+
+  it('places a layer afresh from the clear list when it switches, without closing it or leaving a frame', async () => {
+    const user = userEvent.setup();
+    const onToggle = vi.fn();
+    const displays: string[] = [];
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: HTMLElement) {
+        if (this.hasAttribute('popover')) {
+          displays.push(this.style.display);
+          return rect(16, 350, 688, 300);
+        }
+        return TRIGGER;
+      },
+    );
+    const {container} = render(<ClearHarness />);
+    const layerEl = container.querySelector('[popover]') as HTMLElement;
+    layerEl.addEventListener('toggle', onToggle);
+    layerEl.addEventListener('beforetoggle', onToggle);
+    await user.click(container.querySelector('button')!);
+    expect(layerEl).toHaveAttribute('data-astryx-clears-anchor');
+    // A browser keeps a laid-out layer on its last option until the layer
+    // stops being rendered: the switch takes it out of rendering for one
+    // forced layout, then restores its own display, in the same task.
+    expect(displays).toContain('none');
+    expect(layerEl.style.display).not.toBe('none');
+    // Only the show itself opened it; the re-placement neither closed nor
+    // re-opened it.
+    expect(
+      onToggle.mock.calls.map(([e]) => (e as ToggleEvent).newState),
+    ).not.toContain('closed');
+    // A later read that still finds it covering does not take it out again.
+    displays.length = 0;
+    act(() => {
+      window.dispatchEvent(new Event('resize'));
+    });
+    expect(displays).not.toContain('none');
   });
 
   it('switches to the clear list when the shown layer leaves the viewport on the block axis while its trigger is in view', async () => {

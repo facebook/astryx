@@ -124,6 +124,8 @@ const TRIGGER_2 = '[data-test-replacement]';
 interface Frame {
   tooltip: Box;
   trigger: Box;
+  /** The tooltip's visible content height in that frame. */
+  tooltipHeight: number;
 }
 
 /**
@@ -151,7 +153,7 @@ async function moveAndSampleFrames(
         throw new Error(`${sel} is not in the document`);
       }
       Object.assign(el.style, changes);
-      const frames: {tooltip: Box; trigger: Box}[] = [];
+      const frames: {tooltip: Box; trigger: Box; tooltipHeight: number}[] = [];
       // A message posted from a frame callback runs as the first task after
       // that frame has painted, before the tasks the frame itself queued
       // (intersection observer callbacks among them), so it reads what the
@@ -168,7 +170,11 @@ async function moveAndSampleFrames(
         await afterPaint();
         const t = document.querySelector(tip);
         if (t != null) {
-          frames.push({tooltip: box(t), trigger: box(el)});
+          frames.push({
+            tooltip: box(t),
+            trigger: box(el),
+            tooltipHeight: (t as HTMLElement).clientHeight,
+          });
         }
       }
       return frames;
@@ -626,4 +632,130 @@ test('a held-open tooltip keeps a replaced trigger clear when the replacement re
     ).toBe(false);
   }
   expect(overlaps(await rect(page, TOOLTIP), after)).toBe(false);
+});
+
+/**
+ * From the second painted frame after a move, the tooltip is clear of the
+ * trigger, inside the viewport, on the block side with more room, and tall
+ * enough to read.
+ */
+function expectReadableOnRoomierSide(frames: Frame[], viewportHeight: number) {
+  expectClearFromSecondFrame(frames);
+  for (const [i, {tooltip, trigger, tooltipHeight}] of frames.entries()) {
+    if (i === 0) {
+      continue;
+    }
+    expect(tooltip.top).toBeGreaterThanOrEqual(0);
+    expect(tooltip.bottom).toBeLessThanOrEqual(viewportHeight);
+    expect(
+      tooltipHeight,
+      `painted frame ${i + 1} squeezes the tooltip to ${tooltipHeight}px`,
+    ).toBeGreaterThan(200);
+    if (trigger.top > viewportHeight - trigger.bottom) {
+      expect(tooltip.bottom).toBeLessThanOrEqual(trigger.top);
+    } else {
+      expect(tooltip.top).toBeGreaterThanOrEqual(trigger.bottom);
+    }
+  }
+}
+
+/**
+ * Focus the trigger of a 60-line tooltip on a phone, with the trigger's centre
+ * at `triggerY`, and wait until the tooltip has switched to its anchor-clear
+ * list.
+ */
+async function focusTallTriggerOnPhone(page: Page, triggerY: number) {
+  await page.setViewportSize({width: 390, height: 700});
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-tooltip--tall-content&viewMode=story`,
+  );
+  await holdMotionStill(page);
+  const trigger = page.getByRole('button', {name: 'Hover for details'});
+  await expect(trigger).toBeVisible();
+  await page.evaluate(
+    ([sel, y]) => {
+      const el = document.querySelector(sel as string) as HTMLElement;
+      const r = el.getBoundingClientRect();
+      window.scrollBy(0, r.top + r.height / 2 - (y as number));
+    },
+    [TRIGGER, triggerY],
+  );
+  await trigger.focus();
+  await expect(page.getByRole('tooltip')).toBeVisible();
+  await page.waitForTimeout(200);
+  expect(
+    await page.evaluate(
+      sel =>
+        document.querySelector(sel)?.hasAttribute('data-astryx-clears-anchor'),
+      TOOLTIP,
+    ),
+  ).toBe(true);
+}
+
+test('a switched tooltip whose trigger moves toward the far edge moves to the roomier side, readable', async ({
+  page,
+}) => {
+  // The 390×700 case: opened below a trigger in the upper half, the tooltip
+  // must not stay below, squeezed to a sliver, once the trigger moves down.
+  await focusTallTriggerOnPhone(page, 200);
+  const before = await rect(page, TOOLTIP);
+  const trigger = await rect(page, TRIGGER);
+  expect(before.top).toBeGreaterThanOrEqual(trigger.bottom);
+  const frames = await moveAndSampleFrames(page, TRIGGER, {
+    position: 'relative',
+    insetBlockStart: '460px',
+  });
+  expectReadableOnRoomierSide(frames, 700);
+});
+
+test('a switched tooltip whose trigger moves the other way moves to the roomier side, readable', async ({
+  page,
+}) => {
+  // Opened above a trigger in the lower half, then the trigger moves up.
+  await focusTallTriggerOnPhone(page, 500);
+  const before = await rect(page, TOOLTIP);
+  const trigger = await rect(page, TRIGGER);
+  expect(before.bottom).toBeLessThanOrEqual(trigger.top);
+  const frames = await moveAndSampleFrames(page, TRIGGER, {
+    position: 'relative',
+    insetBlockStart: '-400px',
+  });
+  expectReadableOnRoomierSide(frames, 700);
+});
+
+test('a tooltip that switches lists after it has painted is placed afresh, not left on its old option', async ({
+  page,
+}) => {
+  // A held-open short tooltip paints above its trigger, then grows to 368px
+  // and its trigger moves up: the old option leaves the box past the top of
+  // the viewport, so the tooltip switches lists while it is showing.
+  await page.setViewportSize({width: 1280, height: 720});
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-tooltip--tall-content&viewMode=story&args=content:A+short+tooltip;isOpen:!true`,
+  );
+  await holdMotionStill(page);
+  await expect(page.getByRole('tooltip')).toBeVisible();
+  await page.evaluate(sel => {
+    const el = document.querySelector(sel) as HTMLElement;
+    window.scrollBy(0, el.getBoundingClientRect().top - 650);
+  }, TRIGGER);
+  await page.waitForTimeout(200);
+  await page.evaluate(sel => {
+    const content = document.querySelector(sel)?.firstElementChild;
+    for (let i = 1; i <= 17; i++) {
+      const line = document.createElement('div');
+      line.textContent = `Line ${i}`;
+      content?.appendChild(line);
+    }
+  }, TOOLTIP);
+  await page.waitForTimeout(200);
+  const frames = await moveAndSampleFrames(page, TRIGGER, {
+    position: 'relative',
+    insetBlockStart: '-310px',
+  });
+  expectClearFromSecondFrame(frames);
+  for (const {tooltip} of frames.slice(1)) {
+    expect(tooltip.top).toBeGreaterThanOrEqual(0);
+    expect(tooltip.bottom).toBeLessThanOrEqual(720);
+  }
 });
