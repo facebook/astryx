@@ -41,7 +41,7 @@ system_specs: [spec:AST-005, spec:AST-085]
 | Behavior                | `href` renders a link, `onClick` (or an enclosing trigger context) renders a container around a full-size inner button, and `onRemove` adds a separate remove button beside, never inside, them.              |
 | End-user impact         | Pointer users can activate the whole chip; keyboard and screen-reader users reach the chip's action and its remove action as separate, named controls.                                                        |
 | Builder impact          | None; the record describes shipped behavior.                                                                                                                                                                  |
-| Compatibility/readiness | Released behavior recorded as current; no API, default, or output changes. Three implementation gaps are listed under Current-state impact.                                                                   |
+| Compatibility/readiness | Released behavior recorded as current; no API, default, or output changes. Five implementation gaps are listed under Current-state impact.                                                                    |
 | Review checks           | Reject a remove button nested in the link or the inner button, a remove target smaller than 24 by 24 CSS pixels, a native `disabled` attribute, or a token that navigates around the shared destination rule. |
 | Governing rules         | `family:navigation-destinations`; `spec:AST-005`; `spec:AST-085/FR1,FR2,FR5`; `architecture:public-component-api/INV5,INV6,INV8`; `architecture:component-theming-surface/INV6,INV14`.                        |
 
@@ -77,6 +77,14 @@ Consumer migration instructions belong in consumer docs and release notes.
   static, clickable, or link-and-remove token puts `aria-label` on a `span` that
   has no role, where WAI-ARIA 1.2 prohibits naming the generic role. The
   visually hidden label text still reaches assistive technology.
+
+- **Two focus indicators on Remove (AR4).** In clickable and link-and-remove
+  tokens, keyboard focus on the Remove button draws the token's outline and the
+  button's own, where `architecture:interaction-modality` INV3 allows one
+  indicator per focus move.
+- **Small remove target (AR6).** At `size="sm"` the token's 20px block size and
+  clipped overflow cut the Remove button's hit area to 24 by 20 CSS pixels,
+  below the 24 by 24 of WCAG 2.2 2.5.8.
 
 ## Ownership boundary
 
@@ -120,9 +128,9 @@ Consumer migration instructions belong in consumer docs and release notes.
 | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------ |
 | FR1  | Content renders in logical inline order: Icon, Label, End content, Remove button. The root is inline-flex with `--spacing-1` gaps, inline padding `--spacing-2`, `--radius-inner` corners, `--text-supporting-size` type at `--font-weight-medium`, and block size `--size-element-sm`, `-md`, or `-lg` minus 8px for `sm`, `md`, and `lg`.                                                                                                                                                                                                                                                      | Current source and tests |
 | FR2  | With no `href`, `onClick`, or enclosing trigger context, the token is a static `span` holding its content directly.                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Current source and tests |
-| FR3  | With an enabled `href` and no `onRemove`, the token root is the shared link component carrying the destination; it takes the root ref, passthrough props, and its own focus-visible outline. Navigation wins over `onClick`: in both link structures a supplied `onClick` is not attached. Implementation gap: the dropped `onClick` is listed under Current-state impact.                                                                                                                                                                                                                       | Current source and tests |
+| FR3  | With an enabled `href` and no `onRemove`, the token root is the shared link component carrying the destination; it takes the root ref, passthrough props, and its own focus-visible outline. In both link structures a supplied `onClick` is not attached or called. Implementation gap: dropping an accepted `onClick` conflicts with `architecture:public-component-api` INV5 (Current-state impact).                                                                                                                                                                                          | Current source and tests |
 | FR4  | With `onClick`, or an enclosing trigger context that resolves the token to a button, the root is a `span` container holding an inner `button` that wraps the Label and calls `onClick`; a click on the container outside any nested button or link also calls `onClick`. With an enabled `href` and `onRemove`, the container instead holds an inner link wrapping the Label, and a surface click outside the Remove button activates that link with the browser's plain, modified, and middle-click behavior. A caller `onMouseUp` on the link-and-remove container runs before its delegation. | Current source and tests |
-| FR5  | `isDisabled` ignores `href`, so a disabled link token resolves to the static structure, or to the clickable structure when `onClick` or a trigger context applies. A disabled token renders at half opacity with pointer events off and fires neither `onClick` nor `onRemove` from pointer, Enter, or Space; inner and Remove buttons stay focusable with `aria-disabled="true"` and never receive native `disabled`. Implementation gap: a disabled link token loses its tab stop and disabled state (Current-state impact).                                                                   | Current source and tests |
+| FR5  | A disabled token renders at half opacity with pointer events off and fires neither `onClick` nor `onRemove` from pointer, Enter, or Space; inner and Remove buttons stay focusable with `aria-disabled="true"` and never receive native `disabled`. A disabled token with `href` and no `onClick` or trigger context renders the static structure (with `onClick` or a trigger context, the clickable structure). Implementation gap: that disabled link token has no tab stop and no disabled state, against `spec:AST-085` FR1 and FR5 (Current-state impact).                                 | Current source and tests |
 | FR6  | `onRemove` renders a `type="button"` Remove button holding a close glyph; a click stops propagation before `onRemove` runs, so it never triggers the token's own action or link. The button is a sibling of the inner button or link, never nested in it.                                                                                                                                                                                                                                                                                                                                        | Current source and tests |
 | FR7  | The label never wraps: the root is capped at its container's inline size and clips overflow, and the Label ends in an ellipsis. `isLabelHidden` keeps the Label in the DOM with a visually hidden clip treatment.                                                                                                                                                                                                                                                                                                                                                                                | Current source and tests |
 | FR8  | `color` defaults to `default`, painting `--color-neutral` with primary text; every other built-in tone paints its tinted background with its matching colored text. The `token` target reflects the resolved `color` and `size` for every value, including a theme-added color, which receives no component fill or text color until a theme paints it.                                                                                                                                                                                                                                          | Current source and tests |
@@ -172,7 +180,10 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **AR1 — Separate controls.** The token's own action and the Remove button are
   separate focusable controls in DOM order; neither is nested in the other, so
   the HTML interactive-content rule holds.
-- **AR2 — Names.** The inner button or link takes its name from the Label. The
+- **AR2 — Names.** In the clickable and link-and-remove structures the inner
+  button or link takes its name from the Label. In the link structure the link
+  is the root and takes its name from all of its content, including End content
+  (a label "Inbox" with a count reads "Inbox 12"). The
   Remove button is named by the translated "Remove {label}" string.
 - **AR3 — Hidden label.** With `isLabelHidden`, the Label text stays in the
   accessibility tree and the root carries `aria-label` equal to the label.
@@ -181,15 +192,19 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **AR4 — Focus indicator.** The link root draws its own focus-visible outline.
   Clickable and link-and-remove containers draw the outline while any
   descendant has `:focus-visible`; the inner button draws none of its own. The
-  Remove button draws its own focus-visible outline.
+  Remove button draws its own focus-visible outline. Implementation gap: in the
+  clickable and link-and-remove structures, focusing the Remove button shows
+  both the container outline and the button's own, two indicators for one focus
+  move, which `architecture:interaction-modality` INV3 does not allow.
 - **AR5 — Disabled.** Inner and Remove buttons follow `spec:AST-085` FR1, FR2,
   and FR5: focusable, `aria-disabled="true"`, inert to pointer, Enter, and
   Space. Implementation gap: a disabled link token renders as a static `span`
   with no tab stop and no disabled state.
 - **AR6 — Remove target size.** The Remove button's glyph box is 16 by 16 CSS
-  pixels and its hit area extends 4 pixels on every side to 24 by 24, meeting
-  WCAG 2.2 2.5.8, while a press on the adjacent label still runs the token's
-  own action, in both text directions.
+  pixels and its hit area extends 4 pixels on every side to 24 by 24 at `md`
+  and `lg`, meeting WCAG 2.2 2.5.8, while a press on the adjacent label still
+  runs the token's own action, in both text directions. Implementation gap: at
+  `size="sm"` the 20px-tall root clips the extension, leaving a 24 by 20 target.
 - **AR7 — Description.** `description` sets `aria-description` on the root.
 
 ## Design relationships
@@ -222,17 +237,17 @@ token's text color.
 
 ## Verification map
 
-| Contract           | Verification                                                                           | Representative states                             | Mutation or failure expectation                                                                                                                 | Audit section          |
-| ------------------ | -------------------------------------------------------------------------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| FR2, FR10          | `Token.test.tsx` render, ref, and pass-through suites                                  | Static, refs on every structure, caller props     | A wrong root element, a detached ref, or a dropped caller prop fails DOM assertions.                                                            | `audit:Token/behavior` |
-| FR1, FR7           | `Token.stories.tsx` size, slot, and overflow fixtures in a browser                     | Sizes, icon and end content, long labels          | Gap: the size and overflow unit tests assert presence only; slot order, block size, and the ellipsis are visible only in the rendered fixtures. | `audit:Token/layout`   |
-| FR3, FR4, FR6, AR1 | `Token.test.tsx` link, clickable, and link-with-remove suites                          | Link, clickable, link and remove, modified clicks | Nesting the Remove button, firing the token action from Remove, or losing delegation fails.                                                     | `audit:Token/behavior` |
-| FR5, AR5           | `Token.test.tsx` disabled tests                                                        | Disabled clickable with remove                    | A native `disabled`, a lost tab stop on a button, or a fired callback fails. Gap: no test covers a disabled link token.                         | `audit:Token/a11y`     |
-| AR2, AR3, AR7      | `Token.test.tsx` accessibility suite                                                   | Remove name, hidden label, description            | A missing remove name, lost hidden label, or missing description fails.                                                                         | `audit:Token/a11y`     |
-| AR6                | `TokenRemoveTarget.a11y.chromium.spec.ts`                                              | Pre-set filter tokens, LTR and RTL                | A remove target that misses its X edge or swallows a label press fails in real Chromium.                                                        | `audit:Token/a11y`     |
-| FR8                | `Token.test.tsx` custom-color test; `extensibleAxes.test.ts`; `themingTargets.test.ts` | Theme-added color; map wiring                     | Dropping the `color` reflection fails. Gap: no test asserts `data-size` or any tone's paint; those are visible only in `Token.stories.tsx`.     | `audit:Token/theming`  |
-| FR9, AR4           | `Token.stories.tsx` clickable and link fixtures in a browser                           | Hover, press, keyboard focus                      | Gap: no automated check; missing overlays or a missing or duplicated focus indicator is visible only in the rendered fixture.                   | `audit:Token/design`   |
-| PR1                | Source review                                                                          | Every structure                                   | Gap: no automated check fails if Token adds a per-token listener, observer, or timer.                                                           | `audit:Token/behavior` |
+| Contract           | Verification                                                                           | Representative states                                   | Mutation or failure expectation                                                                                                                 | Audit section          |
+| ------------------ | -------------------------------------------------------------------------------------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| FR2, FR10          | `Token.test.tsx` render, ref, and pass-through suites                                  | Static, refs on every structure, caller props           | A wrong root element, a detached ref, or a dropped caller prop fails DOM assertions.                                                            | `audit:Token/behavior` |
+| FR1, FR7           | `Token.stories.tsx` size, slot, and overflow fixtures in a browser                     | Sizes, icon and end content, long labels                | Gap: the size and overflow unit tests assert presence only; slot order, block size, and the ellipsis are visible only in the rendered fixtures. | `audit:Token/layout`   |
+| FR3, FR4, FR6, AR1 | `Token.test.tsx` link, clickable, and link-with-remove suites                          | Link, clickable, link and remove, modified clicks       | Nesting the Remove button, firing the token action from Remove, or losing delegation fails.                                                     | `audit:Token/behavior` |
+| FR5, AR5           | `Token.test.tsx` disabled tests                                                        | Disabled clickable with remove                          | A native `disabled`, a lost tab stop on a button, or a fired callback fails. Gap: no test covers a disabled link token.                         | `audit:Token/a11y`     |
+| AR2, AR3, AR7      | `Token.test.tsx` accessibility suite                                                   | Remove name, hidden label, description                  | A missing remove name, lost hidden label, or missing description fails. Gap: no test asserts the link structure's content-derived name.         | `audit:Token/a11y`     |
+| AR6                | `TokenRemoveTarget.a11y.chromium.spec.ts`                                              | Pre-set filter tokens (default size), LTR and RTL       | A remove target that misses its X edge or swallows a label press fails in real Chromium. Gap: the `sm` clipping is not covered.                 | `audit:Token/a11y`     |
+| FR8                | `Token.test.tsx` custom-color test; `extensibleAxes.test.ts`; `themingTargets.test.ts` | Theme-added color; map wiring                           | Dropping the `color` reflection fails. Gap: no test asserts `data-size` or any tone's paint; those are visible only in `Token.stories.tsx`.     | `audit:Token/theming`  |
+| FR9, AR4           | `Token.stories.tsx` clickable, link, and removable fixtures in a browser               | Hover, press, keyboard focus on the token and on Remove | Gap: no automated check; missing overlays, or the recorded double indicator on Remove, are visible only in the rendered fixture.                | `audit:Token/design`   |
+| PR1                | Source review                                                                          | Every structure                                         | Gap: no automated check fails if Token adds a per-token listener, observer, or timer.                                                           | `audit:Token/behavior` |
 
 ## Decision log
 
