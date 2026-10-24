@@ -508,7 +508,8 @@ export const AutoHeight: Story = {
  * pointer is touch. On a phone (or with touch emulation) the page itself
  * scrolls under the sticky header, so a status-bar tap returns to the top and
  * the browser's toolbar minimizes as you scroll. On a desktop the main region
- * scrolls inside the viewport-high shell.
+ * scrolls inside the viewport-high shell; the page's action gives keyboard
+ * users a stop inside it, from which the arrow keys scroll it.
  */
 export const AdaptiveHeight: Story = {
   render: () => (
@@ -517,7 +518,12 @@ export const AdaptiveHeight: Story = {
       topNav={<AppTopNav />}
       sideNav={<SideNavWithoutHeader />}
       height="adaptive">
-      <MockContent paragraphs={20} />
+      <div {...stylex.props(styles.longContent)}>
+        <div>
+          <Button label="New page" variant="primary" />
+        </div>
+        <MockContent paragraphs={20} />
+      </div>
     </AppShell>
   ),
 };
