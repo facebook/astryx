@@ -131,9 +131,10 @@ considered when native support leaves the canary channel
 **Reference:** `spec:AST-091/DEC-2`
 **Decider:** cixzhang, 2026-10-23
 
-Templates are starting points a person owns once they clone them. Anything
-Astryx publishes for a template, code or logic, becomes an API callers depend
-on and Astryx must keep stable, so native templates are source only.
+Templates are starting points a person owns once they clone them. Anything an
+app imports from Astryx for a native template at run time, code or logic,
+becomes an API callers depend on and Astryx must keep stable, so native
+templates are source only.
 
 Rejected: a portable view model shared by a template's native versions,
 because it is template logic Astryx would ship and maintain.
