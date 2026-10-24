@@ -492,6 +492,7 @@ async function runProjectCodemod(
  * @param {string} [options.root] - Project root a project codemod reads (default: the process cwd)
  * @param {{root: string, classify: (file: string) => import('../../foundation/fs/file-protection.mjs').FileProtection[]}} [options.protection] - Preloaded protection resolver
  * @param {boolean} [options.coversTarget] - False when these codemods stop before the installed target (the CLI is older than Core), so a run with no changes does not say the code is up to date. Default true.
+ * @param {unknown[]} [options.outcomes] - Findings the transforms reported instead of changing a file (manual migrations, files to regenerate), filled while the run goes. A run with any does not say the code is up to date; the caller lists them.
  * @returns {Promise<{totalFilesChanged: number, totalTransformsApplied: number, totalValidationBlocked: number, changedFiles: string[], writtenFiles: string[], stagedContents: Map<string, string>, protectedFiles: import('../../authoring/codemod/type').CodemodRunResult['protectedFiles'], errors: Array<{file: string, codemod: string, error: string}>, skippedOptional: Array<{name: string, meta: {title: string, description?: string, fileExtensions?: string[], codemodType?: string}, version: string}>} | {ok: false, reason: string, resolvedPath: string}>}
  */
 export async function runCodemods(
@@ -505,6 +506,7 @@ export async function runCodemods(
     root = process.cwd(),
     protection: providedProtection,
     coversTarget = true,
+    outcomes,
   },
 ) {
   // No-op stub object so silent mode skips log output entirely without
@@ -713,6 +715,13 @@ export async function runCodemods(
     );
   }
 
+  // A generated file a transform reported out of date keeps the run from
+  // looking done, as a blocked protected file does.
+  const pendingRegeneration = (outcomes ?? []).some(
+    outcome =>
+      /** @type {{kind?: string} | null} */ (outcome)?.kind === 'regenerate',
+  );
+
   if (
     totalFilesChanged === 0 &&
     errors.length === 0 &&
@@ -720,12 +729,12 @@ export async function runCodemods(
   ) {
     // Codemods that stop before the installed target cannot vouch for the
     // code; the caller says what is missing.
-    if (coversTarget) {
+    if (coversTarget && !(outcomes && outcomes.length > 0)) {
       log.success('No changes needed — your code is already up to date!');
     }
-  } else if (apply && protectedFiles.length > 0) {
+  } else if (apply && (protectedFiles.length > 0 || pendingRegeneration)) {
     log.warn(
-      `Applied ${totalTransformsApplied} owned change${totalTransformsApplied === 1 ? '' : 's'} across ${totalFilesChanged} file${totalFilesChanged === 1 ? '' : 's'}; protected changes remain.`,
+      `Applied ${totalTransformsApplied} owned change${totalTransformsApplied === 1 ? '' : 's'} across ${totalFilesChanged} file${totalFilesChanged === 1 ? '' : 's'}; ${protectedFiles.length > 0 ? 'protected changes remain' : 'generated files to regenerate remain'}.`,
     );
   } else if (apply) {
     log.success(

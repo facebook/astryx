@@ -39,6 +39,7 @@ import {
   warnIntegrationIssues,
   selectIntegrationCodemodsFor,
   runIntegrationCodemodsStep,
+  withCodemodOutcomes,
 } from '../_adapter.mjs';
 import {
   logRegistryCompositionSummary,
@@ -110,13 +111,160 @@ function loadFileProtection(cwd) {
 }
 
 /**
+ * Code a codemod could identify but not migrate, one row per finding, in a
+ * stable order. These need a person; they do not fail the run.
+ * @param {import('../_adapter.mjs').CodemodOutcomeRecord[]} outcomes
+ * @returns {import('../upgrade.type.mjs').ManualAction[]}
+ */
+function summarizeManualActions(outcomes) {
+  const seen = new Set();
+  /** @type {import('../upgrade.type.mjs').ManualAction[]} */
+  const rows = [];
+  for (const outcome of outcomes) {
+    if (outcome.kind !== 'manual') continue;
+    const key = JSON.stringify([
+      outcome.file,
+      outcome.line ?? null,
+      outcome.codemod,
+      outcome.message,
+    ]);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    rows.push({
+      file: outcome.file,
+      ...(typeof outcome.line === 'number' ? {line: outcome.line} : {}),
+      codemod: outcome.codemod,
+      message: outcome.message,
+    });
+  }
+  return rows.sort(
+    (a, b) =>
+      a.file.localeCompare(b.file) ||
+      (a.line ?? 0) - (b.line ?? 0) ||
+      a.codemod.localeCompare(b.codemod),
+  );
+}
+
+/**
+ * Generated files that must be rebuilt before the upgrade is complete, one row
+ * per file: protected generated files a codemod still needs to change, and
+ * generated outputs a codemod reported out of date. `commands` are the exact
+ * rebuild commands known for the file (its header's `Command:` line, or the
+ * command the codemod names).
+ * @param {Array<{file: string, codemods: string[], reasons: string[], commands: string[]}>} protectedFiles
+ * @param {import('../_adapter.mjs').CodemodOutcomeRecord[]} outcomes
+ * @returns {import('../upgrade.type.mjs').RegenerateFile[]}
+ */
+function summarizeRegenerate(protectedFiles, outcomes) {
+  /** @type {Map<string, {codemods: Set<string>, commands: Set<string>, messages: Set<string>}>} */
+  const byFile = new Map();
+  /** @param {string} file */
+  const row = file => {
+    const current = byFile.get(file) ?? {
+      codemods: new Set(),
+      commands: new Set(),
+      messages: new Set(),
+    };
+    byFile.set(file, current);
+    return current;
+  };
+  for (const item of protectedFiles) {
+    if (!item.reasons.includes('generated')) continue;
+    const current = row(item.file);
+    for (const codemod of item.codemods) current.codemods.add(codemod);
+    for (const command of item.commands) current.commands.add(command);
+  }
+  for (const outcome of outcomes) {
+    if (outcome.kind !== 'regenerate') continue;
+    const current = row(outcome.file);
+    current.codemods.add(outcome.codemod);
+    for (const command of outcome.commands) current.commands.add(command);
+    current.messages.add(outcome.message);
+  }
+  return [...byFile.entries()]
+    .map(([file, item]) => ({
+      file,
+      codemods: [...item.codemods].sort(),
+      commands: [...item.commands].sort(),
+      messages: [...item.messages].sort(),
+    }))
+    .sort((a, b) => a.file.localeCompare(b.file));
+}
+
+/**
+ * Protection rows for generated outputs a codemod reported out of date, from
+ * the run's protection resolver, in the shape the runners report blocked
+ * protected candidates. A reported file the project protects (an `@generated`
+ * header, `linguist-generated`, ...) is a protected file that still requires a
+ * change, so it is listed in `protectedFiles` with the declaration that
+ * protects it (spec:AST-040 FR6), and the command the codemod names is one of
+ * its `commands`. A reported file nothing protects gets no row here: it is a
+ * codemod error (`regenerationErrors`) and stays in `regenerate`.
+ * @param {import('../_adapter.mjs').CodemodOutcomeRecord[]} outcomes
+ * @param {{classify: (file: string) => import('../../../foundation/fs/file-protection.mjs').FileProtection[]}} protection
+ * @param {string} cwd
+ * @returns {Array<{file: string, codemod: string, reason: string, declaration: string, generated: boolean, command?: string}>}
+ */
+function regenerationProtectionRows(outcomes, protection, cwd) {
+  /** @type {Array<{file: string, codemod: string, reason: string, declaration: string, generated: boolean, command?: string}>} */
+  const rows = [];
+  for (const outcome of outcomes) {
+    if (outcome.kind !== 'regenerate') continue;
+    for (const item of protection.classify(path.resolve(cwd, outcome.file))) {
+      const base = {
+        file: item.file,
+        codemod: outcome.codemod,
+        reason: item.reason,
+        declaration: item.declaration,
+        generated: item.reason === 'generated',
+      };
+      const commands = [
+        ...(item.command ? [item.command] : []),
+        ...outcome.commands,
+      ];
+      if (commands.length === 0) rows.push(base);
+      for (const command of commands) rows.push({...base, command});
+    }
+  }
+  return rows;
+}
+
+/**
+ * Error rows for generated outputs a codemod reported out of date that nothing
+ * protects. No protected consumer file blocks such a change, so it is not an
+ * ERR_CODEMOD_PROTECTED outcome: the codemod required a change it could not
+ * make, which is a codemod failure (ERR_CODEMOD_FAILED), as it was before the
+ * outcome was typed. The file stays in `regenerate` with its command.
+ * @param {import('../_adapter.mjs').CodemodOutcomeRecord[]} outcomes
+ * @param {{classify: (file: string) => import('../../../foundation/fs/file-protection.mjs').FileProtection[]}} protection
+ * @param {string} cwd
+ * @returns {Array<{file: string, codemod: string, error: string}>}
+ */
+function regenerationErrors(outcomes, protection, cwd) {
+  /** @type {Array<{file: string, codemod: string, error: string}>} */
+  const rows = [];
+  for (const outcome of outcomes) {
+    if (outcome.kind !== 'regenerate') continue;
+    if (protection.classify(path.resolve(cwd, outcome.file)).length > 0) {
+      continue;
+    }
+    rows.push({
+      file: outcome.file,
+      codemod: outcome.codemod,
+      error: outcome.message,
+    });
+  }
+  return rows;
+}
+
+/**
  * The receipt of a run that stopped after codemods ran. Whatever the codemods
  * already wrote stays on disk, so the error the run throws carries this
  * receipt (`failWithReceipt`): a caller that reads only the error would
  * report nothing changed while the files it lists remain modified
  * (spec:AST-040 FR7).
  *
- * @param {{from: string, to: string, codemods: number, integrations: string[], sourcePathFound: boolean, cwd: string, changedFiles: string[], transformsApplied: number, protectedRows: Array<{file: string, codemod: string, reason: string, declaration: string, generated: boolean, command?: string}>, errors: Array<{file: string, codemod: string, error: string}>, errorCode: string, cliBehindCore?: import('../upgrade.type.mjs').CliBehindCore | null, registryCompositions?: import('../upgrade.type.mjs').RegistryCompositionSummary}} facts
+ * @param {{from: string, to: string, codemods: number, integrations: string[], sourcePathFound: boolean, cwd: string, changedFiles: string[], transformsApplied: number, protectedRows: Array<{file: string, codemod: string, reason: string, declaration: string, generated: boolean, command?: string}>, outcomes?: import('../_adapter.mjs').CodemodOutcomeRecord[], errors: Array<{file: string, codemod: string, error: string}>, errorCode: string, cliBehindCore?: import('../upgrade.type.mjs').CliBehindCore | null, registryCompositions?: import('../upgrade.type.mjs').RegistryCompositionSummary}} facts
  * @returns {import('../upgrade.type.mjs').UpgradeRunResponse['data']}
  */
 function stoppedReceipt({
@@ -129,11 +277,13 @@ function stoppedReceipt({
   changedFiles,
   transformsApplied,
   protectedRows,
+  outcomes = [],
   errors,
   errorCode,
   cliBehindCore,
   registryCompositions,
 }) {
+  const protectedFiles = summarizeProtectedFiles(protectedRows);
   const modifiedFiles = uniqueFiles(changedFiles).map(file =>
     path.relative(cwd, file).split(path.sep).join('/'),
   );
@@ -155,8 +305,10 @@ function stoppedReceipt({
     filesChanged: modifiedFiles.length,
     transformsApplied,
     modifiedFiles,
-    protectedFiles: summarizeProtectedFiles(protectedRows),
+    protectedFiles,
     declinedCandidates: [],
+    manualActions: summarizeManualActions(outcomes),
+    regenerate: summarizeRegenerate(protectedFiles, outcomes),
     complete: false,
     errorCode,
     errors,
@@ -340,16 +492,22 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
   }
 
   // CORE codemods run FIRST (before loading config) so a core CONFIG codemod can
-  // repair a config the strict loader would otherwise reject.
-  const codemodResult = await runCoreCodemods(versionManifests, {
-    apply,
-    path: path_,
-    codemod: options.codemod,
-    skipCodemods,
-    root: cwd,
-    protection,
-    coversTarget: !cliBehindCore,
-  });
+  // repair a config the strict loader would otherwise reject. Manual-migration
+  // and regeneration outcomes they report are collected, not counted as errors.
+  const initialOutcomes = withCodemodOutcomes(versionManifests, cwd);
+  const codemodResult = await runCoreCodemods(
+    initialOutcomes.versionManifests,
+    {
+      apply,
+      path: path_,
+      codemod: options.codemod,
+      skipCodemods,
+      root: cwd,
+      protection,
+      coversTarget: !cliBehindCore,
+      outcomes: initialOutcomes.outcomes,
+    },
+  );
   const coreResult =
     codemodResult && 'totalFilesChanged' in codemodResult
       ? codemodResult
@@ -371,14 +529,39 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
     iconSets = projectContext.iconSets;
   } catch (err) {
     const configErr = /** @type {Error} */ (err);
-    const allProtected = coreResult?.protectedFiles ?? [];
+    const allProtected = [
+      ...(coreResult?.protectedFiles ?? []),
+      ...regenerationProtectionRows(initialOutcomes.outcomes, protection, cwd),
+    ];
+    const staleErrors = regenerationErrors(
+      initialOutcomes.outcomes,
+      protection,
+      cwd,
+    );
+    // A protected file to regenerate blocks the run like any protected file,
+    // so it keeps this incomplete result rather than the config error.
     if (allProtected.length > 0) {
       const protectedFiles = summarizeProtectedFiles(allProtected);
+      const regenerate = summarizeRegenerate(
+        protectedFiles,
+        initialOutcomes.outcomes,
+      );
       logger.error(
         `${ERROR_CODES.ERR_CODEMOD_PROTECTED}: protected codemod changes remain while loading the Astryx config.`,
       );
       for (const item of protectedFiles) {
         logger.error(`  ${item.file} — ${item.declarations.join('; ')}`);
+      }
+      const unprotected = regenerate.filter(
+        item => !protectedFiles.some(row => row.file === item.file),
+      );
+      if (unprotected.length > 0) {
+        logger.error(
+          `${unprotected.length} generated file${unprotected.length === 1 ? '' : 's'} must be regenerated:`,
+        );
+        for (const item of unprotected) {
+          logger.error(`  ${item.file} — ${item.messages.join(' ')}`);
+        }
       }
       if (cliBehindCore) logCliBehindCore(cliBehindCore, targetVersion);
       logger.log('Upgrade incomplete: protected changes remain\n');
@@ -406,9 +589,11 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
           ),
           protectedFiles,
           declinedCandidates: [],
+          manualActions: summarizeManualActions(initialOutcomes.outcomes),
+          regenerate,
           complete: false,
           errorCode: 'ERR_CODEMOD_PROTECTED',
-          errors: coreResult?.errors ?? [],
+          errors: [...(coreResult?.errors ?? []), ...staleErrors],
           ...(cliBehindCore ? {cliBehindCore} : {}),
         },
       };
@@ -442,8 +627,12 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
     // Genuine config error: abort.
     logger.error(configErr.message);
     logger.log('Aborted\n');
-    if ((coreResult?.writtenFiles.length ?? 0) > 0) {
-      // Core codemods already wrote: the error carries what they changed.
+    if (
+      (coreResult?.writtenFiles.length ?? 0) > 0 ||
+      initialOutcomes.outcomes.length > 0
+    ) {
+      // Core codemods already wrote, or reported files to regenerate or
+      // migrate by hand: the error carries what they changed and found.
       if (cliBehindCore) logCliBehindCore(cliBehindCore, targetVersion);
       const stopped = stoppedReceipt({
         from: currentVersion,
@@ -455,8 +644,10 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
         changedFiles: coreResult?.changedFiles ?? [],
         transformsApplied: coreResult?.totalTransformsApplied ?? 0,
         protectedRows: [],
+        outcomes: initialOutcomes.outcomes,
         errors: [
           ...(coreResult?.errors ?? []),
+          ...staleErrors,
           {file: '.', codemod: 'config', error: configErr.message},
         ],
         errorCode: ERROR_CODES.ERR_INVALID_ARGUMENT,
@@ -616,15 +807,21 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
   ];
   const registryFilesChanged = registryResult?.writtenFiles.length ?? 0;
   const generatedChangeBlocked = initialProtected.some(item => item.generated);
+  // Generated outputs a codemod reported out of date: the project's declared
+  // regeneration may rebuild them, exactly like a blocked generated change.
+  const reportedRegeneration = initialOutcomes.outcomes.filter(
+    outcome => outcome.kind === 'regenerate',
+  );
   const shouldRunHooks =
     postCodemodHooks.length > 0 &&
     (mergedFilesChanged > 0 ||
       registryFilesChanged > 0 ||
-      generatedChangeBlocked);
+      generatedChangeBlocked ||
+      reportedRegeneration.length > 0);
   /** @type {Map<string, Buffer>} */
   const protectedBeforeHooks = new Map();
   if (apply && shouldRunHooks) {
-    for (const item of initialProtected) {
+    for (const item of [...initialProtected, ...reportedRegeneration]) {
       const absolute = path.resolve(cwd, item.file);
       const relative = path.relative(cwd, absolute);
       if (
@@ -659,7 +856,12 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
       const hookErr = /** @type {Error} */ (err);
       const msg = `Post-codemod hook failed: ${hookErr.message}`;
       logger.error(msg);
-      if (initialProtected.length === 0) {
+      const protectedRegeneration = regenerationProtectionRows(
+        initialOutcomes.outcomes,
+        protection,
+        cwd,
+      );
+      if (initialProtected.length === 0 && protectedRegeneration.length === 0) {
         logger.log('Upgrade failed\n');
         throw failWithReceipt(
           msg,
@@ -674,8 +876,10 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
             changedFiles: mergedChangedFiles,
             transformsApplied: mergedTransformsApplied,
             protectedRows: [],
+            outcomes: initialOutcomes.outcomes,
             errors: [
               ...mergedErrors,
+              ...regenerationErrors(initialOutcomes.outcomes, protection, cwd),
               {file: '.', codemod: 'post-codemod-hook', error: msg},
             ],
             errorCode: ERROR_CODES.ERR_CODEMOD_FAILED,
@@ -709,6 +913,8 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
   // selected codemods in preview mode against fresh bytes and fresh declarations
   // to distinguish resolved outputs from changes that remain blocked.
   let remainingProtected = initialProtected;
+  let finalOutcomes = initialOutcomes.outcomes;
+  let finalProtection = protection;
   if (apply && shouldRunHooks && !hookFailure) {
     let refreshedProtection;
     try {
@@ -726,9 +932,18 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
         cwd,
         changedFiles: [...mergedChangedFiles, ...hookModifiedFiles],
         transformsApplied: mergedTransformsApplied,
-        protectedRows: initialProtected,
+        protectedRows: [
+          ...initialProtected,
+          ...regenerationProtectionRows(
+            initialOutcomes.outcomes,
+            protection,
+            cwd,
+          ),
+        ],
+        outcomes: initialOutcomes.outcomes,
         errors: [
           ...mergedErrors,
+          ...regenerationErrors(initialOutcomes.outcomes, protection, cwd),
           {file: '.', codemod: 'file-protection', error: err.message},
         ],
         errorCode: err.code,
@@ -739,7 +954,8 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
       });
       throw failWithReceipt(err.message, err.code, stopped);
     }
-    const coreCheck = await runCoreCodemods(versionManifests, {
+    const recheckOutcomes = withCodemodOutcomes(versionManifests, cwd);
+    const coreCheck = await runCoreCodemods(recheckOutcomes.versionManifests, {
       apply: false,
       path: path_,
       codemod: options.codemod,
@@ -789,6 +1005,8 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
       recheckedProtected.push(...(initialByFile.get(file) ?? []));
     }
     remainingProtected = recheckedProtected;
+    finalOutcomes = recheckOutcomes.outcomes;
+    finalProtection = refreshedProtection;
     finalErrors = [
       ...mergedErrors,
       ...(checkedCore?.errors ?? []),
@@ -796,7 +1014,10 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
     ];
   }
 
-  const protectedFiles = summarizeProtectedFiles(remainingProtected);
+  const protectedFiles = summarizeProtectedFiles([
+    ...remainingProtected,
+    ...regenerationProtectionRows(finalOutcomes, finalProtection, cwd),
+  ]);
   receipt.filesChanged = mergedFilesChanged;
   receipt.transformsApplied = mergedTransformsApplied;
   receipt.modifiedFiles = uniqueFiles([
@@ -805,8 +1026,20 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
   ]).map(file => path.relative(cwd, file).split(path.sep).join('/'));
   receipt.protectedFiles = protectedFiles;
   receipt.declinedCandidates = [];
-  receipt.complete = protectedFiles.length === 0 && finalErrors.length === 0;
-  if (protectedFiles.length > 0) {
+  const manualActions = summarizeManualActions(finalOutcomes);
+  const regenerate = summarizeRegenerate(protectedFiles, finalOutcomes);
+  receipt.manualActions = manualActions;
+  receipt.regenerate = regenerate;
+  // A protected file to rebuild blocks the run like any protected file
+  // (spec:AST-040 FR6). An unprotected one is a required change the codemod
+  // could not make: a codemod error. A manual action never blocks.
+  finalErrors = [
+    ...finalErrors,
+    ...regenerationErrors(finalOutcomes, finalProtection, cwd),
+  ];
+  const blocked = protectedFiles.length > 0;
+  receipt.complete = !blocked && finalErrors.length === 0;
+  if (blocked) {
     receipt.errorCode = 'ERR_CODEMOD_PROTECTED';
   } else if (finalErrors.length > 0) {
     // Only on the receipt the thrown error carries (below).
@@ -828,7 +1061,34 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
     }
   }
 
-  if (finalErrors.length > 0 && protectedFiles.length === 0) {
+  // Generated outputs a codemod reported out of date, beyond the protected
+  // files already listed above.
+  const protectedSet = new Set(protectedFiles.map(item => item.file));
+  const staleOutputs = regenerate.filter(item => !protectedSet.has(item.file));
+  if (staleOutputs.length > 0) {
+    logger.error(
+      `${staleOutputs.length} generated file${staleOutputs.length === 1 ? '' : 's'} must be regenerated:`,
+    );
+    for (const item of staleOutputs) {
+      logger.error(`  ${item.file} — ${item.messages.join(' ')}`);
+      for (const command of item.commands) {
+        logger.log(`  Regenerate with: ${command}`);
+      }
+    }
+  }
+
+  if (manualActions.length > 0) {
+    logger.warn(
+      `${manualActions.length} place${manualActions.length === 1 ? '' : 's'} need${manualActions.length === 1 ? 's' : ''} a manual migration that upgrade cannot make:`,
+    );
+    for (const item of manualActions) {
+      logger.warn(
+        `  ${item.file}${item.line == null ? '' : `:${item.line}`} — ${item.message} (${item.codemod})`,
+      );
+    }
+  }
+
+  if (finalErrors.length > 0 && !blocked) {
     const msg = `Upgrade completed with ${finalErrors.length} codemod error${finalErrors.length === 1 ? '' : 's'}.`;
     logger.log('Upgrade failed\n');
     // The error carries the receipt: every file the codemods wrote before the
@@ -865,14 +1125,18 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
     : apply
       ? 'Upgrade complete'
       : 'Dry run complete';
+  const manualNote =
+    manualActions.length > 0
+      ? `; ${manualActions.length} manual migration${manualActions.length === 1 ? '' : 's'} listed above`
+      : '';
   logger.log(
     protectedFiles.length > 0
       ? 'Upgrade incomplete: protected changes remain\n'
       : !registryOk
         ? 'Upgrade finished with unresolved registry items\n'
         : sourcePathFound
-          ? done + '\n'
-          : `${done}, but ${path.relative(cwd, path_) || '.'} does not exist, so no source files were scanned. ` +
+          ? done + manualNote + '\n'
+          : `${done}${manualNote}, but ${path.relative(cwd, path_) || '.'} does not exist, so no source files were scanned. ` +
             `Pass --path <your source directory> if your code does not live in ./src.\n`,
   );
   return {
