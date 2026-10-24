@@ -9,17 +9,24 @@
  * @position Internal to BottomSheet; pure (no DOM, no React). The rule a
  *   drag's release follows; no gesture calls it yet.
  *
- * A released sheet goes where UISheetPresentationController sends it: to the
- * position nearest its release offset projected `sheet.release
- * .projectionSeconds` ahead at the release velocity, with the dismissed
- * position (the sheet fully below the screen) counting as one of the
- * positions. A slow release projects onto itself, so it lands on whatever is
- * nearest; at rest the sheet dismisses once it is more than halfway from its
- * shortest detent to gone. Nothing restricts the direction: a sheet released
- * just above a detent while moving up, but slowly, falls back to it.
+ * A released sheet goes where UISheetPresentationController sends it. The
+ * dismissed position (the sheet fully below the screen) counts as one of the
+ * positions.
+ * - Below `sheet.release.fastSpeed`, to the position nearest its release
+ *   offset projected `sheet.release.projectionSeconds` ahead at the release
+ *   velocity. A slow release projects onto itself, so it lands on whatever
+ *   is nearest; at rest the sheet dismisses once it is more than halfway
+ *   from its shortest detent to gone. Nothing restricts the direction: a
+ *   sheet released just above a detent while moving up, but slowly, falls
+ *   back to it.
+ * - From that speed on, a flick: at least to the next position beyond where
+ *   it is, in its direction (on a position within
+ *   `sheet.release.detentTolerance`, the one after it), or to the
+ *   projection's nearest position if that is farther.
  *
- * The sheet gets there on UIKit's release spring, picked by the release speed
- * alone (`sheet.release.fastSpeed`), and starting at the finger's velocity.
+ * The sheet gets there on UIKit's release spring, picked by the same speed
+ * (critically damped below it, 80 % damped from it on), and starting at the
+ * finger's velocity.
  *
  * Offsets are px down from the tallest detent (0 = fully open), velocities
  * px/s with positive meaning downward.
@@ -60,12 +67,14 @@ const PROJECTION_RATE = rateForProjection(sheet.release.projectionSeconds);
  *
  * @example
  * ```
- * // Detents at 0 (open) and 300 px; gone at 640 px. Released at 420 px
- * // moving down at 1200 px/s: projected 552 px, nearer gone than 300.
+ * // Detents at 0 (open) and 300 px; gone at 640 px. Released at 300 px
+ * // moving down at 1200 px/s: a flick, so past the 300 px detent it is on
+ * // to the next position down, although its projection (420 px) is nearer
+ * // 300.
  * resolveSheetRelease({
  *   detents: [0, 300],
  *   dismissedOffset: 640,
- *   position: 420,
+ *   position: 300,
  *   velocity: 1200,
  * }); // {kind: 'dismiss', offset: 640, spring: springs.sheetDismissSwipe, …}
  * ```
@@ -94,7 +103,27 @@ export function resolveSheetRelease({
     rate: PROJECTION_RATE,
   });
   const isFast = Math.abs(velocity) >= sheet.release.fastSpeed;
-  if (dismissedOffset != null && choice.index === detents.length) {
+  let index = choice.index;
+  if (isFast) {
+    // A flick goes at least to the next position beyond where it is.
+    const tolerance = sheet.release.detentTolerance;
+    let next = -1;
+    if (velocity > 0) {
+      next = positions.findIndex(p => p > position + tolerance);
+    } else {
+      for (let i = positions.length - 1; i >= 0 && next === -1; i -= 1) {
+        if (positions[i] < position - tolerance) {
+          next = i;
+        }
+      }
+    }
+    if (next !== -1 && (velocity > 0 ? next > index : next < index)) {
+      index = next;
+    }
+  }
+  if (dismissedOffset != null && index === detents.length) {
+    // A slow dismissal's spring is a stand-in: none of the measured releases
+    // that dismissed recorded a spring, so `springs.sheetDetent` is used.
     return {
       kind: 'dismiss',
       index: -1,
@@ -105,8 +134,8 @@ export function resolveSheetRelease({
   }
   return {
     kind: 'detent',
-    index: choice.index,
-    offset: choice.value,
+    index,
+    offset: positions[index],
     projected: choice.projected,
     spring: isFast ? springs.sheetReleaseFast : springs.sheetDetent,
   };

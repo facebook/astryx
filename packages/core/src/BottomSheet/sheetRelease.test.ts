@@ -3,7 +3,7 @@
 /**
  * @file sheetRelease.test.ts
  * @input vitest, resolveSheetRelease and the UIKit constants table
- * @output Holds the release rule to UIKit's own releases: 47 drags of a
+ * @output Holds the release rule to UIKit's own releases: 134 drags of a
  *   UISheetPresentationController `[.medium(), .large()]` sheet read from
  *   UIKit (offset and velocity of the sheet interaction's last drag update
  *   before the lift, the detent it settled on, the damping of the spring it
@@ -74,27 +74,120 @@ const UIKIT_RELEASES: ReadonlyArray<
   ['zeta.awayFromTarget.v1000', 208.32, 76, 'large', 1],
 ];
 
+/**
+ * The second capture, placed to separate the candidate laws: releases from
+ * 90 pt above to 180 pt below the medium detent at 600 to 1400 pt/s in
+ * either direction, the finger at a constant speed for its last 0.15 s and
+ * lifting while moving (iOS 26.2 simulator, Oct 24 2026). Same columns; ζ
+ * is null where the release dismissed or its spring was not read.
+ */
+const UIKIT_FLICK_RELEASES: ReadonlyArray<
+  readonly [
+    string,
+    number,
+    number,
+    'large' | 'medium' | 'dismissed',
+    1 | 0.8 | null,
+  ]
+> = [
+  ['d-90.v-1400', 315.99, -1403.9, 'large', 0.8],
+  ['d-90.v-1200', 310.99, -1195.1, 'large', 0.8],
+  ['d-90.v-1000', 312.65, -1090.0, 'large', 0.8],
+  ['d-90.v-800', 310.99, -746.9, 'medium', 1],
+  ['d-90.v-600', 339.32, -607.5, 'medium', 1],
+  ['d-90.v600', 319.32, 567.3, 'medium', 1],
+  ['d-90.v800', 320.99, 776.4, 'medium', 1],
+  ['d-90.v1000', 324.32, 979.0, 'medium', 1],
+  ['d-90.v1200', 324.32, 1122.4, 'medium', 0.8],
+  ['d-90.v1400', 315.99, 1432.4, 'medium', 0.8],
+  ['d-45.v-1400', 345.99, -1399.9, 'large', 0.8],
+  ['d-45.v-1200', 369.32, -1288.8, 'large', 0.8],
+  ['d-45.v-1000', 346.32, -1028.3, 'large', 0.8],
+  ['d-45.v-800', 349.32, -868.6, 'medium', 1],
+  ['d-45.v-600', 349.32, -628.2, 'medium', 1],
+  ['d-45.v600', 372.32, 565.6, 'medium', 1],
+  ['d-45.v800', 359.32, 814.1, 'medium', 1],
+  ['d-45.v1000', 352.65, 1290.9, 'medium', 0.8],
+  ['d-45.v1200', 349.32, 1279.1, 'medium', 0.8],
+  ['d-45.v1400', 367.65, 2318.6, 'medium', 0.8],
+  ['d0.v-1400', 417.65, -2014.5, 'large', 0.8],
+  ['d0.v-1200', 404.32, -1222.1, 'large', 0.8],
+  ['d0.v-1000', 402.65, -920.3, 'medium', 1],
+  ['d0.v-800', 400.99, -927.9, 'medium', 1],
+  ['d0.v-600', 399.32, -594.7, 'medium', 1],
+  ['d0.v600', 404.32, 533.8, 'medium', null],
+  ['d0.v800', 414.32, 819.5, 'medium', null],
+  ['d0.v1000', 397.65, 1088.7, 'medium', 0.8],
+  ['d0.v1200', 404.32, 1164.9, 'dismissed', null],
+  ['d0.v1400', 414.32, 1873.1, 'dismissed', null],
+  ['d30.v-1400', 424.32, -928.4, 'medium', null],
+  ['d30.v-1200', 424.32, -1402.5, 'medium', null],
+  ['d30.v-1000', 424.32, -1014.9, 'medium', null],
+  ['d30.v-800', 427.65, -814.4, 'medium', null],
+  ['d30.v-600', 429.32, -582.8, 'medium', null],
+  ['d30.v600', 450.99, 605.9, 'medium', null],
+  ['d30.v800', 437.65, 803.7, 'medium', null],
+  ['d30.v1000', 444.32, 977.4, 'medium', null],
+  ['d30.v1200', 444.32, 1184.7, 'dismissed', null],
+  ['d30.v1400', 420.99, 1397.1, 'dismissed', null],
+  ['d60.v-1400', 454.32, -1723.7, 'medium', null],
+  ['d60.v-1200', 464.32, -1470.6, 'medium', null],
+  ['d60.v-1000', 450.99, -947.3, 'medium', null],
+  ['d60.v-800', 454.32, -806.7, 'medium', null],
+  ['d60.v-600', 450.99, -596.6, 'medium', null],
+  ['d60.v600', 472.65, 570.9, 'medium', null],
+  ['d60.v800', 484.32, 806.8, 'medium', null],
+  ['d60.v1000', 474.32, 967.4, 'medium', null],
+  ['d60.v1200', 474.32, 1179.4, 'dismissed', null],
+  ['d60.v1400', 450.99, 1306.2, 'dismissed', null],
+  ['d90.v-1400', 489.32, -1430.1, 'medium', null],
+  ['d90.v-1200', 484.32, -1213.0, 'medium', null],
+  ['d90.v-1000', 484.32, -1071.7, 'medium', null],
+  ['d90.v-800', 484.32, -924.6, 'medium', null],
+  ['d90.v-600', 489.32, -610.9, 'medium', null],
+  ['d90.v600', 479.32, 615.4, 'medium', null],
+  ['d90.v800', 497.65, 780.5, 'medium', null],
+  ['d90.v1000', 507.65, 975.6, 'medium', null],
+  ['d90.v1200', 504.32, 1177.0, 'dismissed', null],
+  ['d90.v1400', 490.99, 1443.1, 'dismissed', null],
+  ['d120.v-1400', 525.99, -1430.3, 'medium', null],
+  ['d120.v-1200', 507.65, -1164.3, 'medium', null],
+  ['d120.v-1000', 519.32, -1026.1, 'medium', null],
+  ['d120.v-800', 510.99, -807.4, 'medium', null],
+  ['d120.v-600', 519.32, -607.2, 'medium', null],
+  ['d120.v600', 502.65, 605.0, 'medium', null],
+  ['d120.v800', 484.32, 792.8, 'medium', null],
+  ['d120.v1000', 529.32, 965.5, 'medium', null],
+  ['d120.v1200', 534.32, 1177.8, 'dismissed', null],
+  ['d120.v1400', 522.65, 1408.6, 'dismissed', null],
+  ['d150.v-1200', 554.32, -1240.1, 'medium', null],
+  ['d150.v-1000', 552.65, -981.5, 'medium', null],
+  ['d150.v-800', 540.99, -794.3, 'medium', null],
+  ['d150.v-600', 537.65, -583.2, 'medium', null],
+  ['d150.v600', 537.65, 600.3, 'medium', null],
+  ['d150.v800', 537.65, 810.5, 'medium', null],
+  ['d150.v1000', 535.99, 1067.8, 'dismissed', null],
+  ['d150.v1200', 544.32, 1226.5, 'dismissed', null],
+  ['d150.v1400', 567.65, 1419.1, 'dismissed', null],
+  ['d180.v-1000', 582.65, -1063.9, 'medium', null],
+  ['d180.v-800', 570.99, -786.2, 'medium', null],
+  ['d180.v-600', 574.32, -645.2, 'medium', null],
+  ['d180.v600', 565.99, 601.9, 'medium', null],
+  ['d180.v800', 554.32, 800.5, 'medium', null],
+  ['d180.v1000', 554.32, 990.4, 'dismissed', null],
+  ['d180.v1200', 524.32, 1183.9, 'dismissed', null],
+  ['d180.v1400', 600.99, 1424.8, 'dismissed', null],
+];
+
 const LARGE = 62;
 const MEDIUM = 404.32;
 const GONE = 874;
-const MEDIUM_GONE_BOUNDARY = (MEDIUM + GONE) / 2;
-
-/**
- * The releases the rule does not reproduce, and why. The first two land on
- * opposite sides of the medium / dismissed boundary less than 1 pt from it
- * and from each other: one needs a projection time of at least 0.1145 s, the
- * other at most 0.1120 s, so no single value separates them (the noise of the
- * velocity reading). The third's last drag update read 1140 pt/s for a
- * 3000 pt/s injection (its siblings read ~3000): an under-read, not a rule.
- */
-const KNOWN_MISSES: Record<string, 'boundary' | 'under-read'> = {
-  'down.end500.v1200': 'boundary',
-  'off200.v500': 'boundary',
-  'off120.v3000': 'under-read',
-};
 
 describe('resolveSheetRelease against UIKit', () => {
-  for (const [name, offset, velocity, outcome, zeta] of UIKIT_RELEASES) {
+  for (const [name, offset, velocity, outcome, zeta] of [
+    ...UIKIT_RELEASES,
+    ...UIKIT_FLICK_RELEASES,
+  ]) {
     it(`${name}: ${velocity} pt/s from ${offset} pt → ${outcome}`, () => {
       const release = resolveSheetRelease({
         detents: [LARGE, MEDIUM],
@@ -108,17 +201,7 @@ describe('resolveSheetRelease against UIKit', () => {
           : release.index === 0
             ? 'large'
             : 'medium';
-      const miss = KNOWN_MISSES[name];
-      if (miss === 'boundary') {
-        expect(landed).not.toBe(outcome);
-        expect(Math.abs(release.projected - MEDIUM_GONE_BOUNDARY)).toBeLessThan(
-          1,
-        );
-      } else if (miss === 'under-read') {
-        expect(landed).not.toBe(outcome);
-      } else {
-        expect(landed).toBe(outcome);
-      }
+      expect(landed).toBe(outcome);
       if (zeta != null) {
         expect(release.spring).toBe(
           zeta === 1 ? springs.sheetDetent : springs.sheetReleaseFast,
@@ -126,25 +209,6 @@ describe('resolveSheetRelease against UIKit', () => {
       }
     });
   }
-
-  it('reproduces all but the three releases it names', () => {
-    const misses = UIKIT_RELEASES.filter(([, offset, velocity, outcome]) => {
-      const release = resolveSheetRelease({
-        detents: [LARGE, MEDIUM],
-        dismissedOffset: GONE,
-        position: offset,
-        velocity,
-      });
-      const landed =
-        release.kind === 'dismiss'
-          ? 'dismissed'
-          : release.index === 0
-            ? 'large'
-            : 'medium';
-      return landed !== outcome;
-    }).map(([name]) => name);
-    expect(misses.sort()).toEqual(Object.keys(KNOWN_MISSES).sort());
-  });
 });
 
 describe('resolveSheetRelease', () => {
@@ -171,6 +235,51 @@ describe('resolveSheetRelease', () => {
       }).kind;
     expect(at(469)).toBe('detent');
     expect(at(471)).toBe('dismiss');
+  });
+
+  it('sends a flick at least to the next position beyond it', () => {
+    // On the 300 px detent, flicked down at the threshold: its projection
+    // (about 400 px) is nearer 300, but a flick goes on to the next position.
+    expect(
+      resolveSheetRelease({
+        detents: [0, 300],
+        dismissedOffset: 640,
+        position: 300,
+        velocity: sheet.release.fastSpeed,
+      }),
+    ).toMatchObject({kind: 'dismiss', offset: 640});
+    // Just under the threshold, the same release projects back to 300.
+    expect(
+      resolveSheetRelease({
+        detents: [0, 300],
+        dismissedOffset: 640,
+        position: 300,
+        velocity: sheet.release.fastSpeed - 1,
+      }),
+    ).toMatchObject({kind: 'detent', offset: 300});
+    // Within the tolerance a detent counts as passed; a flick up from just
+    // below 300 goes on to 0 instead of stopping at 300.
+    expect(
+      resolveSheetRelease({
+        detents: [0, 300],
+        dismissedOffset: 640,
+        position: 300 + sheet.release.detentTolerance / 2,
+        velocity: -sheet.release.fastSpeed,
+      }),
+    ).toMatchObject({kind: 'detent', offset: 0});
+  });
+
+  it('takes the projection when a flick carries farther than the next position', () => {
+    // Flicked down at 5000 px/s from 50 px: the next position is 300, but
+    // the projection (550 px) is nearest gone, so it dismisses.
+    expect(
+      resolveSheetRelease({
+        detents: [0, 300],
+        dismissedOffset: 640,
+        position: 50,
+        velocity: 5000,
+      }),
+    ).toMatchObject({kind: 'dismiss', offset: 640});
   });
 
   it('settles against the motion when the projection says so', () => {
