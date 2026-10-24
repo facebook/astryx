@@ -5,8 +5,8 @@
  * @input Nothing; data only
  * @output Exports `refreshControl`: UIRefreshControl's height (the
  *   refreshing inset and the one-to-one stretch of a pull), its trigger, the
- *   pull after the trigger, the indicator's reveal curve, spin, trigger
- *   rotation and exit, and the end-of-refresh clock
+ *   pull after the trigger, the indicator's reveal curve, spokes, spin and
+ *   its gradient, trigger rotation and exit, and the end-of-refresh clock
  * @position The refresh-control domain of the UIKit constants table
  *   (motion/uikit). The release onto the inset is the scroll view's own
  *   bounce (`scroll.bounce`), and the pull past `height` uses the scroll
@@ -109,15 +109,65 @@ export const refreshControl = {
    */
   indicatorSpokes: 8,
   /**
-   * While spinning, each spoke is this much fainter than the one ahead of
-   * it (the replicator's alpha offset per instance).
-   * @source GUESS — the trigger animates instanceAlphaOffset and
-   *   instanceColor on springs (dumped), but their target values were not
-   *   read; one spoke's share of the circle is the gradient
-   *   UIActivityIndicatorView shows
-   * @measure M-RC4
+   * Each spoke, an instance of the replicator: a capsule this wide (corners
+   * `spokeCornerRadiusPt`), lying along its radius from `spokeInnerRadiusPt`
+   * to `spokeOuterRadiusPt` from the indicator's center (so as long as their
+   * difference).
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, the replicator's instance layer: 3.67 × 10 pt at
+   *   (50.17, 40) in the 100 pt replicator, cornerRadius 1.83, Oct 24 2026
    */
-  spinAlphaStep: -0.125,
+  spokeWidthPt: 3.67,
+  /**
+   * The spoke's corner radius (half its width: a capsule).
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, the instance layer's cornerRadius 1.83, Oct 24 2026
+   */
+  spokeCornerRadiusPt: 1.83,
+  /**
+   * Where each spoke starts, from the indicator's center.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, the instance layer's frame against the replicator's
+   *   center (50, 50), Oct 24 2026
+   */
+  spokeInnerRadiusPt: 5,
+  /**
+   * Where each spoke ends, from the indicator's center: the indicator is
+   * twice this across.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, the instance layer's frame against the replicator's
+   *   center (50, 50), Oct 24 2026
+   */
+  spokeOuterRadiusPt: 15,
+  /**
+   * While refreshing, each spoke is this much more opaque than the one
+   * before it (clockwise), so the last is the brightest and the trail fades
+   * counter-clockwise behind it (the replicator's alpha offset per
+   * instance).
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, CAReplicatorLayer instanceAlphaOffset read while
+   *   refreshing, Oct 24 2026
+   */
+  spinInstanceAlphaOffset: 0.08,
+  /**
+   * While refreshing, the first spoke's alpha (the replicator's
+   * instanceColor alpha); the others add `spinInstanceAlphaOffset` each.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, CAReplicatorLayer instanceColor read while refreshing
+   *   (#3C3C43, alpha 0), Oct 24 2026
+   */
+  spinFirstInstanceAlpha: 0,
+  /**
+   * At the trigger that gradient springs in from every spoke at full alpha
+   * (offset 0, first alpha 1) on this spring. UIKit asks for mass 1,
+   * stiffness 5 and damping 5000 with `allowsOverdamping` off, so Core
+   * Animation clamps the damping to critical (2√5).
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, CAAnimation dump: CASpringAnimation instanceAlphaOffset
+   *   0 → 0.08 and instanceColor alpha 1 → 0, mass 1, stiffness 5, damping
+   *   5000, allowsOverdamping 0, duration 4, Oct 24 2026
+   */
+  triggerGradientSpring: {mass: 1, stiffness: 5, damping: 4.472},
   /**
    * The indicator's spin: one turn of its keyframed transform per this many
    * ms, repeating, started in the trigger frame.
@@ -136,9 +186,9 @@ export const refreshControl = {
    *   iPhone 17 Pro, CAAnimation dump: CASpringAnimation transform, additive,
    *   mass 1, stiffness 7.418584 and 7.034003, damping 5000, duration 4,
    *   Oct 23 2026
-   * @source GUESS — the clamp to critical damping follows the lab's reading
-   *   of `allowsOverdamping` off for UIKit's other springs; this animation's
-   *   own flag, and how the stiffness depends on the release, were not read
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, the same animation's allowsOverdamping 0, Oct 24 2026
+   * @source GUESS — how the stiffness depends on the release was not read
    * @measure M-RC4
    */
   triggerTurnSpring: {mass: 1, stiffness: 7.2, damping: 5.367},

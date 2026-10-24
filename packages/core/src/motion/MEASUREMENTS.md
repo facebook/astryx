@@ -280,7 +280,9 @@ height and refreshing inset, the one-to-one pull up to the height, the trigger
 distance against the view's height (and its floor), the trigger moment (finger
 down), the step after it, the release onto the inset, the reveal (a paused
 replicator scrubbed by overscroll ÷ trigger distance; 8 spokes), the spin and
-trigger springs, the end clock (three runs at rest, identical), that a
+trigger springs, the spokes' geometry and the refreshing gradient (alpha
+offset 0.08, first alpha 0, springing in with `allowsOverdamping` off; Oct 24
+2026), the end clock (three runs at rest, identical), that a
 momentum overshoot never triggers, that a pull while refreshing fires
 `valueChanged` again, and that the trigger makes no feedback-generator call
 (at 50, 150 and 400 pt/s).
@@ -289,6 +291,6 @@ momentum overshoot never triggers, that a pull while refreshing fires
 | ----- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------ |
 | M-RC2 | Indicator placement    | RefreshLab: slow pulls to 2 × the trigger distance on the 400 and 874 pt views, a screen recording beside the layer log      | the control's frame and the spinner's position against the overscroll (moves with the content, pinned, or centred in the gap)           | B, C   |
 | M-RC3 | Pull after the trigger | RefreshLab: pulls to 300 pt at 150 and 50 pt/s on the 334 and 874 pt views; a second pull while refreshing                   | the offset against the finger past 2 × `height` (is the step back systematic?), and the distance at which a pull while refreshing fires | C      |
-| M-RC4 | Trigger springs        | RefreshLab: pulls through the trigger at 50, 150 and 400 pt/s                                                                | the trigger springs' `allowsOverdamping`, target values (`instanceAlphaOffset`, `instanceColor`), stiffness against the release speed   | A      |
+| M-RC4 | Trigger springs        | RefreshLab: pulls through the trigger at 50, 150 and 400 pt/s                                                                | the turn spring's stiffness against the release speed (b51b answered its overdamping and the gradient's targets)                        | A      |
 | M-RC5 | End of a refresh       | RefreshLab: `endRefreshing` while scrolled 300 pt away, while dragging, with a touch 100 ms into it, and 50 ms after a begin | what moves when scrolled away, the end under a finger, what a touch during the end does, any minimum visible time; a screen recording   | A, B   |
 | M-RC7 | Programmatic begin     | RefreshLab: `beginRefreshing` at the top and when scrolled 300 pt                                                            | whether the content moves to reveal the control, and its curve                                                                          | A, C   |
