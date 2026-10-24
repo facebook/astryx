@@ -462,7 +462,14 @@ export function Typeahead<T extends SearchableItem>({
   // Show token when value is selected and not in edit mode
   const showToken = value != null && !isEditing;
 
-  // Enter edit mode: remove token visually, populate input with value label
+  // Enter edit mode: remove token visually, populate input with value label.
+  //
+  // Everything happens inside the tap or click that asked for it, never a
+  // frame later: iOS raises the software keyboard only for a focus made while
+  // the browser is still dispatching the person's own tap (or when the
+  // keyboard is already up). Deferred to an animation frame, the focus landed
+  // with no keyboard, so a tap on the selected value showed a caret and
+  // nothing to type with until a second tap.
   const handleEnterEditMode = useCallback(() => {
     if (isDisabled || !value) {
       return;
@@ -471,21 +478,21 @@ export function Typeahead<T extends SearchableItem>({
     setIsEditing(true);
     // The base will receive onChangeQuery with the value's label
     onChangeQuery?.(value.label);
-    requestAnimationFrame(() => {
-      const input = inputRef.current;
-      if (input) {
-        // Set the input value directly since the base manages its own query state
-        // We trigger a synthetic change to sync the base's internal state
-        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-          window.HTMLInputElement.prototype,
-          'value',
-        )?.set;
-        nativeInputValueSetter?.call(input, value.label);
-        input.dispatchEvent(new Event('input', {bubbles: true}));
-        input.focus();
-        input.setSelectionRange(0, input.value.length);
-      }
-    });
+    const input = inputRef.current;
+    if (input) {
+      // Set the input value directly since the base manages its own query
+      // state, and trigger a synthetic change to sync the base's internal
+      // state. The value is in place before the focus, so the base's focus
+      // handler sees the label rather than an empty query.
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value',
+      )?.set;
+      nativeInputValueSetter?.call(input, value.label);
+      input.dispatchEvent(new Event('input', {bubbles: true}));
+      input.focus();
+      input.setSelectionRange(0, input.value.length);
+    }
   }, [isDisabled, value, onChangeQuery]);
 
   // Handle blur: restore token if editing and no selection was made
