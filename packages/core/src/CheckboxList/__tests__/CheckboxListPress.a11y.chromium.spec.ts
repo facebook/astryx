@@ -255,4 +255,50 @@ test.describe('CheckboxList row press', () => {
     expect(darker(onBox.box, rest.box)).toBe(true);
     expect(darker(onBox.row, rest.row)).toBe(true);
   });
+
+  test('holding the row leaves a checkbox in its content at rest', async ({
+    browser,
+  }) => {
+    const row = await openRow(
+      browser,
+      'core-checkboxlist--checkbox-in-row-content',
+      'Email',
+    );
+    try {
+      const nested = await row.page
+        .getByRole('checkbox', {name: 'Daily digest'})
+        .evaluate(input => {
+          const box = input.parentElement?.querySelector(
+            '.astryx-checkbox-indicator',
+          );
+          if (box == null) {
+            return null;
+          }
+          const r = box.getBoundingClientRect();
+          return {x: r.x + r.width / 2, y: r.y + r.height - 5};
+        });
+      if (nested == null) {
+        throw new Error('the nested checkbox has no box');
+      }
+      const rest = {
+        box: await pixel(row.page, row.boxSample),
+        nested: await pixel(row.page, nested),
+      };
+      await row.press(row.label);
+      await row.page.waitForTimeout(HOLD_MS);
+      const held = {
+        surface: await pressedSurface(row.page),
+        box: await pixel(row.page, row.boxSample),
+        nested: await pixel(row.page, nested),
+      };
+      await row.lift(row.label);
+      // The row owns the press and paints its own box…
+      expect(held.surface).toBe('li');
+      expect(darker(held.box, rest.box)).toBe(true);
+      // …and the checkbox in its content keeps its own press: at rest.
+      expect(held.nested).toEqual(rest.nested);
+    } finally {
+      await row.close();
+    }
+  });
 });

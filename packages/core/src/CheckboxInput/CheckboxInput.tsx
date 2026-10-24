@@ -88,8 +88,9 @@ const styles = stylex.create({
   // Two pointers, two press models (see interactionOverlay.stylex.ts): a
   // mouse keeps `:active`; under a coarse pointer that arm is dropped and the
   // touch press controller writes `data-astryx-press` on the row, which this layer
-  // reads off the same scope marker as the hover tint — or, under a row that
-  // owns the press (CheckboxRowPressContext), off that row's marker.
+  // reads off the same scope marker as the hover tint — or, for the row's own
+  // checkbox under a row that owns the press (CheckboxRowPressContext), off
+  // that row's marker too (indicatorRowPressOverlay).
   indicatorPressOverlay: {
     '::after': {
       content: '""',
@@ -108,6 +109,27 @@ const styles = stylex.create({
       // discrete, so no transition can delay the onset, and the strength the
       // row's `pressedAlpha` arms own (1 while on, 1 → 0 over the release) is
       // what moves. Coarse pointers only, like the drop above.
+      backgroundImage: {
+        default: null,
+        [stylex.when.ancestor('[data-astryx-press="on"]', indicatorScope)]: {
+          default: null,
+          '@media (pointer: coarse)': pressedOverlayImage,
+        },
+        [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
+          {
+            default: null,
+            '@media (pointer: coarse)': pressedOverlayImage,
+          },
+      },
+    },
+  },
+  // The row's own checkbox, under a row that owns the press
+  // (CheckboxRowPressContext): the same layer, also read off that row's
+  // marker. Only that checkbox takes it, so a CheckboxInput placed in the
+  // row's content keeps its own press. It restates the scope arms because a
+  // later style replaces the whole property.
+  indicatorRowPressOverlay: {
+    '::after': {
       backgroundImage: {
         default: null,
         [stylex.when.ancestor('[data-astryx-press="on"]', indicatorScope)]: {
@@ -480,6 +502,7 @@ export function CheckboxInput({
             styles.checkboxWrapper,
             wrapperSizeStyles[size],
             !isDisabled && styles.indicatorPressOverlay,
+            !isDisabled && isRowPressSurface && styles.indicatorRowPressOverlay,
           )}
           {...focusProps}>
           <input
