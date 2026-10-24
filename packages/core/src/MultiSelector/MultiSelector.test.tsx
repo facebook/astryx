@@ -4704,7 +4704,10 @@ describe('MultiSelector renderCreateOption', () => {
       />,
     );
     await user.click(screen.getByRole('button', {name: 'Labels'}));
-    await user.type(screen.getByRole('combobox', h), 'Urgent');
+    // Pasted, so one query change makes one announcement: keystrokes typed
+    // within one frame are joined into one message (useAnnounce).
+    await user.click(screen.getByRole('combobox', h));
+    await user.paste('Urgent');
     // The region says what the row says, not the default label it replaced.
     await waitFor(() => {
       expect(politeRegion()?.textContent).toBe('New label “Urgent”');
@@ -4751,7 +4754,10 @@ describe('MultiSelector renderCreateOption', () => {
         />,
       );
       await user.click(screen.getByRole('button', {name: 'Labels'}));
-      await user.type(screen.getByRole('combobox', h), 'Urgent');
+      // Pasted, so one query change makes one announcement: keystrokes typed
+      // within one frame are joined into one message (useAnnounce).
+      await user.click(screen.getByRole('combobox', h));
+      await user.paste('Urgent');
       expect(
         screen.getByRole('option', {name: 'New label Urgent', ...h}),
       ).toBeInTheDocument();
@@ -4781,7 +4787,10 @@ describe('MultiSelector renderCreateOption', () => {
         />,
       );
       await user.click(screen.getByRole('button', {name: 'Labels'}));
-      await user.type(screen.getByRole('combobox', h), 'Urgent');
+      // Pasted, so one query change makes one announcement: keystrokes typed
+      // within one frame are joined into one message (useAnnounce).
+      await user.click(screen.getByRole('combobox', h));
+      await user.paste('Urgent');
       await waitFor(() => {
         expect(politeRegion()?.textContent).toBe('Red Create "Urgent"');
       });
