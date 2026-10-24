@@ -2,7 +2,8 @@
 
 /**
  * @file CheckboxIndicator.tsx
- * @input Indicator state props
+ * @input Indicator state props; the mark-change clock of a touch presentation
+ *   (selectionMotion.stylex.ts, mirroring motion/uikit/selection.ts)
  * @output Exports CheckboxIndicator — the default checkbox selection visual
  * @position Decorative checkbox visual shared by CheckboxInput, CheckboxList,
  *           and decorative menu markers
@@ -18,7 +19,11 @@ import {
 } from '../theme/tokens.stylex';
 import {isRenderable, mergeProps, themeProps} from '../utils';
 import {indicatorScope} from './indicator.markers.stylex';
+import {selectionMotionConsts} from './selectionMotion.stylex';
 import type {IndicatorProps} from './types';
+
+/** How long the mark takes to change under a finger: one frame, as on iOS. */
+const MARK_CHANGE = `${selectionMotionConsts.markChangeMs}ms`;
 
 const styles = stylex.create({
   box: {
@@ -33,6 +38,10 @@ const styles = stylex.create({
     transitionProperty: 'background-color, border-color',
     transitionDuration: {
       default: durationVars['--duration-fast'],
+      // Under a finger the mark changes in the frame the selection lands, as
+      // iOS's selection marks do (motion/uikit/selection.ts); a mouse keeps
+      // the theme's duration.
+      '@media (pointer: coarse)': MARK_CHANGE,
       '@media (prefers-reduced-motion: reduce)': '0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
