@@ -229,6 +229,18 @@ describe('theme generation derives a complete status set (INV17)', () => {
     }
   });
 
+  it('keeps aliases for a source that is not a concrete colour', () => {
+    const theme = defineTheme({
+      name: 'status-unresolved',
+      tokens: {'--color-success': 'var(--brand-success)'},
+    });
+    const emitted = emittedRootTokens(theme);
+    expect(emitted['--color-success-emphasized']).toBe('var(--color-success)');
+    // Unset here, so Core's own alias to the hue text token applies.
+    expect(emitted).not.toHaveProperty('--color-text-success');
+    expect(emitted).not.toHaveProperty('--color-on-success-muted');
+  });
+
   it('counts a role inherited through extends as set', () => {
     const parent = defineTheme({
       name: 'status-parent',
