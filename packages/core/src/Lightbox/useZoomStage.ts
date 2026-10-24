@@ -4,15 +4,16 @@
 
 /**
  * @file useZoomStage.ts
- * @input A stage element ref (clipping, centring the photo), whether zoom is on, the
- *   current item's key, and callbacks for zoom changes and taps outside the
- *   photo
+ * @input A stage element ref (clipping, centring the photo), the element the
+ *   recognizers attach to (the stage, or a gallery's track), whether zoom is
+ *   on, the current item's key, and callbacks for zoom changes and taps
+ *   outside the photo
  * @output Exports `useZoomStage`: Lightbox's zoom and pan as a zooming
  *   UIScrollView — pinch about the fingers with the pan riding along, the
  *   give past the zoom limits and the eased return, double tap to the tapped
  *   point (Photos' aspect fill), a zoomed pan with UIScrollView's rubber
- *   band and coast — plus the
- *   callback ref for the photo and an imperative API for the keyboard
+ *   band and coast — plus the callback ref for the photo, an imperative API
+ *   for the keyboard, and `isAtEdge` for an outer pager
  * @position Lightbox's zoom driver (internal); built on the gesture
  *   recognizers (../gestures) and the compositor animator (../motion), with
  *   the geometry in zoomStage.ts
@@ -28,14 +29,21 @@
  * Recognizers on the stage, as UIScrollView arranges its own:
  * - pinch, simultaneous with the pan, so two fingers zoom and move at once
  *   and a finger left down after the pinch keeps panning;
- * - pan (one or two fingers), moving a zoomed photo;
+ * - pan (one or two fingers), moving a zoomed photo. As UIScrollView's, it
+ *   begins only when the photo can move that way: with two fingers down, or
+ *   on a zoomed photo not already at its edge on the side the drag heads to;
+ *   any other drag is left to an outer pager. Its release reads the scroll
+ *   view's release velocity (motion/paging.ts), so a finger held still
+ *   before the lift does not coast;
  * - double tap: zoom in as Photos does (until the photo fills the stage,
  *   the tapped point brought to the centre), or back to the fitted size;
  * - single tap, which waits for the double tap to fail: a tap that lands
  *   outside the photo is reported (Lightbox closes on it);
  * - a zero-duration press beside them all (UIKit's touch-down idiom): a
  *   finger landing on a moving photo stops it where it shows, as a scroll
- *   view stops its deceleration, and a lift with no drag lets it settle.
+ *   view stops its deceleration, and a lift with no drag lets it settle. It
+ *   only claims a touch on a moving photo, so a still one leaves the touch
+ *   to an outer pager's own catch.
  * The stage's `touch-action` is the caller's (none while zoom is on), since
  * a disabled recognizer would still claim it.
  *
@@ -46,8 +54,9 @@
  * centroid; a zoomed pan coasts and bounces like a scroll view. A two-finger
  * tap does nothing (UIKit's default).
  *
- * SYNC: When modified, update zoomStage.ts, Lightbox.tsx and
- * __tests__/LightboxZoom.interaction.browser.spec.ts.
+ * SYNC: When modified, update zoomStage.ts, Lightbox.tsx,
+ * __tests__/LightboxZoom.interaction.browser.spec.ts and
+ * __tests__/LightboxPaging.interaction.browser.spec.ts.
  */
 
 import {
@@ -67,6 +76,7 @@ import {useGestureRecognizer} from '../gestures/useGestureRecognizer';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import type {AnimateOptions} from '../motion/animator';
 import {decayRestDistance} from '../motion/decay';
+import {pagingReleaseVelocity} from '../motion/paging';
 import {useAnimator} from '../motion/useAnimator';
 import {
   IDENTITY,
@@ -93,9 +103,18 @@ import {
 /** Set on the stage while a finger or the mouse drags a zoomed photo. */
 export const ZOOM_DRAGGING_ATTRIBUTE = 'data-zoom-dragging';
 
+/** A drag's initial direction on screen. */
+export type PanDirection = 'left' | 'right';
+
 export interface UseZoomStageOptions {
-  /** The stage: the photo's clipping parent, which centres it. */
+  /** The stage: the box the photo is fitted and centred in, clipping it. */
   stageRef: RefObject<HTMLElement | null>;
+  /**
+   * Where the recognizers attach: the stage by default. In a pager, the
+   * track (the pager's own pan sits on the stage, and each element has one
+   * `touch-action`).
+   */
+  surfaceRef?: RefObject<HTMLElement | null>;
   /** Zoom is on (an image item with `hasZoom`). */
   isEnabled: boolean;
   /** Changes when another item shows; the photo returns to the fitted size. */
@@ -119,6 +138,12 @@ export interface ZoomStage {
   zoomOut(): void;
   /** Keyboard: move a zoomed photo by (dx, dy) px, kept inside the stage. */
   panBy(dx: number, dy: number): void;
+  /**
+   * Whether a zoomed photo can no longer move with a drag toward
+   * `direction` (its edge on that side is at the stage's): a pager takes
+   * such a drag, as an outer paging scroll view does.
+   */
+  isAtEdge(direction: PanDirection): boolean;
 }
 
 interface PinchSession {
@@ -133,6 +158,11 @@ interface PanSession {
   /** The finger-travel transform when the session started. */
   readonly raw: ZoomTransform;
   readonly translation: Point;
+  /** The release reads the pan's last two velocity samples (UIKit's way). */
+  last: Point;
+  lastMoveTime: number;
+  velocity: Point;
+  previousVelocity: Point;
 }
 
 export function useZoomStage(options: UseZoomStageOptions): ZoomStage {
@@ -295,11 +325,54 @@ export function useZoomStage(options: UseZoomStageOptions): ZoomStage {
     [animator, current, setZoomed],
   );
 
+  // UIScrollView's pan begins only when the content can move that way: with
+  // two fingers down (a pinch is zooming), or on a zoomed photo that is not
+  // already at its edge on the side the drag heads to. Otherwise the drag is
+  // left to an outer pager (or to nothing).
+  const isMovingRef = useRef<() => boolean>(() => false);
+  const panShouldBeginRef = useRef<(pan: PanGestureRecognizer) => boolean>(
+    () => true,
+  );
+  const isAtEdgeOf = useCallback(
+    (geometry: ZoomGeometry, direction: PanDirection): boolean => {
+      const {x, scale} = targetRef.current;
+      const range = restRange(geometry, scale);
+      return direction === 'left'
+        ? x <= range.x.min + 0.5
+        : x >= range.x.max - 0.5;
+    },
+    [],
+  );
+  isMovingRef.current = () => {
+    const shown = current();
+    const target = targetRef.current;
+    return (
+      Math.abs(shown.x - target.x) > 0.01 ||
+      Math.abs(shown.y - target.y) > 0.01 ||
+      Math.abs(shown.scale - target.scale) > 0.0001
+    );
+  };
+  panShouldBeginRef.current = pan => {
+    if (pan.numberOfTouches > 1) {
+      return true;
+    }
+    const geometry = measure();
+    if (geometry == null || !isZoomed(geometry, current())) {
+      return false;
+    }
+    const {x, y} = pan.totalTranslation();
+    return !(
+      Math.abs(x) >= Math.abs(y) &&
+      isAtEdgeOf(geometry, x < 0 ? 'left' : 'right')
+    );
+  };
+
   const [recognizers] = useState(() => {
     const pinch = new PinchGestureRecognizer({name: 'lightbox-zoom-pinch'});
     const pan = new PanGestureRecognizer({
       name: 'lightbox-zoom-pan',
       maximumNumberOfTouches: 2,
+      shouldBegin: recognizer => panShouldBeginRef.current(recognizer),
     });
     const doubleTap = new TapGestureRecognizer({
       name: 'lightbox-zoom-double-tap',
@@ -312,6 +385,9 @@ export function useZoomStage(options: UseZoomStageOptions): ZoomStage {
       allowableMovement: Number.POSITIVE_INFINITY,
       cancelsTouchesInView: false,
       delaysTouchesEnded: false,
+      // Only a moving photo is caught, so a still one leaves the touch to
+      // everyone else (an outer pager's own catch).
+      shouldBegin: () => isMovingRef.current(),
     });
     pinch.recognizeSimultaneouslyWith(pan);
     tap.requireToFail(doubleTap);
@@ -322,9 +398,10 @@ export function useZoomStage(options: UseZoomStageOptions): ZoomStage {
   });
 
   const recognizerOptions = {isEnabled: options.isEnabled, manageStyle: false};
+  const surfaceRef = options.surfaceRef ?? options.stageRef;
 
   useGestureRecognizer(
-    options.stageRef,
+    surfaceRef,
     () => recognizers.pinch,
     pinch => {
       if (pinch.state === 'began') {
@@ -379,9 +456,14 @@ export function useZoomStage(options: UseZoomStageOptions): ZoomStage {
       const pan = recognizers.pan;
       if (pan.state === 'began' || pan.state === 'changed') {
         // The finger left down keeps panning from here, without a jump.
+        const velocity = pan.velocity();
         panRef.current = {
           raw: rawForDragged(geometry, shown),
           translation: pan.translation(),
+          last: pan.translation(),
+          lastMoveTime: pan.trackedTouches[0]?.time ?? 0,
+          velocity,
+          previousVelocity: velocity,
         };
         setZoomed(isZoomed(geometry, shown));
         return;
@@ -392,7 +474,7 @@ export function useZoomStage(options: UseZoomStageOptions): ZoomStage {
   );
 
   useGestureRecognizer(
-    options.stageRef,
+    surfaceRef,
     () => recognizers.pan,
     pan => {
       const stage = optionsRef.current.stageRef.current;
@@ -410,9 +492,14 @@ export function useZoomStage(options: UseZoomStageOptions): ZoomStage {
         }
         // The translation already leaves out the begin threshold's travel,
         // and what the finger moved past it shows at once, as in UIKit.
+        const velocity = pan.velocity();
         panRef.current = {
           raw: rawForDragged(geometry, shown),
           translation: {x: 0, y: 0},
+          last: pan.translation(),
+          lastMoveTime: pan.trackedTouches[0]?.time ?? 0,
+          velocity,
+          previousVelocity: velocity,
         };
       }
       if (pan.state === 'began' || pan.state === 'changed') {
@@ -422,6 +509,16 @@ export function useZoomStage(options: UseZoomStageOptions): ZoomStage {
           return;
         }
         const translation = pan.translation();
+        if (
+          translation.x !== session.last.x ||
+          translation.y !== session.last.y
+        ) {
+          session.last = translation;
+          session.lastMoveTime =
+            pan.trackedTouches[0]?.time ?? session.lastMoveTime;
+          session.previousVelocity = session.velocity;
+          session.velocity = pan.velocity();
+        }
         write(
           draggedTransform(geometry, {
             x: session.raw.x + translation.x - session.translation.x,
@@ -439,29 +536,40 @@ export function useZoomStage(options: UseZoomStageOptions): ZoomStage {
       if (pinchRef.current != null || session == null || geometry == null) {
         return;
       }
-      coast(geometry, pan.state === 'ended' ? pan.velocity() : {x: 0, y: 0});
+      // The scroll view's release velocity: a finger held still before the
+      // lift, or a slow release, starts the coast at rest.
+      const liftTime =
+        pan.trackedTouches[0]?.time ??
+        (typeof performance === 'undefined' ? 0 : performance.now());
+      const stillFor = Math.max(0, liftTime - session.lastMoveTime);
+      const release = (axis: 'x' | 'y') =>
+        pagingReleaseVelocity({
+          current: session.velocity[axis],
+          previous: session.previousVelocity[axis],
+          stillFor,
+        }).settle;
+      coast(
+        geometry,
+        pan.state === 'ended'
+          ? {x: release('x'), y: release('y')}
+          : {x: 0, y: 0},
+      );
     },
     recognizerOptions,
   );
 
   useGestureRecognizer(
-    options.stageRef,
+    surfaceRef,
     () => recognizers.touchDown,
     touchDown => {
       if (touchDown.state === 'began') {
+        // It only begins on a moving photo: stopped where it shows, at the
+        // presentation value from the curve.
         draggedSinceCatchRef.current = false;
+        caughtRef.current = true;
         const shown = current();
-        const target = targetRef.current;
-        const moving =
-          Math.abs(shown.x - target.x) > 0.01 ||
-          Math.abs(shown.y - target.y) > 0.01 ||
-          Math.abs(shown.scale - target.scale) > 0.0001;
-        caughtRef.current = moving;
-        if (moving) {
-          // Stopped where it shows: the presentation value, from the curve.
-          animator.stop();
-          targetRef.current = shown;
-        }
+        animator.stop();
+        targetRef.current = shown;
         return;
       }
       if (touchDown.state === 'changed') {
@@ -491,7 +599,7 @@ export function useZoomStage(options: UseZoomStageOptions): ZoomStage {
   );
 
   useGestureRecognizer(
-    options.stageRef,
+    surfaceRef,
     () => recognizers.doubleTap,
     doubleTap => {
       if (doubleTap.state !== 'ended') {
@@ -512,7 +620,7 @@ export function useZoomStage(options: UseZoomStageOptions): ZoomStage {
   );
 
   useGestureRecognizer(
-    options.stageRef,
+    surfaceRef,
     () => recognizers.tap,
     tap => {
       if (tap.state !== 'ended') {
@@ -526,12 +634,19 @@ export function useZoomStage(options: UseZoomStageOptions): ZoomStage {
       const {x, y, scale} = current();
       const left = geometry.fit.x + x;
       const top = geometry.fit.y + y;
-      const inside =
+      const onPhoto =
         point.x >= left &&
         point.x <= left + geometry.fit.width * scale &&
         point.y >= top &&
         point.y <= top + geometry.fit.height * scale;
-      if (!inside) {
+      // Beside the photo, on the stage: not on what surrounds the stage (a
+      // gallery page's caption shares the surface).
+      const onStage =
+        point.x >= 0 &&
+        point.x <= geometry.width &&
+        point.y >= 0 &&
+        point.y <= geometry.height;
+      if (onStage && !onPhoto) {
         optionsRef.current.onTapOutside?.();
       }
     },
@@ -622,7 +737,14 @@ export function useZoomStage(options: UseZoomStageOptions): ZoomStage {
           undefined,
         );
       },
+      isAtEdge: (direction: PanDirection) => {
+        const geometry = geometryRef.current ?? measure();
+        if (geometry == null || !zoomedRef.current) {
+          return true;
+        }
+        return isAtEdgeOf(geometry, direction);
+      },
     }),
-    [contentRef, measure, settleTo, zoomIn, zoomOut],
+    [contentRef, isAtEdgeOf, measure, settleTo, zoomIn, zoomOut],
   );
 }

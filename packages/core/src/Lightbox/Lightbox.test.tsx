@@ -58,8 +58,12 @@ function stubStageLayout(): () => void {
     });
   };
   const isPhoto = (element: Element) => element instanceof HTMLImageElement;
+  // The zoom stage: a single item's photo box, or a gallery page's.
   const isStage = (element: Element) =>
-    element.querySelector(':scope > img') != null;
+    element.hasAttribute('data-lightbox-page-media') ||
+    (element.getAttribute('role') === 'button' &&
+      element.getAttribute('aria-label') === 'Zoom' &&
+      element.querySelector('[data-lightbox-page]') == null);
   define(HTMLElement.prototype, 'offsetWidth', element =>
     isPhoto(element) ? 400 : 0,
   );
@@ -225,6 +229,50 @@ describe('Lightbox', () => {
         />,
       );
       expect(screen.getByAltText('Image B')).toBeInTheDocument();
+    });
+
+    it('renders the current item and its neighbours as pages, each with its own caption', () => {
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={media}
+          index={1}
+        />,
+      );
+      const pages = [
+        ...document.querySelectorAll<HTMLElement>('[data-lightbox-page]'),
+      ];
+      expect(pages).toHaveLength(3);
+      const current = pages.filter(page => page.hasAttribute('data-current'));
+      expect(current).toHaveLength(1);
+      expect(current[0]).toContainElement(screen.getByAltText('Image B'));
+      expect(current[0]).toHaveTextContent('Second');
+      // The neighbours are off screen: hidden from assistive technology.
+      for (const page of pages.filter(p => p !== current[0])) {
+        const img = page.querySelector('img');
+        expect(img).toHaveAttribute('aria-hidden', 'true');
+        expect(img).toHaveAttribute('alt', '');
+      }
+      expect(pages[0]).toHaveTextContent('First');
+    });
+
+    it('closes on a click beside the photo on a page', () => {
+      const onOpenChange = vi.fn();
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={onOpenChange}
+          media={media}
+          index={0}
+        />,
+      );
+      const current = document.querySelector('[data-current]')!;
+      fireEvent.click(current.querySelector('[data-lightbox-page-media]')!);
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+      onOpenChange.mockClear();
+      fireEvent.click(screen.getByAltText('Image A'));
+      expect(onOpenChange).not.toHaveBeenCalled();
     });
 
     it('shows gallery counter', () => {
