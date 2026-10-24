@@ -302,7 +302,12 @@ describe('upgrade protected-file contract', () => {
     expect(`${text.stdout}${text.stderr}`).toContain(
       '1 protected file was skipped because it does not parse',
     );
-    expect(`${text.stdout}${text.stderr}`).toContain('vendor/bundle.js:2:46');
+    const declinedLine = `${text.stdout}${text.stderr}`
+      .split('\n')
+      .find(line => line.includes('vendor/bundle.js:2:46'));
+    expect(declinedLine).toMatch(/^ {2}vendor\/bundle\.js:2:46 - /);
+    // cli-surface output is plain ASCII.
+    expect(declinedLine).toMatch(/^[\x20-\x7e]*$/);
   });
 
   it('still fails when an owned file does not parse', () => {

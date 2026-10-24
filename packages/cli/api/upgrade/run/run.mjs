@@ -129,7 +129,7 @@ function logDeclined(declined) {
     `${n} protected file${n === 1 ? ' was' : 's were'} skipped because ${n === 1 ? 'it does' : 'they do'} not parse; review manually:`,
   );
   for (const {file, location, reason} of declined) {
-    logger.warn(`  ${file}${location ? `:${location}` : ''} — ${reason}`);
+    logger.warn(`  ${file}${location ? `:${location}` : ''} - ${reason}`);
   }
 }
 
