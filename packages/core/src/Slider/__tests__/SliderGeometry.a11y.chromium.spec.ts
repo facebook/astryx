@@ -3,7 +3,7 @@
 /**
  * @file SliderGeometry.a11y.chromium.spec.ts
  * @input Built Slider stories in real Chromium, under LTR, RTL and mixed-direction regions
- * @output Browser evidence that thumbs and fills sit where their values put them and never leave the control
+ * @output Browser evidence that thumbs and fills sit where their values put them and never leave the control, and that a drag of a slider displaying no value lays out nothing per move
  * @position Slider geometry proof; jsdom computes neither container units nor translate, so placement is checked here
  */
 
@@ -180,3 +180,48 @@ for (const region of REGIONS) {
     expect(Math.abs(fill.right - span[1])).toBeLessThanOrEqual(TOLERANCE);
   });
 }
+
+// Moving the thumbs and the fill is a translate in container units, so a
+// drag of a slider that displays no value lays out nothing per move; a
+// value tooltip or text display still lays out as its text changes.
+test('a drag lays out nothing per move when no value is displayed', async ({
+  page,
+}) => {
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-slider--default&viewMode=story&args=valueDisplay:none`,
+  );
+  const thumb = page.getByRole('slider');
+  await thumb.waitFor();
+  const box = await thumb.boundingBox();
+  if (box == null) {
+    throw new Error('no thumb');
+  }
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Performance.enable');
+  const layouts = async () => {
+    const {metrics} = await cdp.send('Performance.getMetrics');
+    return metrics.find(metric => metric.name === 'LayoutCount')?.value ?? 0;
+  };
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  // The press itself may restyle (pressed paint, focus); count the moves.
+  await page.mouse.move(x + 2, y);
+  await page.evaluate(
+    async () =>
+      new Promise(resolve => requestAnimationFrame(() => resolve(null))),
+  );
+  const before = await layouts();
+  for (let i = 2; i <= 60; i++) {
+    await page.mouse.move(x + i * 2, y);
+    await page.evaluate(
+      async () =>
+        new Promise(resolve => requestAnimationFrame(() => resolve(null))),
+    );
+  }
+  const after = await layouts();
+  await page.mouse.up();
+  expect(Number(await thumb.getAttribute('aria-valuenow'))).toBeGreaterThan(50);
+  expect(after - before).toBe(0);
+});
