@@ -2660,7 +2660,13 @@ jobs:
           COMPONENTS=$(node .github/scripts/a11y-pr-scope.mjs analysis.json)
           case ",${COMPONENTS}," in
             *,core/Markdown,*)
-              echo 'should_run=true' >> "$GITHUB_OUTPUT"
+              # An older PR head can lack the spec (the wrapper then skips
+              # it), and it would leave nothing for the upload to find.
+              if [ -e packages/core/src/Markdown/plugins/headingLinks.a11y.chromium.spec.ts ]; then
+                echo 'should_run=true' >> "$GITHUB_OUTPUT"
+              else
+                echo 'should_run=false' >> "$GITHUB_OUTPUT"
+              fi
               pnpm exec playwright test \
                 packages/core/src/Markdown/plugins/headingLinks.a11y.chromium.spec.ts \
                 --project chromium \

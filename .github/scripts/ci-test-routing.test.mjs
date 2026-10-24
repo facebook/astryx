@@ -297,6 +297,19 @@ describe('ci.yml pr-a11y steps against an older PR head', () => {
     }
   });
 
+  // A step that uploads its evidence with `if-no-files-found: error` must not
+  // promise a run the wrapper then skips on an older head.
+  it('promises heading-links evidence only when its spec is in the head', () => {
+    const run = steps.find(
+      step => step.name === 'Run heading-links module browser evidence',
+    ).run;
+    const spec =
+      'packages/core/src/Markdown/plugins/headingLinks.a11y.chromium.spec.ts';
+    const promise = run.indexOf("echo 'should_run=true'");
+    expect(promise).toBeGreaterThan(-1);
+    expect(run.slice(0, promise)).toContain(`if [ -e ${spec} ]; then`);
+  });
+
   it("sources the base's absent-spec wrapper before every Playwright step", () => {
     const index = steps.findIndex(
       step => step.name === 'Skip contract specs the PR head predates',

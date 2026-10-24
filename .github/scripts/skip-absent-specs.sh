@@ -29,7 +29,7 @@ pnpm() {
         -*) ;;
         *.spec.ts | *.spec.tsx | *.spec.js | *.spec.mjs)
           if [ ! -e "$arg" ]; then
-            echo "::notice title=Spec not in this PR head::${arg} was added to main after this pull request branched; rebase to run it."
+            echo "::notice title=Spec not in this PR head::${arg} is not in this pull request's head; rebase onto main to run it."
             dropped=$((dropped + 1))
             continue
           fi

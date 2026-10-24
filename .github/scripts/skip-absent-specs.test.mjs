@@ -80,7 +80,7 @@ describe('skip-absent-specs.sh', () => {
       `exec playwright test ${PRESENT} --project chromium --reporter list,json --output out`,
     ]);
     expect(stdout).toContain(
-      `::notice title=Spec not in this PR head::${ABSENT} was added to main after this pull request branched; rebase to run it.`,
+      `::notice title=Spec not in this PR head::${ABSENT} is not in this pull request's head; rebase onto main to run it.`,
     );
   });
 
