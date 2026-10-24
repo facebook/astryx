@@ -1618,6 +1618,17 @@ jobs:
             --project chromium \
             --output top-nav-mobile-long-heading-output
 
+      # A pinch that starts on a row with swipe actions must zoom the page
+      # (WCAG 1.4.4) and leave the row where it is, whichever finger lands
+      # first, while a one-finger sideways drag still swipes. Pinch-zoom and
+      # touch-action only exist in a real engine with two-finger touch input.
+      - name: Run Item swipe pinch-zoom contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/Item/__tests__/ItemSwipePinchZoom.a11y.chromium.spec.ts \
+            --project chromium \
+            --output item-swipe-pinch-zoom-output
+
       # The RichTextEditor "Markdown parity" stories render one Markdown
       # document with core Markdown and RichTextEditor and measure where each
       # block lands; geometry, the read/edit switch and the scroll anchor only
