@@ -778,18 +778,17 @@ describe('useSheetGestures', () => {
     expect(values[values.length - 1]).toBeCloseTo(0.3);
   });
 
-  it('magnetically settles the live drag onto a nearby detent', () => {
-    // Detents for a 400px sheet with snaps 300 and 200 -> visible-height snaps
-    // become offsets [0, 100, 200]. Approaching the middle detent (offset 100)
-    // from just below (raw ~90) — inside MAGNET_RANGE and BELOW the shortest
-    // detent so the between-detents magnet applies — should ease toward 100.
+  it('tracks the finger 1:1 between detents and into the dismiss zone', () => {
+    // UIKit's sheet follows the finger exactly (interaction offset = detent
+    // offset + translation, no magnet); the release picks the detent. Offsets
+    // for a 400px sheet with snaps 300 and 200: [0, 100, 200], gone at 400.
     const {hook} = setup({snapHeights: () => [200, 300]});
     const t = makeTarget();
     down(hook, 0, 0, t);
-    move(hook, 90, 100, t); // raw offset 90, 10px from the 100 detent
-    const off = liveOffset(hook);
-    expect(off).toBeGreaterThan(90); // pulled up toward 100
-    expect(off).toBeLessThanOrEqual(100);
+    for (const y of [10, 60, 90, 99, 100, 101, 140, 199, 230, 320]) {
+      move(hook, y, y * 2, t);
+      expect(liveOffset(hook)).toBe(y);
+    }
   });
 
   it('translates the surface live during a drag', () => {
@@ -1013,16 +1012,18 @@ describe('useSheetGestures', () => {
     expect(hook.result.current.isDragging).toBe(false);
   });
 
-  it('rubber-bands an upward drag past the fully-open position', () => {
+  it('holds at the fully-open position when dragged further up', () => {
+    // UIKit's sheet stops dead at its largest detent (measured on iOS 26.2:
+    // no stretch from a grabber or a content touch, or from medium past it).
     const {hook} = setup({snapHeights: () => [200]});
     const t = makeTarget();
     down(hook, 100, 0, t);
-    move(hook, 20, 100, t); // drag up 80px past the top of a rested-at-top sheet
-    // Overscroll is allowed but damped: a resisted fraction of the raw -80,
-    // and negative (above the top), not the raw distance and not clamped to 0.
-    const off = liveOffset(hook);
-    expect(off).toBeLessThan(0);
-    expect(off).toBeGreaterThan(-80); // resisted, so smaller in magnitude
+    move(hook, 60, 50, t);
+    expect(liveOffset(hook)).toBe(0);
+    move(hook, 20, 100, t); // 80px past the top of a rested-at-top sheet
+    expect(liveOffset(hook)).toBe(0);
+    move(hook, 130, 150, t); // back down: the finger's travel from the press, clamped
+    expect(liveOffset(hook)).toBe(30);
   });
 
   it('dismisses a single-height sheet on a slow drag past the floor', () => {
@@ -2059,21 +2060,22 @@ describe('useSheetGestures: the release on the compositor', () => {
     const {hook} = setup({snapHeights: () => [200]});
     const t = makeTarget();
     const played = recordAnimations(t);
-    down(hook, 200, 0, t);
-    // Rest at 0; a fast upward pull past the top settles back at 0 on the
-    // fast spring (|v| ≥ sheet.release.fastSpeed).
+    down(hook, 0, 0, t);
+    // A fast throw down (|v| ≥ sheet.release.fastSpeed) from the top: a
+    // flick, to the next detent down (200); 58 px + 1308 px/s × 0.1 s
+    // projects to 189, nearest that detent too.
     const speed = sheet.release.fastSpeed + 300;
-    stream(hook, t, {from: 200, to: 200 - speed * 0.05, t0: 0, t1: 50});
+    const to = speed * 0.044;
+    stream(hook, t, {from: 0, to, t0: 0, t1: 44});
     act(() =>
-      hook.result.current.handleProps.onPointerUp(
-        pointerEvent(200 - speed * 0.05, 51, t),
-      ),
+      hook.result.current.handleProps.onPointerUp(pointerEvent(to, 45, t)),
     );
+    expect(hook.result.current.settledOffset).toBe(200);
     const from = travelAt(played.at(-1) as Played, 0);
     const curve = solveSpring(toSpring(springs.sheetReleaseFast), {
       from,
-      to: 0,
-      velocity: -speed,
+      to: 200,
+      velocity: speed,
     });
     for (const ms of [16, 50, 100, 200]) {
       expect(travelAt(played.at(-1) as Played, ms)).toBeCloseTo(

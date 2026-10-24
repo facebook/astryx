@@ -155,9 +155,6 @@ function restingDismissOffset(
 // its last stretch, not between its last two samples (one slow sample before
 // the lift must not cancel a throw), and none after a pause before the lift.
 const VELOCITY_WINDOW_MS = 100;
-// Within this many px of a detent, the live drag is magnetically eased toward
-// it so it "clicks" into place instead of hovering just off the mark.
-const MAGNET_RANGE = 40;
 // The touch path drives the sheet through the same machinery the pointer path
 // uses, by handing it a pointer-shaped object built from a `Touch`. On iOS
 // Safari that object is indistinguishable from the real thing: WebKit raises
@@ -171,13 +168,6 @@ function isSyntheticTouch(event: ReactPointerEvent): boolean {
   return (event as SyntheticTouchPointer).syntheticTouch === true;
 }
 
-// Rubber-band factor for dragging up past fully-open, capped at OVERSCROLL_MAX
-// (the sheet reserves that much bottom padding for the lift to reveal).
-const OVERSCROLL_RESISTANCE = 0.35;
-// SYNC: must match OVERSCROLL_PADDING in BottomSheetPanel.tsx (the reserved
-// bottom padding the lift reveals). Kept as a local const rather than a shared
-// import so it can be used inside stylex.create there.
-const OVERSCROLL_MAX = 48;
 // Travel past the point where a scrolling gesture ran out of content before it
 // hands the sheet the rest of the pull. Small enough to feel continuous with
 // the scroll, large enough that a swipe merely coming to rest on the last pixel
@@ -197,28 +187,6 @@ const CONTENT_END_HANDOFF_SLOP = 4;
 // 8px is the conventional tap slop, a shade over iOS's own recognizer, and
 // well under what a real pull covers in its first frames.
 const DRAG_PROMOTION_SLOP = 8;
-
-// Pull a value toward the nearest of `targets` when within MAGNET_RANGE, easing
-// the last stretch so the surface settles crisply onto a detent while dragging.
-function magnetize(value: number, targets: number[]): number {
-  let nearestTarget = targets[0];
-  let nearestDist = Math.abs(value - nearestTarget);
-  for (const t of targets) {
-    const d = Math.abs(value - t);
-    if (d < nearestDist) {
-      nearestDist = d;
-      nearestTarget = t;
-    }
-  }
-  if (nearestDist >= MAGNET_RANGE) {
-    return value;
-  }
-  // Ease-in over the range: pull grows as you approach (t^2), so the click
-  // feels magnetic near the detent but doesn't fight a deliberate drag-through.
-  const t = nearestDist / MAGNET_RANGE;
-  const pull = 1 - t * t;
-  return value + (nearestTarget - value) * pull;
-}
 
 function preservationInsetForOffset(
   baseOffset: number,
@@ -582,7 +550,7 @@ export function useSheetGestures({
       setSettlingLayoutOffset(null);
       // Released on the detent, so there is no travel left to animate — but
       // the layout split may still differ from the one the drag rendered
-      // with (magnetize() lands a slow drag exactly on a detent). Swapping
+      // with (a drag that ends exactly on a detent). Swapping
       // height for transform is only invisible while transitions are off:
       // with them live, the composited transform would animate the whole
       // swap while the layout height jumped, throwing the sheet the wrong
@@ -1482,18 +1450,11 @@ export function useSheetGestures({
       const {offsets, peekOffset} = resolveDetents(state.height);
 
       const raw = state.baseOffset + delta;
-      const maxDetentOffset = offsets[offsets.length - 1];
-      let next: number;
-      if (raw < 0) {
-        // Up past fully-open: damped + capped rubber-band; springs back on release.
-        next = Math.max(-OVERSCROLL_MAX, raw * OVERSCROLL_RESISTANCE);
-      } else if (raw > maxDetentOffset) {
-        // In the dismiss zone: no magnet, so it doesn't fight a drag-to-close.
-        next = raw;
-      } else {
-        // Between detents: magnetically ease toward a nearby one.
-        next = magnetize(raw, offsets);
-      }
+      // 1:1 with the finger between detents and into the dismiss zone, as
+      // UIKit's sheet tracks (the release, not the drag, picks the detent).
+      // Up past fully open it holds: UIKit's sheet doesn't stretch beyond its
+      // largest detent.
+      const next = Math.max(0, raw);
       // Dragging above the base restores the full layout height below the
       // viewport; otherwise keep whatever layout the base detent settled with
       // (0 at a peek, so a peek drag stays transform-only).
