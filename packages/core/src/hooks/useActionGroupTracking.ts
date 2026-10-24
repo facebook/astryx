@@ -20,7 +20,11 @@
  * - lifting runs the action under the finger, and nothing when there is
  *   none; the lifted action's highlight fades;
  * - tracking spans the whole element it is attached to, so a touch that
- *   lands on the message highlights nothing until it slides onto an action.
+ *   lands on the message highlights nothing until it slides onto an action;
+ * - while the owner says presses are inert (`isInert`, read when a press
+ *   begins: an alert during its present or dismiss transition), a touch is
+ *   still taken, so the browser makes no click of it, but paints and runs
+ *   nothing, as UIKit drops touches during a transition.
  *
  * One recognizer does it: a long press with no minimum duration and no
  * movement limit, so it begins on the touch, claims it (nothing under the
@@ -58,6 +62,12 @@ export interface ActionGroupTrackingOptions {
   pointerTypes?: ReadonlyArray<PointerKind>;
   /** A touch whose target this rejects is not tracked (a modal's backdrop). */
   shouldTrack?: (target: unknown) => boolean;
+  /**
+   * Read when a press begins: when true, the press is still taken (the
+   * browser makes no click of it) but paints nothing and runs nothing, as
+   * UIKit drops touches during a presentation transition.
+   */
+  isInert?: () => boolean;
   /** @default true */
   isEnabled?: boolean;
   /**
@@ -183,7 +193,8 @@ export function useActionGroupTracking(
         case 'began': {
           const root = ref.current;
           const actions: TrackedAction[] = [];
-          if (root != null) {
+          // An inert press tracks no action: nothing to paint, nothing to run.
+          if (root != null && optionsRef.current.isInert?.() !== true) {
             for (const element of root.querySelectorAll<HTMLElement>(
               optionsRef.current.itemSelector,
             )) {

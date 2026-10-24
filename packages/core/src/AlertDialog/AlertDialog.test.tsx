@@ -11,6 +11,7 @@
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {
+  act,
   render,
   screen,
   fireEvent,
@@ -18,6 +19,7 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {alertController} from '../motion/uikit/alert';
 import {AlertDialog} from './AlertDialog';
 import {useImperativeAlertDialog} from './useImperativeAlertDialog';
 
@@ -168,8 +170,9 @@ describe('AlertDialog', () => {
       });
       render(<AlertDialog {...defaultProps} />);
 
+      // The layout reads the width alone. The pointer query only picks the
+      // motion (UIKit's under a finger), never the order or the stacking.
       expect(window.matchMedia).toHaveBeenCalledWith('(max-width: 640px)');
-      expect(window.matchMedia).not.toHaveBeenCalledWith('(pointer: coarse)');
       expect(window.matchMedia).not.toHaveBeenCalledWith('(hover: none)');
       const dialog = screen.getByRole('alertdialog');
       const buttons = within(dialog).getAllByRole('button');
@@ -229,8 +232,9 @@ describe('AlertDialog', () => {
         />,
       );
 
+      // The layout reads the width alone. The pointer query only picks the
+      // motion (UIKit's under a finger), never the order or the stacking.
       expect(window.matchMedia).toHaveBeenCalledWith('(max-width: 640px)');
-      expect(window.matchMedia).not.toHaveBeenCalledWith('(pointer: coarse)');
       expect(window.matchMedia).not.toHaveBeenCalledWith('(hover: none)');
       const dialog = screen.getByRole('alertdialog');
       const buttons = within(dialog).getAllByRole('button');
@@ -263,8 +267,9 @@ describe('AlertDialog', () => {
         />,
       );
 
+      // The layout reads the width alone. The pointer query only picks the
+      // motion (UIKit's under a finger), never the order or the stacking.
       expect(window.matchMedia).toHaveBeenCalledWith('(max-width: 640px)');
-      expect(window.matchMedia).not.toHaveBeenCalledWith('(pointer: coarse)');
       expect(window.matchMedia).not.toHaveBeenCalledWith('(hover: none)');
       const dialog = screen.getByRole('alertdialog');
       const buttons = within(dialog).getAllByRole('button');
@@ -492,7 +497,22 @@ describe('AlertDialog touch tracking', () => {
     return {onOpenChange, onAction, cancel, action};
   }
 
+  /**
+   * Lets the presentation complete: UIKit drops touches until it does. Lets
+   * the animator report its start (a promise), then moves the clock past the
+   * touch window.
+   */
+  async function completePresentation(): Promise<void> {
+    const presentedAt = performance.now();
+    const clock = vi.spyOn(performance, 'now').mockReturnValue(presentedAt);
+    await act(async () => {});
+    clock.mockReturnValue(
+      presentedAt + alertController.present.ignoresTouchesForMs,
+    );
+  }
+
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
 
@@ -511,8 +531,9 @@ describe('AlertDialog touch tracking', () => {
     }
   });
 
-  it('cancels when a finger lands on the action and lifts on Cancel', () => {
+  it('cancels when a finger lands on the action and lifts on Cancel', async () => {
     const {onOpenChange, onAction, cancel, action} = renderOpen();
+    await completePresentation();
     const id = touchId++;
     touch('touchstart', action, {x: 60, y: 116}, id);
     expect(action).toHaveAttribute('data-astryx-press', 'on');
@@ -525,8 +546,9 @@ describe('AlertDialog touch tracking', () => {
     expect(onAction).not.toHaveBeenCalled();
   });
 
-  it('runs the action when a finger slides from Cancel onto it', () => {
+  it('runs the action when a finger slides from Cancel onto it', async () => {
     const {onOpenChange, onAction, cancel} = renderOpen();
+    await completePresentation();
     const id = touchId++;
     touch('touchstart', cancel, {x: 60, y: 156}, id);
     touch('touchmove', cancel, {x: 60, y: 116}, id);
@@ -535,8 +557,25 @@ describe('AlertDialog touch tracking', () => {
     expect(onOpenChange).not.toHaveBeenCalled();
   });
 
-  it('does not track a touch that starts on the backdrop', () => {
+  it('drops a touch that lands while the alert is presenting, then tracks once it has', async () => {
     const {onOpenChange, onAction, cancel} = renderOpen();
+    const early = touchId++;
+    touch('touchstart', cancel, {x: 60, y: 156}, early);
+    expect(cancel).not.toHaveAttribute('data-astryx-press');
+    touch('touchend', cancel, {x: 60, y: 156}, early);
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(onAction).not.toHaveBeenCalled();
+    await completePresentation();
+    const late = touchId++;
+    touch('touchstart', cancel, {x: 60, y: 156}, late);
+    expect(cancel).toHaveAttribute('data-astryx-press', 'on');
+    touch('touchend', cancel, {x: 60, y: 156}, late);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('does not track a touch that starts on the backdrop', async () => {
+    const {onOpenChange, onAction, cancel} = renderOpen();
+    await completePresentation();
     const dialog = screen.getByRole('alertdialog');
     const id = touchId++;
     // A touch on ::backdrop targets the dialog element itself.

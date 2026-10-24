@@ -5,7 +5,8 @@
 /**
  * @file AlertDialog.tsx
  * @input Uses React, StyleX, Dialog, Layout, Heading, Text, Button,
- *   useActionGroupTracking and the alert entries of the UIKit constants table
+ *   useActionGroupTracking, useAlertMotion, the shared touch presentation
+ *   resolver and the alert entries of the UIKit constants table
  * @output Exports AlertDialog component, AlertDialogProps type
  * @position Core implementation; consumed by index.ts, tested by AlertDialog.test.tsx
  *
@@ -17,11 +18,18 @@
  * action. A mouse, the keyboard and assistive technology keep the buttons'
  * own click.
  *
+ * Under a finger it also appears and leaves the way UIKit's alert does
+ * (useAlertMotion): it scales down from 1.2 and fades in with the dimming,
+ * and leaves with a fade alone, both on the compositor; the dialog stays open
+ * until the fade ends, and touches during either transition reach nothing.
+ * Under a mouse the theme's entrance plays and the dialog closes at once.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/AlertDialog/AlertDialog.doc.mjs (props table, features, examples)
  * - /packages/core/src/AlertDialog/AlertDialog.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/AlertDialog/index.ts (exports if types change)
  * - /packages/core/src/AlertDialog/__tests__/AlertDialog.interaction.browser.spec.ts (touch tracking)
+ * - /packages/core/src/AlertDialog/__tests__/AlertDialog.motion.interaction.browser.spec.ts (touch motion)
  * - /apps/storybook/stories/AlertDialog.stories.tsx (storybook stories)
  * - /packages/cli/assets/templates/blocks/components/AlertDialog/ (showcase blocks)
  */
@@ -44,6 +52,8 @@ import {useMediaQuery} from '../hooks';
 import {useActionGroupTracking} from '../hooks/useActionGroupTracking';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {alertController} from '../motion/uikit/alert';
+import {useMotionPresentation} from '../utils/touchPresentation';
+import {useAlertMotion} from './useAlertMotion';
 
 const SMALL_SCREEN_QUERY = '(max-width: 640px)';
 
@@ -61,6 +71,17 @@ const styles = stylex.create({
     WebkitTouchCallout: {default: null, '@media (pointer: coarse)': 'none'},
     WebkitUserSelect: {default: null, '@media (pointer: coarse)': 'none'},
     userSelect: {default: null, '@media (pointer: coarse)': 'none'},
+  },
+  // UIKit's alert motion drives the dialog (useAlertMotion): the theme's
+  // entrance keyframes stand down.
+  uikitMotion: {
+    animationName: 'none',
+    // The motion animator promotes the dimming while it moves through this
+    // custom property on the dialog: Mobile Safari keeps an unlayered
+    // ::backdrop's animation on the main thread at its first commit.
+    '::backdrop': {
+      willChange: 'var(--astryx-motion-will-change-backdrop, auto)',
+    },
   },
   action: {
     maxWidth: '100%',
@@ -201,14 +222,24 @@ export function AlertDialog({
   // tracking); the backdrop, where a touch targets the dialog itself, is not
   // part of it. Each action opts out of its own press tracking while the
   // group owns its touches, and runs through its own click at the lift.
+  //
+  // Under a finger the alert also appears and leaves the way UIKit's does
+  // (useAlertMotion): it stays presented while it fades out, and touches
+  // during either transition are taken and dropped.
+  const motionPresentation = useMotionPresentation();
+  const motion = useAlertMotion({
+    isOpen,
+    isEnabled: motionPresentation === 'uikit' && !isInline,
+  });
   const surfaceRef = useRef<HTMLDialogElement>(null);
-  const mergedRef = useMergedRefs(ref, surfaceRef);
-  const isTracking = isOpen && !isInline;
+  const mergedRef = useMergedRefs(ref, surfaceRef, motion.ref);
+  const isTracking = motion.isPresented && !isInline;
   useActionGroupTracking(surfaceRef, {
     itemSelector: `[${ACTION_ATTRIBUTE}]`,
     highlightOnsetMs: alertController.actions.highlightOnsetMs,
     highlightExpansion: alertController.actions.highlightExpansion,
     shouldTrack: target => target !== surfaceRef.current,
+    isInert: () => !motion.acceptsTouches(),
     isEnabled: isTracking,
     manageStyle: false,
   });
@@ -254,7 +285,7 @@ export function AlertDialog({
     <Dialog
       {...rest}
       ref={mergedRef}
-      isOpen={isOpen}
+      isOpen={motion.isPresented}
       isInline={isInline}
       onOpenChange={onOpenChange}
       width={width}
@@ -268,7 +299,11 @@ export function AlertDialog({
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
       {...mergeProps(themeProps('alert-dialog'), {className, style})}
-      xstyle={[isTracking && styles.trackingSurface, xstyle]}
+      xstyle={[
+        isTracking && styles.trackingSurface,
+        motion.isDriving && styles.uikitMotion,
+        xstyle,
+      ]}
       data-testid={testId}>
       <Layout
         content={
