@@ -12,6 +12,10 @@
 import type {MotionRoleKind} from './roles';
 
 export const MOTION_ROLE_KINDS: Readonly<Record<string, MotionRoleKind>> = {
+  'androidKeyboard.hideCurve': 'curve',
+  'androidKeyboard.hideMs': 'duration',
+  'androidKeyboard.showCurve': 'curve',
+  'androidKeyboard.showMs': 'duration',
   'navigation.transitionMs': 'duration',
   'scroll.bounce': 'spring',
   'scroll.paging.snap': 'spring',

@@ -20,6 +20,8 @@
  */
 
 import {expect, test, type Locator, type Page} from '@playwright/test';
+import {cubicBezier} from '../../motion/bezier';
+import {keyboard as ANDROID_KEYBOARD} from '../../motion/android/keyboard';
 import {
   animationStoryboard,
   blockMainThread,
@@ -153,6 +155,43 @@ async function installKeyboard(page: Page) {
   });
 }
 
+/**
+ * Chrome on Android: the same visual viewport the test drives (headless
+ * browsers have no keyboard), and a VirtualKeyboard object the guide must
+ * leave alone, so the guide reads Chrome's profile. Run it under a finger:
+ * the keyboard module measures such a browser only there.
+ */
+async function installAndroidKeyboard(page: Page) {
+  await page.addInitScript(() => {
+    const keyboard = Object.assign(new EventTarget(), {
+      overlaysContent: false,
+      boundingRect: new DOMRect(0, 0, 0, 0),
+    });
+    Object.defineProperty(navigator, 'virtualKeyboard', {
+      configurable: true,
+      value: keyboard,
+    });
+    const viewport = Object.assign(new EventTarget(), {
+      height: window.innerHeight,
+      width: window.innerWidth,
+      offsetTop: 0,
+      offsetLeft: 0,
+      pageTop: 0,
+      pageLeft: 0,
+      scale: 1,
+    });
+    Object.defineProperty(window, 'visualViewport', {
+      configurable: true,
+      get: () => viewport,
+    });
+    (window as unknown as {__keyboard: (cover: number) => void}).__keyboard =
+      cover => {
+        viewport.height = window.innerHeight - cover;
+        viewport.dispatchEvent(new Event('resize'));
+      };
+  });
+}
+
 interface Chat {
   dock: Locator;
   messages: Locator;
@@ -164,8 +203,15 @@ interface Chat {
   lift: number;
 }
 
-async function openChat(page: Page): Promise<Chat> {
-  await installKeyboard(page);
+async function openChat(
+  page: Page,
+  {android = false}: {android?: boolean} = {},
+): Promise<Chat> {
+  if (android) {
+    await installAndroidKeyboard(page);
+  } else {
+    await installKeyboard(page);
+  }
   await openStory(page, storybook(), 'core-chatlayout--full-ai-chat');
   const editable = page.locator('[contenteditable="true"]').first();
   await expect(editable).toBeVisible();
@@ -276,8 +322,20 @@ test('the dock rises on the keyboard spring by the cover over it', async ({
 test('the lift is the part of the keyboard over the dock\u2019s resting bottom: a root ending below the viewport rises by more than the cover', async ({
   page,
 }) => {
-  const {dock, editable, lift} = await openChat(page);
-  // The story's root ends below the layout viewport (the preview's padding).
+  const {dock, editable} = await openChat(page);
+  // Let the chat's root end below the layout viewport: the story at the full
+  // viewport height under the preview's padding.
+  await dock.evaluate(el => {
+    const root = el.parentElement as HTMLElement;
+    (root.parentElement as HTMLElement).style.height = '100vh';
+  });
+  await page.waitForTimeout(200);
+  const lift = await dock.evaluate(
+    (el, cover) =>
+      (el.parentElement as HTMLElement).getBoundingClientRect().bottom -
+      (window.innerHeight - cover),
+    COVER,
+  );
   expect(lift).toBeGreaterThan(COVER);
   await editable.focus();
   await showKeyboard(page);
@@ -802,5 +860,168 @@ test.describe('under a finger', () => {
       return [read(el), transcript == null ? '1' : read(transcript)];
     });
     expect(opacities).toEqual(['1', '1']);
+  });
+});
+
+test.describe('Chrome on Android (spec:AST-099 FR8, proposed)', () => {
+  test.use({hasTouch: true, isMobile: true});
+  test.skip(
+    ({browserName}) => browserName !== 'chromium',
+    'Chrome’s keyboard profile needs the VirtualKeyboard API',
+  );
+
+  const reportAt = async (page: Page, cover: number) =>
+    page.evaluate(c => {
+      let at = 0;
+      const view = window.visualViewport as unknown as EventTarget;
+      view.addEventListener(
+        'resize',
+        event => {
+          at = event.timeStamp;
+        },
+        {once: true},
+      );
+      (window as unknown as {__keyboard: (c: number) => void}).__keyboard(c);
+      return at;
+    }, cover);
+
+  test('the dock rides up on Gboard’s slide from the report, dated back to Gboard’s start', async ({
+    page,
+  }) => {
+    const {dock, editable, lift} = await openChat(page, {android: true});
+    await editable.focus();
+    const reported = await reportAt(page, COVER);
+    await waitForAnimation(dock);
+    const start = await dock.evaluate(el =>
+      Math.max(
+        ...el.getAnimations().map(a => Number(a.startTime ?? -Infinity)),
+      ),
+    );
+    expect(
+      Math.abs(start - (reported - ANDROID_KEYBOARD.showReportLagMs)),
+    ).toBeLessThan(2);
+    const held = await holdAnimations(page, dock);
+    const curveEnd = Math.max(...held.map(a => a.curveEndMs));
+    const samples = curveOf(
+      await sampleCurve(dock, timeline(curveEnd)),
+      'translateY',
+    );
+    await releaseAnimations(page);
+    const ease = cubicBezier(ANDROID_KEYBOARD.showCurve);
+    const result = compareCurve(
+      samples,
+      t => -lift * ease(Math.min(1, t / ANDROID_KEYBOARD.showMs)),
+      0.5,
+    );
+    expect(result.maxError, JSON.stringify(result.worst)).toBeLessThanOrEqual(
+      0.5,
+    );
+    // And the layout takes the lift once the ride ends.
+    await waitForRest(dock);
+    await page.waitForTimeout(100);
+    expect(await dockY(dock)).toBeCloseTo(-lift, 0);
+    expect(
+      await page.evaluate(
+        () =>
+          (
+            navigator as unknown as {
+              virtualKeyboard: {overlaysContent: boolean};
+            }
+          ).virtualKeyboard.overlaysContent,
+      ),
+    ).toBe(false);
+  });
+
+  test('the dock rides down on Gboard’s slide from the blur', async ({
+    page,
+  }) => {
+    const {dock, editable} = await openChat(page, {android: true});
+    await editable.focus();
+    await reportAt(page, COVER);
+    await waitForRest(dock);
+    await page.waitForTimeout(100);
+    const lifted = -(await dockY(dock));
+    const blurAt = await editable.evaluate(el => {
+      let at = 0;
+      el.addEventListener(
+        'focusout',
+        event => {
+          at = event.timeStamp;
+        },
+        {once: true},
+      );
+      (el as HTMLElement).blur();
+      return at;
+    });
+    await waitForAnimation(dock);
+    const start = await dock.evaluate(el =>
+      Math.max(
+        ...el.getAnimations().map(a => Number(a.startTime ?? -Infinity)),
+      ),
+    );
+    expect(
+      Math.abs(start - (blurAt + ANDROID_KEYBOARD.hideAfterBlurMs)),
+    ).toBeLessThan(8);
+    const held = await holdAnimations(page, dock);
+    const curveEnd = Math.max(...held.map(a => a.curveEndMs));
+    const samples = curveOf(
+      await sampleCurve(dock, timeline(curveEnd)),
+      'translateY',
+    );
+    await releaseAnimations(page);
+    // The layout still holds the lift; the translate takes the dock down.
+    const ease = cubicBezier(ANDROID_KEYBOARD.hideCurve);
+    const result = compareCurve(
+      samples,
+      t => lifted * ease(Math.min(1, t / ANDROID_KEYBOARD.hideMs)),
+      0.5,
+    );
+    expect(result.maxError, JSON.stringify(result.worst)).toBeLessThanOrEqual(
+      0.5,
+    );
+    expect(curveEnd).toBeCloseTo(ANDROID_KEYBOARD.hideMs, -1);
+  });
+
+  test('Reduce Motion: the dock never travels with Gboard (design:reduced-motion)', async ({
+    page,
+  }) => {
+    await page.emulateMedia({reducedMotion: 'reduce'});
+    const {dock, editable, lift} = await openChat(page, {android: true});
+    await editable.focus();
+    const ys = await editable.evaluate(async (el, cover) => {
+      let host: HTMLElement | null = el as HTMLElement;
+      while (host != null && getComputedStyle(host).position !== 'sticky') {
+        host = host.parentElement;
+      }
+      const read = () => {
+        const style = getComputedStyle(host as HTMLElement);
+        const value = style.translate;
+        const translate =
+          value === 'none' ? 0 : parseFloat(value.split(' ')[1] ?? '0');
+        return translate - (parseFloat(style.bottom) || 0);
+      };
+      const out: number[] = [];
+      const until = performance.now() + 900;
+      const sample = () => {
+        out.push(read());
+        if (performance.now() < until) {
+          requestAnimationFrame(sample);
+        }
+      };
+      requestAnimationFrame(sample);
+      (window as unknown as {__keyboard: (c: number) => void}).__keyboard(
+        cover,
+      );
+      await new Promise(resolve => setTimeout(resolve, 900));
+      return out;
+    }, COVER);
+    for (const y of ys) {
+      expect(
+        Math.abs(y) < 0.5 || Math.abs(y + lift) < 0.5,
+        JSON.stringify(ys.map(Math.round)),
+      ).toBe(true);
+    }
+    expect(ys.at(-1)).toBeCloseTo(-lift, 0);
+    expect(await dock.evaluate(el => getComputedStyle(el).opacity)).toBe('1');
   });
 });

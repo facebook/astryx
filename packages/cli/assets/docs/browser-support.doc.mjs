@@ -152,7 +152,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: "Chrome on Android follows your page's viewport setting. By default (`interactive-widget=resizes-visual`) it lays the keyboard over the page and pans to the focused field. With `interactive-widget=resizes-content` it shrinks the layout viewport instead, so content anchored to the bottom, such as a chat composer, sits above the keyboard. Astryx documents this setting and never sets it: your app owns its viewport `<meta>` element.",
+          text: 'In Chrome on Android, those components ride the keyboard as it slides up and down. Elsewhere on the page Chrome follows your viewport setting. By default (`interactive-widget=resizes-visual`) it lays the keyboard over the page and pans to the focused field. With `interactive-widget=resizes-content` it shrinks the layout viewport instead, so content anchored to the bottom sits above the keyboard. Astryx documents this setting and never sets it: your app owns its viewport `<meta>` element.',
         },
         {
           type: 'code',

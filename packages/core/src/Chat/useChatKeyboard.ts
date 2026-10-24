@@ -5,8 +5,9 @@
 /**
  * @file useChatKeyboard.ts
  * @input React refs, the keyboard module (useKeyboardHeight,
- *   claimTapFocus), the keyboard layout guide, the animator,
- *   `springs.keyboard` (registerSpringsTable)
+ *   claimTapFocus, rideKeyboard), the keyboard layout guide, the animator,
+ *   the keyboard's motion tables (registerSpringsTable,
+ *   registerAndroidKeyboardTable)
  * @output Exports useChatKeyboard: the lift ChatLayout lays its dock and
  *   keyboard spacer out with, and the refs it puts on its dock, message area
  *   and composer region so the composer rides the software keyboard
@@ -23,8 +24,9 @@
  *   message can scroll above the lifted composer. ChatLayout applies `lift`
  *   through functional styles, so the layout is right with no animation.
  * - The ride is polish on top, timed by the keyboard layout guide: the dock
- *   moves on the compositor (`translate`) on `springs.keyboard` from the
- *   keyboard's own start, so it is where the keyboard is from its first
+ *   moves on the compositor (`translate`) on the keyboard's own motion
+ *   (`springs.keyboard` on iOS, Gboard's slides in Chrome on Android,
+ *   spec:AST-099 FR8) from the keyboard's own start, so it is where the keyboard is from its first
  *   frame, and a transcript at its newest message rides with it. The layout
  *   catches up once the ride ends, with the translate handed back in the
  *   same frame. Under Reduce Motion nothing travels (design:reduced-motion):
@@ -44,12 +46,14 @@
 
 import {useRef, useState, useSyncExternalStore, type RefObject} from 'react';
 import {useAnimator} from '../motion/useAnimator';
-import {registerSpringsTable, springs} from '../motion/uikit/springs';
+import {registerAndroidKeyboardTable} from '../motion/android/keyboard';
+import {registerSpringsTable} from '../motion/uikit/springs';
 import {
   bringsUpKeyboard,
   claimTapFocus,
   getKeyboardLayoutGuide,
   getMobileKeyboardHeight,
+  rideKeyboard,
   useKeyboardHeight,
   type KeyboardTransition,
 } from '../keyboard';
@@ -251,9 +255,11 @@ export function useChatKeyboard({
     };
     commitRef.current = commit;
 
-    // The ride plays `springs.keyboard`: its table registers (once) before
-    // the first animation, so a theme's keyboard spring applies.
+    // The ride plays `springs.keyboard` (iOS) or Gboard's slides (Android):
+    // their tables register (once) before the first ride, so a theme's
+    // keyboard motion applies.
     registerSpringsTable();
+    registerAndroidKeyboardTable();
     const follow = (transition: KeyboardTransition) => {
       // The ride: the dock goes where the guide says the keyboard will be,
       // from the keyboard's start, relative to the layout it rests in now.
@@ -273,19 +279,19 @@ export function useChatKeyboard({
       }
       // Under Reduce Motion the animator's default applies: no travel, a
       // cross-fade on a touch screen (design:reduced-motion DR1, DR2).
-      const timing = {at: transition.start};
       const shown = {y: target};
       ridingRef.current = true;
       rideRef.current += 1;
       const ride = rideRef.current;
+      // On the keyboard's own motion: UIKit's spring, or Gboard's slide.
       const rides = [
-        dock.animator.animate(shown, {spring: springs.keyboard}, timing)
-          .finished,
+        rideKeyboard(dock.animator, shown, transition)?.finished ??
+          Promise.resolve(true),
       ];
       if (atEnd) {
         rides.push(
-          messages.animator.animate(shown, {spring: springs.keyboard}, timing)
-            .finished,
+          rideKeyboard(messages.animator, shown, transition)?.finished ??
+            Promise.resolve(true),
         );
       }
       void Promise.all(rides)

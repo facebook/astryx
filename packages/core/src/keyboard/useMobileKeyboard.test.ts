@@ -56,6 +56,7 @@ afterEach(() => {
   Reflect.deleteProperty(window, 'visualViewport');
   Reflect.deleteProperty(window.navigator, 'virtualKeyboard');
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe('the keyboard height (spec:AST-099 FR2)', () => {
@@ -88,14 +89,37 @@ describe('where the keyboard is measured (FR6, FR7)', () => {
     expect(isKeyboardMeasurable(window)).toBe(true);
   });
 
-  it('measures nothing where the platform has its own keyboard geometry API', () => {
+  it('measures nothing under a mouse where the browser has its own keyboard geometry API', () => {
     Object.defineProperty(window.navigator, 'virtualKeyboard', {
       configurable: true,
       value: {overlaysContent: false},
     });
+    vi.stubGlobal(
+      'matchMedia',
+      (query: string) =>
+        ({matches: false, media: query}) as unknown as MediaQueryList,
+    );
     viewport.height = window.innerHeight - 300;
     expect(isKeyboardMeasurable(window)).toBe(false);
     expect(measureKeyboardHeight(window)).toBe(0);
+  });
+
+  it('measures Chrome on Android from its visual viewport, under a finger (FR8, proposed)', () => {
+    Object.defineProperty(window.navigator, 'virtualKeyboard', {
+      configurable: true,
+      value: {overlaysContent: false},
+    });
+    vi.stubGlobal(
+      'matchMedia',
+      (query: string) =>
+        ({
+          matches: query === '(pointer: coarse)',
+          media: query,
+        }) as unknown as MediaQueryList,
+    );
+    viewport.height = window.innerHeight - 312;
+    expect(isKeyboardMeasurable(window)).toBe(true);
+    expect(measureKeyboardHeight(window)).toBe(312);
   });
 
   it('measures nothing without a visual viewport', () => {

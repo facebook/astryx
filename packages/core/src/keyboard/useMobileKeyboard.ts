@@ -5,7 +5,7 @@
 /**
  * @file useMobileKeyboard.ts
  * @input The window's visual viewport, focus events, React effects and refs,
- *   the motion module's Reduce Motion queries
+ *   the motion module's Reduce Motion queries, the touch query
  * @output Exports the on-screen keyboard module: measureKeyboardHeight,
  *   isKeyboardMeasurable, subscribeMobileKeyboard, getMobileKeyboardHeight,
  *   useKeyboardHeight, isTextEntryControl, findTextEntryControl,
@@ -18,10 +18,11 @@
  *
  * The keyboard height (AST-099 FR2) is the layout viewport's height minus the
  * visual viewport's height times its scale, in CSS px: a page pan is not a
- * smaller keyboard, and a pinch zoom is not a keyboard. It is 0 where the
- * platform has its own keyboard geometry API (`navigator.virtualKeyboard`,
- * Android's path, FR6, FR8), without a visual viewport, and inside an iframe,
- * whose visual viewport never shrinks for the keyboard (FR7). One set of
+ * smaller keyboard, and a pinch zoom is not a keyboard. Chrome on Android is
+ * measured the same way (FR8, proposed; `isKeyboardMeasurable`). It is 0
+ * without a visual viewport, under a mouse in a browser with its own keyboard
+ * geometry API, and inside an iframe, whose visual viewport never shrinks for
+ * the keyboard (FR7). One set of
  * listeners per window reads it (the visual viewport's resize and scroll, the
  * window's resize, and focus moves), however many components subscribe.
  *
@@ -50,6 +51,7 @@ import {
   REDUCED_MOTION_FADE_QUERY,
   REDUCED_MOTION_INSTANT_QUERY,
 } from '../motion/reducedMotion';
+import {TOUCH_QUERY} from '../utils/touchPresentation';
 import {
   useEffect,
   useRef,
@@ -76,14 +78,21 @@ const NON_TEXT_INPUT_TYPES = new Set([
 
 /**
  * Whether this window measures the keyboard: a top-level document (FR7) with
- * a visual viewport and no keyboard geometry API of its own (FR6). Decided
- * from capabilities, never from the user agent.
+ * a visual viewport (FR6). Decided from capabilities, never from the user
+ * agent. A browser with its own keyboard geometry API (the VirtualKeyboard
+ * API) is measured the same way under a finger, which is Chrome on Android:
+ * its visual viewport shrinks for the keyboard while the layout viewport
+ * keeps its height, and that report comes earlier and more reliably than the
+ * API's geometry with `overlaysContent` (FR8, proposed; pending owner review
+ * on #8304). Under a mouse such a browser shows no on-screen keyboard and is
+ * left alone.
  */
 export function isKeyboardMeasurable(win: Window): boolean {
   return (
     win.visualViewport != null &&
-    !('virtualKeyboard' in win.navigator) &&
-    win.self === win.top
+    win.self === win.top &&
+    (!('virtualKeyboard' in win.navigator) ||
+      win.matchMedia?.(TOUCH_QUERY).matches === true)
   );
 }
 
