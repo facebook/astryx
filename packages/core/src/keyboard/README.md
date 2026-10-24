@@ -10,11 +10,7 @@ from `../keyboard`, and nothing here is exported from the package entry.
 ```ts
 const guide = getKeyboardLayoutGuide(window);
 const unsubscribe = guide.subscribe(t => {
-  animator.animate(
-    {y: -lift(t.to)},
-    {spring: springs.keyboard},
-    {at: t.start, reducedMotion: 'keep'},
-  );
+  animator.animate({y: -lift(t.to)}, {spring: springs.keyboard}, {at: t.start});
 });
 ```
 
@@ -22,10 +18,10 @@ Each transition is `{kind, from, to, start, velocity, animated, predicted}`:
 insets in CSS px, `start` on the document timeline (in the past for a show
 Safari reported late, slightly ahead for a hide that starts after a blur).
 Move your own elements on the compositor with the animator, from `start`, on
-`springs.keyboard`. Content that follows the keyboard mirrors it, and Reduce
-Motion leaves the iOS keyboard's motion as it is, so keep the motion
-(`reducedMotion: 'keep'`). `presentation(time)` gives the inset at any time,
-for something that appears while the keyboard moves.
+`springs.keyboard`. Under Reduce Motion content never travels with the keyboard
+(design:reduced-motion): the animator's default cross-fades it to its new place
+on a touch screen and moves it at once otherwise. `presentation(time)` gives
+the inset at any time, for something that appears while the keyboard moves.
 
 For an element docked at the bottom, rise by the part of the cover over its
 resting bottom, and only while a keyboard is up:

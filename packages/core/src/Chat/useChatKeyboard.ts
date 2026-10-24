@@ -19,8 +19,9 @@
  * - The dock (blur layer, scroll button, composer) moves by the part of the
  *   keyboard that covers it, on the compositor (`translate`), on
  *   `springs.keyboard` from the start time the keyboard layout guide gives,
- *   so it is where the keyboard is from its first frame. Reduce Motion
- *   leaves the keyboard's motion as it is, so the dock keeps its motion too.
+ *   so it is where the keyboard is from its first frame. Under Reduce Motion
+ *   it never travels (design:reduced-motion): the animator cross-fades it to
+ *   its new place on a touch screen and moves it at once otherwise.
  * - A spacer after the messages takes the same height, once per keyboard
  *   change, so the newest message can scroll above the lifted composer. A
  *   transcript at its newest message is scrolled to the new end in the same
@@ -169,7 +170,9 @@ export function useChatKeyboard({
         transition.to > 0
           ? Math.max(0, bottom - (win.innerHeight - transition.to))
           : 0;
-      const timing = {at: transition.start, reducedMotion: 'keep'} as const;
+      // Under Reduce Motion the animator's default applies: no travel, a
+      // cross-fade on a touch screen (design:reduced-motion DR1, DR2).
+      const timing = {at: transition.start};
       if (transition.animated) {
         dock.animator.animate({y: -lift}, {spring: springs.keyboard}, timing);
       } else {

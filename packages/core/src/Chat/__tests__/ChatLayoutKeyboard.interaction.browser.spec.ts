@@ -291,41 +291,41 @@ test('a hide the viewport never confirms puts the dock back on the keyboard', as
   expect(await dockY(dock)).toBeCloseTo(-lift, 0);
 });
 
-test('Reduce Motion: the dock still rides the keyboard spring', async ({
+test('Reduce Motion: the dock never travels, it cross-fades to the keyboard (design:reduced-motion)', async ({
   page,
 }) => {
-  // The iOS keyboard keeps sliding under Reduce Motion, so content that
-  // follows it slides with it instead of cross-fading.
   await page.emulateMedia({reducedMotion: 'reduce'});
   const {dock, lift} = await openChat(page);
   await showKeyboard(page);
-  await waitForAnimation(dock);
-  const held = await holdAnimations(page, dock);
-  const curveEnd = Math.max(...held.map(a => a.curveEndMs));
-  const samples = curveOf(
-    await sampleCurve(dock, timeline(curveEnd)),
-    'translateY',
+  // Every frame of the change: the dock is where it was or where it lands,
+  // never in between (DR1); only its opacity animates (DR2).
+  const frames = await dock.evaluate(
+    async el =>
+      new Promise<{y: number; opacity: number}[]>(resolve => {
+        const out: {y: number; opacity: number}[] = [];
+        const step = () => {
+          const style = getComputedStyle(el);
+          out.push({
+            y: Number(style.translate.split(' ')[1]?.replace('px', '') ?? 0),
+            opacity: Number(style.opacity),
+          });
+          if (out.length < 60) {
+            requestAnimationFrame(step);
+          } else {
+            resolve(out);
+          }
+        };
+        requestAnimationFrame(step);
+      }),
   );
-  await releaseAnimations(page);
-  const result = compareCurve(
-    samples,
-    t => -lift * springStep(KEYBOARD, t),
-    0.5,
-  );
-  expect(result.maxError, JSON.stringify(result.worst)).toBeLessThanOrEqual(
-    0.5,
-  );
-  // No cross-fade stands in for the travel.
-  const opacity = await dock.evaluate(el =>
-    el
-      .getAnimations()
-      .some(a =>
-        (a.effect as KeyframeEffect)
-          .getKeyframes()
-          .some(k => k.opacity != null),
-      ),
-  );
-  expect(opacity).toBe(false);
+  for (const {y} of frames) {
+    expect(
+      Math.abs(y) < 0.5 || Math.abs(y + lift) < 0.5,
+      JSON.stringify(frames.map(f => Math.round(f.y))),
+    ).toBe(true);
+  }
+  await waitForRest(dock);
+  expect(await dockY(dock)).toBeCloseTo(-lift, 0);
 });
 
 test('focus returning mid-hide turns the dock back up without a jump', async ({

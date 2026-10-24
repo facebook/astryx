@@ -129,7 +129,7 @@ const guides = new WeakMap<Window, KeyboardLayoutGuide>();
  * ```
  * const guide = getKeyboardLayoutGuide(window);
  * const unsubscribe = guide.subscribe(t => {
- *   animator.animate({y: -t.to}, {spring: springs.keyboard}, {at: t.start, reducedMotion: 'keep'});
+ *   animator.animate({y: -t.to}, {spring: springs.keyboard}, {at: t.start});
  * });
  * ```
  */
