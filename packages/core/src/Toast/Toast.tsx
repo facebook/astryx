@@ -4,9 +4,10 @@
 
 /**
  * @file Toast.tsx
- * @input Uses React timers, touch/pen gesture events, Toast options, Button/Icon,
- *   MediaTheme, tokens, and placement motion inherited from ToastViewport
- * @output Exports the rendered Toast surface and its pause/swipe/dismiss behavior
+ * @input Uses React timers, the swipe gesture (useToastGesture), Toast options,
+ *   Button/Icon, MediaTheme, tokens, and placement motion inherited from ToastViewport
+ * @output Exports the rendered Toast surface and its pause/swipe/dismiss behavior;
+ *   a swipe dismissal plays the ordinary exit from where the finger left the card
  * @position Core implementation; rendered by ToastViewport and documented by Toast.doc.mjs
  *
  * SYNC: When Toast layout, timer pause, media theme, or dismissal behavior changes,
@@ -74,12 +75,13 @@ const styles = stylex.create({
     width: 400,
     maxWidth: '100%',
     boxShadow: shadowVars['--shadow-med'],
-    opacity: 'var(--_toast-swipe-opacity, 1)',
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleDefaults['--text-body-size'],
     lineHeight: typeScaleDefaults['--text-body-leading'],
-    transform:
-      'translateY(var(--_toast-swipe-y, 0px)) scale(var(--_toast-swipe-scale, 1))',
+    transform: 'translateY(0px)',
+    // The swipe moves the card with `translate` every frame: its own layer
+    // keeps that off the main thread's paint.
+    willChange: 'translate',
     transitionProperty: 'opacity, transform',
     transitionDuration: {
       default: durationVars['--duration-fast'],
@@ -112,7 +114,7 @@ const styles = stylex.create({
   },
   exiting: {
     opacity: 0,
-    transform: `translateY(var(--_toast-swipe-exit-y, var(--_toast-swipe-y, var(--_toast-slide-y, ${TOAST_EDGE_DRIFT})))) scale(var(--_toast-swipe-scale, 1))`,
+    transform: `translateY(var(--_toast-slide-y, ${TOAST_EDGE_DRIFT}))`,
   },
   endContent: {
     flexShrink: 0,
@@ -146,6 +148,11 @@ export interface ToastProps {
 
 interface ToastSurfaceProps extends ToastProps {
   gestureDirection: ToastGestureDirection;
+  /**
+   * Called when a swipe dismisses the toast, just before `onDismiss`: the
+   * card leaves from where the finger left it, so its row must not clip it.
+   */
+  onSwipeExit?: () => void;
 }
 
 /**
@@ -182,6 +189,7 @@ export function ToastSurface({
   onDismiss,
   renderContent,
   gestureDirection,
+  onSwipeExit,
 }: ToastSurfaceProps) {
   const t = useTranslator();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -262,7 +270,12 @@ export function ToastSurface({
   const dismissFromGesture = useCallback(() => {
     onDismissRef.current('manual');
   }, []);
-  const {rootRef, bindings: gestureBindings} = useToastGesture({
+  const onSwipeExitRef = useRef(onSwipeExit);
+  onSwipeExitRef.current = onSwipeExit;
+  const handleSwipeExit = useCallback(() => {
+    onSwipeExitRef.current?.();
+  }, []);
+  const {rootRef} = useToastGesture({
     direction: gestureDirection,
     enabled: !isExiting,
     canPauseTimer: isAutoHide,
@@ -270,6 +283,7 @@ export function ToastSurface({
     pauseTimer,
     resumeTimer,
     dismiss: dismissFromGesture,
+    onSwipeExit: handleSwipeExit,
     shouldIgnoreTarget: isInteractiveTarget,
   });
 
@@ -294,7 +308,6 @@ export function ToastSurface({
       onMouseLeave={resumeTimer}
       onFocusCapture={pauseTimer}
       onBlurCapture={resumeTimer}
-      {...gestureBindings}
       {...mergeProps(
         themeProps('toast', {type}),
         stylex.props(

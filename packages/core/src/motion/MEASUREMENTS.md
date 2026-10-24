@@ -265,3 +265,15 @@ fades in, with Prefer Cross-Fade Transitions on or off.
 | M-CM4 | Reduce Motion press feedback    | Probe app with Reduce Motion on: long press, then dismiss                                                                   | press feedback, lift and dismiss animations under Reduce Motion                                                                                                                           | A, B   |
 | M-CM5 | Commit haptic stand-in          | An Android device: `navigator.vibrate` patterns against the platform's HapticFeedbackConstants for the context-click moment | the pattern that matches; not a UIKit parity value (as M-G18)                                                                                                                             | H      |
 | M-CM6 | Press thresholds                | Probe app: repeated long presses at random vsync phases                                                                     | from touch receipt and from the HID timestamp, the tick before and the tick at the press observer's began and at the click commit; the intersection pins the 150 ms and 400 ms thresholds | C      |
+
+## Toast (system notification banner)
+
+SpringBoard draws the banner out of process, so the lab app's animation dump
+cannot see it: a lab app posts the notifications (foreground presentation
+`.banner`) and drives HID touches, and a 60 fps recording is tracked per frame
+(method B). Run on an iPhone 17 Pro simulator, iOS 26.2. Three runs (Oct 23 2026) measured the follow distance and ratio, the release rule (`toast.dismissOffset`,
+`toast.flickVelocity`) and the settle spring; what remains is below.
+
+| ID   | What                  | App and gesture                                                                                                  | Extract                                                        | Method | Feeds             |
+| ---- | --------------------- | ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ------ | ----------------- |
+| M-T2 | Banner drag direction | A banner at rest; slow drags from its middle at 15°, 30°, 45° and 60° from vertical, toward the edge, 60 pt long | which drags move the banner and which leave it (the axis rule) | B      | `toast.axisRatio` |

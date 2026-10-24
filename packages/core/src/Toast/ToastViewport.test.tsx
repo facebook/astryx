@@ -23,6 +23,7 @@ import {
 } from 'vitest';
 import {
   cleanup,
+  createEvent,
   render,
   screen,
   fireEvent,
@@ -631,9 +632,7 @@ describe('Toast native motion contract', () => {
     const toastStyle = getComputedStyle(visualToast);
     const wrapperStyle = getComputedStyle(wrapper);
 
-    expect(normalizeCssFunction(toastStyle.transform)).toBe(
-      'translateY(var(--_toast-swipe-y, 0px)) scale(var(--_toast-swipe-scale, 1))',
-    );
+    expect(normalizeCssFunction(toastStyle.transform)).toBe('translateY(0px)');
     expect(normalizeCssList(toastStyle.transitionProperty)).toBe(
       'opacity, transform',
     );
@@ -967,381 +966,363 @@ describe('Toast swipe dismissal', () => {
     return {...result, visualToast, onHide};
   }
 
-  it('dismisses on a pen swipe toward the configured block edge past the threshold', () => {
-    const {visualToast, onHide} = renderSwipeToast();
-
-    act(() => {
-      fireEvent.pointerDown(visualToast, {
-        pointerId: 7,
-        pointerType: 'pen',
-        button: 0,
-        clientX: 0,
-        clientY: 0,
-      });
-      fireEvent.pointerMove(visualToast, {
-        pointerId: 7,
-        pointerType: 'pen',
-        clientX: 0,
-        clientY: 60,
-      });
-      fireEvent.pointerUp(visualToast, {
-        pointerId: 7,
-        pointerType: 'pen',
-        clientX: 0,
-        clientY: 60,
-      });
-    });
-
-    expect(visualToast.setPointerCapture).toHaveBeenCalledWith(7);
-    expect(visualToast.releasePointerCapture).toHaveBeenCalledWith(7);
-    expect(onHide).toHaveBeenCalledWith('manual');
-    expect(onHide).toHaveBeenCalledTimes(1);
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-exit-y')).toBe(
-      '120%',
-    );
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-y')).toBe('');
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-opacity')).toBe(
-      '',
-    );
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-scale')).toBe('');
-    expect(getComputedStyle(visualToast).transform).not.toContain('translateX');
-  });
-
-  it('dismisses a fast flick below the distance threshold', () => {
-    const now = vi
-      .spyOn(Date, 'now')
-      .mockReturnValueOnce(1_000)
-      .mockReturnValueOnce(1_020);
-    try {
-      const {visualToast, onHide} = renderSwipeToast(
-        SWIPE_TOAST,
-        'bottomEnd',
-        'Swipe toast',
-        400,
-      );
-
-      act(() => {
-        fireEvent.pointerDown(visualToast, {
-          pointerId: 8,
-          pointerType: 'pen',
-          button: 0,
-          clientX: 0,
-          clientY: 0,
-        });
-        fireEvent.pointerMove(visualToast, {
-          pointerId: 8,
-          pointerType: 'pen',
-          clientX: 0,
-          clientY: 60,
-        });
-        fireEvent.pointerUp(visualToast, {
-          pointerId: 8,
-          pointerType: 'pen',
-          clientX: 0,
-          clientY: 60,
-        });
-      });
-
-      expect(onHide).toHaveBeenCalledWith('manual');
-      expect(visualToast.style.getPropertyValue('--_toast-swipe-exit-y')).toBe(
-        '120%',
-      );
-    } finally {
-      now.mockRestore();
-    }
-  });
-
-  // A one-line toast is 56 px tall: 40% of it is below the 48 px distance
-  // floor, so a short swipe on it can only be dismissed as a flick.
-  function mockClock(start = 1_000) {
-    let time = start;
-    const spy = vi.spyOn(Date, 'now').mockImplementation(() => time);
-    return {
-      advance(ms: number) {
-        time += ms;
-      },
-      restore() {
-        spy.mockRestore();
-      },
-    };
+  // The document's gesture host keeps one clock for every test in this file
+  // and never moves it backwards, so each timed stroke starts after the last
+  // event any earlier stroke sent.
+  let strokeClock = 0;
+  function strokeStart(): number {
+    strokeClock = Math.max(strokeClock, performance.now()) + 100;
+    return strokeClock;
   }
 
-  it('dismisses a quick pen flick on a one-line toast', () => {
-    const clock = mockClock();
-    try {
-      const {visualToast, onHide} = renderSwipeToast(
-        SWIPE_TOAST,
-        'bottomEnd',
-        'Swipe toast',
-        56,
-      );
+  /** The card's offset from rest, as the swipe animator writes it. */
+  function cardY(card: HTMLElement): number {
+    const [, y = '0px'] = card.style.getPropertyValue('translate').split(' ');
+    return Number.parseFloat(y) || 0;
+  }
 
-      act(() => {
-        fireEvent.pointerDown(visualToast, {
-          pointerId: 9,
-          pointerType: 'pen',
-          button: 0,
-          clientX: 0,
-          clientY: 0,
-        });
-      });
-      clock.advance(30);
-      act(() => {
-        fireEvent.pointerMove(visualToast, {
-          pointerId: 9,
-          pointerType: 'pen',
-          clientX: 0,
-          clientY: 40,
-        });
-        fireEvent.pointerUp(visualToast, {
-          pointerId: 9,
-          pointerType: 'pen',
-          clientX: 0,
-          clientY: 40,
-        });
-      });
+  /**
+   * One pen event at an explicit time (ms on the page clock) and clientY:
+   * velocity comes from these timestamps, as it does from real input.
+   */
+  function pen(
+    target: HTMLElement,
+    type: 'pointerDown' | 'pointerMove' | 'pointerUp' | 'pointerCancel',
+    pointerId: number,
+    time: number,
+    clientY: number,
+  ) {
+    const event = createEvent[type](target, {
+      pointerId,
+      pointerType: 'pen',
+      button: 0,
+      buttons: type === 'pointerUp' || type === 'pointerCancel' ? 0 : 1,
+      clientX: 0,
+      clientY,
+    });
+    Object.defineProperty(event, 'timeStamp', {value: time});
+    strokeClock = Math.max(strokeClock, time);
+    fireEvent(target, event);
+  }
 
-      expect(onHide).toHaveBeenCalledWith('manual');
-      expect(onHide).toHaveBeenCalledTimes(1);
-    } finally {
-      clock.restore();
-    }
+  /**
+   * A pen stroke with explicit timestamps: [ms from its start, clientY] per
+   * event. It starts after every event earlier tests sent the document's
+   * gesture host, whose clock only moves forward.
+   */
+  function penStroke(
+    target: HTMLElement,
+    pointerId: number,
+    points: ReadonlyArray<readonly [number, number]>,
+  ) {
+    const start = strokeStart();
+    points.forEach(([offset, clientY], index) => {
+      const time = start + offset;
+      strokeClock = Math.max(strokeClock, time);
+      const type =
+        index === 0
+          ? 'pointerDown'
+          : index === points.length - 1
+            ? 'pointerUp'
+            : 'pointerMove';
+      const event = createEvent[type](target, {
+        pointerId,
+        pointerType: 'pen',
+        button: 0,
+        buttons: type === 'pointerUp' ? 0 : 1,
+        clientX: 0,
+        clientY,
+      });
+      Object.defineProperty(event, 'timeStamp', {value: time});
+      fireEvent(target, event);
+    });
+  }
+
+  it('follows the finger only past the follow distance, at the follow ratio, without a jump', () => {
+    const {visualToast} = renderSwipeToast();
+    const start = strokeStart();
+    const offsets: number[] = [];
+    act(() => {
+      pen(visualToast, 'pointerDown', 7, start, 0);
+      for (const [time, y] of [
+        [100, 10],
+        [200, 14],
+        [300, 34],
+        [400, 54],
+      ] as const) {
+        pen(visualToast, 'pointerMove', 7, start + time, y);
+        offsets.push(cardY(visualToast));
+      }
+    });
+    // Still for the first 14 px of finger travel (the pan began at 10 px),
+    // then 0.55 of each pixel more; no opacity or scale change on the way.
+    expect(offsets).toEqual([0, 0, 11, 22]);
+    expect(visualToast.style.getPropertyValue('opacity')).toBe('');
+    expect(visualToast.style.getPropertyValue('scale')).toBe('');
+    act(() => {
+      pen(visualToast, 'pointerCancel', 7, start + 410, 54);
+    });
   });
 
+  it('settles a slow drag short of the dismiss travel back to rest', () => {
+    const {visualToast, onHide} = renderSwipeToast();
+    act(() => {
+      penStroke(visualToast, 8, [
+        [0, 0],
+        [300, 10],
+        [600, 20],
+        [900, 30],
+        [910, 30],
+      ]);
+    });
+    expect(onHide).not.toHaveBeenCalled();
+    expect(cardY(visualToast)).toBe(0);
+  });
+
+  it('dismisses a slow drag past the dismiss travel', () => {
+    const {visualToast, onHide} = renderSwipeToast();
+    act(() => {
+      penStroke(visualToast, 9, [
+        [0, 0],
+        [300, 20],
+        [600, 40],
+        [900, 60],
+        [910, 60],
+      ]);
+    });
+    expect(onHide).toHaveBeenCalledWith('manual');
+    expect(onHide).toHaveBeenCalledTimes(1);
+  });
+
+  it('dismisses a quick flick that never moved the card', () => {
+    // 15 px in 60 ms: barely past the follow distance, but the release
+    // velocity projects it past the dismiss travel.
+    const {visualToast, onHide} = renderSwipeToast();
+    act(() => {
+      penStroke(visualToast, 10, [
+        [0, 0],
+        [50, 8],
+        [60, 15],
+        [64, 15],
+      ]);
+    });
+    expect(onHide).toHaveBeenCalledWith('manual');
+  });
+
+  it('dismisses a quick pen flick on a one-line toast', () => {
+    // 40 px in 30 ms on a 56 px card: the speed dismisses, whatever the
+    // card's height.
+    const {visualToast, onHide} = renderSwipeToast(
+      SWIPE_TOAST,
+      'bottomEnd',
+      'Swipe toast',
+      56,
+    );
+    act(() => {
+      penStroke(visualToast, 18, [
+        [0, 0],
+        [30, 40],
+        [34, 40],
+      ]);
+    });
+    expect(onHide).toHaveBeenCalledWith('manual');
+    expect(onHide).toHaveBeenCalledTimes(1);
+  });
+
+  /** A native touch event at an explicit time (ms on the page clock). */
+  function touchAt(
+    type: 'touchstart' | 'touchmove' | 'touchend',
+    identifier: number,
+    time: number,
+    clientY: number,
+  ): Event {
+    const event = new Event(type, {bubbles: true, cancelable: true});
+    const touch = {identifier, clientX: 10, clientY};
+    Object.defineProperty(event, 'touches', {
+      value: type === 'touchend' ? [] : [touch],
+    });
+    Object.defineProperty(event, 'changedTouches', {value: [touch]});
+    Object.defineProperty(event, 'timeStamp', {value: time});
+    strokeClock = Math.max(strokeClock, time);
+    return event;
+  }
+
   it('dismisses a quick touch flick on a one-line toast at the top', () => {
-    const clock = mockClock();
-    try {
-      const {visualToast, onHide} = renderSwipeToast(
-        SWIPE_TOAST,
-        'topEnd',
-        'Swipe toast',
-        56,
-      );
-      const touchEvent = (
-        type: 'touchstart' | 'touchmove' | 'touchend',
-        clientY: number,
-      ) => {
-        const event = new Event(type, {bubbles: true, cancelable: true});
-        const touch = {identifier: 32, clientX: 10, clientY};
-        Object.defineProperty(event, 'touches', {
-          value: type === 'touchend' ? [] : [touch],
-        });
-        Object.defineProperty(event, 'changedTouches', {value: [touch]});
-        visualToast.dispatchEvent(event);
-        return event;
-      };
-
-      act(() => {
-        touchEvent('touchstart', 100);
-      });
-      clock.advance(15);
-      let move: Event;
-      act(() => {
-        move = touchEvent('touchmove', 80);
-      });
-      clock.advance(15);
-      act(() => {
-        touchEvent('touchmove', 60);
-        touchEvent('touchend', 60);
-      });
-
-      expect(move!.defaultPrevented).toBe(true);
-      expect(onHide).toHaveBeenCalledWith('manual');
-      expect(onHide).toHaveBeenCalledTimes(1);
-    } finally {
-      clock.restore();
-    }
+    const {visualToast, onHide} = renderSwipeToast(
+      SWIPE_TOAST,
+      'topEnd',
+      'Swipe toast',
+      56,
+    );
+    const start = strokeStart();
+    let move: Event;
+    act(() => {
+      visualToast.dispatchEvent(touchAt('touchstart', 32, start, 100));
+      move = touchAt('touchmove', 32, start + 15, 80);
+      visualToast.dispatchEvent(move);
+      visualToast.dispatchEvent(touchAt('touchmove', 32, start + 30, 60));
+      visualToast.dispatchEvent(touchAt('touchend', 32, start + 31, 60));
+    });
+    expect(move!.defaultPrevented).toBe(true);
+    expect(onHide).toHaveBeenCalledWith('manual');
+    expect(onHide).toHaveBeenCalledTimes(1);
   });
 
   it('times a flick by its input events, not by when the handlers run', () => {
     // Browsers deliver moves on the next frame, so handlers can run well
     // after the finger moved: here the whole 40 px flick took 30 ms, but its
-    // moves and lift are only handled 60 ms after the touch landed.
-    const clock = mockClock();
-    try {
-      const {visualToast, onHide} = renderSwipeToast(
-        SWIPE_TOAST,
-        'topEnd',
-        'Swipe toast',
-        56,
-      );
-      const touchEvent = (
-        type: 'touchstart' | 'touchmove' | 'touchend',
-        clientY: number,
-      ) => {
-        const event = new Event(type, {bubbles: true, cancelable: true});
-        const touch = {identifier: 33, clientX: 10, clientY};
-        Object.defineProperty(event, 'touches', {
-          value: type === 'touchend' ? [] : [touch],
-        });
-        Object.defineProperty(event, 'changedTouches', {value: [touch]});
-        return event;
-      };
-
-      act(() => {
-        visualToast.dispatchEvent(touchEvent('touchstart', 100));
-      });
-      clock.advance(15);
-      const firstMove = touchEvent('touchmove', 80);
-      clock.advance(15);
-      const secondMove = touchEvent('touchmove', 60);
-      const lift = touchEvent('touchend', 60);
-      clock.advance(30);
-      act(() => {
-        visualToast.dispatchEvent(firstMove);
-        visualToast.dispatchEvent(secondMove);
-        visualToast.dispatchEvent(lift);
-      });
-
-      expect(onHide).toHaveBeenCalledWith('manual');
-    } finally {
-      clock.restore();
-    }
+    // moves and lift are only handled together, later.
+    const {visualToast, onHide} = renderSwipeToast(
+      SWIPE_TOAST,
+      'topEnd',
+      'Swipe toast',
+      56,
+    );
+    const start = strokeStart();
+    act(() => {
+      visualToast.dispatchEvent(touchAt('touchstart', 33, start, 100));
+    });
+    const firstMove = touchAt('touchmove', 33, start + 15, 80);
+    const secondMove = touchAt('touchmove', 33, start + 30, 60);
+    const lift = touchAt('touchend', 33, start + 31, 60);
+    act(() => {
+      visualToast.dispatchEvent(firstMove);
+      visualToast.dispatchEvent(secondMove);
+      visualToast.dispatchEvent(lift);
+    });
+    expect(onHide).toHaveBeenCalledWith('manual');
   });
 
   it('snaps back after a slow short drag on a one-line toast', () => {
-    const clock = mockClock();
-    try {
-      const {visualToast, onHide} = renderSwipeToast(
-        SWIPE_TOAST,
-        'bottomEnd',
-        'Swipe toast',
-        56,
-      );
-
-      act(() => {
-        fireEvent.pointerDown(visualToast, {
-          pointerId: 10,
-          pointerType: 'pen',
-          button: 0,
-          clientX: 0,
-          clientY: 0,
-        });
-      });
-      clock.advance(400);
-      act(() => {
-        fireEvent.pointerMove(visualToast, {
-          pointerId: 10,
-          pointerType: 'pen',
-          clientX: 0,
-          clientY: 40,
-        });
-        fireEvent.pointerUp(visualToast, {
-          pointerId: 10,
-          pointerType: 'pen',
-          clientX: 0,
-          clientY: 40,
-        });
-      });
-
-      expect(onHide).not.toHaveBeenCalled();
-      expect(visualToast.style.getPropertyValue('--_toast-swipe-y')).toBe('');
-    } finally {
-      clock.restore();
-    }
+    const {visualToast, onHide} = renderSwipeToast(
+      SWIPE_TOAST,
+      'bottomEnd',
+      'Swipe toast',
+      56,
+    );
+    act(() => {
+      penStroke(visualToast, 19, [
+        [0, 0],
+        [400, 40],
+        [410, 40],
+      ]);
+    });
+    expect(onHide).not.toHaveBeenCalled();
+    expect(cardY(visualToast)).toBe(0);
   });
 
-  it('snaps back without dismissing after a short drag', () => {
-    // A slow drag: 24 px over 400 ms is far below flick speed.
-    const clock = mockClock();
+  it('claims the touch 5 px toward the edge, before Safari would scroll the page', () => {
+    const {visualToast} = renderSwipeToast(SWIPE_TOAST, 'topEnd');
+    const start = strokeStart();
+    let at4: Event;
+    let at5: Event;
+    act(() => {
+      visualToast.dispatchEvent(touchAt('touchstart', 34, start, 100));
+      at4 = touchAt('touchmove', 34, start + 40, 96);
+      visualToast.dispatchEvent(at4);
+      at5 = touchAt('touchmove', 34, start + 50, 95);
+      visualToast.dispatchEvent(at5);
+    });
+    expect(at4!.defaultPrevented).toBe(false);
+    expect(at5!.defaultPrevented).toBe(true);
+    expect(cardY(visualToast)).toBe(0);
+    act(() => {
+      visualToast.dispatchEvent(
+        new Event('touchcancel', {bubbles: true, cancelable: true}),
+      );
+    });
+  });
+
+  it('snaps a slow 20 px drag back', () => {
+    const {visualToast, onHide} = renderSwipeToast();
+    act(() => {
+      penStroke(visualToast, 11, [
+        [0, 0],
+        [300, 10],
+        [600, 20],
+        [610, 20],
+      ]);
+    });
+    expect(onHide).not.toHaveBeenCalled();
+    expect(cardY(visualToast)).toBe(0);
+  });
+
+  it('plays the ordinary exit from where the finger left the card, unclipped by its row', () => {
+    // A long drag carries the card 74 px; it leaves from there, with the exit
+    // every other dismissal plays, never moving back toward rest.
+    const {visualToast, onHide} = renderSwipeToast();
+    const wrapper = visualToast.closest('[data-toast-id]') as HTMLElement;
+    const start = strokeStart();
+    let released = 0;
+    act(() => {
+      pen(visualToast, 'pointerDown', 12, start, 0);
+      pen(visualToast, 'pointerMove', 12, start + 200, 50);
+      pen(visualToast, 'pointerMove', 12, start + 400, 100);
+      pen(visualToast, 'pointerMove', 12, start + 600, 150);
+      released = cardY(visualToast);
+      pen(visualToast, 'pointerUp', 12, start + 610, 150);
+    });
+    expect(released).toBeCloseTo(0.55 * (150 - 14), 5);
+    expect(onHide).toHaveBeenCalledWith('manual');
+    expect(cardY(visualToast)).toBe(released);
+    const card = getComputedStyle(visualToast);
+    expect(card.opacity).toBe('0');
+    // The ordinary exit's drift toward the edge, on top of the drag offset.
+    expect(card.transform).toContain('--_toast-slide-y');
+    expect(
+      getComputedStyle(wrapper.firstElementChild as HTMLElement).overflow,
+    ).toBe('visible');
+  });
+
+  it('lets a touch on a card that is springing back pass through to the page', async () => {
+    // One clock for the timers and the animator (it times its motion with
+    // performance.now), so running the timers runs the spring-back to its end.
+    vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout', 'performance']});
     try {
       const {visualToast, onHide} = renderSwipeToast();
-
       act(() => {
-        fireEvent.pointerDown(visualToast, {
-          pointerId: 7,
-          pointerType: 'pen',
-          button: 0,
-          clientX: 0,
-          clientY: 0,
-        });
+        penStroke(visualToast, 13, [
+          [0, 0],
+          [400, 10],
+          [800, 20],
+          [1200, 35],
+          [1210, 35],
+        ]);
       });
-      clock.advance(400);
-      act(() => {
-        fireEvent.pointerMove(visualToast, {
-          pointerId: 7,
-          pointerType: 'pen',
-          clientX: 0,
-          clientY: 24,
-        });
-        fireEvent.pointerUp(visualToast, {
-          pointerId: 7,
-          pointerType: 'pen',
-          clientX: 0,
-          clientY: 24,
-        });
-      });
-
+      // Released 11.6 px from rest, short of dismissing: it springs back.
       expect(onHide).not.toHaveBeenCalled();
-      expect(visualToast.style.getPropertyValue('--_toast-swipe-y')).toBe('');
-      expect(visualToast.style.getPropertyValue('--_toast-swipe-opacity')).toBe(
-        '',
-      );
-      expect(visualToast.style.getPropertyValue('--_toast-swipe-scale')).toBe(
-        '',
-      );
+
+      // A swipe while it springs back neither catches nor moves it.
+      act(() => {
+        penStroke(visualToast, 14, [
+          [0, 0],
+          [100, 30],
+          [200, 60],
+          [210, 60],
+        ]);
+      });
+      expect(onHide).not.toHaveBeenCalled();
+      expect(cardY(visualToast)).toBe(0);
+
+      // Once it is back at rest, the card takes swipes again.
+      await act(async () => {
+        await vi.runAllTimersAsync();
+      });
+      act(() => {
+        penStroke(visualToast, 15, [
+          [0, 0],
+          [100, 30],
+          [200, 60],
+          [210, 60],
+        ]);
+      });
+      expect(onHide).toHaveBeenCalledWith('manual');
     } finally {
-      clock.restore();
+      vi.useRealTimers();
     }
   });
 
-  it('fades and subtly scales only after accepted vertical edge swipe intent', () => {
-    const {visualToast} = renderSwipeToast();
-
-    act(() => {
-      fireEvent.pointerDown(visualToast, {
-        pointerId: 7,
-        pointerType: 'pen',
-        button: 0,
-        clientX: 0,
-        clientY: 0,
-      });
-      fireEvent.pointerMove(visualToast, {
-        pointerId: 7,
-        pointerType: 'pen',
-        clientX: 0,
-        clientY: -40,
-      });
-    });
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-y')).toBe('');
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-opacity')).toBe(
-      '',
-    );
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-scale')).toBe('');
-    act(() => {
-      fireEvent.pointerCancel(visualToast, {
-        pointerId: 7,
-        pointerType: 'pen',
-        clientX: 0,
-        clientY: -40,
-      });
-    });
-
-    act(() => {
-      fireEvent.pointerDown(visualToast, {
-        pointerId: 8,
-        pointerType: 'pen',
-        button: 0,
-        clientX: 0,
-        clientY: 0,
-      });
-      fireEvent.pointerMove(visualToast, {
-        pointerId: 8,
-        pointerType: 'pen',
-        clientX: 0,
-        clientY: 40,
-      });
-    });
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-y')).toBe('40px');
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-opacity')).toBe(
-      '0.800',
-    );
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-scale')).toBe(
-      '0.990',
-    );
-  });
-
-  it('does not fade for horizontal intent and resets swipe vars on pointercancel', () => {
+  it('leaves a horizontal drag to the page and returns a cancelled swipe to rest', () => {
     const {visualToast, onHide} = renderSwipeToast();
 
     act(() => {
@@ -1360,12 +1341,16 @@ describe('Toast swipe dismissal', () => {
       });
     });
     expect(onHide).not.toHaveBeenCalled();
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-opacity')).toBe(
-      '',
-    );
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-scale')).toBe('');
+    expect(cardY(visualToast)).toBe(0);
 
     act(() => {
+      // A failed gesture stays failed until its pen lifts.
+      fireEvent.pointerUp(visualToast, {
+        pointerId: 7,
+        pointerType: 'pen',
+        clientX: 80,
+        clientY: 20,
+      });
       fireEvent.pointerDown(visualToast, {
         pointerId: 8,
         pointerType: 'pen',
@@ -1377,25 +1362,20 @@ describe('Toast swipe dismissal', () => {
         pointerId: 8,
         pointerType: 'pen',
         clientX: 0,
-        clientY: 40,
+        clientY: 54,
       });
     });
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-opacity')).toBe(
-      '0.800',
-    );
+    expect(cardY(visualToast)).toBeCloseTo(22, 5);
     act(() => {
       fireEvent.pointerCancel(visualToast, {
         pointerId: 8,
         pointerType: 'pen',
         clientX: 0,
-        clientY: 40,
+        clientY: 54,
       });
     });
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-y')).toBe('');
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-opacity')).toBe(
-      '',
-    );
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-scale')).toBe('');
+    expect(onHide).not.toHaveBeenCalled();
+    expect(cardY(visualToast)).toBe(0);
   });
 
   it('hands the opposite vertical direction back without moving the toast', () => {
@@ -1558,13 +1538,11 @@ describe('Toast swipe dismissal', () => {
     });
 
     expect(onHide).toHaveBeenCalledWith('manual');
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-opacity')).toBe(
-      '',
-    );
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-scale')).toBe('');
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-exit-y')).toBe(
-      'calc(-1 * 120%)',
-    );
+    // A top toast leaves upward from where the finger left it, and never
+    // sideways.
+    const [x] = visualToast.style.getPropertyValue('translate').split(' ');
+    expect(x).toBe('0px');
+    expect(cardY(visualToast)).toBeCloseTo(-0.55 * (60 - 14), 5);
     expect(getComputedStyle(visualToast).transform).not.toContain('translateX');
   });
 
@@ -1643,7 +1621,7 @@ describe('Toast swipe dismissal', () => {
       move = touch('touchmove', 40);
     });
     expect(move!.defaultPrevented).toBe(true);
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-y')).toBe('40px');
+    expect(cardY(visualToast)).toBeCloseTo(0.55 * (40 - 14), 5);
 
     act(() => {
       visualToast.dispatchEvent(
@@ -1652,16 +1630,13 @@ describe('Toast swipe dismissal', () => {
     });
 
     expect(onHide).not.toHaveBeenCalled();
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-y')).toBe('');
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-opacity')).toBe(
-      '',
-    );
+    expect(cardY(visualToast)).toBe(0);
   });
 
-  it('abandons a one-finger swipe when a second touch starts', () => {
+  it('keeps a one-finger swipe when a second touch starts', () => {
     const {visualToast, onHide} = renderSwipeToast();
     const dispatchTouch = (
-      type: 'touchstart' | 'touchmove',
+      type: 'touchstart' | 'touchmove' | 'touchend',
       touches: {identifier: number; clientX: number; clientY: number}[],
       changedTouches = touches,
     ) => {
@@ -1678,22 +1653,34 @@ describe('Toast swipe dismissal', () => {
       dispatchTouch('touchstart', [first]);
       dispatchTouch('touchmove', [{...first, clientY: 40}]);
     });
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-y')).toBe('40px');
+    expect(cardY(visualToast)).toBeCloseTo(0.55 * (40 - 14), 5);
+
+    // A second finger never breaks the first: the swipe keeps its finger.
+    act(() => {
+      dispatchTouch('touchstart', [{...first, clientY: 40}, second], [second]);
+    });
+    let multitouchMove: Event;
+    act(() => {
+      multitouchMove = dispatchTouch('touchmove', [
+        {...first, clientY: 70},
+        {...second, clientY: 90},
+      ]);
+    });
+    expect(multitouchMove!.defaultPrevented).toBe(true);
+    expect(cardY(visualToast)).toBeCloseTo(0.55 * (70 - 14), 5);
+    expect(onHide).not.toHaveBeenCalled();
 
     act(() => {
-      dispatchTouch('touchstart', [first, second], [second]);
+      dispatchTouch(
+        'touchend',
+        [{...second, clientY: 90}],
+        [{...first, clientY: 70}],
+      );
     });
-    const multitouchMove = dispatchTouch('touchmove', [first, second]);
-
-    expect(multitouchMove.defaultPrevented).toBe(false);
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-y')).toBe('');
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-opacity')).toBe(
-      '',
-    );
-    expect(onHide).not.toHaveBeenCalled();
+    expect(onHide).toHaveBeenCalledWith('manual');
   });
 
-  it('does not dismiss when another touch remains outside the Toast', () => {
+  it('dismisses when the swiping finger lifts while another touch stays down outside the Toast', () => {
     const {visualToast, onHide} = renderSwipeToast();
     const first = {identifier: 61, clientX: 10, clientY: 0};
     const second = {identifier: 62, clientX: 200, clientY: 200};
@@ -1717,20 +1704,16 @@ describe('Toast swipe dismissal', () => {
         [{...first, clientY: 60}],
       );
     });
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-y')).toBe('60px');
+    expect(cardY(visualToast)).toBeCloseTo(0.55 * (60 - 14), 5);
 
-    // The second contact began outside the Toast, so its touchstart did not
-    // reach the Toast listener. Ending the tracked finger must still cancel
-    // while that other contact remains active.
+    // The other contact began outside the Toast; the swipe is the tracked
+    // finger's alone, and its lift completes it.
     act(() => {
       dispatchTouch('touchend', [second], [{...first, clientY: 60}]);
     });
 
-    expect(onHide).not.toHaveBeenCalled();
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-y')).toBe('');
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-opacity')).toBe(
-      '',
-    );
+    expect(onHide).toHaveBeenCalledWith('manual');
+    expect(cardY(visualToast)).toBeCloseTo(0.55 * (60 - 14), 5);
   });
 
   it('does not let a pen event with the same numeric ID control a touch gesture', () => {
@@ -1760,7 +1743,7 @@ describe('Toast swipe dismissal', () => {
     });
 
     expect(onHide).not.toHaveBeenCalled();
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-y')).toBe('');
+    expect(cardY(visualToast)).toBe(0);
 
     act(() => {
       visualToast.dispatchEvent(
@@ -1769,14 +1752,23 @@ describe('Toast swipe dismissal', () => {
     });
   });
 
-  it('removes native touch listeners when a Toast unmounts', () => {
-    const {visualToast, unmount} = renderSwipeToast();
-    const removeListener = vi.spyOn(visualToast, 'removeEventListener');
-
-    unmount();
-
-    for (const type of ['touchstart', 'touchmove', 'touchend', 'touchcancel']) {
-      expect(removeListener).toHaveBeenCalledWith(type, expect.any(Function));
+  it('leaves the card one native touch listener, removed when it unmounts', () => {
+    // The document's gesture host tracks the touches. The card carries only
+    // the non-passive touchmove that lets a claimed swipe cancel scrolling.
+    const add = vi.spyOn(EventTarget.prototype, 'addEventListener');
+    try {
+      const {visualToast, unmount} = renderSwipeToast();
+      const onCard = add.mock.calls
+        .filter((_, index) => add.mock.contexts[index] === visualToast)
+        .map(([type]) => type);
+      expect(onCard.filter(type => type.startsWith('touch'))).toEqual([
+        'touchmove',
+      ]);
+      const remove = vi.spyOn(visualToast, 'removeEventListener');
+      unmount();
+      expect(remove.mock.calls.map(([type]) => type)).toContain('touchmove');
+    } finally {
+      add.mockRestore();
     }
   });
 
@@ -1913,7 +1905,7 @@ describe('Toast swipe dismissal', () => {
     });
 
     expect(onHide).not.toHaveBeenCalled();
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-y')).toBe('');
+    expect(cardY(visualToast)).toBe(0);
     act(() => {
       fireEvent.click(targets[0]);
     });

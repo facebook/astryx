@@ -445,6 +445,7 @@ const calmTheme = defineTheme({
               'duration',
               '500ms',
             ],
+            ['toast.settle', '--motion-toast-settle', 'spring', '0.5s 0'],
             // motion-roles:end
           ],
         },
