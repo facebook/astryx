@@ -18,6 +18,7 @@ import {
   beforeEach,
   afterEach,
 } from 'vitest';
+import {readFileSync} from 'node:fs';
 import {renderToString} from 'react-dom/server';
 import {act, render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -1167,6 +1168,15 @@ describe('AppShell page scroll owner', () => {
   }
 
   const TOUCH = '(pointer: coarse)';
+
+  it('resolves touch through the shared touch resolver', () => {
+    const source = readFileSync(
+      'packages/core/src/AppShell/AppShell.tsx',
+      'utf8',
+    );
+    expect(source).toContain('useTouchPresentation(');
+    expect(source).not.toContain('(pointer: coarse)');
+  });
 
   it('adaptive scrolls the page, not the main region, where the primary pointer is touch', () => {
     mockQueries(query => query === TOUCH);

@@ -54,6 +54,7 @@ import type {BaseProps} from '../BaseProps';
 import {mergeProps, isRenderable} from '../utils';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useMediaQuery} from '../hooks/useMediaQuery';
+import {useTouchPresentation} from '../utils/touchPresentation';
 import {observeResize} from '../utils/sharedResizeObserver';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
@@ -81,15 +82,6 @@ const ActivityWrapper = HasActivity
 // =============================================================================
 
 const MAIN_CONTENT_ID = 'astryx-app-shell-main';
-
-/**
- * A primary pointer that is a finger. The browser attaches its page behaviors
- * to the document's own scroll (on iOS, where the page is a native scroll
- * view: scroll to top from a status-bar tap, the toolbar that minimizes as
- * you scroll), and a scroll region inside a viewport-high shell gets none of
- * them, so `height="adaptive"` scrolls the page on such a device.
- */
-const TOUCH_POINTER_QUERY = '(pointer: coarse)';
 
 /**
  * Extra time, on top of MobileNav's own worst-case close delay, that
@@ -608,15 +600,18 @@ export function AppShell({
     document.getElementById(MAIN_CONTENT_ID)?.focus();
   }, []);
 
-  // `adaptive` resolves per device: the page scrolls where the primary pointer
-  // is touch. The SSR hint for mobile layout also seeds the touch query, so a
+  // `adaptive` resolves through the shared touch resolver: the page scrolls
+  // under a finger (a coarse primary pointer). The browser attaches its page
+  // behaviors to the document's own scroll (the toolbar or address bar that
+  // minimizes as the page scrolls, the pull at the top; on iOS, scroll to top
+  // from a status-bar tap), and a scroll region inside a viewport-high shell
+  // gets none of them. The SSR hint for mobile layout also seeds it, so a
   // server-rendered phone page starts out scrolling the page.
-  const isTouchPointer = useMediaQuery(
-    TOUCH_POINTER_QUERY,
-    mobileNavConfig?.defaultIsMobile ?? false,
-  );
+  const {isTouch} = useTouchPresentation({
+    isTouch: mobileNavConfig?.defaultIsMobile ?? false,
+  });
   const scrollsDocument =
-    height === 'auto' || (height === 'adaptive' && isTouchPointer);
+    height === 'auto' || (height === 'adaptive' && isTouch);
   const isFill = !scrollsDocument;
   const isAuto = scrollsDocument;
 
