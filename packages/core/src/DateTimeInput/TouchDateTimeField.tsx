@@ -4,15 +4,15 @@
 
 /**
  * @file TouchDateTimeField.tsx
- * @input Uses React, Field, BottomSheet, SegmentedControl, DateInput month picker primitives, Wheel, StyleX intrinsic flex layout
+ * @input Uses React, Field, BottomSheet, SegmentedControl, DateInput month picker primitives, TimeWheels, StyleX intrinsic flex layout
  * @output Exports TouchDateTimeField — the coarse-pointer surface behind DateTimeInput
  * @position Internal component; consumed by DateTimeInput.tsx
  *
  * The touch half of `DateTimeInput`, holding `DateTimeInput`'s whole prop
- * contract so the desktop and touch surfaces are interchangeable. The desktop
- * only props `timeIncrement` and `timeOptionInterval` remain accepted but are
- * intentionally ignored here: time is selected with wheels instead of a typed
- * field or preset list.
+ * contract so the desktop and touch surfaces are interchangeable. Time is
+ * selected with UIDatePicker's time wheels (TimeWheels): `timeIncrement`
+ * steps the minute column, while the desktop-only `timeOptionInterval` stays
+ * accepted and ignored (a preset list has no place beside the wheels).
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/DateTimeInput/DateTimeInput.tsx
@@ -75,7 +75,6 @@ import {
   formatISOTime,
   isImeKeyEvent,
   isRenderable,
-  isTimeInRange,
   clampTime,
   mergeProps,
   parseISOTime,
@@ -97,8 +96,6 @@ import {
   type MonthScrollerHandle,
 } from '../DateInput/MonthScroller';
 import {MonthYearWheels} from '../DateInput/MonthYearWheels';
-import {Wheel, type WheelOption} from '../DateInput/Wheel';
-import {WheelGroup} from '../DateInput/WheelGroup';
 import {
   dateInputTouchGeometry,
   dateInputTouchSizes,
@@ -110,6 +107,8 @@ import {
   monthIndexOf,
 } from '../DateInput/monthGeometry';
 import type {DateTimeInputProps, ISODateTimeString} from './DateTimeInput';
+import {TimeWheels} from '../TimeInput/TimeWheels';
+import {minuteIntervalOf} from '../TimeInput/timeWheelRules';
 
 function splitDateTime(dt: ISODateTimeString | undefined): {
   date: ISODateString | undefined;
@@ -412,45 +411,6 @@ function normalizeISOTime(
   return parsed ? formatISOTime(parsed, hasSeconds) : undefined;
 }
 
-function timeToSeconds(time: ISOTimeString | undefined): number | null {
-  if (time === undefined) {
-    return null;
-  }
-  const parsed = parseISOTime(time);
-  return parsed == null
-    ? null
-    : parsed.hour * 3600 + parsed.minute * 60 + parsed.second;
-}
-
-function twoDigits(value: number): string {
-  return String(value).padStart(2, '0');
-}
-
-function hour12From24(hour: number): number {
-  return hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-}
-
-function hour24From12(hour: number, meridiem: number): number {
-  if (meridiem === 0) {
-    return hour === 12 ? 0 : hour;
-  }
-  return hour === 12 ? 12 : hour + 12;
-}
-
-function rangeOverlaps(
-  startSecond: number,
-  endSecond: number,
-  min: ISOTimeString | undefined,
-  max: ISOTimeString | undefined,
-): boolean {
-  const minSecond = timeToSeconds(min);
-  const maxSecond = timeToSeconds(max);
-  return (
-    (minSecond == null || endSecond >= minSecond) &&
-    (maxSecond == null || startSecond <= maxSecond)
-  );
-}
-
 type TouchDateTimePanel = 'date' | 'time';
 
 export function TouchDateTimeField({
@@ -471,7 +431,7 @@ export function TouchDateTimeField({
   hasSeconds = false,
   hourFormat = '12h',
   // Desktop-only: mobile uses wheels instead of typed arrow stepping or a preset list.
-  timeIncrement: _timeIncrement,
+  timeIncrement,
   timeOptionInterval: _timeOptionInterval,
   hasClear = false,
   placeholder: placeholderFromProps,
@@ -832,145 +792,7 @@ export function TouchDateTimeField({
     [clampTimeForDate, fireChange, optimisticValue, valueParts.date],
   );
 
-  const composeWheelTime = useCallback(
-    ({
-      hour24,
-      hour12,
-      minute,
-      second,
-      meridiem,
-    }: {
-      hour24?: number;
-      hour12?: number;
-      minute?: number;
-      second?: number;
-      meridiem?: number;
-    }): ISOTimeString => {
-      const currentMeridiem = parsedWheelTime.hour < 12 ? 0 : 1;
-      let hour = parsedWheelTime.hour;
-      if (hourFormat === '24h') {
-        hour = hour24 ?? hour;
-      } else {
-        hour = hour24From12(
-          hour12 ?? hour12From24(hour),
-          meridiem ?? currentMeridiem,
-        );
-      }
-      return formatISOTime(
-        {
-          hour,
-          minute: minute ?? parsedWheelTime.minute,
-          second: hasSeconds ? (second ?? parsedWheelTime.second) : 0,
-        },
-        hasSeconds,
-      );
-    },
-    [hasSeconds, hourFormat, parsedWheelTime],
-  );
-
   const timeBounds = timeBoundsForDate(valueParts.date);
-  const hourOptions: WheelOption[] = useMemo(() => {
-    if (hourFormat === '24h') {
-      return Array.from({length: 24}, (_, hour) => ({
-        value: hour,
-        label: twoDigits(hour),
-        isDisabled: !rangeOverlaps(
-          hour * 3600,
-          hour * 3600 + 3599,
-          timeBounds.min,
-          timeBounds.max,
-        ),
-      }));
-    }
-    const meridiem = parsedWheelTime.hour < 12 ? 0 : 1;
-    // In 12-hour mode the hour column is interpreted inside the active AM/PM
-    // half, so disabled rows describe reachability within that half only.
-    return Array.from({length: 12}, (_, index) => {
-      const hour = index + 1;
-      const hour24 = hour24From12(hour, meridiem);
-      return {
-        value: hour,
-        label: String(hour),
-        isDisabled: !rangeOverlaps(
-          hour24 * 3600,
-          hour24 * 3600 + 3599,
-          timeBounds.min,
-          timeBounds.max,
-        ),
-      };
-    });
-  }, [hourFormat, parsedWheelTime.hour, timeBounds.min, timeBounds.max]);
-
-  const minuteOptions: WheelOption[] = useMemo(
-    () =>
-      Array.from({length: 60}, (_, minute) => {
-        const start = parsedWheelTime.hour * 3600 + minute * 60;
-        return {
-          value: minute,
-          label: twoDigits(minute),
-          isDisabled: !rangeOverlaps(
-            start,
-            start + (hasSeconds ? 59 : 0),
-            timeBounds.min,
-            timeBounds.max,
-          ),
-        };
-      }),
-    [hasSeconds, parsedWheelTime.hour, timeBounds.min, timeBounds.max],
-  );
-
-  const secondOptions: WheelOption[] = useMemo(
-    () =>
-      Array.from({length: 60}, (_, second) => ({
-        value: second,
-        label: twoDigits(second),
-        isDisabled: !isTimeInRange(
-          formatISOTime(
-            {
-              hour: parsedWheelTime.hour,
-              minute: parsedWheelTime.minute,
-              second,
-            },
-            true,
-          ),
-          timeBounds.min,
-          timeBounds.max,
-        ),
-      })),
-    [
-      parsedWheelTime.hour,
-      parsedWheelTime.minute,
-      timeBounds.min,
-      timeBounds.max,
-    ],
-  );
-
-  const meridiemOptions: WheelOption[] = useMemo(
-    () => [
-      {
-        value: 0,
-        label: t('@astryx.dateTimeInput.meridiemAM'),
-        isDisabled: !rangeOverlaps(
-          0,
-          11 * 3600 + 3599,
-          timeBounds.min,
-          timeBounds.max,
-        ),
-      },
-      {
-        value: 1,
-        label: t('@astryx.dateTimeInput.meridiemPM'),
-        isDisabled: !rangeOverlaps(
-          12 * 3600,
-          23 * 3600 + 3599,
-          timeBounds.min,
-          timeBounds.max,
-        ),
-      },
-    ],
-    [t, timeBounds.min, timeBounds.max],
-  );
-
   const handleVisibleMonthChange = useCallback(
     (next: number) => {
       if (activePanel === 'date' && !isWheelOpen) {
@@ -1240,54 +1062,18 @@ export function TouchDateTimeField({
             activePanel !== 'time' && styles.touchPanelHidden,
           )}>
           <div {...stylex.props(styles.touchTimeWheels)}>
-            <WheelGroup>
-              <Wheel
-                label={t('@astryx.dateTimeInput.hourWheel')}
-                options={hourOptions}
-                value={
-                  hourFormat === '24h'
-                    ? parsedWheelTime.hour
-                    : hour12From24(parsedWheelTime.hour)
-                }
-                isActive={activePanel === 'time'}
-                onChange={hour =>
-                  commitWheelTime(
-                    hourFormat === '24h'
-                      ? composeWheelTime({hour24: hour})
-                      : composeWheelTime({hour12: hour}),
-                  )
-                }
-              />
-              <Wheel
-                label={t('@astryx.dateTimeInput.minuteWheel')}
-                options={minuteOptions}
-                value={parsedWheelTime.minute}
-                isActive={activePanel === 'time'}
-                onChange={minute => commitWheelTime(composeWheelTime({minute}))}
-              />
-              {hasSeconds && (
-                <Wheel
-                  label={t('@astryx.dateTimeInput.secondWheel')}
-                  options={secondOptions}
-                  value={parsedWheelTime.second}
-                  isActive={activePanel === 'time'}
-                  onChange={second =>
-                    commitWheelTime(composeWheelTime({second}))
-                  }
-                />
-              )}
-              {hourFormat === '12h' && (
-                <Wheel
-                  label={t('@astryx.dateTimeInput.meridiemWheel')}
-                  options={meridiemOptions}
-                  value={parsedWheelTime.hour < 12 ? 0 : 1}
-                  isActive={activePanel === 'time'}
-                  onChange={meridiem =>
-                    commitWheelTime(composeWheelTime({meridiem}))
-                  }
-                />
-              )}
-            </WheelGroup>
+            <TimeWheels
+              time={parsedWheelTime}
+              hourFormat={hourFormat}
+              hasSeconds={hasSeconds}
+              minuteInterval={minuteIntervalOf(timeIncrement)}
+              min={timeBounds.min}
+              max={timeBounds.max}
+              isActive={activePanel === 'time'}
+              onCommit={time =>
+                commitWheelTime(formatISOTime(time, hasSeconds))
+              }
+            />
           </div>
           <div {...stylex.props(styles.touchFooter)}>
             <Button

@@ -4,7 +4,7 @@
 
 /**
  * @file TouchTimeField.tsx
- * @input Uses React, Field, BottomSheet, Wheel, DateInput touch geometry
+ * @input Uses React, Field, BottomSheet, TimeWheels, DateInput touch geometry
  *   tokens, and shared time utilities
  * @output Exports TouchTimeField — the bottom-sheet surface behind TimeInput
  * @position Internal component; consumed by TimeInput.tsx for `presentation`
@@ -13,7 +13,8 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/TimeInput/TimeInput.tsx
  * - /packages/core/src/TimeInput/TimeInput.doc.mjs
- * - /packages/core/src/DateTimeInput/TouchDateTimeField.tsx (wheel behavior)
+ * - /packages/core/src/DateTimeInput/TouchDateTimeField.tsx (both render
+ *   TimeWheels)
  */
 
 import {
@@ -51,8 +52,6 @@ import {colorVars, sizeVars, spacingVars} from '../theme/tokens.stylex';
 import {useSize} from '../SizeContext/SizeContext';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
-import {Wheel, type WheelOption} from '../DateInput/Wheel';
-import {WheelGroup} from '../DateInput/WheelGroup';
 import {dateInputTouchGeometry} from '../DateInput/tokens.stylex';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {themeProps} from '../utils/themeProps';
@@ -69,6 +68,8 @@ import {
 } from '../utils';
 import {chainEventHandlers} from '../utils/chainEventHandlers';
 import type {TimeInputProps} from './TimeInput';
+import {TimeWheels} from './TimeWheels';
+import {minuteIntervalOf, type TimeParts} from './timeWheelRules';
 
 const sizeStyles = stylex.create({
   sm: {height: sizeVars['--size-element-sm'], minWidth: 120},
@@ -147,45 +148,6 @@ const styles = stylex.create({
   },
 });
 
-function twoDigits(value: number): string {
-  return String(value).padStart(2, '0');
-}
-
-function hour12From24(hour: number): number {
-  return hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-}
-
-function hour24From12(hour: number, meridiem: number): number {
-  if (meridiem === 0) {
-    return hour === 12 ? 0 : hour;
-  }
-  return hour === 12 ? 12 : hour + 12;
-}
-
-function timeToSeconds(time: ISOTimeString | undefined): number | null {
-  if (time == null) {
-    return null;
-  }
-  const parsed = parseISOTime(time);
-  return parsed == null
-    ? null
-    : parsed.hour * 3600 + parsed.minute * 60 + parsed.second;
-}
-
-function rangeOverlaps(
-  startSecond: number,
-  endSecond: number,
-  min: ISOTimeString | undefined,
-  max: ISOTimeString | undefined,
-): boolean {
-  const minSecond = timeToSeconds(min);
-  const maxSecond = timeToSeconds(max);
-  return (
-    (minSecond == null || endSecond >= minSecond) &&
-    (maxSecond == null || startSecond <= maxSecond)
-  );
-}
-
 /**
  * The Astryx bottom-sheet time surface: a read-only closed field that opens
  * hour/minute(/second/meridiem) wheels in a BottomSheet. Wheels commit live,
@@ -210,7 +172,7 @@ export function TouchTimeField({
   hourFormat = '12h',
   // Typed-field only: the wheels step by their own options and the sheet
   // opens on tap, so neither reaches this surface.
-  increment: _increment,
+  increment,
   hasAutoFocus: _hasAutoFocus,
   placeholder: placeholderFromProps,
   size: sizeProp,
@@ -331,123 +293,21 @@ export function TouchTimeField({
     [fallbackTime, optimisticValue],
   );
 
-  const composeWheelTime = useCallback(
-    (patch: {
-      hour24?: number;
-      hour12?: number;
-      minute?: number;
-      second?: number;
-      meridiem?: number;
-    }): ISOTimeString => {
-      const meridiem = patch.meridiem ?? (parsedWheelTime.hour < 12 ? 0 : 1);
-      let hour = parsedWheelTime.hour;
-      if (patch.hour24 !== undefined) {
-        hour = patch.hour24;
-      } else if (patch.hour12 !== undefined) {
-        hour = hour24From12(patch.hour12, meridiem);
-      } else if (patch.meridiem !== undefined) {
-        hour = hour24From12(hour12From24(hour), patch.meridiem);
-      }
-      return formatISOTime(
-        {
-          hour,
-          minute: patch.minute ?? parsedWheelTime.minute,
-          second: hasSeconds ? (patch.second ?? parsedWheelTime.second) : 0,
-        },
+  const commitWheelTime = useCallback(
+    (time: TimeParts) => {
+      // The wheels already keep the time inside the bounds; clamp again so a
+      // commit can never escape them.
+      const next = clampTime(
+        formatISOTime(time, hasSeconds),
+        min,
+        max,
         hasSeconds,
       );
-    },
-    [hasSeconds, parsedWheelTime],
-  );
-
-  const commitWheelTime = useCallback(
-    (rawTime: ISOTimeString) => {
-      const next = clampTime(rawTime, min, max, hasSeconds);
       if (next !== optimisticValue && isTimeInRange(next, min, max)) {
         fireChange(next);
       }
     },
     [fireChange, hasSeconds, max, min, optimisticValue],
-  );
-
-  const hourOptions: WheelOption[] = useMemo(() => {
-    if (hourFormat === '24h') {
-      return Array.from({length: 24}, (_, hour) => ({
-        value: hour,
-        label: twoDigits(hour),
-        isDisabled: !rangeOverlaps(hour * 3600, hour * 3600 + 3599, min, max),
-      }));
-    }
-    const meridiem = parsedWheelTime.hour < 12 ? 0 : 1;
-    return Array.from({length: 12}, (_, index) => {
-      const hour = index + 1;
-      const hour24 = hour24From12(hour, meridiem);
-      return {
-        value: hour,
-        label: String(hour),
-        isDisabled: !rangeOverlaps(
-          hour24 * 3600,
-          hour24 * 3600 + 3599,
-          min,
-          max,
-        ),
-      };
-    });
-  }, [hourFormat, max, min, parsedWheelTime.hour]);
-
-  const minuteOptions: WheelOption[] = useMemo(
-    () =>
-      Array.from({length: 60}, (_, minute) => {
-        const start = parsedWheelTime.hour * 3600 + minute * 60;
-        return {
-          value: minute,
-          label: twoDigits(minute),
-          isDisabled: !rangeOverlaps(
-            start,
-            start + (hasSeconds ? 59 : 0),
-            min,
-            max,
-          ),
-        };
-      }),
-    [hasSeconds, max, min, parsedWheelTime.hour],
-  );
-
-  const secondOptions: WheelOption[] = useMemo(
-    () =>
-      Array.from({length: 60}, (_, second) => ({
-        value: second,
-        label: twoDigits(second),
-        isDisabled: !isTimeInRange(
-          formatISOTime(
-            {
-              hour: parsedWheelTime.hour,
-              minute: parsedWheelTime.minute,
-              second,
-            },
-            true,
-          ),
-          min,
-          max,
-        ),
-      })),
-    [max, min, parsedWheelTime.hour, parsedWheelTime.minute],
-  );
-
-  const meridiemOptions: WheelOption[] = useMemo(
-    () => [
-      {
-        value: 0,
-        label: t('@astryx.dateTimeInput.meridiemAM'),
-        isDisabled: !rangeOverlaps(0, 11 * 3600 + 3599, min, max),
-      },
-      {
-        value: 1,
-        label: t('@astryx.dateTimeInput.meridiemPM'),
-        isDisabled: !rangeOverlaps(12 * 3600, 23 * 3600 + 3599, min, max),
-      },
-    ],
-    [max, min, t],
   );
 
   const openSheet = useCallback(() => {
@@ -545,54 +405,16 @@ export function TouchTimeField({
         padding={0}>
         <div ref={sheetBodyRef} {...stylex.props(styles.sheetBody)}>
           <div {...stylex.props(styles.wheels)}>
-            <WheelGroup>
-              <Wheel
-                label={t('@astryx.dateTimeInput.hourWheel')}
-                options={hourOptions}
-                value={
-                  hourFormat === '24h'
-                    ? parsedWheelTime.hour
-                    : hour12From24(parsedWheelTime.hour)
-                }
-                isActive={isSheetOpen}
-                onChange={hour =>
-                  commitWheelTime(
-                    hourFormat === '24h'
-                      ? composeWheelTime({hour24: hour})
-                      : composeWheelTime({hour12: hour}),
-                  )
-                }
-              />
-              <Wheel
-                label={t('@astryx.dateTimeInput.minuteWheel')}
-                options={minuteOptions}
-                value={parsedWheelTime.minute}
-                isActive={isSheetOpen}
-                onChange={minute => commitWheelTime(composeWheelTime({minute}))}
-              />
-              {hasSeconds && (
-                <Wheel
-                  label={t('@astryx.dateTimeInput.secondWheel')}
-                  options={secondOptions}
-                  value={parsedWheelTime.second}
-                  isActive={isSheetOpen}
-                  onChange={second =>
-                    commitWheelTime(composeWheelTime({second}))
-                  }
-                />
-              )}
-              {hourFormat === '12h' && (
-                <Wheel
-                  label={t('@astryx.dateTimeInput.meridiemWheel')}
-                  options={meridiemOptions}
-                  value={parsedWheelTime.hour < 12 ? 0 : 1}
-                  isActive={isSheetOpen}
-                  onChange={meridiem =>
-                    commitWheelTime(composeWheelTime({meridiem}))
-                  }
-                />
-              )}
-            </WheelGroup>
+            <TimeWheels
+              time={parsedWheelTime}
+              hourFormat={hourFormat}
+              hasSeconds={hasSeconds}
+              minuteInterval={minuteIntervalOf(increment)}
+              min={min}
+              max={max}
+              isActive={isSheetOpen}
+              onCommit={commitWheelTime}
+            />
           </div>
           <div {...stylex.props(styles.footer)}>
             <Button

@@ -419,9 +419,10 @@ export interface DateTimeInputProps extends Omit<
 
   /**
    * Minute step for the time field. Astryx's typed field uses it for arrow-key
-   * stepping. The default value permits the native time picker; a non-default
+   * stepping, and the Astryx touch sheet's minute wheel shows every n-th
+   * minute. The default value permits the native time picker; a non-default
    * value retains the Astryx time field because iOS does not apply native
-   * `step` as picker cadence. Ignored by the Astryx touch sheet.
+   * `step` as picker cadence.
    * @default 1
    */
   timeIncrement?: DateTimeInputTimeIncrement;
