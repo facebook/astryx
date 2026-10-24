@@ -3,7 +3,8 @@
 /**
  * @file index.ts
  * @input The domain files of the UIKit constants table
- * @output Re-exports `springs`, `scroll`, `timing`, `navigation`, `keyboard`
+ * @output Re-exports `springs`, `scroll`, `timing`, `navigation`, `keyboard`,
+ *   `search`
  *   and the gesture thresholds (`UIKIT_GESTURES` and the haptic tables)
  * @position Entry of the UIKit constants table (motion/uikit). Internal to
  *   core: not exported from the package entry point
@@ -31,5 +32,6 @@ export {
 export {keyboard} from './keyboard';
 export {navigation} from './navigation';
 export {scroll} from './scroll';
+export {search} from './search';
 export {springs} from './springs';
 export {timing} from './timing';
