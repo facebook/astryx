@@ -22,6 +22,11 @@
  * - Failure requirements. A recognizer that requires another to fail waits
  *   (still `possible`) until that one fails, then recognizes; if that one
  *   recognizes, it fails. An idle recognizer holds nothing up.
+ * - Delegates from outside. Code that does not own a recognizer (an app
+ *   relating its pan to a component's) registers delegate methods against a
+ *   matcher (`addDelegate`). They add to the owner's own: any `false` from
+ *   should-begin or should-receive vetoes, any `true` relationship applies.
+ *   With none registered, nothing changes.
  * - Delivery to the view. The touch's consumer (a pressable control) gets
  *   began / moved / ended unless a recognizer delays them
  *   (`delaysTouchesBegan`, `delaysTouchesEnded`) or recognizing cancels them
@@ -45,6 +50,8 @@
 import {
   isActive,
   isTerminal,
+  type GestureDelegate,
+  type GestureMatcher,
   type GestureRecognizer,
 } from './GestureRecognizer';
 import type {
@@ -138,6 +145,11 @@ export class GestureArena {
   /** The latest time processed: input never moves the clock backwards. */
   private latestTime = Number.NEGATIVE_INFINITY;
   private depth = 0;
+  /** Delegates for recognizers someone else owns, by what they match. */
+  private readonly delegates = new Set<{
+    readonly match: GestureMatcher;
+    readonly delegate: GestureDelegate;
+  }>();
 
   constructor(options: GestureArenaOptions = {}) {
     this.options = options;
@@ -170,6 +182,36 @@ export class GestureArena {
   /** Recognizers taking part in the current interaction, in resolution order. */
   get involvedRecognizers(): ReadonlyArray<GestureRecognizer> {
     return this.active;
+  }
+
+  // --- Delegates for recognizers someone else owns ---------------------------
+
+  /**
+   * Register delegate methods for every recognizer `match` picks, on top of
+   * its owner's own (UIKit's delegate model for code that does not own the
+   * recognizer, such as an app relating its pan to a component's). With none
+   * registered, nothing changes. Returns the unregister function.
+   */
+  addDelegate(match: GestureMatcher, delegate: GestureDelegate): () => void {
+    const entry = {match, delegate};
+    this.delegates.add(entry);
+    return () => {
+      this.delegates.delete(entry);
+    };
+  }
+
+  /** @internal The registered delegates that apply to `recognizer` now. */
+  delegatesFor(recognizer: GestureRecognizer): ReadonlyArray<GestureDelegate> {
+    if (this.delegates.size === 0) {
+      return [];
+    }
+    const found: GestureDelegate[] = [];
+    for (const {match, delegate} of this.delegates) {
+      if (match(recognizer)) {
+        found.push(delegate);
+      }
+    }
+    return found;
   }
 
   // --- Input -----------------------------------------------------------------
@@ -205,11 +247,12 @@ export class GestureArena {
         };
         const participants: GestureRecognizer[] = [];
         for (const recognizer of input.recognizers) {
+          // Before it is asked: its outside delegates live on this arena.
+          recognizer.arena = this;
           if (!recognizer.wantsTouch(touch)) {
             continue;
           }
           participants.push(recognizer);
-          recognizer.arena = this;
           if (!this.active.includes(recognizer)) {
             this.active.push(recognizer);
           }
