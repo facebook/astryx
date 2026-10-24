@@ -201,6 +201,16 @@ export const doc = {
         '`Command:` line in its header, such as `// Command: pnpm run gen:panel`; upgrade prints it as ' +
         '`Regenerate with: <command>` and lists it in `commands`.',
     },
+    {
+      type: 'prose',
+      text:
+        'A protected file a codemod cannot parse, such as a vendored bundle written for another toolchain, cannot need a ' +
+        'change the codemod can prove, and upgrade never writes it. upgrade skips it, lists it under ' +
+        '`declinedCandidates` with the parse error and where it occurred, and carries on; on its own it does not fail the run. ' +
+        'If another codemod in the same upgrade still requires a change to that file (the 0.6.0 theme selector migration, for one, ' +
+        'adds a TODO comment above a selector it cannot parse), the file is listed once, under `protectedFiles`, and the run is ' +
+        'incomplete as for any protected file. A file upgrade owns that does not parse still fails the run with ERR_CODEMOD_FAILED.',
+    },
     {type: 'heading', level: 3, text: 'A failed codemod'},
     {
       type: 'prose',
