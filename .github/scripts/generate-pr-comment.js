@@ -345,7 +345,7 @@ const diffModeCaveat =
 const body = `## PR Analysis Report
 <!-- astryx-pr-analysis -->
 
-${diffModeCaveat}${previewAvailabilitySection}${storybookSection}${sandboxSection}${componentSection || '_No new or modified components detected._\n\n'}
+${diffModeCaveat}${previewAvailabilitySection}${storybookSection}${sandboxSection}${componentSection || (sizeSection ? '' : '_No new or modified components detected._\n\n')}
 ${sizeSection}${budgetSection}${bundleSection}
 ${a11ySection}
 ${visualSection}---

@@ -122,6 +122,26 @@ describe('component import size', () => {
     expect(js).toContain('import(');
   });
 
+  it('counts CSS a lazily loaded module references, since it ships in the stylesheet', () => {
+    const root = tree({
+      'dist/Menu/index.js':
+        "export function Menu() { return 'xmenu1 ' + import('./Touch.js'); }\n",
+      'dist/Menu/Touch.js': "export const touch = 'xtouch1';\n",
+    });
+    const sheet = '.xmenu1{color:red}.xtouch1{padding:44px}.xother1{margin:0}';
+    const withLazy = measureComponentImport(
+      path.join(root, 'dist/Menu/index.js'),
+      sheet,
+      path.join(root, 'dist'),
+    );
+    const eagerOnly = measureComponentImport(
+      path.join(root, 'dist/Menu/index.js'),
+      '.xmenu1{color:red}.xother1{margin:0}',
+      path.join(root, 'dist'),
+    );
+    expect(withLazy.cssGzipBytes).toBeGreaterThan(eagerOnly.cssGzipBytes);
+  });
+
   it('keeps the @keyframes a kept rule names', () => {
     const css =
       '@layer astryx-base{.xspin2{animation-name:xrot1}.xother9{animation-name:xrot9}@keyframes xrot1{from{opacity:0}to{opacity:1}}@keyframes xrot9{to{opacity:1}}}';

@@ -105,10 +105,12 @@ function bundleImportWithInputs(entry, exportName) {
         }
       }
     }
-    const inputs = new Set();
     let text = '';
-    for (const key of eager) {
-      text += byPath.get(key) ?? '';
+    for (const key of eager) text += byPath.get(key) ?? '';
+    // CSS ships in the package stylesheet whether its module loads eagerly or
+    // through import(), so class names come from every chunk.
+    const inputs = new Set();
+    for (const key of Object.keys(outputs)) {
       for (const input of Object.keys(outputs[key].inputs || {})) {
         inputs.add(path.resolve(workingDir, input));
       }

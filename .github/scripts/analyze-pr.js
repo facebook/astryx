@@ -581,8 +581,9 @@ function measureSizes(targets) {
     // An alias (`export {A as B}`) is not exported by its defining module;
     // measure it through the package entry instead.
     if (size.importGzipBytes === null) {
+      const {esmPath} = resolveEntries(dist, target.pkg);
       size = measureComponentImport(
-        path.join(dist, 'index.js'),
+        esmPath,
         packageStylesheet(target.pkg),
         dist,
         target.name,
