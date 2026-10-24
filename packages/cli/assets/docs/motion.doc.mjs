@@ -191,12 +191,6 @@ const calmTheme = defineTheme({
               '60ms',
             ],
             [
-              'navigation.backChevronReducedMotionDelayMs',
-              '--motion-navigation-back-chevron-reduced-motion-delay-ms',
-              'duration',
-              '175ms',
-            ],
-            [
               'navigation.transitionMs',
               '--motion-navigation-transition-ms',
               'duration',

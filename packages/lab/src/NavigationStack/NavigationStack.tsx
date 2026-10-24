@@ -48,10 +48,11 @@
  * home-screen web app (`navigator.standalone`), and the content swipe
  * ignores touches that start in that edge band.
  *
- * Reduce Motion follows UIKit's cross-fade (the animator's substitution):
- * the incoming screen fades in where it lands while the outgoing one fades
- * out, with no travel and no dimming; the bars swap at once. The back swipe
- * still tracks the finger.
+ * Reduced Motion is the animator's (`design:reduced-motion`): under a finger
+ * the incoming screen fades in where it lands and the outgoing one fades out
+ * in 200 ms, with no travel and no dimming; under a mouse the change is
+ * immediate. A finger's back swipe still tracks it; what its release
+ * starts fades on any pointer.
  *
  * Accessibility: covered screens are `inert`. A push moves focus to the new
  * screen's title; a pop returns it to the control that pushed the screen.
@@ -80,10 +81,8 @@ import {
   PanGestureRecognizer,
   ScreenEdgePanGestureRecognizer,
   useGestureRecognizer,
-  useTouchIdiom,
 } from '@astryxdesign/core/gestures';
 import type {Animator} from '@astryxdesign/core/motion/animator';
-import {prefersReducedMotion} from '@astryxdesign/core/motion/reducedMotion';
 import {resolveMotion} from '@astryxdesign/core/motion/resolveMotion';
 import {
   solveSpring,
@@ -96,6 +95,7 @@ import {
   UIKIT_GESTURES,
 } from '@astryxdesign/core/motion/uikit';
 import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
+import {useTouchPresentation} from '@astryxdesign/core/utils/touchPresentation';
 import {useTranslator} from '@astryxdesign/core/i18n';
 import {focusOutlineStyles} from '@astryxdesign/core/utils';
 import {Icon} from '@astryxdesign/core/Icon';
@@ -756,7 +756,7 @@ export function NavigationStack<T>({
       under: string | null,
       spring: SpringDescription,
       dp: number | undefined,
-      reducedMotion: 'crossfade' | 'keep',
+      release: boolean,
       underBar: 'rest' | 'ride',
     ): Promise<boolean> => {
       const width = cardsRef.current?.clientWidth ?? 0;
@@ -768,29 +768,31 @@ export function NavigationStack<T>({
       const topLayers = layersOf(top);
       const underLayers = layersOf(under);
       const handles = [];
-      // Reduce Motion: UIKit cross-fades. The animator substitutes the fade
-      // for the travel; `crossfadeAs` says which card enters (fades in where
-      // it lands) and which leaves (fades out in place).
+      // Reduced Motion is the animator's; `crossfadeAs` says which card
+      // enters (fades in where it lands) and which leaves (fades out in
+      // place). A finger's release fades on any pointer (`touchRelease`).
       if (topLayers?.card) {
         handles.push(
           topLayers.card.animate(
             {x: values.topX},
             {spring, velocity: velocity ? {x: velocity.topX} : undefined},
-            {at, reducedMotion, crossfadeAs: to === 0 ? 'entrance' : 'exit'},
+            {
+              at,
+              touchRelease: release,
+              crossfadeAs: to === 0 ? 'entrance' : 'exit',
+            },
           ),
         );
         startedRef.current = at;
       }
       // The bars move with their cards (each screen's bar is part of it in
-      // UIKit): the incoming one covers the outgoing title. Under Reduce
-      // Motion they swap at once, as UIKit's titles do.
-      const barMotion = reducedMotion === 'crossfade' ? 'instant' : 'keep';
+      // UIKit): the incoming one covers the outgoing title.
       if (topLayers?.bar) {
         handles.push(
           topLayers.bar.animate(
             {x: values.topX},
             {spring, velocity: velocity ? {x: velocity.topX} : undefined},
-            {at, reducedMotion: barMotion},
+            {at, touchRelease: release},
           ),
         );
       }
@@ -799,7 +801,7 @@ export function NavigationStack<T>({
           underLayers.bar.animate(
             {x: values.underX},
             {spring, velocity: velocity ? {x: velocity.underX} : undefined},
-            {at, reducedMotion: barMotion},
+            {at, touchRelease: release},
           ),
         );
       }
@@ -808,7 +810,11 @@ export function NavigationStack<T>({
           underLayers.card.animate(
             {x: values.underX},
             {spring, velocity: velocity ? {x: velocity.underX} : undefined},
-            {at, reducedMotion, crossfadeAs: to === 1 ? 'entrance' : 'exit'},
+            {
+              at,
+              touchRelease: release,
+              crossfadeAs: to === 1 ? 'entrance' : 'exit',
+            },
           ),
         );
       }
@@ -816,9 +822,9 @@ export function NavigationStack<T>({
         if (dim == null) {
           continue;
         }
-        if (reducedMotion === 'crossfade' && prefersReducedMotion()) {
-          // UIKit's Reduce Motion cross-fade has no dimming: the shade
-          // belongs to the slide.
+        if (dim.reducedMotion({touchRelease: release}) !== 'off') {
+          // A Reduced Motion fade has no dimming: the shade belongs to the
+          // slide.
           dim.set({opacity: 0});
         } else {
           handles.push(
@@ -828,7 +834,7 @@ export function NavigationStack<T>({
                 spring,
                 velocity: velocity ? {opacity: velocity.dim} : undefined,
               },
-              {at},
+              {at, touchRelease: release},
             ),
           );
         }
@@ -849,7 +855,7 @@ export function NavigationStack<T>({
    * push's delay is a motion role, resolved under the stack's theme.
    */
   const fadeBack = useCallback(
-    (kind: 'push' | 'pop', under: string | null) => {
+    (kind: 'push' | 'pop', under: string | null, release = false) => {
       const isRoot = under != null && view.models[0]?.key === under;
       if (!isRoot) {
         return;
@@ -859,13 +865,7 @@ export function NavigationStack<T>({
       const delay =
         kind === 'pop'
           ? 0
-          : resolveMotion(
-              element,
-              navigation,
-              prefersReducedMotion()
-                ? 'backChevronReducedMotionDelayMs'
-                : 'backChevronPushDelayMs',
-            );
+          : resolveMotion(element, navigation, 'backChevronPushDelayMs');
       if (kind === 'push') {
         backControl.animator.set({opacity: 1});
         backChevron.animator.set({opacity: 0});
@@ -889,7 +889,7 @@ export function NavigationStack<T>({
             velocity: t => (t < delayS ? 0 : fade.velocity(t - delayS)),
           },
         },
-        {at: startedRef.current, reducedMotion: 'keep'},
+        {at: startedRef.current, touchRelease: release},
       );
     },
     [view.models, backControl.animator, backChevron.animator],
@@ -996,7 +996,7 @@ export function NavigationStack<T>({
         under,
         springs.navigationPush,
         wasRunning ? undefined : programmaticVelocity('push'),
-        'crossfade',
+        false,
         'ride',
       );
       fadeBack('push', under);
@@ -1007,10 +1007,10 @@ export function NavigationStack<T>({
         under,
         springs.navigationInteractivePopFinish,
         release.velocity,
-        'keep',
+        true,
         'rest',
       );
-      fadeBack('pop', under);
+      fadeBack('pop', under, true);
     } else {
       if (!wasRunning) {
         setProgress(0, top, under, 'ride');
@@ -1021,7 +1021,7 @@ export function NavigationStack<T>({
         under,
         springs.navigationPop,
         wasRunning ? undefined : programmaticVelocity('pop'),
-        'crossfade',
+        false,
         'ride',
       );
       fadeBack('pop', under);
@@ -1240,7 +1240,7 @@ export function NavigationStack<T>({
               swipe.under,
               springs.navigationInteractivePopFinish,
               velocity,
-              'keep',
+              true,
               'rest',
             ).then(finished => {
               if (runningRef.current?.id === id) {
@@ -1284,9 +1284,10 @@ export function NavigationStack<T>({
     [view.models, layersOf, setProgress, animateProgress, settle],
   );
 
-  // The back swipes are UIKit idioms: elsewhere (Android's system back owns
-  // both edges) back is the bar's button and the browser's history.
-  const isIos = useTouchIdiom() === 'ios';
+  // The back swipes are touch behaviour: one model under any finger (a
+  // coarse primary pointer), Android and iOS alike; a mouse goes back with
+  // the bar's button and the browser's history.
+  const isTouch = useTouchPresentation().isTouch;
   // In a browser tab the screen's leading edge is the browser's own back
   // swipe (iOS Safari keeps it, AST-094 FR22): the edge swipe only runs in a
   // home-screen web app, and the content swipe ignores touches that start
@@ -1308,7 +1309,8 @@ export function NavigationStack<T>({
       }),
     recognizer => onSwipe(recognizer, 0),
     {
-      isEnabled: isIos && canPop && isInteractivePopEnabled && !browserOwnsEdge,
+      isEnabled:
+        isTouch && canPop && isInteractivePopEnabled && !browserOwnsEdge,
     },
   );
   // iOS 26's back swipe from anywhere in the content. It waits for the edge
@@ -1334,7 +1336,7 @@ export function NavigationStack<T>({
           ),
       }).requireToFail(edge),
     recognizer => onSwipe(recognizer, CONTENT_DEAD_ZONE_PX),
-    {isEnabled: isIos && canPop && isInteractivePopEnabled},
+    {isEnabled: isTouch && canPop && isInteractivePopEnabled},
   );
   // The content swipe pops toward the trailing edge: rightward unless RTL.
   useLayoutEffect(() => {
