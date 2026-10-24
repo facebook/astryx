@@ -14,8 +14,9 @@
  *   (final value and presented curve against an independent spring), a slow
  *   release does not coast, a drag that rests before the lift still coasts
  *   on its last velocity, Reduce Motion keeps the lift and the coast, a
- *   held thumb selects no text, and a finger lifted outside stays at the
- *   lift value; `onChangeEnd`
+ *   finger landing on a coasting thumb stops it where it is, a held thumb
+ *   selects no text, and a finger lifted outside stays at the lift value;
+ *   `onChangeEnd`
  *   reports after the coast; coincident range thumbs; a vertical swipe from
  *   a thumb scrolls a list; RTL; the coast keeps moving through a blocked
  *   main thread (with its storyboard); no Layout per drag move and no Layout
@@ -531,6 +532,51 @@ test('Reduce Motion keeps the finger-driven lift and coast on their springs', as
   await waitForRest(thumb);
   await frames(page, 4);
   expect(await value()).toBeGreaterThan(start);
+});
+
+test('a finger landing on a coasting thumb stops it where it is', async ({
+  page,
+}) => {
+  const {driver, thumb, center, value, length} = await openSlider(
+    page,
+    'core-slider--touch-tracking',
+    {name: 'Brightness'},
+  );
+  test.skip(
+    !driver.scriptedTimestamps,
+    'the coast target needs the scripted release velocity (README: engine limits)',
+  );
+  const at = await center();
+  const velocity = 600;
+  const script = flick(at, {velocity: {x: velocity, y: 0}, durationMs: 100});
+  const [liftValue] = await playReading(
+    page,
+    driver,
+    script,
+    [script.length - 2],
+    value,
+  );
+  const target = Math.round(
+    liftValue + (UISLIDER.projectionShare * project(velocity) * 100) / length,
+  );
+  // At once, on the thumb where the coast presents it now.
+  const box = await thumb.boundingBox();
+  if (box == null) {
+    throw new Error('no thumb');
+  }
+  await driver.play(
+    tap({x: box.x + box.width / 2, y: box.y + box.height / 2}, {holdMs: 200}),
+  );
+  await page.waitForTimeout(700);
+  const caught = await value();
+  expect(caught).toBeGreaterThan(liftValue);
+  expect(caught).toBeLessThan(target);
+  // The interrupted coast reports where it stopped, then the catching touch
+  // ends there too, and nothing moves on.
+  await expect(page.getByTestId('slider-change-end')).toHaveText(
+    `Brightness ${caught}, Brightness ${caught}`,
+  );
+  expect(await thumb.evaluate(element => element.style.translate)).toBe('');
 });
 
 test('a finger held on a thumb selects no text: the touch control declares Safari’s prefixed user-select and callout', async ({
