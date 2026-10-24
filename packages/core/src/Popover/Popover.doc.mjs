@@ -150,6 +150,13 @@ export const docs = {
           default: 'true',
         },
         {
+          name: 'presentation',
+          type: "'popover' | 'bottom-sheet' | 'adaptive'",
+          description:
+            "The surface that holds the content. 'popover' anchors it to the trigger, 'bottom-sheet' presents it in a modal BottomSheet labeled by label, and 'adaptive' uses the BottomSheet on a compact touch screen (a phone) and the anchored popover elsewhere. In a sheet, placement, alignment and width do not apply.",
+          default: "'popover'",
+        },
+        {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
@@ -397,6 +404,13 @@ export const docsZh = {
             '按 Escape 是否关闭弹出框。仅在 hasLightDismiss={false} 时生效，因为原生 light dismiss 行为同样响应 Escape。',
           default: 'true',
         },
+        {
+          name: 'presentation',
+          type: "'popover' | 'bottom-sheet' | 'adaptive'",
+          description:
+            "承载内容的界面。'popover' 锚定在触发器上，'bottom-sheet' 以模态 BottomSheet 呈现（由 label 命名），'adaptive' 在紧凑触屏（手机）上使用 BottomSheet，在其他设备上使用锚定的弹出框。在底部面板中，placement、alignment 和 width 不生效。",
+          default: "'popover'",
+        },
       ],
     },
   ],
@@ -573,6 +587,8 @@ export const docsDense = {
           'Outside click dismisses; false for explicit-dismiss surfaces (coachmarks).',
         hasEscapeDismiss:
           'Escape dismisses; full effect only with hasLightDismiss=false.',
+        presentation:
+          "Surface: 'popover' (anchored), 'bottom-sheet' (modal BottomSheet), or 'adaptive' (BottomSheet on a compact touch screen, popover elsewhere).",
       },
     },
   ],
