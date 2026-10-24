@@ -184,10 +184,12 @@ the app reaches every layer instead of the components that happen to read it.
   layer tries instead beside the anchor on the inline end, then on the inline
   start, each at its content's inline size and capped to the viewport, then
   the block side with more room, then the other block side, each sized to the
-  room on that side; the layer scrolls what it cannot show (FR3). Chromium
-  tries no more than five position options, so this is a second list that
-  replaces the first, not an extension of it. The runtime authors both orders;
-  a component passes no fallbacks of its own to an anchor-mode layer.
+  room on that side. It scrolls what it cannot show, and only then, so a
+  layer that fits stays a plain box (FR3). Once switched, it keeps the second
+  list until it next opens. Chromium tries no more than five position
+  options, so this is a second list that replaces the first, not an extension
+  of it. The runtime authors both orders; a component passes no fallbacks of
+  its own to an anchor-mode layer.
 - **FR5 — An off-screen anchor holds.** A layer whose anchor has left the
   viewport does not slide. It keeps the position the flips give it and its
   size until the anchor returns (DEC-3).
@@ -223,10 +225,12 @@ the app reaches every layer instead of the components that happen to read it.
   (FR5) is read before the layer's first paint and thereafter only when the
   anchor's visibility changes, so a layer opened while its anchor is already
   out of view holds from its first frame. For a layer that keeps its anchor
-  clear (FR4), whether its settled box covers its anchor is read in the same
-  call that shows it, so the switch to its second list lands before any frame
-  paints. When a declared inset changes while a layer is open, the layer and
-  the declaration change in the same frame.
+  clear (FR4), whether its settled box covers its anchor and whether its
+  content overflows the box are read in the same call that shows or remounts
+  it, and again while it is open whenever its size, its content's size, its
+  anchor's size, a scroll position or the viewport changes; each read lands
+  before the next frame paints. When a declared inset changes while a layer
+  is open, the layer and the declaration change in the same frame.
   Latency between an app measuring its own bar and declaring the result is the
   app's; the runtime renders what is declared, when it is declared. A
   paint-then-shift is a failure of this contract, not a quality concern.

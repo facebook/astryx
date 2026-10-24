@@ -66,33 +66,11 @@ const TRIGGER = '#storybook-root button';
 const TOOLTIP = '[role="tooltip"]';
 
 /**
- * Open the TallContent story at a viewport, scroll the trigger's centre to
- * `triggerY`, rest the pointer on the trigger and wait for the tooltip.
- * Returns how many times the tooltip toggled.
+ * Count every open and close of the tooltip from here on, and record its box
+ * in every frame it is open: a frame callback runs before that frame's paint,
+ * so a frame that would paint the tooltip over its trigger is seen.
  */
-async function hoverTallTrigger(
-  page: Page,
-  viewport: {width: number; height: number},
-  triggerY: number,
-) {
-  await page.setViewportSize(viewport);
-  await page.goto(
-    `${storybook.origin}/iframe.html?id=core-tooltip--tall-content&viewMode=story`,
-  );
-  await holdMotionStill(page);
-  const trigger = page.getByRole('button', {name: 'Hover for details'});
-  await expect(trigger).toBeVisible();
-  await page.evaluate(
-    ([sel, y]) => {
-      const el = document.querySelector(sel as string) as HTMLElement;
-      const r = el.getBoundingClientRect();
-      window.scrollBy(0, r.top + r.height / 2 - (y as number));
-    },
-    [TRIGGER, triggerY],
-  );
-  // Count every open and close of the tooltip from here on, and record its
-  // box in every frame it is open: a frame callback runs before that frame's
-  // paint, so a frame that would paint the tooltip over its trigger is seen.
+async function watchTooltip(page: Page) {
   await page.evaluate(sel => {
     const w = window as unknown as {
       __toggles: number;
@@ -124,6 +102,43 @@ async function hoverTallTrigger(
     };
     requestAnimationFrame(record);
   }, TOOLTIP);
+}
+
+/** The boxes recorded since frame `from`. */
+async function framesFrom(page: Page, from = 0): Promise<Box[]> {
+  return page.evaluate(
+    start => (window as unknown as {__frames: Box[]}).__frames.slice(start),
+    from,
+  );
+}
+
+/**
+ * Open the TallContent story at a viewport, scroll the trigger's centre to
+ * `triggerY`, rest the pointer on the trigger and wait for the tooltip.
+ * Returns how many times the tooltip toggled.
+ */
+async function hoverTallTrigger(
+  page: Page,
+  viewport: {width: number; height: number},
+  triggerY: number,
+  args = '',
+) {
+  await page.setViewportSize(viewport);
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-tooltip--tall-content&viewMode=story${args ? `&args=${args}` : ''}`,
+  );
+  await holdMotionStill(page);
+  const trigger = page.getByRole('button', {name: 'Hover for details'});
+  await expect(trigger).toBeVisible();
+  await page.evaluate(
+    ([sel, y]) => {
+      const el = document.querySelector(sel as string) as HTMLElement;
+      const r = el.getBoundingClientRect();
+      window.scrollBy(0, r.top + r.height / 2 - (y as number));
+    },
+    [TRIGGER, triggerY],
+  );
+  await watchTooltip(page);
   const t = await rect(page, TRIGGER);
   await page.mouse.move((t.left + t.right) / 2, (t.top + t.bottom) / 2);
   const tooltip = page.getByRole('tooltip');
@@ -141,6 +156,7 @@ async function expectStillAndClear(
   page: Page,
   trigger: Box,
   viewport: {width: number; height: number},
+  fromFrame = 0,
 ) {
   const cx = (trigger.left + trigger.right) / 2;
   const cy = (trigger.top + trigger.bottom) / 2;
@@ -167,9 +183,7 @@ async function expectStillAndClear(
     ),
   ).toBe(1);
   // No frame, the first included, painted it over the trigger.
-  const frames = await page.evaluate(
-    () => (window as unknown as {__frames: Box[]}).__frames,
-  );
+  const frames = await framesFrom(page, fromFrame);
   expect(frames.length).toBeGreaterThan(0);
   for (const [i, frame] of frames.entries()) {
     expect(overlaps(frame, trigger), `frame ${i} covers the trigger`).toBe(
@@ -255,4 +269,151 @@ test('a tooltip that fits above still opens above, unscrolled', async ({
     return {scrollHeight: el.scrollHeight, clientHeight: el.clientHeight};
   }, TOOLTIP);
   expect(metrics.scrollHeight).toBe(metrics.clientHeight);
+});
+
+test('a wheel over a tooltip that fits still scrolls the page', async ({
+  page,
+}) => {
+  const viewport = {width: 900, height: 600};
+  await hoverTallTrigger(page, viewport, 300, 'content:A+short+tooltip');
+  const s = await rect(page, TOOLTIP);
+  // The hover bridge keeps it open while the pointer is on its surface.
+  await page.mouse.move((s.left + s.right) / 2, (s.top + s.bottom) / 2, {
+    steps: 4,
+  });
+  const before = await page.evaluate(() => window.scrollY);
+  await page.mouse.wheel(0, 300);
+  await expect
+    .poll(async () => page.evaluate(() => window.scrollY))
+    .toBeGreaterThan(before);
+  // It has no scroll range of its own, and it is still open.
+  const metrics = await page.evaluate(sel => {
+    const el = document.querySelector(sel) as HTMLElement;
+    return {scrollHeight: el.scrollHeight, clientHeight: el.clientHeight};
+  }, TOOLTIP);
+  expect(metrics.scrollHeight).toBe(metrics.clientHeight);
+  await expect(page.getByRole('tooltip')).toBeVisible();
+});
+
+test('content that grows while the tooltip is open never leaves it over its trigger', async ({
+  page,
+}) => {
+  const viewport = {width: 1280, height: 720};
+  const {trigger} = await hoverTallTrigger(
+    page,
+    viewport,
+    360,
+    'content:A+short+tooltip',
+  );
+  // It fits above, unscrolled.
+  const s = await rect(page, TOOLTIP);
+  expect(s.bottom).toBeLessThanOrEqual(trigger.top);
+  // Record the tooltip's box from a ResizeObserver created now, after the
+  // runtime's own: observers run in creation order after layout and before
+  // paint, so this one sees the geometry the frame paints.
+  await page.evaluate(sel => {
+    const el = document.querySelector(sel) as HTMLElement;
+    const w = window as unknown as {__settled: Box[]};
+    w.__settled = [];
+    const observer = new ResizeObserver(() => {
+      const r = el.getBoundingClientRect();
+      w.__settled.push({
+        top: r.top,
+        bottom: r.bottom,
+        left: r.left,
+        right: r.right,
+      });
+    });
+    observer.observe(el);
+    if (el.firstElementChild) {
+      observer.observe(el.firstElementChild);
+    }
+  }, TOOLTIP);
+  // Let the observer deliver its initial report first.
+  await page.evaluate(
+    async () =>
+      new Promise(resolve =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      ),
+  );
+  // Sixty more lines arrive while the pointer rests on the trigger.
+  await page.evaluate(sel => {
+    const content = document.querySelector(sel)?.firstElementChild;
+    for (let i = 1; i <= 60; i++) {
+      const line = document.createElement('div');
+      line.textContent = `Line ${i} that arrived while the tooltip was open`;
+      content?.appendChild(line);
+    }
+  }, TOOLTIP);
+  await page.waitForTimeout(100);
+  const settled = await page.evaluate(
+    () => (window as unknown as {__settled: Box[]}).__settled,
+  );
+  // The first entry is the observer's initial report, before the growth.
+  expect(settled.length).toBeGreaterThan(1);
+  for (const [i, frame] of settled.entries()) {
+    expect(overlaps(frame, trigger), `frame ${i} covers the trigger`).toBe(
+      false,
+    );
+  }
+  // A frame callback runs before the observers that settle a resize, so only
+  // frames after the growth settled are compared here.
+  await expectStillAndClear(
+    page,
+    trigger,
+    viewport,
+    (await framesFrom(page)).length,
+  );
+  await expectScrollsInside(page);
+});
+
+test('a held-open tooltip whose host moves keeps its trigger clear', async ({
+  page,
+}) => {
+  await page.setViewportSize({width: 1280, height: 720});
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-tooltip--tall-content-moving-host&viewMode=story`,
+  );
+  await holdMotionStill(page);
+  await watchTooltip(page);
+  const trigger = page.getByRole('button', {name: 'Tall tooltip trigger'});
+  await expect(page.getByRole('tooltip')).toBeVisible();
+  const t = await trigger.boundingBox();
+  if (t == null) {
+    throw new Error('the trigger has no layout box');
+  }
+  const triggerBox = {
+    top: t.y,
+    bottom: t.y + t.height,
+    left: t.x,
+    right: t.x + t.width,
+  };
+  await page.evaluate(sel => {
+    const el = document.querySelector(sel) as HTMLElement & {__first?: true};
+    el.__first = true;
+  }, TOOLTIP);
+  expect(overlaps(await rect(page, TOOLTIP), triggerBox)).toBe(false);
+
+  const start = (await framesFrom(page)).length;
+  await page.getByRole('button', {name: "Move the tooltip's host"}).click();
+  // The layer was hosted elsewhere and remounted as a new element.
+  await expect
+    .poll(async () =>
+      page.evaluate(sel => {
+        const el = document.querySelector(sel) as HTMLElement & {
+          __first?: true;
+        };
+        return el != null && el.__first !== true;
+      }, TOOLTIP),
+    )
+    .toBe(true);
+  await page.waitForTimeout(200);
+  const moved = await framesFrom(page, start);
+  expect(moved.length).toBeGreaterThan(0);
+  for (const [i, frame] of moved.entries()) {
+    expect(overlaps(frame, triggerBox), `frame ${i} covers the trigger`).toBe(
+      false,
+    );
+  }
+  expect(overlaps(await rect(page, TOOLTIP), triggerBox)).toBe(false);
 });

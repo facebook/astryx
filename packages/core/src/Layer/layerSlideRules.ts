@@ -219,9 +219,20 @@ export const LAYER_TRY_FALLBACKS_PROPERTY = '--_astryx-layer-try-fallbacks';
  */
 export const LAYER_CLEARS_ANCHOR_ATTRIBUTE = 'data-astryx-clears-anchor';
 
-/** Switches a layer that set the attribute to its anchor-clear list. */
+/**
+ * The attribute the runtime sets on a layer that keeps its anchor clear while
+ * its content overflows the box it was given; only then does it scroll, so a
+ * layer that fits stays a plain box and a wheel over it still scrolls the
+ * page.
+ */
+export const LAYER_SCROLLS_ATTRIBUTE = 'data-astryx-layer-scrolls';
+
+/**
+ * Switches a layer that set the attribute to its anchor-clear list, and lets
+ * a layer whose content overflows scroll it.
+ */
 function clearSwitchCss(): string {
-  return `[${LAYER_CLEARS_ANCHOR_ATTRIBUTE}]{${LAYER_TRY_FALLBACKS_PROPERTY}:var(${LAYER_CLEAR_FALLBACKS_PROPERTY});}`;
+  return `[${LAYER_CLEARS_ANCHOR_ATTRIBUTE}]{${LAYER_TRY_FALLBACKS_PROPERTY}:var(${LAYER_CLEAR_FALLBACKS_PROPERTY});}[${LAYER_SCROLLS_ATTRIBUTE}]{overflow-y:auto;overscroll-behavior:contain;}`;
 }
 
 /**

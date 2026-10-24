@@ -1710,6 +1710,120 @@ describe('a layer that keeps its anchor clear (spec:AST-059 FR4)', () => {
     expect(layerEl).not.toHaveAttribute('data-astryx-clears-anchor');
   });
 
+  it('scrolls only while its content overflows the box it was given', async () => {
+    const user = userEvent.setup();
+    placeBoxes(TRIGGER, rect(200, 350, 100, 200));
+    let scrollHeight = 100;
+    vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(
+      () => scrollHeight,
+    );
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(100);
+    const {container, getByText} = render(<ClearHarness />);
+    await user.click(getByText('Trigger'));
+    const layerEl = container.querySelector('[popover]') as HTMLElement;
+    // A layer that fits stays a plain box.
+    expect(layerEl).not.toHaveAttribute('data-astryx-layer-scrolls');
+
+    await user.click(getByText('Hide'));
+    scrollHeight = 900;
+    await user.click(getByText('Trigger'));
+    expect(layerEl).toHaveAttribute('data-astryx-layer-scrolls');
+    const css =
+      document.getElementById('astryx-layer-slide-rules')?.textContent ?? '';
+    expect(css).toContain(
+      '[data-astryx-layer-scrolls]{overflow-y:auto;overscroll-behavior:contain;}',
+    );
+  });
+
+  it('re-reads its geometry while open when it or its content resizes', async () => {
+    const callbacks: (() => void)[] = [];
+    const observed: Element[] = [];
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback: () => void) {
+          callbacks.push(callback);
+        }
+        observe(target: Element) {
+          observed.push(target);
+        }
+        disconnect() {}
+        unobserve() {}
+      },
+    );
+    const user = userEvent.setup();
+    const spy = placeBoxes(TRIGGER, rect(200, 350, 100, 200));
+    const {container, getByText} = render(<ClearHarness />);
+    await user.click(getByText('Trigger'));
+    const layerEl = container.querySelector('[popover]') as HTMLElement;
+    expect(layerEl).not.toHaveAttribute('data-astryx-clears-anchor');
+    expect(observed).toContain(layerEl);
+    expect(observed).toContain(layerEl.firstElementChild);
+    expect(observed).toContain(getByText('Trigger'));
+
+    // The content grows and the standard list re-settles over the trigger.
+    spy.mockRestore();
+    placeBoxes(TRIGGER, rect(16, 350, 688, 300));
+    act(() => {
+      for (const callback of callbacks) {
+        callback();
+      }
+    });
+    expect(layerEl).toHaveAttribute('data-astryx-clears-anchor');
+    vi.unstubAllGlobals();
+  });
+
+  it('gives a layer remounted while open by a moved render call the same treatment', async () => {
+    function MovingClearHarness({unsafe}: {unsafe: boolean}) {
+      const layer = useLayerInternal({
+        mode: 'context',
+        keepsAnchorClear: true,
+      });
+      const rendered = layer.render(<span>Layer content</span>);
+      return (
+        <>
+          <button type="button" ref={layer.ref} onClick={layer.show}>
+            Trigger
+          </button>
+          {unsafe ? (
+            <div data-testid="unsafe-host">
+              <p>{rendered}</p>
+            </div>
+          ) : (
+            <section data-testid="safe-host">{rendered}</section>
+          )}
+        </>
+      );
+    }
+    const showSpy = vi.fn(function (this: HTMLElement) {
+      this.dataset.open = 'true';
+    });
+    HTMLElement.prototype.showPopover = showSpy;
+    placeBoxes(TRIGGER, rect(16, 350, 688, 300));
+    const {container, getByRole, rerender} = render(
+      <MovingClearHarness unsafe />,
+    );
+    fireEvent.click(getByRole('button', {name: 'Trigger'}));
+    await waitFor(() => {
+      expect(container.querySelector('[popover]')).toHaveAttribute(
+        'data-astryx-clears-anchor',
+      );
+    });
+    const first = container.querySelector('[popover]');
+
+    rerender(<MovingClearHarness unsafe={false} />);
+
+    await waitFor(() => {
+      const layer = container.querySelector('[popover]');
+      expect(layer).not.toBe(first);
+      expect(layer?.parentElement).toBe(
+        container.querySelector('[data-testid="safe-host"]'),
+      );
+      expect(layer).toHaveAttribute('data-open', 'true');
+      expect(layer).toHaveAttribute('data-astryx-clears-anchor');
+    });
+  });
+
   it('leaves a standard layer on the standard list alone', async () => {
     const user = userEvent.setup();
     placeBoxes(TRIGGER, rect(16, 350, 688, 300));
