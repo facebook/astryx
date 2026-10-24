@@ -423,6 +423,10 @@ const styles = stylex.create({
     width: size,
     height: size,
   }),
+  searchPress: {
+    position: 'absolute',
+    inset: 0,
+  },
   searchGlass: {
     position: 'absolute',
     inset: 0,
@@ -975,6 +979,13 @@ export function TabBar({
     isTouch,
   });
   const mergedSearchHostRef = useMergedRefs(searchHostRef, searchMotion.host);
+  const cancelPressedRef = useRef(false);
+  const releaseCancel = () => {
+    if (cancelPressedRef.current) {
+      cancelPressedRef.current = false;
+      searchMotion.pressCancel(false);
+    }
+  };
   const circleRef = useRef<HTMLButtonElement | null>(null);
   const lens = useTabBarLens({
     capsuleRef,
@@ -1187,6 +1198,17 @@ export function TabBar({
               data-tab-bar-search={search.value}
               data-tab-bar-search-cancel={isSearchActive ? '' : undefined}
               onClick={chooseSearch}
+              // Active, the cancel button grows under the finger, and
+              // shrinks back with a wobble on release, as UIKit's does.
+              onPointerDown={() => {
+                if (isSearchActive) {
+                  cancelPressedRef.current = true;
+                  searchMotion.pressCancel(true);
+                }
+              }}
+              onPointerUp={releaseCancel}
+              onPointerCancel={releaseCancel}
+              onPointerLeave={releaseCancel}
               {...mergeProps(
                 themeProps('tab-bar-item', {
                   selected: isSearchSelected ? 'selected' : null,
@@ -1202,10 +1224,17 @@ export function TabBar({
                 ),
               )}>
               <span
-                ref={minimize.searchGlass}
+                ref={searchMotion.press}
                 aria-hidden
-                {...stylex.props(styles.glass, styles.searchGlass)}
-              />
+                data-tab-bar-search-press=""
+                {...stylex.props(styles.searchPress)}>
+                <span
+                  ref={minimize.searchGlass}
+                  aria-hidden
+                  data-tab-bar-search-glass=""
+                  {...stylex.props(styles.glass, styles.searchGlass)}
+                />
+              </span>
               <span
                 ref={searchMotion.searchGlyph}
                 aria-hidden

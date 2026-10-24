@@ -30,7 +30,10 @@
  * report back). The search circle, shrunk to the minimized size, is the
  * field's cancel button: its cancel glyph appears at `searchCancelDelay`
  * and it rides with the field, `searchCancelShift` toward the screen's
- * edge. Cancelling plays it back: the field falls with the keyboard and the
+ * edge. Pressed, the cancel button grows to `searchCancelPressedSize` on
+ * `searchCancelPress` and, released, shrinks back with UIKit's wobble on
+ * `searchCancelReturn`. Cancelling, the field falls back into the bar with
+ * the keyboard on `searchFall`, dropped at `searchFallVelocity`, and the
  * circle becomes the bar's search tab again. Leaving the search tab fades
  * the field out.
  *
@@ -99,6 +102,10 @@ export interface TabBarSearch {
   readonly cancelGlyph: (element: HTMLElement | null) => void;
   /** The field's host: rides the keyboard. */
   readonly host: (element: HTMLElement | null) => void;
+  /** The cancel button's press: wraps its glass, grows it while pressed. */
+  readonly press: (element: HTMLElement | null) => void;
+  /** A finger (or a mouse button) went down on the cancel button, or up. */
+  readonly pressCancel: (isPressed: boolean) => void;
   /** The field's glass and content: fades in, moves between its places. */
   readonly field: (element: HTMLElement | null) => void;
   /** The field glass's middle: its width. */
@@ -118,6 +125,7 @@ export function useTabBarSearch({
   const searchGlyph = useAnimator();
   const cancelGlyph = useAnimator({initial: {opacity: 0}});
   const host = useAnimator();
+  const press = useAnimator();
   const field = useAnimator({initial: {opacity: 0}});
   const fieldMiddle = useAnimator();
   const fieldEnd = useAnimator();
@@ -174,6 +182,7 @@ export function useTabBarSearch({
   // move; inactive, both come back down into the bar. One spring for both,
   // so they move as one.
   const activeRef = useRef(isActive);
+  const rideTargetRef = useRef<{x: number; y: number} | null>(null);
   const ride = (inset: number, start: number) => {
     const element = hostRef.current;
     const capsule = capsuleRef.current;
@@ -190,12 +199,32 @@ export function useTabBarSearch({
     const shift = activeRef.current
       ? (isRtl ? -1 : 1) * searchCancelShift()
       : 0;
-    const velocity = host.animator.getVelocity('y', now);
-    const spring = {spring: tabBar.searchRise};
+    const moving = host.animator.getVelocity('y', now);
+    // Already heading there (a predicted transition the viewport then
+    // confirms): the motion on screen stands.
+    if (
+      moving !== 0 &&
+      rideTargetRef.current != null &&
+      Math.abs(rideTargetRef.current.y - lift) < 0.5 &&
+      Math.abs(rideTargetRef.current.x - shift) < 0.5
+    ) {
+      return;
+    }
+    rideTargetRef.current = {x: shift, y: lift};
+    // Rising on `searchRise`; falling, on `searchFall`, dropped at
+    // `searchFallVelocity` (in fall distances per second) as UIKit drops it.
+    const isFalling = lift > current;
+    const spring = {
+      spring: isFalling ? tabBar.searchFall : tabBar.searchRise,
+    };
+    const velocity =
+      moving !== 0 || !isFalling
+        ? moving
+        : tabBar.searchFallVelocity * (lift - current);
     // Motion on screen continues from now; from rest the ride is dated back
     // to the keyboard's start.
     const options =
-      velocity !== 0
+      moving !== 0
         ? {at: now, ...MOTION}
         : {at: Math.min(start, now), ...MOTION};
     host.animator.animate(
@@ -209,7 +238,10 @@ export function useTabBarSearch({
         ...spring,
         velocity: {
           x: circle.animator.getVelocity('x', now),
-          y: circle.animator.getVelocity('y', now),
+          y:
+            circle.animator.getVelocity('y', now) !== 0
+              ? circle.animator.getVelocity('y', now)
+              : velocity,
         },
       },
       options,
@@ -296,8 +328,32 @@ export function useTabBarSearch({
     );
   }, [isActive, capsuleRef, field, fieldEnd, fieldMiddle]);
 
+  // The cancel button's press: it grows to `searchCancelPressedSize` under
+  // the finger and shrinks back with UIKit's wobble on release.
+  const pressCancel = (isPressed: boolean) => {
+    const now = performance.now();
+    const velocity = press.animator.getVelocity('scale', now);
+    press.animator.animate(
+      {
+        scale: isPressed
+          ? tabBar.searchCancelPressedSize / tabBar.minimizedSize
+          : 1,
+      },
+      {
+        spring: isPressed
+          ? tabBar.searchCancelPress
+          : tabBar.searchCancelReturn,
+        velocity: {scale: velocity},
+      },
+      // From rest at the commit; a press still moving turns from now.
+      velocity !== 0 ? {at: now, ...MOTION} : MOTION,
+    );
+  };
+
   return {
     circle: circle.ref,
+    press: press.ref,
+    pressCancel,
     searchGlyph: searchGlyph.ref,
     cancelGlyph: cancelGlyph.ref,
     host: host.ref,

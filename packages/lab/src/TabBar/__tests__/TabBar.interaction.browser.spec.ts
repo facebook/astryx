@@ -1483,7 +1483,7 @@ test.describe('search tab', () => {
       throw new Error('no bar');
     }
     await minimizeBar(page, driver);
-    const glass = searchCircle(page).locator('> span').first();
+    const glass = page.locator('[data-tab-bar-search-glass]');
     await waitForRest(glass);
     await waitForRest(accessory(page));
     const shrunk = await glass.boundingBox();
@@ -1703,9 +1703,8 @@ test.describe('search tab, active', () => {
       ).toBeLessThan(0.5);
     }
     // The cancel button rests 8 px from the screen's edge, level with the field.
-    const cancel = await cancelCircle(page)
-      .locator('> span')
-      .first()
+    const cancel = await page
+      .locator('[data-tab-bar-search-glass]')
       .boundingBox();
     if (cancel == null) {
       throw new Error('no cancel');
@@ -1743,6 +1742,158 @@ test.describe('search tab, active', () => {
       .toBeCloseTo(0, 0);
     // The circle is the bar's search tab again.
     await expect(tab(page, 'Search')).toBeVisible();
+  });
+});
+
+/** uikit/tabBar.ts: the cancel button's press and return, and the fall. */
+const SEARCH_CANCEL_PRESS = {response: 0.145, dampingFraction: 0.746};
+const SEARCH_CANCEL_RETURN = {response: 0.399, dampingFraction: 0.374};
+const SEARCH_CANCEL_PRESSED = 63.65 / 48;
+const SEARCH_FALL = {
+  response: 0.498,
+  dampingFraction: 0.968,
+  initialVelocity: 13.4,
+};
+
+const cancelPress = (page: Page) => page.locator('[data-tab-bar-search-press]');
+
+test.describe('search tab, cancel button', () => {
+  test('it grows under the finger and shrinks back with UIKit’s wobble on release', async ({
+    page,
+    browserName,
+  }, testInfo) => {
+    test.skip(
+      browserName !== 'chromium',
+      'a held finger in WebKit reads as a long press, which fires no click (touch.ts)',
+    );
+    const {driver} = await openBar(page, 'search-tab');
+    await tapSearch(page, driver);
+    await expect(cancelCircle(page)).toBeVisible();
+    // With no keyboard to wait for, the cancel button moves to its place
+    // once the wait for one is over.
+    await expect
+      .poll(async () => (await translate(cancelCircle(page)))[0])
+      .toBeCloseTo(20, 0);
+    const box = await cancelCircle(page).boundingBox();
+    if (box == null) {
+      throw new Error('no cancel');
+    }
+    const at = {x: box.x + box.width / 2, y: box.y + box.height / 2};
+    const times = Array.from({length: 31}, (_, i) => i * 16.667);
+    // Pressed: read the press's curve while the finger is down.
+    let pressed: Awaited<ReturnType<typeof sampleCurve>> = [];
+    await driver.play(tapScript(at, {holdMs: 300}), {
+      realtime: false,
+      onEvent: async step => {
+        if (step.type !== 'touchStart') {
+          return;
+        }
+        await waitForAnimation(cancelPress(page));
+        await holdAnimations(page, cancelPress(page));
+        pressed = await sampleCurve(cancelPress(page), times);
+        await releaseAnimations(page, {finish: true});
+      },
+    });
+    // Released: the return, from the pressed size.
+    await waitForAnimation(cancelPress(page));
+    await holdAnimations(page, cancelPress(page));
+    const returned = await sampleCurve(cancelPress(page), times);
+    await releaseAnimations(page, {finish: true});
+    const samples = times.map((t, i) => ({
+      t: +t.toFixed(1),
+      press: pressed[i].transform.scaleX,
+      analyticPress:
+        1 + (SEARCH_CANCEL_PRESSED - 1) * springStep(SEARCH_CANCEL_PRESS, t),
+      back: returned[i].transform.scaleX,
+      analyticBack:
+        SEARCH_CANCEL_PRESSED +
+        (1 - SEARCH_CANCEL_PRESSED) * springStep(SEARCH_CANCEL_RETURN, t),
+    }));
+    await writeEvidence(
+      'curves/tabbar-search-cancel-press',
+      {[`${testInfo.project.name}.json`]: JSON.stringify(samples, null, 1)},
+      testInfo,
+    );
+    for (const sample of samples) {
+      expect(
+        Math.abs(sample.press - sample.analyticPress),
+        JSON.stringify(sample),
+      ).toBeLessThan(0.005);
+      expect(
+        Math.abs(sample.back - sample.analyticBack),
+        JSON.stringify(sample),
+      ).toBeLessThan(0.005);
+    }
+    // The wobble: it undershoots the resting size before it settles.
+    expect(Math.min(...samples.map(sample => sample.back))).toBeLessThan(0.95);
+    // The tap cancelled search.
+    await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  test('cancelled, the field falls into the bar on UIKit’s spring, dropped at its speed', async ({
+    page,
+  }, testInfo) => {
+    await installKeyboard(page);
+    const {driver} = await openBar(page, 'search-tab');
+    await tapSearch(page, driver);
+    await keyboard(page, KEYBOARD);
+    await waitForRest(searchHost(page));
+    const [, lifted] = await translate(searchHost(page));
+    const cancel = await cancelCircle(page).boundingBox();
+    if (cancel == null) {
+      throw new Error('no cancel');
+    }
+    await driver.tap({
+      x: cancel.x + cancel.width / 2,
+      y: cancel.y + cancel.height / 2,
+    });
+    // The keyboard falls as the field lets go of focus, as on iOS.
+    await keyboard(page, 0);
+    await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+    await waitForAnimation(searchHost(page));
+    await holdAnimations(page, searchHost(page));
+    const times = Array.from({length: 31}, (_, i) => i * 16.667);
+    const fall = await sampleCurve(searchHost(page), times);
+    await releaseAnimations(page, {finish: true});
+    // The fall is dated back to when the keyboard started down (the guide's
+    // transition), so its first frame is already a little way along: find
+    // how far, then hold every frame to the spring from there.
+    const first = fall[0].transform.translateY;
+    let low = 0;
+    let high = 200;
+    for (let i = 0; i < 40; i += 1) {
+      const mid = (low + high) / 2;
+      if (lifted * (1 - springStep(SEARCH_FALL, mid)) < first) {
+        low = mid;
+      } else {
+        high = mid;
+      }
+    }
+    const offset = low;
+    const samples = times.map((t, i) => ({
+      t: +t.toFixed(1),
+      y: fall[i].transform.translateY,
+      analytic: lifted * (1 - springStep(SEARCH_FALL, t + offset)),
+    }));
+    expect(offset).toBeLessThan(50);
+    await writeEvidence(
+      'curves/tabbar-search-fall',
+      {
+        [`${testInfo.project.name}.json`]: JSON.stringify(
+          {lifted, offset, samples},
+          null,
+          1,
+        ),
+      },
+      testInfo,
+    );
+    expect(lifted).toBeLessThan(-200);
+    for (const sample of samples) {
+      expect(
+        Math.abs(sample.y - sample.analytic),
+        JSON.stringify(sample),
+      ).toBeLessThan(0.5);
+    }
   });
 });
 
