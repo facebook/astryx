@@ -15,5 +15,6 @@ wins.
 | `augmentable-variants.md` | How a theme's own variants reach Swift as open types                                  |
 | `component-api.md`        | How a SwiftUI view is named and takes its generated contract                          |
 | `slots.md`                | How each slot kind (text, icon, content) appears in SwiftUI                           |
+| `styles.md`               | How Astryx's look ships as SwiftUI styles                                             |
 | `theme-environment.md`    | How the theme rides on SwiftUI's environment in both directions                       |
 | `theme-generator.md`      | How any Astryx theme becomes a Swift `Theme`                                          |
