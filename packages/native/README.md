@@ -132,7 +132,7 @@ pnpm -F @astryxdesign/native typecheck        # source and tests
 pnpm -F @astryxdesign/native build            # dist/, including platform types
 pnpm -F @astryxdesign/native typecheck:types  # every platform's types, after build
 pnpm -F @astryxdesign/native generate:apple   # regenerate apple/Sources/.../Generated
-pnpm -F @astryxdesign/native generate:swift-ios # regenerate the Astryx product's default theme and strings
+pnpm -F @astryxdesign/native generate:swift-ios # regenerate the Astryx product's typed tokens, every published theme, and strings
 pnpm vitest run --project node packages/native
 ```
 

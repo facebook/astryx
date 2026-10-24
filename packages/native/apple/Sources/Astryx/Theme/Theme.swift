@@ -9,68 +9,69 @@ import UIKit
 import AppKit
 #endif
 
-/// One mode of a theme, resolved: colors as `#RRGGBBAA`, sizes in points, and
-/// font families as their CSS stacks, first choice first, keyed by core's
-/// token names without the leading `--`.
-public struct AstryxTokens: Equatable, Sendable {
-  public var colors: [String: String]
-  public var sizes: [String: Double]
-  public var fonts: [String: [String]]
-
-  public init(colors: [String: String], sizes: [String: Double], fonts: [String: [String]] = [:]) {
-    self.colors = colors
-    self.sizes = sizes
-    self.fonts = fonts
-  }
-}
-
-/// A theme's light and dark tokens. `AstryxTheme.default` is core's default
-/// theme, generated from core's own resolver.
-public struct AstryxTheme: Equatable, Sendable {
-  public var light: AstryxTokens
-  public var dark: AstryxTokens
+/// A theme's light and dark tokens, as typed members (`Generated/Tokens.swift`).
+/// Every `Theme.<name>` is generated from an Astryx theme by core's own
+/// resolver (`Generated/`); `Theme.default` is core's defaults. An app
+/// generates its own theme the same way.
+public struct Theme: Equatable, Sendable {
+  public var light: Tokens
+  public var dark: Tokens
   /// SF Symbols that replace the defaults for shared icon names, such as
   /// `["success": "checkmark.seal.fill"]` (AST-082 FR17).
   public var icons: [String: String]
+  /// Native visual intent from `defineNativeTheme`. Reserved: empty until a
+  /// component reads it.
+  public var native: NativeIntent
 
-  public init(light: AstryxTokens, dark: AstryxTokens, icons: [String: String] = [:]) {
+  public init(light: Tokens, dark: Tokens, icons: [String: String] = [:], native: NativeIntent = .init()) {
     self.light = light
     self.dark = dark
     self.icons = icons
+    self.native = native
   }
+}
 
-  public static let `default` = AstryxTheme(
-    light: .defaultLight,
-    dark: .defaultDark
-  )
+/// Native visual intent a theme carries beside its tokens (durable `material`,
+/// platform entries), resolved for the running OS version. Reserved and empty
+/// until the first component reads it.
+public struct NativeIntent: Equatable, Sendable {
+  public init() {}
 }
 
 /// The tokens a component paints with: one mode of the theme, grown by the
 /// person's Dynamic Type setting. Components read every color, size, and font
 /// from here, never from a constant of their own.
 public struct AstryxStyle: Sendable {
-  public let tokens: AstryxTokens
+  /// The theme's tokens in the current mode, as typed members
+  /// (`tokens.color.textPrimary`).
+  public let tokens: Tokens
   /// How much Dynamic Type grows text at the person's setting (1 at Large).
   public let textScale: CGFloat
   /// The theme's replacements for shared icon names.
   public let icons: [String: String]
+  /// Whether the person turned on Bold Text (`legibilityWeight == .bold`).
+  public let isBoldText: Bool
 
-  public init(tokens: AstryxTokens, textScale: CGFloat = 1, icons: [String: String] = [:]) {
+  public init(
+    tokens: Tokens, textScale: CGFloat = 1, icons: [String: String] = [:], isBoldText: Bool = false
+  ) {
     self.tokens = tokens
     self.textScale = textScale
     self.icons = icons
+    self.isBoldText = isBoldText
   }
 
-  /// A token color. A token the theme does not define draws clear, so a
-  /// missing token shows up in review instead of a guessed color.
+  /// A token color by its CSS name, for code that only has the name. A name
+  /// the theme does not define draws clear. New code reads the typed members.
   public func color(_ token: String) -> Color {
-    guard let hex = tokens.colors[token] else { return .clear }
-    return Color(astryxHex: hex)
+    tokens.color.value(named: token) ?? .clear
   }
 
-  /// A token size in points, or `fallback` when the theme does not define it.
+  /// A token size in points by its CSS name, or `fallback` when the theme does
+  /// not define it. New code reads the typed members.
   public func size(_ token: String, _ fallback: CGFloat) -> CGFloat {
-    tokens.sizes[token].map { CGFloat($0) } ?? fallback
+    tokens.space.value(named: token) ?? tokens.radius.value(named: token)
+      ?? tokens.size.value(named: token) ?? tokens.font.number(named: token) ?? fallback
   }
 
   /// A step on the spacing ladder: `space(4)` reads `spacing-4`.
@@ -93,9 +94,10 @@ public struct AstryxStyle: Sendable {
     family: String = "font-family-body"
   ) -> Font {
     astryxFont(
-      families: tokens.fonts[family] ?? [],
+      families: tokens.font.families(named: family) ?? [],
       size: fontSize(token, fallback),
-      weight: fontWeight(size(weight, 400))
+      weight: fontWeight(size(weight, 400)),
+      isBoldText: isBoldText
     )
   }
 
@@ -121,8 +123,19 @@ public struct AstryxStyle: Sendable {
 }
 
 extension Color {
-  /// A color from `#RRGGBBAA`, the form the generated tokens use. `#RRGGBB`
-  /// and `#RGB` also read; anything else is clear.
+  /// A color from `0xRRGGBBAA` in sRGB, the form the generated themes use.
+  public init(astryxRGBA value: UInt32) {
+    self.init(
+      .sRGB,
+      red: Double((value >> 24) & 0xFF) / 255,
+      green: Double((value >> 16) & 0xFF) / 255,
+      blue: Double((value >> 8) & 0xFF) / 255,
+      opacity: Double(value & 0xFF) / 255
+    )
+  }
+
+  /// A color from `#RRGGBBAA`. `#RRGGBB` and `#RGB` also read; anything else
+  /// is clear.
   public init(astryxHex hex: String) {
     var digits = hex.hasPrefix("#") ? String(hex.dropFirst()) : hex
     if digits.count == 3 { digits = digits.map { "\($0)\($0)" }.joined() }
@@ -142,7 +155,10 @@ extension Color {
 }
 
 /// A font from a CSS family stack: the first system family or installed font.
-func astryxFont(families: [String], size: CGFloat, weight: Font.Weight) -> Font {
+/// System fonts follow Bold Text by themselves; an installed custom face is
+/// drawn one weight step heavier when Bold Text is on (theme environment
+/// spec, E1).
+func astryxFont(families: [String], size: CGFloat, weight: Font.Weight, isBoldText: Bool = false) -> Font {
   for family in families {
     switch family.lowercased() {
     case "-apple-system", "blinkmacsystemfont", "system-ui", "ui-sans-serif", "sans-serif":
@@ -156,11 +172,27 @@ func astryxFont(families: [String], size: CGFloat, weight: Font.Weight) -> Font 
     default:
       if astryxFontIsInstalled(family) {
         // Fixed size: the size already carries the Dynamic Type scale.
-        return .custom(family, fixedSize: size).weight(weight)
+        return .custom(family, fixedSize: size).weight(isBoldText ? astryxBoldTextWeight(weight) : weight)
       }
     }
   }
   return .system(size: size, weight: weight)
+}
+
+/// The weight a custom face draws at with Bold Text on: one step heavier,
+/// with regular and medium both stepping to semibold, as iOS does for its own
+/// text.
+func astryxBoldTextWeight(_ weight: Font.Weight) -> Font.Weight {
+  switch weight {
+  case .ultraLight: .thin
+  case .thin: .light
+  case .light: .regular
+  case .regular, .medium: .semibold
+  case .semibold: .bold
+  case .bold: .heavy
+  case .heavy, .black: .black
+  default: weight
+  }
 }
 
 func astryxFontIsInstalled(_ name: String) -> Bool {
@@ -194,12 +226,12 @@ func astryxTextScale(for size: DynamicTypeSize) -> CGFloat {
 }
 
 private struct AstryxThemeKey: EnvironmentKey {
-  static let defaultValue = AstryxTheme.default
+  static let defaultValue = Theme.default
 }
 
 extension EnvironmentValues {
   /// The theme `astryxTheme(_:)` sets; core's default theme without it.
-  public var astryxTheme: AstryxTheme {
+  public var astryxTheme: Theme {
     get { self[AstryxThemeKey.self] }
     set { self[AstryxThemeKey.self] = newValue }
   }
@@ -212,7 +244,8 @@ extension EnvironmentValues {
     return AstryxStyle(
       tokens: colorScheme == .dark ? theme.dark : theme.light,
       textScale: astryxTextScale(for: dynamicTypeSize),
-      icons: theme.icons
+      icons: theme.icons,
+      isBoldText: legibilityWeight == .bold
     )
   }
 }
@@ -220,7 +253,7 @@ extension EnvironmentValues {
 extension View {
   /// Paints this subtree with a theme. Components follow the color scheme and
   /// the person's text size either way.
-  public func astryxTheme(_ theme: AstryxTheme = .default) -> some View {
+  public func astryxTheme(_ theme: Theme = .default) -> some View {
     environment(\.astryxTheme, theme)
   }
 }

@@ -216,6 +216,22 @@ function findSourceFiles(dir, root = dir) {
 }
 
 /**
+ * The declined candidates that are not also protected files the run reports.
+ * A file another codemod still requires a change to is listed once, under
+ * `protectedFiles`, which already makes the run incomplete.
+ * @template {{file: string}} T
+ * @param {T[]} declined
+ * @param {Array<{file: string}>} protectedRows
+ * @returns {T[]}
+ */
+export function withoutProtected(declined, protectedRows) {
+  /** @param {string} file */
+  const key = file => file.split(path.sep).join('/');
+  const blocked = new Set(protectedRows.map(item => key(item.file)));
+  return declined.filter(item => !blocked.has(key(item.file)));
+}
+
+/**
  * Validate transform output before writing to disk.
  *
  * Checks:
@@ -492,7 +508,7 @@ async function runProjectCodemod(
  * @param {string} [options.root] - Project root a project codemod reads (default: the process cwd)
  * @param {{root: string, classify: (file: string) => import('../../foundation/fs/file-protection.mjs').FileProtection[]}} [options.protection] - Preloaded protection resolver
  * @param {boolean} [options.coversTarget] - False when these codemods stop before the installed target (the CLI is older than Core), so a run with no changes does not say the code is up to date. Default true.
- * @returns {Promise<{totalFilesChanged: number, totalTransformsApplied: number, totalValidationBlocked: number, changedFiles: string[], writtenFiles: string[], stagedContents: Map<string, string>, protectedFiles: import('../../authoring/codemod/type').CodemodRunResult['protectedFiles'], errors: Array<{file: string, codemod: string, error: string}>, skippedOptional: Array<{name: string, meta: {title: string, description?: string, fileExtensions?: string[], codemodType?: string}, version: string}>} | {ok: false, reason: string, resolvedPath: string}>}
+ * @returns {Promise<{totalFilesChanged: number, totalTransformsApplied: number, totalValidationBlocked: number, changedFiles: string[], writtenFiles: string[], stagedContents: Map<string, string>, protectedFiles: import('../../authoring/codemod/type').CodemodRunResult['protectedFiles'], declinedCandidates: NonNullable<import('../../authoring/codemod/type').CodemodRunResult['declinedCandidates']>, errors: Array<{file: string, codemod: string, error: string}>, skippedOptional: Array<{name: string, meta: {title: string, description?: string, fileExtensions?: string[], codemodType?: string}, version: string}>} | {ok: false, reason: string, resolvedPath: string}>}
  */
 export async function runCodemods(
   versionManifests,
@@ -573,6 +589,8 @@ export async function runCodemods(
   const writtenFiles = [];
   /** @type {import('../../authoring/codemod/type').CodemodRunResult['protectedFiles']} */
   const protectedFiles = [];
+  /** @type {NonNullable<import('../../authoring/codemod/type').CodemodRunResult['declinedCandidates']>} */
+  const declinedCandidates = [];
   /** @type {Array<{name: string, meta: {title: string, description?: string, fileExtensions?: string[], codemodType?: string}, version: string}>} */
   const skippedOptional = [];
   for (const {version, transforms} of versionManifests) {
@@ -662,6 +680,7 @@ export async function runCodemods(
       );
       errors.push(...result.errors);
       protectedFiles.push(...result.protectedFiles);
+      declinedCandidates.push(...(result.declinedCandidates ?? []));
       changedFiles.push(...result.changedFiles);
       writtenFiles.push(...result.writtenFiles);
       totalTransformsApplied += result.filesChanged;
@@ -713,10 +732,15 @@ export async function runCodemods(
     );
   }
 
+  // A later codemod can block a file an earlier one declined. The caller
+  // prints declined files once it has reconciled every runner's results.
+  const reportedDeclined = withoutProtected(declinedCandidates, protectedFiles);
+
   if (
     totalFilesChanged === 0 &&
     errors.length === 0 &&
-    protectedFiles.length === 0
+    protectedFiles.length === 0 &&
+    reportedDeclined.length === 0
   ) {
     // Codemods that stop before the installed target cannot vouch for the
     // code; the caller says what is missing.
@@ -766,6 +790,7 @@ export async function runCodemods(
     changedFiles,
     writtenFiles,
     protectedFiles,
+    declinedCandidates: reportedDeclined,
     stagedContents: virtualContents,
     errors,
     skippedOptional,

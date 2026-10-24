@@ -5,26 +5,32 @@ import Testing
 @testable import Astryx
 
 @Test func defaultThemeCarriesCoreTokensInBothModes() {
-  for tokens in [AstryxTokens.defaultLight, AstryxTokens.defaultDark] {
-    for color in ["color-accent", "color-on-accent", "color-text-primary", "color-background-card"] {
-      #expect(tokens.colors[color] != nil, "missing \(color)")
-    }
-    #expect(tokens.sizes["size-element-md"] == 32)
-    #expect(tokens.sizes["radius-element"] == 8)
+  for tokens in [Theme.default.light, Theme.default.dark] {
+    #expect(tokens.size.elementMd == 32)
+    #expect(tokens.radius.element == 8)
+    #expect(tokens.font.familyBody.isEmpty == false)
   }
-  #expect(AstryxTokens.defaultLight.colors["color-text-primary"] != AstryxTokens.defaultDark.colors["color-text-primary"])
+  #expect(Theme.default.light.color.textPrimary != Theme.default.dark.color.textPrimary)
 }
 
-@Test func styleReadsTokensAndFallsBackOnlyForSizes() {
-  let style = AstryxStyle(
-    tokens: AstryxTokens(colors: ["color-accent": "#0064E0FF"], sizes: ["spacing-4": 16]),
-    textScale: 1.5
-  )
-  #expect(style.space(4) == 16)
-  #expect(style.space(3) == 12)
-  #expect(style.size("radius-element", 8) == 8)
-  #expect(style.fontSize("spacing-4", 0) == 24)
+@Test func everyPublishedThemeIsGenerated() {
+  let themes: [Theme] = [.default, .butter, .chocolate, .gothic, .matcha, .neutral, .stone, .y2k]
+  #expect(Set(themes.map(\.light.color.accent.description)).count > 1)
+  #expect(Theme.neutral.native == NativeIntent())
+}
+
+@Test func styleReadsTokensByNameAndFallsBackOnlyForSizes() {
+  let style = AstryxStyle(tokens: Theme.default.light, textScale: 1.5)
+  #expect(style.space(4) == Theme.default.light.space.s4)
+  #expect(style.size("radius-element", 0) == 8)
+  #expect(style.size("size-missing", 7) == 7)
+  #expect(style.fontSize("text-body-size", 0) == Theme.default.light.font.bodySize * 1.5)
+  #expect(style.color("color-accent") == Theme.default.light.color.accent)
   #expect(style.color("color-missing") == .clear)
+}
+
+@Test func rgbaColorsRead() {
+  #expect(Color(astryxRGBA: 0x0064E0FF) == Color(.sRGB, red: 0, green: 100 / 255, blue: 224 / 255, opacity: 1))
 }
 
 @Test func hexColorsRead() {

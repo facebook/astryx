@@ -23,7 +23,7 @@ apple/
 ├── Sources/
 │   ├── Astryx/            # SwiftUI views (module Astryx)
 │   │   ├── Theme/         # tokens, the theme environment, Dynamic Type
-│   │   │   └── Generated/ # core's default theme, generated; do not edit
+│   │   │   └── Generated/ # typed tokens and every published theme, generated; do not edit
 │   │   ├── Resources/     # core's messages per locale, generated; do not edit
 │   │   ├── Localization/
 │   │   ├── Text/          # AstryxText
@@ -93,23 +93,65 @@ size.
 ## Theme tokens
 
 Components read every color, size, and font from the `astryx` environment
-value, never from a constant of their own. Token names are core's, without
-the leading `--` (`color-accent`, `spacing-4`, `size-element-md`). Text sizes
-grow with Dynamic Type.
+value, never from a constant of their own. `astryx.tokens` holds the theme's
+tokens in the current mode as typed members (`tokens.color.textPrimary`,
+`tokens.space.s4`, `tokens.font.bodySize`), so a misspelled token fails to
+compile. Text sizes grow with Dynamic Type. The components still read some
+tokens by core's name (`astryx.color("color-accent")`); moving them onto the
+typed members comes next.
 
 Font families come from the theme's `font-family-*` stacks: the first family
 the device has wins, and a system family such as `-apple-system` or
 `sans-serif` is the system font. Icons use core's shared icon names
 (`success`, `warning`, …), drawn as an SF Symbol by default; a theme replaces
-one with `AstryxTheme(…, icons: ["success": "checkmark.seal.fill"])`.
+one with `Theme(…, icons: ["success": "checkmark.seal.fill"])`.
 
-`Sources/Astryx/Theme/Generated/DefaultTheme.swift` is core's default theme
-run through core's own resolver, light and dark. Regenerate it after a core
-token change:
+`Sources/Astryx/Theme/Generated/` is written by the Swift theme generator
+(`../specs/swift/library/theme-generator.md`) from core's own resolver, light
+and dark:
+
+- `Tokens.swift`: the typed token surface, from core's token names.
+- One `<Name>Theme.swift` per theme, declaring `Theme.<name>`: core's
+  defaults (`.default`) and every published theme package (`.butter`,
+  `.chocolate`, `.gothic`, `.matcha`, `.neutral`, `.stone`, `.y2k`).
+
+```swift
+LoginTemplate().astryxTheme(.neutral)
+```
+
+Regenerate after a theme or core token change:
 
 ```sh
 pnpm -F @astryxdesign/native generate:swift-ios
 ```
+
+A product generates its own theme the same way, from its theme's module and
+export:
+
+```sh
+node packages/native/scripts/swift-ios-theme.mjs --theme ./src/acmeTheme.ts#acmeTheme --out ./Sources/Theme
+```
+
+A theme's local tokens are not generated yet; the generator names each one it
+leaves out.
+
+**Fonts.** A theme's font families are carried as data. Astryx never bundles
+a font: a component walks the theme's family list in order and uses the first
+family the app has registered; a system family in the list (such as
+`-apple-system` or `sans-serif`) is the system font, and a list with no
+registered family falls back to the system font. To draw a theme's brand face, bundle and register it
+in the app. Faces the published themes name (body, heading, code):
+
+| Theme        | Faces to bundle                            |
+| ------------ | ------------------------------------------ |
+| `.default`   | none (system fonts)                        |
+| `.butter`    | Outfit, JetBrains Mono                     |
+| `.chocolate` | Albert Sans, Fraunces, JetBrains Mono      |
+| `.gothic`    | Fustat, JetBrains Mono                     |
+| `.matcha`    | DM Sans, Playwrite US Trad, JetBrains Mono |
+| `.neutral`   | Figtree                                    |
+| `.stone`     | Figtree, Montserrat, JetBrains Mono        |
+| `.y2k`       | Poppins, JetBrains Mono                    |
 
 The same command writes
 `Sources/Astryx/Resources/<locale>.lproj/Localizable.strings` from core's
@@ -142,5 +184,5 @@ core's prop names, read its tokens from `astryx`, and add tests under
 - The views do not use the generated contract types in `AstryxNative` yet.
   Moving them onto those types is how a core prop change reaches Swift.
 - Pixel and behavior parity with the web components has not been measured.
-- Only the default theme is generated; named themes, Increase Contrast, and
-  platform theme entries (`defineNativeTheme`) are not wired in.
+- Increase Contrast, theme-local tokens, and platform theme entries
+  (`defineNativeTheme`, reserved as `Theme.native`) are not wired in.

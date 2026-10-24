@@ -12,8 +12,8 @@ import Testing
   let card = AstryxCard { Color.clear.frame(width: 80, height: 40) }.frame(width: 120)
   let light = Pixels(card, scheme: .light)
   let dark = Pixels(card, scheme: .dark)
-  #expect(close(light.at(60, light.height / 2), rgba(AstryxTokens.defaultLight.colors["color-background-card"]!)))
-  #expect(close(dark.at(60, dark.height / 2), rgba(AstryxTokens.defaultDark.colors["color-background-card"]!)))
+  #expect(close(light.at(60, light.height / 2), rgba(Theme.default.light.color.backgroundCard)))
+  #expect(close(dark.at(60, dark.height / 2), rgba(Theme.default.dark.color.backgroundCard)))
 }
 
 @MainActor
@@ -31,6 +31,36 @@ import Testing
 }
 
 @Test func theDefaultThemeCarriesCoresFontFamilies() {
-  #expect(AstryxTokens.defaultLight.fonts["font-family-body"]?.first == "-apple-system")
-  #expect(AstryxTokens.defaultLight.fonts["font-family-heading"] != nil)
+  #expect(Theme.default.light.font.familyBody.first == "-apple-system")
+  #expect(Theme.default.light.font.familyHeading.isEmpty == false)
+}
+
+// Theme environment spec, E1: with Bold Text on, a custom face from the
+// theme's family list is drawn one weight step heavier; system fonts follow
+// Bold Text by themselves.
+
+@Test func boldTextStepsCustomFacesHeavier() {
+  let steps: [(Font.Weight, Font.Weight)] = [
+    (.ultraLight, .thin), (.thin, .light), (.light, .regular), (.regular, .semibold),
+    (.medium, .semibold), (.semibold, .bold), (.bold, .heavy), (.heavy, .black), (.black, .black),
+  ]
+  for (weight, bolder) in steps {
+    #expect(astryxBoldTextWeight(weight) == bolder)
+  }
+  #expect(
+    astryxFont(families: ["Helvetica"], size: 14, weight: .regular, isBoldText: true)
+      == .custom("Helvetica", fixedSize: 14).weight(.semibold))
+  #expect(
+    astryxFont(families: ["Helvetica"], size: 14, weight: .bold, isBoldText: true)
+      == .custom("Helvetica", fixedSize: 14).weight(.heavy))
+  #expect(
+    astryxFont(families: ["-apple-system"], size: 14, weight: .regular, isBoldText: true)
+      == .system(size: 14, weight: .regular))
+}
+
+@Test func theStyleReadsBoldTextFromTheEnvironment() {
+  var environment = EnvironmentValues()
+  #expect(environment.astryx.isBoldText == false)
+  environment.legibilityWeight = .bold
+  #expect(environment.astryx.isBoldText)
 }

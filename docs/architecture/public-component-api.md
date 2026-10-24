@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-08-30
+approved_at: 2026-10-24
 owners: [cixzhang, imdreamrunner]
 applies_to:
   [
@@ -31,6 +31,7 @@ deciding_specs:
     spec:AST-012/DEC-1,
     spec:AST-012/DEC-2,
     spec:AST-071/DEC-1,
+    spec:AST-017/DEC-23,
   ]
 ---
 
@@ -52,7 +53,8 @@ deciding_specs:
       "INV7",
       "INV8",
       "INV9",
-      "INV12"
+      "INV12",
+      "INV16"
     ]
   }
 }
@@ -146,6 +148,23 @@ guidance owns the process used to propose and test APIs.
   `<part>Style` together, reaching that element and composing as INV6 describes.
   No public prop accepts StyleX styles for an element that cannot also take a
   class name and inline styles, following `spec:AST-071/DEC-1`.
+- **INV16 — A caller's presentation choice wins over touch defaults.** A stable
+  component that, under a coarse pointer, presents a different surface, such as
+  a sheet in place of a popover, or switches how an open surface follows input,
+  such as touch tracking in an open list, takes one `presentation` prop, and a
+  value of it, such as `presentation="popover"`, keeps the surface and input
+  mode the component uses with a fine pointer on every device. Touch behavior
+  is the component's default where it serves touch users, and a caller's
+  explicit choice always wins over that default. Every internal touch mode of
+  that kind is reachable by callers through a public prop or value; none is
+  hard-coded beyond a caller's reach. Touch styling, such as press paint or a
+  text-size floor, and touch-only behavior that its own record defines, such as
+  a row swipe or a tooltip's touch trigger, follow those records. Thresholds and
+  tuning values inside a mode stay internal (`spec:AST-002` FR3). INV4 lets the
+  component derive the default; INV16 keeps the caller able to override it.
+  When a touch default changes a released component's behavior, that
+  `presentation` value is the restoring prop `spec:AST-017` FR3 names
+  (`spec:AST-017/DEC-23`).
 
 This record applies to stable public packages. Lab components are not stable
 public promises until promotion.
@@ -169,6 +188,9 @@ public promises until promotion.
   defect does not by itself require consumer-doc changes.
 - A new prop includes the admission argument from `spec:AST-002/DEC-1`; it does
   not get accepted only because it solves one callsite.
+- Adding a touch presentation or a touch input mode for an open surface to a
+  stable component checks INV16: a `presentation` value keeps the fine-pointer
+  surface and mode, and every such touch mode is reachable by callers.
 - A new public semantic CSS custom property includes the same admission argument
   and shows why the target's guaranteed CSS property set cannot express the
   caller-owned need. Its detailed contract and evidence stay in the owning
@@ -202,6 +224,9 @@ public promises until promotion.
   theme width names and inclusive-`from`/exclusive-`below` edge meanings.
 - `spec:AST-071/DEC-1` — every styling input works from every styling system,
   so a part's styling inputs come as a set.
+- `spec:AST-017/DEC-23` — a touch presentation or open-surface touch mode is
+  a default the caller can always override, through one `presentation` prop
+  that also restores the previous surface and mode.
 
 Transition Action sequencing and pending behavior belong to their component or
 family contract. This record links that owner once it is current; it does not
@@ -209,18 +234,19 @@ copy the component matrix.
 
 ## Verification
 
-| Invariant               | Evidence                                                                     | Failure signal                                                                                                           |
-| ----------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| INV1, INV8              | Export, public-subpath, prop, and ref checks                                 | A promised component/type cannot be imported or its ref cannot reach the contract element                                |
-| INV2                    | Naming and logical-direction lint/tests                                      | Equivalent concepts use conflicting names or physical direction leaks into public API                                    |
-| INV3, INV4              | Historical API review benchmark and `spec:AST-002` evidence                  | A prop combines unrelated axes or exposes a derivable implementation choice                                              |
-| INV5, INV6, INV7        | BaseProps/passthrough lint and representative runtime tests                  | Consumer ARIA/data/style/events are dropped, clobber component semantics, or fail to compose                             |
-| INV9                    | Published-surface, Changeset, migration, and public-type checks              | A released API changes without explicit compatibility evidence                                                           |
-| INV11                   | Public-API admission review plus owning theming/component tests              | A public semantic custom property exposes derivable or unsupported implementation detail                                 |
-| INV12, INV13            | Generated declaration/export/behavior inventory plus canonical-owner mapping | A reachable supporting type or behavior is called internal, or mechanical evidence is treated as permission to accept it |
-| INV14                   | `AppShell.test.tsx`                                                          | A component hardcodes a divergent point or treats equality as below                                                      |
-| INV15                   | Public-API review of the generated declaration inventory                     | A part or StyleX-typed styling prop ships without class-name and inline-style counterparts on the same element           |
-| Consumer-doc projection | `docPropReferences.test.ts` and `docPropLiterals.test.ts`                    | Docs name a nonexistent prop or omit public literal choices                                                              |
+| Invariant               | Evidence                                                                             | Failure signal                                                                                                                                                                                                                                                                                |
+| ----------------------- | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| INV1, INV8              | Export, public-subpath, prop, and ref checks                                         | A promised component/type cannot be imported or its ref cannot reach the contract element                                                                                                                                                                                                     |
+| INV2                    | Naming and logical-direction lint/tests                                              | Equivalent concepts use conflicting names or physical direction leaks into public API                                                                                                                                                                                                         |
+| INV3, INV4              | Historical API review benchmark and `spec:AST-002` evidence                          | A prop combines unrelated axes or exposes a derivable implementation choice                                                                                                                                                                                                                   |
+| INV5, INV6, INV7        | BaseProps/passthrough lint and representative runtime tests                          | Consumer ARIA/data/style/events are dropped, clobber component semantics, or fail to compose                                                                                                                                                                                                  |
+| INV9                    | Published-surface, Changeset, migration, and public-type checks                      | A released API changes without explicit compatibility evidence                                                                                                                                                                                                                                |
+| INV11                   | Public-API admission review plus owning theming/component tests                      | A public semantic custom property exposes derivable or unsupported implementation detail                                                                                                                                                                                                      |
+| INV12, INV13            | Generated declaration/export/behavior inventory plus canonical-owner mapping         | A reachable supporting type or behavior is called internal, or mechanical evidence is treated as permission to accept it                                                                                                                                                                      |
+| INV14                   | `AppShell.test.tsx`                                                                  | A component hardcodes a divergent point or treats equality as below                                                                                                                                                                                                                           |
+| INV15                   | Public-API review of the generated declaration inventory                             | A part or StyleX-typed styling prop ships without class-name and inline-style counterparts on the same element                                                                                                                                                                                |
+| INV16                   | Public-API review of touch presentations plus coarse- and fine-pointer runtime tests | A stable component that presents a different surface or switches an open surface's input mode under a coarse pointer and has no `presentation` value that keeps its fine-pointer surface and mode; such a touch mode callers cannot reach; a default that overrides an explicit caller choice |
+| Consumer-doc projection | `docPropReferences.test.ts` and `docPropLiterals.test.ts`                            | Docs name a nonexistent prop or omit public literal choices                                                                                                                                                                                                                                   |
 
 Known verification gaps:
 
