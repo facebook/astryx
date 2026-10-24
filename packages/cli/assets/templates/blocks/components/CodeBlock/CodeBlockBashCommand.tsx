@@ -22,7 +22,7 @@ export default function CodeBlockBashCommand() {
       />
       <CodeBlock
         code={
-          'npx astryx upgrade --from 0.6.0 --apply --include "src/**/*.tsx"\nnpm run build'
+          'astryx upgrade --from 0.6.0 --apply --include "src/**/*.tsx"\nnpm run build'
         }
         language="bash"
         hasLanguageLabel={false}
