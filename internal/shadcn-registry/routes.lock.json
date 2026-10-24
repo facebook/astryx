@@ -3865,6 +3865,11 @@
       "aliases": []
     },
     {
+      "name": "hook-use-keyboard-layout-guide",
+      "path": "hooks/use-keyboard-layout-guide",
+      "aliases": []
+    },
+    {
       "name": "hook-use-layer",
       "path": "hooks/use-layer",
       "aliases": []

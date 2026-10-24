@@ -36,10 +36,16 @@
 import {keyboard, springs, timing} from '../motion/uikit';
 import {solveSpring, toSpring, type SpringCurve} from '../motion/spring';
 
-/** How the keyboard's cover changes. */
+/**
+ * How the keyboard's cover changes.
+ * @experimental
+ */
 export type KeyboardTransitionKind = 'show' | 'hide' | 'change';
 
-/** One change of the keyboard's cover, as the guide reports it. */
+/**
+ * One change of the keyboard's cover, as the guide reports it.
+ * @experimental
+ */
 export interface KeyboardTransition {
   readonly kind: KeyboardTransitionKind;
   /** Inset presented at `start`, CSS px. */

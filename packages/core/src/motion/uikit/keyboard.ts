@@ -22,6 +22,11 @@
  * SYNC: When modified, update /packages/core/src/keyboard/README.md
  */
 
+/**
+ * When Mobile Safari's visual viewport reports the software keyboard
+ * relative to the keyboard's own motion, each value with its source.
+ * @experimental
+ */
 export const keyboard = {
   /**
    * How long after the keyboard starts to rise Mobile Safari usually fires
