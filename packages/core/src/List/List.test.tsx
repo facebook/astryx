@@ -16,6 +16,8 @@ import {rulesDeclaredFor} from '../__tests__/pressState';
 import {List} from './List';
 import {ListItem} from './ListItem';
 import {ListMarkerScope} from './ListContext';
+import {listRowConsts} from './listRow.stylex';
+import {list} from '../motion/uikit/list';
 
 describe('List', () => {
   it('forwards ListItem align to its Item row unchanged', () => {
@@ -486,6 +488,129 @@ describe('List', () => {
     );
     const hrs = container.querySelectorAll('hr');
     expect(hrs).toHaveLength(0);
+  });
+
+  it('hides a touch-pressed row’s divider and the one above it, with the press layer over its own', () => {
+    render(
+      <List hasDividers>
+        <ListItem label="Item 1" onClick={() => {}} />
+        <ListItem label="Item 2" onClick={() => {}} />
+      </List>,
+    );
+    const row = screen.getByText('Item 1').closest('li') as HTMLElement;
+    const rules = rulesDeclaredFor(row);
+    const selector = (rule: string) => rule.slice(0, rule.indexOf('{'));
+    const hides = (condition: string) =>
+      rules.some(
+        rule =>
+          selector(rule).includes(condition) &&
+          !selector(rule).includes('::before') &&
+          /border-(bottom|block-end)-color:\s*transparent/.test(rule),
+      );
+    // Its own divider while it is pressed, and the divider above the row
+    // being pressed: the row before a pressed sibling.
+    expect(hides('[data-astryx-press="on"]')).toBe(true);
+    expect(hides(':has(+ [data-astryx-press="on"])')).toBe(true);
+    // Only while the press is on: the release shows both again at once.
+    expect(hides('[data-astryx-press="fading"]')).toBe(false);
+    // The pressed row's layer reaches over the hidden divider, except on the
+    // last row, which has none.
+    const layer = rules.filter(
+      rule =>
+        selector(rule).includes('::before') &&
+        selector(rule).includes('[data-astryx-press="on"]') &&
+        /(bottom|inset-block-end):/.test(rule),
+    );
+    expect(layer.some(rule => /calc\(\s*-1\s*\*\s*var\(/.test(rule))).toBe(
+      true,
+    );
+    expect(
+      layer.some(
+        rule =>
+          selector(rule).includes(':last-child') &&
+          /(bottom|inset-block-end):\s*0(px)?[;}\s]/.test(rule),
+      ),
+    ).toBe(true);
+  });
+
+  it('leaves a list without dividers alone during a press', () => {
+    render(
+      <List>
+        <ListItem label="Item 1" onClick={() => {}} />
+      </List>,
+    );
+    const row = screen.getByText('Item 1').closest('li') as HTMLElement;
+    expect(
+      rulesDeclaredFor(row).some(rule =>
+        rule.slice(0, rule.indexOf('{')).includes(':has(+ [data-astryx-press'),
+      ),
+    ).toBe(false);
+  });
+
+  // ===========================================================================
+  // Touch row heights
+  // ===========================================================================
+
+  /**
+   * The element's own min-height declarations, split by whether they sit
+   * under the touch media query.
+   */
+  function minHeights(el: Element): {touch: string[]; other: string[]} {
+    const classes = el.className
+      .split(/\s+/)
+      .filter(Boolean)
+      .map(name => `.${name}`);
+    const out = {touch: [] as string[], other: [] as string[]};
+    const visit = (rules: CSSRuleList, touch: boolean) => {
+      for (const rule of Array.from(rules)) {
+        if (rule instanceof CSSMediaRule) {
+          visit(
+            rule.cssRules,
+            touch || rule.conditionText.includes('pointer: coarse'),
+          );
+        } else if (
+          rule instanceof CSSStyleRule &&
+          classes.some(cls => rule.selectorText.startsWith(cls)) &&
+          rule.style.minHeight !== ''
+        ) {
+          (touch ? out.touch : out.other).push(rule.style.minHeight);
+        }
+      }
+    };
+    for (const sheet of Array.from(document.styleSheets)) {
+      visit(sheet.cssRules, false);
+    }
+    return out;
+  }
+
+  it('mirrors the constants table’s touch row heights for the stylesheet', () => {
+    expect(listRowConsts.touchRowHeight).toBe(`${list.metrics.rowHeight}px`);
+    expect(listRowConsts.touchSubtitleRowHeight).toBe(
+      `${list.metrics.subtitleRowHeight}px`,
+    );
+    expect(listRowConsts.touchControlSize).toBe(
+      `${list.metrics.controlSize}px`,
+    );
+  });
+
+  it('gives rows UIKit’s table heights on a touch screen only', () => {
+    render(
+      <>
+        <List>
+          <ListItem label="One line" />
+          <ListItem label="Two lines" description="A description" />
+        </List>
+        <List density="compact">
+          <ListItem label="Compact" description="Still the control size" />
+        </List>
+      </>,
+    );
+    const row = (text: string) => screen.getByText(text).closest('li')!;
+    expect(minHeights(row('One line')).touch).toEqual(['52px']);
+    expect(minHeights(row('Two lines')).touch).toEqual(['62px']);
+    expect(minHeights(row('Compact')).touch).toEqual(['44px']);
+    // Nothing outside the touch query: a mouse-driven list is unchanged.
+    expect(minHeights(row('One line')).other).toEqual([]);
   });
 
   // ===========================================================================
