@@ -14,7 +14,7 @@ struct Pixels {
   @MainActor
   init<V: View>(
     _ view: V,
-    theme: AstryxTheme? = nil,
+    theme: Theme? = nil,
     scheme: ColorScheme = .light,
     typeSize: DynamicTypeSize = .large
   ) {
@@ -55,6 +55,12 @@ struct Pixels {
 func rgba(_ hex: String) -> [Int] {
   let value = UInt32(hex.dropFirst(), radix: 16)!
   return [24, 16, 8, 0].map { Int((value >> UInt32($0)) & 0xFF) }
+}
+
+/// The components of a theme color, resolved in sRGB.
+func rgba(_ color: Color) -> [Int] {
+  let r = color.resolve(in: EnvironmentValues())
+  return [r.red, r.green, r.blue, r.opacity].map { Int(($0 * 255).rounded()) }
 }
 
 func close(_ a: [Int], _ b: [Int], within tolerance: Int = 8) -> Bool {

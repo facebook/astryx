@@ -3,7 +3,7 @@
 /// The SF Symbol each of Astryx's built-in icon names draws by default on
 /// Apple platforms (AST-082 FR17). A test keeps this map equal to
 /// `NATIVE_ICON_DEFAULTS` in `@astryxdesign/native`; a theme replaces any
-/// entry through `AstryxTheme(icons:)`.
+/// entry through `Theme(icons:)`.
 let astryxDefaultIcons: [String: String] = [
   "close": "xmark",
   "chevronDown": "chevron.down",

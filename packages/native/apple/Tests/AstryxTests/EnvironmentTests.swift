@@ -12,8 +12,8 @@ import Testing
   let card = AstryxCard { Color.clear.frame(width: 80, height: 40) }.frame(width: 120)
   let light = Pixels(card, scheme: .light)
   let dark = Pixels(card, scheme: .dark)
-  #expect(close(light.at(60, light.height / 2), rgba(AstryxTokens.defaultLight.colors["color-background-card"]!)))
-  #expect(close(dark.at(60, dark.height / 2), rgba(AstryxTokens.defaultDark.colors["color-background-card"]!)))
+  #expect(close(light.at(60, light.height / 2), rgba(Theme.default.light.color.backgroundCard)))
+  #expect(close(dark.at(60, dark.height / 2), rgba(Theme.default.dark.color.backgroundCard)))
 }
 
 @MainActor
@@ -31,6 +31,6 @@ import Testing
 }
 
 @Test func theDefaultThemeCarriesCoresFontFamilies() {
-  #expect(AstryxTokens.defaultLight.fonts["font-family-body"]?.first == "-apple-system")
-  #expect(AstryxTokens.defaultLight.fonts["font-family-heading"] != nil)
+  #expect(Theme.default.light.font.familyBody.first == "-apple-system")
+  #expect(Theme.default.light.font.familyHeading.isEmpty == false)
 }

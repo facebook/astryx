@@ -23,7 +23,7 @@ import Testing
 
 @MainActor
 @Test func aLoadingButtonIsNotDimmedAndKeepsItsWidth() {
-  let accent = rgba(AstryxTokens.defaultLight.colors["color-accent"]!)
+  let accent = rgba(Theme.default.light.color.accent)
   let loading = Pixels(AstryxButton(label: "Continue", variant: .primary, isLoading: true) {}.fixedSize())
   let ready = Pixels(AstryxButton(label: "Continue", variant: .primary) {}.fixedSize())
   #expect(close(loading.at(8, loading.height / 2), accent))
@@ -32,7 +32,7 @@ import Testing
 
 @MainActor
 @Test func aDisabledButtonIsDimmed() {
-  let accent = rgba(AstryxTokens.defaultLight.colors["color-accent"]!)
+  let accent = rgba(Theme.default.light.color.accent)
   let disabled = Pixels(AstryxButton(label: "Continue", variant: .primary, isDisabled: true) {}.fixedSize())
   #expect(!close(disabled.at(8, disabled.height / 2), accent))
 }
@@ -60,8 +60,8 @@ import Testing
 }
 
 @Test func buttonIconsUseSharedNamesAndTheTheme() {
-  #expect(AstryxStyle(tokens: .defaultLight).icon("search") == "magnifyingglass")
-  #expect(AstryxStyle(tokens: .defaultLight, icons: ["search": "sparkle.magnifyingglass"]).icon("search") == "sparkle.magnifyingglass")
+  #expect(AstryxStyle(tokens: Theme.default.light).icon("search") == "magnifyingglass")
+  #expect(AstryxStyle(tokens: Theme.default.light, icons: ["search": "sparkle.magnifyingglass"]).icon("search") == "sparkle.magnifyingglass")
 }
 
 @MainActor

@@ -11,19 +11,19 @@ import Testing
 
 /// Core's default tokens with a different accent, card, text color, type
 /// size, and corner shape, in both modes.
-private let secondTheme: AstryxTheme = {
-  func restyle(_ base: AstryxTokens) -> AstryxTokens {
+private let secondTheme: Theme = {
+  func restyle(_ base: Tokens) -> Tokens {
     var tokens = base
-    tokens.colors["color-accent"] = "#C2410CFF"
-    tokens.colors["color-background-card"] = "#FDE68AFF"
-    tokens.colors["color-text-primary"] = "#FF0000FF"
-    tokens.sizes["text-label-size"] = 28
-    tokens.sizes["text-body-size"] = 30
-    tokens.sizes["radius-container"] = 0
-    tokens.sizes["radius-element"] = 0
+    tokens.color.accent = Color(astryxRGBA: 0xC2410CFF)
+    tokens.color.backgroundCard = Color(astryxRGBA: 0xFDE68AFF)
+    tokens.color.textPrimary = Color(astryxRGBA: 0xFF0000FF)
+    tokens.font.labelSize = 28
+    tokens.font.bodySize = 30
+    tokens.radius.container = 0
+    tokens.radius.element = 0
     return tokens
   }
-  return AstryxTheme(light: restyle(.defaultLight), dark: restyle(.defaultDark))
+  return Theme(light: restyle(Theme.default.light), dark: restyle(Theme.default.dark))
 }()
 
 @MainActor
@@ -33,7 +33,7 @@ private let secondTheme: AstryxTheme = {
   let second = Pixels(card, theme: secondTheme)
 
   let center = (second.width / 2, second.height / 2)
-  #expect(close(standard.at(center.0, center.1), rgba(AstryxTokens.defaultLight.colors["color-background-card"]!)))
+  #expect(close(standard.at(center.0, center.1), rgba(Theme.default.light.color.backgroundCard)))
   #expect(close(second.at(center.0, center.1), rgba("#FDE68AFF")))
   // Corner shape: the default container radius leaves the corner empty;
   // a radius of 0 fills it.
@@ -47,7 +47,7 @@ private let secondTheme: AstryxTheme = {
   let standard = Pixels(button, theme: .default)
   let second = Pixels(button, theme: secondTheme)
 
-  #expect(close(standard.at(8, standard.height / 2), rgba(AstryxTokens.defaultLight.colors["color-accent"]!)))
+  #expect(close(standard.at(8, standard.height / 2), rgba(Theme.default.light.color.accent)))
   #expect(close(second.at(8, second.height / 2), rgba("#C2410CFF")))
   // A larger label size makes the same label wider.
   #expect(second.width > standard.width)

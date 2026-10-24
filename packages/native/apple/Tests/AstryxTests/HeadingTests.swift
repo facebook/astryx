@@ -26,9 +26,9 @@ import Testing
   let largest = Pixels(AstryxHeading("Settings").fixedSize(), typeSize: .accessibility5)
   #expect(largest.width > large.width * 2)
 
-  var theme = AstryxTheme.default
-  theme.light.sizes["text-heading-2-size"] = 48
-  theme.light.colors["color-text-primary"] = "#FF0000FF"
+  var theme = Theme.default
+  theme.light.font.heading2Size = 48
+  theme.light.color.textPrimary = Color(astryxRGBA: 0xFF0000FF)
   let themed = Pixels(AstryxHeading("Settings").fixedSize(), theme: theme)
   #expect(themed.width > large.width)
   #expect(themed.contains { $0[0] > 200 && $0[1] < 60 && $0[2] < 60 && $0[3] > 200 })
