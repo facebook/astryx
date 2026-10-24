@@ -9,7 +9,7 @@
  * SYNC: When modified, update this header
  */
 
-import {describe, it, expect, vi} from 'vitest';
+import {beforeAll, describe, it, expect, vi} from 'vitest';
 import {cleanup, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {rulesDeclaredFor} from '../__tests__/pressState';
@@ -1013,6 +1013,13 @@ describe('List', () => {
 });
 
 describe('List and swipe actions', () => {
+  // A row's swipe panels arrive with a lazily loaded module; load it first,
+  // so a test waits on the import (however long a cold one takes) rather
+  // than on waitFor's one second.
+  beforeAll(async () => {
+    await import('../Item/ItemSwipeLayer');
+  });
+
   it('clips the rows in the inline axis with clip, never hidden, so a row dragged aside paints no further than the list', () => {
     render(
       <List>
@@ -1024,6 +1031,24 @@ describe('List and swipe actions', () => {
     // the same axis in horizontal writing modes.
     expect(rules.some(r => /overflow-(inline|x): clip/.test(r))).toBe(true);
     expect(rules.some(r => /overflow[-a-z]*: hidden/.test(r))).toBe(false);
+  });
+
+  it('passes controlProps through to the row\x27s control unchanged', () => {
+    render(
+      <List>
+        <ListItem
+          label="A"
+          data-testid="row"
+          href="/a"
+          controlProps={{'data-nav-id': 'a', tabIndex: -1}}
+        />
+      </List>,
+    );
+    const row = screen.getByTestId('row');
+    const link = screen.getByRole('link', {name: 'A'});
+    expect(link).toHaveAttribute('data-nav-id', 'a');
+    expect(link).toHaveAttribute('tabindex', '-1');
+    expect(row).not.toHaveAttribute('data-nav-id');
   });
 
   it('passes swipeActions and swipeBehavior through to the row unchanged', async () => {

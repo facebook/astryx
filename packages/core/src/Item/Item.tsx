@@ -11,10 +11,10 @@
  * The swipe actions live in ItemSwipeLayer, reached only through a dynamic
  * import when `swipeActions` is set: this module imports nothing of the
  * gesture, so a row without swipe actions ships none of it. The root here
- * still carries the swipe styles and forwards its events into the bridge the
- * layer fills, so a swipeable row keeps the DOM and the event model it had
- * when the gesture was imported here (Item.source-build.test.mjs pins the
- * import graph).
+ * still carries the swipe styles and forwards its key events into the bridge
+ * the layer fills; the layer attaches the gesture to the root itself, so a
+ * swipeable row keeps the DOM it had when the gesture was imported here
+ * (Item.source-build.test.mjs pins the import graph).
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Item/Item.doc.mjs
@@ -31,6 +31,7 @@ import {
   useCallback,
   useId,
   useRef,
+  useState,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -113,12 +114,42 @@ export interface ItemSwipeActions {
 }
 
 /**
- * `reveal`: past half the panel the row rests open with every entry a real
- * button; a long drag or a fling fires the outermost. `commit`: a release
- * past the commit point slides the row out and fires the outermost entry;
- * nothing rests, and the panel is presentational.
+ * `reveal`: every entry of a resting row is a real button, and a long drag
+ * fires the outermost. On iOS, as in a UIKit list, a fast release goes the
+ * way it moves (a flick opens the row, a flick back closes it) and a slow one
+ * rests the row open past half the panel; elsewhere a release past half the
+ * panel rests it open and a fling fires the outermost, as before. `commit`: a
+ * release past the commit point slides the row out and fires the outermost
+ * entry; nothing rests, and the panel is presentational.
  */
 export type ItemSwipeBehavior = 'reveal' | 'commit';
+
+/**
+ * Attributes for the control the row renders — the invisible button
+ * (`onClick`) or anchor (`href`) that carries the label and takes keyboard
+ * focus. States and relations a screen reader must find on the focused
+ * control (`aria-expanded`, `aria-haspopup`, `aria-controls`,
+ * `aria-pressed`, `aria-describedby`), a host's marks (`data-*`), its key
+ * handling, and the roving `tabIndex` of a composite all belong here; the
+ * rest of the row's props stay on the root. The control's role, its content,
+ * its click and its disabled state are the row's own and are not accepted,
+ * nor is anything that would hide the row's only focusable element.
+ */
+export type ItemControlProps = Omit<
+  React.HTMLAttributes<HTMLElement>,
+  | 'children'
+  | 'className'
+  | 'style'
+  | 'role'
+  | 'onClick'
+  | 'dangerouslySetInnerHTML'
+  // The row's only focusable element is never hidden by the bag.
+  | 'hidden'
+  | 'inert'
+  | 'aria-hidden'
+> & {
+  [key: `data-${string}`]: string | number | boolean | undefined;
+};
 
 export interface ItemProps extends BaseProps<HTMLElement> {
   /** Ref forwarded to the root element. */
@@ -134,6 +165,13 @@ export interface ItemProps extends BaseProps<HTMLElement> {
    * keyboard access and the row adds no second tab stop; and only when no
    * interactive node sits in `startContent` or `endContent`, since a control
    * nested inside an anchor is invalid.
+   *
+   * `role="row"` is the one role that keeps the row's own control: inside a
+   * `grid`, the row renders its parts as `gridcell`s — the marker, the start
+   * content, the label with its description, the end content, and each swipe
+   * panel — and the label cell holds the invisible anchor or button, which
+   * `controlProps` reaches, so a grid's keyboard model can rove focus to it.
+   * `isSelected` is the row's `aria-selected`.
    * @default 'div'
    */
   as?: 'div' | 'li' | 'span' | React.ElementType;
@@ -232,6 +270,31 @@ export interface ItemProps extends BaseProps<HTMLElement> {
   href?: string;
 
   /**
+   * Attributes spread on the control the row renders for `onClick` or `href`
+   * (the invisible button or anchor the label sits in), which is the element
+   * keyboard focus lands on. Use it for what a screen reader must find on
+   * the focused control — a disclosure's `aria-expanded`, `aria-haspopup`
+   * and `aria-controls`, a toggle's `aria-pressed`, a name of its own
+   * through `aria-label` or `aria-labelledby` — and for a host's own marks
+   * and key handling (`data-*`, `onKeyDown`, a composite's roving
+   * `tabIndex`). Every other prop keeps landing on the root. The row's own
+   * attributes win where they conflict: a disabled row keeps `tabIndex={-1}`
+   * and `aria-disabled` on its button or anchor. Where the root is the
+   * control (`as` is a link component, with or without a `role`), these land
+   * on the root after the row's other props, so on an attribute named in both
+   * places the `controlProps` value is the one written, a disabled row keeps
+   * `tabIndex={-1}` and `aria-disabled` there too, and an invisible button
+   * the row still nests inside such a root for `onClick` takes none of them. A row given
+   * no `controlProps` renders exactly what it did before the prop existed.
+   * Ignored, with a development warning, where the row renders no control: a
+   * row with a `role` other than `row` on a plain root (its parent owns
+   * keyboard access; a grid's `row` keeps its control in the label cell) or
+   * an `interactiveRef` (the nested control is the one to attribute), a link
+   * root included. `ListItem` passes it through unchanged.
+   */
+  controlProps?: ItemControlProps;
+
+  /**
    * Link target (e.g., '_blank'). Only used with href.
    */
   target?: '_blank' | '_self';
@@ -273,7 +336,10 @@ export interface ItemProps extends BaseProps<HTMLElement> {
    * a touch accelerator and never a row's only path to a verb: a verb
    * reachable only by swipe is unreachable by keyboard and by mouse, so every
    * entry must also be reachable through the row's own content (a menu or a
-   * button in `endContent`).
+   * button in `endContent`). On iOS an open row closes on a tap on its own
+   * content, which activates nothing and paints no press, on a touch
+   * elsewhere, when the list or page scrolls, and on Escape; elsewhere it
+   * closes on a touch elsewhere and on Escape, as before.
    *
    * Available on a row whose role permits interactive descendants — a
    * `listitem`, a row with no role — and not served on one whose role forbids
@@ -289,8 +355,10 @@ export interface ItemProps extends BaseProps<HTMLElement> {
 
   /**
    * What a swipe does: `reveal` rests the row open with every entry tappable
-   * and fires the outermost on a long drag; `commit` slides the row out and
-   * fires the outermost on release. `commit` fits one entry per side.
+   * (on iOS a flick opens it and a flick back closes it; elsewhere a fling
+   * fires the outermost, as before) and fires the outermost on a long drag;
+   * `commit` slides the row out and fires the outermost on a release past
+   * the commit point. `commit` fits one entry per side.
    * @default 'reveal'
    */
   swipeBehavior?: ItemSwipeBehavior;
@@ -322,14 +390,11 @@ const ARIA_SELECTED_ROLES = new Set([
 /**
  * Roles whose content model permits interactive descendants, so a swipe
  * panel's buttons may live inside the row. A row with no role at all
- * qualifies too; `option`, the `menuitem*` roles and the rest do not.
+ * qualifies too; `option`, the `menuitem*` roles and the rest do not. A
+ * grid's `row` qualifies through its cells: every child the row exposes is a
+ * `gridcell`, the panel included (see `isGridRow`).
  */
-const SWIPE_ROLES = new Set(['listitem']);
-
-/** The travel a drag writes on the row root, in physical px (see useSwipeAction). */
-const SWIPE_TRAVEL = 'var(--_item-swipe-travel, 0px)';
-/** The settle clock, `0s` while the finger drives the row. */
-const SWIPE_DURATION = 'var(--_item-swipe-duration, 0s)';
+const SWIPE_ROLES = new Set(['listitem', 'row']);
 
 // =============================================================================
 // Styles
@@ -501,19 +566,26 @@ const styles = stylex.create({
     display: 'flex',
     marginInlineStart: 'auto',
   },
-  // Swipe actions. The root translates by the drag's travel and settles on
-  // the clock the gesture writes; `pan-y` lets the browser keep scrolling the
-  // list while the row owns horizontal movement, and `pinch-zoom` leaves a
-  // two-finger pinch that starts on the row to the browser, so the page stays
-  // zoomable (WCAG 1.4.4). The hover transition keeps its own clock beside
-  // the transform's.
+  // A grid row's cells. The label cell takes the room the control took when
+  // it sat bare in the row; the control inside fills it.
+  labelCell: {
+    display: 'flex',
+    flex: 1,
+    minWidth: 0,
+  },
+  markerCell: {
+    display: 'flex',
+    flex: '0 0 auto',
+  },
+  // Swipe actions. The gesture moves the root with its `translate` property
+  // (compositor animations, see useSwipeAction), so the row's own `transform`
+  // stays free; `pan-y` lets the browser keep scrolling the list while the
+  // row owns horizontal movement, and `pinch-zoom` leaves a two-finger pinch
+  // that starts on the row to the browser, so the page stays zoomable
+  // (WCAG 1.4.4). The gesture writes the same value inline once it loads.
   swipeRoot: {
     isolation: 'isolate',
     touchAction: 'pan-y pinch-zoom',
-    transform: `translate3d(${SWIPE_TRAVEL}, 0, 0)`,
-    transitionProperty: 'background-color, transform',
-    transitionDuration: `${durationVars['--duration-fast-min']}, ${SWIPE_DURATION}`,
-    transitionTimingFunction: `${easeVars['--ease-standard']}, ease-out`,
   },
 });
 
@@ -571,6 +643,7 @@ export function Item({
   onClick,
   interactiveRef,
   href,
+  controlProps,
   target: targetFromProps,
   rel: relFromProps,
   isHighlighted = false,
@@ -611,14 +684,44 @@ export function Item({
 
   const isInteractive = onClick != null || href != null || isDelegate;
   const {target, rel} = computeTargetAndRel(targetFromProps, relFromProps);
-  // When a semantic role is provided (e.g. "menuitem"), a parent component
-  // handles keyboard access. Skip the invisible button/anchor and put
-  // onClick directly on the root element instead.
-  const hasParentRole = role != null;
   // The root is whatever `as` says it is. A caller that passed a link
   // component means the root itself is the anchor, so the address rides it
   // and the invisible anchor below is not rendered.
   const isLinkRoot = typeof Component !== 'string' && href != null;
+  // A row of a grid: the parts render as `gridcell`s and the label cell keeps
+  // the row's own control, where a grid's roving focus lands.
+  const isGridRow = role === 'row';
+  // The control the row renders, if any: the invisible anchor or button, or
+  // the root itself when `as` made the root the link (that root is the
+  // control whatever its `role`). A parent-role row with a plain root (a
+  // grid's `row` excepted: its control sits in the label cell) and a
+  // delegating row render none, so `controlProps` has nowhere to land there.
+  const rendersControl =
+    !isDelegate &&
+    (isLinkRoot ||
+      ((role == null || isGridRow) && (href != null || onClick != null)));
+  // A link root with a bag: the root is the control and the bag lands on it,
+  // and on nothing else — a link root that also has `onClick` still nests the
+  // invisible button inside it, and that button takes no bag. A row that
+  // passes no bag, or renders no control, keeps every element as it was.
+  const rootControlProps =
+    isLinkRoot && rendersControl ? controlProps : undefined;
+  const buttonControlProps = isLinkRoot ? undefined : controlProps;
+  useDevWarning(
+    'Item',
+    '`controlProps` reaches the control the row renders for `onClick` or ' +
+      '`href`, and this row renders none: a row with a `role` other than ' +
+      '`row` leaves keyboard access to its parent, and a row with an ' +
+      '`interactiveRef` has the nested control as its one control. Put the ' +
+      'attributes on that control, or on the row itself.',
+    controlProps != null && !rendersControl,
+  );
+  // When a semantic role is provided (e.g. "menuitem"), a parent component
+  // handles keyboard access. Skip the invisible button/anchor and put
+  // onClick directly on the root element instead. A grid's `row` is the
+  // exception: its cells hold the controls a grid's keyboard model moves
+  // between, so the row keeps its own.
+  const hasParentRole = role != null && !isGridRow;
 
   // Swipe actions exist where the row's role permits interactive descendants
   // (a swipe panel's buttons are such descendants): a `listitem`, or no role
@@ -642,13 +745,15 @@ export function Item({
       swipeBehavior === 'commit' &&
       (leadingSwipe.length > 1 || trailingSwipe.length > 1),
   );
-  const swipeRootRef = useRef<HTMLElement | null>(null);
   // Filled by the swipe layer once it has mounted; empty until then and on a
   // row without swipe actions, when the forwarders below do nothing.
   const swipeBridgeRef = useRef<ItemSwipeBridge | null>(null);
   const setSwipeBridge = useCallback((bridge: ItemSwipeBridge | null) => {
     swipeBridgeRef.current = bridge;
   }, []);
+  // An open row's root is no pressable surface: a tap on its content only
+  // closes it, and UIKit's cell neither sees that touch nor highlights.
+  const [isSwipeOpen, setSwipeOpen] = useState(false);
   const linkRootProps = isLinkRoot
     ? {
         // A disabled row keeps its place in the tree but goes nowhere.
@@ -738,11 +843,81 @@ export function Item({
     onClick?.(e);
   };
 
+  // In a grid row every exposed child is a `gridcell`; elsewhere the parts
+  // sit bare in the row.
+  const cellRole = isGridRow ? 'gridcell' : undefined;
+  const labelControl =
+    hasParentRole || isDelegate ? (
+      // Delegation mode (and parent-role mode) put the label in a plain span:
+      // keyboard access lives on the nested control, so no invisible
+      // button/anchor is rendered and the row adds no second tab stop.
+      <span
+        {...stylex.props(
+          styles.content,
+          isInline && styles.inlineContent,
+          isDisabled && styles.disabledContent,
+        )}>
+        {labelAndDescription}
+      </span>
+    ) : href != null && !isLinkRoot ? (
+      <LinkComponent
+        {...controlProps}
+        href={href}
+        target={target}
+        rel={rel}
+        aria-disabled={isDisabled ? true : controlProps?.['aria-disabled']}
+        tabIndex={isDisabled ? -1 : controlProps?.tabIndex}
+        {...stylex.props(
+          styles.invisibleAnchor,
+          isInline && styles.inlineContent,
+          isDisabled && styles.disabledContent,
+        )}>
+        {labelAndDescription}
+      </LinkComponent>
+    ) : onClick != null ? (
+      <button
+        {...buttonControlProps}
+        type="button"
+        onClick={onClick}
+        disabled={isDisabled}
+        {...(buttonControlProps != null
+          ? {
+              'aria-disabled': isDisabled
+                ? true
+                : buttonControlProps['aria-disabled'],
+              tabIndex: isDisabled ? -1 : buttonControlProps.tabIndex,
+            }
+          : undefined)}
+        {...stylex.props(
+          styles.invisibleButton,
+          isInline && styles.inlineContent,
+          isDisabled && styles.disabledContent,
+        )}>
+        {labelAndDescription}
+      </button>
+    ) : (
+      <span
+        {...stylex.props(
+          styles.content,
+          isInline && styles.inlineContent,
+          isDisabled && styles.disabledContent,
+        )}>
+        {labelAndDescription}
+      </span>
+    );
+
   const innerContent = (
     <>
-      {marker}
+      {marker != null && isGridRow ? (
+        <span role="gridcell" {...stylex.props(styles.markerCell)}>
+          {marker}
+        </span>
+      ) : (
+        marker
+      )}
       {startContent != null && (
         <span
+          role={cellRole}
           {...stylex.props(
             styles.startContent,
             align === 'first-line' && styles.firstLineSlot,
@@ -751,57 +926,17 @@ export function Item({
         </span>
       )}
 
-      {hasParentRole || isDelegate ? (
-        // Delegation mode (and parent-role mode) put the label in a plain span:
-        // keyboard access lives on the nested control, so no invisible
-        // button/anchor is rendered and the row adds no second tab stop.
-        <span
-          {...stylex.props(
-            styles.content,
-            isInline && styles.inlineContent,
-            isDisabled && styles.disabledContent,
-          )}>
-          {labelAndDescription}
+      {isGridRow ? (
+        <span role="gridcell" {...stylex.props(styles.labelCell)}>
+          {labelControl}
         </span>
-      ) : href != null && !isLinkRoot ? (
-        <LinkComponent
-          href={href}
-          target={target}
-          rel={rel}
-          aria-disabled={isDisabled || undefined}
-          tabIndex={isDisabled ? -1 : undefined}
-          {...stylex.props(
-            styles.invisibleAnchor,
-            isInline && styles.inlineContent,
-            isDisabled && styles.disabledContent,
-          )}>
-          {labelAndDescription}
-        </LinkComponent>
-      ) : onClick != null ? (
-        <button
-          type="button"
-          onClick={onClick}
-          disabled={isDisabled}
-          {...stylex.props(
-            styles.invisibleButton,
-            isInline && styles.inlineContent,
-            isDisabled && styles.disabledContent,
-          )}>
-          {labelAndDescription}
-        </button>
       ) : (
-        <span
-          {...stylex.props(
-            styles.content,
-            isInline && styles.inlineContent,
-            isDisabled && styles.disabledContent,
-          )}>
-          {labelAndDescription}
-        </span>
+        labelControl
       )}
 
       {endContent != null && (
         <span
+          role={cellRole}
           {...stylex.props(
             styles.endContent,
             align === 'first-line' && styles.firstLineSlot,
@@ -814,13 +949,10 @@ export function Item({
   );
 
   const mergedRef = useMergedRefs(ref, containerRef);
-  const rootRef = useMergedRefs(
-    (isDelegate ? mergedRef : ref) as React.Ref<HTMLElement>,
-    hasSwipe ? swipeRootRef : undefined,
-  );
+  const rootRef = isDelegate ? mergedRef : ref;
 
-  // The row's own primary, which the click the browser synthesizes after a
-  // drag must not fire.
+  // The row's own primary. The click the browser synthesizes after a swipe
+  // never reaches it: the gesture system swallows it.
   const primaryOnClick = isDelegate
     ? delegatedOnClick
     : hasParentRole
@@ -828,35 +960,15 @@ export function Item({
       : isInteractive
         ? handleContainerClick
         : undefined;
-  const rootOnClick =
-    hasSwipe && primaryOnClick != null
-      ? (event: React.MouseEvent<HTMLElement>) => {
-          if (swipeBridgeRef.current?.shouldSuppressClick() === true) {
-            return;
-          }
-          primaryOnClick(event);
-        }
-      : primaryOnClick;
 
-  // The gesture's handlers, forwarded from the root into the bridge the swipe
-  // layer fills: the root keeps the event model it had before the split — React's
-  // own pointer, click-capture and key events on the row's root — while the
-  // gesture itself lives in the lazily loaded layer. Until the layer has
-  // mounted the bridge is empty and each forwarder does nothing.
+  // Escape on a resting row, forwarded from the root into the bridge the swipe
+  // layer fills: React's own key event on the row's root, so the row keeps the
+  // event model it had before the split. Until the layer has mounted the
+  // bridge is empty and the forwarder does nothing.
   const swipeHandlers = hasSwipe
     ? {
-        onPointerDown: (event: React.PointerEvent) =>
-          swipeBridgeRef.current?.handlers.onPointerDown(event),
-        onPointerMove: (event: React.PointerEvent) =>
-          swipeBridgeRef.current?.handlers.onPointerMove(event),
-        onPointerUp: (event: React.PointerEvent) =>
-          swipeBridgeRef.current?.handlers.onPointerUp(event),
-        onPointerCancel: (event: React.PointerEvent) =>
-          swipeBridgeRef.current?.handlers.onPointerCancel(event),
-        onClickCapture: (event: React.MouseEvent) =>
-          swipeBridgeRef.current?.handlers.onClickCapture(event),
         onKeyDown: (event: React.KeyboardEvent) =>
-          swipeBridgeRef.current?.handlers.onKeyDown(event),
+          swipeBridgeRef.current?.onKeyDown(event),
       }
     : undefined;
 
@@ -864,6 +976,7 @@ export function Item({
     <Component
       ref={rootRef as React.Ref<never>}
       {...restProps}
+      {...rootControlProps}
       {...swipeHandlers}
       {...linkRootProps}
       aria-selected={(allowsAriaSelected && isSelected) || undefined}
@@ -871,12 +984,31 @@ export function Item({
       // bare div, etc.). For those, convey selection via aria-current — valid
       // on any element — so the state still reaches AT. Written after
       // {...restProps} so it must defer to a consumer-provided aria-current.
+      // On a link root that takes a bag the control and the root are one
+      // element, so the caller's two bags meet on the attributes the row
+      // writes itself: `controlProps` after the root's props, and the row's
+      // disabled state over both, as on the invisible anchor. A row that
+      // passes no bag renders what it always did.
       aria-current={
+        rootControlProps?.['aria-current'] ??
         restProps['aria-current'] ??
         (isSelected && !allowsAriaSelected ? true : undefined)
       }
-      aria-disabled={isDisabled || undefined}
-      {...(isInteractive ? pressable : undefined)}
+      aria-disabled={
+        isDisabled
+          ? true
+          : rootControlProps != null
+            ? (rootControlProps['aria-disabled'] ?? restProps['aria-disabled'])
+            : undefined
+      }
+      tabIndex={
+        rootControlProps != null
+          ? isDisabled
+            ? -1
+            : (rootControlProps.tabIndex ?? restProps.tabIndex)
+          : restProps.tabIndex
+      }
+      {...(isInteractive && !isSwipeOpen ? pressable : undefined)}
       {...mergeProps(
         themeProps('item', {density, align}),
         focusOutlineProps.focusWithin(
@@ -897,7 +1029,7 @@ export function Item({
         style,
       )}
       role={role}
-      onClick={rootOnClick}>
+      onClick={primaryOnClick}>
       <ItemDescriptionContext
         value={hasRenderableDescription ? descriptionID : null}>
         {innerContent}
@@ -908,11 +1040,12 @@ export function Item({
         // the fallback is nothing — at rest a panel shows nothing either.
         <Suspense fallback={null}>
           <LazyItemSwipeLayer
-            rootRef={swipeRootRef}
             onBridge={setSwipeBridge}
+            onOpenChange={setSwipeOpen}
             leading={leadingSwipe}
             trailing={trailingSwipe}
             behavior={swipeBehavior}
+            panelRole={cellRole}
           />
         </Suspense>
       )}
