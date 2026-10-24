@@ -141,9 +141,10 @@ same generated contract.
 ## Current state
 
 - `packages/native/apple/` is one Swift package with the `Astryx` product
-  (SwiftUI views, prefixed `AstryxButton` and so on) and the `AstryxNative`
-  product (generated contract types). The generated contracts already use core
-  names unprefixed (`ButtonProps`, `ButtonVariant`).
+  (SwiftUI views with core's names, `Button`, `Text`, and so on, re-exporting
+  SwiftUI and the contracts) and the `AstryxNative` product (generated contract
+  types, unprefixed: `ButtonProps`, `ButtonVariant`).
+- Button keeps hand-written parameters until it moves onto `ButtonProps`.
 - The generated iOS `SwitchProps` still declares `size`, and `HStackProps` and
   `VStackProps` are still generated for iOS and macOS.
 
