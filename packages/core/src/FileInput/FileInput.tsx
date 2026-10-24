@@ -47,6 +47,7 @@ import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {useClickableContainer} from '../hooks/useClickableContainer';
 import {useTooltip} from '../Tooltip';
@@ -490,6 +491,20 @@ export function FileInput({
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
+  // A pick is one user action, already announced as "file selected"; a busy
+  // period it starts (changeAction, or a caller setting isLoading from
+  // onChange) adds no second message (spec:AST-086 FR6). The mark lasts until
+  // the field is idle again. Other busy starts announce; the Spinner stays
+  // decorative (FR8).
+  const [isPickAnnounced, setIsPickAnnounced] = useState(false);
+  if (isPickAnnounced && !isBusy) {
+    setIsPickAnnounced(false);
+  }
+  useBusyAnnouncement(
+    isBusy && !isPickAnnounced,
+    t('@astryx.spinner.loading'),
+    containerRef,
+  );
 
   // Announce successful file selection to screen readers via a persistent
   // live region (forms-17). Validation errors are announced (assertively) by
@@ -580,6 +595,7 @@ export function FileInput({
       // status mounts, so only announce the attach here (do not
       // double-announce errors).
       if (errors.length === 0) {
+        setIsPickAnnounced(true);
         announce(
           valid.length === 1
             ? t('@astryx.fileInput.fileSelected', {fileName: valid[0].name})
@@ -741,7 +757,7 @@ export function FileInput({
 
   const renderDropzoneContent = () => {
     if (isBusy) {
-      return <Spinner size="md" />;
+      return <Spinner size="md" aria-hidden="true" />;
     }
     if (hasFiles) {
       return (
@@ -772,7 +788,7 @@ export function FileInput({
           <span {...stylex.props(styles.fileNameText)}>
             {fileNames ?? displayPlaceholder}
           </span>
-          <Spinner size="sm" />
+          <Spinner size="sm" aria-hidden="true" />
         </>
       );
     }

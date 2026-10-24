@@ -19,9 +19,13 @@ rests on evidence.
 | Swift binding  | `apple/`                          | A Swift package with props generated from the same contracts. iOS and macOS props sit behind `#if os(...)`.                                                                                                                                  |
 | Native theme   | `defineNativeTheme`               | Durable theme intent (`material: 'opaque' \| 'translucent'`) plus platform entries scoped by OS version, such as Liquid Glass from iOS 26. Never sets tokens.                                                                                |
 | Icons          | `NATIVE_ICON_DEFAULTS`            | Astryx's built-in icon names mapped to SF Symbols on Apple platforms and Material Symbols on Android.                                                                                                                                        |
+| Wire           | `AstryxNode`, `AstryxAction`      | Each component as JSON a TypeScript core sends a native host (arm C), and the action a host sends back when a view calls a callback. Swift decodes `<Name>Node` and turns it into `<Name>Props` with `viewProps(send:)`.                     |
+| Logic core     | `@astryxdesign/native/logic`      | `createLogicCore` holds a screen's state, builds its node tree, and reduces actions; `connectBridge` carries it to a native host as JSON. ECMAScript built-ins only, so it runs in Hermes. Shaped after EJ Campbell's astryx-swift spike.    |
+| Logic host     | `AstryxLogicHost` (Swift)         | Runs a logic core bundle in JavaScriptCore, decodes each tree into `AstryxNode`, and sends views' actions back. A Hermes host speaks the same bridge.                                                                                        |
 
-Only `Selector` has native additions so far. React Native and Android bindings
-are not built yet; see [the experiment matrix](#experiment-matrix).
+Contracts cover Badge, Button, Card, Divider, Heading, HStack, ProgressBar,
+Selector, Switch, Text, TextInput, and VStack. React Native and Android
+bindings are not built yet; see [the experiment matrix](#experiment-matrix).
 
 ```ts
 // tsconfig.json for an iOS app: "customConditions": ["ios"]
@@ -34,16 +38,109 @@ const props: SelectorProps = {
 };
 ```
 
+How core documentation becomes a contract:
+
+- A callback whose arguments are values followed by the DOM event that caused
+  them, such as `(checked: boolean, e: ChangeEvent) => void`, keeps the values
+  in the core; the event stays on the web.
+- A callback that carries only an event stays on the web, unless the component
+  names it in `callbacks`, as Button does for `onClick`. Its core form takes no
+  arguments. A callback with an event before a value stays on the web either
+  way.
+- Free-form content becomes a typed slot only where a component declares one
+  in `slots`; `text` is a string, as for a badge's label or a heading's words,
+  and `content` is child Astryx components, as for a stack's or a card's
+  children. A SwiftUI view takes content as a view builder, so `<Name>Props`
+  leaves it out; `<Name>Node` carries it as child nodes.
+- A closed set of numbers, such as a heading level, is a Swift enum with raw
+  values.
+- A core prop may share a platform toolkit's name only when the component
+  declares in `sameMeaning` that it means the same thing there.
+
+### The wire (arm C)
+
+A TypeScript core sends a tree of nodes and receives actions. A node lists the
+callbacks the core listens to in `events`; a view gets only those callbacks.
+
+```ts
+// tsconfig: "customConditions": ["ios"]
+import type {AstryxAction, AstryxNode} from '@astryxdesign/native/components';
+
+const screen: AstryxNode = {
+  component: 'VStack',
+  key: 'root',
+  props: {
+    gap: 2,
+    children: [
+      {
+        component: 'Switch',
+        key: 'wifi',
+        props: {label: 'Wi-Fi', value: true},
+        events: ['onChange'],
+      },
+    ],
+  },
+};
+// What the host sends back when the switch is turned off:
+const action: AstryxAction = {
+  key: 'wifi',
+  component: 'Switch',
+  event: 'onChange',
+  args: [false],
+};
+```
+
+```swift
+let host = AstryxLogicHost(bundle: bundleSource) // calls the bundle's global astryxStart(host)
+if case .switch(let wifi) = host.root {
+  let props = wifi.viewProps(send: host.send)
+}
+```
+
+```ts
+// tsconfig: "customConditions": ["ios"]
+import type {AstryxAction, AstryxNode} from '@astryxdesign/native/components';
+import {connectBridge, createLogicCore} from '@astryxdesign/native/logic';
+import type {Bridge, BridgeHost} from '@astryxdesign/native/logic';
+
+const core = createLogicCore<{wifi: boolean}, AstryxNode, AstryxAction>({
+  initial: {wifi: true},
+  view: state => ({
+    component: 'Switch',
+    key: 'wifi',
+    props: {label: 'Wi-Fi', value: state.wifi},
+    events: ['onChange'],
+  }),
+  reduce: (state, action) =>
+    action.component === 'Switch' && action.event === 'onChange'
+      ? {wifi: action.args[0]}
+      : state,
+});
+// The bundle's entry: the native host calls it with its two calls in and
+// gets back the bridge it reads snapshots from and dispatches actions to.
+(globalThis as {astryxStart?: (host: BridgeHost) => Bridge}).astryxStart =
+  host => connectBridge(core, host);
+```
+
 ## Working on it
 
 ```sh
+pnpm -F @astryxdesign/native typecheck        # source and tests
 pnpm -F @astryxdesign/native build            # dist/, including platform types
+pnpm -F @astryxdesign/native typecheck:types  # every platform's types, after build
 pnpm -F @astryxdesign/native generate:apple   # regenerate apple/Sources/.../Generated
 pnpm vitest run --project node packages/native
 ```
 
 Generated Swift is committed so a Swift package can pin a commit. A test fails
 when it drifts from the contracts.
+
+**Cleanup needed.** Committing the generated Swift
+(`apple/Sources/AstryxNative/Generated`) is temporary. It is there only because
+Swift Package Manager installs a package from a git commit and cannot run the
+Node generator. The intended replacement: CI generates the Swift files and
+publishes them to a Swift-only branch or tag that apps pin, and the generated
+files are ignored on `main`.
 
 Boundaries, checked by `pnpm check:package-boundaries`:
 

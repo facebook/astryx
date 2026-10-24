@@ -1318,6 +1318,10 @@ export function Step({
   const iconLabelNode = (
     <div {...stylex.props(styles.iconLabelRow)}>
       {(!isCompact || indicatorPosition !== 'on-track') && indicatorNode}
+      {/* A space between the indicator and the label: the row is a flex
+          container, which drops whitespace-only text, so nothing changes on
+          screen, but a text reading of the button then keeps "1 Account" as two
+          words instead of "1Account". */}{' '}
       <span
         {...mergeProps(
           labelThemeProps,
@@ -1578,6 +1582,8 @@ export function Step({
               )}
             />
           </div>
+          {/* Whitespace between the indicator column and the label, as in
+              iconLabelNode. */}{' '}
           <div {...stylex.props(styles.otBodyV)}>
             {labelLineNode}
             {otDescriptionNode}
@@ -1660,6 +1666,7 @@ export function Step({
             )}
           />
         </div>
+        {/* Whitespace between the rail and the label, as in iconLabelNode. */}{' '}
         {/* The on-track indicator remains visible as a node on the rail at
             compact widths, but the wrapper becomes presentational with its
             label. Navigation moves to the named controls in the summary row. */}

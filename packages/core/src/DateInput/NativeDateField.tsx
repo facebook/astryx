@@ -83,7 +83,8 @@ import {
 import {chainEventHandlers} from '../utils/chainEventHandlers';
 
 const styles = stylex.create({
-  // Same as DateInput's: the focus ring for a focused disabled field.
+  // Same as DateInput's: no hover ring while disabled or busy, and the
+  // focus ring while the field's input holds focus.
   disabledFocusRing: {
     borderColor: {
       default: colorVars['--color-border-emphasized'],
@@ -597,7 +598,10 @@ export function NativeDateField({
           inputWrapperStyles.base,
           sizeStyles[size],
           styles.wrapper,
-          isEffectivelyDisabled && inputWrapperStyles.disabled,
+          // Disabled paint belongs to the disabled state only; a busy field
+          // keeps its ordinary paint and shows the Spinner (spec:AST-085
+          // FR6, family:buttons FR4).
+          isDisabled && inputWrapperStyles.disabled,
           isEffectivelyDisabled && styles.disabledFocusRing,
           status && inputStatusBorderStyles[status.type],
           status &&

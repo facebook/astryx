@@ -728,6 +728,87 @@ jobs:
         if: matrix.shard == 1 && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         run: node .github/scripts/theme-family-cascade.js
 
+  # Native Swift: the Swift packages of the experimental, canary-only
+  # @astryxdesign/native (AST-082) build and test only on macOS. They are
+  # coverage inside the shared surface (AST-030 FR11), so `test` joins
+  # test-native-swift. A Linux job first decides whether the change touches
+  # Swift under packages/native or the lane's own script; only then does
+  # test-native-swift take a macOS runner, and otherwise it passes on Linux
+  # without work.
+  native-swift-scope:
+    needs: [check-scope]
+    if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+    outputs:
+      applies: ${{ steps.scope.outputs.applies }}
+    steps:
+      - name: Require successful scope classification
+        if: needs.check-scope.result != 'success'
+        run: |
+          echo "Change scope could not be classified; refusing to skip required work."
+          exit 1
+
+      - uses: actions/checkout@v7
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+
+      # The helper comes from the base, since an older head lacks it. Exit 1
+      # means out of scope; 0 in scope; 2 unknown, so the Swift work runs.
+      - name: Decide whether native Swift changed
+        id: scope
+        env:
+          DOCSITE_ONLY: ${{ needs.check-scope.outputs.docsite_only }}
+          TOOLING_ONLY: ${{ needs.check-scope.outputs.tooling_only }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+        run: |
+          if [ "$DOCSITE_ONLY" = true ] || [ "$TOOLING_ONLY" = true ]; then
+            echo 'Specialized lane; no native Swift work.'
+            echo 'applies=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          scope=2
+          helper="$(mktemp)"
+          if [ -n "$BASE_SHA" ] \
+            && git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA" \
+            && git show "$BASE_SHA:.github/scripts/pr-scope-touches.sh" > "$helper"; then
+            scope=0
+            bash "$helper" "$BASE_SHA" '^packages/native/.*(\.swift|/Package\.swift)$|^\.github/scripts/native-swift\.sh$' || scope=$?
+          fi
+          if [ "$scope" = 1 ]; then
+            echo 'No native Swift change; nothing to build.'
+            echo 'applies=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'applies=true' >> "$GITHUB_OUTPUT"
+          fi
+
+  test-native-swift:
+    needs: [check-scope, native-swift-scope]
+    if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
+    runs-on: ${{ needs.native-swift-scope.outputs.applies == 'true' && 'macos-15' || 'ubuntu-slim' }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Require a decided Swift scope
+        if: needs.native-swift-scope.result != 'success'
+        run: |
+          echo "Native Swift scope could not be decided; refusing to skip required work."
+          exit 1
+
+      - name: Skip Swift work outside its scope
+        if: needs.native-swift-scope.outputs.applies != 'true'
+        run: echo "No native Swift change in this scope."
+
+      - uses: actions/checkout@v7
+        if: needs.native-swift-scope.outputs.applies == 'true'
+
+      # The steps live in native-swift.sh, which is in the native Swift scope,
+      # so a change to them runs on its own pull request.
+      - name: Build and test each native Swift package
+        if: needs.native-swift-scope.outputs.applies == 'true'
+        run: bash .github/scripts/native-swift.sh
+
   # Public registry contract. Generation proves schema, dependency, route-lock,
   # alias, and release-gating invariants; the final step drives every canonical
   # item through the exact pinned ShadCN client and compiles every written source.
@@ -804,7 +885,15 @@ jobs:
   # public registry contract always report or explicitly skip, so this join
   # projects their combined result without creating another surface lane.
   test:
-    needs: [check-scope, test-ui, test-node, test-build, registry-contract]
+    needs:
+      [
+        check-scope,
+        test-ui,
+        test-node,
+        test-build,
+        registry-contract,
+        test-native-swift,
+      ]
     if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
     runs-on: ubuntu-slim
     permissions:
@@ -822,6 +911,7 @@ jobs:
           TEST_NODE_RESULT: ${{ needs.test-node.result }}
           TEST_BUILD_RESULT: ${{ needs.test-build.result }}
           REGISTRY_CONTRACT_RESULT: ${{ needs.registry-contract.result }}
+          TEST_NATIVE_SWIFT_RESULT: ${{ needs.test-native-swift.result }}
         run: node .github/scripts/ci-test-join.mjs
 
   # Build storybook + typecheck + analyze components (parallel with test and
@@ -1064,6 +1154,22 @@ jobs:
       - name: Typecheck accessibility spec-test contracts
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         run: pnpm -F @astryxdesign/a11y-spec typecheck
+
+      # The canary-only @astryxdesign/native is outside the root build, and
+      # Vitest neither typechecks its source nor loads every platform's types.
+      # Its build emits one declaration file per type-resolution condition
+      # (ios, android, macos, windows, shared); the last step checks them all.
+      - name: Typecheck native
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        run: pnpm -F @astryxdesign/native typecheck
+
+      - name: Build native platform types
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        run: pnpm -F @astryxdesign/native build
+
+      - name: Typecheck native platform types
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        run: pnpm -F @astryxdesign/native typecheck:types
 
   # Sandbox preview build — the single slowest piece of PR CI (~4min), run as
   # its own job so it overlaps build-storybook instead of serializing after it.
@@ -3139,12 +3245,15 @@ jobs:
       # DateInput's open-state audit story uses a play function to open the
       # popover. Restricting this focused pass to that story lets the selector
       # wait bind axe to the Calendar dialog without making every DateInput story
-      # require an open overlay.
+      # require an open overlay. The receipt spec then captures rest, focus,
+      # busy, disabled, status, and open states across the popover, native, and
+      # bottom-sheet surfaces, themes, direction, pointers, and viewport.
       - name: Run DateInput audit browser evidence
-        if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DateInput:')
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DateInput:') }}
         env:
           ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
+          status=0
           node .github/scripts/accessibility-audit.js \
             --storybook-dir apps/storybook/dist \
             --output date-input-a11y-report.json \
@@ -3152,14 +3261,20 @@ jobs:
             --stories core-dateinput--open-calendar-audit \
             --ready-selector '[role="dialog"]' \
             --baseline .github/a11y-baseline.json \
-            --fail-on-new
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/DateInput/__tests__/DateInputAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
 
       - name: Upload DateInput audit evidence
         if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DateInput:')
         uses: actions/upload-artifact@v7
         with:
           name: date-input-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
-          path: date-input-a11y-report.json
+          path: |
+            date-input-a11y-report.json
+            date-input-audit-evidence/
           retention-days: 30
           if-no-files-found: error
 

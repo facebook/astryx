@@ -62,6 +62,11 @@
       "source": "./src/contract/index.ts",
       "types": "./dist/contract/index.d.ts",
       "default": "./dist/contract/index.js"
+    },
+    "./logic": {
+      "source": "./src/logic/index.ts",
+      "types": "./dist/logic/index.d.ts",
+      "default": "./dist/logic/index.js"
     }
   },
   "scripts": {
@@ -69,10 +74,11 @@
     "build": "node ../../scripts/clean-dist.mjs && tsc --project tsconfig.build.json && node scripts/generate.mjs --types",
     "generate:apple": "pnpm build && node scripts/generate.mjs --apple",
     "test": "vitest run --root ../.. packages/native",
-    "typecheck": "tsc --project tsconfig.json --noEmit"
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "typecheck:types": "tsc --project tsconfig.types.json"
   },
   "peerDependencies": {
-    "@astryxdesign/core": "0.7.4"
+    "@astryxdesign/core": "0.7.5"
   },
   "devDependencies": {
     "@astryxdesign/core": "workspace:*"

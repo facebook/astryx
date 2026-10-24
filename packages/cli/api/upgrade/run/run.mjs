@@ -285,6 +285,8 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
   let integrations;
   /** @type {import('../../../authoring/config/type').PostCodemodHook[]} */
   let postCodemodHooks;
+  /** @type {boolean} */
+  let iconSets;
   try {
     const projectContext = await loadProjectContext(
       cwd,
@@ -292,6 +294,7 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
     );
     postCodemodHooks = projectContext.postCodemodHooks;
     integrations = projectContext.integrations;
+    iconSets = projectContext.iconSets;
   } catch (err) {
     const configErr = /** @type {Error} */ (err);
     const allProtected = coreResult?.protectedFiles ?? [];
@@ -380,7 +383,7 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
 
   // Non-blocking nudge for integration validation issues (suppressed for
   // programmatic/--json callers, i.e. the silent logger).
-  await warnIntegrationIssues(integrations);
+  await warnIntegrationIssues(integrations, {iconSets});
 
   const integrationVersionGroups = await selectIntegrationCodemodsFor(
     integrations,

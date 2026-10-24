@@ -80,8 +80,9 @@ import {
 import {useDevWarning} from '../hooks/useDevWarning';
 
 const styles = stylex.create({
-  // The shared disabled style drops the focus ring; restore it while this
-  // field's own input holds focus (spec:AST-085 FR6). Defaults repeat it.
+  // While disabled or busy the field takes no hover ring, but the focus ring
+  // returns while this field's own input holds focus (spec:AST-085 FR6).
+  // Defaults repeat the shared border and shadow.
   disabledFocusRing: {
     borderColor: {
       default: colorVars['--color-border-emphasized'],
@@ -292,7 +293,9 @@ export interface DateInputProps extends Omit<
   changeAction?: (value: ISODateString | undefined) => void | Promise<void>;
 
   /**
-   * Whether the input is in a loading state.
+   * Whether the input is in a loading state. The field stays focusable and
+   * exposes `aria-busy` with a Spinner; typing, picking, and clearing are
+   * blocked until loading ends.
    * @default false
    */
   isLoading?: boolean;
@@ -319,9 +322,9 @@ export interface DateInputProps extends Omit<
   placeholder?: string;
 
   /**
-   * The size of the input.
-   * - 'sm': Compact size (18px height)
-   * - 'md': Default size (26px height)
+   * The size of the input. The field height follows the theme's element-size
+   * token for the chosen size (`--size-element-sm`, `--size-element-md`, or
+   * `--size-element-lg`).
    * @default 'md'
    */
   size?: DateInputSize;
@@ -835,7 +838,10 @@ function PointerDateField({
         stylex.props(
           inputWrapperStyles.base,
           sizeStyles[size],
-          isEffectivelyDisabled && inputWrapperStyles.disabled,
+          // Disabled paint belongs to the disabled state only; a busy field
+          // keeps its ordinary paint and shows the Spinner (spec:AST-085
+          // FR6, family:buttons FR4).
+          isDisabled && inputWrapperStyles.disabled,
           isEffectivelyDisabled && styles.disabledFocusRing,
           status && inputStatusBorderStyles[status.type],
           status &&

@@ -36,6 +36,7 @@ import {
 import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 const styles = stylex.create({
   wrapper: {
     display: 'flex',
@@ -190,6 +191,14 @@ export function CommandPaletteInput({
   const hasListbox = ctx ? ctx.selectableItems.length > 0 : true;
   const dialogContext = useDialogContext();
   const inputRef = useRef<HTMLInputElement>(null);
+  // The search Spinner is decorative; the input announces each busy start,
+  // including the load on opening or clearing the query. Inside the palette's
+  // native modal it does so from a region in the dialog (spec:AST-086 FR8, FR3).
+  useBusyAnnouncement(
+    ctx?.isBusy === true,
+    t('@astryx.commandPalette.loading'),
+    inputRef,
+  );
   const [isKeyboardFocus, setIsKeyboardFocus] = useState(false);
 
   // Text-entry controls match :focus-visible after pointer focus in Chromium.
@@ -335,7 +344,7 @@ export function CommandPaletteInput({
         <span {...stylex.props(styles.end)}>
           {ctx?.isBusy && (
             <span {...stylex.props(styles.icon, styles.spinner)}>
-              <Spinner size="sm" />
+              <Spinner size="sm" aria-hidden="true" />
             </span>
           )}
           {hasEndContent && endContent}

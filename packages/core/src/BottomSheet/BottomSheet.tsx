@@ -4,7 +4,7 @@
 
 /**
  * @file BottomSheet.tsx
- * @input Uses React, StyleX, core hooks, shared layer dismissal, the shared interaction modality, named BottomSheetPanel, BottomSheetSwitcherContext
+ * @input Uses React, StyleX, core hooks, shared layer dismissal, the modal outlet registry, the shared interaction modality, named BottomSheetPanel, BottomSheetSwitcherContext
  * @output Exports BottomSheet component and BottomSheetProps
  * @position Public BottomSheet router plus private standalone/switcher hosts
  *
@@ -27,6 +27,9 @@
  * in a switcher, handing one scrim between two dialogs and keeping focus in
  * the active sheet when a retained dialog closes.
  *
+ * While a standalone modal sheet is open, its dialog is the outlet that
+ * app-global surfaces (toasts) render into (Layer/modalOutlet.ts).
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/BottomSheet/BottomSheetPanel.tsx
  * - /packages/core/src/BottomSheet/BottomSheetEdgeTint.tsx
@@ -36,6 +39,7 @@
  * - /packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx
  * - /packages/core/src/Layer/layerDismissalFamilies.test.tsx
  * - /packages/core/src/Layer/layerDismissalInvariants.test.tsx
+ * - /packages/core/src/Toast/ToastViewport.modalHost.test.tsx
  * - /apps/storybook/stories/BottomSheet.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/BottomSheet/BottomSheetShowcase.tsx
  */
@@ -58,6 +62,7 @@ import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import {useDevWarning, useScrollLock} from '../hooks';
 import {mergeProps} from '../utils';
 import {LayerDepthProvider} from '../Layer/LayerDepthContext';
+import {useModalOutlet} from '../Layer/modalOutlet';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
 import {focusForLastInput} from '../utils/focusReturn';
 import {useInteractionModalityTracking} from '../utils/interactionModality';
@@ -372,6 +377,12 @@ function StandaloneBottomSheet({
       focusPanel(panelRef.current, hasScrim);
     }
   }, [hasScrim, isOpen]);
+
+  // Host app-global surfaces (toasts) inside this sheet while it is an open
+  // modal, so they stay visible and operable above it. A closing sheet stays
+  // modal through its exit animation, but inert and hidden, so it hands them
+  // back as soon as it starts closing.
+  useModalOutlet(dialogRef, isOpen && hasScrim);
 
   useEffect(() => {
     if (!isOpen && isPresented && hasScrim) {

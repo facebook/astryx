@@ -36,7 +36,7 @@ deciding_specs: [spec:AST-006/DEC-1, spec:AST-006/DEC-5]
 {
   "scope": "global",
   "triggers": {
-    "tokens": ["INV1", "INV3", "INV4", "INV6", "INV8", "INV9", "INV10"]
+    "tokens": ["INV1", "INV3", "INV4", "INV6", "INV8", "INV9", "INV10", "INV11"]
   }
 }
 ```
@@ -114,12 +114,50 @@ then have contradictory winners.
   `resolveThemeToken()`, `tokenDefaults`) return the token's value with its
   unit; code that needs pixels resolves the value against the root font size
   instead of parsing a number.
-- **INV10 — Semantic status roles are surface-specific.** Each status provides a
-  strong fill (`--color-info/success/warning/error`) paired with `--color-on-*`,
-  a pale fill (`--color-*-muted`) paired with `--color-on-*-muted`, and a
-  plain-surface foreground (`--color-status-foreground-*`) for semantic text,
-  matching icons, standalone status icons, and status boundaries. Components
-  select the role from the surface instead of using one color for every job.
+- **INV10 — Colour token names follow one grammar.** Every portable colour
+  token name takes one of five shapes:
+  1. `--color-<property>-<role>`: a colour for one paint property. The property
+     is `text`, `icon`, `background`, or `border`. The role is an emphasis
+     (`primary`, `secondary`, `disabled`, `emphasized`), an intent
+     (`--color-text-accent`), a surface (`surface`, `body`, `card`, `popover`,
+     `muted`, `inverted`), or a hue (`--color-text-green`).
+  2. `--color-<intent>`: the intent's own colour. The intents are `accent`,
+     `neutral`, `info`, `success`, `warning`, and `error`.
+  3. A shape-1 or shape-2 name with one variant suffix: `-muted` (the pale
+     form), `-emphasized` (the strong form), `-hover` or `-pressed` (an
+     interaction state), or `-inverted` (for an inverted surface).
+  4. `--color-on-<fill>`: content placed on a fill, where `<fill>` is a shape-2
+     or shape-3 intent name, `dark`, or `light`. `--color-on-<intent>` is
+     content on the intent's strong fills, its bare and `-emphasized` forms; a
+     `-muted` fill pairs with its own `--color-on-<intent>-muted`.
+  5. `--color-<domain>-…` for a domain layer under INV5: `--color-data-*` and
+     `--color-syntax-*`.
+
+  The role-less utility names `--color-border`, `--color-overlay` (with its
+  `-hover` and `-pressed` states), `--color-shadow`, `--color-skeleton`,
+  `--color-track`, and `--color-tint-hover` keep their names. A new name adds
+  no group segment (such as `status`), no other property word (such as
+  `foreground`), and no property suffix (such as `-text`). Tailwind keys are a
+  projection: a key may alias a token under a shorter name, and it never adds a
+  CSS variable.
+
+- **INV11 — Semantic status roles are surface-specific.** Each status (`info`,
+  `success`, `warning`, `error`) has three surface roles, named under INV10:
+  - `--color-text-<status>` is status text on the default page and card
+    surfaces, at 4.5:1 or more against them. Status icons and status borders on
+    those surfaces use it too.
+  - `--color-<status>-emphasized` is the strong status fill. Content on it uses
+    `--color-on-<status>`, at 4.5:1 or more.
+  - `--color-<status>-muted` is the pale status fill. Content on it uses
+    `--color-on-<status>-muted`, at 4.5:1 or more where the fill sits on the
+    default surface.
+
+  Every status fill and status text colour is chromatic in every theme: no theme paints one in a neutral grey, near-black, or near-white. Components select the role from the surface instead
+  of using one colour for every job. The released `--color-success`,
+  `--color-warning`, and `--color-error` keep their values and meaning in every
+  theme, and so do the Tailwind utilities that resolve to them (`bg-success`,
+  `text-success`, `border-success`, and the warning and error forms); Astryx
+  components use the surface roles instead.
 
 This record does not own:
 
@@ -146,6 +184,8 @@ does not silently change authoring, runtime, compiler, or component contracts.
 - Changes to JavaScript resolution preserve CSS cascade semantics for supported
   references and color expressions; unsupported expressions remain intact
   rather than being guessed.
+- Adding a portable colour token chooses its name under INV10; a role the
+  grammar cannot name changes INV10 first.
 - Adding a theme-local name does not update portable defaults, name types,
   helpers, or generated token docs. Authoring validation rejects a duplicate
   across `tokens` and `localTokens` before the compiler or helpers can disagree.
@@ -212,13 +252,14 @@ decision).
 
 ## Verification
 
-| Invariant                    | Evidence                                                                                                                                                                                                                                                                                                                                                         | Failure signal                                                                                                                              |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| INV1, INV2, INV7             | `scripts/check-theme-template.test.mjs` and token-doc generation check                                                                                                                                                                                                                                                                                           | A token family exists without a matching author-facing inventory or generated documentation                                                 |
-| INV5                         | Domain-token exports and theme-generation tests                                                                                                                                                                                                                                                                                                                  | Domain names disappear from validation or require importing unused domain implementation                                                    |
-| INV6                         | `packages/core/src/theme/tokens.test.ts`                                                                                                                                                                                                                                                                                                                         | JavaScript resolution disagrees with defaults, mode selection, references, or supported color expressions                                   |
-| INV8                         | `defineTheme.test.ts`, template checks, and token-doc generation                                                                                                                                                                                                                                                                                                 | A local name enters portable helpers/docs or can conflict with a portable declaration                                                       |
-| INV9                         | `tokens.test.ts` (core defaults), `SpacingRootFontSize.a11y.chromium.spec.ts` (real-Chromium root font size), each overriding theme's `*Theme.spacing.test.ts`, `check-cli-theme-bundle.test.mjs` (bundled copies byte-equal to the packages), `theme-concentricity.test.ts` (playground ramp read in rem)                                                       | A spacing step in `px` that no theme documents as its exception: a core default, a theme override, a bundled copy, or a generated ramp step |
-| INV10                        | `scripts/check-muted-status-contrast.test.mjs` (resolves global and Banner pale-surface role pairs), `scripts/check-badge-contrast.test.mjs` (resolves Core Badge defaults plus theme overrides), `neutralTheme.test.ts` (pins reviewed role values and pairings), `tailwind-theme.test.ts` (pins public foreground utilities), and theme alias-generation tests | A strong, pale, or plain status role is missing, mispaired, routed to the wrong public utility, or falls below its owned contrast threshold |
-| Released token compatibility | Type checking plus representative package/source builds                                                                                                                                                                                                                                                                                                          | A released CSS variable or typed token name disappears without an explicit migration decision                                               |
-| Visual defaults              | Real Chromium examples in light, dark, status, and high-contrast contexts                                                                                                                                                                                                                                                                                        | A changed default produces unreadable or semantically inconsistent output                                                                   |
+| Invariant                    | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Failure signal                                                                                                                                                                 |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| INV1, INV2, INV7             | `scripts/check-theme-template.test.mjs` and token-doc generation check                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | A token family exists without a matching author-facing inventory or generated documentation                                                                                    |
+| INV5                         | Domain-token exports and theme-generation tests                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Domain names disappear from validation or require importing unused domain implementation                                                                                       |
+| INV6                         | `packages/core/src/theme/tokens.test.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | JavaScript resolution disagrees with defaults, mode selection, references, or supported color expressions                                                                      |
+| INV8                         | `defineTheme.test.ts`, template checks, and token-doc generation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | A local name enters portable helpers/docs or can conflict with a portable declaration                                                                                          |
+| INV9                         | `tokens.test.ts` (core defaults), `SpacingRootFontSize.a11y.chromium.spec.ts` (real-Chromium root font size), each overriding theme's `*Theme.spacing.test.ts`, `check-cli-theme-bundle.test.mjs` (bundled copies byte-equal to the packages), `theme-concentricity.test.ts` (playground ramp read in rem)                                                                                                                                                                                                                                                                                                 | A spacing step in `px` that no theme documents as its exception: a core default, a theme override, a bundled copy, or a generated ramp step                                    |
+| INV10                        | `tokens.test.ts` name check over `colorDefaults` and `domainTokenDefaults`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | A colour token name fits none of the five shapes                                                                                                                               |
+| INV11                        | `scripts/check-muted-status-contrast.test.mjs` (resolves global and Banner pale-surface role pairs), `scripts/check-badge-contrast.test.mjs` (resolves Core Badge defaults plus theme overrides), `scripts/check-status-text-contrast.test.mjs` (resolves `--color-text-<status>` against the surface and card tokens and checks that each status fill and text colour is chromatic in every first-party theme), `neutralTheme.test.ts` (pins reviewed role values and pairings), `tailwind-theme.test.ts` (pins the status utilities, including the released base ones), and theme alias-generation tests | A status role is missing, mispaired, grey, routed to the wrong public utility, or falls below its contrast threshold, or a released base status token or utility changes value |
+| Released token compatibility | Type checking plus representative package/source builds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | A released CSS variable or typed token name disappears without an explicit migration decision                                                                                  |
+| Visual defaults              | Real Chromium examples in light, dark, status, and high-contrast contexts                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | A changed default produces unreadable or semantically inconsistent output                                                                                                      |

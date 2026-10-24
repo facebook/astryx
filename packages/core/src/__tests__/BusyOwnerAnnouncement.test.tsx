@@ -8,7 +8,13 @@
  *   owning control announces each busy start once through the shared channel
  */
 
-import {StrictMode, useEffect, useRef, type ReactElement} from 'react';
+import {
+  StrictMode,
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+} from 'react';
 import {
   afterAll,
   afterEach,
@@ -30,6 +36,8 @@ import {DateRangeInput} from '../DateRangeInput';
 import {DateTimeInput} from '../DateTimeInput';
 import {TimeInput} from '../TimeInput';
 import {CheckboxInput} from '../CheckboxInput';
+import {FileInput} from '../FileInput';
+import {CommandPalette} from '../CommandPalette';
 import {Thumbnail} from '../Thumbnail';
 import {
   DropdownMenu,
@@ -156,6 +164,21 @@ const OWNERS: ReadonlyArray<
       <Thumbnail src="/local.jpg" alt="Upload" isLoading={isLoading} />
     ),
   ],
+  ...(['dropzone', 'input'] as const).map(
+    mode =>
+      [
+        `FileInput (${mode})`,
+        (isLoading: boolean) => (
+          <FileInput
+            label="Attachment"
+            mode={mode}
+            value={null}
+            onChange={() => {}}
+            isLoading={isLoading}
+          />
+        ),
+      ] as const,
+  ),
   [
     'DateRangeInput',
     isLoading => (
@@ -572,5 +595,198 @@ describe('ChatMessageList top loader (spec:AST-086 FR4, FR8)', () => {
       'true',
     );
     expect(busyAnnouncements()).toEqual([['Loading', 'polite']]);
+  });
+});
+
+describe('FileInput busy start from a pick or a clear (spec:AST-086 FR6, FR8)', () => {
+  const file = new File(['x'], 'report.pdf', {type: 'application/pdf'});
+
+  it('keeps a pick under a pending changeAction to its one "selected" message', async () => {
+    const {container} = render(
+      strict(
+        <FileInput
+          label="Attachment"
+          value={null}
+          onChange={() => {}}
+          changeAction={async () => new Promise<void>(() => {})}
+        />,
+      ),
+    );
+    act(() => {
+      fireEvent.change(
+        container.querySelector('input[type="file"]') as HTMLInputElement,
+        {target: {files: [file]}},
+      );
+    });
+    await nextFrame();
+    expect(container.querySelector('.astryx-spinner')).toHaveAttribute(
+      'aria-hidden',
+      'true',
+    );
+    expect(announce).toHaveBeenCalledWith('1 file selected: report.pdf');
+    expect(busyAnnouncements()).toEqual([]);
+  });
+
+  it('keeps a pick whose onChange starts an upload (isLoading) to its one "selected" message', async () => {
+    function Uploader() {
+      const [value, setValue] = useState<File | null>(null);
+      const [isLoading, setIsLoading] = useState(false);
+      return (
+        <FileInput
+          label="Attachment"
+          value={value}
+          isLoading={isLoading}
+          onChange={next => {
+            setValue(next as File | null);
+            setIsLoading(true);
+          }}
+        />
+      );
+    }
+    const {container} = render(strict(<Uploader />));
+    act(() => {
+      fireEvent.change(
+        container.querySelector('input[type="file"]') as HTMLInputElement,
+        {target: {files: [file]}},
+      );
+    });
+    await nextFrame();
+    await nextFrame();
+    expect(announce).toHaveBeenCalledWith('1 file selected: report.pdf');
+    expect(busyAnnouncements()).toEqual([]);
+  });
+
+  it('announces nothing more when an earlier pick settles while a later one is still pending', async () => {
+    const settles: (() => void)[] = [];
+    const {container} = render(
+      strict(
+        <FileInput
+          label="Attachment"
+          value={null}
+          onChange={() => {}}
+          changeAction={async () =>
+            new Promise<void>(resolve => {
+              settles.push(resolve);
+            })
+          }
+        />,
+      ),
+    );
+    const input = container.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    act(() => {
+      fireEvent.change(input, {target: {files: [file]}});
+    });
+    await nextFrame();
+    act(() => {
+      fireEvent.change(input, {
+        target: {files: [new File(['y'], 'notes.txt', {type: 'text/plain'})]},
+      });
+    });
+    await nextFrame();
+    await act(async () => {
+      settles[0]();
+    });
+    await nextFrame();
+    await nextFrame();
+    expect(busyAnnouncements()).toEqual([]);
+  });
+
+  it('announces the busy start of a clear under a pending changeAction', async () => {
+    render(
+      strict(
+        <FileInput
+          label="Attachment"
+          value={file}
+          onChange={() => {}}
+          changeAction={async () => new Promise<void>(() => {})}
+        />,
+      ),
+    );
+    act(() => {
+      fireEvent.click(screen.getByRole('button', {name: /Clear/}));
+    });
+    await nextFrame();
+    expect(busyAnnouncements()).toEqual([['Loading', 'polite']]);
+  });
+});
+
+describe('CommandPalette busy start inside its modal (spec:AST-086 FR8, FR3)', () => {
+  beforeEach(() => {
+    HTMLDialogElement.prototype.showModal = vi.fn(function (
+      this: HTMLDialogElement,
+    ) {
+      this.setAttribute('open', '');
+    });
+    HTMLDialogElement.prototype.close = vi.fn(function (
+      this: HTMLDialogElement,
+    ) {
+      this.removeAttribute('open');
+    });
+    const matches = Element.prototype.matches;
+    vi.spyOn(Element.prototype, 'matches').mockImplementation(function (
+      this: Element,
+      selector: string,
+    ) {
+      return selector === ':modal'
+        ? this instanceof HTMLDialogElement && this.open
+        : matches.call(this, selector);
+    });
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function regionOf(): Element | null {
+    return (
+      document
+        .querySelector('dialog[open]')
+        ?.querySelector('[data-astryx-modal-busy-region]') ?? null
+    );
+  }
+
+  it('announces the load on opening from a region inside its dialog, with a silent Spinner', async () => {
+    render(
+      strict(
+        <CommandPalette
+          isOpen
+          onOpenChange={() => {}}
+          searchSource={{
+            bootstrap: async () => new Promise<SearchableItem[]>(() => {}),
+            search: async () => new Promise<SearchableItem[]>(() => {}),
+          }}
+        />,
+      ),
+    );
+    await nextFrame();
+    await nextFrame();
+    const dialog = document.querySelector('dialog[open]') as HTMLElement;
+    expect(dialog.querySelector('.astryx-spinner')).toHaveAttribute(
+      'aria-hidden',
+      'true',
+    );
+    expect(regionOf()).toHaveTextContent('Loading');
+    expect(busyAnnouncements()).toEqual([]);
+  });
+
+  it('announces a search start once from inside its dialog, not on the hidden page channel', async () => {
+    render(
+      strict(
+        <CommandPalette
+          isOpen
+          onOpenChange={() => {}}
+          searchSource={pendingSource()}
+        />,
+      ),
+    );
+    await nextFrame();
+    act(() => {
+      fireEvent.change(screen.getByRole('combobox'), {target: {value: 'se'}});
+    });
+    await nextFrame();
+    await nextFrame();
+    expect(regionOf()).toHaveTextContent('Loading');
+    expect(busyAnnouncements()).toEqual([]);
   });
 });
