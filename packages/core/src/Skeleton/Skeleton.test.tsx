@@ -132,6 +132,34 @@ describe('pulse', () => {
   });
 });
 
+describe('under a finger', () => {
+  // SwiftUI's placeholder (`.redacted(reason: .placeholder)`) shows the shape
+  // of what is coming and does not move; under a coarse pointer the pulse
+  // stops and the placeholder rests at its static opacity.
+  it('stands still, as SwiftUI\u2019s placeholder does', () => {
+    render(<Skeleton width={200} height={20} data-testid="sk" />);
+    const css = getAllInjectedCss();
+    const classes = Array.from(screen.getByTestId('sk').classList);
+    const stops = classes.some(cls =>
+      new RegExp(
+        `@media[^{]*\\(pointer: coarse\\)[^{]*\\{\\s*\\.${cls}\\b[^{]*\\{[^}]*animation-name:\\s*none`,
+      ).test(css),
+    );
+    expect(stops).toBe(true);
+    // It rests at the pulse's top step, SwiftUI's placeholder weight, rather
+    // than the 0.25 rest that is barely visible on a phone.
+    const rests = classes.some(cls =>
+      new RegExp(
+        `@media \\(pointer: coarse\\)[^{]*\\{\\s*\\.${cls}\\b[^{]*\\{[^}]*opacity:\\s*0?\\.925`,
+      ).test(css),
+    );
+    expect(rests).toBe(true);
+    // The mouse path keeps its 0.25 rest.
+    const declarations = declarationsOf(screen.getByTestId('sk'), css);
+    expect(declarations).toContain('opacity: 0.25');
+  });
+});
+
 // jsdom cannot emulate forced-colors rendering, so these assert that the
 // compiled output includes the forced-colors rules; visual behavior needs
 // manual verification under Windows High Contrast.
