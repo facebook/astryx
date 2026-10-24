@@ -23,6 +23,7 @@ import {
   useState,
   useMemo,
   useCallback,
+  useEffect,
   useRef,
   type FocusEvent,
   type KeyboardEvent,
@@ -52,7 +53,15 @@ import {VisuallyHidden} from '../VisuallyHidden';
 import {useTooltip} from '../Tooltip';
 import {getInputARIA} from '../utils';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
-import {usePressFeedback} from '../hooks/usePressFeedback';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
+import {
+  paintPress,
+  readPressPaint,
+  usePressTracker,
+  type PointerKind,
+} from '../gestures';
+import {stepper, UIKIT_GESTURES} from '../motion/uikit';
+import {StepperTracking, type StepperHalf} from './stepperTracking';
 import {inputDisabledFocusStyles} from '../Field/inputDisabledFocus';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
@@ -591,7 +600,6 @@ export function NumberInput({
     containerClassName,
     containerStyle,
   });
-  const pressable = usePressFeedback();
   const t = useTranslator();
   const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
@@ -924,8 +932,159 @@ export function NumberInput({
     if (pointerType === 'mouse' && event.detail > 0) {
       inputRef.current?.focus();
     }
+    // A finger or a pen the steppers tracked has stepped already, at its
+    // lift or while held; its click is not another step.
+    if (
+      (pointerType === 'touch' || pointerType === 'pen') &&
+      stepperTrackedPressRef.current
+    ) {
+      stepperTrackedPressRef.current = false;
+      return;
+    }
     stepValue(direction);
   };
+
+  // A finger or a pen on the steppers is tracked as UIStepper tracks one
+  // (stepperTracking.ts, motion/uikit/stepper.ts): a tap steps at the lift, a
+  // held half repeats on UIKit's cadence, the finger can slide from one half
+  // to the other, and leaving the column stops the repeat. The press paints
+  // the half under the finger at once and clears at once, as UIKit's does;
+  // inside a scroll view it waits for the content-touch delay, and a scroll
+  // that takes the touch cancels it. A mouse keeps the click.
+  const stepperColumnRef = useRef<HTMLDivElement | null>(null);
+  const incrementRef = useRef<HTMLButtonElement | null>(null);
+  const decrementRef = useRef<HTMLButtonElement | null>(null);
+  // Whether the touch or pen press that a click follows was tracked here.
+  const stepperTrackedPressRef = useRef(false);
+  const stepperPressRef = useRef<{
+    pointerType: PointerKind | null;
+    downTime: number;
+    isDelayed: boolean;
+    /** Client y where the decrement half begins, read once at touch-down. */
+    split: number;
+    /** The half under the finger, kept through the lift for a quick tap's flash. */
+    half: StepperHalf | null;
+  }>({
+    pointerType: null,
+    downTime: 0,
+    isDelayed: false,
+    split: Number.POSITIVE_INFINITY,
+    half: null,
+  });
+  const latestSteppingRef = useRef({
+    stepValue,
+    canIncrement,
+    canDecrement,
+    isDisabled,
+    isReadOnly,
+  });
+  useIsomorphicLayoutEffect(() => {
+    latestSteppingRef.current = {
+      stepValue,
+      canIncrement,
+      canDecrement,
+      isDisabled,
+      isReadOnly,
+    };
+  });
+  const [stepperTracking] = useState(
+    () =>
+      new StepperTracking({
+        step: half => {
+          const latest = latestSteppingRef.current;
+          if (
+            latest.isDisabled ||
+            latest.isReadOnly ||
+            (half === 'increment' ? !latest.canIncrement : !latest.canDecrement)
+          ) {
+            return false;
+          }
+          latest.stepValue(half === 'increment' ? 1 : -1);
+          return true;
+        },
+      }),
+  );
+  useEffect(() => () => stepperTracking.dispose(), [stepperTracking]);
+
+  const paintStepper = (half: StepperHalf | null) => {
+    for (const [own, button] of [
+      ['increment', incrementRef.current],
+      ['decrement', decrementRef.current],
+    ] as const) {
+      const next = half === own ? 'on' : 'none';
+      // Only real changes are written: an unchanged write still restyles.
+      if (button != null && readPressPaint(button) !== next) {
+        paintPress(button, next);
+      }
+    }
+  };
+
+  const stepperPressTracker = usePressTracker(stepperColumnRef, {
+    trackingExpansion: stepper.tracking.expansion,
+    isEnabled: () =>
+      !latestSteppingRef.current.isDisabled &&
+      !latestSteppingRef.current.isReadOnly,
+    onControlEvent: (event, touch) => {
+      const press = stepperPressRef.current;
+      if (event === 'touchDown') {
+        press.pointerType = touch.pointerType;
+        if (touch.pointerType === 'mouse') {
+          return;
+        }
+        // The one layout read of the press.
+        press.split =
+          decrementRef.current?.getBoundingClientRect().top ??
+          Number.POSITIVE_INFINITY;
+        press.downTime = touch.time;
+        // PressTracker's control profile delays a finger's highlight inside a
+        // scroll view; the press reaches the stepper when it lights.
+        press.isDelayed =
+          touch.pointerType === 'touch' &&
+          touch.scroll?.isInsideScroller === true;
+        press.half = touch.y < press.split ? 'increment' : 'decrement';
+        stepperTrackedPressRef.current = true;
+        stepperTracking.begin(press.half);
+        return;
+      }
+      if (press.pointerType === 'mouse') {
+        return;
+      }
+      const isInside =
+        event === 'touchDragInside' ||
+        event === 'touchDragEnter' ||
+        event === 'touchUpInside';
+      const half: StepperHalf | null = !isInside
+        ? null
+        : touch.y < press.split
+          ? 'increment'
+          : 'decrement';
+      if (event === 'touchCancel') {
+        stepperTracking.cancel();
+        press.half = null;
+      } else if (event === 'touchUpInside' || event === 'touchUpOutside') {
+        press.half = half;
+        stepperTracking.end(half);
+      } else {
+        press.half = half;
+        stepperTracking.move(half);
+      }
+      paintStepper(stepperPressTracker.isHighlighted ? press.half : null);
+    },
+    onHighlightChange: isHighlighted => {
+      const press = stepperPressRef.current;
+      if (press.pointerType === 'mouse') {
+        return;
+      }
+      if (isHighlighted) {
+        stepperTracking.deliver(
+          press.isDelayed
+            ? press.downTime + UIKIT_GESTURES.press.contentTouchDelay.value
+            : press.downTime,
+        );
+      }
+      paintStepper(isHighlighted ? press.half : null);
+    },
+  });
 
   // Handle clear button click
   const handleClear = useCallback(
@@ -1064,11 +1223,11 @@ export function NumberInput({
       )}
       {statusIcon}
       {hasNumberSteppers && (
-        <div {...stylex.props(styles.numberSteppers)}>
+        <div ref={stepperColumnRef} {...stylex.props(styles.numberSteppers)}>
           <button
+            ref={incrementRef}
             type="button"
             tabIndex={-1}
-            {...pressable}
             aria-disabled={
               isDisabled || isReadOnly || !canIncrement || undefined
             }
@@ -1089,9 +1248,9 @@ export function NumberInput({
             />
           </button>
           <button
+            ref={decrementRef}
             type="button"
             tabIndex={-1}
-            {...pressable}
             aria-disabled={
               isDisabled || isReadOnly || !canDecrement || undefined
             }
