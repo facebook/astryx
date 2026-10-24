@@ -3,6 +3,7 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {CheckboxList, CheckboxListItem} from '@astryxdesign/core/CheckboxList';
+import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
 import {List} from '@astryxdesign/core/List';
 import {Badge} from '@astryxdesign/core/Badge';
 import {Card} from '@astryxdesign/core/Card';
@@ -197,6 +198,34 @@ export const ReadOnly: Story = {
       <CheckboxListItem label="In progress" isChecked="indeterminate" />
     </List>
   ),
+};
+
+/**
+ * A checkbox placed in a row's content is its own control: under a finger it
+ * paints its own press, and the row it sits in does not.
+ */
+export const CheckboxInRowContent: Story = {
+  name: "Checkbox in a row's content",
+  render: () => {
+    const [value, setValue] = useState<string[]>([]);
+    const [digest, setDigest] = useState(false);
+    return (
+      <CheckboxList label="Notifications" value={value} onChange={setValue}>
+        <CheckboxListItem
+          label="Email"
+          value="email"
+          endContent={
+            <CheckboxInput
+              label="Daily digest"
+              value={digest}
+              onChange={setDigest}
+            />
+          }
+        />
+        <CheckboxListItem label="SMS" value="sms" />
+      </CheckboxList>
+    );
+  },
 };
 
 export const SelectAllWithIndeterminate: Story = {
