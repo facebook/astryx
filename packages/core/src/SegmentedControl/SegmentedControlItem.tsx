@@ -6,9 +6,16 @@
  * @file SegmentedControlItem.tsx
  * @input Uses React, StyleX, SegmentedControlContext
  * @output Exports SegmentedControlItem component and SegmentedControlItemProps type
- * @position Child item; renders as a radio button within the segmented control
+ * @position Child item; renders as a radio button within the segmented control.
+ *   Its title is two layers in one grid cell: the visible title, and an
+ *   aria-hidden twin at the selected weight that reserves the selected width,
+ *   so a selection never changes a segment's width. In the touch presentation
+ *   the twin also carries the outgoing rendering while the title cross-fades
+ *   (useSegmentedSelectionMotion.ts), and the segment drops its CSS
+ *   transitions: that motion animates the change instead.
  *
  * SYNC: When modified, update:
+ * - /packages/core/src/SegmentedControl/useSegmentedSelectionMotion.ts (title layers)
  * - /packages/core/src/SegmentedControl/SegmentedControl.doc.mjs
  * - /packages/core/src/SegmentedControl/index.ts
  * - /packages/core/src/SegmentedControl/SegmentedControl.test.tsx
@@ -139,10 +146,40 @@ const styles = stylex.create({
     justifyContent: 'center',
     flexShrink: 0,
   },
+  // The title's grid cell holds the visible title and its twin, so the cell
+  // is as wide as the wider of the two: the selected weight's width, whether
+  // or not the segment is selected. The column can still shrink to nothing,
+  // which is what lets a capped control truncate.
+  titleStack: {
+    display: 'inline-grid',
+    gridTemplateColumns: 'minmax(0, max-content)',
+    minWidth: 0,
+  },
   labelText: {
+    gridRowStart: 1,
+    gridColumnStart: 1,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     minWidth: 0,
+  },
+  // Reserves the selected width at rest. In the touch presentation the
+  // selection motion makes it visible, with the outgoing rendering's color and
+  // weight written inline, for the length of a title cross-fade.
+  titleTwin: {
+    gridRowStart: 1,
+    gridColumnStart: 1,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    minWidth: 0,
+    visibility: 'hidden',
+    pointerEvents: 'none',
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+  },
+  // Under a finger the selection change is animated in script (the surface
+  // slides, the titles cross-fade on opacity); a CSS transition would run a
+  // second, main-thread version of the same change.
+  touchPresentation: {
+    transitionProperty: 'none',
   },
 });
 
@@ -258,12 +295,23 @@ export function SegmentedControlItem({
             !isItemDisabled &&
             interactionOverlayStyles.backgroundColor,
           isItemDisabled && styles.disabled,
+          ctx.isTouchPresentation === true && styles.touchPresentation,
           xstyle,
         ),
       )}>
       {iconElement}
       {!isLabelHidden && (
-        <span {...stylex.props(styles.labelText)}>{label}</span>
+        <span {...stylex.props(styles.titleStack)}>
+          <span data-segment-title="text" {...stylex.props(styles.labelText)}>
+            {label}
+          </span>
+          <span
+            aria-hidden="true"
+            data-segment-title="twin"
+            {...stylex.props(styles.titleTwin)}>
+            {label}
+          </span>
+        </span>
       )}
     </button>
   );
