@@ -433,6 +433,122 @@ describe('AlertDialog', () => {
   });
 });
 
+/**
+ * Touch tracking: a finger is tracked across both actions as one group, as
+ * UIKit tracks an alert's actions (measured on iOS 26.2). The tracking hook's
+ * own contract is covered in hooks/useActionGroupTracking.test.tsx; these
+ * cover AlertDialog's wiring of it.
+ */
+describe('AlertDialog touch tracking', () => {
+  let touchClock = 10_000;
+  let touchId = 500;
+
+  function touch(
+    type: 'touchstart' | 'touchmove' | 'touchend',
+    target: Element,
+    point: {x: number; y: number},
+    id: number,
+  ): void {
+    touchClock += 16;
+    const event = new Event(type, {bubbles: true, cancelable: true});
+    const entry = {identifier: id, clientX: point.x, clientY: point.y, target};
+    Object.defineProperty(event, 'changedTouches', {value: [entry]});
+    Object.defineProperty(event, 'touches', {
+      value: type === 'touchend' ? [] : [entry],
+    });
+    Object.defineProperty(event, 'timeStamp', {value: touchClock});
+    target.dispatchEvent(event);
+  }
+
+  function place(element: Element, left: number, top: number): void {
+    const rect = DOMRect.fromRect({x: left, y: top, width: 120, height: 32});
+    element.getBoundingClientRect = () => rect;
+  }
+
+  function renderOpen(props: {isInline?: boolean} = {}) {
+    stubAlertDialogMedia({
+      smallScreen: true,
+      coarsePointer: true,
+      noHover: true,
+    });
+    const onOpenChange = vi.fn();
+    const onAction = vi.fn();
+    render(
+      <AlertDialog
+        isOpen
+        isInline={props.isInline}
+        onOpenChange={onOpenChange}
+        title="Delete item?"
+        description="This cannot be undone."
+        actionLabel="Delete"
+        onAction={onAction}
+      />,
+    );
+    const cancel = screen.getByRole('button', {name: 'Cancel'});
+    const action = screen.getByRole('button', {name: 'Delete'});
+    // Stacked on a narrow screen: the action above Cancel.
+    place(action, 16, 100);
+    place(cancel, 16, 140);
+    return {onOpenChange, onAction, cancel, action};
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('marks both actions for the tracking and takes them off the document press controller', () => {
+    const {cancel, action} = renderOpen();
+    for (const button of [cancel, action]) {
+      expect(button).toHaveAttribute('data-astryx-alert-action');
+      expect(button).not.toHaveAttribute('data-astryx-pressable');
+    }
+  });
+
+  it('keeps the document press controller in the inline preview, which is not tracked', () => {
+    const {cancel, action} = renderOpen({isInline: true});
+    for (const button of [cancel, action]) {
+      expect(button).toHaveAttribute('data-astryx-pressable');
+    }
+  });
+
+  it('cancels when a finger lands on the action and lifts on Cancel', () => {
+    const {onOpenChange, onAction, cancel, action} = renderOpen();
+    const id = touchId++;
+    touch('touchstart', action, {x: 60, y: 116}, id);
+    expect(action).toHaveAttribute('data-astryx-press', 'on');
+    touch('touchmove', action, {x: 60, y: 156}, id);
+    expect(action).not.toHaveAttribute('data-astryx-press');
+    expect(cancel).toHaveAttribute('data-astryx-press', 'on');
+    touch('touchend', action, {x: 60, y: 156}, id);
+    expect(onOpenChange).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(onAction).not.toHaveBeenCalled();
+  });
+
+  it('runs the action when a finger slides from Cancel onto it', () => {
+    const {onOpenChange, onAction, cancel} = renderOpen();
+    const id = touchId++;
+    touch('touchstart', cancel, {x: 60, y: 156}, id);
+    touch('touchmove', cancel, {x: 60, y: 116}, id);
+    touch('touchend', cancel, {x: 60, y: 116}, id);
+    expect(onAction).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).not.toHaveBeenCalled();
+  });
+
+  it('does not track a touch that starts on the backdrop', () => {
+    const {onOpenChange, onAction, cancel} = renderOpen();
+    const dialog = screen.getByRole('alertdialog');
+    const id = touchId++;
+    // A touch on ::backdrop targets the dialog element itself.
+    touch('touchstart', dialog, {x: 60, y: 400}, id);
+    touch('touchmove', dialog, {x: 60, y: 156}, id);
+    expect(cancel).not.toHaveAttribute('data-astryx-press');
+    touch('touchend', dialog, {x: 60, y: 156}, id);
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(onAction).not.toHaveBeenCalled();
+  });
+});
+
 describe('useImperativeAlertDialog', () => {
   const noop = () => {};
 
