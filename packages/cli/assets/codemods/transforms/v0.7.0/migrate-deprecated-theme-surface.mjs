@@ -237,7 +237,7 @@ function unclassifiedBareClasses(selectorText) {
   return [...found].sort();
 }
 
-/** @param {string} selector */
+/** @param {string | import('postcss').Rule} selector selector text, or the rule that holds it */
 function finishSelectorText(selector) {
   return processSelector(selector, selectors => {
     selectors.each(finishSelectorMigration);
@@ -294,6 +294,12 @@ function finishScopeParams(params) {
 
 /** @param {string} source @param {string} from */
 function migrateCss(source, from) {
+  // Parse every selector of the stylesheet as written first, so one the
+  // selector parser rejects is reported at its line and column in the file,
+  // not in the migrated text below.
+  parseCss(source, {from}).walkRules(rule => {
+    processSelector(rule, () => {});
+  });
   const migrated = migrateAstryxThemeSelectors(source, from, SELECTOR_DATA);
   const root = parseCss(migrated, {from});
   /** @type {Set<string>} */
@@ -302,7 +308,7 @@ function migrateCss(source, from) {
     existingComments.add(comment.text.trim());
   });
   root.walkRules(rule => {
-    rule.selector = finishSelectorText(rule.selector);
+    rule.selector = finishSelectorText(rule);
     const tokens = unclassifiedBareClasses(rule.selector);
     if (tokens.length === 0) return;
     const list = tokens.map(token => `.${token}`).join(', ');

@@ -95,15 +95,19 @@ function summarizeProtectedFiles(rows) {
 
 /**
  * Collapse per-codemod declined candidates into one row per file, in the
- * receipt's `{file, location?, reason}` shape.
+ * receipt's `{file, location?, reason}` shape. A file the receipt lists under
+ * `protectedFiles` is left out: a codemod still requires a change to it, and
+ * that already makes the run incomplete.
  * @param {Array<{file: string, codemod: string, location?: string, reason: string}>} rows
+ * @param {Array<{file: string}>} [protectedRows]
  * @returns {Array<{file: string, location?: string, reason: string}>}
  */
-function summarizeDeclinedCandidates(rows) {
+function summarizeDeclinedCandidates(rows, protectedRows = []) {
+  const blocked = new Set(protectedRows.map(item => item.file));
   /** @type {Map<string, {file: string, location?: string, reason: string}>} */
   const byFile = new Map();
   for (const {file, location, reason} of rows) {
-    if (byFile.has(file)) continue;
+    if (byFile.has(file) || blocked.has(file)) continue;
     byFile.set(file, {file, ...(location ? {location} : {}), reason});
   }
   return [...byFile.values()].sort((a, b) => a.file.localeCompare(b.file));
@@ -173,7 +177,10 @@ function stoppedReceipt({
     transformsApplied,
     modifiedFiles,
     protectedFiles: summarizeProtectedFiles(protectedRows),
-    declinedCandidates: summarizeDeclinedCandidates(declinedRows),
+    declinedCandidates: summarizeDeclinedCandidates(
+      declinedRows,
+      protectedRows,
+    ),
     complete: false,
     errorCode,
     errors,
@@ -424,6 +431,7 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
           protectedFiles,
           declinedCandidates: summarizeDeclinedCandidates(
             coreResult?.declinedCandidates ?? [],
+            allProtected,
           ),
           complete: false,
           errorCode: 'ERR_CODEMOD_PROTECTED',
@@ -832,10 +840,13 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
     ...hookModifiedFiles,
   ]).map(file => path.relative(cwd, file).split(path.sep).join('/'));
   receipt.protectedFiles = protectedFiles;
-  receipt.declinedCandidates = summarizeDeclinedCandidates([
-    ...(coreResult?.declinedCandidates ?? []),
-    ...(integrationResult?.declinedCandidates ?? []),
-  ]);
+  receipt.declinedCandidates = summarizeDeclinedCandidates(
+    [
+      ...(coreResult?.declinedCandidates ?? []),
+      ...(integrationResult?.declinedCandidates ?? []),
+    ],
+    remainingProtected,
+  );
   receipt.complete = protectedFiles.length === 0 && finalErrors.length === 0;
   if (protectedFiles.length > 0) {
     receipt.errorCode = 'ERR_CODEMOD_PROTECTED';

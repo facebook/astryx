@@ -410,7 +410,9 @@ export function runCodeCodemod(
         resolver,
       );
       if (declined) {
-        log.warn(`    ! ${relativePath} — skipped: ${declined.reason}`);
+        log.warn(
+          `    ! ${relativePath}${declined.location ? `:${declined.location}` : ''} — skipped: ${declined.reason}`,
+        );
         declinedCandidates.push(declined);
         continue;
       }

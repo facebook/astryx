@@ -302,6 +302,7 @@ describe('upgrade protected-file contract', () => {
     expect(`${text.stdout}${text.stderr}`).toContain(
       '1 protected file was skipped because it does not parse',
     );
+    expect(`${text.stdout}${text.stderr}`).toContain('vendor/bundle.js:2:46');
   });
 
   it('still fails when an owned file does not parse', () => {
@@ -317,6 +318,29 @@ describe('upgrade protected-file contract', () => {
 
     expect(applied.status).toBe(1);
     expect(applied.envelope).toMatchObject({code: 'ERR_CODEMOD_FAILED'});
+  });
+
+  it('reports a stylesheet the 0.6 and 0.7 theme codemods both need once, as protected', () => {
+    write('package.json', JSON.stringify({name: 'consumer', private: true}));
+    write(
+      'node_modules/@astryxdesign/core/package.json',
+      JSON.stringify({name: '@astryxdesign/core', version: CLI_VERSION}),
+    );
+    write('.gitattributes', 'vendor/** linguist-vendored\n');
+    write('vendor/bundle.css', 'a:: { color: red; }\n');
+
+    const result = run(['--from', '0.5.4', '--path', '.']);
+
+    expect(result.status).toBe(1);
+    expect(result.envelope).toMatchObject({
+      type: 'upgrade.run',
+      data: {
+        complete: false,
+        errorCode: 'ERR_CODEMOD_PROTECTED',
+        protectedFiles: [expect.objectContaining({file: 'vendor/bundle.css'})],
+        declinedCandidates: [],
+      },
+    });
   });
 });
 

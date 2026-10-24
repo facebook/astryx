@@ -216,10 +216,26 @@ function findSourceFiles(dir, root = dir) {
 }
 
 /**
+ * The declined candidates that are not also protected files the run reports.
+ * A file another codemod still requires a change to is listed once, under
+ * `protectedFiles`, which already makes the run incomplete.
+ * @template {{file: string}} T
+ * @param {T[]} declined
+ * @param {Array<{file: string}>} protectedRows
+ * @returns {T[]}
+ */
+export function withoutProtected(declined, protectedRows) {
+  /** @param {string} file */
+  const key = file => file.split(path.sep).join('/');
+  const blocked = new Set(protectedRows.map(item => key(item.file)));
+  return declined.filter(item => !blocked.has(key(item.file)));
+}
+
+/**
  * Print the protected files a run skipped because their source does not
  * parse, once per file, so the human output carries what the receipt lists.
  * @param {{warn: (m: string) => void, info: (m: string) => void}} log
- * @param {Array<{file: string, reason: string}>} declined
+ * @param {Array<{file: string, location?: string, reason: string}>} declined
  */
 export function logDeclinedCandidates(log, declined) {
   const byFile = new Map(declined.map(item => [item.file, item]));
@@ -227,8 +243,8 @@ export function logDeclinedCandidates(log, declined) {
   log.warn(
     `${byFile.size} protected file${byFile.size === 1 ? ' was' : 's were'} skipped because ${byFile.size === 1 ? 'it does' : 'they do'} not parse; review manually:`,
   );
-  for (const {file, reason} of byFile.values()) {
-    log.info(`  ${file} — ${reason}`);
+  for (const {file, location, reason} of byFile.values()) {
+    log.info(`  ${file}${location ? `:${location}` : ''} — ${reason}`);
   }
 }
 
@@ -733,13 +749,15 @@ export async function runCodemods(
     );
   }
 
-  logDeclinedCandidates(log, declinedCandidates);
+  // A later codemod can block a file an earlier one declined.
+  const reportedDeclined = withoutProtected(declinedCandidates, protectedFiles);
+  logDeclinedCandidates(log, reportedDeclined);
 
   if (
     totalFilesChanged === 0 &&
     errors.length === 0 &&
     protectedFiles.length === 0 &&
-    declinedCandidates.length === 0
+    reportedDeclined.length === 0
   ) {
     // Codemods that stop before the installed target cannot vouch for the
     // code; the caller says what is missing.
@@ -789,7 +807,7 @@ export async function runCodemods(
     changedFiles,
     writtenFiles,
     protectedFiles,
-    declinedCandidates,
+    declinedCandidates: reportedDeclined,
     stagedContents: virtualContents,
     errors,
     skippedOptional,

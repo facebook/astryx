@@ -13,6 +13,9 @@ import {parseCss, processSelector} from '../parse.mjs';
 import validateDataTokenOwnership, {
   meta as validateDataTokenOwnershipMeta,
 } from '../transforms/v0.7.0/validate-data-token-ownership.mjs';
+import migrateThemeSelectors, {
+  meta as migrateThemeSelectorsMeta,
+} from '../transforms/v0.6.0/migrate-astryx-theme-selectors-to-data-attrs.mjs';
 import migrateDeprecatedThemeSurface, {
   meta as migrateDeprecatedThemeSurfaceMeta,
 } from '../transforms/v0.7.0/migrate-deprecated-theme-surface.mjs';
@@ -316,6 +319,7 @@ describe('runCodemods — protected files that do not parse', () => {
       {
         file: path.join('vendor', 'bundle.css'),
         codemod: 'core:migrate-deprecated-theme-surface',
+        location: '1:3',
         reason:
           'unparseable protected file (linguist-vendored in .gitattributes:1): Expected a pseudo-class or pseudo-element.',
       },
@@ -367,5 +371,49 @@ describe('runCodemods — protected files that do not parse', () => {
         error: 'callback failed',
       },
     ]);
+  });
+
+  it('lists a file another codemod still needs to change under protectedFiles only', async () => {
+    fs.mkdirSync(path.join(tmpDir, 'vendor'), {recursive: true});
+    fs.writeFileSync(
+      path.join(tmpDir, '.gitattributes'),
+      'vendor/** linguist-vendored\n',
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'vendor', 'bundle.css'),
+      'a:: { color: red; }\n',
+    );
+
+    const r = await runCodemods(
+      [
+        {
+          version: '0.6.0',
+          transforms: [
+            {
+              name: 'migrate-astryx-theme-selectors-to-data-attrs',
+              transform: migrateThemeSelectors,
+              meta: migrateThemeSelectorsMeta,
+            },
+          ],
+        },
+        {
+          version: '0.7.0',
+          transforms: [
+            {
+              name: 'migrate-deprecated-theme-surface',
+              transform: migrateDeprecatedThemeSurface,
+              meta: migrateDeprecatedThemeSurfaceMeta,
+            },
+          ],
+        },
+      ],
+      {apply: true, path: '.', silent: true},
+    );
+
+    expect(r.errors).toEqual([]);
+    expect(r.protectedFiles.map(item => item.file)).toEqual([
+      'vendor/bundle.css',
+    ]);
+    expect(r.declinedCandidates).toEqual([]);
   });
 });

@@ -54,9 +54,11 @@ export function parseCss(source, options) {
 /**
  * Parse one selector, hand its tree to `callback`, and return the tree as
  * text, like `selectorParser(callback).processSync(selector, {lossless:
- * true})`. Only a failure to parse is marked; an error `callback` throws is
- * passed through unchanged.
- * @param {string} selector
+ * true})`. Pass the PostCSS rule rather than its selector text when there is
+ * one: a failure then reports its line and column in the stylesheet. Only a
+ * failure to parse is marked; an error `callback` throws is passed through
+ * unchanged.
+ * @param {string | import('postcss').Rule} selector selector text, or the rule that holds it
  * @param {(root: import('postcss-selector-parser').Root) => void} callback
  * @returns {string}
  */
