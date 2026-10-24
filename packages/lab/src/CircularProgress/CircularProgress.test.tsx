@@ -394,6 +394,29 @@ describe('CircularProgress', () => {
       expect(progressbar).not.toHaveAttribute('aria-valuemax');
     });
 
+    it('draws the arc from the compositor layers, with no stroke-dash animation', () => {
+      const {container} = render(
+        <CircularProgress isIndeterminate label="Loading" />,
+      );
+      const fill = container.querySelector(
+        '.astryx-circular-progress-fill',
+      ) as HTMLElement;
+      expect(fill).toHaveAttribute('aria-hidden', 'true');
+      // A spinning layer, the arc's start inside it, and in that the same
+      // two half-rings and two caps as the determinate fill.
+      const tail = fill.firstElementChild?.firstElementChild as HTMLElement;
+      expect(tail.children).toHaveLength(4);
+      expect(tail.querySelectorAll('circle')).toHaveLength(2);
+      // Without script it rests as a quarter turn.
+      expect(
+        (tail.children[0].firstElementChild as HTMLElement).style.transform,
+      ).toBe('rotate(90deg)');
+      const css = Array.from(document.styleSheets)
+        .flatMap(sheet => Array.from(sheet.cssRules).map(rule => rule.cssText))
+        .join('\n');
+      expect(css).not.toMatch(/stroke-dash(array|offset)[^;]*%/);
+    });
+
     it('does not set aria-valuetext when indeterminate', () => {
       render(<CircularProgress isIndeterminate label="Loading" />);
       const progressbar = screen.getByRole('progressbar');

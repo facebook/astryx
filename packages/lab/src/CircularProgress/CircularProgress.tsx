@@ -142,27 +142,14 @@ export interface CircularProgressProps extends BaseProps<HTMLDivElement> {
 // Indeterminate animation
 // =============================================================================
 
-const indeterminateRotation = stylex.keyframes({
-  '0%': {transform: 'rotate(0deg)'},
-  '100%': {transform: 'rotate(360deg)'},
-});
-
-// SVG dash percentages scale with the square viewport. A 300% gap exceeds every
-// ring circumference; shifting the 2% + 300% pattern by 302% closes the loop.
-const indeterminateDash = stylex.keyframes({
-  '0%': {
-    strokeDasharray: '2%, 300%',
-    strokeDashoffset: '0%',
-  },
-  '50%': {
-    strokeDasharray: '175%, 300%',
-    strokeDashoffset: '-68%',
-  },
-  '100%': {
-    strokeDasharray: '2%, 300%',
-    strokeDashoffset: '-302%',
-  },
-});
+/**
+ * The indeterminate arc's cycle, as the stroked circle drew it with a dash
+ * pattern: a dash 2 units long grows to 175 and back while its start moves
+ * on by 68 units over the first half and by the rest of the 302-unit
+ * pattern over the second, each half eased in and out. Here a unit is a
+ * 302nd of a turn, so every cycle ends exactly where it started.
+ */
+const INDETERMINATE = {pattern: 302, shortest: 2, longest: 175, midway: 68};
 
 // =============================================================================
 // Styles
@@ -183,16 +170,6 @@ const styles = stylex.create({
   svg: {
     display: 'block',
     transform: 'rotate(-90deg)',
-  },
-  svgIndeterminate: {
-    display: 'block',
-    animationName: indeterminateRotation,
-    animationDuration: {
-      default: '2s',
-      '@media (prefers-reduced-motion: reduce)': '4s',
-    },
-    animationTimingFunction: 'linear',
-    animationIterationCount: 'infinite',
   },
   track: {
     fill: 'none',
@@ -266,16 +243,21 @@ const styles = stylex.create({
     fill: 'none',
     strokeLinecap: 'round',
   },
-  fillIndeterminate: {
-    fill: 'none',
-    strokeLinecap: 'round',
-    animationName: indeterminateDash,
+  // The indeterminate arc turns with Web Animations on the compositor: the
+  // whole arc spins once per `animationDuration` here...
+  indeterminateSpin: {
+    animationDuration: {
+      default: '2s',
+      '@media (prefers-reduced-motion: reduce)': '4s',
+    },
+  },
+  // ...while its start and end run one breathing cycle per
+  // `animationDuration` here (read back when the animation starts).
+  indeterminateCycle: {
     animationDuration: {
       default: '1.5s',
       '@media (prefers-reduced-motion: reduce)': '3s',
     },
-    animationTimingFunction: 'ease-in-out',
-    animationIterationCount: 'infinite',
   },
   children: {
     position: 'absolute',
@@ -488,6 +470,79 @@ function fillKeyframes(
 }
 
 /**
+ * Where the indeterminate arc's start (`tail`) and its length (`arc`) are, in
+ * degrees, at `t` (0–1) of a cycle.
+ */
+function indeterminateAt(t: number, ease: (t: number) => number) {
+  const {pattern, shortest, longest, midway} = INDETERMINATE;
+  const first = t < 0.5;
+  const e = ease(first ? t / 0.5 : (t - 0.5) / 0.5);
+  const dash = first
+    ? shortest + (longest - shortest) * e
+    : longest + (shortest - longest) * e;
+  const start = first ? midway * e : midway + (pattern - midway) * e;
+  return {tail: (360 * start) / pattern, arc: (360 * dash) / pattern};
+}
+
+/**
+ * Keyframes for one indeterminate cycle of `duration` ms, sampled once a
+ * frame, plus a sample exactly where the arc crosses half a turn (and one
+ * just after), so the left half shows and hides on time.
+ */
+function indeterminateKeyframes(duration: number, ease: (t: number) => number) {
+  const count = Math.max(8, Math.ceil(duration / (1000 / 60)));
+  const grid = Array.from({length: count + 1}, (_, i) => i / count);
+  const over = (t: number) => indeterminateAt(t, ease).arc - 180;
+  const crossings: number[] = [];
+  for (let i = 0; i < count; i++) {
+    let low = grid[i];
+    let high = grid[i + 1];
+    if (over(low) * over(high) >= 0) {
+      continue;
+    }
+    for (let k = 0; k < 24; k++) {
+      const mid = (low + high) / 2;
+      if (over(low) * over(mid) <= 0) {
+        high = mid;
+      } else {
+        low = mid;
+      }
+    }
+    crossings.push((low + high) / 2);
+  }
+  const times = [
+    ...new Set([
+      ...grid,
+      ...crossings,
+      ...crossings.map(c => c + 1e-4).filter(t => t < 1),
+    ]),
+  ].sort((x, y) => x - y);
+  const frames = times.map(t => {
+    const {tail, arc} = indeterminateAt(t, ease);
+    return {t, tail, ...fillTurns(arc / 360)};
+  });
+  return {
+    tail: frames.map(f => ({offset: f.t, transform: `rotate(${f.tail}deg)`})),
+    right: frames.map(f => ({
+      offset: f.t,
+      transform: `rotate(${f.right}deg)`,
+      opacity: f.rightShown,
+    })),
+    left: frames.map(f => ({
+      offset: f.t,
+      transform: `rotate(${f.left}deg)`,
+      opacity: f.leftShown,
+    })),
+    cap: frames.map(f => ({
+      offset: f.t,
+      transform: `rotate(${f.cap}deg)`,
+      opacity: f.caps,
+    })),
+    start: frames.map(f => ({offset: f.t, opacity: f.caps})),
+  };
+}
+
+/**
  * A circular/radial progress indicator that shows completion as a ring.
  *
  * In determinate mode, displays a known value as an arc fill.
@@ -640,7 +695,64 @@ export function CircularProgress({
     },
     [],
   );
-  const turns = fillTurns(percentage);
+  // Indeterminate: the same layers, turned by endless Web Animations on the
+  // compositor (a stroke-dash animation repaints on the main thread and stops
+  // while a script runs), with the whole arc spinning in its own layer and
+  // the arc's start in another. Without script it rests as a quarter turn.
+  const spinRef = useRef<HTMLSpanElement | null>(null);
+  const tailRef = useRef<HTMLSpanElement | null>(null);
+  useLayoutEffect(() => {
+    if (!isIndeterminate) {
+      return;
+    }
+    const layers = [
+      spinRef.current,
+      tailRef.current,
+      rightRef.current,
+      leftRef.current,
+      capRef.current,
+      startRef.current,
+    ];
+    if (layers.some(layer => typeof layer?.animate !== 'function')) {
+      return;
+    }
+    const [spin, tail, right, left, cap, start] = layers as [
+      HTMLElement,
+      HTMLElement,
+      HTMLElement,
+      HTMLElement,
+      HTMLElement,
+      SVGElement,
+    ];
+    const spinMs = parseTime(getComputedStyle(spin).animationDuration);
+    const cycleMs = parseTime(getComputedStyle(tail).animationDuration);
+    if (spinMs <= 0 || cycleMs <= 0) {
+      return;
+    }
+    const frames = indeterminateKeyframes(cycleMs, easingOf('ease-in-out'));
+    const cycle: KeyframeAnimationOptions = {
+      duration: cycleMs,
+      iterations: Infinity,
+      easing: 'linear',
+    };
+    const animations = [
+      spin.animate(
+        [{transform: 'rotate(0deg)'}, {transform: 'rotate(360deg)'}],
+        {duration: spinMs, iterations: Infinity, easing: 'linear'},
+      ),
+      tail.animate(frames.tail, cycle),
+      right.animate(frames.right, cycle),
+      left.animate(frames.left, cycle),
+      cap.animate(frames.cap, cycle),
+      start.animate(frames.start, cycle),
+    ];
+    return () => {
+      for (const animation of animations) {
+        animation.cancel();
+      }
+    };
+  }, [isIndeterminate]);
+  const turns = fillTurns(isIndeterminate ? 0.25 : percentage);
   // One half of the ring's stroke, from 6 o'clock clockwise to 12 (the left
   // half) before its layer turns; butt ends, the caps are drawn apart.
   const bleedBox = `${-FILL_BLEED} ${-FILL_BLEED} ${diameter + 2 * FILL_BLEED} ${diameter + 2 * FILL_BLEED}`;
@@ -662,6 +774,59 @@ export function CircularProgress({
   );
   // A round cap at 12 o'clock on the ring's centerline (a zero-length stroke).
   const capPath = `M ${center} ${strokeWidth / 2} h 0`;
+  const arc = (
+    <>
+      <span {...stylex.props(styles.fillHalf, styles.fillHalfRight)}>
+        <span
+          ref={rightRef}
+          {...stylex.props(styles.fillTurn, styles.fillTurnRight)}
+          style={{
+            transform: `rotate(${turns.right}deg)`,
+            opacity: turns.rightShown,
+          }}>
+          {halfRing}
+        </span>
+      </span>
+      <span {...stylex.props(styles.fillHalf, styles.fillHalfLeft)}>
+        <span
+          ref={leftRef}
+          {...stylex.props(styles.fillTurn, styles.fillTurnLeft)}
+          style={{
+            transform: `rotate(${turns.left}deg)`,
+            opacity: turns.leftShown,
+          }}>
+          {halfRing}
+        </span>
+      </span>
+      <svg
+        width={diameter}
+        height={diameter}
+        viewBox={`0 0 ${diameter} ${diameter}`}
+        {...stylex.props(styles.fillCap, styles.fillCapShape)}>
+        <path
+          ref={startRef}
+          d={capPath}
+          strokeWidth={strokeWidth}
+          style={{opacity: turns.caps}}
+        />
+      </svg>
+      <span
+        ref={capRef}
+        {...stylex.props(styles.fillCap)}
+        style={{
+          transform: `rotate(${turns.cap}deg)`,
+          opacity: turns.caps,
+        }}>
+        <svg
+          width={diameter + 2 * FILL_BLEED}
+          height={diameter + 2 * FILL_BLEED}
+          viewBox={bleedBox}
+          {...stylex.props(styles.fillCapShape, styles.fillShape)}>
+          <path d={capPath} strokeWidth={strokeWidth} />
+        </svg>
+      </span>
+    </>
+  );
 
   return (
     <div
@@ -694,9 +859,7 @@ export function CircularProgress({
           width={diameter}
           height={diameter}
           viewBox={`0 0 ${diameter} ${diameter}`}
-          {...stylex.props(
-            isIndeterminate ? styles.svgIndeterminate : styles.svg,
-          )}>
+          {...stylex.props(styles.svg)}>
           <circle
             {...mergeProps(
               themeProps('circular-progress-track'),
@@ -707,84 +870,34 @@ export function CircularProgress({
             r={radius}
             strokeWidth={strokeWidth}
           />
-          {isIndeterminate ? (
-            <circle
-              {...mergeProps(
-                themeProps('circular-progress-fill', {variant: fillVariant}),
-                stylex.props(
-                  styles.fillIndeterminate,
-                  variantStyles[fillVariant],
-                ),
-              )}
-              cx={center}
-              cy={center}
-              r={radius}
-              strokeWidth={strokeWidth}
-            />
-          ) : null}
         </svg>
 
-        {isIndeterminate ? null : (
-          // The determinate fill (see `styles.fill`). Its stroke color is
-          // set on the theming target and inherited by every part.
-          <span
-            ref={fillRef}
-            aria-hidden="true"
-            {...mergeProps(
-              themeProps('circular-progress-fill', {variant: fillVariant}),
-              stylex.props(styles.fill, variantStyles[fillVariant]),
-            )}>
-            <span {...stylex.props(styles.fillHalf, styles.fillHalfRight)}>
-              <span
-                ref={rightRef}
-                {...stylex.props(styles.fillTurn, styles.fillTurnRight)}
-                style={{
-                  transform: `rotate(${turns.right}deg)`,
-                  opacity: turns.rightShown,
-                }}>
-                {halfRing}
-              </span>
-            </span>
-            <span {...stylex.props(styles.fillHalf, styles.fillHalfLeft)}>
-              <span
-                ref={leftRef}
-                {...stylex.props(styles.fillTurn, styles.fillTurnLeft)}
-                style={{
-                  transform: `rotate(${turns.left}deg)`,
-                  opacity: turns.leftShown,
-                }}>
-                {halfRing}
-              </span>
-            </span>
-            <svg
-              width={diameter}
-              height={diameter}
-              viewBox={`0 0 ${diameter} ${diameter}`}
-              {...stylex.props(styles.fillCap, styles.fillCapShape)}>
-              <path
-                ref={startRef}
-                d={capPath}
-                strokeWidth={strokeWidth}
-                style={{opacity: turns.caps}}
-              />
-            </svg>
+        {/*
+          The fill (see `styles.fill`); indeterminate, the same layers inside
+          a spinning layer and one for the arc's start. Its stroke color is
+          set on the theming target and inherited by every part.
+        */}
+        <span
+          ref={fillRef}
+          aria-hidden="true"
+          {...mergeProps(
+            themeProps('circular-progress-fill', {variant: fillVariant}),
+            stylex.props(styles.fill, variantStyles[fillVariant]),
+          )}>
+          {isIndeterminate ? (
             <span
-              ref={capRef}
-              {...stylex.props(styles.fillCap)}
-              style={{
-                transform: `rotate(${turns.cap}deg)`,
-                opacity: turns.caps,
-              }}>
-              <svg
-                width={diameter + 2 * FILL_BLEED}
-                height={diameter + 2 * FILL_BLEED}
-                viewBox={bleedBox}
-                {...stylex.props(styles.fillCapShape, styles.fillShape)}>
-                <path d={capPath} strokeWidth={strokeWidth} />
-              </svg>
+              ref={spinRef}
+              {...stylex.props(styles.fillCap, styles.indeterminateSpin)}>
+              <span
+                ref={tailRef}
+                {...stylex.props(styles.fillCap, styles.indeterminateCycle)}>
+                {arc}
+              </span>
             </span>
-          </span>
-        )}
+          ) : (
+            arc
+          )}
+        </span>
 
         {centerContent != null && (
           <div {...stylex.props(styles.children)}>

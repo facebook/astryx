@@ -647,3 +647,298 @@ test('storyboard: 20% to 80% @storyboard', async ({page}, testInfo) => {
     await sheet.close();
   }
 });
+
+// -----------------------------------------------------------------------------
+// Indeterminate
+// -----------------------------------------------------------------------------
+
+async function openIndeterminate(page: Page) {
+  await page.goto(`${storybook.origin}/iframe.html?id=${STORY}&viewMode=story`);
+  await expect(page.getByRole('progressbar')).toBeVisible();
+  await setArgs(page, {isIndeterminate: true, size: 'lg'});
+  await page.waitForTimeout(600);
+}
+
+/** The inked piece: where it starts (degrees clockwise from 12) and its length. */
+function arcOf(row: boolean[]): {
+  pieces: number;
+  start: number;
+  length: number;
+} {
+  const {pieces} = span(row);
+  let start = -1;
+  for (let degree = 0; degree < 360; degree += 1) {
+    if (row[degree] && !row[(degree + 359) % 360]) {
+      start = degree;
+      break;
+    }
+  }
+  let length = 0;
+  if (start >= 0) {
+    while (length < 360 && row[(start + length) % 360]) {
+      length += 1;
+    }
+  }
+  return {pieces, start, length};
+}
+
+/** Screencast frames cropped to the ring's box, as PNG base64. */
+async function ringCrops(page: Page, raw: {data: string}[], ring: Box) {
+  const scratch = await page.context().newPage();
+  try {
+    return await scratch.evaluate(
+      async ({items, box}) => {
+        const out: string[] = [];
+        for (const item of items) {
+          const bitmap = await createImageBitmap(
+            await (await fetch(`data:image/png;base64,${item}`)).blob(),
+          );
+          const scale = bitmap.width / 240;
+          const canvas = new OffscreenCanvas(
+            Math.round(box.width * scale),
+            Math.round(box.height * scale),
+          );
+          const context = canvas.getContext('2d');
+          if (context == null) {
+            throw new Error('no 2d context');
+          }
+          context.drawImage(
+            bitmap,
+            Math.round(box.x * scale),
+            Math.round(box.y * scale),
+            canvas.width,
+            canvas.height,
+            0,
+            0,
+            canvas.width,
+            canvas.height,
+          );
+          const blob = await canvas.convertToBlob({type: 'image/png'});
+          const bytes = new Uint8Array(await blob.arrayBuffer());
+          let binary = '';
+          for (const byte of bytes) {
+            binary += String.fromCharCode(byte);
+          }
+          out.push(btoa(binary));
+        }
+        return out;
+      },
+      {items: raw.map(f => f.data), box: ring},
+    );
+  } finally {
+    await scratch.close();
+  }
+}
+
+test('the indeterminate arc keeps spinning and breathing while a script holds the main thread', async ({
+  page,
+}) => {
+  await openIndeterminate(page);
+  const box = await ringBox(page);
+  const palette = await colors(page);
+  const cdp = await page.context().newCDPSession(page);
+  const raw: {t: number; data: string}[] = [];
+  cdp.on('Page.screencastFrame', frame => {
+    raw.push({
+      t: (frame.metadata.timestamp ?? Date.now() / 1000) * 1000,
+      data: frame.data,
+    });
+    cdp
+      .send('Page.screencastFrameAck', {sessionId: frame.sessionId})
+      .catch(() => {});
+  });
+  await cdp.send('Page.startScreencast', {
+    format: 'png',
+    maxWidth: 240 * DPR,
+    maxHeight: 160 * DPR,
+    everyNthFrame: 1,
+  });
+  await page.waitForTimeout(300);
+  const busy = await page.evaluate(() => {
+    const from = performance.timeOrigin + performance.now();
+    const end = performance.now() + 700;
+    while (performance.now() < end) {
+      // hold
+    }
+    return {from, to: performance.timeOrigin + performance.now()};
+  });
+  await page.waitForTimeout(300);
+  await cdp.send('Page.stopScreencast');
+  await cdp.detach().catch(() => {});
+  const rows = await inkByDegree(
+    page,
+    await ringCrops(page, raw, box),
+    palette,
+  );
+  const inside = rows
+    .map((row, i) => ({t: raw[i].t, ...arcOf(row)}))
+    .filter(f => f.t >= busy.from + 20 && f.t <= busy.to - 20);
+  expect(inside.length).toBeGreaterThanOrEqual(30);
+  for (const frame of inside) {
+    expect(frame.pieces, `pieces at ${frame.t}`).toBe(1);
+  }
+  // It spins: the arc's start moves in nearly every frame of the block...
+  let moved = 0;
+  for (let i = 1; i < inside.length; i += 1) {
+    if (inside[i].start !== inside[i - 1].start) {
+      moved += 1;
+    }
+  }
+  expect(moved).toBeGreaterThanOrEqual((inside.length - 1) * 0.8);
+  // ...and breathes: its length changes by tens of degrees within the block.
+  const lengths = inside.map(f => f.length);
+  expect(Math.max(...lengths) - Math.min(...lengths)).toBeGreaterThan(40);
+});
+
+test('the indeterminate arc lays out and paints nothing per frame', async ({
+  page,
+  browser,
+}) => {
+  await openIndeterminate(page);
+  await browser.startTracing(page, {
+    categories: ['devtools.timeline', 'disabled-by-default-devtools.timeline'],
+  });
+  await page.waitForTimeout(1000);
+  const running = await page.evaluate(
+    () =>
+      document.getAnimations().filter(a => a.playState === 'running').length,
+  );
+  const trace = JSON.parse((await browser.stopTracing()).toString()) as {
+    traceEvents: {
+      name: string;
+      ph: string;
+      pid: number;
+      tid: number;
+      args?: {name?: string};
+    }[];
+  };
+  const mainThreads = new Set(
+    trace.traceEvents
+      .filter(e => e.ph === 'M' && e.name === 'thread_name')
+      .filter(e => e.args?.name === 'CrRendererMain')
+      .map(e => `${e.pid}:${e.tid}`),
+  );
+  const count = (name: string) =>
+    trace.traceEvents.filter(
+      e => e.name === name && mainThreads.has(`${e.pid}:${e.tid}`),
+    ).length;
+  // The stroke-dash animation repainted every frame.
+  expect(running).toBe(6);
+  expect(count('Layout')).toBe(0);
+  expect(count('Paint')).toBe(0);
+});
+
+for (const reducedMotion of ['no-preference', 'reduce'] as const) {
+  test(`the indeterminate arc animates only transform and opacity (${reducedMotion} motion)`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({reducedMotion});
+    await openIndeterminate(page);
+    const animations = await page.evaluate(() =>
+      document.getAnimations().map(animation => {
+        const effect = animation.effect as KeyframeEffect;
+        const keys = new Set<string>();
+        for (const frame of effect.getKeyframes()) {
+          for (const key of Object.keys(frame)) {
+            keys.add(key);
+          }
+        }
+        const timing = effect.getTiming();
+        return {
+          keys: [...keys],
+          easing: String(timing.easing),
+          iterations: Number(timing.iterations),
+          duration: Number(timing.duration),
+        };
+      }),
+    );
+    expect(animations).toHaveLength(6);
+    const allowed = [
+      'offset',
+      'computedOffset',
+      'easing',
+      'composite',
+      'transform',
+      'opacity',
+    ];
+    for (const animation of animations) {
+      expect(animation.keys.filter(key => !allowed.includes(key))).toEqual([]);
+      expect(animation.easing).not.toMatch(/steps/);
+      expect(animation.iterations).toBe(Infinity);
+    }
+    // The spin and the breathing cycle, as before: 2 s and 1.5 s, doubled
+    // under reduced motion.
+    const durations = [...new Set(animations.map(a => a.duration))].sort(
+      (a, b) => a - b,
+    );
+    expect(durations).toEqual(
+      reducedMotion === 'reduce' ? [3000, 4000] : [1500, 2000],
+    );
+  });
+}
+
+test('storyboard: one indeterminate cycle @storyboard', async ({page}) => {
+  await openIndeterminate(page);
+  await page.evaluate(() => {
+    for (const animation of document.getAnimations()) {
+      animation.pause();
+    }
+  });
+  const shots: string[] = [];
+  for (let t = 0; t < 3000; t += 125) {
+    await page.evaluate(time => {
+      for (const animation of document.getAnimations()) {
+        animation.currentTime = time;
+      }
+    }, t);
+    shots.push(
+      (await page.getByRole('progressbar').screenshot()).toString('base64'),
+    );
+  }
+  fs.mkdirSync(EVIDENCE, {recursive: true});
+  const sheet = await page.context().newPage();
+  try {
+    const png = await sheet.evaluate(async items => {
+      const decoded = await Promise.all(
+        items.map(async item =>
+          createImageBitmap(
+            await (await fetch(`data:image/png;base64,${item}`)).blob(),
+          ),
+        ),
+      );
+      const w = decoded[0].width + 12;
+      const h = decoded[0].height + 12;
+      const columns = 8;
+      const canvas = new OffscreenCanvas(
+        columns * w,
+        Math.ceil(decoded.length / columns) * h,
+      );
+      const context = canvas.getContext('2d');
+      if (context == null) {
+        throw new Error('no 2d context');
+      }
+      context.fillStyle = '#fff';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      decoded.forEach((bitmap, i) =>
+        context.drawImage(
+          bitmap,
+          (i % columns) * w + 6,
+          Math.floor(i / columns) * h + 6,
+        ),
+      );
+      const blob = await canvas.convertToBlob({type: 'image/png'});
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      let binary = '';
+      for (const byte of bytes) {
+        binary += String.fromCharCode(byte);
+      }
+      return btoa(binary);
+    }, shots);
+    fs.writeFileSync(
+      path.join(EVIDENCE, 'circular-progress-indeterminate.png'),
+      Buffer.from(png, 'base64'),
+    );
+  } finally {
+    await sheet.close();
+  }
+});
