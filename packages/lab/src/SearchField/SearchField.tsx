@@ -26,9 +26,9 @@
  * ACTIVATION
  *
  * Focusing the field (a tap, or the host calling `handleRef.focus()` inside
- * its own tap so the keyboard rises) activates it. In the iOS idiom (WebKit
- * on iOS or iPadOS under a finger) the field then plays UIKit's activation,
- * all on one clock
+ * its own tap so the keyboard rises) activates it. Under a finger (a coarse
+ * primary pointer, iOS and Android alike) the field then plays UIKit's
+ * activation, all on one clock
  * (`search.activationMs`, 383 ms on `search.activationCurve`, the
  * UIViewPropertyAnimator UIKit uses; both are motion roles a theme may
  * retune, read when each move starts): it rises by the host's `lift`, it
@@ -42,12 +42,11 @@
  * The close button cancels: it clears the text, ends editing (the keyboard
  * leaves) and plays the activation back to rest, the button sliding out at
  * the opacity it has, then hiding. Escape does the same. A change of mind
- * mid-flight starts from where every part is. Anywhere else (an Android
- * finger, a mouse) the parts take their places at once, and the close button
- * is a plain round button instead of glass: the motion and the glass are
- * iOS's idiom. Under reduced motion it follows `design:reduced-motion`: on a
- * touch screen, in any idiom, the parts cross-fade to their places (the
- * animator replaces the travel with a fade); otherwise they change at once.
+ * mid-flight starts from where every part is. Under a mouse or a trackpad
+ * the parts take their places at once, and the close button is a plain
+ * round button instead of glass. Under reduced motion it follows
+ * `design:reduced-motion` through the animator: under a finger the parts
+ * cross-fade to their places; otherwise they change at once.
  *
  * Search with the keyboard's Search key (Enter) calls `onSubmit`; focus and
  * the keyboard stay, as UIKit leaves them to the app. A tap outside ends
@@ -293,28 +292,19 @@ const styles = stylex.create({
     padding: 0,
     borderWidth: 0,
     borderRadius: radiusVars['--radius-full'],
-    // Glass in the iOS idiom only (nested as IOS_TOUCH_STYLE_KEYS spells
-    // it); elsewhere a plain round button in the field's own fill.
+    // Glass under a finger (TOUCH_QUERY, spelled as touchPresentation.ts
+    // does); under a mouse a plain round button in the field's own fill.
     backgroundColor: {
       default: colorVars['--color-background-muted'],
-      '@media (pointer: coarse)': {
-        default: colorVars['--color-background-muted'],
-        '@supports (-webkit-touch-callout: none)': `color-mix(in srgb, ${colorVars['--color-background-popover']} 78%, transparent)`,
-      },
+      '@media (pointer: coarse)': `color-mix(in srgb, ${colorVars['--color-background-popover']} 78%, transparent)`,
     },
     backdropFilter: {
       default: 'none',
-      '@media (pointer: coarse)': {
-        default: 'none',
-        '@supports (-webkit-touch-callout: none)': 'blur(16px) saturate(180%)',
-      },
+      '@media (pointer: coarse)': 'blur(16px) saturate(180%)',
     },
     boxShadow: {
       default: 'none',
-      '@media (pointer: coarse)': {
-        default: 'none',
-        '@supports (-webkit-touch-callout: none)': shadowVars['--shadow-med'],
-      },
+      '@media (pointer: coarse)': shadowVars['--shadow-med'],
     },
     color: colorVars['--color-text-primary'],
     cursor: {
@@ -398,17 +388,12 @@ export function SearchField({
   const middleAnimator = useAnimator();
   const endAnimator = useAnimator();
   const closeAnimator = useAnimator();
-  // UIKit's activation in the iOS idiom (WebKit on iOS or iPadOS under a
-  // finger); anywhere else (an Android finger, a mouse) the parts take their
-  // places at once. Under reduced motion a touch screen takes the animated
-  // path in any idiom, and the animator turns its travel into a cross-fade
-  // (`design:reduced-motion` DR2); a fine pointer changes at once (DR3).
-  const {idiom} = useTouchPresentation();
-  const playsUIKit = idiom === 'ios';
-  const animates = useCallback(
-    () => playsUIKit || rootAnimator.animator.reducedMotion() === 'crossfade',
-    [playsUIKit, rootAnimator],
-  );
+  // UIKit's activation under a finger (a coarse primary pointer, on every
+  // touch device); under a mouse or a trackpad the parts take their places
+  // at once. Reduced motion is the animator's: under a finger it turns the
+  // travel into a cross-fade (`design:reduced-motion` DR2).
+  const {isTouch} = useTouchPresentation();
+  const animates = useCallback(() => isTouch, [isTouch]);
 
   const setValue = useCallback(
     (next: string) => {
@@ -488,8 +473,7 @@ export function SearchField({
   useLayoutEffect(() => {
     const target = isActive;
     if (settledRef.current === null || !animates()) {
-      // First layout, or outside the iOS idiom (and not a reduced-motion
-      // cross-fade on a touch screen): take the places at once.
+      // First layout, or a mouse or trackpad: take the places at once.
       settledRef.current = target;
       place(poseFor(target, geometry()));
       return;

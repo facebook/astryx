@@ -128,17 +128,17 @@ function onPresentedFrame(win: Window, start: () => void): () => void {
  * runs the real one): the content rises with the field by `lift` on the
  * field's clock, and the large title fades as UIKit's does (opacity
  * (1 − p / 0.35)² on activation; on cancel it comes back from p = 0.65).
- * Placed at once outside the iOS idiom, as the field is.
+ * Placed at once under a mouse, as the field is.
  */
 function useLiftedHost(isActive: boolean, lift: number) {
   const content = useAnimator();
   const title = useAnimator();
-  const {idiom} = useTouchPresentation();
+  const {isTouch} = useTouchPresentation();
   const settled = useRef<boolean | null>(null);
   useLayoutEffect(() => {
     const target = isActive && lift > 0;
     const y = target ? -lift : 0;
-    if (settled.current === null || idiom !== 'ios' || lift === 0) {
+    if (settled.current === null || !isTouch || lift === 0) {
       settled.current = target;
       content.animator.set({y});
       title.animator.set({opacity: target ? 0 : 1});
@@ -187,7 +187,7 @@ function useLiftedHost(isActive: boolean, lift: number) {
         ),
       });
     }
-  }, [isActive, lift, idiom, content, title]);
+  }, [isActive, lift, isTouch, content, title]);
   return {contentRef: content.ref, titleRef: title.ref};
 }
 

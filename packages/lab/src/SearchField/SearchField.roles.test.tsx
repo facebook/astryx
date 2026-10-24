@@ -8,8 +8,8 @@
  *   roles under the field's theme: a theme's `--motion-search-activation-ms`
  *   and `--motion-search-activation-curve` time the activation the field
  *   plays, and without a theme it keeps UIKit's 383 ms ease-in-ease-out; the
- *   activation waits for a presented frame; a finger outside iOS plays none
- *   (the iOS idiom gate)
+ *   activation waits for a presented frame; a mouse plays none (any finger,
+ *   iOS or Android, plays it)
  * @position Testing; validates SearchField.tsx and searchFieldModel.ts with a
  *   stubbed computed style (as core's resolveMotion.test.ts does)
  */
@@ -94,12 +94,8 @@ beforeEach(() => {
           variables.get(element)?.[name] ?? '',
       }) as unknown as CSSStyleDeclaration,
   );
-  // iOS under a finger (WebKit on iOS answers -webkit-touch-callout), so the
-  // field plays UIKit's activation.
-  vi.stubGlobal('CSS', {
-    supports: (condition: string) =>
-      condition.includes('-webkit-touch-callout'),
-  });
+  // Under a finger (a coarse primary pointer), so the field plays UIKit's
+  // activation.
   vi.stubGlobal(
     'matchMedia',
     vi.fn((query: string) => ({
@@ -179,8 +175,20 @@ describe('SearchField motion roles', () => {
     }
   });
 
-  it('plays no activation on a finger outside iOS: the parts take their places at once', () => {
-    vi.stubGlobal('CSS', {supports: () => false});
+  it('plays no activation under a mouse: the parts take their places at once', () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    );
     themed({'--motion-search-activation-ms': '600ms'});
     render(<SearchField label="Search" />);
     act(() => screen.getByRole('searchbox').focus());
