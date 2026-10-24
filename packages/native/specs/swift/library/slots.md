@@ -54,8 +54,10 @@ places as on the web, read by VoiceOver in the same order.
   whatever view is in it. An Astryx child inherits its owner's size only where
   core's does: an `Icon` in an owner's documented icon slot (an `Icon` in a
   small `IconButton` is small), and a child of a component whose contract
-  adopts the size cascade. Every other child keeps its own default (an unsized
-  `Avatar` in a list item stays `md`), and an explicit size on any child wins.
+  adopts the size cascade. Every other child keeps its own default (an unsized `Avatar` in a list item
+  stays `md`). An explicit size on a child wins wherever core's does, and a
+  component that sizes its members in core keeps doing so: core's `AvatarGroup`
+  sets every member `Avatar`'s size, explicit or not.
 - **S5 — Reading order follows the slots.** VoiceOver reads a component's slots
   in the core contract's order (for a list item: `marker`, `startContent`,
   `label`, `description`, `endContent`), whatever views they hold. A decorative
