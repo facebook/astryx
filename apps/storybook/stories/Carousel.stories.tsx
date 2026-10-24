@@ -59,7 +59,61 @@ const styles = stylex.create({
     marginBottom: spacingVars['--spacing-2'],
     fontFamily: typographyVars['--font-family-body'],
   },
+  page: {
+    width: '100%',
+    height: 220,
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'flex-end',
+    gap: spacingVars['--spacing-1'],
+    padding: spacingVars['--spacing-4'],
+    borderRadius: radiusVars['--radius-element'],
+    color: '#fff',
+    fontFamily: typographyVars['--font-family-body'],
+  },
+  pageTitle: {
+    margin: 0,
+    fontSize: 22,
+    fontWeight: 700,
+    color: 'inherit',
+  },
+  pageBody: {
+    margin: 0,
+    fontSize: 14,
+    color: 'inherit',
+  },
+  longPageSpacer: {
+    height: 120,
+  },
+  longPageTail: {
+    height: 1600,
+  },
 });
+
+const PAGES = [
+  {title: 'Plan', body: 'Pick a place and the dates.', color: '#3a6ea5'},
+  {title: 'Pack', body: 'A checklist for every trip.', color: '#527e51'},
+  {title: 'Go', body: 'Tickets and directions offline.', color: '#b05f34'},
+  {title: 'Share', body: 'Photos and notes for the group.', color: '#7a4f9a'},
+  {title: 'Remember', body: 'Your trips, a year later.', color: '#3a797f'},
+];
+
+function PagePanel({
+  title,
+  body,
+  color,
+}: {
+  title: string;
+  body: string;
+  color: string;
+}) {
+  return (
+    <div {...stylex.props(styles.page)} style={{backgroundColor: color}}>
+      <h3 {...stylex.props(styles.pageTitle)}>{title}</h3>
+      <p {...stylex.props(styles.pageBody)}>{body}</p>
+    </div>
+  );
+}
 
 const IMAGES = [
   {id: 1, src: 'https://picsum.photos/id/1042/200/200', label: 'dark.jpg'},
@@ -102,6 +156,10 @@ const meta: Meta<typeof Carousel> = {
     hasSnap: {
       control: 'boolean',
       description: 'Enable scroll-snap',
+    },
+    hasPaging: {
+      control: 'boolean',
+      description: 'One full-width page at a time',
     },
   },
   decorators: [
@@ -321,6 +379,57 @@ export const Loop: Story = {
           />
         ))}
       </Carousel>
+    </div>
+  ),
+};
+
+export const Paging: Story = {
+  name: 'Paging',
+  render: () => (
+    <div {...stylex.props(styles.constrainedWidth)}>
+      <p {...stylex.props(styles.label)}>
+        One page at a time: swipe or flick (under a finger on iOS the pages move
+        like an iOS paging scroll view), arrow keys, or the buttons
+      </p>
+      <Carousel hasPaging gap={2} aria-label="Trip planner">
+        {PAGES.map(page => (
+          <PagePanel key={page.title} {...page} />
+        ))}
+      </Carousel>
+    </div>
+  ),
+};
+
+export const PagingLoop: Story = {
+  name: 'Paging (Loop)',
+  render: () => (
+    <div {...stylex.props(styles.constrainedWidth)}>
+      <p {...stylex.props(styles.label)}>
+        Past the last page the next one is the first, in both directions
+      </p>
+      <Carousel hasPaging hasLoop gap={2} aria-label="Trip planner, looping">
+        {PAGES.map(page => (
+          <PagePanel key={page.title} {...page} />
+        ))}
+      </Carousel>
+    </div>
+  ),
+};
+
+export const PagingInLongPage: Story = {
+  name: 'Paging (In a Long Page)',
+  render: () => (
+    <div {...stylex.props(styles.constrainedWidth)}>
+      <p {...stylex.props(styles.label)}>
+        A vertical drag on the pages scrolls the page; a horizontal one pages
+      </p>
+      <div {...stylex.props(styles.longPageSpacer)} />
+      <Carousel hasPaging gap={2} aria-label="Trip planner in a long page">
+        {PAGES.map(page => (
+          <PagePanel key={page.title} {...page} />
+        ))}
+      </Carousel>
+      <div {...stylex.props(styles.longPageTail)} />
     </div>
   ),
 };

@@ -11,13 +11,17 @@
  *   visual bleed allowance for child selection indicators, and Shift + wheel
  *   mapping so mouse users can scroll horizontally. Supports optional
  *   wrap-around looping and an imperative handle (handleRef) for programmatic
- *   scroll control. Exposes APG
+ *   scroll control. With hasPaging every child is a page: under a finger on
+ *   iOS the pages move like an iOS paging scroll view (useCarouselPaging, the
+ *   shared pager); elsewhere, Android included, the scroller snaps natively
+ *   one page at a time. Exposes APG
  *   carousel semantics: the root is a labelled region with
  *   aria-roledescription="carousel" and each item wrapper is a group with
  *   aria-roledescription="slide" named "Slide N of M".
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Carousel/index.ts (exports)
+ * - /packages/core/src/Carousel/useCarouselPaging.ts
  * - /apps/storybook/stories/Carousel.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/Carousel/ (showcase blocks)
  */
@@ -47,6 +51,8 @@ import {useScrollOverflow} from '../hooks/useScrollOverflow';
 import {isRtlElement} from '../hooks/isRtlElement';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps, rtlStyles} from '../utils';
+import {useTouchPresentation} from '../utils/touchPresentation';
+import {useCarouselPaging} from './useCarouselPaging';
 import type {SpacingStep} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
@@ -129,6 +135,17 @@ export interface CarouselProps extends BaseProps<HTMLDivElement> {
    */
   hasSnap?: boolean;
   /**
+   * Show one child at a time: each child fills the carousel's width and a
+   * swipe, a flick, an arrow key or a button moves exactly one page. Under a
+   * finger on iOS the pages follow the finger and settle like an iOS paging
+   * scroll view (with `hasLoop`, swiping past the last page continues to the
+   * first); elsewhere (a mouse, a trackpad, a finger on Android) the carousel
+   * snaps natively one page at a time.
+   * `hasSnap`, `hasEdgeFade` and `padding` do not apply.
+   * @default false
+   */
+  hasPaging?: boolean;
+  /**
    * Inline padding on the scroll container. Applied as padding-inline
    * so the gutter is inside the scrollable area — items can scroll fully
    * into the padded region. Also sets matching scroll-padding so snap
@@ -199,6 +216,35 @@ const styles = stylex.create({
     scrollSnapAlign: 'start',
     display: 'flex',
     flexShrink: 0,
+  },
+  // Paging: one row of pages, each the scroller's width.
+  pagingTrack: {
+    display: 'flex',
+    alignItems: 'stretch',
+    width: '100%',
+    flexShrink: 0,
+  },
+  pagingItem: {
+    display: 'flex',
+    flexShrink: 0,
+    flexBasis: '100%',
+    minWidth: 0,
+  },
+  // Native paging (pointer): one snap point per page, never skipped.
+  pagingSnapItem: {
+    scrollSnapAlign: 'start',
+    scrollSnapStop: 'always',
+  },
+  // Paging: the scroller is exactly the carousel's width (pages size to it).
+  pagingScroller: {
+    flexGrow: 1,
+    minWidth: 0,
+  },
+  // Touch paging: the pager moves the track; nothing scrolls natively, not
+  // even to bring a focused element into view (the pager does that).
+  pagingTouchScroller: {
+    overflowX: 'clip',
+    overflowY: 'clip',
   },
   // Overlay on top layer — covers the carousel anchor area
   buttonOverlay: {
@@ -299,6 +345,13 @@ const paddingStyles = stylex.create({
   },
 });
 
+/** The gap between pages, px: the track's column gap. */
+function pageGap(track: HTMLElement | null): number {
+  return track == null
+    ? 0
+    : Number.parseFloat(getComputedStyle(track).columnGap) || 0;
+}
+
 // =============================================================================
 // Component
 // =============================================================================
@@ -330,6 +383,7 @@ export function Carousel({
   hasEdgeFade = true,
   hasLoop = false,
   hasSnap = false,
+  hasPaging = false,
   padding,
   'aria-label': ariaLabelFromProps,
   xstyle,
@@ -355,6 +409,21 @@ export function Carousel({
   // stable keys, so slide numbering ("Slide N of M") matches what actually
   // renders even when some children are conditionally omitted.
   const slides = Children.toArray(children);
+
+  // Paging: under a finger on iOS the shared pager moves the track like a
+  // UIKit paging scroll view; everywhere else (a mouse, a trackpad, a finger
+  // on Android) the scroller snaps natively one page at a time, on the
+  // platform's own scroll physics.
+  const trackRef = useRef<HTMLDivElement>(null);
+  const {idiom} = useTouchPresentation();
+  const isTouchPaging = hasPaging && idiom === 'ios';
+  const paging = useCarouselPaging({
+    isEnabled: isTouchPaging,
+    scrollElRef,
+    trackRef,
+    count: slides.length,
+    loop: hasLoop,
+  });
 
   const layer = useLayer({
     mode: 'context',
@@ -404,6 +473,10 @@ export function Carousel({
 
   const scrollBy = useCallback(
     (direction: -1 | 1) => {
+      if (isTouchPaging) {
+        paging.goBy(direction);
+        return;
+      }
       const el = scrollElRef.current;
       if (!el) {
         return;
@@ -434,6 +507,13 @@ export function Carousel({
         }
       }
 
+      if (hasPaging) {
+        // One page per press: the next snap point in that direction.
+        const pageWidth = el.clientWidth + pageGap(trackRef.current);
+        el.scrollBy({left: rtlSign * direction * pageWidth, behavior});
+        return;
+      }
+
       const firstChild = el.firstElementChild as HTMLElement | null;
       const itemWidth = firstChild ? firstChild.offsetWidth : 0;
       const amount = el.clientWidth - itemWidth * 0.5;
@@ -444,36 +524,51 @@ export function Carousel({
         behavior,
       });
     },
-    [hasLoop, hasOverflow, overflowStart, overflowEnd],
+    [
+      isTouchPaging,
+      paging,
+      hasPaging,
+      hasLoop,
+      hasOverflow,
+      overflowStart,
+      overflowEnd,
+    ],
   );
 
-  const scrollToIndex = useCallback((index: number) => {
-    const el = scrollElRef.current;
-    const items = el?.children;
-    if (!el || !items || items.length === 0) {
-      return;
-    }
-    const clamped = Math.max(0, Math.min(index, items.length - 1));
-    const target = items[clamped] as HTMLElement;
-    const prefersReducedMotion =
-      typeof window !== 'undefined' &&
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    // Bring the item to the start edge by scrolling the container by the
-    // measured gap between the item and the container edge. Using scrollBy
-    // (not scrollIntoView) keeps the scroll contained to the carousel and
-    // never moves ancestors or the page. In RTL the start edge is the right
-    // edge, so align the trailing edges instead of the leading ones.
-    const containerRect = el.getBoundingClientRect();
-    const itemRect = target.getBoundingClientRect();
-    const delta = isRtlElement(el)
-      ? itemRect.right - containerRect.right
-      : itemRect.left - containerRect.left;
-    el.scrollBy({
-      left: delta,
-      behavior: prefersReducedMotion ? 'auto' : 'smooth',
-    });
-  }, []);
+  const scrollToIndex = useCallback(
+    (index: number) => {
+      if (isTouchPaging) {
+        paging.goTo(index);
+        return;
+      }
+      const el = scrollElRef.current;
+      const items = hasPaging ? trackRef.current?.children : el?.children;
+      if (!el || !items || items.length === 0) {
+        return;
+      }
+      const clamped = Math.max(0, Math.min(index, items.length - 1));
+      const target = items[clamped] as HTMLElement;
+      const prefersReducedMotion =
+        typeof window !== 'undefined' &&
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      // Bring the item to the start edge by scrolling the container by the
+      // measured gap between the item and the container edge. Using scrollBy
+      // (not scrollIntoView) keeps the scroll contained to the carousel and
+      // never moves ancestors or the page. In RTL the start edge is the right
+      // edge, so align the trailing edges instead of the leading ones.
+      const containerRect = el.getBoundingClientRect();
+      const itemRect = target.getBoundingClientRect();
+      const delta = isRtlElement(el)
+        ? itemRect.right - containerRect.right
+        : itemRect.left - containerRect.left;
+      el.scrollBy({
+        left: delta,
+        behavior: prefersReducedMotion ? 'auto' : 'smooth',
+      });
+    },
+    [isTouchPaging, paging, hasPaging],
+  );
 
   useImperativeHandle(
     handleRef,
@@ -483,16 +578,43 @@ export function Carousel({
       scrollTo: (index: number) => scrollToIndex(index),
       // With loop, either direction is reachable whenever the content
       // overflows; otherwise reflect the live per-edge overflow state.
-      canScrollNext: () => (hasLoop ? hasOverflow : overflowEnd),
-      canScrollPrev: () => (hasLoop ? hasOverflow : overflowStart),
+      canScrollNext: () =>
+        isTouchPaging
+          ? paging.canGoForward
+          : hasLoop
+            ? hasOverflow
+            : overflowEnd,
+      canScrollPrev: () =>
+        isTouchPaging
+          ? paging.canGoBack
+          : hasLoop
+            ? hasOverflow
+            : overflowStart,
     }),
-    [scrollBy, scrollToIndex, hasLoop, hasOverflow, overflowStart, overflowEnd],
+    [
+      scrollBy,
+      scrollToIndex,
+      isTouchPaging,
+      paging,
+      hasLoop,
+      hasOverflow,
+      overflowStart,
+      overflowEnd,
+    ],
   );
 
   // With loop, the buttons stay reachable at both edges as long as there's
   // something to scroll; without loop they follow the per-edge overflow state.
-  const canScrollStart = hasLoop && hasOverflow ? true : overflowStart;
-  const canScrollEnd = hasLoop && hasOverflow ? true : overflowEnd;
+  const canScrollStart = isTouchPaging
+    ? paging.canGoBack
+    : hasLoop && hasOverflow
+      ? true
+      : overflowStart;
+  const canScrollEnd = isTouchPaging
+    ? paging.canGoForward
+    : hasLoop && hasOverflow
+      ? true
+      : overflowEnd;
 
   // Keep the keyboard user where they are when a nav button disables under
   // them. The browser drops focus off a control it disables, so reaching an
@@ -557,15 +679,16 @@ export function Carousel({
     receiver.focus({preventScroll: true});
   }, [canScrollStart, canScrollEnd]);
 
-  const fadeStyle = hasEdgeFade
-    ? (hasLoop && hasOverflow) || (overflowStart && overflowEnd)
-      ? styles.fadeBoth
-      : overflowStart
-        ? styles.fadeStart
-        : overflowEnd
-          ? styles.fadeEnd
-          : null
-    : null;
+  const fadeStyle =
+    hasEdgeFade && !hasPaging
+      ? (hasLoop && hasOverflow) || (overflowStart && overflowEnd)
+        ? styles.fadeBoth
+        : overflowStart
+          ? styles.fadeStart
+          : overflowEnd
+            ? styles.fadeEnd
+            : null
+      : null;
 
   // Self-authored position styles (positioning: 'custom' below): a cover
   // centered on the anchor, sized to it — direction-neutral by construction.
@@ -574,6 +697,29 @@ export function Carousel({
     width: 'anchor-size(width)',
     height: 'anchor-size(height)',
   };
+
+  const renderSlides = () =>
+    slides.map((child, index) => (
+      // APG carousel pattern: each slide container is a group with
+      // aria-roledescription="slide" and an "N of M" accessible name so
+      // ATs announce slide boundaries and position instead of anonymous
+      // generics.
+      <div
+        // eslint-disable-next-line @eslint-react/no-array-index-key -- index fallback only applies to text/number children, which are positional by definition; elements keep their Children.toArray keys
+        key={isValidElement(child) ? child.key : index}
+        role="group"
+        aria-roledescription="slide"
+        aria-label={t('@astryx.carousel.slideLabel', {
+          current: index + 1,
+          total: slides.length,
+        })}
+        {...stylex.props(
+          hasPaging ? styles.pagingItem : styles.item,
+          hasPaging && !isTouchPaging && styles.pagingSnapItem,
+        )}>
+        {child}
+      </div>
+    ));
 
   return (
     <div
@@ -593,39 +739,36 @@ export function Carousel({
         ref={composedRef}
         tabIndex={0}
         onWheel={handleWheel}
+        onKeyDown={isTouchPaging ? paging.onKeyDown : undefined}
+        onFocus={isTouchPaging ? paging.onFocus : undefined}
         {...mergeProps(
           themeProps('carousel-scroller', {
             gap,
-            padding,
-            snap: hasSnap ? 'snap' : null,
-            edgeFade: hasEdgeFade ? 'edge-fade' : null,
+            padding: hasPaging ? null : padding,
+            snap: hasSnap && !hasPaging ? 'snap' : null,
+            paging: hasPaging ? 'paging' : null,
+            edgeFade: hasEdgeFade && !hasPaging ? 'edge-fade' : null,
           }),
           stylex.props(
             styles.scroller,
-            gapStyles[gap],
-            padding != null && paddingStyles[padding],
-            hasSnap && styles.snap,
+            !hasPaging && gapStyles[gap],
+            !hasPaging && padding != null && paddingStyles[padding],
+            ((hasSnap && !hasPaging) || (hasPaging && !isTouchPaging)) &&
+              styles.snap,
+            hasPaging && styles.pagingScroller,
+            isTouchPaging && styles.pagingTouchScroller,
             fadeStyle,
           ),
         )}>
-        {slides.map((child, index) => (
-          // APG carousel pattern: each slide container is a group with
-          // aria-roledescription="slide" and an "N of M" accessible name so
-          // ATs announce slide boundaries and position instead of anonymous
-          // generics.
+        {hasPaging ? (
           <div
-            // eslint-disable-next-line @eslint-react/no-array-index-key -- index fallback only applies to text/number children, which are positional by definition; elements keep their Children.toArray keys
-            key={isValidElement(child) ? child.key : index}
-            role="group"
-            aria-roledescription="slide"
-            aria-label={t('@astryx.carousel.slideLabel', {
-              current: index + 1,
-              total: slides.length,
-            })}
-            {...stylex.props(styles.item)}>
-            {child}
+            ref={trackRef}
+            {...stylex.props(styles.pagingTrack, gapStyles[gap])}>
+            {renderSlides()}
           </div>
-        ))}
+        ) : (
+          renderSlides()
+        )}
       </div>
 
       {hasButtons &&
