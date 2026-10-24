@@ -308,6 +308,40 @@ export const tabBar = {
    */
   minimizeFade: {response: 0.25, dampingRatio: 1},
   /**
+   * The bottom accessory (`UITabBarController.bottomAccessory`, Music's mini
+   * player): a capsule this tall, as wide as the bar and this far above it;
+   * minimized, it sits inline between the circle and the bar's trailing end,
+   * `accessoryGap` after the circle and concentric with the trailing cap.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, four tabs: the accessory at (21, 735, 360 × 48) over a
+   *   bar at (21, 791); minimized at (84, 798, 290 × 48) beside the circle
+   *   at (28, 798), and (84, 798, 234 × 48) ending 8 pt before the search
+   *   circle, Oct 24 2026
+   */
+  accessoryHeight: 48,
+  /**
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, 8 pt between the accessory and the bar (735 + 48 to
+   *   791) and between the minimized circle and the inline accessory (76 to
+   *   84), Oct 24 2026
+   */
+  accessoryGap: 8,
+  /**
+   * The accessory moving down inline as the bar minimizes: its x, y and
+   * width on one spring.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, a joint least-squares fit of the accessory's per-frame
+   *   x, y and width collapsing (rms 0.94 pt), Oct 24 2026
+   */
+  accessoryCollapse: {response: 0.405, dampingRatio: 0.745},
+  /**
+   * The accessory moving back up as the bar expands.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, a joint least-squares fit of the accessory's per-frame
+   *   x, y and width expanding (rms 1.1 pt), Oct 24 2026
+   */
+  accessoryExpand: {response: 0.329, dampingRatio: 0.731},
+  /**
    * Reduce Motion changes nothing: taps, drags and the lift animate as
    * usual (no cross-fade substitution).
    * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,

@@ -16,7 +16,12 @@ import {
   UserCircleIcon as UserSolid,
   BellIcon as BellSolid,
 } from '@heroicons/react/24/solid';
-import {TabBar, TabBarItem} from '@astryxdesign/lab';
+import {ForwardIcon, PauseIcon, PlayIcon} from '@heroicons/react/24/solid';
+import {
+  TabBar,
+  TabBarItem,
+  type TabBarAccessoryPlacement,
+} from '@astryxdesign/lab';
 import {Button} from '@astryxdesign/core/Button';
 import {Icon, type IconType} from '@astryxdesign/core/Icon';
 
@@ -96,11 +101,13 @@ function Bar({
   initial = 'home',
   badges = {library: 3},
   minimizeBehavior,
+  bottomAccessory,
 }: {
   sections?: Section[];
   initial?: string;
   badges?: Record<string, string | number>;
   minimizeBehavior?: 'never' | 'onScrollDown';
+  bottomAccessory?: (placement: TabBarAccessoryPlacement) => React.ReactNode;
 }) {
   const [value, setValue] = useState(initial);
   const [reselects, setReselects] = useState(0);
@@ -114,6 +121,7 @@ function Bar({
         onReselect={() => setReselects(n => n + 1)}
         label="Sections"
         minimizeBehavior={minimizeBehavior}
+        bottomAccessory={bottomAccessory}
         data-testid="tab-bar">
         {sections.map(section => (
           <TabBarItem
@@ -141,6 +149,73 @@ export const Default: Story = {
  */
 export const MinimizeOnScroll: Story = {
   render: () => <Bar initial="library" minimizeBehavior="onScrollDown" />,
+};
+
+/** A now-playing bar for the bottom accessory; inline, it drops "Next". */
+function NowPlaying({placement}: {placement: TabBarAccessoryPlacement}) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        width: '100%',
+        padding: '0 8px 0 6px',
+        boxSizing: 'border-box',
+      }}>
+      <div
+        aria-hidden
+        style={{
+          width: 36,
+          height: 36,
+          flexShrink: 0,
+          borderRadius: 8,
+          background: 'linear-gradient(135deg, #f97316, #db2777)',
+        }}
+      />
+      <div
+        style={{
+          flex: 1,
+          minWidth: 0,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          fontSize: 14,
+        }}>
+        Midnight City
+      </div>
+      <Button
+        label={isPlaying ? 'Pause' : 'Play'}
+        variant="ghost"
+        isIconOnly
+        icon={<Icon icon={isPlaying ? PauseIcon : PlayIcon} />}
+        onClick={() => setIsPlaying(playing => !playing)}
+      />
+      {placement === 'expanded' ? (
+        <Button
+          label="Next"
+          variant="ghost"
+          isIconOnly
+          icon={<Icon icon={ForwardIcon} />}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * A bottom accessory above the bar. Scroll the page down under a finger: it
+ * moves down inline beside the circle, and back up at the top.
+ */
+export const BottomAccessory: Story = {
+  render: () => (
+    <Bar
+      initial="library"
+      minimizeBehavior="onScrollDown"
+      bottomAccessory={placement => <NowPlaying placement={placement} />}
+    />
+  ),
 };
 
 /** Badges appear, change and disappear at once, as UIKit's do. */

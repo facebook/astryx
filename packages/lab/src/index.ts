@@ -339,6 +339,7 @@ export {
 export {
   TabBar,
   TabBarItem,
+  type TabBarAccessoryPlacement,
   type TabBarItemProps,
   type TabBarProps,
 } from './TabBar';

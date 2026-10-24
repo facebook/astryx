@@ -9,8 +9,8 @@
  *   (`@astryxdesign/core/motion/experimental`) and the UIKit tab-bar table
  * @output Exports useTabBarMinimize: whether the bar is minimized (UIKit's
  *   `tabBarMinimizeBehavior = .onScrollDown`), a way to expand it, and the
- *   refs TabBar puts on the platter's pieces, the items, the badges and the
- *   minimized circle's icon
+ *   refs TabBar puts on the platter's pieces, the items, the badges, the
+ *   minimized circle's icon and the bottom accessory
  * @position Internal to the lab TabBar (TabBar.tsx)
  *
  * WHEN (uikit/tabBar.ts, measured on iOS 26.2)
@@ -31,7 +31,11 @@
  * `minimizedSize` about the leading cap's centre (`collapseSize`). The items
  * and their badges fade out (`minimizeFade`) and the selected icon fades in
  * at the circle's centre; useTabBarLens.ts carries the lens into the circle.
- * Expanding plays the same motion back. Every animation runs on the
+ * The bottom accessory moves down inline beside the circle
+ * (`accessoryCollapse`): its box changes in CSS and it starts where it was,
+ * its glass drawn in the same three pieces so its width changes with
+ * transforms too, its content laid out at once for its new place. Expanding
+ * plays the same motion back (`accessoryExpand` for the accessory). Every animation runs on the
  * compositor, transforms and opacity only.
  *
  * SYNC: When modified, update TabBar.tsx, useTabBarLens.ts and
@@ -52,6 +56,7 @@ import {
   useAnimator,
   type Animator,
 } from '@astryxdesign/core/motion/experimental';
+import {accessoryBox} from './tabBarModel';
 
 const {tabBar} = uikit;
 
@@ -86,6 +91,12 @@ export interface TabBarMinimize {
   readonly badges: (element: HTMLElement | null) => void;
   /** The minimized circle's icon: fades in. */
   readonly circleIcon: (element: HTMLElement | null) => void;
+  /** The bottom accessory: moves between its two places. */
+  readonly accessory: (element: HTMLElement | null) => void;
+  /** The accessory glass's middle: its width. */
+  readonly accessoryMiddle: (element: HTMLElement | null) => void;
+  /** The accessory glass's trailing cap: its width. */
+  readonly accessoryEnd: (element: HTMLElement | null) => void;
 }
 
 /** One animator per item, stable across renders. */
@@ -188,6 +199,9 @@ export function useTabBarMinimize({
   const badges = useAnimator();
   const circleIcon = useAnimator({initial: {opacity: 0}});
   const items = useAnimatorList(count);
+  const accessory = useAnimator();
+  const accessoryMiddle = useAnimator();
+  const accessoryEnd = useAnimator();
 
   const previousRef = useRef(isMinimized);
   useLayoutEffect(() => {
@@ -234,6 +248,31 @@ export function useTabBarMinimize({
       isMinimized ? size : fade,
       options,
     );
+    // The accessory's box changed in CSS this frame: it starts where it was
+    // on screen (its offset and width carried over) and springs to rest.
+    const width = element.offsetWidth;
+    const from = accessoryBox(width, was);
+    const to = accessoryBox(width, isMinimized);
+    const sign = isRtl ? -1 : 1;
+    const cap = tabBar.accessoryHeight;
+    const moved = {
+      x: accessory.animator.get('x', now) + sign * (from.start - to.start),
+      y: accessory.animator.get('y', now) + (from.top - to.top),
+    };
+    const end =
+      accessoryEnd.animator.get('x', now) + sign * (from.width - to.width);
+    const middle =
+      (accessoryMiddle.animator.get('scaleX', now) * (from.width - cap)) /
+      (to.width - cap);
+    accessory.animator.set(moved);
+    accessoryEnd.animator.set({x: end});
+    accessoryMiddle.animator.set({scaleX: middle});
+    const move = {
+      spring: isMinimized ? tabBar.accessoryCollapse : tabBar.accessoryExpand,
+    };
+    accessory.animator.animate({x: 0, y: 0}, move, options);
+    accessoryEnd.animator.animate({x: 0}, move, options);
+    accessoryMiddle.animator.animate({scaleX: 1}, move, options);
   }, [
     isMinimized,
     count,
@@ -244,6 +283,9 @@ export function useTabBarMinimize({
     badges,
     circleIcon,
     items,
+    accessory,
+    accessoryMiddle,
+    accessoryEnd,
   ]);
 
   return {
@@ -255,5 +297,8 @@ export function useTabBarMinimize({
     item: index => items.refs[index],
     badges: badges.ref,
     circleIcon: circleIcon.ref,
+    accessory: accessory.ref,
+    accessoryMiddle: accessoryMiddle.ref,
+    accessoryEnd: accessoryEnd.ref,
   };
 }
