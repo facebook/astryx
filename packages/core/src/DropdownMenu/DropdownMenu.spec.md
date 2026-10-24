@@ -235,6 +235,7 @@ visibility helper.
 | Caller-rendered item start content | Presents arbitrary React content directly in an action-row start slot.        | Caller-supplied content        | Context-dependent | FR1, FR3           |
 | Checkbox indicator                 | Draws the decorative checkbox state for a checkbox action row.                | `component:Indicator`          | Supporting        | FR1, FR3           |
 | Radio indicator                    | Draws shared radio chrome with the current menu-specific radio target.        | Current source and Indicator   | Supporting        | FR1, FR2, FR3      |
+| Radio cell                         | Draws caller content as a tile; the checked cell has an accent border.        | DropdownMenuRadioItem DEC-1    | Context-dependent | RadioItem FR9      |
 | Pointer section heading            | Labels a grouped set of pointer action rows.                                  | Current source and public docs | Supporting        | FR1, FR2           |
 | Pointer divider                    | Separates groups of pointer action rows.                                      | Current source and public docs | Supporting        | FR1, FR2           |
 | Pointer submenu indicator icon     | Identifies a pointer action row that opens a nested flyout.                   | Current source and public docs | Supporting        | FR1, FR2           |
@@ -280,6 +281,11 @@ than adding a DropdownMenu-owned heading target.
     }
   },
   "Radio indicator": {"target": "dropdown-menu-radio"},
+  "Radio cell": {
+    "none": {
+      "reason": "intentional: The tile is caller content; its checked border reads the accent token and its focus ring the shared focus tokens, so it adds no DropdownMenu target."
+    }
+  },
   "Pointer section heading": {"target": "dropdown-menu-section-heading"},
   "Pointer divider": {"target": "dropdown-menu-divider"},
   "Pointer submenu indicator icon": {

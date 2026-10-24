@@ -50,6 +50,12 @@ const anatomy = [
       'Decorative shared radio indicator with an additional menu-owned target.',
   },
   {
+    name: 'Radio cell',
+    required: false,
+    description:
+      'A radio item given children: the caller content as a tile, named by its label, with an accent border when checked.',
+  },
+  {
     name: 'Pointer section heading',
     required: false,
     description:
