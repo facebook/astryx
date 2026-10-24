@@ -108,6 +108,58 @@ test.describe('selection controls under a finger', () => {
     await expect(page.getByRole('radio').nth(1)).toBeChecked();
   });
 
+  // A label-hidden checkbox is a marker in a composer's row: the composer
+  // keeps its row height and the marker its 24 px target, so a taller target
+  // never reaches into the next row.
+  for (const [what, story] of [
+    ['a Markdown task item', 'core-markdown--default'],
+    ['a compact table selection cell', 'core-tableselection--compact'],
+  ] as const) {
+    test(`${what} keeps its height under a finger`, async ({page}) => {
+      await openStory(page, storybook(), story);
+      const marker = await page
+        .locator('#storybook-root input[type="checkbox"]')
+        .first()
+        .evaluate(input => {
+          const row = input.closest('[data-astryx-pressable]');
+          if (row == null) {
+            throw new Error('no checkbox row');
+          }
+          const r = input.getBoundingClientRect();
+          return {
+            row: row.getBoundingClientRect().height,
+            input: {width: r.width, height: r.height},
+          };
+        });
+      expect(marker.row).toBeLessThan(SIZE);
+      expect(marker.input.width).toBeLessThanOrEqual(24.5);
+      expect(marker.input.height).toBeLessThanOrEqual(24.5);
+    });
+  }
+
+  test('a MultiSelector option keeps its height under a finger', async ({
+    page,
+  }) => {
+    await openStory(page, storybook(), 'core-multiselector--default');
+    await page.getByRole('combobox').first().tap();
+    const option = page.getByRole('option').first();
+    await option.waitFor();
+    const marker = await option.evaluate(el => {
+      const input = el.querySelector('input[type="checkbox"]');
+      if (input == null) {
+        throw new Error('no checkbox in the option');
+      }
+      const r = input.getBoundingClientRect();
+      return {
+        option: el.getBoundingClientRect().height,
+        input: {width: r.width, height: r.height},
+      };
+    });
+    expect(marker.option).toBeLessThan(SIZE);
+    expect(marker.input.width).toBeLessThanOrEqual(24.5);
+    expect(marker.input.height).toBeLessThanOrEqual(24.5);
+  });
+
   test('a mouse keeps the drawn sizes (negative control)', async ({
     browser,
   }) => {

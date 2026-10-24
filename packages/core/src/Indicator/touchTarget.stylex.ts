@@ -30,8 +30,8 @@ export const touchTargetConsts = stylex.defineConsts({
 });
 
 /**
- * The touch presentation's query (utils/touchPresentation.ts TOUCH_QUERY),
- * written out: StyleX needs a literal media key.
+ * The touch presentation's query, written out: StyleX needs a literal media
+ * key.
  */
 const TOUCH = '@media (pointer: coarse)';
 

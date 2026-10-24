@@ -137,6 +137,12 @@ const styles = stylex.create({
     },
     zIndex: 1,
   },
+  inputCoarse: {
+    '@media (pointer: coarse)': {
+      minInlineSize: 24,
+      minBlockSize: 24,
+    },
+  },
   inputDisabled: {
     cursor: 'default',
   },
@@ -436,8 +442,11 @@ export function CheckboxInput({
         }}
         {...(isDisabled ? undefined : pressable)}
         {...stylex.props(
-          // Under a finger the row is at least as tall as an iOS control.
-          touchTargetStyles.row,
+          // Under a finger the row is at least as tall as an iOS control,
+          // when the checkbox is its own labelled row. A label-hidden
+          // checkbox is a marker in a composer's row (a MultiSelector option,
+          // a table's selection cell, a task item), which keeps its height.
+          !isLabelHidden && touchTargetStyles.row,
           styles.container,
           isLabelHidden && styles.containerLabelHidden,
           // Hover and focus reach the checkbox visual through this ancestor
@@ -504,8 +513,10 @@ export function CheckboxInput({
               styles.input,
               rtlStyles.centerInline('-50%'),
               // Under a finger the input is the control's whole target, 44
-              // pt each way like an iOS control, centred on the box.
-              touchTargetStyles.control,
+              // pt each way like an iOS control, centred on the box. A
+              // label-hidden marker keeps its 24 px target: in a composer's
+              // shorter row a 44 px one would reach into the next row.
+              isLabelHidden ? styles.inputCoarse : touchTargetStyles.control,
               wrapperSizeStyles[size],
               isDisabled && styles.inputDisabled,
             )}
