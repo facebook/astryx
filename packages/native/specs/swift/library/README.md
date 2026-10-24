@@ -2,7 +2,7 @@
 
 Rules that every Astryx Swift component or Swift build step shares, one
 concern per file. A component spec (`<Name>.spec.md` in the component's own
-folder, such as `swift-ios-1/core/Button/Button.spec.md`, from
+folder, such as `apple/Sources/Astryx/Button/Button.spec.md`, from
 `../../TEMPLATE.md`) follows these and records only where a component differs.
 
 These specs apply AST-082 (native-first surfaces) and AST-093 (native component

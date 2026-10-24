@@ -55,17 +55,15 @@ validating, and reviewing individual native components while
 - **FR1 — A native component's spec lives beside its implementation.** Each
   native component has its own folder in its language's implementation, named
   as the core component, and its spec is `<Name>.spec.md` in that folder, as
-  core does (`packages/core/src/<Name>/<Name>.spec.md`). For Swift that is
-  `packages/native/swift-ios-<n>/core/<Name>/<Name>.spec.md`, beside the
-  component's views. `<Name>` is the core component's name. The spec follows
+  core does (`packages/core/src/<Name>/<Name>.spec.md`). Each language has one
+  implementation package; for Swift that is `packages/native/apple/`, and the
+  spec is `packages/native/apple/Sources/Astryx/<Name>/<Name>.spec.md`, beside
+  the component's views. `<Name>` is the core component's name. The spec follows
   `packages/native/specs/TEMPLATE.md`: summary, contract, native control,
   platform guidelines, brand through the theme, states, accessibility, test and
   validation, and open questions. One spec covers every implementation of the
   component in that language, on every platform the language serves (Swift
-  serves `ios` and `macos`). When more than one package in a language implements
-  a component, such as a later `swift-ios-<n>` generation or a macOS-only
-  package, the spec lives in that component's folder in the lowest-numbered
-  live package of the language. Rules that apply across a language's components
+  serves `ios` and `macos`). Rules that apply across a language's components
   live under `packages/native/specs/<language>/`. A merged native component spec
   describes that component's implementations in that language. It never changes
   the core contract and never contradicts `spec:AST-082` or this record; where
@@ -142,9 +140,10 @@ validating, and reviewing individual native components while
 - No architecture, family, contributing, or consumer-doc record changes.
 - No native component spec exists yet.
 - Component folders live inside a language's implementation package. For
-  Swift that is `swift-ios-1`, which arrives with the SwiftUI package; until it
-  is on `main`, no component folder exists and no component spec can be added.
-- The first Swift views in `swift-ios-1` (Banner, Button, Card, Heading, Text,
+  Swift that is `packages/native/apple/`, whose `Astryx` product holds the
+  SwiftUI views; until they are on `main`, no component folder exists and no
+  component spec can be added.
+- The first Swift views in the `Astryx` product (Banner, Button, Card, Heading, Text,
   and TextInput) take hand-written parameters, including `action` for the
   contract's `onClick`, until they move to the generated contracts. Until then
   they are the only native components exempt from FR5's generated-parameter
