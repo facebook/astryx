@@ -117,14 +117,21 @@ describe('EmptyState', () => {
     expect(divs).toHaveLength(2); // container + text group
   });
 
-  it('has role="status" on the container', () => {
-    render(<EmptyState title="No results" />);
-    expect(screen.getByRole('status')).toBeInTheDocument();
+  it('does not make the root a live region', () => {
+    render(
+      <EmptyState
+        title="No results"
+        description="Try again."
+        data-testid="empty-state"
+      />,
+    );
+    const root = screen.getByTestId('empty-state');
+    expect(root.parentElement?.querySelector('[role], [aria-live]')).toBeNull();
+    expect(root).toHaveTextContent('No resultsTry again.');
   });
 
   it('renders compact variant', () => {
     render(<EmptyState title="No results" isCompact />);
-    expect(screen.getByRole('status')).toBeInTheDocument();
     expect(screen.getByText('No results')).toBeInTheDocument();
   });
 
@@ -141,9 +148,15 @@ describe('EmptyState', () => {
 
   it('does not render empty optional slot wrappers', () => {
     const {container} = render(
-      <EmptyState title="No results" description="" icon={false} actions="" />,
+      <EmptyState
+        title="No results"
+        description=""
+        icon={false}
+        actions=""
+        data-testid="empty-state"
+      />,
     );
-    const root = screen.getByRole('status');
+    const root = screen.getByTestId('empty-state');
     expect(root).toHaveTextContent('No results');
     expect(root).toHaveTextContent(/^No results$/);
     expect(root.children).toHaveLength(1);
@@ -153,7 +166,7 @@ describe('EmptyState', () => {
     ).toBeNull();
   });
 
-  it('composes root props and keeps component semantics authoritative', () => {
+  it('composes root props, including a caller role', () => {
     const onClick = vi.fn();
     const expectedXstyleClass = stylex.props(testStyles.root).className;
     if (expectedXstyleClass == null) {
@@ -171,7 +184,7 @@ describe('EmptyState', () => {
       />,
     );
 
-    const root = screen.getByRole('status');
+    const root = screen.getByRole('region');
     expect(root).toHaveClass('astryx-empty-state', 'consumer-class');
     expect(root).toHaveClass(expectedXstyleClass);
     expect(root).toHaveAttribute('data-owner', 'consumer');
@@ -188,10 +201,11 @@ describe('EmptyState', () => {
         icon={<span data-testid="icon">Icon</span>}
         actions={<button type="button">Retry</button>}
         isCompact
+        data-testid="empty-state"
       />,
     );
 
-    const root = screen.getByRole('status');
+    const root = screen.getByTestId('empty-state');
     expect(root).toHaveAttribute('data-variant', 'compact');
     expect(root.children).toHaveLength(3);
     expect(root.children[0]).toContainElement(screen.getByTestId('icon'));
