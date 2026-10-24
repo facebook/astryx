@@ -613,6 +613,8 @@ export function useSheetGestures({
   // curve, as UIKit recomputes its dim from position every frame.
   const scrimAnimatorRef = useRef<Animator | null>(null);
   const isScrimTrackingRef = useRef(false);
+  // Whether the dim playing is a release's, which a close takes back.
+  const scrimOwnerRef = useRef<'release' | null>(null);
   // Stops a release's dim where it is, and says where that was.
   const stopScrimFollow = useCallback((): number | null => {
     const scrim = scrimAnimatorRef.current;
@@ -632,6 +634,7 @@ export function useSheetGestures({
     if (readTouchPresentation().idiom !== 'ios') {
       return;
     }
+    scrimOwnerRef.current = null;
     const current = stopScrimFollow();
     if (current != null) {
       onScrimOpacityRef.current?.(current);
@@ -644,6 +647,7 @@ export function useSheetGestures({
   // The motion is over: the host gets the dim back at its final value.
   const endScrimTracking = useCallback(
     (dim: number) => {
+      scrimOwnerRef.current = null;
       stopScrimFollow();
       onScrimOpacityRef.current?.(dim);
       if (isScrimTrackingRef.current) {
@@ -653,6 +657,16 @@ export function useSheetGestures({
     },
     [stopScrimFollow],
   );
+  // The sheet is closing: the host gets the dim back as it is, unpinned, so
+  // its own close fade runs; nothing is written over it.
+  const releaseScrimTracking = useCallback(() => {
+    scrimOwnerRef.current = null;
+    stopScrimFollow();
+    if (isScrimTrackingRef.current) {
+      isScrimTrackingRef.current = false;
+      onScrimTrackingRef.current?.(false);
+    }
+  }, [stopScrimFollow]);
   // Plays the dim along the sheet's curve: `offsetAt(t)` is where the sheet
   // is `t` s after `at`.
   const followScrim = useCallback(
@@ -889,6 +903,8 @@ export function useSheetGestures({
       gestureExitRef.current = null;
       travelHandleRef.current = null;
       animator.set({y: 0});
+      // And the dialog's ::backdrop dim: its animation stops, and the host
+      // gets its own easing back.
       stopScrimFollow();
       if (isScrimTrackingRef.current) {
         isScrimTrackingRef.current = false;
@@ -896,6 +912,15 @@ export function useSheetGestures({
       }
     }
   }, [animator, isOpen, recordSettledLayoutOffset, stopScrimFollow]);
+
+  // Syncs the dialog's ::backdrop dim with a close: a release still playing
+  // it stops, and the host's easing comes back unpinned, so the host's close
+  // fade runs instead of the page staying dimmed until the dialog closes.
+  useEffect(() => {
+    if (!isOpen && scrimOwnerRef.current === 'release') {
+      releaseScrimTracking();
+    }
+  }, [isOpen, releaseScrimTracking]);
 
   // The fully-open height for detent math. Prefer the ResizeObserver-locked
   // value; fall back to a live measure of the tracked sheet element if the
@@ -1109,6 +1134,7 @@ export function useSheetGestures({
         const curve = themeCurve(from, to, motion);
         handle = animator.play({y: curve}, {at, crossfadeAs, touchRelease});
         if (dimFor != null) {
+          scrimOwnerRef.current = 'release';
           followScrim(
             {duration: curve.duration, offsetAt: t => base + curve.at(t)},
             dimFor,
@@ -1137,6 +1163,7 @@ export function useSheetGestures({
         );
         if (dimFor != null) {
           const curve = solveSpring(toSpring(spring), {from, to, velocity: v});
+          scrimOwnerRef.current = 'release';
           followScrim(
             {
               duration: curve.settleTime(0.5),
@@ -1157,7 +1184,12 @@ export function useSheetGestures({
           return;
         }
         if (dimFor != null) {
-          endScrimTracking(dimFor(offset));
+          // Closed meanwhile: the release's dim isn't written back.
+          if (isOpenRef.current) {
+            endScrimTracking(dimFor(offset));
+          } else {
+            releaseScrimTracking();
+          }
         }
         if (settlingLayoutOffsetRef.current != null) {
           completeScrollAreaSettle();
@@ -1165,7 +1197,13 @@ export function useSheetGestures({
       });
       return handle;
     },
-    [animator, completeScrollAreaSettle, endScrimTracking, followScrim],
+    [
+      animator,
+      completeScrollAreaSettle,
+      endScrimTracking,
+      followScrim,
+      releaseScrimTracking,
+    ],
   );
 
   // The host calls this right after it writes a resting transform: the travel
