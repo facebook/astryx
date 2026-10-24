@@ -29,6 +29,7 @@ import type {ComponentStyleMap, DefinedTheme} from './defineTheme';
 import {
   normalizeThemeAdaptations,
   resolveThemeAdaptationRules,
+  type ResolvedThemeAdaptationRule,
 } from './themeAdaptations';
 import {parseStyleKey} from '../utils/parseStyleKey';
 import {getDerivedVars} from './derivedVarRegistry';
@@ -37,6 +38,12 @@ import {
   checkDeclarationName,
   checkDeclarationValue,
 } from './declarationBoundary';
+import {
+  DYNAMIC_TYPE_SUPPORTS,
+  dynamicTypeCategoryRules,
+  scaledFontSizeEntries,
+} from './dynamicType';
+import {textSizeDefaults} from './tokens.stylex';
 
 /**
  * Theme @scope selectors.
@@ -1111,6 +1118,30 @@ function generateAdaptationMediaBlock(
 }
 
 /**
+ * Generate CSS for a theme's ordered adaptation rules, then for the reader's
+ * text size (Dynamic Type) when the theme follows it.
+ *
+ * The text size comes after every authored rule, so a rule that changes the
+ * type scale is scaled inside its own condition too.
+ */
+export function generateAdaptationCSS(
+  theme: DefinedTheme,
+  warnings?: string[],
+): ThemeCSSOutput {
+  const authored = generateAuthoredAdaptationCSS(theme, warnings);
+  const dynamicType = generateDynamicTypeCSS(theme);
+  if (!dynamicType) {
+    return authored;
+  }
+  return {
+    prose: authored.prose,
+    component: authored.component
+      ? `${authored.component}\n\n${dynamicType}`
+      : dynamicType,
+  };
+}
+
+/**
  * Generate CSS for a theme's ordered adaptation rules.
  *
  * Each authored rule stays a separate media block in declaration order. Blocks
@@ -1119,7 +1150,7 @@ function generateAdaptationMediaBlock(
  * rule. Bare prose follows semantic variables, so token writes need no duplicate
  * prose selectors here.
  */
-export function generateAdaptationCSS(
+function generateAuthoredAdaptationCSS(
   theme: DefinedTheme,
   warnings?: string[],
 ): ThemeCSSOutput {
@@ -1207,6 +1238,62 @@ export function generateAdaptationCSS(
   }
 
   return {prose: '', component: blocks.join('\n\n')};
+}
+
+/** Drops in the Dynamic Type copy were already reported for the original. */
+const silentSink: DiagnosticSink = () => {};
+
+/**
+ * The reader's text size (iOS Dynamic Type) for a theme with
+ * `typography.dynamicType`, or an empty string.
+ *
+ * Inside `@supports` for iOS WebKit: the rules that give each text size
+ * category its scales on `<html>` (the root Theme writes the category there),
+ * then the theme's raw font-size steps re-declared as their own values times
+ * their curve's scale, at the root and inside every adaptation rule that
+ * writes them. Nothing else changes, and at Large every scale is 1. See
+ * dynamicType.ts.
+ */
+function generateDynamicTypeCSS(theme: DefinedTheme): string {
+  if (theme.__axes?.typography?.dynamicType !== true) {
+    return '';
+  }
+  const rules: ReadonlyArray<ResolvedThemeAdaptationRule> =
+    theme.__adaptationRules ??
+    (theme.__adaptations
+      ? (resolveThemeAdaptationRules(
+          theme.name,
+          normalizeThemeAdaptations(theme.name, theme.__adaptations, undefined),
+          theme.__axes ?? {},
+          theme.tokens,
+          theme.localTokens,
+          theme.components,
+        ) ?? [])
+      : []);
+  const scopeSelector = themeScopeStart(theme.name);
+  const scoped = (tokens: Record<string, string>, location: string) => {
+    const declarations = joinDeclarations(
+      scaledFontSizeEntries(tokens),
+      location,
+      silentSink,
+    );
+    return declarations
+      ? `@scope (${scopeSelector}) to (${THEME_SCOPE_TO}) {\n  :scope {\n${declarations}\n  }\n}`
+      : '';
+  };
+
+  const parts = [...dynamicTypeCategoryRules()];
+  const root = scoped({...textSizeDefaults, ...theme.tokens}, 'tokens');
+  if (root) {
+    parts.push(root);
+  }
+  for (const [index, rule] of rules.entries()) {
+    const block = scoped(rule.tokens ?? {}, `adaptations[${index}].tokens`);
+    if (block) {
+      parts.push(`@media ${rule.query} {\n${block}\n}`);
+    }
+  }
+  return `@supports ${DYNAMIC_TYPE_SUPPORTS} {\n${parts.join('\n\n')}\n}`;
 }
 
 /** Indent the rule start without rewriting newlines inside authored values. */
