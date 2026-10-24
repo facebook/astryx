@@ -412,22 +412,32 @@ test('the rise does no Layout or Paint per frame', async ({
   // No polling inside the trace: reading a sticky element's presented style
   // from the test forces a layout every frame by itself.
   let rise = {from: 0, to: 0};
-  const trace = await traceRendering(page, async () => {
-    rise = await page.evaluate(async cover => {
-      const from = performance.timeOrigin + performance.now();
-      (window as unknown as {__keyboard: (c: number) => void}).__keyboard(
-        cover,
-      );
-      await new Promise(resolve => setTimeout(resolve, 450));
-      return {from, to: performance.timeOrigin + performance.now()};
-    }, COVER);
-  });
+  const trace = await traceRendering(
+    page,
+    async () => {
+      rise = await page.evaluate(async cover => {
+        const from = performance.timeOrigin + performance.now();
+        (window as unknown as {__keyboard: (c: number) => void}).__keyboard(
+          cover,
+        );
+        await new Promise(resolve => setTimeout(resolve, 450));
+        return {from, to: performance.timeOrigin + performance.now()};
+      }, COVER);
+    },
+    {invalidations: true},
+  );
   // The steady part of the rise, 150–400 ms after the report. Its start lays
   // out and paints a few times (the spacer, the scroll to the newest message,
   // the scroll's handlers), within 75 ms of the report at a 6x CPU slowdown;
   // its end (about 480 ms) hands the layers back, which lays out once. A
-  // window that followed the late timer under load would take that in.
-  const during = countBetween(trace, rise.from + 150, rise.from + 400);
+  // window that followed the late timer under load would take that in. On a
+  // loaded machine Chrome may also deliver the dock's and the messages'
+  // compositor start times late and make one pass for them by itself (no
+  // script, every recalculation for `Animation` on those composited
+  // elements): that pass is Chrome's, not the rise's, and is left out.
+  const during = countBetween(trace, rise.from + 150, rise.from + 400, {
+    skipCompositorAnimationUpdates: true,
+  });
   // On failure, every rendering event of the rise and the long tasks, in ms
   // after the report.
   const detail = JSON.stringify({
@@ -439,6 +449,14 @@ test('the rise does no Layout or Paint per frame', async ({
       task =>
         `${Math.round(task.start - rise.from)}+${Math.round(task.durationMs)}`,
     ),
+    recalcs: (trace.styleInvalidations ?? [])
+      .filter(inv => inv.t >= rise.from - 20 && inv.t <= rise.from + 500)
+      .map(
+        inv => `${inv.reason}#${inv.nodeId}@${Math.round(inv.t - rise.from)}`,
+      ),
+    scripts: (trace.scripts ?? [])
+      .filter(t => t >= rise.from + 100 && t <= rise.from + 450)
+      .map(t => Math.round(t - rise.from)),
   });
   expect(during.Layout ?? 0, detail).toBe(0);
   expect(during.Paint ?? 0, detail).toBe(0);
