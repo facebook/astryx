@@ -665,8 +665,8 @@ export function Slider({ref, ...props}: SliderProps) {
     [isRange, values],
   );
 
-  // Set while a drag holds two coincident thumbs at their shared value and
-  // no movement has said which way it goes; the first value off it picks
+  // The pointer's value at a press on two coincident thumbs, while no
+  // movement has said which way the drag goes; the first value off it picks
   // the thumb that can travel that way (see handlePointerMove).
   const coincidentDragRef = useRef<number | null>(null);
 
@@ -779,23 +779,23 @@ export function Slider({ref, ...props}: SliderProps) {
           : Array.from(thumbs).indexOf(pressedThumb);
       // A direct thumb press owns that thumb; track and mark presses choose
       // the nearest value. Two thumbs on one value are the exception: only
-      // one of them can travel toward the press, so the side of the press
-      // picks it, and a press on the shared value itself keeps the pressed
-      // thumb until the first movement picks a side.
+      // one of them can travel toward where the pointer goes. A track press
+      // beside them picks the thumb on its side. A press on the thumbs
+      // themselves (or on their shared value) moves nothing: the pressed
+      // thumb holds the press until the pointer moves, and the direction of
+      // that first movement from the press picks the thumb.
       const isCoincident = isRange && values[0] === values[1];
       let thumbIndex =
         pressedThumbIndex >= 0 ? pressedThumbIndex : getClosestThumb(newVal);
-      coincidentDragRef.current = null;
-      if (isCoincident) {
-        if (newVal === values[0]) {
-          coincidentDragRef.current = values[0];
-        } else {
-          thumbIndex = newVal > values[0] ? 1 : 0;
-        }
+      const parks =
+        isCoincident && (pressedThumbIndex >= 0 || newVal === values[0]);
+      coincidentDragRef.current = parks ? newVal : null;
+      if (isCoincident && !parks) {
+        thumbIndex = newVal > values[0] ? 1 : 0;
       }
       draggingThumbRef.current = thumbIndex;
       setDraggingThumb(thumbIndex);
-      updateValue(thumbIndex, newVal);
+      updateValue(thumbIndex, parks ? values[thumbIndex] : newVal);
 
       // Focus the thumb that owns this drag.
       thumbs?.[thumbIndex]?.focus();
@@ -830,15 +830,16 @@ export function Slider({ref, ...props}: SliderProps) {
         return;
       }
       const newVal = getValueFromPosition(e.clientX, e.clientY);
-      const shared = coincidentDragRef.current;
-      if (shared !== null) {
-        if (newVal === shared) {
+      const pressValue = coincidentDragRef.current;
+      if (pressValue !== null) {
+        if (newVal === pressValue) {
           return;
         }
-        // The first movement off the shared value hands the drag to the
-        // thumb that can travel that way, with its focus and pressed paint.
+        // The first movement from a press on coincident thumbs hands the
+        // drag to the thumb that can travel that way, with its focus and
+        // pressed paint.
         coincidentDragRef.current = null;
-        const thumbIndex = newVal > shared ? 1 : 0;
+        const thumbIndex = newVal > pressValue ? 1 : 0;
         if (thumbIndex !== draggingThumbRef.current) {
           draggingThumbRef.current = thumbIndex;
           setDraggingThumb(thumbIndex);
@@ -1096,7 +1097,11 @@ export function Slider({ref, ...props}: SliderProps) {
           placement={tooltipPlacement}
           delay={0}
           focusTrigger="always"
-          isOpen={draggingThumb === thumbIndex ? true : undefined}>
+          // A drag keeps its own thumb's value showing and closes the other
+          // thumb's, which a drag handed over from it may have forced open.
+          isOpen={
+            draggingThumb === null ? undefined : draggingThumb === thumbIndex
+          }>
           {thumbElement}
         </Tooltip>
       );

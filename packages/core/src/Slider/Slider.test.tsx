@@ -1679,6 +1679,55 @@ describe('coincident range thumbs', () => {
     expect(declaresPressedOverlay(start)).toBe(false);
   });
 
+  it('commits a press beside the shared value to no thumb until the pointer moves', () => {
+    const onChange = vi.fn();
+    const {unmount} = render(
+      <ControlledRange initial={[80, 80]} onChange={onChange} />,
+    );
+    mockGroupRect();
+    let [, end] = screen.getAllByRole('slider');
+    // A press on the thumbs a little below their value (79), dragged toward
+    // the maximum: the upper thumb follows.
+    fireEvent.pointerDown(end, {clientX: 152, clientY: 10, pointerId: 1});
+    expect(onChange).toHaveBeenLastCalledWith([80, 80]);
+    fireEvent.pointerMove(end, {clientX: 172, clientY: 10, pointerId: 1});
+    expect(onChange).toHaveBeenLastCalledWith([80, 90]);
+    fireEvent.pointerUp(end, {clientX: 172, clientY: 10, pointerId: 1});
+    unmount();
+
+    // A press a little above it (81), dragged toward the minimum: the lower
+    // thumb follows.
+    render(<ControlledRange initial={[80, 80]} onChange={onChange} />);
+    mockGroupRect();
+    const [start, upper] = screen.getAllByRole('slider');
+    end = upper;
+    fireEvent.pointerDown(end, {clientX: 156, clientY: 10, pointerId: 1});
+    expect(onChange).toHaveBeenLastCalledWith([80, 80]);
+    fireEvent.pointerMove(end, {clientX: 64, clientY: 10, pointerId: 1});
+    expect(onChange).toHaveBeenLastCalledWith([30, 80]);
+    expect(start).toHaveAttribute('aria-valuenow', '30');
+  });
+
+  it('closes the value tooltip of the thumb a drag was handed away from', () => {
+    render(<ControlledRange initial={[50, 50]} onChange={vi.fn()} />);
+    mockGroupRect();
+    const [start, end] = screen.getAllByRole('slider');
+    const tipOf = (thumb: HTMLElement) =>
+      document.getElementById(
+        (thumb.getAttribute('aria-describedby') ?? '')
+          .split(' ')
+          .find(
+            id =>
+              document.getElementById(id)?.getAttribute('role') === 'tooltip',
+          ) ?? '',
+      );
+    fireEvent.pointerDown(end, {clientX: 100, clientY: 10, pointerId: 1});
+    fireEvent.pointerMove(end, {clientX: 64, clientY: 10, pointerId: 1});
+    fireEvent.pointerUp(end, {clientX: 64, clientY: 10, pointerId: 1});
+    expect(document.activeElement).toBe(start);
+    expect(tipOf(end)).not.toHaveAttribute('popover-open');
+  });
+
   it('moves the upper thumb for a track press above the shared value', () => {
     const onChange = vi.fn();
     render(<ControlledRange initial={[50, 50]} onChange={onChange} />);
