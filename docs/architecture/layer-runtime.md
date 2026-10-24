@@ -186,9 +186,9 @@ edge it meets. A layer that keeps its anchor clear (Tooltip) carries a second
 list beside the first: when `show()` finds the first list settled the box over
 the anchor, it switches to beside the anchor on the inline end, then the inline
 start, at the content's inline size, then the block side with more room, then
-the other, each sized to the room there, and the layer scrolls its overflow.
-Chromium tries no more than five options, so the second list replaces the
-first rather than extending it.
+the other, each sized to the room there, keeps that list until it next opens,
+and scrolls only while its content overflows. Chromium tries no more than five
+options, so the second list replaces the first rather than extending it.
 Once the anchor has left the viewport the runtime pins the layer's
 self-alignment `unsafe` toward the anchor, so the layer holds the position its
 flips give it and holds its size rather than sliding to the edge. Components
@@ -199,9 +199,11 @@ same frame as the render that produced it; the runtime measures nothing after
 paint to apply them. Anchor visibility is read synchronously in a layout effect
 before the layer's first paint and then observed while the layer is open, so a
 layer opened with its anchor already out of view holds from its first frame.
-Whether a layer that keeps its anchor clear covers its anchor is read inside
-`show()`, right after the popover is shown, so its switch lands before any
-frame paints. A layer never paints at a geometry it is about to correct.
+Whether a layer that keeps its anchor clear covers its anchor, and whether
+its content overflows, is read inside `show()` and the open-remount path right
+after the popover is shown, and again while it is open from ResizeObserver
+callbacks and scroll and resize events, all of which run before the frame
+paints. A layer never paints at a geometry it is about to correct.
 
 ### Current browser support behavior
 

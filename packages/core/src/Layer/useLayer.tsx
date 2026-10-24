@@ -38,6 +38,7 @@ import {layerInsetProperties} from './layerInset';
 import {
   LAYER_CLEARANCE_PROPERTY,
   LAYER_CLEARS_ANCHOR_ATTRIBUTE,
+  LAYER_SCROLLS_ATTRIBUTE,
   LAYER_CLEAR_FALLBACKS_PROPERTY,
   LAYER_TRY_FALLBACKS_PROPERTY,
   ensureSlideRules,
@@ -444,32 +445,37 @@ function toCssLength(value: number | string): string {
 
 /**
  * For a layer that must never cover its anchor (spec:AST-059 FR4): read where
- * the standard fallback list settled the just-shown layer and, if its box
- * covers the anchor, switch it to its anchor-clear list. This runs inside
- * `show()`, right after `showPopover()`, so the read and the switch land in
- * the same task as the show and the first frame painted is the settled one
- * (FR8). Only a box that overlaps the anchor counts; a layer flush against it
- * does not.
+ * its fallback list settled it and, if its box covers the anchor, switch it to
+ * its anchor-clear list; then let it scroll only if its content overflows the
+ * box it was given (FR3). The runtime calls this in the same task as every
+ * show and remount, and while the layer is open whenever its size, its
+ * content's size, its anchor's size, a scroll position or the viewport
+ * changes. Each of those reads lands before the next frame paints (FR8). Only
+ * a box that overlaps the anchor counts; a layer flush against it does not.
+ * Once switched, a layer keeps its anchor-clear list until it next opens, so
+ * it never jumps back over its trigger while open.
  */
-function clearAnchorIfCovered(
-  layer: HTMLElement,
-  anchor: HTMLElement | null,
-): void {
-  if (!anchor) {
-    return;
+function keepAnchorClear(layer: HTMLElement, anchor: HTMLElement | null): void {
+  if (anchor) {
+    const a = anchor.getBoundingClientRect();
+    const l = layer.getBoundingClientRect();
+    const covers =
+      l.width > 0 &&
+      l.height > 0 &&
+      l.left < a.right &&
+      a.left < l.right &&
+      l.top < a.bottom &&
+      a.top < l.bottom;
+    if (covers) {
+      layer.setAttribute(LAYER_CLEARS_ANCHOR_ATTRIBUTE, '');
+    }
   }
-  const a = anchor.getBoundingClientRect();
-  const l = layer.getBoundingClientRect();
-  const covers =
-    l.width > 0 &&
-    l.height > 0 &&
-    l.left < a.right &&
-    a.left < l.right &&
-    l.top < a.bottom &&
-    a.top < l.bottom;
-  if (covers) {
-    layer.setAttribute(LAYER_CLEARS_ANCHOR_ATTRIBUTE, '');
-  }
+  // A layer that fits has no scroll range and stays a plain box, so a wheel
+  // over it still scrolls the page.
+  layer.toggleAttribute(
+    LAYER_SCROLLS_ATTRIBUTE,
+    layer.scrollHeight > layer.clientHeight + 1,
+  );
 }
 
 /**
@@ -907,9 +913,10 @@ function useLayerImplementation(
         return;
       }
       popover.removeAttribute(LAYER_CLEARS_ANCHOR_ATTRIBUTE);
+      popover.removeAttribute(LAYER_SCROLLS_ATTRIBUTE);
       showPopoverElement(popover);
       if (keepsAnchorClear) {
-        clearAnchorIfCovered(popover, triggerRef.current);
+        keepAnchorClear(popover, triggerRef.current);
       }
       isOpenRef.current = true;
       setIsOpen(true);
@@ -1096,6 +1103,9 @@ function useLayerImplementation(
         // Changing a portal target remounts the popover. Preserve the logical
         // open state without firing onShow again for the replacement element.
         showPopoverElement(el);
+        if (keepsAnchorClear) {
+          keepAnchorClear(el, triggerRef.current);
+        }
       }
     },
     [
@@ -1104,6 +1114,7 @@ function useLayerImplementation(
       show,
       showPopoverElement,
       isCurrentContextPopover,
+      keepsAnchorClear,
     ],
   );
 
@@ -1189,6 +1200,52 @@ function useLayerImplementation(
     observer.observe(anchor);
     return () => observer.disconnect();
   }, [isOpen, mode, updateAnchorInView]);
+
+  // A layer that keeps its anchor clear (FR4) re-reads its geometry while it
+  // is open: content that grows, an anchor that resizes, a scroll or a
+  // viewport resize can each re-settle the standard list over the anchor or
+  // give the layer a scroll range. ResizeObserver callbacks and scroll and
+  // resize events all run before the frame paints, so the switch is never
+  // painted late (FR8). The layer element changes when a moved render call
+  // remounts it, which changes `contextMount`.
+  useIsomorphicLayoutEffect(() => {
+    if (!keepsAnchorClear || !isOpen || mode !== 'context') {
+      return;
+    }
+    const layer = popoverRef.current;
+    const anchor = triggerRef.current;
+    const view = layer?.ownerDocument.defaultView;
+    if (!layer || !anchor || !view) {
+      return;
+    }
+    const reread = () => {
+      if (popoverRef.current === layer) {
+        keepAnchorClear(layer, triggerRef.current);
+      }
+    };
+    const onScroll = (event: Event) => {
+      // The layer's own scrolling moves nothing else.
+      if (event.target !== layer) {
+        reread();
+      }
+    };
+    let observer: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(reread);
+      observer.observe(layer);
+      for (const child of Array.from(layer.children)) {
+        observer.observe(child);
+      }
+      observer.observe(anchor);
+    }
+    view.addEventListener('scroll', onScroll, {capture: true, passive: true});
+    view.addEventListener('resize', reread);
+    return () => {
+      observer?.disconnect();
+      view.removeEventListener('scroll', onScroll, {capture: true});
+      view.removeEventListener('resize', reread);
+    };
+  }, [keepsAnchorClear, isOpen, mode, contextMount]);
 
   // Render function for context mode
   const renderContext = useCallback(

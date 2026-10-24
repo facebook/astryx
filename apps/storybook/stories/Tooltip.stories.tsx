@@ -1,5 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {Tooltip, useTooltip} from '@astryxdesign/core/Tooltip';
 import {Button} from '@astryxdesign/core/Button';
@@ -196,6 +197,49 @@ export const TallContent: Story = {
       <Tooltip {...args} />
     </div>
   ),
+};
+
+/**
+ * A tall tooltip held open while its render call moves from a plain container
+ * into a paragraph, which hosts the layer elsewhere and remounts it. The
+ * replacement must keep its trigger clear exactly as the first one did.
+ */
+export const TallContentMovingHost: Story = {
+  parameters: {layout: 'fullscreen'},
+  render: function TallContentMovingHostExample() {
+    const [inParagraph, setInParagraph] = useState(false);
+    const tooltip = useTooltip({placement: 'above', isOpen: true});
+    const rendered = tooltip.renderTooltip(
+      <div>
+        {TALL_LINES.map(line => (
+          <div key={line}>{line}</div>
+        ))}
+      </div>,
+    );
+    return (
+      <div style={{minHeight: '100vh', display: 'grid', placeItems: 'center'}}>
+        <div
+          style={{
+            position: 'fixed',
+            insetBlockStart: 16,
+            insetInlineStart: 16,
+          }}>
+          <Button
+            label="Move the tooltip's host"
+            onClick={() => setInParagraph(value => !value)}>
+            Move the tooltip&apos;s host
+          </Button>
+        </div>
+        <Button
+          label="Tall tooltip trigger"
+          ref={tooltip.ref}
+          aria-describedby={tooltip.describedBy}>
+          Tall tooltip trigger
+        </Button>
+        {inParagraph ? <p>{rendered}</p> : <div>{rendered}</div>}
+      </div>
+    );
+  },
 };
 
 export const MultipleTooltips: Story = {
