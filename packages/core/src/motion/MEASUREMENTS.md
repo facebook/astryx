@@ -249,6 +249,22 @@ match the probe.
 | M-SH21  | SheetProbe on iPad, iOS 27 `preferredPlacement` each case, RTL                                                         | present                                                                                                                             | placement geometry and motion                                                                                                                           | B, C    |
 | M-SH22  | SheetProbe iOS 26 `preferredTransition = .zoom` from a bar button                                                      | present, dismiss                                                                                                                    | morph geometry per frame                                                                                                                                | A, C    |
 
+## Date picker (UIDatePicker)
+
+Values the DateInput, DateTimeInput and TimeInput touch surfaces read from
+their own table (`uikit/datePicker.ts`); the month grid is a paging scroll view
+and the wheels are UIPickerView's, so those parts use the paging and picker
+values.
+
+Done (UIKit lab, iOS 26.2 simulator, Oct 23 2026; in the date picker's table):
+a day tap and `setDate(_:animated:)`, the title following the drag, the release
+rule, the chevron step and its retarget, the chevron at a bound, the month/year
+toggle's fades and chevron turn, the month/year wheels, the compact popover's
+springs, the AM/PM column following the hour, the looping time columns, the
+minutes not carrying, the turn back onto a bound, the day clamped to the month,
+and the year-and-month mode; the AM/PM column's turn and the disabled chevron
+followed on Oct 24 2026.
+
 ## Context menu (UIContextMenuInteraction)
 
 Values the context menu reads from its own table (`uikit/contextMenu.ts`);
