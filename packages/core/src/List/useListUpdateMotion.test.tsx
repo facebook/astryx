@@ -2,15 +2,16 @@
 
 /**
  * @file useListUpdateMotion.test.tsx
- * @input vitest, List with `hasAnimatedChanges`, a stubbed idiom (a finger on
- *   WebKit for iOS, an Android finger, a mouse) and stubbed row positions
+ * @input vitest, List with `hasAnimatedChanges`, a stubbed pointer (a finger,
+ *   iOS and Android alike, or a mouse) and stubbed row positions
  *   (jsdom lays nothing out)
  * @output Unit tests for when List's update motion moves rows: survivors whose
- *   place changed get a motion in the iOS idiom; a removed row collapses in
+ *   place changed get a motion under any finger; a removed row collapses in
  *   place as a ghost, the row below glued to its edge; a new row shows nothing
  *   until the row it displaced has cleared its band; a row crossing rows
- *   that move the other way rides above them; nothing moves with an Android
- *   finger or a mouse, without `hasAnimatedChanges`, on the first render, or
+ *   that move the other way rides above them; nothing moves with a mouse,
+ *   without `hasAnimatedChanges`,
+ *   on the first render, or
  *   while a reorder session owns the list; content below the list moves with
  *   it unless the list keeps it still, only by what layout moved it; with
  *   motion off nothing is read; a resize of the list between commits
@@ -23,7 +24,12 @@ import {act, render, screen} from '@testing-library/react';
 import {afterEach, beforeAll, describe, expect, it, vi} from 'vitest';
 import {List} from './List';
 import {ListItem} from './ListItem';
-import {motionNow, motionOf, presentation, type RowMotion} from '../utils/rowMotion';
+import {
+  motionNow,
+  motionOf,
+  presentation,
+  type RowMotion,
+} from '../utils/rowMotion';
 
 const ROW = 40;
 /** Each row's height as the stubbed layout reports it. */
@@ -65,16 +71,15 @@ beforeAll(() => {
   });
 });
 
-/** The page as a finger on WebKit for iOS (`ios`) or anywhere else sees it. */
-function stubIdiom(idiom: 'ios' | 'android' | 'mouse') {
-  vi.stubGlobal('CSS', {
-    supports: (condition: string) =>
-      idiom === 'ios' && condition.includes('-webkit-touch-callout'),
-  });
+/**
+ * The page under a finger (a coarse primary pointer: one touch model, iOS
+ * and Android alike) or a mouse.
+ */
+function stubPointer(pointer: 'touch' | 'mouse') {
   vi.stubGlobal(
     'matchMedia',
     vi.fn((query: string) => ({
-      matches: idiom !== 'mouse' && query.includes('pointer: coarse'),
+      matches: pointer === 'touch' && query.includes('pointer: coarse'),
       media: query,
       onchange: null,
       addEventListener: () => undefined,
@@ -123,8 +128,8 @@ const rowOf = (label: string) =>
   ) as HTMLElement;
 
 describe('List update motion', () => {
-  it('in the iOS idiom, rows that change place move and new rows fade in', async () => {
-    stubIdiom('ios');
+  it('under a finger, rows that change place move and new rows fade in', async () => {
+    stubPointer('touch');
     const {rerender} = render(<Rows labels={['A', 'B', 'C']} />);
     await act(async () => undefined);
     expect(motionOf(rowOf('C'))).toBeUndefined();
@@ -139,7 +144,7 @@ describe('List update motion', () => {
   });
 
   it('a new row shows nothing while the row it displaced still crosses its band, then fades in, arriving with it', async () => {
-    stubIdiom('ios');
+    stubPointer('touch');
     const {rerender} = render(<Rows labels={['A', 'C']} />);
     await act(async () => undefined);
     // Insert B second: C slides down out of B's band.
@@ -170,7 +175,7 @@ describe('List update motion', () => {
   });
 
   it('a removed row collapses in place, the row below glued to its bottom edge, then goes', async () => {
-    stubIdiom('ios');
+    stubPointer('touch');
     const {rerender} = render(<Rows labels={['A', 'B', 'C']} />);
     await act(async () => undefined);
     const removed = rowOf('B');
@@ -210,8 +215,69 @@ describe('List update motion', () => {
     });
   });
 
+  it('a removed row stays exactly as long as its collapse, even on a theme spring slower than a second', async () => {
+    stubPointer('touch');
+    // A theme that slows the table spring to 1.5 s, written the way a theme
+    // writes a role: its CSS variable, here on the root, which a theme switch
+    // brings in.
+    document.documentElement.style.setProperty(
+      '--motion-list-update-table-spring',
+      '1.5s 0',
+    );
+    document.documentElement.setAttribute('data-theme', 'slow-table');
+    try {
+      const {rerender} = render(<Rows labels={['A', 'B', 'C']} />);
+      await act(async () => undefined);
+      const removed = rowOf('B');
+      rerender(<Rows labels={['A', 'C']} />);
+      const ghost = removed.parentElement as HTMLElement;
+      expect(ghost.hasAttribute('data-astryx-leaving')).toBe(true);
+      const collapse = motionOf(ghost, 'y') as RowMotion;
+      expect(collapse).toBeDefined();
+      // Still there while its collapse runs, past a second: no timer cuts
+      // it short.
+      await new Promise(resolve => setTimeout(resolve, 1200));
+      expect(ghost.isConnected).toBe(true);
+      // Gone when the collapse ends, with nothing left behind.
+      await collapse.handle.finished;
+      await Promise.resolve();
+      expect(ghost.isConnected).toBe(false);
+    } finally {
+      document.documentElement.style.removeProperty(
+        '--motion-list-update-table-spring',
+      );
+      document.documentElement.removeAttribute('data-theme');
+    }
+  });
+
+  it('a removed row leaves in the same commit that turns the motion off', async () => {
+    stubPointer('touch');
+    const {rerender} = render(<Rows labels={['A', 'B', 'C']} />);
+    await act(async () => undefined);
+    const removed = rowOf('B');
+    rerender(<Rows labels={['A', 'C']} />);
+    const ghost = removed.parentElement as HTMLElement;
+    expect(ghost.hasAttribute('data-astryx-leaving')).toBe(true);
+    rerender(<Rows labels={['A', 'C']} hasAnimatedChanges={false} />);
+    expect(ghost.isConnected).toBe(false);
+    expect(motionOf(ghost, 'y')).toBeUndefined();
+  });
+
+  it('on the default table spring a removed row leaves within a second (INV7)', async () => {
+    stubPointer('touch');
+    const {rerender} = render(<Rows labels={['A', 'B', 'C']} />);
+    await act(async () => undefined);
+    const removed = rowOf('B');
+    rerender(<Rows labels={['A', 'C']} />);
+    const ghost = removed.parentElement as HTMLElement;
+    expect(ghost.hasAttribute('data-astryx-leaving')).toBe(true);
+    await vi.waitFor(() => expect(ghost.isConnected).toBe(false), {
+      timeout: 1000,
+    });
+  });
+
   it('a row that slides across rows moving the other way rides above them for its slide', async () => {
-    stubIdiom('ios');
+    stubPointer('touch');
     const {rerender} = render(<Rows labels={['A', 'B', 'C', 'D']} />);
     await act(async () => undefined);
     const rides = (label: string) =>
@@ -232,7 +298,7 @@ describe('List update motion', () => {
   });
 
   it('reads no layout at all without hasAnimatedChanges', async () => {
-    stubIdiom('ios');
+    stubPointer('touch');
     const reads = vi.fn();
     const top = Object.getOwnPropertyDescriptor(
       HTMLElement.prototype,
@@ -257,7 +323,7 @@ describe('List update motion', () => {
   });
 
   it('moves the content below only by what layout moved it: a pinned footer stays put', async () => {
-    stubIdiom('ios');
+    stubPointer('touch');
     const {rerender} = render(<Rows labels={['A', 'B', 'C']} />);
     await act(async () => undefined);
     rerender(<Rows labels={['A', 'C']} />);
@@ -269,20 +335,19 @@ describe('List update motion', () => {
     expect(screen.getByTestId('pinned').style.translate).toBe('');
   });
 
-  it('moves nothing with an Android finger or a mouse, or without hasAnimatedChanges', async () => {
-    for (const idiom of ['android', 'mouse'] as const) {
-      stubIdiom(idiom);
-      const first = render(<Rows labels={['A', 'B', 'C']} />);
-      await act(async () => undefined);
-      first.rerender(<Rows labels={['A', 'C']} />);
-      expect(motionOf(rowOf('C'))).toBeUndefined();
-      first.rerender(<Rows labels={['D', 'A', 'C']} />);
-      expect(motionOf(rowOf('D'), 'opacity')).toBeUndefined();
-      expect(motionOf(screen.getByTestId('below'))).toBeUndefined();
-      first.unmount();
-    }
+  it('moves nothing with a mouse, or without hasAnimatedChanges', async () => {
+    stubPointer('mouse');
+    expect(matchMedia('(pointer: coarse)').matches).toBe(false);
+    const first = render(<Rows labels={['A', 'B', 'C']} />);
+    await act(async () => undefined);
+    first.rerender(<Rows labels={['A', 'C']} />);
+    expect(motionOf(rowOf('C'))).toBeUndefined();
+    first.rerender(<Rows labels={['D', 'A', 'C']} />);
+    expect(motionOf(rowOf('D'), 'opacity')).toBeUndefined();
+    expect(motionOf(screen.getByTestId('below'))).toBeUndefined();
+    first.unmount();
 
-    stubIdiom('ios');
+    stubPointer('touch');
     const second = render(
       <Rows labels={['A', 'B', 'C']} hasAnimatedChanges={false} />,
     );
@@ -292,7 +357,7 @@ describe('List update motion', () => {
   });
 
   it("moves the content below with the rows, unless followingContent is 'stays'", async () => {
-    stubIdiom('ios');
+    stubPointer('touch');
     // jsdom lays nothing out: the list is as tall as its rows.
     const height = vi
       .spyOn(HTMLElement.prototype, 'offsetHeight', 'get')
@@ -341,7 +406,7 @@ describe('List update motion', () => {
         }
       },
     );
-    stubIdiom('ios');
+    stubPointer('touch');
     const {rerender} = render(<Rows labels={['A', 'B', 'C']} />);
     await act(async () => undefined);
     // Every row grows with no commit (a stylesheet, a web font): the list
@@ -359,7 +424,7 @@ describe('List update motion', () => {
   });
 
   it('leaves a list a reorder session owns to the reorder', async () => {
-    stubIdiom('ios');
+    stubPointer('touch');
     const {rerender} = render(<Rows labels={['A', 'B', 'C']} />);
     await act(async () => undefined);
     document.querySelector('ul')?.setAttribute('data-astryx-reordering', '');

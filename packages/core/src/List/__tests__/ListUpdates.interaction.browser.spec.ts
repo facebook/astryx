@@ -17,12 +17,13 @@
  *   (`design:reduced-motion`); a
  *   theme's table spring times it; a removed row collapses in place, its
  *   bottom edge on the next row's top every frame, and a row swiped away
- *   collapses the same way while the rows below close the gap; the rows keep
+ *   collapses the same way while the rows below close the gap, as it was on
+ *   screen (a compositor animation on its parts kept); the rows keep
  *   moving while the main thread is blocked, with no Layout or Paint; a
  *   storyboard of a removal
- * @position Interaction evidence for List/useListUpdateMotion.ts, in the iOS
- *   idiom (./iosIdiom.ts), with one Android case where the rows land in place
- *   with the commit
+ * @position Interaction evidence for List/useListUpdateMotion.ts under a
+ *   finger (./touchStory.ts), with an Android case that moves the same way and
+ *   a mouse case where the rows land in place with the commit
  */
 
 import {expect, test, type Locator, type Page} from '@playwright/test';
@@ -48,7 +49,7 @@ import {
 } from '@astryxdesign/interaction-harness';
 import {solveSpring, toSpring} from '../../motion/spring';
 import {list} from '../../motion/uikit/list';
-import {openStoryAs} from './iosIdiom';
+import {openStory} from './touchStory';
 import {expectReducedMotionCrossFade} from './reducedMotion';
 import {blockBehindBeacon, installBeacon, sampleVideoPoints} from './rowPixels';
 
@@ -84,7 +85,7 @@ const opacity = async (element: Locator) =>
   element.evaluate(el => Number(getComputedStyle(el).opacity));
 
 async function open(page: Page) {
-  await openStoryAs(page, storybook(), STORY, 'ios');
+  await openStory(page, storybook(), STORY);
   const touch = await page.evaluate(
     () => matchMedia('(pointer: coarse)').matches,
   );
@@ -96,34 +97,60 @@ async function press(page: Page, name: string) {
   await page.getByRole('button', {name}).click();
 }
 
-test('Android: a removal and an insert land in place with the commit (the iOS idiom only animates)', async ({
+test('Android: a removal moves the rows the same way (one touch model)', async ({
   page,
   browserName,
 }) => {
   test.skip(browserName !== 'chromium', 'Android is Chromium');
-  await openStoryAs(page, storybook(), STORY, 'android');
+  await openStory(page, storybook(), STORY);
   expect(
     await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
   ).toBe(true);
   await expect(row(page, 'Spam')).toBeVisible();
   const drafts = row(page, 'Drafts');
-  const button = page.getByRole('button', {name: 'Remove the second row'});
   await press(page, 'Remove the second row');
   await expect(row(page, 'Sent')).toHaveCount(0);
-  // Nothing animates: the rows and the content below are already in place.
-  const motions = async (element: Locator) =>
-    element.evaluate(el => el.getAnimations().length);
-  expect(await translateY(drafts)).toBe(0);
-  expect(await motions(drafts)).toBe(0);
-  expect(await translateY(button)).toBe(0);
-  expect(await motions(button)).toBe(0);
-  await press(page, 'Insert a row second');
-  const inserted = page.locator('#storybook-root li').nth(1);
-  await expect(inserted).toBeVisible();
-  expect(await opacity(inserted)).toBe(1);
-  expect(await motions(inserted)).toBe(0);
-  expect(await translateY(drafts)).toBe(0);
-  expect(await motions(drafts)).toBe(0);
+  // The row below starts where it was and springs home, as on iOS.
+  expect(
+    await drafts.evaluate(el => el.getAnimations().length),
+  ).toBeGreaterThan(0);
+  await expect.poll(async () => translateY(drafts)).toBe(0);
+});
+
+test('a mouse: a removal and an insert land in place with the commit', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    hasTouch: false,
+    isMobile: false,
+    viewport: {width: 900, height: 900},
+  });
+  const page = await context.newPage();
+  try {
+    await openStory(page, storybook(), STORY);
+    expect(
+      await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+    ).toBe(false);
+    await expect(row(page, 'Spam')).toBeVisible();
+    const drafts = row(page, 'Drafts');
+    const button = page.getByRole('button', {name: 'Remove the second row'});
+    await press(page, 'Remove the second row');
+    await expect(row(page, 'Sent')).toHaveCount(0);
+    // Nothing animates: the rows and the content below are already in place.
+    const motions = async (element: Locator) =>
+      element.evaluate(el => el.getAnimations().length);
+    expect(await translateY(drafts)).toBe(0);
+    expect(await motions(drafts)).toBe(0);
+    expect(await translateY(button)).toBe(0);
+    expect(await motions(button)).toBe(0);
+    await press(page, 'Insert a row second');
+    const inserted = page.locator('#storybook-root li').nth(1);
+    await expect(inserted).toBeVisible();
+    expect(await opacity(inserted)).toBe(1);
+    expect(await motions(inserted)).toBe(0);
+  } finally {
+    await context.close();
+  }
 });
 
 test('a removal: the rows below start where they were and slide up on the table spring', async ({
@@ -441,26 +468,153 @@ test("a theme's table spring (a motion role) times the update", async ({
   await expect.poll(async () => translateY(drafts)).toBe(0);
 });
 
+test('a removed row whose parts run a compositor animation collapses as it was on screen', async ({
+  page,
+}) => {
+  await open(page);
+  const sent = row(page, 'Sent');
+  await expect(sent).toBeVisible();
+  // What a swipe leaves on screen: a running Web Animation of the row's
+  // content, here held halfway at 40 px to the left.
+  await sent.evaluate(el => {
+    const content = el.firstElementChild as HTMLElement;
+    content.setAttribute('data-test-swiped', '');
+    const animation = content.animate(
+      [{translate: '0px'}, {translate: '-80px'}],
+      {duration: 1000, fill: 'forwards'},
+    );
+    animation.pause();
+    animation.currentTime = 500;
+  });
+  await press(page, 'Remove the second row');
+  await expect(row(page, 'Sent')).toHaveCount(0);
+  await holdAnimations(page);
+  await seekAnimations(page, 0);
+  // The collapse's first frame: the leaving row's content where it was.
+  const swiped = page.locator(
+    '#storybook-root [data-astryx-leaving] [data-test-swiped]',
+  );
+  await expect(swiped).toHaveCount(1);
+  expect(
+    await swiped.evaluate(el => {
+      const value = getComputedStyle(el).translate;
+      return value === 'none' ? 0 : Number.parseFloat(value);
+    }),
+  ).toBeCloseTo(-40, 0);
+  await releaseAnimations(page, {finish: true});
+});
+
+test('a removed row collapses as it was on screen even when its parts’ owner resets them as it unmounts', async ({
+  page,
+}) => {
+  await open(page);
+  const sent = row(page, 'Sent');
+  await expect(sent).toBeVisible();
+  await sent.evaluate(el => {
+    const content = el.firstElementChild as HTMLElement;
+    content.setAttribute('data-test-swiped', '');
+    const animation = content.animate(
+      [{translate: '0px'}, {translate: '-80px'}],
+      {duration: 1000, fill: 'forwards'},
+    );
+    animation.pause();
+    animation.currentTime = 500;
+    // The owner's own cleanup runs after the row's and before React removes
+    // the row (a swipe gives its row back its translation): it resets the
+    // style the row just wrote.
+    const list = el.parentElement as HTMLElement;
+    const removeChild = list.removeChild.bind(list);
+    list.removeChild = <T extends Node>(child: T): T => {
+      if ((child as Node) === el) {
+        content.style.removeProperty('translate');
+      }
+      return removeChild(child);
+    };
+  });
+  await press(page, 'Remove the second row');
+  await expect(row(page, 'Sent')).toHaveCount(0);
+  await holdAnimations(page);
+  await seekAnimations(page, 0);
+  const swiped = page.locator(
+    '#storybook-root [data-astryx-leaving] [data-test-swiped]',
+  );
+  await expect(swiped).toHaveCount(1);
+  expect(
+    await swiped.evaluate(el => {
+      const value = getComputedStyle(el).translate;
+      return value === 'none' ? 0 : Number.parseFloat(value);
+    }),
+  ).toBeCloseTo(-40, 0);
+  await releaseAnimations(page, {finish: true});
+});
+
+test('a removed row a swipe moved sideways on its own root keeps that offset through its collapse', async ({
+  page,
+}) => {
+  await open(page);
+  const sent = row(page, 'Sent');
+  await expect(sent).toBeVisible();
+  await sent.evaluate(el => {
+    // What a swipe that moves the row itself leaves on screen: the row
+    // translated sideways, which its owner gives back as the row unmounts.
+    (el as HTMLElement).style.translate = '-40px';
+    el.setAttribute('data-test-swiped-row', '');
+    const list = el.parentElement as HTMLElement;
+    const removeChild = list.removeChild.bind(list);
+    list.removeChild = <T extends Node>(child: T): T => {
+      if ((child as Node) === el) {
+        (el as HTMLElement).style.removeProperty('translate');
+      }
+      return removeChild(child);
+    };
+  });
+  await press(page, 'Remove the second row');
+  await expect(row(page, 'Sent')).toHaveCount(0);
+  await holdAnimations(page);
+  await seekAnimations(page, 0);
+  const swiped = page.locator(
+    '#storybook-root [data-astryx-leaving] [data-test-swiped-row]',
+  );
+  await expect(swiped).toHaveCount(1);
+  // The collapse moves it on y only: the sideways offset stays.
+  expect(
+    await swiped.evaluate(el => {
+      const value = getComputedStyle(el).translate;
+      return value === 'none' ? 0 : Number.parseFloat(value.split(' ')[0]);
+    }),
+  ).toBeCloseTo(-40, 0);
+  await releaseAnimations(page, {finish: true});
+});
+
 test('under reduced motion a removal, an insert and a reorder cross-fade: opacity only, within 200 ms', async ({
   page,
 }) => {
   // design:reduced-motion DR1 and DR2, under a finger: no row travels or
   // collapses; a removed row fades out where it is, a new one fades in.
   await page.emulateMedia({reducedMotion: 'reduce'});
-  await open(page);
   for (const change of [
     'Remove the second row',
     'Insert a row second',
     'Move the last row first',
   ]) {
-    await press(page, change);
+    // Each change on a fresh list.
+    await open(page);
+    // The fades last 200 ms: wait for them in the page, frame by frame,
+    // then hold them before the animator retires them.
+    await page.evaluate(async name => {
+      [...document.querySelectorAll('button')]
+        .find(button => button.textContent?.trim() === name)
+        ?.click();
+      for (
+        let frame = 0;
+        frame < 60 && document.getAnimations().length === 0;
+        frame += 1
+      ) {
+        await new Promise(resolve => requestAnimationFrame(resolve));
+      }
+    }, change);
     expectReducedMotionCrossFade(await holdAnimations(page));
     await releaseAnimations(page, {finish: true});
-    await expect
-      .poll(async () =>
-        page.locator('#storybook-root [data-astryx-leaving]').count(),
-      )
-      .toBe(0);
   }
 });
 
@@ -472,12 +626,7 @@ test('a row swiped away with a removal action collapses in place: the rows below
     browserName !== 'chromium',
     'the swipe is driven with Chromium touch events (CDP)',
   );
-  await openStoryAs(
-    page,
-    storybook(),
-    'core-list--animated-changes-swipe',
-    'ios',
-  );
+  await openStory(page, storybook(), 'core-list--animated-changes-swipe');
   const touch = await page.evaluate(
     () => matchMedia('(pointer: coarse)').matches,
   );
@@ -527,21 +676,19 @@ test('a row swiped away with a removal action collapses in place: the rows below
   // The gesture arrives with the lazily loaded swipe layer; its panel is the
   // sign the row can be dragged.
   await expect(sent.locator('[data-swipe-panel="trailing"]')).toBeAttached();
-  // Toward the inline start: a slow start claims the drag, then a fling
-  // fires the outermost entry, Delete, whose removal holds the row out until
-  // the story removes it from the data.
+  // Toward the inline start, most of the row's width: the full swipe fires
+  // the outermost entry, Delete, whose removal holds the row out until the
+  // story removes it from the data.
   const cdp = await page.context().newCDPSession(page);
   const y = box.y + box.height / 2;
   const startX = box.x + box.width - 24;
   const finger = async (x: number, type: 'touchStart' | 'touchMove') =>
     cdp.send('Input.dispatchTouchEvent', {touchPoints: [{x, y}], type});
   await finger(startX, 'touchStart');
-  for (const dx of [6, 14, 28]) {
-    await finger(startX - dx, 'touchMove');
+  for (const fraction of [0.02, 0.05, 0.1, 0.2, 0.35, 0.5, 0.65, 0.8, 0.9]) {
+    await finger(startX - box.width * fraction, 'touchMove');
     await page.waitForTimeout(40);
   }
-  await finger(startX - 44, 'touchMove');
-  await finger(startX - 90, 'touchMove');
   await cdp.send('Input.dispatchTouchEvent', {
     touchPoints: [],
     type: 'touchEnd',

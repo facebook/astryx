@@ -8,7 +8,7 @@
  *   treatment, the press layer (dividers beside a touch-pressed or held row
  *   hide and the layer reaches over the row's own), the touch row heights
  *   (listRow.stylex.ts), the travelling marker of an update's slide
- *   (utils/useListUpdateMotion.ts), CheckboxInput, and the marker or task
+ *   (List/useListUpdateMotion.ts), CheckboxInput, and the marker or task
  *   checkbox a ListMarkerScope sets (Markdown's nested lists and the task
  *   items of mixed lists)
  * @output Exports ListItem component, ListItemProps type
@@ -25,7 +25,7 @@
  * - /packages/cli/assets/templates/blocks/components/List/ (showcase blocks)
  */
 
-import {use, type ReactNode} from 'react';
+import {use, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -42,6 +42,8 @@ import {Item} from '../Item';
 import type {ItemAlign, ItemSwipeActions, ItemSwipeBehavior} from '../Item';
 import {themeProps} from '../utils/themeProps';
 import {listRowStyles} from './listRow.stylex';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 
 // =============================================================================
 // Types
@@ -157,7 +159,7 @@ const styles = stylex.create({
   },
   // A row an update slides across rows moving the other way rides above them
   // with the surface behind it, for the length of its slide (the attribute
-  // utils/useListUpdateMotion.ts writes): a UIKit cell passes its neighbours
+  // List/useListUpdateMotion.ts writes): a UIKit cell passes its neighbours
   // opaque and on top, and rows here have no background of their own. The
   // layer covers the padding box, under the press layer, so the row's divider
   // and its press stay visible; a selected row keeps its own fill.
@@ -394,6 +396,27 @@ export function ListItem({
   ...restProps
 }: ListItemProps) {
   const ctx = use(ListContext);
+  const rowRef = useRef<HTMLLIElement | null>(null);
+  const mergedRef = useMergedRefs(ref, rowRef);
+  const keepRowPresentation = ctx?.keepRowPresentation;
+  const keepRowPresentationRef = useRef(keepRowPresentation);
+  useIsomorphicLayoutEffect(() => {
+    keepRowPresentationRef.current = keepRowPresentation;
+  });
+  // External system (`architecture:react-component-runtime` INV3): the Web
+  // Animations running on the row's parts (a swipe's travel, on the
+  // compositor), which a detached row loses. Leaving a list that animates
+  // its changes, the row writes what they present inline while it is still
+  // in the document (a parent's layout cleanup runs before React removes the
+  // row), so the removal's collapse shows it as it was on screen.
+  useIsomorphicLayoutEffect(() => {
+    const row = rowRef.current;
+    return () => {
+      if (row != null) {
+        keepRowPresentationRef.current?.(row);
+      }
+    };
+  }, []);
   const density = ctx?.density ?? 'balanced';
   const hasDividers = ctx?.hasDividers ?? false;
   const edge = ctx?.edge ?? 'padded';
@@ -438,7 +461,7 @@ export function ListItem({
   return (
     <Item
       as="li"
-      ref={ref}
+      ref={mergedRef}
       marker={marker}
       startContent={startContent}
       label={label}

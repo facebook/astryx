@@ -581,7 +581,7 @@ export const AnimatedChanges: Story = {
     docs: {
       description: {
         story:
-          'With `hasAnimatedChanges`, on an iPhone or iPad under a finger, ' +
+          'With `hasAnimatedChanges`, under a finger, ' +
           'rows that stay slide to their new places and new rows fade in ' +
           'once the rows sliding past have cleared them, on UIKit’s table ' +
           'update spring; a row crossing rows that move the other way ' +
