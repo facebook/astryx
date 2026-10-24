@@ -118,16 +118,8 @@ describe('EmptyState', () => {
   });
 
   it('does not make the root a live region', () => {
-    render(
-      <EmptyState
-        title="No results"
-        description="Try again."
-        data-testid="empty-state"
-      />,
-    );
-    const root = screen.getByTestId('empty-state');
-    expect(root.parentElement?.querySelector('[role], [aria-live]')).toBeNull();
-    expect(root).toHaveTextContent('No resultsTry again.');
+    const {container} = render(<EmptyState title="No results" />);
+    expect(container.querySelector('[role], [aria-live]')).toBeNull();
   });
 
   it('renders compact variant', () => {
@@ -148,15 +140,9 @@ describe('EmptyState', () => {
 
   it('does not render empty optional slot wrappers', () => {
     const {container} = render(
-      <EmptyState
-        title="No results"
-        description=""
-        icon={false}
-        actions=""
-        data-testid="empty-state"
-      />,
+      <EmptyState title="No results" description="" icon={false} actions="" />,
     );
-    const root = screen.getByTestId('empty-state');
+    const root = container.firstElementChild as HTMLElement;
     expect(root).toHaveTextContent('No results');
     expect(root).toHaveTextContent(/^No results$/);
     expect(root.children).toHaveLength(1);

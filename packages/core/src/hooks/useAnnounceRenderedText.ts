@@ -32,7 +32,7 @@
  * (see `FieldStatus` and `TimeInput`): a live region that mounts together
  * with its content is not reliably announced.
  *
- * Content hidden from the accessibility tree with `aria-hidden` is excluded,
+ * Content hidden with `aria-hidden` or `hidden` is excluded,
  * so a decorative icon stays out of the announcement exactly as it stays out
  * of what a screen reader reads. An `aria-label` renaming a descendant is NOT
  * substituted — the region speaks the rendered text.
@@ -53,7 +53,7 @@ const LIVE_CONTAINER =
 /** Each child element's rendered text as its own block, joined by spaces. */
 function blockText(element: HTMLElement): string {
   return Array.from(element.children)
-    .filter(child => child.getAttribute('aria-hidden') !== 'true')
+    .filter(child => !child.matches('[aria-hidden="true"], [hidden]'))
     .map(child => renderedText(child as HTMLElement))
     .filter(part => part !== '')
     .join(' ');
@@ -63,9 +63,9 @@ export interface AnnounceRenderedTextOptions {
   /**
    * Text present or changed before the document finished loading (or while
    * hydrating) is not announced; text that appears or changes later is, once
-   * (`spec:AST-086` FR11). Content inside a mounted
-   * live container is left to that container (FR4). Each child element is
-   * read as its own block.
+   * (`spec:AST-086` FR11). Content inside a mounted live container is left to
+   * that container (FR4). Each child element is read as its own block. A
+   * reveal by script outside React is read on the next render (INV5).
    */
   skipFirstRender?: boolean;
 }
@@ -75,7 +75,9 @@ export function renderedText(element: HTMLElement): string {
   // Clone so removing the hidden parts cannot disturb what is on screen. The
   // clone is never attached to the document.
   const copy = element.cloneNode(true) as HTMLElement;
-  for (const hidden of copy.querySelectorAll('[aria-hidden="true"]')) {
+  for (const hidden of copy.querySelectorAll(
+    '[aria-hidden="true"], [hidden]',
+  )) {
     hidden.remove();
   }
   return (copy.textContent ?? '').replace(/\s+/g, ' ').trim();

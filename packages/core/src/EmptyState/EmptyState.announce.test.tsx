@@ -11,6 +11,7 @@ import {act, StrictMode, useState} from 'react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {createRoot, hydrateRoot} from 'react-dom/client';
 import {renderToString} from 'react-dom/server';
+import {renderedText} from '../hooks/useAnnounceRenderedText';
 
 // The document is "loading" until `paint()`; a render before it is part of the
 // page load, one after it is inserted later (spec:AST-086 FR11).
@@ -164,6 +165,12 @@ describe('EmptyState announcement (spec:AST-086 FR2)', () => {
     polite.stop();
     expect(polite.spoken).toEqual([]);
     await act(async () => root.unmount());
+  });
+
+  it('leaves text inside a hidden element out of the message', () => {
+    const element = document.createElement('p');
+    element.innerHTML = 'Try again.<span hidden> Hidden</span>';
+    expect(renderedText(element)).toBe('Try again.');
   });
 
   it('stays silent while hidden or revealed during load; announces once when shown later (FR12)', async () => {
