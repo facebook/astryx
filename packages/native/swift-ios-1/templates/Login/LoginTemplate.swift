@@ -63,7 +63,7 @@ struct LoginTemplateContent: View {
     VStack(spacing: astryx.space(4)) {
       VStack(spacing: astryx.space(2)) {
         Image(systemName: "cube")
-          .font(.system(size: 24 * astryx.textScale))
+          .font(.system(size: astryx.fontSize("font-size-2xl", 24)))
           .foregroundStyle(astryx.color("color-icon-primary"))
           .accessibilityHidden(true)
         AstryxText("Product Inc.", size: .lg, weight: .bold)
