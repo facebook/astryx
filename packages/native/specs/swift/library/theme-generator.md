@@ -141,12 +141,14 @@ generator runs core's own resolver, so Swift never re-implements theme logic.
   Recommendation: this spec keeps `AstryxTokens` dictionaries; when 02 is
   approved, the same generator emits the typed form.
 - **OQ3 — A slot for native intent.** Native visual intent (durable
-  `material`, platform entries, icons; AST-082 FR10, FR17) is not generated
-  yet. Wherever a theme authors that intent, the generator reads it from the
-  resolved theme it is given, never from a separate source. Recommendation:
-  reserve `AstryxTheme.native` now as a documented, empty member, and fill it,
-  already resolved per OS version range, when the first component reads
-  `material`.
+  `material`, platform entries, icons; AST-082 FR10, FR17) comes from
+  `defineNativeTheme`, a native theme that wraps the portable theme, and is
+  not generated yet. When it is, the generator takes the native theme and
+  reads the wrapped portable theme from it, so one call produces one file.
+  Composing native intent inside `defineTheme` is outside this spec.
+  Recommendation: reserve `AstryxTheme.native` now as a documented, empty
+  member, and fill it, already resolved per OS version range, when the first
+  component reads `material`.
 - **OQ4 — Increased contrast.** Core themes have light and dark modes only, so
   nothing is generated for Increase Contrast. Recommendation: leave it out of
   this spec; a contrast mode in core changes files outside `packages/native/`
