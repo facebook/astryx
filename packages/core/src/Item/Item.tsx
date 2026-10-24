@@ -55,7 +55,6 @@ import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {pressLayerStyles} from '../utils/pressLayer.stylex';
-import {cellPressableProps} from '../utils/selectionHold';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import type {ItemSwipeBridge} from './ItemSwipeLayer';
 
@@ -586,7 +585,9 @@ export function Item({
   role,
   ...restProps
 }: ItemProps) {
-  const pressable = usePressFeedback();
+  // A row's press is a cell's: it waits UIScrollView's content-touch delay,
+  // yields to the pan, and releases on the deselect clock.
+  const pressable = usePressFeedback({profile: 'cell'});
   const LinkComponent = useLinkComponent();
 
   // Delegation mode: the row is an enlarged click/tap target for a nested
@@ -877,7 +878,7 @@ export function Item({
         (isSelected && !allowsAriaSelected ? true : undefined)
       }
       aria-disabled={isDisabled || undefined}
-      {...(isInteractive ? {...pressable, ...cellPressableProps} : undefined)}
+      {...(isInteractive ? pressable : undefined)}
       {...mergeProps(
         themeProps('item', {density, align}),
         focusOutlineProps.focusWithin(

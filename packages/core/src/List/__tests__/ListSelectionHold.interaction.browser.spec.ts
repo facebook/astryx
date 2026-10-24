@@ -283,7 +283,10 @@ test('the deselect does no Layout or Paint per frame', async ({
   const {target} = await push(page);
   let deselect = {from: 0, to: 0};
   const trace = await traceRendering(page, async () => {
-    await page.getByRole('button', {name: 'Back'}).click();
+    // Back is activated without a pointer press: on a touch-first device a
+    // mouse press paints Back's own pressed state and release, and the trace
+    // measures the row's deselect alone.
+    await page.getByRole('button', {name: 'Back'}).dispatchEvent('click');
     const [started] = await waitForAnimation(target);
     // The curve's own window (the animation holds its end value past it).
     deselect = {from: started.from, to: started.from + POP_MS};

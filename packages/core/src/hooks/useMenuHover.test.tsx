@@ -448,9 +448,12 @@ describe('useMenuHover — the click guard and its consumers', () => {
     // for the life of the page.
     vi.useFakeTimers({shouldAdvanceTime: true});
     const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    const trigger = renderMenu();
+    // Watched from after the mount: the gesture host's document listeners,
+    // installed once for every pressable on the page, stay while any is
+    // mounted; this test is about the hook's own.
     const add = vi.spyOn(document, 'addEventListener');
     const remove = vi.spyOn(document, 'removeEventListener');
-    const trigger = renderMenu();
 
     await user.hover(trigger);
     act(() => {

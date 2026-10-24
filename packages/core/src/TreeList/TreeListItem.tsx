@@ -28,7 +28,6 @@ import {
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {pressLayerStyles} from '../utils/pressLayer.stylex';
-import {cellPressableProps} from '../utils/selectionHold';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {
   hasInteractiveAncestor,
@@ -408,7 +407,9 @@ export function TreeListItem({
   setSize,
   isTabbable,
 }: TreeListItemInternalProps) {
-  const pressable = usePressFeedback();
+  // A row's press is a cell's: it waits UIScrollView's content-touch delay,
+  // yields to the pan, and releases on the deselect clock.
+  const pressable = usePressFeedback({profile: 'cell'});
   const t = useTranslator();
   const labelId = useId();
   const descriptionId = useId();
@@ -667,7 +668,7 @@ export function TreeListItem({
       <div {...stylex.props(styles.rowWrapper)}>
         <div
           {...(isInteractive || (hasChildren && onClick == null)
-            ? {...pressable, ...cellPressableProps}
+            ? pressable
             : undefined)}
           {...mergeProps(
             themeProps('tree-list-item', {

@@ -49,22 +49,18 @@ import {
 import {cubicBezier, type BezierPoints} from '../motion/bezier';
 import type {SpringDescription} from '../motion/spring';
 import {list} from '../motion/uikit/list';
-import {PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE} from './pressFeedback';
+import {
+  cellPressableProps,
+  PRESSABLE_ATTRIBUTE,
+  PRESSED_ATTRIBUTE,
+} from './pressFeedback';
 
 /**
  * The press profile a list row carries in its `data-astryx-pressable`
  * marker: rows paint the press on the cell layer and release on the cell's
  * clock.
  */
-export const CELL_PRESS_PROFILE = 'cell';
-
-/**
- * Spread on a list row's pressable element after the press feedback hook's
- * props: the marker carries the cell profile.
- */
-export const cellPressableProps: {
-  readonly [PRESSABLE_ATTRIBUTE]: typeof CELL_PRESS_PROFILE;
-} = {[PRESSABLE_ATTRIBUTE]: CELL_PRESS_PROFILE};
+export const CELL_PRESS_PROFILE = cellPressableProps[PRESSABLE_ATTRIBUTE];
 
 /** The press state a hold writes; owned by the hold, never by the controller. */
 export const HELD_PRESS_STATE = 'held';
