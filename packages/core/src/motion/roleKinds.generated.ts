@@ -12,6 +12,9 @@
 import type {MotionRoleKind} from './roles';
 
 export const MOTION_ROLE_KINDS: Readonly<Record<string, MotionRoleKind>> = {
+  'datePicker.calendar.monthYearToggle.fadeMs': 'duration',
+  'datePicker.wheels.columnTurn.curve': 'curve',
+  'datePicker.wheels.columnTurn.durationMs': 'duration',
   'navigation.transitionMs': 'duration',
   'scroll.bounce': 'spring',
   'scroll.paging.snap': 'spring',

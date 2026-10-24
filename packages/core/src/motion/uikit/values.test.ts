@@ -11,16 +11,20 @@
  */
 
 import {describe, expect, it} from 'vitest';
+import {cubicBezier} from '../bezier';
 import {solveDecay} from '../decay';
 import {rubberBand} from '../rubberBand';
 import {
+  dampingRatioOf,
   naturalFrequency,
+  responseOf,
   settlingDuration,
   springFromUIKitDampingDuration,
   toSpring,
   type SpringDescription,
 } from '../spring';
-import {scroll, springs} from '.';
+import {listMotionRoles, motionRoleIn, motionRoleOf} from '../roles';
+import {datePicker, registerDatePickerTable, scroll, springs} from '.';
 
 describe('UIKit constants table through the motion math', () => {
   const springEntries: [string, SpringDescription][] = [
@@ -88,6 +92,71 @@ describe('UIKit constants table through the motion math', () => {
           rubberBand(overflow, 874, scroll.rubberBand.coefficient) - shown,
         ),
       ).toBeLessThan(0.5);
+    }
+  });
+
+  it('the date picker\u2019s animated selection is springDuration 0.3 with no bounce, settling in 0.441 s', () => {
+    // UIKit attached mass 1, stiffness 438.649, damping 41.888 and reported
+    // a settlingDuration of 0.441 s.
+    const spring = toSpring(datePicker.calendar.selection.programmaticSpring);
+    expect(dampingRatioOf(spring)).toBeCloseTo(1, 4);
+    expect(responseOf(spring)).toBeCloseTo(0.3, 4);
+    expect(settlingDuration(spring)).toBeCloseTo(0.441, 3);
+  });
+
+  it('the compact date picker\u2019s popover opens and closes on the menu springs', () => {
+    expect(datePicker.compact.present).toEqual(springs.menuOpen);
+    expect(datePicker.compact.dismiss).toEqual(springs.menuClose);
+  });
+
+  it('registers the date picker\u2019s played motion as roles, and only that', () => {
+    // Nothing registers on import; the touch module calls this.
+    expect(motionRoleOf(datePicker.wheels.columnTurn.curve)).toBeUndefined();
+    registerDatePickerTable();
+    registerDatePickerTable();
+    // The toggle's fades (TouchDateField, TouchDateTimeField) and the column
+    // turn (TimeWheels, MonthYearWheels) are played; the rest waits.
+    expect(
+      motionRoleIn(datePicker.calendar.monthYearToggle, 'fadeMs')?.variable,
+    ).toBe('--motion-date-picker-calendar-month-year-toggle-fade-ms');
+    expect(motionRoleIn(datePicker.wheels.columnTurn, 'durationMs')?.kind).toBe(
+      'duration',
+    );
+    expect(motionRoleOf(datePicker.wheels.columnTurn.curve)?.variable).toBe(
+      '--motion-date-picker-wheels-column-turn-curve',
+    );
+    // Motion no component plays yet is not offered to themes.
+    expect(
+      motionRoleOf(datePicker.calendar.selection.programmaticSpring),
+    ).toBeUndefined();
+    expect(motionRoleOf(datePicker.compact.present)).toBeUndefined();
+    expect(motionRoleOf(datePicker.compact.dismiss)).toBeUndefined();
+    expect(motionRoleIn(datePicker.compact, 'labelDimMs')).toBeUndefined();
+    // The rules are not motion.
+    expect(
+      motionRoleIn(datePicker.calendar.monthYearToggle, 'chevronTurnDegrees'),
+    ).toBeUndefined();
+    expect(
+      motionRoleIn(datePicker.wheels, 'minuteIntervalMax'),
+    ).toBeUndefined();
+    expect(
+      listMotionRoles()
+        .map(role => role.id)
+        .filter(id => id.startsWith('datePicker.')),
+    ).toEqual([
+      'datePicker.calendar.monthYearToggle.fadeMs',
+      'datePicker.wheels.columnTurn.curve',
+      'datePicker.wheels.columnTurn.durationMs',
+    ]);
+  });
+
+  it('a column the date picker turns itself moves on the sinusoid of an animated setContentOffset, within 0.2 %', () => {
+    const ease = cubicBezier(datePicker.wheels.columnTurn.curve);
+    for (let i = 0; i <= 100; i++) {
+      const t = i / 100;
+      expect(
+        Math.abs(ease(t) - (0.5 - 0.5 * Math.cos(Math.PI * t))),
+      ).toBeLessThan(0.002);
     }
   });
 });
