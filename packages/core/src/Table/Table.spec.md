@@ -6,8 +6,8 @@ id: component:Table
 authority: current
 archive_reason: null
 superseded_by: null
-approved_by: cixzhang
-approved_at: 2026-09-01
+approved_by: humbertovirtudes
+approved_at: 2026-10-24
 owners: [cixzhang]
 review_triggers: [public-api, behavior, layout, theming, accessibility]
 verified_by:
@@ -440,7 +440,7 @@ content, because it shifts with data and view state.
 ### DEC-3 - Canonical identity and declared row ownership
 
 **Reference:** `component:Table/DEC-3`
-**Decider:** pending exact-head owner review
+**Decider:** humbertovirtudes (2026-10-24)
 
 Identity, rendering mode and row classification are parent facts. Opt-in activation
 and windowing consume one validated canonical key and immutable context; they do
@@ -455,7 +455,7 @@ Rejected: inferring action ownership from arbitrary callback code or adding a se
 ### DEC-4 - Window planning, logical positions and viewport stay in Table
 
 **Reference:** `component:Table/DEC-4`
-**Decider:** pending exact-head owner review
+**Decider:** humbertovirtudes (2026-10-24)
 
 Table consumes the geometry-only virtualization capability with its complete data,
 identity and columns. Admission and logical render planning happen before cells are

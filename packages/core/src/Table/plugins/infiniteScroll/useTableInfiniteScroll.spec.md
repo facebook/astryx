@@ -3,11 +3,11 @@ schema_version: 3
 template_version: 4
 kind: module
 id: module:Table/useTableInfiniteScroll
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
+approved_by: humbertovirtudes
+approved_at: 2026-10-24
 owners: [cixzhang]
 review_triggers:
   [public-api, behavior, layout, theming, accessibility, interaction]
@@ -42,11 +42,11 @@ references:
 | Behavior                | One after-table sentinel observes the parent-owned block viewport, or the browser viewport when absent. Requests latch before invocation; completion and committed controlled state gate short-batch rearming.          |
 | End-user impact         | An always-available manual command, coherent progress, preserved focus, and failure-loop suppression keep incremental data loading operable.                                                                            |
 | Builder impact          | The caller owns rows, requests, errors, and stale-data suppression. A dataset reset remounts the component owning the hook together with its Table; no reset/root/look-ahead/loading-renderer API exists.               |
-| Compatibility/readiness | Additive and unreleased. All eight choices are closed in this draft; actual owner review of module/parent text, source implementation, and all implementation/AT evidence remain pending.                               |
+| Compatibility/readiness | Additive and unreleased. Module and parent decisions have owner approval; source implementation and runtime evidence remain release gates.                                                                              |
 | Review checks           | Reject overlapping/reentrant loads, immediate failure loops, stale-generation rearming, DOM-inferred mode, ancestor discovery, focus loss, duplicate announcements/chrome, or invalid table content.                    |
 | Governing rules         | `component:Table` owns wrapper/context, render planning, and viewport. Required FR15-FR17 and DEC-3/DEC-4 parent additions remain subject to owner review; runtime, public API, and evidence rules retain their owners. |
 
-This table is a review projection; the body below defines the draft contract.
+This table is a review projection; the body below defines the module contract.
 
 ## Intent
 
@@ -58,7 +58,7 @@ This table is a review projection; the body below defines the draft contract.
 - Compatibility class: additive unreleased hook; unsupported new-capability combinations are neutralised while legacy plugins remain available.
 - Migration decision: `module:Table/useTableInfiniteScroll/DEC-1`, DEC-6, and DEC-7.
 
-Consumer signatures, imports, examples, and reset instructions belong in consumer docs. This draft is not implementation authority. Promotion requires actual owner review of the exact module and parent text, not inferred approval from authored choices, merged code, or passing checks.
+Consumer signatures, imports, examples, and reset instructions belong in consumer docs. Owner approval establishes the normative module and parent decisions; implementation and release evidence remain separate. Merged code or passing checks alone do not establish approval.
 
 ## Ownership boundary
 
@@ -202,7 +202,7 @@ Frontmatter paths are verification targets, not assertions that files exist or p
 ### DEC-1 — Latch before request and complete after commit
 
 **Reference:** `module:Table/useTableInfiniteScroll/DEC-1`
-**Decider:** pending owner review
+**Decider:** humbertovirtudes (2026-10-24)
 
 All paths share a pre-invocation latch and require a Promise. Settlement plus a subsequent committed false snapshot completes a valid request without requiring a true phase. Invalid non-Promise results release the invocation latch, pause automatic attempts, and preserve operable manual recovery once controlled loading is false. Successful short batches rearm after commit.
 Rejected: unobservable void completion, a mandatory true-to-false cycle, or treating invalid callback output as permanently pending.
@@ -210,14 +210,14 @@ Rejected: unobservable void completion, a mandatory true-to-false cycle, or trea
 ### DEC-2 — Parent geometry and after-table placement
 
 **Reference:** `module:Table/useTableInfiniteScroll/DEC-2`
-**Decider:** pending owner review
+**Decider:** humbertovirtudes (2026-10-24)
 
 The parent's block viewport is the root when present, otherwise the browser viewport. Native ancestor clipping handles nesting. One surface appends outside the table.
 
 ### DEC-3 — Always-operable manual path and deterministic focus
 
 **Reference:** `module:Table/useTableInfiniteScroll/DEC-3`
-**Decider:** pending owner review
+**Decider:** humbertovirtudes (2026-10-24)
 
 A Load more Button exists with more data, stays mounted/focusable while busy, and is nonoperable until completion. Exhaustion transfers only its owned focus to the parent Scroll region before removal with `preventScroll`.
 Rejected: IO-only loading, hiding the command during loading, or stealing unrelated focus on exhaustion.
@@ -225,7 +225,7 @@ Rejected: IO-only loading, hiding the command during loading, or stealing unrela
 ### DEC-4 — The Load more Button owns loading announcements
 
 **Reference:** `module:Table/useTableInfiniteScroll/DEC-4`
-**Decider:** pending owner review
+**Decider:** humbertovirtudes (2026-10-24)
 
 Shared Button primitives render one fixed loading surface. Its persistent polite
 loading region is the sole busy-message owner; the module supplies coalesced
@@ -237,7 +237,7 @@ Rejected: a public loading renderer, a second channel/region for Button's loadin
 ### DEC-5 — Failure pauses automatic loading
 
 **Reference:** `module:Table/useTableInfiniteScroll/DEC-5`
-**Decider:** pending owner review
+**Decider:** humbertovirtudes (2026-10-24)
 
 Throws/rejections pause automatic loading until gated manual retry or owning-hook remount. Manual success resumes rearming. Caller-owned errors/stale data, more-data toggles, and callback changes never silently reset failure.
 Rejected: immediately retrying a visible failed sentinel or module-owned error/retry panels.
@@ -245,7 +245,7 @@ Rejected: immediately retrying a visible failed sentinel or module-owned error/r
 ### DEC-6 — Zero look-ahead and hook-owning remount reset
 
 **Reference:** `module:Table/useTableInfiniteScroll/DEC-6`
-**Decider:** pending owner review
+**Decider:** humbertovirtudes (2026-10-24)
 
 Look-ahead is internal zero. Dataset reset keys the component owning both hook and Table; old settlements cannot affect the new generation. The caller still suppresses stale product-data commits.
 Rejected: public look-ahead/reset APIs, Table-child-only remount as reset, or module cancellation of caller data.
@@ -253,7 +253,7 @@ Rejected: public look-ahead/reset APIs, Table-child-only remount as reset, or mo
 ### DEC-7 — Parent mode and flat admission
 
 **Reference:** `module:Table/useTableInfiniteScroll/DEC-7`
-**Decider:** pending owner review
+**Decider:** humbertovirtudes (2026-10-24)
 
 Parent context/declarations admit flat data loading and the shared viewport. Children mode is a deduplicated-warning no-op; unknown/non-flat/custom-body incompatibility neutralises the capability while preserving legacy plugins.
 

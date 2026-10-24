@@ -3,11 +3,11 @@ schema_version: 3
 template_version: 4
 kind: module
 id: module:Table/useTableVirtualization
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
+approved_by: humbertovirtudes
+approved_at: 2026-10-24
 owners: [cixzhang]
 review_triggers:
   [
@@ -51,7 +51,7 @@ references:
 | Behavior                | Fixed-height flat-row windowing with four internal overscan rows per side, at most one retained focused row, native table semantics and parent-owned pre-cell planning.                                                                |
 | End-user impact         | Mounted rows preserve selection, controls, focus and truthful full-table positions; unmounted rows are not promised virtual-cursor discovery.                                                                                          |
 | Builder impact          | Callers choose total row pitch and bounded viewport height in CSS pixels and accept constrained single-line content; unsupported content falls back to full rendering.                                                                 |
-| Compatibility/readiness | Additive, unreleased capability; legacy output remains unchanged without opt-in. Authority is draft, owner review is pending, and all implementation verification is pending.                                                          |
+| Compatibility/readiness | Additive, unreleased capability; legacy output remains unchanged without opt-in. Module and parent decisions have owner approval; runtime and numerical evidence remain release gates.                                                 |
 | Review checks           | Reject render-then-hide, independent keys or scroll owners, invalid native structure, silent clipping/drift, lost focus, unbounded retention, window-relative metadata and unmeasured budget claims.                                   |
 | Governing rules         | `component:Table` owns identity, context, admission, render planning, viewport and logical appearance. `spec:AST-025` FR18/FR19 constrain scrolling; `spec:AST-002` and runtime/accessibility architecture constrain API and evidence. |
 
@@ -195,7 +195,7 @@ Implementation verification is pending; structural checks are not runtime eviden
 ### DEC-1 — Capability configures parent-owned rendering
 
 **Reference:** `module:Table/useTableVirtualization/DEC-1`
-**Decider:** pending owner review
+**Decider:** humbertovirtudes (2026-10-24)
 
 The geometry-only opaque capability leaves data/rendering with Table. Its SSR seed
 derives from declared sizes; four-row overscan and row-scroll coordination are internal.
@@ -204,7 +204,7 @@ Rejected: sliced-props bundles, duplicate Table renderers and public engine/over
 ### DEC-2 — Flat fixed-content mode has a full-render fail-safe
 
 **Reference:** `module:Table/useTableVirtualization/DEC-2`
-**Decider:** pending owner review
+**Decider:** humbertovirtudes (2026-10-24)
 
 Fixed single-line content preserves pitch, fonts and controls. Invalid geometry,
 identity, content or extent disables virtualization in all builds. Native gaps
@@ -214,7 +214,7 @@ Rejected: numeric row minimums as enforcement, average-height repair, silent cli
 ### DEC-3 — Identity and metadata stay canonical
 
 **Reference:** `module:Table/useTableVirtualization/DEC-3`
-**Decider:** pending owner review
+**Decider:** humbertovirtudes (2026-10-24)
 
 Parent keys prevent cross-row recycling and distinguish numeric/string identity.
 Parent positions count headers for ARIA, not visible numbering; virtual paint uses
@@ -224,7 +224,7 @@ Rejected: secondary extractors, window-local identity and global legacy ARIA cor
 ### DEC-4 — One focus island and a first-visible-key anchor
 
 **Reference:** `module:Table/useTableVirtualization/DEC-4`
-**Decider:** pending owner review
+**Decider:** humbertovirtudes (2026-10-24)
 
 One keyed island retains focus; first-visible key/fractional offset anchors scroll
 with successor/predecessor/start fallback. Table remount, not activation/append, resets it.
@@ -233,7 +233,7 @@ Rejected: stretching a contiguous window to remote focus or using active state a
 ### DEC-5 — Shared viewport and objective budgets gate completion
 
 **Reference:** `module:Table/useTableVirtualization/DEC-5`
-**Decider:** pending owner review
+**Decider:** humbertovirtudes (2026-10-24)
 
 Table/shared scrolling owns both axes, per-axis chaining and pooled geometry.
 Structural bounds and PR5/PR6 targets gate completion; targets are not results.
@@ -241,8 +241,8 @@ Rejected: a parallel public scroll wrapper/detector or a subjective smoothness v
 
 ## Open questions
 
-None. Exact-head owner review and pending implementation evidence remain required
-before this draft and its parent/module dependencies become current authority.
+None. Owner approval establishes the normative module and parent decisions;
+implementation and release evidence remain separate.
 
 ## Content boundary
 
