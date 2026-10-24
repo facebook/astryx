@@ -28,8 +28,9 @@ validation, and states after the same steps. Each native platform draws the
 template with its own controls and conventions.
 
 A native template is plain source for one platform, with its own state, like a
-catalog template is for the web. A person clones it into their app and owns it
-from then on; Astryx publishes nothing for templates. One scripted scenario
+catalog template is for the web. A person copies it from the Astryx repository
+into their app by hand and owns it from then on; Astryx publishes nothing for
+native templates. One scripted scenario
 keeps each native template in step with the web template it mirrors.
 
 ## Non-goals
@@ -48,9 +49,7 @@ keeps each native template in step with the web template it mirrors.
 - **FR1 — A native template mirrors one catalog template.** A native template
   is kept in the `@astryxdesign/native` source tree, in its platform package's
   versioned templates directory, such as `swift-ios-<n>/templates/`, and names
-  the catalog page template it mirrors by its id. A platform without a native
-  version of a template reports that it has none rather than substituting
-  another platform's.
+  the catalog page template it mirrors by its id.
 - **FR2 — A native template is plain platform source.** It keeps its own state
   and logic in its platform's language and draws with that platform's Astryx
   components (`spec:AST-093`). It shares no template logic, state, or generated
@@ -72,22 +71,29 @@ keeps each native template in step with the web template it mirrors.
 - **FR5 — Nothing ships for native templates.** Native template source, its
   tests, and its scenario are excluded from every published artifact: the npm
   package's files, every package export and entry point, and every Swift
-  product. They exist only as source in the repository, which a person clones
-  as catalog templates are cloned (`architecture:template-authoring/INV8`), and
-  an app never depends on Astryx for a template at run time.
+  product; the npm package's `files` leave out every templates directory. They
+  exist only as source in the Astryx repository, which a person copies into
+  their app by hand, and an app never depends on Astryx for a native template at
+  run time. Catalog templates differ: they ship inside `@astryxdesign/cli` and
+  reach people through `astryx template`
+  (`architecture:template-authoring/INV8`).
 
 ### Platform support
 
 - Supported feature/engine floor: each native template targets its platform
   package's floor, such as iOS 17 for `swift-ios-<n>`. The web floor is
   unchanged.
-- Unsupported behavior: a template on a platform without its native version
-  reports the platforms that have one; nothing renders a substitute.
+- Unsupported behavior: a platform with no native version of a template has no
+  source for it, and Astryx renders nothing in its place.
 - Browser evidence: FR3 replays the scenario on the catalog web template in a
   browser; native claims are proven by the same replay on devices.
 
 ## Current-state impact
 
+- Versioned platform packages such as `swift-ios-<n>` do not exist on main yet;
+  the only platform package is `packages/native/apple/`, which holds no
+  templates. When a platform package gains a templates directory, FR5 requires
+  `@astryxdesign/native`'s `files` to leave it out.
 - `@astryxdesign/native` gains native templates in each platform package's
   templates directory, each with a scenario.
 - No catalog template, CLI command, published artifact, or architecture record
@@ -96,13 +102,13 @@ keeps each native template in step with the web template it mirrors.
 
 ## Verification
 
-| Contract | Verification                                                                                                   | Representative states                                                | Mutation or failure expectation                                                                                    |
-| -------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| FR1      | Native package check that every native template names an existing catalog template, plus a lookup per platform | a template with an iOS version; a request for a platform without one | A native template names a missing catalog id, or a missing version renders a substitute                            |
-| FR2      | Source review and dependency check of each native template                                                     | a template's state, validation, and text                             | A native template imports template logic or generated per-template types shared with the web or another platform   |
-| FR3      | Scenario replay on the catalog web template and on each native version                                         | every step of each template's scenario                               | Any native version or the web template shows a different result after a step, or a catalog change is blocked by it |
-| FR4      | Catalog and CLI output comparison with and without native templates, plus a dependency check                   | each catalog template a native template mirrors                      | Catalog source, metadata, or copy output differs, or core or the CLI imports a native template                     |
-| FR5      | `npm pack` file list of `@astryxdesign/native`, its exports map, and the products of every Swift package       | each native template, its tests, and its scenario                    | A packed file, export, entry point, or Swift product contains or exposes native template source                    |
+| Contract | Verification                                                                                                         | Representative states                             | Mutation or failure expectation                                                                                    |
+| -------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| FR1      | Native package check that every native template names an existing catalog template                                   | a template with an iOS version                    | A native template names a missing catalog id                                                                       |
+| FR2      | Source review and dependency check of each native template                                                           | a template's state, validation, and text          | A native template imports template logic or generated per-template types shared with the web or another platform   |
+| FR3      | Scenario replay on the catalog web template and on each native version                                               | every step of each template's scenario            | Any native version or the web template shows a different result after a step, or a catalog change is blocked by it |
+| FR4      | Catalog and CLI output comparison with and without native templates, plus a dependency check                         | each catalog template a native template mirrors   | Catalog source, metadata, or copy output differs, or core or the CLI imports a native template                     |
+| FR5      | `npm pack` file list of `@astryxdesign/native`, its `files` and exports map, and the products of every Swift package | each native template, its tests, and its scenario | A packed file, export, entry point, or Swift product contains or exposes native template source                    |
 
 ## Decision log
 
