@@ -680,6 +680,32 @@ test('a theme’s activation clock (the search.activationMs role) times the acti
   expect(await translateX(end(page))).toBeCloseTo(-NARROWING, 1);
 });
 
+test('the waiting close button does not widen the page: nothing scrolls sideways', async ({
+  page,
+}) => {
+  await openField(page);
+  // A full-bleed field, as on a phone screen: the root spans the viewport,
+  // so the inactive close button (resting 44 px past its place) would end
+  // 28 px past the screen's edge.
+  // (A phone browser widens its layout viewport to fit what overflows, so
+  // the page is compared with the screen's width, read first.)
+  const widths = await page.evaluate(() => {
+    const screenWidth = window.innerWidth;
+    const root = document.querySelector('[role="search"]') as HTMLElement;
+    const left = root.getBoundingClientRect().left;
+    root.style.width = `${screenWidth}px`;
+    root.style.marginInlineStart = `${-left}px`;
+    return {
+      scroll: document.documentElement.scrollWidth,
+      viewport: screenWidth,
+      layoutViewport: window.innerWidth,
+    };
+  });
+  expect(widths.scroll, JSON.stringify(widths)).toBeLessThanOrEqual(
+    widths.viewport,
+  );
+});
+
 test('in the iOS idiom the close button is glass', async ({page}) => {
   await openField(page);
   const style = await close(page).evaluate(element => {

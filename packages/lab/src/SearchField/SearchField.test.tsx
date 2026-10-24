@@ -19,6 +19,7 @@ import {describe, expect, it, vi} from 'vitest';
 import {createRef, useState} from 'react';
 import {flushSync} from 'react-dom';
 import {act, fireEvent, render, screen} from '@testing-library/react';
+import {InternationalizationProvider} from '@astryxdesign/core/i18n';
 import {
   SearchField,
   type SearchFieldHandle,
@@ -94,6 +95,47 @@ describe('SearchField', () => {
     expect(onActiveChange).toHaveBeenLastCalledWith(false);
     expect(box()).toHaveValue('');
     expect(box()).not.toHaveFocus();
+  });
+
+  it('a cancel from the close button with focus leaves focus on the search landmark, not on the hidden button', () => {
+    render(<Field />);
+    act(() => box().focus());
+    // Keyboard users Tab to the close button, then press Enter or Space.
+    act(() => close().focus());
+    fireEvent.click(close());
+    const landmark = screen.getByRole('search');
+    expect(close()).toHaveAttribute('aria-hidden', 'true');
+    expect(landmark).toHaveFocus();
+    // The landmark lets focus go: it is not left in the tab order.
+    act(() => landmark.blur());
+    expect(landmark).not.toHaveAttribute('tabindex');
+  });
+
+  it('Escape leaves focus on the search landmark', () => {
+    render(<Field />);
+    act(() => box().focus());
+    fireEvent.keyDown(box(), {key: 'Escape'});
+    expect(screen.getByRole('search')).toHaveFocus();
+  });
+
+  it('names its buttons through the translator by default', () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{
+          fr: {
+            '@astryx.searchField.cancel': 'Annuler',
+            '@astryx.searchField.clear': 'Effacer le texte',
+          },
+        }}>
+        <SearchField label="Rechercher" defaultValue="ap" />
+      </InternationalizationProvider>,
+    );
+    act(() => screen.getByRole('searchbox').focus());
+    expect(screen.getByRole('button', {name: 'Annuler'})).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: 'Effacer le texte'}),
+    ).toBeInTheDocument();
   });
 
   it('cancels on Escape, but not on an Escape that ends a composition', () => {

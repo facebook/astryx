@@ -69,12 +69,14 @@ import {
   useState,
   type ChangeEvent,
   type KeyboardEvent,
+  type MouseEvent,
   type Ref,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '@astryxdesign/core';
 import {Icon} from '@astryxdesign/core/Icon';
 import {useMergedRefs} from '@astryxdesign/core/hooks';
+import {useTranslator} from '@astryxdesign/core/i18n';
 import {useTouchPresentation} from '@astryxdesign/core/gestures/experimental';
 import {
   uikit,
@@ -148,9 +150,9 @@ export interface SearchFieldProps extends Omit<
    * title to the bar's row). 0, the default, keeps it in place.
    */
   lift?: number;
-  /** The close button's accessible name. */
+  /** The close button's accessible name (default: "Cancel", translated). */
   cancelLabel?: string;
-  /** The clear button's accessible name. */
+  /** The clear button's accessible name (default: "Clear text", translated). */
   clearLabel?: string;
   /** The root element (the `search` landmark). */
   ref?: Ref<HTMLDivElement>;
@@ -167,6 +169,11 @@ const styles = stylex.create({
     position: 'relative',
     boxSizing: 'border-box',
     width: '100%',
+    // The inactive close button waits past the field's end (it slides in
+    // from there, as UIKit's does from beyond the screen's edge); clipping
+    // the inline overflow keeps it from widening the page, which would
+    // otherwise scroll sideways on a phone.
+    overflowX: 'clip',
     // No browser tap highlight over the field or its buttons: UIKit's has
     // none, and Chromium's fades on the main thread, painting every frame.
     WebkitTapHighlightColor: 'transparent',
@@ -358,8 +365,8 @@ export function SearchField({
   onSubmit,
   handleRef,
   lift = 0,
-  cancelLabel = 'Cancel',
-  clearLabel = 'Clear text',
+  cancelLabel,
+  clearLabel,
   xstyle,
   className,
   style,
@@ -372,6 +379,10 @@ export function SearchField({
   const isActive = isActiveProp ?? isActiveState;
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const t = useTranslator();
+  const resolvedCancelLabel = cancelLabel ?? t('@astryx.searchField.cancel');
+  const resolvedClearLabel = clearLabel ?? t('@astryx.searchField.clear');
   const fieldRef = useRef<HTMLDivElement>(null);
   const rootAnimator = useAnimator();
   const middleAnimator = useAnimator();
@@ -597,6 +608,34 @@ export function SearchField({
     setActive(false);
   }, [setValue, setActive]);
 
+  // A cancel from the keyboard (Escape in the field, or the close button
+  // with focus) leaves focus on the search landmark: the close button turns
+  // `aria-hidden` and transparent at once, and the field would activate
+  // again if it took focus. The landmark takes focus only for this, and
+  // lets it go once focus moves on, so Tab continues from the field.
+  const keepFocusOnLandmark = useCallback(() => {
+    const root = rootRef.current;
+    if (root == null) {
+      return;
+    }
+    root.tabIndex = -1;
+    root.addEventListener('blur', () => root.removeAttribute('tabindex'), {
+      once: true,
+    });
+    root.focus({preventScroll: true});
+  }, []);
+  const handleClose = useCallback(
+    (event: MouseEvent<HTMLButtonElement>) => {
+      const button = event.currentTarget;
+      const hadFocus = button.ownerDocument.activeElement === button;
+      cancel();
+      if (hadFocus) {
+        keepFocusOnLandmark();
+      }
+    },
+    [cancel, keepFocusOnLandmark],
+  );
+
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLInputElement>) => {
       if (event.nativeEvent.isComposing) {
@@ -608,9 +647,10 @@ export function SearchField({
       } else if (event.key === 'Escape' && isActive) {
         event.preventDefault();
         cancel();
+        keepFocusOnLandmark();
       }
     },
-    [onSubmit, value, isActive, cancel],
+    [onSubmit, value, isActive, cancel, keepFocusOnLandmark],
   );
 
   // The clear button keeps the input's focus (its press never takes it) and,
@@ -633,7 +673,7 @@ export function SearchField({
   return (
     <div
       {...rest}
-      ref={useMergedRefs(ref, rootAnimator.ref)}
+      ref={useMergedRefs(ref, rootAnimator.ref, rootRef)}
       role="search"
       data-search-field-active={isActive || undefined}
       {...mergeProps(
@@ -687,7 +727,7 @@ export function SearchField({
           {showsClear ? (
             <button
               type="button"
-              aria-label={clearLabel}
+              aria-label={resolvedClearLabel}
               onMouseDown={event => event.preventDefault()}
               onClick={handleClear}
               {...stylex.props(
@@ -702,11 +742,11 @@ export function SearchField({
       <button
         ref={closeAnimator.ref}
         type="button"
-        aria-label={cancelLabel}
+        aria-label={resolvedCancelLabel}
         tabIndex={isActive ? undefined : -1}
         aria-hidden={isActive ? undefined : true}
         data-search-field-close=""
-        onClick={cancel}
+        onClick={handleClose}
         {...stylex.props(
           styles.close,
           styles.closeGeometry(
