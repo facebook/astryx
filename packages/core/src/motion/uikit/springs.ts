@@ -167,17 +167,6 @@ export const springs = {
    *   33 ms samples within 0.021, Oct 23 2026
    */
   navigationBackButton: {response: 0.4, dampingRatio: 1},
-  /**
-   * The covered screen's inline title sliding toward the leading edge on a
-   * push, at full opacity, by the parallax distance (0.3 of the width); it is
-   * removed when the push ends. The pushed title appears in place.
-   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
-   *   iPhone 17 Pro, the title label's frame per frame (179 → 58.6 pt on a
-   *   402 pt screen); a critically damped spring of response 0.178 s from
-   *   rest fits all nine 33 ms samples within 0.015 of the travel,
-   *   Oct 23 2026
-   */
-  navigationCoveredTitle: {response: 0.178, dampingRatio: 1},
 
   // ---------------------------------------------------------------------
   // Sheets (UISheetPresentationController)

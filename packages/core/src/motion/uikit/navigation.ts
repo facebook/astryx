@@ -100,15 +100,31 @@ export const navigation = {
    */
   interactivePopVelocitySamples: 3,
   /**
-   * On a push, the covered screen's inline title slides toward the leading
-   * edge (`springs.navigationCoveredTitle`) and is removed this many ms after
-   * the push starts.
+   * On a push from the root, the back button's glass platter is there from
+   * the first frame and its chevron starts fading in (on
+   * `springs.navigationBackButton`) this many ms after the screens start
+   * moving. On a pop to the root the chevron fades out at once on the same
+   * spring and the platter leaves with the screen.
    * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
-   *   iPhone 17 Pro, the covered title label per frame: full opacity while
-   *   it slides 179 → 58.6 pt, gone from the hierarchy at ~0.54 s (F4 batch
-   *   27), Oct 23 2026
+   *   iPhone 17 Pro, inline root ↔ inline detail, per 60 Hz frame (F4 batch
+   *   62): the slide's start fitted with the push spring (rms 0.0015 of the
+   *   travel); the chevron image's effective opacity (0.027, 0.27, 0.53,
+   *   0.72, 0.84, 0.91, 0.97 …) fits the 0.4 s spring from 60.8 ms after it
+   *   within 0.010; on the pop it starts within a frame of the slide (0.973,
+   *   0.825, 0.642, 0.474 … at 34 ms steps), Oct 24 2026
    */
-  coveredTitleRemovedMs: 540,
+  backChevronPushDelayMs: 60,
+  /**
+   * The same delay under Reduce Motion with Prefer Cross-Fade Transitions,
+   * after the screens start cross-fading.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, the same push with Reduce Motion + Prefer Cross-Fade on
+   *   (F4 batch 62b): the cross-fade's start fitted with its 0.5 s
+   *   (0.42, 0, 0.58, 1) curve (rms 0.0035); the chevron (0.036, 0.104,
+   *   0.19, 0.28, 0.37 …) fits the 0.4 s spring from 176.8 ms after it within
+   *   0.010, Oct 24 2026
+   */
+  backChevronReducedMotionDelayMs: 175,
 } as const;
 
 /**

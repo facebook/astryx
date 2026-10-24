@@ -23,7 +23,7 @@
  * Motion is UIKit's, measured on iOS 26.2 (motion/uikit/navigation.ts): a
  * critically damped spring (response 0.3 s) that starts at 8.773 widths per
  * second, the card underneath moving at 0.3 of the top card's speed under a
- * 10 % black dimming, and the bar contents cross-fading on the bar spring.
+ * 10 % black dimming; each screen's bar moves with it.
  * Every layer runs on the compositor (core's animator), so a busy main thread
  * does not stall a push or a pop. The back swipe is tracked 1:1 by the
  * recognizer (from the leading screen edge, or anywhere in the content as on
@@ -33,12 +33,15 @@
  * during a push turns it around from where it is, and a finger can grab a
  * moving card.
  *
- * The bar is iOS 26's (measured): Back is a 44 pt circle holding only the
- * chevron, named by the screen it returns to. It fades in on a push and out
- * on a pop; a back swipe leaves it alone until the pop finishes. A pushed
- * title appears in place while the covered one slides toward the leading
- * edge and is removed; on a pop, and under a finger, titles ride their
- * screens.
+ * The bar is iOS 26's (measured): each screen has its own opaque bar that
+ * moves with its screen, so a pushed title slides in with its screen and
+ * covers the one it replaces, which rides the parallax underneath; under a
+ * finger the revealed bar holds still. Back is one 44 pt circle over the
+ * bars, holding only the chevron and named by the screen it returns to: on
+ * a push from the root its platter is there from the first frame and the
+ * chevron fades in a beat later; on a pop to the root the chevron fades out
+ * at once and the platter leaves with the screen. A back swipe leaves it
+ * alone until the pop finishes.
  *
  * In a browser tab the screen's leading edge is the browser's own back
  * swipe (iOS Safari keeps it): the stack's edge swipe runs only in a
@@ -47,7 +50,8 @@
  *
  * Reduce Motion follows UIKit's cross-fade (the animator's substitution):
  * the incoming screen fades in where it lands while the outgoing one fades
- * out, with no travel. The back swipe still tracks the finger.
+ * out, with no travel and no dimming; the bars swap at once. The back swipe
+ * still tracks the finger.
  *
  * Accessibility: covered screens are `inert`. A push moves focus to the new
  * screen's title; a pop returns it to the control that pushed the screen.
@@ -77,13 +81,10 @@ import {
   useGestureRecognizer,
   useTouchIdiom,
 } from '@astryxdesign/core/gestures';
-import type {Animator, MotionCurve} from '@astryxdesign/core/motion/animator';
+import type {Animator} from '@astryxdesign/core/motion/animator';
+import {prefersReducedMotion} from '@astryxdesign/core/motion/reducedMotion';
 import {resolveMotion} from '@astryxdesign/core/motion/resolveMotion';
-import {
-  solveSpring,
-  toSpring,
-  type SpringDescription,
-} from '@astryxdesign/core/motion/spring';
+import type {SpringDescription} from '@astryxdesign/core/motion/spring';
 import {
   navigation,
   springs,
@@ -208,6 +209,7 @@ const styles = stylex.create({
   },
   bar: {
     position: 'relative',
+    isolation: 'isolate',
     flexShrink: 0,
     height: BAR_HEIGHT,
     backgroundColor: colorVars['--color-background-surface'],
@@ -215,6 +217,8 @@ const styles = stylex.create({
     borderBottomStyle: 'solid',
     borderBottomColor: colorVars['--color-border'],
   },
+  // Each screen's bar is opaque and moves with its screen, as UIKit's
+  // per-screen bar copy does: the incoming one covers the outgoing title.
   barLayer: {
     position: 'absolute',
     inset: 0,
@@ -222,6 +226,19 @@ const styles = stylex.create({
     gridTemplateColumns: '1fr auto 1fr',
     alignItems: 'center',
     paddingInline: spacingVars['--spacing-4'],
+    backgroundColor: colorVars['--color-background-surface'],
+    // Below the back button: WebKit does not promote the static siblings a
+    // moving layer crosses, so the moving one goes underneath.
+    zIndex: -1,
+  },
+  // The one back button: it stays put while the bars move under it.
+  backControl: {
+    position: 'absolute',
+    insetInlineStart: spacingVars['--spacing-4'],
+    top: 0,
+    bottom: 0,
+    display: 'flex',
+    alignItems: 'center',
   },
   barLayerCovered: {
     pointerEvents: 'none',
@@ -313,15 +330,15 @@ const dynamicStyles = stylex.create({
 // =============================================================================
 
 /**
- * One screen's animated layers: its card, the dimming over it, and its bar
- * items (the title moves; the back button and trailing items fade).
+ * One screen's animated layers: its card and the dimming over it, and its
+ * bar, which moves with the card (title and trailing items included), with
+ * the same dimming.
  */
 interface ScreenLayers {
   card: Animator;
   dim: Animator;
-  title: Animator;
-  back: Animator;
-  trailing: Animator;
+  bar: Animator;
+  barDim: Animator;
   cardElement: HTMLElement | null;
   titleElement: HTMLElement | null;
 }
@@ -390,61 +407,85 @@ function CardLayer({
 function BarLayer({
   model,
   registry,
-  backLabel,
-  onBack,
   isCovered,
 }: {
   model: ScreenModel;
   registry: Registry;
-  backLabel: string | null;
-  onBack: () => void;
   isCovered: boolean;
 }) {
-  const title = useAnimator();
-  const back = useAnimator();
-  const trailing = useAnimator();
+  const bar = useAnimator();
+  const barDim = useAnimator();
   useLayoutEffect(() => {
     const entry = registry.get(model.key) ?? {};
-    entry.title = title.animator;
-    entry.back = back.animator;
-    entry.trailing = trailing.animator;
+    entry.bar = bar.animator;
+    entry.barDim = barDim.animator;
     registry.set(model.key, entry);
-  }, [registry, model.key, title.animator, back.animator, trailing.animator]);
+  }, [registry, model.key, bar.animator, barDim.animator]);
   const titleRef = useCallback(
     (element: HTMLHeadingElement | null) => {
-      title.ref(element);
       const entry = registry.get(model.key) ?? {};
       entry.titleElement = element;
       registry.set(model.key, entry);
     },
-    [title, registry, model.key],
+    [registry, model.key],
   );
   const props = model.element.props;
   return (
     <div
+      ref={bar.ref}
       data-navigation-bar={model.key}
       inert={isCovered || undefined}
       {...stylex.props(styles.barLayer, isCovered && styles.barLayerCovered)}>
-      <div ref={back.ref} {...stylex.props(styles.barLeading)}>
-        {backLabel != null ? (
-          <button
-            type="button"
-            onClick={onBack}
-            aria-label={backLabel}
-            data-navigation-back
-            {...stylex.props(styles.back)}>
-            <span {...stylex.props(styles.backIcon)}>
-              <Icon icon="chevronLeft" color="inherit" />
-            </span>
-          </button>
-        ) : null}
-      </div>
+      <div {...stylex.props(styles.barLeading)} />
       <h2 ref={titleRef} tabIndex={-1} {...stylex.props(styles.barTitle)}>
         {props.title}
       </h2>
-      <div ref={trailing.ref} {...stylex.props(styles.barTrailing)}>
-        {props.trailing}
-      </div>
+      <div {...stylex.props(styles.barTrailing)}>{props.trailing}</div>
+      <div
+        ref={barDim.ref}
+        aria-hidden
+        {...stylex.props(
+          styles.dim,
+          dynamicStyles.dimColor(navigation.dimmingAlpha),
+        )}
+      />
+    </div>
+  );
+}
+
+/**
+ * The back button: one for the stack, over the moving bars. Its glass
+ * platter shows from a push's first frame; its chevron fades in and out on
+ * its own clock (the stack drives both).
+ */
+function BackControl({
+  label,
+  onBack,
+  isLeaving,
+  control,
+  chevron,
+}: {
+  label: string;
+  onBack: () => void;
+  isLeaving: boolean;
+  control: (element: HTMLElement | null) => void;
+  chevron: (element: HTMLElement | null) => void;
+}) {
+  return (
+    <div
+      ref={control}
+      inert={isLeaving || undefined}
+      {...stylex.props(styles.backControl)}>
+      <button
+        type="button"
+        onClick={onBack}
+        aria-label={label}
+        data-navigation-back
+        {...stylex.props(styles.back)}>
+        <span ref={chevron} {...stylex.props(styles.backIcon)}>
+          <Icon icon="chevronLeft" color="inherit" />
+        </span>
+      </button>
     </div>
   );
 }
@@ -491,39 +532,6 @@ function startsInEdgeBand(x: number, direction: 'ltr' | 'rtl'): boolean {
   return direction === 'rtl'
     ? typeof window !== 'undefined' && x >= window.innerWidth - band
     : x <= band;
-}
-
-/**
- * The covered title on a push: it slides toward the leading edge on its own
- * spring and is removed when UIKit removes it. The removal is a step in the
- * same compositor animation, so it happens on time even while the main
- * thread is busy. Both values are motion roles, resolved under the title's
- * theme.
- */
-function coveredTitleCurves(
-  element: Element | null | undefined,
-  from: number,
-  to: number,
-): {x: MotionCurve; opacity: MotionCurve} {
-  const slide = solveSpring(
-    toSpring(resolveMotion(element, springs.navigationCoveredTitle)),
-    {from, to},
-  );
-  const removeAt =
-    resolveMotion(element, navigation, 'coveredTitleRemovedMs') / 1000;
-  const duration = Math.max(removeAt, slide.settleTime(0.01));
-  return {
-    x: {
-      duration,
-      at: t => slide.value(t),
-      velocity: t => slide.velocity(t),
-    },
-    opacity: {
-      duration,
-      at: t => (t < removeAt ? 1 : 0),
-      velocity: () => 0,
-    },
-  };
 }
 
 function writingDirection(element: Element | null): 'ltr' | 'rtl' {
@@ -646,27 +654,40 @@ export function NavigationStack<T>({
 
   const runningRef = useRef<{id: number; done: boolean} | null>(null);
   const progressRef = useRef(0);
+  // The back button's platter and chevron (one for the stack).
+  const backControl = useAnimator();
+  const backChevron = useAnimator();
 
   const layersOf = useCallback(
     (key: string | null) => (key == null ? null : (registry.get(key) ?? null)),
     [registry],
   );
 
-  /** Writes the layers for progress p (a finger's frame; no animation). */
+  /**
+   * Writes the layers for progress p (a finger's frame, or a transition's
+   * first one; no animation). The top bar moves with its card. Under a
+   * finger the revealed bar holds still where it rests, as UIKit's does;
+   * `underBar: 'ride'` puts it at its card's parallax instead (where a
+   * programmatic pop starts it).
+   */
   const setProgress = useCallback(
-    (p: number, top: string, under: string | null) => {
+    (
+      p: number,
+      top: string,
+      under: string | null,
+      underBar: 'rest' | 'ride' = 'rest',
+    ) => {
       const width = cardsRef.current?.clientWidth ?? 0;
       const direction = writingDirection(containerRef.current);
       const values = layersAt(p, width, direction);
       const topLayers = layersOf(top);
       const underLayers = layersOf(under);
       topLayers?.card?.set({x: values.topX});
+      topLayers?.bar?.set({x: values.topX});
       underLayers?.card?.set({x: values.underX});
+      underLayers?.bar?.set({x: underBar === 'ride' ? values.underX : 0});
       underLayers?.dim?.set({opacity: values.dim});
-      // The titles ride their views; the back button and trailing items do
-      // not follow a finger (they fade once a pop finishes).
-      topLayers?.title?.set({x: values.topX, opacity: 1});
-      underLayers?.title?.set({x: values.underX, opacity: 1});
+      underLayers?.barDim?.set({opacity: values.dim});
       progressRef.current = p;
     },
     [layersOf],
@@ -684,7 +705,7 @@ export function NavigationStack<T>({
       spring: SpringDescription,
       dp: number | undefined,
       reducedMotion: 'crossfade' | 'keep',
-      kind: 'push' | 'pop' | 'cancel',
+      underBar: 'rest' | 'ride',
     ): Promise<boolean> => {
       const width = cardsRef.current?.clientWidth ?? 0;
       const direction = writingDirection(containerRef.current);
@@ -707,46 +728,26 @@ export function NavigationStack<T>({
           ),
         );
       }
-      // Titles: a pushed title appears in place at once; the covered one
-      // slides toward the leading edge on its own, faster spring. A popping
-      // title rides out with its card and the revealed one rides in with
-      // its card.
-      if (topLayers?.title) {
-        if (kind === 'push') {
-          topLayers.title.set({x: 0, opacity: 1});
-        } else {
-          handles.push(
-            topLayers.title.animate(
-              {x: values.topX},
-              {spring, velocity: velocity ? {x: velocity.topX} : undefined},
-              {at, reducedMotion: 'instant'},
-            ),
-          );
-        }
-      }
-      if (underLayers?.title) {
-        if (kind !== 'push') {
-          // A covered title a push was removing comes back with its screen.
-          underLayers.title.set({opacity: 1});
-        }
+      // The bars move with their cards (each screen's bar is part of it in
+      // UIKit): the incoming one covers the outgoing title. Under Reduce
+      // Motion they swap at once, as UIKit's titles do.
+      const barMotion = reducedMotion === 'crossfade' ? 'instant' : 'keep';
+      if (topLayers?.bar) {
         handles.push(
-          kind === 'push'
-            ? underLayers.title.play(
-                coveredTitleCurves(
-                  underLayers.titleElement,
-                  underLayers.title.get('x'),
-                  values.underX,
-                ),
-                {at, reducedMotion: 'instant'},
-              )
-            : underLayers.title.animate(
-                {x: values.underX},
-                {
-                  spring,
-                  velocity: velocity ? {x: velocity.underX} : undefined,
-                },
-                {at, reducedMotion: 'instant'},
-              ),
+          topLayers.bar.animate(
+            {x: values.topX},
+            {spring, velocity: velocity ? {x: velocity.topX} : undefined},
+            {at, reducedMotion: barMotion},
+          ),
+        );
+      }
+      if (underLayers?.bar && underBar === 'ride') {
+        handles.push(
+          underLayers.bar.animate(
+            {x: values.underX},
+            {spring, velocity: velocity ? {x: velocity.underX} : undefined},
+            {at, reducedMotion: barMotion},
+          ),
         );
       }
       if (underLayers?.card) {
@@ -758,14 +759,26 @@ export function NavigationStack<T>({
           ),
         );
       }
-      if (underLayers?.dim) {
-        handles.push(
-          underLayers.dim.animate(
-            {opacity: values.dim},
-            {spring, velocity: velocity ? {opacity: velocity.dim} : undefined},
-            {at},
-          ),
-        );
+      for (const dim of [underLayers?.dim, underLayers?.barDim]) {
+        if (dim == null) {
+          continue;
+        }
+        if (reducedMotion === 'crossfade' && prefersReducedMotion()) {
+          // UIKit's Reduce Motion cross-fade has no dimming: the shade
+          // belongs to the slide.
+          dim.set({opacity: 0});
+        } else {
+          handles.push(
+            dim.animate(
+              {opacity: values.dim},
+              {
+                spring,
+                velocity: velocity ? {opacity: velocity.dim} : undefined,
+              },
+              {at},
+            ),
+          );
+        }
       }
       progressRef.current = to;
       return Promise.all(handles.map(async handle => handle.finished)).then(
@@ -776,41 +789,44 @@ export function NavigationStack<T>({
   );
 
   /**
-   * The back button and trailing items of a push or a pop: the incoming
-   * screen's fade in and the outgoing screen's fade out, each on its own
-   * spring, from the moment the transition (or a finished swipe) commits.
+   * The back button on a push from the root or a pop to it, as UIKit's: the
+   * platter is there from the push's first frame and the chevron fades in a
+   * beat later; on the pop the chevron fades out at once and the platter
+   * leaves with the screen. Both fades are the back-button spring; the
+   * push's delay is a motion role, resolved under the stack's theme.
    */
-  const fadeItems = useCallback(
-    (kind: 'push' | 'pop', top: string, under: string | null) => {
-      const at = performance.now();
-      const incoming = layersOf(kind === 'push' ? top : under);
-      const outgoing = layersOf(kind === 'push' ? under : top);
-      if (kind === 'push') {
-        incoming?.back?.set({opacity: 0});
-        incoming?.trailing?.set({opacity: 0});
+  const fadeBack = useCallback(
+    (kind: 'push' | 'pop', under: string | null) => {
+      const isRoot = under != null && view.models[0]?.key === under;
+      if (!isRoot) {
+        return;
       }
-      incoming?.back?.animate(
-        {opacity: 1},
-        {spring: springs.navigationBackButton},
-        {at},
-      );
-      outgoing?.back?.animate(
-        {opacity: 0},
-        {spring: springs.navigationBackButton},
-        {at},
-      );
-      incoming?.trailing?.animate(
-        {opacity: 1},
-        {spring: springs.navigationBarElements},
-        {at},
-      );
-      outgoing?.trailing?.animate(
-        {opacity: 0},
-        {spring: springs.navigationBarElements},
-        {at},
-      );
+      const element = containerRef.current;
+      const spring = springs.navigationBackButton;
+      if (kind === 'push') {
+        const delay = resolveMotion(
+          element,
+          navigation,
+          prefersReducedMotion()
+            ? 'backChevronReducedMotionDelayMs'
+            : 'backChevronPushDelayMs',
+        );
+        backControl.animator.set({opacity: 1});
+        backChevron.animator.set({opacity: 0});
+        backChevron.animator.animate(
+          {opacity: 1},
+          {spring},
+          {at: performance.now() + delay, reducedMotion: 'keep'},
+        );
+      } else {
+        backChevron.animator.animate(
+          {opacity: 0},
+          {spring},
+          {at: performance.now(), reducedMotion: 'keep'},
+        );
+      }
     },
-    [layersOf],
+    [view.models, backControl.animator, backChevron.animator],
   );
 
   /** Puts a screen's layers at rest: on top, covered, or off. */
@@ -823,16 +839,14 @@ export function NavigationStack<T>({
       if (role === 'top') {
         layers?.card?.set({x: 0, opacity: 1});
         layers?.dim?.set({opacity: 0});
-        layers?.title?.set({x: 0, opacity: 1});
-        layers?.back?.set({opacity: 1});
-        layers?.trailing?.set({opacity: 1});
+        layers?.bar?.set({x: 0});
+        layers?.barDim?.set({opacity: 0});
       } else {
-        // A covered screen's title is removed once it has slid away.
+        // Covered: parked at the parallax, under the top screen and its bar.
         layers?.card?.set({x: values.underX, opacity: 1});
         layers?.dim?.set({opacity: 1});
-        layers?.title?.set({x: values.underX, opacity: 0});
-        layers?.back?.set({opacity: 0});
-        layers?.trailing?.set({opacity: 0});
+        layers?.bar?.set({x: values.underX});
+        layers?.barDim?.set({opacity: 1});
       }
     },
     [layersOf],
@@ -875,6 +889,8 @@ export function NavigationStack<T>({
       view.models.forEach((model, index) => {
         settle(model.key, index === view.models.length - 1 ? 'top' : 'covered');
       });
+      backControl.animator.set({opacity: 1});
+      backChevron.animator.set({opacity: 1});
       return;
     }
     const {top, under} = transition;
@@ -889,7 +905,7 @@ export function NavigationStack<T>({
       if (!wasRunning) {
         setProgress(1, top, under);
       }
-      fadeItems('push', top, under);
+      fadeBack('push', under);
       promise = animateProgress(
         0,
         top,
@@ -897,10 +913,10 @@ export function NavigationStack<T>({
         springs.navigationPush,
         wasRunning ? undefined : programmaticVelocity('push'),
         'crossfade',
-        'push',
+        'ride',
       );
     } else if (release != null) {
-      fadeItems('pop', top, under);
+      fadeBack('pop', under);
       promise = animateProgress(
         1,
         top,
@@ -908,13 +924,13 @@ export function NavigationStack<T>({
         springs.navigationInteractivePopFinish,
         release.velocity,
         'keep',
-        'pop',
+        'rest',
       );
     } else {
       if (!wasRunning) {
-        setProgress(0, top, under);
+        setProgress(0, top, under, 'ride');
       }
-      fadeItems('pop', top, under);
+      fadeBack('pop', under);
       promise = animateProgress(
         1,
         top,
@@ -922,7 +938,7 @@ export function NavigationStack<T>({
         springs.navigationPop,
         wasRunning ? undefined : programmaticVelocity('pop'),
         'crossfade',
-        'pop',
+        'ride',
       );
     }
     void promise.then(finished => {
@@ -943,10 +959,8 @@ export function NavigationStack<T>({
         }
       } else {
         if (under != null) {
-          // The covered screen keeps its place under the top one; its title
-          // is removed.
+          // The covered screen keeps its place under the top one.
           layersOf(under)?.card?.set({opacity: 1});
-          layersOf(under)?.title?.set({opacity: 0});
         }
         focusAfter('push', top);
       }
@@ -1055,7 +1069,8 @@ export function NavigationStack<T>({
             const layers = layersOf(key);
             layers?.card?.stop();
             layers?.dim?.stop();
-            layers?.title?.stop();
+            layers?.bar?.stop();
+            layers?.barDim?.stop();
           }
           runningRef.current = null;
           swipeRef.current = {start, top, under, velocities: []};
@@ -1120,7 +1135,7 @@ export function NavigationStack<T>({
               springs.navigationInteractivePopFinish,
               v,
               'keep',
-              'cancel',
+              'rest',
             ).then(finished => {
               if (runningRef.current?.id === id) {
                 runningRef.current = {id, done: true};
@@ -1210,6 +1225,11 @@ export function NavigationStack<T>({
       t('@astryx.navigationStack.back')
     );
   };
+  // The top screen's back target; while a pop to the root runs, the leaving
+  // screen's (its button fades out with it).
+  const topBackLabel = backLabelFor(
+    rendered.findIndex(model => model.key === topKey),
+  );
 
   return (
     <NavigationStackContext.Provider value={api as NavigationStackApi}>
@@ -1220,18 +1240,25 @@ export function NavigationStack<T>({
         data-testid={testId}
         {...stylex.props(styles.stack)}>
         <div {...stylex.props(styles.bar)}>
-          {rendered.map((model, index) =>
+          {rendered.map(model =>
             model.key === topKey || model.key === underKey ? (
               <BarLayer
                 key={model.key}
                 model={model}
                 registry={registry}
-                backLabel={backLabelFor(index)}
-                onBack={api.pop}
                 isCovered={model.key !== topKey || view.leaving != null}
               />
             ) : null,
           )}
+          {topBackLabel != null ? (
+            <BackControl
+              label={topBackLabel}
+              onBack={api.pop}
+              isLeaving={view.leaving != null}
+              control={backControl.ref}
+              chevron={backChevron.ref}
+            />
+          ) : null}
         </div>
         <div ref={cardsRef} {...stylex.props(styles.cards)}>
           {rendered.map(model => (
