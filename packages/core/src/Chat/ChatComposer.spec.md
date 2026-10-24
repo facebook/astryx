@@ -1,8 +1,9 @@
 ---
-schema_version: 3
+schema_version: 5
 template_version: 5
 kind: component
 id: component:ChatComposer
+platform_of: null
 authority: draft
 archive_reason: null
 superseded_by: null
