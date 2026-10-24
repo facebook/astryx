@@ -1,9 +1,9 @@
 # Typed slots (Swift)
 
 - Status: draft
-- Relation: extends AST-082 FR4 ("the core expresses content as a typed slot
-  instead, such as text, an icon, or a named Astryx component") and FR17
-  (semantic icon names). It decides how each slot kind appears in Swift.
+- Relation: applies AST-082 FR4 (typed slots: text, icon, content) and FR17
+  (shared icon names) to Swift. It decides how each slot kind appears in
+  SwiftUI; it does not define the kinds.
 
 ## Summary
 
@@ -15,25 +15,27 @@ places as on the web, read by VoiceOver in the same order.
 
 ## Requirements
 
-- **S1 — Four slot kinds.** A core prop whose web type is free-form content is
-  given exactly one slot kind in the component's native additions:
-  - `text`: words, a `String` (with a `LocalizedStringResource` spelling, per
-    the component API spec);
-  - `icon`: an `AstryxIconName` (S2);
-  - `component`: one of a closed list of named Astryx components, such as
-    `Avatar | Icon | Thumbnail`;
-  - `content`: child Astryx components in order, as `Card` takes today.
-    A free-form prop with no slot kind stays in the web contract only.
-- **S2 — Icon names are a closed, extensible set.** `AstryxIconName` holds every
-  built-in semantic icon name, generated from core's icon registry, plus
-  namespaced names `<library>:<name>` that an app registers in code with the
-  image to draw (an SF Symbol name or an asset). A name the app has not
-  registered fails at registration time in development and draws nothing in
-  release, never a substitute.
-- **S3 — Component slots are generic and constrained.** A `component` slot is a
-  `@ViewBuilder` parameter whose type is constrained to the listed Astryx
-  views, never `AnyView` and never an arbitrary `View`. The props initializer
-  takes the slot as the matching generated node type.
+- **S1 — Each AST-082 slot kind has one Swift form.**
+  - A **text** slot is a `String`, with a `LocalizedStringResource` spelling
+    as the component API spec gives every word.
+  - An **icon** slot is an `AstryxIconName` (S2).
+  - A **content** slot holds named Astryx components. Its component's native
+    additions list which ones it accepts, and whether it holds one or many
+    (a row's start holds one of `Avatar`, `Icon`, `Thumbnail`; a card holds
+    many of any).
+    A free-form web prop with no slot kind stays in the web contract only.
+- **S2 — Icon names are a string-backed type with the built-ins as members.**
+  `AstryxIconName` is a `RawRepresentable`, `ExpressibleByStringLiteral`,
+  `Hashable`, `Codable`, `Sendable` value. Every built-in semantic name is a
+  static member (`.search`, `.close`), generated from core's icon registry. A
+  namespaced name (`"acme:rocket"`) is valid once the app registers it in code
+  with the image to draw (an SF Symbol name or an asset). An unknown name
+  stops a development build with a message naming it, and draws nothing in a
+  release build, never a substitute.
+- **S3 — Content slots are constrained generics.** A content slot is a
+  `@ViewBuilder` parameter whose type accepts only the listed Astryx views,
+  never `AnyView` and never an arbitrary `View`. The props initializer takes
+  the slot as the matching generated node type.
 - **S4 — The owner sizes what it holds.** A component that holds an icon or a
   component in a slot sets that child's size from its own size, as core does
   (an `Icon` in a small `IconButton` is small). An explicit size on the child
@@ -42,18 +44,18 @@ places as on the web, read by VoiceOver in the same order.
   in the core contract's order (start, label, description, end). A decorative
   icon in a slot is hidden unless it carries a label (AST-082 FR17).
 - **S6 — Slots are declared, not guessed.** Each component's native additions
-  name the slot kind for every free-form prop it keeps; the contract generator
+  name the slot kind, and for a content slot its accepted components, for every free-form prop it keeps; the contract generator
   fails when a kept free-form prop has none.
 
 ## Acceptance checks
 
-| Requirement | Check                                                                                                                                                                                                   |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| S1, S6      | The generator test fails on a fixture component whose free-form prop has no slot kind, and produces each of the four Swift forms for a fixture with all four.                                           |
-| S2          | Every built-in name maps to an SF Symbol that exists on the package's iOS floor; registering `acme:rocket` makes `.custom("acme:rocket")` draw it; an unregistered name triggers a development failure. |
-| S3          | A compile test passes an `AstryxAvatar` into a row's start slot and fails to compile when passing a SwiftUI `Toggle`.                                                                                   |
-| S4          | A test reads the resolved size of an unsized icon inside a small and a large owner.                                                                                                                     |
-| S5          | A UI test reads a row with an avatar, label, description, and badge in that order.                                                                                                                      |
+| Requirement | Check                                                                                                                                                                                                                  |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S1, S6      | The generator test fails on a fixture component whose free-form prop has no slot kind, and produces each of the four Swift forms for a fixture with all four.                                                          |
+| S2          | Every built-in name maps to an SF Symbol that exists on the package's iOS floor; registering `acme:rocket` makes `"acme:rocket"` draw it; an unregistered name stops a development build and draws nothing in release. |
+| S3          | A compile test passes an `AstryxAvatar` into a row's start slot and fails to compile when passing a SwiftUI `Toggle`.                                                                                                  |
+| S4          | A test reads the resolved size of an unsized icon inside a small and a large owner.                                                                                                                                    |
+| S5          | A UI test reads a row with an avatar, label, description, and badge in that order.                                                                                                                                     |
 
 ## Current state
 
@@ -64,10 +66,7 @@ places as on the web, read by VoiceOver in the same order.
 
 ## Open questions
 
-- **OQ1 — Is `component` the right fourth kind, or should each named component
-  be its own kind?** Recommendation: one `component` kind with a closed list
-  per slot, because the list differs by slot (a row's start takes
-  `Avatar | Icon | Thumbnail`; its end takes `Badge | Icon | Text`).
+None.
 
 ## References
 
