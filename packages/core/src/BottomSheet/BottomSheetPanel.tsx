@@ -80,7 +80,9 @@ const HEIGHT_BUDGETS = {
 export type BottomSheetHeight = keyof typeof HEIGHT_BUDGETS;
 export type {BottomSheetSnapPoint};
 
-// SYNC: must match OVERSCROLL_MAX in useSheetGestures.ts.
+// How far the surface extends below the viewport, so a release that carries
+// the sheet past fully open (the 0.8-damped spring overshoots) never shows a
+// gap under it.
 const OVERSCROLL_PADDING = 48;
 const MOBILE_KEYBOARD_BOTTOM_CLEARANCE = 48;
 const TRANSITION_BACKSTOP_BUFFER_MS = 50;
@@ -522,7 +524,8 @@ export function BottomSheetPanel({
     scrollPreservationInset,
     settlingLayoutOffset,
     settledLayoutOffset,
-    completeScrollAreaSettle,
+    gestureExitRef,
+    resetTravel,
   } = useSheetGestures({
     isOpen: isInteractive,
     canDismiss: isSwipeDismissAllowed,
@@ -579,32 +582,34 @@ export function BottomSheetPanel({
       pendingMotionCompleteRef.current = motion;
       return;
     }
-    return waitForTransition(
-      elementRef.current,
-      motion === 'fading' ? 'opacity' : 'transform',
-      () => {
-        if (startedMotionRef.current === motion) {
-          onMotionCompleteRef.current?.(motion);
-        } else {
-          pendingMotionCompleteRef.current = motion;
+    const complete = () => {
+      if (startedMotionRef.current === motion) {
+        onMotionCompleteRef.current?.(motion);
+      } else {
+        pendingMotionCompleteRef.current = motion;
+      }
+    };
+    // A sheet dismissed by a drag leaves on its release spring (the gesture
+    // hook carries it off screen), not on the exit transition: its exit is
+    // over when that spring lands.
+    const gestureExit = motion === 'exiting' ? gestureExitRef.current : null;
+    if (gestureExit != null) {
+      let isCurrent = true;
+      void gestureExit.finished.then(() => {
+        if (isCurrent) {
+          complete();
         }
-      },
-    );
-  }, [motion]);
-  // The snap is transform-only; the layout height reconciles when it lands.
-  // waitForTransition — the same helper the motion states use — resolves that
-  // even when no `transitionend` is coming: inline or computed
-  // `transition: none`, a zero duration, and a timer backstop otherwise.
-  useLayoutEffect(() => {
-    if (settlingLayoutOffset == null) {
-      return;
+      });
+      return () => {
+        isCurrent = false;
+      };
     }
     return waitForTransition(
       elementRef.current,
-      'transform',
-      completeScrollAreaSettle,
+      motion === 'fading' ? 'opacity' : 'transform',
+      complete,
     );
-  }, [completeScrollAreaSettle, settlingLayoutOffset]);
+  }, [gestureExitRef, motion]);
   useEffect(() => {
     if (motion == null) {
       return;
@@ -681,22 +686,30 @@ export function BottomSheetPanel({
       ? retainedTransform
       : undefined;
   const consumerTransform = style?.transform;
-  // The transform is written to the element here, not rendered through the
-  // style prop. A drag writes it straight to the element once per input
-  // sample (useSheetGestures) and renders nothing in between, so React never
-  // sees those writes; rendered through the prop, the resting value would be
-  // skipped as "unchanged" when the drag ends and the sheet would stay where
-  // the finger left it. Written after every commit instead, outside a drag,
-  // the resting value lands in the same style update as the restored
-  // transition, so a settle or a dismissal animates from the live position.
+  // The resting transform is written to the element here, after every
+  // commit, not rendered through the style prop: the gesture hook moves the
+  // sheet on the separate `translate` channel (a drag once per input sample,
+  // a release on its spring), and the new resting value is written once that
+  // travel is over, in the same commit as the layout reconcile, with the
+  // travel folded into it (resetTravel). While a release spring runs, the
+  // previous resting transform stays: the travel is measured from it. A
+  // drag-dismissed sheet keeps it through its exit too, which also holds off
+  // the closing style's transform, since the release spring carries it out.
   useLayoutEffect(() => {
     if (isDragging || consumerTransform != null) {
       return;
     }
     const element = elementRef.current;
-    if (element != null) {
-      element.style.transform = sheetTransform ?? '';
+    if (element == null || settlingLayoutOffset != null) {
+      return;
     }
+    const gestureExit = gestureExitRef.current;
+    if (gestureExit != null) {
+      element.style.transform = gestureExit.transform;
+      return;
+    }
+    element.style.transform = sheetTransform ?? '';
+    resetTravel();
   });
   const gestureStyle = {
     transition: contentProps.style.transition,
