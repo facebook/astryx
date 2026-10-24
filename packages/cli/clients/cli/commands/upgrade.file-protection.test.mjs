@@ -279,7 +279,7 @@ describe('upgrade protected-file contract', () => {
             file: 'vendor/bundle.js',
             location: '2:46',
             reason:
-              'unparseable protected file (linguist-vendored in .gitattributes:1): Unexpected token, expected ","',
+              'unparseable protected file (vendored): Unexpected token, expected ","',
           },
         ],
       },

@@ -61,6 +61,7 @@ import {
   PathSafetyError,
 } from '../../../foundation/fs/path-safety.mjs';
 import {createFileProtectionResolver} from '../../../foundation/fs/file-protection.mjs';
+import {withoutProtected} from '../../../assets/codemods/runner.mjs';
 
 /**
  * Collapse per-codemod protection hits into one stable row per file.
@@ -103,11 +104,13 @@ function summarizeProtectedFiles(rows) {
  * @returns {Array<{file: string, location?: string, reason: string}>}
  */
 function summarizeDeclinedCandidates(rows, protectedRows = []) {
-  const blocked = new Set(protectedRows.map(item => item.file));
   /** @type {Map<string, {file: string, location?: string, reason: string}>} */
   const byFile = new Map();
-  for (const {file, location, reason} of rows) {
-    if (byFile.has(file) || blocked.has(file)) continue;
+  for (const {file, location, reason} of withoutProtected(
+    rows,
+    protectedRows,
+  )) {
+    if (byFile.has(file)) continue;
     byFile.set(file, {file, ...(location ? {location} : {}), reason});
   }
   return [...byFile.values()].sort((a, b) => a.file.localeCompare(b.file));

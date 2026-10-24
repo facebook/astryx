@@ -84,7 +84,7 @@ describe('runCodemods — protected files that do not parse', () => {
         codemod: 'core:rename-foo',
         location: '1:21',
         reason: expect.stringMatching(
-          /^unparseable protected file \(linguist-vendored in \.gitattributes:1\): /,
+          /^unparseable protected file \(vendored\): /,
         ),
       },
     ]);
@@ -282,8 +282,7 @@ describe('runCodemods — protected files that do not parse', () => {
         file: path.join('vendor', 'broken.css'),
         codemod: 'core:css',
         location: '1:1',
-        reason:
-          'unparseable protected file (linguist-vendored in .gitattributes:1): Unclosed block',
+        reason: 'unparseable protected file (vendored): Unclosed block',
       },
     ]);
   });
@@ -321,7 +320,7 @@ describe('runCodemods — protected files that do not parse', () => {
         codemod: 'core:migrate-deprecated-theme-surface',
         location: '1:3',
         reason:
-          'unparseable protected file (linguist-vendored in .gitattributes:1): Expected a pseudo-class or pseudo-element.',
+          'unparseable protected file (vendored): Expected a pseudo-class or pseudo-element.',
       },
     ]);
     expect(
@@ -415,5 +414,44 @@ describe('runCodemods — protected files that do not parse', () => {
       'vendor/bundle.css',
     ]);
     expect(r.declinedCandidates).toEqual([]);
+  });
+
+  it('gives a rejected @scope prelude its position in the stylesheet', async () => {
+    fs.mkdirSync(path.join(tmpDir, 'vendor'), {recursive: true});
+    fs.writeFileSync(
+      path.join(tmpDir, '.gitattributes'),
+      'vendor/** linguist-vendored\n',
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'vendor', 'bundle.css'),
+      '.x { color: blue; }\n\n@scope (a::) {\n  b { color: red; }\n}\n',
+    );
+
+    const r = await runCodemods(
+      [
+        {
+          version: '0.7.0',
+          transforms: [
+            {
+              name: 'migrate-deprecated-theme-surface',
+              transform: migrateDeprecatedThemeSurface,
+              meta: migrateDeprecatedThemeSurfaceMeta,
+            },
+          ],
+        },
+      ],
+      {apply: true, path: '.', silent: true},
+    );
+
+    expect(r.errors).toEqual([]);
+    expect(r.declinedCandidates).toEqual([
+      {
+        file: path.join('vendor', 'bundle.css'),
+        codemod: 'core:migrate-deprecated-theme-surface',
+        location: '3:9',
+        reason:
+          'unparseable protected file (vendored): Expected a pseudo-class or pseudo-element.',
+      },
+    ]);
   });
 });

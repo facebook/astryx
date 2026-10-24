@@ -130,7 +130,9 @@ function declineUnparseableProtected(
     file: relativePath,
     codemod: name,
     ...(location ? {location} : {}),
-    reason: `unparseable protected file (${protections.map(item => item.declaration).join('; ')}): ${message}`,
+    // The category, not the declaration: a declaration names its source
+    // file from the project root, and `file` may be rebased elsewhere.
+    reason: `unparseable protected file (${[...new Set(protections.map(item => item.reason))].join(', ')}): ${message}`,
   };
 }
 

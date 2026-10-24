@@ -136,10 +136,35 @@ describe('a failed upgrade', () => {
         file: 'src/vendor/bundle.js',
         location: '1:19',
         reason: expect.stringMatching(
-          /^unparseable protected file \(linguist-vendored in \.gitattributes:1\): /,
+          /^unparseable protected file \(vendored\): /,
         ),
       },
     ]);
+  });
+
+  it('names a declined file from the folder the command ran in, with no root-relative path in its reason', async () => {
+    write('.gitattributes', 'src/vendor/** linguist-vendored\n');
+    write('src/vendor/bundle.js', 'export const x = {;\n');
+
+    const err = await rejection(
+      upgrade(
+        {from: '0.1.0', apply: true, path: '.'},
+        {cwd: path.join(dir, 'src')},
+      ),
+    );
+
+    expect(err.receipt.declinedCandidates).toEqual([
+      {
+        file: 'vendor/bundle.js',
+        location: '1:19',
+        reason: expect.stringMatching(
+          /^unparseable protected file \(vendored\): /,
+        ),
+      },
+    ]);
+    expect(err.receipt.declinedCandidates[0].reason).not.toContain(
+      '.gitattributes',
+    );
   });
 
   it('names receipt files from the folder the command ran in', async () => {
