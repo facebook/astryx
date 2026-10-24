@@ -73,8 +73,8 @@ components read through two shared primitives is a system fact.
   `TopNav` and `SideNav` menus, and Chat trigger menus) gain no exit here.
 - Elements in page flow that animate in, such as `FieldStatus` and
   `useEntryAnimation`, gain no exit here (OQ2).
-- Entrances do not change: their durations and curves, the hover-summoned
-  entrance that `design:motion` owns, and the `Dialog` backdrop's entrance.
+- Entrances do not change: their durations and curves, the entrance of a layer
+  that a hover opens, and the `Dialog` backdrop's entrance.
 - The rest of a semantic motion vocabulary (entry, movement, and state curves;
   entrance, overlay, and reveal durations) is not settled here. The exit names
   follow the `--ease-<job>` and `--duration-<job>` pattern so that vocabulary
@@ -103,10 +103,13 @@ components read through two shared primitives is a system fact.
   dialog's backdrop fades out over the same duration.
 - **FR4 — A leaving surface takes no input.** From the moment its close begins,
   no pointer press or key activates anything inside a leaving surface.
-- **FR5 — A leaving surface keeps Escape.** Until it is hidden, a leaving
-  surface remains a present member of the shared dismissal stack
-  (`family:overlay-dismissal` FR2): an Escape press or platform close request
-  during its exit does not reach a surface beneath it.
+- **FR5 — A leaving surface keeps its dismissal role.** Until it is hidden, a
+  leaving surface keeps the dismissal role it had while open (`spec:AST-003`
+  FR1). A leaving active or blocking owner stays present on the shared
+  dismissal stack (`family:overlay-dismissal` FR2), so an Escape press or
+  platform close request during its exit does not reach an owner beneath it. A
+  leaving passive dependent, such as `Tooltip`, stays passive and shields
+  nothing (`spec:AST-003` FR4).
 - **FR6 — Focus leaves with the close.** A layer surface hands focus back when
   its close begins, as it does with the exit off. A dialog surface returns focus
   to the element that opened it when the dialog is hidden; until then the page
@@ -161,10 +164,17 @@ components read through two shared primitives is a system fact.
   single-fired (INV6), and lazily mounted content unmounts when the exit ends.
 - `family:overlay-dismissal`: no claim changes. A leaving member stays present
   for FR2 until it is hidden, and animation stays member-owned (AV6).
+- `spec:AST-003`: no claim changes. A leaving surface keeps its interaction role
+  (FR1), and a leaving passive dependent such as `Tooltip` still never shields
+  an owner (FR4, DEC-1).
 - `design:motion` (draft): exits apply DR1, DR2, and DR5. This record holds the
   exit tokens and behavior that its content boundary leaves to other records.
-- `component:Dialog` AR2 and `component:Popover` AR4 keep their focus-return
-  claims; FR6 states when the return happens for each kind.
+- `component:Dialog`: its `visibility` concept (open, closed) gains a leaving
+  phase. With dialog exits on, a Dialog whose caller has closed it stays
+  presented, with the page behind it inert, until its exit ends (FR6, FR9). AR2
+  keeps its focus-return claim; FR6 states when the return happens.
+- `component:Popover`: AR4 keeps its focus-return claim; FR6 states when the
+  return happens for a layer.
 - `component:BottomSheet`: its closing curve reads `--ease-exit`.
 - Consumer docs: `motion` describes both curves, that exits are off by default,
   how a theme turns each kind on, and that callers keep content rendered while a
@@ -173,21 +183,21 @@ components read through two shared primitives is a system fact.
 
 ## Verification
 
-| Contract | Verification                                                                                                | Representative states                                                                              | Mutation or failure expectation                                                                   |
-| -------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| FR1      | Component unit suites run unchanged with default tokens                                                     | Every dialog and layer member, opened and closed                                                   | A surface stays rendered after its close with default tokens                                      |
-| FR2      | Real-browser test under a theme that sets one kind                                                          | Dialogs on with layers off; layers on with dialogs off; a nested `Theme`                           | The unset kind animates, or the set kind closes at once                                           |
-| FR3      | Real-browser frame sampling during an exit                                                                  | A dialog with and without an opener, a fullscreen dialog, a layer in each placement, right-to-left | The surface leaves its entrance path, or keeps the entrance curve                                 |
-| FR4      | Real-browser test                                                                                           | A press and an Enter key on a control inside a leaving surface                                     | The control activates                                                                             |
-| FR5      | Dismissal invariant tests                                                                                   | Escape during an exit with a surface beneath                                                       | The surface beneath closes                                                                        |
-| FR6      | Unit and real-browser focus tests                                                                           | Dialog and layer closes, by keyboard and by pointer                                                | Dialog focus returns before the dialog is hidden or lands on the body; layer focus waits for exit |
-| FR7      | Unit tests                                                                                                  | Controlled and uncontrolled closes                                                                 | A callback or `isOpen` waits for the exit                                                         |
-| FR8      | Unit and real-browser tests                                                                                 | Reopen during an exit, unmount during an exit, `Activity` hidden during an exit                    | The surface disappears and reappears, or stays after unmount                                      |
-| FR9      | Unit test with a suppressed end event; real-browser test with animations and transitions disabled page-wide | Open and close in one update; page-wide `transition: none`; no end event                           | The surface is present more than 100ms after its exit duration                                    |
-| FR10     | Real-browser test with reduced motion emulated                                                              | Each kind turned on                                                                                | An exit plays                                                                                     |
-| FR11     | Unit tests                                                                                                  | Hover card content, an open sub-menu path, a selector query                                        | Content unmounts or resets before the surface is hidden                                           |
-| FR12     | Token default tests, theme template inventory test, token documentation check                               | Defaults; the `BottomSheet` closing curve                                                          | A default drifts, or `BottomSheet` restates the curve                                             |
-| Platform | Real-browser tests                                                                                          | A browser that plays layer exits and one that does not                                             | A layer paints outside the top layer, or a browser without support delays the close               |
+| Contract | Verification                                                                                                | Representative states                                                                                          | Mutation or failure expectation                                                                   |
+| -------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| FR1      | Component unit suites run unchanged with default tokens                                                     | Every dialog and layer member, opened and closed                                                               | A surface stays rendered after its close with default tokens                                      |
+| FR2      | Real-browser test under a theme that sets one kind                                                          | Dialogs on with layers off; layers on with dialogs off; a nested `Theme`                                       | The unset kind animates, or the set kind closes at once                                           |
+| FR3      | Real-browser frame sampling during an exit                                                                  | A dialog with and without an opener, a fullscreen dialog, a layer in each placement, right-to-left             | The surface leaves its entrance path, or keeps the entrance curve                                 |
+| FR4      | Real-browser test                                                                                           | A press and an Enter key on a control inside a leaving surface                                                 | The control activates                                                                             |
+| FR5      | Dismissal invariant tests                                                                                   | Escape during a leaving Dialog or Popover with an owner beneath; Escape during a leaving Tooltip over a Dialog | The owner beneath a leaving owner closes, or a leaving Tooltip absorbs the press                  |
+| FR6      | Unit and real-browser focus tests                                                                           | Dialog and layer closes, by keyboard and by pointer                                                            | Dialog focus returns before the dialog is hidden or lands on the body; layer focus waits for exit |
+| FR7      | Unit tests                                                                                                  | Controlled and uncontrolled closes                                                                             | A callback or `isOpen` waits for the exit                                                         |
+| FR8      | Unit and real-browser tests                                                                                 | Reopen during an exit, unmount during an exit, `Activity` hidden during an exit                                | The surface disappears and reappears, or stays after unmount                                      |
+| FR9      | Unit test with a suppressed end event; real-browser test with animations and transitions disabled page-wide | Open and close in one update; page-wide `transition: none`; no end event                                       | The surface is present more than 100ms after its exit duration                                    |
+| FR10     | Real-browser test with reduced motion emulated                                                              | Each kind turned on                                                                                            | An exit plays                                                                                     |
+| FR11     | Unit tests                                                                                                  | Hover card content, an open sub-menu path, a selector query                                                    | Content unmounts or resets before the surface is hidden                                           |
+| FR12     | Token default tests, theme template inventory test, token documentation check                               | Defaults; the `BottomSheet` closing curve                                                                      | A default drifts, or `BottomSheet` restates the curve                                             |
+| Platform | Real-browser tests                                                                                          | A browser that plays layer exits and one that does not                                                         | A layer paints outside the top layer, or a browser without support delays the close               |
 
 ## Decision log
 
