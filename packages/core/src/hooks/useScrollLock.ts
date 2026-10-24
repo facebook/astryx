@@ -4,46 +4,50 @@
 
 /**
  * @file useScrollLock.ts
- * @input Uses React useEffect
- * @output Exports useScrollLock hook for locking body scroll
- * @position Core hook; used by Dialog to prevent background scrolling
+ * @input Uses React useEffect, the root scroll-style owner, the scroll-lock
+ *   touch guard and the scrollbar gutter hold
+ * @output Exports useScrollLock hook for locking page scroll behind a modal
+ * @position Core hook; used by Dialog, BottomSheet, Drawer and Lightbox to
+ *   prevent background scrolling
  *
- * Locks body scroll when active by pinning the body with position:fixed.
- * This is needed because overscroll-behavior:contain doesn't work on iOS Safari.
+ * Holds the page where it is. `overflow: hidden` on the root, claimed through
+ * rootScrollStyles, stops wheel, keyboard and scrollbar scrolling. On touch
+ * screens a guard also cancels the one-finger pans that would still scroll
+ * the page, because iOS Safari before 26.4 scrolls an `overflow: hidden` page
+ * under a finger. The page's scroll offset never changes, so there is nothing
+ * to restore on unlock, and iOS Safari's toolbar keeps the state it had.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/index.ts
  * - /packages/core/src/hooks/scrollbarGutter.ts
+ * - /packages/core/src/hooks/rootScrollStyles.ts
  */
 
 import {useEffect} from 'react';
+import {claimRootScrollStyle, reportScrollLock} from './rootScrollStyles';
+import {installScrollLockTouchGuard} from './scrollLockTouchGuard';
 import {holdScrollbarGutter, type ScrollbarGutterHold} from './scrollbarGutter';
 
-interface ScrollLockSnapshot {
-  scrollX: number;
-  scrollY: number;
-  overflow: string;
-  position: string;
-  top: string;
-  left: string;
-  right: string;
+interface ActiveLock {
+  releaseRootStyle: () => void;
+  removeTouchGuard: () => void;
   gutter: ScrollbarGutterHold;
 }
 
 let lockCount = 0;
-let originalBodyState: ScrollLockSnapshot | null = null;
+let activeLock: ActiveLock | null = null;
 
 /**
- * Locks body scroll when `isLocked` is true.
+ * Locks page scroll while `isLocked` is true.
  *
- * Pins the body with `position: fixed` to prevent background scrolling,
- * which is necessary for iOS Safari where `overscroll-behavior: contain`
- * does not prevent body scroll behind modals. Restores scroll position
- * on unlock.
+ * The page stays where it is: the root gets `overflow: hidden`, and on touch
+ * screens a one-finger pan that would reach the page is cancelled, while pans
+ * that a scroller inside the overlay can take, and two-finger zoom, go through.
+ * The scroll offset never changes, so nothing jumps on lock or unlock.
  *
- * Pinning also hides the document's scrollbar, so the gutter that scrollbar
- * occupied is held open for the duration of the lock — without it the page
- * reflows sideways by ~15px the moment an overlay opens.
+ * Hiding the root's scrollbar would widen the layout where that scrollbar
+ * takes space (desktop), so its gutter is held open for the duration of the
+ * lock and the page does not shift sideways.
  *
  * @example
  * ```
@@ -56,54 +60,31 @@ export function useScrollLock(isLocked: boolean): void {
       return;
     }
 
-    const {body} = document;
-
     if (lockCount === 0) {
-      const scrollX = window.scrollX;
-      const scrollY = window.scrollY;
-
-      // Taken before the pinning styles below hide the scrollbar.
-      const gutter = holdScrollbarGutter(body);
-
-      originalBodyState = {
-        scrollX,
-        scrollY,
-        overflow: body.style.overflow,
-        position: body.style.position,
-        top: body.style.top,
-        left: body.style.left,
-        right: body.style.right,
-        gutter,
-      };
-
-      body.style.overflow = 'hidden';
-      body.style.position = 'fixed';
-      body.style.top = `-${scrollY}px`;
-      body.style.left = '0';
-      body.style.right = '0';
-
+      // Taken before the root's overflow hides the scrollbar.
+      const gutter = holdScrollbarGutter(document.documentElement);
+      const releaseRootStyle = claimRootScrollStyle({overflow: 'hidden'});
+      const removeTouchGuard = installScrollLockTouchGuard();
       gutter.settle();
+      activeLock = {releaseRootStyle, removeTouchGuard, gutter};
     }
 
     lockCount += 1;
+    reportScrollLock(1);
 
     return () => {
       lockCount -= 1;
+      reportScrollLock(-1);
 
-      if (lockCount !== 0 || originalBodyState == null) {
+      if (lockCount !== 0 || activeLock == null) {
         return;
       }
 
-      const state = originalBodyState;
-      originalBodyState = null;
-
-      body.style.overflow = state.overflow;
-      body.style.position = state.position;
-      body.style.top = state.top;
-      body.style.left = state.left;
-      body.style.right = state.right;
-      state.gutter.release();
-      window.scrollTo(state.scrollX, state.scrollY);
+      const lock = activeLock;
+      activeLock = null;
+      lock.removeTouchGuard();
+      lock.releaseRootStyle();
+      lock.gutter.release();
     };
   }, [isLocked]);
 }
