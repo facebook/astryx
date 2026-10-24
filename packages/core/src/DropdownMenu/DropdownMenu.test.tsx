@@ -1566,6 +1566,26 @@ describe('DropdownMenuItem host attributes', () => {
 });
 
 describe('DropdownMenuGroup (compound mode)', () => {
+  it("a caller's xstyle still wins over the group's own layout", async () => {
+    const user = userEvent.setup();
+    const flush = stylex.create({group: {gap: 0}});
+    render(
+      <DropdownMenu button={{label: 'Version'}}>
+        <DropdownMenuGroup title="Version history" xstyle={flush.group}>
+          <DropdownMenuItem label="Restore" onClick={() => {}} />
+        </DropdownMenuGroup>
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Version/}));
+    const group = screen.getByRole('group', {
+      name: 'Version history',
+      hidden: true,
+    });
+    // The caller's gap replaces the group's own row gap (2px), as the
+    // runtime-injected styles resolve it.
+    expect(getComputedStyle(group).gap).toBe('0');
+  });
+
   it('a focusable node in the heading is not reachable by the arrow keys', async () => {
     // The public ReactNode type permits a focusable descendant, but the menu's
     // roving focus model cannot reach it. Pin that shipped gap while the public
