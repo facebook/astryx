@@ -20,8 +20,7 @@ places as on the web, read by VoiceOver in the same order.
 
 - **S1 — Each AST-082 slot kind has one Swift form.**
   - A **text** slot is a `String`, the contract's exact type (AST-093 FR5). A
-    localizable spelling waits on OQ1 of
-    `packages/native/specs/swift/library/component-api.md`.
+    localized text spelling is outside this record.
   - An **icon** slot is an `IconName` (S2).
   - A **content** slot accepts any SwiftUI view, through a `@ViewBuilder`
     closure (S3). The core's content slot holds named Astryx components; Swift
