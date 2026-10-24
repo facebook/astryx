@@ -325,12 +325,6 @@ const calmTheme = defineTheme({
               '0.3s 0',
             ],
             [
-              'springs.segmentedThumb',
-              '--motion-springs-segmented-thumb',
-              'spring',
-              '0.3s 0.25',
-            ],
-            [
               'springs.sheetDetent',
               '--motion-springs-sheet-detent',
               'spring',

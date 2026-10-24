@@ -301,14 +301,6 @@ export const springs = {
    * @measure M-SW03
    */
   switchThumbStretch: {response: 0.35, dampingRatio: 0.87},
-  /**
-   * UISegmentedControl selection thumb sliding to a new segment.
-   * @source GUESS — WebKit's UIKit-matched switch thumb spring, the nearest
-   *   sourced control thumb
-   * @measure M-SG02
-   * @measure M-SG03
-   */
-  segmentedThumb: {response: 0.3, dampingRatio: 0.75},
 
   // ---------------------------------------------------------------------
   // System

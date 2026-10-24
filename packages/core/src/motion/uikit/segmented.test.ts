@@ -18,6 +18,7 @@ import {dampingRatioOf, responseOf, solveSpring, toSpring} from '../spring';
 import {motionRoleIn, motionRoleOf} from '../roles';
 import {resolveMotion} from '../resolveMotion';
 import {segmentedControl} from './segmented';
+import {springs} from './springs';
 import {timing} from './timing';
 
 /**
@@ -211,6 +212,16 @@ const MEASURED_REDUCED_MOTION = {
     [200.0, 1, 1],
   ],
 } as const;
+
+describe('one source for the slide', () => {
+  it('the segmented slide has one spring, the measured one: no guessed thumb spring is left', () => {
+    expect('segmentedThumb' in springs).toBe(false);
+    expect(motionRoleIn(springs, 'segmentedThumb')).toBeUndefined();
+    expect(motionRoleIn(segmentedControl, 'selectionSpring')).toMatchObject({
+      id: 'segmentedControl.selectionSpring',
+    });
+  });
+});
 
 describe('Reduce Motion', () => {
   const {reducedMotion} = segmentedControl;
