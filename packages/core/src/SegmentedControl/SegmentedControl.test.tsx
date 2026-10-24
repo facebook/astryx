@@ -215,8 +215,10 @@ describe('SegmentedControl', () => {
     );
 
     const button = screen.getByRole('radio', {name: /very long/});
+    // The visible title; its aria-hidden twin carries the same text.
     const label = screen.getByText(
       'A very long segment label that should truncate',
+      {selector: '[data-segment-title="text"]'},
     );
 
     // The button (flex child) must allow shrinking below content size
@@ -312,7 +314,9 @@ describe('SegmentedControl', () => {
     expect(getComputedStyle(segment).flexShrink).not.toBe('0');
     const iconWrapper = screen.getByTestId('grid-icon').parentElement!;
     expect(getComputedStyle(iconWrapper).flexShrink).toBe('0');
-    const label = screen.getByText('Grid with thumbnails and captions');
+    const label = screen.getByText('Grid with thumbnails and captions', {
+      selector: '[data-segment-title="text"]',
+    });
     expect(getComputedStyle(label).textOverflow).toBe('ellipsis');
   });
 
@@ -847,5 +851,34 @@ describe('pressed state', () => {
     expect(hasPressedArm(screen.getByRole('radio', {name: 'List'}))).toBe(
       false,
     );
+  });
+});
+
+describe('segment width', () => {
+  it('reads each title once: the width-reserving twin is hidden from assistive technology', () => {
+    render(
+      <SegmentedControl value="grid" onChange={() => {}} label="View mode">
+        <SegmentedControlItem value="grid" label="Grid" />
+        <SegmentedControlItem value="list" label="List" />
+        <SegmentedControlItem
+          value="icon"
+          label="Icon"
+          icon={<span>*</span>}
+          isLabelHidden
+        />
+      </SegmentedControl>,
+    );
+    for (const name of ['Grid', 'List']) {
+      const radio = screen.getByRole('radio', {name});
+      const twin = radio.querySelector('[data-segment-title="twin"]');
+      expect(twin).toHaveAttribute('aria-hidden', 'true');
+      expect(twin?.textContent).toBe(name);
+    }
+    // Icon-only segments have no title layers.
+    expect(
+      screen
+        .getByRole('radio', {name: 'Icon'})
+        .querySelector('[data-segment-title]'),
+    ).toBeNull();
   });
 });
