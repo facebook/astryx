@@ -24,9 +24,9 @@
  */
 
 import React, {
+  use,
   useState,
   useCallback,
-  useEffect,
   useRef,
   useMemo,
   type ReactNode,
@@ -52,9 +52,13 @@ import {ChatComposerInput} from './ChatComposerInput';
 import {ChatComposerContext} from './ChatContext';
 import type {ChatComposerInputControl} from './ChatContext';
 import {ChatSendButton} from './ChatSendButton';
+import {
+  KeyboardSurfaceContext,
+  focusInKeyboardSurface,
+} from './keyboardSurface';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
-import {useAnnounce} from '../hooks/useAnnounce';
+import {useAnnounceRenderedText} from '../hooks/useAnnounceRenderedText';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {
   getInteractionModality,
@@ -412,31 +416,40 @@ export function ChatComposer(props: ChatComposerProps) {
   // drive it without knowing its DOM shape. Stable ref — safe in the memoized
   // context value.
   const inputControlRef = useRef<ChatComposerInputControl | null>(null);
+  // Inside ChatLayout's keyboard-aware region, under a finger, focus refuses
+  // the browser's reveal (spec:AST-099 FR4); elsewhere, and under a mouse
+  // (spec:AST-017 FR59), it is the browser's own.
+  const isKeyboardSurface = use(KeyboardSurfaceContext);
 
-  const handleBodyClick = useCallback((e: MouseEvent<HTMLDivElement>) => {
-    // Focus the input when clicking empty space in the body.
-    // Skip if the click target is a button, link, or interactive element.
-    const target = e.target as HTMLElement;
-    if (
-      target.closest(
-        'button, a, [role="button"], [contenteditable="true"], [data-astryx-token]',
-      )
-    ) {
-      return;
-    }
-    // Prefer the input's registered control (works for any input shape,
-    // including editors whose focusable node isn't a bare
-    // contenteditable/textarea). Fall back to a DOM query so uninstrumented
-    // custom inputs still get click-to-focus.
-    if (inputControlRef.current) {
-      inputControlRef.current.focus();
-      return;
-    }
-    const editable = bodyRef.current?.querySelector<HTMLElement>(
-      '[contenteditable="true"], textarea',
-    );
-    editable?.focus();
-  }, []);
+  const handleBodyClick = useCallback(
+    (e: MouseEvent<HTMLDivElement>) => {
+      // Focus the input when clicking empty space in the body.
+      // Skip if the click target is a button, link, or interactive element.
+      const target = e.target as HTMLElement;
+      if (
+        target.closest(
+          'button, a, [role="button"], [contenteditable="true"], [data-astryx-token]',
+        )
+      ) {
+        return;
+      }
+      // Prefer the input's registered control (works for any input shape,
+      // including editors whose focusable node isn't a bare
+      // contenteditable/textarea). Fall back to a DOM query so uninstrumented
+      // custom inputs still get click-to-focus.
+      if (inputControlRef.current) {
+        inputControlRef.current.focus();
+        return;
+      }
+      const editable = bodyRef.current?.querySelector<HTMLElement>(
+        '[contenteditable="true"], textarea',
+      );
+      if (editable) {
+        focusInKeyboardSurface(editable, isKeyboardSurface);
+      }
+    },
+    [isKeyboardSurface],
+  );
 
   const handleBodyFocusCapture = useCallback(
     (event: FocusEvent<HTMLDivElement>) => {
@@ -458,30 +471,25 @@ export function ChatComposer(props: ChatComposerProps) {
   );
 
   // The status bar mounts together with its message, and a live region born
-  // holding its text is not reliably announced, so the message goes through
-  // the shared channel instead: errors assertively, warnings politely
-  // (spec:AST-086 FR2, FR5). The ref keeps a rerender or a StrictMode effect
-  // replay from repeating it; clearing the status re-arms it, so the same
-  // message shown again is a new occasion (FR6).
-  const announce = useAnnounce();
-  const statusType = status?.type;
-  const statusMessage = status?.message;
-  const announcedStatusRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!statusMessage) {
-      announcedStatusRef.current = null;
-      return;
-    }
-    const occasion = `${statusType}\u0000${statusMessage}`;
-    if (announcedStatusRef.current === occasion) {
-      return;
-    }
-    announcedStatusRef.current = occasion;
-    announce(statusMessage, statusType === 'error' ? 'assertive' : 'polite');
-  }, [announce, statusType, statusMessage]);
+  // holding its text is not reliably announced, so the shared own-content
+  // module announces what the bar renders: errors assertively, warnings
+  // politely, once per occasion, silent for a status already shown when the
+  // page loads (spec:AST-086 FR2, FR5, FR6, FR11; react-component-runtime
+  // INV10). Changing the status type is a new occasion; clearing it re-arms.
+  const statusRef = useRef<HTMLDivElement>(null);
+  useAnnounceRenderedText(
+    statusRef,
+    Boolean(status?.message),
+    status?.type ?? '',
+    {
+      skipFirstRender: true,
+      politeness: status?.type === 'error' ? 'assertive' : 'polite',
+    },
+  );
 
   const statusEl = status ? (
     <div
+      ref={statusRef}
       {...stylex.props(
         styles.statusBar,
         statusPosition === 'top' ? styles.statusTop : styles.statusBottom,

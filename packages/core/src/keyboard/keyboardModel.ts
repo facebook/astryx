@@ -2,7 +2,7 @@
 
 /**
  * @file keyboardModel.ts
- * @input `springs.keyboard`, `timing.keyboardNotificationMs` and `keyboard`
+ * @input `keyboard` (its spring, notification duration and report timings)
  *   from the UIKit table
  * @output Exports createKeyboardModel (the keyboard layout guide's clock-free
  *   core) and the KeyboardTransition / KeyboardModel types
@@ -37,9 +37,12 @@
  */
 
 import {keyboard} from '../motion/uikit/keyboard';
-import {springs} from '../motion/uikit/springs';
-import {timing} from '../motion/uikit/timing';
-import {solveSpring, toSpring, type SpringCurve} from '../motion/spring';
+import {
+  solveSpring,
+  toSpring,
+  type SpringCurve,
+  type SpringDescription,
+} from '../motion/spring';
 
 /** How the keyboard's cover changes. */
 export type KeyboardTransitionKind = 'show' | 'hide' | 'change';
@@ -63,6 +66,12 @@ export interface KeyboardTransition {
   readonly animated: boolean;
   /** True until the visual viewport confirms a transition the guide inferred. */
   readonly predicted: boolean;
+  /**
+   * The curve the keyboard moves on (the system's own spring, never a
+   * theme's): what a surface riding the keyboard plays from `start`
+   * (architecture:react-component-runtime INV11).
+   */
+  readonly spring: SpringDescription;
 }
 
 /** Timing of the keyboard as the page sees it; the UIKit table's by default. */
@@ -128,10 +137,10 @@ export function createKeyboardModel(
     showReportLagMaxMs = keyboard.showReportLagMaxMs,
     focusToShowMs = keyboard.focusToShowMs,
     hideAfterBlurMs = keyboard.hideAfterBlurMs,
-    durationMs = timing.keyboardNotificationMs,
+    durationMs = keyboard.notificationMs,
   }: KeyboardModelOptions = {},
 ): KeyboardModel {
-  const spring = toSpring(springs.keyboard);
+  const spring = toSpring(keyboard.spring);
   let transition: KeyboardTransition = {
     kind: 'change',
     from: initialInset,
@@ -140,6 +149,7 @@ export function createKeyboardModel(
     velocity: 0,
     animated: false,
     predicted: false,
+    spring: keyboard.spring,
   };
   let curve: SpringCurve | null = null;
   // The inset of the last keyboard that was up, for a hide that turns back.
@@ -179,7 +189,16 @@ export function createKeyboardModel(
     const at = Math.max(start, transition.start);
     const from = presentation(at);
     const v = animated ? velocity(at) : 0;
-    transition = {kind, from, to, start: at, velocity: v, animated, predicted};
+    transition = {
+      kind,
+      from,
+      to,
+      start: at,
+      velocity: v,
+      animated,
+      predicted,
+      spring: keyboard.spring,
+    };
     curve =
       animated && Math.abs(to - from) + Math.abs(v) > 0
         ? solveSpring(spring, {from, to, velocity: v})

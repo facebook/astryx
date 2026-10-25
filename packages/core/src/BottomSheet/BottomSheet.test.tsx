@@ -15,6 +15,7 @@ import {createRef, useState} from 'react';
 import {BottomSheet} from './BottomSheet';
 import {BottomSheetSwitcher} from './BottomSheetSwitcher';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
+import {__resetRevealsAtReportForTest} from '../keyboard/useMobileKeyboard';
 
 // A sheet has no stops unless its host asks for them, so the tests that
 // exercise detents pass their own. These three — a 14% peek, a half-height
@@ -66,6 +67,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  __resetRevealsAtReportForTest();
 });
 
 function getSheet(): HTMLElement {
@@ -153,6 +155,25 @@ function mockIOSWebKit() {
     maxTouchPoints: {configurable: true, value: 5},
   });
   vi.stubGlobal('navigator', navigatorMock);
+  mockPrimaryPointer('coarse');
+}
+
+// The primary pointer `matchMedia` reports: a touch screen's coarse finger,
+// or a desktop's fine mouse.
+function mockPrimaryPointer(pointer: 'coarse' | 'fine') {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((query: string) => ({
+      matches: query === `(pointer: ${pointer})`,
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  );
 }
 
 // Desktop Chrome and Android Chrome: the platform's own keyboard geometry API
@@ -265,6 +286,18 @@ function fireTimedPointer(
     timeStamp: {value: time},
   });
   return fireEvent(target, event);
+}
+
+// The room the keyboard takes at the end of a Tall sheet's body, CSS px: the
+// value its functional style writes on the body (0 when none is laid out).
+// The keyboard room: the functional style on the body's content box, whose
+// `::after` is the room's box.
+function keyboardInsetOf(body: HTMLElement): number {
+  const content = body.firstElementChild;
+  const match = /--[\w-]+:\s*(-?[\d.]+)px/.exec(
+    content?.getAttribute('style') ?? '',
+  );
+  return match == null ? 0 : Number(match[1]);
 }
 
 describe('BottomSheet', () => {
@@ -1464,6 +1497,38 @@ describe('BottomSheet', () => {
       expect(sheetFocus).toHaveBeenCalledWith({preventScroll: true});
     });
 
+    it('leaves focus to desktop Safari and Firefox, which measure but have a fine pointer (AST-017 FR59)', () => {
+      // A visual viewport and no keyboard geometry API, as on iOS, but a mouse.
+      mockVisualViewport(800);
+      mockWindowHeight(800);
+      mockPrimaryPointer('fine');
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Title" />
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const sheet = getSheet();
+      const title = screen.getByRole('textbox', {name: 'Title'});
+      const comment = screen.getByRole('textbox', {name: 'Comment'});
+      title.focus();
+      const commentFocus = vi.spyOn(comment, 'focus');
+      const sheetFocus = vi.spyOn(sheet, 'focus');
+
+      // Tab between fields: the browser's own move, not one delivered here.
+      fireEvent.blur(title, {relatedTarget: comment});
+      expect(commentFocus).not.toHaveBeenCalled();
+
+      // A window switch blurs the field for nothing: focus is not parked on
+      // the sheet, so it comes back to the field.
+      fireEvent.blur(title, {relatedTarget: null});
+      expect(sheetFocus).not.toHaveBeenCalled();
+    });
+
     it('does not alter ordinary desktop focus when the viewport is unobstructed', () => {
       mockVisualViewport(800);
       mockWindowHeight(800);
@@ -1485,9 +1550,7 @@ describe('BottomSheet', () => {
 
       expect(focus).not.toHaveBeenCalledWith({preventScroll: true});
       expect(onFocus).toHaveBeenCalledTimes(1);
-      expect(getBody().style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '0px',
-      );
+      expect(keyboardInsetOf(getBody())).toBe(0);
     });
 
     it('keeps Tall geometry fixed while extending and cleaning up its internal scroll range', () => {
@@ -1530,19 +1593,94 @@ describe('BottomSheet', () => {
         '',
       );
       // 300px keyboard overlap + 48px room for Android suggestion UI.
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '348px',
-      );
+      expect(keyboardInsetOf(body)).toBe(348);
       // Visible bottom is 500px; preserve the same 48px focus gap.
       expect(body.scrollTop).toBe(248);
 
       viewport.height = 800;
       void act(() => viewport.dispatchEvent(new Event('resize')));
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '0px',
-      );
+      expect(keyboardInsetOf(body)).toBe(0);
       expect(sheet.getBoundingClientRect()).toEqual(initialRect);
       expect(sheet.style.height).toBe('');
+    });
+
+    it('keeps the keyboard room when the page is pinch-zoomed past 2x with the keyboard up', () => {
+      // WebKit reports innerWidth and innerHeight in the zoomed visual
+      // viewport's px (spec:AST-099 FR2): at 2x, innerHeight alone reads no
+      // keyboard, and the room would be given back with the keyboard up.
+      mockIOSWebKit();
+      mockWindowHeight(800);
+      vi.stubGlobal('innerWidth', 1024);
+      const viewport = Object.assign(mockVisualViewport(500), {
+        width: 1024,
+        scale: 1,
+      });
+      try {
+        render(
+          <BottomSheet
+            isOpen
+            onOpenChange={() => {}}
+            label="Add a comment"
+            height="tall">
+            <input aria-label="Comment" />
+          </BottomSheet>,
+        );
+        const body = getBody();
+        const input = screen.getByRole('textbox', {name: 'Comment'});
+        vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
+          rect({top: 100, bottom: 800}),
+        );
+        vi.spyOn(input, 'getBoundingClientRect').mockReturnValue(
+          rect({top: 300, bottom: 340}),
+        );
+        input.focus();
+        expect(keyboardInsetOf(body)).toBe(348);
+
+        vi.stubGlobal('innerHeight', 400);
+        vi.stubGlobal('innerWidth', 512);
+        Object.assign(viewport, {height: 250, scale: 2, width: 512});
+        void act(() => viewport.dispatchEvent(new Event('resize')));
+        expect(keyboardInsetOf(body)).toBe(348);
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    });
+
+    it('makes no keyboard room beside a classic scrollbar with no keyboard', () => {
+      // A desktop page with a 17 px vertical scrollbar: innerWidth counts it,
+      // the document's client width and the visual viewport do not.
+      mockPrimaryPointer('fine');
+      mockWindowHeight(800);
+      vi.stubGlobal('innerWidth', 1280);
+      Object.assign(mockVisualViewport(800), {width: 1263, scale: 1});
+      Object.defineProperty(document.documentElement, 'clientWidth', {
+        configurable: true,
+        value: 1263,
+      });
+      try {
+        render(
+          <BottomSheet
+            isOpen
+            onOpenChange={() => {}}
+            label="Add a comment"
+            height="tall">
+            <input aria-label="Comment" />
+          </BottomSheet>,
+        );
+        const body = getBody();
+        const input = screen.getByRole('textbox', {name: 'Comment'});
+        vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
+          rect({top: 100, bottom: 800}),
+        );
+        vi.spyOn(input, 'getBoundingClientRect').mockReturnValue(
+          rect({top: 700, bottom: 740}),
+        );
+        input.focus();
+        expect(keyboardInsetOf(body)).toBe(0);
+      } finally {
+        Reflect.deleteProperty(document.documentElement, 'clientWidth');
+        vi.unstubAllGlobals();
+      }
     });
 
     it('smoothly scrolls a focused Tall control above the keyboard', () => {
@@ -1580,6 +1718,175 @@ describe('BottomSheet', () => {
       expect(scrollBy).toHaveBeenCalledWith({top: 248, behavior: 'smooth'});
     });
 
+    describe('the reveal at the keyboard\u2019s report (spec:AST-099 FR4)', () => {
+      // A Tall sheet with its last field low, as in the Mobile keyboard story.
+      function renderLowField() {
+        mockWindowHeight(800);
+        const viewport = Object.assign(mockVisualViewport(800), {scale: 1});
+        render(
+          <BottomSheet
+            isOpen
+            onOpenChange={() => {}}
+            label="Add a comment"
+            height="tall">
+            <input aria-label="Comment" />
+          </BottomSheet>,
+        );
+        const body = getBody();
+        const input = screen.getByRole('textbox', {name: 'Comment'});
+        // A smooth scroll is still under way when the next event comes; an
+        // instant one has landed.
+        const scrollBy = vi.fn((options: ScrollToOptions) => {
+          if (options.behavior !== 'smooth') {
+            body.scrollTop += options.top ?? 0;
+          }
+        });
+        Object.defineProperty(body, 'scrollBy', {
+          configurable: true,
+          value: scrollBy,
+        });
+        vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
+          rect({top: 100, bottom: 800}),
+        );
+        vi.spyOn(input, 'getBoundingClientRect').mockImplementation(() =>
+          rect({top: 660 - body.scrollTop, bottom: 700 - body.scrollTop}),
+        );
+        const scrollIntoView = vi.fn();
+        const dialog = body.closest('dialog')!;
+        Object.defineProperty(dialog, 'scrollIntoView', {
+          configurable: true,
+          value: scrollIntoView,
+        });
+        const report = (height: number) => {
+          viewport.height = height;
+          void act(() => viewport.dispatchEvent(new Event('resize')));
+        };
+        // The browser's own pan: the visual viewport moves down within the
+        // layout viewport, with no touch and no document scroll.
+        const pan = (offsetTop: number) => {
+          viewport.offsetTop = offsetTop;
+          void act(() => viewport.dispatchEvent(new Event('scroll')));
+        };
+        return {body, input, scrollBy, scrollIntoView, report, pan};
+      }
+
+      it('reveals the field in the report\u2019s own frame', () => {
+        const {body, input, report} = renderLowField();
+        // No frame comes: only what the report's own event does shows.
+        vi.stubGlobal(
+          'requestAnimationFrame',
+          vi.fn(() => 1),
+        );
+        input.focus();
+        report(500);
+        expect(keyboardInsetOf(body)).toBe(348);
+      });
+
+      it('keeps the smooth reveal where the browser does not pan to the field', () => {
+        const {input, scrollBy, scrollIntoView, report} = renderLowField();
+        input.focus();
+        report(500);
+        expect(scrollBy).toHaveBeenLastCalledWith({
+          top: 248,
+          behavior: 'smooth',
+        });
+        expect(scrollIntoView).not.toHaveBeenCalled();
+      });
+
+      it('puts back the browser\u2019s own pan to the field and reveals at once from then on', () => {
+        const {body, input, scrollBy, scrollIntoView, report, pan} =
+          renderLowField();
+        input.focus();
+        report(500);
+        pan(256);
+        expect(scrollIntoView).toHaveBeenCalledWith({
+          block: 'start',
+          inline: 'nearest',
+          behavior: 'instant',
+        });
+        expect(scrollBy).toHaveBeenLastCalledWith({
+          top: 248,
+          behavior: 'instant',
+        });
+
+        // The next keyboard lands the field in the report's frame, at once.
+        report(800);
+        pan(0);
+        body.scrollTop = 0;
+        scrollBy.mockClear();
+        report(500);
+        expect(scrollBy).toHaveBeenLastCalledWith({
+          top: 248,
+          behavior: 'instant',
+        });
+      });
+
+      it('puts the pan back without a second scroll while the smooth reveal is still on its way', () => {
+        const {body, input, scrollBy, scrollIntoView, report, pan} =
+          renderLowField();
+        // The body can scroll far enough; the smooth reveal is under way.
+        Object.defineProperty(body, 'scrollHeight', {
+          configurable: true,
+          value: 2000,
+        });
+        Object.defineProperty(body, 'clientHeight', {
+          configurable: true,
+          value: 700,
+        });
+        input.focus();
+        report(500);
+        expect(scrollBy).toHaveBeenLastCalledWith({
+          top: 248,
+          behavior: 'smooth',
+        });
+        scrollBy.mockClear();
+        pan(256);
+        // Firefox keeps adding a smooth scrollBy's distance after an instant
+        // scroll, so a second scroll here would overshoot.
+        expect(scrollBy).not.toHaveBeenCalled();
+        expect(scrollIntoView).toHaveBeenCalledWith({
+          block: 'start',
+          inline: 'nearest',
+          behavior: 'instant',
+        });
+        // The put-back moves the visual viewport up again; the reveal that
+        // follows leaves the smooth one to land the field.
+        pan(0);
+        expect(scrollBy).not.toHaveBeenCalled();
+      });
+
+      it('keeps the browser\u2019s reveal when the sheet cannot bring the field above the keyboard', () => {
+        const {input, scrollBy, scrollIntoView, report, pan} = renderLowField();
+        // The body cannot scroll further: the field stays under the keyboard.
+        scrollBy.mockImplementation(() => {});
+        input.focus();
+        report(500);
+        pan(256);
+        expect(scrollIntoView).not.toHaveBeenCalled();
+      });
+
+      it('leaves a pan the reader makes', () => {
+        const {input, scrollBy, scrollIntoView, report, pan} = renderLowField();
+        input.focus();
+        report(500);
+        fireEvent.touchStart(document.body);
+        pan(256);
+        expect(scrollIntoView).not.toHaveBeenCalled();
+        expect(scrollBy).not.toHaveBeenCalledWith(
+          expect.objectContaining({behavior: 'instant'}),
+        );
+      });
+
+      it('leaves a document scroll, which is not the browser revealing the field', () => {
+        const {input, scrollIntoView, report, pan} = renderLowField();
+        input.focus();
+        report(500);
+        vi.stubGlobal('scrollY', 120);
+        pan(120);
+        expect(scrollIntoView).not.toHaveBeenCalled();
+      });
+    });
+
     it('does not add clearance or scroll when the viewport is unobstructed', () => {
       mockVisualViewport(800);
       mockWindowHeight(800);
@@ -1603,9 +1910,7 @@ describe('BottomSheet', () => {
 
       input.focus();
 
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '0px',
-      );
+      expect(keyboardInsetOf(body)).toBe(0);
       expect(body.scrollTop).toBe(0);
     });
 
@@ -1664,9 +1969,7 @@ describe('BottomSheet', () => {
       input.focus();
       void act(() => viewport.dispatchEvent(new Event('resize')));
 
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '0px',
-      );
+      expect(keyboardInsetOf(body)).toBe(0);
       expect(body.scrollTop).toBe(0);
       // The keyboard moved nothing: the sheet still rests at that detent.
       expect(sheet.style.transform).toBe('');
@@ -1717,7 +2020,7 @@ describe('BottomSheet', () => {
         expect(body.scrollTop).toBe(120);
         expect(focus).not.toHaveBeenCalled();
         expect(sheetFocus).not.toHaveBeenCalled();
-        expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe('');
+        expect(keyboardInsetOf(body)).toBe(0);
         expect(
           positioner.style.getPropertyValue('--_sheet-keyboard-lift'),
         ).toBe('');
@@ -1773,9 +2076,7 @@ describe('BottomSheet', () => {
 
         input.focus();
 
-        expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-          '348px',
-        );
+        expect(keyboardInsetOf(body)).toBe(348);
         expect(body.scrollTop).toBe(248);
         result.unmount();
       },
@@ -1849,9 +2150,7 @@ describe('BottomSheet', () => {
 
       input.focus();
       expect(body.scrollTop).toBe(248);
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '348px',
-      );
+      expect(keyboardInsetOf(body)).toBe(348);
 
       const pointerDownAllowed = fireEvent.pointerDown(getHandle(), {
         pointerId: 1,
@@ -1868,16 +2167,12 @@ describe('BottomSheet', () => {
       expect(positioner.style.getPropertyValue('--_sheet-keyboard-lift')).toBe(
         '',
       );
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '348px',
-      );
+      expect(keyboardInsetOf(body)).toBe(348);
       expect(body.scrollTop).toBe(248);
 
       viewport.height = 800;
       void act(() => viewport.dispatchEvent(new Event('resize')));
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '0px',
-      );
+      expect(keyboardInsetOf(body)).toBe(0);
     });
 
     it('retains Tall keyboard scroll space after blur until the viewport recovers', () => {
@@ -1903,21 +2198,15 @@ describe('BottomSheet', () => {
         }),
       );
       input.focus();
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '348px',
-      );
+      expect(keyboardInsetOf(body)).toBe(348);
 
       input.blur();
 
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '348px',
-      );
+      expect(keyboardInsetOf(body)).toBe(348);
 
       viewport.height = 800;
       void act(() => viewport.dispatchEvent(new Event('resize')));
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '0px',
-      );
+      expect(keyboardInsetOf(body)).toBe(0);
     });
 
     it('blurs the focused Tall field and retains its inset until the viewport recovers', () => {
@@ -1945,22 +2234,16 @@ describe('BottomSheet', () => {
         }),
       );
       input.focus();
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '348px',
-      );
+      expect(keyboardInsetOf(body)).toBe(348);
 
       rerender(content(false));
 
       expect(document.activeElement).not.toBe(input);
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '348px',
-      );
+      expect(keyboardInsetOf(body)).toBe(348);
 
       viewport.height = 800;
       void act(() => viewport.dispatchEvent(new Event('resize')));
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '0px',
-      );
+      expect(keyboardInsetOf(body)).toBe(0);
     });
 
     it('retains Tall keyboard scroll space through a switcher handoff until the viewport recovers', () => {
@@ -1990,22 +2273,16 @@ describe('BottomSheet', () => {
         }),
       );
       input.focus();
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '348px',
-      );
+      expect(keyboardInsetOf(body)).toBe(348);
 
       rerender(content('confirmation'));
 
       expect(document.activeElement).not.toBe(input);
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '348px',
-      );
+      expect(keyboardInsetOf(body)).toBe(348);
 
       viewport.height = 800;
       void act(() => viewport.dispatchEvent(new Event('resize')));
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '0px',
-      );
+      expect(keyboardInsetOf(body)).toBe(0);
     });
 
     it('puts back a document scroll the browser makes to reveal a field', () => {
@@ -2132,9 +2409,7 @@ describe('BottomSheet', () => {
       // The first field opens the keyboard and is already inside the safe
       // area, so nothing has to move for it.
       title.focus();
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '348px',
-      );
+      expect(keyboardInsetOf(body)).toBe(348);
       expect(scrolls).toEqual([]);
 
       // A keyboard accessory "Next" or a Tab arrives as a blur naming the
@@ -2265,8 +2540,8 @@ describe('BottomSheet', () => {
         rect({top: 660 - body.scrollTop, bottom: 700 - body.scrollTop}),
       );
       input.focus();
-      const inset = body.style.getPropertyValue('--_sheet-keyboard-inset');
-      expect(inset).toBe(`${layoutBottom - (500 - 48)}px`);
+      const inset = keyboardInsetOf(body);
+      expect(inset).toBe(layoutBottom - (500 - 48));
 
       // The browser pans the page up to reveal a field: the same 500px of
       // visible page, now offset so its bottom edge coincides with the layout
@@ -2276,9 +2551,7 @@ describe('BottomSheet', () => {
       input.blur();
 
       // The keyboard did not change size, so neither does the scroll range.
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        inset,
-      );
+      expect(keyboardInsetOf(body)).toBe(inset);
     });
 
     it('keeps defending a pinned sheet after the browser has panned it once', () => {
@@ -2324,14 +2597,12 @@ describe('BottomSheet', () => {
       );
 
       title.focus();
-      const inset = body.style.getPropertyValue('--_sheet-keyboard-inset');
-      expect(inset).toBe(`${layoutBottom - (500 - 48)}px`);
+      const inset = keyboardInsetOf(body);
+      expect(inset).toBe(layoutBottom - (500 - 48));
 
       viewport.offsetTop = layoutBottom - 500;
       void act(() => viewport.dispatchEvent(new Event('resize')));
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        inset,
-      );
+      expect(keyboardInsetOf(body)).toBe(inset);
 
       // And the next browser-driven transition is still claimed and revealed,
       // by a distance measured against the unshifted keyboard boundary.

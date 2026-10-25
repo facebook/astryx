@@ -11,6 +11,11 @@ exported from the package entry.
 - **The height (FR2):** `measureKeyboardHeight(window)` is the layout
   viewport's height minus the visual viewport's height times its scale, in CSS
   px. A page pan is not a smaller keyboard, and a pinch zoom is not a keyboard.
+  The layout viewport's height is `layoutViewportHeight(window)`
+  (`../utils/layoutViewport.ts`), in layout px in every engine: WebKit reports
+  `innerHeight` and `innerWidth` in the zoomed visual viewport's px, which
+  `innerWidth` matching the visual viewport's width tells apart. BottomSheet's
+  obstruction and ChatLayout's lift read it too.
 - **Where it measures (FR6, FR7):** `isKeyboardMeasurable(window)` is true for
   a top-level document with a visual viewport and no keyboard geometry API of
   its own. It is decided from capabilities, never from the user agent.
@@ -39,7 +44,10 @@ exported from the package entry.
 - **BottomSheet's hook (FR4, FR5):** `useMobileKeyboard(options)` gives a
   fully expanded Tall sheet its keyboard scroll range, claims focus moves into
   it, puts back a document scroll while the page is locked, and dismisses the
-  keyboard when the sheet starts to move.
+  keyboard when the sheet starts to move. It returns the room the keyboard
+  takes at the end of the sheet's body, which the sheet lays out through a
+  functional style on its own body (FR3), committed before the reveal scrolls
+  into it.
 
 ## Laying out from the height, riding on top
 
@@ -62,18 +70,20 @@ const guide = getKeyboardLayoutGuide(window);
 const unsubscribe = guide.subscribe(t => {
   animator.animate(
     {y: layoutLift - lift(t.to)},
-    {spring: springs.keyboard},
+    {spring: t.spring},
     {at: t.start},
   );
 });
 ```
 
-Each transition is `{kind, from, to, start, velocity, animated, predicted}`:
-heights in CSS px, `start` on the document timeline (in the past for a show
-Safari reported late, slightly ahead for a hide that starts after a blur).
-Move your own elements on the compositor with the animator, from `start`, on
-`springs.keyboard`, and hand the translate back to the layout once the ride
-ends (ChatLayout does). Under Reduce Motion nothing travels with the keyboard
+Each transition is
+`{kind, from, to, start, velocity, animated, predicted, spring}`: heights in
+CSS px, `start` on the document timeline (in the past for a show Safari
+reported late, slightly ahead for a hide that starts after a blur), and the
+curve the keyboard moves on (`keyboard.spring`, its own and no theme's). Move
+your own elements on the compositor with the animator, from `start`, on that
+curve, and hand the translate back to the layout once the ride ends
+(ChatLayout does). Under Reduce Motion nothing travels with the keyboard
 (design:reduced-motion): the animator's default cross-fades on a touch screen
 and moves at once otherwise. `presentation(time)` gives the height presented
 at any time, for something that appears while the keyboard moves.
@@ -100,14 +110,28 @@ at any time, for something that appears while the keyboard moves.
 - Safari reveals a focused field by scrolling the whole page, so a layout that
   keeps its own content above the keyboard focuses its field with
   `preventScroll` (a claimed tap, or `refuseFocusReveal`).
-
-## Consumers
-
-- BottomSheet (`BottomSheet/BottomSheetPanel.tsx`): `useMobileKeyboard`.
-- ChatLayout (`Chat/useChatKeyboard.ts`): the dock and the spacer after the
-  messages are laid out from `useKeyboardHeight`; the guide's ride moves the
-  dock, and a transcript at its newest message, with the keyboard; a tap on the
-  composer's text focuses it without Safari's reveal.
+- Firefox for Android reports the keyboard once it is up, and 34 to 104 ms
+  later pans the visual viewport to a focused field the keyboard still
+  covers. So BottomSheet reveals in the report's own event, and where a
+  browser has panned to the field after a report (the visual viewport moved
+  down with no touch, document scroll or zoom since), it lands the field with
+  its own scroller, leaving a smooth reveal under way to land it, and only
+  then scrolls the dialog's top back into view; a field it cannot bring up
+  keeps the browser's reveal. Every later reveal lands at once in the
+  report's frame. A browser that never pans keeps the smooth reveal.
+- BottomSheet (`BottomSheet/BottomSheetPanel.tsx`): `useMobileKeyboard`, whose
+  inset the content box's `keyboardInset` functional style lays out as the
+  content's last box (after its own children, so it adds scroll range in
+  Firefox too, which keeps the content box at the body's height); it reveals the
+  focused field in the keyboard report's own event.
+- ChatLayout (`Chat/useChatKeyboard.ts`): the dock and the message area's end
+  padding are laid out from `useKeyboardHeight`; the guide's ride moves the
+  dock, and a transcript at its newest message, with the keyboard; a tap on
+  the composer's text is the tap route, and every other move into it the
+  focus takeover (`refuseFocusReveal`), so none scrolls the page; the
+  keyboard's Done parks focus on the composer region, a named group that is
+  no tab stop. The composer's own focus routes pass `preventScroll` under a
+  finger in that region (`Chat/keyboardSurface.ts`).
 
 ## Files
 
@@ -119,4 +143,4 @@ at any time, for something that appears while the keyboard moves.
 | `index.ts`               | Entry point.                                                                               |
 
 The timing constants live in `../motion/uikit/keyboard.ts`, the spring in
-`springs.keyboard`, the duration in `timing.keyboardNotificationMs`.
+`keyboard.spring`, the duration in `keyboard.notificationMs`.

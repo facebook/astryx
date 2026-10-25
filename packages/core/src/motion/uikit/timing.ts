@@ -119,15 +119,6 @@ export const timing = {
    */
   navigationBarHideShowMs: 200,
   /**
-   * The duration the keyboard notifications report
-   * (UIKeyboardAnimationDurationUserInfoKey, with curve 7), show and hide
-   * alike, in ms. The frame follows `springs.keyboard`, cut at this time.
-   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
-   *   iPhone 17 Pro, UIKeyboardWillShow / WillHide / WillChangeFrame read,
-   *   Oct 23 2026
-   */
-  keyboardNotificationMs: 383.3,
-  /**
    * Core Animation's implicit animation duration
    * (`CATransaction.animationDuration()`), in ms.
    * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,

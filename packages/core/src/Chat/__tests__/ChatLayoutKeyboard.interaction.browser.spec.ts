@@ -6,7 +6,7 @@
  *   viewport that reports a software keyboard, real touch input and the
  *   interaction harness
  * @output Interaction and animation proofs for ChatLayout's keyboard
- *   behavior: the dock rides the keyboard on `springs.keyboard` (sampled
+ *   behavior: the dock rides the keyboard on `keyboard.spring` (sampled
  *   curve), keeps moving while the main thread is blocked, does no Layout or
  *   Paint per frame, the transcript stays at its newest message, the dock
  *   comes down with the hide and goes back up when the viewport says the
@@ -47,7 +47,7 @@ import {
 
 const storybook = withStorybook(test);
 
-// UIKit's keyboard spring (motion/uikit springs.keyboard): mass 1,
+// UIKit's keyboard spring (motion/uikit keyboard.spring): mass 1,
 // stiffness 555.0265, damping 47.118 — critically damped, response 2π/√k.
 const KEYBOARD = {
   response: (2 * Math.PI) / Math.sqrt(555.0265),
@@ -664,7 +664,7 @@ test('the rise does no Layout or Paint per frame', async ({
     {invalidations: true},
   );
   // The steady part of the rise, 150–400 ms after the report. Its start lays
-  // out and paints a few times (the spacer, the scroll to the newest message,
+  // out and paints a few times (the end padding, the scroll to the newest message,
   // the scroll's handlers), within 75 ms of the report at a 6x CPU slowdown;
   // its end (about 480 ms) hands the layers back, which lays out once. A
   // window that followed the late timer under load would take that in. On a

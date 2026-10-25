@@ -263,13 +263,29 @@ const styles = stylex.create({
   },
   tallKeyboardBody: {
     scrollPaddingBlockEnd: MOBILE_KEYBOARD_BOTTOM_CLEARANCE,
+  },
+  // The room the keyboard takes at the end of a Tall sheet's content
+  // (useMobileKeyboard), so its last control can scroll above the keyboard.
+  // It is the content box's last in-flow box, after the content's own
+  // children, not a box after the content: Firefox resolves the content's
+  // `min-height: min-content` as `auto` in the block axis, so the content box
+  // keeps the body's height while its children overflow it, and a room after
+  // that box sat inside the overflow and added no scroll range (measured in
+  // Firefox for Android: the body's scrollHeight 1491 with and without a 357
+  // px room).
+  tallKeyboardContent: {
     '::after': {
       content: '""',
       display: 'block',
-      blockSize: 'var(--_sheet-keyboard-inset, 0px)',
+      blockSize: 0,
       pointerEvents: 'none',
     },
   },
+  keyboardInset: (inset: number) => ({
+    '::after': {
+      blockSize: inset,
+    },
+  }),
   budget: {
     height: `calc(var(--_sheet-budget) + ${OVERSCROLL_PADDING}px)`,
   },
@@ -551,7 +567,7 @@ export function BottomSheetPanel({
     },
     [onElementChange, sheetRef],
   );
-  useMobileKeyboard({
+  const keyboardInset = useMobileKeyboard({
     bodyRef: bodyElementRef,
     bottomClearance: MOBILE_KEYBOARD_BOTTOM_CLEARANCE,
     isEnabled: height === 'tall',
@@ -757,6 +773,10 @@ export function BottomSheetPanel({
           {...getContentProps<HTMLDivElement>(
             stylex.props(
               styles.content,
+              height === 'tall' && styles.tallKeyboardContent,
+              height === 'tall' &&
+                keyboardInset > 0 &&
+                styles.keyboardInset(keyboardInset),
               ...container(
                 usesThemePadding
                   ? {useThemeDefault: 'bottom-sheet'}
