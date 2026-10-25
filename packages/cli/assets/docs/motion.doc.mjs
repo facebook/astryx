@@ -398,12 +398,6 @@ const calmTheme = defineTheme({
               '250ms',
             ],
             [
-              'timing.keyboardNotificationMs',
-              '--motion-timing-keyboard-notification-ms',
-              'duration',
-              '383.3ms',
-            ],
-            [
               'timing.navigationBarHideShowMs',
               '--motion-timing-navigation-bar-hide-show-ms',
               'duration',
