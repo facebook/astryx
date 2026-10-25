@@ -44,12 +44,12 @@ trackpad, or keyboard the change is immediate.
 
 ## Anatomy and hierarchy
 
-| Role              | Purpose                                      | Required relationship                                 |
-| ----------------- | -------------------------------------------- | ----------------------------------------------------- |
-| origin state      | What the person sees before the change       | Leaves without moving                                 |
-| destination state | What the person sees after the change        | Appears in its final place, size, and order           |
-| cross-fade        | Connects the two states on a touch screen    | Changes opacity only, 200 ms or less                  |
-| direct movement   | Content the person moves with their own hand | Follows the pointer or finger; it is not a transition |
+| Role              | Purpose                                      | Required relationship                                                                    |
+| ----------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| origin state      | What the person sees before the change       | Leaves without moving                                                                    |
+| destination state | What the person sees after the change        | Appears in its final place, size, and order                                              |
+| cross-fade        | Connects the two states on a touch screen    | Changes opacity only, 200 ms or less                                                     |
+| direct movement   | Content the person moves with their own hand | Follows the pointer or finger, and coasts on after a throw (DR2); it is not a transition |
 
 ## State representation
 
