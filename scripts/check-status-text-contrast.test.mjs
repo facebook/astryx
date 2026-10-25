@@ -335,6 +335,71 @@ describe('theme generation derives a complete status set (INV17)', () => {
     expect(rule).toMatch(/--color-text-success: light-dark\(#/);
   });
 
+  it('returns a root-derived fill to its alias in a rule whose colour carries its content', () => {
+    const theme = defineTheme({
+      name: 'status-adaptive-fill',
+      tokens: {'--color-success': '#7EE787', '--color-on-success': '#FFFFFF'},
+      adaptations: {
+        rules: [
+          {
+            when: {contrast: 'more'},
+            value: {tokens: {'--color-success': '#0A5C2E'}},
+          },
+        ],
+      },
+    });
+    const css = allThemeCSS(theme);
+    expect(emittedRootTokens(theme)['--color-success-emphasized']).toMatch(
+      /^light-dark\(#/,
+    );
+    const rule = css.slice(css.indexOf('prefers-contrast: more'));
+    expect(rule).toContain('--color-success-emphasized: var(--color-success);');
+  });
+
+  it('resolves every fixture the same way in JavaScript as in its CSS', () => {
+    const fixtures = [
+      minimal,
+      defineTheme({
+        name: 'js-grey-accent',
+        tokens: {'--color-accent': 'light-dark(#555555, #BBBBBB)'},
+      }),
+      defineTheme({
+        name: 'js-grey-base',
+        tokens: {'--color-success': 'light-dark(#666666, #AAAAAA)'},
+      }),
+      defineTheme({
+        name: 'js-child',
+        extends: defineTheme({
+          name: 'js-parent',
+          tokens: {'--color-text-success': '#0A5C2E'},
+        }),
+        tokens: {'--color-error': '#D1242F'},
+      }),
+    ];
+    for (const theme of fixtures) {
+      for (const mode of MODES) {
+        const fromCss = effectiveTokens(theme, mode);
+        const fromJs = resolveThemeTokens(theme, {mode});
+        for (const status of STATUSES) {
+          for (const role of [
+            `--color-text-${status}`,
+            `--color-icon-${status}`,
+            `--color-border-${status}`,
+            `--color-${status}-emphasized`,
+            `--color-on-${status}-muted`,
+          ]) {
+            expect([theme.name, mode, role, fromJs[role]]).toEqual([
+              theme.name,
+              mode,
+              role,
+              fromCss[role],
+            ]);
+          }
+        }
+      }
+    }
+  });
+
   it('aliases a status colour a media surface sets, over a derived root role', () => {
     const theme = defineTheme({
       name: 'status-media',

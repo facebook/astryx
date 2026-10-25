@@ -169,6 +169,45 @@ describe('theme build adaptations', () => {
     expect(generateThemeCSS(fromBuilt)).toEqual(generateThemeCSS(fromSource));
   });
 
+  it('derives a complete status set for a minimal theme in built CSS (INV17)', async () => {
+    const {defineTheme, generateThemeCSS} =
+      await import('@astryxdesign/core/theme');
+    const project = path.join(tmpDir, 'project');
+    const themesDir = path.join(project, 'themes');
+    const input = {
+      name: 'status-minimal',
+      tokens: {
+        '--color-success': '#3FB950',
+        '--color-warning': '#D29922',
+        '--color-error': '#F85149',
+        '--color-accent': '#6E40C9',
+      },
+    };
+    const themeFile = writeTheme(themesDir, input.name, JSON.stringify(input));
+    const result = await build(project, themeFile);
+    expect(result.code, result.stderr).toBe(0);
+
+    const css = fs.readFileSync(
+      path.join(themesDir, 'status-minimal.css'),
+      'utf8',
+    );
+    for (const status of ['success', 'warning', 'error', 'info']) {
+      expect(css).toMatch(
+        new RegExp(
+          `--color-text-${status}: light-dark\\(#[0-9A-F]{6}, #[0-9A-F]{6}\\);`,
+        ),
+      );
+      expect(css).toContain(
+        `--color-icon-${status}: var(--color-text-${status});`,
+      );
+    }
+    // Built and runtime output derive the same values.
+    const runtime = generateThemeCSS(defineTheme(input));
+    const derived = css.match(/--color-text-warning: [^;]+;/)?.[0];
+    expect(derived).toBeDefined();
+    expect(JSON.stringify(runtime)).toContain(derived);
+  });
+
   it.each([
     ['defined', writeTheme],
     ['plain', writePlainTheme],

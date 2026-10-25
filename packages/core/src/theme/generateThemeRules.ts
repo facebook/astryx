@@ -812,6 +812,9 @@ function generatedAdaptationStatusRoleDefaults(
     Object.fromEntries(rootAliases),
     rootLocalTokens,
   ).values;
+  const rootDerived = new Set(
+    deriveStatusRoleTokens(rootTokens, rootLocalTokens).map(([role]) => role),
+  );
   const states = reachableAdaptationMatchSets(rules).map(indexes => ({
     indexes,
     values: effectiveAdaptationTokenValues(
@@ -832,12 +835,28 @@ function generatedAdaptationStatusRoleDefaults(
     // INV17 in an adaptation: a rule that changes a colour the derivation
     // measures gets the roles derived from the root and that rule together.
     if (Object.keys(authoredRule).some(token => STATUS_MEASURED.test(token))) {
-      for (const [role, value] of deriveStatusRoleTokens(
-        {...rootTokens, ...rule.tokens},
-        {...rootLocalTokens, ...rule.localTokens},
-      )) {
+      const ruleDerived = new Map(
+        deriveStatusRoleTokens(
+          {...rootTokens, ...rule.tokens},
+          {...rootLocalTokens, ...rule.localTokens},
+        ),
+      );
+      for (const [role, value] of ruleDerived) {
         if (authoredRule[role] === undefined && rootValues[role] !== value) {
           aliases[index].push([role, value]);
+        }
+      }
+      // A root role computed for the root's colour returns to its INV16
+      // alias where this rule's colour carries its content unadjusted.
+      for (const role of rootDerived) {
+        const source = SCOPED_STATUS_ROLE_SOURCES.get(role);
+        if (
+          source !== undefined &&
+          !ruleDerived.has(role) &&
+          authoredRule[role] === undefined &&
+          authoredRule[source] !== undefined
+        ) {
+          aliases[index].push([role, `var(${source})`]);
         }
       }
     }
