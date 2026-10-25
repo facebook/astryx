@@ -1,4 +1,4 @@
-Results for "experimental" (4)
+Results for "experimental" (3)
 name:        authoring/field-reference
 section:     config
 domain:      doc
