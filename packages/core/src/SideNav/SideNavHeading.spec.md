@@ -83,10 +83,12 @@ Consumer migration instructions belong in consumer docs and release notes.
   so that content renders twice. `architecture:component-style-authoring` INV7
   has content render once.
 - **Links in the links-plus-trigger form also open the menu.** The block that
-  holds the links carries the menu's trigger handlers, so a click on the
-  heading or suite link, or Enter on the heading link, both navigates and opens
-  the menu, moving focus to its first item, against FR2's split between the
-  links and the menu trigger.
+  holds the links carries the menu's trigger handlers. With touch or the
+  keyboard, activating the heading or suite link both navigates and opens the
+  menu, moving focus to its first item. With a mouse, moving the pointer onto
+  the block opens the menu at once over it, so a click lands on the menu's
+  heading button rather than the link underneath. Both break FR2's split between
+  the links and the menu trigger.
 - **End content also opens the menu.** In both menu configurations
   `headerEndContent` renders inside the block that carries the menu's trigger
   handlers. With touch or the keyboard, activating a control there runs that
