@@ -236,3 +236,17 @@ private func onWhite(_ color: Color) -> [Int] {
   #expect(Avatar.tapOutset(side: 128) == 0)
 }
 
+
+// AST-082 FR19: an Avatar node from a logic core draws as Avatar.
+@MainActor
+@Test func anAvatarNodeDrawsAsAnAvatar() {
+  let json = #"{"component":"Avatar","key":"a","props":{"name":"Ada Lovelace","size":"lg"}}"#
+  guard let node = try? JSONDecoder().decode(AstryxNode.self, from: Data(json.utf8)) else {
+    Issue.record("the avatar did not decode")
+    return
+  }
+  #expect(AstryxNodeView.componentName(node) == "Avatar")
+  let wired = Pixels(AstryxNodeView(node) { _ in }.fixedSize())
+  let direct = Pixels(Avatar("Ada Lovelace", size: .lg).fixedSize())
+  #expect(wired.width == direct.width && wired.height == direct.height)
+}
