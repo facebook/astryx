@@ -29,7 +29,7 @@ affects_consumer_docs: []
 <!-- Describe the system, not the project: present tense, what it does. No proposals, history, pull requests, or research in the record; see docs/contributing/spec-writing.md and report its rubric results in the pull request. -->
 
 **Proposed; pending owner decision.** Every requirement below awaits the
-owner's decision, except DEC-1, DEC-2, and DEC-3, which are decided.
+owner's decision, except DEC-1 through DEC-4, which are decided.
 
 ## Intent
 
@@ -69,7 +69,7 @@ const reorderable = createReorderable({
 
 <List reorderable={reorderable}>
   {items.map(item => (
-    <ListItem key={item.id} label={item.name} />
+    <ListItem key={item.id} itemKey={item.id} label={item.name} />
   ))}
 </List>;
 ```
@@ -102,8 +102,9 @@ announcements are those of FR3 and FR4, and the tree adds no option.
   handle and cannot be picked up (DEC-2). A row it rejects at either end of the
   collection also bounds the drop range: nothing drops beyond it, and a
   keyboard or assistive-technology move past it is not offered.
-  A collection takes each item's key from its own item model; List reads the
-  React `key` of each direct child, so its rows are direct children. The
+  Each item's key comes from the data,
+  never from React's `key`: List reads each `ListItem`'s `itemKey`, and a
+  collection built from data, such as TreeList, takes `getKey(item)` (DEC-4). The
   object may be created again on each render: the collection uses the latest
   callbacks when a move commits, and a new object during a drag does not
   cancel the drag. One object passed to two collections reorders each on its
@@ -203,6 +204,19 @@ between parents, where a pair of indices would not. A caller that filters the
 items it passes maps `to` back to its full list.
 
 Rejected: `onReorder(from, to)` with a pair of positions.
+
+### DEC-4 — The reorder key comes from the data
+
+**Reference:** `spec:AST-103/DEC-4`
+**Decider:** `cixzhang`, `2026-10-25`
+
+React does not pass `key` to a component, so a collection cannot rely on it.
+A `ListItem` names its item with one `itemKey` prop, and a collection built
+from data takes `getKey(item)`. `itemKey` is a new name because no row prop
+carries item identity today: `value` on option-like rows is the selected value
+a form reads, a different job (`architecture:public-component-api` INV21).
+
+Rejected: reading each direct child's React `key`.
 
 ## Open questions
 

@@ -182,7 +182,7 @@ Consumer migration instructions belong in consumer docs and release notes.
   (FR9) and `ListItem` passes `swipeActions` and `swipeBehavior` through to
   `Item` unchanged.
 - Proposed: `spec:AST-103` owns reordering. List is its first adopter: it
-  takes the `reorderable` object, a row's key is the React `key` of the direct child that renders it
+  takes the `reorderable` object, a row's key is its `ListItem`'s `itemKey`
   and its position is its index, and the
   handle is drawn in the row's existing trailing element.
 
