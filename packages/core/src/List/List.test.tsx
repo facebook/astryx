@@ -636,9 +636,6 @@ describe('List', () => {
     expect(listRowConsts.touchSubtitleRowHeight).toBe(
       `${list.metrics.subtitleRowHeight}px`,
     );
-    expect(listRowConsts.touchControlSize).toBe(
-      `${list.metrics.controlSize}px`,
-    );
     expect(listRowConsts.editingIndent).toBe(`${list.metrics.editingIndent}px`);
     expect(listRowConsts.editingControlCenter).toBe(
       `${list.metrics.editingControlCenter}px`,
@@ -653,7 +650,7 @@ describe('List', () => {
           <ListItem label="Two lines" description="A description" />
         </List>
         <List density="compact">
-          <ListItem label="Compact" description="Still the control size" />
+          <ListItem label="Compact" description="Still dense" />
         </List>
         <List density="spacious">
           <ListItem label="Spacious" />
@@ -664,12 +661,27 @@ describe('List', () => {
     const row = (text: string) => screen.getByText(text).closest('li')!;
     expect(minHeights(row('One line')).touch).toEqual(['52px']);
     expect(minHeights(row('Two lines')).touch).toEqual(['62px']);
-    expect(minHeights(row('Compact')).touch).toEqual(['44px']);
+    // A compact list is the dense case: it keeps its density.
+    expect(minHeights(row('Compact')).touch).toEqual([]);
     // Spacious keeps its own padding over the same minimums.
     expect(minHeights(row('Spacious')).touch).toEqual(['52px']);
     expect(minHeights(row('Spacious two')).touch).toEqual(['62px']);
     // Nothing outside the touch gate: a mouse keeps today's heights.
     expect(minHeights(row('One line')).other).toEqual([]);
+  });
+
+  it('keeps a compact list’s density under a finger, interactive or read-only', () => {
+    render(
+      <List density="compact">
+        <ListItem label="Read-only" />
+        <ListItem label="Interactive" onClick={() => {}} />
+        <ListItem label="Described" description="Still dense" />
+      </List>,
+    );
+    for (const text of ['Read-only', 'Interactive', 'Described']) {
+      const row = screen.getByText(text).closest('li')!;
+      expect(minHeights(row)).toEqual({touch: [], other: []});
+    }
   });
 
   // ===========================================================================
