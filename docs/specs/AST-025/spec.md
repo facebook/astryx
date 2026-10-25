@@ -11,7 +11,11 @@ approved_at: 2026-09-11
 phase: accepted
 owners: [cixzhang]
 affects_architecture:
-  [architecture:container-padding, architecture:public-component-api]
+  [
+    architecture:container-padding,
+    architecture:public-component-api,
+    architecture:interaction-modality,
+  ]
 affects_families: [family:layout-regions, family:layout-primitives]
 affects_contributing: []
 affects_consumer_docs:

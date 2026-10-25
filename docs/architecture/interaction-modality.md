@@ -116,7 +116,12 @@ work.
   and replacement content cannot silently remove the owner's indicator.
 - **INV4 — Every modality has an operable path.** Keyboard, pointer, and touch or
   pen can reach each supported interaction. Hover is never the only discovery or
-  activation path.
+  activation path. A tooltip's scrolling overflow is the one exception, as
+  `spec:AST-025` FR12 records: a tooltip never takes focus under the ARIA
+  tooltip pattern, so content too tall for the viewport scrolls inside it with
+  no keyboard path; its full content stays available to assistive technology
+  through the trigger's accessible description, and long or essential content
+  belongs in a HoverCard or Popover.
 - **INV5 — Existing state semantics win.** Disabled controls do not become
   interactive because of modality. Read-only and busy controls preserve their
   documented focus and activation behavior.
