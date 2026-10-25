@@ -448,7 +448,9 @@ struct AvatarTapTooltip: ViewModifier {
     #if os(iOS)
     if let text, !voiceOver {
       content
-        .onTapGesture { isShown.toggle() }
+        // Shared with an enclosing row's button or link, which still runs:
+        // core's touch trigger never takes the tap from its container.
+        .simultaneousGesture(TapGesture().onEnded { isShown.toggle() })
         // A popover closes on the next tap anywhere, as core's tooltip does.
         .popover(isPresented: $isShown, arrowEdge: .bottom) {
           AvatarTooltipBubble(text: text)
