@@ -270,10 +270,16 @@ const styles = stylex.create({
   },
   // The indeterminate arc turns with Web Animations on the compositor: the
   // whole arc spins once per `animationDuration` here...
+  // Under reduced motion both clocks run at half speed on every pointer: a
+  // continuous indicator sits outside design:reduced-motion's scope, so this
+  // keeps the ring's slower reduced-motion clocks, keyed on the two shared
+  // reduced-motion queries, a fine pointer's and a coarse pointer's.
   indeterminateSpin: {
     animationDuration: {
       default: '2s',
-      '@media (prefers-reduced-motion: reduce)': '4s',
+      '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
+        '4s',
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)': '4s',
     },
   },
   // ...while its start and end run one breathing cycle per
@@ -281,7 +287,9 @@ const styles = stylex.create({
   indeterminateCycle: {
     animationDuration: {
       default: '1.5s',
-      '@media (prefers-reduced-motion: reduce)': '3s',
+      '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
+        '3s',
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)': '3s',
     },
   },
   children: {
@@ -725,7 +733,8 @@ export function CircularProgress({
   const tailRef = useRef<HTMLSpanElement | null>(null);
   // The loops read their durations when they start, and reduced motion
   // changes those durations: a change of the preference while the ring is
-  // shown restarts them on the new clocks.
+  // shown restarts them on the new clocks. Both shared reduced-motion queries
+  // set the same clocks, so the preference alone decides.
   const isReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
   useLayoutEffect(() => {
     if (!isIndeterminate) {

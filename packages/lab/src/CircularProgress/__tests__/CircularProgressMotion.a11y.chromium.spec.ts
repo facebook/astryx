@@ -1054,12 +1054,26 @@ test('the indeterminate arc lays out and paints nothing per frame', async ({
   expect(count('Paint')).toBe(0);
 });
 
-for (const reducedMotion of ['no-preference', 'reduce'] as const) {
-  test(`the indeterminate arc animates only transform and opacity (${reducedMotion} motion)`, async ({
-    page,
+for (const [reducedMotion, pointer] of [
+  ['no-preference', 'a mouse'],
+  ['reduce', 'a mouse'],
+  ['reduce', 'a finger'],
+] as const) {
+  test(`the indeterminate arc animates only transform and opacity (${reducedMotion} motion, ${pointer})`, async ({
+    browser,
   }) => {
-    await page.emulateMedia({reducedMotion});
+    // Both shared reduced-motion queries, a fine pointer's and a coarse
+    // pointer's, set the same slower clocks.
+    const context = await browser.newContext(
+      pointer === 'a finger'
+        ? {hasTouch: true, isMobile: true, reducedMotion}
+        : {hasTouch: false, isMobile: false, reducedMotion},
+    );
+    const page = await context.newPage();
     await openIndeterminate(page);
+    expect(
+      await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+    ).toBe(pointer === 'a finger');
     const animations = await page.evaluate(() =>
       document.getAnimations().map(animation => {
         const effect = animation.effect as KeyframeEffect;
@@ -1100,6 +1114,7 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     expect(durations).toEqual(
       reducedMotion === 'reduce' ? [3000, 4000] : [1500, 2000],
     );
+    await context.close();
   });
 }
 
