@@ -3750,11 +3750,6 @@
       "aliases": []
     },
     {
-      "name": "hook-use-animator",
-      "path": "hooks/use-animator",
-      "aliases": []
-    },
-    {
       "name": "hook-use-announce",
       "path": "hooks/use-announce",
       "aliases": []
@@ -3807,11 +3802,6 @@
     {
       "name": "hook-use-focus-trap",
       "path": "hooks/use-focus-trap",
-      "aliases": []
-    },
-    {
-      "name": "hook-use-gesture-recognizer",
-      "path": "hooks/use-gesture-recognizer",
       "aliases": []
     },
     {
@@ -3922,11 +3912,6 @@
     {
       "name": "hook-use-press-feedback",
       "path": "hooks/use-press-feedback",
-      "aliases": []
-    },
-    {
-      "name": "hook-use-press-tracker",
-      "path": "hooks/use-press-tracker",
       "aliases": []
     },
     {
@@ -4042,11 +4027,6 @@
     {
       "name": "hook-use-tooltip",
       "path": "hooks/use-tooltip",
-      "aliases": []
-    },
-    {
-      "name": "hook-use-touch-presentation",
-      "path": "hooks/use-touch-presentation",
       "aliases": []
     },
     {
