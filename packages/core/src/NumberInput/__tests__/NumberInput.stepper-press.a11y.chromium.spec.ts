@@ -159,11 +159,13 @@ async function holdPlus(page: Page): Promise<number> {
 test('a finger held 1.6 s selects nothing and keeps stepping', async ({
   page,
 }) => {
-  // The steppers track the finger: a hold repeats from 0.5 s as UIStepper
-  // does, and the click after the lift adds nothing.
+  // The steppers track the finger: a hold repeats from 0.5 s on one steady
+  // ramp and commits once, at the lift; the click after the lift adds
+  // nothing.
   await open(page);
-  // The steps at 0.5, 1 and 1.5 s; one more if the lift comes after 2 s.
+  // From 2: steps at 500, 750, 975, 1177.5, 1359.75 and 1523.8 ms, and one
+  // more if the lift comes after 1671.4 ms.
   const value = await holdPlus(page);
-  expect(value).toBeGreaterThanOrEqual(4);
-  expect(value).toBeLessThanOrEqual(6);
+  expect(value).toBeGreaterThanOrEqual(7);
+  expect(value).toBeLessThanOrEqual(9);
 });

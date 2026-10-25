@@ -4,20 +4,24 @@
  * @file NumberInputStepperHold.interaction.browser.spec.ts
  * @input The built "With Number Steppers" NumberInput story, real touch input
  *   (Chromium CDP / WebKit's input command) and the interaction harness
- * @output Interaction proofs for the steppers under a finger, against
- *   UIStepper's measured behavior (motion/uikit/stepper.ts): a tap steps once
- *   at the lift and paints only while the finger is down; a hold steps at
- *   0.5 s and repeats on UIStepper's cadence; a slide onto the other half
- *   carries the paint and the repeat; leaving the column stops the repeat and
- *   coming back steps at once; a scroll that starts on a stepper scrolls and
- *   steps nothing; a step made late by a blocked main thread runs once, with
- *   no burst; storyboards of a tap, a hold and a slide
+ * @output Interaction proofs for the steppers under a finger and a mouse
+ *   (motion/uikit/stepper.ts): a tap steps once at the lift, paints only
+ *   while the finger is down, and the engine's click after it adds nothing,
+ *   a light tap trembling on the edge too; a hold shows a step at 0.5 s, then
+ *   on one steady ramp, stops at the bound and commits once, at the release;
+ *   a slide onto the other half carries the paint and the repeat; trembling
+ *   on the edge adds no step; leaving the column pauses the repeat and coming
+ *   back resumes it, never with a step at once; a scroll that starts on a
+ *   stepper scrolls and steps nothing; a mouse holds like a finger; a step
+ *   made late by a blocked main thread runs once, with no burst; storyboards
+ *   of a tap, a hold, a slide, leaving and coming back, and a hold in a
+ *   scrolling page
  * @position NumberInput's `*.interaction.browser.spec.ts`, shaped like the
- *   harness exemplar (BottomSheetDetent). The UIStepper paths run under a
- *   finger (the phone profile, as Android Chrome is); one case runs with a
- *   mouse, which keeps the click. Times are read in
- *   the page, on its own clock, from the value and press-paint mutations the
- *   steps produce.
+ *   harness exemplar (BottomSheetDetent). The paths run under a finger (the
+ *   phone profile, as Android Chrome is); one runs with a mouse. Times are
+ *   read in the page, on its own clock: the value the field shows, sampled
+ *   every frame; the committed value (aria-valuenow, what assistive
+ *   technology hears); and the press-paint mutations.
  */
 
 import {expect, test, type Page} from '@playwright/test';
@@ -40,13 +44,21 @@ const storybook = withStorybook(test);
 const STORY = 'core-numberinput--with-number-steppers';
 /** How far a step may land from its scheduled time, ms (a timer's jitter plus a render). */
 const SLACK = 45;
-/** UIStepper, iOS 26.2: value changes during a hold on +, ms after touch-down. */
-const UIKIT_HOLD = [514, 1017, 1520, 2023, 2525, 3028, 3130, 3233];
-/** The same steps on the schedule motion/uikit/stepper.ts gives. */
-const SCHEDULE = [500, 1000, 1500, 2000, 2500, 3000, 3100, 3200];
+/** UIStepper's first step of a hold, iOS 26.2, ms after touch-down. */
+const UIKIT_FIRST_STEP = 514;
+/**
+ * A hold's steps, ms after touch-down (motion/uikit/stepper.ts): 500, then
+ * 250 ms, each interval 0.9 of the one before.
+ */
+const SCHEDULE = [
+  500, 750, 975, 1177.5, 1359.75, 1523.775, 1671.3975, 1804.25775,
+];
 
 interface Log {
-  values: {t: number; value: number}[];
+  /** The value the field shows, sampled every frame. */
+  shown: {t: number; value: number}[];
+  /** The committed value (aria-valuenow): what assistive technology hears. */
+  commits: {t: number; value: number}[];
   paints: {
     t: number;
     half: 'increment' | 'decrement';
@@ -80,13 +92,18 @@ interface Stepper {
   minus: Point;
   /** The column's top edge, CSS px. */
   top: number;
+  /** The column's bottom edge, CSS px. */
+  bottom: number;
   clip: ClipBox;
 }
 
-/** Records every value change, press paint and touch, in epoch ms on the page clock. */
+/**
+ * Records the shown value every frame, every commit, press paint, touch and
+ * pointer press, in epoch ms on the page clock.
+ */
 function installLog(): void {
   const now = () => performance.timeOrigin + performance.now();
-  const log: Log = {values: [], paints: [], touches: []};
+  const log: Log = {shown: [], commits: [], paints: [], touches: []};
   (window as unknown as {stepperLog: Log}).stepperLog = log;
   const input = document.querySelector('[role="spinbutton"]');
   const plus = document.querySelector('[aria-label^="Increment"]');
@@ -94,8 +111,20 @@ function installLog(): void {
   if (input == null || plus == null || minus == null) {
     throw new Error('no stepper');
   }
+  if (!(input instanceof HTMLInputElement)) {
+    throw new Error('no input');
+  }
+  let lastShown = input.value;
+  const sample = () => {
+    if (input.value !== lastShown) {
+      lastShown = input.value;
+      log.shown.push({t: now(), value: Number(input.value)});
+    }
+    requestAnimationFrame(sample);
+  };
+  requestAnimationFrame(sample);
   new MutationObserver(() => {
-    log.values.push({
+    log.commits.push({
       t: now(),
       value: Number(input.getAttribute('aria-valuenow')),
     });
@@ -118,7 +147,14 @@ function installLog(): void {
       attributeFilter: ['data-astryx-press'],
     });
   }
-  for (const type of ['touchstart', 'touchmove', 'touchend', 'touchcancel']) {
+  for (const type of [
+    'touchstart',
+    'touchmove',
+    'touchend',
+    'touchcancel',
+    'pointerdown',
+    'pointerup',
+  ]) {
     document.addEventListener(type, () => log.touches.push({t: now(), type}), {
       capture: true,
       passive: true,
@@ -162,6 +198,7 @@ async function openStepper(page: Page): Promise<Stepper> {
       y: minusBox.y + minusBox.height / 2,
     },
     top: plusBox.y,
+    bottom: minusBox.y + minusBox.height,
     clip: {
       x: left,
       y: top,
@@ -214,13 +251,33 @@ function moves(from: Point, to: Point, t0: number, t1: number): TouchFrame[] {
   });
 }
 
-/** Step times and values, relative to the first touch-down. */
-function stepsOf(log: Log): {t: number; value: number}[] {
-  const down = log.touches.find(touch => touch.type === 'touchstart')?.t;
+/** The first press's down time: its touchstart, or a mouse's pointerdown. */
+function downTime(log: Log): number {
+  const down =
+    log.touches.find(touch => touch.type === 'touchstart') ??
+    log.touches.find(touch => touch.type === 'pointerdown');
   if (down == null) {
-    throw new Error('no touchstart logged');
+    throw new Error('no press logged');
   }
-  return log.values.map(({t, value}) => ({t: t - down, value}));
+  return down.t;
+}
+
+/** Shown step times and values, relative to the first press. */
+function stepsOf(log: Log): {t: number; value: number}[] {
+  const down = downTime(log);
+  return log.shown.map(({t, value}) => ({t: t - down, value}));
+}
+
+/** The commits: exactly one, at the release, with `value`. */
+function expectOneCommitAtRelease(log: Log, value: number): void {
+  expect(log.commits.map(commit => commit.value)).toEqual([value]);
+  const release = last(
+    log.touches.filter(
+      touch => touch.type === 'touchend' || touch.type === 'pointerup',
+    ),
+  ).t;
+  expect(log.commits[0].t).toBeGreaterThanOrEqual(release - 1);
+  expect(log.commits[0].t - release).toBeLessThan(SLACK);
 }
 
 function expectSchedule(times: number[], schedule: number[]): void {
@@ -242,10 +299,10 @@ test('a tap steps once, at the lift, and paints only while the finger is down', 
   const log = await readLog(page);
   const down = touchTime(log, 'touchstart');
   const up = touchTime(log, 'touchend');
-  expect(log.values.map(v => v.value)).toEqual([3]);
-  // The step lands at the lift, not at touch-down.
-  expect(log.values[0].t).toBeGreaterThanOrEqual(up - 1);
-  expect(log.values[0].t - up).toBeLessThan(SLACK);
+  // One step, at the lift, not at touch-down; the engine's click after the
+  // lift adds nothing.
+  expect(log.shown.map(v => v.value)).toEqual([3]);
+  expectOneCommitAtRelease(log, 3);
   // The touched half lights in the touch-down frame and clears at the lift,
   // with no fade (UIStepper's fill switches in one frame both ways).
   expect(log.paints.map(({half, paint}) => [half, paint])).toEqual([
@@ -256,40 +313,54 @@ test('a tap steps once, at the lift, and paints only while the finger is down', 
   expect(log.paints[1].t - up).toBeLessThan(20);
 });
 
-test('a hold steps at 0.5 s, repeats on UIStepper’s cadence and stops at the bound', async ({
+test('a light tap trembling on the top edge steps exactly once', async ({
+  page,
+}) => {
+  const {driver, plus, top} = await openStepper(page);
+  const at = (dy: number) => ({x: plus.x, y: top + dy});
+  await driver.play([
+    {t: 0, fingers: [{id: 0, ...at(1)}]},
+    {t: 20, fingers: [{id: 0, ...at(-2)}]},
+    {t: 40, fingers: [{id: 0, ...at(1)}]},
+    {t: 60, fingers: [{id: 0, ...at(-3)}]},
+    {t: 80, fingers: []},
+  ]);
+  await page.waitForTimeout(700);
+  const log = await readLog(page);
+  expect(log.shown.map(v => v.value)).toEqual([3]);
+  expectOneCommitAtRelease(log, 3);
+});
+
+test('a hold shows a step at 0.5 s, then on one steady ramp, stops at the bound and commits once at the release', async ({
   page,
 }, testInfo) => {
   const {driver, plus} = await openStepper(page);
-  await driver.play(hold(plus, 3450));
+  await driver.play(hold(plus, 2400));
   await page.waitForTimeout(600);
   const log = await readLog(page);
   const steps = stepsOf(log);
   // The story counts 0 to 10 from 2: eight steps reach the maximum, and the
-  // finger held on past it steps no more (UIStepper: 8, 9, 10, then nothing).
+  // finger held on past it steps no more.
   expect(steps.map(s => s.value)).toEqual([3, 4, 5, 6, 7, 8, 9, 10]);
   const times = steps.map(s => Math.round(s.t));
   expectSchedule(times, SCHEDULE);
-  // Against UIKit's own times on the same hold (its timer re-arms after each
-  // step's work, so it drifts later by a few ms per step).
-  const parity = times.map((t, i) => UIKIT_HOLD[i] - t);
   testInfo.annotations.push({
     type: 'uikit-parity',
-    description: `step times vs UIStepper: ${parity.map(d => `${d >= 0 ? '+' : ''}${d}`).join(', ')} ms`,
+    description: `first step at ${times[0]} ms; UIStepper's at ${UIKIT_FIRST_STEP} ms`,
   });
   await writeEvidence(
     'traces/numberinput-stepper-hold',
     {
       [`${testInfo.project.name}.json`]: JSON.stringify(
-        {steps: times, schedule: SCHEDULE, uikit: UIKIT_HOLD, log},
+        {steps: times, schedule: SCHEDULE, log},
         null,
         1,
       ),
     },
     testInfo,
   );
-  for (const delta of parity) {
-    expect(Math.abs(delta)).toBeLessThanOrEqual(SLACK + 40);
-  }
+  // Nothing was committed, or told to assistive technology, until the lift.
+  expectOneCommitAtRelease(log, 10);
   // The lift after a repeat adds nothing, and the paint clears with it.
   expect(log.paints.at(-1)).toMatchObject({half: 'increment', paint: null});
 });
@@ -301,17 +372,17 @@ test('a slide onto the other half carries the paint and the repeat', async ({
   await keepTouchInPage(page);
   await driver.play([
     {t: 0, fingers: [{id: 0, ...plus}]},
-    ...moves(plus, minus, 1100, 1200),
-    {t: 2600, fingers: []},
+    ...moves(plus, minus, 800, 900),
+    {t: 1450, fingers: []},
   ]);
   await page.waitForTimeout(600);
   const log = await readLog(page);
   const steps = stepsOf(log);
-  // + at 0.5 and 1 s, then − on the same beat: 1.5, 2 and 2.5 s.
+  // + at 500 and 750 ms, then − on the same ramp: 975, 1177.5, 1359.75 ms.
   expect(steps.map(s => s.value)).toEqual([3, 4, 3, 2, 1]);
   expectSchedule(
     steps.map(s => Math.round(s.t)),
-    [500, 1000, 1500, 2000, 2500],
+    SCHEDULE.slice(0, 5),
   );
   expect(log.paints.map(({half, paint}) => [half, paint])).toEqual([
     ['increment', 'on'],
@@ -319,6 +390,35 @@ test('a slide onto the other half carries the paint and the repeat', async ({
     ['decrement', 'on'],
     ['decrement', null],
   ]);
+  expectOneCommitAtRelease(log, 1);
+});
+
+test('a finger trembling on the edge during a hold adds no step', async ({
+  page,
+}) => {
+  const {driver, plus, top} = await openStepper(page);
+  await keepTouchInPage(page);
+  // Across the column's top edge and back every frame from 800 to 1000 ms,
+  // within the press's tracking area.
+  const tremble = Array.from({length: 12}, (_, i) => ({
+    t: 800 + i * 17,
+    fingers: [{id: 0, x: plus.x, y: top + (i % 2 === 0 ? -6 : 4)}],
+  }));
+  await driver.play([
+    {t: 0, fingers: [{id: 0, ...plus}]},
+    ...tremble,
+    {t: 1270, fingers: []},
+  ]);
+  await page.waitForTimeout(600);
+  const log = await readLog(page);
+  const steps = stepsOf(log);
+  // The steady hold's steps, on the steady hold's times.
+  expect(steps.map(s => s.value)).toEqual([3, 4, 5, 6]);
+  expectSchedule(
+    steps.map(s => Math.round(s.t)),
+    SCHEDULE.slice(0, 4),
+  );
+  expectOneCommitAtRelease(log, 6);
 });
 
 test('on a page that scrolls, a delivered press keeps its touch: a slide up onto + carries the repeat', async ({
@@ -349,44 +449,148 @@ test('on a page that scrolls, a delivered press keeps its touch: a slide up onto
   // The page did not take the slide as a pan...
   expect(await page.evaluate(() => scrollY)).toBe(0);
   // ...and the repeat went on, on +.
-  const steps = stepsOf(await readLog(page));
+  const log = await readLog(page);
+  const steps = stepsOf(log);
   expect(steps.length).toBeGreaterThan(0);
   expect(steps.map(step => step.value)).toEqual(
     steps.map((_, i) => start + 1 + i),
   );
+  expectOneCommitAtRelease(log, last(steps).value);
 });
 
-test('leaving the column stops the repeat, and coming back steps at once', async ({
+test('leaving the column pauses the repeat, and coming back resumes it with no step at once', async ({
   page,
 }) => {
-  const {driver, plus, top} = await openStepper(page);
+  const {driver, plus, bottom} = await openStepper(page);
   await keepTouchInPage(page);
-  const above = {x: plus.x, y: top - 14};
+  // Below the column, past the press's 70 pt tracking area.
+  const below = {x: plus.x, y: bottom + 100};
   await driver.play([
     {t: 0, fingers: [{id: 0, ...plus}]},
-    ...moves(plus, above, 1100, 1200),
-    ...moves(above, plus, 2700, 2800),
+    {t: 800, fingers: [{id: 0, ...below}]},
+    {t: 2700, fingers: [{id: 0, ...plus}]},
     {t: 3000, fingers: []},
   ]);
   await page.waitForTimeout(600);
   const log = await readLog(page);
   const steps = stepsOf(log);
-  const down = touchTime(log, 'touchstart');
-  // The first move back inside the column, after the 1.5 s outside.
-  const back = log.touches
-    .filter(touch => touch.type === 'touchmove' && touch.t - down > 2700)
+  const down = downTime(log);
+  const movesAt = log.touches
+    .filter(touch => touch.type === 'touchmove')
     .map(touch => touch.t - down);
+  const out = movesAt.find(t => t > 700);
+  const back = movesAt.find(t => t > 2600);
+  if (out == null || back == null) {
+    throw new Error(`moves not logged: ${JSON.stringify(movesAt)}`);
+  }
   expect(steps.map(s => s.value)).toEqual([3, 4, 5]);
   expectSchedule(
     steps.slice(0, 2).map(s => Math.round(s.t)),
-    [500, 1000],
+    [500, 750],
   );
-  // Nothing while outside; the return steps within the moves that bring the
-  // finger back (2.7–2.8 s), not on a beat of the old cadence.
-  expect(steps[2].t).toBeGreaterThan(back[0]);
-  expect(steps[2].t).toBeLessThan(last(back) + SLACK);
+  // Nothing while outside; back inside, the rest of the beat that was
+  // running when the finger left (975 ms) runs first: no step at once.
+  expect(steps[2].t - back).toBeGreaterThan(40);
+  expect(Math.abs(steps[2].t - (back + (975 - out)))).toBeLessThanOrEqual(
+    SLACK,
+  );
   // The paint goes off when the finger leaves and comes back with it.
   expect(log.paints.map(({paint}) => paint)).toEqual(['on', null, 'on', null]);
+  expectOneCommitAtRelease(log, 5);
+});
+
+test('under a finger each half takes at least a 24 x 24 target, and the layout does not move', async ({
+  page,
+  browser,
+}) => {
+  const {driver} = await openStepper(page);
+  const columnBox = async (p: Page) =>
+    p.evaluate(() => {
+      const column = document.querySelector(
+        '[aria-label^="Increment"]',
+      )?.parentElement;
+      if (column == null) {
+        throw new Error('no stepper column');
+      }
+      const {left, right, top, bottom} = column.getBoundingClientRect();
+      return {left, right, top, bottom};
+    });
+  const column = await columnBox(page);
+  // Each half's reach past the column: up to 24 px tall and 24 px wide.
+  const block = Math.max(0, 24 - (column.bottom - column.top) / 2);
+  const inline = Math.max(0, (24 - (column.right - column.left)) / 2);
+  expect(block).toBeGreaterThan(0);
+  const hits = await page.evaluate(
+    ({box, block, inline}) => {
+      const column = document.querySelector(
+        '[aria-label^="Increment"]',
+      )?.parentElement;
+      const hits = (x: number, y: number) => {
+        const element = document.elementFromPoint(x, y);
+        return element != null && column?.contains(element) === true;
+      };
+      const midX = (box.left + box.right) / 2;
+      const midY = (box.top + box.bottom) / 2;
+      return {
+        aboveInside: hits(midX, box.top - block + 1),
+        aboveOutside: hits(midX, box.top - block - 2),
+        belowInside: hits(midX, box.bottom + block - 1),
+        belowOutside: hits(midX, box.bottom + block + 2),
+        startInside: hits(box.left - inline + 1, midY - 4),
+        endInside: hits(box.right + inline - 1, midY + 4),
+      };
+    },
+    {box: column, block, inline},
+  );
+  expect(hits).toEqual({
+    aboveInside: true,
+    aboveOutside: false,
+    belowInside: true,
+    belowOutside: false,
+    startInside: true,
+    endInside: true,
+  });
+  // A tap in the reach above + steps +, once.
+  await driver.play(
+    hold({x: (column.left + column.right) / 2, y: column.top - block + 2}, 80),
+  );
+  await page.waitForTimeout(500);
+  expectOneCommitAtRelease(await readLog(page), 3);
+  // Under a mouse the column sits in its field the same way: the reach moves
+  // no layout. (The two profiles place the field itself differently.)
+  const placement = async (p: Page) =>
+    p.evaluate(() => {
+      const column = document.querySelector(
+        '[aria-label^="Increment"]',
+      )?.parentElement;
+      const field = column?.parentElement;
+      if (column == null || field == null) {
+        throw new Error('no stepper column');
+      }
+      const c = column.getBoundingClientRect();
+      const f = field.getBoundingClientRect();
+      return {
+        width: c.width,
+        height: c.height,
+        fromFieldLeft: c.left - f.left,
+        fromFieldTop: c.top - f.top,
+        fieldWidth: f.width,
+        fieldHeight: f.height,
+      };
+    });
+  const touchPlacement = await placement(page);
+  const context = await browser.newContext({
+    viewport: page.viewportSize() ?? {width: 402, height: 714},
+    hasTouch: false,
+    isMobile: false,
+  });
+  const mousePage = await context.newPage();
+  await openStepper(mousePage);
+  expect(
+    await mousePage.evaluate(() => matchMedia('(pointer: coarse)').matches),
+  ).toBe(false);
+  expect(await placement(mousePage)).toEqual(touchPlacement);
+  await context.close();
 });
 
 test('a scroll that starts on a stepper scrolls the page and steps nothing', async ({
@@ -408,7 +612,8 @@ test('a scroll that starts on a stepper scrolls the page and steps nothing', asy
     .toBeGreaterThan(0);
   await page.waitForTimeout(700);
   const log = await readLog(page);
-  expect(log.values).toEqual([]);
+  expect(log.shown).toEqual([]);
+  expect(log.commits).toEqual([]);
   // The page is a scroll view, so the press waits for the content-touch
   // delay; a finger that moves before it is a scroll and paints nothing.
   expect(log.paints).toEqual([]);
@@ -419,18 +624,19 @@ test('inside a scrolling page, a held press reaches the stepper after the conten
 }) => {
   const {driver, plus} = await openStepper(page);
   await makePageScroll(page);
-  await driver.play(hold(plus, 1250));
+  await driver.play(hold(plus, 1000));
   await page.waitForTimeout(600);
   const log = await readLog(page);
   const down = touchTime(log, 'touchstart');
   // UIScrollView delivers a still finger after 150 ms; in one, UIStepper's
-  // first step came at +653 ms and its second at +1155 ms.
+  // first step came at +653 ms. The ramp then runs from the delivery.
   expect(log.paints[0]).toMatchObject({half: 'increment', paint: 'on'});
   expect(Math.abs(log.paints[0].t - down - 150)).toBeLessThanOrEqual(SLACK);
   expectSchedule(
     stepsOf(log).map(s => Math.round(s.t)),
-    [650, 1150],
+    [650, 900],
   );
+  expectOneCommitAtRelease(log, 4);
 });
 
 test('inside a scrolling page, a quick tap steps at the lift and flashes the press', async ({
@@ -442,8 +648,8 @@ test('inside a scrolling page, a quick tap steps at the lift and flashes the pre
   await page.waitForTimeout(600);
   const log = await readLog(page);
   const up = touchTime(log, 'touchend');
-  expect(log.values.map(v => v.value)).toEqual([3]);
-  expect(log.values[0].t - up).toBeLessThan(SLACK);
+  expect(log.shown.map(v => v.value)).toEqual([3]);
+  expectOneCommitAtRelease(log, 3);
   // Quicker than the delay: the press shows at the lift for UIKit's 100 ms
   // flash.
   expect(log.paints.map(p => p.paint)).toEqual(['on', null]);
@@ -453,11 +659,9 @@ test('inside a scrolling page, a quick tap steps at the lift and flashes the pre
   );
 });
 
-test('with a mouse, a held press steps once, on its click, and never repeats', async ({
+test('with a mouse, a held press repeats like a finger and commits once, at the release', async ({
   browser,
 }) => {
-  // Touch work costs nothing under a fine pointer: the tracker ignores a
-  // mouse, and the button's click steps once when the button is released.
   const context = await browser.newContext({
     viewport: {width: 402, height: 714},
     hasTouch: false,
@@ -471,11 +675,24 @@ test('with a mouse, a held press steps once, on its click, and never repeats', a
   ).toBe(false);
   await page.mouse.move(plus.x, plus.y);
   await page.mouse.down();
-  await page.waitForTimeout(1600);
-  expect((await readLog(page)).values).toEqual([]);
+  await page.waitForTimeout(1230);
   await page.mouse.up();
   await page.waitForTimeout(400);
-  expect((await readLog(page)).values.map(({value}) => value)).toEqual([3]);
+  const log = await readLog(page);
+  const steps = stepsOf(log);
+  expect(steps.map(s => s.value)).toEqual([3, 4, 5, 6]);
+  expectSchedule(
+    steps.map(s => Math.round(s.t)),
+    SCHEDULE.slice(0, 4),
+  );
+  // One commit, at the release; the click after it adds nothing.
+  expectOneCommitAtRelease(log, 6);
+  expect(log.paints.map(({half, paint}) => [half, paint])).toEqual([
+    ['increment', 'on'],
+    ['increment', null],
+  ]);
+  // A mouse press moves focus to the field, as a click on a spin button does.
+  await expect(page.getByRole('spinbutton', {name: 'Quantity'})).toBeFocused();
   await context.close();
 });
 
@@ -500,7 +717,7 @@ test('after a scroll takes the touch, a click with no pointer still steps', asyn
     .poll(async () => page.evaluate(() => scrollY))
     .toBeGreaterThan(0);
   await page.waitForTimeout(700);
-  expect((await readLog(page)).values).toEqual([]);
+  expect((await readLog(page)).commits).toEqual([]);
   await page.evaluate(() => {
     const increment = document.querySelector('button[aria-label^="Increment"]');
     if (!(increment instanceof HTMLElement)) {
@@ -509,7 +726,7 @@ test('after a scroll takes the touch, a click with no pointer still steps', asyn
     increment.click();
   });
   await page.waitForTimeout(200);
-  expect((await readLog(page)).values.map(({value}) => value)).toEqual([3]);
+  expect((await readLog(page)).commits.map(({value}) => value)).toEqual([3]);
 });
 
 test('a step made late by a blocked main thread runs once, and the cadence resumes from it', async ({
@@ -518,14 +735,14 @@ test('a step made late by a blocked main thread runs once, and the cadence resum
   const {driver, plus} = await openStepper(page);
   const playing = driver.play(hold(plus, 2800));
   await expect
-    .poll(async () => (await readLog(page)).values.length, {intervals: [20]})
+    .poll(async () => (await readLog(page)).shown.length, {intervals: [20]})
     .toBe(2);
-  // Hold the main thread past the 1.5 s beat.
+  // Hold the main thread past the 975 ms beat.
   const block = await blockMainThread(page, 700);
   await playing;
   await page.waitForTimeout(600);
   const log = await readLog(page);
-  const after = log.values.filter(v => v.t > block.from);
+  const after = log.shown.filter(v => v.t > block.from);
   await writeEvidence(
     'busy-main-thread/numberinput-stepper-hold',
     {
@@ -534,22 +751,21 @@ test('a step made late by a blocked main thread runs once, and the cadence resum
     testInfo,
   );
   // The beat the block swallowed runs once, right after it; the next one is a
-  // full interval later (no catch-up burst).
+  // full interval later (202.5 ms after a third step: no catch-up burst).
   expect(after.length).toBeGreaterThanOrEqual(2);
   expect(after[0].t - block.to).toBeLessThan(SLACK);
-  expect(after[1].t - after[0].t).toBeGreaterThan(500 - SLACK);
-  expect(after[1].t - after[0].t).toBeLessThan(500 + SLACK);
+  expect(after[1].t - after[0].t).toBeGreaterThan(202.5 - SLACK);
+  expect(after[1].t - after[0].t).toBeLessThan(202.5 + SLACK);
 });
 
 test(
   'storyboard: a tap, a hold, a slide, leaving and coming back, and a hold in a scrolling page',
   {tag: '@storyboard'},
   async ({page}, testInfo) => {
+    // The value the field shows (a press's value while it lasts).
     const value = async () =>
       Number(
-        await page
-          .getByRole('spinbutton', {name: 'Quantity'})
-          .getAttribute('aria-valuenow'),
+        await page.getByRole('spinbutton', {name: 'Quantity'}).inputValue(),
       );
     const paint = async () =>
       page.evaluate(() =>
@@ -581,7 +797,9 @@ test(
       await shoot(b, 'lifted', last(script).t + 150);
     }
 
-    // Each board starts from the story as it loads: 2, counting 0 to 10.
+    // Each board starts from the story as it loads: 2, counting 0 to 10. The
+    // moments sit between the hold's steps (500, 750, 975, 1177.5, 1359.75,
+    // 1523.8 … ms).
     let stepper = await openStepper(page);
     const tap = board('numberinput-stepper-tap', stepper.clip);
     await filmed(tap, stepper.driver, hold(stepper.plus, 250), [
@@ -589,12 +807,12 @@ test(
     ]);
     stepper = await openStepper(page);
     const held = board('numberinput-stepper-hold', stepper.clip);
-    await filmed(held, stepper.driver, hold(stepper.plus, 3400), [
+    await filmed(held, stepper.driver, hold(stepper.plus, 2400), [
       [200, 'held, before 0.5 s'],
-      [700, 'first step at 0.5 s'],
-      [1200, 'second at 1 s'],
-      [3150, 'every 0.1 s after 3 s'],
-      [3300, 'stopped at the maximum'],
+      [620, 'first step at 0.5 s'],
+      [860, 'the next 250 ms later'],
+      [1440, 'the ramp quickens'],
+      [2200, 'stopped at the maximum'],
     ]);
     stepper = await openStepper(page);
     await keepTouchInPage(page);
@@ -604,42 +822,43 @@ test(
       stepper.driver,
       [
         {t: 0, fingers: [{id: 0, ...stepper.plus}]},
-        ...moves(stepper.plus, stepper.minus, 1100, 1200),
-        {t: 2100, fingers: []},
+        ...moves(stepper.plus, stepper.minus, 780, 840),
+        {t: 1250, fingers: []},
       ],
       [
-        [700, 'held on +'],
-        [1300, 'slid onto −'],
-        [1700, '− steps on the beat'],
+        [620, 'held on +'],
+        [900, 'slid onto −'],
+        [1080, '− steps on the beat'],
       ],
     );
     stepper = await openStepper(page);
     await keepTouchInPage(page);
-    const above = {x: stepper.plus.x, y: stepper.top - 14};
+    const below = {x: stepper.plus.x, y: stepper.bottom + 100};
     const leave = board('numberinput-stepper-leave', stepper.clip);
     await filmed(
       leave,
       stepper.driver,
       [
         {t: 0, fingers: [{id: 0, ...stepper.plus}]},
-        ...moves(stepper.plus, above, 1100, 1200),
-        ...moves(above, stepper.plus, 2700, 2800),
-        {t: 3000, fingers: []},
+        {t: 760, fingers: [{id: 0, ...below}]},
+        {t: 2000, fingers: [{id: 0, ...stepper.plus}]},
+        {t: 2360, fingers: []},
       ],
       [
-        [700, 'held on +'],
-        [1400, 'finger above the column'],
-        [2500, 'nothing steps outside'],
-        [2900, 'back inside: steps at once'],
+        [620, 'held on +'],
+        [1200, 'finger off the stepper'],
+        [1900, 'nothing steps outside'],
+        [2080, 'back on +: no step at once'],
+        [2300, 'the paused beat resumes'],
       ],
     );
     stepper = await openStepper(page);
     await makePageScroll(page);
     const scroller = board('numberinput-stepper-scroller-hold', stepper.clip);
-    await filmed(scroller, stepper.driver, hold(stepper.plus, 1250), [
+    await filmed(scroller, stepper.driver, hold(stepper.plus, 1000), [
       [60, 'held, before the delay'],
       [300, 'reached at 150 ms'],
-      [800, 'first step at 0.65 s'],
+      [780, 'first step at 0.65 s'],
     ]);
     for (const b of [tap, held, slide, leave, scroller]) {
       await b.write(testInfo);
@@ -649,14 +868,25 @@ test(
     const paints = (b: Storyboard) => b.frames.map(f => f.data.paint as string);
     expect(values(tap)).toEqual([2, 2, 3]);
     expect(paints(tap)).toEqual(['- -', 'on -', '- -']);
-    expect(values(held)).toEqual([2, 2, 3, 4, 9, 10, 10]);
+    expect(values(held)).toEqual([2, 2, 3, 4, 7, 10, 10]);
     expect(paints(held).slice(1, 6)).toEqual(Array(5).fill('on -'));
     expect(paints(held).at(-1)).toBe('- -');
-    // + steps at 0.5 and 1 s, the finger slides at 1.1 s, − steps at 1.5 and 2 s.
+    // + steps at 500 and 750 ms, the finger slides at 0.8 s, − steps at 975
+    // and 1177.5 ms.
     expect(values(slide)).toEqual([2, 3, 4, 3, 2]);
     expect(paints(slide)).toEqual(['- -', 'on -', '- on', '- on', '- -']);
-    expect(values(leave)).toEqual([2, 3, 4, 4, 5, 5]);
-    expect(paints(leave)).toEqual(['- -', 'on -', '- -', '- -', 'on -', '- -']);
+    // Out at 760 ms with 215 ms of the 975 ms beat left; back at 2 s, so the
+    // next step comes at 2215 ms.
+    expect(values(leave)).toEqual([2, 3, 4, 4, 4, 5, 5]);
+    expect(paints(leave)).toEqual([
+      '- -',
+      'on -',
+      '- -',
+      '- -',
+      'on -',
+      'on -',
+      '- -',
+    ]);
     expect(values(scroller)).toEqual([2, 2, 2, 3, 4]);
     expect(paints(scroller)).toEqual(['- -', '- -', 'on -', 'on -', '- -']);
   },

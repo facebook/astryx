@@ -2,16 +2,19 @@
 
 /**
  * @file NumberInput.stepperTouch.test.tsx
- * @input vitest + Testing Library, NumberInput with steppers, touch and pen
- *   events with timestamps on the page clock, and laid-out stepper rects
- * @output The steppers under a finger or a pen, through the gesture system:
- *   a tap steps once at the lift and its click adds nothing; a hold repeats on
- *   UIStepper's cadence; the touched half paints at once and clears at once;
- *   a slide moves the paint and the repeat; leaving the column stops it; a
- *   mouse keeps the click; disabled, read-only and bound halves do nothing;
- *   steppers shown after the field mounts, or shown again, track a finger;
- *   a click with no pointer after a touch the engine sent no click for steps;
- *   no shared press feedback: the tracker paints
+ * @input vitest + Testing Library, NumberInput with steppers, touch, pen and
+ *   mouse events with timestamps on the page clock, and laid-out stepper rects
+ * @output The steppers under any pointer, through the gesture system: a tap
+ *   steps once at the lift and the click each engine sends after it (Chrome
+ *   on Android, Safari on iOS) adds nothing, a tap trembling on the edge too;
+ *   a hold shows each step in the field and commits once, at the release,
+ *   and the parent's value wins after it; the touched half paints at once and
+ *   clears at once; a slide moves the paint and the repeat; edge tremble adds
+ *   nothing; leaving the column pauses the repeat and coming back resumes it;
+ *   a mouse holds like a finger and focuses the field; disabled, read-only and
+ *   bound halves do nothing; a press cancelled under a blocked field commits
+ *   nothing; steppers shown after the field mounts, or shown again, track a
+ *   finger; a click no pointer sent always steps; no shared press feedback
  * @position jsdom tests of the steppers' touch layer, NumberInputTouch.tsx (the
  *   rules themselves: stepperTracking.test.ts; real engines:
  *   NumberInput.stepperHold.interaction.browser.spec.ts)
@@ -93,13 +96,13 @@ function fingerDown(target: Element, at: {x: number; y: number}): number {
 /**
  * A click as Chrome and Firefox dispatch one: a pointer event that names its
  * pointer ('' for a click no pointer sent). Chrome on Android sends a tap's
- * click with detail 0.
+ * click as 'touch' with detail 0; Safari on iOS as 'mouse' with detail 1.
  */
-function clickNaming(pointerType: string): MouseEvent {
+function clickNaming(pointerType: string, detail = 0): MouseEvent {
   const click = new MouseEvent('click', {
     bubbles: true,
     cancelable: true,
-    detail: 0,
+    detail,
   });
   Object.defineProperty(click, 'pointerType', {value: pointerType});
   return click;
@@ -129,7 +132,10 @@ function Controlled({
   isDisabled?: boolean;
   isReadOnly?: boolean;
   hasNumberSteppers?: boolean;
+  /** Whether the parent takes the value onChange hands it. */
+  isAccepting?: boolean;
 }) {
+  const {isAccepting = true, ...rest} = props;
   const [value, setValue] = useState<number | null>(initial);
   return (
     <NumberInput
@@ -137,10 +143,12 @@ function Controlled({
       value={value}
       onChange={next => {
         onChange?.(next);
-        setValue(next);
+        if (isAccepting) {
+          setValue(next);
+        }
       }}
       hasNumberSteppers
-      {...props}
+      {...rest}
     />
   );
 }
@@ -157,6 +165,11 @@ function setup(props: Parameters<typeof Controlled>[0] = {}) {
 }
 
 const press = (element: Element) => element.getAttribute('data-astryx-press');
+const shown = (input: HTMLElement) => (input as HTMLInputElement).value;
+const committed = (onChange: {mock: {calls: [number | null][]}}) =>
+  onChange.mock.calls.map(([value]) => value);
+// Above the column, past the control profile's 70 pt tracking area.
+const FAR_ABOVE = {x: 212, y: -80};
 
 // The document's gesture host outlives a test and keeps event times
 // monotonic, while each fake clock starts at 0: every test starts later than
@@ -188,30 +201,79 @@ describe('NumberInput steppers under a finger', () => {
     wait(60);
     expect(onChange).not.toHaveBeenCalled();
     touch('touchend', increment, INCREMENT, id);
-    expect(onChange).toHaveBeenCalledTimes(1);
-    expect(onChange).toHaveBeenLastCalledWith(6);
+    expect(committed(onChange)).toEqual([6]);
     fireEvent.click(increment, {detail: 1});
-    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(committed(onChange)).toEqual([6]);
     expect(input).not.toHaveFocus();
   });
 
-  it('a hold steps at 0.5 s and keeps stepping on UIStepper’s cadence', () => {
+  it('the click Safari on iOS sends after a tap (named mouse, detail 1) adds nothing', () => {
     const {onChange, increment} = setup();
     const id = fingerDown(increment, INCREMENT);
+    touch('touchend', increment, INCREMENT, id);
+    act(() => {
+      increment.dispatchEvent(clickNaming('mouse', 1));
+    });
+    expect(committed(onChange)).toEqual([6]);
+  });
+
+  it('the click Chrome on Android sends after a tap (named touch, detail 0) adds nothing', () => {
+    const {onChange, increment} = setup();
+    const id = fingerDown(increment, INCREMENT);
+    touch('touchend', increment, INCREMENT, id);
+    act(() => {
+      increment.dispatchEvent(clickNaming('touch'));
+    });
+    expect(committed(onChange)).toEqual([6]);
+  });
+
+  it('a light tap trembling on the top edge steps exactly once', () => {
+    const {onChange, increment} = setup();
+    const id = fingerDown(increment, {x: 212, y: 1});
+    for (const y of [-2, 1, -3, 0, -2]) {
+      touch('touchmove', increment, {x: 212, y}, id);
+    }
+    wait(70);
+    touch('touchend', increment, {x: 212, y: -2}, id);
+    act(() => {
+      increment.dispatchEvent(clickNaming('mouse', 1));
+    });
+    expect(committed(onChange)).toEqual([6]);
+  });
+
+  it('a hold shows each step in the field and commits once, at the release', () => {
+    const {onChange, input, increment} = setup();
+    const id = fingerDown(increment, INCREMENT);
     wait(499);
-    expect(onChange).not.toHaveBeenCalled();
+    expect(shown(input)).toBe('5');
     wait(1);
-    expect(onChange).toHaveBeenLastCalledWith(6);
-    wait(2500);
-    // Six steps by 3 s, then every 100 ms.
-    expect(onChange).toHaveBeenCalledTimes(6);
-    wait(300);
-    expect(onChange).toHaveBeenCalledTimes(9);
-    expect(onChange).toHaveBeenLastCalledWith(14);
+    expect(shown(input)).toBe('6');
+    // 250 ms, then 225 ms, then 202.5 ms: one steady ramp.
+    wait(250);
+    expect(shown(input)).toBe('7');
+    wait(225);
+    expect(shown(input)).toBe('8');
+    wait(205);
+    expect(shown(input)).toBe('9');
+    // Nothing is committed, or told to assistive technology, mid-hold.
+    expect(onChange).not.toHaveBeenCalled();
+    expect(input).toHaveAttribute('aria-valuenow', '5');
     touch('touchend', increment, INCREMENT, id);
     fireEvent.click(increment, {detail: 1});
-    // The lift and its click add nothing after a repeat.
-    expect(onChange).toHaveBeenCalledTimes(9);
+    expect(committed(onChange)).toEqual([9]);
+    expect(shown(input)).toBe('9');
+    expect(input).toHaveAttribute('aria-valuenow', '9');
+  });
+
+  it('after the release the field shows the value the parent passes back', () => {
+    const {onChange, input, increment} = setup({isAccepting: false});
+    const id = fingerDown(increment, INCREMENT);
+    wait(800);
+    expect(shown(input)).toBe('7');
+    touch('touchend', increment, INCREMENT, id);
+    // The parent rejected 7: its 5 wins.
+    expect(committed(onChange)).toEqual([7]);
+    expect(shown(input)).toBe('5');
   });
 
   it('paints the touched half at once and clears it at once', () => {
@@ -225,18 +287,19 @@ describe('NumberInput steppers under a finger', () => {
   });
 
   it('a slide onto the other half moves the paint and the repeat', () => {
-    const {onChange, increment, decrement} = setup();
+    const {onChange, input, increment, decrement} = setup();
     const id = fingerDown(increment, INCREMENT);
-    wait(500);
-    expect(onChange).toHaveBeenLastCalledWith(6);
+    wait(800);
+    expect(shown(input)).toBe('7');
     touch('touchmove', increment, DECREMENT, id);
     expect(press(increment)).toBeNull();
     expect(press(decrement)).toBe('on');
-    // The cadence runs on: the next beat, at 1 s, steps −.
-    wait(500);
-    expect(onChange).toHaveBeenLastCalledWith(5);
+    // The cadence runs on: the next beat, at 975 ms, steps −.
+    wait(175);
+    expect(shown(input)).toBe('6');
     touch('touchend', increment, DECREMENT, id);
     expect(press(decrement)).toBeNull();
+    expect(committed(onChange)).toEqual([6]);
   });
 
   it('a finger that slid from − onto + before any repeat steps + at the lift', () => {
@@ -246,32 +309,57 @@ describe('NumberInput steppers under a finger', () => {
     touch('touchmove', decrement, INCREMENT, id);
     wait(150);
     touch('touchend', decrement, INCREMENT, id);
-    expect(onChange).toHaveBeenCalledTimes(1);
-    expect(onChange).toHaveBeenLastCalledWith(6);
+    expect(committed(onChange)).toEqual([6]);
   });
 
-  it('leaving the column stops the repeat and coming back steps at once', () => {
-    const {onChange, increment} = setup();
+  it('a finger trembling over the edge during a hold adds no step', () => {
+    const steady = setup();
+    const a = fingerDown(steady.increment, INCREMENT);
+    wait(1200);
+    touch('touchend', steady.increment, INCREMENT, a);
+    document.body.innerHTML = '';
+
+    const trembling = setup();
+    const b = fingerDown(trembling.increment, INCREMENT);
+    wait(800);
+    // Back and forth across the top edge, within the tracking area.
+    for (const y of [-6, 2, -9, 1, -4, 3, -7, 2]) {
+      touch('touchmove', trembling.increment, {x: 212, y}, b);
+      wait(10);
+    }
+    expect(press(trembling.increment)).toBe('on');
+    wait(320);
+    touch('touchend', trembling.increment, {x: 212, y: 2}, b);
+    expect(committed(trembling.onChange)).toEqual(committed(steady.onChange));
+  });
+
+  it('leaving the column pauses the repeat and coming back resumes it, with no step at once', () => {
+    const {onChange, input, increment} = setup();
     const id = fingerDown(increment, INCREMENT);
-    wait(1000);
-    expect(onChange).toHaveBeenCalledTimes(2);
-    // 1 pt above the top edge: outside, with no tracking margin.
-    touch('touchmove', increment, {x: 212, y: -1}, id);
+    wait(800);
+    expect(shown(input)).toBe('7');
+    touch('touchmove', increment, FAR_ABOVE, id);
     expect(press(increment)).toBeNull();
     wait(2000);
-    expect(onChange).toHaveBeenCalledTimes(2);
+    expect(shown(input)).toBe('7');
     touch('touchmove', increment, INCREMENT, id);
-    expect(onChange).toHaveBeenCalledTimes(3);
+    expect(shown(input)).toBe('7');
     expect(press(increment)).toBe('on');
+    // The rest of the 975 ms beat (175 ms) runs, then the next step.
+    wait(170);
+    expect(shown(input)).toBe('7');
+    wait(10);
+    expect(shown(input)).toBe('8');
     touch('touchend', increment, INCREMENT, id);
+    expect(committed(onChange)).toEqual([8]);
   });
 
   it('a lift outside the column steps nothing', () => {
     const {onChange, increment} = setup();
     const id = fingerDown(increment, INCREMENT);
     wait(60);
-    touch('touchmove', increment, {x: 212, y: -4}, id);
-    touch('touchend', increment, {x: 212, y: -4}, id);
+    touch('touchmove', increment, FAR_ABOVE, id);
+    touch('touchend', increment, FAR_ABOVE, id);
     expect(onChange).not.toHaveBeenCalled();
   });
 
@@ -280,45 +368,39 @@ describe('NumberInput steppers under a finger', () => {
     const {onChange, increment} = setup();
     const id = fingerDown(increment, INCREMENT);
     wait(60);
-    touch('touchmove', increment, {x: 212, y: -4}, id);
-    touch('touchend', increment, {x: 212, y: -4}, id);
+    touch('touchmove', increment, FAR_ABOVE, id);
+    touch('touchend', increment, FAR_ABOVE, id);
     fireEvent.click(increment, {detail: 1});
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it('a click with no pointer after a touch that ended without one still steps', () => {
-    // An engine may send no click after a touch (a long press, a slide off, a
-    // scroll). A screen reader's activation or a programmatic click() that
-    // comes later has detail 0 and no pointerdown: it is a press of its own.
+  it('a click no pointer sent steps, even right after a tracked touch', () => {
+    // A screen reader's activation, a key or a programmatic click(): detail
+    // 0, and where clicks name their pointer, none ('').
     const {onChange, increment} = setup();
     const id = fingerDown(increment, INCREMENT);
     touch('touchend', increment, INCREMENT, id);
-    expect(onChange.mock.calls.map(([value]) => value)).toEqual([6]);
     fireEvent.click(increment, {detail: 0});
-    expect(onChange.mock.calls.map(([value]) => value)).toEqual([6, 7]);
-  });
-
-  it('a tap whose click names a touch and has detail 0 steps once, as Chrome on Android sends it', () => {
-    const {onChange, increment} = setup();
-    const id = fingerDown(increment, INCREMENT);
-    touch('touchend', increment, INCREMENT, id);
-    expect(onChange.mock.calls.map(([value]) => value)).toEqual([6]);
-    act(() => {
-      increment.dispatchEvent(clickNaming('touch'));
-    });
-    expect(onChange.mock.calls.map(([value]) => value)).toEqual([6]);
-  });
-
-  it('a click that names no pointer steps, even right after a tracked touch', () => {
-    // A screen reader's activation, a key or a programmatic click(): Chrome
-    // names no pointer for it.
-    const {onChange, increment} = setup();
-    const id = fingerDown(increment, INCREMENT);
-    touch('touchend', increment, INCREMENT, id);
+    expect(committed(onChange)).toEqual([6, 7]);
     act(() => {
       increment.dispatchEvent(clickNaming(''));
     });
-    expect(onChange.mock.calls.map(([value]) => value)).toEqual([6, 7]);
+    expect(committed(onChange)).toEqual([6, 7, 8]);
+  });
+
+  it('a pointer click long after a hold the engine sent no click for is a press of its own', () => {
+    // Safari on iOS sends no click after a hold; an activation that comes a
+    // second or more later is not the hold's.
+    const {onChange, increment} = setup();
+    const id = fingerDown(increment, INCREMENT);
+    wait(600);
+    touch('touchend', increment, INCREMENT, id);
+    expect(committed(onChange)).toEqual([6]);
+    wait(1500);
+    act(() => {
+      increment.dispatchEvent(clickNaming('mouse', 1));
+    });
+    expect(committed(onChange)).toEqual([6, 7]);
   });
 
   it('a press delivered under a finger keeps its touch: the page cannot pan it away', () => {
@@ -347,31 +429,33 @@ describe('NumberInput steppers under a finger', () => {
     ['disabled', {isDisabled: true}],
     ['read-only', {isReadOnly: true}],
   ] as const)(
-    'a field turned %s mid-hold lets go of the press at once',
+    'a field turned %s mid-hold lets go of the press and commits nothing',
     (_, blocked) => {
-      // PressTracker reads isEnabled only when a touch begins, so the touch
-      // layer itself must let go: no pressed paint beside aria-disabled, and
-      // no repeat timer left running behind the refused steps.
+      // PressTracker reads isEnabled only when a touch begins, so the press
+      // layer itself must let go: no pressed paint beside aria-disabled, no
+      // repeat timer behind the refused steps, and no commit at the lift.
       const onChange = vi.fn<(value: number | null) => void>();
       const {rerender} = render(<Controlled onChange={onChange} />);
+      const input = screen.getByRole('spinbutton');
       const increment = screen.getByRole('button', {
         name: 'Increment Quantity',
       });
       const id = fingerDown(increment, INCREMENT);
       wait(600);
-      expect(onChange.mock.calls.map(([value]) => value)).toEqual([6]);
+      expect(shown(input)).toBe('6');
       expect(press(increment)).toBe('on');
       rerender(<Controlled onChange={onChange} {...blocked} />);
       expect(press(increment)).toBeNull();
+      expect(shown(input)).toBe('5');
       wait(1000);
       // Turned back on with the finger still down: the press stays let go
       // until a new touch, so nothing resumes and nothing repaints.
       rerender(<Controlled onChange={onChange} />);
       wait(1000);
-      expect(onChange.mock.calls.map(([value]) => value)).toEqual([6]);
+      expect(shown(input)).toBe('5');
       expect(press(increment)).toBeNull();
       touch('touchend', increment, INCREMENT, id);
-      expect(onChange.mock.calls.map(([value]) => value)).toEqual([6]);
+      expect(onChange).not.toHaveBeenCalled();
       expect(press(increment)).toBeNull();
     },
   );
@@ -388,9 +472,9 @@ describe('NumberInput steppers under a finger', () => {
     const increment = screen.getByRole('button', {name: 'Increment Quantity'});
     const id = fingerDown(increment, INCREMENT);
     wait(600);
-    expect(onChange.mock.calls.map(([value]) => value)).toEqual([6]);
+    expect(shown(screen.getByRole('spinbutton'))).toBe('6');
     touch('touchend', increment, INCREMENT, id);
-    expect(onChange.mock.calls.map(([value]) => value)).toEqual([6]);
+    expect(committed(onChange)).toEqual([6]);
   });
 
   it('steppers removed and shown again follow a finger, once', () => {
@@ -400,18 +484,21 @@ describe('NumberInput steppers under a finger', () => {
     rerender(<Controlled onChange={onChange} hasNumberSteppers />);
     const increment = screen.getByRole('button', {name: 'Increment Quantity'});
     const id = fingerDown(increment, INCREMENT);
-    wait(1100);
-    // 0.5 s and 1 s: one tracker, not one per column the field ever had.
-    expect(onChange.mock.calls.map(([value]) => value)).toEqual([6, 7]);
+    wait(800);
+    // 500 and 750 ms: one tracker, not one per column the field ever had.
+    expect(shown(screen.getByRole('spinbutton'))).toBe('7');
     touch('touchend', increment, INCREMENT, id);
+    expect(committed(onChange)).toEqual([7]);
   });
 
-  it('a hold stops at the bound', () => {
-    const {onChange, increment} = setup({initial: 8, max: 10});
+  it('a hold stops at the bound, and the bound shows on the half as it is reached', () => {
+    const {onChange, input, increment} = setup({initial: 8, max: 10});
     const id = fingerDown(increment, INCREMENT);
     wait(2600);
-    expect(onChange.mock.calls.map(([value]) => value)).toEqual([9, 10]);
+    expect(shown(input)).toBe('10');
+    expect(increment).toHaveAttribute('aria-disabled', 'true');
     touch('touchend', increment, INCREMENT, id);
+    expect(committed(onChange)).toEqual([10]);
   });
 
   it('does nothing while disabled or read-only', () => {
@@ -438,25 +525,43 @@ describe('NumberInput steppers under a pen and a mouse', () => {
     expect(press(increment)).toBe('on');
     wait(80);
     fireEvent.pointerUp(increment, {...pointer, clientX: 212, clientY: 8});
-    expect(onChange).toHaveBeenCalledTimes(1);
-    expect(onChange).toHaveBeenLastCalledWith(6);
+    expect(committed(onChange)).toEqual([6]);
     fireEvent.click(increment, {detail: 1});
-    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(committed(onChange)).toEqual([6]);
     expect(input).not.toHaveFocus();
   });
 
-  it('a mouse keeps the click: no press paint, and the click steps and focuses', () => {
+  it('a mouse click steps once and focuses the field', () => {
     // A fine pointer: this test's context has no coarse pointer.
     expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
     const {onChange, input, increment} = setup();
     const pointer = {pointerType: 'mouse', pointerId: 1, isPrimary: true};
     fireEvent.pointerDown(increment, {...pointer, clientX: 212, clientY: 8});
-    expect(press(increment)).toBeNull();
+    wait(80);
+    fireEvent.pointerUp(increment, {...pointer, clientX: 212, clientY: 8});
+    act(() => {
+      increment.dispatchEvent(clickNaming('mouse', 1));
+    });
+    expect(committed(onChange)).toEqual([6]);
+    expect(input).toHaveFocus();
+  });
+
+  it('a mouse held on a stepper repeats like a finger and commits once, at the release', () => {
+    // A fine pointer: this test's context has no coarse pointer.
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+    const {onChange, input, increment} = setup();
+    const pointer = {pointerType: 'mouse', pointerId: 1, isPrimary: true};
+    fireEvent.pointerDown(increment, {...pointer, clientX: 212, clientY: 8});
+    expect(press(increment)).toBe('on');
     wait(1200);
+    expect(shown(input)).toBe('9');
     expect(onChange).not.toHaveBeenCalled();
     fireEvent.pointerUp(increment, {...pointer, clientX: 212, clientY: 8});
-    fireEvent.click(increment, {detail: 1});
-    expect(onChange).toHaveBeenCalledTimes(1);
+    act(() => {
+      increment.dispatchEvent(clickNaming('mouse', 1));
+    });
+    expect(committed(onChange)).toEqual([9]);
+    expect(press(increment)).toBeNull();
     expect(input).toHaveFocus();
   });
 });

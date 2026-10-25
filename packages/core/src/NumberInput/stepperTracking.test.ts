@@ -2,10 +2,11 @@
 
 /**
  * @file stepperTracking.test.ts
- * @input vitest, StepperTracking, and UIStepper's measured event times
- * @output UIStepper's tap and autorepeat rules on explicit times: taps step at
- *   the lift, the hold's cadence and its phases, slides, leaving and coming
- *   back, bounds, a busy main thread, cancellation
+ * @input vitest, StepperTracking, and UIStepper's measured delay
+ * @output The stepper's tap and autorepeat rules on explicit times: taps step
+ *   at the lift (a tap trembling on the edge too), the hold's one steady ramp,
+ *   slides, leaving and coming back (a pause, never a step at once), edge
+ *   tremble during a hold, bounds, a busy main thread, cancellation
  * @position Unit tests for NumberInput/stepperTracking.ts (no DOM, no real
  *   time)
  */
@@ -97,14 +98,19 @@ function setup(canStep: (half: StepperHalf) => boolean = () => true) {
 
 const at = (steps: {at: number}[]) => steps.map(step => step.at);
 
-/**
- * UIStepper, iOS 26.2: the times of the value changes during an 8 s hold on
- * +, from the touch-down (UIKit lab, HID touches, valueChanged log).
- */
-const UIKIT_HOLD = [
-  514, 1017, 1520, 2023, 2525, 3028, 3130, 3233, 3335, 3438, 3539, 3644, 3747,
-  3849, 3951, 4052, 4154, 4257, 4359, 4463, 4514, 4566, 4619, 4669, 4720,
-];
+/** The times the ramp steps at, from the delivery: 500, then 250 ms shrinking by 0.9 to 50. */
+function rampTimes(count: number, from = 0): number[] {
+  const times = [from + stepper.autorepeat.delayMs];
+  while (times.length < count) {
+    times.push(times.at(-1)! + repeatInterval(times.length));
+  }
+  return times;
+}
+
+const expectTimes = (actual: number[], expected: number[]) => {
+  expect(actual, JSON.stringify(actual)).toHaveLength(expected.length);
+  expected.forEach((time, i) => expect(actual[i]).toBeCloseTo(time, 6));
+};
 
 describe('StepperTracking: taps', () => {
   it('a tap steps once, at the lift', () => {
@@ -114,6 +120,22 @@ describe('StepperTracking: taps', () => {
     expect(steps).toEqual([]);
     tracking.end('increment');
     expect(steps).toEqual([{half: 'increment', at: 60}]);
+    time.advanceTo(3000);
+    expect(steps).toHaveLength(1);
+  });
+
+  it('a light tap trembling across the edge steps exactly once', () => {
+    const {time, steps, tracking, press} = setup();
+    press('increment');
+    for (const t of [10, 20, 30, 40, 50]) {
+      time.advanceTo(t);
+      tracking.move(null);
+      time.advanceTo(t + 4);
+      tracking.move('increment');
+    }
+    time.advanceTo(70);
+    tracking.end('increment');
+    expect(steps).toEqual([{half: 'increment', at: 70}]);
     time.advanceTo(3000);
     expect(steps).toHaveLength(1);
   });
@@ -148,53 +170,40 @@ describe('StepperTracking: taps', () => {
 });
 
 describe('StepperTracking: holding a half', () => {
-  it('steps at 0.5 s, every 0.5 s to six steps, every 0.1 s to twenty, then every 50 ms', () => {
+  it('steps at UIStepper’s 0.5 s, then on one steady ramp down to 50 ms', () => {
     const {time, steps, press} = setup();
     press('increment');
-    time.advanceTo(4720);
-    const expected = [
-      500, 1000, 1500, 2000, 2500, 3000, 3100, 3200, 3300, 3400, 3500, 3600,
-      3700, 3800, 3900, 4000, 4100, 4200, 4300, 4400, 4450, 4500, 4550, 4600,
-      4650, 4700,
-    ];
-    expect(at(steps)).toEqual(expected);
+    time.advanceTo(1200);
+    // 500, then 250, 225 and 202.5 ms apart.
+    expectTimes(at(steps), [500, 750, 975, 1177.5]);
+    time.advanceTo(4000);
+    expectTimes(at(steps), rampTimes(steps.length));
     expect(steps.every(step => step.half === 'increment')).toBe(true);
   });
 
-  it('matches UIStepper’s measured hold within its own step work', () => {
+  it('the ramp has no jump: each interval is 0.9 of the last until 50 ms, then stays', () => {
     const {time, steps, press} = setup();
     press('increment');
-    time.advanceTo(UIKIT_HOLD.at(-1)!);
-    // UIKit re-arms its timer after each step's work (about 2.5 ms in the
-    // lab), so its steps drift later by a few ms per step; the model's times
-    // are the drift-free schedule, never later than UIKit's.
-    const model = at(steps).slice(0, UIKIT_HOLD.length);
-    UIKIT_HOLD.forEach((uikit, i) => {
-      const lag = uikit - model[i];
-      expect(lag, `step ${i + 1}`).toBeGreaterThanOrEqual(0);
-      expect(lag, `step ${i + 1}`).toBeLessThanOrEqual(14 + 3 * i);
-    });
-    // Each phase's interval matches UIKit's to within its step work.
-    const gaps = (times: number[], from: number, to: number) =>
-      (times[to] - times[from]) / (to - from);
-    expect(gaps(UIKIT_HOLD, 0, 5)).toBeCloseTo(
-      stepper.autorepeat.slowIntervalMs,
-      -1,
-    );
-    expect(gaps(UIKIT_HOLD, 6, 19)).toBeCloseTo(
-      stepper.autorepeat.mediumIntervalMs,
-      -1,
-    );
-    expect(gaps(UIKIT_HOLD, 20, 24)).toBeCloseTo(
-      stepper.autorepeat.fastIntervalMs,
-      -1,
-    );
+    time.advanceTo(6000);
+    const gaps = at(steps)
+      .slice(1)
+      .map((t, i) => t - at(steps)[i]);
+    expect(gaps[0]).toBeCloseTo(250, 6);
+    for (let i = 1; i < gaps.length; i += 1) {
+      const expected = Math.max(50, gaps[i - 1] * 0.9);
+      expect(gaps[i], `gap ${i + 1}`).toBeCloseTo(expected, 6);
+    }
+    expect(Math.min(...gaps)).toBeCloseTo(50, 6);
+    // The ramp reaches its floor within three seconds of the press.
+    expect(
+      at(steps).find((t, i) => i > 0 && t - at(steps)[i - 1] === 50),
+    ).toBeLessThan(3000);
   });
 
   it('a lift after a repeat adds no step', () => {
     const {time, steps, tracking, press} = setup();
     press('increment');
-    time.advanceTo(800);
+    time.advanceTo(600);
     tracking.end('increment');
     time.advanceTo(3000);
     expect(at(steps)).toEqual([500]);
@@ -202,10 +211,10 @@ describe('StepperTracking: holding a half', () => {
 
   it('inside a scroll view the delay counts from the delayed delivery', () => {
     const {time, steps, press} = setup();
-    // UIKit: +653 and +1155 ms.
+    // UIKit's first step in a scroll view: +653 ms.
     press('increment', 150);
-    time.advanceTo(1200);
-    expect(at(steps)).toEqual([650, 1150]);
+    time.advanceTo(1000);
+    expect(at(steps)).toEqual([650, 900]);
   });
 
   it('nothing repeats before the press reaches the control', () => {
@@ -215,9 +224,17 @@ describe('StepperTracking: holding a half', () => {
     expect(steps).toEqual([]);
   });
 
-  it('repeatInterval follows the phases', () => {
-    expect([0, 5, 6, 19, 20, 80].map(repeatInterval)).toEqual([
-      500, 500, 100, 100, 50, 50,
+  it('repeatInterval is 250 ms, then 0.9 of the last, never under 50 ms', () => {
+    const intervals = [0, 1, 2, 3, 10, 16, 17, 80].map(repeatInterval);
+    expectTimes(intervals, [
+      250,
+      250,
+      225,
+      202.5,
+      250 * 0.9 ** 9,
+      250 * 0.9 ** 15,
+      50,
+      50,
     ]);
   });
 });
@@ -225,50 +242,72 @@ describe('StepperTracking: holding a half', () => {
 describe('StepperTracking: moving the finger', () => {
   it('a slide onto the other half keeps the running cadence', () => {
     const {time, steps, tracking, press} = setup();
-    // UIKit: −49 at +508, −48 at +1010, slide at +1190, +49 at +1513, +50 at +2014.
     press('decrement');
-    time.advanceTo(1190);
+    time.advanceTo(800);
     tracking.move('increment');
-    time.advanceTo(2100);
-    expect(steps).toEqual([
-      {half: 'decrement', at: 500},
-      {half: 'decrement', at: 1000},
-      {half: 'increment', at: 1500},
-      {half: 'increment', at: 2000},
+    time.advanceTo(1200);
+    expect(steps.map(step => step.half)).toEqual([
+      'decrement',
+      'decrement',
+      'increment',
+      'increment',
     ]);
+    expectTimes(at(steps), [500, 750, 975, 1177.5]);
   });
 
-  it('leaving the control stops the repeat', () => {
+  it('leaving the control pauses the cadence', () => {
     const {time, steps, tracking, press} = setup();
     press('increment');
-    time.advanceTo(1100);
+    time.advanceTo(800);
     tracking.move(null);
     time.advanceTo(6000);
-    expect(at(steps)).toEqual([500, 1000]);
+    expect(at(steps)).toEqual([500, 750]);
   });
 
-  it('coming back steps at once and resumes the cadence, counted in steps', () => {
+  it('coming back resumes the rest of the paused interval, never a step at once', () => {
     const {time, steps, tracking, press} = setup();
-    // UIKit: steps at +519 and +1020, out from +1103, back at +11507: a step
-    // at +11520, then +12023 (still the slow interval after a 10 s pause).
+    // Left at 800 with 175 ms of the 975 interval still to run.
     press('increment');
-    time.advanceTo(1100);
+    time.advanceTo(800);
     tracking.move(null);
-    time.advanceTo(11500);
+    time.advanceTo(5000);
     tracking.move('increment');
-    time.advanceTo(12100);
-    expect(at(steps)).toEqual([500, 1000, 11500, 12000]);
+    expect(at(steps)).toEqual([500, 750]);
+    time.advanceTo(5400);
+    expectTimes(at(steps), [500, 750, 5175, 5377.5]);
   });
 
-  it('coming back before the first repeat keeps the press’s own clock', () => {
+  it('trembling on the edge during a hold adds no step and does not speed the ramp', () => {
+    const steady = setup();
+    steady.press('increment');
+    steady.time.advanceTo(2000);
+
+    const trembling = setup();
+    trembling.press('increment');
+    // Out for 2 ms at a time, ten times, between 800 and 900.
+    for (let t = 800; t < 900; t += 10) {
+      trembling.time.advanceTo(t);
+      trembling.tracking.move(null);
+      trembling.time.advanceTo(t + 2);
+      trembling.tracking.move('increment');
+    }
+    trembling.time.advanceTo(2000 + 20);
+    // The same steps, each later by the 20 ms spent outside.
+    expectTimes(
+      at(trembling.steps),
+      at(steady.steps).map(t => (t < 800 ? t : t + 20)),
+    );
+  });
+
+  it('coming back before the first repeat keeps the rest of the delay', () => {
     const early = setup();
     early.press('increment');
     early.time.advanceTo(200);
     early.tracking.move(null);
     early.time.advanceTo(300);
     early.tracking.move('increment');
-    early.time.advanceTo(1100);
-    expect(at(early.steps)).toEqual([500, 1000]);
+    early.time.advanceTo(900);
+    expect(at(early.steps)).toEqual([600, 850]);
 
     const late = setup();
     late.press('increment');
@@ -277,7 +316,7 @@ describe('StepperTracking: moving the finger', () => {
     late.time.advanceTo(700);
     late.tracking.move('increment');
     late.time.advanceTo(1300);
-    expect(at(late.steps)).toEqual([700, 1200]);
+    expect(at(late.steps)).toEqual([1000, 1250]);
   });
 
   it('a half at its bound does not step; the other half steps on the next beat', () => {
@@ -296,15 +335,15 @@ describe('StepperTracking: moving the finger', () => {
         return true;
       },
     });
-    // UIKit, holding + from 7 with a maximum of 10: 8, 9, 10, then nothing.
     tracking.begin('increment');
     tracking.deliver(0);
-    time.advanceTo(2600);
-    expect(at(steps)).toEqual([500, 1000]);
+    time.advanceTo(1300);
+    expect(at(steps)).toEqual([500, 750]);
     expect(value).toBe(10);
+    // The clock ran on at the bound (975, 1200, 1425 …): − steps on the next beat.
     tracking.move('decrement');
-    time.advanceTo(3100);
-    expect(steps.at(-1)).toEqual({half: 'decrement', at: 3000});
+    time.advanceTo(1500);
+    expect(steps.at(-1)).toEqual({half: 'decrement', at: 1425});
     expect(value).toBe(9);
   });
 });
@@ -314,11 +353,11 @@ describe('StepperTracking: a busy main thread and cancellation', () => {
     const {time, steps, press} = setup();
     press('increment');
     time.advanceTo(1000);
-    // The main thread is blocked from 1000 to 1700: the 1500 step runs late,
+    // The main thread is blocked from 1000 to 1700: the 1177.5 step runs late,
     // once, and the next one is a full interval after it.
     time.stallTo(1700);
-    time.advanceTo(2300);
-    expect(at(steps)).toEqual([500, 1000, 1700, 2200]);
+    time.advanceTo(1900);
+    expectTimes(at(steps), [500, 750, 975, 1700, 1882.25]);
   });
 
   it('a cancel steps nothing and stops the clock', () => {
@@ -331,13 +370,13 @@ describe('StepperTracking: a busy main thread and cancellation', () => {
     expect(tracking.isTracking).toBe(false);
   });
 
-  it('a cancel after a repeat keeps the steps already made', () => {
+  it('a cancel after a repeat stops the clock', () => {
     const {time, steps, tracking, press} = setup();
     press('increment');
-    time.advanceTo(1200);
+    time.advanceTo(800);
     tracking.cancel();
     time.advanceTo(3000);
-    expect(at(steps)).toEqual([500, 1000]);
+    expect(at(steps)).toEqual([500, 750]);
   });
 
   it('a new press starts from nothing', () => {
@@ -349,10 +388,7 @@ describe('StepperTracking: a busy main thread and cancellation', () => {
     const startedAt = time.now;
     tracking.begin('increment');
     tracking.deliver(startedAt);
-    time.advanceTo(startedAt + 1100);
-    expect(at(steps.slice(before))).toEqual([
-      startedAt + 500,
-      startedAt + 1000,
-    ]);
+    time.advanceTo(startedAt + 800);
+    expect(at(steps.slice(before))).toEqual([startedAt + 500, startedAt + 750]);
   });
 });

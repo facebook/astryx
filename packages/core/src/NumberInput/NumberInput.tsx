@@ -86,6 +86,14 @@ const padInlineEnd = `var(--astryx-number-input-padding-inline-end, ${padInline}
 const padBlockStart = `var(--astryx-number-input-padding-block-start, ${padBlockAll})`;
 const padBlockEnd = `var(--astryx-number-input-padding-block-end, ${padBlockAll})`;
 
+// A coarse primary pointer: the touch presentation resolver's TOUCH_QUERY
+// (utils/touchPresentation.ts) as a StyleX media key, so the steppers' touch
+// target is there from the first paint, on every touch device. Spelled as a
+// literal: the StyleX build gives an imported at-rule key a different
+// priority than its literal, which reorders the cascade; NumberInput.test.tsx
+// keeps it equal to TOUCH_QUERY.
+const TOUCH = '@media (pointer: coarse)';
+
 const styles = stylex.create({
   wrapper: {
     zIndex: 1,
@@ -154,9 +162,23 @@ const styles = stylex.create({
     borderInlineStartWidth: borderVars['--border-width'],
     borderInlineStartStyle: 'solid',
     borderInlineStartColor: colorVars['--color-border-emphasized'],
-    overflow: 'hidden',
+    // Under a finger the column clips nothing, so its ::before can reach past
+    // it; each half rounds its own outer corner instead.
+    overflow: {default: 'hidden', [TOUCH]: 'visible'},
+    position: {default: 'static', [TOUCH]: 'relative'},
     borderStartEndRadius: 'var(--_field-radius)',
     borderEndEndRadius: 'var(--_field-radius)',
+    // Under a finger each half takes at least a 24 x 24 target (WCAG 2.5.8)
+    // with no change to the layout: the ::before reaches past the column, and
+    // a press there is the column's (the half above or below its split).
+    '::before': {
+      content: {default: 'none', [TOUCH]: '""'},
+      position: 'absolute',
+      insetBlockStart: 'min(0px, calc(50% - 24px))',
+      insetBlockEnd: 'min(0px, calc(50% - 24px))',
+      insetInlineStart: 'min(0px, calc(50% - 12px))',
+      insetInlineEnd: 'min(0px, calc(50% - 12px))',
+    },
     // `manipulation` keeps rapid taps from double-tap zooming the page while
     // pans and pinch-zoom stay the browser's. A held finger selects nothing:
     // the gesture host turns text selection and the touch callout off on the
@@ -194,6 +216,14 @@ const styles = stylex.create({
   },
   incrementIcon: {
     transform: 'rotate(180deg)',
+  },
+  // The outer corner of each half, under a finger, where the column clips
+  // nothing (numberSteppers).
+  incrementCorner: {
+    borderStartEndRadius: {default: 0, [TOUCH]: 'var(--_field-radius)'},
+  },
+  decrementCorner: {
+    borderEndEndRadius: {default: 0, [TOUCH]: 'var(--_field-radius)'},
   },
 });
 
@@ -608,6 +638,9 @@ export function NumberInput({
   // Pending input while user is typing (null = show formatted value)
   const [pendingInput, setPendingInput] = useState<string | null>(null);
   const [isFocused, setIsFocused] = useState(false);
+  // The value a stepper press has stepped to, shown while the press lasts;
+  // the press commits it once, at its release (NumberInputTouch.tsx).
+  const [pressValue, setPressValue] = useState<number | null>(null);
 
   // Disabled-reason tooltip. The tooltip listeners attach to the input container (which already exists) and
   // the input stays perceivable via aria-disabled instead of the native
@@ -671,6 +704,11 @@ export function NumberInput({
   // Preserve pending text while editing. Otherwise show the formatted value
   // at rest and the raw numeric value while focused so it remains editable.
   const displayValue = useMemo(() => {
+    if (pressValue !== null) {
+      return isFocused
+        ? formatEditableNumber(pressValue, locale)
+        : (formatValue?.(pressValue) ?? String(pressValue));
+    }
     if (pendingInput !== null) {
       return pendingInput;
     }
@@ -678,7 +716,15 @@ export function NumberInput({
       return '';
     }
     return isFocused ? formatEditableNumber(value, locale) : formattedValue;
-  }, [formattedValue, isFocused, locale, pendingInput, value]);
+  }, [
+    formatValue,
+    formattedValue,
+    isFocused,
+    locale,
+    pendingInput,
+    pressValue,
+    value,
+  ]);
 
   // Check if current pending input is valid (for styling purposes)
   const isInputValid = useMemo(() => {
@@ -887,8 +933,37 @@ export function NumberInput({
     [ref, wheelListenerRef],
   );
 
-  const canIncrement = getNextValue(1) !== valueForStepping;
-  const canDecrement = getNextValue(-1) !== valueForStepping;
+  // One step from any value, for a press that steps from its own value.
+  const stepFrom = useCallback(
+    (current: number | null, direction: StepDirection) =>
+      getSteppedValue({
+        currentValue: current,
+        direction,
+        min,
+        max,
+        step,
+        isIntegerOnly,
+      }),
+    [isIntegerOnly, max, min, step],
+  );
+  // The bounds follow the value on show, a press's while it lasts.
+  const shownValue = pressValue ?? valueForStepping;
+  const canIncrement = stepFrom(shownValue, 1) !== shownValue;
+  const canDecrement = stepFrom(shownValue, -1) !== shownValue;
+
+  // Commits a stepper press's final value, once, at its release.
+  const commitValue = useCallback(
+    (next: number) => {
+      if (isDisabled || isReadOnly) {
+        return;
+      }
+      setPendingInput(null);
+      if (next !== value) {
+        onChange(next);
+      }
+    },
+    [isDisabled, isReadOnly, onChange, value],
+  );
 
   // The kind of pointer that pressed a stepper, read when its click lands.
   const stepperPointerTypeRef = useRef<string | null>(null);
@@ -923,21 +998,28 @@ export function NumberInput({
     if (pointerType === 'mouse' && event.detail > 0) {
       inputRef.current?.focus();
     }
-    // A finger or a pen the touch layer tracked has stepped already, at its
-    // lift or while held: the click the engine sends after it is no step.
-    if (stepperTouch.takeTrackedClick(event.nativeEvent, pointerType)) {
+    // A press the press layer tracked has stepped already, at its lift or
+    // while held: the click the engine sends after it is no step.
+    if (stepperTouch.takeTrackedClick(event.nativeEvent)) {
       return;
     }
     stepValue(direction);
   };
 
-  // A finger or a pen on the steppers is tracked by the touch layer
-  // (NumberInputTouch.tsx) as UIStepper tracks one; a mouse keeps the click.
+  // A press on the steppers by any pointer is tracked by the press layer
+  // (NumberInputTouch.tsx); a key or assistive technology steps by the click.
   const incrementRef = useRef<HTMLButtonElement | null>(null);
   const decrementRef = useRef<HTMLButtonElement | null>(null);
   const stepperColumnRef = useRef<HTMLDivElement | null>(null);
   const stepperTouch = useStepperTouch(
-    {stepValue, canIncrement, canDecrement, isDisabled, isReadOnly},
+    {
+      valueForStepping,
+      stepFrom,
+      showPressValue: setPressValue,
+      commitValue,
+      isDisabled,
+      isReadOnly,
+    },
     incrementRef,
     decrementRef,
     stepperColumnRef,
@@ -1095,6 +1177,7 @@ export function NumberInput({
             {...stylex.props(
               styles.numberStepperButton,
               interactionOverlayStyles.backgroundImage,
+              styles.incrementCorner,
               (isDisabled || isReadOnly || !canIncrement) &&
                 styles.numberStepperButtonDisabled,
             )}>
@@ -1119,6 +1202,7 @@ export function NumberInput({
               styles.numberStepperButton,
               interactionOverlayStyles.backgroundImage,
               styles.decrementButton,
+              styles.decrementCorner,
               (isDisabled || isReadOnly || !canDecrement) &&
                 styles.numberStepperButtonDisabled,
             )}>

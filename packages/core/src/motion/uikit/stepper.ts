@@ -3,9 +3,9 @@
 /**
  * @file stepper.ts
  * @input Nothing; data only
- * @output Exports `stepper`: UIStepper's tap and autorepeat clocks, its
- *   tracking area, and the timing of its pressed state, as measured on
- *   iOS 26.2
+ * @output Exports `stepper`: the stepper's tap and autorepeat clocks (UIStepper's
+ *   measured delay and fastest interval, and a proposed ramp between them)
+ *   and the timing of its pressed state, as measured on iOS 26.2
  * @position The stepper domain of the UIKit constants table (motion/uikit)
  *
  * Every leaf carries one or more `@source` (apple-docs | wwdc | webkit |
@@ -34,45 +34,27 @@ export const stepper = {
      */
     delayMs: 500,
     /**
-     * The interval between repeats while fewer than `mediumAfterSteps` steps
-     * have been made in the press.
-     * @source measured: UIKit lab (injected host app), iOS 26.2 sim iPhone 17 Pro, 8 s hold: steps 1 to 6 at +514, 1017, 1520, 2023, 2525, 3028 ms (a 500 ms timer re-armed after each step's own work), Oct 23 2026
+     * The interval before the second step of a hold. Each later interval is
+     * `acceleration` times the one before, down to `minIntervalMs`: one
+     * steady ramp. UIStepper waits 500 ms between its first six steps, then
+     * drops to 100 ms and later to 50 ms; on a phone that read as slow, and a
+     * gentle, predictable ramp was asked for (#8205).
+     * @source GUESS — proposed, pending owner review: UIStepper measured 500 ms between its first repeats (+514, 1017, 1520, 2023, 2525, 3028 ms), iOS 26.2 sim, Oct 23 2026
+     * @measure M-STP20
      */
-    slowIntervalMs: 500,
+    firstIntervalMs: 250,
     /**
-     * Steps made before the interval drops to `mediumIntervalMs`. The count is
-     * of steps, not time: a hold that paused 10 s outside the control after
-     * two steps resumed at the slow interval.
-     * @source measured: UIKit lab (injected host app), iOS 26.2 sim iPhone 17 Pro, 8 s hold (step 7 came 102 ms after step 6) and a drag out and back at 20 pt/s (steps 3 and 4 503 ms apart after the pause), Oct 23 2026
+     * Each repeat's interval as a fraction of the one before: a steady
+     * acceleration with no jump.
+     * @source GUESS — proposed, pending owner review, with `firstIntervalMs`
+     * @measure M-STP20
      */
-    mediumAfterSteps: 6,
+    acceleration: 0.9,
     /**
-     * The interval between repeats from step `mediumAfterSteps` to step
-     * `fastAfterSteps`.
-     * @source measured: UIKit lab (injected host app), iOS 26.2 sim iPhone 17 Pro, 8 s hold: steps 7 to 20 from +3130 to +4463 ms (102.5 ms apart), Oct 23 2026
-     */
-    mediumIntervalMs: 100,
-    /**
-     * Steps made before the interval drops to `fastIntervalMs`.
-     * @source measured: UIKit lab (injected host app), iOS 26.2 sim iPhone 17 Pro, 8 s hold: step 21 came 51 ms after step 20, Oct 23 2026
-     */
-    fastAfterSteps: 20,
-    /**
-     * The interval between repeats from then on; the step size never grows.
+     * The shortest interval: the ramp stops here; the step size never grows.
      * @source measured: UIKit lab (injected host app), iOS 26.2 sim iPhone 17 Pro, 8 s hold: steps 21 to 59 from +4514 to +6512 ms (52.5 ms apart), step size 1 throughout, Oct 23 2026
      */
-    fastIntervalMs: 50,
-  },
-  tracking: {
-    /**
-     * How far outside its frame the control keeps tracking a finger: none.
-     * The repeat runs with the finger on the top edge and stops once it is
-     * above it; re-entering the frame steps at once; a tap that lifts 2 to
-     * 12 pt above the top edge does not step, and a touch-down 4 to 40 pt
-     * outside any edge does nothing.
-     * @source measured: UIKit lab (injected host app), iOS 26.2 sim iPhone 17 Pro, a hold dragged out at 4 pt/s and taps lifted or landed outside each edge, Oct 24 2026
-     */
-    expansion: 0,
+    minIntervalMs: 50,
   },
   press: {
     /**

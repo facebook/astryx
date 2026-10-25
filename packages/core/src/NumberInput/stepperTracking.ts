@@ -2,35 +2,35 @@
 
 /**
  * @file stepperTracking.ts
- * @input The half of a number stepper under a finger over time, and a clock
- * @output Exports StepperTracking (UIStepper's tap and autorepeat rules on
+ * @input The half of a number stepper under a pointer over time, and a clock
+ * @output Exports StepperTracking (the stepper's tap and autorepeat rules on
  *   explicit times), repeatInterval and the StepperHalf type
- * @position Pure half of NumberInput's touch stepper: no DOM. NumberInput
- *   feeds it from the gesture system's PressTracker; tested by
- *   stepperTracking.test.ts with a manual clock
+ * @position Pure half of NumberInput's stepper press: no DOM. The press layer
+ *   (NumberInputTouch.tsx) feeds it from the gesture system's PressTracker;
+ *   tested by stepperTracking.test.ts with a manual clock
  *
- * UIStepper on iOS 26.2, as measured (motion/uikit/stepper.ts):
+ * The rules (motion/uikit/stepper.ts):
  *
- * - A tap steps once, at the lift, on the half under the finger then: a
- *   finger that slid from − onto + before anything repeated steps +. A lift
+ * - A tap steps once, at the lift, on the half under the pointer then: a
+ *   pointer that slid from − onto + before anything repeated steps +. A lift
  *   outside the control steps nothing.
- * - A held finger steps `delayMs` after the press reached the control, then
- *   keeps stepping: every `slowIntervalMs` until `mediumAfterSteps` steps,
- *   every `mediumIntervalMs` until `fastAfterSteps`, then every
- *   `fastIntervalMs`. The phases count steps, not time. Each interval is
- *   timed from the step before it, so a step that runs late (a busy main
- *   thread) runs once, never as a burst. A lift after a repeat adds nothing.
+ * - A held press steps `delayMs` after it reached the control (UIStepper's
+ *   measured delay), then keeps stepping on one steady ramp: after
+ *   `firstIntervalMs`, then each interval `acceleration` times the one
+ *   before, never under `minIntervalMs`. Each interval is timed from the
+ *   step before it, so a step that runs late (a busy main thread) runs once,
+ *   never as a burst. A lift after a repeat adds nothing.
  * - Sliding onto the other half keeps the running cadence; the next step
  *   lands on the new half.
- * - The control keeps no tracking margin: leaving its frame stops the
- *   repeat, and coming back steps at once and resumes the cadence. Coming
- *   back before the first repeat keeps the press's own clock (not measured:
- *   motion/MEASUREMENTS.md M-STP16).
+ * - Leaving the control pauses the cadence and coming back resumes it: the
+ *   next step comes once the rest of the paused interval has passed, never
+ *   at once, so a pointer trembling at the edge adds no step and does not
+ *   speed the ramp.
  * - A half at its bound does not step; the clock runs on, so sliding to the
  *   other half steps it on the next beat.
  *
- * SYNC: When modified, update stepperTracking.test.ts and the stepper
- * glue in NumberInput.tsx.
+ * SYNC: When modified, update stepperTracking.test.ts and the press layer
+ * in NumberInputTouch.tsx.
  */
 
 import {browserClock, type GestureClock} from '../gestures';
@@ -50,32 +50,29 @@ export interface StepperTrackingOptions {
 
 /** The interval before the next repeat, once `stepsMade` steps were made. */
 export function repeatInterval(stepsMade: number): number {
-  const {
-    slowIntervalMs,
-    mediumAfterSteps,
-    mediumIntervalMs,
-    fastAfterSteps,
-    fastIntervalMs,
-  } = stepper.autorepeat;
-  if (stepsMade < mediumAfterSteps) {
-    return slowIntervalMs;
-  }
-  return stepsMade < fastAfterSteps ? mediumIntervalMs : fastIntervalMs;
+  const {firstIntervalMs, acceleration, minIntervalMs} = stepper.autorepeat;
+  return Math.max(
+    minIntervalMs,
+    firstIntervalMs * acceleration ** Math.max(0, stepsMade - 1),
+  );
 }
 
 export class StepperTracking {
-  /** Whether a finger is tracked. */
+  /** Whether a press is tracked. */
   isTracking = false;
   /** Whether the press has reached the control (the repeat clock runs). */
   isDelivered = false;
-  /** The half under the finger; null while it is outside the control. */
+  /** The half under the pointer; null while it is outside the control. */
   half: StepperHalf | null = null;
   /** Steps made by this press (taps and repeats). */
   steps = 0;
 
   private readonly options: StepperTrackingOptions;
   private readonly clock: GestureClock;
-  private deliveredAt = 0;
+  /** When the armed repeat fires; null while none is armed. */
+  private deadline: number | null = null;
+  /** What was left of the interval when the pointer left the control. */
+  private remaining: number | null = null;
   private timer: unknown = null;
 
   constructor(options: StepperTrackingOptions) {
@@ -83,7 +80,7 @@ export class StepperTracking {
     this.clock = options.clock ?? browserClock;
   }
 
-  /** A finger landed on `half`. */
+  /** A pointer landed on `half`. */
   begin(half: StepperHalf): void {
     this.reset();
     this.isTracking = true;
@@ -99,11 +96,15 @@ export class StepperTracking {
       return;
     }
     this.isDelivered = true;
-    this.deliveredAt = time;
-    this.arm(time + stepper.autorepeat.delayMs);
+    const deadline = time + stepper.autorepeat.delayMs;
+    if (this.half == null) {
+      this.remaining = Math.max(0, deadline - this.clock.now());
+    } else {
+      this.arm(deadline);
+    }
   }
 
-  /** The finger moved; `half` is null when it is outside the control. */
+  /** The pointer moved; `half` is null when it is outside the control. */
   move(half: StepperHalf | null): void {
     if (!this.isTracking) {
       return;
@@ -115,17 +116,22 @@ export class StepperTracking {
       return;
     }
     if (half == null) {
-      // Leaving the control stops the repeat.
+      // Leaving the control pauses the cadence.
+      this.remaining =
+        this.deadline == null
+          ? null
+          : Math.max(0, this.deadline - this.clock.now());
       this.disarm();
-    } else if (this.steps > 0) {
-      // Coming back steps at once and resumes the cadence from there.
-      this.repeat();
     } else {
-      this.arm(this.deliveredAt + stepper.autorepeat.delayMs);
+      // Coming back resumes it, with the rest of the paused interval.
+      this.arm(
+        this.clock.now() + (this.remaining ?? repeatInterval(this.steps)),
+      );
+      this.remaining = null;
     }
   }
 
-  /** The finger lifted over `half` (null: outside the control). */
+  /** The pointer lifted over `half` (null: outside the control). */
   end(half: StepperHalf | null): void {
     if (!this.isTracking) {
       return;
@@ -137,7 +143,7 @@ export class StepperTracking {
     }
   }
 
-  /** The press was taken away (a scroll, a recognizer): nothing more steps. */
+  /** The press was taken away (a scroll, the system): nothing more steps. */
   cancel(): void {
     this.reset();
   }
@@ -152,15 +158,17 @@ export class StepperTracking {
     if (half != null && this.options.step(half)) {
       this.steps += 1;
     }
-    // Timed from after this step's work, as UIKit re-arms its timer.
+    // Timed from after this step's work, so a late step runs once.
     this.arm(this.clock.now() + repeatInterval(this.steps));
   }
 
   private arm(deadline: number): void {
     this.disarm();
+    this.deadline = deadline;
     this.timer = this.clock.setTimeout(
       () => {
         this.timer = null;
+        this.deadline = null;
         if (this.isTracking && this.half != null) {
           this.repeat();
         }
@@ -174,6 +182,7 @@ export class StepperTracking {
       this.clock.clearTimeout(this.timer);
       this.timer = null;
     }
+    this.deadline = null;
   }
 
   private reset(): void {
@@ -182,6 +191,6 @@ export class StepperTracking {
     this.isDelivered = false;
     this.half = null;
     this.steps = 0;
-    this.deliveredAt = 0;
+    this.remaining = null;
   }
 }

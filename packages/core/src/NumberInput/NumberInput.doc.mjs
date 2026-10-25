@@ -338,7 +338,7 @@ export const docs = {
         name: 'Number steppers',
         required: false,
         description:
-          'Optional buttons that increment or decrement by the configured step. Under a finger a tap steps once when the finger lifts, and a button held down keeps stepping: after half a second, then faster after three seconds, until the finger lifts or slides off.',
+          'Optional buttons that increment or decrement by the configured step. A tap steps once when the pointer lifts. A button held down by a finger, a pen or a mouse keeps stepping: after half a second, then faster and faster until the pointer lifts; sliding away pauses it and coming back resumes it. The field shows each step as it comes and calls onChange once, with the final value, when the press ends.',
       },
     ],
   },
@@ -643,7 +643,7 @@ export const docsZh = {
         name: 'Number steppers',
         required: false,
         description:
-          'Optional buttons that increment or decrement by the configured step. Under a finger a tap steps once when the finger lifts, and a button held down keeps stepping: after half a second, then faster after three seconds, until the finger lifts or slides off.',
+          'Optional buttons that increment or decrement by the configured step. A tap steps once when the pointer lifts. A button held down by a finger, a pen or a mouse keeps stepping: after half a second, then faster and faster until the pointer lifts; sliding away pauses it and coming back resumes it. The field shows each step as it comes and calls onChange once, with the final value, when the press ends.',
       },
     ],
   },
@@ -717,7 +717,7 @@ export const docsDense = {
         name: 'Number steppers',
         required: false,
         description:
-          'Optional buttons that increment or decrement by the configured step. Under a finger a tap steps once when the finger lifts, and a button held down keeps stepping: after half a second, then faster after three seconds, until the finger lifts or slides off.',
+          'Optional buttons that increment or decrement by the configured step. A tap steps once when the pointer lifts. A button held down by a finger, a pen or a mouse keeps stepping: after half a second, then faster and faster until the pointer lifts; sliding away pauses it and coming back resumes it. The field shows each step as it comes and calls onChange once, with the final value, when the press ends.',
       },
     ],
   },
