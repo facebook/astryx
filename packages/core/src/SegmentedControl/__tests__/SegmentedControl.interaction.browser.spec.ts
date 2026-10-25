@@ -1769,6 +1769,32 @@ test('a slow ±3 px dither across a boundary changes the selected face at most o
   expect(changes.length, faces.join(' ')).toBeLessThanOrEqual(1);
 });
 
+test('a lifted drag held just past a boundary: at the lift the selected colour snaps to the segment nearest the finger, which it commits', async ({
+  page,
+}) => {
+  const control = await openControl(page);
+  const boxes = await control.boxes();
+  const grid = boxOf(boxes, 'grid');
+  const list = boxOf(boxes, 'list');
+  const groupBox = await control.group.boundingBox();
+  const y = (groupBox?.y ?? 0) + (groupBox?.height ?? 0) / 2;
+  const boundary = (groupBox?.x ?? 0) + (grid.x + grid.width + list.x) / 2;
+  const start = await clientCenter(control, 'grid');
+  const selections = await recordSelections(control.group);
+  // Held on Grid, carried 3 px past the boundary, rested, lifted.
+  await control.driver.play([
+    {t: 0, fingers: [{id: 0, x: start.x, y}]},
+    {t: 300, fingers: [{id: 0, x: boundary - 10, y}]},
+    {t: 400, fingers: [{id: 0, x: boundary + 3, y}]},
+    {t: 900, fingers: []},
+  ]);
+  await page.waitForTimeout(400);
+  // The hysteresis kept the colour on Grid while held; the lift commits List,
+  // the nearest, and the colour snaps there with the selection.
+  await expect(control.segment('list')).toHaveAttribute('aria-checked', 'true');
+  expect((await selections()).map(change => change.value)).toEqual(['list']);
+});
+
 test('a tap’s commit is the browser’s own click (spec:AST-094 FR11)', async ({
   page,
 }) => {

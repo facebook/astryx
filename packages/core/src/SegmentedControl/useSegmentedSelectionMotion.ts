@@ -72,8 +72,11 @@
  *   The commit's titles take their new weights at once, so the lens aims at
  *   the destination's box as it is once the new value shows. A click the
  *   item vetoes sends the lens back at once; otherwise the lens waits for the
- *   value to come back (a parent may adopt it later), and goes back only if a
- *   later render still shows the old value or the slide settles without it.
+ *   value to come back (a parent may adopt it later, after renders that still
+ *   show the old one), and goes back only if the slide settles without it.
+ * - At the lift the selected colour snaps to the segment nearest the finger,
+ *   the one the lift commits, even where the hysteresis had kept it on a
+ *   neighbour just past a boundary.
  * - A cancelled touch (the page took it to scroll) puts the lens back.
  *
  * Reduced Motion (`design:reduced-motion`): nothing lifts, chases, travels
@@ -599,8 +602,8 @@ export class SegmentedSelectionMotion {
    */
   private committed: string | null = null;
   /**
-   * The commit's click ran without a veto: the lens waits for the value,
-   * until a later render still shows the old one or the slide settles.
+   * The commit's click ran without a veto: the lens waits for the value
+   * until the slide settles.
    */
   private isAwaitingValue = false;
   /** The motion a release starts once its commit's click has run. */
@@ -992,19 +995,6 @@ export class SegmentedSelectionMotion {
         this.startPending(this.selectedIn(track));
       }
     });
-  }
-
-  /**
-   * The control rendered `value`. A touch's value still waiting to come back
-   * goes back when a later render shows another value: the parent kept its
-   * own.
-   */
-  rendered(track: HTMLElement, value: string): void {
-    const committed = this.committed;
-    if (!this.isAwaitingValue || committed == null || value === committed) {
-      return;
-    }
-    this.decline(track, committed);
   }
 
   /**
@@ -1809,15 +1799,6 @@ export function useSegmentedSelectionMotion(
     }
     motion.select(track, from, value);
   }, [isEnabled, motion, trackRef, value]);
-
-  // Every commit: a touch's value still waiting to come back goes back when
-  // a later render shows another one.
-  useIsomorphicLayoutEffect(() => {
-    const track = trackRef.current;
-    if (isEnabled && track != null) {
-      motion.rendered(track, value);
-    }
-  });
 
   // The lens aims at boxes measured when its motion began: if the control
   // resizes under it, hand the surface back rather than land somewhere stale.

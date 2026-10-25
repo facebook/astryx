@@ -48,7 +48,7 @@
  * a mouse, and the click path never runs twice. A vetoed click sends the
  * lens back at once; otherwise the motion waits for the value to come back
  * (a controlled parent may adopt it later) and sends the lens back only if
- * a later render keeps the old value or the slide settles without it.
+ * the slide settles without it.
  * Mouse, keyboard and assistive technology keep the click.
  *
  * While a finger is down, the gesture host turns text selection and the
@@ -119,22 +119,31 @@ function awaitBrowserClick(
     if (isDone) {
       return;
     }
-    let clicked: Event | null = null;
-    const own = (event: Event) => {
-      if (clicked == null && event.target === segment) {
-        clicked = event;
-      }
-    };
     view.removeEventListener('click', grab, true);
-    view.addEventListener('click', own, true);
-    try {
-      segment.click();
-    } finally {
-      view.removeEventListener('click', own, true);
-    }
-    finish((clicked as Event | null)?.defaultPrevented === true);
+    finish(clickAndReport(segment));
   }, BROWSER_CLICK_WAIT_MS);
   view.addEventListener('click', grab, true);
+}
+
+/**
+ * Clicks `segment` (its activation and every handler run) and reports
+ * whether a handler cancelled the click.
+ */
+function clickAndReport(segment: HTMLElement): boolean {
+  const view = segment.ownerDocument.defaultView;
+  let clicked: Event | null = null;
+  const grab = (event: Event) => {
+    if (clicked == null && event.target === segment) {
+      clicked = event;
+    }
+  };
+  view?.addEventListener('click', grab, true);
+  try {
+    segment.click();
+  } finally {
+    view?.removeEventListener('click', grab, true);
+  }
+  return (clicked as Event | null)?.defaultPrevented === true;
 }
 
 /** A ref to nothing: hooks given it attach nothing. */

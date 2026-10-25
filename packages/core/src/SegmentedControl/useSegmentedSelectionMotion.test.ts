@@ -614,20 +614,6 @@ describe('under a finger', () => {
     expectNoOverride(ctx.segments.grid);
   });
 
-  it('a later render that keeps the old value sends the lens back', async () => {
-    const ctx = setup('grid');
-    press(ctx, clientCenterOf('table'));
-    release(ctx, clientCenterOf('table'));
-    ctx.motion.clicked(ctx.track, 'table', false);
-    await Promise.resolve();
-    await advance(50);
-    // The parent re-rendered with Grid still selected.
-    ctx.motion.rendered(ctx.track, 'grid');
-    await advance(3000);
-    expect(ctx.motion.isSliding).toBe(false);
-    expectOwnSurface(ctx.segments.grid);
-  });
-
   it('a value that never comes back: the lens goes back once its slide settles, the bound being the slide itself', async () => {
     const ctx = setup('grid');
     press(ctx, clientCenterOf('table'));
