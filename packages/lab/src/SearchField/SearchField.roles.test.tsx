@@ -22,6 +22,8 @@ import {SearchField} from './SearchField';
 import {activationTiming} from './searchFieldModel';
 
 const played = vi.hoisted(() => [] as Array<Record<string, number>>);
+/** The search table's registration and each play, in order. */
+const events = vi.hoisted(() => [] as Array<'register' | 'play'>);
 
 // Records the length of every curve the field plays; the animator still
 // plays them.
@@ -30,6 +32,13 @@ vi.mock('@astryxdesign/core/motion/experimental', async importOriginal => {
   const wrapped = new WeakSet<object>();
   return {
     ...actual,
+    uikit: {
+      ...actual.uikit,
+      registerSearchTable: () => {
+        events.push('register');
+        actual.uikit.registerSearchTable();
+      },
+    },
     useAnimator: (...args: Parameters<typeof actual.useAnimator>) => {
       const result = actual.useAnimator(...args);
       const {animator} = result;
@@ -37,6 +46,7 @@ vi.mock('@astryxdesign/core/motion/experimental', async importOriginal => {
         wrapped.add(animator);
         const play = animator.play.bind(animator);
         animator.play = (curves, options) => {
+          events.push('play');
           played.push(
             Object.fromEntries(
               Object.entries(curves).map(([key, curve]) => [
@@ -74,6 +84,7 @@ function deliverFrames(count: number) {
 
 beforeEach(() => {
   played.length = 0;
+  events.length = 0;
   variables = new Map();
   frameCallbacks = new Map();
   frameTime = performance.now();
@@ -128,6 +139,8 @@ function themed(values: Record<string, string>) {
 
 describe('SearchField motion roles', () => {
   it('reads the clock and curve from the field’s theme, or the table’s', () => {
+    // As the touch layer does before its first move.
+    uikit.registerSearchTable();
     const scope = themed({
       '--motion-search-activation-ms': '600ms',
       '--motion-search-activation-curve': 'cubic-bezier(0, 0, 1, 1)',
@@ -161,6 +174,15 @@ describe('SearchField motion roles', () => {
         expect(duration).toBeCloseTo(0.6, 6);
       }
     }
+  });
+
+  it('registers the search table’s roles before its first move', () => {
+    render(<SearchField label="Search" />);
+    act(() => screen.getByRole('searchbox').focus());
+    deliverFrames(2);
+    expect(events).toContain('play');
+    expect(events.indexOf('register')).toBeGreaterThanOrEqual(0);
+    expect(events.indexOf('register')).toBeLessThan(events.indexOf('play'));
   });
 
   it('keeps UIKit’s 383 ms activation without a theme', () => {

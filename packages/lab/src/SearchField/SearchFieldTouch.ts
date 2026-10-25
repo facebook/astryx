@@ -4,9 +4,9 @@
 
 /**
  * @file SearchFieldTouch.ts
- * @input The animator and `uikit.search` (`@astryxdesign/core/motion/
- *   experimental`), the touch resolver, onPresentedFrame and
- *   searchFieldModel.ts
+ * @input The animator, `uikit.search` and its roles' registration
+ *   (`@astryxdesign/core/motion/experimental`), the touch resolver,
+ *   onPresentedFrame and searchFieldModel.ts
  * @output useSearchFieldMotion: SearchField's touch layer. It places the
  *   field's parts (the lift, the narrowing middle, the trailing end, the close
  *   button) and, under a finger, plays UIKit's activation and cancel on one
@@ -134,7 +134,9 @@ export function useSearchFieldMotion({
       const to = poseFor(target, shape);
       const from = poseFor(!target, shape);
       const current = presented();
-      // The clock and curve under the field's theme, read as the move starts.
+      // The clock and curve under the field's theme, read as the move starts
+      // (the search table's roles, registered once before the first move).
+      uikit.registerSearchTable();
       const timing = activationTiming(rootAnimator.animator.element);
       const duration = timing.seconds * remainingFraction(current, from, to);
       // Under reduced motion the animator plays its cross-fade for these.
