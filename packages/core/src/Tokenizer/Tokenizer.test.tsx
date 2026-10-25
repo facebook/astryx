@@ -506,6 +506,7 @@ describe('Tokenizer', () => {
 
     it('removes the last token on the first Delete under a mouse, as before', () => {
       stubPointer(false);
+      expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
       const onChange = vi.fn();
       render(<Controlled onChange={onChange} />);
       const input = screen.getByRole('combobox');
