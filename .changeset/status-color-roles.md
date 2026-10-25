@@ -16,7 +16,7 @@
 The released `--color-success`, `--color-warning`, and `--color-error`, and `bg-success`/`text-success`/`border-success` with their warning and error forms, keep their values and meaning in every theme. No app code needs to change.
 
 Astryx components move to the new roles, so their colours change where a theme's values differ:
-- Badge, StatusDot, AvatarStatusDot, ProgressBar, Stepper indicators, the destructive Button, and item swipe actions use the strong fills. Core's dark Info and Error fills are now `#0064E0` and `#E3193B`, so white labels reach 4.5:1.
+- Badge, StatusDot, AvatarStatusDot, ProgressBar, Stepper indicators, the destructive Button, and item swipe actions use the strong fills. Core's dark Info and Error fills are now `#0064E0` and `#E3193B` instead of `#2694FE` and `#F5394F`, so white labels reach 4.5:1.
 - Icon `color="info|success|warning|error"`, Stepper status glyphs, and Chat tool-call status icons use the icon roles, which are the readable text colours. For example, Core's success icon is now `#09441F` (light) instead of `#0D8626`.
 - Input and FileInput status borders use the border roles. Core's light warning border is now `#753F07` instead of `#E9AF08`. Butter's light success and warning input rims are now mid-ramp stops that reach 3:1.
 - Banner paints its built-in title, description, icon, and controls with the on-muted roles.

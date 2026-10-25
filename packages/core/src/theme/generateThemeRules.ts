@@ -750,7 +750,8 @@ export function generatedScopedStatusRoleDefaults(
     const alias = `var(${source})`;
     if (
       authoredRoot[role] !== undefined ||
-      authoredRoot[source] === undefined
+      (authoredRoot[source] === undefined &&
+        !entries.some(([emitted]) => emitted === source))
     ) {
       continue;
     }
@@ -870,7 +871,8 @@ function generatedAdaptationStatusRoleDefaults(
       if (
         ruleRoles.has(role) ||
         authoredRule[role] !== undefined ||
-        ruleSources[source] === undefined ||
+        (ruleSources[source] === undefined &&
+          !aliases[index].some(([emitted]) => emitted === source)) ||
         rootRole !== undefined
       ) {
         continue;
@@ -946,7 +948,8 @@ function generatedMediaStatusRoleDefaults(
     const rootRole = rootValues[role];
     if (
       authoredMedia[role] !== undefined ||
-      authoredMedia[source] === undefined ||
+      (authoredMedia[source] === undefined &&
+        !aliases.some(([emitted]) => emitted === source)) ||
       (role === '--color-info-emphasized' &&
         source === '--color-accent' &&
         authoredMedia['--color-on-accent'] === undefined) ||

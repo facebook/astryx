@@ -501,6 +501,17 @@ describe('theme generation derives a complete status set (INV17)', () => {
     }
   });
 
+  it('aliases icon and border roles to a text role that is itself an alias', () => {
+    const theme = defineTheme({
+      name: 'status-hue-text-only',
+      tokens: {'--color-text-green': '#0A5C2E'},
+    });
+    const emitted = emittedRootTokens(theme);
+    expect(emitted['--color-text-success']).toBe('var(--color-text-green)');
+    expect(emitted['--color-icon-success']).toBe('var(--color-text-success)');
+    expect(emitted['--color-border-success']).toBe('var(--color-text-success)');
+  });
+
   it('counts a role inherited through extends as set', () => {
     const parent = defineTheme({
       name: 'status-parent',
