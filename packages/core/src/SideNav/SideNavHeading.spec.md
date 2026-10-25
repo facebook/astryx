@@ -89,9 +89,12 @@ Consumer migration instructions belong in consumer docs and release notes.
   links and the menu trigger.
 - **End content also opens the menu.** In both menu configurations
   `headerEndContent` renders inside the block that carries the menu's trigger
-  handlers, so a click or Enter on a control there runs that control and also
-  opens the menu, moving focus to its first item. A control in end content is
-  the caller's, outside FR2's trigger area.
+  handlers. With touch or the keyboard, activating a control there runs that
+  control and also opens the menu, moving focus to its first item. With a mouse,
+  moving the pointer onto the links or end content opens the menu at once over
+  the whole block, so a click on end content lands on the menu's heading button
+  and the menu reopens under the pointer. A control in end content is the
+  caller's, outside FR2's trigger area.
 
 ## Ownership boundary
 
