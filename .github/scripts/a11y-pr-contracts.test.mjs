@@ -4,7 +4,9 @@
  * @file Routing contract for the PR browser accessibility spec runner.
  */
 
+import {execFileSync} from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 
 import {describe, expect, it} from 'vitest';
@@ -13,6 +15,7 @@ import {
   auditArgs,
   auditedComponents,
   auditPlan,
+  changedSinceMergeBase,
   kebab,
   planFor,
   parseRouting,
@@ -347,6 +350,51 @@ describe('component audit axe pass', () => {
     for (const name of Object.keys(config).filter(key => key !== '$comment')) {
       expect(() => auditPlan(name, config), name).not.toThrow();
       expect(name).toMatch(/^[A-Z]\w*$/);
+    }
+  });
+});
+
+describe('changedSinceMergeBase', () => {
+  const git = (cwd, ...args) =>
+    execFileSync('git', args, {cwd, encoding: 'utf8', stdio: 'pipe'}).trim();
+  const commit = (cwd, file, text) => {
+    fs.writeFileSync(path.join(cwd, file), text);
+    git(cwd, 'add', file);
+    git(
+      cwd,
+      '-c',
+      'user.email=a@b',
+      '-c',
+      'user.name=a',
+      'commit',
+      '-qm',
+      text,
+    );
+  };
+
+  it("lists the branch's own changes and never makes a full clone shallow", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-pr-a11y-'));
+    const cwd = process.cwd();
+    try {
+      const origin = path.join(dir, 'origin');
+      fs.mkdirSync(origin);
+      git(origin, 'init', '-q', '-b', 'main');
+      for (const n of ['1', '2', '3']) commit(origin, 'base.txt', n);
+      const clone = path.join(dir, 'clone');
+      git(dir, 'clone', '-q', origin, clone);
+      git(clone, 'checkout', '-qb', 'feature');
+      commit(clone, 'feature.txt', 'f');
+      git(clone, 'push', '-q', 'origin', 'feature');
+      commit(origin, 'later.txt', 'l');
+      process.chdir(clone);
+      expect(changedSinceMergeBase('main')).toEqual(['feature.txt']);
+      expect(changedSinceMergeBase('origin/main')).toEqual(['feature.txt']);
+      expect(git(clone, 'rev-parse', '--is-shallow-repository')).toBe('false');
+      expect(changedSinceMergeBase('no-such-ref')).toBeNull();
+      expect(changedSinceMergeBase(undefined)).toBeNull();
+    } finally {
+      process.chdir(cwd);
+      fs.rmSync(dir, {recursive: true, force: true});
     }
   });
 });

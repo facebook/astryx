@@ -595,7 +595,7 @@ pnpm storybook:build
 npx playwright install chromium
 
 pnpm test:a11y-contract      # the Chromium lane, every spec (the release check)
-pnpm test:a11y-contract:pr   # the specs a pull request from this branch runs
+pnpm test:a11y-contract:pr origin/main --dry-run   # what a PR from this branch runs (drop --dry-run to run it)
 ```
 
 Adopting the pattern in a new component means binding to the existing contract,

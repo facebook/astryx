@@ -295,22 +295,29 @@ export function changedSinceMergeBase(base) {
   if (!base) return null;
   try {
     const head = git(['rev-parse', 'HEAD']);
+    const shallow = () =>
+      git(['rev-parse', '--is-shallow-repository']) === 'true';
+    const has = rev => {
+      try {
+        git(['rev-parse', '--verify', '--quiet', `${rev}^{commit}`]);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    // Only CI's shallow checkout is fetched at a depth; a complete clone is
+    // never made shallow. It fetches the base only when it lacks it.
     const fetch = extra =>
       git(['fetch', '--quiet', '--no-tags', ...extra, 'origin', base, head]);
-    // A local run may name a ref that is already present (origin/main).
-    try {
-      fetch(['--depth=200']);
-    } catch {
-      git(['rev-parse', '--verify', `${base}^{commit}`]);
-    }
+    if (shallow()) fetch(['--depth=200']);
+    else if (!has(base)) git(['fetch', '--quiet', '--no-tags', 'origin', base]);
     let mergeBase = null;
     for (;;) {
       try {
         mergeBase = git(['merge-base', base, head]);
         break;
       } catch {
-        if (git(['rev-parse', '--is-shallow-repository']) !== 'true')
-          return null;
+        if (!shallow()) return null;
         fetch(['--deepen=200']);
       }
     }
@@ -397,9 +404,11 @@ function main() {
   const isPullRequest = process.env.GITHUB_EVENT_NAME
     ? process.env.GITHUB_EVENT_NAME === 'pull_request'
     : true;
+  // Outside CI, a run with no base compares with origin/main.
   const base =
     process.env.BASE_SHA ||
-    process.argv.slice(2).find(arg => !arg.startsWith('-'));
+    process.argv.slice(2).find(arg => !arg.startsWith('-')) ||
+    (process.env.GITHUB_ACTIONS ? undefined : 'origin/main');
   const policySha = process.env.WORKFLOW_SHA;
   const specs = listSpecs(root).map(file => ({
     file,
