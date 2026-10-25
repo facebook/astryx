@@ -8,7 +8,8 @@
  *   search table and its roles' registration
  *   (`@astryxdesign/core/motion/uikit`), the touch resolver
  *   (`@astryxdesign/core/utils/touchPresentation`), the tap recognizer
- *   (`@astryxdesign/core/gestures`) and searchFieldModel.ts
+ *   (`@astryxdesign/core/gestures`), searchFieldModel.ts and lab's
+ *   keyboard listener (keyboard/useKeyboardHeight.ts)
  * @output useSearchFieldMotion: SearchField's touch layer. It places the
  *   field's parts and, under a finger, plays UIKit's activation and cancel
  *   (stacked: one clock; bottom: the measured gel) from the frame that
@@ -62,6 +63,10 @@ import {
 import {registerSearchTable, search} from '@astryxdesign/core/motion/uikit';
 import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
 import {useTouchPresentation} from '@astryxdesign/core/utils/touchPresentation';
+import {
+  keyboardCoversPage,
+  useKeyboardHeight,
+} from '../keyboard/useKeyboardHeight';
 
 const {bottom} = search;
 
@@ -438,18 +443,27 @@ export function useSearchFieldMotion({
   // Bottom: above the software keyboard
   // ---------------------------------------------------------------------------
 
-  // The keyboard's height as of its last report, and how far the field's
-  // resting centre sits above the viewport's bottom edge. The root's
-  // `bottom` (SearchField.tsx) takes the lift at once on each report: a Lab
-  // surface commits the resting value and never rides the keyboard
-  // (spec:AST-099 FR8, react-component-runtime INV11), under reduced motion
-  // too.
+  // The keyboard's height as of its last report (lab's one keyboard
+  // listener, keyboard/useKeyboardHeight.ts). The root's `bottom`
+  // (SearchField.tsx) takes the lift at once on each report: a Lab surface
+  // commits the resting value and never rides the keyboard (spec:AST-099
+  // FR8, react-component-runtime INV11), under reduced motion too.
   const isLifted = isBottom && isTouch;
-  const {height: keyboardHeight, restGap} = useKeyboardHeight(
-    isLifted,
-    rootAnimator.animator,
-    inputRef,
-  );
+  const keyboardHeight = useKeyboardHeight(isLifted, inputRef);
+  // How far the field's resting centre sits above the viewport's bottom
+  // edge, read once per keyboard change: where layout puts the field
+  // without the lift (the root's `bottom`).
+  const [restGap, setRestGap] = useState(0);
+  useLayoutEffect(() => {
+    const root = rootAnimator.animator.element;
+    const win = root?.ownerDocument.defaultView;
+    if (!isLifted || root == null || win == null) {
+      return;
+    }
+    const rect = root.getBoundingClientRect();
+    const lift = parseFloat(win.getComputedStyle(root).bottom) || 0;
+    setRestGap(win.innerHeight - (rect.top + lift + rect.height / 2));
+  }, [isLifted, keyboardHeight, rootAnimator]);
   const keyboardLift = isLifted
     ? bottomLift(isActive, keyboardHeight, restGap)
     : 0;
@@ -580,187 +594,6 @@ export function useSearchFieldMotion({
     closeRef: closeAnimator.ref,
     keyboardLift,
   };
-}
-
-// =============================================================================
-// The keyboard
-// =============================================================================
-
-/** The browser's own keyboard report (the VirtualKeyboard API). */
-interface VirtualKeyboard extends EventTarget {
-  overlaysContent: boolean;
-  readonly boundingRect: DOMRectReadOnly;
-}
-
-/**
- * The browser's own keyboard report, where it gives one (Chrome on Android,
- * in a secure context: spec:AST-099 FR6, FR8) to a top-level document
- * (FR7).
- */
-function virtualKeyboardOf(win: Window): VirtualKeyboard | null {
-  if (win !== win.top) {
-    return null;
-  }
-  return (
-    (win.navigator as Navigator & {virtualKeyboard?: VirtualKeyboard})
-      .virtualKeyboard ?? null
-  );
-}
-
-/**
- * Whether a software keyboard would cover the page rather than resize it
- * (spec:AST-099 FR2, FR6): a visual viewport, no keyboard report of the
- * browser's own (FR8) and the top-level document (FR7).
- */
-function keyboardCoversPage(win: Window): boolean {
-  return (
-    win.visualViewport != null &&
-    !('virtualKeyboard' in win.navigator) &&
-    win === win.top
-  );
-}
-
-/**
- * The software keyboard's height as spec:AST-099 FR2 defines it:
- * `innerHeight − visualViewport.height × scale` where it covers the page;
- * 0 otherwise.
- */
-export function keyboardInsetOf(win: Window): number {
-  const viewport = win.visualViewport;
-  if (viewport == null || !keyboardCoversPage(win)) {
-    return 0;
-  }
-  return Math.max(0, win.innerHeight - viewport.height * (viewport.scale ?? 1));
-}
-
-/** Whether focus moving to `target` brings up a keyboard. */
-function bringsUpKeyboard(target: EventTarget | null): boolean {
-  if (typeof HTMLElement === 'undefined' || !(target instanceof HTMLElement)) {
-    return false;
-  }
-  if (target.isContentEditable || target instanceof HTMLTextAreaElement) {
-    return true;
-  }
-  return (
-    target instanceof HTMLInputElement &&
-    ![
-      'button',
-      'checkbox',
-      'color',
-      'file',
-      'hidden',
-      'image',
-      'radio',
-      'range',
-      'reset',
-      'submit',
-    ].includes(target.type)
-  );
-}
-
-/**
- * The software keyboard's height as of its last report, while `enabled`
- * (spec:AST-099 FR1), with no ride and no prediction (FR8):
- * - where the keyboard covers the page (Mobile Safari, Firefox for
- *   Android), FR2's measurement on each visual-viewport resize;
- * - where the browser reports the keyboard itself (Chrome on Android, FR8),
- *   its report: while the field has focus the keyboard overlays the page
- *   (`overlaysContent`) and each `geometrychange` gives its height; after
- *   the blur the overlay goes back once Chrome reports the keyboard down
- *   (at once when focus moves to another text field), so the app's own
- *   viewport setting holds everywhere else.
- * Also the field's resting gap (its resting centre above the viewport's
- * bottom edge), read once with each report.
- */
-function useKeyboardHeight(
-  enabled: boolean,
-  animator: Animator,
-  inputRef: RefObject<HTMLInputElement | null>,
-): {height: number; restGap: number} {
-  const [state, setState] = useState({height: 0, restGap: 0});
-  useEffect(() => {
-    const root = animator.element;
-    const input = inputRef.current;
-    const win = root?.ownerDocument.defaultView;
-    if (!enabled || root == null || input == null || win == null) {
-      return;
-    }
-    const restGap = () => {
-      const rect = root.getBoundingClientRect();
-      // Where layout puts the field without the lift (the root's `bottom`).
-      const lift = parseFloat(win.getComputedStyle(root).bottom) || 0;
-      return win.innerHeight - (rect.top + lift + rect.height / 2);
-    };
-    const commit = (height: number) => setState({height, restGap: restGap()});
-    const keyboard = virtualKeyboardOf(win);
-    if (keyboard != null) {
-      // The app's own setting, while the field holds the overlay.
-      let appOverlay: boolean | null = null;
-      let height = 0;
-      const giveBack = () => {
-        if (appOverlay != null) {
-          keyboard.overlaysContent = appOverlay;
-          appOverlay = null;
-        }
-      };
-      const onGeometryChange = () => {
-        if (appOverlay == null) {
-          return;
-        }
-        height = keyboard.boundingRect.height;
-        if (height <= 0.5 && input.ownerDocument.activeElement !== input) {
-          // Down after the field's blur: the overlay goes back.
-          giveBack();
-        }
-        commit(height);
-      };
-      const onFocus = () => {
-        if (appOverlay == null) {
-          appOverlay = keyboard.overlaysContent;
-          keyboard.overlaysContent = true;
-        }
-        height = keyboard.boundingRect.height;
-        commit(height);
-      };
-      const onBlur = (event: FocusEvent) => {
-        // The keyboard goes down after the blur, and Chrome reports it down
-        // once it is: until then the bar keeps its place, so a tap that
-        // blurred the field (on the close button) still lands where it
-        // began. Focus moving to another text field keeps the keyboard up
-        // under the app's own setting.
-        if (height > 0.5 && !bringsUpKeyboard(event.relatedTarget)) {
-          return;
-        }
-        giveBack();
-        height = 0;
-        commit(0);
-      };
-      keyboard.addEventListener('geometrychange', onGeometryChange);
-      input.addEventListener('focus', onFocus);
-      input.addEventListener('blur', onBlur);
-      if (input.ownerDocument.activeElement === input) {
-        onFocus();
-      } else {
-        commit(0);
-      }
-      return () => {
-        keyboard.removeEventListener('geometrychange', onGeometryChange);
-        input.removeEventListener('focus', onFocus);
-        input.removeEventListener('blur', onBlur);
-        giveBack();
-      };
-    }
-    const viewport = win.visualViewport;
-    const onResize = () => commit(keyboardInsetOf(win));
-    onResize();
-    viewport?.addEventListener('resize', onResize);
-    win.addEventListener('resize', onResize);
-    return () => {
-      viewport?.removeEventListener('resize', onResize);
-      win.removeEventListener('resize', onResize);
-    };
-  }, [enabled, animator, inputRef]);
-  return enabled ? state : {height: 0, restGap: 0};
 }
 
 // =============================================================================
