@@ -6,7 +6,7 @@
  *   keyboard, scroll and visibility events
  * @output Exports PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE, PRESS_PROFILES,
  *   pressableProps, the list row's press profile (CELL_PRESS_PROFILE,
- *   cellPressableProps) and installPressFeedback
+ *   cellPressableProps), installPressFeedback and subscribePressPaint
  * @position The DOM half of the touch press model: one delegated controller
  *   per document that writes `data-astryx-press` on the nearest pressable surface.
  *   Installed by usePressFeedback (hooks/usePressFeedback.ts) on first mount;
@@ -344,19 +344,68 @@ function ownedElsewhere(element: HTMLElement): boolean {
   return value != null && value !== 'on' && value !== 'fading';
 }
 
+/** Who follows the paint of each surface: one registry, no observer. */
+const paintListeners = new WeakMap<Element, Set<(paint: PressPaint) => void>>();
+
+/**
+ * Call `listener` with the paint the controller gives `element` each time it
+ * changes (`on` once it believes the press, `fading` while the release
+ * fades, `none` when it clears), until the returned function runs. One
+ * registry serves every surface, so a page of many triggers adds no observer
+ * and no listener per trigger. Not exported from the package entry point.
+ */
+export function subscribePressPaint(
+  element: Element,
+  listener: (paint: PressPaint) => void,
+): () => void {
+  let listeners = paintListeners.get(element);
+  if (listeners == null) {
+    listeners = new Set();
+    paintListeners.set(element, listeners);
+  }
+  listeners.add(listener);
+  return () => {
+    const current = paintListeners.get(element);
+    current?.delete(listener);
+    if (current?.size === 0) {
+      paintListeners.delete(element);
+    }
+  };
+}
+
+/** Tell `element`'s subscribers its new paint; one's throw stops no other. */
+function reportPaint(element: Element, paint: PressPaint): void {
+  const listeners = paintListeners.get(element);
+  if (listeners == null) {
+    return;
+  }
+  for (const listener of [...listeners]) {
+    try {
+      listener(paint);
+    } catch (error) {
+      queueMicrotask(() => {
+        throw error;
+      });
+    }
+  }
+}
+
 function paintElement(element: HTMLElement, paint: PressPaint): void {
   if (ownedElsewhere(element)) {
     return;
   }
-  if (paint === 'none') {
-    element.removeAttribute(PRESSED_ATTRIBUTE);
-    return;
-  }
+  const previous = element.getAttribute(PRESSED_ATTRIBUTE) ?? 'none';
   // A pass-through step repeats the paint it already wrote: writing it again
   // would only wake every observer of the attribute for nothing.
-  if (element.getAttribute(PRESSED_ATTRIBUTE) !== paint) {
+  if (previous === paint) {
+    return;
+  }
+  if (paint === 'none') {
+    element.removeAttribute(PRESSED_ATTRIBUTE);
+  } else {
     element.setAttribute(PRESSED_ATTRIBUTE, paint);
   }
+  reportPaint(element, paint);
 }
 
 function clearTimer(slot: Slot): void {
@@ -504,10 +553,16 @@ function finish(slot: Slot): void {
   }
   clearTimer(slot);
   unlockSelection(slot);
-  if (!ownedElsewhere(live.element)) {
-    live.element.removeAttribute(PRESSED_ATTRIBUTE);
+  const {element} = live;
+  const wasPainted =
+    !ownedElsewhere(element) && element.hasAttribute(PRESSED_ATTRIBUTE);
+  if (wasPainted) {
+    element.removeAttribute(PRESSED_ATTRIBUTE);
   }
   slot.live = null;
+  if (wasPainted) {
+    reportPaint(element, 'none');
+  }
   if (slot === button) {
     holdKey(false);
   }
