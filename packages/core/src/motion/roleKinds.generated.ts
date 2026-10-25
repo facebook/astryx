@@ -12,6 +12,8 @@
 import type {MotionRoleKind} from './roles';
 
 export const MOTION_ROLE_KINDS: Readonly<Record<string, MotionRoleKind>> = {
+  'alertController.dismiss.durationMs': 'duration',
+  'alertController.present.durationMs': 'duration',
   'navigation.transitionMs': 'duration',
   'scroll.bounce': 'spring',
   'scroll.paging.snap': 'spring',
