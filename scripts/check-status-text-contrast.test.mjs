@@ -368,6 +368,17 @@ describe('theme generation derives a complete status set (INV17)', () => {
         tokens: {'--color-success': 'light-dark(#666666, #AAAAAA)'},
       }),
       defineTheme({
+        name: 'js-unresolved-source',
+        tokens: {'--color-success': 'var(--brand-success)'},
+      }),
+      defineTheme({
+        name: 'js-unresolved-card',
+        tokens: {
+          '--color-success': '#3FB950',
+          '--color-background-card': 'var(--host-card)',
+        },
+      }),
+      defineTheme({
         name: 'js-child',
         extends: defineTheme({
           name: 'js-parent',
