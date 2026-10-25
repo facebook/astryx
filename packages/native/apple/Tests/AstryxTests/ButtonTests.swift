@@ -59,6 +59,7 @@ import Testing
   #expect(Astryx.Button.accessibilityTraits.contains(.isButton))
 }
 
+@MainActor
 @Test func buttonIconsUseSharedNamesAndTheTheme() {
   #expect(AstryxStyle(tokens: Theme.default.light).icon("search") == "magnifyingglass")
   #expect(AstryxStyle(tokens: Theme.default.light, icons: ["search": "sparkle.magnifyingglass"]).icon("search") == "sparkle.magnifyingglass")
