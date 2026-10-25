@@ -21,10 +21,9 @@
  * from its own projection, and a scroller's momentum cannot be caught,
  * measured or proven.
  *
- * - A finger drags the rows through a ScrollViewPanGestureRecognizer, the
- *   pan a scroll view uses: every move writes the rows' transforms, past an
- *   end on UIKit's rubber band, and the lift reads a scroll view's release
- *   velocity.
+ * - A finger drags the rows through a PanGestureRecognizer: every move
+ *   writes the rows' transforms, past an end on UIKit's rubber band, and the
+ *   lift reads a scroll view's release velocity, a pan's `scrollVelocity()`.
  * - The lift starts the motion UIKit would (wheelPhysics.ts: a coast onto a
  *   row, a snap, a coast into an end and its bounce, a return from past an
  *   end), baked per row and played on the compositor (wheelMotion.ts), so a
@@ -88,7 +87,7 @@ import {
 } from 'react';
 import {flushSync} from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
-import {ScrollViewPanGestureRecognizer} from '../gestures/ScrollViewPanGestureRecognizer';
+import {PanGestureRecognizer} from '../gestures/PanGestureRecognizer';
 import {TapGestureRecognizer} from '../gestures/TapGestureRecognizer';
 import {useGestureRecognizer} from '../gestures/useGestureRecognizer';
 import {observeResize} from '../utils/sharedResizeObserver';
@@ -669,7 +668,7 @@ export function PickerWheel({
   const pan = useGestureRecognizer(
     columnRef,
     () =>
-      new ScrollViewPanGestureRecognizer({
+      new PanGestureRecognizer({
         name: 'wheel-pan',
         direction: 'vertical',
         // A held finger on the wheel never starts text selection or the
@@ -713,7 +712,7 @@ export function PickerWheel({
           dragRef.current = null;
           // A scroll view's release velocity (the pan's last two, blended as
           // UIPickerView's); the rows move against the finger.
-          release(drag == null ? 0 : -recognizer.velocity().y);
+          release(drag == null ? 0 : -recognizer.scrollVelocity().y);
           break;
         }
         case 'cancelled': {

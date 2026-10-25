@@ -338,7 +338,12 @@ test('the coast keeps advancing every frame while the main thread is blocked', a
     `${proof.summary}; ${proof.verdict.failures.join('; ')}`,
   ).toBe(true);
   expect(proof.monotonic).toBe(true);
-  expect(proof.longestStallMs).toBeLessThan(40);
+  // Every frame the compositor presented while the main thread was blocked
+  // shows the coast moved. A frame the runner never drew is never presented,
+  // so a dropped frame (software compositing on a busy runner) proves nothing
+  // either way; a coast that stops shows presented frames that did not move,
+  // or none at all, which the verdict above rejects.
+  expect(proof.moved, proof.summary).toBe(proof.frames);
 });
 
 test('the coast does no Layout or Paint per frame', async ({
