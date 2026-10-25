@@ -2,8 +2,8 @@
 
 /**
  * @file keyboardModel.ts
- * @input `springs.keyboard`, `timing.keyboardNotificationMs` and `keyboard`
- *   from the UIKit table
+ * @input `keyboard` (its spring and report timings) and
+ *   `timing.keyboardNotificationMs` from the UIKit table
  * @output Exports createKeyboardModel (the keyboard layout guide's clock-free
  *   core) and the KeyboardTransition / KeyboardModel types
  * @position The state of the keyboard layout guide (keyboardLayoutGuide.ts):
@@ -54,7 +54,6 @@
  */
 
 import {keyboard} from '../motion/uikit/keyboard';
-import {springs} from '../motion/uikit/springs';
 import {timing} from '../motion/uikit/timing';
 import {keyboard as androidKeyboard} from '../motion/android/keyboard';
 import {cubicBezier} from '../motion/bezier';
@@ -98,7 +97,7 @@ export interface KeyboardTransition {
   readonly predicted: boolean;
   /**
    * The eased curve the keyboard slides on (Android), or null when it moves
-   * on UIKit's keyboard spring (`springs.keyboard`).
+   * on UIKit's keyboard spring (`keyboard.spring`).
    */
   readonly curve: KeyboardCurve | null;
 }
@@ -178,7 +177,7 @@ export function createKeyboardModel(
     profile = 'webkit',
   }: KeyboardModelOptions = {},
 ): KeyboardModel {
-  const spring = toSpring(springs.keyboard);
+  const spring = toSpring(keyboard.spring);
   const chromium = profile === 'chromium';
   let transition: KeyboardTransition = {
     kind: 'change',

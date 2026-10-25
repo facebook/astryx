@@ -3,7 +3,7 @@
 /**
  * @file index.ts
  * @input The domain files of the Android constants table
- * @output Re-exports `keyboard` and registerAndroidKeyboardTable
+ * @output Re-exports `keyboard`
  * @position Entry of the Android constants table (motion/android). Internal
  *   to core: not exported from the package entry point
  *
@@ -15,4 +15,4 @@
  * /packages/core/src/motion/README.md.
  */
 
-export {keyboard, registerAndroidKeyboardTable} from './keyboard';
+export {keyboard} from './keyboard';

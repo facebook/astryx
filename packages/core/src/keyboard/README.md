@@ -72,9 +72,9 @@ curve}`: heights in CSS px, `start` on the document timeline (in the past for
 a show reported after the keyboard started, slightly ahead for a hide that
 starts after a blur), and `curve` Gboard's slide in Chrome on Android (null
 for UIKit's spring). `rideKeyboard` moves your element on the compositor from
-`start` on the keyboard's own motion: `springs.keyboard` on iOS, the Android
-table's show or hide curve (`../motion/android/keyboard.ts`) in Chrome, both
-theme roles, or at once when the transition is not animated. Hand the
+`start` on the keyboard's own motion: `keyboard.spring` on iOS, the Android
+table's show or hide curve (`../motion/android/keyboard.ts`) in Chrome, values
+no theme retunes, or at once when the transition is not animated. Hand the
 translate back to the layout once the ride ends (ChatLayout does). Under Reduce Motion nothing travels with the keyboard
 (design:reduced-motion): the animator's default cross-fades on a touch screen
 and moves at once otherwise. `presentation(time)` gives the height presented
@@ -155,4 +155,4 @@ proposed; pending owner review on #8304).
 
 The timing constants live in `../motion/uikit/keyboard.ts` (iOS) and
 `../motion/android/keyboard.ts` (Chrome with Gboard), the spring in
-`springs.keyboard`, the duration in `timing.keyboardNotificationMs`.
+`keyboard.spring`, the duration in `timing.keyboardNotificationMs`.

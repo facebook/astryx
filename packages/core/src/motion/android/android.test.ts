@@ -4,7 +4,7 @@
  * @file android.test.ts
  * @input The Android constants table's files and values, the motion roles
  * @output Tests that every leaf carries a source, the values, and that the
- *   table is registered as theme motion roles
+ *   table is no theme's (no motion roles)
  * @position Testing for /packages/core/src/motion/android
  */
 
@@ -12,7 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {describe, expect, it} from 'vitest';
 import {motionRole} from '../roles';
-import {keyboard, registerAndroidKeyboardTable} from '.';
+import {keyboard} from '.';
 
 const SOURCE_KINDS =
   /^@source (aosp frameworks\/|measured: .*Android \d|GUESS — )/;
@@ -50,16 +50,9 @@ describe('the Android constants table', () => {
     expect(keyboard.showReportLagMs).toBeGreaterThan(0);
   });
 
-  it('registers its slides as theme motion roles, the timing offsets excepted, and nothing on import', () => {
-    expect(motionRole('androidKeyboard.showMs')).toBeUndefined();
-    registerAndroidKeyboardTable();
-    registerAndroidKeyboardTable();
-    expect(motionRole('androidKeyboard.showMs')?.kind).toBe('duration');
-    expect(motionRole('androidKeyboard.showCurve')?.kind).toBe('curve');
-    expect(motionRole('androidKeyboard.hideMs')?.kind).toBe('duration');
-    expect(motionRole('androidKeyboard.hideCurve')?.kind).toBe('curve');
-    expect(motionRole('androidKeyboard.showReportLagMs')).toBeUndefined();
-    expect(motionRole('androidKeyboard.hideAfterBlurMs')).toBeUndefined();
-    expect(motionRole('androidKeyboard.hideReportLagMs')).toBeUndefined();
+  it('is the keyboard’s own motion, which no theme retunes', () => {
+    for (const key of Object.keys(keyboard)) {
+      expect(motionRole(`androidKeyboard.${key}`), key).toBeUndefined();
+    }
   });
 });

@@ -2,11 +2,11 @@
 
 /**
  * @file keyboard.ts
- * @input registerMotionTable
+ * @input None
  * @output Exports `keyboard`: how the software keyboard moves on Android
  *   (Chrome with Gboard) as the page sees it: its slides up and down
  *   (durations and curves) and when they start relative to Chrome's report
- *   and to a blur; and registerAndroidKeyboardTable
+ *   and to a blur
  * @position The keyboard domain of the Android constants table
  *   (motion/android); read by keyboard/keyboardModel.ts for Chrome's profile.
  *   The UIKit table (motion/uikit) holds iOS's keyboard; this table holds
@@ -15,10 +15,9 @@
  * Chrome reports the keyboard once per slide, through the visual viewport,
  * just after the slide starts, never per frame. Content that rides the
  * keyboard plays these curves from the slide's start so it moves in step
- * with Gboard (spec:AST-099 FR8). The durations and curves are theme motion
- * roles (`androidKeyboard.showMs`, `androidKeyboard.showCurve`,
- * `androidKeyboard.hideMs`, `androidKeyboard.hideCurve`); the offsets are
- * timing facts, not motion, and stay out of the roles.
+ * with Gboard (spec:AST-099 FR8). These are Gboard's own motion, values no
+ * theme retunes: the system moves the keyboard on them whatever the theme
+ * says, so a retuned curve would leave the content out of step with it.
  *
  * Measured on the Android 15 emulator (golden image of Oct 25 2026, Chromium
  * 158, Gboard) by recording the screen at 540 × 1200 and reading Gboard's top
@@ -28,8 +27,6 @@
  *
  * SYNC: When modified, update /packages/core/src/keyboard/README.md
  */
-
-import {registerMotionTable} from '../roles';
 
 export const keyboard = {
   /**
@@ -101,14 +98,3 @@ export const keyboard = {
    */
   hideReportLagMs: 33,
 } as const;
-
-/**
- * Makes the slides' durations and curves motion roles a theme may retune
- * (motion/roles.ts). Nothing registers on import: the touch code that rides
- * the keyboard calls it once (it is idempotent).
- */
-export function registerAndroidKeyboardTable(): void {
-  registerMotionTable('androidKeyboard', keyboard, {
-    exclude: ['showReportLagMs', 'hideAfterBlurMs', 'hideReportLagMs'],
-  });
-}

@@ -3,7 +3,7 @@
 /**
  * @file rideKeyboard.ts
  * @input An animator, target values and a keyboard transition; the UIKit
- *   keyboard spring, the Android keyboard table, resolveMotion
+ *   keyboard's own spring (`keyboard.spring`), the Android keyboard table
  * @output Exports rideKeyboard: moves an element with the keyboard on the
  *   keyboard's own motion
  * @position Keyboard module (internal to core); what a guide subscriber
@@ -16,9 +16,9 @@
  * animated (a keyboard changing while up) lands at once. Under Reduce Motion
  * nothing travels (design:reduced-motion): the animator's default
  * cross-fades the element to its new place on a touch screen and moves it at
- * once otherwise. A theme retunes the motion through its roles
- * (`springs.keyboard`, `androidKeyboard.showMs` and `showCurve`,
- * `androidKeyboard.hideMs` and `hideCurve`).
+ * once otherwise. These are the keyboard's own motion, values no theme
+ * retunes: the system moves the keyboard on them whatever the theme says, so
+ * a retuned curve would leave the element out of step with it.
  *
  * SYNC: When modified, update /packages/core/src/keyboard/README.md
  */
@@ -32,8 +32,7 @@ import type {
 } from '../motion/animator';
 import {keyboard as androidKeyboard} from '../motion/android/keyboard';
 import {cubicBezier} from '../motion/bezier';
-import {resolveMotion} from '../motion/resolveMotion';
-import {springs} from '../motion/uikit/springs';
+import {keyboard} from '../motion/uikit/keyboard';
 import type {KeyboardTransition} from './keyboardModel';
 
 /**
@@ -57,14 +56,12 @@ export function rideKeyboard(
   // Under Reduce Motion the animator's default applies: no travel (DR1).
   const options = {at: transition.start};
   if (transition.curve == null) {
-    return animator.animate(to, {spring: springs.keyboard}, options);
+    return animator.animate(to, {spring: keyboard.spring}, options);
   }
-  const element = animator.element;
   const show = transition.kind === 'show';
-  const span =
-    resolveMotion(element, androidKeyboard, show ? 'showMs' : 'hideMs') / 1000;
+  const span = (show ? androidKeyboard.showMs : androidKeyboard.hideMs) / 1000;
   const ease = cubicBezier(
-    resolveMotion(element, androidKeyboard, show ? 'showCurve' : 'hideCurve'),
+    show ? androidKeyboard.showCurve : androidKeyboard.hideCurve,
   );
   const curves: Partial<Record<MotionProperty, MotionCurve>> = {};
   for (const [property, target] of Object.entries(to) as [

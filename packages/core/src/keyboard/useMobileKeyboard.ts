@@ -40,7 +40,9 @@
  * Tall sheet a keyboard-aware internal scroll range while leaving the sheet
  * itself stationary: it returns the room the keyboard takes at the end of the
  * body, which the sheet lays out through a functional style on its own body,
- * with no CSS custom property of its own (FR3). Shorter detents and other heights opt out entirely.
+ * with no CSS custom property of its own (FR3). It takes focus moves over
+ * only under a coarse primary pointer: a desktop browser keeps its own focus
+ * (spec:AST-017 FR59). Shorter detents and other heights opt out entirely.
  * Starting Tall-sheet travel or closing the sheet blurs the field and
  * dismisses the keyboard (FR5).
  *
@@ -601,6 +603,13 @@ export function useMobileKeyboard({
     let documentScrollAtKeyboard: {x: number; y: number} | null = null;
     // FR6: where this window measures the keyboard, never by user agent.
     const ownsFocusTransitions = isKeyboardMeasurable(window);
+    // Desktop Safari and Firefox measure too, but show no on-screen keyboard
+    // and keep the browser's own focus (spec:AST-017 FR59, DEC-25): a window
+    // switch must not park focus on the sheet. Read on every blur, so a
+    // tablet that docks a mouse follows its primary pointer.
+    const isTouchScreen = () =>
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia(TOUCH_QUERY).matches;
 
     // Lays the inset out before anything measures or scrolls the body: the
     // reveal scrolls into the room it adds in the same frame.
@@ -703,7 +712,7 @@ export function useMobileKeyboard({
     // restores focus to whatever opened the sheet.
     const claimFocusTransitions = () =>
       refuseFocusReveal(document, {
-        isActive: () => isFullyExpandedRef.current,
+        isActive: () => isFullyExpandedRef.current && isTouchScreen(),
         claim: destination => findTextEntryControl(destination, body),
         park: origin => {
           if (isOpenRef.current && findTextEntryControl(origin, body)) {

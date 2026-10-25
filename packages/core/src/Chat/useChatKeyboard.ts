@@ -6,8 +6,8 @@
  * @file useChatKeyboard.ts
  * @input React refs, the keyboard module (useKeyboardHeight,
  *   claimTapFocus, rideKeyboard), the keyboard layout guide, the animator,
- *   the keyboard's motion tables (registerSpringsTable,
- *   registerAndroidKeyboardTable)
+ *   the keyboard's own motion (`keyboard.spring` on iOS, Gboard's slides in
+ *   Chrome on Android)
  * @output Exports useChatKeyboard: the lift ChatLayout lays its dock and
  *   keyboard spacer out with, and the refs it puts on its dock, message area
  *   and composer region so the composer rides the software keyboard
@@ -25,8 +25,8 @@
  *   through functional styles, so the layout is right with no animation.
  * - The ride is polish on top, timed by the keyboard layout guide: the dock
  *   moves on the compositor (`translate`) on the keyboard's own motion
- *   (`springs.keyboard` on iOS, Gboard's slides in Chrome on Android,
- *   spec:AST-099 FR8) from the keyboard's own start, so it is where the keyboard is from its first
+ *   (`keyboard.spring` on iOS, Gboard's slides in Chrome on Android,
+ *   spec:AST-099 FR8; never a theme's) from the keyboard's own start, so it is where the keyboard is from its first
  *   frame, and a transcript at its newest message rides with it. The layout
  *   catches up once the ride ends, with the translate handed back in the
  *   same frame. Under Reduce Motion nothing travels (design:reduced-motion):
@@ -46,8 +46,6 @@
 
 import {useRef, useState, useSyncExternalStore, type RefObject} from 'react';
 import {useAnimator} from '../motion/useAnimator';
-import {registerAndroidKeyboardTable} from '../motion/android/keyboard';
-import {registerSpringsTable} from '../motion/uikit/springs';
 import {
   bringsUpKeyboard,
   claimTapFocus,
@@ -149,11 +147,29 @@ export function editableToClaim(target: unknown): HTMLElement | null {
   return active === editable || editable.contains(active) ? null : editable;
 }
 
-/** Focuses without Safari's reveal and puts the caret under the finger. */
-function focusAtPoint(editable: HTMLElement, x: number, y: number) {
+/**
+ * The collapsed caret at (x, y): the standard `caretPositionFromPoint`
+ * (Firefox has only this one), or WebKit's `caretRangeFromPoint`.
+ */
+function caretRangeAt(doc: Document, x: number, y: number): Range | null {
+  const position = doc.caretPositionFromPoint?.(x, y);
+  if (position != null) {
+    const range = doc.createRange();
+    range.setStart(position.offsetNode, position.offset);
+    range.collapse(true);
+    return range;
+  }
+  return doc.caretRangeFromPoint?.(x, y) ?? null;
+}
+
+/**
+ * Focuses without Safari's reveal and puts the caret under the finger.
+ * Exported for its tests.
+ */
+export function focusAtPoint(editable: HTMLElement, x: number, y: number) {
   editable.focus({preventScroll: true});
   const doc = editable.ownerDocument;
-  const range = doc.caretRangeFromPoint?.(x, y);
+  const range = caretRangeAt(doc, x, y);
   if (
     range != null &&
     editable.isContentEditable &&
@@ -255,11 +271,10 @@ export function useChatKeyboard({
     };
     commitRef.current = commit;
 
-    // The ride plays `springs.keyboard` (iOS) or Gboard's slides (Android):
-    // their tables register (once) before the first ride, so a theme's
-    // keyboard motion applies.
-    registerSpringsTable();
-    registerAndroidKeyboardTable();
+    // The ride plays the keyboard's own motion (UIKit's spring, or Gboard's
+    // slides in Chrome), values and not theme roles: the system moves the
+    // keyboard on them whatever the theme says, so a retuned curve would
+    // leave the composer out of step with it.
     const follow = (transition: KeyboardTransition) => {
       // The ride: the dock goes where the guide says the keyboard will be,
       // from the keyboard's start, relative to the layout it rests in now.

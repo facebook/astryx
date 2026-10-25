@@ -12,10 +12,6 @@
 import type {MotionRoleKind} from './roles';
 
 export const MOTION_ROLE_KINDS: Readonly<Record<string, MotionRoleKind>> = {
-  'androidKeyboard.hideCurve': 'curve',
-  'androidKeyboard.hideMs': 'duration',
-  'androidKeyboard.showCurve': 'curve',
-  'androidKeyboard.showMs': 'duration',
   'navigation.transitionMs': 'duration',
   'scroll.bounce': 'spring',
   'scroll.paging.snap': 'spring',
@@ -28,7 +24,6 @@ export const MOTION_ROLE_KINDS: Readonly<Record<string, MotionRoleKind>> = {
   'springs.contextMenuDismiss': 'spring',
   'springs.contextMenuLift': 'spring',
   'springs.interactive': 'spring',
-  'springs.keyboard': 'spring',
   'springs.menuClose': 'spring',
   'springs.menuOpen': 'spring',
   'springs.menuReducedMotion': 'spring',
