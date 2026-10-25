@@ -589,7 +589,7 @@ describe('useMenuPress — the trigger', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 
-  describe('a pointer that went down elsewhere (continueGesture)', () => {
+  describe('a pointer that went down elsewhere is the opening press (continueGesture, module FR11)', () => {
     /** Hand pointer 7 to the menu, as a context menu's long press does. */
     const continueAt = (
       press: {current: DropdownMenuPressReturn | null},
