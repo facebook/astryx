@@ -200,6 +200,16 @@ const overlaysContent = async (page: Page) =>
         .virtualKeyboard.overlaysContent,
   );
 
+/** The field's computed `touch-action` (the gesture host writes it). */
+const touchActionOf = async (page: Page) =>
+  page
+    .locator('[data-search-field-start]')
+    .evaluate(element =>
+      element.parentElement == null
+        ? null
+        : getComputedStyle(element.parentElement).touchAction,
+    );
+
 /** How many animations the root itself runs. */
 const rootAnimations = async (page: Page) =>
   root(page).evaluate(element => element.getAnimations().length);
@@ -511,6 +521,17 @@ test('a tap focuses the field without Safari’s reveal', async ({page}) => {
   // view (Mobile Safari would pan the page instead of letting the bar ride).
   expect(calls).toEqual([{role: 'searchbox', options: {preventScroll: true}}]);
   expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore);
+});
+
+test('the tap claim attaches only where it claims taps', async ({page}) => {
+  // Where the keyboard covers the page (Mobile Safari), the bottom field
+  // claims a tap, so the gesture host owns its touch-action.
+  await openBottom(page);
+  expect(await touchActionOf(page)).not.toBe('auto');
+  // A stacked field never claims a tap: it keeps the browser's own.
+  await openStory(page, storybook(), 'lab-searchfield--default');
+  await expect(page.getByRole('searchbox').first()).toBeVisible();
+  expect(await touchActionOf(page)).toBe('auto');
 });
 
 test('a tap into an existing query puts the caret where the finger lifted', async ({
@@ -889,6 +910,8 @@ test.describe('where the browser reports the keyboard itself (Chrome on Android)
   }) => {
     const {driver, field} = await openBottom(page, {virtualKeyboardApi: true});
     expect(await overlaysContent(page)).toBe(false);
+    // No tap claim attached: the field keeps the browser's touch-action.
+    expect(await touchActionOf(page)).toBe('auto');
     // The tap stays the browser's: only Chrome's own tap brings its keyboard
     // up, so no focus comes from script.
     await page.evaluate(() => {

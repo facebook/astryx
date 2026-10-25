@@ -483,11 +483,14 @@ export function useSearchFieldMotion({
   // the keyboard up (a focus from script inside the tap does not, measured
   // on the Android emulator), and as the keyboard overlays the page from
   // the focus on, that focus pans nothing, so the tap stays the browser's.
-  const claimsTapRef = useRef(false);
+  // The recognizer attaches only where it claims (react-component-runtime
+  // INV5): any other field keeps the browser's own touch-action and tap.
+  const [claimsTap, setClaimsTap] = useState(false);
   useLayoutEffect(() => {
     const win = rootAnimator.animator.element?.ownerDocument.defaultView;
-    claimsTapRef.current = !isStacked && win != null && keyboardCoversPage(win);
+    setClaimsTap(!isStacked && win != null && keyboardCoversPage(win));
   }, [isStacked, rootAnimator]);
+  const noClaimTarget = useRef<HTMLElement | null>(null);
   // A tap held a while still gets its mouse events a few ms after its
   // cancelled touchend, aimed at whatever is under the finger by then (the
   // field has moved): the claimed tap swallows them, from its touchend until
@@ -529,7 +532,7 @@ export function useSearchFieldMotion({
   }, []);
   useEffect(() => () => disarmRef.current?.(), []);
   useGestureRecognizer(
-    fieldRef,
+    claimsTap ? fieldRef : noClaimTarget,
     () =>
       new TapGestureRecognizer({
         name: 'search-field-bottom-focus',
@@ -538,7 +541,6 @@ export function useSearchFieldMotion({
           const input = inputRef.current;
           const target = touch.target as Element | null;
           return (
-            claimsTapRef.current &&
             input != null &&
             input.ownerDocument.activeElement !== input &&
             !(target?.closest?.('button') != null)
