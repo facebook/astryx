@@ -75,8 +75,12 @@ import {
   type MenuPressPointerType,
 } from './menuPressGesture';
 import {createNativeScrollProbe} from '../gestures/nativeScroll';
-import {UIKIT_GESTURES} from '../motion/uikit/gestures';
-import {scroll} from '../motion/uikit/scroll';
+import {
+  DELAYS_CONTENT_TOUCHES_MS,
+  MENU_PRESS_HOLD_OPEN_SLOP_PX,
+} from './menuPressValues';
+import {TOUCH_QUERY} from '../utils/touchPresentation';
+import {useMediaQuery} from './useMediaQuery';
 import {useLongPress, type UseLongPressHandlers} from './useLongPress';
 import {edgeAutoscroll} from '../utils/edgeAutoscroll';
 import {focusForLastInput} from '../utils/focusReturn';
@@ -242,7 +246,10 @@ export interface UseMenuPressOptions {
   hitTest?: (x: number, y: number) => Element | null;
   /**
    * How long a finger rests on the trigger before the menu opens under it.
-   * @default 500
+   * Unset, the wait follows `spec:AST-094` FR29 where the primary pointer is
+   * coarse (none in a fixed bar, 150 ms in a scroll view, the opening finger
+   * picking after UIMenu's handoff) and is 500 ms where it is fine. Set, it
+   * is that wait everywhere, as released (`spec:AST-094` FR25).
    */
   longPressDelayMs?: number;
   /** Whether the model is live. @default true */
@@ -348,9 +355,9 @@ function handoffPosition(
 
 /**
  * Whether a control is inside a scroll view (`spec:AST-094` FR11): it sits in
- * a scrollable container, or in scrolling page content with no fixed
- * ancestor. A control in a fixed bar (a top bar, a tab bar, a toolbar, fixed
- * or stuck) is not.
+ * a scrollable container (under a sticky ancestor too), or in scrolling page
+ * content with no fixed or sticky ancestor. A control in a fixed bar (a top
+ * bar, a tab bar, a toolbar, fixed or stuck to the page) is not.
  */
 function isInScrollView(control: Element): boolean {
   if (!createNativeScrollProbe(control).isInsideScroller) {
@@ -359,6 +366,10 @@ function isInScrollView(control: Element): boolean {
   const doc = control.ownerDocument;
   const view = doc.defaultView;
   const root = doc.scrollingElement ?? doc.documentElement;
+  // A sticky ancestor sticks within the nearest scroller: inside a
+  // scrollable container it is still in a scroll view; stuck to the page it
+  // is a bar.
+  let isStuck = false;
   for (
     let node = control.parentElement;
     node != null && node !== root && node !== doc.body;
@@ -374,11 +385,14 @@ function isInScrollView(control: Element): boolean {
     if (scrolls) {
       return true;
     }
-    if (style?.position === 'fixed' || style?.position === 'sticky') {
+    if (style?.position === 'fixed') {
       return false;
     }
+    if (style?.position === 'sticky') {
+      isStuck = true;
+    }
   }
-  return true;
+  return !isStuck;
 }
 
 function isRowFocusable(row: HTMLElement): boolean {
@@ -462,7 +476,17 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
   // `touchModel` does not reach the model.
   const {touchModel: _touchModel, ...publicOptions} =
     options as DropdownMenuPressOptions;
-  const press = useDropdownMenuPress(publicOptions);
+  // An unset delay follows FR29 where the primary pointer is coarse
+  // (spec:AST-094 FR25); a set one, or a fine primary pointer, keeps the
+  // released wait.
+  const isCoarsePrimary = useMediaQuery(TOUCH_QUERY, false);
+  const press = useDropdownMenuPress({
+    ...publicOptions,
+    touchModel:
+      publicOptions.longPressDelayMs === undefined && isCoarsePrimary
+        ? 'uikit'
+        : 'pointer',
+  });
   // Neither is the continuation: the public return is the public contract.
   return useMemo(() => {
     const {continueGesture: _continueGesture, ...publicPress} = press;
@@ -952,10 +976,8 @@ export function useDropdownMenuPress(
   });
   const scrollerHold = useLongPress({
     onLongPress: fireLongPress,
-    delayMs: isUikit ? scroll.delaysContentTouchesMs : pointerHoldMs,
-    ...(isUikit
-      ? {moveCancelPx: UIKIT_GESTURES.menuPress.holdOpenSlop.value}
-      : {}),
+    delayMs: isUikit ? DELAYS_CONTENT_TOUCHES_MS : pointerHoldMs,
+    ...(isUikit ? {moveCancelPx: MENU_PRESS_HOLD_OPEN_SLOP_PX} : {}),
   });
   const holdDetectorsRef = useRef({plain: plainHold, scroller: scrollerHold});
   holdDetectorsRef.current = {plain: plainHold, scroller: scrollerHold};

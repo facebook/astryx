@@ -864,6 +864,49 @@ describe('useMenuPress — the trigger', () => {
     }
   });
 
+  it('a trigger under a sticky ancestor inside a scroll view waits for the content-touch delay; stuck to the page it opens as the finger presses', () => {
+    vi.useFakeTimers();
+    const root = document.documentElement;
+    Object.defineProperty(root, 'scrollHeight', {
+      configurable: true,
+      value: 4000,
+    });
+    Object.defineProperty(root, 'clientHeight', {
+      configurable: true,
+      value: 800,
+    });
+    try {
+      const opensAt = (inScrollView: boolean) => {
+        const onOpenChange = vi.fn();
+        const sticky = (
+          <div style={{position: 'sticky', top: 0}}>
+            <Harness touchModel="uikit" onOpenChange={onOpenChange} />
+          </div>
+        );
+        const {unmount} = render(
+          inScrollView ? <ScrollView>{sticky}</ScrollView> : sticky,
+        );
+        const trigger = screen.getByRole('button', {name: 'Open'});
+        fireEvent.pointerDown(trigger, {...touch(), clientX: 0, clientY: 0});
+        let elapsed = 0;
+        while (onOpenChange.mock.calls.length === 0 && elapsed < 1000) {
+          act(() => {
+            vi.advanceTimersByTime(10);
+          });
+          elapsed += 10;
+        }
+        fireEvent.pointerUp(trigger, {...touch(), clientX: 0, clientY: 0});
+        unmount();
+        return elapsed;
+      };
+      expect(opensAt(true)).toBe(scroll.delaysContentTouchesMs);
+      expect(opensAt(false)).toBe(0);
+    } finally {
+      delete (root as unknown as Record<string, unknown>).scrollHeight;
+      delete (root as unknown as Record<string, unknown>).clientHeight;
+    }
+  });
+
   it('a finger that travels on the trigger is a scroll, not a held press', () => {
     vi.useFakeTimers();
     const onOpenChange = vi.fn();
@@ -957,11 +1000,13 @@ describe('useMenuPress — edge autoscroll', () => {
   });
 });
 
-describe('useMenuPress — the public hook has no touch model', () => {
+describe('useMenuPress — the public hook takes no touch model option', () => {
   function PublicHarness({
     onOpenChange,
+    longPressDelayMs,
   }: {
     onOpenChange: (open: boolean) => void;
+    longPressDelayMs?: number;
   }) {
     const menuRef = useRef<HTMLDivElement>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
@@ -973,9 +1018,10 @@ describe('useMenuPress — the public hook has no touch model', () => {
         onOpenChange(true);
         return true;
       },
+      longPressDelayMs,
       // An untyped caller passing DropdownMenu's own option gets nothing
       // from it: the touch model is not part of the public hook.
-      ...({touchModel: 'uikit'} as object),
+      ...({touchModel: 'pointer'} as object),
     });
     return (
       <>
@@ -997,6 +1043,41 @@ describe('useMenuPress — the public hook has no touch model', () => {
     render(<Probe />);
     expect(seen.current).not.toBeNull();
     expect('continueGesture' in (seen.current as object)).toBe(false);
+  });
+
+  it('with no delay set, a finger opens the menu as it presses where the primary pointer is coarse (spec:AST-094 FR25, FR29)', () => {
+    emulateTouch({ios: false});
+    const onOpenChange = vi.fn();
+    render(<PublicHarness onOpenChange={onOpenChange} />);
+    fireEvent.pointerDown(screen.getByRole('button', {name: 'Open'}), {
+      pointerType: 'touch',
+      pointerId: 1,
+      button: 0,
+      clientX: 0,
+      clientY: 0,
+    });
+    expect(onOpenChange).toHaveBeenCalledWith(true);
+  });
+
+  it('with a delay set, a finger waits for it on a touch screen too, as released', () => {
+    vi.useFakeTimers();
+    emulateTouch({ios: false});
+    const onOpenChange = vi.fn();
+    render(
+      <PublicHarness onOpenChange={onOpenChange} longPressDelayMs={500} />,
+    );
+    fireEvent.pointerDown(screen.getByRole('button', {name: 'Open'}), {
+      pointerType: 'touch',
+      pointerId: 1,
+      button: 0,
+      clientX: 0,
+      clientY: 0,
+    });
+    expect(onOpenChange).not.toHaveBeenCalled();
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(onOpenChange).toHaveBeenCalledWith(true);
   });
 
   it('a finger press on the trigger does not open the menu by itself', () => {
