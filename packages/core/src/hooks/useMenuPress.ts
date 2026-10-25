@@ -72,7 +72,7 @@ import {
   type MenuPressPointerType,
 } from './menuPressGesture';
 import {createNativeScrollProbe} from '../gestures/nativeScroll';
-import {menu} from '../motion/uikit/menu';
+import {UIKIT_GESTURES} from '../motion/uikit/gestures';
 import {scroll} from '../motion/uikit/scroll';
 import {useLongPress, type UseLongPressHandlers} from './useLongPress';
 import {edgeAutoscroll} from '../utils/edgeAutoscroll';
@@ -897,7 +897,9 @@ export function useDropdownMenuPress(
   const scrollerHold = useLongPress({
     onLongPress: fireLongPress,
     delayMs: isUikit ? scroll.delaysContentTouchesMs : pointerHoldMs,
-    ...(isUikit ? {moveCancelPx: menu.holdOpenSlopPx} : {}),
+    ...(isUikit
+      ? {moveCancelPx: UIKIT_GESTURES.menuPress.holdOpenSlop.value}
+      : {}),
   });
   const holdDetectorsRef = useRef({plain: plainHold, scroller: scrollerHold});
   holdDetectorsRef.current = {plain: plainHold, scroller: scrollerHold};

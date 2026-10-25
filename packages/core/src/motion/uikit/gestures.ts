@@ -286,6 +286,39 @@ export const UIKIT_GESTURES = {
         'M-G19: Safari page, hardest HID flick: time from the lift to the last scroll event.',
     },
   },
+  /**
+   * UIMenu presented by a button whose menu is its primary action: how far a
+   * finger on the button may drift and still open the menu, and how far the
+   * finger that opened it travels before it picks (`spec:AST-094` FR2 and
+   * FR29). Shared: the menu press model reads them for every menu surface.
+   */
+  menuPress: {
+    /**
+     * How far the finger may move on a button inside a scroll view during the
+     * content-touch delay and still open the menu (`spec:AST-094` FR2's drift
+     * allowance).
+     */
+    holdOpenSlop: {
+      value: 13,
+      unit: 'px',
+      guess:
+        'Between the 12 pt that opened and the 14 pt that did not: UIKit lab, iOS 26.2 simulator, iPhone 17 Pro, gesture-state hook, Oct 23 2026 (M-MN1): on a button outside any scroll view a 12 pt move within 80 ms still opened the menu at about 151 ms; moves of 14, 17, 20 and 25 pt opened nothing; the recognizer reads an allowableMovement of 10.',
+      measure:
+        'M-G20: UIKit lab, a pull-down button inside a UIScrollView: HID presses moved 12.5, 13 and 13.5 pt within the content-touch delay; the largest move that still opens the menu.',
+    },
+    /**
+     * After the menu opens under a still-held finger, the finger travels this
+     * far (a straight-line distance, counted from the first sample the menu
+     * receives after it opened) before it starts picking: until then nothing
+     * is lit and lifting acts on nothing.
+     */
+    handoff: {
+      value: 10,
+      unit: 'px',
+      source:
+        'measured: UIKit lab (injected host app), iOS 26.2 simulator, iPhone 17 Pro, gesture-state hook, steps 150 ms apart, Oct 23 2026 (M-MN2): with the menu open under a held finger and a 1 pt first step, moves of (0, 9) and (7, 7) picked nothing; (0, 10), (0, 11), (10, 0), (9, 9) and (10, 10) picked; a 9 pt step followed by 3 pt more picked nothing',
+    },
+  },
   scroll: {
     /**
      * Travel past the point where a native scroll ran out of content before

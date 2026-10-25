@@ -38,7 +38,7 @@ import {COMPACT_TOUCH_PRESENTATION_QUERY} from '../hooks/useAdaptivePresentation
 import {MENU_PRESS_LONG_PRESS_MS} from '../hooks/useMenuPress';
 import {MENU_PRESS_SETTLE_MS} from '../hooks/menuPressGesture';
 import {COMPACT_QUERY, TOUCH_QUERY} from '../utils/touchPresentation';
-import {menu as uikitMenu} from '../motion/uikit/menu';
+import {UIKIT_GESTURES} from '../motion/uikit/gestures';
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
 beforeEach(() => {
@@ -2883,13 +2883,13 @@ describe('DropdownMenu press model', () => {
       fireEvent.pointerMove(item('Delete'), {
         ...touch,
         clientX: 0,
-        clientY: 3 + uikitMenu.scrubHandoffPx,
+        clientY: 3 + UIKIT_GESTURES.menuPress.handoff.value,
       });
       expect(item('Delete')).toHaveFocus();
       fireEvent.pointerUp(item('Delete'), {
         ...touch,
         clientX: 0,
-        clientY: 3 + uikitMenu.scrubHandoffPx,
+        clientY: 3 + UIKIT_GESTURES.menuPress.handoff.value,
       });
       expect(onPick).toHaveBeenCalledWith('Delete');
       // The click the browser aims at the trigger for this gesture is spent.

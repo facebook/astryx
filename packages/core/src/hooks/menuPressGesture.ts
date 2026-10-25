@@ -41,7 +41,7 @@
  * - /packages/core/src/hooks/useMenuPress.ts
  */
 
-import {menu} from '../motion/uikit/menu';
+import {UIKIT_GESTURES} from '../motion/uikit/gestures';
 
 /** How long a MOUSE's opening press must last before its release may act. */
 export const MENU_PRESS_SETTLE_MS = 300;
@@ -50,7 +50,8 @@ export const MENU_PRESS_SETTLE_MS = 300;
  * How far a finger that opened the menu travels, from the first sample the
  * menu sees, before it starts picking (UIMenu's scrub handoff).
  */
-export const MENU_PRESS_HANDOFF_PX: number = menu.scrubHandoffPx;
+export const MENU_PRESS_HANDOFF_PX: number =
+  UIKIT_GESTURES.menuPress.handoff.value;
 
 export type MenuPressPointerType = 'mouse' | 'touch' | 'pen';
 

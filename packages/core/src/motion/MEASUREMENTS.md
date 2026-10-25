@@ -98,6 +98,7 @@ of a page scroll, so many of these can be read off Safari itself.
 | M-G17 | `UIKIT_GESTURES.click.strayClickWindow`         | Not a parity value: confirm in Safari and Chromium that the click follows touchend within one frame.                                                                                                 | C      |
 | M-G18 | `HAPTIC_VIBRATION_PATTERNS` (every kind)        | On an Android device, compare against the platform HapticFeedbackConstants for the same moments.                                                                                                     | C      |
 | M-G19 | `UIKIT_GESTURES.press.momentumMemory`           | Safari page, hardest HID flick: time from the lift to the last scroll event.                                                                                                                         | C      |
+| M-G20 | `UIKIT_GESTURES.menuPress.holdOpenSlop`         | UIKit lab, a pull-down button inside a UIScrollView: HID presses moved 12.5, 13 and 13.5 pt within the content-touch delay; the largest move that still opens the menu.                              | C      |
 
 Done (UIKit lab, iOS 26.2 simulator, Oct 23 2026: the recognizers' ivars read
 in process, each confirmed with HID touches and the state log; values in

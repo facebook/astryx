@@ -23,7 +23,7 @@ import {
   type UseMenuPressReturn,
 } from './useMenuPress';
 import {MENU_PRESS_SETTLE_MS} from './menuPressGesture';
-import {menu} from '../motion/uikit/menu';
+import {UIKIT_GESTURES} from '../motion/uikit/gestures';
 import {scroll} from '../motion/uikit/scroll';
 
 /**
@@ -662,6 +662,31 @@ describe('useMenuPress — the trigger', () => {
     expect(onOpenChange).toHaveBeenLastCalledWith(true);
   });
 
+  it('inside a scroll view a tap that ends before the content-touch delay opens the menu at its lift', () => {
+    // spec:AST-094 FR29: "or at the lift of a tap that ends sooner".
+    vi.useFakeTimers();
+    const onOpenChange = vi.fn();
+    render(
+      <ScrollView>
+        <Harness touchModel="uikit" onOpenChange={onOpenChange} />
+      </ScrollView>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Open'});
+    fireEvent.pointerDown(trigger, {...touch(), clientX: 0, clientY: 0});
+    act(() => {
+      vi.advanceTimersByTime(scroll.delaysContentTouchesMs - 60);
+    });
+    fireEvent.pointerUp(trigger, {...touch(), clientX: 0, clientY: 0});
+    expect(onOpenChange).not.toHaveBeenCalled();
+    fireEvent.click(trigger, {detail: 1});
+    expect(onOpenChange).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+    act(() => {
+      vi.advanceTimersByTime(scroll.delaysContentTouchesMs);
+    });
+    expect(onOpenChange).toHaveBeenCalledTimes(1);
+  });
+
   it('inside a scroll view a finger that drifts up to the allowance still opens; farther, the scroll takes the touch', () => {
     vi.useFakeTimers();
     const opened = (dy: number) => {
@@ -683,7 +708,7 @@ describe('useMenuPress — the trigger', () => {
       return result;
     };
     // UIKit lab, iOS 26.2: 12 pt opened, 14 pt did not.
-    expect(menu.holdOpenSlopPx).toBe(13);
+    expect(UIKIT_GESTURES.menuPress.holdOpenSlop.value).toBe(13);
     expect(opened(12)).toBe(true);
     expect(opened(14)).toBe(false);
   });
