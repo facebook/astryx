@@ -2,7 +2,7 @@
 
 /**
  * @file pageControlModel.ts
- * @input The UIKit page-control table (`uikit.pageControl`)
+ * @input The UIKit page-control table (`pageControl`, motion/uikit)
  * @output Pure page-control math: the control's size for a page count, the
  *   offset that keeps the current indicator in view when the indicators
  *   outgrow the width cap, and the step a tap makes
@@ -11,9 +11,9 @@
  * SYNC: When modified, update pageControlModel.test.ts and PageControl.tsx.
  */
 
-import {uikit} from '@astryxdesign/core/motion/experimental';
+import {pageControl} from '@astryxdesign/core/motion/uikit';
 
-const PC = uikit.pageControl;
+const PC = pageControl;
 
 export interface PageControlLayout {
   /** The control's width, px. */

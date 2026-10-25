@@ -5,8 +5,8 @@
 /**
  * @file PageControl.tsx
  * @input React, StyleX, core's theme tokens and translator, the gesture
- *   system's tap recognizer (`@astryxdesign/core/gestures/experimental`), the
- *   UIKit page-control table (`@astryxdesign/core/motion/experimental`),
+ *   system's tap recognizer (`@astryxdesign/core/gestures`), the
+ *   UIKit page-control table (`@astryxdesign/core/motion/uikit`),
  *   pageControlModel.ts for the math
  * @output Exports PageControl: a row of page indicators, the current one
  *   highlighted, that pages one step per tap like UIPageControl
@@ -64,11 +64,11 @@ import {colorVars, focusVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {
   TapGestureRecognizer,
   useGestureRecognizer,
-} from '@astryxdesign/core/gestures/experimental';
-import {uikit} from '@astryxdesign/core/motion/experimental';
+} from '@astryxdesign/core/gestures';
+import {pageControl} from '@astryxdesign/core/motion/uikit';
 import {pageControlLayout, tapTarget, windowOffset} from './pageControlModel';
 
-const PC = uikit.pageControl;
+const PC = pageControl;
 // Each indicator is a whole-pixel box scaled down to UIKit's 9.67 px. Chromium
 // snaps a box's edges to whole CSS pixels when it paints, so a 9.67 px box
 // paints 9 or 10 px wide depending on where it falls: every few indicators an
