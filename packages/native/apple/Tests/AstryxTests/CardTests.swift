@@ -132,3 +132,18 @@ import Testing
     #expect(hasBorder == (variant == .default), "\(variant.rawValue)")
   }
 }
+
+@MainActor
+@Test func anInsetRingDrawsInsideTheDefaultCardsBorder() {
+  // As CSS draws an inset shadow inside an element's border: the border on the
+  // edge, the ring just inside it.
+  var theme = Theme.default
+  theme.light.color.border = Color(astryxRGBA: 0xFF00FFFF)
+  theme.light.size.borderWidth = 1
+  theme.light.shadow.low = [ShadowLayer(x: 0, y: 0, blur: 0, spread: 1, isInset: true, color: Color(astryxRGBA: 0x00FFFFFF))]
+  let card = Astryx.Card(elevation: .low) { Color.black.frame(width: 40, height: 40) }.frame(width: 80)
+  let pixels = Pixels(card, theme: theme)
+  let x = pixels.width / 2
+  #expect(close(pixels.at(x, 0), [255, 0, 255, 255], within: 8))
+  #expect(close(pixels.at(x, 1), [0, 255, 255, 255], within: 8))
+}

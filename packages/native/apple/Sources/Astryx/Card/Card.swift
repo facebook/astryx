@@ -41,7 +41,10 @@ public struct Card<Content: View>: View {
           shape.strokeBorder(astryx.tokens.color.border, lineWidth: astryx.tokens.size.borderWidth)
         }
       }
-      .astryxShadow(Self.shadow(props.elevation ?? .none, astryx.tokens.shadow), in: shape)
+      .astryxShadow(
+        Self.shadow(props.elevation ?? .none, astryx.tokens.shadow), in: shape,
+        borderWidth: variant == .default ? astryx.tokens.size.borderWidth : 0
+      )
       .astryxBase(props.base)
   }
 
