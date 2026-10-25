@@ -378,7 +378,7 @@ export interface ComplexSelectorProps<Value> extends Omit<
   isOptional?: boolean;
   /** Marks the field required. */
   isRequired?: boolean;
-  /** Disables the selector. */
+  /** Blocks opening and value commits, including from an already-open popup. */
   isDisabled?: boolean;
   /** Shows loading state on the trigger. */
   isLoading?: boolean;
@@ -689,6 +689,11 @@ export function ComplexSelector<Value>({
 
   const commitValue = useCallback(
     (nextValue: Value) => {
+      // Caller-owned popup controls may remain mounted after disablement.
+      // Guard the supplied commit boundary, not just the trigger.
+      if (isDisabled) {
+        return;
+      }
       onChange?.(nextValue);
       if (changeAction) {
         startTransition(async () => {
@@ -697,7 +702,7 @@ export function ComplexSelector<Value>({
         });
       }
     },
-    [changeAction, onChange, setOptimisticValue, startTransition],
+    [isDisabled, changeAction, onChange, setOptimisticValue, startTransition],
   );
 
   const triggerContent = triggerLabel ?? placeholder;

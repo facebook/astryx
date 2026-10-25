@@ -213,6 +213,39 @@ describe('ComplexSelector', () => {
     });
   });
 
+  it('blocks commits when disabled while open and allows them after re-enabling', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const changeAction = vi.fn();
+    const renderSelector = (isDisabled: boolean) => (
+      <ComplexSelector
+        label="Fruit"
+        value="Apple"
+        isDisabled={isDisabled}
+        onChange={onChange}
+        changeAction={changeAction}>
+        {(_value, commit) => (
+          <button type="button" onClick={() => commit('Banana')}>
+            Select Banana
+          </button>
+        )}
+      </ComplexSelector>
+    );
+    const {rerender} = render(renderSelector(false));
+    await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+    const choice = screen.getByRole('button', {name: 'Select Banana', ...h});
+
+    rerender(renderSelector(true));
+    await user.click(choice);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(changeAction).not.toHaveBeenCalled();
+
+    rerender(renderSelector(false));
+    await user.click(choice);
+    expect(onChange).toHaveBeenCalledExactlyOnceWith('Banana');
+    expect(changeAction).toHaveBeenCalledExactlyOnceWith('Banana');
+  });
+
   it('passes a close helper to composed content', async () => {
     const user = userEvent.setup();
 
