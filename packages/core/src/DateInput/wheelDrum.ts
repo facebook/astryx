@@ -30,12 +30,7 @@
  */
 
 import {picker} from '../motion/uikit/picker';
-import {
-  scaleFor,
-  wrapIndex,
-  type WheelCurve,
-  type WheelLayout,
-} from './wheelPhysics';
+import {scaleFor, type WheelCurve, type WheelLayout} from './wheelPhysics';
 
 /** A row turned this far is edge-on or beyond: hidden by its back face. */
 export const PARKED_ANGLE = (95 * Math.PI) / 180;
@@ -73,21 +68,18 @@ export function drumGeometry(rowHeight: number): DrumGeometry {
 }
 
 /**
- * Row `index`'s distance below the band's centre (px) at `offset`. A looping
- * wheel shows each row once, at the copy nearest the band.
+ * The distance (px) below the band's centre, at `offset`, of the row drawn at
+ * `position` along the wheel: its option index, or on a looping wheel any
+ * integer. A looping wheel draws one row per position, so every copy of an
+ * option has its own and a short list repeats around the cylinder, as
+ * UIPickerView's looping table does.
  */
 export function rowDistance(
-  index: number,
+  position: number,
   offset: number,
   layout: WheelLayout,
 ): number {
-  const distance = index * layout.rowHeight - offset;
-  if (!layout.looping) {
-    return distance;
-  }
-  const cycle = layout.rowCount * layout.rowHeight;
-  // Fold into [−cycle / 2, cycle / 2).
-  return distance - cycle * Math.floor(distance / cycle + 0.5);
+  return position * layout.rowHeight - offset;
 }
 
 /** The angle (radians, positive below the band) of a row `distance` away. */
@@ -122,9 +114,10 @@ export function stripTranslation(offset: number): number {
 }
 
 /**
- * The row whose cylinder position is under a point `dy` px below the band's
- * centre, or null past the drum's top or bottom. Orthographic: the
- * perspective moves rows by under a pixel along y.
+ * The position of the row under a point `dy` px below the band's centre (an
+ * option index, or on a looping wheel the copy's own position), or null past
+ * the drum's top or bottom. Orthographic: the perspective moves rows by under
+ * a pixel along y.
  */
 export function rowAtPoint(
   dy: number,
@@ -136,11 +129,11 @@ export function rowAtPoint(
     return null;
   }
   const distance = geometry.radius * Math.asin(dy / geometry.radius);
-  const index = Math.round((offset + distance) / layout.rowHeight);
+  const position = Math.round((offset + distance) / layout.rowHeight);
   if (layout.looping) {
-    return wrapIndex(index, layout.rowCount);
+    return position;
   }
-  return index >= 0 && index < layout.rowCount ? index : null;
+  return position >= 0 && position < layout.rowCount ? position : null;
 }
 
 /** One baked sample of a curve. */
@@ -201,14 +194,12 @@ export interface RowKeyframe {
 }
 
 /**
- * Row `index`'s keyframes along `samples` (a baked curve lasting `duration`
- * seconds), or null when the row stays parked out of sight throughout.
- * Runs of identical angles collapse to their ends; a looping row that jumps
- * to its other copy while parked gets two keyframes at the same progress, so
- * it never sweeps across the front on the way.
+ * The keyframes of the row at `position` along `samples` (a baked curve
+ * lasting `duration` seconds), or null when the row stays parked out of sight
+ * throughout. Runs of identical angles collapse to their ends.
  */
 export function rowKeyframes(
-  index: number,
+  position: number,
   samples: ReadonlyArray<CurveSample>,
   duration: number,
   layout: WheelLayout,
@@ -221,7 +212,10 @@ export function rowKeyframes(
   const progress = (t: number) =>
     duration > 0 ? Math.min(1, t / duration) : 1;
   for (const sample of samples) {
-    const angle = rowAngle(rowDistance(index, sample.value, layout), geometry);
+    const angle = rowAngle(
+      rowDistance(position, sample.value, layout),
+      geometry,
+    );
     const frame = {offset: progress(sample.t), transform: rowTransform(angle)};
     if (isRowVisible(angle)) {
       everVisible = true;
@@ -234,17 +228,6 @@ export function rowKeyframes(
     if (pendingParked != null) {
       frames.push(pendingParked);
       pendingParked = null;
-    }
-    if (
-      previousAngle != null &&
-      Math.abs(angle - previousAngle) > Math.PI &&
-      frames.length > 0
-    ) {
-      // A looping row jumping to its other copy: step at this progress.
-      frames.push({
-        offset: frame.offset,
-        transform: frames[frames.length - 1].transform,
-      });
     }
     frames.push(frame);
     previousAngle = angle;
