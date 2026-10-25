@@ -1429,6 +1429,115 @@ describe('Popover touch presentation', () => {
     expect(copy!.hasAttribute('inert')).toBe(true);
   });
 
+  it('under a finger, closes as soon as a pan that starts outside takes the touch', () => {
+    isCoarse = true;
+    open();
+    const trigger = screen.getByRole('button', {name: 'Filter'});
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    // The browser takes a touch on the page for a scroll: no lift follows.
+    fireEvent.pointerDown(document.body, {pointerType: 'touch', pointerId: 7});
+    fireEvent.pointerCancel(document.body, {
+      pointerType: 'touch',
+      pointerId: 7,
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('under a finger, a pan that starts on the trigger closes it too, as on iOS', () => {
+    isCoarse = true;
+    open();
+    const trigger = screen.getByRole('button', {name: 'Filter'});
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    // A UIKit popover's source is outside it: a pan from it dismisses.
+    fireEvent.pointerDown(trigger, {pointerType: 'touch', pointerId: 11});
+    fireEvent.pointerCancel(trigger, {pointerType: 'touch', pointerId: 11});
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('under a finger, a pan inside a parent popover but outside its child closes only the child', () => {
+    isCoarse = true;
+    render(
+      <Popover
+        label="Parent"
+        content={
+          <div>
+            <span>Parent body</span>
+            <Popover label="Child" content={<span>Child body</span>}>
+              <button type="button">Child trigger</button>
+            </Popover>
+          </div>
+        }>
+        <button type="button">Parent trigger</button>
+      </Popover>,
+    );
+    const parent = screen.getByRole('button', {name: 'Parent trigger'});
+    fireEvent.click(parent);
+    // Inside the parent's layer, which jsdom does not show.
+    const child = screen.getByRole('button', {
+      name: 'Child trigger',
+      hidden: true,
+    });
+    fireEvent.click(child);
+    expect(parent).toHaveAttribute('aria-expanded', 'true');
+    expect(child).toHaveAttribute('aria-expanded', 'true');
+    const parentBody = screen.getByText('Parent body');
+    fireEvent.pointerDown(parentBody, {pointerType: 'touch', pointerId: 12});
+    fireEvent.pointerCancel(parentBody, {pointerType: 'touch', pointerId: 12});
+    expect(child).toHaveAttribute('aria-expanded', 'false');
+    expect(parent).toHaveAttribute('aria-expanded', 'true');
+    // A pan inside the child (open again) keeps both.
+    fireEvent.click(child);
+    const childBody = screen.getByText('Child body');
+    fireEvent.pointerDown(childBody, {pointerType: 'touch', pointerId: 13});
+    fireEvent.pointerCancel(childBody, {pointerType: 'touch', pointerId: 13});
+    expect(child).toHaveAttribute('aria-expanded', 'true');
+    expect(parent).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('under a finger, a pan in a dialog outside its popover closes only the popover', () => {
+    isCoarse = true;
+    render(
+      <dialog open aria-label="Settings dialog">
+        <p>Dialog body</p>
+        <Popover label="Help" content={<span>Help body</span>}>
+          <button type="button">Help</button>
+        </Popover>
+      </dialog>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Help'});
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    const body = screen.getByText('Dialog body');
+    fireEvent.pointerDown(body, {pointerType: 'touch', pointerId: 14});
+    fireEvent.pointerCancel(body, {pointerType: 'touch', pointerId: 14});
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(
+      screen.getByRole('dialog', {name: 'Settings dialog'}),
+    ).toHaveAttribute('open');
+  });
+
+  it('a popover that only closes explicitly stays open through a pan outside', () => {
+    isCoarse = true;
+    recorded = [];
+    render(
+      <Popover
+        content={<span>Steps</span>}
+        label="Steps"
+        hasLightDismiss={false}>
+        <button type="button">Tour</button>
+      </Popover>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Tour'});
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.pointerDown(document.body, {pointerType: 'touch', pointerId: 8});
+    fireEvent.pointerCancel(document.body, {
+      pointerType: 'touch',
+      pointerId: 8,
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
   it('under a mouse, keeps the layer\u2019s own entrance and plays nothing', () => {
     isCoarse = false;
     expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
@@ -1436,6 +1545,15 @@ describe('Popover touch presentation', () => {
     expect(layer.style.getPropertyValue('animation-name')).toBe('');
     expect(recorded.filter(animation => animation.target === layer)).toEqual(
       [],
+    );
+    fireEvent.pointerDown(document.body, {pointerType: 'touch', pointerId: 9});
+    fireEvent.pointerCancel(document.body, {
+      pointerType: 'touch',
+      pointerId: 9,
+    });
+    expect(screen.getByRole('button', {name: 'Filter'})).toHaveAttribute(
+      'aria-expanded',
+      'true',
     );
     fireEvent.click(screen.getByRole('button', {name: 'Filter'}));
     expect(
@@ -1452,6 +1570,10 @@ describe('Popover touch presentation', () => {
       [],
     );
     fireEvent.click(screen.getByRole('button', {name: 'Filter'}));
+    expect(screen.getByRole('button', {name: 'Filter'})).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
     expect(
       layer.parentElement!.querySelector('[data-astryx-popover-exit]'),
     ).toBeNull();

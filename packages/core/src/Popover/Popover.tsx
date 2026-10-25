@@ -6,7 +6,9 @@
  * @file Popover.tsx
  * @input Uses React layout measurement, the usePopover hook and the touch
  *   presentation's surface motion
- * @output Exports Popover with conditional overflow and content-first focus above the layer runtime's viewport fit
+ * @output Exports Popover with conditional overflow (a surface that does not
+ *   scroll takes no pan, so the page behind it stays put) and content-first
+ *   focus above the layer runtime's viewport fit
  * @position Layer component; declarative wrapper around usePopover hook
  *
  * Under a finger (the shared touch resolver's coarse primary pointer, one
@@ -29,6 +31,7 @@
 
 import React, {
   useCallback,
+  useMemo,
   useRef,
   useState,
   type ReactElement,
@@ -39,7 +42,7 @@ import * as stylex from '@stylexjs/stylex';
 import {devWarn} from '../utils/devWarning';
 import type {BaseProps} from '../BaseProps';
 import {usePopover} from './usePopover';
-import {usePopoverSurfaceMotion} from './PopoverTouch';
+import {usePanOutsideDismiss, usePopoverSurfaceMotion} from './PopoverTouch';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {layerViewportInset} from '../Layer/layerViewportInset.stylex';
@@ -295,6 +298,13 @@ const styles = stylex.create({
     overflow: 'auto',
     overscrollBehavior: 'contain',
   },
+  // A pan that starts inside a surface that does not scroll starts no page
+  // scroll: the page behind the popover stays where it is, as it does
+  // behind a UIKit popover, and a pinch still zooms the page. A scrolling
+  // surface keeps its own pan above.
+  surfaceStill: {
+    touchAction: 'pinch-zoom',
+  },
   // An explicit width renders at its size up to the viewport cap, never
   // shrunk to the room beside the trigger (spec:AST-059 FR2). Keywords cannot
   // sit inside min(); the surface cap above bounds them.
@@ -382,7 +392,8 @@ export function Popover({
   // The element the popover is anchored to, whichever way it was attached:
   // the touch presentation grows the popover out of it.
   const anchorElementRef = useRef<HTMLElement | null>(null);
-  const presentSurface = usePopoverSurfaceMotion();
+  const {present: presentSurface, isTouchPresentation} =
+    usePopoverSurfaceMotion();
   // Runs as the popover opens, before it paints; set once `usePopover` has
   // returned the surface it presents.
   const presentSurfaceRef = useRef<() => void>(() => {});
@@ -414,7 +425,7 @@ export function Popover({
     padding,
     xstyle: [
       styles.surfaceViewportFit,
-      hasOverflow && styles.surfaceScrollable,
+      hasOverflow ? styles.surfaceScrollable : styles.surfaceStill,
       xstyle,
     ],
     className,
@@ -436,6 +447,20 @@ export function Popover({
       );
     };
   }, [presentSurface, surfaceRef]);
+
+  // A pan that starts outside the touch-presented popover dismisses it as
+  // the pan begins, and the same touch goes on to scroll the page; a tap or a
+  // hold outside dismisses at the lift (the browser's light dismiss), as
+  // UIKit's popovers do on iOS 26.2. The trigger is outside too: a pan that
+  // starts on a UIKit popover's source dismisses it the same way. Escape-only
+  // popovers keep it.
+  const panInsideRefs = useMemo(() => [surfaceRef], [surfaceRef]);
+  usePanOutsideDismiss({
+    isOpen: popover.isOpen && hasLightDismiss,
+    isTouchPresentation,
+    inside: panInsideRefs,
+    onDismiss: popover.hide,
+  });
 
   const measureOverflow = useCallback(() => {
     const surface = popover.contentRef.current;

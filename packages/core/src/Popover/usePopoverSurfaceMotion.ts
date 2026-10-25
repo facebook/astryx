@@ -7,7 +7,8 @@
  * @input React, the shared touch resolver and popoverSurfaceMotion
  * @output Exports `usePopoverSurfaceMotion`: the call Popover makes as it
  *   opens, which presents the popover the UIKit way under a finger and
- *   leaves the layer's own entrance to a mouse
+ *   leaves the layer's own entrance to a mouse, and whether the popover is
+ *   under a finger
  * @position Internal to Popover; glue between the component and
  *   popoverSurfaceMotion.ts
  *
@@ -25,7 +26,7 @@
  * - /packages/core/src/Popover/Popover.test.tsx
  */
 
-import {useCallback, useEffect, useRef} from 'react';
+import {useCallback, useEffect, useMemo, useRef} from 'react';
 import {TOUCH_QUERY} from '../utils/touchPresentation';
 import {
   createPopoverSurfaceMotion,
@@ -43,21 +44,26 @@ function boxOf(element: Element): PopoverSurfaceRect {
   };
 }
 
-/**
- * Returns `present(layer, source)`, to call as the popover opens (right after
- * the browser shows it, before it paints).
- */
-export function usePopoverSurfaceMotion(): (
-  layer: HTMLElement | null,
-  source: HTMLElement | null,
-) => void {
+export interface PopoverSurfaceMotionControls {
+  /**
+   * To call as the popover opens (right after the browser shows it, before
+   * it paints): presents it the UIKit way or leaves the layer's entrance.
+   */
+  present: (layer: HTMLElement | null, source: HTMLElement | null) => void;
+  /** Whether the open popover is under a finger, on any platform. */
+  isTouchPresentation: () => boolean;
+}
+
+export function usePopoverSurfaceMotion(): PopoverSurfaceMotionControls {
   const motionRef = useRef<{
     element: HTMLElement;
     motion: PopoverSurfaceMotion;
     detach: () => void;
   } | null>(null);
-  // Whether the presentation in progress is the touch one.
-  const isTouchPresentationRef = useRef(false);
+  // Whether the open popover is under a finger: it is then presented the
+  // UIKit way, and a pan that starts outside it dismisses it
+  // (usePanOutsideDismiss).
+  const isTouchRef = useRef(false);
 
   const motionFor = useCallback((element: HTMLElement) => {
     const current = motionRef.current;
@@ -67,10 +73,7 @@ export function usePopoverSurfaceMotion(): (
     current?.detach();
     const motion = createPopoverSurfaceMotion(element);
     const handleBeforeToggle = (event: Event) => {
-      if (
-        (event as ToggleEvent).newState === 'closed' &&
-        isTouchPresentationRef.current
-      ) {
+      if ((event as ToggleEvent).newState === 'closed' && isTouchRef.current) {
         motion.exit();
       }
     };
@@ -97,17 +100,16 @@ export function usePopoverSurfaceMotion(): (
     [],
   );
 
-  return useCallback(
+  const present = useCallback(
     (layer: HTMLElement | null, source: HTMLElement | null) => {
       if (layer == null) {
         return;
       }
       const view = layer.ownerDocument.defaultView;
       const isTouch =
-        source != null &&
         typeof view?.matchMedia === 'function' &&
         view.matchMedia(TOUCH_QUERY).matches;
-      isTouchPresentationRef.current = isTouch;
+      isTouchRef.current = isTouch;
       const motion = motionFor(layer);
       if (!isTouch || source == null) {
         motion.reset();
@@ -116,5 +118,10 @@ export function usePopoverSurfaceMotion(): (
       motion.enter(() => ({surface: boxOf(layer), source: boxOf(source)}));
     },
     [motionFor],
+  );
+  const isTouchPresentation = useCallback(() => isTouchRef.current, []);
+  return useMemo(
+    () => ({present, isTouchPresentation}),
+    [present, isTouchPresentation],
   );
 }
