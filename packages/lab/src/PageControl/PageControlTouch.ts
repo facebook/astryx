@@ -133,6 +133,11 @@ export function usePageControlTouch({
     startX: 0,
     lastX: 0,
     isScrubbing: false,
+    /**
+     * The control's geometry, read once when the scrub begins: nothing reads
+     * layout while the finger moves.
+     */
+    geo: null as ReturnType<typeof geometry>,
     interactTimer: 0 as ReturnType<typeof setTimeout> | 0,
     jogTimer: 0 as ReturnType<typeof setTimeout> | 0,
     /** When the finger crossed the edge or the last jog step ran, ms. */
@@ -156,7 +161,7 @@ export function usePageControlTouch({
   // moving further brings the next step closer.
   const jog = () => {
     const g = gestureRef.current;
-    const geo = geometry();
+    const geo = g.geo;
     const latest = latestRef.current;
     if (
       geo == null ||
@@ -200,7 +205,7 @@ export function usePageControlTouch({
   };
 
   const scrubTo = (x: number) => {
-    const geo = geometry();
+    const geo = gestureRef.current.geo;
     const latest = latestRef.current;
     if (geo == null) {
       return;
@@ -223,6 +228,7 @@ export function usePageControlTouch({
     }
     stopJog();
     g.isScrubbing = false;
+    g.geo = null;
     setInteracting(false);
   };
 
@@ -254,6 +260,7 @@ export function usePageControlTouch({
             latestRef.current.pages > 1
           ) {
             g.isScrubbing = true;
+            g.geo = geometry();
             setInteracting(true);
           }
           if (g.isScrubbing) {

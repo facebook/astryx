@@ -139,7 +139,7 @@ test('rapid taps are not coalesced: five taps 150 ms apart step five pages (UIKi
   await expect.poll(async () => valueNow(slider)).toBe(31);
 });
 
-test('a finger that travels 16 px scrubs: the page is the indicator under it, switching at the midpoints', async ({
+test('a finger that travels 16 px scrubs: the page is the indicator under it, switching at the midpoints, with no layout read after the scrub begins', async ({
   page,
 }) => {
   const {slider, driver} = await open(page);
@@ -148,16 +148,38 @@ test('a finger that travels 16 px scrubs: the page is the indicator under it, sw
   );
   const from = centers[2];
   const to = {x: centers[4].x + 4, y: from.y};
-  const seen: Array<{x: number; page: number}> = [];
+  // Every layout read the page makes from here on.
+  await page.evaluate(() => {
+    const counter = window as unknown as {layoutReads: number};
+    const read = Element.prototype.getBoundingClientRect;
+    counter.layoutReads = 0;
+    Element.prototype.getBoundingClientRect = function (this: Element) {
+      counter.layoutReads++;
+      return read.call(this);
+    };
+  });
+  const seen: Array<{x: number; page: number; reads: number}> = [];
   await driver.play(drag(from, to, {durationMs: 900, hz: 30, restMs: 120}), {
     onEvent: async step => {
       if (step.type === 'touchMove') {
         const x = step.fingers[0].x;
         await page.waitForTimeout(20);
-        seen.push({x, page: (await valueNow(slider)) - 1});
+        seen.push({
+          x,
+          page: (await valueNow(slider)) - 1,
+          reads: await page.evaluate(
+            () => (window as unknown as {layoutReads: number}).layoutReads,
+          ),
+        });
       }
     },
   });
+  // The scrub reads the control's layout once, as it begins, and never while
+  // the finger moves.
+  const scrubbing = seen.filter(({x}) => x - from.x >= 16);
+  expect(scrubbing.length).toBeGreaterThan(5);
+  expect(scrubbing[0].reads).toBeGreaterThan(0);
+  expect(scrubbing[scrubbing.length - 1].reads).toBe(scrubbing[0].reads);
   for (const {x, page: shown} of seen) {
     const travel = x - from.x;
     const expected =
