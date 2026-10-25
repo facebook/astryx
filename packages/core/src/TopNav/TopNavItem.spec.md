@@ -165,7 +165,7 @@ is recorded.
 | FR2–FR4, AR1–AR3 | `TopNav.test.tsx` TopNavItem state tests                      | Selected, disabled, icon only | Missing attribute or a navigating disabled item fails. | `audit:TopNavItem/accessibility` |
 | FR5              | `TopNav.test.tsx` disabled-navigation tests in both modes     | Default and drawer            | Lost click forwarding or href handling fails.          | `audit:TopNavItem/behavior`      |
 
-Read from source, with no focused test yet: other DOM props reaching the link (FR1); the `top-nav-item` target and its `mode` and `selected` states (FR5); the selected fill under hover and press (FR2); the drawer row size, `data-mode="drawer"`, and closing the drawer on activation (FR5); FR6; and FR7.
+Read from source, with no focused test yet: the disabled plain `<a>` taking precedence over `as` and `LinkProvider` (ORD1, FR3); other DOM props reaching the link (FR1); the `top-nav-item` target and its `mode` and `selected` states (FR5); the selected fill under hover and press (FR2); the drawer row size, `data-mode="drawer"`, and closing the drawer on activation (FR5); FR6; and FR7.
 
 ## Decision log
 
