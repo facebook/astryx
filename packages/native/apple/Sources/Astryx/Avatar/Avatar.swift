@@ -57,6 +57,7 @@ public struct Avatar: View {
       control
         .modifier(AvatarTooltipModifier(text: helpText))
         .modifier(AvatarPointerTooltip(text: pointerTooltipText))
+        .modifier(AvatarTapTooltip(text: Avatar.opensTooltipOnTap(tap) ? tooltipText : nil))
         .modifier(AvatarIdentifier(id: props.base.id))
         .onAppear(perform: checkInDevelopment)
     }
@@ -132,6 +133,10 @@ public struct Avatar: View {
   /// How the avatar takes a tap: a link with a usable `href`, else a button
   /// with `onClick`, else none.
   enum Tap: Equatable { case link, button, none }
+
+  /// Whether a tap on a touch screen opens the tooltip: only for a static
+  /// avatar; a link or button keeps the tap for its action, as core's does.
+  nonisolated static func opensTooltipOnTap(_ tap: Tap) -> Bool { tap == .none }
 
   var tap: Tap {
     if linkURL != nil { return .link }
@@ -426,6 +431,36 @@ struct AvatarPointerTooltip: ViewModifier {
       try? await Task.sleep(for: Self.delay)
       if !Task.isCancelled { isShown = true }
     }
+  }
+}
+
+/// The tooltip on a touch screen, as core's `touchTrigger`: a tap on a static
+/// avatar opens a bubble with the tooltip's words, and the next tap, on the
+/// avatar or elsewhere, closes it. With VoiceOver running the tap is left
+/// alone, so VoiceOver reads the avatar as before.
+struct AvatarTapTooltip: ViewModifier {
+  let text: String?
+  @Environment(\.astryx) private var astryx
+  @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
+  @State private var isShown = false
+
+  func body(content: Content) -> some View {
+    #if os(iOS)
+    if let text, !voiceOver {
+      content
+        .onTapGesture { isShown.toggle() }
+        // A popover closes on the next tap anywhere, as core's tooltip does.
+        .popover(isPresented: $isShown, arrowEdge: .bottom) {
+          AvatarTooltipBubble(text: text)
+            .presentationCompactAdaptation(.popover)
+            .presentationBackground(astryx.tokens.color.textPrimary)
+        }
+    } else {
+      content
+    }
+    #else
+    content
+    #endif
   }
 }
 
