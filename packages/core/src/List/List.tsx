@@ -57,8 +57,8 @@ export interface ListProps extends BaseProps<
    * - 'spacious': Extra spacing for readability
    *
    * Under a finger (iOS and Android alike), rows are at least 52px tall,
-   * 62px with a description, and never shorter than 44px in compact
-   * density, as iOS table rows are; a list with markers keeps its rows.
+   * 62px with a description, as iOS table rows are; a compact list and a
+   * list with markers keep their rows.
    * @default 'balanced'
    */
   density?: ListDensity;

@@ -28,8 +28,6 @@ export const listRowConsts = stylex.defineConsts({
   touchRowHeight: '52px',
   /** `list.metrics.subtitleRowHeight`: a row with a description. */
   touchSubtitleRowHeight: '62px',
-  /** `list.metrics.controlSize`: the floor of a compact touch row. */
-  touchControlSize: '44px',
 });
 
 /**
@@ -40,10 +38,10 @@ export const listRowConsts = stylex.defineConsts({
 const TOUCH = '@media (pointer: coarse)';
 
 /**
- * A row's height under a finger: UIKit's table rows, at least that tall,
- * never shorter than the platform's control size, the same on every touch
- * platform. With a mouse the row keeps today's height. A theme's
- * `min-height` on `list-item` replaces it.
+ * A row's height under a finger: UIKit's table rows, at least that tall, the
+ * same on every touch platform. A compact list keeps its density, and with a
+ * mouse the row keeps today's height. A theme's `min-height` on `list-item`
+ * replaces it.
  */
 export const listRowStyles = stylex.create({
   touchOneLine: {
@@ -56,12 +54,6 @@ export const listRowStyles = stylex.create({
     minHeight: {
       default: null,
       [TOUCH]: listRowConsts.touchSubtitleRowHeight,
-    },
-  },
-  touchCompact: {
-    minHeight: {
-      default: null,
-      [TOUCH]: listRowConsts.touchControlSize,
     },
   },
 });
