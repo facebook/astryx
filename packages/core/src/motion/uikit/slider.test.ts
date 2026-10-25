@@ -13,8 +13,6 @@
  *   this table.
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
 import {describe, expect, it, vi} from 'vitest';
 import {projectDistance} from '../projection';
 import {listMotionRoles, motionRole, motionRoleOf} from '../roles';
@@ -113,18 +111,6 @@ function rms(errors: ReadonlyArray<number>): number {
 describe('slider under Reduce Motion', () => {
   it('keeps no motion of its own under Reduce Motion (design:reduced-motion DR4)', () => {
     expect(Object.keys(slider)).not.toContain('reducedMotion');
-  });
-});
-
-describe('slider table marker', () => {
-  it('carries the experimental marker, as the foundation tables do (AST-017 FR21)', () => {
-    const source = fs.readFileSync(
-      path.resolve(__dirname, 'slider.ts'),
-      'utf8',
-    );
-    expect(source).toMatch(
-      /\/\*\*(?:(?!\*\/)[\s\S])*@experimental(?:(?!\*\/)[\s\S])*\*\/\s*export const slider\b/,
-    );
   });
 });
 

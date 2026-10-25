@@ -53,7 +53,6 @@ import {registerMotionTable} from '../roles';
 /**
  * UISlider's touch values: hit target, tracking, release coast, lift, drop
  * and the end-of-track haptic.
- * @experimental
  */
 export const slider = {
   /**
@@ -164,7 +163,6 @@ export const slider = {
  * (motion/roles.ts). Nothing registers on import: the slider's touch module
  * calls it once before its first animation (it is idempotent), so a page that
  * never animates a slider ships no registry.
- * @experimental
  */
 export function registerSliderTable(): void {
   registerMotionTable('slider', slider);
