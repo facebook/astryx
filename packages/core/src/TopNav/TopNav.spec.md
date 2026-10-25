@@ -174,7 +174,7 @@ component's record names its own target.
 | FR5, FR6     | `AppShell.test.tsx` mobile suites               | Heading-only; items; items with side nav        | A missing toggle or duplicated items fails.                | `audit:TopNav/behavior`      |
 | AR2          | `TopNavMobileLongHeading.a11y.chromium.spec.ts` | Long heading at phone width                     | The toggle or close button leaves the viewport.            | `audit:TopNav/accessibility` |
 
-Read from source, with no focused test yet: other DOM props reaching the `<nav>` (FR1); the auto-toggle condition (FR5); rendering nothing in `drawer` mode with no content (FR6); the `top-nav` target and its `mode` state (FR1); the flex and grid layout geometry (FR3, FR4); that start and center content do not render in the mobile bar (FR5); the drawer's content order and divider (FR6); FR7; and FR9.
+Read from source, with no focused test yet: the mobile bar's part order (FR5); the drawer's `heading` header (FR6); other DOM props reaching the `<nav>` (FR1); the auto-toggle condition (FR5); rendering nothing in `drawer` mode with no content (FR6); the `top-nav` target and its `mode` state (FR1); the flex and grid layout geometry (FR3, FR4); that start and center content do not render in the mobile bar (FR5); the drawer's content order and divider (FR6); FR7; and FR9.
 
 ## Decision log
 

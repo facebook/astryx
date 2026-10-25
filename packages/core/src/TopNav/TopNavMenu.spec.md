@@ -177,7 +177,7 @@ recorded.
 | FR7, FR10, AR3    | `TopNavMenu.test.tsx` drawer tests                         | Collapsed and expanded                          | Reachable collapsed items or a missing ring fails.                            | `audit:TopNavMenu/behavior`      |
 | Shared menu focus | `useMenuHover.test.tsx`                                    | Hover-open, click-open, Escape, Enter and Space | Focus moved on hover, not moved in on click, or not returned on Escape fails. | `audit:TopNavMenu/accessibility` |
 
-Read from source, with no focused test yet: the native `<a>` for bar items, the icon box, and the description (FR4); the forwarded `ref`, the `top-nav-menu` target, and the bar and drawer chevrons' turn (FR1, FR7); the drawer group's clipping while it expands and its height animation (FR7); the caller `preventDefault()` cancellation (FR6); hover opening and closing with `delay` and `hideDelay` (FR2); slot alignment (FR3); FR8; FR9; and the bar trigger and item parts of FR10.
+Read from source, with no focused test yet: dropping a rejected `href` (FR4); the native `<a>` for bar items, the icon box, and the description (FR4); the forwarded `ref`, the `top-nav-menu` target, and the bar and drawer chevrons' turn (FR1, FR7); the drawer group's clipping while it expands and its height animation (FR7); the caller `preventDefault()` cancellation (FR6); hover opening and closing with `delay` and `hideDelay` (FR2); slot alignment (FR3); FR8; FR9; and the bar trigger and item parts of FR10.
 
 ## Decision log
 
