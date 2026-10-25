@@ -42,9 +42,9 @@ not reorder loads none of it.
 
 ## Non-goals
 
-- Moving several items in one drag, a destination predicate, and moves
-  between collection instances; each can be added later without changing this
-  contract.
+- Moving several items in one drag, a destination predicate, moves between
+  collection instances, and keyboard reparenting in a tree; each can be added
+  later without changing this contract.
 - Moving items between collections, freeform canvas placement, and file drops.
 - Reorder motion values, thresholds, and timing: these stay internal
   (`spec:AST-002` FR3) and come from the theme's motion roles and
@@ -56,6 +56,12 @@ not reorder loads none of it.
 
 ```tsx
 import {createReorderable} from '@astryxdesign/core';
+
+const moveTo = (items, key, to) => {
+  const moved = items.find(item => item.id === key);
+  const rest = items.filter(item => item.id !== key);
+  return [...rest.slice(0, to), moved, ...rest.slice(to)];
+};
 
 const reorderable = createReorderable({
   onReorder: ({key, to}) => setItems(items => moveTo(items, key, to)),
@@ -93,7 +99,15 @@ announcements are those of FR3 and FR4, and the tree adds no option.
   at the root) and `index` is the item's position among that parent's children
   after the move (DEC-3). It carries no gesture, animation, or timing settings. An optional
   `isMovable(key)` predicate keeps a row in place: a row it rejects shows no
-  handle and cannot be picked up (DEC-2).
+  handle and cannot be picked up (DEC-2). A row it rejects at either end of the
+  collection also bounds the drop range: nothing drops beyond it, and a
+  keyboard or assistive-technology move past it is not offered.
+  A collection takes each item's key from its own item model; List reads the
+  React `key` of each direct child, so its rows are direct children. The
+  object may be created again on each render: the collection uses the latest
+  callbacks when a move commits, and a new object during a drag does not
+  cancel the drag. One object passed to two collections reorders each on its
+  own and moves nothing between them.
 - **FR2 — Present means enabled.** A collection that accepts reordering takes
   the object through one `reorderable` prop; there is no separate boolean.
   With the prop absent the collection renders no handle, registers no reorder
@@ -183,7 +197,8 @@ Rejected: no per-row control, with unwanted moves ignored after the drop.
 `onReorder` receives the moved item's key and its new position, and
 `isMovable` receives a key, so the contract names items by key everywhere. A
 key stays correct when a list is virtualized and when a tree moves an item
-between parents, where a pair of indices would not.
+between parents, where a pair of indices would not. A caller that filters the
+items it passes maps `to` back to its full list.
 
 Rejected: `onReorder(from, to)` with a pair of positions.
 
