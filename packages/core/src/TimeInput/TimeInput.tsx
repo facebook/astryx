@@ -18,6 +18,7 @@
  */
 
 import {
+  use,
   useId,
   useState,
   useCallback,
@@ -76,6 +77,7 @@ import {useMediaQuery} from '../hooks/useMediaQuery';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
+import {InputGroupInternalContext} from '../InputGroup/InputGroupInternalContext';
 import {groupStyles, inputGroupItemProps} from '../InputGroup/groupStyles';
 import {useTooltip} from '../Tooltip';
 import {themeProps} from '../utils/themeProps';
@@ -935,6 +937,8 @@ TimeField.displayName = 'TimeField';
  * `preventDefault` on, so it cannot cancel built-in behavior.
  */
 export function TimeInput(props: TimeInputProps) {
+  const inputGroupState = use(InputGroupInternalContext);
+  const isDisabled = props.isDisabled || inputGroupState.isDisabled;
   const isTouch = useMediaQuery(TOUCH_POINTER_QUERY);
   useDevWarning(
     'TimeInput',
@@ -957,6 +961,7 @@ export function TimeInput(props: TimeInputProps) {
     return (
       <TimeField
         {...rest}
+        isDisabled={isDisabled}
         nativeMode={
           props.presentation === undefined && props.nativePicker === 'always'
             ? 'legacy'
@@ -968,12 +973,14 @@ export function TimeInput(props: TimeInputProps) {
   switch (resolveInputPresentation(effective, isTouch)) {
     case 'native':
       // Only `adaptive-native` on a coarse pointer resolves here (FR2).
-      return <TimeField {...rest} nativeMode="adaptive" />;
+      return (
+        <TimeField {...rest} isDisabled={isDisabled} nativeMode="adaptive" />
+      );
     case 'sheet':
-      return <TouchTimeField {...rest} />;
+      return <TouchTimeField {...rest} isDisabled={isDisabled} />;
     case 'text-input':
     case 'desktop':
-      return <TimeField {...rest} />;
+      return <TimeField {...rest} isDisabled={isDisabled} />;
   }
 }
 
