@@ -140,7 +140,17 @@ for spec in $hosts; do
       xcrun xcresulttool export attachments --path "$results" --output-path "$NATIVE_UI_DIR/$name" || true
     fi
     xcrun xcresulttool get test-results summary --path "$results" --compact > "$work/host-summary.json"
-    python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print("UI tests: %s passed, %s failed, %s skipped" % (d["passedTests"], d["failedTests"], d["skippedTests"])); sys.exit(d["totalTestCount"] == 0)' "$work/host-summary.json"
+    # Each failure's own message, as an annotation: an audit issue names the
+    # element and what the audit found.
+    python3 - "$work/host-summary.json" <<'SUMMARY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+print("UI tests: %s passed, %s failed, %s skipped" % (d["passedTests"], d["failedTests"], d["skippedTests"]))
+for failure in d.get("testFailures", []):
+    text = " ".join(failure.get("failureText", "").split()).replace("%", "%25")
+    print("::error title=%s::%s" % (failure.get("testName", "UI test"), text))
+sys.exit(d["totalTestCount"] == 0)
+SUMMARY
     exit "$status"
   )
   echo '::endgroup::'
