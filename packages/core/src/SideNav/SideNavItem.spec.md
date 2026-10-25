@@ -207,6 +207,10 @@ is recorded. Row geometry visual intent is `component:SideNav` DD1.
 | FR11          | `SideNav.test.tsx` focus ring suite                                 | Plain, split, actions rows                   | Missing shared ring classes fail.                                                 | `audit:SideNavItem/accessibility` |
 | FR3, FR7, FR9 | `SideNav.test.tsx` keyboard operation and focus management suites   | Tab order, Enter/Space toggle, flyout Escape | Lost order, a stranded focus, or no focus return fails.                           | `audit:SideNavItem/accessibility` |
 
+Pending conformance: the SideNavItem suite's native-`disabled` assertion and
+the keyboard suite's disabled Tab-skip assertion pin FR1's implementation gap;
+they change when disabled items follow `spec:AST-085`.
+
 Read from source, with no focused test yet:
 
 - FR1 and ORD1–ORD2: a disabled item with `href` rendering a button, the
