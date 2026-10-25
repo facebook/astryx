@@ -12,8 +12,9 @@
  *   spring, on screen through the light dismiss; the presentation keeps
  *   advancing through a blocked main thread; neither does Layout or Paint
  *   per frame; Reduce Motion cross-fades, opacity only, in 200 ms or less;
- *   a mouse keeps the layer's own entrance; a tap or a pan outside during the
- *   presentation starts nothing; storyboards of both
+ *   a mouse keeps the layer's own entrance; a tap or a pan outside during
+ *   the presentation starts nothing, and a pinch zooms the page; storyboards
+ *   of both
  * @position Evidence for Popover's touch presentation; the model itself is
  *   unit-tested in popoverSurfaceMotion.test.ts
  */
@@ -33,6 +34,7 @@ import {
   installTimerGate,
   markElement,
   openStory,
+  pinch,
   readLongTasks,
   releaseAnimations,
   startScreencast,
@@ -388,6 +390,45 @@ test('a pan outside during the presentation starts nothing: no scroll, and the p
   // Without a trace: the control the popover focused keeps focus.
   expect(focusedAtOpen).toContain('role="switch"');
   expect(await focused()).toBe(focusedAtOpen);
+});
+
+test('a pinch during the presentation zooms the page, and the presentation finishes and stays', async ({
+  page,
+}) => {
+  const story = await openDefault(page);
+  test.skip(
+    !story.driver.drivesNativeGestures,
+    'scripted touches do not start a native pinch-zoom in this engine (iOS evidence: the simulator run)',
+  );
+  await installTouchLog(page);
+  const scale = async () =>
+    page.evaluate(() => window.visualViewport?.scale ?? 1);
+  expect(await scale()).toBe(1);
+  const viewport = page.viewportSize();
+  if (viewport == null) {
+    throw new Error('no viewport');
+  }
+  await story.driver.tap(story.center);
+  // 60 ms into the presentation, two fingers spread apart below the popover.
+  await page.waitForTimeout(60);
+  await story.driver.play(
+    pinch({
+      center: {x: viewport.width / 2, y: viewport.height - 160},
+      fromDistance: 60,
+      toDistance: 240,
+      durationMs: 250,
+      hz: 60,
+    }),
+  );
+  await waitForRest(story.layer);
+  const log = await readTouchLog(page);
+  // Both fingers landed on the hold, which leaves a pinch to the browser
+  // (spec:AST-094 FR35, FR10): the page zoomed.
+  expect(log.held).toEqual([true, true]);
+  await expect.poll(scale).toBeGreaterThan(1.1);
+  // The presentation finished, and the popover stayed open.
+  await expect(story.trigger).toHaveAttribute('aria-expanded', 'true');
+  expect(log.closed).toEqual([]);
 });
 
 test('the presentation grows out of the trigger on UIKit\u2019s present spring', async ({
