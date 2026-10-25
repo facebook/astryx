@@ -88,6 +88,19 @@ describe('native Swift routing', () => {
     }
   });
 
+  it('uploads the component screenshots named with the head SHA', () => {
+    const dir = '${{ runner.temp }}/native-screenshots';
+    expect(step(swift, 'Build and test each native Swift package').env).toEqual(
+      {ASTRYX_SCREENSHOT_DIR: dir},
+    );
+    const upload = step(swift, 'Upload native component screenshots');
+    expect(upload.uses).toBe('actions/upload-artifact@v7');
+    expect(upload.with).toMatchObject({
+      name: 'native-screenshots-${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}',
+      path: dir,
+    });
+  });
+
   it('skips the Swift work on docsite-only and tooling-only changes', () => {
     const decide = step(scope, 'Decide whether native Swift changed');
     expect(decide.env).toMatchObject({
