@@ -430,3 +430,62 @@ describe('createInteractiveTransition: a move from rest', () => {
     expect(scrim.plays[0].options.crossfadeAs).toBeUndefined();
   });
 });
+
+describe('createInteractiveTransition: a move\u2019s landing state, and place', () => {
+  const stateful = () => {
+    const row = recordingAnimator({x: 120});
+    const panel = recordingAnimator({x: -120});
+    const look = recordingAnimator({opacity: 1});
+    const transition = createInteractiveTransition<'n', object, number>({
+      driver: {animator: row.animator, property: 'x'},
+      layers: [
+        {animator: panel.animator, property: 'x', map: x => -x},
+        {
+          animator: look.animator,
+          property: 'opacity',
+          value: confirm => 1 - confirm,
+          spring: SPRING,
+        },
+      ],
+      rule: () => ({target: 0, motion: SPRING, outcome: 'n'}),
+    });
+    return {row, panel, look, transition};
+  };
+
+  it('springs each state layer to its value for the landing state, on the move\u2019s spring and clock', () => {
+    const {look, transition} = stateful();
+    const settle = {mass: 2, stiffness: 200, damping: 100};
+    transition.to(300, settle, {
+      state: 1,
+      touchRelease: true,
+      startAtCommit: true,
+    });
+    expect(look.animates).toHaveLength(1);
+    expect(look.animates[0].to).toEqual({opacity: 0});
+    expect(look.animates[0].transition).toEqual({spring: settle});
+    expect(look.animates[0].options).toEqual({touchRelease: true});
+  });
+
+  it('leaves state layers alone when the move names no state', () => {
+    const {look, transition} = stateful();
+    transition.to(300, SPRING);
+    expect(look.animates).toHaveLength(0);
+  });
+
+  it('still lands the state layers when the driver is already at the target', () => {
+    const {look, row, transition} = stateful();
+    transition.to(120, SPRING, {state: 0});
+    expect(row.plays).toHaveLength(0);
+    expect(look.animates[0].to).toEqual({opacity: 1});
+  });
+
+  it('places the driver, its map layers and its state layers at once', () => {
+    const {look, panel, row, transition} = stateful();
+    transition.place(80, {state: 1});
+    expect(row.sets.at(-1)).toEqual({x: 80});
+    expect(panel.sets.at(-1)).toEqual({x: -80});
+    expect(look.sets.at(-1)).toEqual({opacity: 0});
+    transition.place(40);
+    expect(look.sets).toHaveLength(1);
+  });
+});

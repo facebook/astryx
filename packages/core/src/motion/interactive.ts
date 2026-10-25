@@ -36,7 +36,9 @@
  *   drag's state on its own spring (a full swipe's confirm look).
  * - A release, or a programmatic move (`to`), plays one progress curve: the
  *   driver along `from + (to − from) · p`, each map layer along its map of
- *   that, all on one explicit `at`, so they stay in lockstep by construction.
+ *   that, all on one clock, so they stay in lockstep by construction. A move
+ *   can name the drag state it lands in; its state layers go there on the
+ *   move's motion. `place` puts everything somewhere at once.
  * - A grab takes over from what is on screen: the presented values of the
  *   driver and of every layer, read at one `now` and written with `set`.
  *   Opacity is left alone unless a layer's own channel is opacity, so a grab
@@ -156,7 +158,7 @@ export type CompanionLayer<State> = MapLayer | StateLayer<State>;
 /**
  * Options of a programmatic move (`to`).
  */
-export interface MoveOptions {
+export interface MoveOptions<State = undefined> {
   /** The starting velocity, driver units per second (default 0). */
   readonly velocity?: number;
   /** Which way a reduced-motion cross-fade goes (a present, a dismiss). */
@@ -167,13 +169,19 @@ export interface MoveOptions {
   readonly now?: number;
   /**
    * Start on the browser's commit instead of `now`: the driver and every
-   * layer play from rest with no start time, so the browser starts them all
-   * on the frame it commits them, as Core Animation starts a presentation at
-   * its transaction's commit, and a long task after the call delays the move
-   * instead of skipping into it. Only for a move from rest on every animator
-   * (a present, a dismiss): a driver already moving starts on its own clock.
+   * layer play with no start time, so a move from rest starts on the frame
+   * the browser commits it, as Core Animation starts a presentation at its
+   * transaction's commit, and a long task after the call delays it instead of
+   * skipping into it; one that continues a motion keeps the frame on screen.
+   * Calls in one task share one clock either way.
    */
   readonly startAtCommit?: boolean;
+  /**
+   * The drag state the move lands in: each state layer goes to its value for
+   * it on the move's motion, from where it is (a spring: on that spring,
+   * handed the layer's own velocity; a timing: on the move's clock).
+   */
+  readonly state?: State;
 }
 
 /**
@@ -210,12 +218,18 @@ export interface InteractiveTransition<Outcome extends string, Context, State> {
     readonly target: number;
     readonly exits: boolean;
   };
-  /** A programmatic move (present, dismiss, a keyboard command). */
+  /** A programmatic move (present, dismiss, a keyboard command, a settle). */
   to(
     target: number,
     motion: TransitionMotion,
-    options?: MoveOptions,
+    options?: MoveOptions<State>,
   ): TransitionRun;
+  /**
+   * Puts the driver and its map layers at `position` now, and the state
+   * layers at their values for `state` when given: no motion (a finger
+   * followed one for one under reduced motion).
+   */
+  place(position: number, options?: {state?: State}): void;
   /** The driver's presentation value and velocity at `now`. */
   presented(now?: number): {position: number; velocity: number};
   /** Stops the run and any follow, leaving everything where it is drawn. */
@@ -343,21 +357,54 @@ export function createInteractiveTransition<
   const play = (
     target: number,
     motion: TransitionMotion,
-    {
+    options: MoveOptions<State>,
+  ): TransitionRun => {
+    const {
       velocity = 0,
       crossfadeAs,
       touchRelease = false,
       now: at = now(),
       startAtCommit = false,
-    }: MoveOptions,
-  ): TransitionRun => {
+    } = options;
     cancelFrame();
     following = null;
     catchingUp = false;
+    const clock = startAtCommit ? {} : {at};
+    // The state layers land in the move's state, from where they are.
+    const landStateLayers = (progress: MotionCurve | null) => {
+      if (!('state' in options)) {
+        return;
+      }
+      const landing = options.state as State;
+      for (const layer of stateLayers) {
+        const value = layer.value(landing);
+        if (!isTiming(motion)) {
+          layer.animator.animate(
+            {[layer.property]: value},
+            {spring: motion},
+            {...clock, touchRelease},
+          );
+        } else if (progress == null) {
+          layer.animator.set({[layer.property]: value});
+        } else {
+          const start = layer.animator.get(layer.property, at);
+          layer.animator.play(
+            {
+              [layer.property]: mapProgress(
+                progress,
+                p => start + (value - start) * p,
+              ),
+            },
+            {...clock, touchRelease},
+          );
+        }
+      }
+    };
     const from = driver.animator.get(driver.property, at);
     const distance = target - from;
     if (Math.abs(distance) < LAND_EPSILON) {
       write(target);
+      landStateLayers(null);
       return {handle: null, finished: Promise.resolve(true)};
     }
     const progress = isTiming(motion)
@@ -369,7 +416,6 @@ export function createInteractiveTransition<
           epsilon: SETTLE_THRESHOLD[driver.property] / Math.abs(distance),
         });
     const along = (p: number) => from + distance * p;
-    const clock = startAtCommit ? {} : {at};
     const handle = driver.animator.play(
       {[driver.property]: mapProgress(progress, along)},
       {...clock, touchRelease, ...(crossfadeAs == null ? {} : {crossfadeAs})},
@@ -383,6 +429,7 @@ export function createInteractiveTransition<
         ).finished,
       );
     }
+    landStateLayers(progress);
     return {
       handle,
       finished: Promise.all(finishing).then(all => all.every(Boolean)),
@@ -451,6 +498,19 @@ export function createInteractiveTransition<
     },
     to(target, motion, options = {}) {
       return play(target, motion, options);
+    },
+    place(position, options = {}) {
+      cancelFrame();
+      following = null;
+      catchingUp = false;
+      write(position);
+      if ('state' in options) {
+        for (const layer of stateLayers) {
+          layer.animator.set({
+            [layer.property]: layer.value(options.state as State),
+          });
+        }
+      }
     },
     presented(time = now()) {
       return {
