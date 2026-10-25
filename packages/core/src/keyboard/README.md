@@ -70,18 +70,20 @@ const guide = getKeyboardLayoutGuide(window);
 const unsubscribe = guide.subscribe(t => {
   animator.animate(
     {y: layoutLift - lift(t.to)},
-    {spring: keyboard.spring},
+    {spring: t.spring},
     {at: t.start},
   );
 });
 ```
 
-Each transition is `{kind, from, to, start, velocity, animated, predicted}`:
-heights in CSS px, `start` on the document timeline (in the past for a show
-Safari reported late, slightly ahead for a hide that starts after a blur).
-Move your own elements on the compositor with the animator, from `start`, on
-`keyboard.spring`, and hand the translate back to the layout once the ride
-ends (ChatLayout does). Under Reduce Motion nothing travels with the keyboard
+Each transition is
+`{kind, from, to, start, velocity, animated, predicted, spring}`: heights in
+CSS px, `start` on the document timeline (in the past for a show Safari
+reported late, slightly ahead for a hide that starts after a blur), and the
+curve the keyboard moves on (`keyboard.spring`, its own and no theme's). Move
+your own elements on the compositor with the animator, from `start`, on that
+curve, and hand the translate back to the layout once the ride ends
+(ChatLayout does). Under Reduce Motion nothing travels with the keyboard
 (design:reduced-motion): the animator's default cross-fades on a touch screen
 and moves at once otherwise. `presentation(time)` gives the height presented
 at any time, for something that appears while the keyboard moves.
@@ -117,7 +119,10 @@ at any time, for something that appears while the keyboard moves.
   padding are laid out from `useKeyboardHeight`; the guide's ride moves the
   dock, and a transcript at its newest message, with the keyboard; a tap on
   the composer's text is the tap route, and every other move into it the
-  focus takeover (`refuseFocusReveal`), so none scrolls the page.
+  focus takeover (`refuseFocusReveal`), so none scrolls the page; the
+  keyboard's Done parks focus on the composer region, a named region that is
+  no tab stop. The composer's own focus routes pass `preventScroll` under a
+  finger in that region (`Chat/keyboardSurface.ts`).
 
 ## Files
 
