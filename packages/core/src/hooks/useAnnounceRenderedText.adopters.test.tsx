@@ -130,7 +130,7 @@ const ADOPTERS: Record<string, () => Promise<void>> = {
     await expectDelegated('No options');
   },
   'MultiSelector/MultiSelector.tsx': async () => {
-    render(
+    const {unmount} = render(
       <MultiSelector
         label="Fruits"
         options={[] as string[]}
@@ -140,6 +140,24 @@ const ADOPTERS: Record<string, () => Promise<void>> = {
     );
     fireEvent.click(screen.getByRole('combobox'));
     await expectDelegated('No options');
+    unmount();
+    // A caller's create row, alone in the results, is its own content too.
+    render(
+      <MultiSelector
+        label="Labels"
+        options={['Bug']}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        hasCreate
+        renderCreateOption={({query}) => <span>{`New label ${query}`}</span>}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', {name: 'Labels'}));
+    fireEvent.change(screen.getByRole('combobox', {hidden: true}), {
+      target: {value: 'Zz'},
+    });
+    await expectDelegated('New label Zz');
   },
   'CommandPalette/CommandPalette.tsx': async () => {
     render(
