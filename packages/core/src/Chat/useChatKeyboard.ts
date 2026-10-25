@@ -43,13 +43,12 @@
  *   next buttons, Tab, a script moving focus from another element, a text
  *   control tapped while another element has focus) is delivered the same
  *   way, by the keyboard module's focus takeover (refuseFocusReveal), under a
- *   finger and where the keyboard is measured. A script's focus() while
+ *   finger and where the keyboard is measured. The keyboard's Done moves
+ *   focus to the composer region ChatLayout names, which is no tab stop. A script's focus() while
  *   nothing has focus raises no event before Safari reveals the field, so
  *   nothing can take that move over: the composer's own focus routes pass
  *   `preventScroll` in this region (keyboardSurface.ts), and the tap route
  *   covers taps on the composer's text.
- *   Focus that leaves the composer's text for nothing (the keyboard's Done, a
- *   dismissal) stays where the browser leaves it.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/ChatLayout.tsx and ChatLayout.doc.mjs
@@ -424,7 +423,10 @@ export function useChatKeyboard({
   // Every other move into the composer's text is the keyboard module's focus
   // takeover (spec:AST-099 FR4), where the keyboard is measured (FR6). A
   // desktop browser keeps its own focus (spec:AST-017 FR59): the pointer is
-  // read on every blur, so a tablet that docks a mouse follows it.
+  // read on every blur, so a tablet that docks a mouse follows it. When the
+  // keyboard's Done ends entry, focus leaves the composer's text for nothing
+  // and moves to the composer region (FR4), a named region that is no tab
+  // stop, so the next tap or Tab starts from the composer.
   useIsomorphicLayoutEffect(() => {
     const composer = composerRef.current;
     const win = composer?.ownerDocument.defaultView;
@@ -436,6 +438,11 @@ export function useChatKeyboard({
         typeof win.matchMedia === 'function' &&
         win.matchMedia(TOUCH_QUERY).matches,
       claim: destination => findTextEntryControl(destination, composer),
+      park: origin => {
+        if (findTextEntryControl(origin, composer) != null) {
+          composer.focus({preventScroll: true});
+        }
+      },
     });
   }, []);
 

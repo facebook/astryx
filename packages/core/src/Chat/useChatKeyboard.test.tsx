@@ -330,8 +330,35 @@ describe('focus moves into the composer (spec:AST-099 FR4)', () => {
     expect(focus).not.toHaveBeenCalledWith({preventScroll: true});
   });
 
-  it('moves focus nowhere when the composer\u2019s text blurs to nothing', () => {
+  it('moves focus to the named composer region when the keyboard\u2019s Done ends entry', () => {
     primaryPointer('coarse');
+    const {message} = renderWithSearch('textarea');
+    const region = screen.getByRole('region', {name: 'Message composer'});
+    act(() => message.focus());
+    const focus = vi.spyOn(region, 'focus');
+    // Done blurs the composer's text, and focus goes to nothing.
+    act(() => message.blur());
+    expect(document.activeElement).toBe(region);
+    expect(focus).toHaveBeenCalledWith({preventScroll: true});
+  });
+
+  it('adds no tab stop for the composer region', () => {
+    primaryPointer('coarse');
+    renderWithSearch('textarea');
+    const region = screen.getByRole('region', {name: 'Message composer'});
+    expect(region.tabIndex).toBe(-1);
+  });
+
+  it('leaves focus where the browser puts it when it moves on to another field', () => {
+    primaryPointer('coarse');
+    const {search, message} = renderWithSearch('textarea');
+    act(() => message.focus());
+    act(() => search.focus());
+    expect(document.activeElement).toBe(search);
+  });
+
+  it('leaves a blur to nothing to the browser under a mouse', () => {
+    primaryPointer('fine');
     const {message} = renderWithSearch('textarea');
     act(() => message.focus());
     act(() => message.blur());

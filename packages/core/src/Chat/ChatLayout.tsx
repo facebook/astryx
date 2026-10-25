@@ -207,6 +207,9 @@ const styles = stylex.create({
     position: 'relative',
     zIndex: 1,
     pointerEvents: 'auto',
+    // Focused only where the keyboard's Done leaves focus, never by Tab: the
+    // field it held showed the focus, and the region draws none.
+    outline: 'none',
     paddingInline: spacingVars['--spacing-3'],
     paddingBlockEnd: spacingVars['--spacing-3'],
   },
@@ -434,10 +437,15 @@ export function ChatLayout({
           {/* Frosted glass layer */}
           <div {...stylex.props(styles.blurLayer, currentDensity.blurLayer)} />
 
-          {/* Composer, in the keyboard-aware region (spec:AST-099 FR4) */}
+          {/* Composer, in the keyboard-aware region (spec:AST-099 FR4). Focus
+              rests on the named region after the keyboard's Done, and it is
+              no tab stop. */}
           <KeyboardSurfaceContext value={true}>
             <div
               ref={keyboard.composerRef}
+              role="region"
+              aria-label={t('@astryx.chatLayout.composerRegion')}
+              tabIndex={-1}
               {...stylex.props(styles.dock, currentDensity.dock)}>
               <div
                 {...stylex.props(styles.dockInner, currentDensity.dockInner)}>
