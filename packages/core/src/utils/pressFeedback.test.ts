@@ -37,6 +37,7 @@ import {
   PRESS_SCROLL_BRAKE_MS,
   PRESS_SLOP_PX,
 } from './pressGesture';
+import {pointerQuery} from '../gestures/__tests__/pointerQuery';
 
 let release: () => void = () => undefined;
 let scroller: HTMLElement;
@@ -63,6 +64,27 @@ function pressable(tag = 'div'): HTMLElement {
   return element;
 }
 
+/**
+ * The primary pointer is coarse (a phone, a tablet) until the returned
+ * restore runs: jsdom's matchMedia models a desktop, where touch work stays
+ * off (`spec:AST-094` FR19).
+ */
+function coarsePrimaryPointer(): () => void {
+  const matchMedia = window.matchMedia;
+  window.matchMedia = (query: string) => ({
+    ...matchMedia(query),
+    matches: query.includes('(pointer: coarse)') || matchMedia(query).matches,
+  });
+  const restore = (): void => {
+    window.matchMedia = matchMedia;
+  };
+  matchMediaRestorers.push(restore);
+  return restore;
+}
+
+/** Restores every pointer stub a test left, so none leaks into the next. */
+const matchMediaRestorers: (() => void)[] = [];
+
 beforeEach(() => {
   vi.useFakeTimers();
   document.body.innerHTML = '';
@@ -83,9 +105,123 @@ beforeEach(() => {
 afterEach(() => {
   release();
   vi.useRealTimers();
+  for (const restore of matchMediaRestorers.splice(0).reverse()) {
+    restore();
+  }
 });
 
 describe('the press reaches the surface the finger landed on', () => {
+  it('locks text selection on the row and its switch input while a finger is held, where the primary pointer is coarse', () => {
+    coarsePrimaryPointer();
+    const row = pressable('label');
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.setAttribute('role', 'switch');
+    row.appendChild(input);
+    document.body.appendChild(row);
+    press(input, 'pointerdown', 10, 10);
+    vi.advanceTimersByTime(600);
+    expect(row.style.getPropertyValue('user-select')).toBe('none');
+    expect(input.style.getPropertyValue('user-select')).toBe('none');
+    press(input, 'pointerup', 10, 10);
+    expect(row.style.getPropertyValue('user-select')).toBe('');
+    expect(input.style.getPropertyValue('user-select')).toBe('');
+    // A mouse never locks anything.
+    press(input, 'pointerdown', 10, 10, 'mouse');
+    expect(row.style.getPropertyValue('user-select')).toBe('');
+    press(input, 'pointerup', 10, 10, 'mouse');
+  });
+
+  it("keeps a link's native long-press menu: no callout lock on a link or under one", () => {
+    coarsePrimaryPointer();
+    // jsdom drops -webkit-touch-callout, so the lock's writes are recorded.
+    const written = new Map<Element, string[]>();
+    const setProperty = CSSStyleDeclaration.prototype.setProperty;
+    const owners = new WeakMap<CSSStyleDeclaration, Element>();
+    const spy = vi
+      .spyOn(CSSStyleDeclaration.prototype, 'setProperty')
+      .mockImplementation(function (
+        this: CSSStyleDeclaration,
+        name: string,
+        value: string | null,
+        priority?: string,
+      ) {
+        const owner = owners.get(this);
+        if (owner != null && value === 'none') {
+          written.set(owner, [...(written.get(owner) ?? []), name]);
+        }
+        setProperty.call(this, name, value, priority);
+      });
+    const track = (element: HTMLElement) => {
+      owners.set(element.style, element);
+      return element;
+    };
+    const link = track(pressable('a'));
+    link.setAttribute('href', '/next');
+    const text = document.createElement('span');
+    text.textContent = 'Next';
+    link.appendChild(text);
+    document.body.appendChild(link);
+    press(text, 'pointerdown', 10, 10);
+    vi.advanceTimersByTime(600);
+    press(text, 'pointerup', 10, 10);
+    // iOS shows a link's menu and preview on a long press: no callout lock.
+    expect(written.get(link)).toEqual(['-webkit-user-select', 'user-select']);
+    // A link inside a pressable row keeps its menu too.
+    const row = track(pressable());
+    const inner = document.createElement('a');
+    inner.setAttribute('href', '/more');
+    inner.textContent = 'More';
+    row.appendChild(inner);
+    document.body.appendChild(row);
+    press(inner, 'pointerdown', 10, 10);
+    vi.advanceTimersByTime(600);
+    press(inner, 'pointerup', 10, 10);
+    expect(written.get(row)).toEqual(['-webkit-user-select', 'user-select']);
+    // A plain row still loses the callout.
+    const plain = track(rows[0]);
+    press(plain, 'pointerdown', 10, 10);
+    vi.advanceTimersByTime(600);
+    press(plain, 'pointerup', 10, 10);
+    expect(written.get(plain)).toEqual([
+      '-webkit-touch-callout',
+      '-webkit-user-select',
+      'user-select',
+    ]);
+    spy.mockRestore();
+  });
+
+  it('keeps selection under a mouse, a pen and a finger where the primary pointer is fine, as on main (spec:AST-094 FR19, spec:AST-017 FR59)', () => {
+    const row = rows[2];
+    press(row, 'pointerdown', 10, 10, 'mouse');
+    vi.advanceTimersByTime(600);
+    expect(row.style.getPropertyValue('user-select')).toBe('');
+    press(row, 'pointerup', 10, 10, 'mouse');
+    // A desktop pen tablet: a fine primary pointer.
+    press(row, 'pointerdown', 10, 10, 'pen');
+    vi.advanceTimersByTime(600);
+    expect(row.style.getPropertyValue('user-select')).toBe('');
+    press(row, 'pointerup', 10, 10, 'pen');
+    vi.advanceTimersByTime(600);
+    // A finger on a touchscreen laptop: the primary pointer is still fine.
+    press(row, 'pointerdown', 10, 10);
+    vi.advanceTimersByTime(600);
+    expect(row.style.getPropertyValue('user-select')).toBe('');
+    press(row, 'pointerup', 10, 10);
+    vi.advanceTimersByTime(600);
+    // On a touch device a pen locks, as a finger does.
+    const restore = coarsePrimaryPointer();
+    try {
+      press(row, 'pointerdown', 10, 10, 'pen');
+      vi.advanceTimersByTime(600);
+      expect(row.style.getPropertyValue('user-select')).toBe('none');
+      press(row, 'pointerup', 10, 10, 'pen');
+      expect(row.style.getPropertyValue('user-select')).toBe('');
+    } finally {
+      restore();
+    }
+  });
+
   it('paints the row after the delay, not before', () => {
     const label = rows[1].firstElementChild;
     if (label == null) {
@@ -459,6 +595,48 @@ describe('what the list pays for it', () => {
     press(row, 'pointerdown', 10, 10);
     vi.advanceTimersByTime(PRESS_ONSET_MS);
     expect(added).toEqual([]);
+  });
+
+  it('registers no touch listener on the window or the document where the primary pointer is fine (spec:AST-094 FR24)', () => {
+    release();
+    matchMediaRestorers.push(pointerQuery(false).restore);
+    const added = [
+      vi.spyOn(window, 'addEventListener'),
+      vi.spyOn(document, 'addEventListener'),
+    ];
+    try {
+      release = installPressFeedback();
+      const types = added.flatMap(spy =>
+        spy.mock.calls.map(([type]) => String(type)),
+      );
+      expect(types.filter(type => type.startsWith('touch'))).toEqual([]);
+      expect(types).toContain('pointerdown');
+    } finally {
+      for (const spy of added) {
+        spy.mockRestore();
+      }
+    }
+  });
+
+  it('hears touchcancel only while the primary pointer is coarse, and follows it', () => {
+    release();
+    const pointer = pointerQuery(false);
+    matchMediaRestorers.push(pointer.restore);
+    release = installPressFeedback();
+    // A tablet undocks its mouse: the browser's touchcancel ends a press.
+    pointer.set(true);
+    press(rows[0], 'pointerdown', 10, 10);
+    vi.advanceTimersByTime(PRESS_ONSET_MS);
+    expect(pressedRow()).toBe(0);
+    window.dispatchEvent(new Event('touchcancel'));
+    expect(pressedRow()).toBe(-1);
+    // It docks one again: the touch listener comes down.
+    pointer.set(false);
+    press(rows[1], 'pointerdown', 10, 100);
+    vi.advanceTimersByTime(PRESS_ONSET_MS);
+    expect(pressedRow()).toBe(1);
+    window.dispatchEvent(new Event('touchcancel'));
+    expect(pressedRow()).toBe(1);
   });
 
   it('installs once, however many times it is called, and stays while any holder remains', () => {

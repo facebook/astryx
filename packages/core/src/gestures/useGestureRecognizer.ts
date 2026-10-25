@@ -4,9 +4,10 @@
 
 /**
  * @file useGestureRecognizer.ts
- * @input An element ref, a recognizer factory and a gesture listener; or an
- *   element ref and press tracker options
- * @output Exports useGestureRecognizer and usePressTracker
+ * @input An element ref, a recognizer factory and a gesture listener
+ * @output Exports useGestureRecognizer (usePressTracker lives in
+ *   usePressTracker.ts, so a gesture-only component never imports the press
+ *   tracker)
  * @position React face of packages/core/src/gestures
  *
  * The recognizer is created once and keeps its identity for the life of the
@@ -15,7 +16,9 @@
  * passing a new function each render re-attaches nothing, and a gesture
  * costs no React render at all — the listener runs inside the input event
  * and writes to the DOM itself. The recognizer attaches in a layout effect,
- * so its `touch-action` is in place before the browser can see a finger.
+ * so its `touch-action` is in place before the browser can see a finger, and
+ * re-attaches on any commit that finds another element behind the ref. After
+ * unmount neither hook calls the consumer back.
  *
  * SYNC: When modified, update useGestureRecognizer.test.tsx and README.md.
  */
@@ -24,14 +27,25 @@ import {useEffect, useRef, useState, type RefObject} from 'react';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {getGestureHost} from './GestureHost';
 import type {GestureRecognizer} from './GestureRecognizer';
-import {PressTracker, type PressTrackerOptions} from './PressTracker';
+import {useAttachment, useIsUnmountedRef} from './useAttachment';
 
 /** @experimental */
 export interface UseGestureRecognizerOptions {
-  /** Live toggle; turning it off mid-gesture cancels the gesture. @default true */
+  /**
+   * Live toggle; turning it off mid-gesture cancels the gesture. That cancel
+   * does not call `onGesture`: it comes from the render that turned the
+   * recognizer off, and the code that turned it off already knows.
+   * @default true
+   */
   isEnabled?: boolean;
   /** Let the host set touch-action (and long-press callout) styles. @default true */
   manageStyle?: boolean;
+  /**
+   * The recognizer reads each event's pointer itself (`spec:AST-057`'s row
+   * swipe), so it attaches even where the primary pointer is fine; see the
+   * host's AttachOptions. @default false
+   */
+  perEventPointer?: boolean;
 }
 
 /**
@@ -57,104 +71,49 @@ export function useGestureRecognizer<R extends GestureRecognizer>(
 ): R {
   const [recognizer] = useState(create);
   const onGestureRef = useRef(onGesture);
+  // True while an Effect drives the recognizer, so a transition it causes
+  // reaches no caller callback (react-component-runtime INV2, INV3).
+  const isSyncingRef = useRef(false);
   useIsomorphicLayoutEffect(() => {
     onGestureRef.current = onGesture;
   });
-  const {isEnabled = true, manageStyle = true} = options;
+  const {
+    isEnabled = true,
+    manageStyle = true,
+    perEventPointer = false,
+  } = options;
+  const isUnmountedRef = useIsUnmountedRef();
 
+  // The listener runs inside input events, never during a render or an
+  // Effect, and goes quiet once the component unmounts.
   useEffect(
     () =>
       recognizer.addListener(current => {
-        onGestureRef.current?.(current);
+        if (!isUnmountedRef.current && !isSyncingRef.current) {
+          onGestureRef.current?.(current);
+        }
       }),
-    [recognizer],
+    [recognizer, isUnmountedRef],
+  );
+
+  useAttachment(
+    ref,
+    element =>
+      getGestureHost(element.ownerDocument).attach(element, recognizer, {
+        manageStyle,
+        perEventPointer,
+      }),
+    `${manageStyle}:${perEventPointer}`,
   );
 
   useIsomorphicLayoutEffect(() => {
-    const element = ref.current;
-    if (element == null) {
-      return undefined;
+    isSyncingRef.current = true;
+    try {
+      recognizer.setEnabled(isEnabled);
+    } finally {
+      isSyncingRef.current = false;
     }
-    return getGestureHost(element.ownerDocument).attach(element, recognizer, {
-      manageStyle,
-    });
-  }, [ref, recognizer, manageStyle]);
-
-  useIsomorphicLayoutEffect(() => {
-    recognizer.setEnabled(isEnabled);
   }, [recognizer, isEnabled]);
 
   return recognizer;
-}
-
-/** @experimental */
-export type UsePressTrackerOptions = Omit<
-  PressTrackerOptions,
-  'getBounds' | 'view'
->;
-
-/**
- * Track presses on the element behind `ref` with UIControl semantics. The
- * callbacks are read through a ref, like a recognizer's listener.
- * @experimental
- */
-export function usePressTracker(
-  ref: RefObject<Element | null>,
-  options: UsePressTrackerOptions = {},
-): PressTracker {
-  const optionsRef = useRef(options);
-  useIsomorphicLayoutEffect(() => {
-    optionsRef.current = options;
-  });
-  const [tracker] = useState(
-    () =>
-      new PressTracker({
-        getBounds: () => ref.current?.getBoundingClientRect() ?? null,
-        get view() {
-          return ref.current;
-        },
-        onControlEvent: (event, touch) =>
-          optionsRef.current.onControlEvent?.(event, touch),
-        onHighlightChange: isHighlighted =>
-          optionsRef.current.onHighlightChange?.(isHighlighted),
-        trackingExpansion: options.trackingExpansion,
-        highlightDelay: options.highlightDelay,
-        cancelTravel: options.cancelTravel,
-        quickTapFlash: options.quickTapFlash,
-        vetoesAncestorRecognizer: recognizer =>
-          optionsRef.current.vetoesAncestorRecognizer?.(recognizer) ??
-          defaultVeto(recognizer),
-        isEnabled: () => optionsRef.current.isEnabled?.() ?? true,
-      }),
-  );
-
-  useIsomorphicLayoutEffect(() => {
-    const element = ref.current;
-    if (element == null) {
-      return undefined;
-    }
-    const detach = getGestureHost(element.ownerDocument).attachConsumer(
-      element,
-      tracker,
-    );
-    return () => {
-      detach();
-      tracker.dispose();
-    };
-  }, [ref, tracker]);
-
-  return tracker;
-}
-
-/** PressTracker's own default: an ancestor's single-finger single tap. */
-function defaultVeto(recognizer: GestureRecognizer): boolean {
-  const tap = recognizer as GestureRecognizer & {
-    numberOfTapsRequired?: number;
-    numberOfTouchesRequired?: number;
-  };
-  return (
-    recognizer.isDiscrete &&
-    tap.numberOfTapsRequired === 1 &&
-    tap.numberOfTouchesRequired === 1
-  );
 }

@@ -17,6 +17,7 @@ from the package entry point; components import it by path.
 | `uikit/timing.ts`                                | Non-spring clocks and curves: press highlight, Core Animation's named curves, keyboard, Reduced Motion cross-fade.                                                   |
 | `uikit/navigation.ts`                            | UINavigationController: push velocity, parallax, dimming, transition clock, interactive pop finish rule.                                                             |
 | `uikit/list.ts`                                  | UITableView / UICollectionView list cells: the cell highlight's release clock and curve.                                                                             |
+| `uikit/swipeActions.ts`                          | Swipe actions on a list row: the claim and swipe thresholds, the tracking and settle spring, the release rule.                                                       |
 | `uikit/gestures.ts`                              | Gesture recognizer thresholds, the velocity filter and the haptic stand-ins, as typed entries the gesture system reads.                                              |
 | `roles.ts`                                       | Motion roles: each spring, duration and curve of a registered table, named by its path, and its CSS variable.                                                        |
 | `resolveMotion.ts`                               | A role's value under an element's theme, read once when a motion starts.                                                                                             |
@@ -94,7 +95,9 @@ await handle.finished; // true if it ran to the end, false if interrupted
 - `get` / `getVelocity` evaluate the curves; the DOM is never read.
 - Promotion: every animation the animator creates, and every `set`, gives its
   channels a compositing layer in the same task (inline `will-change`, merged
-  with the element's own), cleared 500 ms after the last motion. Mobile Safari
+  with the element's own), cleared 500 ms after the last motion.
+  `set(values, {promote: false})` writes without one, for a one-off switch
+  that must not give its element a layer. Mobile Safari
   needs it to run a curve through a blocked main thread. A pseudo-element is
   promoted through `--astryx-motion-will-change-<pseudo>` on its host; its
   style opts in with

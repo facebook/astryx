@@ -12,10 +12,14 @@
  * The swipe actions live in ItemSwipeLayer, reached only through a dynamic
  * import when `swipeActions` is set: this module imports nothing of the
  * gesture, so a row without swipe actions ships none of it. The root here
- * still carries the swipe styles and forwards its events into the bridge the
- * layer fills, so a swipeable row keeps the DOM and the event model it had
- * when the gesture was imported here (Item.source-build.test.mjs pins the
- * import graph).
+ * still carries the swipe styles and forwards its key events into the bridge
+ * the layer fills; the layer attaches the gesture to the root itself, so a
+ * swipeable row keeps the DOM it had when the gesture was imported here
+ * (Item.source-build.test.mjs pins the import graph).
+ *
+ * A control Item renders in the row (List's edit-mode delete control, in the
+ * marker slot) reaches the row's swipe through ItemSwipeRevealContext: the
+ * side it is open on, and the swipe's own reveal and close.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Item/Item.doc.mjs
@@ -31,7 +35,9 @@ import {
   Suspense,
   useCallback,
   useId,
+  useMemo,
   useRef,
+  useState,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -46,6 +52,11 @@ import {
 import type {BaseProps} from '../BaseProps';
 import {isRenderable, mergeProps} from '../utils';
 import {ItemDescriptionContext} from './ItemDescriptionContext';
+import {
+  ItemSwipeRevealContext,
+  type ItemSwipeReveal,
+  type ItemSwipeSide,
+} from './ItemSwipeRevealContext';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {computeTargetAndRel} from '../Link/computeTargetAndRel';
 import {useLinkComponent} from '../Link/useLinkComponent';
@@ -116,10 +127,14 @@ export interface ItemSwipeActions {
 }
 
 /**
- * `reveal`: past half the panel the row rests open with every entry a real
- * button; a long drag or a fling fires the outermost. `commit`: a release
- * past the commit point slides the row out and fires the outermost entry;
- * nothing rests, and the panel is presentational.
+ * `reveal`: every entry of a resting row is a real button. As in a UIKit
+ * list, a fast release goes the way it moves (a flick opens the row, a flick
+ * back closes it) and a slow one rests the row open past half the panel, and
+ * a full swipe fires the outermost: dragged on past the confirm point, the
+ * row runs ahead and the outermost entry covers its place, and letting go
+ * there fires it; backing out closes the row. `commit`: only a full swipe
+ * does anything, sliding the row out; nothing rests, and the panel is
+ * presentational.
  */
 export type ItemSwipeBehavior = 'reveal' | 'commit';
 
@@ -276,7 +291,9 @@ export interface ItemProps extends BaseProps<HTMLElement> {
    * a touch accelerator and never a row's only path to a verb: a verb
    * reachable only by swipe is unreachable by keyboard and by mouse, so every
    * entry must also be reachable through the row's own content (a menu or a
-   * button in `endContent`).
+   * button in `endContent`). An open row closes on a tap on its own content,
+   * which activates nothing and paints no press, on a touch elsewhere, when
+   * the list or page scrolls with focus outside it, and on Escape.
    *
    * Available on a row whose role permits interactive descendants — a
    * `listitem`, a row with no role — and not served on one whose role forbids
@@ -284,6 +301,9 @@ export interface ItemProps extends BaseProps<HTMLElement> {
    * radio). The element containing the rows clips in the inline axis
    * (`overflow-inline: clip`): `List` does; any other host does it once.
    *
+   * The swipe is a touch behaviour, the same on every device: the gesture
+   * reads each touch's pointer, so a finger swipes the row whatever the
+   * primary pointer (a touchscreen laptop's included) and a mouse never does.
    * The gesture and its panels are loaded on demand, the first time a row has
    * swipe actions, so a row without them ships none of it; a row with them is
    * drawn at once and becomes swipeable as soon as that module has loaded.
@@ -292,8 +312,9 @@ export interface ItemProps extends BaseProps<HTMLElement> {
 
   /**
    * What a swipe does: `reveal` rests the row open with every entry tappable
-   * and fires the outermost on a long drag; `commit` slides the row out and
-   * fires the outermost on release. `commit` fits one entry per side.
+   * (a flick opens it, a flick back closes it, and a full swipe fires the
+   * outermost, as in a UIKit list); `commit` only fires the outermost on a
+   * full swipe, sliding the row out. `commit` fits one entry per side.
    * @default 'reveal'
    */
   swipeBehavior?: ItemSwipeBehavior;
@@ -328,11 +349,6 @@ const ARIA_SELECTED_ROLES = new Set([
  * qualifies too; `option`, the `menuitem*` roles and the rest do not.
  */
 const SWIPE_ROLES = new Set(['listitem']);
-
-/** The travel a drag writes on the row root, in physical px (see useSwipeAction). */
-const SWIPE_TRAVEL = 'var(--_item-swipe-travel, 0px)';
-/** The settle clock, `0s` while the finger drives the row. */
-const SWIPE_DURATION = 'var(--_item-swipe-duration, 0s)';
 
 // =============================================================================
 // Styles
@@ -504,19 +520,15 @@ const styles = stylex.create({
     display: 'flex',
     marginInlineStart: 'auto',
   },
-  // Swipe actions. The root translates by the drag's travel and settles on
-  // the clock the gesture writes; `pan-y` lets the browser keep scrolling the
-  // list while the row owns horizontal movement, and `pinch-zoom` leaves a
-  // two-finger pinch that starts on the row to the browser, so the page stays
-  // zoomable (WCAG 1.4.4). The hover transition keeps its own clock beside
-  // the transform's.
+  // Swipe actions. The gesture moves the root with its `translate` property
+  // (compositor animations, see useSwipeAction), so the row's own `transform`
+  // stays free; `pan-y` lets the browser keep scrolling the list while the
+  // row owns horizontal movement, and `pinch-zoom` leaves a two-finger pinch
+  // that starts on the row to the browser, so the page stays zoomable
+  // (WCAG 1.4.4). The gesture writes the same value inline once it loads.
   swipeRoot: {
     isolation: 'isolate',
     touchAction: 'pan-y pinch-zoom',
-    transform: `translate3d(${SWIPE_TRAVEL}, 0, 0)`,
-    transitionProperty: 'background-color, transform',
-    transitionDuration: `${durationVars['--duration-fast-min']}, ${SWIPE_DURATION}`,
-    transitionTimingFunction: `${easeVars['--ease-standard']}, ease-out`,
   },
 });
 
@@ -633,29 +645,55 @@ export function Item({
   // a row that is the enlarged target of a nested control are not served.
   const leadingSwipe = swipeActions?.leading ?? [];
   const trailingSwipe = swipeActions?.trailing ?? [];
-  const hasSwipe =
+  const isSwipeServed =
     swipeActions != null &&
     (leadingSwipe.length > 0 || trailingSwipe.length > 0) &&
     !isDisabled &&
     !isDelegate &&
     !isLinkRoot &&
     (role == null || SWIPE_ROLES.has(role));
+  // The swipe is a touch behaviour, the same on every device: the gesture
+  // reads each touch's pointer (`spec:AST-057`), so a finger swipes whatever
+  // the primary pointer and a mouse never starts the drag.
+  const hasSwipe = isSwipeServed;
   useDevWarning(
     'Item',
     '`swipeBehavior="commit"` fires only the outermost entry of a side; the ' +
       'other entries have no touch path. Give a committing side one entry, ' +
       'or use `swipeBehavior="reveal"`.',
-    hasSwipe &&
+    isSwipeServed &&
       swipeBehavior === 'commit' &&
       (leadingSwipe.length > 1 || trailingSwipe.length > 1),
   );
-  const swipeRootRef = useRef<HTMLElement | null>(null);
   // Filled by the swipe layer once it has mounted; empty until then and on a
   // row without swipe actions, when the forwarders below do nothing.
   const swipeBridgeRef = useRef<ItemSwipeBridge | null>(null);
+  const [hasSwipeBridge, setHasSwipeBridge] = useState(false);
   const setSwipeBridge = useCallback((bridge: ItemSwipeBridge | null) => {
     swipeBridgeRef.current = bridge;
+    setHasSwipeBridge(bridge != null);
   }, []);
+  // The side an open row is open on. An open row's root is no pressable
+  // surface: a tap on its content only closes it, and UIKit's cell neither
+  // sees that touch nor highlights.
+  const [swipeOpenSide, setSwipeOpenSide] = useState<ItemSwipeSide | null>(
+    null,
+  );
+  const isSwipeOpen = swipeOpenSide != null;
+  // The row's swipe as a control rendered in the row reaches it (List's
+  // edit-mode delete control, in the marker slot): `null` wherever there is
+  // none to reveal, and until the layer has mounted.
+  const swipeReveal = useMemo<ItemSwipeReveal | null>(
+    () =>
+      hasSwipe && hasSwipeBridge
+        ? {
+            close: () => swipeBridgeRef.current?.close(),
+            reveal: side => swipeBridgeRef.current?.reveal(side),
+            side: swipeOpenSide,
+          }
+        : null,
+    [hasSwipe, hasSwipeBridge, swipeOpenSide],
+  );
   const linkRootProps = isLinkRoot
     ? {
         // A disabled row keeps its place in the tree but goes nowhere.
@@ -824,13 +862,10 @@ export function Item({
   );
 
   const mergedRef = useMergedRefs(ref, containerRef);
-  const rootRef = useMergedRefs(
-    (isDelegate ? mergedRef : ref) as React.Ref<HTMLElement>,
-    hasSwipe ? swipeRootRef : undefined,
-  );
+  const rootRef = isDelegate ? mergedRef : ref;
 
-  // The row's own primary, which the click the browser synthesizes after a
-  // drag must not fire.
+  // The row's own primary. The click the browser synthesizes after a swipe
+  // never reaches it: the gesture system swallows it.
   const primaryOnClick = isDelegate
     ? delegatedOnClick
     : hasParentRole
@@ -838,35 +873,15 @@ export function Item({
       : isInteractive
         ? handleContainerClick
         : undefined;
-  const rootOnClick =
-    hasSwipe && primaryOnClick != null
-      ? (event: React.MouseEvent<HTMLElement>) => {
-          if (swipeBridgeRef.current?.shouldSuppressClick() === true) {
-            return;
-          }
-          primaryOnClick(event);
-        }
-      : primaryOnClick;
 
-  // The gesture's handlers, forwarded from the root into the bridge the swipe
-  // layer fills: the root keeps the event model it had before the split — React's
-  // own pointer, click-capture and key events on the row's root — while the
-  // gesture itself lives in the lazily loaded layer. Until the layer has
-  // mounted the bridge is empty and each forwarder does nothing.
+  // Escape on a resting row, forwarded from the root into the bridge the swipe
+  // layer fills: React's own key event on the row's root, so the row keeps the
+  // event model it had before the split. Until the layer has mounted the
+  // bridge is empty and the forwarder does nothing.
   const swipeHandlers = hasSwipe
     ? {
-        onPointerDown: (event: React.PointerEvent) =>
-          swipeBridgeRef.current?.handlers.onPointerDown(event),
-        onPointerMove: (event: React.PointerEvent) =>
-          swipeBridgeRef.current?.handlers.onPointerMove(event),
-        onPointerUp: (event: React.PointerEvent) =>
-          swipeBridgeRef.current?.handlers.onPointerUp(event),
-        onPointerCancel: (event: React.PointerEvent) =>
-          swipeBridgeRef.current?.handlers.onPointerCancel(event),
-        onClickCapture: (event: React.MouseEvent) =>
-          swipeBridgeRef.current?.handlers.onClickCapture(event),
         onKeyDown: (event: React.KeyboardEvent) =>
-          swipeBridgeRef.current?.handlers.onKeyDown(event),
+          swipeBridgeRef.current?.onKeyDown(event),
       }
     : undefined;
 
@@ -886,7 +901,9 @@ export function Item({
         (isSelected && !allowsAriaSelected ? true : undefined)
       }
       aria-disabled={isDisabled || undefined}
-      {...(isInteractive ? {...pressable, ...cellPressableProps} : undefined)}
+      {...(isInteractive && !isSwipeOpen
+        ? {...pressable, ...cellPressableProps}
+        : undefined)}
       {...mergeProps(
         themeProps('item', {density, align}),
         focusOutlineProps.focusWithin(
@@ -911,10 +928,12 @@ export function Item({
         style,
       )}
       role={role}
-      onClick={rootOnClick}>
+      onClick={primaryOnClick}>
       <ItemDescriptionContext
         value={hasRenderableDescription ? descriptionID : null}>
-        {innerContent}
+        <ItemSwipeRevealContext value={swipeReveal}>
+          {innerContent}
+        </ItemSwipeRevealContext>
       </ItemDescriptionContext>
       {hasSwipe && (
         // The panels: out-of-flow children of this root, so the DOM is the one
@@ -922,8 +941,8 @@ export function Item({
         // the fallback is nothing — at rest a panel shows nothing either.
         <Suspense fallback={null}>
           <LazyItemSwipeLayer
-            rootRef={swipeRootRef}
             onBridge={setSwipeBridge}
+            onOpenChange={setSwipeOpenSide}
             leading={leadingSwipe}
             trailing={trailingSwipe}
             behavior={swipeBehavior}
