@@ -4,7 +4,7 @@
 
 /**
  * @file Button.tsx
- * @input Uses React, ButtonHTMLAttributes, ReactNode, i18n (useTranslator), group contexts
+ * @input Uses React, ButtonHTMLAttributes, ReactNode, i18n (useTranslator), ButtonGroup/InputGroup disabled contexts
  * @output Exports Button component, ButtonProps, ButtonVariant types
  * @position Core implementation; consumed by index.ts, tested by Button.test.tsx
  *
@@ -615,7 +615,8 @@ export function Button({
   // the consumer is deliberately showing it.
   const delaySpinner = isPending || isInterruptible;
   const groupDisabled = buttonGroup?.isDisabled ?? false;
-  const isTrueDisabled = isDisabled || groupDisabled;
+  const isTrueDisabled =
+    isDisabled || groupDisabled || !!inputGroup?.isDisabled;
   // Busy-only: the button can't fire again purely because an action is in
   // flight, not because it's genuinely isDisabled/group-disabled. Per the API
   // Conventions "Disabled vs Busy" rule, busy is visual-only (aria-busy +

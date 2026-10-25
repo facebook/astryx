@@ -5,7 +5,7 @@
 /**
  * @file Selector.tsx
  * @input Uses React, StyleX, adaptive selection surfaces, theme-resolved
- *   indicators, Field, and InputGroup context
+ *   indicators, Field, and InputGroup context (including disabled state)
  * @output Exports Selector with input, secondary, and ghost trigger treatments, content-derived option-mark layout, and token-sized single-line triggers
  * @position Core implementation; consumed by index.ts
  *
@@ -951,7 +951,7 @@ export function Selector<T extends SelectorOptionType>(
     description,
     isOptional = false,
     isRequired = false,
-    isDisabled = false,
+    isDisabled: isDisabledProp = false,
     isReadOnly = false,
     disabledMessage,
     options,
@@ -992,6 +992,8 @@ export function Selector<T extends SelectorOptionType>(
     id,
     ...restProps
   } = props as SelectorPropsClearable<T>;
+  const inputGroup = useInputGroup();
+  const isDisabled = isDisabledProp || !!inputGroup?.isDisabled;
   const {rest, container} = useFieldInputStyling('Selector', restProps, {
     containerXstyle,
     containerClassName,
@@ -1035,7 +1037,6 @@ export function Selector<T extends SelectorOptionType>(
     ref,
   );
   const searchRef = useRef<HTMLInputElement>(null);
-  const inputGroup = useInputGroup();
 
   const [searchQuery, setSearchQuery] = useState('');
   // Mirrors searchQuery for the seed path, which runs before focus reaches the

@@ -4,7 +4,7 @@
 
 /**
  * @file MultiSelector.tsx
- * @input Uses React, StyleX, usePopover, useTooltip, CheckboxInput, Field, Badge, Icon, InputGroupContext
+ * @input Uses React, StyleX, usePopover, useTooltip, CheckboxInput, Field, Badge, Icon, InputGroupContext (including disabled state)
  * @output Exports MultiSelector with input, secondary, and ghost trigger variants
  * @position Core implementation; consumed by index.ts
  *
@@ -1087,7 +1087,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   description,
   isOptional = false,
   isRequired = false,
-  isDisabled = false,
+  isDisabled: isDisabledProp = false,
   isReadOnly = false,
   disabledMessage,
   options,
@@ -1136,6 +1136,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   'aria-describedby': ariaDescribedByProp,
   ...restProps
 }: MultiSelectorProps<T>) {
+  const inputGroup = useInputGroup();
+  const isDisabled = isDisabledProp || !!inputGroup?.isDisabled;
   const {rest, container} = useFieldInputStyling('MultiSelector', restProps, {
     containerXstyle,
     containerClassName,
@@ -1187,7 +1189,6 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const triggerButtonRef = useMergedRefs<HTMLElement>(triggerRef, ref);
   const searchRef = useRef<HTMLInputElement>(null);
   const listboxRef = useRef<HTMLDivElement>(null);
-  const inputGroup = useInputGroup();
 
   const [searchQuery, setSearchQuery] = useState('');
   // A typed query shows the search row's clear (✕) button, which becomes

@@ -1,5 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file InputGroup.doc.mjs
+ * @input InputGroup props and supported child composition
+ * @output Consumer guidance for connected inputs and inherited disablement
+ * @position Colocated InputGroup documentation consumed by the CLI and docsite
+ */
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -53,7 +60,8 @@ export const docs = {
     {
       name: 'isDisabled',
       type: 'boolean',
-      description: 'Disable the entire group.',
+      description:
+        'Disable compatible inputs and Button addons, including nested groups. A child cannot opt out with isDisabled={false}, and explicitly disabled children stay disabled when the group is enabled. Caller-rendered controls are not modified.',
       default: 'false',
     },
     {
@@ -124,6 +132,11 @@ export const docs = {
         guidance: true,
         description:
           "Keep each inner input's label specific; grouped inputs automatically combine the group label with their own label and inherit the group description/status context.",
+      },
+      {
+        guidance: true,
+        description:
+          'Set isDisabled on the group instead of repeating it on compatible children. Provide disabledMessage on each child that supports a reason; caller-rendered controls own their disabled behavior.',
       },
       {
         guidance: false,
@@ -200,6 +213,11 @@ export const docsDense = {
         guidance: true,
         description:
           "Keep each inner input's label specific; grouped inputs combine the group label with their own label and inherit group description/status.",
+      },
+      {
+        guidance: true,
+        description:
+          'Group isDisabled disables compatible children and Button addons; child false cannot opt out. Keep disabledMessage on children; caller-rendered controls own their disabled behavior.',
       },
       {
         guidance: false,

@@ -4,7 +4,7 @@
 
 /**
  * @file TextInput.tsx
- * @input Uses React, useId, ChangeEvent, Field, Icon, InputGroupContext
+ * @input Uses React, useId, ChangeEvent, Field, Icon, InputGroupContext (including disabled state)
  * @output Exports TextInput component, TextInputProps
  * @position Core implementation; consumed by index.ts, tested by TextInput.test.tsx
  *
@@ -297,7 +297,7 @@ export function TextInput({
   description,
   isOptional = false,
   isRequired = false,
-  isDisabled = false,
+  isDisabled: isDisabledProp = false,
   isReadOnly = false,
   disabledMessage,
   startIcon,
@@ -327,6 +327,8 @@ export function TextInput({
   'aria-describedby': ariaDescribedByProp,
   ...restProps
 }: TextInputProps) {
+  const inputGroup = useInputGroup();
+  const isDisabled = isDisabledProp || !!inputGroup?.isDisabled;
   const {rest, container} = useFieldInputStyling('TextInput', restProps, {
     containerXstyle,
     containerClassName,
@@ -352,7 +354,6 @@ export function TextInput({
   const statusMessageID = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const inputGroup = useInputGroup();
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);

@@ -5,7 +5,7 @@
 /**
  * @file TimeInput.tsx
  * @input Uses React, Field, NativeTimeSegment, InputGroupContext, pointer media queries, and shared time utilities
- * @output Exports TimeInput, TimeInputProps, and TimeInputNativePicker
+ * @output Exports TimeInput, TimeInputProps, and TimeInputNativePicker; all presentations inherit group disablement
  * @position Core implementation; consumed by index.ts, tested by TimeInput.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -934,6 +934,8 @@ TimeField.displayName = 'TimeField';
  * `preventDefault` on, so it cannot cancel built-in behavior.
  */
 export function TimeInput(props: TimeInputProps) {
+  const inputGroup = useInputGroup();
+  const isDisabled = props.isDisabled || !!inputGroup?.isDisabled;
   const isTouch = useMediaQuery(TOUCH_POINTER_QUERY);
   useDevWarning(
     'TimeInput',
@@ -956,6 +958,7 @@ export function TimeInput(props: TimeInputProps) {
     return (
       <TimeField
         {...rest}
+        isDisabled={isDisabled}
         nativeMode={
           props.presentation === undefined && props.nativePicker === 'always'
             ? 'legacy'
@@ -967,12 +970,14 @@ export function TimeInput(props: TimeInputProps) {
   switch (resolveInputPresentation(effective, isTouch)) {
     case 'native':
       // Only `adaptive-native` on a coarse pointer resolves here (FR2).
-      return <TimeField {...rest} nativeMode="adaptive" />;
+      return (
+        <TimeField {...rest} isDisabled={isDisabled} nativeMode="adaptive" />
+      );
     case 'sheet':
-      return <TouchTimeField {...rest} />;
+      return <TouchTimeField {...rest} isDisabled={isDisabled} />;
     case 'text-input':
     case 'desktop':
-      return <TimeField {...rest} />;
+      return <TimeField {...rest} isDisabled={isDisabled} />;
   }
 }
 

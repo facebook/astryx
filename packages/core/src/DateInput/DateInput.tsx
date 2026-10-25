@@ -5,7 +5,7 @@
 /**
  * @file DateInput.tsx
  * @input Uses React, useId, useState, useCallback, useRef, Field, Icon, Calendar, usePopover, InputGroupContext
- * @output Exports DateInput component, DateInputProps
+ * @output Exports DateInput and DateInputProps; all presentations inherit group disablement
  * @position Core implementation; consumed by index.ts, tested by DateInput.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -1045,6 +1045,8 @@ PointerDateField.displayName = 'PointerDateField';
  * ```
  */
 export function DateInput(props: DateInputProps) {
+  const inputGroup = useInputGroup();
+  const isDisabled = props.isDisabled || !!inputGroup?.isDisabled;
   const isTouch = useMediaQuery(TOUCH_POINTER_QUERY);
   useDevWarning(
     'DateInput',
@@ -1062,11 +1064,11 @@ export function DateInput(props: DateInputProps) {
   } = props;
   switch (surface) {
     case 'native':
-      return <NativeDateField {...rest} />;
+      return <NativeDateField {...rest} isDisabled={isDisabled} />;
     case 'sheet':
-      return <TouchDateField {...rest} />;
+      return <TouchDateField {...rest} isDisabled={isDisabled} />;
     case 'desktop':
-      return <PointerDateField {...rest} />;
+      return <PointerDateField {...rest} isDisabled={isDisabled} />;
   }
 }
 

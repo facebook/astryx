@@ -5,7 +5,7 @@
 /**
  * @file InputGroup.tsx
  * @input Uses React, StyleX, theme tokens, InputGroupContext, Field
- * @output Exports InputGroup component with group label/description ARIA wiring
+ * @output Exports InputGroup with group ARIA wiring and inherited disabled state
  * @position Groups input with prefix/suffix addons; consumed by index.ts
  *
  * Compatible input children consume InputGroup context to remove competing
@@ -26,7 +26,7 @@ import {Field, type InputStatus} from '../Field';
 import {SizeProvider, useSize} from '../SizeContext/SizeContext';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
-import {InputGroupContext} from './InputGroupContext';
+import {InputGroupContext, useInputGroup} from './InputGroupContext';
 import {themeProps} from '../utils/themeProps';
 
 export type InputGroupSize = 'sm' | 'md' | 'lg';
@@ -84,7 +84,8 @@ export interface InputGroupProps extends Omit<
   description?: string;
 
   /**
-   * Whether the group is disabled.
+   * Whether compatible inputs and Button addons are disabled. A disabled
+   * ancestor group also disables this group; individual children cannot opt out.
    * @default false
    */
   isDisabled?: boolean;
@@ -140,7 +141,7 @@ export function InputGroup({
   label,
   isLabelHidden = false,
   description,
-  isDisabled = false,
+  isDisabled: isDisabledProp = false,
   isOptional = false,
   isRequired = false,
   size: sizeProp,
@@ -153,6 +154,8 @@ export function InputGroup({
   'data-testid': testId,
   ...rest
 }: InputGroupProps) {
+  const parentGroup = useInputGroup();
+  const isDisabled = isDisabledProp || !!parentGroup?.isDisabled;
   const size = useSize(sizeProp, 'md');
   const inputId = useId();
   const labelID = useId();
@@ -168,8 +171,8 @@ export function InputGroup({
       .join(' ') || undefined;
 
   const contextValue = useMemo(
-    () => ({isInGroup: true as const, labelID, describedByIDs}),
-    [labelID, describedByIDs],
+    () => ({isInGroup: true as const, isDisabled, labelID, describedByIDs}),
+    [isDisabled, labelID, describedByIDs],
   );
 
   return (

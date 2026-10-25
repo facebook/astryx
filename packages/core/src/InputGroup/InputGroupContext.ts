@@ -6,7 +6,7 @@
  * @file InputGroupContext.ts
  * @input Layer-scoped React context/use
  * @output Exports InputGroup context and useInputGroup hook
- * @position Shared context; consumed by input components for group-aware styling and ARIA associations
+ * @position Shared context; consumed for grouped styling, ARIA associations, and inherited disablement
  */
 
 import {use} from 'react';
@@ -14,6 +14,8 @@ import {createLayerScopedContext as createContext} from '../Layer/layerScopedCon
 
 export interface InputGroupContextValue {
   isInGroup: true;
+  /** Effective group disablement; a child cannot opt out with isDisabled=false. */
+  isDisabled?: boolean;
   /** ID of the group label element, for aria-labelledby composition. */
   labelID: string;
   /** IDs of helper/status text owned by the group, for aria-describedby composition. */

@@ -4,7 +4,7 @@
 
 /**
  * @file Typeahead.tsx
- * @input Uses React, BaseTypeahead, Field, Token, InputGroupContext
+ * @input Uses React, BaseTypeahead, Field, Token, InputGroupContext (including disabled state)
  * @output Exports Typeahead styled typeahead component
  * @position Styled wrapper; composes BaseTypeahead with Field or InputGroup
  *
@@ -396,7 +396,7 @@ export function Typeahead<T extends SearchableItem>({
   maxMenuItems,
   minQueryLength,
   emptySearchText,
-  isDisabled = false,
+  isDisabled: isDisabledProp = false,
   disabledMessage,
   hasClear = true,
   hasAutoFocus,
@@ -429,6 +429,7 @@ export function Typeahead<T extends SearchableItem>({
   const descriptionId = useId();
   const statusMessageId = useId();
   const inputGroup = useInputGroup();
+  const isDisabled = isDisabledProp || !!inputGroup?.isDisabled;
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);

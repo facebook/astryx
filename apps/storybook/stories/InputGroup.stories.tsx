@@ -1,5 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file InputGroup.stories.tsx
+ * @input InputGroup and compatible input/addon components
+ * @output Connected field examples, including inherited disabled state
+ * @position Storybook examples for InputGroup consumer composition
+ */
+
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {Button} from '@astryxdesign/core/Button';
@@ -325,6 +332,30 @@ export const ActionButtonCombinations: Story = {
         </InputGroup>
       </div>
     );
+  },
+};
+
+export const Disabled: Story = {
+  render: args => {
+    const [value, setValue] = useState('example');
+    return (
+      <InputGroup {...args}>
+        <InputGroupText>https://</InputGroupText>
+        <TextInput
+          label="URL"
+          value={value}
+          onChange={setValue}
+          htmlName="website"
+          disabledMessage="Website editing is unavailable"
+        />
+        <Button label="Clear" onClick={() => setValue('')} />
+      </InputGroup>
+    );
+  },
+  args: {
+    label: 'Website',
+    description: 'The input and action inherit the group disabled state.',
+    isDisabled: true,
   },
 };
 
