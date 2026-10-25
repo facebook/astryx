@@ -271,6 +271,18 @@ const dynamicStyles = stylex.create({
  * own scheduled `dialog.close()` has a chance to run (#5701).
  */
 export const MAX_CLOSE_DELAY_MS = 250;
+/**
+ * Longest the drawer slides out for, in ms. The slide-out runs for the
+ * theme's `--duration-medium` (410 ms by default; the default scale's
+ * `--duration-medium-max` is 545 ms), and it keeps playing after the dialog
+ * has closed, while the dialog's `display` transition holds it rendered.
+ *
+ * Exported so `AppShell` keeps this drawer's `Activity` boundary visible for
+ * at least this long after a close (`ACTIVITY_HIDE_BUFFER_MS` in
+ * AppShell.tsx): Activity's `display: none !important` would otherwise cut
+ * the slide-out off (#5701).
+ */
+export const MAX_EXIT_MS = 550;
 /** Fraction of the hold to close at, so the close never lands on its boundary. */
 const CLOSE_WITHIN_HOLD = 0.6;
 
