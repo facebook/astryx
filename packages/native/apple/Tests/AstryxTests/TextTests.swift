@@ -40,6 +40,7 @@ import Testing
   #expect(font.style(.code)?.families == font.familyCode)
   #expect(font.style(.code)?.size == font.codeSize)
   #expect(font.style(.display1)?.size == font.display1Size)
+  #expect(font.style(.display2)?.families == font.familyHeading)
   #expect(font.style(.display3)?.weight == font.display3Weight)
   #expect(font.style(.inherit) == nil)
 }
@@ -57,6 +58,10 @@ import Testing
   #expect(astryxLineLimit(nil) == nil)
   #expect(astryxLineLimit(0) == nil)
   #expect(astryxLineLimit(2) == 2)
+  #expect(astryxLineLimit(2.7) == 2)
+  #expect(astryxLineLimit(.infinity) == nil)
+  #expect(astryxLineLimit(1e30) == nil)
+  #expect(astryxLineLimit(.nan) == nil)
 }
 
 @MainActor

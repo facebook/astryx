@@ -9,7 +9,8 @@ struct TypeStyle: Equatable {
 }
 
 extension FontTokens {
-  /// The style core's Text draws for a type, or nil for `inherit`.
+  /// The style core's Text draws for a type, or nil for `inherit`. Display
+  /// types draw in the heading family, as core's type scale sets them.
   func style(_ type: TextType) -> TypeStyle? {
     switch type {
     case .body: TypeStyle(size: bodySize, weight: bodyWeight, families: familyBody)
@@ -17,9 +18,9 @@ extension FontTokens {
     case .label: TypeStyle(size: labelSize, weight: labelWeight, families: familyBody)
     case .supporting: TypeStyle(size: supportingSize, weight: supportingWeight, families: familyBody)
     case .code: TypeStyle(size: codeSize, weight: codeWeight, families: familyCode)
-    case .display1: TypeStyle(size: display1Size, weight: display1Weight, families: familyBody)
-    case .display2: TypeStyle(size: display2Size, weight: display2Weight, families: familyBody)
-    case .display3: TypeStyle(size: display3Size, weight: display3Weight, families: familyBody)
+    case .display1: TypeStyle(size: display1Size, weight: display1Weight, families: familyHeading)
+    case .display2: TypeStyle(size: display2Size, weight: display2Weight, families: familyHeading)
+    case .display3: TypeStyle(size: display3Size, weight: display3Weight, families: familyHeading)
     case .inherit: nil
     }
   }
@@ -98,10 +99,28 @@ extension HeadingJustify {
     case .end: .trailing
     }
   }
+
+  /// Where a heading's line sits in its container: core's heading is a block,
+  /// so `justify` aligns even a single line across the full width.
+  var frameAlignment: Alignment {
+    switch self {
+    case .start: .leading
+    case .center: .center
+    case .end: .trailing
+    }
+  }
 }
 
-/// Core's `maxLines`: a positive count clamps the text; zero or none does not.
+extension View {
+  /// Spans the offered width and places the content at `alignment`, when set.
+  @ViewBuilder func astryxJustified(_ alignment: Alignment?) -> some View {
+    if let alignment { frame(maxWidth: .infinity, alignment: alignment) } else { self }
+  }
+}
+
+/// Core's `maxLines`: a positive count clamps the text; zero, none, or a count
+/// too large to reach (including infinity) does not.
 func astryxLineLimit(_ maxLines: Double?) -> Int? {
-  guard let maxLines, maxLines >= 1 else { return nil }
+  guard let maxLines, maxLines >= 1, maxLines < Double(Int32.max) else { return nil }
   return Int(maxLines)
 }

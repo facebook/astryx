@@ -58,6 +58,7 @@ public struct Heading: View {
     styled(SwiftUI.Text(props.children))
       .lineLimit(astryxLineLimit(props.maxLines))
       .multilineTextAlignment(props.justify?.alignment ?? inheritedAlignment)
+      .astryxJustified(props.justify?.frameAlignment)
       .accessibilityAddTraits(Self.accessibilityTraits)
       .accessibilityHeading(headingLevel)
       .astryxBase(props.base)

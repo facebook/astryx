@@ -54,3 +54,12 @@ import Testing
 @Test func aHeadingIsAHeader() {
   #expect(Astryx.Heading.accessibilityTraits.contains(.isHeader))
 }
+
+@MainActor
+@Test func justifyAlignsAOneLineHeadingAcrossItsContainer() {
+  let start = Pixels(Astryx.Heading("Hi", level: .v4).frame(width: 300))
+  let end = Pixels(Astryx.Heading("Hi", level: .v4, justify: .end).frame(width: 300))
+  let firstInk = { (p: Pixels) in (0..<p.width).first { x in (0..<p.height).contains { y in p.at(x, y)[3] > 0 } } ?? 0 }
+  #expect(firstInk(end) > firstInk(start) + 150)
+  #expect(HeadingJustify.end.frameAlignment == .trailing)
+}
