@@ -74,14 +74,17 @@ the person's device.
   option, prop, or document attribute and does not change the document-root
   font size (`design:mobile-typography` DR4). A size the person set
   replaces the mobile reading base of `design:mobile-typography` DR1, smaller
-  or larger; DR1 applies when none is set, and the iOS text-entry floor of
+  or larger, and DR2's pin does not apply: every role scales from that size;
+  DR1 and DR2 apply when none is set, and the iOS text-entry floor of
   `family:input-fields` FR9 still holds.
 - **FR4 — Larger text stays usable.** Up to 200% of the theme's sizes, every
   component keeps all of its content and function (WCAG 2.2 success criterion
-  1.4.4). Above 200%, reading text keeps growing; a label inside a dense,
-  fixed-size control, such as a tab, badge, table cell, or segmented control,
-  MAY stop growing at 200% but is never cut off. A control grows with its text
-  rather than holding a fixed height.
+  1.4.4). Above 200%, reading text keeps growing; a label inside a dense control, such
+  as a tab, badge, table cell, or segmented control, MAY stop growing at 200%.
+  A control grows with its text rather than holding a fixed height, so its
+  height never clips a label; a truncation a component record already defines,
+  such as the ellipsis of `component:Badge` FR3, `component:Button` FR5, or
+  `component:Token` FR7, still applies.
 
 ### Platform support
 
@@ -103,6 +106,8 @@ the person's device.
   Sankey labels using `system-ui` directly and several Core and Lab components
   setting their own sizes or line heights; under FR1 those are conformance
   gaps.
+- `architecture:theme-tokens`: size tokens stay rem; Butter, Stone, and Y2K's
+  12 px supporting-size token is the token-level gap below.
 - Defects under FR3 and FR4:
   - On iOS and iPadOS, text ignores Dynamic Type in every theme.
   - Butter, Stone, and Y2K fix supporting text at 12 px, so it does not follow
@@ -120,7 +125,7 @@ the person's device.
 | FR1      | Source check over Core and Lab component styles plus token review                                                                                                              | family, size, and line height of rendered text in component styles; an inherited value; a `1em` icon size; coarse and fine pointer; a platform font keyword; the iOS text-entry floor | A Core or Lab web component sets the family, size, or line height of text it renders outside typography tokens and not by inheritance, or applies a platform font keyword directly; icon sizing and the family floor are not failures |
 | FR2      | Theme token review plus Safari on iOS, top-level document                                                                                                                      | an unbranded shipped theme using the system body font family; a branded theme; the default theme                                                                                      | A branded theme's body font replaced by the system font, or a system body font applied by a component instead of a theme token                                                                                                        |
 | FR3      | Safari on iOS across Dynamic Type categories; Chrome on Android in the emulator with font scale; a desktop browser with a larger default font size and with zoom; theme review | a branded and an unbranded theme; no size set; default category; a size set on each platform; macOS Safari                                                                            | Text that ignores a size the person set; text that differs from the theme's family or size when none is set; a theme family replaced; a public option, prop, or document attribute; a changed root font size                          |
-| FR4      | Desktop browser at 200%, 250%, and 300% text size, plus Safari on iOS at accessibility categories                                                                              | reading text; a button, text input, tab, badge, table cell, and segmented control                                                                                                     | Lost content or function at 200% or less; a cut-off label at any size; a control that keeps a fixed height while its text grows                                                                                                       |
+| FR4      | Desktop browser at 200%, 250%, and 300% text size, plus Safari on iOS at accessibility categories                                                                              | reading text; a button, text input, tab, badge, table cell, and segmented control                                                                                                     | Lost content or function at 200% or less; a label clipped by its control's height at any size; a control that keeps a fixed height while its text grows                                                                               |
 
 ## Decision log
 
