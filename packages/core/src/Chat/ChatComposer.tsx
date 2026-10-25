@@ -509,7 +509,9 @@ export function ChatComposer(props: ChatComposerProps) {
       <Icon
         icon={status.type === 'error' ? 'error' : 'warning'}
         size="md"
-        color={status.type === 'error' ? 'error' : 'warning'}
+        // The glyph sits on the pale status fill, so it takes the bar's
+        // on-muted content colour, as Banner and FieldStatus glyphs do.
+        color="inherit"
       />
       {status.message}
     </div>

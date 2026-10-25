@@ -23,7 +23,7 @@ Astryx components move to the new roles, so their colours change where a theme's
 - Status fills keep a visible boundary in forced-colors mode.
 - Chocolate and Matcha's `--color-on-success` and `--color-on-error` are now a dark ink instead of white, and Stone's `--color-on-success`, `--color-on-warning` and `--color-on-error` are white in light mode and near-black in dark mode instead of the status hue, so content on those fills reaches 4.5:1. Apps that pair them with `bg-success` and the other base fills get the readable ink too.
 - Neutral's success, warning and error Badges, StatusDots, progress fills and Stepper badges move to its retuned status fills: success `#198100` to `#2F7D33` (dark `#64AF4C` to `#74AF75`), warning `#FFCE2F` to `#F8D36A` (dark `#EFD284`), and error `#C9303A` to `#CF3738` (dark `#FF705D` to `#EE736C`). Its accent fill stays `#0074E2` (dark `#6D9CFE`). To keep an old fill, set `--color-<status>-emphasized` in your theme.
-- Stone, Gothic, and Y2K Info fills are blue instead of their neutral accent.
+- Stone, Gothic, and Y2K set a blue `--color-info-emphasized` instead of their neutral accent; their own Info Badge colours are unchanged.
 
 Custom themes get every status role they don't set: theme generation derives readable text, a strong fill that carries its content, and on-muted content from the theme's base status colours (and accent, for Info). To keep a component's previous colour, set the matching role in your theme; for example, set `--color-icon-success` to your old `--color-success` value.
 
