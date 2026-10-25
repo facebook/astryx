@@ -21,6 +21,7 @@ import {GestureHost} from '../GestureHost';
 import {PanGestureRecognizer} from '../PanGestureRecognizer';
 import {TapGestureRecognizer} from '../TapGestureRecognizer';
 import {ManualClock} from './harness';
+import {coarsePrimaryPointer} from './pointerQuery';
 
 interface Box {
   left: number;
@@ -130,6 +131,15 @@ function mount(sheetBox: Box, drawnY: number): void {
     }),
   );
 }
+
+// A phone: the host attaches only where the primary pointer is coarse.
+let restorePointer: () => void;
+beforeEach(() => {
+  restorePointer = coarsePrimaryPointer();
+});
+afterEach(() => {
+  restorePointer();
+});
 
 beforeEach(() => {
   clock = new ManualClock();

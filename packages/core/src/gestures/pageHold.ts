@@ -2,21 +2,28 @@
 
 /**
  * @file pageHold.ts
- * @input A gesture host (its document, and which touches a recognizer owns)
- *   and a scroll lock's decision
+ * @input A document, its gesture host if it has one (which touches a
+ *   recognizer owns), and a scroll lock's decision
  * @output Exports holdPageScroll and PageScrollDecision
  * @position Scroll-lock support of packages/core/src/gestures, in its own
- *   module so a page without a scroll lock never ships it
+ *   module so a page without a scroll lock never ships it. It imports nothing
+ *   of the gesture host: it asks the document's host only if one exists, so a
+ *   scroll lock does not bring the host, its arena and its recognizers into
+ *   every overlay.
  *
  * While a hold is held, a one-finger pan that `decide` says would scroll the
  * page, and that no recognizer owns, is cancelled for the rest of its touch;
- * a second finger (pinch-zoom) never is. Holds stack per host. Only
+ * a second finger (pinch-zoom) never is. A document with no gesture host has
+ * no recognizer, so no touch there is owned. Holds stack per document. Only
  * while one is held is there a non-passive `touchmove` listener, so a scroll
  * lock costs nothing once it is released, and a touch scrolls as without
  * the system.
+ *
+ * SYNC: When modified, update the gestures README ("Holding the page still").
  */
 
-import type {GestureHost} from './GestureHost';
+import {isCoarsePointer, watchCoarsePointer} from './coarsePointer';
+import {gestureHosts} from './hostRegistry';
 
 /**
  * Decides, once per one-finger touch, whether its pan would scroll the page:
@@ -53,18 +60,23 @@ interface PageHolds {
   } | null;
   readonly onTouchStart: (event: TouchEvent) => void;
   readonly onTouchMove: (event: TouchEvent) => void;
+  /** Whether its listeners are on: while held, and the pointer is coarse. */
+  isListening: boolean;
+  stopWatchingPointer: (() => void) | null;
 }
 
-const holdsByHost = new WeakMap<GestureHost, PageHolds>();
+const holdsByDocument = new WeakMap<Document, PageHolds>();
 
 function fingersOf(event: TouchEvent): Touch[] {
   return event.touches == null ? [] : Array.from(event.touches);
 }
 
-function createHolds(host: GestureHost): PageHolds {
+function createHolds(doc: Document): PageHolds {
   const holds: PageHolds = {
     decisions: new Set(),
     touch: null,
+    isListening: false,
+    stopWatchingPointer: null,
     onTouchStart: event => {
       const fingers = fingersOf(event);
       const finger = fingers[0];
@@ -91,8 +103,9 @@ function createHolds(host: GestureHost): PageHolds {
       ) {
         return;
       }
-      // A recognizer that owns the touch decides about its moves itself.
-      if (host.isTouchClaimed(current.id)) {
+      // A recognizer that owns the touch decides about its moves itself. The
+      // host is read on every move: one may be created after the hold began.
+      if (gestureHosts.get(doc)?.isTouchClaimed(current.id) === true) {
         return;
       }
       if (current.verdict == null) {
@@ -116,27 +129,49 @@ function createHolds(host: GestureHost): PageHolds {
 }
 
 /**
- * Hold the page of `host`'s document still under a finger until the
- * returned release runs (a scroll lock under a modal presentation):
- * `holdPageScroll(getGestureHost(document), decide)`.
+ * Turn the holds' listeners on or off: on only while one is held and the
+ * primary pointer is coarse (`spec:AST-094` FR19, FR24).
+ */
+function listen(doc: Document, holds: PageHolds, on: boolean): void {
+  if (on === holds.isListening) {
+    return;
+  }
+  holds.isListening = on;
+  if (on) {
+    doc.addEventListener('touchstart', holds.onTouchStart, PASSIVE_CAPTURE);
+    doc.addEventListener('touchmove', holds.onTouchMove, ACTIVE_CAPTURE);
+  } else {
+    doc.removeEventListener('touchstart', holds.onTouchStart, PASSIVE_CAPTURE);
+    doc.removeEventListener('touchmove', holds.onTouchMove, ACTIVE_CAPTURE);
+    holds.touch = null;
+  }
+}
+
+/**
+ * Hold the page of `doc` still under a finger until the returned release runs
+ * (a scroll lock under a modal presentation): `holdPageScroll(document,
+ * decide)`. Never creates a gesture host. Where the primary pointer is fine
+ * it registers nothing, following the pointer while held.
  * Proposed; pending owner review.
  */
 export function holdPageScroll(
-  host: GestureHost,
+  doc: Document,
   decide: PageScrollDecision,
 ): () => void {
-  const doc = host.document;
-  let holds = holdsByHost.get(host);
+  let holds = holdsByDocument.get(doc);
   if (holds == null) {
-    holds = createHolds(host);
-    holdsByHost.set(host, holds);
+    holds = createHolds(doc);
+    holdsByDocument.set(doc, holds);
   }
   const owned = holds;
   const hold = {decide};
   owned.decisions.add(hold);
   if (owned.decisions.size === 1) {
-    doc.addEventListener('touchstart', owned.onTouchStart, PASSIVE_CAPTURE);
-    doc.addEventListener('touchmove', owned.onTouchMove, ACTIVE_CAPTURE);
+    const view = doc.defaultView;
+    owned.stopWatchingPointer = watchCoarsePointer(view, isCoarse =>
+      listen(doc, owned, isCoarse),
+    );
+    listen(doc, owned, isCoarsePointer(view));
   }
   let isHeld = true;
   return () => {
@@ -146,13 +181,9 @@ export function holdPageScroll(
     isHeld = false;
     owned.decisions.delete(hold);
     if (owned.decisions.size === 0) {
-      doc.removeEventListener(
-        'touchstart',
-        owned.onTouchStart,
-        PASSIVE_CAPTURE,
-      );
-      doc.removeEventListener('touchmove', owned.onTouchMove, ACTIVE_CAPTURE);
-      owned.touch = null;
+      owned.stopWatchingPointer?.();
+      owned.stopWatchingPointer = null;
+      listen(doc, owned, false);
     }
   };
 }

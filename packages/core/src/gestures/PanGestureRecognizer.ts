@@ -112,6 +112,11 @@ const DIRECTION_VECTORS: Partial<Record<PanDirection, Point>> = {
 
 /** @experimental */
 export class PanGestureRecognizer extends GestureRecognizer {
+  /** @internal The host's brand: a pan claims early and follows the one-finger rule (recognizerInternals). */
+  protected get family(): 'pan' {
+    return 'pan';
+  }
+
   minimumNumberOfTouches: number;
   maximumNumberOfTouches: number;
   hysteresis: number;
@@ -132,6 +137,8 @@ export class PanGestureRecognizer extends GestureRecognizer {
   isHandoff = false;
 
   private readonly tracker: VelocityTracker;
+  /** The lift's event time once the pan ended: its release (AST-100 FR2). */
+  private releaseTime: number | undefined = undefined;
   /** The centroid where the gesture started, in client px. */
   private origin: Point = ZERO;
   /** Re-basing that keeps the translation continuous across finger changes. */
@@ -139,8 +146,6 @@ export class PanGestureRecognizer extends GestureRecognizer {
   /** Translation since touch-down, before `setTranslation` offsets. */
   private raw: Point = ZERO;
   private offset: Point = ZERO;
-  /** The lift's event time, once the last finger lifted. */
-  private liftTime: number | undefined;
   private virtual: Point = ZERO;
   private isObserving = false;
   private anchor: Point | null = null;
@@ -199,19 +204,25 @@ export class PanGestureRecognizer extends GestureRecognizer {
   }
 
   /**
-   * Velocity in px/s, UIKit's way (`velocity(in:)`): after a silent rest it
-   * is the last moving value, since a finger at rest sends no events.
+   * Velocity in px/s, UIKit's way, for a dragged surface. At the release it
+   * is 0 when the finger rested longer than the stillness interval before
+   * lifting, or moved fewer than twice (spec:AST-100 FR2).
    */
   velocity(): Point {
-    return this.locked(this.readVelocity(this.tracker, this.liftTime));
+    return this.locked(this.tracker.velocity(this.releaseTime));
   }
 
   /**
-   * The tracker's reading this kind of recognizer reports: a pan's. `at` is
-   * the lift's event time once the last finger lifted (the stillness reset).
+   * A scrolling surface's release velocity in px/s (paging, a wheel): the
+   * scroll-view blend of the pan's last two values, with the same release
+   * rules (architecture:interaction-modality INV10).
    */
-  protected readVelocity(tracker: VelocityTracker, at?: number): Point {
-    return tracker.velocity(at);
+  scrollVelocity(): Point {
+    return this.locked(
+      this.tracker.scrollVelocity(
+        this.releaseTime ?? this.tracker.lastSample?.time ?? 0,
+      ),
+    );
   }
 
   /**
@@ -285,10 +296,10 @@ export class PanGestureRecognizer extends GestureRecognizer {
   }
 
   protected override touchesMoved(
-    touches: ReadonlyArray<GestureTouch>,
+    _touches: ReadonlyArray<GestureTouch>,
     event: GestureEventContext,
   ): void {
-    this.track(touches, event.time);
+    this.track(event.time);
     if (this.isObserving) {
       this.observeNativeScroll();
       return;
@@ -304,14 +315,12 @@ export class PanGestureRecognizer extends GestureRecognizer {
     touches: ReadonlyArray<GestureTouch>,
     event: GestureEventContext,
   ): void {
-    // UIKit reads neither the translation nor the velocity from the lift;
-    // its time is kept for the stillness reset.
+    // UIKit reads neither the translation nor the velocity from the lift; the
+    // lift's time only decides whether the finger was still (AST-100 FR2).
     const remaining = this.numberOfTouches - touches.length;
-    if (remaining === 0) {
-      this.liftTime = event.time;
-    }
     if (isActive(this.state)) {
       if (remaining < this.minimumNumberOfTouches) {
+        this.releaseTime = event.time;
         this.setState('ended');
         return;
       }
@@ -343,7 +352,6 @@ export class PanGestureRecognizer extends GestureRecognizer {
   }
 
   protected override reset(): void {
-    this.liftTime = undefined;
     this.isClaimCommitted = false;
     this.lockedAxis = null;
     this.travelAtBegan = ZERO;
@@ -356,6 +364,7 @@ export class PanGestureRecognizer extends GestureRecognizer {
     this.raw = ZERO;
     this.offset = ZERO;
     this.virtual = ZERO;
+    this.releaseTime = undefined;
     this.tracker.reset();
   }
 
@@ -603,15 +612,13 @@ export class PanGestureRecognizer extends GestureRecognizer {
     return false;
   }
 
-  private track(touches: ReadonlyArray<GestureTouch>, time: number): void {
+  private track(time: number): void {
     const current = centroid(this.touches.values());
     const virtual = {
       x: current.x + this.adjust.x,
       y: current.y + this.adjust.y,
     };
-    // One sample per input event, at the event's own time (`spec:AST-100`
-    // FR4), for every pointer alike.
-    void touches;
+    // UIKit's filter runs once per event.
     this.tracker.add(virtual.x, virtual.y, time);
     this.virtual = virtual;
     this.raw = {x: virtual.x - this.origin.x, y: virtual.y - this.origin.y};
