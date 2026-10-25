@@ -4,12 +4,13 @@
  * @file useChatKeyboard.test.tsx
  * @input vitest, Testing Library, ChatLayout, a stand-in visual viewport
  * @output Tests ChatLayout's keyboard behavior in jsdom: the dock lifts by
- *   the keyboard's cover and makes room after the messages, a transcript at
- *   its newest message stays there, the dock comes down when the composer's
- *   text blurs, nothing moves without a keyboard; which touches the composer
- *   claims (unfocused contenteditable text, never a token's control or a
- *   text control); the caret a claimed tap places, where the browser has
- *   either caret-from-point API
+ *   the keyboard's cover and the message area's end padding makes the same
+ *   room, with no element added for it, a transcript at its newest message
+ *   stays there, the dock comes down when the composer's text blurs, nothing
+ *   moves without a keyboard; which touches the composer claims (unfocused
+ *   contenteditable text, never a token's control or a text control); the
+ *   caret a claimed tap places, where the browser has either caret-from-point
+ *   API
  * @position Unit tests for Chat/useChatKeyboard.ts (motion and the tap claim
  *   are proven in Mobile Safari; see the pull request evidence)
  */
@@ -42,8 +43,17 @@ function dockOf(container: HTMLElement): HTMLElement {
     .parentElement!.parentElement!.parentElement!;
 }
 
-function spacerOf(container: HTMLElement): HTMLElement {
-  return container.querySelector<HTMLElement>('[aria-hidden="true"]')!;
+function messagesOf(): HTMLElement {
+  return screen.getByTestId('layout').firstElementChild as HTMLElement;
+}
+
+// The room the message area's end padding makes for the keyboard, CSS px: the
+// `+ Npx` its functional style adds to the density's own padding.
+function keyboardRoom(element: HTMLElement): number {
+  const match = /--[\w-]+:\s*calc\([^;]*\+\s*(-?[\d.]+)px\)/.exec(
+    element.getAttribute('style') ?? '',
+  );
+  return match == null ? 0 : Number(match[1]);
 }
 
 // The lift an element is laid out with: the value its functional style
@@ -113,22 +123,30 @@ describe('ChatLayout and the software keyboard', () => {
     // the ride's translate is handed back to it: back at identity, the
     // animator takes it off the element.
     expect(layoutLift(dockOf(container))).toBe(300);
-    expect(layoutLift(spacerOf(container))).toBe(300);
+    expect(keyboardRoom(messagesOf())).toBe(300);
     expect(dockOf(container).style.translate).toBe('');
   });
 
+  it('adds no element for the keyboard: the root holds the message area and the dock', async () => {
+    renderLayout();
+    report(window.innerHeight - 300);
+    await settle();
+    // architecture:component-style-authoring INV7: the room is the message
+    // area's end padding (spec:AST-099 FR3), not an element of its own.
+    expect(screen.getByTestId('layout').children).toHaveLength(2);
+  });
+
   it('keeps a transcript at its newest message there', async () => {
-    const {container} = renderLayout();
+    renderLayout();
     // Past the mount's own first-frame scroll to the end.
     await settle();
     const root = screen.getByTestId('layout');
-    const spacer = spacerOf(container);
     let scrollTop = 1000 - 600;
     Object.defineProperties(root, {
       clientHeight: {configurable: true, get: () => 600},
       scrollHeight: {
         configurable: true,
-        get: () => 1000 + layoutLift(spacer),
+        get: () => 1000 + keyboardRoom(messagesOf()),
       },
       scrollTop: {
         configurable: true,
@@ -144,17 +162,16 @@ describe('ChatLayout and the software keyboard', () => {
   });
 
   it('leaves a transcript the reader scrolled up where it is', async () => {
-    const {container} = renderLayout();
+    renderLayout();
     // Past the mount's own first-frame scroll to the end.
     await settle();
     const root = screen.getByTestId('layout');
-    const spacer = spacerOf(container);
     let scrollTop = 100;
     Object.defineProperties(root, {
       clientHeight: {configurable: true, get: () => 600},
       scrollHeight: {
         configurable: true,
-        get: () => 1000 + layoutLift(spacer),
+        get: () => 1000 + keyboardRoom(messagesOf()),
       },
       scrollTop: {
         configurable: true,
@@ -184,7 +201,7 @@ describe('ChatLayout and the software keyboard', () => {
     report(window.innerHeight);
     await settle();
     expect(layoutLift(dockOf(container))).toBe(0);
-    expect(layoutLift(spacerOf(container))).toBe(0);
+    expect(keyboardRoom(messagesOf())).toBe(0);
     expect(dockOf(container).style.translate).toBe('');
   });
 
@@ -194,7 +211,7 @@ describe('ChatLayout and the software keyboard', () => {
     await settle();
     expect(dockOf(container).style.translate).toBe('');
     expect(layoutLift(dockOf(container))).toBe(0);
-    expect(layoutLift(spacerOf(container))).toBe(0);
+    expect(keyboardRoom(messagesOf())).toBe(0);
   });
 });
 

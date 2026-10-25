@@ -21,10 +21,10 @@
  * is position: fixed (out of flow) and the message area fills the root.
  *
  * Software keyboard (useChatKeyboard): the dock rests above the keyboard and
- * a spacer after the messages lets the newest message scroll above it, both
- * laid out from the keyboard height (functional styles), with the keyboard's
- * own spring riding on top; a tap on the composer's text focuses it without
- * Safari scrolling the page.
+ * the message area's end padding lets the newest message scroll above it,
+ * both laid out from the keyboard height (functional styles, no added
+ * element), with the keyboard's own spring riding on top; a tap on the
+ * composer's text focuses it without Safari scrolling the page.
  *
  * Density (compact/balanced/spacious) is controlled via a prop with
  * 'balanced' as the default. No JS measurement or ResizeObserver needed.
@@ -151,11 +151,11 @@ const styles = stylex.create({
     paddingInline: 0,
   },
 
-  // Takes the height of the keyboard over the dock, so the newest message
-  // can scroll above the lifted composer (useChatKeyboard's lift).
-  keyboardSpacer: (lift: number) => ({
-    flexShrink: 0,
-    height: lift,
+  // The end padding grows by the part of the keyboard over the dock, so the
+  // newest message can scroll above the lifted composer (useChatKeyboard's
+  // lift), with no element added for it.
+  messageAreaKeyboard: (lift: number) => ({
+    paddingBlockEnd: `calc(${spacingVars['--spacing-6']} + ${lift}px)`,
   }),
 
   emptyState: {
@@ -406,20 +406,17 @@ export function ChatLayout({
         {/* Message area */}
         <div
           ref={keyboard.messagesRef}
-          {...stylex.props(styles.messageArea, currentDensity.messageArea)}>
+          {...stylex.props(
+            styles.messageArea,
+            currentDensity.messageArea,
+            keyboard.lift > 0 && styles.messageAreaKeyboard(keyboard.lift),
+          )}>
           {showEmpty && emptyState ? (
             <div {...stylex.props(styles.emptyState)}>{emptyState}</div>
           ) : (
             children
           )}
         </div>
-
-        {/* Room for the keyboard over the dock */}
-        <div
-          ref={keyboard.spacerRef}
-          aria-hidden
-          {...stylex.props(styles.keyboardSpacer(keyboard.lift))}
-        />
 
         {/* Dock container — sticky/fixed, holds blur + scroll button + composer */}
         <div

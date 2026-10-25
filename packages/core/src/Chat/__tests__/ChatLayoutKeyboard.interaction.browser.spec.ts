@@ -664,7 +664,7 @@ test('the rise does no Layout or Paint per frame', async ({
     {invalidations: true},
   );
   // The steady part of the rise, 150–400 ms after the report. Its start lays
-  // out and paints a few times (the spacer, the scroll to the newest message,
+  // out and paints a few times (the end padding, the scroll to the newest message,
   // the scroll's handlers), within 75 ms of the report at a 6x CPU slowdown;
   // its end (about 480 ms) hands the layers back, which lays out once. A
   // window that followed the late timer under load would take that in. On a
