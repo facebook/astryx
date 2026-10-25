@@ -1115,6 +1115,33 @@ describe("children pages: each child's start edge, as a snap container places it
     expect(f.x()).toBe(0);
   });
 
+  it('reads where each page rests and the page nearest an offset', () => {
+    const f = setupChildren(CARDS, 10);
+    expect([0, 1, 2, 3].map(i => f.pager.pageOffset(i))).toEqual([
+      0, 160, 320, 390,
+    ]);
+    expect(f.pager.nearestPage(70)).toBe(0);
+    expect(f.pager.nearestPage(90)).toBe(1);
+    expect(f.pager.nearestPage(370)).toBe(3);
+    expect(f.pager.nearestPage(5000)).toBe(3);
+  });
+
+  it('a child added to the track is measured on the next options change, and reported from the next frame', async () => {
+    const pages: number[] = [];
+    const f = setupChildren(CARDS, 10, {
+      onPagesChange: pageCount => pages.push(pageCount),
+    });
+    const child = document.createElement('div');
+    child.getBoundingClientRect = () => rectOf(800, 150);
+    f.track.appendChild(child);
+    f.track.getBoundingClientRect = () => rectOf(0, 950);
+    f.pager.setOptions({count: 6});
+    expect(f.pager.pageCount).toBe(5);
+    expect(pages).toEqual([]);
+    await advance(16, f.clock);
+    expect(pages).toEqual([5]);
+  });
+
   it('RTL: pages measure from the right edge, and a drag right goes forward', async () => {
     const f = setupChildren(CARDS, 10, {}, true);
     expect(f.pager.pageCount).toBe(4);

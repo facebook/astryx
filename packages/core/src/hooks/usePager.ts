@@ -143,6 +143,13 @@ export interface PagerOptions {
    */
   onSettle?: (index: number, previous: number) => void;
   /**
+   * With `pages: 'children'`: a measure found different pages (how many, or
+   * where they rest) after the viewport or the track resized or the options
+   * changed. Not called for the measure an attach makes: read `pageCount`
+   * after attaching.
+   */
+  onPagesChange?: (pageCount: number) => void;
+  /**
    * Called when the pan would begin, with the drag's initial physical
    * direction on screen (the same in RTL); return false to leave the touch
    * to someone else (a zoomed photo that can still pan that way).
@@ -177,6 +184,10 @@ export interface Pager {
   readonly isDragging: boolean;
   /** The content offset on screen right now, from the curve (px). */
   presentation(): number;
+  /** Where page `index` rests (px). */
+  pageOffset(index: number): number;
+  /** The page whose rest is nearest content offset `position` (px). */
+  nearestPage(position: number): number;
   /** Move to a page (wrapped to the nearest copy when looping). */
   goTo(index: number, options?: GoToOptions): void;
   /** Update options; a smaller count clamps the target page. */
@@ -811,6 +822,8 @@ export function createPager(
       if (!sameOffsets(offsets, childOffsets)) {
         childOffsets = offsets;
         changed = true;
+        const pageCount = offsets.length;
+        deliver(() => options.onPagesChange?.(pageCount));
       }
     }
     if (!changed) {
@@ -1016,6 +1029,8 @@ export function createPager(
       const offsets = measureChildOffsets();
       if (!sameOffsets(offsets, childOffsets)) {
         childOffsets = offsets;
+        const pageCount = offsets.length;
+        deliver(() => options.onPagesChange?.(pageCount));
       }
     }
     if (!isLooping() && (target < 0 || target > count() - 1)) {
@@ -1101,6 +1116,8 @@ export function createPager(
       return isDragging;
     },
     presentation,
+    pageOffset: offsetOf,
+    nearestPage: (position: number) => clampIndex(Math.round(pageAt(position))),
     goTo,
     setOptions,
     attach,
