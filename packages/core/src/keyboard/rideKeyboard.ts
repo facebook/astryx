@@ -2,16 +2,17 @@
 
 /**
  * @file rideKeyboard.ts
- * @input An animator, target values and a keyboard transition; the UIKit
- *   keyboard's own spring (`keyboard.spring`), the Android keyboard table
+ * @input An animator, target values and a keyboard transition (its start,
+ *   and the curve the guide publishes with it); the Android keyboard table
  * @output Exports rideKeyboard: moves an element with the keyboard on the
  *   keyboard's own motion
  * @position Keyboard module (internal to core); what a guide subscriber
  *   calls for each transition (Chat/useChatKeyboard.ts)
  *
  * iOS's keyboard moves on UIKit's keyboard spring and Android's on Gboard's
- * slides up and down (motion/android/keyboard.ts); the transition says which
- * (`curve`). Every ride starts at the transition's start, so content that
+ * slides up and down (motion/android/keyboard.ts); the transition publishes
+ * which (`curve`, else `spring`), and the ride plays that
+ * (architecture:react-component-runtime INV11). Every ride starts at the transition's start, so content that
  * joins a slide late lands where the keyboard is; a transition that is not
  * animated (a keyboard changing while up) lands at once. Under Reduce Motion
  * nothing travels (design:reduced-motion): the animator's default
@@ -32,7 +33,6 @@ import type {
 } from '../motion/animator';
 import {keyboard as androidKeyboard} from '../motion/android/keyboard';
 import {cubicBezier} from '../motion/bezier';
-import {keyboard} from '../motion/uikit/keyboard';
 import type {KeyboardTransition} from './keyboardModel';
 
 /**
@@ -56,7 +56,7 @@ export function rideKeyboard(
   // Under Reduce Motion the animator's default applies: no travel (DR1).
   const options = {at: transition.start};
   if (transition.curve == null) {
-    return animator.animate(to, {spring: keyboard.spring}, options);
+    return animator.animate(to, {spring: transition.spring}, options);
   }
   const show = transition.kind === 'show';
   const span = (show ? androidKeyboard.showMs : androidKeyboard.hideMs) / 1000;

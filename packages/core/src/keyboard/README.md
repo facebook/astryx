@@ -168,13 +168,13 @@ keyboard module measures them from the visual viewport under a finger
 
 ## Files
 
-| File                     | What it holds                                                                                                 |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| `useMobileKeyboard.ts`   | The keyboard module: the height, its listeners, the focus routes, BottomSheet's hook.                         |
-| `keyboardModel.ts`       | The clock-free core of the guide: transitions from keyboard reports and focus changes.                        |
-| `keyboardLayoutGuide.ts` | One guide per window, fed by the keyboard module: the frame watch, the verification timer, the focus handoff. |
-| `rideKeyboard.ts`        | Moves an element with the keyboard on its spring (iOS) or Gboard's slide (Chrome), or at once.                |
-| `index.ts`               | Entry point.                                                                                                  |
+| File                     | What it holds                                                                                                         |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `useMobileKeyboard.ts`   | The keyboard module: the height, its listeners, the focus routes, BottomSheet's hook.                                 |
+| `keyboardModel.ts`       | The clock-free core of the guide: transitions from keyboard reports and focus changes.                                |
+| `keyboardLayoutGuide.ts` | One guide per window, fed by the keyboard module: the frame watch, the verification timer, the focus handoff.         |
+| `rideKeyboard.ts`        | Moves an element with the keyboard on the curve its transition publishes, or at once (tests: `rideKeyboard.test.ts`). |
+| `index.ts`               | Entry point.                                                                                                          |
 
 The timing constants live in `../motion/uikit/keyboard.ts` (iOS) and
 `../motion/android/keyboard.ts` (Chrome with Gboard), the spring in
