@@ -11,10 +11,14 @@
  * SYNC: When useScrollLock.ts changes, update tests to match new behavior
  */
 
-import {afterEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {cleanup, renderHook} from '@testing-library/react';
 import {useScrollLock} from './useScrollLock';
 import {isScrollLockActive, subscribeScrollLock} from './rootScrollStyles';
+import {
+  coarsePrimaryPointer,
+  pointerQuery,
+} from '../gestures/__tests__/pointerQuery';
 
 /** A one-finger (or `fingers`-finger) touch event at (x, y) on `target`. */
 function touch(
@@ -159,6 +163,16 @@ describe('useScrollLock', () => {
   });
 
   describe('touch guard', () => {
+    // A phone or tablet: the page hold listens only where the primary pointer
+    // is coarse (`spec:AST-094` FR19), and jsdom models a desktop.
+    let restorePointer: () => void = () => {};
+    beforeEach(() => {
+      restorePointer = coarsePrimaryPointer();
+    });
+    afterEach(() => {
+      restorePointer();
+    });
+
     it('cancels a one-finger pan that no scroller under the finger can take', () => {
       const scrim = document.createElement('div');
       document.body.append(scrim);
@@ -329,6 +343,23 @@ describe('useScrollLock', () => {
 
       second.unmount();
       expect(pan(scrim, 300, 200)).toBe(false);
+    });
+
+    it('holds no touch where the primary pointer is fine, and starts once it turns coarse', () => {
+      restorePointer();
+      const pointer = pointerQuery(false);
+      restorePointer = pointer.restore;
+      const scrim = document.createElement('div');
+      document.body.append(scrim);
+      renderHook(() => useScrollLock(true));
+
+      // A touchscreen whose primary pointer is fine keeps the browser's own
+      // touch behavior; `overflow: hidden` still stops wheel and keyboard.
+      expect(pan(scrim, 300, 200)).toBe(false);
+      expect(document.documentElement.style.overflow).toBe('hidden');
+
+      pointer.set(true);
+      expect(pan(scrim, 300, 200)).toBe(true);
     });
   });
 

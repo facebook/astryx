@@ -3,8 +3,9 @@
 /**
  * @file useScrollLockImports.test.ts
  * @input useScrollLock.ts and the core modules it imports at runtime
- * @output Fails when the scroll lock's import reaches the gesture host or its
- *   arena
+ * @output Fails when the scroll lock's import, or that of an overlay taking
+ *   it (Dialog, AlertDialog, BottomSheet, Drawer, Lightbox), reaches the
+ *   gesture host or its arena
  * @position Keeps the scroll lock's touch half small: Dialog, BottomSheet,
  *   Drawer and Lightbox all take the lock, so whatever it imports ships with
  *   every overlay (architecture:component-style-authoring INV6). The page
@@ -90,8 +91,17 @@ function reachableFrom(entry: string): Set<string> {
 }
 
 describe('useScrollLock imports', () => {
-  it('reach neither the gesture host nor its arena', () => {
-    const reached = reachableFrom('hooks/useScrollLock.ts');
+  // The lock itself, and the overlays that take it: whatever the lock pulls
+  // in ships with each of them.
+  it.each([
+    'hooks/useScrollLock.ts',
+    'Dialog/Dialog.tsx',
+    'AlertDialog/AlertDialog.tsx',
+    'BottomSheet/BottomSheet.tsx',
+    'Drawer/Drawer.tsx',
+    'Lightbox/Lightbox.tsx',
+  ])('%s reaches neither the gesture host nor its arena', entry => {
+    const reached = reachableFrom(entry);
     const gestures = [...reached].filter(path => path.startsWith('gestures/'));
     expect(gestures).not.toContain('gestures/GestureHost.ts');
     expect(gestures).not.toContain('gestures/GestureArena.ts');
