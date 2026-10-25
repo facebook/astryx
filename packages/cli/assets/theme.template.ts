@@ -154,10 +154,6 @@ export const myTheme = defineTheme({
    *   body / heading / code: {family, fallbacks, weight, weights}
    *   heading inherits family and fallbacks from body when omitted; `weights`
    *   sets per-level weight for headings 1–6.
-   *   dynamicType  true: font sizes follow the reader's text size where the
-   *                browser exposes it (iPhone and iPad: Settings › Display &
-   *                Text Size), each step on the curve of its iOS text style;
-   *                the theme's own sizes at the default.
    *
    * See §2 above — naming a family here does not load it.
    *

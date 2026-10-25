@@ -15,7 +15,7 @@ export const docs = {
   placement: {parent: 'namespace:typography', slot: 'guides', order: 20},
   category: 'foundations',
   description:
-    'Line height, semantic type scale tokens, display text, Heading and Text components, custom type scales via defineTheme, and following the reader\'s text size on iOS.',
+    "Line height, semantic type scale tokens, display text, Heading and Text components, custom type scales via defineTheme, and following the reader's text size on iOS.",
   keywords: [
     'line height',
     'leading',
@@ -152,25 +152,11 @@ const denseTheme = defineTheme({
       content: [
         {
           type: 'prose',
-          text: "On iPhone and iPad, readers pick a text size in Settings (Display & Text Size, then Larger Text), and native apps grow or shrink their text with it. Set `typography.dynamicType: true` and the theme does the same wherever the browser exposes that choice through `font: -apple-system-body`, as every browser on iPhone and iPad does: every font size follows the reader's choice on the curve of the iOS text style it plays, so body text scales like Body, `heading-1` like Title 1 and display text like Large Title. A size the theme fixes at a length, such as a 12px supporting size, scales on the curve of the step it reads by default (supporting text like Footnote); a size in `em` or `%` follows its parent, and one that reads a variable follows that variable. At the default size every font size is the theme's own. Spacing, radius and the root font size never change, line heights keep their ratios, and elsewhere nothing changes.",
+          text: "On iPhone and iPad, readers pick a text size in Settings (Display & Text Size, then Larger Text), and native apps grow or shrink their text with it. Every theme does the same wherever the browser exposes that choice through `font: -apple-system-body`, as every browser on iPhone and iPad does: each font size follows the reader's choice on the curve of the iOS text style it plays, so body text scales like Body, `heading-1` like Title 1 and display text like Large Title, and every role keeps its order. A size the theme fixes at a length, such as a 12px supporting size, scales on the curve of the step it reads by default; a size in `em` or `%` follows its parent, and one that reads a variable follows that variable. At the default size every font size is the theme's own. The family, spacing, radius and the root font size never change, line heights keep their ratios, text inputs keep their 16px floor on iOS, and elsewhere nothing changes. There is nothing to turn on: no theme option, prop or document attribute.",
         },
         {
           type: 'prose',
-          text: "The root `Theme` writes the reader's category on `<html data-astryx-text-size>` wherever the browser exposes it (`xs`, `s`, `m`, `l` for the default, `xl`, `xxl`, `xxxl`, then `ax1` to `ax5` for the accessibility sizes), whether or not the theme follows it, so a layout can react to the accessibility sizes with `[data-astryx-text-size^=\"ax\"]`. Fixed-height controls such as `Button` and the text inputs keep their height, so their labels can overflow at the accessibility sizes.",
-        },
-        {
-          type: 'code',
-          lang: 'tsx',
-          label: "Following the reader's text size",
-          code: `import {defineTheme} from '@astryxdesign/core/theme';
-
-const readableTheme = defineTheme({
-  name: 'readable',
-  typography: {
-    scale: { base: 16, ratio: 1.2 },
-    dynamicType: true,                          // iOS text size
-  },
-});`,
+          text: 'Fixed-height controls such as `Button` and the text inputs keep their height, so their labels can overflow at the accessibility sizes.',
         },
       ],
     },

@@ -17,10 +17,11 @@
  *   chrome (scrollbars, native form controls, date pickers) reflects the mode.
  * - `data-astryx-theme` — enables @scope'd theme CSS to reach elements rendered
  *   outside the Theme wrapper (portals, toast fallback viewports).
- * - `data-astryx-text-size` — where the engine reports it, the reader's text size category
- *   (Dynamic Type), read from a hidden `font: -apple-system-body` probe and
- *   kept current; themes with `typography.dynamicType` scale their font sizes
- *   on it (see dynamicType.ts).
+ *
+ * The root Theme also reads the reader's text size (iOS Dynamic Type) from a
+ * hidden, empty `font: -apple-system-body` probe and keeps the page's scales
+ * in an adopted stylesheet; every theme's font sizes follow them, and no
+ * attribute is written (see dynamicType.ts).
  *
  * For RSC / SSR, set `data-theme` on `<html>` in your root server layout
  * to avoid a flash of wrong theme before hydration:
@@ -47,7 +48,7 @@ import {colorVars, typographyVars} from './tokens.stylex';
 import {generateThemeCSS, type DefinedTheme} from './defineTheme';
 import {registerTheme} from './themeRegistry';
 import {dataAttr} from '../naming';
-import {syncTextSizeCategory} from './dynamicType';
+import {syncReaderTextSize} from './dynamicType';
 import {ThemeContext} from './useTheme';
 import {warnOnce} from '../utils/devWarning';
 
@@ -230,9 +231,9 @@ function useRootThemeSync(
 }
 
 /**
- * Hook to keep `<html data-astryx-text-size>` on the reader's text size
- * category (iOS Dynamic Type) for the root provider; see dynamicType.ts.
- * Skipped for nested Theme instances, and a no-op where the engine has no
+ * Hook to keep the page's text size scales on the reader's text size (iOS
+ * Dynamic Type) for the root provider; see dynamicType.ts. Skipped for nested
+ * Theme instances, and a no-op where the engine has no
  * `font: -apple-system-body`.
  */
 function useRootTextSizeSync(isNested: boolean): void {
@@ -240,7 +241,7 @@ function useRootTextSizeSync(isNested: boolean): void {
     if (isNested || typeof document === 'undefined') {
       return;
     }
-    return syncTextSizeCategory(document);
+    return syncReaderTextSize(document);
   }, [isNested]);
 }
 

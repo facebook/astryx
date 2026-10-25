@@ -116,15 +116,10 @@ export interface ThemeAdaptationCondition {
   motion?: 'reduce' | 'no-preference';
 }
 
-/**
- * Typography overrides inside an adaptation rule. Dynamic Type is a setting of
- * the whole theme (`typography.dynamicType`): a rule's own type scale follows
- * the reader's text size whenever the theme does, so a rule cannot turn it on
- * or off.
- */
+/** Typography overrides inside an adaptation rule. */
 export interface ThemeAdaptationTypographyConfig extends Omit<
   TypographyConfig,
-  'scale' | 'dynamicType'
+  'scale'
 > {
   /** Partial type scale, completed from the effective root axis. */
   scale?: Partial<NonNullable<TypographyConfig['scale']>>;

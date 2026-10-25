@@ -167,7 +167,10 @@ describe('theme build adaptations', () => {
         css.indexOf('@media (width < 768px) and (pointer: coarse)'),
         css.indexOf('@media (prefers-contrast: more)'),
       );
-      expect(scaleBlock).toContain('--font-size-base: 0.875rem');
+      // Raw steps follow the reader's text size (spec:AST-102 FR3; 1 elsewhere).
+      expect(scaleBlock).toContain(
+        '--font-size-base: min(calc(0.875rem * var(--_dynamic-type-body, 1)), var(--font-size-lg))',
+      );
       expect(scaleBlock).not.toContain('.astryx-text');
       expect(scaleBlock).not.toContain('.astryx-heading');
       expect(scaleBlock).not.toContain('.astryx-button');
@@ -193,7 +196,7 @@ describe('theme build adaptations', () => {
     },
   );
 
-  it('carries the reader text size layer through a built theme', async () => {
+  it("writes a built theme's font sizes following the reader's text size, as at runtime", async () => {
     const {defineTheme, generateAdaptationCSS, generateThemeCSS} =
       await import('@astryxdesign/core/theme');
     const project = path.join(tmpDir, 'project');
@@ -202,7 +205,7 @@ describe('theme build adaptations', () => {
     // turns it back into a step.
     const input = {
       name: 'dynamic-type-built',
-      typography: {scale: {base: 14, ratio: 1.25}, dynamicType: true},
+      typography: {scale: {base: 14, ratio: 1.25}},
       tokens: {'--text-supporting-size': '12px'},
       adaptations: {
         rules: [
@@ -223,16 +226,23 @@ describe('theme build adaptations', () => {
     const compact = value => value.replace(/\s+/g, ' ').trim();
     const source = defineTheme(input);
     const runtime = generateThemeCSS(source);
-    // The layer comes after the authored rule, in the built CSS as at runtime.
+    // The built CSS writes the sizes as the runtime does: the root's steps and
+    // its fixed supporting size scaled, and the phone rule's steps scaled
+    // inside its own condition.
     const adaptationCSS = generateAdaptationCSS(source).component;
-    expect(adaptationCSS).toContain('@supports (font: -apple-system-body)');
     expect(compact(css)).toContain(compact(adaptationCSS));
+    expect(adaptationCSS).toContain(
+      '--font-size-base: min(calc(1rem * var(--_dynamic-type-body, 1)), var(--font-size-lg));',
+    );
+    expect(css).toContain(
+      '--font-size-base: min(calc(0.875rem * var(--_dynamic-type-body, 1)), var(--font-size-lg));',
+    );
     expect(css).toContain(
       '--text-supporting-size: calc(12px * var(--_dynamic-type-footnote, 1));',
     );
 
-    // The built module keeps the flag: it and a theme extending it compile to
-    // the same CSS as the source.
+    // The built module and a theme extending it compile to the same CSS as
+    // the source.
     const {dynamicTypeBuiltTheme: builtTheme} = await import(
       pathToFileURL(path.join(themesDir, 'dynamic-type-built.js')).href
     );
@@ -406,7 +416,9 @@ describe('theme build adaptations', () => {
       'utf-8',
     );
     expect(rebuiltCss).toContain('@media (width < 700px)');
-    expect(rebuiltCss).toContain('--font-size-lg: 1.25rem');
+    expect(rebuiltCss).toContain(
+      '--font-size-lg: min(calc(1.25rem * var(--_dynamic-type-title3, 1)), var(--font-size-xl))',
+    );
     expect(rebuiltCss).toContain('light-dark(#111111, #eeeeee)');
     expect(rebuiltCss).toContain(':root { color-scheme: light dark; }');
     expect(`${rebuilt.stdout}${rebuilt.stderr}`).toContain(

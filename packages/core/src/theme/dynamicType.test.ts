@@ -20,15 +20,13 @@ import {afterEach, describe, expect, it, vi} from 'vitest';
 import {typography} from './uikitTypography';
 import {defineTheme, generateThemeCSS} from './defineTheme';
 import {
-  DYNAMIC_TYPE_SUPPORTS,
   FONT_SIZE_STEP_STYLES,
-  TEXT_SIZE_ATTRIBUTE,
   TEXT_SIZE_CATEGORIES,
-  dynamicTypeCategoryRules,
   dynamicTypeScale,
   dynamicTypeScaleProperty,
+  dynamicTypeScaleRule,
   scaledFontSizeEntries,
-  syncTextSizeCategory,
+  syncReaderTextSize,
   textSizeCategoryForBodySize,
   type DynamicTypeStyle,
 } from './dynamicType';
@@ -238,13 +236,11 @@ describe('the UIKit curves', () => {
     expect(dynamicTypeScale('largeTitle', 'xs')).toBeCloseTo(31 / 34, 10);
   });
 
-  it('gives each category its scales on <html>, Large none', () => {
-    const rules = dynamicTypeCategoryRules();
-    expect(rules).toHaveLength(11);
-    expect(rules.join('\n')).not.toContain(`${TEXT_SIZE_ATTRIBUTE}="l"`);
-    const ax5 = rules.find(rule =>
-      rule.includes(`${TEXT_SIZE_ATTRIBUTE}="ax5"`),
-    );
+  it('gives the page a category its scales on :root, Large and an unnamed size none', () => {
+    expect(dynamicTypeScaleRule('l')).toBe('');
+    expect(dynamicTypeScaleRule(null)).toBe('');
+    const ax5 = dynamicTypeScaleRule('ax5');
+    expect(ax5).toMatch(/\n:root \{\n {2}--_dynamic-type-/);
     expect(ax5).toContain(`${dynamicTypeScaleProperty('body')}: 3.1176;`);
     expect(ax5).toContain(`${dynamicTypeScaleProperty('largeTitle')}: 1.7647;`);
     expect(dynamicTypeScaleProperty('largeTitle')).toBe(
@@ -287,7 +283,7 @@ describe('the UIKit curves', () => {
     for (const scale of ramps) {
       const theme = defineTheme({
         name: `dt-ramp-${scale.base}-${scale.ratio}`,
-        typography: {dynamicType: true, scale},
+        typography: {scale},
       });
       const entries = scaledFontSizeEntries(theme.tokens);
       expect(entries.map(([name]) => name)).toEqual(steps);
@@ -316,17 +312,12 @@ describe('the UIKit curves', () => {
   });
 });
 
-describe('a theme that follows the reader text size', () => {
-  const supportsBlock = (css: string): string => {
-    const start = css.indexOf(`@supports ${DYNAMIC_TYPE_SUPPORTS} {`);
-    return start === -1 ? '' : css.slice(start);
-  };
-
+describe('every theme follows the reader text size', () => {
   /**
-   * The value of `property` that wins on an engine with the reader text size,
-   * where the media queries `holds` accepts hold: the last declaration whose
-   * media queries all hold. Every declaration a theme emits sits in its own
-   * scope at the same specificity, so source order decides.
+   * The value of `property` that wins where the media queries `holds` accepts
+   * hold: the last declaration whose media queries all hold. Every declaration
+   * a theme emits sits in its own scope at the same specificity, so source
+   * order decides.
    */
   const winning = (
     css: string,
@@ -353,46 +344,94 @@ describe('a theme that follows the reader text size', () => {
     return value;
   };
   const nowhere = () => false;
+  const scaled = (name: string, value: string) =>
+    `${name === '--font-size-5xl' ? '' : 'min('}calc(${value} * var(${dynamicTypeScaleProperty(FONT_SIZE_STEP_STYLES[name as keyof typeof FONT_SIZE_STEP_STYLES])}, 1))`;
 
-  it('emits nothing unless it opts in', () => {
-    const css = generateThemeCSS(defineTheme({name: 'dt-off'})).component;
-    expect(css).not.toContain('-apple-system-body');
-    expect(css).not.toContain('--_dynamic-type-');
+  it('writes every font-size step a theme sets scaled, branded included, keeping its family', () => {
+    for (const theme of [
+      defineTheme({
+        name: 'dt-scale',
+        typography: {scale: {base: 15, ratio: 1.25}},
+      }),
+      defineTheme({
+        name: 'dt-brand',
+        typography: {
+          scale: {base: 16, ratio: 1.2},
+          body: {family: 'Outfit', fallbacks: 'sans-serif'},
+        },
+      }),
+    ]) {
+      const css = generateThemeCSS(theme).component;
+      for (const name of Object.keys(textSizeDefaults)) {
+        const value = theme.tokens[name];
+        expect(value).toBeDefined();
+        expect(
+          winning(css, name, nowhere)?.startsWith(scaled(name, value)),
+        ).toBe(true);
+      }
+      // Only sizes follow the reader: no family, line height, spacing or
+      // anything else reads a scale.
+      const readers = [
+        ...css.matchAll(/(--[a-z0-9-]+|[a-z-]+): [^;]*--_dynamic-type-/g),
+      ].map(match => match[1]);
+      expect(
+        readers.every(name =>
+          /^--(font-size-|text-[a-z0-9-]+-size$)/.test(name),
+        ),
+      ).toBe(true);
+    }
+    expect(
+      winning(
+        generateThemeCSS(
+          defineTheme({
+            name: 'dt-brand-family',
+            typography: {body: {family: 'Outfit', fallbacks: 'sans-serif'}},
+          }),
+        ).component,
+        '--font-family-body',
+        nowhere,
+      ),
+    ).toContain('Outfit');
   });
 
-  it('scales its own raw sizes where the engine provides the reader text size, after everything else', () => {
-    const theme = defineTheme({
-      name: 'dt-on',
-      typography: {dynamicType: true, scale: {base: 15, ratio: 1.25}},
-    });
-    const css = generateThemeCSS(theme).component;
-    const block = supportsBlock(css);
-    expect(block).not.toBe('');
-    // Gated by the capability alone: no touch-callout or pointer idiom (one
-    // touch behavior on every touch device).
-    expect(block.startsWith('@supports (font: -apple-system-body) {')).toBe(
-      true,
-    );
-    expect(css).not.toContain('touch-callout');
-    // The category scales live on <html>, where the root Theme writes it.
-    expect(block).toContain(`:root[${TEXT_SIZE_ATTRIBUTE}="xs"] {`);
-    // Every step, from the theme's own value.
-    expect(block).toContain('@scope ([data-astryx-theme="dt-on"])');
+  it('leaves a theme that sets no type scale on the sizes it inherits, already scaled', () => {
+    // A nested theme with no type scale of its own keeps the outer theme's
+    // sizes; at the top of the page they are the core defaults, which the
+    // root stylesheet scales below every theme.
+    const css = generateThemeCSS(
+      defineTheme({name: 'dt-colors-only', tokens: {'--color-accent': 'red'}}),
+    ).component;
     for (const name of Object.keys(textSizeDefaults)) {
-      const value = theme.tokens[name];
-      expect(value).toBeDefined();
-      expect(block).toContain(
-        `${name}: ${name === '--font-size-5xl' ? '' : 'min('}calc(${value} * var(${dynamicTypeScaleProperty(FONT_SIZE_STEP_STYLES[name as keyof typeof FONT_SIZE_STEP_STYLES])}, 1))`,
-      );
+      expect(winning(css, name, nowhere)).toBeUndefined();
     }
-    // Nothing but font sizes changes.
-    expect(block).not.toMatch(/--spacing-|--radius-|--text-[a-z0-9-]+-leading/);
+    const rule = dynamicTypeScaleRule('ax5');
+    expect(rule.startsWith('@layer astryx-base {\n:root {')).toBe(true);
+    for (const [name, value] of Object.entries(textSizeDefaults)) {
+      expect(rule).toContain(`  ${name}: ${scaled(name, value)}`);
+    }
+  });
+
+  it('adds no theme option, prop or document attribute', () => {
+    defineTheme({
+      name: 'dt-no-option',
+      // @ts-expect-error following the reader text size is not an option
+      typography: {dynamicType: true},
+    });
+    const css = generateThemeCSS(
+      defineTheme({
+        name: 'dt-attr',
+        typography: {scale: {base: 14, ratio: 1.2}},
+      }),
+    ).component;
+    // The theme reads only the private scales the root Theme provides.
+    expect(css).not.toContain('data-astryx-text-size');
+    expect(css).not.toMatch(/:root/);
   });
 
   it('scales the sizes an adaptation rule writes inside its own condition', () => {
     const theme = defineTheme({
       name: 'dt-phone',
-      typography: {dynamicType: true, scale: {base: 14, ratio: 1.2}},
+      typography: {scale: {base: 14, ratio: 1.2}},
       adaptations: {
         rules: [
           {
@@ -402,12 +441,14 @@ describe('a theme that follows the reader text size', () => {
         ],
       },
     });
-    const block = supportsBlock(generateThemeCSS(theme).component);
-    const media = block.slice(block.indexOf('@media '));
-    expect(media).toMatch(/^@media [^{]*pointer: coarse[^{]*\{/);
+    const css = generateThemeCSS(theme).component;
+    const phone = (query: string) => query.includes('pointer: coarse');
     // A full ramp in order: each step is capped at the next one's scaled size.
-    expect(media).toContain(
-      '--font-size-base: min(calc(1rem * var(--_dynamic-type-body, 1)), var(--font-size-lg));',
+    expect(winning(css, '--font-size-base', phone)).toBe(
+      'min(calc(1rem * var(--_dynamic-type-body, 1)), var(--font-size-lg))',
+    );
+    expect(winning(css, '--font-size-base', nowhere)).toBe(
+      'min(calc(0.875rem * var(--_dynamic-type-body, 1)), var(--font-size-lg))',
     );
   });
 
@@ -417,7 +458,6 @@ describe('a theme that follows the reader text size', () => {
     // instead of staying 12px while every step grows.
     const theme = defineTheme({
       name: 'dt-fixed',
-      typography: {dynamicType: true},
       tokens: {'--text-supporting-size': '12px'},
     });
     const css = generateThemeCSS(theme).component;
@@ -435,7 +475,7 @@ describe('a theme that follows the reader text size', () => {
     // whose scale turns it back into a step.
     const theme = defineTheme({
       name: 'dt-fixed-rules',
-      typography: {dynamicType: true, scale: {base: 14, ratio: 1.25}},
+      typography: {scale: {base: 14, ratio: 1.25}},
       tokens: {'--text-supporting-size': '12px'},
       adaptations: {
         rules: [
@@ -457,8 +497,7 @@ describe('a theme that follows the reader text size', () => {
     expect(winning(css, '--text-supporting-size', nowhere)).toBe(
       'calc(12px * var(--_dynamic-type-footnote, 1))',
     );
-    // On a phone the rule's step still wins, as it does without Dynamic Type;
-    // the step itself scales.
+    // On a phone the rule's step wins, and the step itself scales.
     expect(winning(css, '--text-supporting-size', phone)).toBe(
       'var(--font-size-sm)',
     );
@@ -477,19 +516,12 @@ describe('a theme that follows the reader text size', () => {
       '--text-code-size': '0.9em',
       '--text-large-size': '110%',
     };
-    const theme = defineTheme({
-      name: 'dt-fixed-only',
-      typography: {dynamicType: true},
-      tokens,
-    });
-    const css = generateThemeCSS(theme).component;
-    const scaledHere = [
-      ...supportsBlock(css).matchAll(/(--text-[a-z0-9-]+-size):/g),
-    ].map(match => match[1]);
-    expect(scaledHere.sort()).toEqual([
-      '--text-heading-6-size',
-      '--text-supporting-size',
-    ]);
+    const css = generateThemeCSS(
+      defineTheme({name: 'dt-fixed-only', tokens}),
+    ).component;
+    expect(winning(css, '--text-supporting-size', nowhere)).toBe(
+      'calc(0.75rem * var(--_dynamic-type-footnote, 1))',
+    );
     expect(winning(css, '--text-heading-6-size', nowhere)).toBe(
       'calc(clamp(10px, 1vw + 6px, 12px) * var(--_dynamic-type-caption1, 1))',
     );
@@ -505,37 +537,60 @@ describe('a theme that follows the reader text size', () => {
     }
   });
 
-  it('is a setting of the whole theme, not of an adaptation rule', () => {
+  it('lets a set size replace the phone base, smaller or larger, and scales the pinned role too', () => {
+    // neutral's shape: a 14/1.2 scale whose phone rule moves the base to 16px
+    // and pins Display 1 at its desktop 42px (design:mobile-typography DR1,
+    // DR2). A size the reader set replaces that base and lifts the pin.
     const theme = defineTheme({
-      name: 'dt-rule-flag',
+      name: 'dt-phone-profile',
+      typography: {scale: {base: 14, ratio: 1.2}},
       adaptations: {
         rules: [
           {
-            when: {pointer: 'coarse'},
-            // @ts-expect-error a rule's typography cannot turn Dynamic Type on
-            value: {typography: {dynamicType: true}},
+            when: {pointer: 'coarse', width: {below: 'lg'}},
+            value: {typography: {scale: {base: 16, ratio: 1.1736}}},
           },
         ],
       },
     });
-    expect(generateThemeCSS(theme).component).not.toContain('--_dynamic-type-');
+    const phone = (
+      theme as unknown as {
+        __adaptationRules: {tokens: Record<string, string>}[];
+      }
+    ).__adaptationRules[0].tokens;
+    const entries = scaledFontSizeEntries(phone);
+    const at = (category: (typeof TEXT_SIZE_CATEGORIES)[number]) => {
+      const sizes = computedSizes(entries, category);
+      return Object.fromEntries(entries.map(([name], i) => [name, sizes[i]]));
+    };
+    // No size set: the phone base and the pinned Display 1 are the theme's.
+    expect(at('l')['--font-size-base']).toBeCloseTo(16, 6);
+    expect(at('l')['--font-size-5xl']).toBeCloseTo(42, 6);
+    // A smaller size goes below the 16px base, a larger one above it.
+    expect(at('xs')['--font-size-base']).toBeCloseTo((16 * 14) / 17, 6);
+    expect(at('ax5')['--font-size-base']).toBeCloseTo((16 * 53) / 17, 6);
+    // The pinned role scales too.
+    expect(at('ax5')['--font-size-5xl']).toBeCloseTo((42 * 60) / 34, 6);
   });
 
-  it('is inherited by a theme that extends it, and can be turned off', () => {
-    const base = defineTheme({
-      name: 'dt-base',
-      typography: {dynamicType: true},
-    });
-    const child = defineTheme({name: 'dt-child', extends: base});
-    const off = defineTheme({
-      name: 'dt-child-off',
-      extends: base,
-      typography: {dynamicType: false},
-    });
-    expect(supportsBlock(generateThemeCSS(child).component)).toContain(
-      '@scope ([data-astryx-theme="dt-child"])',
+  it('keeps the iOS text-entry floor: the root font size never changes, so text inputs stay at 16px', () => {
+    // Only custom properties change, the root's font size never
+    // (design:mobile-typography DR4): the page's rule declares nothing else.
+    const rule = dynamicTypeScaleRule('xs');
+    for (const line of rule.split('\n').filter(l => l.includes(':'))) {
+      expect(line.trim().startsWith('--') || line.startsWith(':root')).toBe(
+        true,
+      );
+    }
+    // TextInput's iOS floor is 1rem, which therefore stays 16px however small
+    // body text gets (family:input-fields FR9).
+    const textInput = fs.readFileSync(
+      path.resolve(__dirname, '../TextInput/TextInput.tsx'),
+      'utf8',
     );
-    expect(supportsBlock(generateThemeCSS(off).component)).toBe('');
+    expect(textInput).toContain(
+      "`max(1rem, ${typeScaleVars['--text-body-size']})`",
+    );
   });
 });
 
@@ -544,17 +599,28 @@ describe('the root sync', () => {
   let observerCallback: (() => void) | null = null;
   let probeSize = '17px';
 
+  /** A stylesheet as the sync can see one: its whole text. */
+  class FakeSheet {
+    text = '';
+    replaceSync(text: string) {
+      this.text = text;
+    }
+  }
+
   /**
    * An engine as the sync can see it: whether it provides
-   * `font: -apple-system-body` (the capability), and whether it has a touch
-   * callout (an iOS idiom the sync must not look at).
+   * `font: -apple-system-body` (the capability), whether it has a touch
+   * callout (an iOS idiom the sync must not look at), and whether it can
+   * construct a stylesheet for the document to adopt.
    */
   function pretendEngine({
     textSize,
     touchCallout = textSize,
+    constructable = true,
   }: {
     textSize: boolean;
     touchCallout?: boolean;
+    constructable?: boolean;
   }) {
     vi.stubGlobal('CSS', {
       supports: vi.fn((property: string, value?: string) =>
@@ -577,6 +643,12 @@ describe('the root sync', () => {
         }
       },
     );
+    vi.stubGlobal('CSSStyleSheet', constructable ? FakeSheet : undefined);
+    Object.defineProperty(document, 'adoptedStyleSheets', {
+      configurable: true,
+      writable: true,
+      value: constructable ? [] : undefined,
+    });
     const real = window.getComputedStyle.bind(window);
     vi.spyOn(window, 'getComputedStyle').mockImplementation(element =>
       element instanceof HTMLElement &&
@@ -586,10 +658,17 @@ describe('the root sync', () => {
     );
   }
 
+  /** The page's scales, from the stylesheets the document adopted. */
+  const adoptedText = () =>
+    ((document.adoptedStyleSheets ?? []) as unknown as FakeSheet[])
+      .map(sheet => sheet.text)
+      .join('');
+  const htmlAttributes = () => html.getAttributeNames().sort().join(' ');
+
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
-    html.removeAttribute(TEXT_SIZE_ATTRIBUTE);
+    delete (document as {adoptedStyleSheets?: unknown}).adoptedStyleSheets;
     probeSize = '17px';
   });
 
@@ -597,51 +676,70 @@ describe('the root sync', () => {
   // behavior on every touch device).
   it('does nothing where the engine has no font: -apple-system-body, touch callout or not', () => {
     pretendEngine({textSize: false, touchCallout: true});
-    expect(syncTextSizeCategory(document)).toBeUndefined();
-    expect(html.hasAttribute(TEXT_SIZE_ATTRIBUTE)).toBe(false);
+    expect(syncReaderTextSize(document)).toBeUndefined();
     expect(document.querySelector('[data-astryx-text-size-probe]')).toBeNull();
+    expect(document.adoptedStyleSheets).toEqual([]);
   });
 
   it('follows the reader text size wherever the engine provides it, with no platform check', () => {
     pretendEngine({textSize: true, touchCallout: false});
     probeSize = '23px';
-    const cleanup = syncTextSizeCategory(document);
-    expect(html.getAttribute(TEXT_SIZE_ATTRIBUTE)).toBe('xxxl');
+    const cleanup = syncReaderTextSize(document);
+    expect(adoptedText()).toBe(dynamicTypeScaleRule('xxxl'));
+    expect(adoptedText()).toContain(
+      `${dynamicTypeScaleProperty('body')}: 1.3529;`,
+    );
     cleanup?.();
   });
 
-  it('writes no category where the keyword follows no reader setting (a fixed 13px Body, as on a Mac)', () => {
+  it('scales nothing where the keyword follows no reader setting (a fixed 13px Body, as on a Mac)', () => {
     pretendEngine({textSize: true, touchCallout: false});
     probeSize = '13px';
-    const cleanup = syncTextSizeCategory(document);
+    const cleanup = syncReaderTextSize(document);
     expect(cleanup).toBeTypeOf('function');
-    expect(html.hasAttribute(TEXT_SIZE_ATTRIBUTE)).toBe(false);
+    expect(adoptedText()).toBe('');
     cleanup?.();
   });
 
-  it('writes the category, follows a change, and cleans up', () => {
+  it('writes the scales, follows a change and cleans up, with an empty probe and nothing on <html>', () => {
     pretendEngine({textSize: true});
+    const before = htmlAttributes();
     probeSize = '23px';
-    const cleanup = syncTextSizeCategory(document);
+    const cleanup = syncReaderTextSize(document);
     const probe = document.querySelector<HTMLElement>(
       '[data-astryx-text-size-probe]',
     );
+    // A hidden box, 1em square, that renders no text.
     expect(probe?.getAttribute('aria-hidden')).toBe('true');
     expect(probe?.style.getPropertyValue('visibility')).toBe('hidden');
-    expect(html.getAttribute(TEXT_SIZE_ATTRIBUTE)).toBe('xxxl');
+    expect(probe?.style.getPropertyValue('inline-size')).toBe('1em');
+    expect(probe?.textContent).toBe('');
+    expect(adoptedText()).toBe(dynamicTypeScaleRule('xxxl'));
 
     // The reader moves the slider while the page is open: the probe resizes.
     probeSize = '53px';
     observerCallback?.();
-    expect(html.getAttribute(TEXT_SIZE_ATTRIBUTE)).toBe('ax5');
+    expect(adoptedText()).toBe(dynamicTypeScaleRule('ax5'));
 
-    // A size that names no category clears it rather than guessing.
+    // A size that names no category clears the scales rather than guessing.
     probeSize = '18px';
     observerCallback?.();
-    expect(html.hasAttribute(TEXT_SIZE_ATTRIBUTE)).toBe(false);
+    expect(adoptedText()).toBe('');
+    expect(htmlAttributes()).toBe(before);
 
     cleanup?.();
+    expect(document.adoptedStyleSheets).toEqual([]);
     expect(document.querySelector('[data-astryx-text-size-probe]')).toBeNull();
     expect(observerCallback).toBeNull();
+  });
+
+  it('does nothing where the engine cannot construct a stylesheet', () => {
+    pretendEngine({textSize: true, constructable: false});
+    probeSize = '53px';
+    expect(syncReaderTextSize(document)).toBeUndefined();
+    expect(document.querySelector('[data-astryx-text-size-probe]')).toBeNull();
+    expect(document.querySelector('style')?.textContent ?? '').not.toContain(
+      '--_dynamic-type-',
+    );
   });
 });

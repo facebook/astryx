@@ -5,12 +5,13 @@
  * @input The UIKit point sizes per text style (uikitTypography.ts), the raw
  *   font-size tokens (tokens.stylex.ts)
  * @output The reader's text size categories, the category a measured Body
- *   size names, each raw font-size step's UIKit curve and scale, the CSS that
- *   maps a category to those scales, the scaled raw font-size declarations a
- *   theme emits and the semantic sizes it fixes, and the root Theme's
- *   category sync
- * @position Theme utility; read by generateThemeRules.ts (a theme's Dynamic
- *   Type CSS) and Theme.tsx (the root provider writes the category to <html>)
+ *   size names, each raw font-size step's UIKit curve and scale, the rule that
+ *   gives a category its scales, the scaled raw font-size declarations every
+ *   theme emits and the semantic sizes it fixes, and the root Theme's text
+ *   size sync
+ * @position Theme utility; read by generateThemeRules.ts (every theme's font
+ *   sizes, as it writes them) and Theme.tsx (the root provider keeps the
+ *   scales current)
  *
  * On iOS the reader picks a text size in Settings (Display & Text Size, then
  * Larger Text), and every UIKit text style follows it on its own curve. Mobile
@@ -18,17 +19,21 @@
  * the root font size stays 16px, and Astryx never changes it
  * (design:mobile-typography DR4).
  *
- * So the root Theme measures `font: -apple-system-body` in a hidden probe,
- * names the category from Body's size (each category has its own), and writes
- * it to `<html data-astryx-text-size>`; it rereads when the probe resizes, so
- * a change made while the page is open applies at once, as Safari restyles its
- * own keywords. A theme with `typography.dynamicType` then re-declares each
- * raw font-size step as its own value times the scale of the UIKit text style
- * that step plays (UIKit's own rule for custom fonts, `UIFontMetrics`); a
- * semantic size the theme fixes at a length scales on the curve of the step
- * it reads by default. Every scale is 1 at Large, the default category, so a
- * default reader sees exactly the theme's sizes, and only sizes move:
- * spacing, radius and the root stay where the theme put them.
+ * So the root Theme measures `font: -apple-system-body` in a hidden, empty
+ * probe, names the category from Body's size (each category has its own), and
+ * gives the page that category's scales in a stylesheet the document adopts;
+ * it rereads when the probe resizes, so a change made while the page is open
+ * applies at once, as Safari restyles its own keywords. Every theme, branded
+ * included, writes each raw font-size step as its own value times the scale
+ * of the UIKit text style that step plays (UIKit's own rule for custom fonts,
+ * `UIFontMetrics`), and a semantic size it fixes at a length times the scale
+ * of the step it reads by default (spec:AST-102 FR3); the root stylesheet
+ * does the same for the core defaults, below every theme. A scale nobody
+ * wrote is 1, as is every scale at Large, the default category, so a reader
+ * who has not set a size, and every other browser, sees exactly the theme's
+ * sizes; only sizes move: the family, spacing, radius and the root stay where
+ * the theme put them. No theme option, prop or document attribute carries any
+ * of it (DEC-3).
  *
  * The gate is the capability alone: the engine provides
  * `font: -apple-system-body`, as every browser on iPhone and iPad does. There
@@ -44,7 +49,7 @@
 
 import {typography} from './uikitTypography';
 import {dataAttr} from '../naming';
-import {typeScaleDefaults, type textSizeDefaults} from './tokens.stylex';
+import {textSizeDefaults, typeScaleDefaults} from './tokens.stylex';
 
 // =============================================================================
 // Categories
@@ -54,8 +59,7 @@ import {typeScaleDefaults, type textSizeDefaults} from './tokens.stylex';
  * The reader's text size categories, smallest to largest, in the order of the
  * UIKit typography table: the seven standard sizes, then the five
  * accessibility sizes Larger Accessibility Sizes unlocks. `l` (Large) is the
- * default. `<html data-astryx-text-size>` carries one of these, so
- * `[data-astryx-text-size^="ax"]` selects the accessibility sizes.
+ * default.
  */
 export const TEXT_SIZE_CATEGORIES = [
   'xs',
@@ -76,10 +80,7 @@ export const TEXT_SIZE_CATEGORIES = [
 export type TextSizeCategory = (typeof TEXT_SIZE_CATEGORIES)[number];
 
 /** Index of Large, the default category, in every table row. */
-const LARGE = TEXT_SIZE_CATEGORIES.indexOf('l');
-
-/** The attribute the root Theme writes on `<html>`. */
-export const TEXT_SIZE_ATTRIBUTE = dataAttr('text-size');
+const LARGE = 3;
 
 /**
  * The category whose Body size this is, or null when no category has it (a
@@ -89,11 +90,12 @@ export const TEXT_SIZE_ATTRIBUTE = dataAttr('text-size');
 export function textSizeCategoryForBodySize(
   px: number,
 ): TextSizeCategory | null {
-  if (!Number.isFinite(px)) {
-    return null;
-  }
-  const index = typography.body.findIndex(size => Math.abs(size - px) < 0.5);
-  return index === -1 ? null : TEXT_SIZE_CATEGORIES[index];
+  return TEXT_SIZE_CATEGORIES[columnForBodySize(px)] ?? null;
+}
+
+/** The table column whose Body size this is, or -1. */
+function columnForBodySize(px: number): number {
+  return typography.body.findIndex(size => Math.abs(size - px) < 0.5);
 }
 
 // =============================================================================
@@ -153,35 +155,42 @@ const SCALED_STYLES = (Object.keys(typography) as DynamicTypeStyle[]).filter(
 // CSS
 // =============================================================================
 
-/**
- * Where the Dynamic Type CSS applies: wherever the engine provides
- * `font: -apple-system-body`, the keyword that carries the reader's text size.
- * The capability is the whole gate, with no touch-callout or pointer check
- * (one touch behavior on every touch device). The scales come only from the
- * category the root Theme writes, so where the keyword follows no reader
- * setting (macOS Safari's fixed Body) every scale stays 1.
- */
-export const DYNAMIC_TYPE_SUPPORTS = '(font: -apple-system-body)';
-
 /** A scale written to four decimals, without trailing zeros. */
 function formatScale(scale: number): string {
   return String(Number(scale.toFixed(4)));
 }
 
 /**
- * The rules that give each category its scales, on `<html>`. Large needs none:
- * every scaled declaration falls back to 1.
+ * The rule that gives the page a category's scales, for the root Theme's
+ * stylesheet: one custom property per scaled style on `:root`. Large, and a
+ * size that names no category, need none: every scaled declaration falls back
+ * to 1.
  */
-export function dynamicTypeCategoryRules(): string[] {
-  return TEXT_SIZE_CATEGORIES.filter((_, index) => index !== LARGE).map(
-    category => {
-      const declarations = SCALED_STYLES.map(
-        style =>
-          `    ${dynamicTypeScaleProperty(style)}: ${formatScale(dynamicTypeScale(style, category))};`,
-      ).join('\n');
-      return `  :root[${TEXT_SIZE_ATTRIBUTE}="${category}"] {\n${declarations}\n  }`;
-    },
+export function dynamicTypeScaleRule(
+  category: TextSizeCategory | null,
+): string {
+  return scaleRuleForColumn(
+    category === null ? -1 : TEXT_SIZE_CATEGORIES.indexOf(category),
   );
+}
+
+/**
+ * The rule for one table column; none at Large or for -1. Besides the scales,
+ * it gives the core default steps their scaled form in the base layer, below
+ * every theme, so a page or a theme that sets no type scale follows too.
+ */
+function scaleRuleForColumn(column: number): string {
+  if (column < 0 || column === LARGE) {
+    return '';
+  }
+  const declarations = (entries: [string, string][]) =>
+    entries.map(([name, value]) => `  ${name}: ${value};`).join('\n');
+  return `@layer astryx-base {\n:root {\n${declarations(scaledFontSizeEntries(textSizeDefaults))}\n}\n}\n:root {\n${declarations(
+    SCALED_STYLES.map(style => [
+      dynamicTypeScaleProperty(style),
+      formatScale(typography[style][column] / typography[style][LARGE]),
+    ]),
+  )}\n}`;
 }
 
 /**
@@ -241,65 +250,43 @@ const TEXT_SIZE_STEPS = Object.entries(typeScaleDefaults).flatMap(
   },
 );
 
-/** A length in a unit that ignores the parent's font size. */
-const FIXED_LENGTH =
-  /\d(?:px|rem|pt|pc|in|cm|mm|q|vw|vh|vi|vb|vmin|vmax|[sld]v[whib]|cq[whib]|cqmin|cqmax)(?![a-z])/i;
-/** A length relative to the parent's font size, which already follows. */
-const RELATIVE_LENGTH = /\d(?:em|ex|ch|ic|cap|lh)(?![a-z])|\d%/i;
-
 /**
- * Whether a size stays where the theme put it: a fixed length (`12px`,
- * `0.75rem`, a `clamp()` of them) that reads no variable and no parent size.
+ * Whether a size stays where the theme put it: a length (`12px`, `0.75rem`, a
+ * `clamp()` of them) that reads no variable and no parent size (`em`, `%` and
+ * the like already follow it).
  */
 function isFixedSize(value: string): boolean {
   return (
-    !value.includes('var(') &&
-    FIXED_LENGTH.test(value) &&
-    !RELATIVE_LENGTH.test(value)
+    /\d[a-z]/i.test(value) && !/var\(|%|\d(?:em|ex|ch|ic|cap|lh)\b/i.test(value)
   );
 }
 
 /**
- * The semantic font sizes (`--text-*-size`) among `tokens` that a theme
- * re-declares, as `[token, value]`; the caller emits them through its
- * declaration checks, after the raw steps.
- *
- * A semantic size normally reads a raw step (`var(--font-size-sm)`), so it
- * follows the reader through that step. One a theme fixes at a length would
- * stay put while every step grows, so it scales on the curve of the step its
- * core default reads: supporting text reads `--font-size-sm`, so a fixed
- * `12px` scales like Footnote. A size that reads a variable follows what it
- * reads, and one relative to its parent (`em`, `%`) follows the parent, so
- * neither scales twice. A fixed size is not capped: the theme that fixes it
- * also fixes its place in the hierarchy.
- *
- * `scaled` collects the sizes scaled so far, block by block. Every block comes
- * after the theme's own declarations, so a later block re-declares, as
- * written, a size it sets through a variable once an earlier block scaled it:
- * an adaptation rule that turns a fixed size back into a step keeps winning
- * wherever its condition holds.
+ * A block's tokens with its font sizes following the reader's text size: each
+ * raw font-size step it writes as `scaledFontSizeEntries` gives it, and each
+ * semantic size (`--text-*-size`) it fixes at a length times the scale of the
+ * step that size reads by default, so supporting text fixed at `12px` scales
+ * like Footnote. A size that reads a variable follows what it reads, and one
+ * relative to its parent (`em`, `%`) follows the parent, so neither scales
+ * twice; a fixed size is not capped, since the theme that fixes it also fixes
+ * its place in the hierarchy. A step the block does not write keeps the value
+ * it inherits, already scaled.
  */
-export function textSizeEntries(
+export function readerTextSizeTokens(
   tokens: Record<string, string>,
-  scaled: Set<string>,
-): [string, string][] {
-  const entries: [string, string][] = [];
+): Record<string, string> {
+  const out = {...tokens};
+  for (const [name, value] of scaledFontSizeEntries(tokens)) {
+    out[name] = value;
+  }
   for (const [name, step] of TEXT_SIZE_STEPS) {
     const value = tokens[name];
-    if (value === undefined) {
-      continue;
-    }
-    if (isFixedSize(value)) {
-      entries.push([
-        name,
-        `calc(${value} * var(${dynamicTypeScaleProperty(FONT_SIZE_STEP_STYLES[step])}, 1))`,
-      ]);
-      scaled.add(name);
-    } else if (scaled.has(name)) {
-      entries.push([name, value]);
+    if (value !== undefined && isFixedSize(value)) {
+      out[name] =
+        `calc(${value} * var(${dynamicTypeScaleProperty(FONT_SIZE_STEP_STYLES[step])}, 1))`;
     }
   }
-  return entries;
+  return out;
 }
 
 /** A `px` or `rem` length in px (16px to the rem); null for anything else. */
@@ -316,53 +303,45 @@ function lengthInPx(value: string | undefined): number | null {
 // =============================================================================
 
 /**
- * Measure the reader's text size and keep `<html data-astryx-text-size>` on
- * its category; returns the cleanup. Does nothing where the engine has no
- * `font: -apple-system-body`; where its Body size names no category (macOS
- * Safari's fixed 13px), it writes none.
+ * Measure the reader's text size and give the page its scales; returns the
+ * cleanup. Does nothing where the engine has no `font: -apple-system-body` or
+ * cannot construct a stylesheet (every supported browser that has the keyword
+ * can); where its Body size names no category (macOS Safari's fixed 13px),
+ * every scale stays 1.
  *
- * The probe is a hidden `font: -apple-system-body` element appended to
- * `<body>`, outside every app subtree; its box resizes when the reader's text
- * size changes, which is when the category is read again.
+ * The probe is a hidden, empty `font: -apple-system-body` box, 1em square,
+ * appended to `<body>` outside every app subtree: it renders no text, and it
+ * resizes when the reader's text size changes, which is when the size is read
+ * again. The scales go to a stylesheet the document adopts, so nothing is
+ * added to the DOM or written on `<html>`.
  */
-export function syncTextSizeCategory(doc: Document): (() => void) | undefined {
+export function syncReaderTextSize(doc: Document): (() => void) | undefined {
   const view = doc.defaultView;
-  const supports = view?.CSS?.supports;
   if (
-    view == null ||
-    typeof supports !== 'function' ||
-    !view.CSS.supports('font', '-apple-system-body')
+    !view?.CSS?.supports?.('font', '-apple-system-body') ||
+    typeof view.CSSStyleSheet !== 'function' ||
+    !Array.isArray(doc.adoptedStyleSheets)
   ) {
     return undefined;
   }
 
-  const root = doc.documentElement;
   const probe = doc.createElement('span');
   probe.setAttribute('aria-hidden', 'true');
   probe.setAttribute(dataAttr('text-size-probe'), '');
-  probe.textContent = 'M';
-  const {style} = probe;
-  style.setProperty('position', 'fixed');
-  style.setProperty('inset-block-start', '0');
-  style.setProperty('inset-inline-start', '0');
-  style.setProperty('display', 'block');
-  style.setProperty('inline-size', 'max-content');
-  style.setProperty('visibility', 'hidden');
-  style.setProperty('pointer-events', 'none');
-  style.setProperty('white-space', 'nowrap');
-  style.setProperty('font', '-apple-system-body');
-  (doc.body ?? root).append(probe);
+  probe.style.cssText =
+    'position:fixed;inset:0 auto auto 0;inline-size:1em;block-size:1em;visibility:hidden;pointer-events:none;font:-apple-system-body';
+  (doc.body ?? doc.documentElement).append(probe);
 
-  const read = () => {
-    const category = textSizeCategoryForBodySize(
-      Number.parseFloat(view.getComputedStyle(probe).fontSize),
+  const sheet = new view.CSSStyleSheet();
+  doc.adoptedStyleSheets = [...doc.adoptedStyleSheets, sheet];
+  const read = () =>
+    sheet.replaceSync(
+      scaleRuleForColumn(
+        columnForBodySize(
+          Number.parseFloat(view.getComputedStyle(probe).fontSize),
+        ),
+      ),
     );
-    if (category === null) {
-      root.removeAttribute(TEXT_SIZE_ATTRIBUTE);
-    } else if (root.getAttribute(TEXT_SIZE_ATTRIBUTE) !== category) {
-      root.setAttribute(TEXT_SIZE_ATTRIBUTE, category);
-    }
-  };
   read();
 
   const observer =
@@ -374,6 +353,8 @@ export function syncTextSizeCategory(doc: Document): (() => void) | undefined {
   return () => {
     observer?.disconnect();
     probe.remove();
-    root.removeAttribute(TEXT_SIZE_ATTRIBUTE);
+    doc.adoptedStyleSheets = doc.adoptedStyleSheets.filter(
+      adopted => adopted !== sheet,
+    );
   };
 }
