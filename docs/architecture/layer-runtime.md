@@ -448,13 +448,16 @@ layers use Layer rendering without joining Escape/platform dismissal.
   correct, and the runtime polls nothing: an anchor that a scrolled
   container hides is followed again when an intersection observer reports it
   back in view.
-- **INV14 — The runtime owns every layer's shared mechanics.** **Proposed;
-  pending owner decision.** Internally, the layer runtime owns top-layer
-  mounting, dismissal, the presentation hold (keeping a layer's chosen
-  presentation from the open until the close settles), the one shared exit copy every
-  layer uses (the single Core mechanism `architecture:component-style-authoring`
-  INV7 names), and the backdrop tint, drawn with `::backdrop`. No component
-  mounts its own top-layer host, exit copy, or backdrop element. The public
+- **INV14 — The runtime owns every layer's shared mechanism.** **Proposed;
+  pending owner decision.** Internally, the layer runtime owns the shared
+  mechanism layers use: top-layer mounting, close-request delivery, the
+  presentation hold (keeping a layer's chosen presentation from the open until
+  the close settles), the one shared exit copy (the single Core mechanism
+  `architecture:component-style-authoring` INV7 names), and the backdrop tint,
+  drawn with `::backdrop`. A component that needs one of these uses the
+  runtime's rather than building its own. Each component still decides when it
+  dismisses, how it is hosted, and how it is presented (INV9;
+  `family:overlay-dismissal` AV3, AV4, AV6; `spec:AST-003` FR10). The public
   surface stays `useLayer` and `LayerProvider`.
 - **INV15 — One lift-from-trigger module, opt-in per surface.** **Proposed;
   pending owner decision.** Lift-from-trigger presentation lives in one
@@ -597,7 +600,7 @@ this current architecture record.
 | INV8                    | `useLayerDismissal.test.tsx`, `layerDismissalInvariants.test.tsx`, and `useFocusTrap.test.tsx`                                                              | Current top registered layer is skipped, two layers close, or a blocker leaks through                                                                                                                         |
 | INV9                    | Representative Dialog, ContextMenu, Tooltip/HoverCard, and BottomSheet source/tests                                                                         | A current local channel silently changes ownership or policy                                                                                                                                                  |
 | INV10                   | `LayerProvider.tsx`, `LayerProvider.test.tsx`, `useToast.tsx`, `ToastViewport.test.tsx`, and `ToastViewport.modalHost.test.tsx`                             | Provider begins relocating ordinary layers, Toast fallback loses its current lifecycle, or a default provider renders differently from no provider                                                            |
-| INV14, INV15 (proposed) | Source boundary check over Core for top-layer hosts, exit copies, backdrop elements, lift, and rectangle-morph code outside the runtime and the lift module | A component mounting its own top-layer host, exit copy, or backdrop element, or re-implementing the lift or the grow                                                                                          |
+| INV14, INV15 (proposed) | Source boundary check over Core for top-layer hosts, exit copies, backdrop elements, lift, and rectangle-morph code outside the runtime and the lift module | A component building its own copy of a mechanism INV14 lists (top-layer mounting, close-request delivery, hold, exit copy, or backdrop element), or re-implementing the lift or the grow                      |
 
 Current unit coverage proves emitted styles, reducers, state transitions, and DOM
 placement. Native Popover, `<dialog>`, focus, top-layer ordering, and rendered
