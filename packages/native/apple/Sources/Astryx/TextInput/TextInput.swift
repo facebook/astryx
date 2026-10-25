@@ -103,42 +103,38 @@ public struct TextInput: View {
   var statusVariant: TextInputStatusVariant { props.statusVariant ?? .attached }
 
   public var body: some View {
-    if props.base.isHidden == true {
-      EmptyView()
-    } else {
-      SwiftUI.VStack(alignment: .leading, spacing: astryx.tokens.space.s1) {
-        if props.isLabelHidden != true {
-          labelRow
-        }
-        // A hidden label hides the description with it, as core's field does;
-        // VoiceOver still reads it on the field. A shown description is also
-        // its own text in the reading order, as core's is.
-        if props.isLabelHidden != true, let description = props.description {
-          Text(description, type: .supporting, color: .secondary)
-        }
-        SwiftUI.VStack(alignment: .leading, spacing: 0) {
-          fieldRow
-          statusMessage
-        }
+    SwiftUI.VStack(alignment: .leading, spacing: astryx.tokens.space.s1) {
+      if props.isLabelHidden != true {
+        labelRow
       }
-      .onAppear {
-        guard !hasAppeared else { return }
-        hasAppeared = true
-        if props.hasAutoFocus == true { isFocused = true }
-        // A field that appears busy says so, as core announces a busy start.
-        if props.isLoading == true { AccessibilityNotification.Announcement(AstryxStrings.spinnerLoading).post() }
-        // A status message already present when the field appears is
-        // announced too, as core's field status does.
-        if let announcement = statusAnnouncement { announce(announcement) }
+      // A hidden label hides the description with it, as core's field does;
+      // VoiceOver still reads it on the field. A shown description is also
+      // its own text in the reading order, as core's is.
+      if props.isLabelHidden != true, let description = props.description {
+        Text(description, type: .supporting, color: .secondary)
       }
-      .onChange(of: props.isLoading == true) { _, loading in
-        if loading { AccessibilityNotification.Announcement(AstryxStrings.spinnerLoading).post() }
+      SwiftUI.VStack(alignment: .leading, spacing: 0) {
+        fieldRow
+        statusMessage
       }
-      .onChange(of: statusAnnouncement) { _, announcement in
-        // A status message that appears or changes is announced: an error at
-        // once, others when VoiceOver is free, as core's field status does.
-        if let announcement { announce(announcement) }
-      }
+    }
+    .onAppear {
+      guard !hasAppeared else { return }
+      hasAppeared = true
+      if props.hasAutoFocus == true { isFocused = true }
+      // A field that appears busy says so, as core announces a busy start.
+      if props.isLoading == true { AccessibilityNotification.Announcement(AstryxStrings.spinnerLoading).post() }
+      // A status message already present when the field appears is
+      // announced too, as core's field status does.
+      if let announcement = statusAnnouncement { announce(announcement) }
+    }
+    .onChange(of: props.isLoading == true) { _, loading in
+      if loading { AccessibilityNotification.Announcement(AstryxStrings.spinnerLoading).post() }
+    }
+    .onChange(of: statusAnnouncement) { _, announcement in
+      // A status message that appears or changes is announced: an error at
+      // once, others when VoiceOver is free, as core's field status does.
+      if let announcement { announce(announcement) }
     }
   }
 
@@ -239,6 +235,11 @@ public struct TextInput: View {
         .accessibilityLabel(SwiftUI.Text(accessibilityLabelText))
         .accessibilityHint(SwiftUI.Text(accessibilityDescription))
         .astryxIdentifier(props.base.id)
+        // Base `isHidden` targets the control, as `id` does: the control hides
+        // while the label, description, and status stay (AST-082 FR7).
+        .opacity(hidesControl ? 0 : 1)
+        .accessibilityHidden(hidesControl)
+        .allowsHitTesting(!hidesControl)
       if props.isLoading == true {
         ProgressView().controlSize(.small).accessibilityHidden(true)
       }
@@ -282,6 +283,9 @@ public struct TextInput: View {
   /// A disabled field keeps its focus stop, as core's disabled input does
   /// (`aria-disabled`), so keyboard users reach it and its reason.
   var keepsFocusWhileDisabled: Bool { isDisabled }
+
+  /// Base `isHidden` hides the field control, TextInput's base target.
+  var hidesControl: Bool { props.base.isHidden == true }
 
   var showsClear: Bool {
     props.hasClear == true && !props.value.isEmpty && !isDisabled && !isReadOnly

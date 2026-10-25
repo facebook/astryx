@@ -199,3 +199,12 @@ import Testing
   #expect(clearAndTip.hasTrailingButtons)
   #expect(!Astryx.TextInput(label: "Email", value: "").hasTrailingButtons)
 }
+
+@MainActor
+@Test func isHiddenHidesTheControlAndKeepsTheLabel() {
+  let hidden = Astryx.TextInput(label: "Email", value: "", base: AstryxBaseProps(isHidden: true))
+  #expect(hidden.hidesControl)
+  // The label still draws, so the field is not empty.
+  #expect(Pixels(hidden.frame(width: 240)).height > 0)
+  #expect(!Astryx.TextInput(label: "Email", value: "").hidesControl)
+}
