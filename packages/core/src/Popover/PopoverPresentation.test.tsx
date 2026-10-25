@@ -142,6 +142,69 @@ async function tapTrigger() {
 }
 
 describe('Popover presentation', () => {
+  it('a closed sheet holds no observers or viewport listeners until it opens', async () => {
+    isCompactTouch = true;
+    const observed: string[] = [];
+    const record = (kind: string, target: Node) => {
+      // The root theme's attribute observer is the theme's, not the sheet's.
+      if (target !== document.documentElement) {
+        observed.push(kind);
+      }
+    };
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe(target: Element) {
+          record('resize', target);
+        }
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    vi.stubGlobal(
+      'MutationObserver',
+      class {
+        observe(target: Node) {
+          record('mutation', target);
+        }
+        disconnect() {}
+        takeRecords() {
+          return [];
+        }
+      },
+    );
+    const viewportListeners: string[] = [];
+    const addWindowListener = window.addEventListener.bind(window);
+    const recordWindowListener = (
+      type: string,
+      listener: EventListenerOrEventListenerObject,
+      options?: boolean | AddEventListenerOptions,
+    ) => {
+      if (type === 'resize' || type === 'blur') {
+        viewportListeners.push(type);
+      }
+      addWindowListener(type, listener, options);
+    };
+    vi.spyOn(window, 'addEventListener').mockImplementation(
+      recordWindowListener,
+    );
+
+    render(<Filters presentation="adaptive" />);
+    // The closed sheet is mounted at rest, in place of the anchored layer.
+    await vi.waitFor(() => {
+      expect(sheetDialog()).not.toBeNull();
+    });
+    expect(sheetDialog()).not.toHaveAttribute('open');
+    expect(observed).toEqual([]);
+    expect(viewportListeners).toEqual([]);
+
+    // Opening attaches them.
+    await tapTrigger();
+    await vi.waitFor(() => {
+      expect(observed.length).toBeGreaterThan(0);
+    });
+  });
+
   it('reads the compact-touch query only for an adaptive popover', async () => {
     const {unmount} = render(<Filters />);
     await tapTrigger();
