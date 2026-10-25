@@ -89,5 +89,4 @@ export type {TouchPresentation} from '../utils/touchPresentation';
 
 export {attachTapHaptic, playHaptic} from './haptics';
 export type {GestureArena} from './GestureArena';
-export type {VelocityStrategy} from './VelocityTracker';
 export type {HapticFeedbackKind} from '../motion/uikit';
