@@ -10,7 +10,9 @@
  *   finger or a pen
  * @position AlertDialog's touch layer, imported once, by AlertDialog.tsx
  *
- * Under a finger or a pen the two actions are tracked as one group, the way
+ * Under a touch presentation (a coarse primary pointer, after hydration;
+ * where it is fine nothing attaches: `spec:AST-094` FR13, FR19), a finger or
+ * a pen tracks the two actions as one group, the way
  * UIKit tracks an alert's actions: the touched action highlights in the
  * touch-down frame, the highlight follows the finger from one action to the
  * other, and the lift runs the action under it (none off both). A touch that
@@ -32,6 +34,11 @@ export interface AlertDialogTouchOptions {
   isOpen: boolean;
   /** The inline preview: nothing is tracked. */
   isInline: boolean;
+  /**
+   * The touch presentation (a coarse primary pointer, after hydration):
+   * without it nothing attaches (`spec:AST-094` FR13, FR19).
+   */
+  isTouch: boolean;
   /** Selects the actions the tracking hit-tests. */
   itemSelector: string;
   /** The content's scroller (the title and the message). */
@@ -52,9 +59,9 @@ export interface AlertDialogTouch {
 /** AlertDialog's touch layer: the action-group tracking. */
 export function useAlertDialogTouch(
   surfaceRef: RefObject<HTMLDialogElement | null>,
-  {isOpen, isInline, itemSelector, bodyRef}: AlertDialogTouchOptions,
+  {isOpen, isInline, isTouch, itemSelector, bodyRef}: AlertDialogTouchOptions,
 ): AlertDialogTouch {
-  const isTracking = isOpen && !isInline;
+  const isTracking = isTouch && isOpen && !isInline;
   const isBodyScrollable = useIsScrollable(bodyRef, isTracking);
   useActionGroupTracking(surfaceRef, {
     itemSelector,

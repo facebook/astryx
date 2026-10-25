@@ -17,6 +17,8 @@
 import {render} from '@testing-library/react';
 import {useRef} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {GestureHost} from '../gestures/GestureHost';
+import {coarsePrimaryPointer} from '../gestures/__tests__/pointerQuery';
 import {UIKIT_GESTURES} from '../motion/uikit/gestures';
 import {PRESS_FADE_MS} from '../utils/pressGesture';
 import {
@@ -166,14 +168,20 @@ function mount(props: Partial<Parameters<typeof Group>[0]> = {}) {
 
 const paintOf = (element: Element) => element.getAttribute('data-astryx-press');
 
+// A phone: the gesture host attaches nothing where the primary pointer is
+// fine (`spec:AST-094` FR19).
+let restorePointer: () => void = () => {};
+
 beforeEach(() => {
   vi.useFakeTimers();
+  restorePointer = coarsePrimaryPointer();
   renders = 0;
 });
 
 afterEach(() => {
   vi.runOnlyPendingTimers();
   vi.useRealTimers();
+  restorePointer();
 });
 
 describe('useActionGroupTracking', () => {
@@ -415,6 +423,15 @@ describe('useActionGroupTracking', () => {
     g.down(cancel, centerOf(CANCEL));
     g.up(cancel, centerOf(CANCEL));
     expect(view.onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it('attaches nothing while tracking is off, and attaches when it turns on', () => {
+    const attach = vi.spyOn(GestureHost.prototype, 'attach');
+    const view = mount({options: {isEnabled: false}});
+    expect(attach).not.toHaveBeenCalled();
+    view.rerender(<Group onCancel={view.onCancel} onDelete={view.onDelete} />);
+    expect(attach).toHaveBeenCalledTimes(1);
+    attach.mockRestore();
   });
 
   it('tracks nothing while disabled', () => {

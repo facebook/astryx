@@ -169,7 +169,8 @@ describe('AlertDialog', () => {
       render(<AlertDialog {...defaultProps} />);
 
       expect(window.matchMedia).toHaveBeenCalledWith('(max-width: 640px)');
-      expect(window.matchMedia).not.toHaveBeenCalledWith('(pointer: coarse)');
+      // The layout reads the width alone. The pointer query only turns the
+      // touch layer on, never the order or the stacking.
       expect(window.matchMedia).not.toHaveBeenCalledWith('(hover: none)');
       const dialog = screen.getByRole('alertdialog');
       const buttons = within(dialog).getAllByRole('button');
@@ -230,7 +231,8 @@ describe('AlertDialog', () => {
       );
 
       expect(window.matchMedia).toHaveBeenCalledWith('(max-width: 640px)');
-      expect(window.matchMedia).not.toHaveBeenCalledWith('(pointer: coarse)');
+      // The layout reads the width alone. The pointer query only turns the
+      // touch layer on, never the order or the stacking.
       expect(window.matchMedia).not.toHaveBeenCalledWith('(hover: none)');
       const dialog = screen.getByRole('alertdialog');
       const buttons = within(dialog).getAllByRole('button');
@@ -264,7 +266,8 @@ describe('AlertDialog', () => {
       );
 
       expect(window.matchMedia).toHaveBeenCalledWith('(max-width: 640px)');
-      expect(window.matchMedia).not.toHaveBeenCalledWith('(pointer: coarse)');
+      // The layout reads the width alone. The pointer query only turns the
+      // touch layer on, never the order or the stacking.
       expect(window.matchMedia).not.toHaveBeenCalledWith('(hover: none)');
       const dialog = screen.getByRole('alertdialog');
       const buttons = within(dialog).getAllByRole('button');

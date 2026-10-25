@@ -43,6 +43,7 @@ import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 import {useMediaQuery} from '../hooks';
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useTouchPresentation} from '../utils/touchPresentation';
 import {useAlertDialogTouch} from './AlertDialogTouch';
 
 const SMALL_SCREEN_QUERY = '(max-width: 640px)';
@@ -206,9 +207,14 @@ export function AlertDialog({
   const surfaceRef = useRef<HTMLDialogElement>(null);
   const mergedRef = useMergedRefs(ref, surfaceRef);
   const bodyRef = useRef<HTMLDivElement>(null);
+  // Only under a touch presentation (a coarse primary pointer, after
+  // hydration): where the primary pointer is fine nothing attaches, and a
+  // finger keeps the browser's click (`spec:AST-094` FR13, FR19).
+  const {isTouch} = useTouchPresentation();
   const {isTracking, isBodyScrollable} = useAlertDialogTouch(surfaceRef, {
     isOpen,
     isInline: isInline === true,
+    isTouch,
     itemSelector: `[${ACTION_ATTRIBUTE}]`,
     bodyRef,
   });
