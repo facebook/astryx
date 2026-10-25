@@ -5,16 +5,62 @@
  * @input vitest (jsdom), Testing Library, PageControl
  * @output Proves the control's semantics (one named slider reading "Page N
  *   of M"), its keyboard (arrows mirrored in RTL, Home, End), its measured
- *   geometry and alphas, the width cap, hidesForSinglePage, and a tap's step
- *   to either side of the current indicator
+ *   geometry and alphas, the width cap and the window it renders, and
+ *   hidesForSinglePage
  * @position Testing; the real-touch proofs are
  *   __tests__/PageControl.interaction.browser.spec.ts
  */
 
-import {describe, expect, it, vi} from 'vitest';
+import {afterEach, describe, expect, it, vi} from 'vitest';
 import {createRef} from 'react';
+import {renderToString} from 'react-dom/server';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {PageControl} from './PageControl';
+
+/**
+ * A finger: a coarse primary pointer, on any engine (one touch model; nothing
+ * asks for iOS); `reduced` turns Reduce Motion on.
+ */
+function asTouch({reduced = false}: {reduced?: boolean} = {}) {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((query: string) => ({
+      matches:
+        query.includes('pointer: coarse') ||
+        (reduced && query.includes('prefers-reduced-motion: reduce')),
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  );
+}
+
+/** A mouse: a fine primary pointer, on any engine. */
+function asMouse() {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((query: string) => ({
+      matches: query.includes('pointer: fine'),
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  );
+  // The case's pointer, as the control will read it.
+  expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 function renderControl(
   props: Partial<React.ComponentProps<typeof PageControl>> = {},
@@ -120,13 +166,17 @@ describe('PageControl', () => {
     expect(slider.style.height).toBe('25.67px');
     expect(slider.style.width).toBe('108.35px');
     const indicators = Array.from(
-      slider.firstElementChild?.children ?? [],
-    ) as HTMLElement[];
+      slider.querySelectorAll<HTMLElement>('[data-page]'),
+    );
     expect(indicators).toHaveLength(5);
     // A 10 px box scaled to 9.67 px: round wherever it falls (see the browser
     // proof "every indicator paints round").
     expect(indicators[0].style.width).toBe('10px');
-    expect(Number(indicators[0].style.scale) * 10).toBeCloseTo(9.67, 5);
+    // The animator writes `scale` as "x y".
+    expect(Number.parseFloat(indicators[0].style.scale) * 10).toBeCloseTo(
+      9.67,
+      3,
+    );
     expect(indicators.map(i => i.style.opacity)).toEqual([
       '0.48',
       '0.48',
@@ -136,17 +186,106 @@ describe('PageControl', () => {
     ]);
   });
 
-  it('never grows wider than 161.3 px; past that the row shifts to keep the current page in view', () => {
+  it('never grows wider than 161.3 px; under a finger, with more than ten pages it renders the window around the current page', () => {
+    asTouch();
     renderControl({count: 50, value: 25});
     const slider = screen.getByRole('slider');
     expect(slider.style.width).toBe('161.3px');
-    const strip = slider.firstElementChild as HTMLElement;
-    expect(
-      Number.parseFloat(strip.style.getPropertyValue('--_page-control-offset')),
-    ).toBeGreaterThan(0);
+    // From page 0, page 25 sits in the window's last full slot: the window
+    // starts at page 18 (pages 20–25 full); three slots on each side render
+    // for the slide.
+    const pages = Array.from(
+      slider.querySelectorAll<HTMLElement>('[data-page]'),
+      i => Number(i.dataset.page),
+    );
+    expect(pages[0]).toBe(15);
+    expect(pages[pages.length - 1]).toBe(30);
   });
 
-  it('a tap on the trailing side of the current dot asks for the next page', () => {
+  it('an Android finger (no -webkit-touch-callout) gets the window too: one touch model, no platform idiom', () => {
+    asTouch();
+    vi.stubGlobal('CSS', {supports: () => false});
+    render(<PageControl count={50} value={25} onChange={() => {}} />);
+    const dots = screen
+      .getByRole('slider')
+      .querySelectorAll<HTMLElement>('[data-page]');
+    // The window and its render margin, not the full row of 50.
+    expect(dots.length).toBeLessThan(50);
+  });
+
+  it('with a mouse, a long control is the full row of pages, cropped', () => {
+    asMouse();
+    renderControl({count: 50, value: 25});
+    const slider = screen.getByRole('slider');
+    expect(slider.style.width).toBe('161.3px');
+    const dots = Array.from(
+      slider.querySelectorAll<HTMLElement>('[data-page]'),
+    );
+    expect(dots).toHaveLength(50);
+    // No fades and no shrinking slots with a mouse.
+    expect(dots.every(dot => dot.style.transition === 'none')).toBe(true);
+  });
+
+  it("under a finger, a theme's --motion-page-control-… values reach the fades", () => {
+    asTouch();
+    const onChange = vi.fn();
+    const {rerender} = render(
+      <div
+        data-astryx-theme="page-control-test"
+        style={
+          {
+            '--motion-page-control-fade-out-ms': '500ms',
+            '--motion-page-control-fade-out-curve': 'cubic-bezier(0, 0, 1, 1)',
+          } as React.CSSProperties
+        }>
+        <PageControl count={5} value={2} onChange={onChange} />
+      </div>,
+    );
+    rerender(
+      <div
+        data-astryx-theme="page-control-test"
+        style={
+          {
+            '--motion-page-control-fade-out-ms': '500ms',
+            '--motion-page-control-fade-out-curve': 'cubic-bezier(0, 0, 1, 1)',
+          } as React.CSSProperties
+        }>
+        <PageControl count={5} value={3} onChange={onChange} />
+      </div>,
+    );
+    const slider = screen.getByRole('slider');
+    const old = slider.querySelector<HTMLElement>('[data-page="2"]');
+    expect(old?.style.transition).toBe('opacity 0.5s cubic-bezier(0, 0, 1, 1)');
+  });
+
+  it('under a finger and Reduce Motion, every opacity change fades in 200 ms on easeInOut, whatever the theme (design:reduced-motion DR2)', () => {
+    asTouch({reduced: true});
+    const onChange = vi.fn();
+    const themed = (value: number) => (
+      <div
+        style={
+          {
+            '--motion-page-control-fade-out-ms': '500ms',
+          } as React.CSSProperties
+        }>
+        <PageControl count={5} value={value} onChange={onChange} />
+      </div>
+    );
+    const {rerender} = render(themed(2));
+    rerender(themed(3));
+    const dots = Array.from(
+      screen.getByRole('slider').querySelectorAll<HTMLElement>('[data-page]'),
+    );
+    expect(dots.length).toBe(5);
+    for (const dot of dots) {
+      expect(dot.style.transition).toBe(
+        'opacity 0.2s cubic-bezier(0.42, 0, 0.58, 1)',
+      );
+    }
+  });
+
+  it('with a mouse, a tap on the trailing side of the current dot asks for the next page', () => {
+    asMouse();
     const {onChange} = renderControl();
     tap(screen.getByRole('slider'), 50);
     expect(onChange).toHaveBeenCalledWith(3);
@@ -160,6 +299,20 @@ describe('PageControl', () => {
     view.rerender(<PageControl count={5} value={2} onChange={onChange} />);
     tap(screen.getByRole('slider'), 50);
     expect(onChange).toHaveBeenCalledWith(3);
+  });
+
+  it('a page the app declines can be asked for again', async () => {
+    // The app keeps its value: no render follows onChange.
+    const {onChange} = renderControl();
+    tap(screen.getByRole('slider'), 50);
+    await new Promise(resolve => setTimeout(resolve, 0));
+    tap(screen.getByRole('slider'), 50);
+    expect(onChange).toHaveBeenCalledTimes(2);
+    fireEvent.keyDown(screen.getByRole('slider'), {key: 'ArrowRight'});
+    expect(onChange).toHaveBeenCalledTimes(2);
+    await new Promise(resolve => setTimeout(resolve, 0));
+    fireEvent.keyDown(screen.getByRole('slider'), {key: 'ArrowRight'});
+    expect(onChange).toHaveBeenCalledTimes(3);
   });
 
   it("a caller's onKeyDown runs first and can keep the page with preventDefault", () => {
@@ -189,15 +342,28 @@ describe('PageControl', () => {
 
   it("inactive dots reach 3:1 on Core's default page background (WCAG 1.4.11)", () => {
     renderControl();
-    const dots = Array.from(
-      screen.getByRole('slider').firstElementChild?.children ?? [],
-    ) as HTMLElement[];
-    // Page 1 of 5 is inactive (the value is page 3). Core's light defaults:
-    // --color-text-primary #0A1317 on --color-background-body #F1F4F7.
-    const alpha = Number(dots[0].style.opacity);
+    const dot = screen
+      .getByRole('slider')
+      .querySelector('[data-page="0"]') as HTMLElement;
+    // Core's light defaults: --color-text-primary #0A1317 on
+    // --color-background-body #F1F4F7.
     expect(
-      contrastOver([0x0a, 0x13, 0x17], [0xf1, 0xf4, 0xf7], alpha),
+      contrastOver(
+        [0x0a, 0x13, 0x17],
+        [0xf1, 0xf4, 0xf7],
+        Number(dot.style.opacity),
+      ),
     ).toBeGreaterThanOrEqual(3);
+  });
+
+  it('server-rendered, a long control already carries its resting offset and sizes', () => {
+    const html = renderToString(
+      <PageControl count={50} value={26} onChange={() => {}} />,
+    );
+    const rest = /--_page-control-rest:\s*([\d.]+)px/.exec(html);
+    expect(rest).not.toBeNull();
+    expect(Number(rest?.[1])).toBeGreaterThan(0);
+    expect(html).toMatch(/--_page-control-scale:\s*0\.967/);
   });
 
   it('with hidesForSinglePage, renders nothing for one page', () => {

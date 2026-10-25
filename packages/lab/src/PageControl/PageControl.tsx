@@ -5,11 +5,13 @@
 /**
  * @file PageControl.tsx
  * @input React, StyleX, core's theme tokens and translator, the gesture
- *   system's tap recognizer (`@astryxdesign/core/gestures/experimental`), the
- *   UIKit page-control table (`@astryxdesign/core/motion/experimental`),
- *   pageControlModel.ts for the math
+ *   system's press recognizer (`@astryxdesign/core/gestures/experimental`),
+ *   the compositor animator and the UIKit page-control table
+ *   (`@astryxdesign/core/motion/experimental`), pageControlModel.ts for the
+ *   math
  * @output Exports PageControl: a row of page indicators, the current one
- *   highlighted, that pages one step per tap like UIPageControl
+ *   highlighted, that pages one step per tap and follows a finger scrubbing
+ *   across it, like UIPageControl
  * @position Lab component (packages/lab/src/PageControl); the phone
  *   presentation of "which page am I on" under a paging view (a paging
  *   Carousel, onboarding screens), UIPageControl's counterpart
@@ -18,35 +20,57 @@
  *
  * UIPageControl's measured geometry (uikit/pageControl.ts): 9.67 px
  * indicators 8 px apart, 14 px of padding at each end, 25.67 px tall, never
- * wider than 161.3 px. Past that the row slides so the current indicator
- * stays in view. The indicators take the theme's primary text colour; the
- * current one is opaque and the others are at 48 % (UIKit's 45 %, raised so
- * they reach 3:1 on the page background; themes keep their colour).
+ * wider than 161.3 px. At most ten indicator slots show, centred on the
+ * control. With more pages the row is a window: where pages continue past it,
+ * its last two slots on that side shrink (7.33 then 4.31 px), and it moves
+ * only when the current page would land in a shrunk slot, 50 ms after the
+ * change, every indicator sliding to its new slot and size on UIKit's spring
+ * (response 0.15 s, critically damped) through core's animator.
+ *
+ * The indicators take the theme's primary text colour; the current one is
+ * opaque and the others are at 45 %, UIKit's default alphas (themes keep
+ * their colour). When the page changes, the old current indicator fades over
+ * 0.125 s after a tap and 0.25 s otherwise; the new one lights at once.
  *
  * HOW IT PAGES
  *
- * A tap on the trailing side of the current indicator asks for the next
- * page, on the leading side for the previous one (mirrored in RTL), when the
- * finger lifts, as UIPageControl reports it. The app owns the page (`value`
- * + `onChange`), so the paging view and the control stay in step.
+ * The app owns the page (`value` + `onChange`). A tap on the trailing side of
+ * the current indicator asks for the next page, on the leading side for the
+ * previous one (mirrored in RTL), when the finger lifts. A finger that
+ * travels 16 px scrubs instead: the page becomes the indicator under it,
+ * switching at the midpoint between indicators; past the edge of the
+ * content of a windowed control the page keeps stepping on its own, faster
+ * the further past (up to 15 pages a second). A finger held on the control
+ * for 155 ms, or scrubbing, shows a platter behind the indicators and dims
+ * the others to 25 %; both return at the lift.
  *
  * Accessibility: one adjustable element, a `slider` named "Page indicators"
  * whose value reads "Page 3 of 5"; the arrow keys, Home and End change the
  * page, and VoiceOver's swipe up or down adjusts it.
  *
- * Not yet: scrubbing (a held finger sliding across the control), the shrinking
- * edge indicators and the sliding of a windowed row, the background platter,
- * and the indicator's transition on a page change wait for their
- * measurements.
+ * TOUCH
+ *
+ * The scrub, the held platter, the shrinking window and the fades are the
+ * touch presentation: a coarse primary pointer, on every touch device
+ * (`useTouchPresentation`; one touch model, no platform idiom). With a mouse
+ * or a trackpad the control pages by tap (UIKit's tap rule: up to 45 px of
+ * travel) and keys over a row cropped to the control, with instant opacity
+ * changes. The motion values are theme roles (`uikit.pageControl`,
+ * resolveMotion).
+ *
+ * The touch presentation lives in PageControlTouch.ts, imported once here.
  *
  * SYNC: When modified, update PageControl.doc.mjs, PageControl.test.tsx,
- * pageControlModel.ts and __tests__/PageControl.interaction.browser.spec.ts.
+ * PageControlTouch.ts, pageControlModel.ts and
+ * __tests__/PageControl.interaction.browser.spec.ts.
  */
 
 import {
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
+  useState,
   type CSSProperties,
   type KeyboardEvent,
   type Ref,
@@ -63,23 +87,34 @@ import {isRtlElement} from '@astryxdesign/core/hooks';
 import {colorVars, focusVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {
   TapGestureRecognizer,
+  useTouchPresentation,
   useGestureRecognizer,
 } from '@astryxdesign/core/gestures/experimental';
-import {uikit} from '@astryxdesign/core/motion/experimental';
-import {pageControlLayout, tapTarget, windowOffset} from './pageControlModel';
+import {animatorFor, uikit} from '@astryxdesign/core/motion/experimental';
+import {usePageControlTouch} from './PageControlTouch';
+import {
+  BOX,
+  PITCH,
+  SWITCH,
+  clampPage,
+  croppedRowOffset,
+  indicatorSize,
+  pageControlLayout,
+  tapTarget,
+  windowFor,
+  type ChangeKind,
+  type Latest,
+} from './pageControlModel';
 
 const PC = uikit.pageControl;
-// Each indicator is a whole-pixel box scaled down to UIKit's 9.67 px. Chromium
-// snaps a box's edges to whole CSS pixels when it paints, so a 9.67 px box
-// paints 9 or 10 px wide depending on where it falls: every few indicators an
-// oval. A 10 px box keeps its shape wherever it falls, and `scale` brings it
-// to the measured size around its centre.
-const BOX = Math.ceil(PC.indicatorSize);
+/** A 10 px box scaled to the 9.67 px indicator (see BOX). */
 const DOT_SCALE = PC.indicatorSize / BOX;
 // UIKit draws the other indicators at 45 %; at that alpha Core's primary text
 // colour on its page background measures 2.97:1, under the 3:1 WCAG 1.4.11
 // asks of the only cue for how many pages there are. 48 % gives 3.25:1.
 const INACTIVE_ALPHA = Math.max(PC.otherIndicatorAlpha, 0.48);
+/** Slots rendered on each side of the window, so a slide has its dots. */
+const RENDER_MARGIN = 3;
 
 export interface PageControlProps extends Omit<
   BaseProps<HTMLDivElement>,
@@ -89,7 +124,10 @@ export interface PageControlProps extends Omit<
   count: number;
   /** The current page, 0-based. */
   value: number;
-  /** Called with the page a tap, a key or an assistive technology asks for. */
+  /**
+   * Called with the page a tap, a scrub, a key or an assistive technology
+   * asks for.
+   */
   onChange: (page: number) => void;
   /**
    * Accessible name of the control.
@@ -109,13 +147,13 @@ export interface PageControlProps extends Omit<
 const styles = stylex.create({
   root: {
     position: 'relative',
-    display: 'inline-flex',
-    alignItems: 'center',
+    display: 'inline-block',
     boxSizing: 'border-box',
-    overflow: 'hidden',
     flexShrink: 0,
+    verticalAlign: 'middle',
     cursor: 'default',
     userSelect: 'none',
+    WebkitUserSelect: 'none',
     WebkitTapHighlightColor: 'transparent',
     outlineStyle: {
       default: 'none',
@@ -125,31 +163,43 @@ const styles = stylex.create({
     outlineColor: focusVars['--focus-outline-color'],
     outlineOffset: focusVars['--focus-outline-offset'],
   },
-  strip: {
-    display: 'flex',
-    alignItems: 'center',
-    flexShrink: 0,
+  cropped: {
+    overflow: 'hidden',
   },
-  // A windowed row shifts toward its logical start by --_page-control-offset.
-  windowed: {
-    translate: {
-      default: 'calc(-1 * var(--_page-control-offset, 0px)) 0',
-      ':is([dir="rtl"] *)': 'var(--_page-control-offset, 0px) 0',
-    },
+  platter: {
+    position: 'absolute',
+    inset: 0,
+    borderRadius: 9999,
+    backgroundColor: colorVars['--color-background-muted'],
+    pointerEvents: 'none',
+  },
+  strip: {
+    position: 'absolute',
+    insetBlock: 0,
+    width: 0,
+    pointerEvents: 'none',
   },
   indicator: {
-    flexShrink: 0,
+    position: 'absolute',
     borderRadius: '50%',
     backgroundColor: colorVars['--color-text-primary'],
   },
+  // The resting offset and sizes the markup carries (custom properties the
+  // render sets); the animator's inline translate and scale override them.
+  restingStrip: {
+    translate: {
+      default: 'calc(-1 * var(--_page-control-rest, 0px)) 0',
+      ':is([dir="rtl"] *)': 'var(--_page-control-rest, 0px) 0',
+    },
+  },
+  restingDot: {
+    scale: 'var(--_page-control-scale, 1)',
+  },
 });
 
-function clampPage(page: number, count: number): number {
-  return Math.max(0, Math.min(count - 1, Math.round(page)));
-}
-
 /**
- * A row of page indicators that pages one step per tap, like UIPageControl.
+ * A row of page indicators that pages one step per tap and follows a
+ * scrubbing finger, like UIPageControl.
  *
  * @example
  * ```
@@ -161,7 +211,7 @@ export function PageControl(props: PageControlProps) {
   const pages = Math.max(0, Math.floor(props.count));
   if (pages === 0 || (props.hidesForSinglePage === true && pages === 1)) {
     // Nothing to show. The row mounts with its element when pages arrive, so
-    // its tap recognizer attaches then.
+    // its recognizers attach then.
     return null;
   }
   return <PageControlRow {...props} />;
@@ -184,15 +234,80 @@ function PageControlRow({
   const t = useTranslator();
   const rootRef = useRef<HTMLDivElement>(null);
   const stripRef = useRef<HTMLSpanElement>(null);
+  const platterRef = useRef<HTMLSpanElement>(null);
   const pages = Math.max(0, Math.floor(count));
   const current = pages === 0 ? 0 : clampPage(value, pages);
+  const layout = pageControlLayout(pages);
+  // The scrub, held platter, shrinking window and fades are the touch
+  // presentation (a finger, on any touch device); with a mouse the control
+  // pages by tap and keys over a cropped row, without them.
+  const {isTouch} = useTouchPresentation();
 
-  // Read through a ref: the recognizer is created once.
-  const latestRef = useRef({current, pages, onChange});
+  // The window moves only when the current page would land in a shrunk
+  // slot, so it depends on where it was: state, adjusted during render.
+  const [windowStart, setWindowStart] = useState(() =>
+    windowFor(pages, 0, current),
+  );
+  const nextWindowStart = isTouch
+    ? windowFor(pages, windowStart, current)
+    : windowStart;
+  if (nextWindowStart !== windowStart) {
+    setWindowStart(nextWindowStart);
+  }
+
+  const [isInteracting, setInteracting] = useState(false);
+
+  // Read by the gesture and its timers, which outlive a render.
+  const latestRef = useRef<Latest>({
+    current,
+    pages,
+    windowStart,
+    onChange,
+  });
   useEffect(() => {
-    latestRef.current = {current, pages, onChange};
+    latestRef.current = {current, pages, windowStart, onChange};
   });
 
+  // What asked for the page the control shows next: a tap fades the old
+  // indicator faster than anything else.
+  const requestRef = useRef<{page: number; kind: ChangeKind} | null>(null);
+  const request = (page: number, kind: ChangeKind) => {
+    const latest = latestRef.current;
+    if (page === latest.current || page === requestRef.current?.page) {
+      return;
+    }
+    const pending = {page, kind};
+    requestRef.current = pending;
+    latest.onChange(page);
+    // An app that keeps its value never renders the page: once it has had
+    // its chance to (the next task), the request lapses, so asking again
+    // calls onChange again.
+    setTimeout(() => {
+      if (requestRef.current === pending) {
+        requestRef.current = null;
+      }
+    }, 0);
+  };
+
+  // The touch layer (PageControlTouch.ts): the scrub, the held platter, the
+  // window's slide and the fades, on under a finger.
+  usePageControlTouch({
+    isTouch,
+    rootRef,
+    stripRef,
+    platterRef,
+    latestRef,
+    requestRef,
+    request,
+    setInteracting,
+    pages,
+    current,
+    windowStart,
+    isInteracting,
+  });
+
+  // With a mouse: a tap steps one page toward its side of the current
+  // indicator when the finger lifts; a drag is not a tap and pages nothing.
   useGestureRecognizer(
     rootRef,
     () => new TapGestureRecognizer(),
@@ -201,39 +316,55 @@ function PageControlRow({
         return;
       }
       const root = rootRef.current;
-      const strip = stripRef.current;
-      const {current: page, pages: total, onChange: change} = latestRef.current;
-      const indicator = strip?.children[page];
-      if (root == null || indicator == null || total < 2) {
+      const latest = latestRef.current;
+      const dot = stripRef.current?.querySelector(
+        `[data-page="${latest.current}"]`,
+      );
+      if (root == null || dot == null || latest.pages < 2) {
         return;
       }
-      const box = indicator.getBoundingClientRect();
-      const next = tapTarget(
-        recognizer.location().x,
-        box.left + box.width / 2,
-        page,
-        total,
-        isRtlElement(root),
+      const box = dot.getBoundingClientRect();
+      request(
+        tapTarget(
+          recognizer.location().x,
+          box.left + box.width / 2,
+          latest.current,
+          latest.pages,
+          isRtlElement(root),
+        ),
+        'tap',
       );
-      if (next !== page) {
-        change(next);
-      }
     },
+    {isEnabled: !isTouch},
   );
 
-  const mergedRef = useMemo(() => mergeRefs(ref, rootRef), [ref]);
+  // With a mouse: the cropped row, every page at full size, shifted at once to
+  // keep the current indicator in view.
+  useLayoutEffect(() => {
+    const strip = stripRef.current;
+    const root = rootRef.current;
+    if (isTouch || strip == null || root == null) {
+      return;
+    }
+    const isRtl = isRtlElement(root);
+    animatorFor(strip).set({
+      x: (isRtl ? 1 : -1) * croppedRowOffset(pages, current),
+    });
+    for (const dot of Array.from(strip.children) as HTMLElement[]) {
+      animatorFor(dot).set({scale: DOT_SCALE});
+    }
+  }, [isTouch, pages, current]);
 
-  const layout = pageControlLayout(pages);
-  const offset = windowOffset(pages, current);
-  const stripStyle: CSSProperties & Record<`--${string}`, string> = {
-    // The measured pitch between the boxes' left edges, and the half pixel
-    // each box overhangs its drawn indicator, so the indicators sit exactly
-    // where UIKit draws them.
-    gap: PC.indicatorSize + PC.indicatorSpacing - BOX,
-    marginInlineStart: -(BOX - PC.indicatorSize) / 2,
-    // Keeps the current indicator inside a windowed control.
-    '--_page-control-offset': `${offset}px`,
-  };
+  // A shown page consumes its request (the touch layer read its kind first).
+  const consumedPageRef = useRef(current);
+  useLayoutEffect(() => {
+    if (consumedPageRef.current !== current) {
+      consumedPageRef.current = current;
+      requestRef.current = null;
+    }
+  }, [current]);
+
+  const mergedRef = useMemo(() => mergeRefs(ref, rootRef), [ref]);
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const isRtl = isRtlElement(event.currentTarget);
@@ -261,23 +392,53 @@ function PageControlRow({
         return;
     }
     event.preventDefault();
-    next = clampPage(next, pages);
-    if (next !== current) {
-      onChange(next);
-    }
+    request(clampPage(next, pages), 'other');
   };
+
+  const isWindow = isTouch && layout.isWindowed;
+  const first = isWindow ? Math.max(0, windowStart - RENDER_MARGIN) : 0;
+  const last = isWindow
+    ? Math.min(pages, windowStart + layout.slots + RENDER_MARGIN)
+    : pages;
+  // Under a finger the slots centre on the control; the cropped row starts inside the
+  // padding.
+  const fullRow = pages * PITCH - PC.indicatorSpacing;
+  const stripStart = isTouch
+    ? (layout.width - layout.rowWidth) / 2
+    : (layout.width -
+        Math.min(fullRow, layout.width - 2 * PC.horizontalPadding)) /
+      2;
+  const transition = isTouch ? SWITCH : 'none';
+  const otherAlpha = isInteracting
+    ? PC.interactingOtherIndicatorAlpha
+    : INACTIVE_ALPHA;
+  // The resting window, also in the markup: before the animator takes the
+  // strip and the dots (its inline values win), a server-rendered control
+  // already shows its current indicator.
+  const restOffset = isTouch
+    ? windowStart * PITCH
+    : croppedRowOffset(pages, current);
+  const stripStyle: CSSProperties & Record<`--${string}`, string> = {
+    insetInlineStart: stripStart,
+    '--_page-control-rest': `${restOffset}px`,
+  };
+  const top = (PC.height - BOX) / 2;
 
   return (
     <div
       data-testid={testId}
+      data-interacting={isInteracting || undefined}
       {...htmlProps}
       ref={mergedRef}
-      {...mergeProps(stylex.props(styles.root, xstyle), className, {
-        ...style,
-        width: layout.width,
-        height: PC.height,
-        paddingInline: PC.horizontalPadding,
-      })}
+      {...mergeProps(
+        stylex.props(styles.root, !isTouch && styles.cropped, xstyle),
+        className,
+        {
+          ...style,
+          width: layout.width,
+          height: PC.height,
+        },
+      )}
       role="slider"
       tabIndex={0}
       aria-label={label ?? t('@astryx.pagination.pageIndicators')}
@@ -292,23 +453,41 @@ function PageControlRow({
       // The caller's handler first: its preventDefault keeps the page.
       onKeyDown={composeEventHandlers(onKeyDownProp, onKeyDown)}>
       <span
+        ref={platterRef}
+        aria-hidden="true"
+        {...stylex.props(styles.platter)}
+        style={{opacity: isInteracting ? 1 : 0, transition}}
+      />
+      <span
         ref={stripRef}
         aria-hidden="true"
-        {...stylex.props(styles.strip, offset !== 0 && styles.windowed)}
+        {...stylex.props(styles.strip, styles.restingStrip)}
         style={stripStyle}>
-        {Array.from({length: pages}, (_, page) => (
-          <span
-            key={page}
-            {...stylex.props(styles.indicator)}
-            style={{
-              width: BOX,
-              height: BOX,
-              scale: `${DOT_SCALE}`,
-              opacity:
-                page === current ? PC.currentIndicatorAlpha : INACTIVE_ALPHA,
-            }}
-          />
-        ))}
+        {Array.from({length: last - first}, (_, i) => {
+          const page = first + i;
+          return (
+            <span
+              key={page}
+              data-page={page}
+              {...stylex.props(styles.indicator, styles.restingDot)}
+              style={{
+                // The box overhangs its drawn indicator by half a pixel.
+                insetInlineStart: page * PITCH - (BOX - PC.indicatorSize) / 2,
+                top,
+                width: BOX,
+                height: BOX,
+                ['--_page-control-scale' as string]: String(
+                  isTouch
+                    ? indicatorSize(pages, windowStart, page) / BOX
+                    : DOT_SCALE,
+                ),
+                opacity:
+                  page === current ? PC.currentIndicatorAlpha : otherAlpha,
+                transition,
+              }}
+            />
+          );
+        })}
       </span>
     </div>
   );
