@@ -45,10 +45,11 @@ Astryx adds no second settings system for an app to keep in step.
 
   So stock SwiftUI controls (`Toggle`, `Picker`, `ProgressView`, `Menu`,
   `List`, `Slider`, `Link`) draw with the brand's accent wherever it stays
-  legible. The theme writes no foreground style: an inherited one would
-  override stock controls' own label colors, turning a link into plain text
-  and a prominent button's white label dark. Plain stock text keeps the
-  system's primary color; Astryx's own text uses the theme's.
+  legible. The theme affects stock SwiftUI controls only through the tint and
+  writes no foreground style: an inherited one would override stock controls'
+  own label colors, turning a link into plain text and a prominent button's
+  white label dark. Plain stock text keeps the system's primary color;
+  Astryx's own text uses the theme's. (Decided by cixzhang, 2026-10-25.)
   Whether the theme also sets the default font is OQ1. Theme values with no SwiftUI environment equivalent are read by
   Astryx components and Astryx's SwiftUI styles (corner radius, spacing,
   element heights, borders, and backgrounds), and an app reads spacing for its
@@ -80,9 +81,10 @@ Astryx adds no second settings system for an app to keep in step.
 
 ## Current state
 
-- On `main`, the Swift package `packages/native/apple` holds generated props,
-  the wire, and the logic host. There is no Swift theme, theme modifier, or
-  SwiftUI component.
+- `packages/native/apple` has the `Astryx` product: the `Theme` and `Tokens`
+  types, the `.astryxTheme(_:)` modifier, which sets the tint and a
+  single-mode theme's color scheme, and SwiftUI components that read the theme
+  from the `astryx` environment value.
 
 ## Open questions
 
