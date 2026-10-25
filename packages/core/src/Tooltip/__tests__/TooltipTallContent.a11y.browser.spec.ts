@@ -968,74 +968,171 @@ test('placing a shown tooltip afresh never replays its entry animation', async (
   }
 });
 
-test('placing a shown tooltip afresh keeps animations inside its content running', async ({
-  page,
-}) => {
-  // A held-open short tooltip whose content holds a 10-second animation. It
-  // grows and its trigger moves up, so the engine's old option leaves it past
-  // the top of the viewport and the runtime places it afresh after paint. The
-  // content's animation carries on where it was rather than restarting.
-  await page.setViewportSize({width: 1280, height: 720});
-  await page.goto(
-    `${storybook.origin}/iframe.html?id=core-tooltip--tall-content&viewMode=story&args=content:A+short+tooltip;isOpen:!true`,
-  );
-  await expect(page.getByRole('tooltip')).toBeVisible();
-  await page.evaluate(sel => {
-    const el = document.querySelector(sel) as HTMLElement;
-    window.scrollBy(0, el.getBoundingClientRect().top - 650);
-  }, TRIGGER);
-  await page.waitForTimeout(300);
-  await page.addStyleTag({
-    content:
-      '@keyframes test-pulse{from{opacity:0}to{opacity:1}}.test-pulse{animation:test-pulse 10s linear both}',
-  });
-  await page.evaluate(sel => {
-    const content = document.querySelector(sel)?.firstElementChild;
-    const pulse = document.createElement('div');
-    pulse.className = 'test-pulse';
-    pulse.textContent = 'Animated line';
-    content?.appendChild(pulse);
-    for (let i = 1; i <= 17; i++) {
-      const line = document.createElement('div');
-      line.textContent = `Line ${i}`;
-      content?.appendChild(line);
-    }
-  }, TOOLTIP);
-  await page.waitForTimeout(700);
-  const read = async () =>
-    page.evaluate(() => {
-      const pulse = document.querySelector('.test-pulse') as HTMLElement;
-      const [animation] = pulse.getAnimations();
-      return {
-        time: Number(animation?.currentTime ?? 0),
-        opacity: Number(getComputedStyle(pulse).opacity),
-      };
-    });
-  const before = await read();
-  expect(before.time).toBeGreaterThan(500);
-  await page.evaluate(sel => {
-    const el = document.querySelector(sel) as HTMLElement;
-    el.style.position = 'relative';
-    el.style.insetBlockStart = '-310px';
-  }, TRIGGER);
-  await page.waitForTimeout(450);
-  expect(await hasSwitched(page)).toBe(true);
-  const tooltip = await rect(page, TOOLTIP);
-  expect(tooltip.top).toBeGreaterThanOrEqual(0);
-  const after = await read();
-  // Carried on: later than before by about the time that passed, never
-  // rewound, and never less visible.
-  expect(after.time).toBeGreaterThanOrEqual(before.time + 300);
-  expect(after.opacity).toBeGreaterThanOrEqual(before.opacity);
-});
+/**
+ * Every kind of animation state inside a Tooltip's content that the
+ * re-placement's display reset could disturb, one content element each. Each
+ * row sets its state up in the page; `expect` checks the state after the
+ * re-placement against the state before it, `elapsed` milliseconds apart.
+ */
+interface AnimationRowState {
+  times: number[];
+  rates: number[];
+  playStates: string[];
+  durations: number[];
+  composites: string[];
+  ids: string[];
+  ends: string[];
+  sameObject: boolean;
+  translate: number;
+}
 
-test('placing a shown tooltip afresh keeps each same-name animation on one element at its own time', async ({
+/** The script set-up of the rows whose state script sets, run in the page. */
+function setUpRows() {
+  const row = (name: string) =>
+    document.querySelector(`[data-row="${name}"]`) as HTMLElement;
+  const first = (name: string) => row(name).getAnimations()[0];
+  first('paused').pause();
+  first('rate').playbackRate = 2;
+  first('reversed').reverse();
+  const [one, two] = row('duplicate').getAnimations();
+  two.currentTime = Number(one.currentTime) + 3000;
+  first('timing').effect?.updateTiming({duration: 20000});
+  (first('composite').effect as KeyframeEffect).composite = 'add';
+  (first('keyframes').effect as KeyframeEffect).setKeyframes([
+    {translate: '0px'},
+    {translate: '50px'},
+  ]);
+  first('id').id = 'kept';
+  // Kept to prove the re-placement below really recreated the animations.
+  (window as unknown as {__runningBefore: Animation}).__runningBefore =
+    first('running');
+  (window as unknown as {__scriptAnimation: Animation}).__scriptAnimation = row(
+    'script',
+  ).animate([{translate: '0px'}, {translate: '100px'}], {duration: 10000});
+  row('transition').style.translate = '100px';
+}
+
+const ANIMATION_ROWS: {
+  name: string;
+  css?: string;
+  expect: (b: AnimationRowState, a: AnimationRowState, elapsed: number) => void;
+}[] = [
+  {
+    name: 'running',
+    expect: (b, a, e) => {
+      expect(a.playStates).toEqual(['running']);
+      expect(a.times[0] - b.times[0]).toBeCloseTo(e, -2.5);
+    },
+  },
+  {
+    name: 'paused',
+    expect: (b, a) => {
+      expect(a.playStates).toEqual(['paused']);
+      expect(a.times[0]).toBeCloseTo(b.times[0], 0);
+      expect(a.translate).toBeCloseTo(b.translate, 1);
+    },
+  },
+  {
+    name: 'rate',
+    expect: (b, a, e) => {
+      expect(a.rates).toEqual([2]);
+      expect(a.times[0] - b.times[0]).toBeCloseTo(2 * e, -2.5);
+    },
+  },
+  {
+    name: 'reversed',
+    expect: (b, a, e) => {
+      expect(a.rates).toEqual([-1]);
+      expect(b.times[0] - a.times[0]).toBeCloseTo(e, -2.5);
+    },
+  },
+  {
+    name: 'finished',
+    css: 'animation-duration:1ms;animation-fill-mode:forwards',
+    expect: (b, a) => {
+      expect(b.playStates).toEqual(['finished']);
+      expect(a.playStates).toEqual(['finished']);
+      expect(a.translate).toBe(100);
+    },
+  },
+  {
+    name: 'duplicate',
+    css: 'animation:test-shift 10s linear both,test-shift 10s linear both;animation-composition:add,add',
+    expect: (b, a, e) => {
+      expect(a.times[0] - b.times[0]).toBeCloseTo(e, -2.5);
+      expect(a.times[1] - b.times[1]).toBeCloseTo(e, -2.5);
+      expect(a.translate - b.translate).toBeCloseTo((2 * e) / 100, -0.5);
+    },
+  },
+  {
+    name: 'descendant',
+    expect: (b, a, e) => {
+      expect(a.times[0] - b.times[0]).toBeCloseTo(e, -2.5);
+    },
+  },
+  {
+    name: 'timing',
+    expect: (b, a, e) => {
+      expect(a.durations).toEqual([20000]);
+      expect(a.times[0] - b.times[0]).toBeCloseTo(e, -2.5);
+    },
+  },
+  {
+    name: 'composite',
+    expect: (b, a) => {
+      expect(a.composites).toEqual(['add']);
+    },
+  },
+  {
+    name: 'keyframes',
+    expect: (b, a) => {
+      expect(a.ends).toEqual(['50px']);
+    },
+  },
+  {
+    name: 'id',
+    expect: (b, a) => {
+      expect(a.ids).toEqual(['kept']);
+    },
+  },
+  {
+    name: 'stylesheet-paused',
+    css: 'animation-play-state:paused',
+    expect: (b, a) => {
+      // Paused by the stylesheet, not by script: it stays under the
+      // stylesheet's control (checked after the re-placement below).
+      expect(a.playStates).toEqual(['paused']);
+      expect(a.times[0]).toBeCloseTo(b.times[0], 0);
+    },
+  },
+  {
+    name: 'script',
+    css: 'animation:none',
+    expect: (b, a, e) => {
+      expect(a.sameObject).toBe(true);
+      expect(a.times[0] - b.times[0]).toBeCloseTo(e, -2.5);
+    },
+  },
+  {
+    name: 'transition',
+    css: 'animation:none;transition:translate 10s linear',
+    expect: (b, a, e) => {
+      expect(b.playStates).toEqual(['running']);
+      expect(a.playStates).toEqual(['running']);
+      expect(a.times[0] - b.times[0]).toBeCloseTo(e, -2.5);
+      expect(a.translate).toBeGreaterThan(b.translate);
+      expect(a.translate).toBeLessThan(50);
+    },
+  },
+];
+
+test('placing a shown tooltip afresh keeps every animation in its content in its exact state', async ({
   page,
+  browserName,
 }) => {
-  // Two additive animations of the same keyframes on one content element,
-  // one three seconds ahead of the other, go through the after-paint re-placement. Each keeps
-  // its own time, so the composed transform moves on only by the time that
-  // passed.
+  // A held-open short tooltip whose content holds one element per row. It
+  // grows and its trigger moves up, so the engine's old option leaves it past
+  // the top of the viewport and the runtime places it afresh after paint.
   await page.setViewportSize({width: 1280, height: 720});
   await page.goto(
     `${storybook.origin}/iframe.html?id=core-tooltip--tall-content&viewMode=story&args=content:A+short+tooltip;isOpen:!true`,
@@ -1047,41 +1144,68 @@ test('placing a shown tooltip afresh keeps each same-name animation on one eleme
   }, TRIGGER);
   await page.waitForTimeout(300);
   await page.addStyleTag({
-    content:
-      '@keyframes test-shift{from{translate:0}to{translate:100px}}.test-shift{animation:test-shift 10s linear both,test-shift 10s linear both;animation-composition:add,add}',
+    content: `@keyframes test-shift{from{translate:0}to{translate:100px}}[data-row]{display:inline-block;margin-inline-end:4px;animation:test-shift 10s linear both}${ANIMATION_ROWS.map(
+      row => (row.css ? `[data-row="${row.name}"]{${row.css}}` : ''),
+    ).join('')}`,
   });
-  await page.evaluate(sel => {
-    const content = document.querySelector(sel)?.firstElementChild;
-    const shift = document.createElement('div');
-    shift.className = 'test-shift';
-    shift.textContent = 'Shifting line';
-    content?.appendChild(shift);
-    for (let i = 1; i <= 17; i++) {
-      const line = document.createElement('div');
-      line.textContent = `Line ${i}`;
-      content?.appendChild(line);
-    }
-  }, TOOLTIP);
+  await page.evaluate(
+    ({sel, names}) => {
+      const content = document.querySelector(sel)?.firstElementChild;
+      for (const name of names) {
+        let host = content;
+        if (name === 'descendant') {
+          for (let i = 0; i < 3; i++) {
+            const wrapper = document.createElement('span');
+            host?.appendChild(wrapper);
+            host = wrapper;
+          }
+        }
+        const row = document.createElement('span');
+        row.dataset.row = name;
+        row.textContent = name.slice(0, 2);
+        host?.appendChild(row);
+      }
+      for (let i = 1; i <= 17; i++) {
+        const line = document.createElement('div');
+        line.textContent = `Line ${i}`;
+        content?.appendChild(line);
+      }
+    },
+    {sel: TOOLTIP, names: ANIMATION_ROWS.map(row => row.name)},
+  );
   await page.waitForTimeout(700);
-  // Put the second instance three seconds ahead of the first.
-  await page.evaluate(() => {
-    const [first, second] = (
-      document.querySelector('.test-shift') as HTMLElement
-    ).getAnimations();
-    second.currentTime = Number(first.currentTime ?? 0) + 3000;
-  });
+  await page.evaluate(setUpRows);
+  await page.waitForTimeout(100);
   const read = async () =>
-    page.evaluate(() => {
-      const shift = document.querySelector('.test-shift') as HTMLElement;
-      return {
-        times: shift.getAnimations().map(a => Number(a.currentTime ?? 0)),
-        translate: parseFloat(getComputedStyle(shift).translate) || 0,
-        at: performance.now(),
-      };
-    });
+    page.evaluate(
+      names => {
+        const out: Record<string, AnimationRowState> = {};
+        for (const name of names) {
+          const el = document.querySelector(
+            `[data-row="${name}"]`,
+          ) as HTMLElement;
+          const animations = el.getAnimations();
+          const effects = animations.map(a => a.effect as KeyframeEffect);
+          out[name] = {
+            times: animations.map(a => Number(a.currentTime ?? 0)),
+            rates: animations.map(a => a.playbackRate),
+            playStates: animations.map(a => a.playState),
+            durations: effects.map(e => Number(e.getTiming().duration)),
+            composites: effects.map(e => e.composite),
+            ids: animations.map(a => a.id),
+            ends: effects.map(e => String(e.getKeyframes().at(-1)?.translate)),
+            sameObject:
+              animations[0] ===
+              (window as unknown as {__scriptAnimation?: Animation})
+                .__scriptAnimation,
+            translate: parseFloat(getComputedStyle(el).translate) || 0,
+          };
+        }
+        return {rows: out, at: performance.now()};
+      },
+      ANIMATION_ROWS.map(row => row.name),
+    );
   const before = await read();
-  expect(before.times.length).toBe(2);
-  expect(before.times[1] - before.times[0]).toBeGreaterThan(2900);
   await page.evaluate(sel => {
     const el = document.querySelector(sel) as HTMLElement;
     el.style.position = 'relative';
@@ -1089,16 +1213,47 @@ test('placing a shown tooltip afresh keeps each same-name animation on one eleme
   }, TRIGGER);
   await page.waitForTimeout(450);
   expect(await hasSwitched(page)).toBe(true);
+  // In Chromium the browser recreated the content's CSS animations: this is
+  // the path that has to put them back. (WebKit's first layout of a
+  // just-shown popover reads a few pixels over the trigger, so there this
+  // short tooltip switched when it opened, and the move re-places it without
+  // a reset; every row must hold either way.)
+  const recreated = await page.evaluate(
+    () =>
+      (
+        document.querySelector('[data-row="running"]') as HTMLElement
+      ).getAnimations()[0] !==
+      (window as unknown as {__runningBefore: Animation}).__runningBefore,
+  );
+  if (browserName === 'chromium') {
+    expect(recreated).toBe(true);
+  }
   const after = await read();
   const elapsed = after.at - before.at;
-  expect(after.times.length).toBe(2);
-  for (const i of [0, 1]) {
-    const advanced = after.times[i] - before.times[i];
-    expect(advanced, `animation ${i + 1}`).toBeGreaterThan(elapsed - 200);
-    expect(advanced, `animation ${i + 1}`).toBeLessThan(elapsed + 200);
+  // Every row is checked, and the ones that fail are named together.
+  const failed: string[] = [];
+  for (const row of ANIMATION_ROWS) {
+    try {
+      row.expect(before.rows[row.name], after.rows[row.name], elapsed);
+    } catch (error) {
+      failed.push(`${row.name}: ${String(error).split('\n')[0]}`);
+    }
   }
-  // 100px over 10s for each of the two: the composed shift moves on by about
-  // 2 × elapsed / 100 pixels.
-  const expected = before.translate + (2 * elapsed) / 100;
-  expect(Math.abs(after.translate - expected)).toBeLessThan(5);
+  expect(failed).toEqual([]);
+  // The stylesheet still controls the animation it paused: unpausing it in
+  // the stylesheet sets it running.
+  await page.addStyleTag({
+    content: '[data-row="stylesheet-paused"]{animation-play-state:running}',
+  });
+  await page.waitForTimeout(100);
+  expect(
+    await page.evaluate(
+      () =>
+        (
+          document.querySelector(
+            '[data-row="stylesheet-paused"]',
+          ) as HTMLElement
+        ).getAnimations()[0].playState,
+    ),
+  ).toBe('running');
 });

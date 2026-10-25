@@ -199,8 +199,14 @@ once the runtime takes the layer out of rendering for one forced layout in the
 same task (no frame paints, the popover stays open, no toggle event fires), and
 the engine places it afresh from the new list; a later read that finds it
 failing again does the same, since no engine re-runs the list when a scroll
-carries the anchor. Leaving rendering restarts the CSS animations of the layer
-and its content, so the runtime puts each one back where it was.
+carries the anchor. Leaving rendering cancels the CSS animations and
+transitions of the layer and its content: the browser recreates the animations
+at their start and the transitions not at all. The runtime gives each recreated
+animation its predecessor's play state, time, playback rate, timing, keyframes,
+composition, id and timeline, resumes each transition with a script animation at
+the same point, and finishes a recreated animation that had no predecessor.
+Script animations are untouched. The Animation objects of CSS animations and
+transitions are new, and the browser fires their cancel and start events.
 Chromium tries no more than five
 options, so the second list replaces the first rather than extending it.
 Once the anchor has left the viewport the runtime pins the layer's
