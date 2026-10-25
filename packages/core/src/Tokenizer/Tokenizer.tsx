@@ -631,6 +631,8 @@ export function Tokenizer<T extends SearchableItem>({
   const lastPressRef = useRef<{
     isTouch: boolean;
     inputHadFocus: boolean;
+    /** The token's own remove button the press landed on, if any. */
+    removeControl: Element | null;
   } | null>(null);
   const handlePointerDownCapture = useCallback((e: React.PointerEvent) => {
     lastPressRef.current = {
@@ -638,6 +640,10 @@ export function Tokenizer<T extends SearchableItem>({
       inputHadFocus:
         inputRef.current != null &&
         inputRef.current.ownerDocument.activeElement === inputRef.current,
+      removeControl:
+        e.target instanceof Element
+          ? e.target.closest('[data-token-remove]')
+          : null,
     };
   }, []);
   // True while the latest interaction is a touch press that began with the
@@ -941,11 +947,15 @@ export function Tokenizer<T extends SearchableItem>({
       onChange(newItems, {item, type: 'remove'});
       announce(t('@astryx.tokenizer.tokenRemoved', {label: item.label}));
       // Focus goes to the input, where typing continues, except after a tap
-      // that began with the keyboard down: focusing the input inside that tap
-      // would raise the touch keyboard, which removing a token never asks for.
-      // A keyboard removal, a mouse click, or a tap made while the input was
-      // focused still lands on the input.
-      if (!isTouchPressWithKeyboardDown()) {
+      // on a token's own × that began with the keyboard down: focusing the
+      // input inside that tap would raise the touch keyboard, which removing
+      // a token never asks for. A keyboard removal, a mouse click, a tap made
+      // while the input was focused, and a custom `renderToken` control still
+      // land on the input.
+      const pressed = isTouchPressWithKeyboardDown()
+        ? (lastPressRef.current?.removeControl ?? null)
+        : null;
+      if (pressed == null) {
         inputRef.current?.focus();
         return;
       }
@@ -953,20 +963,14 @@ export function Tokenizer<T extends SearchableItem>({
       // button is about to unmount with its token, and an element removed
       // while focused drops focus without a blur: the field would stay
       // focused-within (an `unfocusedInline` field expanded) after a tap
-      // elsewhere. Let go of it first.
-      const active = inputRef.current?.ownerDocument.activeElement;
-      if (active instanceof HTMLElement && isFocusInTokenizer(active)) {
+      // elsewhere. Let go of that button first; focus anywhere else (Clear
+      // all, another control) stays where it is.
+      const active = pressed.ownerDocument.activeElement;
+      if (active instanceof HTMLElement && pressed.contains(active)) {
         active.blur();
       }
     },
-    [
-      value,
-      onChange,
-      announce,
-      t,
-      isTouchPressWithKeyboardDown,
-      isFocusInTokenizer,
-    ],
+    [value, onChange, announce, t, isTouchPressWithKeyboardDown],
   );
 
   // Handle clearing all items

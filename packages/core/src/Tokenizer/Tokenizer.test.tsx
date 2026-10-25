@@ -454,6 +454,65 @@ describe('Tokenizer', () => {
       expect(document.activeElement).toBe(document.body);
     });
 
+    it('keeps the old refocus for a custom renderToken remove button: the input keeps focus, with no blur', () => {
+      const onBlur = vi.fn();
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[users[0], users[1]]}
+          onChange={vi.fn()}
+          onBlur={onBlur}
+          renderToken={(item, onRemove) => (
+            <span>
+              {item.label}
+              <button type="button" onClick={onRemove}>
+                Drop {item.label}
+              </button>
+            </span>
+          )}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      const drop = screen.getByRole('button', {name: 'Drop Alice'});
+      fireEvent.pointerDown(drop, {pointerType: 'touch'});
+      // Its press default is not cancelled, and focus that lands on it moves
+      // on to the input (Chrome focuses the pressed button)…
+      expect(fireEvent.mouseDown(drop)).toBe(true);
+      act(() => drop.focus());
+      expect(input).toHaveFocus();
+      // …where the removal leaves it, as before.
+      fireEvent.click(drop);
+      expect(input).toHaveFocus();
+      expect(onBlur).not.toHaveBeenCalled();
+    });
+
+    it('leaves focus on another control in the field when a finger removes a token with the keyboard down', () => {
+      const onBlur = vi.fn();
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[users[0], users[1]]}
+          onChange={vi.fn()}
+          onBlur={onBlur}
+          endContent={<button type="button">Filters</button>}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      const filters = screen.getByRole('button', {name: 'Filters'});
+      // Keyboard focus resting on a control in the field (Tab from the input).
+      act(() => input.focus());
+      act(() => filters.focus());
+      expect(filters).toHaveFocus();
+      const remove = screen.getByRole('button', {name: 'Remove Alice'});
+      fireEvent.pointerDown(remove, {pointerType: 'touch'});
+      expect(fireEvent.mouseDown(remove)).toBe(false);
+      fireEvent.click(remove);
+      expect(filters).toHaveFocus();
+      expect(onBlur).not.toHaveBeenCalled();
+    });
+
     it('focuses the input after a mouse removes a token', () => {
       expectFinePrimaryPointer();
       const {input, remove} = renderPair();
