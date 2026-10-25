@@ -219,8 +219,10 @@ export function useScrollableArea({
     let frame: number | null = null;
     let isActive = true;
 
-    const measure = () => {
-      frame = null;
+    // Measures now; `measure` is the frame callback that also clears the
+    // pending frame. The same-commit remeasure below calls this one, so a frame
+    // already scheduled stays the only pending one.
+    const measureNow = () => {
       const computedStyle = getComputedStyle(viewport);
       const nextMapping = getLogicalAxisMapping(
         computedStyle.writingMode,
@@ -257,18 +259,23 @@ export function useScrollableArea({
       const nextState = {inline, block};
       stateRef.current = nextState;
       registerScrollOwner(viewport, nextState);
-      // eslint-disable-next-line @eslint-react/set-state-in-effect -- measured DOM geometry controls whether the viewport becomes a CSS scroll container
+
       setOverflow(current =>
         overflowEqual(current, nextOverflow) ? current : nextOverflow,
       );
-      // eslint-disable-next-line @eslint-react/set-state-in-effect -- measured DOM state is the hook's output
+
       setMeasured(current =>
         statesEqual(current, nextState) ? current : nextState,
       );
-      // eslint-disable-next-line @eslint-react/set-state-in-effect -- writing-mode changes remap behavior-owned physical CSS
+
       setMapping(current =>
         mappingsEqual(current, nextMapping) ? current : nextMapping,
       );
+    };
+
+    const measure = () => {
+      frame = null;
+      measureNow();
     };
 
     const scheduleMeasure = () => {
@@ -279,7 +286,7 @@ export function useScrollableArea({
     };
 
     registerScrollOwner(viewport, stateRef.current);
-    measureRef.current = measure;
+    measureRef.current = measureNow;
     measure();
     const stopObservingViewport = observeResize(viewport, scheduleMeasure);
     const stopObservingContent = observeResize(content, scheduleMeasure);

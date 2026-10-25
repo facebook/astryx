@@ -113,6 +113,38 @@ function makeMeasurable(viewport: HTMLElement) {
   });
 }
 
+/**
+ * As in a browser, the computed overflow is the one the hook writes: an axis is
+ * `clip` until the hook lets it scroll. `writingMode` reads the current mode.
+ */
+function mockOwnedComputedStyle(
+  writingMode: () => string = () => 'horizontal-tb',
+) {
+  vi.mocked(window.getComputedStyle).mockImplementation(element => {
+    const owned = (axis: 'X' | 'Y') =>
+      element
+        .getAttribute('style')
+        ?.match(new RegExp(`--x-overflow${axis}:\\s*(\\w+)`))?.[1] ?? 'visible';
+    return new Proxy({} as CSSStyleDeclaration, {
+      get(_target, property) {
+        if (property === 'overflowX') {
+          return owned('X');
+        }
+        if (property === 'overflowY') {
+          return owned('Y');
+        }
+        if (property === 'writingMode') {
+          return writingMode();
+        }
+        if (property === 'direction') {
+          return 'ltr';
+        }
+        return property === 'display' ? 'block' : '';
+      },
+    });
+  });
+}
+
 describe('useScrollableArea', () => {
   let frames: FrameRequestCallback[];
 
@@ -180,26 +212,7 @@ describe('useScrollableArea', () => {
   });
 
   it('is a tab stop from the first frame its content overflows, before any animation frame (AST-025 FR12)', () => {
-    // As in a browser, the computed overflow is the one this hook writes: an
-    // axis is `clip` until the hook lets it scroll.
-    vi.mocked(window.getComputedStyle).mockImplementation(element => {
-      const owned = (axis: 'X' | 'Y') =>
-        element
-          .getAttribute('style')
-          ?.match(new RegExp(`--x-overflow${axis}:\\s*(\\w+)`))?.[1] ??
-        'visible';
-      return new Proxy({} as CSSStyleDeclaration, {
-        get(_target, property) {
-          if (property === 'overflowX') {
-            return owned('X');
-          }
-          if (property === 'overflowY') {
-            return owned('Y');
-          }
-          return property === 'display' ? 'block' : '';
-        },
-      });
-    });
+    mockOwnedComputedStyle();
     // Content that is already taller than the viewport when it mounts, such
     // as loaded data replacing a loading fallback.
     const extent = (value: number, scrolled: number) =>
@@ -229,26 +242,7 @@ describe('useScrollableArea', () => {
   });
 
   it('settles content that fits only once a scrollbar takes space, without looping in one commit (AST-025 FR7)', () => {
-    // As in a browser, the computed overflow is the one this hook writes: an
-    // axis is `clip` until the hook lets it scroll.
-    vi.mocked(window.getComputedStyle).mockImplementation(element => {
-      const owned = (axis: 'X' | 'Y') =>
-        element
-          .getAttribute('style')
-          ?.match(new RegExp(`--x-overflow${axis}:\\s*(\\w+)`))?.[1] ??
-        'visible';
-      return new Proxy({} as CSSStyleDeclaration, {
-        get(_target, property) {
-          if (property === 'overflowX') {
-            return owned('X');
-          }
-          if (property === 'overflowY') {
-            return owned('Y');
-          }
-          return property === 'display' ? 'block' : '';
-        },
-      });
-    });
+    mockOwnedComputedStyle();
     // Under `clip` the content is 105 tall and overflows; under `auto` its
     // scrollbar narrows it and it fits (a 16:9 child at full width).
     const viewportOverflowY = (element: HTMLElement) =>
@@ -269,6 +263,79 @@ describe('useScrollableArea', () => {
     // At most one flip per animation frame, as before.
     expect(() => flushFrame()).not.toThrow();
     expect(() => flushFrame()).not.toThrow();
+  });
+
+  it('leaves one frame pending after an overflowing mount, and none after unmount (AST-025 FR7)', async () => {
+    mockOwnedComputedStyle();
+    const pending = new Set<number>();
+    let nextId = 0;
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn(() => {
+        nextId += 1;
+        pending.add(nextId);
+        return nextId;
+      }),
+    );
+    vi.stubGlobal(
+      'cancelAnimationFrame',
+      vi.fn((id: number) => pending.delete(id)),
+    );
+    const extent = (fits: number, viewport: number) =>
+      function (this: HTMLElement) {
+        return this.dataset.testid === 'viewport' ? viewport : fits;
+      };
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(100);
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(100);
+    vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(100);
+    vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(
+      extent(100, 180),
+    );
+
+    const {unmount} = render(<Fixture axis="block" />);
+    // Let the style change reach the MutationObserver.
+    await act(async () => {});
+    expect(screen.getByTestId('viewport')).toHaveAttribute('tabindex', '0');
+    expect(pending.size).toBe(1);
+
+    unmount();
+    expect(pending.size).toBe(0);
+  });
+
+  it('keeps the tab stop through a writing-mode change that moves the overflowing axis', async () => {
+    let isVertical = false;
+    mockOwnedComputedStyle(() =>
+      isVertical ? 'vertical-rl' : 'horizontal-tb',
+    );
+    // The content overflows the block axis in either mode: physical y while
+    // horizontal, physical x once vertical.
+    const viewportExtent = (axis: 'x' | 'y') =>
+      function (this: HTMLElement) {
+        if (this.dataset.testid !== 'viewport') {
+          return 100;
+        }
+        return (axis === 'x') === isVertical ? 180 : 100;
+      };
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(100);
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(100);
+    vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(
+      viewportExtent('x'),
+    );
+    vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(
+      viewportExtent('y'),
+    );
+
+    render(<Fixture axis="block" />);
+    const viewport = screen.getByTestId('viewport');
+    expect(viewport).toHaveAttribute('tabindex', '0');
+
+    isVertical = true;
+    await act(async () => {
+      viewport.parentElement!.setAttribute('dir', 'ltr');
+    });
+    flushFrame();
+    expect(viewport.getAttribute('style')).toContain('--x-overflowX: auto');
+    expect(viewport).toHaveAttribute('tabindex', '0');
   });
 
   it('owns fitting and explicit Sticky overflow styling for direct adopters', () => {
