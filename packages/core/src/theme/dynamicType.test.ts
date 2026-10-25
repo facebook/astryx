@@ -323,6 +323,38 @@ describe('a theme that follows the reader text size', () => {
     return start === -1 ? '' : css.slice(start);
   };
 
+  /**
+   * The value of `property` that wins on an engine with the reader text size,
+   * where the media queries `holds` accepts hold: the last declaration whose
+   * media queries all hold. Every declaration a theme emits sits in its own
+   * scope at the same specificity, so source order decides.
+   */
+  const winning = (
+    css: string,
+    property: string,
+    holds: (query: string) => boolean,
+  ): string | undefined => {
+    const open: string[] = [];
+    let value: string | undefined;
+    for (const raw of css.split('\n')) {
+      const line = raw.trim();
+      if (line.endsWith('{') && !line.includes('}')) {
+        open.push(line);
+      } else if (line === '}') {
+        open.pop();
+      } else if (line.startsWith(`${property}:`)) {
+        const media = open
+          .filter(rule => rule.startsWith('@media '))
+          .map(rule => rule.slice('@media '.length, -1).trim());
+        if (media.every(holds)) {
+          value = line.slice(property.length + 1, -1).trim();
+        }
+      }
+    }
+    return value;
+  };
+  const nowhere = () => false;
+
   it('emits nothing unless it opts in', () => {
     const css = generateThemeCSS(defineTheme({name: 'dt-off'})).component;
     expect(css).not.toContain('-apple-system-body');
@@ -378,6 +410,100 @@ describe('a theme that follows the reader text size', () => {
     expect(media).toContain(
       '--font-size-base: min(calc(1rem * var(--_dynamic-type-body, 1)), var(--font-size-lg));',
     );
+  });
+
+  it('scales a size the theme fixes on the curve of the step it reads', () => {
+    // Butter, Stone and Y2K fix supporting text at 12px. Supporting text reads
+    // --font-size-sm by default, so the fixed size scales like Footnote
+    // instead of staying 12px while every step grows.
+    const theme = defineTheme({
+      name: 'dt-fixed',
+      typography: {dynamicType: true},
+      tokens: {'--text-supporting-size': '12px'},
+    });
+    const css = generateThemeCSS(theme).component;
+    const value = winning(css, '--text-supporting-size', nowhere);
+    expect(value).toBe('calc(12px * var(--_dynamic-type-footnote, 1))');
+    for (const category of TEXT_SIZE_CATEGORIES) {
+      expect(
+        computedSizes([['--text-supporting-size', value ?? '']], category)[0],
+      ).toBeCloseTo(12 * dynamicTypeScale('footnote', category), 6);
+    }
+  });
+
+  it('keeps the size each adaptation rule writes, scaling it when the rule fixes it', () => {
+    // Butter and Stone's shape: a fixed size at the root, and a phone rule
+    // whose scale turns it back into a step.
+    const theme = defineTheme({
+      name: 'dt-fixed-rules',
+      typography: {dynamicType: true, scale: {base: 14, ratio: 1.25}},
+      tokens: {'--text-supporting-size': '12px'},
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'coarse', width: {below: 'lg'}},
+            value: {typography: {scale: {base: 16, ratio: 1.2225}}},
+          },
+          {
+            when: {pointer: 'fine'},
+            value: {tokens: {'--text-supporting-size': '13px'}},
+          },
+        ],
+      },
+    });
+    const css = generateThemeCSS(theme).component;
+    const phone = (query: string) => query.includes('pointer: coarse');
+    const mouse = (query: string) => query.includes('pointer: fine');
+    // Outside every rule, the root's fixed size scales.
+    expect(winning(css, '--text-supporting-size', nowhere)).toBe(
+      'calc(12px * var(--_dynamic-type-footnote, 1))',
+    );
+    // On a phone the rule's step still wins, as it does without Dynamic Type;
+    // the step itself scales.
+    expect(winning(css, '--text-supporting-size', phone)).toBe(
+      'var(--font-size-sm)',
+    );
+    // A rule that fixes the size gets it scaled inside its own condition.
+    expect(winning(css, '--text-supporting-size', mouse)).toBe(
+      'calc(13px * var(--_dynamic-type-footnote, 1))',
+    );
+  });
+
+  it('scales only fixed sizes: a size that reads a variable or its parent is never scaled twice', () => {
+    const tokens = {
+      '--text-supporting-size': '0.75rem',
+      '--text-heading-6-size': 'clamp(10px, 1vw + 6px, 12px)',
+      '--text-heading-5-size': 'var(--font-size-xs)',
+      '--text-label-size': 'calc(var(--font-size-base) + 1px)',
+      '--text-code-size': '0.9em',
+      '--text-large-size': '110%',
+    };
+    const theme = defineTheme({
+      name: 'dt-fixed-only',
+      typography: {dynamicType: true},
+      tokens,
+    });
+    const css = generateThemeCSS(theme).component;
+    const scaledHere = [
+      ...supportsBlock(css).matchAll(/(--text-[a-z0-9-]+-size):/g),
+    ].map(match => match[1]);
+    expect(scaledHere.sort()).toEqual([
+      '--text-heading-6-size',
+      '--text-supporting-size',
+    ]);
+    expect(winning(css, '--text-heading-6-size', nowhere)).toBe(
+      'calc(clamp(10px, 1vw + 6px, 12px) * var(--_dynamic-type-caption1, 1))',
+    );
+    // The others keep what the theme wrote: a step already follows the
+    // reader, and em or % follows the parent's size.
+    for (const name of [
+      '--text-heading-5-size',
+      '--text-label-size',
+      '--text-code-size',
+      '--text-large-size',
+    ] as const) {
+      expect(winning(css, name, nowhere)).toBe(tokens[name]);
+    }
   });
 
   it('is a setting of the whole theme, not of an adaptation rule', () => {

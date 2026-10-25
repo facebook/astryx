@@ -42,6 +42,7 @@ import {
   DYNAMIC_TYPE_SUPPORTS,
   dynamicTypeCategoryRules,
   scaledFontSizeEntries,
+  textSizeEntries,
 } from './dynamicType';
 import {textSizeDefaults} from './tokens.stylex';
 
@@ -1272,24 +1273,33 @@ function generateDynamicTypeCSS(theme: DefinedTheme): string {
         ) ?? [])
       : []);
   const scopeSelector = themeScopeStart(theme.name);
-  const scoped = (tokens: Record<string, string>, location: string) => {
-    const declarations = joinDeclarations(
-      scaledFontSizeEntries(tokens),
-      location,
-      silentSink,
-    );
+  const scoped = (entries: [string, string][], location: string) => {
+    const declarations = joinDeclarations(entries, location, silentSink);
     return declarations
       ? `@scope (${scopeSelector}) to (${THEME_SCOPE_TO}) {\n  :scope {\n${declarations}\n  }\n}`
       : '';
   };
 
+  // The raw steps, then the semantic sizes the theme fixes; `scaled` carries
+  // those sizes from block to block so a later rule keeps its own.
+  const scaled = new Set<string>();
   const parts = [...dynamicTypeCategoryRules()];
-  const root = scoped({...textSizeDefaults, ...theme.tokens}, 'tokens');
+  const root = scoped(
+    [
+      ...scaledFontSizeEntries({...textSizeDefaults, ...theme.tokens}),
+      ...textSizeEntries(theme.tokens, scaled),
+    ],
+    'tokens',
+  );
   if (root) {
     parts.push(root);
   }
   for (const [index, rule] of rules.entries()) {
-    const block = scoped(rule.tokens ?? {}, `adaptations[${index}].tokens`);
+    const tokens = rule.tokens ?? {};
+    const block = scoped(
+      [...scaledFontSizeEntries(tokens), ...textSizeEntries(tokens, scaled)],
+      `adaptations[${index}].tokens`,
+    );
     if (block) {
       parts.push(`@media ${rule.query} {\n${block}\n}`);
     }

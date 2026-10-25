@@ -7,7 +7,8 @@
  * @output The reader's text size categories, the category a measured Body
  *   size names, each raw font-size step's UIKit curve and scale, the CSS that
  *   maps a category to those scales, the scaled raw font-size declarations a
- *   theme emits, and the root Theme's category sync
+ *   theme emits and the semantic sizes it fixes, and the root Theme's
+ *   category sync
  * @position Theme utility; read by generateThemeRules.ts (a theme's Dynamic
  *   Type CSS) and Theme.tsx (the root provider writes the category to <html>)
  *
@@ -23,17 +24,18 @@
  * a change made while the page is open applies at once, as Safari restyles its
  * own keywords. A theme with `typography.dynamicType` then re-declares each
  * raw font-size step as its own value times the scale of the UIKit text style
- * that step plays (UIKit's own rule for custom fonts, `UIFontMetrics`). Every
- * scale is 1 at Large, the default category, so a default reader sees exactly
- * the theme's sizes, and only sizes move: spacing, radius and the root stay
- * where the theme put them.
+ * that step plays (UIKit's own rule for custom fonts, `UIFontMetrics`); a
+ * semantic size the theme fixes at a length scales on the curve of the step
+ * it reads by default. Every scale is 1 at Large, the default category, so a
+ * default reader sees exactly the theme's sizes, and only sizes move:
+ * spacing, radius and the root stay where the theme put them.
  *
  * The gate is the capability alone: the engine provides
  * `font: -apple-system-body`, as every browser on iPhone and iPad does. There
  * is no platform, touch-callout or pointer check, since touch behavior is one
- * on every touch device and this is a style the engine itself provides. macOS Safari knows the keyword too, but its Body is a fixed 13px
- * that names no category, so nothing scales there; other engines do not know
- * it.
+ * on every touch device and this is a style the engine itself provides.
+ * macOS Safari knows the keyword too, but its Body is a fixed 13px that names
+ * no category, so nothing scales there; other engines do not know it.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/theme/dynamicType.test.ts
@@ -42,7 +44,7 @@
 
 import {typography} from './uikitTypography';
 import {dataAttr} from '../naming';
-import type {textSizeDefaults} from './tokens.stylex';
+import {typeScaleDefaults, type textSizeDefaults} from './tokens.stylex';
 
 // =============================================================================
 // Categories
@@ -156,9 +158,8 @@ const SCALED_STYLES = (Object.keys(typography) as DynamicTypeStyle[]).filter(
  * `font: -apple-system-body`, the keyword that carries the reader's text size.
  * The capability is the whole gate, with no touch-callout or pointer check
  * (one touch behavior on every touch device). The scales come only from the
- * category the root Theme
- * writes, so where the keyword follows no reader setting (macOS Safari's fixed
- * Body) every scale stays 1.
+ * category the root Theme writes, so where the keyword follows no reader
+ * setting (macOS Safari's fixed Body) every scale stays 1.
  */
 export const DYNAMIC_TYPE_SUPPORTS = '(font: -apple-system-body)';
 
@@ -223,6 +224,82 @@ export function scaledFontSizeEntries(
           : `min(${scaled}, max(var(${next}), ${value}))`,
       ];
     });
+}
+
+/**
+ * The raw step each semantic font size reads in the core defaults
+ * (`--text-supporting-size` reads `--font-size-sm`), in their order.
+ */
+const TEXT_SIZE_STEPS = Object.entries(typeScaleDefaults).flatMap(
+  ([name, value]): [string, FontSizeToken][] => {
+    const step = /^var\((--font-size-[a-z0-9]+)\)$/.exec(value)?.[1];
+    return name.endsWith('-size') &&
+      step !== undefined &&
+      step in FONT_SIZE_STEP_STYLES
+      ? [[name, step as FontSizeToken]]
+      : [];
+  },
+);
+
+/** A length in a unit that ignores the parent's font size. */
+const FIXED_LENGTH =
+  /\d(?:px|rem|pt|pc|in|cm|mm|q|vw|vh|vi|vb|vmin|vmax|[sld]v[whib]|cq[whib]|cqmin|cqmax)(?![a-z])/i;
+/** A length relative to the parent's font size, which already follows. */
+const RELATIVE_LENGTH = /\d(?:em|ex|ch|ic|cap|lh)(?![a-z])|\d%/i;
+
+/**
+ * Whether a size stays where the theme put it: a fixed length (`12px`,
+ * `0.75rem`, a `clamp()` of them) that reads no variable and no parent size.
+ */
+function isFixedSize(value: string): boolean {
+  return (
+    !value.includes('var(') &&
+    FIXED_LENGTH.test(value) &&
+    !RELATIVE_LENGTH.test(value)
+  );
+}
+
+/**
+ * The semantic font sizes (`--text-*-size`) among `tokens` that a theme
+ * re-declares, as `[token, value]`; the caller emits them through its
+ * declaration checks, after the raw steps.
+ *
+ * A semantic size normally reads a raw step (`var(--font-size-sm)`), so it
+ * follows the reader through that step. One a theme fixes at a length would
+ * stay put while every step grows, so it scales on the curve of the step its
+ * core default reads: supporting text reads `--font-size-sm`, so a fixed
+ * `12px` scales like Footnote. A size that reads a variable follows what it
+ * reads, and one relative to its parent (`em`, `%`) follows the parent, so
+ * neither scales twice. A fixed size is not capped: the theme that fixes it
+ * also fixes its place in the hierarchy.
+ *
+ * `scaled` collects the sizes scaled so far, block by block. Every block comes
+ * after the theme's own declarations, so a later block re-declares, as
+ * written, a size it sets through a variable once an earlier block scaled it:
+ * an adaptation rule that turns a fixed size back into a step keeps winning
+ * wherever its condition holds.
+ */
+export function textSizeEntries(
+  tokens: Record<string, string>,
+  scaled: Set<string>,
+): [string, string][] {
+  const entries: [string, string][] = [];
+  for (const [name, step] of TEXT_SIZE_STEPS) {
+    const value = tokens[name];
+    if (value === undefined) {
+      continue;
+    }
+    if (isFixedSize(value)) {
+      entries.push([
+        name,
+        `calc(${value} * var(${dynamicTypeScaleProperty(FONT_SIZE_STEP_STYLES[step])}, 1))`,
+      ]);
+      scaled.add(name);
+    } else if (scaled.has(name)) {
+      entries.push([name, value]);
+    }
+  }
+  return entries;
 }
 
 /** A `px` or `rem` length in px (16px to the rem); null for anything else. */

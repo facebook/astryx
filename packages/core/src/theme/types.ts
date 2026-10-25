@@ -78,7 +78,9 @@ export interface TypographyConfig {
    * it through `font: -apple-system-body`, as every browser on iPhone and iPad
    * does. When true, the theme's font sizes scale with the size the reader
    * picked in Settings, each step on the curve of the iOS text style it plays
-   * (body text like Body, h1 like Title 1, display text like Large Title).
+   * (body text like Body, h1 like Title 1, display text like Large Title). A
+   * semantic size the theme fixes at a length (`'--text-supporting-size':
+   * '12px'`) scales on the curve of the step it reads by default.
    * At the default size every font size is the theme's own; spacing, radius
    * and the root font size never change. Elsewhere nothing changes.
    *
