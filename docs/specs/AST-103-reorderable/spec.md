@@ -29,7 +29,7 @@ affects_consumer_docs: []
 <!-- Describe the system, not the project: present tense, what it does. No proposals, history, pull requests, or research in the record; see docs/contributing/spec-writing.md and report its rubric results in the pull request. -->
 
 **Proposed; pending owner decision.** Every requirement below awaits the
-owner's decision (OQ1, OQ2), except DEC-1, which is decided.
+owner's decision (OQ1), except DEC-1 and DEC-2, which are decided.
 
 ## Intent
 
@@ -85,8 +85,9 @@ announcements are those of FR3 and FR4, and the tree adds no option.
   returns a reorderable object. `options` carries only the change callback,
   `onReorder(from, to)`, where `from` and `to` are positions in the
   collection's own position model; a flat collection's positions are indices
-  (OQ1). It carries no gesture, animation, or timing settings. Optional
-  `canMove(from)` is OQ2.
+  (OQ1). It carries no gesture, animation, or timing settings. An optional
+  `isMovable(from)` predicate keeps a row in place: a row it rejects shows no
+  handle and cannot be picked up (DEC-2).
 - **FR2 — Present means enabled.** A collection that accepts reordering takes
   the object through one `reorderable` prop; there is no separate boolean.
   With the prop absent the collection renders no handle, registers no reorder
@@ -155,6 +156,18 @@ experimental name or subpath.
 
 Rejected: shipping it as experimental first.
 
+### DEC-2 — A predicate keeps a row in place
+
+**Reference:** `spec:AST-103/DEC-2`
+**Decider:** `cixzhang`, `2026-10-25`
+
+Some rows must not move, such as a pinned first row, and a person should see
+that before trying. An optional `isMovable(from)` predicate marks them: the row
+shows no handle and cannot be picked up, as a UIKit table's `canMoveRow` does.
+The name follows Astryx's `is…` predicate convention.
+
+Rejected: no per-row control, with unwanted moves ignored after the drop.
+
 ## Open questions
 
 - **OQ1 — The move's shape.** (`human-design`) Options: (a, recommended)
@@ -163,8 +176,3 @@ Rejected: shipping it as experimental first.
   a caller applies the move with one array operation; or (b)
   `onReorder({ key, to })`, naming the moved item by its key, which survives
   filtering but requires every collection to know item keys.
-- **OQ2 — Rows that do not move.** (`human-design`) Options: (a, recommended)
-  an optional `canMove(from)` in the options, so a pinned row shows no handle
-  and cannot be picked up, as a UIKit table's `canMoveRow` does; or (b) no
-  per-row control, and a caller ignores a move it does not want, which the
-  collection announces as kept.
