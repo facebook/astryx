@@ -317,12 +317,33 @@ export function Wheel({
       : 0;
   }, []);
 
-  // The kind of pointer that last pressed the wheel: a touch's release
-  // cross-fades under reduced motion whatever the primary pointer.
+  // What last started a scroll of the wheel: a pointer's type, or 'wheel'
+  // for a mouse wheel or trackpad. Under reduced motion the release of a
+  // touch drag cross-fades whatever the primary pointer (design:reduced-motion
+  // DR2); a key step, a row tap or a trackpad's scroll follows the primary
+  // pointer (DR2 on a coarse one, at once otherwise, DR3).
   const lastPointerRef = useRef<string | null>(null);
 
+  // A reduced-motion dip whose rows have not landed yet: its timer and the
+  // row it lands on. While one is pending the rows stay put for it, so they
+  // never move at full opacity, and a further step retargets it.
+  const pendingFadeRef = useRef<{timer: number; top: number} | null>(null);
+  useEffect(
+    () => () => {
+      if (pendingFadeRef.current != null) {
+        window.clearTimeout(pendingFadeRef.current.timer);
+        pendingFadeRef.current = null;
+      }
+    },
+    [],
+  );
+
   const scrollToIndex = useCallback(
-    (index: number, behavior: ScrollBehavior) => {
+    (
+      index: number,
+      behavior: ScrollBehavior,
+      {touchRelease = false}: {touchRelease?: boolean} = {},
+    ) => {
       const scroller = scrollerRef.current;
       const size = itemBlockSize();
       if (scroller == null || size === 0) {
@@ -330,20 +351,32 @@ export function Wheel({
       }
       const top = index * size;
       // Under reduced motion (design:reduced-motion) the wheel's own scroll
-      // lands without travel: a dip on a touch screen or after a touch, at
-      // once otherwise.
+      // lands without travel: a dip on a touch screen or for a touch drag's
+      // release, at once otherwise.
       const fadeTiming =
         behavior === 'smooth'
-          ? reducedMotionFade(scroller, {
-              touchRelease: lastPointerRef.current === 'touch',
-            })
+          ? reducedMotionFade(scroller, {touchRelease})
           : null;
+      const pending = pendingFadeRef.current;
       if (fadeTiming == null) {
+        if (pending != null) {
+          window.clearTimeout(pending.timer);
+          pendingFadeRef.current = null;
+        }
         scroller.scrollTo({top, behavior});
         return;
       }
       if (fadeTiming.duration === 0 || typeof scroller.animate !== 'function') {
+        if (pending != null) {
+          window.clearTimeout(pending.timer);
+          pendingFadeRef.current = null;
+        }
         scroller.scrollTo({top, behavior: 'auto'});
+        return;
+      }
+      if (pending != null) {
+        // The dip is still fading out: its rows land here instead.
+        pending.top = top;
         return;
       }
       const {duration, easing} = fadeTiming;
@@ -351,9 +384,12 @@ export function Wheel({
         [{opacity: 1, easing}, {opacity: 0, easing}, {opacity: 1}],
         {duration, easing: 'linear'},
       );
-      window.setTimeout(() => {
-        scroller.scrollTo({top, behavior: 'auto'});
+      const landing = {top, timer: 0};
+      landing.timer = window.setTimeout(() => {
+        pendingFadeRef.current = null;
+        scroller.scrollTo({top: landing.top, behavior: 'auto'});
       }, duration / 2);
+      pendingFadeRef.current = landing;
     },
     [itemBlockSize],
   );
@@ -383,7 +419,9 @@ export function Wheel({
           ? index
           : nearestEnabledIndex(options, index, selectedIndex);
       if (restIndex !== index) {
-        scrollToIndex(restIndex, 'smooth');
+        scrollToIndex(restIndex, 'smooth', {
+          touchRelease: lastPointerRef.current === 'touch',
+        });
         return;
       }
       const option = options[index];
@@ -404,7 +442,9 @@ export function Wheel({
   // useScrollSettle. The settle handler re-checks the position afterwards, so
   // a correction that is genuinely needed still happens, just at rest.
   useEffect(() => {
-    if (!isActive || !isAtRestRef.current) {
+    // Nor while a reduced-motion dip is still to land its rows: they land
+    // under it, on this row.
+    if (!isActive || !isAtRestRef.current || pendingFadeRef.current != null) {
       return;
     }
     const size = itemBlockSize();
@@ -531,6 +571,9 @@ export function Wheel({
         onKeyDown={handleKeyDown}
         onPointerDown={event => {
           lastPointerRef.current = event.pointerType;
+        }}
+        onWheel={() => {
+          lastPointerRef.current = 'wheel';
         }}
         {...stylex.props(styles.scroller, focusOutlineStyles.focusVisible)}>
         {options.map((option, index) => (

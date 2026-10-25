@@ -121,3 +121,52 @@ test('a wheel dragged onto a row inside the bounds commits that row', async ({
   await expect(selectedHour(hours)).toHaveText('11', {timeout: 3000});
   await expect(field).toHaveValue('11:00 AM');
 });
+
+test('under reduced motion an arrow key step lands under its cross-fade, never at full opacity', async ({
+  page,
+}) => {
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  const {field, hours} = await openHourWheel(page);
+  await hours.focus();
+  // Every frame from before the key until well after the 200 ms dip: where
+  // the rows are drawn (the band copy's strip where the column has one,
+  // its first row otherwise) and how opaque they are.
+  const frames = hours.evaluate(
+    async column =>
+      new Promise<{at: number; opacity: number}[]>(resolve => {
+        const seen: {at: number; opacity: number}[] = [];
+        const sample = () => {
+          const strip = column.querySelector<HTMLElement>('[data-wheel-strip]');
+          const rows =
+            strip ?? column.querySelector<HTMLElement>('[role="option"]');
+          const faded = strip?.parentElement ?? column;
+          seen.push({
+            at: Math.round(
+              (rows?.getBoundingClientRect().top ?? 0) -
+                column.getBoundingClientRect().top,
+            ),
+            opacity: Number(getComputedStyle(faded).opacity),
+          });
+          if (seen.length < 45) {
+            requestAnimationFrame(sample);
+          } else {
+            resolve(seen);
+          }
+        };
+        requestAnimationFrame(sample);
+      }),
+  );
+  await sleep(50);
+  await page.keyboard.press('ArrowDown');
+  const seen = await frames;
+
+  // The rows never move while they are fully visible: they land under the
+  // dip (design:reduced-motion DR2), then fade back in on 11.
+  const start = seen[0].at;
+  const moved = seen.find(frame => frame.at !== start);
+  expect(moved, JSON.stringify(seen)).toBeDefined();
+  expect(moved?.opacity, JSON.stringify(seen)).toBeLessThan(1);
+  expect(seen.at(-1)?.opacity).toBe(1);
+  await expect(selectedHour(hours)).toHaveText('11');
+  await expect(field).toHaveValue('11:00 AM');
+});
