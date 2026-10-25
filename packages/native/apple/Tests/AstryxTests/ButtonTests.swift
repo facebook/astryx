@@ -132,11 +132,12 @@ import Testing
 }
 
 @MainActor
-@Test func aDisabledButtonWithATooltipKeepsItsFocusStopAndTakesNoPress() {
+@Test func aDisabledButtonKeepsItsFocusStopAndTakesNoPress() {
   var presses = 0
   let withTip = Astryx.Button(label: "Save", isDisabled: true, tooltip: "Fill in a name first") { presses += 1 }
   #expect(withTip.keepsFocusWhileDisabled)
   withTip.activate()
   #expect(presses == 0)
-  #expect(!Astryx.Button(label: "Save", isDisabled: true) {}.keepsFocusWhileDisabled)
+  #expect(Astryx.Button(label: "Save", isDisabled: true) {}.keepsFocusWhileDisabled)
+  #expect(!Astryx.Button(label: "Save") {}.keepsFocusWhileDisabled)
 }

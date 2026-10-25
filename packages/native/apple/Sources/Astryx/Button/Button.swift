@@ -88,11 +88,10 @@ public struct Button: View {
   public var body: some View {
     control
       .buttonStyle(style)
-      // A disabled Button with a tooltip keeps its focus stop so keyboard
-      // users reach the tooltip, as core keeps it focusable; presses still
-      // never land, and VoiceOver reads a dimmed button.
-      .disabled(isDisabled && !keepsFocusWhileDisabled)
-      .modifier(DimmedButtonAccessibility(isActive: keepsFocusWhileDisabled, label: accessibilityText))
+      // A disabled Button keeps its focus stop, as core keeps it focusable,
+      // so keyboard users reach it and its tooltip; presses never land, and
+      // VoiceOver reads a dimmed button.
+      .modifier(DimmedButtonAccessibility(isActive: isDisabled, label: accessibilityText))
       // The shared Astryx tooltip on hover and keyboard focus, as core's
       // Button tooltip; its words are the VoiceOver hint.
       .astryxTooltip(props.tooltip, hint: props.tooltip, focus: .control)
@@ -158,8 +157,8 @@ public struct Button: View {
   /// Whether a press lands now: not while loading, unless interruptible.
   var acceptsPress: Bool { !isDisabled && (!isLoading || props.isInterruptible == true) }
 
-  /// A disabled Button with a tooltip keeps its focus stop (core Button FR10).
-  var keepsFocusWhileDisabled: Bool { isDisabled && props.tooltip != nil }
+  /// A disabled Button keeps its focus stop (core Button FR10).
+  var keepsFocusWhileDisabled: Bool { isDisabled }
 
   /// Runs `onClick` when a press lands.
   func activate() {
