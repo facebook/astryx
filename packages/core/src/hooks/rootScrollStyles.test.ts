@@ -74,6 +74,27 @@ describe('claimRootScrollStyle', () => {
     expect(root().overscrollBehaviorY).toBe('');
   });
 
+  it('mirrors overscroll-behavior-y onto the body, which Chrome on Android reads for its pull-to-refresh, and gives the body its own value back', () => {
+    document.body.style.overscrollBehaviorY = 'contain';
+
+    const release = claimRootScrollStyle({overscrollBehaviorY: 'none'});
+    expect(root().overscrollBehaviorY).toBe('none');
+    expect(document.body.style.overscrollBehaviorY).toBe('none');
+
+    release();
+    expect(root().overscrollBehaviorY).toBe('');
+    expect(document.body.style.overscrollBehaviorY).toBe('contain');
+  });
+
+  it('leaves a body overscroll value that an outside writer set while the claim held', () => {
+    const release = claimRootScrollStyle({overscrollBehaviorY: 'none'});
+    document.body.style.overscrollBehaviorY = 'auto';
+
+    release();
+    expect(document.body.style.overscrollBehaviorY).toBe('auto');
+    expect(root().overscrollBehaviorY).toBe('');
+  });
+
   it('lets the latest claim win and restores the one beneath it', () => {
     const lock = claimRootScrollStyle({overflow: 'hidden'});
     const drawer = claimRootScrollStyle({overflow: 'clip'});

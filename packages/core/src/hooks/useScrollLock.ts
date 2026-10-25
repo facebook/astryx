@@ -14,7 +14,9 @@
  * Holds the page where it is. `overflow: hidden`, claimed through
  * rootScrollStyles on the element the viewport takes its overflow from (the
  * root, or `<body>` when its own overflow propagates), stops wheel, keyboard
- * and scrollbar scrolling. Under a finger, the gesture host also cancels the
+ * and scrollbar scrolling, and `overscroll-behavior-y: none` (on the root and
+ * `<body>`) keeps the browser's pull-to-refresh from reloading the page behind
+ * the overlay. Under a finger, the gesture host also cancels the
  * one-finger pans that would still scroll the page (`holdPageScroll`, deciding
  * with `isPanAbsorbedBeforePage`), because iOS Safari before 26.4 scrolls an
  * `overflow: hidden` page under a finger. The page's scroll offset never changes, so there is nothing
@@ -68,7 +70,13 @@ export function useScrollLock(isLocked: boolean): void {
     if (lockCount === 0) {
       // Taken before the root's overflow hides the scrollbar.
       const gutter = holdScrollbarGutter(document.documentElement);
-      const releaseRootStyle = claimRootScrollStyle({overflow: 'hidden'});
+      // `overscroll-behavior-y: none` also keeps the browser's own
+      // pull-to-refresh (Chrome on Android) from reloading the page behind
+      // the overlay.
+      const releaseRootStyle = claimRootScrollStyle({
+        overflow: 'hidden',
+        overscrollBehaviorY: 'none',
+      });
       const releasePageHold = getGestureHost(document).holdPageScroll(
         (origin, dx, dy) => !isPanAbsorbedBeforePage(origin, dx, dy),
       );
