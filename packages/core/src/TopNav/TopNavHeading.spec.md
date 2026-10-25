@@ -13,7 +13,6 @@ review_triggers: [public-api, behavior, accessibility]
 verified_by:
   [
     packages/core/src/TopNav/TopNav.test.tsx,
-    packages/core/src/hooks/useMenuHover.test.tsx,
     apps/storybook/stories/TopNav.stories.tsx,
   ]
 modules: []
@@ -178,12 +177,11 @@ is recorded.
 
 ## Verification map
 
-| Contract          | Verification                                               | Representative states                           | Mutation or failure expectation                                               | Audit section                       |
-| ----------------- | ---------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------- |
-| FR1–FR3, AR1      | `TopNav.test.tsx` TopNavHeading render and logo-name tests | Each configuration                              | A wrong element or unnamed logo link fails.                                   | `audit:TopNavHeading/behavior`      |
-| FR4, FR7, AR2–AR3 | `TopNav.test.tsx` menu popover semantics tests             | Whole trigger; links plus trigger               | A modal wrapper or misplaced menu role fails.                                 | `audit:TopNavHeading/accessibility` |
-| FR5, FR8          | `TopNav.test.tsx` hover/click guard tests                  | Hover-open, click, late click, Escape           | Losing the guard or focus return fails.                                       | `audit:TopNavHeading/behavior`      |
-| Shared menu focus | `useMenuHover.test.tsx`                                    | Hover-open, click-open, Escape, Enter and Space | Focus moved on hover, not moved in on click, or not returned on Escape fails. | `audit:TopNavHeading/accessibility` |
+| Contract          | Verification                                               | Representative states                 | Mutation or failure expectation               | Audit section                       |
+| ----------------- | ---------------------------------------------------------- | ------------------------------------- | --------------------------------------------- | ----------------------------------- |
+| FR1–FR3, AR1      | `TopNav.test.tsx` TopNavHeading render and logo-name tests | Each configuration                    | A wrong element or unnamed logo link fails.   | `audit:TopNavHeading/behavior`      |
+| FR4, FR7, AR2–AR3 | `TopNav.test.tsx` menu popover semantics tests             | Whole trigger; links plus trigger     | A modal wrapper or misplaced menu role fails. | `audit:TopNavHeading/accessibility` |
+| FR5, FR8          | `TopNav.test.tsx` hover/click guard tests                  | Hover-open, click, late click, Escape | Losing the guard or focus return fails.       | `audit:TopNavHeading/behavior`      |
 
 Read from source, with no focused test yet: line truncation, part order, and `headerEndContent` (FR1); `as` and `LinkProvider` rendering (FR3); the chevron button's name and size (FR4); FR6; the popover's placement and its repeated identity row (FR7); and FR9.
 
