@@ -65,6 +65,20 @@ const reorderable = createReorderable({
 </List>;
 ```
 
+A second collection uses the same object and options, wired to its own
+internals. A tree reports positions as a parent and an index:
+
+```tsx
+const reorderable = createReorderable({
+  onReorder: (from, to) => setTree(tree => moveNode(tree, from, to)),
+});
+
+<TreeList reorderable={reorderable} items={tree} />;
+```
+
+Here `from` and `to` are `{ parent, index }`; the handle, keys, actions, and
+announcements are those of FR3 and FR4, and the tree adds no option.
+
 ## Requirements
 
 - **FR1 — One factory makes the behavior.** `createReorderable(options)`
