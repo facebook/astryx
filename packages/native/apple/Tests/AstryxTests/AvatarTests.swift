@@ -165,6 +165,21 @@ import Testing
 }
 
 @MainActor
+@Test func theDefaultNameTooltipShowsToPointersInABubbleVoiceOverSkips() {
+  // The name is the pointer tooltip and never the hint.
+  #expect(Avatar("Ada Lovelace").pointerTooltipText == "Ada Lovelace")
+  #expect(Avatar("Ada Lovelace").helpText == nil)
+  #expect(Avatar("Ada Lovelace", tooltip: true).pointerTooltipText == "Ada Lovelace")
+  #expect(Avatar("Ada Lovelace", tooltip: "Ada Lovelace, Mathematician").pointerTooltipText == nil)
+  #expect(Avatar("Ada Lovelace", tooltip: false).pointerTooltipText == nil)
+  #expect(AvatarPointerTooltip.delay == .milliseconds(500))
+  // The bubble draws the name in core's inverted tooltip colors.
+  let bubble = Pixels(AvatarTooltipBubble(text: "Ada Lovelace"))
+  #expect(bubble.width > 40)
+  #expect(close(bubble.at(bubble.width / 2, 2), rgba(Theme.default.light.color.textPrimary), within: 6))
+}
+
+@MainActor
 @Test func onlyGivenTooltipWordsBecomeHelpSoTheNameIsNotReadTwice() {
   #expect(Avatar("Ada Lovelace").helpText == nil)
   #expect(Avatar("Ada Lovelace", tooltip: true).helpText == nil)

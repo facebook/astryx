@@ -56,6 +56,7 @@ public struct Avatar: View {
     if props.base.isHidden != true {
       control
         .modifier(AvatarTooltipModifier(text: helpText))
+        .modifier(AvatarPointerTooltip(text: pointerTooltipText))
         .modifier(AvatarIdentifier(id: props.base.id))
         .onAppear(perform: checkInDevelopment)
     }
@@ -91,6 +92,13 @@ public struct Avatar: View {
   /// tooltip out of the description, so the name alone is not repeated.
   var helpText: String? {
     guard case .text = props.tooltip else { return nil }
+    return tooltipText
+  }
+
+  /// The default name tooltip: shown where there is a pointer, as core's is,
+  /// in a bubble VoiceOver skips, since it already reads the name.
+  var pointerTooltipText: String? {
+    if case .text = props.tooltip { return nil }
     return tooltipText
   }
 
@@ -368,6 +376,67 @@ private struct AvatarTooltipModifier: ViewModifier {
     } else {
       content
     }
+  }
+}
+
+/// The default name tooltip: after the pointer rests on the avatar for half a
+/// second, a bubble below it shows the name, in core's tooltip colors. The
+/// bubble is hidden from VoiceOver, which reads the name as the avatar's own.
+struct AvatarPointerTooltip: ViewModifier {
+  let text: String?
+  @State private var isShown = false
+  @State private var pending: Task<Void, Never>?
+
+  /// Core's tooltip delay before showing on hover.
+  static let delay: Duration = .milliseconds(500)
+
+  func body(content: Content) -> some View {
+    if let text {
+      content
+        .onHover { inside in
+          pending?.cancel()
+          if inside {
+            pending = Task { @MainActor in
+              try? await Task.sleep(for: Self.delay)
+              if !Task.isCancelled { isShown = true }
+            }
+          } else {
+            isShown = false
+          }
+        }
+        .overlay(alignment: .bottom) {
+          if isShown {
+            AvatarTooltipBubble(text: text)
+              // The bubble's top sits 4 points below the avatar.
+              .alignmentGuide(.bottom) { d in d[.top] - 4 }
+          }
+        }
+        .zIndex(isShown ? 1 : 0)
+    } else {
+      content
+    }
+  }
+}
+
+/// Core's tooltip surface: the primary text color behind surface-colored
+/// body text, padded `space.s1` by `space.s2`, with the container radius.
+struct AvatarTooltipBubble: View {
+  let text: String
+  @Environment(\.astryx) private var astryx
+
+  var body: some View {
+    SwiftUI.Text(text)
+      .font(astryx.font(size: "text-body-size", 14, weight: "text-body-weight"))
+      .foregroundStyle(astryx.tokens.color.backgroundSurface)
+      .padding(.vertical, astryx.tokens.space.s1)
+      .padding(.horizontal, astryx.tokens.space.s2)
+      .background(
+        RoundedRectangle(cornerRadius: astryx.tokens.radius.container, style: .continuous)
+          .fill(astryx.tokens.color.textPrimary)
+      )
+      .fixedSize()
+      .allowsHitTesting(false)
+      .accessibilityHidden(true)
   }
 }
 
