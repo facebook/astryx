@@ -198,7 +198,7 @@ struct AstryxButtonStyle: ButtonStyle {
     let shape = RoundedRectangle(cornerRadius: astryx.tokens.radius.element, style: .continuous)
     let font = astryx.tokens.font
     configuration.label
-      .font(astryx.font(TypeStyle(size: font.labelSize, weight: font.labelWeight, families: font.familyBody)))
+      .font(astryx.font(TypeStyle(font.label, families: font.family.body)))
       .foregroundStyle(foreground)
       .padding(.horizontal, astryx.tokens.space.s3)
       // Grows with text size, but not so far that one line of a large label
