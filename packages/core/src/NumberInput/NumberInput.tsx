@@ -19,6 +19,7 @@
  */
 
 import {
+  use,
   useId,
   useState,
   useMemo,
@@ -59,6 +60,7 @@ import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
+import {InputGroupInternalContext} from '../InputGroup/InputGroupInternalContext';
 
 // Public padding tokens for the `number-input` theme target. A theme writes an
 // ordinary `padding` (in ANY spelling — the shorthand, `paddingBlock`, or a
@@ -537,7 +539,7 @@ export function NumberInput({
   description,
   isOptional = false,
   isRequired = false,
-  isDisabled = false,
+  isDisabled: isDisabledProp = false,
   isReadOnly = false,
   disabledMessage,
   startIcon,
@@ -596,6 +598,8 @@ export function NumberInput({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const inputGroup = useInputGroup();
+  const inputGroupState = use(InputGroupInternalContext);
+  const isDisabled = isDisabledProp || inputGroupState.isDisabled;
 
   // Pending input while user is typing (null = show formatted value)
   const [pendingInput, setPendingInput] = useState<string | null>(null);
@@ -928,11 +932,12 @@ export function NumberInput({
       if (!e || e.detail === 0) {
         inputRef.current?.focus();
       } else {
-        // Defer focus restoration past the button's unmount task so iOS Safari
-        // and touch browsers don't jump the page scroll to 0 on tap.
-        requestAnimationFrame(() => {
-          inputRef.current?.focus({preventScroll: true});
-        });
+        // Focus inside the tap: iOS Safari brings up its keyboard only for a
+        // focus made while handling the touch, so a field the tap reaches
+        // unfocused gets its keyboard, as UIKit's clear button makes the
+        // field first responder. `preventScroll` keeps a scrolled page where
+        // it is.
+        inputRef.current?.focus({preventScroll: true});
       }
     },
     [hasClear, onChange],
