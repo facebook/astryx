@@ -194,11 +194,16 @@ export class PanGestureRecognizer extends GestureRecognizer {
   }
 
   /**
-   * Velocity in px/s, UIKit's way: after a rest it is the last moving value,
-   * since a finger at rest sends no events.
+   * Velocity in px/s, UIKit's way (`velocity(in:)`): after a silent rest it
+   * is the last moving value, since a finger at rest sends no events.
    */
   velocity(): Point {
-    return this.locked(this.tracker.velocity());
+    return this.locked(this.readVelocity(this.tracker));
+  }
+
+  /** The tracker's reading this kind of recognizer reports: a pan's. */
+  protected readVelocity(tracker: VelocityTracker): Point {
+    return tracker.velocity();
   }
 
   /**

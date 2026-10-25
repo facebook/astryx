@@ -23,6 +23,7 @@ const NAMES = [
   'LongPressGestureRecognizer',
   'PanGestureRecognizer',
   'ScreenEdgePanGestureRecognizer',
+  'ScrollViewPanGestureRecognizer',
   'SwipeGestureRecognizer',
   'PinchGestureRecognizer',
   'RotationGestureRecognizer',
