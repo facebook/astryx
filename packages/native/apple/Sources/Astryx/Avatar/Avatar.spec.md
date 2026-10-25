@@ -142,7 +142,8 @@ states Avatar's choices.
 - **AR1 — Named or decorative.** A static avatar with a name is one image
   element named by `alt`, else `name`; without one it is hidden from VoiceOver.
   A link or button avatar is one element with the link or button trait and the
-  same name (Swift accessibility X1, X5).
+  same name; the initials are never an element of their own (Swift
+  accessibility X1, X5).
 - **AR2 — Touch target.** A link or button avatar, and a static avatar whose
   tap opens its tooltip, answers taps across at least 44 by 44 points without
   changing its drawn size or layout (X7).
@@ -151,6 +152,13 @@ states Avatar's choices.
   app-hosted target exists.
 - **AR4 — Unnamed taps are flagged.** A link or button avatar without `alt`
   or `name` logs a development warning, as core warns.
+- **AR5 — Known audit findings.** The initials draw in core's tokens,
+  `color.textSecondary` on `color.neutral`, as core's Avatar does. In the
+  default and neutral themes' dark appearance that pair is below 4.5:1, in
+  core as well, so the platform accessibility audit can report its contrast;
+  the fix belongs to the theme tokens. The initials grow with the avatar only
+  up to 1.6 times (FR3), where core's initials keep their pixel size, so the
+  audit can report Dynamic Type as partly supported for them.
 
 ## Design relationships
 
@@ -187,7 +195,8 @@ Theme values read: `color.neutral`, `color.textSecondary`, `radius.element`,
 | FR5, AR2, AR4 | `AvatarTests.swift` link and button renders; tap, trait, tap-area, warning, `linkURL`, and web-path tests                                                                     | static, link, button; malformed, relative, and empty `href`                           | a link or button that draws differently, a malformed `href` made a link, a web path not flagged, or an unflagged unnamed tap fails                           | `audit:swift/Avatar/control` |
 | FR8           | `AvatarTests.swift` tooltip words, focus and touch, VoiceOver hint, and wire tests; `TooltipPresenterTests.swift` for each input; `contracts.test.ts`; `parseDocType.test.ts` | name, `true`, words, `false`, blank, no name; static, link, button                    | a wrong tooltip, a static avatar that is not a tab stop or does not open on a tap, a control that loses its tap, or a wire value that is not the web's fails | `audit:swift/Avatar/tooltip` |
 | FR6           | `AvatarTests.swift` initializer and hidden tests; `contracts.test.ts`                                                                                                         | both initializers; `isHidden`; named sizes                                            | differing props, a drawn hidden avatar, or a pixel size in Swift fails                                                                                       | `audit:swift/Avatar/api`     |
-| AR1           | `AvatarTests.swift` naming tests                                                                                                                                              | `alt`, `name`, blank, none                                                            | a wrong name or a named decorative avatar fails                                                                                                              | `audit:swift/Avatar/a11y`    |
+| AR1           | `AvatarTests.swift` naming and trait tests                                                                                                                                    | `alt`, `name`, blank, none                                                            | a wrong name or a named decorative avatar fails                                                                                                              | `audit:swift/Avatar/a11y`    |
+| AR5           | `AvatarTests.swift` two-theme renders draw the initials in core's tokens                                                                                                      | default and neutral, light and dark                                                   | initials in tokens other than core's fail                                                                                                                    | `audit:swift/Avatar/look`    |
 
 ## Decision log
 
