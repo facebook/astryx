@@ -124,6 +124,7 @@ import {
   type Animator,
   type MotionHandle,
 } from '../motion/animator';
+import {resolveMotion} from '../motion/resolveMotion';
 import type {SpringDescription} from '../motion/spring';
 import {registerSpringsTable, springs} from '../motion/uikit/springs';
 import {
@@ -198,6 +199,55 @@ function scrimClearOffset(
     ? dismissedOffsetFor(maxOffset, shortestDetentHeight)
     : maxOffset + shortestDetentHeight * DEFAULT_DISMISS_OVERSHOOT_RATIO;
 }
+// Today's drag (a mouse anywhere, and anything where the primary pointer is
+// fine) keeps the sheet's pointer behavior (spec:AST-017 FR59): within this
+// many px of a detent the live drag eases toward it, so it "clicks" into place
+// instead of hovering just off the mark. Under UIKit's presentation the sheet
+// tracks 1:1, as UIKit's does.
+const MAGNET_RANGE = 40;
+// Rubber-band factor for today's drag up past fully open, capped at
+// OVERSCROLL_MAX (the sheet reserves that much bottom padding for the lift to
+// reveal). Under UIKit's presentation it holds at the tallest detent, as
+// UIKit's sheet does.
+const OVERSCROLL_RESISTANCE = 0.35;
+// SYNC: must match OVERSCROLL_PADDING in BottomSheetPanel.tsx (the reserved
+// bottom padding the lift reveals).
+const OVERSCROLL_MAX = 48;
+
+// Pull a value toward the nearest of `targets` when within MAGNET_RANGE, easing
+// the last stretch so the surface settles crisply onto a detent while dragging.
+function magnetize(value: number, targets: number[]): number {
+  let nearestTarget = targets[0];
+  let nearestDist = Math.abs(value - nearestTarget);
+  for (const t of targets) {
+    const d = Math.abs(value - t);
+    if (d < nearestDist) {
+      nearestDist = d;
+      nearestTarget = t;
+    }
+  }
+  if (nearestDist >= MAGNET_RANGE) {
+    return value;
+  }
+  // Ease-in over the range: pull grows as you approach (t^2), so the click
+  // feels magnetic near the detent but doesn't fight a deliberate drag-through.
+  const t = nearestDist / MAGNET_RANGE;
+  const pull = 1 - t * t;
+  return value + (nearestTarget - value) * pull;
+}
+
+// The live offset for a mouse or pen drag at `raw`: a damped, capped rubber
+// band up past fully open, 1:1 in the dismiss zone, magnetic between detents.
+function pointerDragOffset(raw: number, offsets: number[]): number {
+  if (raw < 0) {
+    return Math.max(-OVERSCROLL_MAX, raw * OVERSCROLL_RESISTANCE);
+  }
+  if (raw > offsets[offsets.length - 1]) {
+    return raw;
+  }
+  return magnetize(raw, offsets);
+}
+
 function preservationInsetForOffset(
   baseOffset: number,
   targetOffset: number,
@@ -1086,6 +1136,10 @@ export function useSheetGestures({
           layers.push({animator: scrim, property: 'opacity', map});
         }
       }
+      // The spring the release plays: its theme value, read once, so the
+      // overshoot cap and the driver agree (a theme may retune it,
+      // spec:AST-094 FR4).
+      const played = resolveMotion(sheetElRef.current, spring);
       // Thrown up onto the tallest detent, the 80 % damped spring overshoots
       // above it; the sheet extends only its reserve below the screen, so
       // the hand-off is capped to keep the page from showing under it.
@@ -1093,7 +1147,7 @@ export function useSheetGestures({
       const v =
         motion.kind === 'uikit' && offset === 0
           ? limitOvershoot(
-              spring,
+              played,
               from,
               to,
               handed,
@@ -1108,7 +1162,7 @@ export function useSheetGestures({
         to,
         motion.kind === 'theme'
           ? {durationMs: motion.durationMs, easing: motion.easing}
-          : spring,
+          : played,
         {
           velocity: motion.kind === 'theme' ? 0 : v,
           touchRelease,
@@ -1652,13 +1706,13 @@ export function useSheetGestures({
   // A drag begins when a pan does (past its threshold, UIKit's translation
   // from there on), or on a settling sheet at the touch itself (the catch).
   const beginDrag = useCallback(
-    (isTouch: boolean, sheetHeight: number): boolean => {
+    (pointerType: string, sheetHeight: number): boolean => {
       // A closing sheet is not grabbed: its exit owns the surface.
       if (!isOpenRef.current) {
         return false;
       }
-      dragTouchRef.current = isTouch;
-      if (isTouch) {
+      dragTouchRef.current = pointerType === 'touch';
+      if (dragTouchRef.current) {
         lockSelection();
       }
       const naturalEndGap = naturalEndGapFor(bodyNodeRef.current);
@@ -1687,7 +1741,10 @@ export function useSheetGestures({
       activeOffsetRef.current = baseOffset;
       beginScrimTracking();
       // Read before this drag turns transitions off (releaseMotion.ts).
-      releaseMotionRef.current = readReleaseMotion(sheetElRef.current);
+      releaseMotionRef.current = readReleaseMotion(
+        sheetElRef.current,
+        pointerType,
+      );
       dragStateRef.current = {
         pan: null,
         height: sheetHeight,
@@ -1732,11 +1789,16 @@ export function useSheetGestures({
       const {offsets, peekOffset} = resolveDetents(state.height);
 
       const raw = state.baseOffset + translation;
-      // 1:1 with the finger between detents and into the dismiss zone, as
-      // UIKit's sheet tracks (the release, not the drag, picks the detent).
-      // Up past fully open it holds: UIKit's sheet doesn't stretch beyond its
-      // largest detent.
-      const next = Math.max(0, raw);
+      // Under UIKit's presentation (a finger or a pen where the primary
+      // pointer is coarse, the same answer as the release's): 1:1 between
+      // detents and into the dismiss zone, as UIKit's sheet tracks (the
+      // release, not the drag, picks the detent), and held at fully open,
+      // since UIKit's sheet doesn't stretch beyond its largest detent.
+      // Otherwise today's pointer behavior (spec:AST-017 FR59).
+      const next =
+        releaseMotionRef.current.kind === 'uikit'
+          ? Math.max(0, raw)
+          : pointerDragOffset(raw, offsets);
       // Dragging above the base restores the full layout height below the
       // viewport; otherwise keep whatever layout the base detent settled with
       // (0 at a peek, so a peek drag stays transform-only).
@@ -1888,7 +1950,7 @@ export function useSheetGestures({
           // watcher below); otherwise the drag starts here.
           if (
             dragStateRef.current == null &&
-            !beginDrag(pointerKinds.get(pan) === 'touch', measureHeight())
+            !beginDrag(pointerKinds.get(pan) ?? 'touch', measureHeight())
           ) {
             return;
           }
@@ -2008,7 +2070,7 @@ export function useSheetGestures({
             dragStateRef.current == null &&
             canDrag()
           ) {
-            beginDrag(pointerKinds.get(press) === 'touch', measureHeight());
+            beginDrag(pointerKinds.get(press) ?? 'touch', measureHeight());
           }
           return;
         case 'ended':

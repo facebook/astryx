@@ -208,6 +208,7 @@ function makeScroller(metrics: {
  * move the browser sends once it scrolls with the finger.
  */
 function fingers() {
+  stubCoarsePointer();
   const down = new Map<number, Contact>();
   let clock = 0;
   return (
@@ -279,6 +280,22 @@ beforeEach(() => {
  * device takes UIKit's rule and springs (one touch model, AST-094); a mouse
  * keeps today's (releaseMotion.ts, sheetRelease.ts).
  */
+/**
+ * A coarse primary pointer: a finger there takes UIKit's presentation
+ * (spec:AST-094 FR13); every other query stays unmatched.
+ */
+function stubCoarsePointer() {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((query: string) => ({
+      matches: query.includes('pointer: coarse'),
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })),
+  );
+}
+
 function stubIosIdiom({reducedMotion = false}: {reducedMotion?: boolean} = {}) {
   vi.stubGlobal(
     'matchMedia',
@@ -390,6 +407,7 @@ function attach(hook: Hook, target: HTMLElement) {
 let pointerKind: 'touch' | 'mouse' | null = null;
 function asFinger() {
   pointerKind = 'touch';
+  stubCoarsePointer();
 }
 function asMouse() {
   pointerKind = 'mouse';
@@ -1052,6 +1070,7 @@ describe('useSheetGestures', () => {
   });
 
   it('tracks the finger 1:1 between detents and into the dismiss zone', () => {
+    asFinger();
     // UIKit's sheet follows the finger exactly (interaction offset = detent
     // offset + translation, no magnet); the release picks the detent. Offsets
     // for a 400px sheet with snaps 300 and 200: [0, 100, 200], gone at 400.
@@ -1062,6 +1081,57 @@ describe('useSheetGestures', () => {
       move(hook, y, y * 2, t);
       expect(liveOffset(hook)).toBe(y);
     }
+  });
+
+  it('under a mouse, magnetically settles the live drag onto a nearby detent, as before', () => {
+    // Offsets [0, 100, 200] for a 400px sheet with snaps 300 and 200. A mouse
+    // keeps the pointer behavior (spec:AST-017 FR59): 10px short of the 100
+    // detent it eases toward it.
+    asMouse();
+    const {hook} = setup({snapHeights: () => [200, 300]});
+    const t = makeTarget();
+    down(hook, 0, 0, t);
+    move(hook, 90, 100, t);
+    const off = liveOffset(hook);
+    expect(off).toBeGreaterThan(90);
+    expect(off).toBeLessThanOrEqual(100);
+    // Past the shortest detent, in the dismiss zone, it tracks 1:1.
+    move(hook, 320, 200, t);
+    expect(liveOffset(hook)).toBe(320);
+  });
+
+  describe('one answer for the tracking and the release (spec:AST-094 FR13)', () => {
+    // Offsets [0, 100, 200] for a 400px sheet with snaps 300 and 200: 10 px
+    // short of the 100 detent, today's drag eases toward it; UIKit's tracks
+    // 1:1. The release reads the same answer (releaseMotion.test.ts).
+    function dragTo90(): number {
+      const {hook} = setup({snapHeights: () => [200, 300]});
+      const t = makeTarget();
+      down(hook, 0, 0, t);
+      move(hook, 90, 100, t);
+      return liveOffset(hook);
+    }
+
+    it("keeps a finger on today's drag where the primary pointer is fine", () => {
+      pointerKind = 'touch';
+      expect(matchMedia('(pointer: coarse)').matches).toBe(false);
+      const offset = dragTo90();
+      expect(offset).toBeGreaterThan(90);
+      expect(offset).toBeLessThanOrEqual(100);
+    });
+
+    it("keeps a mouse on today's drag where the primary pointer is coarse", () => {
+      stubIosIdiom();
+      asMouse();
+      const offset = dragTo90();
+      expect(offset).toBeGreaterThan(90);
+      expect(offset).toBeLessThanOrEqual(100);
+    });
+
+    it('tracks a finger 1:1 where the primary pointer is coarse', () => {
+      asFinger();
+      expect(dragTo90()).toBe(90);
+    });
   });
 
   it('translates the surface live during a drag', () => {
@@ -1338,6 +1408,7 @@ describe('useSheetGestures', () => {
   });
 
   it('holds at the fully-open position when dragged further up', () => {
+    asFinger();
     // UIKit's sheet stops dead at its largest detent (measured on iOS 26.2:
     // no stretch from a grabber or a content touch, or from medium past it).
     const {hook} = setup({snapHeights: () => [200]});
@@ -1349,6 +1420,18 @@ describe('useSheetGestures', () => {
     expect(liveOffset(hook)).toBe(0);
     move(hook, 130, 150, t); // back down: the finger's travel from the press, clamped
     expect(liveOffset(hook)).toBe(30);
+  });
+
+  it('under a mouse, rubber-bands an upward drag past the fully-open position, as before', () => {
+    asMouse();
+    const {hook} = setup({snapHeights: () => [200]});
+    const t = makeTarget();
+    down(hook, 100, 0, t);
+    move(hook, 20, 100, t); // 80px past the top of a rested-at-top sheet
+    // Damped and capped: above the top, smaller than the raw 80px.
+    const off = liveOffset(hook);
+    expect(off).toBeLessThan(0);
+    expect(off).toBeGreaterThan(-80);
   });
 
   it('dismisses a single-height sheet on a slow drag past the floor', () => {
@@ -1388,8 +1471,10 @@ describe('useSheetGestures', () => {
       bodyDown(hook, 0, 0, body);
       bodyMove(hook, 40, 100, body); // pull down while at the top
       expect(hook.result.current.isDragging).toBe(true);
-      // The translation past the pan's threshold, as UIKit's pan reports it.
-      expect(liveOffset(hook)).toBe(40 - PAN_THRESHOLD);
+      // The translation past the pan's threshold (30 px), as UIKit's pan
+      // reports it, eased toward fully open by today's detent magnet: a
+      // mouse keeps today's drag (spec:AST-017 FR59).
+      expect(liveOffset(hook)).toBeCloseTo(30 - 30 * (1 - (30 / 40) ** 2), 6);
     });
 
     /**
@@ -2291,6 +2376,43 @@ describe('useSheetGestures: the release on the compositor', () => {
     expect(hook.result.current.settledOffset).toBe(0);
     const release = played.at(-1) as Played;
     // The sheet extends 48 px below the screen: it never rises past that.
+    for (let ms = 0; ms <= 600; ms += 4) {
+      expect(travelAt(release, ms)).toBeGreaterThanOrEqual(-48.5);
+    }
+  });
+
+  it("keeps a fast throw within the reserve on the theme's release spring too (spec:AST-094 FR4)", () => {
+    // A theme retunes the fast release to a bouncier spring: the cap reads
+    // the spring the release plays, not the table's.
+    const scope = document.createElement('div');
+    scope.setAttribute('data-astryx-theme', 'bouncy-release');
+    document.body.append(scope);
+    const computed = window.getComputedStyle.bind(window);
+    vi.spyOn(window, 'getComputedStyle').mockImplementation(
+      (element: Element, pseudo?: string | null) =>
+        element === scope
+          ? ({
+              getPropertyValue: (name: string) =>
+                name === '--motion-springs-sheet-release-fast'
+                  ? '0.5s 0.6'
+                  : '',
+            } as CSSStyleDeclaration)
+          : computed(element, pseudo),
+    );
+    const {hook} = setup({
+      snapHeights: () => [200],
+      offscreenBlockEndInset: 48,
+    });
+    const t = makeTarget();
+    scope.append(t);
+    const played = recordAnimations(t);
+    down(hook, 0, 0, t);
+    stream(hook, t, {from: 0, to: 150, t0: 0, t1: 600});
+    // Thrown back up at 3000 px/s, released 5 px below fully open.
+    stream(hook, t, {from: 150, to: 5, t0: 600, t1: 648});
+    lift(hook, 5, 650, t);
+    expect(hook.result.current.settledOffset).toBe(0);
+    const release = played.at(-1) as Played;
     for (let ms = 0; ms <= 600; ms += 4) {
       expect(travelAt(release, ms)).toBeGreaterThanOrEqual(-48.5);
     }
