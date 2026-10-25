@@ -320,10 +320,19 @@ describe('theme build --icons-specifier (spawned processes)', () => {
         `  tokens: {'--color-bg': '#0a0b0c'},\n` +
         `};\n`;
       fs.writeFileSync(themeFile, touched);
+      // The rebuilt module as read when the new token showed up. The
+      // assertion below reads this snapshot, not the file again: a re-touch
+      // in this loop can queue one more rebuild, and a second read can land
+      // inside that rewrite (writeFileSync truncates first) and see an empty
+      // module.
+      let rebuiltModule = '';
       const rebuilt = await waitFor(() => {
         try {
-          if (fs.readFileSync(builtFile, 'utf-8').includes('#0a0b0c'))
+          const generated = fs.readFileSync(builtFile, 'utf-8');
+          if (generated.includes('#0a0b0c')) {
+            rebuiltModule = generated;
             return true;
+          }
         } catch {
           // JavaScript module mid-write; fall through to re-touch.
         }
@@ -340,9 +349,7 @@ describe('theme build --icons-specifier (spawned processes)', () => {
       // forwarding is what this test pins. A watch loop that dropped the flag
       // would regenerate with the scraped './icons' here and ship the #4620
       // bytes on every save.
-      expect(iconImportLine(fs.readFileSync(builtFile, 'utf8'))).toBe(
-        declaredImport,
-      );
+      expect(iconImportLine(rebuiltModule)).toBe(declaredImport);
     } finally {
       child.kill('SIGINT');
     }
