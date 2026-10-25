@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-10-25
+approved_at: 2026-10-26
 owners: [cixzhang]
 review_triggers: [public-api, behavior, navigation]
 verified_by:
@@ -63,10 +63,13 @@ Consumer migration instructions belong in consumer docs and release notes.
 **Owns**
 
 - Supplying `component` to the subtree and its scoping.
-- The default `to` a router component receives (FR3).
 
 **Does not own / non-goals**
 
+- The router-facing `href` and `to` handoff, including the default `to` in FR3
+  — owned by the shared link boundary (`useLinkComponent`) under
+  `family:navigation-destinations`; the same default reaches an `as` component
+  without a provider.
 - Destination checks and inert rendering of rejected destinations — owned by
   `family:navigation-destinations` FR6 and `spec:AST-005` FR7; FR4 points to
   them.
@@ -84,13 +87,13 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Behavioral and layout contract
 
-| ID  | Invariant                                                                                                                                                                                              | Basis                                                    |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------- |
-| FR1 | LinkProvider renders only its children and adds no element.                                                                                                                                            | Current source                                           |
-| FR2 | Inside the provider, a link rendered through the shared link boundary uses `component`. A per-component `as` wins over the provider; with neither, a native anchor renders. The nearest provider wins. | `family:navigation-destinations` FR2, AV2; current tests |
-| FR3 | `component` receives the accepted `href` and a `to` equal to `href` unless an accepted explicit `to` is supplied, which wins. A native anchor receives no `to`.                                        | `family:navigation-destinations` FR6; current tests      |
-| FR4 | A rejected destination never reaches `component`; the inert rendering and destination checks follow `family:navigation-destinations` FR6 and `spec:AST-005` FR7.                                       | `family:navigation-destinations` FR6; `spec:AST-005` FR7 |
-| FR5 | A component that renders no link in a given state does not use the provider; a disabled `component:Link` renders a native anchor without `href` (`component:Link` FR5).                                | Current source and tests                                 |
+| ID  | Invariant                                                                                                                                                                                                                                                                | Basis                                                    |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------- |
+| FR1 | LinkProvider renders only its children and adds no element.                                                                                                                                                                                                              | Current source                                           |
+| FR2 | Inside the provider, a link rendered through the shared link boundary uses `component`. A per-component `as` wins over the provider; with neither, a native anchor renders. The nearest provider wins.                                                                   | `family:navigation-destinations` FR2, AV2; current tests |
+| FR3 | Through the shared link boundary, `component` receives the accepted `href` and a `to` equal to `href` unless an accepted explicit `to` is supplied, which wins; a native anchor receives no `to`. LinkProvider only selects `component`.                                 | `family:navigation-destinations` FR6; current tests      |
+| FR4 | A rejected destination never reaches `component`; the inert rendering and destination checks follow `family:navigation-destinations` FR6 and `spec:AST-005` FR7.                                                                                                         | `family:navigation-destinations` FR6; `spec:AST-005` FR7 |
+| FR5 | A component that renders no link in a given state does not use the provider: a disabled `component:Link` with `href` and no `onClick` renders a native anchor without `href`, and one with `onClick` or without `href` renders a `<button>` (`component:Link` FR1, FR5). | Current source and tests                                 |
 
 ### Allowed variation
 
