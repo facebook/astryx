@@ -781,7 +781,7 @@ jobs:
             && git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA" \
             && git show "$BASE_SHA:.github/scripts/pr-scope-touches.sh" > "$helper"; then
             scope=0
-            bash "$helper" "$BASE_SHA" '^packages/native/.*(\.swift|/Package\.swift)$|^\.github/scripts/native-swift\.sh$' || scope=$?
+            bash "$helper" "$BASE_SHA" '^packages/native/.*(\.swift|/Package\.swift|/Host/project\.yml)$|^\.github/scripts/native-swift\.sh$' || scope=$?
           fi
           if [ "$scope" = 1 ]; then
             echo 'No native Swift change; nothing to build.'
@@ -815,7 +815,19 @@ jobs:
       # so a change to them runs on its own pull request.
       - name: Build and test each native Swift package
         if: needs.native-swift-scope.outputs.applies == 'true'
+        env:
+          NATIVE_UI_DIR: ${{ runner.temp }}/native-ui-tests
         run: bash .github/scripts/native-swift.sh
+
+      # Screenshots the host app's UI tests took, named with the head commit.
+      - name: Upload native UI test screenshots
+        if: always() && needs.native-swift-scope.outputs.applies == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: native-ui-tests-${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}
+          path: ${{ runner.temp }}/native-ui-tests
+          if-no-files-found: ignore
+          retention-days: 30
 
   # Public registry contract. Generation proves schema, dependency, route-lock,
   # alias, and release-gating invariants; the final step drives every canonical
