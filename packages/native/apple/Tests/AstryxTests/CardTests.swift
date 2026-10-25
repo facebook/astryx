@@ -119,15 +119,15 @@ import Testing
 
 @MainActor
 @Test func onlyTheDefaultVariantDrawsABorder() {
-  // A border makes the card's top edge differ from its ground a few points
-  // in; without one, the edge is the ground. Pixels are compared as drawn
-  // (premultiplied), so translucent grounds compare like opaque ones.
+  // A theme whose border token is a color nothing else uses: a card draws
+  // that color exactly when it draws a border.
+  var theme = Theme.default
+  theme.light.color.border = Color(astryxRGBA: 0xFF00FFFF)
+  let magenta = [255, 0, 255, 255]
   for variant in CardVariant.allCases {
     let card = Astryx.Card(variant: variant) { Color.clear.frame(width: 40, height: 40) }
       .frame(width: 80)
-    let pixels = Pixels(card)
-    let x = pixels.width / 2
-    let hasBorder = !close(pixels.at(x, 0), pixels.at(x, 4), within: 3)
+    let hasBorder = Pixels(card, theme: theme).contains { close($0, magenta, within: 4) }
     #expect(hasBorder == (variant == .default), "\(variant.rawValue)")
   }
 }
