@@ -18,8 +18,9 @@ public struct Text: View {
   ///     surrounding font and color, unless `size` is also set (below).
   ///   - size: core's `size`, replacing the type's size. With `inherit`,
   ///     SwiftUI cannot change only the size of an inherited font, so the text
-  ///     draws in the theme's body family at that size: a known gap from core,
-  ///     where an inherited family keeps its face.
+  ///     draws in the theme's body family at normal weight (or at `weight`,
+  ///     when set) at that size: a documented Swift gap from core, where an
+  ///     inherited family and weight keep their face.
   ///   - color: core's `color`; secondary for `supporting`, primary otherwise.
   ///   - weight: core's `weight`, replacing the type's weight.
   ///   - maxLines: core's `maxLines`; text past it is truncated. Unset, a
@@ -75,7 +76,8 @@ public struct Text: View {
       text = text.font(astryx.font(style))
     } else if let size = props.size {
       // `inherit` with a size: SwiftUI cannot change only the size of an
-      // inherited font, so it draws the body family at that size.
+      // inherited font, so it draws the body family at normal weight (or the
+      // given weight) at that size, a documented gap.
       let weight = font.weight(named: props.weight?.rawValue ?? "normal")
       text = text.font(astryx.font(TypeStyle(size: font.size(size), weight: weight, families: font.familyBody)))
     } else if let weight = props.weight {
