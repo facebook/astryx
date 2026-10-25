@@ -12,10 +12,12 @@
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {UIKIT_GESTURES} from '../../motion/uikit/gestures';
+import {installPressFeedback} from '../../utils/pressFeedback';
 import {installPressAttribute} from '../delegatedPress';
 import {PRESS_PROFILES} from '../PressTracker';
 import {getGestureHost} from '../GestureHost';
 import {PanGestureRecognizer} from '../PanGestureRecognizer';
+import {coarsePrimaryPointer} from './pointerQuery';
 
 interface Contact {
   id: number;
@@ -53,6 +55,15 @@ function mount(html: string): Record<string, HTMLElement> {
   }
   return elements;
 }
+
+// A phone: the host attaches only where the primary pointer is coarse.
+let restorePointer: () => void;
+beforeEach(() => {
+  restorePointer = coarsePrimaryPointer();
+});
+afterEach(() => {
+  restorePointer();
+});
 
 let release: () => void = () => {};
 
@@ -166,6 +177,27 @@ describe('installPressAttribute', () => {
     other.setAttribute('data-astryx-press', 'held');
     vi.advanceTimersByTime(PRESS_PROFILES.control.releaseMs);
     expect(other.getAttribute('data-astryx-press')).toBe('held');
+  });
+
+  it('stays idle, and says so once, while the document press controller holds the same attribute', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const {row} = mount('<div id="row" data-astryx-pressable>Row</div>');
+    const releaseController = installPressFeedback();
+    touch('touchstart', row, {id: 1, x: 5, y: 5}, 0);
+    expect(row.hasAttribute('data-astryx-press')).toBe(false);
+    touch('touchend', row, {id: 1, x: 5, y: 5}, 80);
+    touch('touchstart', row, {id: 2, x: 5, y: 5}, 400);
+    touch('touchend', row, {id: 2, x: 5, y: 5}, 480);
+    expect(
+      warn.mock.calls.filter(([message]) =>
+        String(message).startsWith('installPressAttribute:'),
+      ),
+    ).toHaveLength(1);
+    releaseController();
+    touch('touchstart', row, {id: 3, x: 5, y: 5}, 900);
+    expect(row.getAttribute('data-astryx-press')).toBe('on');
+    touch('touchend', row, {id: 3, x: 5, y: 5}, 980);
+    warn.mockRestore();
   });
 
   it('counts installs and adds no listener to the marked elements', () => {

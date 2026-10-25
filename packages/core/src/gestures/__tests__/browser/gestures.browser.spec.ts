@@ -47,6 +47,8 @@ test.beforeAll(async () => {
     format: 'iife',
     platform: 'browser',
     target: 'es2022',
+    // A development build, as an app's bundler would make one.
+    define: {'process.env.NODE_ENV': '"development"'},
   });
   bundle = result.outputFiles[0].text;
 });
@@ -309,7 +311,15 @@ test('only elements whose recognizers claim a moving touch carry a blocking touc
   // Pans (the cards' too), a long press, a pinch and the sheet's pan can take
   // a moving touch; a tap-only element and a press consumer never wait.
   expect(new Set(blocking)).toEqual(
-    new Set(['hpan', 'presser', 'pinchable', 'sheetBody', 'card', 'cardLate']),
+    new Set([
+      'hpan',
+      'presser',
+      'pinchable',
+      'sheetBody',
+      'slider',
+      'card',
+      'cardLate',
+    ]),
   );
 });
 
@@ -405,6 +415,70 @@ test('a one-way overlay pan keeps its direction from the page, and leaves the ot
   await driver.play(drag(start, {x: start.x, y: start.y + 60}, 30));
   expect(await page.evaluate(() => window.scrollY)).toBeLessThan(before - 20);
   expect(states(await log(page), 'card')).toEqual(['failed', 'possible']);
+});
+
+test('a held finger turns text selection off on a press-tracked control and on a pan that asks, until it lifts; a mouse and other pans keep it', async ({
+  page,
+  browserName,
+}) => {
+  const driver = await open(page, browserName);
+  const selection = async (id: string) =>
+    page.evaluate(target => {
+      const style = getComputedStyle(
+        document.getElementById(target) ?? document.body,
+      );
+      return (
+        style.getPropertyValue('-webkit-user-select') ||
+        style.getPropertyValue('user-select')
+      );
+    }, id);
+  const held: Record<string, string[]> = {};
+  for (const id of ['passive', 'slider', 'hpan']) {
+    await page.locator(`#${id}`).scrollIntoViewIfNeeded();
+    const at = await center(page, id);
+    const before = await selection(id);
+    await driver.play([{t: 0, down: [{id: 1, ...at}]}]);
+    const during = await selection(id);
+    await driver.play([{t: 0, down: []}]);
+    held[id] = [before, during, await selection(id)];
+  }
+  // The engine's own value otherwise: Chromium computes `auto`, WebKit `text`.
+  const free = held.hpan[0];
+  expect(free).not.toBe('none');
+  expect(held.passive).toEqual([free, 'none', free]);
+  expect(held.slider).toEqual([free, 'none', free]);
+  expect(held.hpan).toEqual([free, free, free]);
+
+  const at = await center(page, 'passive');
+  await page.mouse.move(at.x, at.y);
+  await page.mouse.down();
+  const withMouse = await selection('passive');
+  await page.mouse.up();
+  expect(withMouse).toBe(free);
+});
+
+test('a held finger on a checkbox inside a press-tracked row turns its selection off too: WebKit makes every input selectable', async ({
+  page,
+  browserName,
+}) => {
+  const driver = await open(page, browserName);
+  const selection = async () =>
+    page.evaluate(() => {
+      const style = getComputedStyle(
+        document.getElementById('check') ?? document.body,
+      );
+      return (
+        style.getPropertyValue('-webkit-user-select') ||
+        style.getPropertyValue('user-select')
+      );
+    });
+  await page.locator('#check').scrollIntoViewIfNeeded();
+  const at = await center(page, 'check');
+  const before = await selection();
+  await driver.play([{t: 0, down: [{id: 1, ...at}]}]);
+  const during = await selection();
+  await driver.play([{t: 0, down: []}]);
+  expect([before, during, await selection()]).toEqual([before, 'none', before]);
 });
 
 test('a tap recognizer replaces the click: no ghost click, no compatibility mouse events', async ({
@@ -600,4 +674,44 @@ test('a long press begins at touch-down + 500 ms on the event clock, even when t
   expect((began?.beganAt ?? 0) - (began?.startedAt ?? 0)).toBeCloseTo(500, 6);
   expect(states(entries, 'press')).toEqual(['began', 'ended', 'possible']);
   expect(entries.some(entry => entry.name.startsWith('click:'))).toBe(false);
+});
+
+test.describe('where the primary pointer is fine', () => {
+  test.use({hasTouch: false, isMobile: false});
+
+  test('the host registers no touch listener and writes no style, though the page attaches recognizers (spec:AST-094 FR19)', async ({
+    page,
+  }) => {
+    const warnings: string[] = [];
+    page.on('console', message => {
+      if (message.type() === 'warning') {
+        warnings.push(message.text());
+      }
+    });
+    await page.goto('about:blank');
+    await page.setContent(
+      '<!doctype html><meta name="viewport" content="width=device-width, initial-scale=1"><body></body>',
+    );
+    await page.addScriptTag({content: bundle});
+    const seen = await page.evaluate(() => ({
+      isCoarse: matchMedia('(pointer: coarse)').matches,
+      page: window.__pageTouchListenersAtLoad,
+      elements: window.__listeners.map(entry => entry.id),
+      // What the host would write: none of it, in any engine's spelling.
+      styles: ['hpan', 'presser', 'slider', 'card'].map(id => {
+        const style = document.getElementById(id)?.style;
+        return ['touch-action', '-webkit-user-select', '-webkit-touch-callout']
+          .map(property => style?.getPropertyValue(property) ?? 'missing')
+          .join('|');
+      }),
+    }));
+    expect(seen.isCoarse).toBe(false);
+    expect(seen.page).toEqual([]);
+    expect(seen.elements).toEqual([]);
+    expect(seen.styles).toEqual(['||', '||', '||', '||']);
+    // The page's attaches are named once, in development.
+    expect(
+      warnings.filter(text => text.includes('primary pointer is fine')),
+    ).toHaveLength(1);
+  });
 });
