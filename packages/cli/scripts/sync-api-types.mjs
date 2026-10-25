@@ -27,11 +27,11 @@
 
 import {execFileSync} from 'node:child_process';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const CLI_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const TMP = '/tmp/astryx-dts-build';
 
 /**
  * The source trees whose `.mjs` JSDoc is the contract. Emitted in one tsc pass
@@ -91,18 +91,25 @@ function cleanDts(dir) {
   }
 }
 
-fs.rmSync(TMP, {recursive: true, force: true});
 for (const tree of TREES) cleanDts(path.join(CLI_ROOT, tree));
-execFileSync('pnpm', ['exec', 'tsc', '--project', 'tsconfig.api-dts.json'], {
-  cwd: CLI_ROOT,
-  stdio: 'inherit',
-});
-for (const tree of TREES) {
-  const emitted = path.join(TMP, 'packages', 'cli', tree);
-  if (!fs.existsSync(emitted)) {
-    throw new Error(`Expected emitted declarations at ${emitted} — tsc produced nothing.`);
+// A temp directory of this run's own, passed to tsc as --outDir: two builds on
+// one machine (two checkouts, or two jobs) run this at once, and a shared
+// directory lets one run's cleanup delete what the other has just emitted.
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-dts-build-'));
+try {
+  execFileSync(
+    'pnpm',
+    ['exec', 'tsc', '--project', 'tsconfig.api-dts.json', '--outDir', tmp],
+    {cwd: CLI_ROOT, stdio: 'inherit'},
+  );
+  for (const tree of TREES) {
+    const emitted = path.join(tmp, 'packages', 'cli', tree);
+    if (!fs.existsSync(emitted)) {
+      throw new Error(`Expected emitted declarations at ${emitted} — tsc produced nothing.`);
+    }
+    copyDts(emitted, path.join(CLI_ROOT, tree), tree);
   }
-  copyDts(emitted, path.join(CLI_ROOT, tree), tree);
+} finally {
+  fs.rmSync(tmp, {recursive: true, force: true});
 }
-fs.rmSync(TMP, {recursive: true, force: true});
 console.log(`Synced ${TREES.join(' + ')} declarations from the JSDoc source of truth.`);
