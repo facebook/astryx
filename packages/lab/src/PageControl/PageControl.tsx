@@ -42,8 +42,10 @@
  * switching at the midpoint between indicators; past the edge of the
  * content of a windowed control the page keeps stepping on its own, faster
  * the further past (up to 15 pages a second). A finger held on the control
- * for 155 ms, or scrubbing, shows a platter behind the indicators and dims
- * the others to 25 %; both return at the lift.
+ * for 155 ms (UIPageControl's own interaction delay, measured), or
+ * scrubbing, shows a platter behind the indicators, the held look painted
+ * with the system pressed overlay (design:user-states DR1), and dims the
+ * others to 25 %; both return at the lift.
  *
  * Accessibility: one adjustable element, a `slider` named "Page indicators"
  * whose value reads "Page 3 of 5"; the arrow keys, Home and End change the
@@ -168,11 +170,13 @@ const styles = stylex.create({
   cropped: {
     overflow: 'hidden',
   },
+  // The held look: a held or scrubbing finger's platter paints the system
+  // pressed overlay (design:user-states DR1).
   platter: {
     position: 'absolute',
     inset: 0,
     borderRadius: 9999,
-    backgroundColor: colorVars['--color-background-muted'],
+    backgroundColor: colorVars['--color-overlay-pressed'],
     pointerEvents: 'none',
   },
   strip: {

@@ -251,7 +251,7 @@ test('past the edge of a windowed control the page keeps stepping, faster the fu
   expect(fastMedian).toBeLessThan(85);
 });
 
-test('a held finger shows the platter and dims the other indicators after 155 ms; the touched indicator does not transform', async ({
+test('a held finger shows the platter, the pressed overlay, and dims the other indicators after 155 ms; the touched indicator does not transform', async ({
   page,
 }) => {
   const {slider, driver} = await open(page);
@@ -298,6 +298,22 @@ test('a held finger shows the platter and dims the other indicators after 155 ms
   expect(late.length).toBeGreaterThan(0);
   expect(late.every(s => s.interacting && s.other === 0.25)).toBe(true);
   expect(late.every(s => s.platter > 0.9)).toBe(true);
+  // The platter is the held look: the system pressed overlay
+  // (design:user-states DR1), resolved as any element resolves it here.
+  const colors = await slider.evaluate(el => {
+    const probe = document.createElement('span');
+    probe.style.backgroundColor = 'var(--color-overlay-pressed)';
+    el.append(probe);
+    const expected = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    return {
+      platter: getComputedStyle(el.firstElementChild as HTMLElement)
+        .backgroundColor,
+      expected,
+    };
+  });
+  expect(colors.expected).not.toBe('rgba(0, 0, 0, 0)');
+  expect(colors.platter).toBe(colors.expected);
   // The touched indicator keeps its resting size throughout.
   expect(states.every(s => s.touchedScale === restingScale)).toBe(true);
   // At the lift both return.
