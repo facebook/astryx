@@ -241,11 +241,22 @@ function LargeTitleStack() {
         path={path}
         onPathChange={setPath}
         getKey={entry => entry}
-        renderScreen={entry => (
-          <NavigationScreen title={entry}>
-            <Rows title={entry} />
-          </NavigationScreen>
-        )}
+        renderScreen={entry =>
+          entry === 'Display' ? (
+            <NavigationScreen title={entry} titleDisplayMode="large">
+              <Rows title={entry} />
+              <List>
+                {Array.from({length: 24}, (_, i) => (
+                  <ListItem key={i} label={`Display option ${i + 1}`} />
+                ))}
+              </List>
+            </NavigationScreen>
+          ) : (
+            <NavigationScreen title={entry}>
+              <Rows title={entry} />
+            </NavigationScreen>
+          )
+        }
         data-testid="navigation-stack"
       />
     </div>

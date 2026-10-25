@@ -1618,6 +1618,72 @@ test('under Reduce Motion the bar title cross-fades in place, without the rise',
   }
 });
 
+/** The bar title's opacity, every frame for `ms`. */
+async function sampleTitleOpacity(page: Page, bar: string, ms: number) {
+  return page.evaluate(
+    ({bar, ms}) =>
+      new Promise<number[]>(resolve => {
+        const samples: number[] = [];
+        const start = performance.now();
+        const tick = () => {
+          const title = document.querySelector(
+            `[data-navigation-bar="${bar}"] h2`,
+          );
+          samples.push(
+            title == null ? NaN : Number(getComputedStyle(title).opacity),
+          );
+          if (performance.now() - start < ms) {
+            requestAnimationFrame(tick);
+          } else {
+            resolve(samples);
+          }
+        };
+        requestAnimationFrame(tick);
+      }),
+    {bar, ms},
+  );
+}
+
+test('popping back to a large title two levels down shows it without the bar title', async ({
+  page,
+}) => {
+  const {driver} = await openStack(page, 'large-title');
+  await driver.tap(await rowCenter(page, 'General'));
+  await waitForRest(card(page, 'screen-General'));
+  await driver.tap(await rowCenter(page, 'About'));
+  await waitForRest(card(page, 'screen-About'));
+  // The root is two levels down now (not rendered); Done returns to it.
+  await driver.tap(await rowCenter(page, 'Done'));
+  const samples = await sampleTitleOpacity(page, 'root', 500);
+  // Its large title never scrolled: the bar's title stays hidden throughout.
+  expect(Math.max(...samples), JSON.stringify(samples)).toBeLessThan(0.05);
+});
+
+test('a large-title screen pushed again starts with its large title, not the bar’s', async ({
+  page,
+}) => {
+  const {driver} = await openStack(page, 'large-title');
+  await driver.tap(await rowCenter(page, 'Display'));
+  await waitForRest(card(page, 'screen-Display'));
+  await card(page, 'screen-Display').evaluate(element =>
+    element.scrollTo({top: 300}),
+  );
+  await expect
+    .poll(() =>
+      page
+        .locator('[data-navigation-bar="screen-Display"] h2')
+        .evaluate(e => Number(getComputedStyle(e).opacity)),
+    )
+    .toBe(1);
+  await page.locator('[data-navigation-back]').last().click();
+  await expect(card(page, 'screen-Display')).toHaveCount(0);
+
+  // Mounted again, the card starts at the top with its large title showing.
+  await driver.tap(await rowCenter(page, 'Display'));
+  const samples = await sampleTitleOpacity(page, 'screen-Display', 400);
+  expect(Math.max(...samples), JSON.stringify(samples)).toBeLessThan(0.05);
+});
+
 test('the bar title’s handover keeps running while the main thread is blocked', async ({
   page,
   browserName,
