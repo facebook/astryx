@@ -3,8 +3,14 @@
 import {beforeEach, describe, it, expect, vi} from 'vitest';
 import {act, render, fireEvent, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {StrictMode, useEffect, useRef} from 'react';
+import {StrictMode, useEffect, useRef, type ReactNode} from 'react';
 import {ChatComposer} from './ChatComposer';
+import {
+  ChatComposerInput,
+  type ChatComposerInputHandle,
+} from './ChatComposerInput';
+import {ChatLayout} from './ChatLayout';
+import {KeyboardSurfaceContext} from './keyboardSurface';
 import {useChatComposerContext} from './ChatContext';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 import type * as AnnounceModule from '../hooks/useAnnounce';
@@ -259,18 +265,83 @@ describe('ChatComposer input composition contract', () => {
     const focus = vi.spyOn(textarea, 'focus');
     fireEvent.click(body);
     expect(document.activeElement).toBe(textarea);
-    // Without the browser's reveal, which scrolls the page on iOS (AST-099 FR4).
+    // Outside a keyboard-aware surface the browser's own focus applies.
+    expect(focus).toHaveBeenCalledWith();
+  });
+});
+
+describe('ChatComposer focus inside a keyboard-aware surface (spec:AST-099 FR4)', () => {
+  // Every route into the text refuses the browser's reveal there, which
+  // scrolls the whole page on iOS; elsewhere the browser's focus applies.
+  const inSurface = (node: ReactNode) => (
+    <KeyboardSurfaceContext value={true}>{node}</KeyboardSurfaceContext>
+  );
+
+  it('focuses the default input on an empty-space tap without the reveal', () => {
+    const {container} = render(inSurface(<ChatComposer onSubmit={() => {}} />));
+    const editable = container.querySelector<HTMLElement>(
+      '[contenteditable="true"]',
+    )!;
+    const focus = vi.spyOn(editable, 'focus');
+    fireEvent.click(editable.parentElement!);
     expect(focus).toHaveBeenCalledWith({preventScroll: true});
   });
 
-  it('focuses the default input without the browser\u2019s reveal on an empty-space tap (AST-099 FR4)', () => {
+  it('focuses a bare field the shell falls back to without the reveal', () => {
+    const {getByTestId} = render(
+      inSurface(
+        <ChatComposer
+          onSubmit={() => {}}
+          input={<textarea data-testid="bare-textarea" />}
+        />,
+      ),
+    );
+    const textarea = getByTestId('bare-textarea');
+    const focus = vi.spyOn(textarea, 'focus');
+    fireEvent.click(textarea.parentElement!.parentElement!);
+    expect(focus).toHaveBeenCalledWith({preventScroll: true});
+  });
+
+  it('focuses without the reveal when the app calls the input\u2019s focus()', () => {
+    let handle: ChatComposerInputHandle | null = null;
+    const {container} = render(
+      inSurface(
+        <ChatComposerInput
+          handleRef={h => {
+            handle = h;
+          }}
+        />,
+      ),
+    );
+    const editable = container.querySelector<HTMLElement>(
+      '[contenteditable="true"]',
+    )!;
+    const focus = vi.spyOn(editable, 'focus');
+    act(() => handle!.focus());
+    expect(focus).toHaveBeenCalledWith({preventScroll: true});
+  });
+
+  it('keeps the browser\u2019s focus for a composer outside one', () => {
     const {container} = render(<ChatComposer onSubmit={() => {}} />);
     const editable = container.querySelector<HTMLElement>(
       '[contenteditable="true"]',
     )!;
     const focus = vi.spyOn(editable, 'focus');
-    const body = editable.closest('[contenteditable="true"]')!.parentElement!;
-    fireEvent.click(body);
+    fireEvent.click(editable.parentElement!);
+    expect(focus).toHaveBeenCalledWith();
+  });
+
+  it('is what ChatLayout gives its composer', () => {
+    const {container} = render(
+      <ChatLayout composer={<ChatComposer onSubmit={() => {}} />}>
+        <p>Hello</p>
+      </ChatLayout>,
+    );
+    const editable = container.querySelector<HTMLElement>(
+      '[contenteditable="true"]',
+    )!;
+    const focus = vi.spyOn(editable, 'focus');
+    fireEvent.click(editable.parentElement!);
     expect(focus).toHaveBeenCalledWith({preventScroll: true});
   });
 });

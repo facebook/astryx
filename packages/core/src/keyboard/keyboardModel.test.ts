@@ -56,6 +56,12 @@ describe('createKeyboardModel', () => {
     expect(model.velocity(1000)).toBeGreaterThan(0);
   });
 
+  it('publishes the curve each transition moves on: the keyboard\u2019s own spring (INV11)', () => {
+    const model = createKeyboardModel(0);
+    expect(model.transition.spring).toBe(keyboard.spring);
+    expect(model.report(INSET, 1000)?.spring).toBe(keyboard.spring);
+  });
+
   it('dates a show back to the last frame before a report a busy main thread held back', () => {
     const model = createKeyboardModel(0);
     // The page rendered nothing between 960 and the report at 1000.

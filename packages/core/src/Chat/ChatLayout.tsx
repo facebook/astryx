@@ -46,6 +46,7 @@ import {useChatNewMessages} from './useChatNewMessages';
 import {useChatKeyboard} from './useChatKeyboard';
 import {ChatLayoutScrollButton} from './ChatLayoutScrollButton';
 import {ChatLayoutContext} from './ChatContext';
+import {KeyboardSurfaceContext} from './keyboardSurface';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
@@ -436,14 +437,17 @@ export function ChatLayout({
           {/* Frosted glass layer */}
           <div {...stylex.props(styles.blurLayer, currentDensity.blurLayer)} />
 
-          {/* Composer */}
-          <div
-            ref={keyboard.composerRef}
-            {...stylex.props(styles.dock, currentDensity.dock)}>
-            <div {...stylex.props(styles.dockInner, currentDensity.dockInner)}>
-              {composer}
+          {/* Composer, in the keyboard-aware region (spec:AST-099 FR4) */}
+          <KeyboardSurfaceContext value={true}>
+            <div
+              ref={keyboard.composerRef}
+              {...stylex.props(styles.dock, currentDensity.dock)}>
+              <div
+                {...stylex.props(styles.dockInner, currentDensity.dockInner)}>
+                {composer}
+              </div>
             </div>
-          </div>
+          </KeyboardSurfaceContext>
         </div>
       </div>
     </ChatLayoutContext>

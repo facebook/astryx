@@ -5,8 +5,8 @@
 /**
  * @file useChatKeyboard.ts
  * @input React refs, the keyboard module (useKeyboardHeight,
- *   claimTapFocus), the keyboard layout guide, the animator, the keyboard's
- *   own spring (`keyboard.spring`)
+ *   claimTapFocus), the keyboard layout guide (each transition's start,
+ *   resting value and curve), the animator
  * @output Exports useChatKeyboard: the lift ChatLayout lays its dock and
  *   keyboard spacer out with, and the refs it puts on its dock, message area
  *   and composer region so the composer rides the software keyboard
@@ -23,8 +23,8 @@
  *   message can scroll above the lifted composer. ChatLayout applies `lift`
  *   through functional styles, so the layout is right with no animation.
  * - The ride is polish on top, timed by the keyboard layout guide: the dock
- *   moves on the compositor (`translate`) on the keyboard's own spring
- *   (`keyboard.spring`, never a theme's) from the
+ *   moves on the compositor (`translate`) on the curve the guide publishes
+ *   (the keyboard's own spring, never a theme's) from the
  *   keyboard's own start, so it is where the keyboard is from its first
  *   frame, and a transcript at its newest message rides with it. The layout
  *   catches up once the ride ends, with the translate handed back in the
@@ -45,7 +45,6 @@
 
 import {useRef, useState, useSyncExternalStore, type RefObject} from 'react';
 import {useAnimator} from '../motion/useAnimator';
-import {keyboard as uikitKeyboard} from '../motion/uikit/keyboard';
 import {
   bringsUpKeyboard,
   claimTapFocus,
@@ -270,9 +269,9 @@ export function useChatKeyboard({
     };
     commitRef.current = commit;
 
-    // The ride plays the keyboard's own spring, a value and not a theme
-    // role: the system moves the keyboard on it whatever the theme says, so
-    // a retuned spring would leave the composer out of step with it.
+    // The ride plays the curve the guide publishes with each transition
+    // (INV11): the keyboard's own spring, a value and not a theme role, since
+    // the system moves the keyboard on it whatever the theme says.
     const follow = (transition: KeyboardTransition) => {
       // The ride: the dock goes where the guide says the keyboard will be,
       // from the keyboard's start, relative to the layout it rests in now.
@@ -298,16 +297,13 @@ export function useChatKeyboard({
       rideRef.current += 1;
       const ride = rideRef.current;
       const rides = [
-        dock.animator.animate(shown, {spring: uikitKeyboard.spring}, timing)
+        dock.animator.animate(shown, {spring: transition.spring}, timing)
           .finished,
       ];
       if (atEnd) {
         rides.push(
-          messages.animator.animate(
-            shown,
-            {spring: uikitKeyboard.spring},
-            timing,
-          ).finished,
+          messages.animator.animate(shown, {spring: transition.spring}, timing)
+            .finished,
         );
       }
       void Promise.all(rides)

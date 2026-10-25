@@ -28,6 +28,7 @@
  */
 
 import {
+  use,
   useRef,
   useState,
   useCallback,
@@ -67,6 +68,10 @@ import {
 } from './useChatPasteAsToken';
 import {Badge, type BadgeProps} from '../Badge';
 import {useChatComposerContext} from './ChatContext';
+import {
+  KeyboardSurfaceContext,
+  focusInKeyboardSurface,
+} from './keyboardSurface';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
@@ -432,6 +437,10 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
    * would arm the next ArrowUp to replace it. Landing after the text is
    * also what a click on the composer's trailing space means.
    */
+  // Inside ChatLayout's keyboard-aware region every route into the text
+  // refuses the browser's reveal (spec:AST-099 FR4).
+  const isKeyboardSurface = use(KeyboardSurfaceContext);
+
   /**
    * Focus the editable, keeping a caret or selection the user already has
    * inside it.
@@ -453,13 +462,13 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
     // Read before focusing: `focus()` itself creates the offset-0 caret, so
     // asking afterwards cannot tell the user's own caret from the engine's.
     const existing = getSelectionRangeInside(editable);
-    editable.focus();
+    focusInKeyboardSurface(editable, isKeyboardSurface);
     if (existing) {
       restoreSelectionRange(existing);
       return;
     }
     placeCaretAtEnd(editable);
-  }, []);
+  }, [isKeyboardSurface]);
 
   /**
    * Focus the editable and put the caret after the draft, whatever the
@@ -469,17 +478,14 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
    * space after a draft means "put me after the text", so it overrides a
    * stale caret rather than restoring one.
    */
-  // The composer's body click (an empty-space tap) lands here: the tapped
-  // composer is already on screen, and the browser's reveal would scroll the
-  // whole page on iOS (spec:AST-099 FR4).
   const focusEditableAtEnd = useCallback(() => {
     const editable = editableRef.current;
     if (!editable) {
       return;
     }
-    editable.focus({preventScroll: true});
+    focusInKeyboardSurface(editable, isKeyboardSurface);
     placeCaretAtEnd(editable);
-  }, []);
+  }, [isKeyboardSurface]);
 
   const handle: ChatComposerInputHandle = {
     insertToken: (token: ChatComposerToken) => insertTokenRef.current(token),
