@@ -153,8 +153,8 @@ work.
   0 after a still contact, is the only lift velocity a Core component reads
   (`spec:AST-100`). It is not exported. No Core component keeps its own sample
   buffer, velocity math, or alternative release filter; a component's flick
-  threshold compares the tracker's release velocity. Web packages outside
-  Core, such as Lab, cannot import the tracker; a gesture there keeps one local tracker with the
+  threshold compares the tracker's release velocity. Lab cannot import the
+  tracker; a Lab gesture keeps one local tracker with the
   same release filter, window, and stillness interval, so it reports the same
   velocity for the same motion.
 
