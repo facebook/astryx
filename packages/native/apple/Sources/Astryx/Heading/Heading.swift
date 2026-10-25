@@ -22,7 +22,8 @@ public struct Heading: View {
   ///   - accessibilityLevel: core's `accessibilityLevel`, the level VoiceOver
   ///     reads when it differs from `level`.
   ///   - color: core's `color`; primary when nil.
-  ///   - maxLines: core's `maxLines`; text past it is truncated.
+  ///   - maxLines: core's `maxLines`; text past it is truncated. Unset, a
+  ///     surrounding `.lineLimit` still applies.
   ///   - justify: core's `justify`, the alignment of wrapped lines.
   ///   - hasStrikethrough: core's `hasStrikethrough`.
   ///   - base: core's base props.
@@ -56,7 +57,7 @@ public struct Heading: View {
 
   public var body: some View {
     styled(SwiftUI.Text(props.children))
-      .lineLimit(astryxLineLimit(props.maxLines))
+      .astryxMaxLines(props.maxLines)
       .multilineTextAlignment(props.justify?.alignment ?? inheritedAlignment)
       .astryxJustified(props.justify?.frameAlignment)
       .accessibilityAddTraits(Self.accessibilityTraits)

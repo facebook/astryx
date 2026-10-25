@@ -112,6 +112,12 @@ extension HeadingJustify {
 }
 
 extension View {
+  /// Core's `maxLines` as a line limit, only when set: with it unset, a
+  /// caller's own `.lineLimit` around the view still applies.
+  @ViewBuilder func astryxMaxLines(_ maxLines: Double?) -> some View {
+    if let limit = astryxLineLimit(maxLines) { lineLimit(limit) } else { self }
+  }
+
   /// Spans the offered width and places the content at `alignment`, when set.
   @ViewBuilder func astryxJustified(_ alignment: Alignment?) -> some View {
     if let alignment { frame(maxWidth: .infinity, alignment: alignment) } else { self }

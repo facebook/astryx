@@ -15,11 +15,15 @@ public struct Text: View {
   /// - Parameters:
   ///   - children: the words, core's `children`.
   ///   - type: core's `type`; `body` when nil. `inherit` keeps the
-  ///     surrounding font and color.
-  ///   - size: core's `size`, replacing the type's size.
+  ///     surrounding font and color, unless `size` is also set (below).
+  ///   - size: core's `size`, replacing the type's size. With `inherit`,
+  ///     SwiftUI cannot change only the size of an inherited font, so the text
+  ///     draws in the theme's body family at that size: a known gap from core,
+  ///     where an inherited family keeps its face.
   ///   - color: core's `color`; secondary for `supporting`, primary otherwise.
   ///   - weight: core's `weight`, replacing the type's weight.
-  ///   - maxLines: core's `maxLines`; text past it is truncated.
+  ///   - maxLines: core's `maxLines`; text past it is truncated. Unset, a
+  ///     surrounding `.lineLimit` still applies.
   ///   - justify: core's `justify`, the alignment of wrapped lines.
   ///   - hasStrikethrough: core's `hasStrikethrough`.
   ///   - hasTabularNumbers: core's `hasTabularNumbers`; digits take equal
@@ -55,7 +59,7 @@ public struct Text: View {
 
   public var body: some View {
     styled(SwiftUI.Text(props.children))
-      .lineLimit(astryxLineLimit(props.maxLines))
+      .astryxMaxLines(props.maxLines)
       .multilineTextAlignment(props.justify?.alignment ?? inheritedAlignment)
       .astryxBase(props.base)
   }

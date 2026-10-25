@@ -96,3 +96,14 @@ import Testing
     }.fixedSize())
   #expect(withHidden.width == alone.width)
 }
+
+@MainActor
+@Test func withoutMaxLinesACallersLineLimitStillApplies() {
+  let words = String(repeating: "word ", count: 40)
+  let open = Pixels(Astryx.Text(words).frame(width: 120).fixedSize(horizontal: false, vertical: true))
+  let callerLimited = Pixels(Astryx.Text(words).lineLimit(1).frame(width: 120).fixedSize(horizontal: false, vertical: true))
+  #expect(callerLimited.height * 3 < open.height)
+  let heading = Pixels(Astryx.Heading(words, level: .v4).lineLimit(1).frame(width: 120).fixedSize(horizontal: false, vertical: true))
+  let openHeading = Pixels(Astryx.Heading(words, level: .v4).frame(width: 120).fixedSize(horizontal: false, vertical: true))
+  #expect(heading.height * 3 < openHeading.height)
+}
