@@ -10,7 +10,8 @@
  * @output Exports reusable background-color and background-image state styles,
  *   the compositor press layers for list rows (`cell`) and, under a coarse
  *   primary pointer, for a button and the cards (`control`, `controlOver`),
- *   the touch press's
+ *   the press's strength for an owner whose descendant layer releases the
+ *   paint (`pressedAlphaLayered`), the touch press's
  *   registered strength variable (`pressVars`) and its clocks (`pressConsts`,
  *   and `cellPressConsts` for the row layer)
  * @position Internal styling utility for interactive core surfaces
@@ -486,6 +487,20 @@ export const interactionOverlayStyles = stylex.create({
     [PRESS_ALPHA]: pressStrength,
     ...pressReleaseAnimation,
     ...pressPaint,
+  },
+  /**
+   * `pressedAlpha` for an owner whose press paint is released by a
+   * descendant's own compositor layer (a switch row: the track's `::before`
+   * fades its opacity on the control clock). Under a coarse primary pointer
+   * the strength holds through the release instead of animating on the main
+   * thread, so the layer's opacity is the one fade. With any other pointer it
+   * is `pressedAlpha` exactly (the desktop rule, `spec:AST-017` FR59/DEC-25).
+   */
+  pressedAlphaLayered: {
+    [PRESS_ALPHA]: pressStrength,
+    ...pressReleaseAnimation,
+    ...pressPaint,
+    ...strengthReleaseOutsideCoarse,
   },
   /**
    * A list row's touch press on a compositor layer (Item, and TreeList's row
