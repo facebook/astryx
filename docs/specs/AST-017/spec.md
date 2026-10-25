@@ -107,7 +107,8 @@ affects_consumer_docs: [release-process, templates]
       "DEC-25",
       "FR60",
       "DEC-26",
-      "DEC-27"
+      "DEC-27",
+      "DEC-28"
     ]
   }
 }
@@ -377,7 +378,8 @@ one removal merged ahead of the decision to allow it.
   visible at the call site where it is used, carried by the name the caller
   writes, not only in docs, declarations, or a file path; a component's
   `experimental` prop object meets this, and any other deliberately
-  experimental public API meets it with an `experimental_` name prefix. The CLI's
+  experimental public API meets it with an `_experimental` name suffix, such
+  as `useDrag_experimental` (DEC-28). The CLI's
   own records own its experimental marking (FR54). No file path or subpath, for a
   component or a module, conveys experimental status by itself. Declarations
   carry `@experimental`; authored docs carry machine-readable
@@ -896,7 +898,7 @@ lands, maintainers apply its requirement in review and release approval.
 | FR15      | Full manifest-derived command matrix, supported-consumer evidence, and scope-specific contract tests                                                                                                                                                                                                                                                            | global invariant, scoped command group, single command, programmatic API                                                                                                                                                                        | A global control is a no-op for any command, has different meanings, or replaces a narrower owning surface                                                                                                                                                                                                                                                                                                                                                              |
 | FR16–FR18 | Boundary inventory, hostile side-effect probes, response snapshots, and concurrent API tests                                                                                                                                                                                                                                                                    | known and new extension, partial result, text/JSON/API parity, independent concurrent calls                                                                                                                                                     | A route bypasses the guarantee, omitted work looks complete, or one invocation changes another                                                                                                                                                                                                                                                                                                                                                                          |
 | FR19–FR20 | Proposal evidence with a regression fixture for the detection failure, plus composition and provenance tests                                                                                                                                                                                                                                                    | convention covers the case, detection fails, app plus two integrations, refusal, failing contribution, repeated load                                                                                                                            | A key ships without a reproduced detection failure, a contribution displaces the app or applies twice, a part of the effective value has no inspectable source, or a failure silently weakens protection                                                                                                                                                                                                                                                                |
-| FR21–FR24 | Published-surface comparison, declaration/doc metadata checks, import-boundary checks, and Changeset classification review                                                                                                                                                                                                                                      | experimental prop object, experimental subpath, patch evolution, promotion, unpublished adjacent field, stable warning behavior, integration theme; a component or module `/experimental` subpath; an `experimental_` export; a behavior module | A prose-only marker excludes a stable API, adjacency falsely publishes a new field, an experimental export leaks through a stable path, a patch changes stable behavior, or a promoted API remains unprotected, a file path or subpath alone marks a surface experimental, a behavior, utility, or internal module without a public contract is exported, or an experimental public API in Core does not show its status at the call site in the name the caller writes |
+| FR21–FR24 | Published-surface comparison, declaration/doc metadata checks, import-boundary checks, and Changeset classification review                                                                                                                                                                                                                                      | experimental prop object, experimental subpath, patch evolution, promotion, unpublished adjacent field, stable warning behavior, integration theme; a component or module `/experimental` subpath; an `_experimental` export; a behavior module | A prose-only marker excludes a stable API, adjacency falsely publishes a new field, an experimental export leaks through a stable path, a patch changes stable behavior, or a promoted API remains unprotected, a file path or subpath alone marks a surface experimental, a behavior, utility, or internal module without a public contract is exported, or an experimental public API in Core does not show its status at the call site in the name the caller writes |
 | FR25–FR27 | Stable-surface inventory and experimental-boundary matrix                                                                                                                                                                                                                                                                                                       | package/API, CSS/token, CLI/config, persistence, build tooling, docs, whole Lab component                                                                                                                                                       | An unmarked experiment changes stable defaults or a stable surface bypasses compatibility review                                                                                                                                                                                                                                                                                                                                                                        |
 | FR28–FR31 | Declared-tier check: on a minor, the `[breaking]` Changeset describes the change (old usage, replacement, migration); on a patch, a breaking Changeset is refused and the deprecation ships instead; declaration/doc/build/CLI warning projections; old/new fixtures; dry-run/idempotence/migration tests; maintained-source and latest-stable upgrade evidence | whole component, prop/value, theme field/helper/token/target/source, CLI command, CLI option; old-only, new-only, both, static/dynamic/uncertain migration, text/JSON, development/production                                                   | A warning has no usable modernization route, production runtime changes for deprecation, maintained guidance teaches the old surface, a migration guesses, old behavior degrades early, cadence invents a wait, or one cleanup id covers multiple incompatible deltas                                                                                                                                                                                                   |
 | FR32–FR35 | Latest-stable victim fixture, pre-existing authority named in the Changeset or pull request, owner review, declared-tier check, and emergency attestation                                                                                                                                                                                                       | victim-free `[fix]`, `[fix]` plus incompatible-fix metadata, coexistence, cleanup transition, critical-harm emergency                                                                                                                           | A released victim uses bare `[fix]`, a new Changeset tag replaces metadata, a correction record disagrees with its public-surface state, or urgency bypasses migration                                                                                                                                                                                                                                                                                                  |
@@ -1399,11 +1401,24 @@ never experimental exports,
 and requiring any experimental public API in Core to show its status at the
 call site where it is used, in the name the caller writes, with its own decision,
 keeps the public surface honest about what is promised. The `experimental`
-prop object and the `experimental_` name prefix are how that is met today. This replaces DEC-9's placement of experimental hooks,
+prop object and the `_experimental` name suffix, such as
+`useDrag_experimental` (DEC-28), are how that is met today. This replaces DEC-9's placement of experimental hooks,
 functions, and types on a component's `/experimental` subpath; DEC-9's
 `experimental` prop object stands.
 
 Rejected: `/experimental` subpaths that mark status by path, for modules or components.
+
+### DEC-28 — The experimental name marking is a suffix
+
+**Reference:** `spec:AST-017/DEC-28`
+**Decider:** `cixzhang`, `2026-10-25`
+
+A suffix keeps the API's own name first, so `useDrag_experimental` reads and
+sorts beside the stable `useDrag` it may become, and promotion only drops the
+ending. The call site still shows the status in the name the caller writes, as
+DEC-27 requires.
+
+Rejected: an `experimental_` name prefix.
 
 ## Open questions
 
