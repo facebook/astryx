@@ -787,7 +787,7 @@ export function ContextMenu({
                 : null;
             // The press model counts its samples on `Date.now()` (its
             // contract), and the handoff from the first position the open
-            // menu sees (spec:AST-094 FR29).
+            // menu sees (spec:AST-094 FR33).
             if (touch != null && pointerId != null) {
               menuPressRef.current?.continueGesture({
                 pointerId,
