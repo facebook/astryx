@@ -129,7 +129,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 The component implements design requirements without copying their rationale.
 
 Platform control: SwiftUI `Button` and `Link` with `ProgressView`; they are the
-platform's own controls and satisfy the contract (`spec:AST-093` FR2).
+platform's own controls and satisfy the contract (`spec:AST-093` FR2). A
+`tooltip` shows through the shared Astryx tooltip (`library/tooltip.spec.md`).
 Guideline pages: Buttons, Progress indicators, and Accessibility in the Apple
 Human Interface Guidelines (`spec:AST-093` FR3).
 

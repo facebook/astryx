@@ -89,7 +89,9 @@ public struct Button: View {
     control
       .buttonStyle(style)
       .disabled(isDisabled)
-      .help(props.tooltip ?? "")
+      // The shared Astryx tooltip on hover and keyboard focus, as core's
+      // Button tooltip; its words are the VoiceOver hint.
+      .astryxTooltip(props.tooltip, hint: props.tooltip, focus: .control)
       .accessibilityLabel(SwiftUI.Text(accessibilityText))
       .accessibilityValue(SwiftUI.Text(loadingValue ?? ""))
       .onChange(of: isLoading) { _, loading in
