@@ -167,9 +167,11 @@ export function MonthYearWheels({
           value={year}
           isActive={isActive}
           onChange={nextYear => {
-            // A year change can land outside the range: clamp to it, and turn
-            // the month wheel onto the clamped month rather than letting it
-            // jump there (UIKit turns a column past a bound back onto it).
+            // A year change can land outside the range: it goes on to the
+            // nearest reachable month and selects it there, the month wheel
+            // turning onto it rather than jumping (UIDatePicker's
+            // `restPastBound`; a year with no reachable month is a disabled
+            // row the Wheel itself leaves for the nearest enabled one).
             const candidate = toMonthIndex(nextYear, month);
             const clamped = Math.min(
               Math.max(candidate, minMonthIndex),
