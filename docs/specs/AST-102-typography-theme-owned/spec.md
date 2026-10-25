@@ -115,8 +115,10 @@ the person's device.
   - Butter, Stone, and Y2K fix supporting text at 12 px, so it does not follow
     a larger browser or Android text size.
   - Controls hold fixed heights, such as 40 px elements, `component:Badge`
-    FR1's fixed block size, and the fixed row height `family:input-fields`
-    gives InputGroup, so a larger label can overflow.
+    FR1's block size, `component:Button` FR4's and `component:Token` FR1's
+    element sizes, and InputGroup's row height in `family:input-fields`, so a
+    larger label can overflow; those records treat their sizes as minimums
+    under FR4.
   - Whether Chrome on Android carries the system font scale to Astryx text is
     unverified until the emulator check FR3 names.
 
