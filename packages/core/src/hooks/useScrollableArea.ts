@@ -259,15 +259,16 @@ export function useScrollableArea({
       const nextState = {inline, block};
       stateRef.current = nextState;
       registerScrollOwner(viewport, nextState);
-
+      // Measured DOM geometry decides whether the viewport becomes a CSS
+      // scroll container.
       setOverflow(current =>
         overflowEqual(current, nextOverflow) ? current : nextOverflow,
       );
-
+      // The measured DOM state is the hook's output.
       setMeasured(current =>
         statesEqual(current, nextState) ? current : nextState,
       );
-
+      // A writing-mode change remaps the behavior-owned physical CSS.
       setMapping(current =>
         mappingsEqual(current, nextMapping) ? current : nextMapping,
       );
