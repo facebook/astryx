@@ -20,6 +20,7 @@ families: [family:navigation-destinations, family:overlay-dismissal]
 design_specs: []
 architecture:
   [
+    architecture:component-style-authoring,
     architecture:interaction-modality,
     architecture:public-component-api,
     architecture:component-theming-surface,
@@ -38,7 +39,7 @@ system_specs: []
 | Behavior                | The product identity block. Which parts are links and which part opens the menu follows from which `*Href` props and `menu` are set (FR2).                              |
 | End-user impact         | Users reach product, suite, and account destinations and a product switcher menu; screen-reader users hear a named logo link and a named menu.                          |
 | Builder impact          | None.                                                                                                                                                                   |
-| Compatibility/readiness | Records shipped behavior; no public change. Four implementation gaps (see Current-state impact).                                                                        |
+| Compatibility/readiness | Records shipped behavior; no public change. Five implementation gaps (see Current-state impact).                                                                        |
 | Review checks           | Reject a logo link without an accessible name, a menu popup wrapped in a modal dialog, or a heading button placed inside `role="menu"`.                                 |
 | Governing rules         | `architecture:public-component-api` INV5; `architecture:interaction-modality` (shared focus indicator); `architecture:component-theming-surface`.                       |
 
@@ -82,6 +83,10 @@ Consumer migration instructions belong in consumer docs and release notes.
   configuration, the popover's heading button repeats the superheading,
   heading, and subheading links inside itself, so interactive content is nested
   inside a button. HTML forbids interactive content inside a `<button>`.
+- **The open menu repeats the identity row.** While the menu is open, its
+  heading button repeats the logo and text that stay mounted in the bar's block,
+  so that content renders twice. `architecture:component-style-authoring` INV7
+  has content render once.
 
 ## Ownership boundary
 
