@@ -2,7 +2,8 @@
 
 /**
  * @file registerTables.ts
- * @input The shared UIKit tables (springs, scroll, timing, navigation)
+ * @input The shared UIKit tables (springs, scroll, timing, navigation,
+ *   search)
  * @output registerSharedTables: registers their motion roles, once
  * @position Called by resolveMotion before it resolves a role. The tables
  *   themselves are plain data with no side effect on import, so code that only
@@ -16,6 +17,7 @@
 import {registerMotionTable} from '../roles';
 import {navigation} from './navigation';
 import {scroll} from './scroll';
+import {search} from './search';
 import {springs} from './springs';
 import {timing} from './timing';
 
@@ -39,4 +41,5 @@ export function registerSharedTables(): void {
     exclude: ['press.scrollBrakeMs', 'reducedMotionCrossFadeMs'],
   });
   registerMotionTable('navigation', navigation);
+  registerMotionTable('search', search);
 }

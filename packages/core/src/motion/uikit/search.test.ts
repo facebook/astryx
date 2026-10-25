@@ -12,9 +12,12 @@
  * @position Testing; validates motion/uikit/search.ts without a browser
  */
 
-import {describe, expect, it} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
 import {search, timing} from '.';
 import {listMotionRoles} from '../roles';
+import {registerSharedTables} from './registerTables';
+
+registerSharedTables();
 
 describe('UIKit search table', () => {
   it('activates on UIKit’s ease-in-ease-out over 383 ms', () => {
@@ -49,6 +52,26 @@ describe('UIKit search table', () => {
     expect(
       search.bar.fadeOutProgress + search.bar.largeTitleFadeInProgress,
     ).toBe(1);
+  });
+
+  it('registers nothing when the table is read; the shared registration registers its roles', async () => {
+    vi.resetModules();
+    const roles = await import('../roles');
+    await import('./search');
+    const searchRoles = () =>
+      roles
+        .listMotionRoles()
+        .map(role => role.id)
+        .filter(id => id.startsWith('search.'))
+        .sort();
+    expect(searchRoles()).toEqual([]);
+    const shared = await import('./registerTables');
+    shared.registerSharedTables();
+    expect(searchRoles()).toEqual([
+      'search.activationCurve',
+      'search.activationMs',
+      'search.scrollAway.snapMs',
+    ]);
   });
 
   it('makes the clock, the curve and the scroll-away snap motion roles, and nothing else', () => {

@@ -32,8 +32,6 @@
  * run `pnpm generate:motion-roles`
  */
 
-import {registerMotionTable} from '../roles';
-
 /**
  * UISearchController's search bar: activation, cancel, geometry and
  * placements.
@@ -194,7 +192,6 @@ export const search = {
 } as const;
 
 // Each duration and curve above is a motion role a theme may retune
-// (motion/roles.ts). The thresholds (`scrollAway.hysteresisPt`,
-// `scrollAway.collapseThresholdPt`) and the geometry are not durations,
-// springs or curves, so they never become roles.
-registerMotionTable('search', search);
+// (motion/roles.ts); registerTables.ts registers them. The thresholds
+// (`scrollAway.hysteresisPt`, `scrollAway.collapseThresholdPt`) and the
+// geometry are not durations, springs or curves, so they never become roles.
