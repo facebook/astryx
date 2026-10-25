@@ -6,10 +6,7 @@
  * @output Exports `typography`: the point size of each UIKit text style at each
  *   content size category (Dynamic Type), from xSmall to AX5
  * @position Theme data: theme/dynamicType.ts scales a theme's own type scale
- *   on these curves when the reader changes their text size. It lives with
- *   the theme rather than among the motion tables (motion/uikit): every page
- *   whose theme follows the reader's text size reads it, while a motion table
- *   is loaded only by the component that animates with it.
+ *   on these curves when the reader changes their text size.
  *
  * Every row lists the twelve content size categories in order: xSmall, Small,
  * Medium, Large (the default), xLarge, xxLarge, xxxLarge, then the five
@@ -22,8 +19,9 @@
  * Only the styles a theme role scales on are listed (theme/dynamicType.ts maps
  * each raw font-size step to one of them).
  *
- * Every leaf carries one or more `@source`, in the motion tables' form;
- * dynamicType.test.ts enforces it.
+ * Every row carries one or more `@source`: Apple's documentation, a WWDC
+ * session, WebKit's own source, or a measurement naming its subject, the iOS
+ * version and the date. dynamicType.test.ts enforces it.
  *
  * SYNC: When modified, update /packages/core/src/theme/dynamicType.ts
  */

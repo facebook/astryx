@@ -160,9 +160,8 @@ describe('the reader text size category', () => {
 });
 
 describe('the UIKit point sizes', () => {
-  // The motion tables' rule for sources (motion/uikit/uikit.test.ts), applied
-  // to this theme table: every row names where its values come from, and a
-  // measurement names its subject, the iOS version and the date.
+  // Every row names where its values come from, and a measurement names its
+  // subject, the iOS version and the date.
   const MEASURED =
     /^@source measured: .*iOS \d.*(\b20\d\d-\d\d-\d\d\b|\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2},? 20\d\d\b)/;
   const SOURCE_KINDS =
@@ -192,7 +191,7 @@ describe('the UIKit point sizes', () => {
     return rows;
   }
 
-  it("names a source for every row, in the motion tables' form", () => {
+  it('names a source for every row, and the iOS version and date of every measurement', () => {
     const rows = rowSources();
     expect([...rows.keys()].sort()).toEqual(STYLES.slice().sort());
     for (const [style, tags] of rows) {
