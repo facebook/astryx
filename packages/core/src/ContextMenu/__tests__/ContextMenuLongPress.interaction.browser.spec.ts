@@ -16,10 +16,15 @@
  *   drift within the tolerance still opens, past it on one axis (or a drag
  *   after the commit) opens nothing; the menu's anchor sits under the
  *   finger, on screen and as laid out, while the trigger is grown, and the
- *   menu stays put; the press feedback's presented scale
- *   follows UIKit's measured frames; it keeps advancing every frame through a
- *   blocked main thread; it does no Layout or Paint; the page does not scroll
- *   under the held finger; a storyboard of the press
+ *   menu stays put; a finger held until the menu shows slides onto a row
+ *   (the highlight follows it) and picks it on the lift, and picks nothing
+ *   when it lifts before UIMenu's handoff (outside the iOS idiom it picks
+ *   nothing, and the menu stays for a tap); the press feedback's presented
+ *   scale follows UIKit's measured frames; it keeps advancing every frame
+ *   through a blocked main thread; it does no Layout or Paint; the page does
+ *   not scroll under the held finger, nor when that finger slides on past
+ *   the menu, which then lights no row, picks nothing and draws no ring on
+ *   the menu (its rows keep their highlight); a storyboard of the press
  * @position Interaction specs of packages/core/src/ContextMenu (the
  *   BottomSheetDetent spec is the exemplar)
  */
@@ -45,6 +50,7 @@ import {
   tap,
   thawTimers,
   timeline,
+  toTouchEvents,
   touchDriver,
   trackMarker,
   traceRendering,
@@ -375,6 +381,75 @@ test('the menu’s anchor sits under the finger, on screen and as laid out, whil
   }
 });
 
+/** The Share row's center: open the menu once with a held press, measure, close. */
+async function shareRowCenter(
+  page: Page,
+  driver: TouchDriver,
+  at: {x: number; y: number},
+): Promise<{x: number; y: number}> {
+  const menu = page.getByRole('menu', {name: 'Photo actions'});
+  await driver.play(hold(at, menuDisplayMs + 100));
+  await expect(menu).toBeVisible();
+  const row = await page.getByRole('menuitem', {name: 'Share'}).boundingBox();
+  if (row == null) {
+    throw new Error('no Share row');
+  }
+  await page.keyboard.press('Escape');
+  await expect(menu).toBeHidden();
+  // Let the trigger return to its size before the next press.
+  await page.waitForTimeout(1200);
+  return {x: row.x + row.width / 2, y: row.y + row.height / 2};
+}
+
+test('a finger held until the menu shows slides onto a row, which follows it, and picks it on the lift', async ({
+  page,
+}) => {
+  const {driver, center} = await openTouchStory(page);
+  const share = await shareRowCenter(page, driver, center);
+  const script = drag(center, share, {
+    holdMs: menuDisplayMs + 100,
+    durationMs: 250,
+    restMs: 120,
+  });
+  const lastMove =
+    toTouchEvents(script).filter(e => e.type === 'touchMove').length - 1;
+  let moves = 0;
+  let highlighted: string | null = null;
+  await driver.play(script, {
+    onEvent: async step => {
+      if (step.type === 'touchMove' && moves++ === lastMove) {
+        highlighted = await page.evaluate(
+          () => document.activeElement?.textContent ?? null,
+        );
+      }
+    },
+  });
+  expect(highlighted).toContain('Share');
+  await expect(page.getByTestId('touch-context-menu-last')).toHaveText(
+    'Last action: Share',
+  );
+  await expect(page.getByRole('menu', {name: 'Photo actions'})).toBeHidden();
+});
+
+test('a lift before UIMenu’s handoff picks nothing and leaves the menu open', async ({
+  page,
+}) => {
+  const {driver, center} = await openTouchStory(page);
+  // 6 px after the menu shows: short of the 10 pt handoff.
+  await driver.play(
+    drag(
+      center,
+      {x: center.x, y: center.y + 6},
+      {holdMs: menuDisplayMs + 100, durationMs: 100, restMs: 120},
+    ),
+  );
+  await page.waitForTimeout(300);
+  await expect(page.getByRole('menu', {name: 'Photo actions'})).toBeVisible();
+  await expect(page.getByTestId('touch-context-menu-last')).toHaveText(
+    'No action yet',
+  );
+});
+
 test('a drag past the tolerance after the commit opens nothing', async ({
   page,
 }) => {
@@ -670,6 +745,68 @@ test('a drag that cancels the press after the commit does not scroll the page ei
   );
   expect(await menuShownAt(page)).toBeNull();
   expect(await top()).toBe(before);
+});
+
+test('a finger slid on past the menu, on a page that scrolls, scrolls nothing, leaves no row lit, and picks nothing on the lift', async ({
+  page,
+}) => {
+  const {driver, center, top} = await openScrollableStory(page);
+  const before = await top();
+  // Held until the menu shows under it (its corner at the finger), then down
+  // and a little inward through the rows, and on past the menu's bottom.
+  // Nothing is lit when the menu opens: a row lights only under the finger.
+  const script = drag(
+    center,
+    {x: center.x + 24, y: center.y + 260},
+    {holdMs: menuDisplayMs + 100, durationMs: 400, restMs: 120},
+  );
+  const lastMove =
+    toTouchEvents(script).filter(e => e.type === 'touchMove').length - 1;
+  let moves = 0;
+  let lit: string | null = null;
+  let litOnTheWay = false;
+  await driver.play(script, {
+    onEvent: async step => {
+      if (step.type !== 'touchMove') {
+        return;
+      }
+      const row = await page.evaluate(() =>
+        document.activeElement?.getAttribute('role') === 'menuitem'
+          ? (document.activeElement.textContent ?? '')
+          : null,
+      );
+      litOnTheWay ||= row != null;
+      if (moves++ === lastMove) {
+        lit = row;
+      }
+    },
+  });
+  // The press holds the finger from the commit on: no scroll can take it, so
+  // nothing cancels it; past the menu it lights nothing and picks nothing.
+  expect(await top()).toBe(before);
+  expect(litOnTheWay).toBe(true);
+  expect(lit).toBeNull();
+  await expect(page.getByTestId('touch-context-menu-last')).toHaveText(
+    'No action yet',
+  );
+  await expect(page.getByRole('menu', {name: 'Photo actions'})).toBeVisible();
+  // The menu holds the highlight, and draws no focus ring for it.
+  const ring = await page.evaluate(() => {
+    const menu = document.querySelector<HTMLElement>('[role="menu"]');
+    menu?.focus({focusVisible: true});
+    return menu == null ? null : getComputedStyle(menu).outlineStyle;
+  });
+  expect(ring).toBe('none');
+  // Its rows keep their own focus indicator: the focused row is highlighted.
+  const copy = page.getByRole('menuitem', {name: 'Copy'});
+  const share = page.getByRole('menuitem', {name: 'Share'});
+  await copy.focus();
+  await expect(copy).toBeFocused();
+  const background = async (row: Locator) =>
+    row.evaluate(el => getComputedStyle(el).backgroundColor);
+  await expect
+    .poll(async () => (await background(copy)) !== (await background(share)))
+    .toBe(true);
 });
 
 test(

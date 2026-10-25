@@ -159,7 +159,7 @@ export const docs = {
   usage: {
     anatomy,
     description:
-      'A right-click context menu that appears at the cursor position. Use to provide contextual actions for specific elements or regions without cluttering the UI with visible buttons. Under a finger, on every touch device, a held finger opens it with iOS timing: the trigger starts to grow at 150 ms, and the menu opens at 735 ms, or as soon as the finger lifts after 400 ms.',
+      'A right-click context menu that appears at the cursor position. Use to provide contextual actions for specific elements or regions without cluttering the UI with visible buttons. Under a finger, on every touch device, a held finger opens it with iOS timing: the trigger starts to grow at 150 ms, and the menu opens at 735 ms, or as soon as the finger lifts after 400 ms; a finger still down when the menu opens can slide onto an action and lift to pick it.',
     bestPractices: [
       {
         guidance: true,
@@ -228,7 +228,7 @@ export const docs = {
 export const docsZh = {
   usage: {
     description:
-      '右键点击时在光标位置出现的上下文菜单。用于为特定元素或区域提供上下文操作，而不使 UI 杂乱。在所有触摸设备上，按住手指即可打开，时序与 iOS 相同：150 毫秒时触发区域开始放大，735 毫秒时菜单打开；若手指在 400 毫秒后抬起，菜单在抬起时立即打开。',
+      '右键点击时在光标位置出现的上下文菜单。用于为特定元素或区域提供上下文操作，而不使 UI 杂乱。在所有触摸设备上，按住手指即可打开，时序与 iOS 相同：150 毫秒时触发区域开始放大，735 毫秒时菜单打开；若手指在 400 毫秒后抬起，菜单在抬起时立即打开；菜单打开时手指仍按住，可滑到某个操作上并抬起来选择它。',
     bestPractices: [
       {guidance: true, description: '保持菜单项简洁和面向操作。'},
       {guidance: true, description: '有很多项时使用分组和分隔线。'},
@@ -269,7 +269,7 @@ export const docsDense = {
   usage: {
     anatomy,
     description:
-      'A right-click context menu that appears at the cursor position. Use to provide contextual actions for specific elements or regions. Under a finger (any touch device): a held finger opens it at 735 ms, or on a lift after 400 ms; the trigger grows from 150 ms.',
+      'A right-click context menu that appears at the cursor position. Use to provide contextual actions for specific elements or regions. Under a finger (any touch device): a held finger opens it at 735 ms, or on a lift after 400 ms; the trigger grows from 150 ms; slide onto an action and lift to pick it.',
     bestPractices: [
       {guidance: true, description: 'Keep items concise and action-oriented.'},
       {

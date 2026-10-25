@@ -22,7 +22,8 @@
  *   past `allowableMovement` still ends it with no menu (`cancelled`), and
  *   a lift shows it at once (`ended` without `isMenuDue`).
  * - `changed` with `isMenuDue` at `menuDisplayMs`: the finger is still
- *   down and the menu shows. From then on the finger moves freely.
+ *   down and the menu shows. From then on the finger moves freely, and the
+ *   menu's press model follows it (a slide onto a row picks it on the lift).
  *
  * The hold runs on useLongPress's detector (createLongPressDetector), the
  * one long-press source in core: the commit is its delay, the menu a later

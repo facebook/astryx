@@ -79,12 +79,15 @@ import {
 import {useMenuOverflow} from '../DropdownMenu/useMenuOverflow';
 import {useMenuDrillIn} from '../DropdownMenu/useMenuDrillIn';
 import {useListFocus} from '../hooks/useListFocus';
-import {useMenuPress} from '../hooks/useMenuPress';
+import {
+  useDropdownMenuPress,
+  type DropdownMenuPressReturn,
+} from '../hooks/useMenuPress';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useScrollLock} from '../hooks/useScrollLock';
 import {readPresentation, usePresentation} from '../utils/presentation';
 import {useCompactDefinition} from '../utils/touchPresentation';
-import {playHaptic, useGestureRecognizer} from '../gestures';
+import {getGestureHost, playHaptic, useGestureRecognizer} from '../gestures';
 import {contextMenu} from '../motion/uikit/contextMenu';
 import {
   ContextMenuPressRecognizer,
@@ -160,9 +163,10 @@ const styles = stylex.create({
     userSelect: 'none',
     WebkitTouchCallout: 'none',
     // A touch open focuses the menu itself, so no row is lit until the finger
-    // moves onto one (as DropdownMenu's held finger): an internal focus target,
-    // not a control, so no browser ring; keyboard focus moves to an item
-    // instead.
+    // moves onto one, and a held finger that slides off the rows leaves the
+    // focus there too (useMenuPress focuses it, as DropdownMenu's): an
+    // internal focus target, not a control, so no browser ring; keyboard focus
+    // moves to an item instead.
     outline: 'none',
   },
   // Scroll ownership by the browser's own signal; see DropdownMenu.
@@ -724,7 +728,11 @@ export function ContextMenu({
   // lift sends no click and no compatibility mouse events). The menu opens
   // where the finger landed: at `menuDisplayMs` if it is still down, or at
   // the lift. A lift before the commit, a second finger, a scroll, or a drift
-  // past the tolerance before the menu shows gets no menu.
+  // past the tolerance before the menu shows gets no menu. A finger still down
+  // when the menu shows goes on into it: a slide onto a row picks it on the
+  // lift (the menu's press model, core's internal `useDropdownMenuPress`).
+  // The menu's press model (below), for the finger the menu shows under.
+  const menuPressRef = useRef<DropdownMenuPressReturn | null>(null);
   // The touch model is the coarse primary pointer's, on every touch device;
   // a fine pointer, or `presentation="popover"`, leaves the recognizer off
   // (the server's answer until hydrated).
@@ -760,6 +768,26 @@ export function ContextMenu({
         case 'changed':
           if (recognizer.isMenuDue && !hasPressOpenedRef.current) {
             open();
+            // The finger is still down, so it goes on into the menu, as
+            // UIKit's touch continuation does: once it has travelled UIMenu's
+            // handoff distance the highlight follows it, and the row under its
+            // lift acts. A lift before that picks nothing.
+            const touch = recognizer.trackedTouches[0];
+            const doc = triggerRef.current?.ownerDocument;
+            const pointerId =
+              touch != null && doc != null
+                ? getGestureHost(doc).pointerIdOf(touch)
+                : null;
+            // The press model counts its samples on `Date.now()` (its
+            // contract), and the handoff from the first position the open
+            // menu sees (spec:AST-094 FR29).
+            if (touch != null && pointerId != null) {
+              menuPressRef.current?.continueGesture({
+                pointerId,
+                pointerType: touch.pointerType,
+                time: Date.now(),
+              });
+            }
           }
           break;
         case 'ended':
@@ -822,12 +850,13 @@ export function ContextMenu({
   // The press model: the row under a release acts, the highlight follows a
   // held pointer, a mouse released outside dismisses and a finger leaves the
   // menu open.
-  const menuPress = useMenuPress({
+  const menuPress = useDropdownMenuPress({
     menuRef: listRef,
     itemSelector: MENU_ITEM_SELECTOR,
     onDismiss: closeMenu,
     isEnabled: !usesBottomSheet,
   });
+  menuPressRef.current = menuPress;
 
   const renderedMenu = (
     <div
