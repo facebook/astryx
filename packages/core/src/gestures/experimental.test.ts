@@ -30,6 +30,7 @@ const NAMES = [
   'HoverGestureRecognizer',
   'useGestureRecognizer',
   'usePressTracker',
+  'useFingerScroll',
   'PressTracker',
   'PRESS_PROFILES',
   'useTouchPresentation',
