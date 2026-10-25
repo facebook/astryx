@@ -547,17 +547,24 @@ export function Popover({
   const isSheetOpen = isControlled
     ? isOpen === true && controlledSurface === 'bottom-sheet'
     : isSheetOpenState;
-  // One presentation at a time, and nothing of the sheet at rest
-  // (architecture:component-style-authoring INV7): the sheet mounts as it
-  // opens, in place of the anchored layer, and stays mounted after it closes
-  // only through its exit, so the exit plays out and its dialog hands focus
-  // back to the trigger (component:Popover AR4), even when the screen stopped
-  // being compact while it was open. It unmounts once its dialog has closed.
+  // One presentation at a time (architecture:component-style-authoring
+  // INV7): the sheet is mounted, in place of the anchored layer, while it is
+  // the surface an opening would choose (a compact touch screen, or
+  // `'bottom-sheet'`) and the anchored popover is not the open one, while it
+  // is open, and through its exit after it was. Closed, it holds the content
+  // as the anchored layer does, so state kept in the content (a ticked box,
+  // typed text) survives a reopen. After a sheet closes on a screen that has
+  // stopped being compact, it stays through its exit, so the exit plays out
+  // and its dialog hands focus back to the trigger (component:Popover AR4),
+  // and gives way to the anchored layer once its dialog has closed.
   const [hasSheetBeenOpen, setHasSheetBeenOpen] = useState(false);
   if (isSheetOpen && !hasSheetBeenOpen) {
     setHasSheetBeenOpen(true);
   }
-  const isSheetMounted = isSheetOpen || hasSheetBeenOpen;
+  const isSheetMounted =
+    isSheetOpen ||
+    hasSheetBeenOpen ||
+    (resolvedPresentation === 'bottom-sheet' && !popover.isOpen);
   const sheetPanelRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (isSheetOpen || !hasSheetBeenOpen) {
@@ -715,9 +722,10 @@ export function Popover({
   const attachTrigger = useCallback(
     (button: HTMLElement) => {
       // ARIA attributes
+      // The sheet's surface is a dialog whatever the popover's role.
       button.setAttribute(
         'aria-haspopup',
-        popover.triggerProps['aria-haspopup'],
+        isSheetMounted ? 'dialog' : popover.triggerProps['aria-haspopup'],
       );
       button.setAttribute('aria-expanded', String(isAnySurfaceOpen));
       button.setAttribute(

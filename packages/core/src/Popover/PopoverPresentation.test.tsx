@@ -425,7 +425,7 @@ describe('Popover presentation', () => {
     expect(openLayer()).toHaveTextContent('Apply');
   });
 
-  it('mounts one presentation at a time, and nothing of the sheet at rest', async () => {
+  it('mounts one presentation at a time, with the content once', async () => {
     // The elements a render adds to the document.
     let before = 0;
     const elements = () => document.body.querySelectorAll('*').length - before;
@@ -436,38 +436,107 @@ describe('Popover presentation', () => {
     await tapTrigger();
     const desktopOpen = elements();
     desktop.unmount();
-    // A compact touch screen: at rest exactly the desktop's elements.
+    // A compact touch screen: the closed sheet stands in place of the
+    // anchored layer, holding the content, with no more elements.
     isCompactTouch = true;
     before = document.body.querySelectorAll('*').length;
     render(<Filters presentation="adaptive" />);
-    expect(elements()).toBe(desktopAtRest);
-    expect(sheetDialog()).toBeNull();
-    await tapTrigger();
     const dialog = await vi.waitFor(() => {
       const element = sheetDialog();
-      expect(element).toHaveAttribute('open');
+      expect(element).not.toBeNull();
       return element!;
     });
-    // Open, the sheet stands in place of the anchored layer.
-    expect(openLayer()).toBeNull();
+    expect(dialog).not.toHaveAttribute('open');
     expect(document.querySelector('[popover]')).toBeNull();
-    expect(elements()).toBeLessThanOrEqual(desktopOpen);
+    expect(
+      screen.getAllByRole('button', {name: 'Apply', hidden: true}),
+    ).toHaveLength(1);
+    const touchAtRest = elements();
+    expect(touchAtRest).toBeLessThanOrEqual(desktopAtRest);
+    // Open: still the one presentation.
+    await tapTrigger();
+    await vi.waitFor(() => {
+      expect(dialog).toHaveAttribute('open');
+    });
+    expect(document.querySelector('[popover]')).toBeNull();
     expect(screen.getAllByRole('button', {name: 'Apply'})).toHaveLength(1);
-    // Closed, the sheet stays through its exit, then leaves.
+    expect(elements()).toBeLessThanOrEqual(desktopOpen);
+    // Closed: the sheet stays, closed, as it was at rest.
     act(() => {
       fireEvent.keyDown(dialog, {key: 'Escape'});
     });
-    expect(dialog.isConnected).toBe(true);
     act(() => {
       fireEvent.transitionEnd(
         dialog.querySelector<HTMLElement>('.astryx-bottom-sheet')!,
         {propertyName: 'transform'},
       );
     });
-    await vi.waitFor(() => {
-      expect(sheetDialog()).toBeNull();
+    expect(dialog).not.toHaveAttribute('open');
+    expect(sheetDialog()).toBe(dialog);
+    expect(elements()).toBe(touchAtRest);
+  });
+
+  it('keeps state in the content across sheet openings, as the anchored popover does', async () => {
+    isCompactTouch = true;
+    render(
+      <Popover
+        label="Filters"
+        presentation="adaptive"
+        content={<input type="checkbox" aria-label="Archived" />}>
+        <Button label="Filter">Filter</Button>
+      </Popover>,
+    );
+    await tapTrigger();
+    const dialog = await vi.waitFor(() => {
+      const element = sheetDialog();
+      expect(element).toHaveAttribute('open');
+      return element!;
     });
-    expect(elements()).toBe(desktopAtRest);
+    act(() => {
+      fireEvent.click(screen.getByRole('checkbox', {name: 'Archived'}));
+    });
+    expect(screen.getByRole('checkbox', {name: 'Archived'})).toBeChecked();
+    act(() => {
+      fireEvent.keyDown(dialog, {key: 'Escape'});
+    });
+    act(() => {
+      fireEvent.transitionEnd(
+        dialog.querySelector<HTMLElement>('.astryx-bottom-sheet')!,
+        {propertyName: 'transform'},
+      );
+    });
+    await tapTrigger();
+    await vi.waitFor(() => {
+      expect(sheetDialog()).toHaveAttribute('open');
+    });
+    expect(screen.getByRole('checkbox', {name: 'Archived'})).toBeChecked();
+  });
+
+  it('a trigger whose popover has no dialog role says it opens a dialog while the sheet is the surface', async () => {
+    const Menu = () => (
+      <Popover
+        label="Filters"
+        role="none"
+        presentation="adaptive"
+        content={<button type="button">Apply</button>}>
+        <Button label="Filter">Filter</Button>
+      </Popover>
+    );
+    // A desktop: the anchored layer, which is not a dialog.
+    const desktop = render(<Menu />);
+    expect(trigger()).toHaveAttribute('aria-haspopup', 'true');
+    desktop.unmount();
+    // A compact touch screen: the sheet, a modal dialog.
+    isCompactTouch = true;
+    render(<Menu />);
+    await vi.waitFor(() => {
+      expect(trigger()).toHaveAttribute('aria-haspopup', 'dialog');
+    });
+    await tapTrigger();
+    await vi.waitFor(() => {
+      expect(sheetDialog()).toHaveAttribute('open');
+    });
+    expect(trigger()).toHaveAttribute('aria-haspopup', 'dialog');
   });
 
   it('without a Theme provider, adaptive measures compact against the registered root theme', async () => {
