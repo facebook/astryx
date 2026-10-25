@@ -26,12 +26,13 @@
  * - /packages/core/src/hooks/index.ts
  * - /packages/core/src/hooks/scrollbarGutter.ts
  * - /packages/core/src/hooks/rootScrollStyles.ts
- * - /packages/core/src/gestures/GestureHost.ts (holdPageScroll)
+ * - /packages/core/src/gestures/pageHold.ts (holdPageScroll)
  */
 
 import {useEffect} from 'react';
 import {claimRootScrollStyle, reportScrollLock} from './rootScrollStyles';
 import {getGestureHost} from '../gestures/GestureHost';
+import {holdPageScroll} from '../gestures/pageHold';
 import {isPanAbsorbedBeforePage} from './scrollLockTouchGuard';
 import {holdScrollbarGutter, type ScrollbarGutterHold} from './scrollbarGutter';
 
@@ -77,7 +78,8 @@ export function useScrollLock(isLocked: boolean): void {
         overflow: 'hidden',
         overscrollBehaviorY: 'none',
       });
-      const releasePageHold = getGestureHost(document).holdPageScroll(
+      const releasePageHold = holdPageScroll(
+        getGestureHost(document),
         (origin, dx, dy) => !isPanAbsorbedBeforePage(origin, dx, dy),
       );
       gutter.settle();

@@ -9,7 +9,8 @@
  * @output isPanAbsorbedBeforePage, the scroll lock's decision for the gesture
  *   host's page-scroll hold
  * @position Internal hook utility; used by useScrollLock, through
- *   GestureHost.holdPageScroll (the host owns the touch listeners).
+ *   gestures/pageHold's holdPageScroll on the gesture host (the host owns
+ *   the touch listeners).
  *
  * `overflow: hidden` on the root stops wheel, keyboard and scrollbar scrolling,
  * but iOS Safari before 26.4 still scrolls such a page under a finger: on iOS
