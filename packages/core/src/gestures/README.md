@@ -189,7 +189,11 @@ at once on a cancel; the marker's value picks the profile (empty or
 A touch that brakes a list the finger set moving paints nothing. A value the
 consumer did not write (a row kept `held` through a navigation push) is
 never overwritten or cleared. Installs are counted per attribute, so every
-component can call the hook.
+component can call the hook. The default attribute pair
+(`data-astryx-pressable`, `data-astryx-press`) is the one the document press
+controller in `utils/pressFeedback.ts` writes: two writers on one pair fight
+over the paint, so where that controller is installed, pass another
+`attribute` and `pressedAttribute`.
 
 ## What the browser is told
 
@@ -353,8 +357,8 @@ exactly as `COMPACT_TOUCH_QUERY`, which a test enforces), so the first paint
 is right. Behaviour reads
 `useTouchPresentation()` (SSR-safe), a decision taken once reads
 `readTouchPresentation()`, and a component with no interaction to infer
-from reads `useMotionPresentation()`: UIKit timings under a finger, theme
-tokens under a mouse.
+from reads the same `useTouchPresentation()` for its motion: UIKit timings
+under a finger, theme tokens under a mouse.
 
 ## Known limits
 
@@ -420,7 +424,9 @@ tokens under a mouse.
 - `__tests__/haptics.test.ts`: vibration patterns and the hidden switch.
 - `__tests__/browser/`: the browser proof on a phone-sized touch screen, in
   Chromium (CDP touches with timestamps) and WebKit (its own touch input).
-  Run it with
+  CI runs it in Chromium in the interaction lane (`spec:AST-030` FR11:
+  `pnpm test:interaction --project chromium`,
+  `playwright.interaction.config.ts`). Run both engines with
   `pnpm exec playwright test --config packages/core/src/gestures/__tests__/browser/playwright.config.ts`;
   where WebKit cannot launch on the host, its project runs in the official
   Playwright image (see the config header). The same fixture passed in
