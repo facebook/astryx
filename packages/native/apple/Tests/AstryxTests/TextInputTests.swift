@@ -56,7 +56,8 @@ import Testing
     disabledMessage: "Managed by your admin",
     status: TextInputStatus(type: .error, message: "Not valid")
   )
-  #expect(field.accessibilityDescription == "Work address, Not valid, Managed by your admin")
+  // An error leads, then the description and the disabled reason.
+  #expect(field.accessibilityDescription == "Not valid, Work address, Managed by your admin")
   // The reason is read only while the field is disabled.
   let enabled = Astryx.TextInput(label: "Email", value: "", disabledMessage: "Managed by your admin")
   #expect(enabled.accessibilityDescription == "")

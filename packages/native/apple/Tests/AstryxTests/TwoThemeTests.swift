@@ -66,7 +66,9 @@ private let secondTheme: Theme = {
 
 @MainActor
 @Test func textInputFollowsTheThemesTextColorAndTypeSize() {
-  let field = Astryx.TextInput(label: "Name", value: "Ada", isLabelHidden: true).frame(width: 240)
+  // Read-only draws its value as text, which an image renderer can read; an
+  // editable field is a platform text field it does not draw.
+  let field = Astryx.TextInput(label: "Name", value: "Ada", isLabelHidden: true, isReadOnly: true).frame(width: 240)
   let standard = Pixels(field, theme: .default)
   let second = Pixels(field, theme: secondTheme)
   #expect(second.contains { close($0, rgba("#FF0000FF"), within: 24) })

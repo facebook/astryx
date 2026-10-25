@@ -221,7 +221,7 @@ public struct TextInput: View {
     let shape = RoundedRectangle(cornerRadius: astryx.tokens.radius.element, style: .continuous)
     return SwiftUI.HStack(spacing: astryx.tokens.space.s2) {
       field
-        .font(astryx.font(TypeStyle(size: astryx.tokens.font.bodySize, weight: astryx.tokens.font.bodyWeight, families: astryx.tokens.font.familyBody)))
+        .font(astryx.font(TypeStyle(astryx.tokens.font.body, families: astryx.tokens.font.family.body)))
         .foregroundStyle(astryx.tokens.color.textPrimary)
         .focused($isFocused)
         .onSubmit { props.onEnter?() }
@@ -360,7 +360,7 @@ public struct TextInput: View {
           icon(status.type.rawValue).accessibilityHidden(true)
         }
         SwiftUI.Text(message)
-          .font(astryx.font(TypeStyle(size: astryx.tokens.font.supportingSize, weight: astryx.tokens.font.supportingWeight, families: astryx.tokens.font.familyBody)))
+          .font(astryx.font(TypeStyle(astryx.tokens.font.supporting, families: astryx.tokens.font.family.body)))
       }
       .foregroundStyle(messageColor(status.type))
       .frame(maxWidth: .infinity, alignment: .leading)
@@ -436,14 +436,14 @@ public struct TextInput: View {
 
   private func tipText(_ text: String) -> some View {
     SwiftUI.Text(text)
-      .font(astryx.font(TypeStyle(size: astryx.tokens.font.supportingSize, weight: astryx.tokens.font.supportingWeight, families: astryx.tokens.font.familyBody)))
+      .font(astryx.font(TypeStyle(astryx.tokens.font.supporting, families: astryx.tokens.font.family.body)))
       .padding(astryx.tokens.space.s3)
       .presentationCompactAdaptation(.popover)
   }
 
   /// A shared icon at the supporting text size: the theme's SF Symbol or app
   /// asset, else the default symbol; a name nothing maps draws nothing.
-  var iconSide: CGFloat { astryx.tokens.font.supportingSize * astryx.textScale }
+  var iconSide: CGFloat { astryx.tokens.font.supporting.size * astryx.textScale }
 
   @ViewBuilder private func icon(_ name: String) -> some View {
     let side = iconSide
