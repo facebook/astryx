@@ -130,3 +130,13 @@ import Testing
   #expect(Astryx.Button(label: "Go", href: "data:image/png;base64,AAAA").link != nil)
   #expect(Astryx.Button(label: "Go", href: "mailto:a@b.co").link != nil)
 }
+
+@MainActor
+@Test func aDisabledButtonWithATooltipKeepsItsFocusStopAndTakesNoPress() {
+  var presses = 0
+  let withTip = Astryx.Button(label: "Save", isDisabled: true, tooltip: "Fill in a name first") { presses += 1 }
+  #expect(withTip.keepsFocusWhileDisabled)
+  withTip.activate()
+  #expect(presses == 0)
+  #expect(!Astryx.Button(label: "Save", isDisabled: true) {}.keepsFocusWhileDisabled)
+}

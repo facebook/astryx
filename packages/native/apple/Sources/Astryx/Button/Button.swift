@@ -88,7 +88,11 @@ public struct Button: View {
   public var body: some View {
     control
       .buttonStyle(style)
-      .disabled(isDisabled)
+      // A disabled Button with a tooltip keeps its focus stop so keyboard
+      // users reach the tooltip, as core keeps it focusable; presses still
+      // never land, and VoiceOver reads a dimmed button.
+      .disabled(isDisabled && !keepsFocusWhileDisabled)
+      .modifier(DimmedButtonAccessibility(isActive: keepsFocusWhileDisabled, label: accessibilityText))
       // The shared Astryx tooltip on hover and keyboard focus, as core's
       // Button tooltip; its words are the VoiceOver hint.
       .astryxTooltip(props.tooltip, hint: props.tooltip, focus: .control)
@@ -136,7 +140,8 @@ public struct Button: View {
       fillsWidth: props.width == .fill,
       foreground: foreground,
       background: background,
-      shadow: shadow
+      shadow: shadow,
+      isDimmed: isDisabled
     )
   }
 
@@ -151,7 +156,10 @@ public struct Button: View {
   var loadingValue: String? { isLoading ? AstryxStrings.buttonLoading : nil }
 
   /// Whether a press lands now: not while loading, unless interruptible.
-  var acceptsPress: Bool { !isLoading || props.isInterruptible == true }
+  var acceptsPress: Bool { !isDisabled && (!isLoading || props.isInterruptible == true) }
+
+  /// A disabled Button with a tooltip keeps its focus stop (core Button FR10).
+  var keepsFocusWhileDisabled: Bool { isDisabled && props.tooltip != nil }
 
   /// Runs `onClick` when a press lands.
   func activate() {
@@ -205,7 +213,10 @@ struct AstryxButtonStyle: ButtonStyle {
   let foreground: Color
   let background: Color
   let shadow: [ShadowLayer]
-  @Environment(\.isEnabled) private var isEnabled
+  /// Draws the disabled look for a disabled Button that keeps its focus stop.
+  var isDimmed = false
+  @Environment(\.isEnabled) private var environmentEnabled
+  private var isEnabled: Bool { environmentEnabled && !isDimmed }
 
   func makeBody(configuration: Configuration) -> some View {
     let shape = RoundedRectangle(cornerRadius: astryx.tokens.radius.element, style: .continuous)
@@ -224,5 +235,22 @@ struct AstryxButtonStyle: ButtonStyle {
       // platform-minimum tap area counts.
       .frame(minWidth: 44, minHeight: 44)
       .contentShape(Rectangle())
+  }
+}
+
+/// For a disabled Button that keeps its focus stop: VoiceOver reads the
+/// platform's disabled button in its place.
+private struct DimmedButtonAccessibility: ViewModifier {
+  let isActive: Bool
+  let label: String
+
+  func body(content: Content) -> some View {
+    if isActive {
+      content.accessibilityRepresentation {
+        SwiftUI.Button(label) {}.disabled(true)
+      }
+    } else {
+      content
+    }
   }
 }
