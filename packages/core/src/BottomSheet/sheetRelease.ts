@@ -40,6 +40,7 @@
 
 import {selectSnapPoint} from '../motion/projection';
 import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
+import type {ReleaseInput, ReleaseOutcome} from '../motion/interactive';
 import {sheet} from '../motion/uikit/sheet';
 import {springs} from '../motion/uikit/springs';
 import {resolveSettleOffset} from './snapOffsets';
@@ -288,4 +289,67 @@ export function limitOvershoot(
     }
   }
   return velocity * low;
+}
+
+/** Where a sheet's release can land: a detent, or gone. */
+export type SheetReleaseOutcome = 'detent' | 'dismiss';
+
+/** What the sheet's release rule knows besides where the gesture let go. */
+export interface SheetReleaseContext {
+  /** Detent offsets, ascending (the tallest first). */
+  readonly detents: ReadonlyArray<number>;
+  /** Where the sheet is gone; null when it can't be dismissed. */
+  readonly dismissedOffset: number | null;
+  /** UIKit's rule (a finger); otherwise today's (a mouse). */
+  readonly isUIKit: boolean;
+  /** How much of the sheet the shortest detent shows, px (today's rule). */
+  readonly shortestDetentHeight: number;
+  /** The detent offset the drag started from (today's rule). */
+  readonly startOffset: number;
+  /** Today's estimator: the drag's direction, travel and last-100 ms speed. */
+  readonly today: {direction: number; travel: number; velocity: number};
+}
+
+/** A sheet release's landing: the driver's outcome, and which detent. */
+export interface SheetReleaseLanding extends ReleaseOutcome<SheetReleaseOutcome> {
+  readonly motion: SpringDescription;
+  /** Index into the detents; -1 for a dismissal. */
+  readonly index: number;
+}
+
+/**
+ * The sheet's release as an interactive-transition rule
+ * (motion/interactive.ts): positions are the sheet's offsets, px down from
+ * fully open, and velocities px/s. Under a finger UIKit's rule
+ * (`resolveSheetRelease`), under a mouse today's (`resolveDefaultRelease`);
+ * a dismissal exits, so under reduced motion it fades out in place.
+ */
+export function sheetReleaseRule(
+  input: ReleaseInput,
+  context: SheetReleaseContext,
+): SheetReleaseLanding {
+  const release = context.isUIKit
+    ? resolveSheetRelease({
+        detents: context.detents,
+        dismissedOffset: context.dismissedOffset,
+        position: input.position,
+        velocity: input.velocity,
+      })
+    : resolveDefaultRelease({
+        detents: context.detents,
+        shortestDetentHeight: context.shortestDetentHeight,
+        dismissible: context.dismissedOffset != null,
+        position: input.position,
+        velocity: context.today.velocity,
+        travel: context.today.travel,
+        direction: context.today.direction,
+        startOffset: context.startOffset,
+      });
+  return {
+    target: release.offset,
+    motion: release.spring,
+    outcome: release.kind,
+    index: release.index,
+    exits: release.kind === 'dismiss',
+  };
 }
