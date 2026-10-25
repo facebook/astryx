@@ -86,6 +86,113 @@ afterEach(() => {
 });
 
 describe('the press reaches the surface the finger landed on', () => {
+  it('locks text selection on the row and its switch input while a finger is held, on any coarse pointer', () => {
+    const row = pressable('label');
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.setAttribute('role', 'switch');
+    row.appendChild(input);
+    document.body.appendChild(row);
+    press(input, 'pointerdown', 10, 10);
+    vi.advanceTimersByTime(600);
+    expect(row.style.getPropertyValue('user-select')).toBe('none');
+    expect(input.style.getPropertyValue('user-select')).toBe('none');
+    press(input, 'pointerup', 10, 10);
+    expect(row.style.getPropertyValue('user-select')).toBe('');
+    expect(input.style.getPropertyValue('user-select')).toBe('');
+    // A mouse never locks anything.
+    press(input, 'pointerdown', 10, 10, 'mouse');
+    expect(row.style.getPropertyValue('user-select')).toBe('');
+    press(input, 'pointerup', 10, 10, 'mouse');
+  });
+
+  it("keeps a link's native long-press menu: no callout lock on a link or under one", () => {
+    // jsdom drops -webkit-touch-callout, so the lock's writes are recorded.
+    const written = new Map<Element, string[]>();
+    const setProperty = CSSStyleDeclaration.prototype.setProperty;
+    const owners = new WeakMap<CSSStyleDeclaration, Element>();
+    const spy = vi
+      .spyOn(CSSStyleDeclaration.prototype, 'setProperty')
+      .mockImplementation(function (
+        this: CSSStyleDeclaration,
+        name: string,
+        value: string | null,
+        priority?: string,
+      ) {
+        const owner = owners.get(this);
+        if (owner != null && value === 'none') {
+          written.set(owner, [...(written.get(owner) ?? []), name]);
+        }
+        setProperty.call(this, name, value, priority);
+      });
+    const track = (element: HTMLElement) => {
+      owners.set(element.style, element);
+      return element;
+    };
+    const link = track(pressable('a'));
+    link.setAttribute('href', '/next');
+    const text = document.createElement('span');
+    text.textContent = 'Next';
+    link.appendChild(text);
+    document.body.appendChild(link);
+    press(text, 'pointerdown', 10, 10);
+    vi.advanceTimersByTime(600);
+    press(text, 'pointerup', 10, 10);
+    // iOS shows a link's menu and preview on a long press: no callout lock.
+    expect(written.get(link)).toEqual(['-webkit-user-select', 'user-select']);
+    // A link inside a pressable row keeps its menu too.
+    const row = track(pressable());
+    const inner = document.createElement('a');
+    inner.setAttribute('href', '/more');
+    inner.textContent = 'More';
+    row.appendChild(inner);
+    document.body.appendChild(row);
+    press(inner, 'pointerdown', 10, 10);
+    vi.advanceTimersByTime(600);
+    press(inner, 'pointerup', 10, 10);
+    expect(written.get(row)).toEqual(['-webkit-user-select', 'user-select']);
+    // A plain row still loses the callout.
+    const plain = track(rows[0]);
+    press(plain, 'pointerdown', 10, 10);
+    vi.advanceTimersByTime(600);
+    press(plain, 'pointerup', 10, 10);
+    expect(written.get(plain)).toEqual([
+      '-webkit-touch-callout',
+      '-webkit-user-select',
+      'user-select',
+    ]);
+    spy.mockRestore();
+  });
+
+  it('keeps selection under a mouse and under a pen where the primary pointer is fine, as on main (spec:AST-017 FR59)', () => {
+    const row = rows[2];
+    press(row, 'pointerdown', 10, 10, 'mouse');
+    vi.advanceTimersByTime(600);
+    expect(row.style.getPropertyValue('user-select')).toBe('');
+    press(row, 'pointerup', 10, 10, 'mouse');
+    // A desktop pen tablet: a fine primary pointer.
+    press(row, 'pointerdown', 10, 10, 'pen');
+    vi.advanceTimersByTime(600);
+    expect(row.style.getPropertyValue('user-select')).toBe('');
+    press(row, 'pointerup', 10, 10, 'pen');
+    vi.advanceTimersByTime(600);
+    // On a touch device a pen locks, as a finger does.
+    const matchMedia = window.matchMedia;
+    window.matchMedia = (query: string) => ({
+      ...matchMedia(query),
+      matches: query.includes('(pointer: coarse)') || matchMedia(query).matches,
+    });
+    try {
+      press(row, 'pointerdown', 10, 10, 'pen');
+      vi.advanceTimersByTime(600);
+      expect(row.style.getPropertyValue('user-select')).toBe('none');
+      press(row, 'pointerup', 10, 10, 'pen');
+      expect(row.style.getPropertyValue('user-select')).toBe('');
+    } finally {
+      window.matchMedia = matchMedia;
+    }
+  });
+
   it('paints the row after the delay, not before', () => {
     const label = rows[1].firstElementChild;
     if (label == null) {
@@ -306,6 +413,23 @@ describe('the release', () => {
     expect(rows[0].getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
     vi.advanceTimersByTime(PRESS_FADE_MS);
     expect(rows[0].hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+  });
+
+  it('leaves a state it did not write alone: a selection hold outlives the release', () => {
+    press(rows[0], 'pointerdown', 10, 10);
+    vi.advanceTimersByTime(PRESS_ONSET_MS);
+    press(rows[0], 'pointerup', 10, 10);
+    expect(rows[0].getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
+    // The activation pushes, and the row is held selected (selectionHold.ts).
+    rows[0].setAttribute(PRESSED_ATTRIBUTE, 'held');
+    vi.advanceTimersByTime(PRESS_FADE_MS);
+    expect(rows[0].getAttribute(PRESSED_ATTRIBUTE)).toBe('held');
+    // A new press on the held row neither repaints nor clears it.
+    press(rows[0], 'pointerdown', 10, 10);
+    vi.advanceTimersByTime(PRESS_ONSET_MS);
+    expect(rows[0].getAttribute(PRESSED_ATTRIBUTE)).toBe('held');
+    press(rows[0], 'pointercancel', 10, 10);
+    expect(rows[0].getAttribute(PRESSED_ATTRIBUTE)).toBe('held');
   });
 });
 

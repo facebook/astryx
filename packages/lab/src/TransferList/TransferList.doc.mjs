@@ -122,7 +122,7 @@ export const docs = {
       name: 'isReorderable',
       type: 'boolean',
       description:
-        'Shows a left-side grip for every selected option. Per-option isReorderDisabled keeps its grip visible but disabled and makes it a fixed-order barrier.',
+        "Gives every selected option a reorder handle at the end of its row (core List's onReorder): on a touch screen hold the handle for a moment, then drag; a mouse drags at once; the arrow keys, Home and End move the focused handle's row. Per-option isReorderDisabled removes the handle and makes the row a fixed-order barrier. Reordering pauses while a search filters the panel.",
       default: 'true',
     },
     {
@@ -340,7 +340,7 @@ export const docs = {
           name: 'isReorderable',
           type: 'boolean',
           description:
-            'Enables pointer and keyboard ordering. Per-option isReorderDisabled keeps a visible disabled grip and fixed-order barrier.',
+            'Enables ordering through a reorder handle at the end of each selected row. Per-option isReorderDisabled removes the handle and keeps the row fixed as a barrier.',
           default: 'true',
         },
         {
@@ -410,7 +410,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Use isTransferDisabled and isReorderDisabled independently. Provide disabledMessage whenever either action is unavailable so the constraint is discoverable.',
+          'Use isTransferDisabled and isReorderDisabled independently. Provide disabledMessage when a transfer is unavailable so the constraint is discoverable; a row that keeps its place shows no reorder handle, so say why in its content when it matters.',
       },
       {
         guidance: true,
@@ -420,7 +420,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Commit add, remove, bulk, and keyboard reorder changes immediately. During pointer reordering, keep rows stationary, lock the translucent preview to its source-column position, use vertical pointer movement to determine insertion, and commit once on release. Keep the preview in the nearest popover or dialog top layer.',
+          'Commit add, remove, bulk, and reorder changes immediately. A drag reorders the way an iOS table does: the row follows the finger or pointer, the rows it passes move out of its way, and onChange runs once on release.',
       },
       {
         guidance: false,
@@ -462,7 +462,7 @@ export const docs = {
         name: 'Row actions',
         required: true,
         description:
-          'Uses a direction-neutral X to remove and plus to add. Selected rows retain a start-aligned grip when reordering is enabled; constraints disable each control independently.',
+          'Uses a direction-neutral X to remove and plus to add. Selected rows end with a reorder handle when reordering is enabled; a row that keeps its place has none, and transfer constraints disable the remove action.',
       },
       {
         name: 'Bulk actions',
@@ -671,7 +671,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Set transfer and reorder constraints independently and explain either with disabledMessage.',
+          'Set transfer and reorder constraints independently and explain a locked transfer with disabledMessage.',
       },
       {
         guidance: true,
@@ -707,7 +707,7 @@ export const docsDense = {
     searchLabel: 'Accessible search label.',
     searchPlaceholder: 'Search placeholder.',
     isReorderable:
-      'Enable grip-based pointer and keyboard ordering; default true.',
+      'Enable ordering through a trailing reorder handle (touch hold, mouse drag, keys); default true; paused while searching.',
     hasSelectAll: 'Add all transfer-enabled available options.',
     hasClear: 'Remove all transfer-enabled selected options.',
     renderOption: 'Custom row content.',
@@ -753,7 +753,8 @@ export const docsDense = {
         hasSearch: 'Shared list filter; default false.',
         searchLabel: 'Accessible search label.',
         searchPlaceholder: 'Search placeholder.',
-        isReorderable: 'Enable pointer and keyboard ordering; default true.',
+        isReorderable:
+          'Enable ordering through a trailing reorder handle; default true; paused while searching.',
         hasSelectAll: 'Add all transfer-enabled options.',
         hasClear: 'Remove all transfer-enabled selected options.',
         renderOption: 'Custom row content.',

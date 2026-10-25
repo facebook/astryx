@@ -10,6 +10,9 @@
  *   types
  * @position Core implementation; consumed by index.ts, tested by List.test.tsx
  *
+ * `hasAnimatedChanges` runs the update motion (utils/useListUpdateMotion.ts);
+ * `onReorder` runs the reorder session (List/useListReorder.ts) after it.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/List/List.doc.mjs
  * - /packages/core/src/List/List.test.tsx
@@ -18,7 +21,7 @@
  * - /packages/cli/assets/templates/blocks/components/List/ (showcase blocks)
  */
 
-import {useId, useMemo, type ReactNode} from 'react';
+import {useId, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
@@ -29,8 +32,12 @@ import {
   type ListMarkerStyle,
 } from './ListContext';
 import {mergeProps} from '../utils';
+import {useMergedRefs} from '../hooks/useMergedRefs';
+import {keepPresentation, useListUpdateMotion} from './useListUpdateMotion';
 import {themeProps} from '../utils/themeProps';
 import {useDevWarning} from '../hooks/useDevWarning';
+import {useTranslator} from '../i18n/useTranslator';
+import {ListReorderContext, useListReorder} from './useListReorder';
 
 export {
   type ListDensity,
@@ -53,12 +60,59 @@ export interface ListProps extends BaseProps<
    * - 'compact': Tighter spacing for dense UIs
    * - 'balanced': Standard spacing
    * - 'spacious': Extra spacing for readability
+   *
+   * Under a finger (iOS and Android alike), rows are at least 52px tall,
+   * 62px with a description, and never shorter than 44px in compact
+   * density, as iOS table rows are; a list with markers keeps its rows.
    * @default 'balanced'
    */
   density?: ListDensity;
 
   /**
-   * Whether to show dividers between list items.
+   * Under a finger (iOS and Android alike), animate the list's changes the
+   * way an iOS table does: when rows are inserted, removed or reordered, the rows
+   * that stay slide from where they were to where they are and new rows fade
+   * in once the rows sliding past have cleared them, on UIKit's table update
+   * spring. A row that crosses rows moving the other way rides above them
+   * with the surface color behind it. A removed row collapses in place, a
+   * swiped one with its action showing, while the rows below close its gap.
+   * Off by default; with a mouse nothing moves.
+   * @default false
+   */
+  hasAnimatedChanges?: boolean;
+
+  /**
+   * Makes the rows reorderable: each row gets a reorder handle at its end
+   * (a ListItem with `isReorderDisabled` keeps its place instead). Called
+   * with a row's index before and after a move; apply it by rendering the
+   * rows in their new order. A drag that ends on its starting place, or a
+   * move the order does not take, changes nothing.
+   *
+   * On a touch screen a finger held still on a handle for a moment picks up
+   * its row (a flick on it still scrolls); the row follows the finger, the
+   * rows it passes slide out of its way, the list scrolls near the edges, and
+   * on release the row settles into its new place, the way an iOS table
+   * reorders. A mouse drags a handle at once. From the keyboard, a handle's
+   * arrow keys move its row one place, Home and End to the ends; Space picks
+   * it up, and Escape puts it back.
+   */
+  onReorder?: (fromIndex: number, toIndex: number) => void;
+
+  /**
+   * With `hasAnimatedChanges`, page content below the list moves with its
+   * rows (a transient `translate`, cleared at rest) instead of jumping when
+   * the list changes height, each piece by what layout moved it. While it
+   * moves, that `translate` makes it the containing block of any
+   * `position: fixed` element inside it. `'stays'` keeps it still, for apps
+   * that manage that area themselves.
+   * @default 'moves'
+   */
+  followingContent?: 'moves' | 'stays';
+
+  /**
+   * Whether to show dividers between list items. Under a finger, a touch
+   * press hides the dividers on either side of the pressed row until the
+   * finger lifts, as iOS lists do.
    * @default false
    */
   hasDividers?: boolean;
@@ -209,6 +263,9 @@ const dynamicStyles = stylex.create({
  */
 export function List({
   children,
+  onReorder,
+  hasAnimatedChanges = false,
+  followingContent = 'moves',
   density = 'balanced',
   hasDividers = false,
   edge: edgeProp,
@@ -224,6 +281,16 @@ export function List({
   ...props
 }: ListProps) {
   const headerId = useId();
+  const reorderHintId = useId();
+  const t = useTranslator();
+  const listRef = useRef<HTMLUListElement & HTMLOListElement>(null);
+  useListUpdateMotion(listRef, hasAnimatedChanges, followingContent);
+  // After the update motion, so a drop's commit is the reorder's.
+  const reorderContext = useListReorder(listRef, onReorder, reorderHintId);
+  const mergedRef = useMergedRefs(
+    listRef,
+    ref as React.Ref<HTMLUListElement & HTMLOListElement>,
+  );
   const isOrdered = listStyle === 'decimal';
   const Tag = isOrdered ? 'ol' : 'ul';
   // Plain use of the deprecated prop is reported by its @deprecated type;
@@ -239,13 +306,19 @@ export function List({
   const reachesContainerPadding = edge === 'outset' || edge === 'bleed';
 
   const contextValue = useMemo(
-    () => ({density, hasDividers, edge, listStyle}),
-    [density, hasDividers, edge, listStyle],
+    () => ({
+      density,
+      hasDividers,
+      edge,
+      listStyle,
+      keepRowPresentation: hasAnimatedChanges ? keepPresentation : undefined,
+    }),
+    [density, hasDividers, edge, listStyle, hasAnimatedChanges],
   );
 
   const listElement = (
     <Tag
-      ref={ref as React.Ref<HTMLUListElement & HTMLOListElement>}
+      ref={mergedRef}
       // Consumer props first: everything the component sets for itself below
       // is part of its contract and wins on conflict.
       {...props}
@@ -280,18 +353,36 @@ export function List({
     </Tag>
   );
 
+  // The handles' instructions, read by each handle's description.
+  const reorderHint =
+    reorderContext == null ? null : (
+      <span id={reorderHintId} hidden>
+        {t('@astryx.list.reorderHint')}
+      </span>
+    );
+
   if (header == null) {
-    return <ListContext value={contextValue}>{listElement}</ListContext>;
+    return (
+      <ListContext value={contextValue}>
+        <ListReorderContext value={reorderContext}>
+          {listElement}
+          {reorderHint}
+        </ListReorderContext>
+      </ListContext>
+    );
   }
 
   return (
     <ListContext value={contextValue}>
-      <div {...stylex.props(styles.root)}>
-        <div id={headerId} {...stylex.props(styles.header)}>
-          {header}
+      <ListReorderContext value={reorderContext}>
+        <div {...stylex.props(styles.root)}>
+          <div id={headerId} {...stylex.props(styles.header)}>
+            {header}
+          </div>
+          {listElement}
+          {reorderHint}
         </div>
-        {listElement}
-      </div>
+      </ListReorderContext>
     </ListContext>
   );
 }
