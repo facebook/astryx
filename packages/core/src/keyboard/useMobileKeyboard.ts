@@ -508,6 +508,18 @@ function getObstructionTop(): number {
   return layoutViewportHeight(window) - getMobileKeyboardHeight(window);
 }
 
+// Windows whose browser revealed a focused field itself right after the
+// keyboard's report, by panning the visual viewport to it (measured in Firefox
+// for Android: 34 to 39 ms after the report, whenever the field was still under
+// the keyboard). Recorded from the behavior, never from the user agent; a sheet
+// there reveals its field at once in the report's own frame from then on.
+let revealsAtReport = new WeakSet<Window>();
+
+/** Forgets every window's recorded reveal, for tests. */
+export function __resetRevealsAtReportForTest(): void {
+  revealsAtReport = new WeakSet<Window>();
+}
+
 // The keyboard is gone once its height is back to 0.
 function isVisualViewportRecovered(): boolean {
   return getMobileKeyboardHeight(window) <= 0.5;
@@ -753,7 +765,10 @@ export function useMobileKeyboard({
           : 0;
       writeInset(inset);
 
-      scrollControlIntoSafeArea(activeElement, overlap > 0);
+      scrollControlIntoSafeArea(
+        activeElement,
+        overlap > 0 && !revealsAtReport.has(window),
+      );
     };
 
     let animationFrame = 0;
@@ -861,12 +876,77 @@ export function useMobileKeyboard({
     };
 
     const stopClaiming = ownsFocusTransitions ? claimFocusTransitions() : null;
+    // A keyboard report is revealed in its own frame, not the next: a browser
+    // that reveals a focused field itself pans the visual viewport to it a few
+    // frames after the report if the keyboard still covers it (spec:AST-099
+    // FR4). Such a pan (the visual viewport moved down within the layout
+    // viewport after the report, with no touch since, no document scroll and
+    // no zoom) is put back by scrolling the full-viewport dialog's top into
+    // view, and the field lands at once, then and on every later report.
+    let lastHeight = getMobileKeyboardHeight(window);
+    let atReport: {x: number; y: number; top: number; scale: number} | null =
+      null;
+    let touchedSinceReport = false;
+    const handleTouchStart = () => {
+      touchedSinceReport = true;
+    };
+    const isBrowserReveal = (height: number) => {
+      const viewport = window.visualViewport;
+      const activeElement = document.activeElement;
+      return (
+        viewport != null &&
+        atReport != null &&
+        !touchedSinceReport &&
+        height > 0 &&
+        hasKeyboardLayoutRef.current &&
+        viewport.offsetTop > atReport.top &&
+        viewport.scale === atReport.scale &&
+        window.scrollX === atReport.x &&
+        window.scrollY === atReport.y &&
+        activeElement instanceof HTMLElement &&
+        body.contains(activeElement) &&
+        isTextEntryControl(activeElement)
+      );
+    };
     // Every keyboard report reaches the reveal through the keyboard module's
     // one set of listeners.
     const unsubscribe = subscribeMobileKeyboard(window, event => {
-      if (event.type === 'viewport') {
-        scheduleReveal();
+      if (event.type !== 'viewport') {
+        return;
       }
+      if (event.height !== lastHeight) {
+        lastHeight = event.height;
+        const viewport = window.visualViewport;
+        atReport =
+          viewport == null
+            ? null
+            : {
+                x: window.scrollX,
+                y: window.scrollY,
+                top: viewport.offsetTop,
+                scale: viewport.scale,
+              };
+        touchedSinceReport = false;
+        cancelAnimationFrame(animationFrame);
+        revealFocusedControl();
+        return;
+      }
+      if (isBrowserReveal(event.height)) {
+        revealsAtReport.add(window);
+        sheet?.closest('dialog')?.scrollIntoView({
+          block: 'start',
+          inline: 'nearest',
+          behavior: 'instant',
+        });
+        cancelAnimationFrame(animationFrame);
+        revealFocusedControl();
+        return;
+      }
+      scheduleReveal();
+    });
+    document.addEventListener('touchstart', handleTouchStart, {
+      capture: true,
+      passive: true,
     });
     body.addEventListener('focusin', handleFocusIn);
     body.addEventListener('focusout', handleFocusOut);
@@ -887,6 +967,7 @@ export function useMobileKeyboard({
       cancelAnimationFrame(animationFrame);
       stopClaiming?.();
       unsubscribe();
+      document.removeEventListener('touchstart', handleTouchStart, true);
       body.removeEventListener('focusin', handleFocusIn);
       body.removeEventListener('focusout', handleFocusOut);
       sheet?.removeEventListener('transitionend', handleSheetTransitionEnd);

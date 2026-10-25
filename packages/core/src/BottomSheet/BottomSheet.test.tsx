@@ -15,6 +15,7 @@ import {createRef, useState} from 'react';
 import {BottomSheet} from './BottomSheet';
 import {BottomSheetSwitcher} from './BottomSheetSwitcher';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
+import {__resetRevealsAtReportForTest} from '../keyboard/useMobileKeyboard';
 
 // A sheet has no stops unless its host asks for them, so the tests that
 // exercise detents pass their own. These three — a 14% peek, a half-height
@@ -66,6 +67,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  __resetRevealsAtReportForTest();
 });
 
 function getSheet(): HTMLElement {
@@ -1711,6 +1713,131 @@ describe('BottomSheet', () => {
       input.focus();
 
       expect(scrollBy).toHaveBeenCalledWith({top: 248, behavior: 'smooth'});
+    });
+
+    describe('the reveal at the keyboard\u2019s report (spec:AST-099 FR4)', () => {
+      // A Tall sheet with its last field low, as in the Mobile keyboard story.
+      function renderLowField() {
+        mockWindowHeight(800);
+        const viewport = Object.assign(mockVisualViewport(800), {scale: 1});
+        render(
+          <BottomSheet
+            isOpen
+            onOpenChange={() => {}}
+            label="Add a comment"
+            height="tall">
+            <input aria-label="Comment" />
+          </BottomSheet>,
+        );
+        const body = getBody();
+        const input = screen.getByRole('textbox', {name: 'Comment'});
+        // A smooth scroll is still under way when the next event comes; an
+        // instant one has landed.
+        const scrollBy = vi.fn((options: ScrollToOptions) => {
+          if (options.behavior !== 'smooth') {
+            body.scrollTop += options.top ?? 0;
+          }
+        });
+        Object.defineProperty(body, 'scrollBy', {
+          configurable: true,
+          value: scrollBy,
+        });
+        vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
+          rect({top: 100, bottom: 800}),
+        );
+        vi.spyOn(input, 'getBoundingClientRect').mockImplementation(() =>
+          rect({top: 660 - body.scrollTop, bottom: 700 - body.scrollTop}),
+        );
+        const scrollIntoView = vi.fn();
+        const dialog = body.closest('dialog')!;
+        Object.defineProperty(dialog, 'scrollIntoView', {
+          configurable: true,
+          value: scrollIntoView,
+        });
+        const report = (height: number) => {
+          viewport.height = height;
+          void act(() => viewport.dispatchEvent(new Event('resize')));
+        };
+        // The browser's own pan: the visual viewport moves down within the
+        // layout viewport, with no touch and no document scroll.
+        const pan = (offsetTop: number) => {
+          viewport.offsetTop = offsetTop;
+          void act(() => viewport.dispatchEvent(new Event('scroll')));
+        };
+        return {body, input, scrollBy, scrollIntoView, report, pan};
+      }
+
+      it('reveals the field in the report\u2019s own frame', () => {
+        const {body, input, report} = renderLowField();
+        // No frame comes: only what the report's own event does shows.
+        vi.stubGlobal(
+          'requestAnimationFrame',
+          vi.fn(() => 1),
+        );
+        input.focus();
+        report(500);
+        expect(keyboardInsetOf(body)).toBe(348);
+      });
+
+      it('keeps the smooth reveal where the browser does not pan to the field', () => {
+        const {input, scrollBy, scrollIntoView, report} = renderLowField();
+        input.focus();
+        report(500);
+        expect(scrollBy).toHaveBeenLastCalledWith({
+          top: 248,
+          behavior: 'smooth',
+        });
+        expect(scrollIntoView).not.toHaveBeenCalled();
+      });
+
+      it('puts back the browser\u2019s own pan to the field and reveals at once from then on', () => {
+        const {body, input, scrollBy, scrollIntoView, report, pan} =
+          renderLowField();
+        input.focus();
+        report(500);
+        pan(256);
+        expect(scrollIntoView).toHaveBeenCalledWith({
+          block: 'start',
+          inline: 'nearest',
+          behavior: 'instant',
+        });
+        expect(scrollBy).toHaveBeenLastCalledWith({
+          top: 248,
+          behavior: 'instant',
+        });
+
+        // The next keyboard lands the field in the report's frame, at once.
+        report(800);
+        pan(0);
+        body.scrollTop = 0;
+        scrollBy.mockClear();
+        report(500);
+        expect(scrollBy).toHaveBeenLastCalledWith({
+          top: 248,
+          behavior: 'instant',
+        });
+      });
+
+      it('leaves a pan the reader makes', () => {
+        const {input, scrollBy, scrollIntoView, report, pan} = renderLowField();
+        input.focus();
+        report(500);
+        fireEvent.touchStart(document.body);
+        pan(256);
+        expect(scrollIntoView).not.toHaveBeenCalled();
+        expect(scrollBy).not.toHaveBeenCalledWith(
+          expect.objectContaining({behavior: 'instant'}),
+        );
+      });
+
+      it('leaves a document scroll, which is not the browser revealing the field', () => {
+        const {input, scrollIntoView, report, pan} = renderLowField();
+        input.focus();
+        report(500);
+        vi.stubGlobal('scrollY', 120);
+        pan(120);
+        expect(scrollIntoView).not.toHaveBeenCalled();
+      });
     });
 
     it('does not add clearance or scroll when the viewport is unobstructed', () => {
