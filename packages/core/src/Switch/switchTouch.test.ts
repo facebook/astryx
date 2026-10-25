@@ -54,10 +54,11 @@ describe('switchTouchGeometry', () => {
     expect(UIKIT.inset).toBeCloseTo(2, 9);
     expect(UIKIT.travel).toBeCloseTo(22, 9);
     expect(UIKIT.flipDistance).toBeCloseTo(26, 9);
-    expect(UIKIT.rubberBandDimension).toBeCloseTo(12, 9);
-    // The lifted lens: 58 × 38.33 from 37 × 24.
-    expect(UIKIT.thumbWidth * UIKIT.liftScaleX).toBeCloseTo(58, 9);
-    expect(UIKIT.thumbHeight * UIKIT.liftScaleY).toBeCloseTo(38.333, 9);
+    // The lift fills half the 2 pt gap on each side (UIKit's own lens grows
+    // to 58 × 38.3, past the track), and the band the other half.
+    expect(UIKIT.liftScaleX).toBeCloseTo(1 + 2 / 37, 9);
+    expect(UIKIT.liftScaleY).toBeCloseTo(UIKIT.liftScaleX, 9);
+    expect(UIKIT.rubberBandDimension).toBeCloseTo(1, 9);
   });
 
   it('keeps UIKit proportions in a smaller track (md 40 × 24, sm 32 × 20)', () => {
@@ -85,14 +86,44 @@ describe('dragTarget', () => {
     expect(dragTarget(22, -7, UIKIT)).toBeCloseTo(15, 9);
   });
 
-  it("rubber-bands past either end with UIScrollView's curve (c 0.55, d 12)", () => {
-    // UIKit: 46 pt past the on end shows 8.15 pt (measured 8.5 with lag).
+  it("rubber-bands past either end with UIScrollView's curve (c 0.55), reaching no further than the lift leaves", () => {
     const past = 46;
-    const expected = (1 - 1 / ((past * 0.55) / 12 + 1)) * 12;
+    const d = UIKIT.rubberBandDimension;
+    const expected = (1 - 1 / ((past * 0.55) / d + 1)) * d;
     expect(dragTarget(0, 22 + past, UIKIT)).toBeCloseTo(22 + expected, 9);
     expect(dragTarget(22, -22 - past, UIKIT)).toBeCloseTo(-expected, 9);
-    // Never further than d past the end.
-    expect(dragTarget(0, 1e6, UIKIT)).toBeLessThan(22 + 12);
+  });
+
+  it('keeps a lifted thumb inside the track at any overdrag, at every size and thumb shape', () => {
+    for (const [width, height, thumb] of [
+      [63, 28, undefined],
+      [40, 24, undefined],
+      [32, 20, undefined],
+      // A theme's circle (aspect ratio 1) in the md and sm tracks.
+      [40, 24, {width: (24 * 24) / 28, height: (24 * 24) / 28}],
+      [32, 20, {width: (20 * 24) / 28, height: (20 * 24) / 28}],
+    ] as const) {
+      const geometry = switchTouchGeometry(width, height, thumb);
+      const grownX = (geometry.thumbWidth * (geometry.liftScaleX - 1)) / 2;
+      const grownY = (geometry.thumbHeight * (geometry.liftScaleY - 1)) / 2;
+      expect(geometry.inset - grownY).toBeGreaterThanOrEqual(0);
+      for (const finger of [1e3, 1e6]) {
+        const end = dragTarget(0, finger, geometry);
+        const start = dragTarget(geometry.travel, -finger, geometry);
+        // Lifted edges from the track's start: inset + offset ∓ growth.
+        expect(
+          geometry.inset + end + geometry.thumbWidth + grownX,
+        ).toBeLessThanOrEqual(width + 1e-9);
+        expect(geometry.inset + start - grownX).toBeGreaterThanOrEqual(-1e-9);
+      }
+    }
+  });
+
+  it('measures the thumb a theme shapes: a circle travels further and flips at the track minus its width', () => {
+    const circle = switchTouchGeometry(40, 24, {width: 20, height: 20});
+    expect(circle.inset).toBeCloseTo(2, 9);
+    expect(circle.travel).toBeCloseTo(16, 9);
+    expect(circle.flipDistance).toBeCloseTo(20, 9);
   });
 
   it('starts from a banded thumb without a jump (grab mid-flight)', () => {

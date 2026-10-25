@@ -6,8 +6,8 @@
  *   input command) and @astryxdesign/interaction-harness
  * @output Interaction and animation proofs of Switch's touch presentation
  *   against UISwitch on iOS 26.2, one named case per path (P1–P14): a press
- *   toggles at the release (nothing lifts: UISwitch's lens waits on its look
- *   decision, and the press shows the shared overlay); a drag flips
+ *   lifts the thumb inside the track and toggles at the release, through the
+ *   browser's click for a tap (spec:AST-094 FR11); a drag flips
  *   26/63 of the track from where the finger landed and commits at the release,
  *   back to the landing point commits nothing, shorter toggles like a tap; a
  *   vertical pan scrolls the page while a held switch keeps the touch; with
@@ -76,6 +76,11 @@ const THUMB_WIDTH = (TRACK.width * 37) / 63;
 const INSET = (TRACK.height - (TRACK.height * 24) / 28) / 2;
 const TRAVEL_PX = TRACK.width - THUMB_WIDTH - 2 * INSET;
 const FLIP_DISTANCE = (TRACK.width * 26) / 63;
+/** The lift grows the thumb into half the gap on each side (switchTouch.ts). */
+const LIFT_SCALE = Math.min(
+  1 + INSET / THUMB_WIDTH,
+  1 + INSET / ((TRACK.height * 24) / 28),
+);
 /**
  * design:reduced-motion DR2: under reduced motion a touch change is an
  * opacity-only cross-fade of this many ms or less.
@@ -467,7 +472,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     expect(await visibleFill(page)).toBe(expected.on);
   });
 
-  test('P1 · a tap toggles at the release: the thumb travels and the track turns on, and nothing lifts', async ({
+  test('P1 · a tap toggles at the release: the thumb travels and the track turns on, and the lift settles back', async ({
     page,
   }) => {
     const {driver, input, thumb, center} = await openSwitch(page);
@@ -475,8 +480,6 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     expect(await thumbOffset(page)).toBeCloseTo(INSET, 0);
     await driver.play(tap(center, {holdMs: 50}));
     await expect(input).toBeChecked();
-    // Nothing lifts (UISwitch's lens waits on its look decision).
-    expect((await presented(page)).scaleX).toBeCloseTo(1, 2);
     await waitForSwitchRest(page, thumb);
     const rest = await presented(page);
     expect(rest.scaleX).toBeCloseTo(1, 2);
@@ -485,7 +488,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     expect(await thumbOffset(page)).toBeCloseTo(INSET + TRAVEL_PX, 0);
   });
 
-  test('P2 · a hold shows the pressed overlay, not a lift, and the release toggles', async ({
+  test('P2 · a hold lifts the thumb inside the track and shows the pressed overlay, and the release toggles', async ({
     page,
   }) => {
     const {driver, input, center} = await openSwitch(page);
@@ -502,11 +505,114 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
       },
     });
     expect(held).not.toBeNull();
-    // The thumb keeps its size and fill; the row shows the pressed overlay.
-    expect(held!.scaleX).toBeCloseTo(1, 2);
+    // The thumb grows into half the gap around it and keeps its fill; the row
+    // shows the pressed overlay.
+    expect(held!.scaleX).toBeCloseTo(LIFT_SCALE, 2);
+    expect(held!.scaleY).toBeCloseTo(LIFT_SCALE, 2);
     expect(held!.fill).toBeCloseTo(1, 2);
     expect(press).toBe('on');
     await expect(input).toBeChecked();
+  });
+
+  for (const direction of ['ltr', 'rtl'] as const) {
+    test(`a lifted thumb dragged far past either end stays inside the track (${direction})`, async ({
+      page,
+    }) => {
+      const {driver, center} = await openSwitch(page, 'core-switch--default', {
+        direction,
+      });
+      const toEnd = direction === 'ltr' ? 1 : -1;
+      const boxes: {thumb: DOMRect; track: DOMRect}[] = [];
+      const read = async () =>
+        page.evaluate(() => {
+          const thumb = document.querySelector<HTMLElement>(
+            '#storybook-root .astryx-switch-thumb',
+          )!;
+          const toJSON = (r: DOMRect) => r.toJSON() as DOMRect;
+          return {
+            thumb: toJSON(thumb.getBoundingClientRect()),
+            track: toJSON(thumb.parentElement!.getBoundingClientRect()),
+          };
+        });
+      // Held, then 160 px past the inline end, then 160 px past the inline
+      // start, the finger resting at each so the thumb settles there.
+      const far = 160;
+      const out = {x: center.x + toEnd * far, y: center.y};
+      const back = {x: center.x - toEnd * far, y: center.y};
+      const script = [
+        ...drag(center, out, {durationMs: 400, holdMs: 300}).slice(0, -1),
+        ...drag(out, back, {durationMs: 600, restMs: 300})
+          .slice(1)
+          .map(frame => ({...frame, t: frame.t + 1200})),
+      ];
+      await driver.play(script, {
+        onEvent: async step => {
+          if (step.type === 'touchMove') {
+            boxes.push(await read());
+          }
+        },
+      });
+      expect(boxes.length).toBeGreaterThan(10);
+      for (const {thumb, track} of boxes) {
+        expect(thumb.left).toBeGreaterThanOrEqual(track.left - 0.01);
+        expect(thumb.right).toBeLessThanOrEqual(track.right + 0.01);
+        expect(thumb.top).toBeGreaterThanOrEqual(track.top - 0.01);
+        expect(thumb.bottom).toBeLessThanOrEqual(track.bottom + 0.01);
+      }
+      // It did reach both ends.
+      const lefts = boxes.map(b => b.thumb.left - b.track.left);
+      expect(Math.min(...lefts)).toBeLessThan(INSET);
+      expect(Math.max(...lefts)).toBeGreaterThan(INSET + TRAVEL_PX - 0.5);
+    });
+  }
+
+  test('a tap activates the switch through the browser’s own click (spec:AST-094 FR11)', async ({
+    page,
+  }) => {
+    const {driver, input, center} = await openSwitch(page);
+    await page.evaluate(() => {
+      const w = window as unknown as {__clicks: boolean[]};
+      w.__clicks = [];
+      document
+        .querySelector('#storybook-root [role="switch"]')!
+        .addEventListener('click', event => w.__clicks.push(event.isTrusted));
+    });
+    await driver.play(tap(center, {holdMs: 50}));
+    await expect(input).toBeChecked();
+    const clicks = await page.evaluate(
+      () => (window as unknown as {__clicks: boolean[]}).__clicks,
+    );
+    expect(clicks).toEqual([true]);
+  });
+
+  test('a theme’s circle thumb (switch-thumb aspect-ratio 1) travels to the far inset and stays inside the track', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      document.addEventListener('DOMContentLoaded', () => {
+        const style = document.createElement('style');
+        style.textContent =
+          '@media (pointer: coarse) { .astryx-switch-thumb { aspect-ratio: 1 } }';
+        document.head.append(style);
+      });
+    });
+    const {driver, input, thumb, center} = await openSwitch(page);
+    const box = await thumb.boundingBox();
+    expect(box!.width).toBeCloseTo(box!.height, 1);
+    await driver.play(tap(center, {holdMs: 50}));
+    await expect(input).toBeChecked();
+    await waitForSwitchRest(page, thumb);
+    const placed = await page.evaluate(() => {
+      const t = document.querySelector<HTMLElement>(
+        '#storybook-root .astryx-switch-thumb',
+      )!;
+      const r = t.getBoundingClientRect();
+      const k = t.parentElement!.getBoundingClientRect();
+      return {gapEnd: k.right - r.right, gapStart: r.left - k.left};
+    });
+    // On: the circle rests at the far inset, the same gap as its top.
+    expect(placed.gapEnd).toBeCloseTo(INSET, 0);
+    expect(placed.gapStart).toBeGreaterThan(INSET);
   });
 
   /**

@@ -27,4 +27,7 @@
  * __tests__/Switch.interaction.browser.spec.ts.
  */
 
-export const SWITCH_CLAIMS_HELD_TOUCH: boolean = true;
+// Passive: `spec:AST-094` FR11 has a control's press end when the browser
+// takes the touch (FR20) and keeps its activation the browser's click, which
+// a claimed touch cannot give (its `touchend` is cancelled, FR21).
+export const SWITCH_CLAIMS_HELD_TOUCH: boolean = false;

@@ -11,14 +11,23 @@
  *
  * UISwitch on iOS 26.2 is the reference (see motion/uikit/switch.ts):
  *
- * - The thumb is a capsule of constant size. UIKit's proportions (a 37 × 24
- *   thumb in a 63 × 28 track) are applied to whatever box the track has, so
- *   the touch presentation keeps the component's sizes.
+ * - The thumb is a capsule of constant size. Its box is measured where it
+ *   renders: its height is UIKit's proportion of the track (24 of 28) and its
+ *   width follows the `switch-thumb` target's aspect ratio, which defaults
+ *   to UIKit's proportion of the track (37 of 63) and which a theme may set
+ *   (1 draws a circle). Without a measured box, UIKit's proportions are
+ *   applied to the track.
+ * - The lift grows the thumb about its center, but only into half of the gap
+ *   between the thumb and the track's edges; the drag's rubber band takes the
+ *   other half. So a lifted, banded thumb still paints inside the track.
  * - Positions are offsets of the thumb from its off end, 0 … `travel`, in the
  *   writing direction; the caller mirrors them for right-to-left.
  * - A drag moves the thumb's TARGET with the finger's translation since it
  *   landed, rubber-banded past either end; the thumb chases the target on a
- *   spring (the caller animates that).
+ *   spring (the caller animates that). The band never carries the thumb out
+ *   of the track: its reach is capped at the gap between the thumb and the
+ *   track's end, so the thumb paints inside the track at any overdrag, in
+ *   either writing direction.
  * - The switch flips by the finger: once it is more than `flipDistance` (the
  *   track width minus the thumb width) from where it landed toward the other
  *   end, the next touch event shows the other side; coming back past where
@@ -42,10 +51,18 @@ export interface SwitchTouchGeometry {
   readonly inset: number;
   /** Offset of the thumb at the on end, px. */
   readonly travel: number;
-  /** Scale of the lifted thumb. */
+  /**
+   * Scale of the lifted thumb: UIKit's lift, capped so the thumb grows into
+   * at most half the gap on each side (one scale on both axes).
+   */
   readonly liftScaleX: number;
   readonly liftScaleY: number;
-  /** The drag's rubber-band dimension, px. */
+  /**
+   * The drag's rubber-band dimension, px: UIKit's, scaled to the track, but
+   * never more than the gap the lift leaves (`inset` less the lifted growth),
+   * so a banded thumb stays inside the track (the band approaches its
+   * dimension and never reaches it).
+   */
   readonly rubberBandDimension: number;
   /** How far the finger goes toward the other end before a flip, px. */
   readonly flipDistance: number;
@@ -55,14 +72,32 @@ const [UIKIT_TRACK_WIDTH, UIKIT_TRACK_HEIGHT] = switchControl.trackSize;
 const [UIKIT_THUMB_WIDTH, UIKIT_THUMB_HEIGHT] = switchControl.thumbSize;
 const [LIFTED_WIDTH, LIFTED_HEIGHT] = switchControl.liftedThumbSize;
 
-/** UIKit's thumb geometry, in proportion to a track of this size. */
+/**
+ * The thumb geometry in a track of this size: the thumb's measured box when
+ * given (a theme may set its aspect ratio), UIKit's proportions otherwise.
+ */
 export function switchTouchGeometry(
   trackWidth: number,
   trackHeight: number,
+  thumb?: {readonly width: number; readonly height: number},
 ): SwitchTouchGeometry {
-  const thumbHeight = (trackHeight * UIKIT_THUMB_HEIGHT) / UIKIT_TRACK_HEIGHT;
-  const thumbWidth = (trackWidth * UIKIT_THUMB_WIDTH) / UIKIT_TRACK_WIDTH;
-  const inset = (trackHeight - thumbHeight) / 2;
+  const thumbHeight =
+    thumb?.height ?? (trackHeight * UIKIT_THUMB_HEIGHT) / UIKIT_TRACK_HEIGHT;
+  const thumbWidth =
+    thumb?.width ?? (trackWidth * UIKIT_THUMB_WIDTH) / UIKIT_TRACK_WIDTH;
+  const inset = Math.max(0, (trackHeight - thumbHeight) / 2);
+  // UIKit lifts to 58 × 38.3 from 37 × 24; here the lift fills at most half
+  // the gap on each side, on both axes alike.
+  const liftScale = Math.max(
+    1,
+    Math.min(
+      LIFTED_WIDTH / UIKIT_THUMB_WIDTH,
+      LIFTED_HEIGHT / UIKIT_THUMB_HEIGHT,
+      thumbWidth > 0 ? 1 + inset / thumbWidth : 1,
+      thumbHeight > 0 ? 1 + inset / thumbHeight : 1,
+    ),
+  );
+  const liftGrowth = (thumbWidth * (liftScale - 1)) / 2;
   return {
     trackWidth,
     trackHeight,
@@ -70,11 +105,16 @@ export function switchTouchGeometry(
     thumbHeight,
     inset,
     travel: Math.max(0, trackWidth - thumbWidth - 2 * inset),
-    liftScaleX: LIFTED_WIDTH / UIKIT_THUMB_WIDTH,
-    liftScaleY: LIFTED_HEIGHT / UIKIT_THUMB_HEIGHT,
-    rubberBandDimension:
-      (switchControl.rubberBand.dimension * trackHeight) / UIKIT_TRACK_HEIGHT,
-    flipDistance: (switchControl.flipDistance * trackWidth) / UIKIT_TRACK_WIDTH,
+    liftScaleX: liftScale,
+    liftScaleY: liftScale,
+    rubberBandDimension: Math.max(
+      0,
+      Math.min(
+        (switchControl.rubberBand.dimension * trackHeight) / UIKIT_TRACK_HEIGHT,
+        inset - liftGrowth,
+      ),
+    ),
+    flipDistance: Math.max(0, trackWidth - thumbWidth),
   };
 }
 

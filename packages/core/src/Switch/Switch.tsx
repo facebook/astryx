@@ -37,6 +37,7 @@ import {
   typographyVars,
   typeScaleVars,
   focusVars,
+  shadowVars,
 } from '../theme/tokens.stylex';
 import {FieldLabel} from '../Field/FieldLabel';
 import {FieldStatus} from '../FieldStatus/FieldStatus';
@@ -112,20 +113,26 @@ const trackSizeStyles = stylex.create({
   },
 });
 
-// Under a finger the thumb takes UISwitch's proportions in the track's
-// container units (motion/uikit/switch.ts), and useSwitchTouch moves it.
+// Under a finger the thumb is UISwitch's height in the track's container
+// units (24 of 28, motion/uikit/switch.ts) and its width follows its aspect
+// ratio: by default UISwitch's width in proportion to the track (37 of 63,
+// which is 185/162 of its height in the md track and 148/135 in the sm),
+// a pill. The `switch-thumb` target's `aspect-ratio` reshapes it (1 draws a
+// circle); useSwitchTouch measures the box it renders and moves it.
 const thumbOffSizeStyles = stylex.create({
   sm: {
-    width: {default: 14, [TOUCH]: '58.7302cqw'},
+    width: {default: 14, [TOUCH]: 'auto'},
     height: {default: 14, [TOUCH]: '85.7143cqh'},
+    aspectRatio: {default: null, [TOUCH]: '148 / 135'},
     transform: {
       default: 'translateX(0)',
       [TOUCH]: 'none',
     },
   },
   md: {
-    width: {default: 16, [TOUCH]: '58.7302cqw'},
+    width: {default: 16, [TOUCH]: 'auto'},
     height: {default: 16, [TOUCH]: '85.7143cqh'},
+    aspectRatio: {default: null, [TOUCH]: '185 / 162'},
     transform: {
       default: 'translateX(0)',
       [TOUCH]: 'none',
@@ -135,8 +142,9 @@ const thumbOffSizeStyles = stylex.create({
 
 const thumbOnSizeStyles = stylex.create({
   sm: {
-    width: {default: 16, [TOUCH]: '58.7302cqw'},
+    width: {default: 16, [TOUCH]: 'auto'},
     height: {default: 16, [TOUCH]: '85.7143cqh'},
+    aspectRatio: {default: null, [TOUCH]: '148 / 135'},
     // The thumb rests at the inline-start edge (flex-start, which flexbox
     // already mirrors under RTL). The on-state travel toward the inline-end
     // edge is a physical translateX, so it must flip sign under RTL — right
@@ -152,8 +160,9 @@ const thumbOnSizeStyles = stylex.create({
     },
   },
   md: {
-    width: {default: 20, [TOUCH]: '58.7302cqw'},
+    width: {default: 20, [TOUCH]: 'auto'},
     height: {default: 20, [TOUCH]: '85.7143cqh'},
+    aspectRatio: {default: null, [TOUCH]: '185 / 162'},
     transform: {
       default: 'translateX(14px)',
       ':is([dir="rtl"] *)': {
@@ -415,6 +424,20 @@ const styles = stylex.create({
         '0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
+    // The lifted shadow, under a finger: the theme's elevation on a layer the
+    // thumb's size, faded in with the lift on the compositor (useSwitchTouch
+    // owns its opacity). At rest it is clear.
+    '::after': {
+      content: '""',
+      display: {default: 'none', [TOUCH]: 'block'},
+      position: 'absolute',
+      inset: 0,
+      borderRadius: 'inherit',
+      pointerEvents: 'none',
+      opacity: 0,
+      boxShadow: shadowVars['--shadow-low'],
+      willChange: {default: null, [TOUCH]: 'opacity'},
+    },
     // Pressed: the same overlay as the track, so the whole control darkens
     // under the finger rather than the thumb standing out against a darker
     // track.
@@ -478,8 +501,9 @@ const styles = stylex.create({
   // to) and fades it on the compositor. Its colour is the theme's, read from
   // the track (switchFill.ts) and set inline; at rest it is clear. The
   // animator owns its opacity, so it has no transition of its own.
-  // The thumb's resting place under a finger: its inline-start inset, so the
-  // steady state needs no script and mirrors under RTL by itself.
+  // The thumb's resting place under a finger: the inset from its own end
+  // (inline-start off, inline-end on), so the steady state needs no script,
+  // holds for any thumb width, and mirrors under RTL by itself.
   thumbPlaceOff: {
     insetInlineStart: {
       default: null,
@@ -489,7 +513,11 @@ const styles = stylex.create({
   thumbPlaceOn: {
     insetInlineStart: {
       default: null,
-      [TOUCH]: 'calc(41.2698cqw - 7.1429cqh)',
+      [TOUCH]: 'auto',
+    },
+    insetInlineEnd: {
+      default: null,
+      [TOUCH]: '7.1429cqh',
     },
   },
   labelWrapper: {

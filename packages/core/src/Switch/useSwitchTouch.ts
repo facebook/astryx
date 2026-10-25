@@ -26,29 +26,38 @@
  *   same layout effect, so nothing moves on screen and the velocity is kept.
  * - Touches go to the gesture system, in one of two ways chosen by the
  *   switch-point in switchTouchClaim.ts:
- *   - Claiming (UISwitch, the default): its own recognizers, a long press
+ *   - Claiming (UISwitch): its own recognizers, a long press
  *     that begins on the touch (after a scroll view's content delay inside
  *     one) and then owns it, a horizontal pan, and a release tap with no
  *     movement or time limit. A held switch keeps the touch, so a vertical
  *     drag after the hold does not scroll and the release toggles; a scroll
  *     that starts on the switch waits for a busy main thread, as UIKit's
  *     own scroll view would.
- *   - Passive: a PressTracker, UIControl's tracking, which never blocks a
- *     scroll. The press begins with the touch or once a horizontal move
+ *   - Passive (the default, `spec:AST-094` FR11): a PressTracker,
+ *     UIControl's tracking, which never blocks a scroll. The press begins with the touch or once a horizontal move
  *     would begin a pan; `touch-action: pan-y` (Switch.tsx) keeps
  *     horizontal moves for the switch, so a drag follows and flips it, and
  *     the release commits. A vertical drag, even after a hold, is the page's
  *     scroll: the browser takes the touch and the switch yields.
- *   Either way the browser's own click is cancelled (by the recognizers,
- *   or by cancelling the release's `touchend`) and the switch clicks its
- *   input itself, so forms, `onChange` and keyboard activation stay the
- *   native checkbox's.
+ *   Passive, a tap, a hold or a short drag activates through the browser's
+ *   own click (`spec:AST-094` FR11); where the browser sends no click for
+ *   the lift, the switch clicks its input itself once the click window
+ *   passes. A drag that flipped the switch gets no click from the browser,
+ *   so its `touchend` is cancelled and the switch clicks its input. Claiming,
+ *   the browser's click is cancelled with the gesture and the switch always
+ *   clicks its input. Either way forms, `onChange` and keyboard activation
+ *   stay the native checkbox's.
  * - The drag never renders: each move retargets the thumb's tracking spring
  *   (one style write) and steps the flip rule on the finger's travel; the
  *   thumb's position comes from its curve, never from layout.
- * - Nothing lifts: UISwitch's lift, the thumb becoming a clear glass lens,
- *   waits on its own look-and-feel decision. The press shows the shared
- *   pressed overlay (design:user-states), as with any other control.
+ * - The thumb lifts while a finger presses: it grows about its center on
+ *   UISwitch's lift spring, into half of the gap around it (switchTouch.ts),
+ *   and its lifted shadow, the theme's `--shadow-low` on the thumb's
+ *   `::after`, fades in; at the release it settles back on the settle
+ *   spring, no sooner than the minimum lift time after it began. The lift
+ *   and the settle are one curve built at the release, so the settle starts
+ *   on time on the compositor. The press also shows the shared pressed
+ *   overlay (design:user-states).
  * - The track keeps its own fill, the theme's, in both states; the colour
  *   change is a fade layer over it, painted with the track's other fill
  *   (switchFill.ts) and faded on the compositor: clear while the visuals
@@ -81,13 +90,20 @@ import {TapGestureRecognizer} from '../gestures/TapGestureRecognizer';
 import type {GestureTouch} from '../gestures/types';
 import {isRtlElement} from '../hooks/isRtlElement';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
-import {createAnimator, type Animator} from '../motion/animator';
+import {
+  createAnimator,
+  type Animator,
+  type MotionCurve,
+} from '../motion/animator';
+import {resolveMotion} from '../motion/resolveMotion';
+import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
 import {UIKIT_GESTURES} from '../motion/uikit/gestures';
 import {registerSwitchTable, switchControl} from '../motion/uikit/switch';
 import {useTouchPresentation} from '../utils/touchPresentation';
 import {
   commitOnRelease,
   dragTarget,
+  settleTime,
   startFlip,
   stepFlip,
   switchTouchGeometry,
@@ -140,9 +156,55 @@ const PAN_HYSTERESIS = UIKIT_GESTURES.pan.hysteresis.value;
  * click is swallowed, ms (it follows the release within a frame or two).
  */
 const CLICK_GUARD_MS = 1000;
+/**
+ * Passive: how long a lift waits for the browser's own click before the
+ * switch clicks its input itself, ms. The browser sends it with the lift's
+ * `touchend` (the surface's `touch-action` leaves no double-tap delay), so
+ * this only runs out for a lift the browser does not count as a click.
+ */
+const BROWSER_CLICK_WAIT_MS = 300;
 
 function now(): number {
   return typeof performance === 'undefined' ? Date.now() : performance.now();
+}
+
+/**
+ * The lift spring until `holdSeconds`, then the settle spring from wherever
+ * the lift had got to: one curve, so the settle starts on the compositor's
+ * clock.
+ */
+function liftThenSettle({
+  from,
+  velocity,
+  lifted,
+  rest,
+  holdSeconds,
+  threshold,
+  lift,
+  settle,
+}: {
+  from: number;
+  velocity: number;
+  lifted: number;
+  rest: number;
+  holdSeconds: number;
+  threshold: number;
+  /** The lift and settle springs as the theme sets them. */
+  lift: SpringDescription;
+  settle: SpringDescription;
+}): MotionCurve {
+  const hold = Math.max(0, holdSeconds);
+  const first = solveSpring(toSpring(lift), {from, to: lifted, velocity});
+  const second = solveSpring(toSpring(settle), {
+    from: first.value(hold),
+    to: rest,
+    velocity: first.velocity(hold),
+  });
+  return {
+    duration: hold + second.settleTime(threshold),
+    at: t => (t < hold ? first.value(t) : second.value(t - hold)),
+    velocity: t => (t < hold ? first.velocity(t) : second.velocity(t - hold)),
+  };
 }
 
 function latestTime(recognizer: GestureRecognizer): number {
@@ -191,6 +253,10 @@ export class SwitchTouchController {
   private thumb: Animator | null = null;
   /** The fade layer: its opacity is how far the visuals are from the value. */
   private fade: Animator | null = null;
+  /** The lifted shadow: the thumb's `::after`, faded in with the lift. */
+  private shadow: Animator | null = null;
+  /** When the thumb lifted (document timeline, ms); null while at rest. */
+  private liftTime: number | null = null;
   private otherTrack: TrackState | null = null;
   private press: LongPressGestureRecognizer | null = null;
   private pan: PanGestureRecognizer | null = null;
@@ -221,6 +287,8 @@ export class SwitchTouchController {
   private clickGuardUntil = 0;
   /** Passive: the switch released on this touch; its `touchend` is cancelled. */
   private cancelsTouchEnd = false;
+  /** Passive: a lift is waiting for the browser's own click. */
+  private browserClickTimer: ReturnType<typeof setTimeout> | null = null;
   private reconcileTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(isOn: boolean, geometry: SwitchTouchGeometry) {
@@ -239,6 +307,7 @@ export class SwitchTouchController {
     // resolves one (idempotent; nothing registers on import).
     registerSwitchTable();
     this.elements = elements;
+    this.measureGeometry();
     this.direction = isRtlElement(elements.surface) ? -1 : 1;
     this.isVisuallyOn = this.isOn;
     this.thumb = createAnimator(elements.thumb);
@@ -249,6 +318,11 @@ export class SwitchTouchController {
       initial: {opacity: 0},
     });
     this.fade.set({opacity: 0});
+    this.shadow = createAnimator(elements.thumb, {
+      pseudoElement: '::after',
+      initial: {opacity: 0},
+    });
+    this.shadow.set({opacity: 0});
     this.paintFade();
 
     const host = getGestureHost(elements.surface.ownerDocument);
@@ -367,6 +441,13 @@ export class SwitchTouchController {
     // swallowed instead. Keyboard and assistive-technology clicks (`detail`
     // 0) and the switch's own (untrusted) click always pass.
     const onClick = (event: MouseEvent) => {
+      if (event.isTrusted && this.browserClickTimer != null) {
+        // The lift's own click: it activates the input natively.
+        clearTimeout(this.browserClickTimer);
+        this.browserClickTimer = null;
+        this.scheduleReconcile();
+        return;
+      }
       if (event.isTrusted && event.detail > 0 && now() < this.clickGuardUntil) {
         this.clickGuardUntil = 0;
         event.preventDefault();
@@ -400,7 +481,7 @@ export class SwitchTouchController {
     }
     this.detachers = [];
     this.clearTimers();
-    for (const animator of [this.thumb, this.fade]) {
+    for (const animator of [this.thumb, this.fade, this.shadow]) {
       const element = animator?.element;
       animator?.dispose();
       if (element != null) {
@@ -410,7 +491,8 @@ export class SwitchTouchController {
       }
     }
     this.elements?.track.style.removeProperty(FADE_FILL);
-    this.thumb = this.fade = null;
+    this.thumb = this.fade = this.shadow = null;
+    this.liftTime = null;
     this.press = this.pan = this.tap = null;
     this.elements = null;
     this.pressTime = null;
@@ -436,7 +518,42 @@ export class SwitchTouchController {
 
   setGeometry(geometry: SwitchTouchGeometry): void {
     this.geometry = geometry;
+    this.measureGeometry();
     this.thumb?.set({x: 0, scaleX: 1, scaleY: 1});
+  }
+
+  /**
+   * The thumb geometry from the track's rendered box, so a theme that resizes
+   * the track moves the thumb by its own size (the thumb's CSS is in the
+   * track's container units). The track has no padding under a finger; its
+   * client box is the box its container units resolve against.
+   */
+  private measureGeometry(): void {
+    const track = this.elements?.track;
+    const thumb = this.elements?.thumb;
+    if (track == null) {
+      return;
+    }
+    // Fractional boxes: the track's border box less its border (it has no
+    // transform), and the thumb's used size from its computed style (its
+    // scale does not change that). The thumb's width follows the
+    // `switch-thumb` target's aspect ratio, which a theme may set.
+    const box = track.getBoundingClientRect();
+    const trackWidth = box.width - 2 * track.clientLeft;
+    const trackHeight = box.height - 2 * track.clientTop;
+    if (trackWidth <= 0 || trackHeight <= 0) {
+      return;
+    }
+    const style = thumb == null ? null : getComputedStyle(thumb);
+    const thumbWidth = style == null ? NaN : parseFloat(style.width);
+    const thumbHeight = style == null ? NaN : parseFloat(style.height);
+    this.geometry = switchTouchGeometry(
+      trackWidth,
+      trackHeight,
+      thumbWidth > 0 && thumbHeight > 0
+        ? {width: thumbWidth, height: thumbHeight}
+        : undefined,
+    );
   }
 
   /**
@@ -548,6 +665,13 @@ export class SwitchTouchController {
         // The finger's lift is a step of its own: a flip armed by the last
         // move happens here (a fast swipe flips on the lift).
         this.move(touch.time, travel);
+        if (event === 'touchUpInside' && this.drag?.flip.didFlip !== true) {
+          // A tap, a hold or a short drag: the browser's click activates it.
+          this.release(touch.time, {byBrowserClick: true});
+          return;
+        }
+        // A drag that flipped, or a lift outside: no click comes from the
+        // browser, so the switch clicks its input and cancels the lift.
         this.cancelsTouchEnd = true;
         this.clickGuardUntil = now() + CLICK_GUARD_MS;
         this.release(touch.time);
@@ -641,8 +765,15 @@ export class SwitchTouchController {
     }
   }
 
-  /** The finger lifted after a tap, a hold or a drag. */
-  private release(time: number): void {
+  /**
+   * The finger lifted after a tap, a hold or a drag. `byBrowserClick`: the
+   * browser's own click activates the input, and the switch clicks it only
+   * if that click never comes.
+   */
+  private release(
+    time: number,
+    {byBrowserClick = false}: {byBrowserClick?: boolean} = {},
+  ): void {
     if (this.released) {
       return;
     }
@@ -666,13 +797,30 @@ export class SwitchTouchController {
     } else {
       this.showSide(commit, time, undefined, true);
     }
-    this.pressEnded();
+    this.pressEnded(time, true);
+    if (byBrowserClick) {
+      this.browserClickTimer = setTimeout(() => {
+        this.browserClickTimer = null;
+        if (commit !== this.isOn) {
+          this.elements?.input.click();
+        }
+        this.scheduleReconcile();
+      }, BROWSER_CLICK_WAIT_MS);
+      return;
+    }
     if (commit !== this.isOn) {
-      // The browser's click was cancelled with the gesture; the input's own
-      // click keeps every native path (form value, onChange, the label).
+      // No click comes from the browser for this lift; the input's own click
+      // keeps every native path (form value, onChange, the label).
       this.elements?.input.click();
     }
-    // If the owner kept the old value, the visuals go back to it.
+    this.scheduleReconcile();
+  }
+
+  /** If the owner kept the old value, the visuals go back to it. */
+  private scheduleReconcile(): void {
+    if (this.reconcileTimer != null) {
+      clearTimeout(this.reconcileTimer);
+    }
     this.reconcileTimer = setTimeout(() => {
       this.reconcileTimer = null;
       if (this.drag == null && this.isVisuallyOn !== this.isOn) {
@@ -686,7 +834,7 @@ export class SwitchTouchController {
   private abandon(time: number): void {
     this.drag = null;
     this.showSide(this.isOn, time, undefined, true);
-    this.pressEnded();
+    this.pressEnded(time, true);
   }
 
   // --- Visuals ---------------------------------------------------------------
@@ -766,21 +914,95 @@ export class SwitchTouchController {
     );
   }
 
-  /**
-   * The press began: the switch holds the touch from here. Nothing moves:
-   * UISwitch's lift (a clear glass lens) waits on its own look-and-feel
-   * decision, and the press shows the shared pressed overlay meanwhile.
-   */
+  /** The press began: the switch holds the touch and the thumb lifts. */
   private pressBegan(time: number): void {
     this.pressTime = time;
+    this.lift(time);
   }
 
   /** The press ended (a release, a cancel or the switch turning off). */
-  private pressEnded(): void {
+  private pressEnded(time: number = now(), touchRelease = false): void {
     this.pressTime = null;
+    this.settle(time, touchRelease);
+  }
+
+  /**
+   * The thumb grows about its center into half the gap around it, and its
+   * lifted shadow fades in. Under reduced motion nothing lifts
+   * (design:reduced-motion DR1): the lift is feedback with no fade of its own.
+   */
+  private lift(time: number): void {
+    if (this.thumb == null || this.thumb.reducedMotion() !== 'off') {
+      return;
+    }
+    this.liftTime = time;
+    const options = {at: time} as const;
+    this.thumb.animate(
+      {scaleX: this.geometry.liftScaleX, scaleY: this.geometry.liftScaleY},
+      {spring: switchControl.lift},
+      options,
+    );
+    this.shadow?.animate({opacity: 1}, {spring: switchControl.lift}, options);
+  }
+
+  /**
+   * The thumb settles back after the press, no sooner than the minimum lift
+   * time after it lifted: one curve per property, built now, so the settle
+   * starts on the compositor's clock.
+   */
+  private settle(time: number, touchRelease: boolean): void {
+    const liftTime = this.liftTime;
+    if (liftTime == null) {
+      return;
+    }
+    this.liftTime = null;
+    const scope = this.elements?.thumb;
+    const lift = resolveMotion(scope, switchControl.lift);
+    const settle = resolveMotion(scope, switchControl.settle);
+    const hold =
+      (settleTime(
+        time,
+        liftTime,
+        resolveMotion(scope, switchControl, 'minimumLiftMs'),
+      ) -
+        time) /
+      1000;
+    const play = (
+      animator: Animator | null,
+      property: 'scaleX' | 'scaleY' | 'opacity',
+      lifted: number,
+      rest: number,
+      threshold: number,
+    ) => {
+      if (animator == null) {
+        return;
+      }
+      animator.play(
+        {
+          [property]: liftThenSettle({
+            from: animator.get(property, time),
+            velocity: animator.getVelocity(property, time),
+            lifted,
+            rest,
+            holdSeconds: hold,
+            threshold,
+            lift,
+            settle,
+          }),
+        },
+        {at: time, touchRelease},
+      );
+    };
+    play(this.thumb, 'scaleX', this.geometry.liftScaleX, 1, 1e-4);
+    play(this.thumb, 'scaleY', this.geometry.liftScaleY, 1, 1e-4);
+    play(this.shadow, 'opacity', 1, 0, 1e-3);
   }
 
   private clearTimers(): void {
+    if (this.browserClickTimer != null) {
+      clearTimeout(this.browserClickTimer);
+      this.browserClickTimer = null;
+    }
     if (this.reconcileTimer != null) {
       clearTimeout(this.reconcileTimer);
       this.reconcileTimer = null;
