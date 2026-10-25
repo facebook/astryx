@@ -1619,8 +1619,8 @@ test('a finger on an unselected segment dims it (the item target’s pressed sta
     touchTap(await clientCenter(control, 'list'), {holdMs: 400}),
     {
       onEvent: async step => {
+        // The return starts at the lift; read it before anything settles.
         if (step.type === 'touchEnd') {
-          await expect(list).toHaveAttribute('aria-checked', 'true');
           atLift = await lastFade();
         }
       },
@@ -1641,6 +1641,7 @@ test('a finger on an unselected segment dims it (the item target’s pressed sta
   ).toEqual({image: 'none', press: null});
   await playing;
   expect(atLift).toMatchObject({to: 1, duration: 180});
+  await expect(list).toHaveAttribute('aria-checked', 'true');
   expect(EASE).toContain(
     (atLift as {easing?: string} | null)?.easing ?? 'none',
   );
@@ -1810,9 +1811,10 @@ test('a tap’s commit is the browser’s own click (spec:AST-094 FR11)', async 
       },
     );
   });
-  await control.driver.play(
-    touchTap(await clientCenter(control, 'table'), {holdMs: 80}),
-  );
+  // The engine's tap path: Playwright's WebKit synthesises the browser's
+  // click only from its tap gesture, not from a raw touch sequence (the
+  // harness README's engine limits); Chromium's touch input does either way.
+  await control.driver.tap(await clientCenter(control, 'table'));
   await expect(control.segment('table')).toHaveAttribute(
     'aria-checked',
     'true',
