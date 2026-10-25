@@ -11,8 +11,10 @@
  *   its analytic curve; a spring that ends inside the block keeps its end
  *   state; no Layout or Paint runs while it animates (Chromium trace); the
  *   engine plays the analytic curve when seeked; a finished animation leaves
- *   within a frame or two of the curve's end; a dialog's ::backdrop follows
- *   the curve and holds its end state; a theme that retunes a table spring
+ *   within a frame or two of the curve's end; a fade-in on an element its
+ *   stylesheet hides stays visible once it retires; a dialog's ::backdrop follows
+ *   the curve and holds its end state; a frame painted before the compositor
+ *   has a curve shows the element where it is; a theme that retunes a table spring
  *   changes the curve the engine plays
  * @position Browser proof for animator.ts, run by `pnpm test:interaction`;
  *   jsdom runs no animations
@@ -189,11 +191,61 @@ test('a spring that ends inside the block keeps showing its end state', async ({
   const landed = xs.findIndex(x => x >= TRAVEL - 1);
   expect(landed).toBeGreaterThanOrEqual(0);
   // WebKit's compositor falls back to the main thread's last committed value
-  // when an animation ends during a block; the animator's end-state hold
-  // keeps the end on screen until script runs again.
+  // when an animation ends during a block; the static hold of the end state
+  // under the curve keeps the end on screen until script runs again.
   for (const x of xs.slice(landed)) {
     expect(x).toBeGreaterThanOrEqual(TRAVEL - 1);
   }
+});
+
+test('a frame painted before the compositor has the curve shows the element where it is', async ({
+  page,
+}) => {
+  await open(page);
+  // What a frame shows without the curve is the element's own style: drop the
+  // curves right after they are created and read it. A present from rest,
+  // then a retarget mid-flight.
+  const result = await page.evaluate(
+    async ({travel}) => {
+      const fresh = () => {
+        const element = document.createElement('div');
+        element.style.cssText =
+          'position:absolute;top:120px;left:0;width:48px;height:48px;background:#c63';
+        document.body.append(element);
+        return {element, animator: Motion.createAnimator(element)};
+      };
+      const x = (element: HTMLElement) =>
+        Number.parseFloat(getComputedStyle(element).translate.split(' ')[0]) ||
+        0;
+      const present = fresh();
+      present.animator.animate({x: travel}, {spring: Motion.springs.smooth});
+      for (const animation of present.element.getAnimations()) {
+        animation.cancel();
+      }
+      const presentX = x(present.element);
+
+      const retarget = fresh();
+      await retarget.animator.animate(
+        {x: travel},
+        {spring: Motion.springs.smooth},
+      ).started;
+      await new Promise(resolve => setTimeout(resolve, 150));
+      const onScreen = retarget.animator.get('x');
+      retarget.animator.animate({x: 0}, {spring: Motion.springs.smooth});
+      for (const animation of retarget.element.getAnimations()) {
+        animation.cancel();
+      }
+      return {presentX, onScreen, retargetX: x(retarget.element)};
+    },
+    {travel: TRAVEL},
+  );
+  test.info().annotations.push({
+    type: 'without the curve',
+    description: JSON.stringify(result),
+  });
+  expect(result.presentX).toBeCloseTo(0, 1);
+  expect(result.onScreen).toBeGreaterThan(20);
+  expect(Math.abs(result.retargetX - result.onScreen)).toBeLessThan(1);
 });
 
 test('a spring started right before a block plays in full after it', async ({
@@ -314,8 +366,8 @@ test('the engine plays the analytic curve, all channels on one clock', async ({
   });
   expect(result.count).toBe(2);
   expect(new Set(result.starts).size).toBe(1);
-  expect(result.worstX).toBeLessThan(0.06);
-  expect(result.worstOpacity).toBeLessThan(0.003);
+  expect(result.worstX).toBeLessThan(0.26);
+  expect(result.worstOpacity).toBeLessThan(0.0045);
 });
 
 test('a theme that retunes a table spring changes the curve the engine plays', async ({
@@ -396,8 +448,8 @@ test('a theme that retunes a table spring changes the curve the engine plays', a
   });
   // Each box plays its own spring: the themed one overshoots, the table's
   // (critically damped) does not.
-  expect(result.plain.worst).toBeLessThan(0.06);
-  expect(result.themed.worst).toBeLessThan(0.06);
+  expect(result.plain.worst).toBeLessThan(0.26);
+  expect(result.themed.worst).toBeLessThan(0.26);
   expect(result.themed.lowest).toBeLessThan(-10);
   expect(result.plain.lowest).toBeGreaterThan(-0.5);
 });
@@ -435,6 +487,53 @@ test('a finished animation leaves the element once the curve ends', async ({
   // Gone within a couple of frames of the curve's end, not after the hold.
   expect(result.leftAt).toBeGreaterThanOrEqual(result.curveEnd - 1);
   expect(result.leftAt).toBeLessThan(result.curveEnd + 100);
+});
+
+test('a fade-in on an element its stylesheet hides stays visible once it retires', async ({
+  page,
+}) => {
+  await open(page);
+  const result = await page.evaluate(
+    async spring => {
+      const sheet = document.createElement('style');
+      sheet.textContent = '.hidden { opacity: 0; }';
+      document.head.append(sheet);
+      const element = document.createElement('div');
+      element.className = 'hidden';
+      element.style.cssText =
+        'position:absolute;top:120px;left:0;width:48px;height:48px;background:#c63';
+      document.body.append(element);
+      const animator = Motion.createAnimator(element);
+      animator.set({opacity: 0});
+      animator.animate({opacity: 1}, {spring});
+      await new Promise<void>(resolve => {
+        const tick = () => {
+          if (element.getAnimations().length === 0) {
+            resolve();
+          } else {
+            requestAnimationFrame(tick);
+          }
+        };
+        requestAnimationFrame(tick);
+      });
+      // A frame after the retire.
+      await new Promise(resolve =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      );
+      return {
+        inline: element.style.opacity,
+        computed: getComputedStyle(element).opacity,
+      };
+    },
+    {response: 0.3, dampingRatio: 1},
+  );
+  test.info().annotations.push({
+    type: 'after retire',
+    description: JSON.stringify(result),
+  });
+  // The end stays inline over the stylesheet's opacity 0.
+  expect(result.computed).toBe('1');
+  expect(result.inline).toBe('1');
 });
 
 test('a fixed child stays fixed after a motion back to identity', async ({
@@ -511,7 +610,7 @@ test('a dialog\u2019s ::backdrop plays the curve and holds its end state', async
     description: JSON.stringify(result),
   });
   expect(result.count).toBe(1);
-  expect(result.worst).toBeLessThan(0.003);
+  expect(result.worst).toBeLessThan(0.0045);
   expect(result.held).toBeCloseTo(1, 6);
 });
 

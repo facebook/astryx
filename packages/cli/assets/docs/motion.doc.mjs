@@ -216,6 +216,24 @@ const calmTheme = defineTheme({
               '0.5s 0',
             ],
             [
+              'search.activationCurve',
+              '--motion-search-activation-curve',
+              'curve',
+              'cubic-bezier(0.42, 0, 0.58, 1)',
+            ],
+            [
+              'search.activationMs',
+              '--motion-search-activation-ms',
+              'duration',
+              '383.3ms',
+            ],
+            [
+              'search.scrollAway.snapMs',
+              '--motion-search-scroll-away-snap-ms',
+              'duration',
+              '230ms',
+            ],
+            [
               'springs.actionSheetDismiss',
               '--motion-springs-action-sheet-dismiss',
               'spring',

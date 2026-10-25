@@ -17,6 +17,7 @@ from the package entry point; components import it by path.
 | `uikit/timing.ts`                                | Non-spring clocks and curves: press highlight, Core Animation's named curves, keyboard, Reduced Motion cross-fade.                                                   |
 | `uikit/navigation.ts`                            | UINavigationController: push velocity, parallax, dimming, transition clock, interactive pop finish rule.                                                             |
 | `uikit/list.ts`                                  | UITableView / UICollectionView list cells: the cell highlight's release clock and curve.                                                                             |
+| `uikit/search.ts`                                | UISearchController: activation clock and curve, the stacked field and close button, the bar's fades, scroll-away, the bottom placement.                              |
 | `uikit/gestures.ts`                              | Gesture recognizer thresholds, the velocity filter and the haptic stand-ins, as typed entries the gesture system reads.                                              |
 | `roles.ts`                                       | Motion roles: each spring, duration and curve of a registered table, named by its path, and its CSS variable.                                                        |
 | `resolveMotion.ts`                               | A role's value under an element's theme, read once when a motion starts.                                                                                             |
@@ -114,7 +115,12 @@ await handle.finished; // true if it ran to the end, false if interrupted
   delays the motion instead of skipping into it (WebKit starts it at the
   frame before the block). Everything the call starts shares that start
   (`handle.started`); a retarget keeps an explicit one, and `{at}` puts
-  several animators on one clock.
+  several animators on one clock. `{start: 'commit'}` lets the browser date
+  a retarget too; `{start: 'presented'}` waits two frames, until the
+  element at rest has been presented. `handle.curve(property)` is the curve
+  a call plays, for a companion to follow. `{additive: true}` retargets the
+  way UIKit does: the old curve keeps going and the change is added on top,
+  in one animation.
 - Reduced Motion (`prefers-reduced-motion: reduce`, design:reduced-motion):
   every `animate` and `play` is replaced and nothing moves, scales or
   springs. On a coarse primary pointer, or for a call started by a touch

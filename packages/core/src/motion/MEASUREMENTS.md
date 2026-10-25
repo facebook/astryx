@@ -279,3 +279,14 @@ configuration) in a UIKit host app; Settings for the built-in check.
 | ID     | Scene                | Gesture                                                                                                           | Extract                                                                                                                                                                                                      | Method |
 | ------ | -------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
 | M-LI01 | † list L (all three) | touch a cell, hold 1 s, lift; programmatic `deselectRow(at:animated: true)` and `deselectItem(at:animated: true)` | every `CAAnimation` added in the cell's subtree at highlight, unhighlight and deselect (key path, from / to, duration, timing function, fill); selected-background alpha per frame for 600 ms after the lift | A, C   |
+
+## Search (UISearchController)
+
+Done (iOS 26.2 simulator, Oct 24 2026; in the search table): the activation
+and cancel clock and curve, the stacked field and its close button, the large
+title's fade, the field scrolling away, the bottom and tab placements' rest
+above the keyboard, the clear button.
+
+| ID    | What                       | App and gesture                                                                                                                | Extract                                                                             | Method | Feeds                                   |
+| ----- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- | ------ | --------------------------------------- |
+| M-SE1 | Scroll-away snap threshold | Probe app: a list with `hidesSearchBarWhenScrolling`; slow pans released at 16, 18, 20 … 28 pt of collapse, then binary search | the collapse at which a release snaps the field closed instead of springing it open | C      | `search.scrollAway.collapseThresholdPt` |
