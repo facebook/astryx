@@ -4,7 +4,7 @@
  * @file pressFeedback.ts
  * @input The press state machine (pressGesture.ts), the document's pointer,
  *   scroll and visibility events, and the release clock's theme motion role
- *   (motion/resolveMotion.ts)
+ *   variable (interactionOverlay.stylex.ts)
  * @output Exports PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE, pressableProps and
  *   installPressFeedback
  * @position The DOM half of the touch press model: one delegated controller
@@ -33,8 +33,7 @@
  * utils/interactionOverlay.stylex.ts and pressFeedback.test.ts.
  */
 
-import {resolveMotion} from '../motion/resolveMotion';
-import {registerTimingTable, timing} from '../motion/uikit/timing';
+import {pressReleaseRoles} from './interactionOverlay.stylex';
 import type {PressGesture, PressPaint, PressStep} from './pressGesture';
 import {
   idlePressGesture,
@@ -106,10 +105,12 @@ const TIMER_MS: Record<NonNullable<PressStep['timer']>, number> = {
 
 /**
  * How long a timer runs on `element`. The release's clock is the theme motion
- * role `timing.press.highlightOutMs` (`spec:AST-094` FR4), read when the
- * release starts, the role the stylesheet's release plays
- * (interactionOverlay.stylex.ts), so a theme that retunes it moves both and
- * the attribute never leaves before the fade ends.
+ * role `timing.press.highlightOutMs` (`spec:AST-094` FR4), read off the
+ * element's role variable when the release starts: the variable the
+ * stylesheet's release plays (interactionOverlay.stylex.ts), so a theme that
+ * retunes it moves both and the attribute never leaves before the fade ends.
+ * Read directly, not through the motion table, so a pressable component
+ * carries no table (`architecture:component-style-authoring` INV6).
  */
 function timerMs(
   kind: NonNullable<PressStep['timer']>,
@@ -118,8 +119,14 @@ function timerMs(
   if (kind !== 'fade') {
     return TIMER_MS[kind];
   }
-  registerTimingTable();
-  return resolveMotion(element, timing.press, 'highlightOutMs');
+  const value = element.ownerDocument.defaultView
+    ?.getComputedStyle(element)
+    .getPropertyValue(pressReleaseRoles.duration)
+    .trim();
+  const match = value == null ? null : /^([\d.]+)(ms|s)$/.exec(value);
+  return match == null
+    ? TIMER_MS.fade
+    : Number(match[1]) * (match[2] === 's' ? 1000 : 1);
 }
 
 const TIMER_EVENT = {
