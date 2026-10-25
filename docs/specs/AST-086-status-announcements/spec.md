@@ -122,7 +122,8 @@ announcement channel.
   rendered text, or its accessible name when it renders no text, leaving out
   `aria-hidden` content. It stays silent for text present during page load
   (except as FR11 provides for announcement-only messages), announces once per later appearance or text change, and re-arms when
-  the element is hidden. During a server render it announces nothing and adds no
+  the element is hidden. An appearance its owner does not re-render for is
+  announced on the owner's next render (FR13). During a server render it announces nothing and adds no
   live role, and a server-renderable adopter stays server-renderable and passes
   the server-safe component boundary check. Any mechanism that satisfies this is
   valid; `architecture:react-component-runtime` INV10 places it.
