@@ -74,7 +74,12 @@ import {
   type PanGestureRecognizerOptions,
 } from '../gestures/PanGestureRecognizer';
 import {ScrollViewPanGestureRecognizer} from '../gestures/ScrollViewPanGestureRecognizer';
-import type {Point} from '../gestures/types';
+import type {
+  GestureEventContext,
+  GestureTouch,
+  Point,
+  PointerKind,
+} from '../gestures/types';
 import {
   animatorFor,
   type Animator,
@@ -212,6 +217,23 @@ const PAGER_CLAIM_DISTANCE = 5;
  * atan(1 ÷ that) and 45°.
  */
 class PagerPanGestureRecognizer extends ScrollViewPanGestureRecognizer {
+  /**
+   * The kind of pointer the pan follows. Under Reduce Motion a touch's
+   * release cross-fades (design:reduced-motion DR2); a mouse's or a pen's
+   * lands at once on a fine pointer (DR3).
+   */
+  pointerType: PointerKind | null = null;
+
+  protected override touchesBegan(
+    touches: ReadonlyArray<GestureTouch>,
+    event: GestureEventContext,
+  ): void {
+    if (this.state === 'possible' && touches.length > 0) {
+      this.pointerType = touches[0].pointerType;
+    }
+    super.touchesBegan(touches, event);
+  }
+
   private hasEnclosingVerticalPan(): boolean {
     for (const other of this.arena?.involvedRecognizers ?? []) {
       if (
@@ -252,8 +274,21 @@ class PagerPanGestureRecognizer extends ScrollViewPanGestureRecognizer {
  * a vertical drag after the paging view's content stopped.
  */
 class SettleCatcher extends LongPressGestureRecognizer {
+  /** The kind of pointer that caught the settle (see the pager's pan). */
+  pointerType: PointerKind | null = null;
+
   override get claimsTouches(): boolean {
     return false;
+  }
+
+  protected override touchesBegan(
+    touches: ReadonlyArray<GestureTouch>,
+    event: GestureEventContext,
+  ): void {
+    if (this.state === 'possible' && touches.length > 0) {
+      this.pointerType = touches[0].pointerType;
+    }
+    super.touchesBegan(touches, event);
   }
 }
 
@@ -456,9 +491,10 @@ export function createPager(
 
   /**
    * Plays `curve` on the track. Under Reduce Motion the animator replaces the
-   * travel (design:reduced-motion): a settle a touch drag's release starts
-   * (`touchRelease`) cross-fades on any pointer; `goTo` cross-fades on a
-   * coarse pointer and lands at once on any other.
+   * travel (design:reduced-motion): a settle a touch's release starts
+   * (`touchRelease`) cross-fades on any pointer; any other motion (`goTo`, a
+   * mouse's or a pen's release) cross-fades on a coarse pointer and lands at
+   * once on any other.
    */
   function play(curve: MotionCurve, touchRelease = false): void {
     if (animator == null) {
@@ -472,6 +508,7 @@ export function createPager(
     position: number,
     velocity: number,
     spring: SpringDescription,
+    touchRelease: boolean,
   ): void {
     if (animator == null) {
       return;
@@ -479,12 +516,12 @@ export function createPager(
     // The integrator starts the content at stepsPerSecond / 1000 of the
     // finger's speed; a theme's spring starts it the same way.
     const start = (velocity * paging.integrator.stepsPerSecond) / 1000;
-    // Only a release settles on a spring: a touch release (see `play`).
+    // Only a release settles on a spring (see `play`).
     follow(
       animator.animate(
         {x: positionToX(position)},
         {spring, velocity: {x: sign() * start}},
-        {touchRelease: true},
+        {touchRelease},
       ),
     );
   }
@@ -513,8 +550,15 @@ export function createPager(
     });
   }
 
-  /** The settle after a finger lifts (a release, or a hold let go). */
-  function settleFrom(position: number, velocity: number): void {
+  /**
+   * The settle after a pointer lifts (a release, or a hold let go);
+   * `touchRelease` when that pointer was a touch.
+   */
+  function settleFrom(
+    position: number,
+    velocity: number,
+    touchRelease: boolean,
+  ): void {
     const to = target * stride();
     // A theme that retunes the settle hands it a spring; without one the
     // settle runs UIKit's integrator itself.
@@ -525,7 +569,7 @@ export function createPager(
         rest();
         return;
       }
-      springTo(to, velocity, spring);
+      springTo(to, velocity, spring, touchRelease);
       return;
     }
     const curve = solvePaging({from: position, velocity, to});
@@ -534,7 +578,7 @@ export function createPager(
       rest();
       return;
     }
-    play(curve, true);
+    play(curve, touchRelease);
   }
 
   function measure(): void {
@@ -614,7 +658,11 @@ export function createPager(
         loop: options.loop === true,
       });
       setTarget(next, 'drag', true);
-      settleFrom(dragPosition, pagingSettleVelocity(velocity));
+      settleFrom(
+        dragPosition,
+        pagingSettleVelocity(velocity),
+        pan.pointerType === 'touch',
+      );
     }
   }
 
@@ -686,7 +734,7 @@ export function createPager(
           loop: options.loop === true,
         });
         setTarget(next, 'drag', true);
-        settleFrom(position, 0);
+        settleFrom(position, 0, catcher.pointerType === 'touch');
       }
     }
   }
