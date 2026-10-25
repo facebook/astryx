@@ -2876,6 +2876,94 @@ describe('DropdownMenu touch presentation (UIMenu under a finger)', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
+  describe('on a phone (compact and touch): over its trigger, as UIMenu', () => {
+    beforeEach(() => {
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn().mockImplementation((query: string) => ({
+          // Coarse primary pointer, and the compact viewport.
+          matches: query === '(pointer: coarse)' || query === COMPACT_QUERY,
+          media: query,
+          onchange: null,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        })),
+      );
+    });
+
+    it('is centered on its trigger, 8 px (or the safe area) off the viewport\u2019s sides, and top-aligned with a trigger in the upper half', async () => {
+      const user = userEvent.setup();
+      const trigger = renderMenu();
+      await user.click(trigger);
+      const {style} = popoverOf();
+      expect(style.getPropertyValue('justify-self')).toBe('anchor-center');
+      // UIKit's 8 pt margin, or the safe area where larger, plus the
+      // LayerProvider inset for that edge: the layer runtime's gutter terms.
+      expect(style.getPropertyValue('left')).toBe(
+        'calc(max(8px, env(safe-area-inset-left, 0px)) + var(--astryx-layer-inset-inline-start, 0px))',
+      );
+      expect(style.getPropertyValue('right')).toBe(
+        'calc(max(8px, env(safe-area-inset-right, 0px)) + var(--astryx-layer-inset-inline-end, 0px))',
+      );
+      // jsdom drops anchor() values; the bottom edge is released and the top
+      // edge is the one pinned (its value is checked in a real browser).
+      expect(style.getPropertyValue('bottom')).toBe('auto');
+      expect(style.getPropertyValue('top')).not.toBe('auto');
+      // Not the layer's below-the-trigger placement.
+      expect(style.getPropertyValue('position-area')).toBe('');
+    });
+
+    it('is bottom-aligned with a trigger whose center is in the lower half', async () => {
+      const lowRect = HTMLElement.prototype.getBoundingClientRect;
+      HTMLElement.prototype.getBoundingClientRect = function (
+        this: HTMLElement,
+      ) {
+        const rect = lowRect.call(this);
+        if (this.hasAttribute('popover')) {
+          return rect;
+        }
+        const top = window.innerHeight - 100;
+        return {...rect, top, y: top, bottom: top + rect.height};
+      };
+      const user = userEvent.setup();
+      const trigger = renderMenu();
+      await user.click(trigger);
+      const {style} = popoverOf();
+      expect(style.getPropertyValue('top')).toBe('auto');
+      expect(style.getPropertyValue('bottom')).not.toBe('auto');
+    });
+
+    it('a mouse on a compact screen keeps the layer\u2019s placement below its trigger', async () => {
+      asMouse();
+      const user = userEvent.setup();
+      const trigger = renderMenu();
+      await user.click(trigger);
+      const {style} = popoverOf();
+      expect(style.getPropertyValue('justify-self')).toBe('');
+      expect(style.getPropertyValue('left')).toBe('');
+      expect(style.getPropertyValue('right')).toBe('');
+    });
+
+    it('presentation="popover" on a compact touch screen keeps the layer\u2019s placement below its trigger', async () => {
+      const user = userEvent.setup();
+      render(
+        <DropdownMenu button={{label: 'Pinned'}} presentation="popover">
+          <DropdownMenuItem label="Edit" onClick={() => {}} />
+          <DropdownMenuItem label="Delete" onClick={() => {}} />
+        </DropdownMenu>,
+      );
+      expect(window.matchMedia(TOUCH_QUERY).matches).toBe(true);
+      await user.click(screen.getByRole('button', {name: /Pinned/}));
+      const {style} = popoverOf();
+      expect(style.getPropertyValue('justify-self')).toBe('');
+      expect(style.getPropertyValue('top')).toBe('');
+      expect(style.getPropertyValue('bottom')).toBe('');
+    });
+  });
+
   it('a pan that starts inside the menu, or a mouse, does not dismiss it', async () => {
     const user = userEvent.setup();
     const trigger = renderMenu();
