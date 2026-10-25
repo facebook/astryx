@@ -29,7 +29,7 @@ affects_consumer_docs: []
 <!-- Describe the system, not the project: present tense, what it does. No proposals, history, pull requests, or research in the record; see docs/contributing/spec-writing.md and report its rubric results in the pull request. -->
 
 **Proposed; pending owner decision.** Every requirement below awaits the
-owner's decision (OQ1), except DEC-1 and DEC-2, which are decided.
+owner's decision, except DEC-1, DEC-2, and DEC-3, which are decided.
 
 ## Intent
 
@@ -55,7 +55,7 @@ not reorder loads none of it.
 import {createReorderable} from '@astryx/core/reorderable';
 
 const reorderable = createReorderable({
-  onReorder: (from, to) => setItems(items => move(items, from, to)),
+  onReorder: ({key, to}) => setItems(items => moveTo(items, key, to)),
 });
 
 <List reorderable={reorderable}>
@@ -70,23 +70,23 @@ internals. A tree reports positions as a parent and an index:
 
 ```tsx
 const reorderable = createReorderable({
-  onReorder: (from, to) => setTree(tree => moveNode(tree, from, to)),
+  onReorder: ({key, to}) => setTree(tree => moveNode(tree, key, to)),
 });
 
 <TreeList reorderable={reorderable} items={tree} />;
 ```
 
-Here `from` and `to` are `{ parent, index }`; the handle, keys, actions, and
+Here `to` is `{ parent, index }`; the handle, keys, actions, and
 announcements are those of FR3 and FR4, and the tree adds no option.
 
 ## Requirements
 
 - **FR1 — One factory makes the behavior.** `createReorderable(options)`
   returns a reorderable object. `options` carries only the change callback,
-  `onReorder(from, to)`, where `from` and `to` are positions in the
-  collection's own position model; a flat collection's positions are indices
-  (OQ1). It carries no gesture, animation, or timing settings. An optional
-  `isMovable(from)` predicate keeps a row in place: a row it rejects shows no
+  `onReorder({ key, to })`, where `key` names the moved item by its key and
+  `to` is its new position in the collection's own model: an index in a flat
+  collection, a parent and an index in a tree (DEC-3). It carries no gesture, animation, or timing settings. An optional
+  `isMovable(key)` predicate keeps a row in place: a row it rejects shows no
   handle and cannot be picked up (DEC-2).
 - **FR2 — Present means enabled.** A collection that accepts reordering takes
   the object through one `reorderable` prop; there is no separate boolean.
@@ -162,17 +162,24 @@ Rejected: shipping it as experimental first.
 **Decider:** `cixzhang`, `2026-10-25`
 
 Some rows must not move, such as a pinned first row, and a person should see
-that before trying. An optional `isMovable(from)` predicate marks them: the row
+that before trying. An optional `isMovable(key)` predicate marks them: the row
 shows no handle and cannot be picked up, as a UIKit table's `canMoveRow` does.
 The name follows Astryx's `is…` predicate convention.
 
 Rejected: no per-row control, with unwanted moves ignored after the drop.
 
+### DEC-3 — A move names the item by its key
+
+**Reference:** `spec:AST-103/DEC-3`
+**Decider:** `cixzhang`, `2026-10-25`
+
+`onReorder` receives the moved item's key and its new position, and
+`isMovable` receives a key, so the contract names items by key everywhere. A
+key stays correct when a list is filtered or virtualized and when a tree moves
+an item between parents, where a pair of indices would not.
+
+Rejected: `onReorder(from, to)` with a pair of positions.
+
 ## Open questions
 
-- **OQ1 — The move's shape.** (`human-design`) Options: (a, recommended)
-  `onReorder(from, to)` with positions in the collection's own model (an index
-  for a flat collection), because a collection knows its rows by position and
-  a caller applies the move with one array operation; or (b)
-  `onReorder({ key, to })`, naming the moved item by its key, which survives
-  filtering but requires every collection to know item keys.
+None.

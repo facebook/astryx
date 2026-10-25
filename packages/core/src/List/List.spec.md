@@ -93,11 +93,11 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-| Concept                        | Closed values or states              | Meaning                                                                                                                | Availability by variant/orientation/state                                                | Default  | Owner            | Stability  | Invalid-value behavior                       |
-| ------------------------------ | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | -------- | ---------------- | ---------- | -------------------------------------------- |
-| Edge treatment                 | `padded`, `flush`, `outset`, `bleed` | Where row content and row paint sit relative to the list's edges and the host's padding                                | Every density, marker style, and divider setting; `outset` and `bleed` read host padding | `padded` | `component:List` | accepted   | Other values are rejected by the public type |
-| Edge compensation (deprecated) | omitted, `inline`                    | Same as `edge="outset"`                                                                                                | As `outset`                                                                              | omitted  | `component:List` | deprecated | Other values are rejected by the public type |
-| Reordering (proposed)          | absent, a `createReorderable` object | Rows can be reordered by handle, keyboard, and assistive technology; `onReorder` receives row indices (`spec:AST-103`) | Every density, marker style, edge treatment, and divider setting                         | absent   | `spec:AST-103`   | proposed   | Other values are rejected by the public type |
+| Concept                        | Closed values or states              | Meaning                                                                                                                                          | Availability by variant/orientation/state                                                | Default  | Owner            | Stability  | Invalid-value behavior                       |
+| ------------------------------ | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- | -------- | ---------------- | ---------- | -------------------------------------------- |
+| Edge treatment                 | `padded`, `flush`, `outset`, `bleed` | Where row content and row paint sit relative to the list's edges and the host's padding                                                          | Every density, marker style, and divider setting; `outset` and `bleed` read host padding | `padded` | `component:List` | accepted   | Other values are rejected by the public type |
+| Edge compensation (deprecated) | omitted, `inline`                    | Same as `edge="outset"`                                                                                                                          | As `outset`                                                                              | omitted  | `component:List` | deprecated | Other values are rejected by the public type |
+| Reordering (proposed)          | absent, a `createReorderable` object | Rows can be reordered by handle, keyboard, and assistive technology; `onReorder` receives the moved row's key and its new index (`spec:AST-103`) | Every density, marker style, edge treatment, and divider setting                         | absent   | `spec:AST-103`   | proposed   | Other values are rejected by the public type |
 
 ## Behavioral and layout contract
 
@@ -182,7 +182,8 @@ Consumer migration instructions belong in consumer docs and release notes.
   (FR9) and `ListItem` passes `swipeActions` and `swipeBehavior` through to
   `Item` unchanged.
 - Proposed: `spec:AST-103` owns reordering. List is its first adopter: it
-  takes the `reorderable` object, its positions are row indices, and the
+  takes the `reorderable` object, a row's key is its `ListItem`'s React `key`
+  and its position is its index, and the
   handle is drawn in the row's existing trailing element.
 
 ## Verification map
