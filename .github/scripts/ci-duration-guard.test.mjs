@@ -35,7 +35,6 @@ const JOINS = new Set([
   'test',
   'build',
   'pr-rtl',
-  'pr-rtl-merge',
 ]);
 
 /** The limit a pull-request run gets from a job's `timeout-minutes`. */
