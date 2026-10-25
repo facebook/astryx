@@ -209,6 +209,12 @@ const calmTheme = defineTheme({
               '1000ms',
             ],
             [
+              'refreshControl.triggerGradientSpring',
+              '--motion-refresh-control-trigger-gradient-spring',
+              'spring',
+              '2.80993s 0.0000304005',
+            ],
+            [
               'refreshControl.triggerTurnSpring',
               '--motion-refresh-control-trigger-turn-spring',
               'spring',

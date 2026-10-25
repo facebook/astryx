@@ -88,7 +88,6 @@ import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
 import {RefreshPullRecognizer} from './RefreshPullRecognizer';
 import {
   REFRESH_REVEAL_VAR,
-  REFRESH_SPIN_STEP_VAR,
   REFRESH_SPINNING_ATTRIBUTE,
 } from './refreshIndicator';
 import type {RefreshEvent, RefreshState} from './refreshModel';
@@ -103,27 +102,6 @@ import {
   triggerDistance,
   type PullMode,
 } from './refreshPull';
-
-/**
- * The spin as keyframes: each of the indicator's spokes in turn holds still,
- * then the rotation steps on by one spoke (the replicator's spin). Linear
- * keyframes with a near-zero jump between holds, rather than a `steps()`
- * timing function, so the browser runs it on its compositor.
- */
-function spinKeyframes(spokes: number): Keyframe[] {
-  const frames: Keyframe[] = [];
-  const jump = 1e-4;
-  for (let index = 0; index < spokes; index++) {
-    const angle = (360 / spokes) * index;
-    frames.push({offset: index / spokes, transform: `rotate(${angle}deg)`});
-    frames.push({
-      offset: (index + 1) / spokes - jump,
-      transform: `rotate(${angle}deg)`,
-    });
-  }
-  frames.push({offset: 1, transform: 'rotate(360deg)'});
-  return frames;
-}
 
 /**
  * The indicator's turn, degrees: the trigger turn starts this far round and
@@ -145,6 +123,8 @@ export interface RefreshTouchController {
   readonly indicatorRef: RefCallback<HTMLElement>;
   readonly spinnerRef: RefCallback<HTMLElement>;
   readonly titleRef: RefCallback<HTMLElement>;
+  readonly revealLayerRef: RefCallback<HTMLElement>;
+  readonly spinLayerRef: RefCallback<HTMLElement>;
   /** A pull triggered: the spin starts with the turn; the release settles onto the inset. */
   trigger(): void;
   /** A refresh began without a pull: the inset arrives with no visible motion. */
@@ -244,10 +224,11 @@ export function useRefreshTouchController({
   const title = useAnimator();
   // The spinner turns on its own: the title beside it must not.
   const turn = useAnimator();
+  // The drawing's two spoke layers, cross-faded at the trigger.
+  const revealLayer = useAnimator();
+  const spinLayer = useAnimator();
   const contentElement = useRef<HTMLElement | null>(null);
   const indicatorElement = useRef<HTMLElement | null>(null);
-  const spinnerElement = useRef<HTMLElement | null>(null);
-  const spin = useRef<Animation | null>(null);
   // Whether the content holds the refreshing inset (only under a finger).
   const hasInset = useRef(false);
   // An end waiting for the frame after its render, and that frame.
@@ -319,11 +300,6 @@ export function useRefreshTouchController({
     selection.current = null;
   }, []);
 
-  const stopSpin = useCallback(() => {
-    spin.current?.cancel();
-    spin.current = null;
-  }, []);
-
   /**
    * The content at `y`, and the indicator pinned at the top of the scroll
    * view: it rides on the content's edge, so it moves by the inset minus `y`.
@@ -360,13 +336,26 @@ export function useRefreshTouchController({
     }
   }, [indicator.animator, title.animator, turn.animator]);
 
+  /**
+   * The revealed spokes shown, the stepping gradient hidden. Each layer is
+   * written only when it is not there already, so an idle layer is not
+   * promoted (and released mid-settle) for nothing.
+   */
+  const showRevealLayer = useCallback(() => {
+    if (revealLayer.animator.get('opacity') !== 1) {
+      revealLayer.animator.set({opacity: 1});
+    }
+    if (spinLayer.animator.get('opacity') !== 0) {
+      spinLayer.animator.set({opacity: 0});
+    }
+  }, [revealLayer.animator, spinLayer.animator]);
+
   const resetIndicator = useCallback(() => {
-    stopSpin();
     indicatorElement.current?.removeAttribute(REFRESH_SPINNING_ATTRIBUTE);
-    indicatorElement.current?.style.removeProperty(REFRESH_SPIN_STEP_VAR);
     setReveal(0);
     restoreIndicator();
-  }, [restoreIndicator, setReveal, stopSpin]);
+    showRevealLayer();
+  }, [restoreIndicator, setReveal, showRevealLayer]);
 
   const startSpinning = useCallback(
     (withTurn: boolean) => {
@@ -374,38 +363,41 @@ export function useRefreshTouchController({
       if (indicator.animator.get('opacity') !== 1) {
         indicator.animator.set({opacity: 1});
       }
-      indicatorElement.current?.style.setProperty(
-        REFRESH_SPIN_STEP_VAR,
-        String(refreshControl.spinAlphaStep),
-      );
       indicatorElement.current?.setAttribute(REFRESH_SPINNING_ATTRIBUTE, '');
-      const spinner = spinnerElement.current;
-      if (
-        spin.current == null &&
-        spinner != null &&
-        typeof spinner.animate === 'function'
-      ) {
-        spin.current = spinner.animate(
-          spinKeyframes(refreshControl.indicatorSpokes),
-          {
-            duration: refreshControl.spinMs,
-            iterations: Infinity,
-            easing: 'linear',
-          },
-        );
-      }
-      // Under Reduce Motion there is no turn: the spinner starts at rest, so
-      // nothing moves and nothing changes (design:reduced-motion DR1), where
-      // the animator's cross-fade would blink the spinner out and back.
-      if (withTurn && turn.animator.reducedMotion() === 'off') {
-        turn.animator.set({rotate: TURN_DEGREES});
-        turn.animator.animate(
-          {rotate: 0},
-          {spring: refreshControl.triggerTurnSpring, velocity: {rotate: 0}},
-        );
+      if (withTurn) {
+        // Under Reduce Motion there is no turn: the spinner starts at rest, so
+        // nothing moves and nothing changes (design:reduced-motion DR1), where
+        // the animator's cross-fade would blink the spinner out and back.
+        if (turn.animator.reducedMotion() === 'off') {
+          turn.animator.set({rotate: TURN_DEGREES});
+          turn.animator.animate(
+            {rotate: 0},
+            {spring: refreshControl.triggerTurnSpring, velocity: {rotate: 0}},
+          );
+        }
+        // UIKit springs the refreshing gradient in at the trigger: the
+        // revealed spokes fade out as the stepping ones fade in, on one
+        // spring, started with the turn so all three share a frame. Under
+        // Reduce Motion the animator fades them instead.
+        const gradient = {
+          spring: refreshControl.triggerGradientSpring,
+          velocity: {opacity: 0},
+        };
+        revealLayer.animator.animate({opacity: 0}, gradient);
+        spinLayer.animator.animate({opacity: 1}, gradient);
+      } else {
+        // A refresh begun without a pull shows the gradient at once.
+        revealLayer.animator.set({opacity: 0});
+        spinLayer.animator.set({opacity: 1});
       }
     },
-    [indicator.animator, setReveal, turn.animator],
+    [
+      indicator.animator,
+      revealLayer.animator,
+      setReveal,
+      spinLayer.animator,
+      turn.animator,
+    ],
   );
 
   // -- Scroll owner and its top-edge policy ----------------------------------
@@ -595,9 +587,8 @@ export function useRefreshTouchController({
       // Under the finger: the release settles back to the top, and the
       // indicator retracts with it.
       pull.current.floor = 0;
-      stopSpin();
       indicatorElement.current?.removeAttribute(REFRESH_SPINNING_ATTRIBUTE);
-      indicatorElement.current?.style.removeProperty(REFRESH_SPIN_STEP_VAR);
+      showRevealLayer();
       return;
     }
     if (!hadInset) {
@@ -635,7 +626,8 @@ export function useRefreshTouchController({
       // spinner out where it is and shortens the title's fade
       // (design:reduced-motion DR2, DR3).
       const exit = resolveMotion(element, refreshControl, 'exitMs');
-      stopSpin();
+      // UIKit's end replaces only the spin's transform: the gradient stays
+      // through the exit (the drawing resets it when the content lands).
       turn.animator.play(
         {
           rotate: bezierCurve(0, TURN_DEGREES, exit, curve),
@@ -671,8 +663,8 @@ export function useRefreshTouchController({
     place,
     resetIndicator,
     resolveOwner,
+    showRevealLayer,
     stopPlacing,
-    stopSpin,
     title.animator,
     turn.animator,
   ]);
@@ -797,14 +789,6 @@ export function useRefreshTouchController({
     };
   }, [applyEdge, content.animator, recognizer, resolveOwner, settle]);
 
-  useEffect(
-    () => () => {
-      spin.current?.cancel();
-      spin.current = null;
-    },
-    [],
-  );
-
   const contentRef = useCallback(
     (element: HTMLElement | null) => {
       contentElement.current = element;
@@ -822,10 +806,43 @@ export function useRefreshTouchController({
 
   const spinnerRef = useCallback(
     (element: HTMLElement | null) => {
-      spinnerElement.current = element;
       turn.ref(element);
     },
     [turn],
+  );
+
+  // Each layer starts where the drawing shows it: revealed spokes shown and
+  // the gradient hidden, unless the indicator is already spinning (a drawing
+  // mounted mid-refresh). The animator then springs from there; nothing is
+  // written when the layer already holds that value.
+  const attachLayer = useCallback(
+    (
+      layer: typeof revealLayer,
+      element: HTMLElement | null,
+      opacity: (isSpinning: boolean) => number,
+    ) => {
+      layer.ref(element);
+      if (element == null) {
+        return;
+      }
+      const target = opacity(
+        element.closest(`[${REFRESH_SPINNING_ATTRIBUTE}]`) != null,
+      );
+      if (layer.animator.get('opacity') !== target) {
+        layer.animator.set({opacity: target});
+      }
+    },
+    [],
+  );
+  const revealLayerRef = useCallback(
+    (element: HTMLElement | null) =>
+      attachLayer(revealLayer, element, isSpinning => (isSpinning ? 0 : 1)),
+    [attachLayer, revealLayer],
+  );
+  const spinLayerRef = useCallback(
+    (element: HTMLElement | null) =>
+      attachLayer(spinLayer, element, isSpinning => (isSpinning ? 1 : 0)),
+    [attachLayer, spinLayer],
   );
 
   const trigger = useCallback(() => {
@@ -852,6 +869,8 @@ export function useRefreshTouchController({
       indicatorRef,
       spinnerRef,
       titleRef: title.ref,
+      revealLayerRef,
+      spinLayerRef,
       trigger,
       begin,
       settle,
@@ -862,7 +881,9 @@ export function useRefreshTouchController({
       contentRef,
       end,
       indicatorRef,
+      revealLayerRef,
       settle,
+      spinLayerRef,
       spinnerRef,
       title.ref,
       trigger,

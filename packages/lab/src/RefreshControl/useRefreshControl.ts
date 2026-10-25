@@ -92,8 +92,23 @@ export interface UseRefreshControlResult {
    * UIRefreshControl's label does.
    */
   titleRef: RefCallback<HTMLElement>;
-  /** Attach to the part of the indicator that spins (optional). */
+  /**
+   * Attach to the indicator's glyph wrapper (optional): it turns at the
+   * trigger, while the glyph inside it spins on its own.
+   */
   spinnerRef: RefCallback<HTMLElement>;
+  /**
+   * Attach to the glyph's layer of spokes the pull reveals (optional): at the
+   * trigger it fades out on the gradient spring as `spinLayerRef`'s layer
+   * fades in, so the two sum to UIKit's refreshing gradient.
+   */
+  revealLayerRef: RefCallback<HTMLElement>;
+  /**
+   * Attach to the glyph's layer of stepping spokes (optional): it fades in on
+   * the gradient spring at the trigger and steps while
+   * `data-refresh-spinning` is set.
+   */
+  spinLayerRef: RefCallback<HTMLElement>;
   /** Whether a refresh is in progress. */
   isRefreshing: boolean;
   /** Starts a refresh without a pull (the non-gesture path). */
@@ -251,6 +266,8 @@ export function useRefreshControl({
     indicatorRef: touch.indicatorRef,
     spinnerRef: touch.spinnerRef,
     titleRef: touch.titleRef,
+    revealLayerRef: touch.revealLayerRef,
+    spinLayerRef: touch.spinLayerRef,
     // Controlled, the prop is the source from the first render.
     isRefreshing: isControlled ? Boolean(isRefreshingProp) : isRefreshing,
     refresh,
