@@ -107,4 +107,26 @@ final class ComponentScreensUITests: XCTestCase {
     XCTAssertEqual(taps.label, "Taps: 1", "a loading button ignores taps")
     attachScreenshot(app, named: "Button after taps")
   }
+
+  /// What VoiceOver reads for TextInput: each field is named by its visible
+  /// label (which is not read twice), keeps its value, and a password field
+  /// is secure.
+  func testTextInputAccessibilityTree() {
+    let app = launch("TextInput")
+
+    let name = app.textFields["Name"]
+    XCTAssertTrue(name.exists, "the field is named by its label")
+    XCTAssertEqual(name.placeholderValue, "Your name")
+
+    let email = app.textFields["Email"]
+    XCTAssertTrue(email.exists)
+    XCTAssertEqual(email.value as? String, "ada@example.com")
+
+    XCTAssertTrue(app.secureTextFields["Password"].exists, "a password field is secure")
+    XCTAssertFalse(app.staticTexts["Name"].exists, "the visible label is not read again as text")
+
+    name.tap()
+    name.typeText("Ada")
+    XCTAssertEqual(name.value as? String, "Ada")
+  }
 }
