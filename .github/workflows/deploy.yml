@@ -16,6 +16,29 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # The one commit every lane and leg of this run tests. A push validates the
+  # pushed commit; a dispatch, main's tip when it starts. Each leg resolving
+  # `main` itself could straddle a merge, shard different file lists, and skip
+  # a file in every leg.
+  main-commit:
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+    outputs:
+      sha: ${{ steps.resolve.outputs.sha }}
+    steps:
+      - name: Resolve the commit under test
+        id: resolve
+        uses: actions/github-script@v9
+        with:
+          script: |
+            let sha = context.sha;
+            if (context.eventName !== 'push') {
+              const {data} = await github.rest.repos.getBranch({...context.repo, branch: 'main'});
+              sha = data.commit.sha;
+            }
+            core.setOutput('sha', sha);
+
   # Verify package.json exports match the source tree.
   # Fails if exports are stale — run `node scripts/sync-exports.js` locally to fix.
   sync-exports:
@@ -45,6 +68,7 @@ jobs:
   # test-ui in ~18 minutes and test-node in ~28, so main's gate took about half
   # an hour while the PR gate took under fifteen. `test` joins the legs.
   test-ui:
+    needs: [main-commit]
     strategy:
       fail-fast: false
       matrix:
@@ -55,7 +79,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: main
+          ref: ${{ needs.main-commit.outputs.sha }}
 
       - uses: ./.github/actions/setup
 
@@ -69,6 +93,7 @@ jobs:
         run: pnpm test:ui:isolated
 
   test-node:
+    needs: [main-commit]
     strategy:
       fail-fast: false
       matrix:
@@ -81,7 +106,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: main
+          ref: ${{ needs.main-commit.outputs.sha }}
 
       - uses: ./.github/actions/setup
 
@@ -93,13 +118,14 @@ jobs:
   # every open PR, which typechecks the PR merged with main (see #3197).
   # Running them here closes that gap and blocks a broken deploy.
   typecheck:
+    needs: [main-commit]
     runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: main
+          ref: ${{ needs.main-commit.outputs.sha }}
 
       - uses: ./.github/actions/setup
 

@@ -641,13 +641,23 @@ describe('deploy.yml push gating', () => {
     }
   });
 
-  it('checks out main on every push-gate lane', () => {
-    // A lane that checks out the default ref would gate the wrong commit.
+  it('checks out one run-wide main commit on every push-gate lane and leg', () => {
+    // A lane that checks out the default ref would gate the wrong commit, and
+    // legs that each resolve `main` can straddle a merge and shard different
+    // file lists, so one job resolves the commit and every leg checks it out.
+    const resolve = workflow.jobs['main-commit'];
+    expect(resolve.outputs.sha).toBe('${{ steps.resolve.outputs.sha }}');
+    const script = resolve.steps[0].with.script;
+    expect(script).toContain('context.sha');
+    expect(script).toContain("branch: 'main'");
     for (const lane of ['test-ui', 'test-node', 'typecheck']) {
+      expect(workflow.jobs[lane].needs).toEqual(['main-commit']);
       const checkout = workflow.jobs[lane].steps.find(step =>
         step.uses?.startsWith('actions/checkout'),
       );
-      expect(checkout?.with?.ref, `${lane} does not pin main`).toBe('main');
+      expect(checkout?.with?.ref, `${lane} does not pin the run's commit`).toBe(
+        '${{ needs.main-commit.outputs.sha }}',
+      );
     }
   });
 });
