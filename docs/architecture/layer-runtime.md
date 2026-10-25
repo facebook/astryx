@@ -450,7 +450,8 @@ layers use Layer rendering without joining Escape/platform dismissal.
   back in view.
 - **INV14 — The runtime owns every layer's shared mechanics.** **Proposed;
   pending owner decision.** Internally, the layer runtime owns top-layer
-  mounting, dismissal, the presentation hold, the one shared exit copy every
+  mounting, dismissal, the presentation hold (keeping a layer's chosen
+  presentation from the open until the close settles), the one shared exit copy every
   layer uses (the single Core mechanism `architecture:component-style-authoring`
   INV7 names), and the backdrop tint, drawn with `::backdrop`. No component
   mounts its own top-layer host, exit copy, or backdrop element. The public
@@ -459,8 +460,12 @@ layers use Layer rendering without joining Escape/platform dismissal.
   pending owner decision.** Lift-from-trigger presentation lives in one
   internal module separate from the layer runtime: the lift from the trigger,
   using the real trigger or a clone, whichever meets the performance outcomes;
-  the grow from the trigger's rectangle through the shared rectangle morph; and
-  the exit, played through the runtime's exit copy (INV14). Surfaces opt in;
+  the grow from the trigger's rectangle through the shared rectangle morph
+  (one Core animation from one rectangle to another); and
+  the exit, played through the runtime's exit copy (INV14). A clone of the
+  trigger is the one transient copy `architecture:component-style-authoring`
+  INV7 allows: inert, hidden from assistive technology, and removed when the
+  lift settles. Surfaces opt in;
   any surface that lifts uses this module and never its own copy, and layers
   that do not lift do not use it. It is internal and unexported
   (`spec:AST-017` FR21).
@@ -485,10 +490,6 @@ Current gaps are observable facts, not current target behavior:
 - Toast's root and fallback hosts remain behind the other native modals:
   Lightbox, MobileNav, and a scrim BottomSheetSwitcher.
 - The reduced browser fallback is not documented as non-equivalent.
-- Under the proposed INV14 and INV15, ContextMenu's touch lift, the one surface
-  that lifts today, grows its menu
-  with its own copy of the rectangle morph, and its trigger clone, manual
-  popover, and `::backdrop` mount are ContextMenu-local rather than shared.
 - Existing tests simulate Popover `toggle` and DOM nesting; they do not prove
   native pointer light dismissal, top-layer/modal ordering, real anchor geometry,
   SSR parser repair, or nested portal behavior in supported browsers.
