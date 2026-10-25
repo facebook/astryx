@@ -57,9 +57,12 @@ import Testing
 
 @MainActor
 @Test func justifyAlignsAOneLineHeadingAcrossItsContainer() {
-  let start = Pixels(Astryx.Heading("Hi", level: .v4).frame(width: 300))
+  // A fixed frame centers whatever it holds, so start and end are measured
+  // against each other, both justified.
+  let start = Pixels(Astryx.Heading("Hi", level: .v4, justify: .start).frame(width: 300))
   let end = Pixels(Astryx.Heading("Hi", level: .v4, justify: .end).frame(width: 300))
   let firstInk = { (p: Pixels) in (0..<p.width).first { x in (0..<p.height).contains { y in p.at(x, y)[3] > 0 } } ?? 0 }
-  #expect(firstInk(end) > firstInk(start) + 150)
+  #expect(firstInk(start) < end.width / 4)
+  #expect(firstInk(end) > end.width * 3 / 4)
   #expect(HeadingJustify.end.frameAlignment == .trailing)
 }
