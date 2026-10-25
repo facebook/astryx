@@ -277,11 +277,11 @@ a measured, sourced difference exists.
 
 ### Menus and popovers under a finger
 
-FR26–FR30 apply to every surface that carries the press model of
+FR26–FR28 and FR30 apply to every surface that carries the press model of
 `module:DropdownMenu/useMenuPress` (DropdownMenu, ContextMenu, their sub-menus,
 and Selector's listbox, whose options count as rows) when a finger or pen
-drives it; FR34 applies to menus; FR31–FR33 and FR35 apply to anchored
-menus and to Popover under a finger. A mouse keeps today's behavior.
+drives it; FR29 applies to DropdownMenu's trigger; FR34 applies to menus;
+FR31–FR33 and FR35 apply to anchored menus and to Popover under a finger. A mouse keeps today's behavior.
 
 - **FR26 — The lift decides.** A menu row MUST act when the finger lifts over
   it, never because the press began on it; a press that never left its row is
@@ -296,8 +296,10 @@ menus and to Popover under a finger. A mouse keeps today's behavior.
   a menu and lifts outside it MUST act on nothing and leave the menu open. A
   cancelled touch, a second finger, or the window losing focus ends the
   gesture: nothing acts and the lit row clears.
-- **FR29 — Opening on press, and the opening finger's handoff.** Under a
-  finger, a menu's trigger in a fixed bar MUST open its menu as the finger
+- **FR29 — DropdownMenu opens on press, with the opening finger's
+  handoff.** This rule covers DropdownMenu's trigger only; ContextMenu,
+  sub-menu rows and Selector keep their own opening. Under a finger, a
+  DropdownMenu trigger in a fixed bar MUST open its menu as the finger
   presses. A trigger inside a scroll view (FR11) MUST open it once the 150 ms
   content-touch delay has passed with no scroll, or at the lift of a tap that
   ends sooner; a scroll that starts first takes the touch and nothing opens. Before the open, the finger may move no

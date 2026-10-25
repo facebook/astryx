@@ -50,12 +50,16 @@ highlight follows the pointer — is contracted by
 
 ## Compatibility and migration
 
-- Released default preserved: `yes`
+- Released default preserved: `no` under a finger. The omitted
+  `presentation`, released as `'popover'`, follows `spec:AST-094` FR29 (open
+  on press) under a finger; `presentation="popover"` keeps the released
+  behavior (`spec:AST-094` FR25). Mouse and keyboard are unchanged.
 - Compatibility class: additive documentation; the press-model behavior
   delta is recorded in `module:DropdownMenu/useMenuPress`
 - Controlled/uncontrolled behavior: unchanged
 - Migration decision: `module:DropdownMenu/useMenuPress/DEC-3`; proposed
-  `module:DropdownMenu/useMenuPress/DEC-4`
+  `module:DropdownMenu/useMenuPress/DEC-4`; `spec:AST-094/DEC-4` (a caller
+  that needs the released tap-open passes `presentation="popover"`)
 
 Consumer migration instructions belong in consumer docs and release notes.
 
