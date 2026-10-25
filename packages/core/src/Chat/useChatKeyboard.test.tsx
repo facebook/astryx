@@ -458,6 +458,43 @@ describe('focus moves into the composer (spec:AST-099 FR4)', () => {
     finger('touchmove', window.innerHeight - 300);
     expect(document.activeElement).toBe(document.body);
   });
+
+  it('dismisses from the composer\u2019s top on a page WebKit pinch-zooms', () => {
+    primaryPointer('coarse');
+    const {message} = renderWithSearch('textarea');
+    // WebKit at 2x: innerWidth and innerHeight in the zoomed visual
+    // viewport's px; rects and clientY in layout px (spec:AST-099 FR2).
+    vi.stubGlobal('innerHeight', 384);
+    vi.stubGlobal('innerWidth', 512);
+    const viewport = window.visualViewport as unknown as EventTarget & {
+      height: number;
+      scale: number;
+      width: number;
+    };
+    Object.assign(viewport, {scale: 2, width: 512, height: (768 - 300) / 2});
+    act(() => {
+      viewport.dispatchEvent(new Event('resize'));
+    });
+    // The composer's top is 68 px above the keyboard's (at 468).
+    screen.getByRole('group', {
+      name: 'Message composer',
+    }).getBoundingClientRect = () => new DOMRect(0, 400, 400, 60);
+    act(() => message.focus());
+    const transcript = screen.getByText('Hello');
+    const finger = (type: string, clientY: number) => {
+      const point = {identifier: 0, clientX: 100, clientY};
+      const event = new Event(type, {bubbles: true});
+      Object.assign(event, {touches: [point], changedTouches: [point]});
+      act(() => {
+        transcript.dispatchEvent(event);
+      });
+    };
+    finger('touchstart', 100);
+    finger('touchmove', 399);
+    expect(document.activeElement).toBe(message);
+    finger('touchmove', 420);
+    expect(document.activeElement).not.toBe(message);
+  });
 });
 
 describe('the taps the composer claims', () => {

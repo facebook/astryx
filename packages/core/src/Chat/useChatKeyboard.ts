@@ -477,7 +477,7 @@ export function useChatKeyboard({
         const composer = composerRef.current;
         return composer == null
           ? 0
-          : win.innerHeight -
+          : layoutViewportHeight(win) -
               getMobileKeyboardHeight(win) -
               composer.getBoundingClientRect().top;
       },

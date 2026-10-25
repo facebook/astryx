@@ -3,8 +3,8 @@
 /**
  * @file keyboardDismiss.ts
  * @input A scroller element, the keyboard module's height
- *   (getMobileKeyboardHeight) and its dismissal blur (blurAsDismissal),
- *   bringsUpKeyboard
+ *   (getMobileKeyboardHeight) and its dismissal blur (blurAsDismissal), the
+ *   layout viewport's height (utils/layoutViewport.ts), bringsUpKeyboard
  * @output Exports observeKeyboardDismiss and KeyboardDismissMode: dismisses
  *   the software keyboard from a drag on a scroller, as UIScrollView's
  *   `keyboardDismissMode`
@@ -39,6 +39,7 @@
 
 import {bringsUpKeyboard} from './keyboardLayoutGuide';
 import {blurAsDismissal, getMobileKeyboardHeight} from './useMobileKeyboard';
+import {layoutViewportHeight} from '../utils/layoutViewport';
 
 /** UIScrollView's `keyboardDismissMode`. */
 export type KeyboardDismissMode = 'none' | 'onDrag' | 'interactive';
@@ -100,8 +101,10 @@ export function observeKeyboardDismiss(
   let padding = 0;
 
   // Where an interactive dismissal begins, in the layout viewport's
-  // coordinates (clientY and the keyboard height share them).
-  const triggerLine = () => win.innerHeight - keyboardHeight() - padding;
+  // coordinates (clientY and the keyboard height share them), read in layout
+  // px under a pinch zoom too (utils/layoutViewport.ts).
+  const triggerLine = () =>
+    layoutViewportHeight(win) - keyboardHeight() - padding;
 
   const dismiss = () => {
     touchId = null;

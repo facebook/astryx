@@ -10,7 +10,7 @@
  * @position Unit tests for keyboard/keyboardDismiss.ts
  */
 
-import {afterEach, beforeEach, describe, expect, it} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {
   observeKeyboardDismiss,
   type KeyboardDismissMode,
@@ -21,6 +21,7 @@ type FakeViewport = EventTarget & {
   height: number;
   offsetTop: number;
   scale: number;
+  width?: number;
 };
 
 const COVER = 300;
@@ -113,11 +114,32 @@ describe('observeKeyboardDismiss', () => {
     viewport.dispatchEvent(new Event('resize'));
     Reflect.deleteProperty(window, 'visualViewport');
     Reflect.deleteProperty(window, 'CSS');
+    vi.unstubAllGlobals();
     document.body.innerHTML = '';
   });
 
   describe('interactive', () => {
     it('dismisses when the finger reaches the keyboard less the padding', () => {
+      observe('interactive');
+      touch('touchstart', row, 200);
+      touch('touchmove', row, TRIGGER - 1);
+      expect(document.activeElement).toBe(field);
+      touch('touchmove', row, TRIGGER);
+      expect(document.activeElement).not.toBe(field);
+    });
+
+    it('dismisses where the finger reaches the keyboard on a page WebKit pinch-zooms', () => {
+      // WebKit reports innerWidth and innerHeight in the zoomed visual
+      // viewport's px (spec:AST-099 FR2); clientY stays in layout px. At 2x
+      // innerHeight alone would put the line 384 px too high.
+      vi.stubGlobal('innerHeight', 384);
+      vi.stubGlobal('innerWidth', 512);
+      Object.assign(viewport, {
+        scale: 2,
+        width: 512,
+        height: (768 - COVER) / 2,
+      });
+      viewport.dispatchEvent(new Event('resize'));
       observe('interactive');
       touch('touchstart', row, 200);
       touch('touchmove', row, TRIGGER - 1);
