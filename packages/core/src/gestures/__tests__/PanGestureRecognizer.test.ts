@@ -75,7 +75,7 @@ describe('PanGestureRecognizer', () => {
     expect(releaseVelocity.y).toBeCloseTo(0, 5);
   });
 
-  it('keeps the last moving velocity through a rest before the lift, as UIKit does', () => {
+  it('releases at 0 when a resting finger reports without moving, and keeps the speed through a silent rest', () => {
     const h = createHarness();
     const pan = new PanGestureRecognizer({name: 'pan'});
     let releaseVelocity = {x: -1, y: -1};
@@ -86,10 +86,17 @@ describe('PanGestureRecognizer', () => {
     });
     const finger = h.finger(1).down(0, 0, 0, {recognizers: [pan]});
     finger.drag(200, 0, 100, 10);
-    // A still finger sends no events; the lift updates nothing.
+    // A silent rest sends no events: the release keeps the speed, as UIKit's.
     finger.up(200);
     expect(releaseVelocity.x).toBeCloseTo(2000, 6);
     expect(releaseVelocity.y).toBe(0);
+    // A resting finger that reports without moving releases at 0.
+    const resting = h.finger(2).down(0, 0, 1000, {recognizers: [pan]});
+    resting.drag(200, 0, 100, 10);
+    resting.move(200, 0, 1108);
+    resting.move(200, 0, 1116);
+    resting.up(1120);
+    expect(releaseVelocity.x).toBe(0);
   });
 
   it('fails a drag against its direction', () => {
