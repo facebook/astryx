@@ -96,7 +96,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | -------- | ------------------------------- | --------------------------------------------------- | ----------------------------------------- | -------- | ----------------------- | --------- | -------------------------------- |
 | Size     | Any `component:Avatar` size     | Applied to every member and the overflow indicator. | All groups                                | `md`     | `component:AvatarGroup` | Stable    | TypeScript rejects other values. |
 | Shape    | `circle`, `rounded`, `square`   | Applied to every member and the overflow indicator. | All groups                                | `circle` | `component:AvatarGroup` | Stable    | TypeScript rejects other values. |
-| Keyboard | static group; interactive group | Whether any member carries the avatar item marker.  | Read at each of the group's own renders                | static   | `component:AvatarGroup` | Stable    | —                                |
+| Keyboard | static group; interactive group | Whether any member carries the avatar item marker.  | Read at each of the group's own renders   | static   | `component:AvatarGroup` | Stable    | —                                |
 
 ## Behavioral and layout contract
 
