@@ -371,6 +371,48 @@ describe('analyze-pr base and head sizes', () => {
     }
   });
 
+  it('measures the merge base through its own defining module when the pull request renames it', () => {
+    const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-analyze-rename-'));
+    const baseRoot = path.join(repo, '.size-base');
+    const write = (root, file, content) => {
+      fs.mkdirSync(path.dirname(path.join(root, file)), {recursive: true});
+      fs.writeFileSync(path.join(root, file), content);
+    };
+    try {
+      write(repo, 'package.json', '{}');
+      write(repo, '.gitignore', 'dist/\n.size-base/\nbase.json\n');
+      write(repo, 'packages/core/package.json', '{"type": "module"}\n');
+      write(repo, 'packages/core/src/index.ts', "export {Card} from './Card';\n");
+      write(repo, 'packages/core/src/Card/index.ts', "export {Card} from './Card';\n");
+      write(repo, 'packages/core/src/Card/Card.tsx', 'export function Card() {}\n');
+      write(repo, 'packages/core/src/Card/Card.doc.mjs', "export const docs = {\n  name: 'Card',\n};\n");
+      git(repo, ['init', '-q', '-b', 'main']);
+      git(repo, ['config', 'user.email', 'test@test.co']);
+      git(repo, ['config', 'user.name', 'Test']);
+      git(repo, ['add', '-A']);
+      git(repo, ['commit', '-qm', 'base']);
+      git(repo, ['worktree', 'add', '-q', '--detach', baseRoot, 'HEAD']);
+      git(repo, ['checkout', '-q', '-b', 'feature']);
+      git(repo, ['mv', 'packages/core/src/Card/Card.tsx', 'packages/core/src/Card/CardView.tsx']);
+      write(repo, 'packages/core/src/Card/index.ts', "export {Card} from './CardView';\n");
+      git(repo, ['commit', '-qam', 'rename the defining module']);
+      // Only the merge base is built; its package entry does not export Card,
+      // so a figure proves the defining module was measured.
+      write(baseRoot, 'packages/core/dist/Card/Card.js', 'export function Card() { return 1; }\n');
+      write(baseRoot, 'packages/core/dist/index.js', 'export const other = 1;\n');
+
+      execFileSync(
+        process.execPath,
+        [SCRIPT, '--base', 'main', '--head', 'HEAD', '--base-root', '.size-base', '--base-only', '--output', 'base.json'],
+        {cwd: repo, encoding: 'utf8'},
+      );
+      const base = JSON.parse(fs.readFileSync(path.join(repo, 'base.json'), 'utf8'));
+      expect(base.baseComponentSizes['core/Card'].importGzipBytes).toBeGreaterThan(0);
+    } finally {
+      fs.rmSync(repo, {recursive: true, force: true});
+    }
+  });
+
   it('measures ESM entries by module type and reads base sizes from a merge-base build', () => {
     const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-analyze-size-'));
     const baseRoot = path.join(repo, '.size-base');

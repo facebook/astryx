@@ -784,7 +784,8 @@ function analyze() {
   // Components a change can affect, by reach in the head build and, when the
   // merge base is built, in the base build too: CI's size-base job builds only
   // the base, and a module change can add or remove reach.
-  let targets = sizeTargets(changedFiles);
+  const headTargets = sizeTargets(changedFiles);
+  let targets = headTargets;
   let baseComponentSizes = null;
   if (baseRoot) {
     const headDir = process.cwd();
@@ -798,8 +799,11 @@ function analyze() {
       baseBundlePackages = PACKAGES.filter((p) => changedPackages.has(p.name)).map((p) =>
         getPackageBundleStats(p),
       );
-      targets = unionTargets(targets, sizeTargets(changedFiles));
-      baseComponentSizes = measureSizes(targets);
+      // Each tree is measured through its own defining modules, so a renamed
+      // module is not mistaken for a missing one.
+      const baseTargets = sizeTargets(changedFiles);
+      baseComponentSizes = measureSizes(unionTargets(baseTargets, headTargets));
+      targets = unionTargets(headTargets, baseTargets);
     } finally {
       process.chdir(headDir);
     }
