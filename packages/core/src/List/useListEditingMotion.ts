@@ -34,6 +34,7 @@ import {useRef, type RefObject} from 'react';
 import {isRtlElement} from '../hooks/isRtlElement';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {list, registerListTable} from '../motion/uikit/list';
+import {EDITING_CONTROL_ATTRIBUTE} from './ListContext';
 import {
   animateRow,
   animatorFor,
@@ -58,29 +59,37 @@ function rowsOf(element: HTMLElement): HTMLElement[] {
   );
 }
 
+/** What the list takes out of layout once its motion is done with it. */
+export interface ListEditingPresence {
+  /** Every trailing part has faded out after entering edit mode. */
+  onTrailingGone: () => void;
+  /** Every editing control has slid out after leaving edit mode. */
+  onControlGone: () => void;
+}
+
 /**
  * Plays the edit-mode transition on each row of `listRef` when `isEditing`
- * changes under a finger (`animates`). `onTrailingGone` runs once every
- * trailing part has faded out after entering edit mode, so the list can take
- * them out of layout.
+ * changes under a finger (`animates`), and tells the list (`presence`) when
+ * the parts that leave after it, the trailing content entering and the
+ * editing controls leaving, are gone.
  */
 export function useListEditingMotion(
   listRef: RefObject<HTMLElement | null>,
   isEditing: boolean,
   animates: boolean,
-  onTrailingGone: () => void,
+  presence: ListEditingPresence,
 ): void {
   const previousRef = useRef(isEditing);
-  const onTrailingGoneRef = useRef(onTrailingGone);
+  const presenceRef = useRef(presence);
   useIsomorphicLayoutEffect(() => {
-    onTrailingGoneRef.current = onTrailingGone;
+    presenceRef.current = presence;
   });
   const generationRef = useRef(0);
 
   // External system (`architecture:react-component-runtime` INV3): the
   // rows' Web Animations (the shared animator), started for the layout this
   // commit made: each moved part put back where it was and sprung home, each
-  // trailing part faded in place.
+  // trailing part faded in place, each editing control slid in or out.
   useIsomorphicLayoutEffect(() => {
     const element = listRef.current;
     const was = previousRef.current;
@@ -96,10 +105,48 @@ export function useListEditingMotion(
     // The indent moved each part toward the inline end by `indent` when
     // entering, back when leaving: put it where it was, then spring home.
     const shift = (isEditing ? -indent : indent) * (rtl ? -1 : 1);
+    // Where an editing control comes from and goes to: UIKit's travel
+    // toward the row's inline start.
+    const away = list.metrics.editingControlTravel * (rtl ? 1 : -1);
     const fades: Promise<boolean>[] = [];
+    const exits: Promise<boolean>[] = [];
     for (const row of rowsOf(element)) {
+      const control = row.querySelector<HTMLElement>(
+        `:scope > [${EDITING_CONTROL_ATTRIBUTE}]`,
+      );
+      if (control != null) {
+        // From where it shows: a control already moving turns around; a new
+        // one starts away, unseen.
+        const moving =
+          motionOf(control, 'x') != null ||
+          motionOf(control, 'opacity') != null;
+        if (isEditing && !moving) {
+          animatorFor(control).set({x: away, opacity: 0});
+        }
+        const slide = animateRow(
+          control,
+          isEditing ? {x: 0, opacity: 1} : {x: away, opacity: 0},
+          SPRING,
+          {
+            at: moving ? at : undefined,
+            crossfadeAs: isEditing ? 'entrance' : 'exit',
+          },
+        ).finished;
+        if (isEditing) {
+          void slide.then(arrived => {
+            if (arrived && generationRef.current === mine) {
+              releaseMotion(control, 'translate', 'opacity');
+            }
+          });
+        } else {
+          exits.push(slide);
+        }
+      }
       for (const part of Array.from(row.children)) {
-        if (!(part instanceof HTMLElement)) {
+        if (
+          !(part instanceof HTMLElement) ||
+          part.hasAttribute(EDITING_CONTROL_ATTRIBUTE)
+        ) {
           continue;
         }
         if (part.hasAttribute(TRAILING_ATTRIBUTE)) {
@@ -130,12 +177,17 @@ export function useListEditingMotion(
         });
       }
     }
-    if (isEditing) {
-      void Promise.all(fades).then(results => {
+    const whenAllArrive = (slides: Promise<boolean>[], gone: () => void) => {
+      void Promise.all(slides).then(results => {
         if (generationRef.current === mine && results.every(done => done)) {
-          onTrailingGoneRef.current();
+          gone();
         }
       });
+    };
+    if (isEditing) {
+      whenAllArrive(fades, () => presenceRef.current.onTrailingGone());
+    } else {
+      whenAllArrive(exits, () => presenceRef.current.onControlGone());
     }
   }, [listRef, isEditing, animates]);
 }

@@ -640,6 +640,9 @@ describe('List', () => {
       `${list.metrics.controlSize}px`,
     );
     expect(listRowConsts.editingIndent).toBe(`${list.metrics.editingIndent}px`);
+    expect(listRowConsts.editingControlCenter).toBe(
+      `${list.metrics.editingControlCenter}px`,
+    );
   });
 
   it('gives rows UIKit’s table heights under a finger only, on every touch platform', () => {

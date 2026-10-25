@@ -73,6 +73,17 @@ export interface ListContextValue {
    * mode, once it has faded out (List/useListEditingMotion.ts); internal.
    */
   showsTrailing?: boolean;
+  /**
+   * The control edit mode puts in each row's leading column
+   * (`editingControl`); internal. `'select'`: the theme's checkbox
+   * indicator, checked when the row is selected.
+   */
+  editingControl?: ListEditingControl;
+  /**
+   * Whether rows show their editing control: in edit mode, and after it
+   * while the control slides out (List/useListEditingMotion.ts); internal.
+   */
+  showsEditingControl?: boolean;
 }
 
 /**
@@ -80,6 +91,15 @@ export interface ListContextValue {
  * indent, which makes room for an editing control (no element of its own).
  */
 export const EDITING_ATTRIBUTE = 'data-astryx-editing';
+
+/** The control edit mode shows in each row's leading column. */
+export type ListEditingControl = 'select';
+
+/**
+ * Marks a row's editing control: the control itself, placed in the room its
+ * row's edit-mode padding makes (no wrapper of its own).
+ */
+export const EDITING_CONTROL_ATTRIBUTE = 'data-astryx-editing-control';
 
 export const ListContext = createContext<ListContextValue | null>(null);
 ListContext.displayName = 'ListContext';

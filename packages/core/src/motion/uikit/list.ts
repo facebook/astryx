@@ -118,6 +118,25 @@ export const list = {
      *   frame by frame (batch 75), Oct 24 2026
      */
     editingIndent: 40,
+    /**
+     * Where an editing control (the multiple-selection circle, the delete
+     * control) centres in edit mode, past the row's resting text start: the
+     * control (25.67 pt wide) sits at x 19.17, so its centre is at 32 pt, 12
+     * past a plain table's 20 pt text margin.
+     * @source measured: UIKit lab, iOS 26.2 sim iPhone 17 Pro, the edit
+     *   control's frame in a plain UITableView in edit mode (batches 57 and
+     *   75), Oct 24 2026
+     */
+    editingControlCenter: 12,
+    /**
+     * How far an editing control travels as edit mode comes and goes: it
+     * slides from x −24.83 to 19.17, 44 pt, fading from 0 to 1 on the table
+     * spring, and back out on leaving.
+     * @source measured: UIKit lab, iOS 26.2 sim iPhone 17 Pro, the edit
+     *   control's position and opacity frame by frame through
+     *   `setEditing(_:animated:)` (batch 75), Oct 24 2026
+     */
+    editingControlTravel: 44,
   },
   update: {
     /**

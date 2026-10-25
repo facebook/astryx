@@ -35,7 +35,13 @@ import {
   borderVars,
 } from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
-import {EDITING_ATTRIBUTE, ListContext, type ListMarker} from './ListContext';
+import {
+  EDITING_ATTRIBUTE,
+  EDITING_CONTROL_ATTRIBUTE,
+  ListContext,
+  type ListMarker,
+} from './ListContext';
+import {useIndicator} from '../Indicator';
 import {CheckboxInput} from '../CheckboxInput';
 import {isRenderable, mergeProps} from '../utils';
 import {Item} from '../Item';
@@ -353,6 +359,27 @@ const editingStyles = stylex.create({
       '[data-astryx-editing]': `calc(max(var(--container-padding-inline-start, 0px), var(--_item-inset-inline)) + ${listRowConsts.editingIndent})`,
     },
   },
+  // The editing control, placed itself (no wrapper) in the room the row's
+  // padding makes: centred UIKit's distance past the row's resting text
+  // start (its leading padding out of edit mode; `controlBleed` for
+  // 'bleed') and on the row's height. Leaving edit mode, the room goes at
+  // once (the content springs back from it) while the control slides out
+  // from where it stood. Its slide is a translate
+  // (List/useListEditingMotion.ts) and its centring a transform, so the two
+  // compose.
+  control: {
+    position: 'absolute',
+    insetInlineStart: `calc(var(--_item-inset-inline) + ${listRowConsts.editingControlCenter})`,
+    insetBlockStart: '50%',
+    transform: {
+      default: 'translate(-50%, -50%)',
+      ':is([dir="rtl"] *)': 'translate(50%, -50%)',
+    },
+    pointerEvents: 'none',
+  },
+  controlBleed: {
+    insetInlineStart: `calc(max(var(--container-padding-inline-start, 0px), var(--_item-inset-inline)) + ${listRowConsts.editingControlCenter})`,
+  },
 });
 
 const taskMarkerStyles = stylex.create({
@@ -484,12 +511,41 @@ export function ListItem({
   // has faded (List/useListEditingMotion.ts).
   const isEditing = ctx?.isEditing ?? false;
   const showsTrailing = ctx?.showsTrailing ?? true;
+  // Edit mode's control: the theme's checkbox indicator, decorative (the row
+  // keeps its selected semantics and its one tab stop), placed itself in the
+  // room the row's padding makes (no wrapper), shown in edit mode and while
+  // it slides out after.
+  const CheckboxControl = useIndicator('checkbox');
+  const showsControl =
+    ctx?.editingControl === 'select' &&
+    (isEditing || (ctx?.showsEditingControl ?? false));
+  const editingControl = showsControl ? (
+    <CheckboxControl
+      aria-hidden="true"
+      {...{[EDITING_CONTROL_ATTRIBUTE]: ''}}
+      state={isSelected ? 'checked' : 'unchecked'}
+      size="md"
+      isDisabled={isDisabled}
+      xstyle={[
+        editingStyles.control,
+        edge === 'bleed' && editingStyles.controlBleed,
+      ]}
+    />
+  ) : null;
 
   return (
     <Item
       as="li"
       ref={mergedRef}
-      marker={marker}
+      // One fragment in both modes, so the marker keeps its slot, and its
+      // element, when the control comes and goes: it slides with the text
+      // instead of remounting at rest.
+      marker={
+        <>
+          {editingControl}
+          {marker}
+        </>
+      }
       startContent={startContent}
       label={label}
       description={description}

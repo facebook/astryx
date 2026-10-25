@@ -32,6 +32,8 @@ export const listRowConsts = stylex.defineConsts({
   touchControlSize: '44px',
   /** `list.metrics.editingIndent`: how far edit mode moves a row's text. */
   editingIndent: '40px',
+  /** `list.metrics.editingControlCenter`: an editing control's centre. */
+  editingControlCenter: '12px',
 });
 
 /**

@@ -282,6 +282,69 @@ export const Editing: Story = {
   },
 };
 
+function EditingSelectionDemo() {
+  const [isEditing, setIsEditing] = useState(false);
+  const [selected, setSelected] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const toggle = (label: string) =>
+    setSelected(current => {
+      const next = new Set(current);
+      if (next.has(label)) {
+        next.delete(label);
+      } else {
+        next.add(label);
+      }
+      return next;
+    });
+  return (
+    <VStack gap={2}>
+      <div>
+        <Button
+          label={isEditing ? 'Done' : 'Edit'}
+          onClick={() => {
+            // Done ends the selection, as an app's edit mode usually does.
+            if (isEditing) {
+              setSelected(new Set());
+            }
+            setIsEditing(!isEditing);
+          }}
+        />
+      </div>
+      <List isEditing={isEditing} editingControl="select" hasDividers>
+        {['Inbox', 'Sent', 'Drafts', 'Archive'].map(label => (
+          <ListItem
+            key={label}
+            label={label}
+            isSelected={selected.has(label)}
+            onClick={() => {
+              if (isEditing) {
+                toggle(label);
+              }
+            }}
+            endContent={<Icon icon={ChevronRightIcon} />}
+          />
+        ))}
+      </List>
+    </VStack>
+  );
+}
+
+export const EditingSelection: Story = {
+  render: () => <EditingSelectionDemo />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'With `editingControl="select"`, edit mode shows the theme’s ' +
+          'checkbox indicator in each row, checked when the row is selected; ' +
+          'tapping a row toggles it here. Under a finger the controls slide ' +
+          'in with the rows and fade in, and slide out on Done.',
+      },
+    },
+  },
+};
+
 export const Links: Story = {
   render: args => (
     <List {...args}>

@@ -26,6 +26,7 @@ import {
   ListContext,
   type ListDensity,
   type ListEdge,
+  type ListEditingControl,
   type ListMarkerStyle,
 } from './ListContext';
 import {mergeProps} from '../utils';
@@ -100,6 +101,18 @@ export interface ListProps extends BaseProps<
    * @default false
    */
   isEditing?: boolean;
+
+  /**
+   * The control edit mode shows in each row's leading column. `'select'`:
+   * UIKit's multiple selection during editing, the theme's checkbox
+   * indicator (a theme can map it to a circle), checked when the row is
+   * `isSelected`. It is decorative: the row keeps its selected semantics
+   * and its one tab stop, and activating the row calls its `onClick` as
+   * before, for the app to toggle the row's selection. Under a finger it
+   * slides in with the rows and fades in, and slides out on leaving.
+   * Proposed public API, pending owner review.
+   */
+  editingControl?: ListEditingControl;
 
   /**
    * Whether to show dividers between list items. Under a finger, a touch
@@ -258,6 +271,7 @@ export function List({
   hasAnimatedChanges = false,
   followingContent = 'moves',
   isEditing = false,
+  editingControl,
   density = 'balanced',
   hasDividers = false,
   edge: edgeProp,
@@ -276,18 +290,23 @@ export function List({
   const listRef = useRef<HTMLUListElement & HTMLOListElement>(null);
   useListUpdateMotion(listRef, hasAnimatedChanges, followingContent);
   // Edit mode's trailing content stays while it fades out under a finger,
-  // and leaves once faded; leaving edit mode brings it back at once.
+  // and leaves once faded; leaving edit mode brings it back at once. The
+  // editing control, the other way round, stays while it slides out.
   const editingAnimates = useTouchPresentation().isTouch;
   const [trailingFading, setTrailingFading] = useState(false);
+  const [controlLeaving, setControlLeaving] = useState(false);
   const [editingSeen, setEditingSeen] = useState(isEditing);
   if (editingSeen !== isEditing) {
     setEditingSeen(isEditing);
     setTrailingFading(isEditing && editingAnimates);
+    setControlLeaving(!isEditing && editingAnimates && editingControl != null);
   }
-  useListEditingMotion(listRef, isEditing, editingAnimates, () =>
-    setTrailingFading(false),
-  );
+  useListEditingMotion(listRef, isEditing, editingAnimates, {
+    onTrailingGone: () => setTrailingFading(false),
+    onControlGone: () => setControlLeaving(false),
+  });
   const showsTrailing = !isEditing || trailingFading;
+  const showsEditingControl = isEditing || controlLeaving;
   const mergedRef = useMergedRefs(
     listRef,
     ref as React.Ref<HTMLUListElement & HTMLOListElement>,
@@ -315,6 +334,8 @@ export function List({
       keepRowPresentation: hasAnimatedChanges ? keepPresentation : undefined,
       isEditing,
       showsTrailing,
+      editingControl,
+      showsEditingControl,
     }),
     [
       density,
@@ -324,6 +345,8 @@ export function List({
       hasAnimatedChanges,
       isEditing,
       showsTrailing,
+      editingControl,
+      showsEditingControl,
     ],
   );
 
