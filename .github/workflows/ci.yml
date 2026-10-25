@@ -794,7 +794,7 @@ jobs:
     needs: [check-scope, native-swift-scope]
     if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
     runs-on: ${{ needs.native-swift-scope.outputs.applies == 'true' && 'macos-15' || 'ubuntu-slim' }}
-    timeout-minutes: 45
+    timeout-minutes: 30
     permissions:
       contents: read
     steps:

@@ -13,7 +13,7 @@ final class ComponentScreensUITests: XCTestCase {
   static let loadingLabel =
     "A loading button keeps its label at zero opacity under the spinner so its width holds; the audit measures that hidden label."
   static let scrolledValue =
-    "An unfocused single-line field shows a value wider than itself cut off with an ellipsis, as system text fields do; at the largest text size the email is cut off."
+    "At the largest text size the unfocused field cuts off the email with an ellipsis; at the default size the screenshot shows the whole value, and the audit's reason is not known."
 
   /// Audit issues found when the audit first ran, each with what is known of
   /// its cause. Any other issue fails, and so does a listed issue that no
@@ -145,5 +145,53 @@ final class ComponentScreensUITests: XCTestCase {
     name.tap()
     name.typeText("Ada")
     XCTAssertEqual(name.value as? String, "Ada")
+  }
+
+  /// What VoiceOver reads for Text: each text is one static text with its
+  /// words.
+  func testTextAccessibilityTree() {
+    let app = launch("Text")
+    XCTAssertTrue(app.staticTexts["Body text that wraps onto a second line when the screen is narrow."].exists)
+    XCTAssertTrue(app.staticTexts["Large"].exists)
+    XCTAssertTrue(app.staticTexts["Secondary"].exists)
+  }
+
+  /// What VoiceOver reads for Heading: each level is a static text with its
+  /// words. Its header trait is not readable through XCUITest, so the unit
+  /// tests assert it instead.
+  func testHeadingAccessibilityTree() {
+    let app = launch("Heading")
+    for level in 1...6 {
+      XCTAssertTrue(app.staticTexts["Heading level \(level)"].exists, "level \(level)")
+    }
+  }
+
+  /// What VoiceOver reads for Card: the card adds no element of its own, and
+  /// its heading and text stay reachable inside it.
+  func testCardAccessibilityTree() {
+    let app = launch("Card")
+    XCTAssertTrue(app.staticTexts["Order 1042"].exists)
+    XCTAssertTrue(app.staticTexts["Two items, arriving Thursday."].exists)
+  }
+
+  /// What VoiceOver reads for Icon: a labeled icon is an image named by its
+  /// label; an unlabeled icon is decorative and not read.
+  func testIconAccessibilityTree() {
+    let app = launch("Icon")
+    XCTAssertTrue(app.images["Search"].exists)
+    XCTAssertTrue(app.images["Done"].exists)
+    XCTAssertEqual(app.images.count, 2, "the unlabeled icon is decorative")
+  }
+
+  /// What VoiceOver reads for Banner: one element per banner, reading its
+  /// title then its description; the icon and the separate texts are not
+  /// read on their own.
+  func testBannerAccessibilityTree() {
+    let app = launch("Banner")
+    let banners = app.descendants(matching: .any).matching(
+      NSPredicate(format: "label == %@", "Changes saved, Your draft is up to date."))
+    XCTAssertEqual(banners.count, 4, "one element per banner, title then description")
+    XCTAssertFalse(app.staticTexts["Changes saved"].exists, "the title is not read again on its own")
+    XCTAssertEqual(app.images.count, 0, "the status icon is not read")
   }
 }
