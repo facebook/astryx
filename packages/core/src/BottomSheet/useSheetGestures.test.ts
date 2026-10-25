@@ -470,13 +470,29 @@ describe('useSheetGestures', () => {
       expect(onDismiss).toHaveBeenCalledTimes(1);
     });
 
-    it('reads a single move after a hold as a move, not as the whole hold', () => {
+    it('reads a single move after a hold over the hold, as for every pointer (spec:AST-100 FR4)', () => {
       const {hook, onDismiss} = setup({snapHeights: () => [200]});
       const t = makeTarget();
       down(hook, 0, 0, t);
       move(hook, 60, 300, t); // one sample, 300ms after touch-down
       up(hook, 60, 302, t);
-      expect(onDismiss).toHaveBeenCalledTimes(1);
+      // UIKit's filter reads 60 px over the 300 ms since the last sample,
+      // 200 px/s, under a mouse as under a finger: its coast (about 100 px)
+      // ends short of the dismiss line, nearest the 200 px detent.
+      expect(onDismiss).not.toHaveBeenCalled();
+      expect(hook.result.current.settledOffset).toBe(200);
+    });
+
+    it('throws nothing from a mouse held still for over 40 ms before the lift (spec:AST-100 FR2)', () => {
+      const {hook, onDismiss} = setup({snapHeights: () => [200]});
+      const t = makeTarget();
+      down(hook, 0, 0, t);
+      stream(hook, t, {from: 0, to: 60, t0: 0, t1: 40}); // 1500 px/s ...
+      up(hook, 60, 95, t); // ... 55 ms still, then the lift
+      // The speed over the last 100 ms used to keep the throw; the release
+      // velocity every pointer reads is 0 after a still pointer.
+      expect(onDismiss).not.toHaveBeenCalled();
+      expect(hook.result.current.settledOffset).toBe(0);
     });
 
     it('releases no throw from a finger that rested before lifting', () => {
@@ -2205,6 +2221,45 @@ describe('useSheetGestures: the release on the compositor', () => {
     expect(hook.result.current.settledOffset).toBe(0);
     const release = played.at(-1) as Played;
     // The sheet extends 48 px below the screen: it never rises past that.
+    for (let ms = 0; ms <= 600; ms += 4) {
+      expect(travelAt(release, ms)).toBeGreaterThanOrEqual(-48.5);
+    }
+  });
+
+  it("keeps a fast throw within the reserve on the theme's release spring too (spec:AST-094 FR4)", () => {
+    // A theme retunes the fast release to a bouncier spring: the cap reads
+    // the spring the release plays, not the table's.
+    const scope = document.createElement('div');
+    scope.setAttribute('data-astryx-theme', 'bouncy-release');
+    document.body.append(scope);
+    const computed = window.getComputedStyle.bind(window);
+    vi.spyOn(window, 'getComputedStyle').mockImplementation(
+      (element: Element, pseudo?: string | null) =>
+        element === scope
+          ? ({
+              getPropertyValue: (name: string) =>
+                name === '--motion-springs-sheet-release-fast'
+                  ? '0.5s 0.6'
+                  : '',
+            } as CSSStyleDeclaration)
+          : computed(element, pseudo),
+    );
+    const {hook} = setup({
+      snapHeights: () => [200],
+      offscreenBlockEndInset: 48,
+    });
+    const t = makeTarget();
+    scope.append(t);
+    const played = recordAnimations(t);
+    down(hook, 0, 0, t);
+    stream(hook, t, {from: 0, to: 150, t0: 0, t1: 600});
+    // Thrown back up at 3000 px/s, released 5 px below fully open.
+    stream(hook, t, {from: 150, to: 5, t0: 600, t1: 648});
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(pointerEvent(5, 650, t)),
+    );
+    expect(hook.result.current.settledOffset).toBe(0);
+    const release = played.at(-1) as Played;
     for (let ms = 0; ms <= 600; ms += 4) {
       expect(travelAt(release, ms)).toBeGreaterThanOrEqual(-48.5);
     }
