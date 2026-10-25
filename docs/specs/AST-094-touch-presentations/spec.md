@@ -113,8 +113,7 @@ a measured, sourced difference exists.
   amends `spec:AST-057` for touch presentations: Item's swipe springs and
   durations become theme motion roles instead of constants in source. It departs from the draft `design:motion` DR3
   wherever the native motion settles with an overshoot or stretches with a
-  rubber band. The motion and gesture machinery behind these roles is internal:
-  it publishes no public API.
+  rubber band.
 
   | Role                       | Default                             | Source                                                                                         |
   | -------------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------- |
