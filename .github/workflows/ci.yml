@@ -1654,6 +1654,17 @@ jobs:
             --project chromium \
             --output codeblock-overflow-stop-output
 
+      # On a touch-first device the stylesheet drops `:active` for every
+      # press, so the press controller paints a mouse or Space press itself;
+      # only a real engine reports a coarse primary pointer, presents the
+      # pressed pixels and synthesises the click.
+      - name: Run press modality contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/__tests__/PressModality.a11y.chromium.spec.ts \
+            --project chromium \
+            --output press-modality-output
+
       # A DropdownMenu header and footer sit beside the menu, outside its
       # role="menu" element, and join one Tab sequence with it. Focus order,
       # the popover's focus trap, the keyboard-only ring and a finger tap on a
