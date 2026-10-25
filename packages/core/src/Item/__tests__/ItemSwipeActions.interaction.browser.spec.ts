@@ -19,7 +19,9 @@
  *   main thread, and one that backs out closes with the entries pinned or
  *   riding at every frame; storyboards. Under Reduce Motion a release, a
  *   confirm and a back-out land with no travel at the bottom of an opacity
- *   dip (design:reduced-motion DR2).
+ *   dip (design:reduced-motion DR2). A control in the row (the internal
+ *   swipe-reveal seam List's edit mode uses) opens the row on the same settle
+ *   spring, and a tap on it while open is the row's dismissing tap.
  * @position Interaction proofs of Item's swipeActions (the shape of
  *   BottomSheetDetent.interaction.browser.spec.ts, the harness exemplar). The
  *   row moves by the individual `translate` property (the compositor
@@ -742,6 +744,75 @@ async function countClicks(row: Locator) {
             .clicks,
       );
 }
+
+test('a control in the row opens its trailing actions on the swipe’s own settle spring, and a tap on it while open closes the row with no click to open it again', async ({
+  page,
+  browserName,
+}, testInfo) => {
+  await openStory(page, storybook(), 'core-item--swipe-reveal-control');
+  const driver = await touchDriver(page);
+  const row = page.locator('.astryx-item').first();
+  const panel = row.locator('[data-swipe-panel="trailing"]');
+  const control = row.getByRole('button', {name: 'Delete control'});
+  // The control renders once the lazily loaded swipe layer has mounted.
+  await expect(control).toBeVisible();
+  await expect(panel).toBeAttached();
+  // The entries are the track's children.
+  const openWidth = await openWidthOf(panel.locator(':scope > div').first());
+  const centerOf = async () => {
+    const box = await control.boundingBox();
+    if (box == null) {
+      throw new Error('no control');
+    }
+    return {x: box.x + box.width / 2, y: box.y + box.height / 2};
+  };
+  await installTimerGate(page);
+  await engineTap(page, browserName, driver, await centerOf());
+  const motion = await motionOf(row, -openWidth);
+  await freezeTimers(page);
+  const held = await holdAnimations(page, row);
+  const samples: {t: number; value: number}[] = [];
+  for (const t of timeline(motion.ms + 50)) {
+    await seekAnimations(page, t);
+    samples.push({t, value: (await partsOf(row)).root});
+  }
+  await releaseAnimations(page);
+  await thawTimers(page);
+  // From rest, toward the panel's width, on the settle spring: the curve a
+  // held release past half the panel plays.
+  const from = samples[0].value;
+  const to = -openWidth;
+  const result = compareCurve(
+    samples,
+    (t: number) => from + (to - from) * springStep(SPRING, t),
+    0.5,
+  );
+  await writeEvidence(
+    'curves/item-swipe-reveal',
+    {
+      [`${testInfo.project.name}.json`]: JSON.stringify(
+        {spring: SPRING, openWidth, held, comparison: result, samples},
+        null,
+        1,
+      ),
+    },
+    testInfo,
+  );
+  expect(result.maxError, JSON.stringify(result.worst)).toBeLessThanOrEqual(
+    0.5,
+  );
+  await expect.poll(async () => xOf(row)).toBeCloseTo(to, 0);
+  await expect(panel).not.toHaveAttribute('inert');
+  // Open, a touch on the control is the row's dismissing tap: the row closes
+  // and the browser makes no click, so nothing opens it again.
+  const clicks = await countClicks(control);
+  await engineTap(page, browserName, driver, await centerOf());
+  await expect.poll(async () => xOf(row)).toBeCloseTo(0, 0);
+  await page.waitForTimeout(400);
+  expect(await clicks()).toBe(0);
+  expect(await xOf(row)).toBeCloseTo(0, 0);
+  await expect(panel).toHaveAttribute('inert');
+});
 
 test('a tap on the resting row’s own content closes it, with no press paint, and no click reaches the row', async ({
   page,

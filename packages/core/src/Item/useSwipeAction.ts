@@ -149,6 +149,11 @@ export function isSwipeOpen(state: SwipeState): boolean {
   );
 }
 
+/** The side an open row is open on (see `isSwipeOpen`), or `null`. */
+function openSideOf(state: SwipeState): SwipeSide | null {
+  return isSwipeOpen(state) ? state.side : null;
+}
+
 /** Callback refs for the elements of one side's panel that move. */
 export interface SwipePanelRefs {
   /** The window over the row's resting box. */
@@ -180,10 +185,11 @@ export interface UseSwipeActionOptions {
   /** Whether the side's outermost entry can fire: a disabled one never confirms a full swipe. */
   canConfirm: (side: SwipeSide) => boolean;
   /**
-   * Told from the transition that opens or closes the row (open is
-   * `isSwipeOpen`), and told `false` if the row leaves while open.
+   * Told the side the row opens on from the transition that opens it (open
+   * is `isSwipeOpen`), `null` from the one that closes it, and `null` if the
+   * row leaves while open.
    */
-  onOpenChange?: (isOpen: boolean) => void;
+  onOpenChange?: (side: SwipeSide | null) => void;
 }
 
 export interface UseSwipeActionResult {
@@ -197,6 +203,12 @@ export interface UseSwipeActionResult {
   activateEntry: (fire: () => boolean) => void;
   /** Close a resting row. */
   close: () => void;
+  /**
+   * Open the row on `side` as a swipe opens it, from wherever it is: a row
+   * open on the other side closes first. Nothing while a finger holds the
+   * row, while it holds out after a fire, or toward a side without entries.
+   */
+  reveal: (side: SwipeSide) => void;
   /** Escape closes a resting row with focus inside it. */
   onKeyDown: (event: ReactKeyboardEvent) => void;
 }
@@ -580,19 +592,19 @@ export function useSwipeAction({
   // row reports it at once, from the handler that caused it.
   const setSwipeState = useCallback((next: SwipeState) => {
     const report = latestRef.current.onOpenChange;
-    const wasOpen = isSwipeOpen(stateRef.current);
-    const isOpen = isSwipeOpen(next);
+    const was = openSideOf(stateRef.current);
+    const now = openSideOf(next);
     stateRef.current = next;
     setState(next);
-    if (wasOpen !== isOpen) {
-      report?.(isOpen);
+    if (was !== now) {
+      report?.(now);
     }
   }, []);
   // Releases the open report when the row leaves while open.
   useEffect(
     () => () => {
       if (isSwipeOpen(stateRef.current)) {
-        latestRef.current.onOpenChange?.(false);
+        latestRef.current.onOpenChange?.(null);
       }
     },
     [],
@@ -909,6 +921,83 @@ export function useSwipeAction({
     settle(layout, 0, 'idle');
   }, [isOpen, rootRef, settle]);
 
+  /** The layout of `side` now, as a drag or a reveal that uncovers it takes it. */
+  const layoutFor = useCallback(
+    (side: SwipeSide, root: HTMLElement): SwipeLayout => {
+      const outerWidth = animators[side].outer.element?.offsetWidth ?? 0;
+      return {
+        inlineSign: isRtlElement(root) ? -1 : 1,
+        openWidth: animators[side].entries.width() + outerWidth,
+        outerWidth,
+        side,
+      };
+    },
+    [animators],
+  );
+
+  // The entries keep their place against the track only for the width they
+  // were placed with; a first drag or reveal (or new entries) puts them in
+  // place, while the track still hides them.
+  const placeEntries = useCallback(
+    (layout: SwipeLayout) => {
+      const side = animators[layout.side];
+      const expected = swipeParts(travelNow(layout), layout).entries;
+      const pinned =
+        side.entries.members().length > 0
+          ? side.entries.get('x')
+          : side.outer.get('x');
+      if (Math.abs(pinned - expected) > AT_REST_PX) {
+        side.entries.set({x: expected});
+        side.outer.set({x: expected});
+      }
+    },
+    [animators, travelNow],
+  );
+
+  // A control in the row opens it, as UIKit's edit-mode delete control does:
+  // the row settles open on the side exactly as a release past half the panel
+  // leaves it, so it closes by the same tap, pointer, scroll or Escape.
+  const reveal = useCallback(
+    (side: SwipeSide) => {
+      const {phase, landing} = stateRef.current;
+      if (
+        dragRef.current != null ||
+        !latestRef.current.sides[side] ||
+        phase === 'held' ||
+        (phase === 'settling' && landing === 'held')
+      ) {
+        return;
+      }
+      const root = rootRef.current;
+      if (root == null) {
+        return;
+      }
+      const layout = layoutFor(side, root);
+      if (layout.openWidth <= 0) {
+        return;
+      }
+      const open = () => {
+        placeEntries(layout);
+        settle(layout, layout.openWidth, 'resting');
+      };
+      // A row open or moving on the other side closes first.
+      const current = layoutRef.current;
+      if (
+        current != null &&
+        current.side !== side &&
+        Math.abs(animators.root.get('x')) > AT_REST_PX
+      ) {
+        settle(current, 0, 'idle', () => {
+          open();
+          return true;
+        });
+        return;
+      }
+      open();
+    },
+    [animators, layoutFor, placeEntries, rootRef, settle],
+  );
+
   const activateEntry = useCallback(
     (fire: () => boolean) => {
       const layout = layoutRef.current;
@@ -1000,27 +1089,9 @@ export function useSwipeAction({
           ? 'leading'
           : 'trailing'
         : sideFor(pan.totalTranslation().x, inlineSign);
-    const outerWidth = animators[side].outer.element?.offsetWidth ?? 0;
-    const layout: SwipeLayout = {
-      inlineSign,
-      openWidth: animators[side].entries.width() + outerWidth,
-      outerWidth,
-      side,
-    };
+    const layout = layoutFor(side, root);
     const rowWidth = root.clientWidth;
-    // The entries keep their place against the track only for the width they
-    // were placed with; a first drag (or new entries) puts them in place now,
-    // while the track still hides them.
-    const sideAnimators = animators[side];
-    const expected = swipeParts(travelNow(layout), layout).entries;
-    const pinned =
-      sideAnimators.entries.members().length > 0
-        ? sideAnimators.entries.get('x')
-        : sideAnimators.outer.get('x');
-    if (Math.abs(pinned - expected) > AT_REST_PX) {
-      sideAnimators.entries.set({x: expected});
-      sideAnimators.outer.set({x: expected});
-    }
+    placeEntries(layout);
     dragRef.current = {
       baseTravel: 0,
       canConfirm: latestRef.current.canConfirm(side),
@@ -1234,5 +1305,5 @@ export function useSwipeAction({
     [close, isOpen],
   );
 
-  return {activateEntry, close, onKeyDown, panelRefs, state};
+  return {activateEntry, close, onKeyDown, panelRefs, reveal, state};
 }
