@@ -27,14 +27,14 @@
  *   tracked release and disarms at the next pointer press or after a short
  *   window; a click with `detail === 0` (a keyboard's or a screen reader's)
  *   always passes.
- * - A mouse press on the trigger opens the menu at once. With
- *   `touchModel: 'uikit'` (DropdownMenu under a finger, `spec:AST-094` FR29)
- *   a finger on a trigger in a fixed bar opens it as it presses, and inside a
- *   scroll view once the 150 ms content-touch delay has passed with no
- *   scroll; the opening finger then travels UIMenu's handoff distance before
- *   it picks. With `touchModel: 'pointer'` (the default) a finger held for
+ * - A mouse press on the trigger opens the menu at once. A finger held for
  *   `longPressDelayMs` opens it and the opening press follows the settle
- *   rule, as before (see menuPressGesture.ts).
+ *   rule (see menuPressGesture.ts). DropdownMenu's own entry
+ *   (`useDropdownMenuPress`, touch model `'uikit'`, `spec:AST-094` FR29)
+ *   instead opens it as a finger presses on a trigger in a fixed bar, and
+ *   inside a scroll view once the 150 ms content-touch delay has passed with
+ *   no scroll; the opening finger then travels UIMenu's handoff distance
+ *   before it picks.
  * - `pointercancel`, a second pointer, or the window losing focus end the
  *   gesture with nothing acting; the model never re-implements scrolling.
  * - While a press is tracked in an overflowing menu, a pointer resting near
@@ -229,11 +229,23 @@ export interface UseMenuPressOptions {
    */
   hitTest?: (x: number, y: number) => Element | null;
   /**
-   * How long a finger rests on the trigger before the menu opens under it,
-   * with `touchModel: 'pointer'`.
+   * How long a finger rests on the trigger before the menu opens under it.
    * @default 500
    */
   longPressDelayMs?: number;
+  /** Whether the model is live. @default true */
+  isEnabled?: boolean;
+}
+
+/**
+ * DropdownMenu's options for the press model: everything the public hook
+ * takes, plus its touch model. The touch mode stays internal
+ * (`architecture:public-component-api` INV16 reaches it through
+ * DropdownMenu's `presentation`), so it is not an option of the public hook.
+ *
+ * @internal
+ */
+export interface DropdownMenuPressOptions extends UseMenuPressOptions {
   /**
    * How a finger on the trigger opens the menu and picks from it.
    * `'pointer'`: after `longPressDelayMs`, and the opening press follows the
@@ -244,8 +256,6 @@ export interface UseMenuPressOptions {
    * @default 'pointer'
    */
   touchModel?: 'pointer' | 'uikit';
-  /** Whether the model is live. @default true */
-  isEnabled?: boolean;
 }
 
 export interface UseMenuPressReturn {
@@ -283,7 +293,7 @@ function normalizePointerType(type: string): MenuPressPointerType | null {
  */
 function handoffPosition(
   event: PointerEvent,
-  touchModel: UseMenuPressOptions['touchModel'],
+  touchModel: DropdownMenuPressOptions['touchModel'],
 ): {x?: number; y?: number} {
   return touchModel === 'uikit' ? {x: event.clientX, y: event.clientY} : {};
 }
@@ -400,6 +410,23 @@ interface ResolvedPoint {
  * ```
  */
 export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
+  // The touch model is DropdownMenu's alone; an untyped caller's
+  // `touchModel` does not reach the model.
+  const {touchModel: _touchModel, ...publicOptions} =
+    options as DropdownMenuPressOptions;
+  return useDropdownMenuPress(publicOptions);
+}
+
+/**
+ * The press model with DropdownMenu's touch model
+ * ({@link DropdownMenuPressOptions.touchModel}). Not exported from the hooks
+ * entry point.
+ *
+ * @internal
+ */
+export function useDropdownMenuPress(
+  options: DropdownMenuPressOptions,
+): UseMenuPressReturn {
   const optionsRef = useRef(options);
   optionsRef.current = options;
   // The highlight, and the hover focus of the rows in this menu, follow the

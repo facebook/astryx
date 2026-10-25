@@ -18,6 +18,7 @@ import {
   MENU_PRESS_LONG_PRESS_MS,
   MENU_PRESS_STRAY_CLICK_MS,
   __resetMenuPressForTest,
+  useDropdownMenuPress,
   useMenuPress,
   type UseMenuPressReturn,
 } from './useMenuPress';
@@ -103,7 +104,9 @@ function Harness({
     setIsOpen(next);
     onOpenChange?.(next);
   };
-  const press = useMenuPress({
+  // DropdownMenu's own entry, so the harness can also drive its touch model;
+  // without `touchModel` it behaves as the public hook.
+  const press = useDropdownMenuPress({
     menuRef,
     triggerRef,
     itemSelector: ITEM_SELECTOR,
@@ -820,5 +823,47 @@ describe('useMenuPress — edge autoscroll', () => {
     });
     document.dispatchEvent(afterCancel);
     expect(afterCancel.defaultPrevented).toBe(false);
+  });
+});
+
+describe('useMenuPress — the public hook has no touch model', () => {
+  function PublicHarness({
+    onOpenChange,
+  }: {
+    onOpenChange: (open: boolean) => void;
+  }) {
+    const menuRef = useRef<HTMLDivElement>(null);
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    const press = useMenuPress({
+      menuRef,
+      triggerRef,
+      itemSelector: ITEM_SELECTOR,
+      onTriggerPress: () => {
+        onOpenChange(true);
+        return true;
+      },
+      // An untyped caller passing DropdownMenu's own option gets nothing
+      // from it: the touch model is not part of the public hook.
+      ...({touchModel: 'uikit'} as object),
+    });
+    return (
+      <>
+        <button type="button" ref={triggerRef} {...press.triggerProps}>
+          Open
+        </button>
+        <div ref={menuRef} role="menu" {...press.menuProps} />
+      </>
+    );
+  }
+
+  it('a finger press on the trigger does not open the menu by itself', () => {
+    const onOpenChange = vi.fn();
+    render(<PublicHarness onOpenChange={onOpenChange} />);
+    fireEvent.pointerDown(screen.getByRole('button', {name: 'Open'}), {
+      pointerType: 'touch',
+      pointerId: 1,
+      button: 0,
+    });
+    expect(onOpenChange).not.toHaveBeenCalled();
   });
 });
