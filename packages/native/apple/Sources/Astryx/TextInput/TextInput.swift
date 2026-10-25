@@ -175,12 +175,13 @@ public struct TextInput: View {
 
   private var labelRow: some View {
     SwiftUI.HStack(alignment: .firstTextBaseline, spacing: astryx.tokens.space.s1) {
-      // The field reads the label and its note, so VoiceOver skips them here.
+      // The field reads the label and its note, so VoiceOver skips them here
+      // while the field shows; with the field hidden they are read as text.
       Text(props.label, type: .label, color: isDisabled ? .disabled : .secondary, weight: .medium)
-        .accessibilityHidden(true)
+        .accessibilityHidden(!hidesControl)
       if let note = labelNote {
         Text("∙ \(note)", type: .supporting, color: .secondary, weight: .normal)
-          .accessibilityHidden(true)
+          .accessibilityHidden(!hidesControl)
       }
       if let tip = props.labelTooltip {
         tipIcon(tip, icon: "info", label: tip)

@@ -80,7 +80,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | FR2 | A read-only or disabled field MUST draw its value (masked for a password, the placeholder when empty), keep its focus stop without raising a keyboard, accept no edits, and read to VoiceOver as SwiftUI's text field (`accessibilityRepresentation`): dimmed when disabled, a secure field for a password, with "Read only" or the disabled reason in its description. | `spec:AST-085`; `family:input-fields` FR4; AV1     | verify             |
 | FR3 | An error MUST be in the field's VoiceOver label after its name; the description and status message MUST stay readable as text and in the description. A status message, and "Loading", are announced on the field's first appearance and when they change, an error at high priority.                                                                                   | `component:TextInput`; `component:FieldStatus` AR1 | verify             |
 | FR4 | The label tip, the tooltip-variant status, the clear button, and a disabled reason MUST show through the shared Astryx tooltip; no view uses `.help`. Trailing controls each lay out across their own 44-point target.                                                                                                                                                  | `spec:AST-082` FR11; Swift tooltip record          | verify             |
-| FR5 | Base `id` and `isHidden` MUST apply to the field control, TextInput's base target: `id` is its accessibility identifier, and `isHidden` takes the control and its buttons out of layout and focus (autofocus included) while the label, description, and status stay.                                                                                                   | `spec:AST-082` FR7                                 | verify             |
+| FR5 | Base `id` and `isHidden` MUST apply to the field control, TextInput's base target: `id` is its accessibility identifier, and `isHidden` takes the control and its buttons out of layout and focus (autofocus included) while the label, description, and status stay, with the label and its note read by VoiceOver as text.                                            | `spec:AST-082` FR7                                 | verify             |
 
 ### Allowed variation
 
@@ -138,11 +138,12 @@ Text fields and Accessibility in the Apple Human Interface Guidelines
 (`spec:AST-093` FR3).
 
 Theme values read (`spec:AST-093` FR4): `color.textPrimary`,
-`color.textSecondary`, `color.borderEmphasized`, `color.error`,
+`color.textSecondary`, `color.textDisabled`, `color.borderEmphasized`, `color.error`,
 `color.warning`, `color.success`, `color.errorMuted`, `color.warningMuted`,
 `color.successMuted`, `color.textRed`, `color.textYellow`, `color.textGreen`,
 `size.elementSm`, `size.elementMd`, `size.elementLg`, `size.borderWidth`,
 `radius.element`, `space` steps, `font.body`, `font.label`, `font.supporting`,
+`font.weight.medium`, `font.weight.normal`,
 `font.family.body`, the theme's icons, and the Dynamic Type scale.
 
 ## Family and system relationships
