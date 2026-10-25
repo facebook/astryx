@@ -534,6 +534,75 @@ test('the tap claim attaches only where it claims taps', async ({page}) => {
   expect(await touchActionOf(page)).toBe('auto');
 });
 
+/**
+ * Records every focus call on the search field and every document scroll,
+ * from here on.
+ */
+async function spyFocusAndScroll(page: Page) {
+  await page.evaluate(() => {
+    const spy = {focus: [] as unknown[], scrolls: 0, scrollY: window.scrollY};
+    (window as unknown as {__spy: typeof spy}).__spy = spy;
+    const focus = HTMLElement.prototype.focus;
+    HTMLElement.prototype.focus = function (options?: FocusOptions) {
+      if (this.getAttribute('role') === 'searchbox') {
+        spy.focus.push(options ?? null);
+      }
+      focus.call(this, options);
+    };
+    window.addEventListener('scroll', () => {
+      spy.scrolls++;
+    });
+  });
+  return async () =>
+    page.evaluate(() => {
+      const spy = (
+        window as unknown as {
+          __spy: {focus: unknown[]; scrolls: number; scrollY: number};
+        }
+      ).__spy;
+      return {...spy, scrolled: window.scrollY - spy.scrollY};
+    });
+}
+
+test('focus moved from another control (Tab, as the keyboard’s next button moves it) reaches the field without a reveal', async ({
+  page,
+}) => {
+  const {field} = await openBottom(page);
+  // Another text field, before the bar in the document.
+  await page.evaluate(() => {
+    const other = document.createElement('input');
+    other.setAttribute('aria-label', 'Name');
+    document.body.prepend(other);
+  });
+  await page.getByRole('textbox', {name: 'Name'}).focus();
+  const read = await spyFocusAndScroll(page);
+  await page.keyboard.press('Tab');
+  await expect(field).toBeFocused();
+  // The field took the move over with preventScroll (spec:AST-099 FR4), and
+  // the document did not move.
+  const spy = await read();
+  expect(spy.focus).toEqual([{preventScroll: true}]);
+  expect(spy.scrolls).toBe(0);
+  expect(spy.scrolled).toBe(0);
+});
+
+test('after the keyboard’s Done, the next tap focuses the field without a reveal', async ({
+  page,
+}) => {
+  const {driver, field} = await openBottom(page);
+  await driver.tap(await centerOf(field));
+  await expect(field).toBeFocused();
+  // Done ends editing: focus leaves the field for nothing.
+  await field.evaluate(element => (element as HTMLElement).blur());
+  const read = await spyFocusAndScroll(page);
+  await driver.tap(await centerOf(field));
+  await expect(field).toBeFocused();
+  const spy = await read();
+  expect(spy.focus).toEqual([{preventScroll: true}]);
+  expect(spy.scrolls).toBe(0);
+  expect(spy.scrolled).toBe(0);
+});
+
 test('a tap into an existing query puts the caret where the finger lifted', async ({
   page,
 }) => {

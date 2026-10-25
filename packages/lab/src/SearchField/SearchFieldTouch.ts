@@ -564,6 +564,29 @@ export function useSearchFieldMotion({
     },
   );
 
+  // Focus navigation into the field (the keyboard's previous and next
+  // buttons, Tab) moves focus from another control, and the browser reveals
+  // the field in its own focus step. That move's blur, dispatched in the
+  // capture phase ahead of the step, names the field in `relatedTarget`:
+  // focusing it there with preventScroll leaves the step nothing to reveal
+  // (spec:AST-099 FR4), the rule core's keyboard module follows to refuse a
+  // reveal (#8176). A host's own focus goes through the handle, which passes
+  // preventScroll. Where the tap is claimed.
+  useEffect(() => {
+    const input = inputRef.current;
+    const doc = input?.ownerDocument;
+    if (!claimsTap || input == null || doc == null) {
+      return;
+    }
+    const onBlur = (event: FocusEvent) => {
+      if (event.relatedTarget === input && doc.activeElement !== input) {
+        input.focus({preventScroll: true});
+      }
+    };
+    doc.addEventListener('blur', onBlur, true);
+    return () => doc.removeEventListener('blur', onBlur, true);
+  }, [claimsTap, inputRef]);
+
   // A resize while settled (the window turning, a host relaying out) moves
   // the narrowed end to the new width at once.
   useLayoutEffect(() => {
