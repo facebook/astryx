@@ -209,18 +209,30 @@ const calmTheme = defineTheme({
               '350ms',
             ],
             [
+              'paging.animatedScroll.curve',
+              '--motion-paging-animated-scroll-curve',
+              'curve',
+              'cubic-bezier(0.364212, 0, 0.635788, 1)',
+            ],
+            [
+              'paging.animatedScroll.durationMs',
+              '--motion-paging-animated-scroll-duration-ms',
+              'duration',
+              '300ms',
+            ],
+            [
+              'paging.settle',
+              '--motion-paging-settle',
+              'spring',
+              '0.3723s 0.1225',
+            ],
+            [
               'picker.tapSpin.durationMs',
               '--motion-picker-tap-spin-duration-ms',
               'duration',
               '300ms',
             ],
             ['scroll.bounce', '--motion-scroll-bounce', 'spring', '0.5s 0'],
-            [
-              'scroll.paging.snap',
-              '--motion-scroll-paging-snap',
-              'spring',
-              '0.5s 0',
-            ],
             [
               'springs.actionSheetDismiss',
               '--motion-springs-action-sheet-dismiss',
