@@ -139,6 +139,8 @@ export class PanGestureRecognizer extends GestureRecognizer {
   /** Translation since touch-down, before `setTranslation` offsets. */
   private raw: Point = ZERO;
   private offset: Point = ZERO;
+  /** The lift's event time, once the last finger lifted. */
+  private liftTime: number | undefined;
   private virtual: Point = ZERO;
   private isObserving = false;
   private anchor: Point | null = null;
@@ -201,12 +203,15 @@ export class PanGestureRecognizer extends GestureRecognizer {
    * is the last moving value, since a finger at rest sends no events.
    */
   velocity(): Point {
-    return this.locked(this.readVelocity(this.tracker));
+    return this.locked(this.readVelocity(this.tracker, this.liftTime));
   }
 
-  /** The tracker's reading this kind of recognizer reports: a pan's. */
-  protected readVelocity(tracker: VelocityTracker): Point {
-    return tracker.velocity();
+  /**
+   * The tracker's reading this kind of recognizer reports: a pan's. `at` is
+   * the lift's event time once the last finger lifted (the stillness reset).
+   */
+  protected readVelocity(tracker: VelocityTracker, at?: number): Point {
+    return tracker.velocity(at);
   }
 
   /**
@@ -295,9 +300,16 @@ export class PanGestureRecognizer extends GestureRecognizer {
     }
   }
 
-  protected override touchesEnded(touches: ReadonlyArray<GestureTouch>): void {
-    // UIKit reads neither the translation nor the velocity from the lift.
+  protected override touchesEnded(
+    touches: ReadonlyArray<GestureTouch>,
+    event: GestureEventContext,
+  ): void {
+    // UIKit reads neither the translation nor the velocity from the lift;
+    // its time is kept for the stillness reset.
     const remaining = this.numberOfTouches - touches.length;
+    if (remaining === 0) {
+      this.liftTime = event.time;
+    }
     if (isActive(this.state)) {
       if (remaining < this.minimumNumberOfTouches) {
         this.setState('ended');
@@ -331,6 +343,7 @@ export class PanGestureRecognizer extends GestureRecognizer {
   }
 
   protected override reset(): void {
+    this.liftTime = undefined;
     this.isClaimCommitted = false;
     this.lockedAxis = null;
     this.travelAtBegan = ZERO;
