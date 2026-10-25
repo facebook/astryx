@@ -70,8 +70,8 @@ public struct Button: View {
       // The label keeps its place while loading so the width holds; the
       // spinner draws over it.
       HStack(spacing: astryx.space(2)) {
-        if let icon, let symbol = astryx.icon(icon) {
-          Image(systemName: symbol)
+        if let icon, let image = astryx.icon(icon)?.image {
+          image
         }
         SwiftUI.Text(label).lineLimit(1)
       }
