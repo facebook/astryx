@@ -27,7 +27,6 @@
 
 /**
  * How iOS shows a selection mark changing: in one frame, with no animation.
- * @experimental
  */
 export const selection = {
   mark: {
