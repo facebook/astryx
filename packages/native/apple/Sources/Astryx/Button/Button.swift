@@ -69,9 +69,20 @@ public struct Button: View {
 
   /// The link an enabled button with `href` becomes. A disabled one stays a
   /// disabled button, as core draws a disabled `<button>`.
+  /// A destination a link never opens leaves an enabled button.
   var link: URL? {
-    guard !isDisabled, let href = props.href else { return nil }
-    return URL(string: href)
+    guard !isDisabled, let href = props.href, let url = URL(string: href) else { return nil }
+    return Self.opensAsLink(url) ? url : nil
+  }
+
+  /// Whether a link may open a destination: not a script URL or an HTML
+  /// document in a `data:` URL, which core's navigation destinations refuse.
+  static func opensAsLink(_ url: URL) -> Bool {
+    switch url.scheme?.lowercased() {
+    case "javascript", "vbscript": return false
+    case "data": return !url.absoluteString.lowercased().hasPrefix("data:text/html")
+    default: return true
+    }
   }
 
   public var body: some View {

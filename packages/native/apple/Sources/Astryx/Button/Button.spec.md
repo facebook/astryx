@@ -26,7 +26,7 @@ system_specs: [spec:AST-082, spec:AST-093]
 
 | Area                    | Contract                                                                                                                                                                                                                     |
 | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | `Button(label:variant:size:isDisabled:isLoading:isInterruptible:elevation:width:tooltip:href:base:onClick:)` and `Button(_ props: ButtonProps)`, a SwiftUI `View` in module `Astryx`.                                        |
+| Public contract         | `Button(label:variant:size:elevation:isLoading:isInterruptible:isDisabled:width:tooltip:href:base:onClick:)` and `Button(_ props: ButtonProps)`, a SwiftUI `View` in module `Astryx`.                                        |
 | Behavior                | A SwiftUI `Button` drawn with the Astryx button style, or a SwiftUI `Link` when an enabled Button has `href`. While loading, a spinner covers the label, which keeps its place, and presses wait unless it is interruptible. |
 | End-user impact         | A person gets one action control whose width holds while it loads and which never runs twice by accident; a link Button stays a link while busy, so VoiceOver and keyboard focus stay on it.                                 |
 | Builder impact          | An app passes core's Button props; `href` makes the same view open a destination through the system.                                                                                                                         |
@@ -84,6 +84,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | FR2 | While loading, the view MUST draw a spinner over the label, keep the label's place so its size does not change, stay at full opacity, and read as busy ("Loading", core's catalog message) to VoiceOver. It MUST NOT run `onClick` while loading unless it is interruptible; an interruptible loading Button runs `onClick` on each press. | `component:Button` FR7–FR9                                                       | verify             |
 | FR3 | An enabled Button with `href` MUST draw a SwiftUI `Link` to that destination, in the Astryx button style, which VoiceOver reads as a link. A disabled Button with `href` MUST draw its disabled button, which never opens.                                                                                                                 | `component:Button` FR11; `spec:AST-082` FR3                                      | verify             |
 | FR4 | A loading Button with `href` MUST stay a `Link`: it keeps focus, shows its spinner, reads as busy, and does not open its destination until loading ends, unless the Button is interruptible, in which case each activation opens it. It never swaps to a button while busy.                                                                | `component:Button` FR9 ("a link-mode Button stays a link while busy-only"), FR11 | verify             |
+| FR5 | A Button whose `href` is a script URL (`javascript:`, `vbscript:`) or an HTML document in a `data:` URL MUST NOT open it: it draws its enabled button, which runs `onClick` and does not look disabled.                                                                                                                                    | `component:Button` FR11; `family:navigation-destinations`                        | verify             |
 
 ### Allowed variation
 
@@ -129,6 +130,15 @@ The component implements design requirements without copying their rationale.
 
 Platform control: SwiftUI `Button` and `Link` with `ProgressView`; they are the
 platform's own controls and satisfy the contract (`spec:AST-093` FR2).
+Guideline pages: Buttons, Progress indicators, and Accessibility in the Apple
+Human Interface Guidelines (`spec:AST-093` FR3).
+
+Theme values read (`spec:AST-093` FR4): `color.accent`, `color.onAccent`,
+`color.error`, `color.onError`, `color.neutral`, `color.textPrimary`,
+`size.elementSm`, `size.elementMd`, `size.elementLg`, `radius.element`,
+`space` steps for padding, `font.label` and `font.family.body`, the
+`shadow.low`, `shadow.med`, and `shadow.high` layers, and the Dynamic Type
+scale.
 
 ## Family and system relationships
 
@@ -138,13 +148,14 @@ platform's own controls and satisfy the contract (`spec:AST-093` FR2).
 
 ## Verification map
 
-| Contract | Verification                                                                     | Representative states              | Mutation or failure expectation                                           | Audit section                |
-| -------- | -------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------- | ---------------------------- |
-| FR1      | `ButtonTests.swift` initializer test                                             | both initializers                  | differing props fail                                                      | `audit:swift/Button/api`     |
-| FR2      | `ButtonTests.swift` loading, width, and interruptible tests                      | loading; loading and interruptible | a press that lands while loading, a size change, or dimming fails         | `audit:swift/Button/loading` |
-| FR3      | `ButtonTests.swift` `href` test                                                  | enabled and disabled with `href`   | a disabled Button that opens, or an enabled one that is not a link, fails | `audit:swift/Button/link`    |
-| FR4      | `ButtonTests.swift` `href` test with loading, and with loading and interruptible | loading with `href`; interruptible | a busy link that swaps to a button or opens before loading ends fails     | `audit:swift/Button/link`    |
-| AR1      | `ButtonTests.swift` accessibility assertions                                     | idle; loading; link                | a missing name, value, or announcement fails                              | `audit:swift/Button/a11y`    |
+| Contract | Verification                                                                     | Representative states                                                                        | Mutation or failure expectation                                           | Audit section                |
+| -------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ---------------------------- |
+| FR1      | `ButtonTests.swift` initializer test                                             | both initializers                                                                            | differing props fail                                                      | `audit:swift/Button/api`     |
+| FR2      | `ButtonTests.swift` loading, width, and interruptible tests                      | loading; loading and interruptible                                                           | a press that lands while loading, a size change, or dimming fails         | `audit:swift/Button/loading` |
+| FR3      | `ButtonTests.swift` `href` test                                                  | enabled and disabled with `href`                                                             | a disabled Button that opens, or an enabled one that is not a link, fails | `audit:swift/Button/link`    |
+| FR4      | `ButtonTests.swift` `href` test with loading, and with loading and interruptible | loading with `href`; interruptible                                                           | a busy link that swaps to a button or opens before loading ends fails     | `audit:swift/Button/link`    |
+| FR5      | `ButtonTests.swift` script and HTML-document destination test                    | `javascript:`, `vbscript:`, `data:text/html`; a `data:image` and a `mailto:` that still open | a refused destination that opens, or one that looks disabled, fails       | `audit:swift/Button/link`    |
+| AR1      | `ButtonTests.swift` accessibility assertions                                     | idle; loading; link                                                                          | a missing name, value, or announcement fails                              | `audit:swift/Button/a11y`    |
 
 ## Decision log
 

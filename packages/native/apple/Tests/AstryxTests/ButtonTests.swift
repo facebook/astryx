@@ -117,3 +117,16 @@ import Testing
   #expect(Astryx.Button(label: "OK").shadow.isEmpty)
   #expect(Astryx.Button(label: "OK", elevation: .med).shadow == Theme.default.light.shadow.med)
 }
+
+@MainActor
+@Test func aButtonNeverOpensAScriptOrHTMLDocumentDestination() {
+  for href in ["javascript:alert(1)", "JavaScript:void(0)", "vbscript:msgbox", "data:text/html,<p>hi</p>"] {
+    let button = Astryx.Button(label: "Go", href: href)
+    #expect(button.link == nil, "\(href)")
+    // It stays an enabled button, not a disabled one.
+    #expect(button.acceptsPress)
+    #expect(!button.isDisabled)
+  }
+  #expect(Astryx.Button(label: "Go", href: "data:image/png;base64,AAAA").link != nil)
+  #expect(Astryx.Button(label: "Go", href: "mailto:a@b.co").link != nil)
+}
