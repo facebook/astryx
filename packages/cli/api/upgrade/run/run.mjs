@@ -105,6 +105,9 @@ const MANUAL_MIGRATION_REASON = 'manual migration needed';
 const NEXT_FINDING =
   /; (?=(?:unparseable protected file|manual migration needed) \()/;
 
+/** The suffix of a folded finding that has no location of its own. */
+const LOCATION_UNKNOWN = '(location unknown)';
+
 /**
  * Collapse per-codemod declined candidates into one row per file, in the
  * receipt's `{file, location?, reason}` shape. A file the receipt lists under
@@ -115,8 +118,11 @@ const NEXT_FINDING =
  * finding is the row as it arrived; several are folded into the one row,
  * each keeping its own prefix (`unparseable protected file (<category>): ...`
  * or `manual migration needed (<codemod>): ...`), joined by `; ` in arrival
- * order. `location` is the first known one; a later finding whose own
- * location differs carries it at its end as ` (at <location>)`.
+ * order. `location` is the first finding's own location (absent when it has
+ * none). A later finding whose own location differs from the row's says so at
+ * its end: ` (at <location>)` when known, ` (location unknown)` when not; a
+ * later finding without a suffix is at the row's location. So no finding is
+ * ever read at another finding's location.
  * @param {Array<{file: string, codemod: string, location?: string, reason: string}>} rows
  * @param {Array<{file: string}>} [protectedRows]
  * @returns {Array<{file: string, location?: string, reason: string}>}
@@ -136,15 +142,17 @@ function summarizeDeclinedCandidates(rows, protectedRows = []) {
   }
   return [...byFile.entries()]
     .map(([file, findings]) => {
-      const location = findings.find(f => f.location)?.location;
+      const location = findings[0].location;
       return {
         file,
         ...(location ? {location} : {}),
         reason: findings
-          .map(f =>
-            f.location && f.location !== location
-              ? `${f.reason} (at ${f.location})`
-              : f.reason,
+          .map((f, index) =>
+            index === 0 || f.location === location
+              ? f.reason
+              : f.location
+                ? `${f.reason} (at ${f.location})`
+                : `${f.reason} ${LOCATION_UNKNOWN}`,
           )
           .join('; '),
       };
@@ -161,6 +169,9 @@ function declinedFindings(row) {
   return row.reason.split(NEXT_FINDING).map((text, index) => {
     if (index === 0) {
       return {...(row.location ? {location: row.location} : {}), text};
+    }
+    if (text.endsWith(` ${LOCATION_UNKNOWN}`)) {
+      return {text: text.slice(0, -LOCATION_UNKNOWN.length - 1)};
     }
     const at = / \(at ([^)]+)\)$/.exec(text);
     return at

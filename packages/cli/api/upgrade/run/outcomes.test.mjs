@@ -48,6 +48,17 @@ vi.mock('../../../assets/codemods/registry.mjs', async importOriginal => {
             },
           },
           {
+            name: 'report-vague',
+            meta: {title: 'Report vague findings', fileExtensions: ['.ts']},
+            /** @param {{source: string}} file */
+            transform(file) {
+              if (file.source.includes('VAGUE')) {
+                throw new ManualMigrationRequired('Check it by hand.');
+              }
+              return undefined;
+            },
+          },
+          {
             name: 'report-legacy',
             meta: {title: 'Report legacy calls', fileExtensions: ['.ts']},
             /** @param {{source: string}} file */
@@ -227,6 +238,60 @@ describe('several manual migrations in one file', () => {
     expect(stdout).toContain(
       'Upgrade complete; 2 manual migrations listed above',
     );
+  });
+});
+
+describe('a folded finding with no location', () => {
+  it('after one with a line, is marked unknown, never read at that line', async () => {
+    // report-raw (line 2) runs before report-vague (no line).
+    write('src/chart.ts', "const a = 1;\nconst b = 'RAW';\nVAGUE();\n");
+    logger.setSilent(false);
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    const result = await upgrade(APPLY, {cwd: dir});
+
+    expect(result.data.declinedCandidates).toEqual([
+      {
+        file: 'src/chart.ts',
+        location: '2',
+        reason:
+          'manual migration needed (core:report-raw): Read it through dataVars.; ' +
+          'manual migration needed (core:report-vague): Check it by hand. (location unknown)',
+      },
+    ]);
+    const stderr = err.mock.calls.map(c => c.join(' ')).join('\n');
+    expect(stderr).toContain(
+      '  src/chart.ts - manual migration needed (core:report-vague): Check it by hand.',
+    );
+    expect(stderr).not.toMatch(/src\/chart\.ts:2 - [^\n]*report-vague/);
+  });
+
+  it('first, leaves the row without a location and gives the later one its own', async () => {
+    // report-vague (no line) runs before report-legacy (line 3).
+    write('src/chart.ts', 'VAGUE();\nconst a = 1;\nLEGACY();\n');
+    logger.setSilent(false);
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    const result = await upgrade(APPLY, {cwd: dir});
+
+    expect(result.data.declinedCandidates).toEqual([
+      {
+        file: 'src/chart.ts',
+        reason:
+          'manual migration needed (core:report-vague): Check it by hand.; ' +
+          'manual migration needed (core:report-legacy): Call the new API. (at 3)',
+      },
+    ]);
+    const stderr = err.mock.calls.map(c => c.join(' ')).join('\n');
+    expect(stderr).toContain(
+      '  src/chart.ts - manual migration needed (core:report-vague): Check it by hand.',
+    );
+    expect(stderr).toContain(
+      '  src/chart.ts:3 - manual migration needed (core:report-legacy): Call the new API.',
+    );
+    expect(stderr).not.toMatch(/src\/chart\.ts:3 - [^\n]*report-vague/);
   });
 });
 
