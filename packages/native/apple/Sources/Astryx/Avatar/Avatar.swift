@@ -55,7 +55,7 @@ public struct Avatar: View {
   public var body: some View {
     if props.base.isHidden != true {
       control
-        .modifier(AvatarTooltipModifier(text: tooltipText))
+        .modifier(AvatarTooltipModifier(text: helpText))
         .modifier(AvatarIdentifier(id: props.base.id))
         .onAppear(perform: checkInDevelopment)
     }
@@ -84,6 +84,14 @@ public struct Avatar: View {
     case .off: nil
     case .text(let words): Avatar.meaningful(words)
     }
+  }
+
+  /// The words `.help` shows: only words the app gave. SwiftUI's `.help`
+  /// also becomes the VoiceOver hint, and core keeps the default name
+  /// tooltip out of the description, so the name alone is not repeated.
+  var helpText: String? {
+    guard case .text = props.tooltip else { return nil }
+    return tooltipText
   }
 
   /// A non-empty `href` that is not an absolute URL, such as a web path.
@@ -349,8 +357,8 @@ private struct AvatarTarget: ViewModifier {
   }
 }
 
-/// The tooltip where there is a pointer (SwiftUI `.help`; on touch it is the
-/// name VoiceOver already reads).
+/// Custom tooltip words where there is a pointer, through SwiftUI `.help`,
+/// which VoiceOver also reads as the hint.
 private struct AvatarTooltipModifier: ViewModifier {
   let text: String?
 
