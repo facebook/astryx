@@ -607,6 +607,37 @@ describe('Popover presentation', () => {
     expect(trigger()).toHaveAttribute('aria-haspopup', 'dialog');
   });
 
+  it("a sheet with neither dismissal differs from the anchored popover only by BottomSheet's frame (DEC-7)", async () => {
+    const Required = () => (
+      <Popover
+        label="Filters"
+        presentation="adaptive"
+        hasLightDismiss={false}
+        hasEscapeDismiss={false}
+        content={<p>Showing archived items</p>}>
+        <Button label="Filter">Filter</Button>
+      </Popover>
+    );
+    let before = 0;
+    const elements = () => document.body.querySelectorAll('*').length - before;
+    // A desktop: the anchored popover, open.
+    before = document.body.querySelectorAll('*').length;
+    const desktop = render(<Required />);
+    await tapTrigger();
+    const anchoredOpen = elements();
+    desktop.unmount();
+    // A phone: the sheet, open. BottomSheet's frame has three elements more
+    // than the anchored layer; Popover adds none of its own.
+    isCompactTouch = true;
+    before = document.body.querySelectorAll('*').length;
+    render(<Required />);
+    await tapTrigger();
+    await vi.waitFor(() => {
+      expect(sheetDialog()).toHaveAttribute('open');
+    });
+    expect(elements()).toBe(anchoredOpen + 3);
+  });
+
   it('without a Theme provider, adaptive measures compact against the registered root theme', async () => {
     defineTheme({
       name: 'root-popover-points',

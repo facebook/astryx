@@ -371,7 +371,8 @@ const styles = stylex.create({
   // The sheet's fallback close control when it has no other way out: hidden
   // until it is reached, as the anchored surface's is, on the Button itself
   // rather than a wrapper (architecture:component-style-authoring INV7).
-  // Taken out of flow and clipped at rest, it rejoins the flow when focused.
+  // Taken out of flow and clipped at rest, it rejoins the flow when focused,
+  // set below the content with room for its focus ring.
   sheetFallbackClose: {
     position: {
       default: 'absolute',
@@ -380,6 +381,10 @@ const styles = stylex.create({
     clipPath: {
       default: 'inset(50%)',
       ':focus': 'none',
+    },
+    marginBlockStart: {
+      default: 0,
+      ':focus': spacingVars['--spacing-3'],
     },
   },
   // The painted surface is capped to the viewport with the layer runtime's
