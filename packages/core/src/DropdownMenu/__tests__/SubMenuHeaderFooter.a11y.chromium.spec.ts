@@ -265,3 +265,61 @@ test.describe('a header with a choice', () => {
     await expect(dialog).toBeVisible();
   });
 });
+
+test.describe('in the action sheet', () => {
+  test('a level shows its own field and button around its actions, and the field filters them live', async ({
+    page,
+  }) => {
+    await page.goto(
+      `${storybook.origin}/iframe.html?id=core-dropdownmenu--sub-menu-header-and-footer-action-sheet&viewMode=story`,
+    );
+    await expect(
+      page.getByTestId('submenu-regions-sheet-fixture'),
+    ).toBeVisible();
+    await page.getByRole('button', {name: 'Session'}).click();
+    // One sheet, named by the level it shows.
+    const sheet = page.getByRole('dialog');
+    await expect(sheet).toHaveAccessibleName('Session');
+    // The root level has no regions of its own.
+    await expect(sheet.getByRole('textbox')).toHaveCount(0);
+
+    await sheet.getByRole('button', {name: /Labels/}).click();
+    await expect(sheet).toHaveAccessibleName('Labels');
+    const field = sheet.getByRole('textbox', {name: 'Filter labels'});
+    await expect(field).toBeVisible();
+    await expect(
+      sheet.getByRole('button', {name: 'Create label'}),
+    ).toBeVisible();
+    // Field above the actions, button below them.
+    const order = await sheet.evaluate(el => {
+      const field = el.querySelector('input');
+      const action = Array.from(el.querySelectorAll('button')).find(b =>
+        b.textContent?.includes('Feature'),
+      );
+      const create = Array.from(el.querySelectorAll('button')).find(b =>
+        b.textContent?.includes('Create label'),
+      );
+      return (
+        field != null &&
+        action != null &&
+        create != null &&
+        (field.compareDocumentPosition(action) &
+          Node.DOCUMENT_POSITION_FOLLOWING) !==
+          0 &&
+        (action.compareDocumentPosition(create) &
+          Node.DOCUMENT_POSITION_FOLLOWING) !==
+          0
+      );
+    });
+    expect(order).toBe(true);
+
+    await field.fill('perf');
+    await expect(field).toHaveValue('perf');
+    await expect(
+      sheet.getByRole('button', {name: /Performance/}),
+    ).toBeVisible();
+    await expect(sheet.getByRole('button', {name: /Feature/})).toHaveCount(0);
+    await sheet.getByRole('button', {name: 'Create label'}).click();
+    await expect(page.getByTestId('created')).toHaveText('1');
+  });
+});
