@@ -140,12 +140,12 @@ those contracts.
 - **INV11 — The on-screen keyboard has one owner.** In `@astryxdesign/core`,
   one shared internal hook measures the on-screen keyboard, keeps the page
   from panning on focus, and dismisses the keyboard when a surface moves
-  (`spec:AST-099`); it is not exported. Its height reaches styles only as the
-  hook's value, the height and each keyboard change's transition (start
-  time, resting value, curve), which live only in the hook: each consumer applies it
+  (`spec:AST-099`); it is not exported. The keyboard height and each keyboard
+  change's transition (start time, resting value, curve) reach styles only as
+  the hook's value and live only in the hook: each consumer applies them
   through a StyleX functional style on its own element, and no CSS custom
-  property on the document root or a shared ancestor carries it. No Core component keeps its own visual-viewport
-  listener for the keyboard. Packages outside Core cannot import the hook; a
+  property on the document root or a shared ancestor carries them. No Core
+  component keeps its own visual-viewport listener for the keyboard. Packages outside Core cannot import the hook; a
   component there that responds to the keyboard keeps one listener that
   measures as `spec:AST-099` FR2 defines, keeps focus from panning as FR4
   does, blurs as FR5 does, applies the height through a functional style on
