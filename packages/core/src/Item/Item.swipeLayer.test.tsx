@@ -4,13 +4,13 @@
  * @file Item.swipeLayer.test.tsx
  * @input Item with and without swipe actions; the swipe layer module, spied
  * @output Verifies a row without swipe actions never renders the swipe layer,
- *   and a row with them renders it into the root once it has loaded
+ *   and a row with them renders it into the root once its module has loaded
  * @position Companion to Item.test.tsx for the lazily loaded swipe layer
  */
 
 import {createElement, type ReactNode} from 'react';
 import {describe, expect, it, vi} from 'vitest';
-import {act, render, screen, waitFor} from '@testing-library/react';
+import {act, render, screen} from '@testing-library/react';
 import {Item} from './Item';
 import type {ItemSwipeLayerProps} from './ItemSwipeLayer';
 
@@ -60,11 +60,13 @@ describe('Item and the swipe layer', () => {
       />,
     );
     const row = screen.getByTestId('row');
-    const panel = await waitFor(() => {
-      const found = row.querySelector('[data-swipe-panel="trailing"]');
-      expect(found).not.toBeNull();
-      return found;
+    // Wait for the lazy module itself, not a time window: its first load can
+    // take longer than any fixed window on a busy machine.
+    await act(async () => {
+      await import('./ItemSwipeLayer');
     });
+    const panel = row.querySelector('[data-swipe-panel="trailing"]');
+    expect(panel).not.toBeNull();
     expect(layerRenders).toHaveBeenCalled();
     // The layer adds nothing but the panel: the root is still the content
     // followed by the out-of-flow panel, with no wrapper for either.
