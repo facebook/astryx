@@ -206,6 +206,37 @@ describe('ChatLayout and the software keyboard', () => {
     expect(dockOf(container).style.translate).toBe('');
   });
 
+  it('keeps the lift when the page is pinch-zoomed past 2x with the keyboard up', async () => {
+    // WebKit reports innerWidth and innerHeight in the zoomed visual
+    // viewport's px (spec:AST-099 FR2): at 2x, innerHeight alone reads no
+    // keyboard, and the dock would drop under it.
+    Object.defineProperty(document.documentElement, 'clientWidth', {
+      configurable: true,
+      value: 402,
+    });
+    try {
+      vi.stubGlobal('innerHeight', 714);
+      vi.stubGlobal('innerWidth', 402);
+      const {container} = renderLayout();
+      screen.getByTestId('layout').getBoundingClientRect = () =>
+        new DOMRect(0, 0, 402, 714);
+      report(714 - 337);
+      await settle();
+      expect(layoutLift(dockOf(container))).toBe(337);
+
+      vi.stubGlobal('innerHeight', 357);
+      vi.stubGlobal('innerWidth', 201);
+      viewport.scale = 2;
+      report((714 - 337) / 2);
+      await settle();
+      expect(layoutLift(dockOf(container))).toBe(337);
+      expect(keyboardRoom(messagesOf())).toBe(337);
+    } finally {
+      Reflect.deleteProperty(document.documentElement, 'clientWidth');
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('moves nothing while no keyboard is up', async () => {
     const {container} = renderLayout();
     report(window.innerHeight);

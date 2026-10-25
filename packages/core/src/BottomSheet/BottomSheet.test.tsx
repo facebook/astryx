@@ -1599,6 +1599,48 @@ describe('BottomSheet', () => {
       expect(sheet.style.height).toBe('');
     });
 
+    it('keeps the keyboard room when the page is pinch-zoomed past 2x with the keyboard up', () => {
+      // WebKit reports innerWidth and innerHeight in the zoomed visual
+      // viewport's px (spec:AST-099 FR2): at 2x, innerHeight alone reads no
+      // keyboard, and the room would be given back with the keyboard up.
+      mockIOSWebKit();
+      mockWindowHeight(800);
+      const viewport = mockVisualViewport(500);
+      Object.defineProperty(document.documentElement, 'clientWidth', {
+        configurable: true,
+        value: 1024,
+      });
+      try {
+        render(
+          <BottomSheet
+            isOpen
+            onOpenChange={() => {}}
+            label="Add a comment"
+            height="tall">
+            <input aria-label="Comment" />
+          </BottomSheet>,
+        );
+        const body = getBody();
+        const input = screen.getByRole('textbox', {name: 'Comment'});
+        vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
+          rect({top: 100, bottom: 800}),
+        );
+        vi.spyOn(input, 'getBoundingClientRect').mockReturnValue(
+          rect({top: 300, bottom: 340}),
+        );
+        input.focus();
+        expect(keyboardInsetOf(body)).toBe(348);
+
+        vi.stubGlobal('innerHeight', 400);
+        vi.stubGlobal('innerWidth', 512);
+        Object.assign(viewport, {height: 250, scale: 2});
+        void act(() => viewport.dispatchEvent(new Event('resize')));
+        expect(keyboardInsetOf(body)).toBe(348);
+      } finally {
+        Reflect.deleteProperty(document.documentElement, 'clientWidth');
+      }
+    });
+
     it('smoothly scrolls a focused Tall control above the keyboard', () => {
       mockVisualViewport(500);
       render(

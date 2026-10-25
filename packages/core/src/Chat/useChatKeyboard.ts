@@ -65,6 +65,7 @@ import {
   getKeyboardLayoutGuide,
   getMobileKeyboardHeight,
   isKeyboardMeasurable,
+  layoutViewportHeight,
   refuseFocusReveal,
   useKeyboardHeight,
   type KeyboardTransition,
@@ -254,10 +255,12 @@ export function useChatKeyboard({
       if (inset <= 0) {
         return 0;
       }
+      // In layout px, as the root's rect is, under a pinch zoom too.
+      const viewportBottom = layoutViewportHeight(win);
       const bottom = isSelfScrolling
         ? root.getBoundingClientRect().bottom
-        : win.innerHeight;
-      return Math.max(0, bottom - (win.innerHeight - inset));
+        : viewportBottom;
+      return Math.max(0, bottom - (viewportBottom - inset));
     };
     const isAtEnd = () => {
       const scroller = scrollRef.current;

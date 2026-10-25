@@ -20,6 +20,7 @@ export {
   getMobileKeyboardHeight,
   isKeyboardMeasurable,
   isTextEntryControl,
+  layoutViewportHeight,
   measureKeyboardHeight,
   refuseFocusReveal,
   subscribeMobileKeyboard,

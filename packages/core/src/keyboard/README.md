@@ -11,6 +11,11 @@ exported from the package entry.
 - **The height (FR2):** `measureKeyboardHeight(window)` is the layout
   viewport's height minus the visual viewport's height times its scale, in CSS
   px. A page pan is not a smaller keyboard, and a pinch zoom is not a keyboard.
+  The layout viewport's height is `layoutViewportHeight(window)`, in layout px
+  in every engine: WebKit reports `innerHeight` and `innerWidth` in the zoomed
+  visual viewport's px, so `innerHeight` is scaled by the document's layout
+  width over `innerWidth` (1 where the zoom does not apply). BottomSheet's
+  obstruction and ChatLayout's lift read it too.
 - **Where it measures (FR6, FR7):** `isKeyboardMeasurable(window)` is true for
   a top-level document with a visual viewport and no keyboard geometry API of
   its own. It is decided from capabilities, never from the user agent.
