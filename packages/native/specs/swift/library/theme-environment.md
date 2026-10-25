@@ -11,9 +11,10 @@
 In an app built with Astryx, the system's own controls and Astryx components
 match, and the person's system settings are honored everywhere: dark mode,
 Increase Contrast, text size, Reduce Motion, Reduce Transparency, Bold Text,
-and right-to-left all come from SwiftUI's own environment, and a stock SwiftUI
-`Toggle` or `ProgressView` inside an Astryx theme takes the theme's accent.
-Astryx adds no second settings system for an app to keep in step.
+and right-to-left all come from SwiftUI's own environment. Inside an Astryx
+theme, stock SwiftUI controls take the theme's accent as their tint wherever
+it stays readable, and otherwise keep their own colors. Astryx adds no second
+settings system for an app to keep in step.
 
 ## Requirements
 
@@ -23,7 +24,7 @@ Astryx adds no second settings system for an app to keep in step.
 
   | SwiftUI value                     | What Astryx does with it                                                                                                                                                                                                                                                                                  |
   | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-  | `colorScheme`                     | Chooses the theme's light or dark tokens, so `.preferredColorScheme(_:)` and the system setting drive the mode                                                                                                                                                                                            |
+  | `colorScheme`                     | Chooses the theme's light or dark tokens, so `.preferredColorScheme(_:)` and the system setting drive the mode, except inside a single-mode theme, which sets its subtree's `colorScheme` (E2)                                                                                                            |
   | `colorSchemeContrast`             | When increased, borders and separators use `color.borderEmphasized` instead of `color.border`                                                                                                                                                                                                             |
   | `dynamicTypeSize`                 | Scales text, through text-style-relative fonts, and the metrics beside text, through `@ScaledMetric`                                                                                                                                                                                                      |
   | `accessibilityReduceMotion`       | Movement becomes a cross-fade or no animation                                                                                                                                                                                                                                                             |
