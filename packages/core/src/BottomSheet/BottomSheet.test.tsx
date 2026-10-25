@@ -1583,6 +1583,42 @@ describe('BottomSheet', () => {
       expect(keyboardInsetOf(body)).toBe(0);
     });
 
+    it('scrolls nothing for a field in the bottom clearance band when the body overhangs the viewport by a fraction of a pixel', () => {
+      // Chrome on Android: the visual viewport can be 0.3 px taller than the
+      // layout viewport. With no keyboard up, a field in the sheet's bottom
+      // 48 px is already visible: the suggestion clearance is for a keyboard.
+      mockIOSWebKit();
+      mockWindowHeight(800);
+      mockVisualViewport(800.3);
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const body = getBody();
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 100, bottom: 800.3}),
+      );
+      vi.spyOn(input, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 760, bottom: 790}),
+      );
+      const scrollBy = vi.fn();
+      Object.defineProperty(body, 'scrollBy', {
+        configurable: true,
+        value: scrollBy,
+      });
+
+      input.focus();
+
+      expect(scrollBy).not.toHaveBeenCalled();
+      expect(body.scrollTop).toBe(0);
+    });
+
     it('keeps Tall geometry fixed while extending and cleaning up its internal scroll range', () => {
       mockWindowHeight(800);
       const viewport = mockVisualViewport(500);

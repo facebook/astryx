@@ -696,7 +696,9 @@ export function useMobileKeyboard({
       const measuredBodyRect = body.getBoundingClientRect();
       const measuredControlRect = control.getBoundingClientRect();
       const obstructionTop = getObstructionTop();
-      const overlap = Math.max(0, measuredBodyRect.bottom - obstructionTop);
+      // Under a pixel of overhang is `innerHeight`'s precision, not a
+      // keyboard: no suggestion clearance then (overlapOf).
+      const overlap = overlapOf(measuredBodyRect.bottom, obstructionTop);
       const clearance = overlap > 0 ? bottomClearance : 0;
       const safeTop = measuredBodyRect.top;
       const safeBottom = Math.min(
