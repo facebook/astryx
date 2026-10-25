@@ -15,11 +15,11 @@ import path from 'node:path';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, renderHook} from '@testing-library/react';
 import {getKeyboardLayoutGuide} from './keyboardLayoutGuide';
+import {layoutViewportHeight} from '../utils/layoutViewport';
 import {
   claimTapFocus,
   getMobileKeyboardHeight,
   isKeyboardMeasurable,
-  layoutViewportHeight,
   measureKeyboardHeight,
   refuseFocusReveal,
   subscribeMobileKeyboard,
@@ -30,6 +30,7 @@ type FakeViewport = EventTarget & {
   height: number;
   offsetTop: number;
   scale: number;
+  width?: number;
 };
 
 let viewport: FakeViewport;
@@ -106,11 +107,8 @@ describe('the layout viewport WebKit reports under a pinch zoom (FR2)', () => {
   }) {
     vi.stubGlobal('innerHeight', innerHeight);
     vi.stubGlobal('innerWidth', innerWidth);
-    Object.defineProperty(document.documentElement, 'clientWidth', {
-      configurable: true,
-      value: 402,
-    });
-    Object.assign(viewport, {height, scale, offsetTop});
+    // The visual viewport is the 402 px layout width over the zoom.
+    Object.assign(viewport, {height, scale, offsetTop, width: 402 / scale});
   }
 
   it('reads the keyboard at scale 1', () => {
@@ -155,6 +153,20 @@ describe('the layout viewport WebKit reports under a pinch zoom (FR2)', () => {
     safari({innerHeight: 536, innerWidth: 302, height: 536, scale: 4 / 3});
     expect(measureKeyboardHeight(window)).toBe(0);
     safari({innerHeight: 714, innerWidth: 402, height: 535.5, scale: 4 / 3});
+    expect(measureKeyboardHeight(window)).toBe(0);
+  });
+
+  it('reads no keyboard beside a classic scrollbar', () => {
+    // A desktop page with a 17 px vertical scrollbar, which innerWidth and
+    // not the document's client width or the visual viewport counts.
+    vi.stubGlobal('innerHeight', 800);
+    vi.stubGlobal('innerWidth', 1280);
+    Object.defineProperty(document.documentElement, 'clientWidth', {
+      configurable: true,
+      value: 1263,
+    });
+    Object.assign(viewport, {height: 800, scale: 1, width: 1263});
+    expect(layoutViewportHeight(window)).toBe(800);
     expect(measureKeyboardHeight(window)).toBe(0);
   });
 });

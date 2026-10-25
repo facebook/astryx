@@ -7,7 +7,7 @@
  * @input React refs, the keyboard module (useKeyboardHeight,
  *   claimTapFocus, refuseFocusReveal), the keyboard layout guide (each
  *   transition's start, resting value and curve), the animator, the touch
- *   query
+ *   query, the layout viewport's height (utils/layoutViewport.ts)
  * @output Exports useChatKeyboard: the lift ChatLayout lays its dock and
  *   message area out with, and the refs it puts on its dock, message area
  *   and composer region so the composer rides the software keyboard
@@ -65,11 +65,11 @@ import {
   getKeyboardLayoutGuide,
   getMobileKeyboardHeight,
   isKeyboardMeasurable,
-  layoutViewportHeight,
   refuseFocusReveal,
   useKeyboardHeight,
   type KeyboardTransition,
 } from '../keyboard';
+import {layoutViewportHeight} from '../utils/layoutViewport';
 import {TOUCH_QUERY} from '../utils/touchPresentation';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 

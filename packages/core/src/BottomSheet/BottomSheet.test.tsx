@@ -1605,10 +1605,10 @@ describe('BottomSheet', () => {
       // keyboard, and the room would be given back with the keyboard up.
       mockIOSWebKit();
       mockWindowHeight(800);
-      const viewport = mockVisualViewport(500);
-      Object.defineProperty(document.documentElement, 'clientWidth', {
-        configurable: true,
-        value: 1024,
+      vi.stubGlobal('innerWidth', 1024);
+      const viewport = Object.assign(mockVisualViewport(500), {
+        width: 1024,
+        scale: 1,
       });
       try {
         render(
@@ -1633,11 +1633,48 @@ describe('BottomSheet', () => {
 
         vi.stubGlobal('innerHeight', 400);
         vi.stubGlobal('innerWidth', 512);
-        Object.assign(viewport, {height: 250, scale: 2});
+        Object.assign(viewport, {height: 250, scale: 2, width: 512});
         void act(() => viewport.dispatchEvent(new Event('resize')));
         expect(keyboardInsetOf(body)).toBe(348);
       } finally {
+        vi.unstubAllGlobals();
+      }
+    });
+
+    it('makes no keyboard room beside a classic scrollbar with no keyboard', () => {
+      // A desktop page with a 17 px vertical scrollbar: innerWidth counts it,
+      // the document's client width and the visual viewport do not.
+      mockPrimaryPointer('fine');
+      mockWindowHeight(800);
+      vi.stubGlobal('innerWidth', 1280);
+      Object.assign(mockVisualViewport(800), {width: 1263, scale: 1});
+      Object.defineProperty(document.documentElement, 'clientWidth', {
+        configurable: true,
+        value: 1263,
+      });
+      try {
+        render(
+          <BottomSheet
+            isOpen
+            onOpenChange={() => {}}
+            label="Add a comment"
+            height="tall">
+            <input aria-label="Comment" />
+          </BottomSheet>,
+        );
+        const body = getBody();
+        const input = screen.getByRole('textbox', {name: 'Comment'});
+        vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
+          rect({top: 100, bottom: 800}),
+        );
+        vi.spyOn(input, 'getBoundingClientRect').mockReturnValue(
+          rect({top: 700, bottom: 740}),
+        );
+        input.focus();
+        expect(keyboardInsetOf(body)).toBe(0);
+      } finally {
         Reflect.deleteProperty(document.documentElement, 'clientWidth');
+        vi.unstubAllGlobals();
       }
     });
 

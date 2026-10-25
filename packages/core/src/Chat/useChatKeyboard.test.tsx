@@ -28,6 +28,7 @@ type FakeViewport = EventTarget & {
   height: number;
   offsetTop: number;
   scale: number;
+  width?: number;
 };
 
 let viewport: FakeViewport;
@@ -210,13 +211,10 @@ describe('ChatLayout and the software keyboard', () => {
     // WebKit reports innerWidth and innerHeight in the zoomed visual
     // viewport's px (spec:AST-099 FR2): at 2x, innerHeight alone reads no
     // keyboard, and the dock would drop under it.
-    Object.defineProperty(document.documentElement, 'clientWidth', {
-      configurable: true,
-      value: 402,
-    });
     try {
       vi.stubGlobal('innerHeight', 714);
       vi.stubGlobal('innerWidth', 402);
+      Object.assign(viewport, {width: 402});
       const {container} = renderLayout();
       screen.getByTestId('layout').getBoundingClientRect = () =>
         new DOMRect(0, 0, 402, 714);
@@ -226,13 +224,12 @@ describe('ChatLayout and the software keyboard', () => {
 
       vi.stubGlobal('innerHeight', 357);
       vi.stubGlobal('innerWidth', 201);
-      viewport.scale = 2;
+      Object.assign(viewport, {scale: 2, width: 201});
       report((714 - 337) / 2);
       await settle();
       expect(layoutLift(dockOf(container))).toBe(337);
       expect(keyboardRoom(messagesOf())).toBe(337);
     } finally {
-      Reflect.deleteProperty(document.documentElement, 'clientWidth');
       vi.unstubAllGlobals();
     }
   });

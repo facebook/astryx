@@ -5,9 +5,9 @@
 /**
  * @file useMobileKeyboard.ts
  * @input The window's visual viewport, focus events, React effects and refs,
- *   the motion module's Reduce Motion queries
+ *   the motion module's Reduce Motion queries, the layout viewport's height
+ *   (utils/layoutViewport.ts)
  * @output Exports the on-screen keyboard module: measureKeyboardHeight,
- *   layoutViewportHeight,
  *   isKeyboardMeasurable, subscribeMobileKeyboard, getMobileKeyboardHeight,
  *   useKeyboardHeight, isTextEntryControl, findTextEntryControl,
  *   refuseFocusReveal, claimTapFocus, and BottomSheet's useMobileKeyboard
@@ -20,8 +20,8 @@
  * The keyboard height (AST-099 FR2) is the layout viewport's height minus the
  * visual viewport's height times its scale, in CSS px: a page pan is not a
  * smaller keyboard, and a pinch zoom is not a keyboard. The layout viewport's
- * height is read in layout px in every engine (`layoutViewportHeight`): WebKit
- * reports `innerHeight` in the zoomed visual viewport's px. It is 0 where the
+ * height is read in layout px in every engine (utils/layoutViewport.ts):
+ * WebKit reports `innerHeight` in the zoomed visual viewport's px. It is 0 where the
  * platform has its own keyboard geometry API (`navigator.virtualKeyboard`,
  * Android's path, FR6, FR8), without a visual viewport, and inside an iframe,
  * whose visual viewport never shrinks for the keyboard (FR7). One set of
@@ -64,6 +64,7 @@ import {
   type RefObject,
 } from 'react';
 import {flushSync} from 'react-dom';
+import {layoutViewportHeight} from '../utils/layoutViewport';
 
 // A shortfall smaller than this is rounding, not a keyboard.
 const KEYBOARD_EPSILON = 1;
@@ -91,26 +92,6 @@ export function isKeyboardMeasurable(win: Window): boolean {
     !('virtualKeyboard' in win.navigator) &&
     win.self === win.top
   );
-}
-
-/**
- * The layout viewport's height, CSS px: what the keyboard height (FR2) and the
- * keyboard-aware layouts measure from, in the units of element rects.
- *
- * `innerHeight` in most engines. WebKit reports `innerHeight` and `innerWidth`
- * in the pinch-zoomed visual viewport's px (714 and 302 at a 1.33 zoom of a
- * 402 × 714 layout viewport, measured in Safari on iOS 26.2), while element
- * rects and the visual viewport's height times its scale stay in layout px, so
- * `innerHeight` alone under-reads the keyboard by the zoom, and past about 2x
- * reads none with it up. The document's layout width over `innerWidth` is that
- * zoom where it applies and exactly 1 where it does not, so no engine is named.
- * A document with no layout width (no layout) takes `innerHeight` as it is.
- */
-export function layoutViewportHeight(win: Window): number {
-  const layoutWidth = win.document.documentElement.clientWidth;
-  return layoutWidth > 0 && win.innerWidth > 0
-    ? win.innerHeight * (layoutWidth / win.innerWidth)
-    : win.innerHeight;
 }
 
 /**
