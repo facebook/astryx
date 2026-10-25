@@ -396,6 +396,26 @@ describe('Tokenizer', () => {
       expect(screen.getByRole('combobox')).not.toHaveFocus();
     });
 
+    it('leaves other controls in the field alone: an endContent button keeps its press and the redirect', () => {
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[users[0], users[1]]}
+          onChange={vi.fn()}
+          endContent={<button type="button">Filters</button>}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      const filters = screen.getByRole('button', {name: 'Filters'});
+      fireEvent.pointerDown(filters, {pointerType: 'touch'});
+      // Its press default (focusing it) is not cancelled…
+      expect(fireEvent.mouseDown(filters)).toBe(true);
+      // …and focus that lands on it moves on to the input, as before.
+      act(() => filters.focus());
+      expect(input).toHaveFocus();
+    });
+
     it('still lets a mouse press, and a tap while typing, focus as before', () => {
       const {input, remove} = renderPair();
       fireEvent.pointerDown(remove, {pointerType: 'mouse'});

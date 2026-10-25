@@ -318,6 +318,9 @@ export function Token({
     <button
       type="button"
       aria-label={t('@astryx.token.remove', {label})}
+      // Lets a field holding tokens (Tokenizer) tell its tokens' remove
+      // buttons from other controls.
+      data-token-remove=""
       onClick={e => {
         e.stopPropagation();
         onRemove(e);

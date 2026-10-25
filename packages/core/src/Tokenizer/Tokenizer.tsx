@@ -544,6 +544,18 @@ function EndLane({
   );
 }
 
+/**
+ * Whether `target` is a token's own remove button (Token's ×, which marks
+ * itself `data-token-remove`): the one control a finger's tap with the
+ * touch keyboard down treats differently. Custom `renderToken` controls and
+ * `endContent` keep their defaults.
+ */
+function isTokenRemoveControl(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element && target.closest('[data-token-remove]') != null
+  );
+}
+
 export function Tokenizer<T extends SearchableItem>({
   label,
   isLabelHidden = false,
@@ -723,7 +735,7 @@ export function Tokenizer<T extends SearchableItem>({
     [layer.id],
   );
 
-  // A finger's tap on a token's control (its remove button) while the
+  // A finger's tap on a token's remove button while the
   // keyboard is down keeps focus out of the field altogether: where the
   // browser focuses a pressed button (Chrome does, on the tap's mouse
   // compatibility events), focus entering would expand an `unfocusedInline`
@@ -733,12 +745,7 @@ export function Tokenizer<T extends SearchableItem>({
   // removes the token. A tap on the input itself still focuses it.
   const handleMouseDownCapture = useCallback(
     (e: React.MouseEvent) => {
-      const target = e.target as Element | null;
-      if (
-        target !== inputRef.current &&
-        target?.closest?.('button') != null &&
-        isTouchPressWithKeyboardDown()
-      ) {
+      if (isTokenRemoveControl(e.target) && isTouchPressWithKeyboardDown()) {
         e.preventDefault();
       }
     },
@@ -756,10 +763,14 @@ export function Tokenizer<T extends SearchableItem>({
         onFocus?.(e);
         // Redirect to the input so the user doesn't have to tab through
         // every token remove button. Not for a finger landing on a token's
-        // control while the keyboard is down: where the browser focuses the
-        // pressed button (Android Chrome), moving focus on to the input would
-        // raise the keyboard for a tap that only meant to remove a token.
-        if (e.target !== inputRef.current && !isTouchPressWithKeyboardDown()) {
+        // remove button while the keyboard is down: where the browser
+        // focuses the pressed button (Android Chrome), moving focus on to the
+        // input would raise the keyboard for a tap that only meant to remove
+        // a token.
+        if (
+          e.target !== inputRef.current &&
+          !(isTokenRemoveControl(e.target) && isTouchPressWithKeyboardDown())
+        ) {
           inputRef.current?.focus();
         }
       }
