@@ -48,11 +48,13 @@ device.
 
 ## Requirements
 
-- **FR1 — Components never override typography.** No component sets a font
-  family, font size, or line height except through the theme's typography
-  tokens. That includes platform font keywords such as `-apple-system-body`
+- **FR1 — Components never override typography.** No Core or Lab web
+  component sets the font family, font size, or line height of text it renders
+  except through the theme's typography tokens. That includes platform font keywords such as `-apple-system-body`
   and system font stacks: a component never applies one directly, on any
-  pointer or platform. Typography values come only from the theme. The one
+  pointer. A font size that sizes an icon, such as a `1em` icon at a
+  `spec:AST-087` FR10 size, is not text typography. Native components follow
+  the platform's own text settings (`spec:AST-082` FR11). Typography values come only from the theme. The one
   exception is a size floor a current family record requires, such as the iOS
   16 px text-entry floor of `family:input-fields` FR9.
 - **FR2 — Unbranded shipped themes may use the system body font.** An Astryx
