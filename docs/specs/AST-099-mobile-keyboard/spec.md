@@ -98,12 +98,14 @@ a chat composer, or a search field.
   viewport does not change when the keyboard opens, so the keyboard height is
   0 there and nothing changes. Behavior and evidence for this record come
   from a top-level document.
-- **FR8 — Android follows the app's viewport setting.** On Android the
-  documented path is the app's viewport setting
-  `interactive-widget=resizes-content`, under which the layout viewport itself
-  shrinks above the keyboard and layout follows with no keyboard inset. The
-  app owns that setting; Astryx documents it and does not set it. Without it,
-  Astryx adds no Android keyboard handling.
+- **FR8 — Android follows FR6 and the app's viewport setting.** Chrome on
+  Android exposes its own keyboard geometry API, so under FR6 Astryx neither
+  measures nor claims focus there; its documented path is the app's viewport
+  setting `interactive-widget=resizes-content`, under which the layout viewport
+  itself shrinks above the keyboard and layout follows with no keyboard inset.
+  The app owns that setting; Astryx documents it and does not set it. An
+  Android browser without that API that shrinks only its visual viewport, such
+  as Firefox for Android, gets FR2–FR5 under FR6.
 
 ### Platform support
 
@@ -123,7 +125,9 @@ a chat composer, or a search field.
 
 - BottomSheet's internal keyboard hook implements FR2, FR4, and FR5 for a
   fully expanded Tall sheet on iOS, detects iOS from the user agent, and writes
-  a private inset on the sheet body. It becomes the single source
+  a private inset on the sheet body as the custom property
+  `--_sheet-keyboard-inset`, which retires: the sheet applies the height
+  through a functional style on its own element. It becomes the single source
   `architecture:react-component-runtime` INV11 names: FR6 replaces the
   user-agent check, FR3 keeps the height internal, and BottomSheet consumes the
   shared source (`component:BottomSheet`).
@@ -151,6 +155,7 @@ a chat composer, or a search field.
 | FR6      | Capability tests with the user agent varied                                                                    | visual viewport shrinking with a fixed layout viewport; platform keyboard geometry API present; neither                                 | Behavior that changes with the user agent alone, or measurement where the platform geometry API applies                                                                                 |
 | FR7      | Tests in an iframe and in a top-level document                                                                 | the same keyboard event sequence in both                                                                                                | A non-zero value or a claimed focus inside an iframe                                                                                                                                    |
 | FR8      | Consumer documentation check plus Chrome on Android, emulator or device, with and without the viewport setting | the documented viewport setting and its effect                                                                                          | Astryx setting the viewport meta, the setting missing from the docs, or, in Chrome on Android with the setting, a focused field ending under the keyboard or a non-zero keyboard height |
+| FR8      | Firefox for Android, emulator or device, top-level document                                                    | focus routes with the keyboard shown and hidden                                                                                         | The page lurches or the field ends under the keyboard                                                                                                                                   |
 | FR2–FR5  | Safari on iOS in the iOS Simulator or on a device, top-level document                                          | focus routes, keyboard shown and hidden, page panned and pinch-zoomed, a sheet moved, in Safari and as a home-screen app                | The page lurches, the field ends under the keyboard, or the height is wrong after a pan or zoom                                                                                         |
 | FR2–FR5  | Recommended follow-up: physical devices in a top-level document (OQ1)                                          | iPhone Safari with the toolbar expanded and collapsed; iPhone home-screen app; Android Chrome with `interactive-widget=resizes-content` | The page lurches, the field ends under the keyboard, or the surface does not follow the keyboard                                                                                        |
 
