@@ -314,12 +314,144 @@ describe('NavigationStack', () => {
       // while the root's row deselects alongside the pop.
       fireEvent.click(screen.getAllByRole('button', {name: 'Done'}).at(-1)!);
       expect(detailsRow).not.toHaveAttribute('data-astryx-press', 'held');
+      // The root's row, the one the pop reveals, deselects with the pop
+      // rather than snapping off.
+      expect(generalRow).toHaveAttribute('data-astryx-press', 'held');
       await waitFor(
         () => expect(screen.queryByText('General details')).toBeNull(),
         {timeout: 3000},
       );
       await waitFor(() =>
         expect(generalRow).not.toHaveAttribute('data-astryx-press', 'held'),
+      );
+    });
+
+    it('releases the row when the app refuses the push', async () => {
+      function RefusingHarness() {
+        return (
+          <NavigationStack
+            label="Settings"
+            root={
+              <NavigationScreen title="Settings">
+                <ListRoot />
+              </NavigationScreen>
+            }
+            path={[]}
+            onPathChange={() => {}}
+            getKey={entry => entry}
+            renderScreen={entry => (
+              <NavigationScreen title={entry}>
+                <p>{entry} content</p>
+              </NavigationScreen>
+            )}
+          />
+        );
+      }
+      render(<RefusingHarness />);
+      fireEvent.click(screen.getByRole('button', {name: 'General'}));
+      // No screen covers the row: by the next frame it is released.
+      await waitFor(() =>
+        expect(rowOf('General')).not.toHaveAttribute(
+          'data-astryx-press',
+          'held',
+        ),
+      );
+    });
+
+    it('releases the covered row when the app replaces the path', async () => {
+      function ReplacingHarness() {
+        const [path, setPath] = useState<string[]>([]);
+        return (
+          <>
+            <button type="button" onClick={() => setPath(['Privacy'])}>
+              Replace
+            </button>
+            <NavigationStack
+              label="Settings"
+              root={
+                <NavigationScreen title="Settings">
+                  <ListRoot />
+                </NavigationScreen>
+              }
+              path={path}
+              onPathChange={setPath}
+              getKey={entry => entry}
+              renderScreen={entry => (
+                <NavigationScreen title={entry}>
+                  <p>{entry} content</p>
+                </NavigationScreen>
+              )}
+            />
+          </>
+        );
+      }
+      render(<ReplacingHarness />);
+      fireEvent.click(screen.getByRole('button', {name: 'General'}));
+      await screen.findByRole('heading', {name: 'General', level: 2});
+      expect(rowOf('General')).toHaveAttribute('data-astryx-press', 'held');
+
+      // A replaced path has no pop to deselect along: the row is released.
+      fireEvent.click(screen.getByRole('button', {name: 'Replace'}));
+      await screen.findByRole('heading', {name: 'Privacy', level: 2});
+      expect(rowOf('General')).not.toHaveAttribute('data-astryx-press', 'held');
+    });
+
+    it('returns focus to a trailing control that pushed, inside its row', async () => {
+      function TrailingRoot() {
+        const nav = useNavigationStack<string>();
+        return (
+          <List>
+            <ListItem
+              label="General"
+              onClick={() => nav.push('General')}
+              endContent={
+                <button
+                  type="button"
+                  onClick={event => {
+                    event.stopPropagation();
+                    nav.push('General info');
+                  }}>
+                  Info
+                </button>
+              }
+            />
+          </List>
+        );
+      }
+      function TrailingHarness() {
+        const [path, setPath] = useState<string[]>([]);
+        return (
+          <NavigationStack
+            label="Settings"
+            root={
+              <NavigationScreen title="Settings">
+                <TrailingRoot />
+              </NavigationScreen>
+            }
+            path={path}
+            onPathChange={setPath}
+            getKey={entry => entry}
+            renderScreen={entry => (
+              <NavigationScreen title={entry}>
+                <p>{entry} content</p>
+              </NavigationScreen>
+            )}
+          />
+        );
+      }
+      render(<TrailingHarness />);
+      const info = screen.getByRole('button', {name: 'Info'});
+      info.focus();
+      fireEvent.click(info);
+      await screen.findByRole('heading', {name: 'General info', level: 2});
+
+      fireEvent.click(backButton('Settings') as HTMLElement);
+      await waitFor(
+        () => expect(screen.queryByText('General info content')).toBeNull(),
+        {timeout: 3000},
+      );
+      await waitFor(() =>
+        expect(screen.getByRole('button', {name: 'Info'})).toHaveFocus(),
       );
     });
 
