@@ -379,31 +379,29 @@ private struct AvatarTooltipModifier: ViewModifier {
   }
 }
 
-/// The default name tooltip: after the pointer rests on the avatar for half a
-/// second, a bubble below it shows the name, in core's tooltip colors. The
-/// bubble is hidden from VoiceOver, which reads the name as the avatar's own.
+/// The default name tooltip: when the pointer rests on the avatar, or a link
+/// or button avatar has keyboard focus, for core's 200 ms, a bubble below it
+/// shows the name in core's tooltip colors. The bubble is hidden from
+/// VoiceOver, which reads the name as the avatar's own.
 struct AvatarPointerTooltip: ViewModifier {
   let text: String?
   @State private var isShown = false
+  @State private var isHovering = false
   @State private var pending: Task<Void, Never>?
+  @FocusState private var isFocused: Bool
 
-  /// Core's tooltip delay before showing on hover.
-  static let delay: Duration = .milliseconds(500)
+  /// Core's tooltip delay before showing.
+  nonisolated static var delay: Duration { .milliseconds(200) }
 
   func body(content: Content) -> some View {
     if let text {
       content
+        .focused($isFocused)
         .onHover { inside in
-          pending?.cancel()
-          if inside {
-            pending = Task { @MainActor in
-              try? await Task.sleep(for: Self.delay)
-              if !Task.isCancelled { isShown = true }
-            }
-          } else {
-            isShown = false
-          }
+          isHovering = inside
+          update()
         }
+        .onChange(of: isFocused) { update() }
         .overlay(alignment: .bottom) {
           if isShown {
             AvatarTooltipBubble(text: text)
@@ -414,6 +412,19 @@ struct AvatarPointerTooltip: ViewModifier {
         .zIndex(isShown ? 1 : 0)
     } else {
       content
+    }
+  }
+
+  /// Shows the bubble after the delay while hovered or focused; hides it at once otherwise.
+  private func update() {
+    pending?.cancel()
+    guard isHovering || isFocused else {
+      isShown = false
+      return
+    }
+    pending = Task { @MainActor in
+      try? await Task.sleep(for: Self.delay)
+      if !Task.isCancelled { isShown = true }
     }
   }
 }
