@@ -7,6 +7,7 @@ import Testing
 // Swift component API spec, A2 and A3: Text takes core's Text props, and both
 // initializers build it from the same TextProps.
 
+@MainActor
 @Test func textInitializersBuildTheSameProps() {
   let labeled = Astryx.Text("Total", type: .large, size: .xl, color: .accent, maxLines: 2, hasTabularNumbers: true)
   let fromProps = Astryx.Text(
@@ -19,6 +20,7 @@ import Testing
   #expect(labeled.props.hasTabularNumbers == fromProps.props.hasTabularNumbers)
 }
 
+@MainActor
 @Test func textColorDefaultsByTypeAsCoreDoes() {
   #expect(Astryx.Text.defaultColor(.supporting) == .secondary)
   #expect(Astryx.Text.defaultColor(.inherit) == .inherit)
@@ -31,6 +33,7 @@ import Testing
   #expect(color.text(named: "inherit") == nil)
 }
 
+@MainActor
 @Test func everyTypeReadsItsOwnTokens() {
   let font = Theme.default.light.font
   #expect(font.style(.body) == TypeStyle(size: font.bodySize, weight: font.bodyWeight, families: font.familyBody))
@@ -41,6 +44,7 @@ import Testing
   #expect(font.style(.inherit) == nil)
 }
 
+@MainActor
 @Test func extraSmallIsSpelledAsCoreSpellsIt() {
   let font = Theme.default.light.font
   #expect(TextSize(rawValue: "xsm") == .xsm)
@@ -48,6 +52,7 @@ import Testing
   #expect(font.size(.v4xl) == font.size4xl)
 }
 
+@MainActor
 @Test func maxLinesClampsOnlyAPositiveCount() {
   #expect(astryxLineLimit(nil) == nil)
   #expect(astryxLineLimit(0) == nil)

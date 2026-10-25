@@ -12,6 +12,7 @@ import Testing
   #expect(Astryx.Heading("Sidebar", level: .v2, accessibilityLevel: .v3).headingLevel == .h3)
 }
 
+@MainActor
 @Test func headingInitializersBuildTheSameProps() {
   let labeled = Astryx.Heading("Revenue", level: .v2, type: .display2, color: .secondary)
   let fromProps = Astryx.Heading(HeadingProps(level: .v2, type: .display2, children: "Revenue", color: .secondary))
