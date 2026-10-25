@@ -88,6 +88,7 @@ import {
 import {
   MenuBottomSheet,
   MenuBottomSheetActionList,
+  preloadMenuBottomSheetActionList,
 } from './lazyMenuBottomSheet';
 import {menuBottomSheetStyles} from './menuBottomSheet.stylex';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
@@ -653,6 +654,11 @@ function DropdownMenuBottomSheet({
       setSubmenuPath([]);
     }
   }
+  // The closed sheet renders nothing, so load its rows at rest: the first
+  // open shows the actions at once.
+  useEffect(() => {
+    preloadMenuBottomSheetActionList();
+  }, []);
   const currentSubmenu = submenuPath.at(-1);
   const currentItems = currentSubmenu?.items ?? items;
   const currentTitle = currentSubmenu?.label ?? button.label;

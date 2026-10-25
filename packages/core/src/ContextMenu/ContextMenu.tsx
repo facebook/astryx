@@ -182,6 +182,11 @@ const styles = stylex.create({
     paddingBlockStart: `calc(${spacingVars['--spacing-4']} + ${spacingVars['--spacing-1']})`,
     paddingBlockEnd: spacingVars['--spacing-1'],
     paddingInline: `calc(${spacingVars['--spacing-1']} + ${spacingVars['--spacing-1']})`,
+    // Bleeding rows read the padding this element applies.
+    '--container-padding-block-start': `calc(${spacingVars['--spacing-4']} + ${spacingVars['--spacing-1']})`,
+    '--container-padding-block-end': spacingVars['--spacing-1'],
+    '--container-padding-inline-start': `calc(${spacingVars['--spacing-1']} + ${spacingVars['--spacing-1']})`,
+    '--container-padding-inline-end': `calc(${spacingVars['--spacing-1']} + ${spacingVars['--spacing-1']})`,
   },
   sheetHeader: {
     display: 'flex',
