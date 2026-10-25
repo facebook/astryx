@@ -1717,6 +1717,7 @@ jobs:
     if: github.event_name == 'pull_request' && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
     # Frame evidence measures timing: four cores, one Playwright worker.
     runs-on: 4-core-ubuntu
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -2488,6 +2489,7 @@ jobs:
         pr-rtl-shard,
         pr-rtl-merge,
         pr-rtl,
+        pr-interaction,
       ]
     if: ${{ always() && github.event_name == 'pull_request' }}
     runs-on: ubuntu-slim
