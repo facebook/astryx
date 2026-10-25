@@ -165,6 +165,32 @@ function touch(
   return event;
 }
 
+/** A mouse event for the gesture host (jsdom has no PointerEvent). */
+function mouse(
+  type: 'pointerdown' | 'pointermove' | 'pointerup',
+  target: EventTarget,
+  x: number,
+  y: number,
+  time: number,
+): Event {
+  const event = new Event(type, {bubbles: true, cancelable: true});
+  const fields: Record<string, unknown> = {
+    pointerType: 'mouse',
+    pointerId: 1,
+    isPrimary: true,
+    button: 0,
+    buttons: type === 'pointerup' ? 0 : 1,
+    clientX: x,
+    clientY: y,
+    timeStamp: time,
+  };
+  for (const [key, value] of Object.entries(fields)) {
+    Object.defineProperty(event, key, {value});
+  }
+  target.dispatchEvent(event);
+  return event;
+}
+
 interface Fixture {
   pager: Pager;
   viewport: HTMLElement;
@@ -853,6 +879,26 @@ describe('createPager', () => {
       expect(-reduced.get('x', now)).toBeCloseTo(WIDTH, 0);
     });
   }
+
+  it("under Reduce Motion, a mouse drag's release on a fine pointer lands at once: no travel, no fade (DR3)", async () => {
+    const f = setup({defaultIndex: 1});
+    const {pager, reduced} = reducedPager(f, 1, false);
+    // The pointer this case claims, as the animator sees it.
+    expect(reduced.reducedMotion()).toBe('instant');
+    const before = recorded.length;
+    mouse('pointerdown', f.page, 300, 100, now);
+    for (let i = 1; i <= 62; i++) {
+      await advance(8, f.clock);
+      mouse('pointermove', f.page, 300 - 4 * i, 100, now);
+    }
+    await advance(8, f.clock);
+    mouse('pointerup', f.page, 52, 100, now);
+    expect(pager.index).toBe(2);
+    await frames(f, 2);
+    expect(travelsSince(before)).toEqual([]);
+    expect(fadesSince(before)).toEqual([]);
+    expect(-reduced.get('x', now)).toBeCloseTo(2 * WIDTH, 0);
+  });
 });
 
 describe("the drag's axis: UIKit's rule for a pager inside a scroll view", () => {
