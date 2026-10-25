@@ -658,10 +658,10 @@ export function Tokenizer<T extends SearchableItem>({
     );
   }, []);
 
-  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
-  // tooltip listeners attach to the input wrapper and the typeahead input stays
-  // perceivable via aria-disabled instead of the disabled attribute. Input is
-  // blocked by the isDisabled guards in BaseTypeahead and handleWrapperClick.
+  // Disabled-reason tooltip. The tooltip listeners attach to the input wrapper
+  // and the typeahead input stays perceivable via aria-disabled instead of the
+  // disabled attribute. Input is blocked by the isDisabled guards in
+  // BaseTypeahead and handleWrapperClick.
   const showsDisabledMessage = isDisabled && !!disabledMessage;
   const disabledMessageTooltip = useTooltip({
     placement: 'above',
@@ -888,7 +888,7 @@ export function Tokenizer<T extends SearchableItem>({
   // Handle adding an item — detect creatable synthetic items
   const handleAdd = useCallback(
     (item: T | null) => {
-      if (!item) {
+      if (isDisabled || !item) {
         return;
       }
       if (isAtMax) {
@@ -929,6 +929,7 @@ export function Tokenizer<T extends SearchableItem>({
     [
       value,
       onChange,
+      isDisabled,
       isAtMax,
       selectedIds,
       selectedLabels,
@@ -943,6 +944,9 @@ export function Tokenizer<T extends SearchableItem>({
   // announcement covers both.
   const handleRemove = useCallback(
     (item: T) => {
+      if (isDisabled) {
+        return;
+      }
       const newItems = value.filter(v => v.id !== item.id);
       onChange(newItems, {item, type: 'remove'});
       announce(t('@astryx.tokenizer.tokenRemoved', {label: item.label}));
@@ -970,19 +974,19 @@ export function Tokenizer<T extends SearchableItem>({
         active.blur();
       }
     },
-    [value, onChange, announce, t, isTouchPressWithKeyboardDown],
+    [value, onChange, isDisabled, announce, t, isTouchPressWithKeyboardDown],
   );
 
   // Handle clearing all items
   const handleClearAll = useCallback(() => {
-    if (value.length === 0) {
+    if (isDisabled || value.length === 0) {
       return;
     }
     // Report the last item as removed (convention)
     const lastItem = value[value.length - 1];
     onChange([], {item: lastItem, type: 'remove'});
     inputRef.current?.focus();
-  }, [value, onChange]);
+  }, [value, onChange, isDisabled]);
 
   // Handle backspace on empty input — remove last token
   const handleKeyDown = useCallback(
@@ -1174,16 +1178,9 @@ export function Tokenizer<T extends SearchableItem>({
         </TrailingKeyDownContext>
       </BusyIndicatorLaneProvider>
       {htmlName != null &&
+        !isDisabled &&
         value.map(item => (
-          <input
-            key={item.id}
-            type="hidden"
-            name={htmlName}
-            value={item.id}
-            // Disabled native controls are excluded from form submission;
-            // mirror that for the hidden carriers.
-            disabled={isDisabled}
-          />
+          <input key={item.id} type="hidden" name={htmlName} value={item.id} />
         ))}
       <EndLane
         lane={busyLane}

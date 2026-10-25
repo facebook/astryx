@@ -182,7 +182,21 @@ would change a parent's last child.
 Content taller than the placement axis can hold on either side is capped to the
 viewport minus both gutters and shifted into the viewport by the browser; its
 margin box stays inside the viewport, so it keeps its anchor clearance from the
-edge it meets.
+edge it meets. A layer that keeps its anchor clear (Tooltip) carries a second
+list beside the first: when it finds the first list settled the box over the
+anchor or, while the anchor is in view, past the viewport on the block axis
+(Chromium shifts a box that fits no option over the anchor; WebKit leaves it on
+its preferred side, partly off-screen), it switches to beside the anchor on the
+inline end, then the inline start, at the content's inline size, then the
+opposite block side at its own size, and only then the preferred block side and
+the other, each only while it is the roomier side and sized to the room there;
+it keeps that list until it next opens, and scrolls only while its content
+overflows. Content that fits on some side keeps its own size there, and no
+option is sized to whatever room is left: a browser keeps an open layer on the
+option it last used while that
+option still fits, so an anchor that moves takes the layer to the side now
+roomier instead of shrinking it. Chromium tries no more than five
+options, so the second list replaces the first rather than extending it.
 Once the anchor has left the viewport the runtime pins the layer's
 self-alignment `unsafe` toward the anchor, so the layer holds the position its
 flips give it and holds its size rather than sliding to the edge. Components
@@ -190,10 +204,21 @@ pass no fallbacks of their own to an anchor-mode layer.
 
 Every one of these inputs is resolved by the browser's style and layout in the
 same frame as the render that produced it; the runtime measures nothing after
-paint to apply them. Anchor visibility is read synchronously in a layout effect
-before the layer's first paint and then observed while the layer is open, so a
-layer opened with its anchor already out of view holds from its first frame. A
-layer never paints at a geometry it is about to correct.
+paint to apply them. Anchor visibility is read
+synchronously in a layout effect before the layer's first paint and then
+observed while the layer is open, so a layer opened with its anchor already out
+of view holds from its first frame. Whether a layer that keeps its anchor clear
+covers its anchor or leaves the viewport, judged from its box without its own
+transform (so an entry animation that starts it closer to the anchor does not
+count), and whether its content overflows, is read inside `show()` and the
+open-remount path right after the popover is shown,
+and again while it is open from ResizeObserver callbacks and resize events, all
+of which run before the frame paints; the observers move to the replacement when
+the caller replaces the anchor element while the layer stays open. An anchor
+that moves on screen without resizing, in layout or by a scroll, is not
+observed: no observer that runs before paint reports it, so the runtime does
+not re-read the layer then. A layer never paints at a geometry it is about to
+correct.
 
 ### Current browser support behavior
 
@@ -373,9 +398,13 @@ layers use Layer rendering without joining Escape/platform dismissal.
   the same inset, no consumer defines its own, no size is capped to the span
   beside the trigger, and a consumer minimum is clamped by the runtime's cap.
 - **INV12 — The first frame is the settled frame.** No input to a layer's
-  viewport geometry is measured after paint and then applied; the one runtime
-  observation, anchor visibility, is read before first paint. A layer never
-  paints at a geometry it is about to correct.
+  viewport geometry is measured after paint and then applied. The runtime
+  observes anchor visibility for every layer, and, for a layer that keeps its
+  anchor clear, whether it covers its anchor or leaves the viewport and
+  whether its content overflows; each is read before first paint and, while
+  the layer is open, from callbacks that run before the frame paints. A layer
+  never paints at a geometry it is about to correct, and the runtime polls
+  nothing.
 
 This record does not make future eligible-owner, branch-association, global-host,
 or browser-support requirements current. It does not own component focus entry or
@@ -441,7 +470,8 @@ be updated only as that work ships.
   `Layer/layerStructureReset.stylex.ts` owns the named structural custom-property
   reset applied on layer content roots.
 - `Layer/layerViewportInset.stylex.ts` owns the gutter and the viewport caps;
-  `Layer/layerSlideRules.ts` owns the slide options' `@position-try` rules;
+  `Layer/layerSlideRules.ts` owns the slide options' `@position-try` rules
+  and the anchor-clear list's beside and fit rules;
   `LayerProvider` publishes the declared inset through `LayerContext`, and
   `Layer/layerInset.ts` owns the `--astryx-layer-inset-*` properties a layer or
   the toast viewport writes on itself to carry it; `Layer/clampInlineSize.ts`
