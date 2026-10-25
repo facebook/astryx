@@ -79,7 +79,6 @@
 import {
   useCallback,
   useEffect,
-  useId,
   useImperativeHandle,
   useMemo,
   useRef,
@@ -106,6 +105,7 @@ import {
 import {focusOutlineStyles} from '../utils';
 import {wheelGeometry} from './wheelGeometry.stylex';
 import {useOwnScrollGesture} from './useOwnScrollGesture';
+import {useWheelListbox} from './useWheelListbox';
 import {PARKED_ANGLE, drumGeometry, rowAtPoint} from './wheelDrum';
 import {WheelMotion, type PlayOptions} from './wheelMotion';
 import {reducedMotionFade} from '../motion/reducedMotion';
@@ -408,7 +408,6 @@ export function PickerWheel({
   resolveRest,
   ref,
 }: WheelProps) {
-  const id = useId();
   const group = useWheelGroup();
   const columnRef = useRef<HTMLDivElement | null>(null);
   const drumRef = useRef<HTMLDivElement | null>(null);
@@ -958,39 +957,16 @@ export function PickerWheel({
     [motion, play],
   );
 
-  const handleKeyDown = useCallback(
-    (event: React.KeyboardEvent) => {
-      switch (event.key) {
-        case 'ArrowDown':
-          event.preventDefault();
-          moveBy(1);
-          break;
-        case 'ArrowUp':
-          event.preventDefault();
-          moveBy(-1);
-          break;
-        case 'PageDown':
-          event.preventDefault();
-          moveBy(10);
-          break;
-        case 'PageUp':
-          event.preventDefault();
-          moveBy(-10);
-          break;
-        case 'Home':
-          event.preventDefault();
-          moveToEnd('first');
-          break;
-        case 'End':
-          event.preventDefault();
-          moveToEnd('last');
-          break;
-        default:
-          break;
-      }
-    },
-    [moveBy, moveToEnd],
-  );
+  const {listboxProps, optionProps} = useWheelListbox({
+    label,
+    options,
+    value,
+    // The committed row: a value set from outside shows in the same render.
+    activeIndex: selectedIndex,
+    stepBy: moveBy,
+    toEnd: moveToEnd,
+    activate: activateRow,
+  });
 
   // The mounted rows: each option index once on the drum (a looping wheel
   // shows a row at its copy nearest the band), and each position of the band
@@ -1018,12 +994,7 @@ export function PickerWheel({
   return (
     <div
       ref={columnRef}
-      role="listbox"
-      aria-label={label}
-      // The committed row: a value set from outside shows in the same render.
-      aria-activedescendant={`${id}-${options[selectedIndex]?.value}`}
-      tabIndex={0}
-      onKeyDown={handleKeyDown}
+      {...listboxProps}
       data-wheel=""
       data-wheel-band={group == null ? '' : undefined}
       {...stylex.props(
@@ -1037,11 +1008,7 @@ export function PickerWheel({
         {options.map((option, index) => (
           <div
             key={option.value}
-            id={`${id}-${option.value}`}
-            role="option"
-            aria-selected={option.value === value}
-            aria-disabled={option.isDisabled || undefined}
-            onClick={() => activateRow(index)}
+            {...optionProps(option, index)}
             {...stylex.props(styles.option)}>
             {option.label}
           </div>

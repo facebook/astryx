@@ -349,3 +349,17 @@ describe('Wheel — by pointer', () => {
     expect(onChange).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('Wheel — markup', () => {
+  // Written before the listbox wiring moved into useWheelListbox: the
+  // snapshot holds today's column to its markup (attributes, classes, order).
+  it('keeps today’s column’s markup', () => {
+    const {container} = render(
+      <Wheel label="Hour" options={HOURS} value={10} onChange={() => {}} />,
+    );
+    // React's generated ids depend on how many renders ran before.
+    expect(
+      container.innerHTML.replace(/_r_[0-9a-z]+_/g, '_r_id_'),
+    ).toMatchSnapshot();
+  });
+});
