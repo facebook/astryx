@@ -35,7 +35,10 @@
  * through its own click, inside the lift, so it keeps the user activation
  * and every click handler. A pen is tracked like a finger, as UIKit tracks
  * Apple Pencil on an alert's actions; a mouse keeps the browser's own click.
- * Turning tracking off, or unmounting, ends any release fade still running.
+ * The recognizer is attached only while tracking is on, so a caller that
+ * turns it on under a touch presentation attaches no touch work where the
+ * primary pointer is fine (`spec:AST-094` FR19). Turning tracking off, or
+ * unmounting, ends any release fade still running.
  *
  * Nothing reads layout after the press begins: the actions' rects are read
  * once when it begins, then hit-tested. A move costs at most two attribute
@@ -70,7 +73,11 @@ export interface ActionGroupTrackingOptions {
    * UIKit drops touches during a presentation transition.
    */
   isInert?: () => boolean;
-  /** @default true */
+  /**
+   * Off, nothing is attached and nothing is tracked: pass the touch
+   * presentation's state, so no touch work attaches where the primary
+   * pointer is fine (`spec:AST-094` FR19). @default true
+   */
   isEnabled?: boolean;
   /**
    * Let the gesture host write a long press's permanent styles on the
@@ -101,6 +108,9 @@ interface TrackingState {
 }
 
 const PRESS = UIKIT_GESTURES.press;
+
+/** The ref handed to the recognizer while tracking is off: no element. */
+const DETACHED: RefObject<Element | null> = {current: null};
 
 /**
  * Track touches on the element behind `ref` across the actions inside it,
@@ -207,7 +217,7 @@ export function useActionGroupTracking(
   };
 
   return useGestureRecognizer(
-    ref,
+    isEnabled ? ref : DETACHED,
     () =>
       new LongPressGestureRecognizer({
         name: 'ActionGroupTracking',

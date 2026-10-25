@@ -226,6 +226,9 @@ export function AlertDialog({
   // at the lift. Under a finger the alert also appears and leaves the way
   // UIKit's does (the touch layer's useAlertMotion): it stays presented while
   // it fades out, and touches during either transition are taken and dropped.
+  // Only under a touch presentation (a coarse primary pointer, after
+  // hydration): where the primary pointer is fine nothing attaches, and a
+  // finger keeps the browser's click (`spec:AST-094` FR13, FR19).
   const {isTouch} = useTouchPresentation();
   // UIKit's alert width under a finger (alertController.width), so the
   // presentation's 1.2 start stays on screen; with a mouse Dialog's 400.
