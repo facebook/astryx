@@ -25,7 +25,11 @@ import {
   vi,
 } from 'vitest';
 import {Button} from '../Button';
-import {DEFAULT_COMPACT_DEFINITION} from '../theme/themeAdaptations';
+import {defineTheme} from '../theme/defineTheme';
+import {
+  compactDefinition,
+  DEFAULT_COMPACT_DEFINITION,
+} from '../theme/themeAdaptations';
 import {Popover, type PopoverPresentation} from './Popover';
 
 // Compact as spec:AST-012 FR9 defines it, with a coarse pointer.
@@ -373,6 +377,76 @@ describe('Popover presentation', () => {
     expect(document.querySelector('[popover]:popover-open')).toBeNull();
     expect(changes).toEqual([]);
     expect(trigger()).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('adaptive: a sheet closed after the screen stops being compact plays its exit and hands focus back to the trigger', async () => {
+    isCompactTouch = true;
+    const closedWhileConnected: boolean[] = [];
+    const close = HTMLDialogElement.prototype.close;
+    HTMLDialogElement.prototype.close = vi.fn(function (
+      this: HTMLDialogElement,
+    ) {
+      closedWhileConnected.push(this.isConnected);
+      close.call(this);
+    });
+    render(<Filters presentation="adaptive" />);
+    trigger().focus();
+    await tapTrigger();
+    const dialog = await vi.waitFor(() => {
+      const element = sheetDialog();
+      expect(element).toHaveAttribute('open');
+      return element!;
+    });
+    // An iPad mini turned to landscape: no longer a compact touch screen.
+    setCompactTouch(false);
+    act(() => {
+      fireEvent.keyDown(dialog, {key: 'Escape'});
+    });
+    expect(trigger()).toHaveAttribute('aria-expanded', 'false');
+    // The sheet that was open stays mounted through its exit.
+    expect(dialog.isConnected).toBe(true);
+    const panel = dialog.querySelector<HTMLElement>('.astryx-bottom-sheet');
+    expect(panel).not.toBeNull();
+    act(() => {
+      fireEvent.transitionEnd(panel!, {propertyName: 'transform'});
+    });
+    // Its dialog closes in the document, and focus is back on the trigger.
+    expect(dialog).not.toHaveAttribute('open');
+    expect(closedWhileConnected).toEqual([true]);
+    expect(document.activeElement).toBe(trigger());
+    // The next open on the wide screen is the anchored popover, with the
+    // content.
+    await tapTrigger();
+    await vi.waitFor(() => {
+      expect(openLayer()).not.toBeNull();
+    });
+    expect(openLayer()).toHaveTextContent('Apply');
+  });
+
+  it('without a Theme provider, adaptive measures compact against the registered root theme', async () => {
+    defineTheme({
+      name: 'root-popover-points',
+      adaptations: {widthBreakpoints: {md: 900}},
+    });
+    const originalGetAttribute = document.documentElement.getAttribute.bind(
+      document.documentElement,
+    );
+    const rootTheme = vi
+      .spyOn(document.documentElement, 'getAttribute')
+      .mockImplementation(name =>
+        name === 'data-astryx-theme'
+          ? 'root-popover-points'
+          : originalGetAttribute(name),
+      );
+    try {
+      render(<Filters presentation="adaptive" />);
+      expect(window.matchMedia).toHaveBeenCalledWith(
+        compactDefinition({md: 900}).coarsePointerQuery,
+      );
+      expect(window.matchMedia).not.toHaveBeenCalledWith(COMPACT_TOUCH_QUERY);
+    } finally {
+      rootTheme.mockRestore();
+    }
   });
 
   it('a render-prop trigger gets the sheet state', async () => {

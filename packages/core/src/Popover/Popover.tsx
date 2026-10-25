@@ -27,7 +27,6 @@
  */
 
 import React, {
-  use,
   useCallback,
   useMemo,
   useRef,
@@ -45,7 +44,7 @@ import {
   compactDefinition,
   DEFAULT_COMPACT_DEFINITION,
 } from '../theme/themeAdaptations';
-import {ThemeContext} from '../theme/useTheme';
+import {useThemeDefinition} from '../theme/useTheme';
 import * as stylex from '@stylexjs/stylex';
 import {devWarn} from '../utils/devWarning';
 import type {BaseProps} from '../BaseProps';
@@ -76,16 +75,15 @@ const notCompactTouch = () => false;
  * it (spec:AST-012 FR9: narrower than its `md` point or shorter than 500).
  * Only an adaptive popover reads the theme and subscribes to that query, so a
  * default popover holds no viewport or document listener. The theme is the
- * nearest Theme provider's; without one, compact is at the default points.
+ * nearest Theme provider's; without one, the registered root theme's, as
+ * AppShell reads it (architecture:theme-application).
  */
 function usePresentationSurface(
   presentation: AdaptivePresentation,
 ): ResolvedAdaptivePresentation {
   const isAdaptive = presentation === 'adaptive';
-  // `use` may be called conditionally, unlike the other hooks.
-  const points = isAdaptive
-    ? use(ThemeContext)?.theme.__adaptations?.widthBreakpoints
-    : undefined;
+  const points =
+    useThemeDefinition(isAdaptive)?.__adaptations?.widthBreakpoints;
   const query = useMemo(
     () =>
       (points == null ? DEFAULT_COMPACT_DEFINITION : compactDefinition(points))
@@ -545,6 +543,18 @@ export function Popover({
   const isSheetOpen = isControlled
     ? isOpen === true && controlledSurface === 'bottom-sheet'
     : isSheetOpenState;
+  // A sheet that has been the open surface stays mounted after it closes, so
+  // its exit plays out and its dialog hands focus back to the trigger
+  // (component:Popover AR4), even when the screen stopped being compact while
+  // it was open. The anchored popover opening releases it.
+  const [hasSheetBeenOpen, setHasSheetBeenOpen] = useState(false);
+  if (isSheetOpen && !hasSheetBeenOpen) {
+    setHasSheetBeenOpen(true);
+  } else if (!isSheetOpen && popover.isOpen && hasSheetBeenOpen) {
+    setHasSheetBeenOpen(false);
+  }
+  const isSheetTheSurface =
+    hasSheetBeenOpen || resolvedPresentation === 'bottom-sheet';
   const isAnySurfaceOpen = popover.isOpen || isSheetOpen;
   const sheetId = `${popover.id}-sheet`;
 
@@ -825,10 +835,10 @@ export function Popover({
   const layerXstyle = [popoverSizeXstyle, layerAnimations[placement]];
 
   // One instance of the content at a time: the sheet holds it while it is
-  // the surface (open, or the one an open would choose, through its exit),
-  // the anchored layer otherwise.
+  // the surface (open, the one an open would choose, or closing after it was
+  // open), the anchored layer otherwise.
   const isContentInSheet =
-    isSheetOpen || (resolvedPresentation === 'bottom-sheet' && !popover.isOpen);
+    isSheetOpen || (isSheetTheSurface && !popover.isOpen);
   const anchoredContent = (
     <div data-testid={isContentInSheet ? undefined : testId}>
       {isContentInSheet ? null : content}
@@ -839,11 +849,12 @@ export function Popover({
     : hasEscapeDismiss
       ? 'form'
       : 'required';
-  // The sheet renders once it can be the surface (it then loads), and while
-  // it is the open one. A sheet with no dismissal keeps the anchored
-  // surface's fallback close control, so it can always be closed.
+  // The sheet renders once it can be the surface (it then loads), while it
+  // is the open one, and through its exit after it was. A sheet with no
+  // dismissal keeps the anchored surface's fallback close control, so it can
+  // always be closed.
   const sheet =
-    isSheetOpen || resolvedPresentation === 'bottom-sheet' ? (
+    isSheetOpen || isSheetTheSurface ? (
       <PopoverBottomSheet
         id={sheetId}
         isOpen={isSheetOpen}
