@@ -242,7 +242,7 @@ export const LAYER_SCROLLS_ATTRIBUTE = 'data-astryx-layer-scrolls';
  * a layer whose content overflows scroll it.
  */
 function clearSwitchCss(): string {
-  return `[${LAYER_CLEARS_ANCHOR_ATTRIBUTE}]{${LAYER_TRY_FALLBACKS_PROPERTY}:var(${LAYER_CLEAR_FALLBACKS_PROPERTY});}[${LAYER_SCROLLS_ATTRIBUTE}]{overflow-y:auto;overscroll-behavior:contain;}`;
+  return `[${LAYER_CLEARS_ANCHOR_ATTRIBUTE}]{${LAYER_TRY_FALLBACKS_PROPERTY}:var(${LAYER_CLEAR_FALLBACKS_PROPERTY});}[${LAYER_SCROLLS_ATTRIBUTE}]{overflow-y:auto;overscroll-behavior-block:contain;}`;
 }
 
 /**
