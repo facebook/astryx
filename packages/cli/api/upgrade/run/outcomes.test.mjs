@@ -17,6 +17,7 @@ import {
   ManualMigrationRequired,
   RegenerationRequired,
 } from '../../../assets/codemods/outcome.mjs';
+import {markParseError} from '../../../assets/codemods/parse.mjs';
 
 vi.mock('../../../assets/codemods/registry.mjs', async importOriginal => {
   const actual = /** @type {Record<string, unknown>} */ (
@@ -55,6 +56,21 @@ vi.mock('../../../assets/codemods/registry.mjs', async importOriginal => {
                 throw new ManualMigrationRequired('Call the new API.', {
                   line: 3,
                 });
+              }
+              return undefined;
+            },
+          },
+          {
+            name: 'parse-strict',
+            meta: {title: 'Parse strictly', fileExtensions: ['.ts']},
+            /** @param {{source: string}} file */
+            transform(file) {
+              if (file.source.includes('UNPARSEABLE')) {
+                throw markParseError(
+                  Object.assign(new SyntaxError('Unexpected token'), {
+                    loc: {line: 4, column: 0},
+                  }),
+                );
               }
               return undefined;
             },
@@ -175,7 +191,7 @@ describe('manual migrations in the upgrade receipt', () => {
 });
 
 describe('several manual migrations in one file', () => {
-  it('are folded into its one declined row, each with its codemod and line, and all counted', async () => {
+  it('are folded into its one declined row, each keeping its prefix and its line, and all counted', async () => {
     write('src/chart.ts', "const a = 1;\nconst b = 'RAW';\nLEGACY();\n");
     logger.setSilent(false);
     const err = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -189,14 +205,65 @@ describe('several manual migrations in one file', () => {
         file: 'src/chart.ts',
         location: '2',
         reason:
-          'manual migration needed (core:report-raw, line 2): Read it through dataVars.; ' +
-          'manual migration needed (core:report-legacy, line 3): Call the new API.',
+          'manual migration needed (core:report-raw): Read it through dataVars.; ' +
+          'manual migration needed (core:report-legacy): Call the new API. (at 3)',
       },
     ]);
+    // Each finding keeps the approved prefix, so a parser reads its codemod.
+    const findings = result.data.declinedCandidates[0].reason.split('; ');
+    expect(findings).toHaveLength(2);
+    for (const finding of findings) {
+      expect(finding).toMatch(/^manual migration needed \(core:[a-z-]+\): /);
+    }
     const stderr = err.mock.calls.map(c => c.join(' ')).join('\n');
     const stdout = out.mock.calls.map(c => c.join(' ')).join('\n');
     expect(stderr).toContain('1 file needs a manual migration');
-    expect(stderr).toContain('Call the new API.');
+    expect(stderr).toContain(
+      '  src/chart.ts:2 - manual migration needed (core:report-raw): Read it through dataVars.',
+    );
+    expect(stderr).toContain(
+      '  src/chart.ts:3 - manual migration needed (core:report-legacy): Call the new API.',
+    );
+    expect(stdout).toContain(
+      'Upgrade complete; 2 manual migrations listed above',
+    );
+  });
+});
+
+describe('a protected file both unparseable and with a manual finding', () => {
+  it('keeps both findings in its one row, each under its own heading', async () => {
+    write(
+      'src/vendor.ts',
+      "// @generated\nconst b = 'RAW';\nconst c = 1;\nUNPARSEABLE\n",
+    );
+    logger.setSilent(false);
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const out = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    const result = await upgrade(APPLY, {cwd: dir});
+
+    expect(result.data.complete).toBe(true);
+    const vendor = result.data.declinedCandidates.find(
+      (/** @type {{file: string}} */ row) => row.file === 'src/vendor.ts',
+    );
+    expect(vendor.location).toBe('4:1');
+    const [parse, manual, ...rest] = vendor.reason.split('; ');
+    expect(rest).toEqual([]);
+    expect(parse).toMatch(
+      /^unparseable protected file \([^)]+\): Unexpected token$/,
+    );
+    expect(manual).toBe(
+      'manual migration needed (core:report-raw): Read it through dataVars. (at 2)',
+    );
+    const stderr = err.mock.calls.map(c => c.join(' ')).join('\n');
+    const stdout = out.mock.calls.map(c => c.join(' ')).join('\n');
+    expect(stderr).toMatch(
+      /1 protected file was skipped because it does not parse; review manually:\n\s+src\/vendor\.ts:4:1 - unparseable protected file/,
+    );
+    expect(stderr).toContain('2 files need a manual migration');
+    expect(stderr).toContain(
+      '  src/vendor.ts:2 - manual migration needed (core:report-raw): Read it through dataVars.',
+    );
     expect(stdout).toContain(
       'Upgrade complete; 2 manual migrations listed above',
     );

@@ -95,87 +95,102 @@ function summarizeProtectedFiles(rows) {
     .sort((a, b) => a.file.localeCompare(b.file));
 }
 
+/** Every declined finding for a manual migration starts with this. */
+const MANUAL_MIGRATION_REASON = 'manual migration needed';
+
+/**
+ * Where one declined finding ends and the next begins inside a folded
+ * `reason`: `; ` before a finding's own prefix.
+ */
+const NEXT_FINDING =
+  /; (?=(?:unparseable protected file|manual migration needed) \()/;
+
 /**
  * Collapse per-codemod declined candidates into one row per file, in the
  * receipt's `{file, location?, reason}` shape. A file the receipt lists under
  * `protectedFiles` is left out: a codemod still requires a change to it, and
  * that already makes the run incomplete.
+ *
+ * Every distinct finding for a file is kept, whatever its kind: a single
+ * finding is the row as it arrived; several are folded into the one row,
+ * each keeping its own prefix (`unparseable protected file (<category>): ...`
+ * or `manual migration needed (<codemod>): ...`), joined by `; ` in arrival
+ * order. `location` is the first known one; a later finding whose own
+ * location differs carries it at its end as ` (at <location>)`.
  * @param {Array<{file: string, codemod: string, location?: string, reason: string}>} rows
  * @param {Array<{file: string}>} [protectedRows]
  * @returns {Array<{file: string, location?: string, reason: string}>}
  */
 function summarizeDeclinedCandidates(rows, protectedRows = []) {
-  /** @type {Map<string, {file: string, location?: string, reason: string}>} */
+  /** @type {Map<string, Array<{location?: string, reason: string}>>} */
   const byFile = new Map();
   for (const {file, location, reason} of withoutProtected(
     rows,
     protectedRows,
   )) {
-    if (byFile.has(file)) continue;
-    byFile.set(file, {file, ...(location ? {location} : {}), reason});
+    const findings = byFile.get(file) ?? [];
+    if (!findings.some(f => f.reason === reason && f.location === location)) {
+      findings.push({...(location ? {location} : {}), reason});
+    }
+    byFile.set(file, findings);
   }
-  return [...byFile.values()].sort((a, b) => a.file.localeCompare(b.file));
+  return [...byFile.entries()]
+    .map(([file, findings]) => {
+      const location = findings.find(f => f.location)?.location;
+      return {
+        file,
+        ...(location ? {location} : {}),
+        reason: findings
+          .map(f =>
+            f.location && f.location !== location
+              ? `${f.reason} (at ${f.location})`
+              : f.reason,
+          )
+          .join('; '),
+      };
+    })
+    .sort((a, b) => a.file.localeCompare(b.file));
 }
 
-/** Every declined row for a manual migration starts its `reason` with this. */
-const MANUAL_MIGRATION_REASON = 'manual migration needed';
+/**
+ * The findings a folded declined row carries, each with its own location.
+ * @param {{location?: string, reason: string}} row
+ * @returns {Array<{location?: string, text: string}>}
+ */
+function declinedFindings(row) {
+  return row.reason.split(NEXT_FINDING).map((text, index) => {
+    if (index === 0) {
+      return {...(row.location ? {location: row.location} : {}), text};
+    }
+    const at = / \(at ([^)]+)\)$/.exec(text);
+    return at
+      ? {location: at[1], text: text.slice(0, at.index)}
+      : {...(row.location ? {location: row.location} : {}), text};
+  });
+}
 
 /**
  * Declined candidates for code a codemod identified but cannot migrate safely
- * (`ManualMigrationRequired`), in the per-codemod row shape the runners use.
- * A person makes the change; like every declined candidate, it never fails
- * the run or makes it incomplete (spec:AST-040 FR7).
- *
- * Declined candidates are one row per file, so every finding for a file is
- * folded into its row: `location` is the first known line, and `reason` lists
- * each finding as `manual migration needed (<codemod>): <change>`, joined by
- * `; `. With more than one finding, each names its own line as
- * `(<codemod>, line <n>)` when known.
+ * (`ManualMigrationRequired`): one row per finding, in the per-codemod row
+ * shape the runners use, for `summarizeDeclinedCandidates` to fold with the
+ * file's other declined findings. A person makes the change; like every
+ * declined candidate, it never fails the run or makes it incomplete
+ * (spec:AST-040 FR7).
  * @param {import('../_adapter.mjs').CodemodOutcomeRecord[]} outcomes
  * @returns {Array<{file: string, codemod: string, location?: string, reason: string}>}
  */
 function manualDeclinedRows(outcomes) {
-  /** @type {Map<string, Array<{codemod: string, line?: number, message: string}>>} */
-  const byFile = new Map();
-  const seen = new Set();
-  for (const outcome of outcomes) {
-    if (outcome.kind !== 'manual') continue;
-    const key = JSON.stringify([
-      outcome.file,
-      outcome.codemod,
-      outcome.line ?? null,
-      outcome.message,
-    ]);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    const findings = byFile.get(outcome.file) ?? [];
-    findings.push({
-      codemod: outcome.codemod,
-      ...(typeof outcome.line === 'number' ? {line: outcome.line} : {}),
-      message: outcome.message,
-    });
-    byFile.set(outcome.file, findings);
-  }
   /** @type {Array<{file: string, codemod: string, location?: string, reason: string}>} */
   const rows = [];
-  for (const [file, findings] of byFile) {
-    findings.sort(
-      (a, b) =>
-        (a.line ?? Infinity) - (b.line ?? Infinity) ||
-        a.codemod.localeCompare(b.codemod),
-    );
-    const first = findings.find(f => f.line !== undefined);
-    const many = findings.length > 1;
+  for (const outcome of outcomes) {
+    if (outcome.kind !== 'manual') continue;
     rows.push({
-      file,
-      codemod: findings[0].codemod,
-      ...(first ? {location: String(first.line)} : {}),
-      reason: findings
-        .map(
-          f =>
-            `${MANUAL_MIGRATION_REASON} (${f.codemod}${many && f.line !== undefined ? `, line ${f.line}` : ''}): ${f.message}`,
-        )
-        .join('; '),
+      file: outcome.file,
+      codemod: outcome.codemod,
+      ...(typeof outcome.line === 'number'
+        ? {location: String(outcome.line)}
+        : {}),
+      reason: `${MANUAL_MIGRATION_REASON} (${outcome.codemod}): ${outcome.message}`,
     });
   }
   return rows;
@@ -184,44 +199,52 @@ function manualDeclinedRows(outcomes) {
 /**
  * How many manual migrations the declined rows carry: every finding, not every
  * file (a folded row lists several).
- * @param {Array<{reason: string}>} declined
+ * @param {Array<{location?: string, reason: string}>} declined
  */
 function countManualMigrations(declined) {
-  let count = 0;
-  for (const {reason} of declined) {
-    if (!reason.startsWith(MANUAL_MIGRATION_REASON)) continue;
-    count += reason.split(`; ${MANUAL_MIGRATION_REASON} (`).length;
-  }
-  return count;
+  return declined
+    .flatMap(declinedFindings)
+    .filter(f => f.text.startsWith(MANUAL_MIGRATION_REASON)).length;
 }
 
 /**
  * Print the final declined list (files it reports as protected are already
  * left out), so the text output carries what the receipt lists: protected
  * files the run skipped because a codemod could not parse them, and code a
- * codemod could not migrate.
+ * codemod could not migrate. Each finding of a folded row is printed under
+ * its own kind.
  * @param {Array<{file: string, location?: string, reason: string}>} declined
  */
 function logDeclined(declined) {
-  const manual = declined.filter(row =>
-    row.reason.startsWith(MANUAL_MIGRATION_REASON),
-  );
-  const unparseable = declined.filter(row => !manual.includes(row));
-  /** @param {Array<{file: string, location?: string, reason: string}>} rows */
+  /** @type {Array<{file: string, location?: string, text: string}>} */
+  const manual = [];
+  /** @type {Array<{file: string, location?: string, text: string}>} */
+  const unparseable = [];
+  for (const row of declined) {
+    for (const finding of declinedFindings(row)) {
+      (finding.text.startsWith(MANUAL_MIGRATION_REASON)
+        ? manual
+        : unparseable
+      ).push({file: row.file, ...finding});
+    }
+  }
+  /** @param {Array<{file: string, location?: string, text: string}>} rows */
   const lines = rows => {
-    for (const {file, location, reason} of rows) {
-      logger.warn(`  ${file}${location ? `:${location}` : ''} - ${reason}`);
+    for (const {file, location, text} of rows) {
+      logger.warn(`  ${file}${location ? `:${location}` : ''} - ${text}`);
     }
   };
+  /** @param {Array<{file: string}>} rows */
+  const files = rows => new Set(rows.map(row => row.file)).size;
   if (unparseable.length > 0) {
-    const n = unparseable.length;
+    const n = files(unparseable);
     logger.warn(
       `${n} protected file${n === 1 ? ' was' : 's were'} skipped because ${n === 1 ? 'it does' : 'they do'} not parse; review manually:`,
     );
     lines(unparseable);
   }
   if (manual.length > 0) {
-    const n = manual.length;
+    const n = files(manual);
     logger.warn(
       `${n} file${n === 1 ? ' needs' : 's need'} a manual migration that upgrade cannot make; review manually:`,
     );
