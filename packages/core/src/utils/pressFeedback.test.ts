@@ -386,6 +386,9 @@ describe('a scroll takes it away and nothing brings it back', () => {
   });
 
   it('is a brake, not a press, when it lands on a list that is still moving', () => {
+    // A touch device: the brake and the finger's lift are coarse-pointer
+    // work (spec:AST-094 FR24).
+    coarsePrimaryPointer();
     // Measured on iOS: a touch stopping a decelerating list highlights
     // nothing. Nothing else would cancel this press, because stopping the
     // scroll is what makes the scroll events stop.
@@ -947,9 +950,15 @@ describe('what the list pays for it', () => {
     ];
     try {
       release = installPressFeedback();
+      // A finger on a touchscreen laptop: the press is tracked, with no
+      // touch listener.
+      press(rows[0], 'pointerdown', 10, 10);
+      vi.advanceTimersByTime(PRESS_ONSET_MS);
+      press(rows[0], 'pointerup', 10, 10);
       const types = added.flatMap(spy => spy.mock.calls.map(([type]) => type));
       expect(types.filter(type => type.startsWith('touch'))).toEqual([]);
       expect(types).toContain('pointerdown');
+      expect(types).toContain('pointerup');
     } finally {
       for (const spy of added) {
         spy.mockRestore();
@@ -1271,6 +1280,9 @@ describe('listeners exist only while a press is live', () => {
   });
 
   it('a finger attaches the rest, and they come down when the press is over and the finger is up', () => {
+    // A touch device: the brake and the finger's lift are coarse-pointer
+    // work (spec:AST-094 FR24).
+    coarsePrimaryPointer();
     press(rows[0], 'pointerdown', 10, 10);
     expect(attached()).toEqual(
       expect.arrayContaining([
@@ -1291,6 +1303,9 @@ describe('listeners exist only while a press is live', () => {
   });
 
   it('after a lift that leaves a fling scrolling, they come down at its scrollend, not at a time', () => {
+    // A touch device: the brake and the finger's lift are coarse-pointer
+    // work (spec:AST-094 FR24).
+    coarsePrimaryPointer();
     press(rows[0], 'pointerdown', 10, 10);
     scroller.dispatchEvent(new Event('scroll'));
     press(rows[0], 'pointercancel', 10, 10);
