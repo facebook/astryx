@@ -217,7 +217,6 @@ export const pageControl = {
  * touch, not how anything moves, so it is not a role. Nothing registers on
  * import: PageControl's touch layer calls it once (it is idempotent), so a
  * page that never shows the touch presentation ships no registry.
- * @experimental
  */
 export function registerPageControlTable(): void {
   registerMotionTable('pageControl', pageControl, {
