@@ -747,7 +747,85 @@ test('a push keeps advancing every frame while the main thread is blocked', asyn
   expect(proof.changed).toBeGreaterThanOrEqual(proof.frames - 3);
 });
 
-test('the incoming bar covers the old title while the main thread is blocked', async ({
+// With a mouse the bars are opaque: the incoming one covers the old title.
+// Under a finger iOS 26's bars are clear (NavigationStackScrollEdge's proofs)
+// and the incoming screen cuts the old title instead (the next test).
+test('with a mouse, the incoming bar covers the old title while the main thread is blocked', async ({
+  browser,
+  browserName,
+}) => {
+  test.skip(
+    browserName !== 'chromium',
+    'screencast frame evidence is Chromium-only in Playwright (WebKit: the iOS simulator rig)',
+  );
+  const {context, page} = await newFinePage(browser);
+  try {
+    await openStack(page, 'settings', {pointer: 'mouse'});
+    expect(
+      await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+    ).toBe(false);
+    // A marker at the trailing end of the root's title: the pushed screen's
+    // opaque bar slides over it on the compositor.
+    await page.locator('[data-navigation-bar="root"] h2').evaluate(title => {
+      const element = title as HTMLElement;
+      element.style.position = 'relative';
+      const chip = document.createElement('div');
+      chip.setAttribute('aria-hidden', 'true');
+      chip.style.cssText =
+        'position:absolute;top:4px;right:0;width:10px;height:10px;background:rgb(255,0,255);pointer-events:none;';
+      element.append(chip);
+    });
+    const cast = await startScreencast(page);
+    const row = await rowCenter(page, 'General');
+    await page.mouse.click(row.x, row.y);
+    await waitForAnimation(card(page, 'screen-General'), {minProgressMs: 16});
+    const block = await blockMainThread(page, 900);
+    await page.waitForTimeout(150);
+    const frames = await cast.stop();
+    const tracked = await trackMarker(page, frames);
+    const trace = JSON.stringify(
+      tracked.map(f => [Math.round(f.t - block.from), f.box?.x ?? null]),
+    );
+    const during = tracked.filter(f => f.t > block.from && f.t < block.to - 20);
+    // Seen while blocked, then covered before the block ends.
+    expect(
+      during.some(f => f.box != null),
+      trace,
+    ).toBe(true);
+    expect(during.at(-1)?.box ?? null, trace).toBeNull();
+  } finally {
+    await context.close();
+  }
+});
+
+/**
+ * How much of bar `key` its clip box shows inside the stack, as a fraction of
+ * the stack's width (0: cut away, 1: whole), rounded to 0.01.
+ */
+async function readCut(page: Page, key: string) {
+  return page.evaluate(k => {
+    const stack = document
+      .querySelector('[data-testid="navigation-stack"]')
+      ?.getBoundingClientRect();
+    const box = document
+      .querySelector(`[data-navigation-bar="${k}"]`)
+      ?.firstElementChild?.getBoundingClientRect();
+    if (stack == null || box == null) {
+      return {shown: -1};
+    }
+    const shown =
+      Math.max(
+        0,
+        Math.min(box.right, stack.right) - Math.max(box.left, stack.left),
+      ) / stack.width;
+    return {shown: Math.round(shown * 100) / 100};
+  }, key);
+}
+
+// Under a finger iOS 26's bars are clear: the bar a card covers is cut at
+// that card's leading edge instead, so the incoming screen still hides the
+// title it slides over, also while the main thread is blocked.
+test('under a finger, the incoming screen cuts the old title while the main thread is blocked', async ({
   page,
   browserName,
 }) => {
@@ -756,8 +834,9 @@ test('the incoming bar covers the old title while the main thread is blocked', a
     'screencast frame evidence is Chromium-only in Playwright (WebKit: the iOS simulator rig)',
   );
   const {driver} = await openStack(page, 'settings');
-  // A marker at the trailing end of the root's title: the pushed screen's
-  // opaque bar slides over it on the compositor.
+  expect(
+    await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+  ).toBe(true);
   await page.locator('[data-navigation-bar="root"] h2').evaluate(title => {
     const element = title as HTMLElement;
     element.style.position = 'relative';
@@ -770,6 +849,18 @@ test('the incoming bar covers the old title while the main thread is blocked', a
   const cast = await startScreencast(page);
   await driver.tap(await rowCenter(page, 'General'));
   await waitForAnimation(card(page, 'screen-General'), {minProgressMs: 16});
+  // Mid-push the root's bar shows only left of the incoming card.
+  const mid = await page.evaluate(() => {
+    const cardBox = document
+      .querySelector('[data-navigation-screen="screen-General"]')
+      ?.getBoundingClientRect();
+    const clipBox = document
+      .querySelector('[data-navigation-bar="root"]')
+      ?.firstElementChild?.getBoundingClientRect();
+    return cardBox == null || clipBox == null
+      ? null
+      : Math.abs(clipBox.right - cardBox.left);
+  });
   const block = await blockMainThread(page, 900);
   await page.waitForTimeout(150);
   const frames = await cast.stop();
@@ -778,12 +869,84 @@ test('the incoming bar covers the old title while the main thread is blocked', a
     tracked.map(f => [Math.round(f.t - block.from), f.box?.x ?? null]),
   );
   const during = tracked.filter(f => f.t > block.from && f.t < block.to - 20);
-  // Seen while blocked, then covered before the block ends.
+  // The cut follows the card's edge (the two move on one spring).
+  expect(mid).not.toBeNull();
+  expect(mid ?? Infinity).toBeLessThan(2);
+  // Seen while blocked, then cut before the block ends.
   expect(
     during.some(f => f.box != null),
     trace,
   ).toBe(true);
   expect(during.at(-1)?.box ?? null, trace).toBeNull();
+});
+
+test('under a finger in a right-to-left stack, the cut mirrors', async ({
+  page,
+}) => {
+  const {driver} = await openStack(page, 'settings');
+  await page
+    .getByTestId('navigation-stack')
+    .evaluate(element => element.setAttribute('dir', 'rtl'));
+  await driver.tap(await rowCenter(page, 'General'));
+  await waitForAnimation(card(page, 'screen-General'), {minProgressMs: 16});
+  // The incoming card enters from the left: the root's bar shows only right
+  // of its trailing edge.
+  const mid = await page.evaluate(() => {
+    const cardBox = document
+      .querySelector('[data-navigation-screen="screen-General"]')
+      ?.getBoundingClientRect();
+    const clipBox = document
+      .querySelector('[data-navigation-bar="root"]')
+      ?.firstElementChild?.getBoundingClientRect();
+    return cardBox == null || clipBox == null
+      ? null
+      : Math.abs(clipBox.left - cardBox.right);
+  });
+  expect(mid).not.toBeNull();
+  expect(mid ?? Infinity).toBeLessThan(2);
+  await waitForRest(card(page, 'screen-General'));
+  expect(await readCut(page, 'root')).toEqual({shown: 0});
+  expect(await readCut(page, 'screen-General')).toEqual({shown: 1});
+});
+
+test('a pointer that turns fine after a push leaves the revealed bar whole', async ({
+  page,
+}) => {
+  // A tablet that picks up a trackpad: the push runs under a finger (the
+  // root's bar cut away), then the pointer is fine and Back pops at once.
+  const {driver} = await openStack(page, 'settings');
+  await driver.tap(await rowCenter(page, 'General'));
+  await waitForRest(card(page, 'screen-General'));
+  expect(await readCut(page, 'root')).toEqual({shown: 0});
+  await page.evaluate(() => {
+    const matchMedia = window.matchMedia.bind(window);
+    window.matchMedia = (query: string) =>
+      query.replace(/\s/g, '') === '(pointer:coarse)'
+        ? matchMedia('(max-width: 0px)')
+        : matchMedia(query);
+  });
+  expect(
+    await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+  ).toBe(false);
+  await page.locator('[data-navigation-back]').click();
+  await expect(card(page, 'screen-General')).toHaveCount(0);
+  await waitForRest(card(page, 'root'));
+  expect(await readCut(page, 'root')).toEqual({shown: 1});
+});
+
+test('under a finger, Back reveals the covered bar whole', async ({page}) => {
+  const {driver} = await openStack(page, 'settings');
+  await driver.tap(await rowCenter(page, 'General'));
+  await waitForRest(card(page, 'screen-General'));
+  expect(await readCut(page, 'root')).toEqual({shown: 0});
+  const back = await page.locator('[data-navigation-back]').boundingBox();
+  if (back == null) {
+    throw new Error('no back button');
+  }
+  await driver.tap({x: back.x + back.width / 2, y: back.y + back.height / 2});
+  await expect(card(page, 'screen-General')).toHaveCount(0);
+  await waitForRest(card(page, 'root'));
+  expect(await readCut(page, 'root')).toEqual({shown: 1});
 });
 
 test('under a mouse the back swipes stay off: Back is the bar’s button', async ({
@@ -907,26 +1070,54 @@ test.describe('the bars ride with their screens, as UIKit’s', () => {
     }
   });
 
-  test('each bar is opaque and stacks over the one it covers', async ({
+  test('with a mouse, each bar is opaque and stacks over the one it covers', async ({
+    browser,
+  }) => {
+    const {context, page} = await newFinePage(browser);
+    try {
+      await openStack(page, 'settings', {pointer: 'mouse'});
+      expect(
+        await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+      ).toBe(false);
+      const row = await rowCenter(page, 'General');
+      await page.mouse.click(row.x, row.y);
+      await waitForRest(card(page, 'screen-General'));
+      const bars = await page.evaluate(() =>
+        [...document.querySelectorAll('[data-navigation-bar]')].map(bar => ({
+          key: bar.getAttribute('data-navigation-bar'),
+          // Each layer paints its opaque background on its own element (the
+          // search hand-off fades it).
+          background: getComputedStyle(
+            bar.querySelector('[data-navigation-bar-background]') ?? bar,
+          ).backgroundColor,
+        })),
+      );
+      expect(bars.map(bar => bar.key)).toEqual(['root', 'screen-General']);
+      for (const bar of bars) {
+        // An rgb() colour has no alpha; rgba(…, 0) would let the title show.
+        expect(bar.background, JSON.stringify(bar)).toMatch(/^rgb\(/);
+      }
+    } finally {
+      await context.close();
+    }
+  });
+
+  test('under a finger each bar is clear, and the covered one cut away at rest', async ({
     page,
   }) => {
     const {driver} = await openStack(page, 'settings');
     await driver.tap(await rowCenter(page, 'General'));
     await waitForRest(card(page, 'screen-General'));
     const bars = await page.evaluate(() =>
-      [...document.querySelectorAll('[data-navigation-bar]')].map(bar => ({
-        key: bar.getAttribute('data-navigation-bar'),
-        // Each layer paints its opaque background on its first child (the
-        // search hand-off fades it).
-        background: getComputedStyle(bar.firstElementChild ?? bar)
-          .backgroundColor,
-      })),
+      [...document.querySelectorAll('[data-navigation-bar-background]')].map(
+        background => getComputedStyle(background).backgroundColor,
+      ),
     );
-    expect(bars.map(bar => bar.key)).toEqual(['root', 'screen-General']);
-    for (const bar of bars) {
-      // An rgb() colour has no alpha; rgba(…, 0) would let the title show.
-      expect(bar.background, JSON.stringify(bar)).toMatch(/^rgb\(/);
-    }
+    expect(bars).toEqual(['rgba(0, 0, 0, 0)', 'rgba(0, 0, 0, 0)']);
+    // iOS 26: the covered screen's bar is cut at the top card's leading
+    // edge (here at rest, so nothing of it shows); the top bar is whole.
+    expect(await readCut(page, 'root')).toEqual({shown: 0});
+    expect(await readCut(page, 'screen-General')).toEqual({shown: 1});
   });
 });
 
@@ -1051,6 +1242,12 @@ test.describe('edge cases (review findings)', () => {
       first?.cards['screen-About'] ?? 0,
       JSON.stringify(first),
     ).toBeGreaterThan(width * 0.5);
+    // Under a finger both end at rest: the screen below is cut away (the
+    // root's bar is no longer rendered) and the top bar is whole.
+    await waitForRest(card(page, 'screen-About'));
+    expect(await page.locator('[data-navigation-bar="root"]').count()).toBe(0);
+    expect(await readCut(page, 'screen-General')).toEqual({shown: 0});
+    expect(await readCut(page, 'screen-About')).toEqual({shown: 1});
   });
 
   test('a sideways drag on a strip that can still scroll scrolls it instead of popping', async ({

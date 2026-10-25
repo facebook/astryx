@@ -5,9 +5,10 @@
 /**
  * @file NavigationStack.tsx
  * @input React, StyleX, selectionHold.ts (the pushing row's selection, a
- *   copy of List's internal hold), core's compositor animator and the UIKit
- *   table (core's internal motion modules), navigationTransition.ts for the
- *   math, NavigationStackTouch.ts for the back swipes (the touch layer)
+ *   copy of List's internal hold), core's compositor animator, the UIKit
+ *   table and the scroll edge effect (core's internal motion modules), the
+ *   touch query, navigationTransition.ts for the math, NavigationStackTouch.ts
+ *   for the back swipes (the touch layer)
  * @output Exports NavigationStack (a push/pop navigator with UIKit's
  *   transitions and back gestures), NavigationScreen (one screen: its bar
  *   title, back title, trailing items and content) and useNavigationStack
@@ -42,6 +43,13 @@
  * chevron fades in a beat later; on a pop to the root the chevron fades out
  * at once and the platter leaves with the screen. A back swipe leaves it
  * alone until the pop finishes.
+ *
+ * Under a finger the bar paints no background and no hairline, as iOS 26's
+ * does: each screen carries core's scroll edge effect, a veil of the body
+ * colour that comes in once the screen's content has moved 10px under the
+ * bar (a fade for a finger's scroll) and rides the screen's card through a
+ * push, a pop or a back swipe, and the bar a card covers is cut at that
+ * card's leading edge. A mouse keeps the bar's surface and hairline.
  *
  * In a browser tab the screen's leading edge is the browser's own back
  * swipe (iOS Safari keeps it): the stack's edge swipe runs only in a
@@ -93,12 +101,15 @@ import {
   type SpringDescription,
 } from '@astryxdesign/core/motion/spring';
 import {
+  bars,
   navigation,
+  registerBarsTable,
   registerNavigationTable,
   registerSpringsTable,
   springs,
 } from '@astryxdesign/core/motion/uikit';
 import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
+import {useScrollEdgeEffect} from '@astryxdesign/core/motion/useScrollEdgeEffect';
 import {TOUCH_QUERY} from '@astryxdesign/core/utils/touchPresentation';
 import {isRtlElement} from '@astryxdesign/core/hooks';
 import {useTranslator} from '@astryxdesign/core/i18n';
@@ -247,29 +258,53 @@ const styles = stylex.create({
     pointerEvents: 'none',
   },
   // The bar's own background and hairline, under every screen's bar layer
-  // (each paints its own opaque background over it).
+  // (each paints its own background over it). iOS 26's bar paints no
+  // background and no hairline (measured on 26.2): under a finger (the
+  // literal coarse-pointer key, spelled as the resolver's touch constant)
+  // the content shows through until it has moved under the bar, when the
+  // screen's scroll edge effect veils it. A mouse keeps the bar's surface
+  // and hairline.
   barBackground: {
     position: 'absolute',
     inset: 0,
     zIndex: -2,
-    backgroundColor: colorVars['--color-background-surface'],
-    borderBottomWidth: 1,
+    backgroundColor: {
+      default: colorVars['--color-background-surface'],
+      '@media (pointer: coarse)': 'transparent',
+    },
+    borderBottomWidth: {
+      default: 1,
+      '@media (pointer: coarse)': 0,
+    },
     borderBottomStyle: 'solid',
     borderBottomColor: colorVars['--color-border'],
   },
   // Each screen's bar moves with its screen, as UIKit's per-screen bar copy
   // does, over an opaque background of its own (barLayerBackground): the
-  // incoming one covers the outgoing title.
+  // incoming one covers the outgoing title. Under a finger the bars are
+  // clear, and the bar a card covers is cut at that card's leading edge
+  // instead (barClip), as UIKit's covering view cuts the title under it.
   barLayer: {
+    position: 'absolute',
+    inset: 0,
+    // Below the back button: WebKit does not promote the static siblings a
+    // moving layer crosses, so the moving one goes underneath.
+    zIndex: -1,
+  },
+  // The box that cuts the bar (its transform is the stack's); the row inside
+  // it moves back by as much, so only the cut moves.
+  barClip: {
+    position: 'absolute',
+    inset: 0,
+    overflow: 'hidden',
+  },
+  barRow: {
     position: 'absolute',
     inset: 0,
     display: 'grid',
     gridTemplateColumns: '1fr auto 1fr',
     alignItems: 'center',
     paddingInline: spacingVars['--spacing-4'],
-    // Below the back button: WebKit does not promote the static siblings a
-    // moving layer crosses, so the moving one goes underneath.
-    zIndex: -1,
   },
   // A layer's opaque background, above the bar's hairline; the search
   // hand-off clears it as the field rises into the bar.
@@ -279,7 +314,11 @@ const styles = stylex.create({
     top: 0,
     bottom: 1,
     zIndex: -1,
-    backgroundColor: colorVars['--color-background-surface'],
+    // Clear under a finger, as the bar's own background (iOS 26's bars).
+    backgroundColor: {
+      default: colorVars['--color-background-surface'],
+      '@media (pointer: coarse)': 'transparent',
+    },
   },
   // The one back button: it stays put while the bars move under it.
   backControl: {
@@ -370,6 +409,17 @@ const styles = stylex.create({
     // and keeps its native sideways scrolling.
     touchAction: 'pan-y pinch-zoom',
   },
+  // Where the screen's scroll edge sentinel sits: the top of its content,
+  // below the large title and the search field (an expanded large title is
+  // outside iOS's veil). The sentinel is absolutely positioned in it.
+  // The scroll edge sentinel stays at its static position, the top of the
+  // content: the scroller is its containing block, so it scrolls with the
+  // content and needs no positioned wrapper (and the content wrapper does not
+  // become a containing block for the screen's children).
+  edgeSentinelStatic: {
+    insetBlockStart: 'auto',
+    insetInlineStart: 'auto',
+  },
   search: {
     paddingBottom: spacingVars['--spacing-2'],
   },
@@ -420,6 +470,14 @@ interface ScreenLayers {
   barDim: Animator;
   /** The bar's opaque background (the search hand-off clears it). */
   barBackground: Animator;
+  /**
+   * The bar's clip box and the row inside it, moved apart (the row by the
+   * opposite of the box) so the box's edge cuts the bar where the top card's
+   * leading edge passes, the row held still: under a finger, a covered bar
+   * shows only beside the card that covers it. Identity everywhere else.
+   */
+  barClip: Animator;
+  barClipContent: Animator;
   /** The bar's trailing items (the search hand-off fades them). */
   trailing: Animator;
   cardElement: HTMLElement | null;
@@ -538,6 +596,18 @@ function CardLayer({
       unobserveContent?.();
     };
   }, []);
+  // iOS 26: each screen's scroll view carries its own edge effect, so a push
+  // or a pop carries each screen's veil with its card. It switches on once
+  // the content has moved 10px under the bar, which overlays the scroller;
+  // the veil is half strength at the bar's bottom.
+  const edge = useScrollEdgeEffect({
+    root: scrollerRef,
+    rootInset: BAR_HEIGHT,
+    edge: `${BAR_HEIGHT}px`,
+    sentinelXstyle: styles.edgeSentinelStatic,
+    springs: bars.scrollEdgeEffect,
+    registerSprings: registerBarsTable,
+  });
   useLayoutEffect(() => {
     const entry = registry.get(model.key) ?? {};
     entry.card = card.animator;
@@ -608,8 +678,12 @@ function CardLayer({
             {field}
           </div>
         ) : null}
-        <div ref={content.ref}>{props.children}</div>
+        <div ref={content.ref}>
+          <div {...edge.sentinelProps} data-navigation-scroll-edge-sentinel />
+          {props.children}
+        </div>
       </div>
+      <div {...edge.layerProps} data-navigation-scroll-edge />
       <div
         ref={dim.ref}
         aria-hidden
@@ -639,12 +713,16 @@ function BarLayer({
   // and the search hand-off clears it as the field rises into the bar.
   const background = useAnimator();
   const trailing = useAnimator();
+  const clip = useAnimator();
+  const clipContent = useAnimator();
   useLayoutEffect(() => {
     const entry = registry.get(model.key) ?? {};
     entry.bar = bar.animator;
     entry.barDim = barDim.animator;
     entry.barBackground = background.animator;
     entry.trailing = trailing.animator;
+    entry.barClip = clip.animator;
+    entry.barClipContent = clipContent.animator;
     registry.set(model.key, entry);
   }, [
     registry,
@@ -653,6 +731,8 @@ function BarLayer({
     barDim.animator,
     background.animator,
     trailing.animator,
+    clip.animator,
+    clipContent.animator,
   ]);
   // While the screen's search is active its bar items are the search
   // motion's (the stack's), and out of reach.
@@ -711,33 +791,38 @@ function BarLayer({
       data-navigation-bar={model.key}
       inert={isCovered || undefined}
       {...stylex.props(styles.barLayer, isCovered && styles.barLayerCovered)}>
-      <div
-        ref={background.ref}
-        aria-hidden
-        {...stylex.props(styles.barLayerBackground)}
-      />
-      <div {...stylex.props(styles.barLeading)} />
-      <h2
-        ref={titleRefs}
-        tabIndex={-1}
-        aria-hidden={isLargeTitleShown || isSearchActive || undefined}
-        {...stylex.props(styles.barTitle, focusOutlineStyles.focusVisible)}>
-        {props.title}
-      </h2>
-      <div
-        ref={trailing.ref}
-        inert={isSearchActive || undefined}
-        {...stylex.props(styles.barTrailing)}>
-        {props.trailing}
+      <div ref={clip.ref} {...stylex.props(styles.barClip)}>
+        <div ref={clipContent.ref} {...stylex.props(styles.barRow)}>
+          <div
+            ref={background.ref}
+            aria-hidden
+            data-navigation-bar-background
+            {...stylex.props(styles.barLayerBackground)}
+          />
+          <div {...stylex.props(styles.barLeading)} />
+          <h2
+            ref={titleRefs}
+            tabIndex={-1}
+            aria-hidden={isLargeTitleShown || isSearchActive || undefined}
+            {...stylex.props(styles.barTitle, focusOutlineStyles.focusVisible)}>
+            {props.title}
+          </h2>
+          <div
+            ref={trailing.ref}
+            inert={isSearchActive || undefined}
+            {...stylex.props(styles.barTrailing)}>
+            {props.trailing}
+          </div>
+          <div
+            ref={barDim.ref}
+            aria-hidden
+            {...stylex.props(
+              styles.dim,
+              dynamicStyles.dimColor(navigation.dimmingAlpha),
+            )}
+          />
+        </div>
       </div>
-      <div
-        ref={barDim.ref}
-        aria-hidden
-        {...stylex.props(
-          styles.dim,
-          dynamicStyles.dimColor(navigation.dimmingAlpha),
-        )}
-      />
     </div>
   );
 }
@@ -1054,6 +1139,35 @@ export function NavigationStack<T>({
     [registry],
   );
 
+  // Under a finger the bars are iOS 26's: clear, so the bar a card covers
+  // would show through it. UIKit's covering view cuts the title under it at
+  // its leading edge (the titles are copies inside the screens' views), so
+  // here the covered bar's clip box follows the top card's leading edge:
+  // its edge sits where the card's does and the row inside it holds still.
+  // Nothing flat covers the top screen's scrolled content. At rest the box
+  // is shut; while the cards travel it moves on their spring (same start,
+  // same velocity) or with the finger. The stack reads the touch
+  // presentation as each move starts, as the swipes and the search do. A
+  // mouse keeps opaque bars and the boxes at identity.
+  const isClearBars = useCallback(() => isTouchNow(containerRef.current), []);
+  /**
+   * Where the covered bar's box goes so its edge meets the top card's
+   * leading edge (the top card at `topX`, the covered bar at `underBarX`).
+   */
+  const clipXFor = useCallback((topX: number, underBarX: number) => {
+    const width = cardsRef.current?.clientWidth ?? 0;
+    const sign = writingDirection(containerRef.current) === 'rtl' ? -1 : 1;
+    return topX - underBarX - sign * width;
+  }, []);
+  const setClip = useCallback(
+    (key: string | null, x: number) => {
+      const layers = layersOf(key);
+      layers?.barClip?.set({x});
+      layers?.barClipContent?.set({x: -x});
+    },
+    [layersOf],
+  );
+
   // While the top screen's search holds the bar, the covered screen's bar
   // layer is hidden: with the top bar's background cleared, it would show
   // through (parked at the parallax, over the row the field rises into).
@@ -1084,7 +1198,19 @@ export function NavigationStack<T>({
     if (underKey != null && underKey === hiddenBarRef.current) {
       layersOf(underKey)?.bar?.set({opacity: 0});
     }
-  }, [underKey, layersOf]);
+    // Under a finger a covered bar mounts cut away (its box shut at the top
+    // card's leading edge, the top card at rest); a transition that starts
+    // here moves the box from there. Under a mouse it is whole: a pointer
+    // that has turned fine (a tablet given a trackpad) leaves no cut.
+    if (underKey != null) {
+      const width = cardsRef.current?.clientWidth ?? 0;
+      const direction = writingDirection(containerRef.current);
+      setClip(
+        underKey,
+        isClearBars() ? clipXFor(0, layersAt(0, width, direction).underX) : 0,
+      );
+    }
+  }, [underKey, layersOf, isClearBars, setClip, clipXFor]);
 
   /**
    * Writes the layers for progress p (a finger's frame, or a transition's
@@ -1108,12 +1234,17 @@ export function NavigationStack<T>({
       topLayers?.card?.set({x: values.topX});
       topLayers?.bar?.set({x: values.topX});
       underLayers?.card?.set({x: values.underX});
-      underLayers?.bar?.set({x: underBar === 'ride' ? values.underX : 0});
+      const underBarX = underBar === 'ride' ? values.underX : 0;
+      underLayers?.bar?.set({x: underBarX});
       underLayers?.dim?.set({opacity: values.dim});
       underLayers?.barDim?.set({opacity: values.dim});
+      // Under a finger the covered bar is cut where the top card's leading
+      // edge is; under a mouse both bars are whole.
+      setClip(top, 0);
+      setClip(under, isClearBars() ? clipXFor(values.topX, underBarX) : 0);
       progressRef.current = p;
     },
-    [layersOf],
+    [layersOf, isClearBars, setClip, clipXFor],
   );
 
   /**
@@ -1190,6 +1321,57 @@ export function NavigationStack<T>({
           ),
         );
       }
+      if (isClearBars()) {
+        // Under a finger the covered bar's box rides the top card's leading
+        // edge on the same spring, from the same start and velocity (the
+        // difference of the two bars' curves is the same curve), with no
+        // clamp: an overshoot past rest stays cut. Reduced Motion's
+        // cross-fade has no travel: the titles swap at once, as UIKit's do.
+        const underBarTo =
+          underBar === 'ride'
+            ? values.underX
+            : (underLayers?.bar?.get('x') ?? 0);
+        const clipTo = clipXFor(values.topX, underBarTo);
+        setClip(top, 0);
+        if (
+          (topLayers?.card?.reducedMotion({touchRelease: release}) ?? 'off') !==
+          'off'
+        ) {
+          setClip(under, clipTo);
+          if (to === 1) {
+            // A pop: the leaving bar goes at once too.
+            setClip(top, direction === 'rtl' ? width : -width);
+          }
+        } else if (underLayers?.barClip && underLayers.barClipContent) {
+          const clipVelocity =
+            velocity == null
+              ? undefined
+              : velocity.topX - (underBar === 'ride' ? velocity.underX : 0);
+          handles.push(
+            underLayers.barClip.animate(
+              {x: clipTo},
+              {
+                spring,
+                velocity: clipVelocity == null ? undefined : {x: clipVelocity},
+              },
+              {at, touchRelease: release},
+            ),
+            underLayers.barClipContent.animate(
+              {x: -clipTo},
+              {
+                spring,
+                velocity: clipVelocity == null ? undefined : {x: -clipVelocity},
+              },
+              {at, touchRelease: release},
+            ),
+          );
+        }
+      } else {
+        // Under a mouse both bars are whole, also after a pointer that was
+        // coarse left a cut.
+        setClip(top, 0);
+        setClip(under, 0);
+      }
       for (const dim of [underLayers?.dim, underLayers?.barDim]) {
         if (dim == null) {
           continue;
@@ -1216,7 +1398,7 @@ export function NavigationStack<T>({
         results => results.every(Boolean),
       );
     },
-    [layersOf],
+    [layersOf, isClearBars, setClip, clipXFor],
   );
 
   /**
@@ -1290,15 +1472,20 @@ export function NavigationStack<T>({
         layers?.barDim?.set({opacity: 0});
         layers?.trailing?.set({opacity: shown});
         layers?.barBackground?.set({opacity: shown});
+        // A screen on top shows its whole bar, under any pointer.
+        setClip(key, 0);
       } else {
         // Covered: parked at the parallax, under the top screen and its bar.
         layers?.card?.set({x: values.underX, opacity: 1});
         layers?.dim?.set({opacity: 1});
         layers?.bar?.set({x: values.underX});
         layers?.barDim?.set({opacity: 1});
+        // Under a finger cut away at the top card's leading edge (the top
+        // card at rest); under a mouse whole, parked under the opaque bar.
+        setClip(key, isClearBars() ? clipXFor(0, values.underX) : 0);
       }
     },
-    [layersOf],
+    [layersOf, isClearBars, setClip, clipXFor],
   );
 
   const focusAfter = useCallback(
@@ -1670,6 +1857,8 @@ export function NavigationStack<T>({
         layers?.dim?.stop();
         layers?.bar?.stop();
         layers?.barDim?.stop();
+        layers?.barClip?.stop();
+        layers?.barClipContent?.stop();
       }
       runningRef.current = null;
       return width > 0 ? Math.abs(x) / width : 0;

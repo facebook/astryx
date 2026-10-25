@@ -9,7 +9,7 @@ import React from 'react';
  * @input Uses React, Theme-resolved breakpoints, Layout, navigation slots, and StyleX
  * @output Exports AppShell component and AppShellProps with SSR-safe mobile layout;
  *   on a touch screen whose page scrolls, the pinned header is an iOS 26 bar
- *   (no background, the scroll edge effect of hooks/useScrollEdgeEffect)
+ *   (no background, the scroll edge effect of motion/useScrollEdgeEffect)
  * @position Page shell for an application — the top-level wrapper for any app.
  *   Composes Layout internally to provide header, sideNav, and main content areas.
  *   Use for any app that needs a top nav, side navigation, and scrollable content.
@@ -59,7 +59,7 @@ import {mergeProps, isRenderable} from '../utils';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useMediaQuery} from '../hooks/useMediaQuery';
 import {useTouchPresentation} from '../utils/touchPresentation';
-import {useScrollEdgeEffect} from '../hooks/useScrollEdgeEffect';
+import {useScrollEdgeEffect} from '../motion/useScrollEdgeEffect';
 import {bars, registerBarsTable} from '../motion/uikit/bars';
 import {observeResize} from '../utils/sharedResizeObserver';
 import {themeProps} from '../utils/themeProps';
@@ -460,68 +460,10 @@ const styles = stylex.create({
       '@media (pointer: coarse)': 'transparent',
     },
   },
-  // The scroll edge effect: a decorative layer behind the bar's content, as
-  // tall as the bar plus `bars.scrollEdgeEffect.softExtentPt` (54.8px). It is
-  // a veil of the bar's own colour over the content, never a blur: the mask
-  // is `veil.maxAlpha × (1 − Φ((y − edge) / veil.softnessPt))`, its edge
-  // `veil.edgeAboveContentBottomPt` (10px) above the bottom of the bar's
-  // content (the header's bottom edge), sampled every 6px over ±3σ
-  // (AppShellScrollEdge.test.tsx recomputes it from the table).
-  // The veil is denser than UIKit's and its edge sits at the header's bottom
-  // (maxAlpha 0.95 for 0.85, edge 10px lower), in every theme and mode: the
-  // title keeps 4.5:1 over the brightest scrolled content (WCAG 1.4.3).
-  // UIKit's values measured 2.58:1 in dark mode; see
-  // AppShellScrollEdge.test.tsx.
-  // useScrollEdgeEffect fades its opacity in and out on UIKit's springs (a
-  // cross-fade of at most 200 ms under Reduce Motion); it starts transparent.
-  // Where the browser supports prefers-reduced-transparency (Safari 26.2
-  // does not yet), Reduce Transparency makes it an opaque band with a hard
-  // edge at the bar's bottom, as UIKit does.
-  scrollEdge: {
-    display: {
-      default: 'none',
-      '@media (pointer: coarse)': 'block',
-    },
-    position: 'absolute',
-    insetInline: 0,
-    insetBlockStart: 0,
-    height: {
-      default: 'calc(100% + 54.8px)',
-      '@media (prefers-reduced-transparency: reduce)': '100%',
-    },
+  // The scroll edge effect's veil (useScrollEdgeEffect) sits behind the
+  // bar's content.
+  scrollEdgeBehind: {
     zIndex: -1,
-    pointerEvents: 'none',
-    opacity: 0,
-    // Composited only while a finger works the page: useScrollEdgeEffect
-    // sets the private property from the finger's landing until its scroll
-    // ends (a
-    // composited layer here makes iOS 26.2 drop the header's items when the
-    // program jumps the page; see the hook's header).
-    willChange: 'var(--_scroll-edge-will-change, auto)',
-    maskImage: {
-      default:
-        'linear-gradient(to bottom, rgb(0 0 0 / 0.950) calc(100% - 118.8px), rgb(0 0 0 / 0.949) calc(100% - 112.8px), rgb(0 0 0 / 0.948) calc(100% - 106.8px), rgb(0 0 0 / 0.945) calc(100% - 100.8px), rgb(0 0 0 / 0.938) calc(100% - 94.8px), rgb(0 0 0 / 0.922) calc(100% - 88.8px), rgb(0 0 0 / 0.893) calc(100% - 82.8px), rgb(0 0 0 / 0.845) calc(100% - 76.8px), rgb(0 0 0 / 0.772) calc(100% - 70.8px), rgb(0 0 0 / 0.675) calc(100% - 64.8px), rgb(0 0 0 / 0.559) calc(100% - 58.8px), rgb(0 0 0 / 0.433) calc(100% - 52.8px), rgb(0 0 0 / 0.312) calc(100% - 46.8px), rgb(0 0 0 / 0.207) calc(100% - 40.8px), rgb(0 0 0 / 0.127) calc(100% - 34.8px), rgb(0 0 0 / 0.071) calc(100% - 28.8px), rgb(0 0 0 / 0.036) calc(100% - 22.8px), rgb(0 0 0 / 0.017) calc(100% - 16.8px), rgb(0 0 0 / 0.007) calc(100% - 10.8px))',
-      '@media (prefers-reduced-transparency: reduce)': 'none',
-    },
-  },
-  scrollEdgeFillBody: {
-    backgroundColor: colorVars['--color-background-body'],
-  },
-  scrollEdgeFillSurface: {
-    backgroundColor: colorVars['--color-background-surface'],
-  },
-  // The box useScrollEdgeEffect observes: `bars.scrollEdgeEffect.switchPt`
-  // (10px) tall at the top of the page, where the content meets the pinned
-  // bar at rest. It leaves the viewport once the content has moved more than
-  // 10px under the bar.
-  scrollEdgeSentinel: {
-    position: 'absolute',
-    insetBlockStart: 0,
-    insetInlineStart: 0,
-    width: 1,
-    height: 10,
-    pointerEvents: 'none',
-    visibility: 'hidden',
   },
   // Sticky sideNav for auto height mode — sticks within the wrapper.
   // This div replaces the panel as the direct flex child of the middle
@@ -778,24 +720,20 @@ export function AppShell({
   // =========================================================================
   // Under a finger (the resolver's touch presentation above, the same on
   // every touch device) the pinned header is iOS 26's bar; a mouse keeps
-  // today's.
+  // today's. The veil takes the bar's own colour; its edge is the header's
+  // bottom. AppShell animates with the bars table: it hands the springs and
+  // their registration to the effect.
   const scrollEdge = useScrollEdgeEffect({
     enabled: isAuto && isTouch,
+    edge: '100%',
+    color: barFillsWithBody
+      ? colorVars['--color-background-body']
+      : colorVars['--color-background-surface'],
+    layerXstyle: styles.scrollEdgeBehind,
     springs: bars.scrollEdgeEffect,
     registerSprings: registerBarsTable,
   });
-  const scrollEdgeLayer = isAuto ? (
-    <div
-      aria-hidden="true"
-      ref={scrollEdge.layerRef}
-      {...stylex.props(
-        styles.scrollEdge,
-        barFillsWithBody
-          ? styles.scrollEdgeFillBody
-          : styles.scrollEdgeFillSurface,
-      )}
-    />
-  ) : null;
+  const scrollEdgeLayer = isAuto ? <div {...scrollEdge.layerProps} /> : null;
 
   // =========================================================================
   // Determine if sideNav should show as overlay (mobile) or inline
@@ -1040,13 +978,7 @@ export function AppShell({
           className,
           style,
         )}>
-        {isAuto && (
-          <div
-            aria-hidden="true"
-            ref={scrollEdge.sentinelRef}
-            {...stylex.props(styles.scrollEdgeSentinel)}
-          />
-        )}
+        {isAuto && <div {...scrollEdge.sentinelProps} />}
         {/* Skip-to-content link */}
         <a
           href={`#${MAIN_CONTENT_ID}`}

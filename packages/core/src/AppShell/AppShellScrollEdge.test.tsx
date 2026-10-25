@@ -3,25 +3,24 @@
 /**
  * @file AppShellScrollEdge.test.tsx
  * @input vitest (jsdom), React Testing Library, AppShell, a query-aware
- *   matchMedia stub, a recording IntersectionObserver, the StyleX rules
- *   vitest injects, and AppShell.tsx's own source
+ *   matchMedia stub, a recording IntersectionObserver and the StyleX rules
+ *   vitest injects
  * @output Checks the iOS 26 bar under a finger (any touch device) whose page
  *   scrolls: the pinned header paints no background and no hairline there,
  *   carries the scroll edge layer, and the page carries the sentinel the
  *   effect observes; a mouse, or a shell whose main region scrolls, keeps
- *   today's opaque bar and draws no effect; the layer, the sentinel and the
- *   veil's mask follow the constants table; leaving the sentinel fades the
- *   layer for a finger's scroll and switches it at once for the program's
+ *   today's opaque bar and draws no effect; the veil takes the bar's colour
+ *   and its edge is the header's bottom; leaving the sentinel fades the
+ *   layer for a finger's scroll and switches it at once for the program's.
+ *   The veil's shape against the constants table is
+ *   motion/useScrollEdgeEffect.test.tsx's
  * @position Testing; validates AppShell.tsx's touch bar. The switch on a real
  *   page, the curve and the busy-main-thread behaviour are proven by
  *   __tests__/AppShellScrollEdge.interaction.browser.spec.ts
  */
 
-import {readFileSync} from 'node:fs';
-import {join} from 'node:path';
 import {act, render, screen} from '@testing-library/react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {bars} from '../motion/uikit/bars';
 import {AppShell} from './AppShell';
 
 const TOUCH = '(pointer: coarse)';
@@ -238,16 +237,28 @@ describe('AppShell scroll edge effect', () => {
   });
 
   it('the veil takes the bar colour of the variant', () => {
+    // The colour is the veil's runtime value (a custom property on the
+    // layer, see useScrollEdgeEffect.test.tsx).
     stubPointer(true);
     const {unmount} = renderShell({height: 'auto', variant: 'wash'});
     expect(
-      declared(layerOf(screen.getByRole('banner'))!, 'background-color'),
-    ).toBe('var(--color-background-body)');
+      layerOf(screen.getByRole('banner'))!.getAttribute('style'),
+    ).toContain('var(--color-background-body)');
     unmount();
     renderShell({height: 'auto', variant: 'section'});
     expect(
-      declared(layerOf(screen.getByRole('banner'))!, 'background-color'),
-    ).toBe('var(--color-background-surface)');
+      layerOf(screen.getByRole('banner'))!.getAttribute('style'),
+    ).toContain('var(--color-background-surface)');
+  });
+
+  it('the veil’s edge is the header’s bottom', () => {
+    // Denser than UIKit's, with its edge at the header's bottom: the title
+    // keeps 4.5:1 over the brightest scrolled content (WCAG 1.4.3).
+    stubPointer(true);
+    renderShell({height: 'auto', variant: 'wash'});
+    expect(
+      layerOf(screen.getByRole('banner'))!.getAttribute('style'),
+    ).toContain('calc(100% + 54.8px)');
   });
 
   it('the touch bar draws no hairline; a mouse keeps the section divider', () => {
@@ -347,77 +358,3 @@ describe('AppShell scroll edge effect', () => {
     expect(isPromoted(layer)).toBe(false);
   });
 });
-
-describe('AppShell scroll edge effect follows the constants table', () => {
-  const source = readFileSync(join(__dirname, 'AppShell.tsx'), 'utf8');
-
-  /** The literal block of `styles.<name>` in AppShell.tsx. */
-  function styleBlock(name: string): string {
-    const start = source.indexOf(`\n  ${name}: {`);
-    expect(start, `styles.${name} not found`).toBeGreaterThan(-1);
-    const end = source.indexOf('\n  },', start);
-    return source.slice(start, end);
-  }
-
-  it('the layer reaches softExtentPt below the bar', () => {
-    expect(styleBlock('scrollEdge')).toContain(
-      `default: 'calc(100% + ${bars.scrollEdgeEffect.softExtentPt}px)'`,
-    );
-  });
-
-  it('the layer’s will-change follows the hook’s promotion property', () => {
-    expect(styleBlock('scrollEdge')).toContain(
-      "willChange: 'var(--_scroll-edge-will-change, auto)',",
-    );
-  });
-
-  it('the sentinel is switchPt tall', () => {
-    expect(styleBlock('scrollEdgeSentinel')).toContain(
-      `height: ${bars.scrollEdgeEffect.switchPt},`,
-    );
-  });
-
-  // Denser than UIKit's veil, with its edge at the header's bottom, in every
-  // theme and mode, so the title keeps 4.5:1 over the brightest scrolled
-  // content (WCAG 1.4.3). Measured worst case over the story's tiles in
-  // Chromium: UIKit's values give 2.58:1 in dark mode (5.49:1 in light);
-  // these give the numbers in the PR body.
-  const VEIL_MAX_ALPHA = 0.95;
-  const VEIL_EDGE_LOWER_PX = 10;
-
-  it('the veil is maxAlpha × (1 − Φ((y − edge) / softness)), sampled every 6px over ±3σ', () => {
-    const {maxAlpha, edgeAboveContentBottomPt, softnessPt} =
-      bars.scrollEdgeEffect.veil;
-    // UIKit's own values, which the contrast floor raises.
-    expect(VEIL_MAX_ALPHA).toBeGreaterThan(maxAlpha);
-    expect(VEIL_EDGE_LOWER_PX).toBe(edgeAboveContentBottomPt);
-    // The stops sit around UIKit's edge (edgeAboveContentBottomPt above the
-    // header's bottom, which is softExtentPt above the layer's bottom); the
-    // floor's edge is VEIL_EDGE_LOWER_PX lower, at the header's bottom.
-    const edge = edgeAboveContentBottomPt + bars.scrollEdgeEffect.softExtentPt;
-    const stops: string[] = [];
-    for (let d = -3 * softnessPt; d <= 3 * softnessPt; d += 6) {
-      const alpha =
-        VEIL_MAX_ALPHA * (1 - normalCdf((d - VEIL_EDGE_LOWER_PX) / softnessPt));
-      const offset = Math.round((edge - d) * 10) / 10;
-      stops.push(`rgb(0 0 0 / ${alpha.toFixed(3)}) calc(100% - ${offset}px)`);
-    }
-    expect(styleBlock('scrollEdge')).toContain(
-      `'linear-gradient(to bottom, ${stops.join(', ')})'`,
-    );
-  });
-});
-
-/** Standard normal CDF, by Simpson integration of the density (oracle). */
-function normalCdf(z: number): number {
-  const n = 2000;
-  const h = Math.abs(z) / n;
-  let sum = 0;
-  for (let i = 0; i <= n; i++) {
-    const t = i * h;
-    const weight = i === 0 || i === n ? 1 : i % 2 === 1 ? 4 : 2;
-    sum += weight * Math.exp((-t * t) / 2);
-  }
-  const half = (sum * h) / 3 / Math.sqrt(2 * Math.PI);
-  return z >= 0 ? 0.5 + half : 0.5 - half;
-}

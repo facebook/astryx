@@ -128,9 +128,10 @@ export const bars = {
  * edge effect's springs stay internal constants until the public
  * motion-token set is decided (`spec:AST-094` FR4, DEC-11), and the switch,
  * the extent and the veil are not motion (not springs, durations or curves).
- * Nothing registers on import: AppShell, which animates with this table,
- * hands it to the scroll edge effect (hooks/useScrollEdgeEffect.ts), which
- * calls it once before its first animation (it is idempotent).
+ * Nothing registers on import: the component that animates with this table
+ * (AppShell; Lab's NavigationStack) hands it to the scroll edge effect
+ * (motion/useScrollEdgeEffect.ts), which calls it once before its first
+ * animation (it is idempotent).
  */
 export function registerBarsTable(): void {
   registerMotionTable('bars', bars);

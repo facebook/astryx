@@ -279,6 +279,12 @@ describe('NavigationStack', () => {
       expect(wrapper).toHaveAttribute('data-navigation-search');
       expect(wrapper).toContainElement(field);
       expect(content).toHaveTextContent('General content');
+      // The scroll edge sentinel marks the top of the content, as its first
+      // child: no positioned wrapper of its own (architecture:component-style-
+      // authoring INV7), at its static position in the scroller.
+      expect(
+        content.querySelector('[data-navigation-scroll-edge-sentinel]'),
+      ).toBe(content.firstElementChild);
       expect(field).toHaveAttribute('data-lift', '0');
     });
 

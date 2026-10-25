@@ -34,6 +34,7 @@ so each keeps its measured value; no shipped component reads the roles yet.
 | `animator.ts`                                    | Compositor animator: springs, coasts and any closed-form curve compiled to Web Animations, read back analytically.                                                   |
 | `reducedMotionPlan.ts`                           | The animator's Reduce Motion planner: what one call becomes, a cross-fade whose travel lands while transparent or at once.                                           |
 | `useAnimator.ts`                                 | React wrapper that never re-renders per frame.                                                                                                                       |
+| `useScrollEdgeEffect.ts`                         | The iOS 26 scroll edge effect of a bar over scrolling content, under a finger: the veil, its sentinel and its fades (AppShell; Lab's NavigationStack).               |
 | `__tests__/animator.interaction.browser.spec.ts` | Browser proofs on the interaction harness (Chromium and WebKit): busy main thread, end state through a block, no Layout / Paint, seeked curves, a dialog's backdrop. |
 
 Component-specific values (a sheet's detents, a switch's geometry, a context

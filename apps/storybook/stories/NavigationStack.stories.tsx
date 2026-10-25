@@ -345,3 +345,75 @@ export const SearchKeepsActive: Story = {
   name: 'Search that stays active',
   render: () => <SearchStack keepsSearchOnLeave />,
 };
+
+// =============================================================================
+// Scrolling — content passing under the bar
+// =============================================================================
+
+const MESSAGES = Array.from({length: 40}, (_, index) => `Message ${index + 1}`);
+
+function MessageRows() {
+  const nav = useNavigationStack<string>();
+  return (
+    <List>
+      {MESSAGES.map(message => (
+        <ListItem
+          key={message}
+          label={message}
+          description="Tap to open; scroll the list under the bar."
+          endContent={<Icon icon="chevronRight" color="secondary" />}
+          onClick={() => nav.push(message)}
+        />
+      ))}
+    </List>
+  );
+}
+
+function MessageBody({title}: {title: string}) {
+  return (
+    <List>
+      {Array.from({length: 30}, (_, index) => (
+        <ListItem
+          key={index}
+          label={`${title}, line ${index + 1}`}
+          description="Long content scrolls under the bar."
+        />
+      ))}
+    </List>
+  );
+}
+
+function ScrollingStack() {
+  const [path, setPath] = useState<string[]>([]);
+  return (
+    <div style={{height: '100vh'}}>
+      <NavigationStack
+        label="Mail"
+        root={
+          <NavigationScreen title="Inbox">
+            <MessageRows />
+          </NavigationScreen>
+        }
+        path={path}
+        onPathChange={setPath}
+        getKey={entry => entry}
+        renderScreen={entry => (
+          <NavigationScreen title={entry}>
+            <MessageBody title={entry} />
+          </NavigationScreen>
+        )}
+        data-testid="navigation-stack"
+      />
+    </div>
+  );
+}
+
+/**
+ * Screens long enough to scroll under the bar. On a touch screen the bar
+ * paints no background: once a screen's content has moved 10px under it, a
+ * veil of the body colour fades in (iOS 26's scroll edge effect), and each
+ * screen keeps its own through a push, a pop or a back swipe.
+ */
+export const Scrolling: Story = {
+  render: () => <ScrollingStack />,
+};
