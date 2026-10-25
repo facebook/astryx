@@ -312,7 +312,7 @@ describe('rule order and writes', () => {
           },
           {
             when: {pointer: 'coarse'},
-            value: {tokens: {'--color-accent': '#abcdef'}},
+            value: {tokens: {'--color-accent': '#0055aa'}},
           },
         ],
       },
@@ -327,7 +327,7 @@ describe('rule order and writes', () => {
       count(component, '--color-info-emphasized: var(--color-accent);'),
     ).toBe(1);
     expect(component).toContain('--color-info-emphasized: #123456;');
-    expect(adaptationCss).toContain('--color-accent: #abcdef;');
+    expect(adaptationCss).toContain('--color-accent: #0055aa;');
     expect(adaptationCss).not.toContain(
       '--color-info-emphasized: var(--color-accent);',
     );
@@ -344,7 +344,7 @@ describe('rule order and writes', () => {
           },
           {
             when: {pointer: 'coarse'},
-            value: {tokens: {'--color-accent': '#abcdef'}},
+            value: {tokens: {'--color-accent': '#0055aa'}},
           },
         ],
       },
@@ -409,8 +409,12 @@ describe('rule order and writes', () => {
     });
     const css = generateAdaptationCSS(theme).component;
 
-    expect(css).toContain('--color-info-emphasized: var(--color-accent);');
-    expect(css).not.toContain('--color-text-info: var(--color-text-blue);');
+    // The first rule changes the accent, so INV17 derives a concrete Info
+    // fill there (its dark accent cannot carry white). With no alias left in
+    // the loop, the second rule's text-info alias is cycle-free.
+    expect(css).toMatch(/--color-info-emphasized: light-dark\(#/);
+    expect(css).not.toContain('--color-info-emphasized: var(--color-accent);');
+    expect(css).toContain('--color-text-info: var(--color-text-blue);');
   });
 
   it('keeps aliases across mutually exclusive adaptation conditions', () => {
@@ -665,14 +669,14 @@ describe('rule order and writes', () => {
         rules: [
           {
             when: {contrast: 'more'},
-            value: {tokens: {'--color-accent': '#abcdef'}},
+            value: {tokens: {'--color-accent': '#0055aa'}},
           },
         ],
       },
     });
     const css = generateAdaptationCSS(theme).component;
 
-    expect(css).toContain('--color-accent: #abcdef;');
+    expect(css).toContain('--color-accent: #0055aa;');
     expect(css).toContain('--color-info-emphasized: var(--color-accent);');
   });
 

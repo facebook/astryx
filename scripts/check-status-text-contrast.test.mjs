@@ -411,6 +411,33 @@ describe('theme generation derives a complete status set (INV17)', () => {
     }
   });
 
+  it('keeps a rule-derived fill when the root never set that status colour', () => {
+    const theme = defineTheme({
+      name: 'status-rule-only',
+      tokens: {},
+      adaptations: {
+        rules: [
+          {
+            when: {contrast: 'more'},
+            value: {
+              tokens: {
+                '--color-success': '#ABCDEF',
+                '--color-on-success': '#FFFFFF',
+              },
+            },
+          },
+        ],
+      },
+    });
+    const css = allThemeCSS(theme);
+    const rule = css.slice(css.indexOf('prefers-contrast: more'));
+    expect(rule).toMatch(/--color-success-emphasized: light-dark\(#/);
+    expect(rule).not.toContain(
+      '--color-success-emphasized: var(--color-success);',
+    );
+    expect(rule).toContain('--color-icon-success: var(--color-text-success);');
+  });
+
   it('aliases a status colour a media surface sets, over a derived root role', () => {
     const theme = defineTheme({
       name: 'status-media',

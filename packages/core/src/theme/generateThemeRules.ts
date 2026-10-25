@@ -860,12 +860,17 @@ function generatedAdaptationStatusRoleDefaults(
         }
       }
     }
+    // Roles this rule derived count as set: they are not overwritten by an
+    // alias, and roles that follow them (icon and border) alias them here.
+    const ruleRoles = new Map(aliases[index]);
+    const ruleSources = {...authoredRule, ...Object.fromEntries(ruleRoles)};
     for (const [role, source] of SCOPED_STATUS_ROLE_DEFAULTS) {
       const alias = `var(${source})`;
       const rootRole = rootValues[role];
       if (
+        ruleRoles.has(role) ||
         authoredRule[role] !== undefined ||
-        authoredRule[source] === undefined ||
+        ruleSources[source] === undefined ||
         rootRole !== undefined
       ) {
         continue;
