@@ -274,6 +274,47 @@ function logDeclined(declined) {
 }
 
 /**
+ * Print protected files that still require a codemod change, each with the
+ * declarations that protect it and the commands that rebuild it.
+ * @param {string} header
+ * @param {import('../upgrade.type.mjs').ProtectedCodemodFile[]} protectedFiles
+ */
+function logProtectedFiles(header, protectedFiles) {
+  if (protectedFiles.length === 0) return;
+  logger.error(header);
+  for (const item of protectedFiles) {
+    logger.error(`  ${item.file} — ${item.declarations.join('; ')}`);
+    for (const command of item.commands) {
+      logger.log(`  Regenerate with: ${command}`);
+    }
+  }
+}
+
+/**
+ * Print the generated files to rebuild, each with why and the commands that
+ * rebuild it, so the text output carries what `regenerate` lists. Files
+ * already printed with their commands (protected files) are skipped.
+ * @param {import('../upgrade.type.mjs').RegenerateFile[]} regenerate
+ * @param {Array<{file: string}>} [printed]
+ */
+function logRegenerate(regenerate, printed = []) {
+  const skip = new Set(printed.map(item => item.file));
+  const rows = regenerate.filter(item => !skip.has(item.file));
+  if (rows.length === 0) return;
+  logger.error(
+    `${rows.length} generated file${rows.length === 1 ? '' : 's'} must be regenerated:`,
+  );
+  for (const item of rows) {
+    logger.error(
+      `  ${item.file}${item.messages.length > 0 ? ` — ${item.messages.join(' ')}` : ''}`,
+    );
+    for (const command of item.commands) {
+      logger.log(`  Regenerate with: ${command}`);
+    }
+  }
+}
+
+/**
  * @template {Array<{file: string, location?: string, reason: string}>} T
  * @param {T} declined
  * @returns {T}
@@ -442,6 +483,9 @@ function stoppedReceipt({
   const modifiedFiles = uniqueFiles(changedFiles).map(file =>
     path.relative(cwd, file).split(path.sep).join('/'),
   );
+  const regenerate = summarizeRegenerate(protectedFiles, outcomes);
+  // The run stopped early; the text still names every file to rebuild.
+  logRegenerate(regenerate);
   return /** @type {import('../upgrade.type.mjs').UpgradeRunResponse['data']} */ ({
     from,
     to,
@@ -467,7 +511,7 @@ function stoppedReceipt({
         protectedRows,
       ),
     ),
-    regenerate: summarizeRegenerate(protectedFiles, outcomes),
+    regenerate,
     complete: false,
     errorCode,
     errors,
@@ -705,23 +749,11 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
         protectedFiles,
         initialOutcomes.outcomes,
       );
-      logger.error(
+      logProtectedFiles(
         `${ERROR_CODES.ERR_CODEMOD_PROTECTED}: protected codemod changes remain while loading the Astryx config.`,
+        protectedFiles,
       );
-      for (const item of protectedFiles) {
-        logger.error(`  ${item.file} — ${item.declarations.join('; ')}`);
-      }
-      const unprotected = regenerate.filter(
-        item => !protectedFiles.some(row => row.file === item.file),
-      );
-      if (unprotected.length > 0) {
-        logger.error(
-          `${unprotected.length} generated file${unprotected.length === 1 ? '' : 's'} must be regenerated:`,
-        );
-        for (const item of unprotected) {
-          logger.error(`  ${item.file} — ${item.messages.join(' ')}`);
-        }
-      }
+      logRegenerate(regenerate, protectedFiles);
       if (cliBehindCore) logCliBehindCore(cliBehindCore, targetVersion);
       logger.log('Upgrade incomplete: protected changes remain\n');
       return {
@@ -1241,33 +1273,13 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
   if (registryResult) receipt.registryCompositions = registryResult.summary;
   if (cliBehindCore) receipt.cliBehindCore = cliBehindCore;
 
-  if (protectedFiles.length > 0) {
-    logger.error(
-      `${ERROR_CODES.ERR_CODEMOD_PROTECTED}: ${protectedFiles.length} protected file${protectedFiles.length === 1 ? '' : 's'} still require${protectedFiles.length === 1 ? 's' : ''} a codemod change:`,
-    );
-    for (const item of protectedFiles) {
-      logger.error(`  ${item.file} — ${item.declarations.join('; ')}`);
-      for (const command of item.commands) {
-        logger.log(`  Regenerate with: ${command}`);
-      }
-    }
-  }
-
+  logProtectedFiles(
+    `${ERROR_CODES.ERR_CODEMOD_PROTECTED}: ${protectedFiles.length} protected file${protectedFiles.length === 1 ? '' : 's'} still require${protectedFiles.length === 1 ? 's' : ''} a codemod change:`,
+    protectedFiles,
+  );
   // Generated outputs a codemod reported out of date, beyond the protected
   // files already listed above.
-  const protectedSet = new Set(protectedFiles.map(item => item.file));
-  const staleOutputs = regenerate.filter(item => !protectedSet.has(item.file));
-  if (staleOutputs.length > 0) {
-    logger.error(
-      `${staleOutputs.length} generated file${staleOutputs.length === 1 ? '' : 's'} must be regenerated:`,
-    );
-    for (const item of staleOutputs) {
-      logger.error(`  ${item.file} — ${item.messages.join(' ')}`);
-      for (const command of item.commands) {
-        logger.log(`  Regenerate with: ${command}`);
-      }
-    }
-  }
+  logRegenerate(regenerate, protectedFiles);
 
   if (finalErrors.length > 0 && !blocked) {
     const msg = `Upgrade completed with ${finalErrors.length} codemod error${finalErrors.length === 1 ? '' : 's'}.`;

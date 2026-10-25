@@ -457,6 +457,41 @@ describe('regeneration in the upgrade receipt', () => {
       ]),
     });
   });
+
+  it('names a file to regenerate and its command in text when astryx.config fails validation', async () => {
+    fs.rmSync(path.join(dir, 'src/index.ts'));
+    write('src/theme.ts', '// STALE\n');
+    write('astryx.config.mjs', "export default {theme: 'neutral'};\n");
+    logger.setSilent(false);
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const out = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await rejection(upgrade(APPLY, {cwd: dir}));
+
+    const stderr = err.mock.calls.map(c => c.join(' ')).join('\n');
+    const stdout = out.mock.calls.map(c => c.join(' ')).join('\n');
+    expect(stderr).toContain(
+      '1 generated file must be regenerated:\n  src/theme.ts — Out of date.',
+    );
+    expect(stdout).toContain('Regenerate with: gen theme');
+  });
+
+  it('prints the command for a protected file to regenerate when astryx.config fails validation', async () => {
+    fs.rmSync(path.join(dir, 'src/index.ts'));
+    write('src/theme.ts', '// @generated\n// STALE\n');
+    write('astryx.config.mjs', "export default {theme: 'neutral'};\n");
+    logger.setSilent(false);
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const out = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    const result = await upgrade(APPLY, {cwd: dir});
+
+    expect(result.data.errorCode).toBe('ERR_CODEMOD_PROTECTED');
+    const stderr = err.mock.calls.map(c => c.join(' ')).join('\n');
+    const stdout = out.mock.calls.map(c => c.join(' ')).join('\n');
+    expect(stderr).toMatch(/src\/theme\.ts — /);
+    expect(stdout).toContain('Regenerate with: gen theme');
+  });
   it('lists a reported file the project protects in protectedFiles too, with its declaration', async () => {
     write('src/theme.ts', '// @generated\n// STALE\n');
 
