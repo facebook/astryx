@@ -135,11 +135,28 @@ test.describe('with a mouse or trackpad', () => {
     expect(
       await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
     ).toBe(false);
-    const {count, animations, first, second} = await placeholders(page);
+    const {count, animations} = await placeholders(page);
     expect(count).toBeGreaterThan(0);
     expect(animations.every(n => n === 1)).toBe(true);
-    // The pulse moves the opacity between samples.
-    expect(first.some((value, i) => value !== second[i])).toBe(true);
+    // The pulse moves the opacity: each placeholder's animation, held at a
+    // twentieth and at eleven twentieths of its cycle (past its delay, so a
+    // slow machine still in the start delay cannot read two equal rests).
+    const [early, late] = await page.evaluate(() => {
+      const all = Array.from(document.querySelectorAll('.astryx-skeleton'));
+      const held = (share: number) =>
+        all.map(el => {
+          const [animation] = el.getAnimations();
+          animation.pause();
+          const timing = animation.effect?.getTiming();
+          const delay = timing?.delay ?? 0;
+          const duration =
+            Number(animation.effect?.getComputedTiming().duration) || 0;
+          animation.currentTime = delay + duration * share;
+          return Number(getComputedStyle(el).opacity);
+        });
+      return [held(0.05), held(0.55)];
+    });
+    expect(early.every((value, i) => value !== late[i])).toBe(true);
   });
 
   test('reduced motion still stops the pulse at its 0.25 rest', async ({
