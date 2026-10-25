@@ -153,7 +153,8 @@ work.
   component reads (`spec:AST-100`). The filter is iOS's measured blend: a
   pan's velocity is 0.2 times the newest interval's velocity plus 0.8 times
   the previous interval's, updated on each moved sample, and a scrolling
-  surface's release blends the last two pan values 0.25 and 0.75; a contact
+  surface's release is 0.25 times the newest pan value plus 0.75 times the
+  previous one; a contact
   still for longer than the stillness interval before lifting reads 0. It is not exported. No Core component keeps its own sample
   buffer, velocity math, or alternative release filter; a component's flick
   threshold compares the tracker's release velocity. Lab cannot import the

@@ -35,8 +35,9 @@ affects_consumer_docs: []
 ## Intent
 
 When a person flicks a sheet, a toast, a row, a page, or a wheel and lifts
-their finger, every Core and Lab component reads the same speed from that
-motion, so a flick of the same speed does the same thing in each of them, and a finger that
+their finger, every Core and Lab component of that kind reads the same speed
+from that motion, as iOS does, so a flick of the same speed does the same thing
+in each of them, and a finger that
 stopped before lifting never counts as a flick. One release filter defines the
 speed every component reads; components decide only what a given velocity
 means for them.
@@ -54,19 +55,20 @@ means for them.
 
 ## Requirements
 
-- **FR1 — One velocity for every gesture.** Every Core and Lab component that
-  reads the velocity of a pointer gesture, including a sheet's drag, a toast's
-  swipe, a row swipe, paging, a wheel picker, a navigation pop, and interactive
-  dismiss, reports the same velocity, in CSS pixels per second on each physical
-  axis, for the same contact motion. `architecture:interaction-modality` INV10
+- **FR1 — One velocity per kind of surface.** Every Core and Lab component that
+  reads the velocity of a pointer gesture reports it in CSS pixels per second
+  on each physical axis, and components of the same kind report the same
+  velocity for the same contact motion. Dragged surfaces are a sheet's drag, a
+  toast's swipe, a row swipe, a navigation pop, and interactive dismiss;
+  scrolling surfaces are paging and a wheel picker. `architecture:interaction-modality` INV10
   owns the source in Core and how a Lab component matches it.
 - **FR2 — A moving finger reads as on iOS; a still finger never flicks.** The
   velocity a component reads when the contact lifts is the velocity iOS
   reports for the same motion: a pan's velocity for a dragged surface, and a
   scroll view's release velocity for a scrolling surface. It is 0 when the
   contact stayed still for longer than a fixed stillness interval before
-  lifting, the one case where it differs from iOS. Every component reads the
-  same release velocity and none reads another estimate. The stillness
+  lifting, the one case where it differs from iOS. Every component of a kind
+  reads the same release velocity and none reads another estimate. The stillness
   interval is an internal tuning value; how the velocity is computed is
   `architecture:interaction-modality` INV10.
 - **FR3 — Thresholds sit on top of the one velocity.** A component's flick,
@@ -130,8 +132,8 @@ means for them.
 Each component estimating velocity its own way makes the same flick dismiss a
 toast but not a sheet, and a finger that paused before lifting count as a
 flick in one place and not another. One release filter, with one source in
-Core and the same filter in Lab, gives every
-component the same speed for the same motion. Reading a moving finger the way
+Core and the same filter in Lab, gives every component of a kind the same
+speed for the same motion. Reading a moving finger the way
 iOS does keeps flicks, paging, and dismissal near their thresholds where an
 iPhone puts them, and the stillness reset stops a resting finger from flinging,
 which is the one place the filter departs from iOS. What a speed means stays
