@@ -3,7 +3,8 @@
 /**
  * @file locale-exports.test.mjs
  * @input The package's exports map, read through Node's own package
- *   resolution from a workspace app that depends on the package
+ *   resolution: the package's self-reference, which applies the same map a
+ *   consumer's import does
  * @output Verifies the public locale surface: every whole catalog under
  *   `@astryxdesign/core/locales/<locale>.generated.js` resolves, and the
  *   per-namespace English slices under `locales/en/` do not — they are the
@@ -17,12 +18,15 @@ import {fileURLToPath} from 'node:url';
 import {describe, expect, it} from 'vitest';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(__dirname, '../../../../..');
+const CORE_ROOT = path.resolve(__dirname, '../../..');
 
 /**
  * Resolve a specifier the way a consumer's bundler or Node would: through
- * the package's exports map, from a module inside a workspace app that
- * depends on the package. `import.meta.resolve` consults the map only and
+ * the package's exports map. The package's own directory resolves its name
+ * through that same map (a self-reference), so no other package is involved:
+ * the docsite's server routes trace this package's files, and a path from
+ * here into another directory would make them ship that whole directory.
+ * `import.meta.resolve` consults the map only and
  * never reads the target, so a built `dist/` is not needed: a matching
  * pattern yields its target path, and a `null` target or no match is
  * ERR_PACKAGE_PATH_NOT_EXPORTED. Run in a fresh process so the test's own
@@ -40,7 +44,7 @@ function resolveFromConsumer(specifier) {
     process.execPath,
     ['--input-type=module', '--eval', script],
     {
-      cwd: path.join(REPO_ROOT, 'apps/sandbox'),
+      cwd: CORE_ROOT,
       encoding: 'utf8',
     },
   );
