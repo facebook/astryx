@@ -53,10 +53,17 @@
  * the pixels stop meaning the same thing when the viewport changes, the stop
  * the user chose does not.
  *
- * The drag runs on the gesture system's recognizers (../gestures), which
- * report UIKit's numbers: a pan's translation from where it began (past its
- * threshold) and its velocity (UIKit's filter, for every pointer:
- * spec:AST-100). A vertical pan on the handle; on the scrolling body, a
+ * Where the primary pointer is coarse (spec:AST-094 FR13, FR19), a finger's
+ * or a pen's drag runs on the gesture system's recognizers (../gestures),
+ * which report UIKit's numbers: a pan's translation from where it began (past
+ * its threshold) and its velocity (UIKit's filter). A mouse anywhere, and a
+ * pen or a finger where the primary pointer is fine, drag the sheet as they
+ * did before the recognizers (spec:AST-017 FR59), through the handle's and
+ * the body's own pointer listeners: 1:1 from the first pixel on the handle,
+ * from the body's top after 8 px anchored at the press, with today's detent
+ * magnet, stretch past the top and release (one answer for the tracking and
+ * the release, spec:AST-094 FR13). Every release reads the same velocity,
+ * UIKit's filter over the events' own timestamps (spec:AST-100 FR4). A vertical pan on the handle; on the scrolling body, a
  * downward pan that begins only when nothing under the finger can scroll up
  * (`scrollEdge`, the scrollers nested in the body included), and an upward
  * one that does so at the bottom while a taller detent exists. Who gets a
@@ -118,6 +125,7 @@ import {
   type PointerKind,
 } from '../gestures';
 import {playHaptic} from '../gestures/haptics';
+import {VelocityTracker} from '../gestures/VelocityTracker';
 import {readTouchPresentation} from './sheetTouch';
 import {useMediaQuery} from '../hooks';
 import {
@@ -214,6 +222,12 @@ const OVERSCROLL_RESISTANCE = 0.35;
 // SYNC: must match OVERSCROLL_PADDING in BottomSheetPanel.tsx (the reserved
 // bottom padding the lift reveals).
 const OVERSCROLL_MAX = 48;
+// How far a mouse pressed on the body (or a pen, where the primary pointer is
+// fine) must travel down before the pull becomes a sheet drag rather than a
+// click: a pointer is never perfectly still, and a drift that started a drag
+// would suppress the panel's transition across a close the click triggered.
+// 8px is the conventional tap slop, a shade over iOS's own recognizer.
+const DRAG_PROMOTION_SLOP = 8;
 
 // Pull a value toward the nearest of `targets` when within MAGNET_RANGE, easing
 // the last stretch so the surface settles crisply onto a detent while dragging.
@@ -264,6 +278,42 @@ function renderedBlockEndPadding(element: HTMLElement): number {
 
 // How much further the body could scroll on its own, ignoring the padding the
 // hook adds to preserve scroll position across a height change.
+/** A box that scrolls vertically and has somewhere to scroll. */
+function isBlockScroller(element: HTMLElement): boolean {
+  if (element.scrollHeight - element.clientHeight <= 1) {
+    return false;
+  }
+  const {overflowY} = getComputedStyle(element);
+  return overflowY === 'auto' || overflowY === 'scroll';
+}
+
+/**
+ * The scrollers a mouse press on `target` inside `body` could scroll,
+ * innermost first and the body last.
+ */
+function scrollChainUnder(
+  target: EventTarget | null,
+  body: HTMLElement,
+): HTMLElement[] {
+  const chain: HTMLElement[] = [];
+  for (
+    let element = target instanceof Element ? target : null;
+    element != null && element !== body;
+    element = element.parentElement
+  ) {
+    if (element instanceof HTMLElement && isBlockScroller(element)) {
+      chain.push(element);
+    }
+  }
+  chain.push(body);
+  return chain;
+}
+
+/** Nothing in the chain can scroll up any further: a pull down is the sheet's. */
+function chainAtTop(chain: ReadonlyArray<HTMLElement>): boolean {
+  return chain.every(element => element.scrollTop <= 0);
+}
+
 function naturalEndGapFor(body: HTMLElement | null): number {
   if (!body) {
     return 0;
@@ -347,12 +397,21 @@ export interface SheetHandleProps {
   style: CSSProperties;
   onContextMenu: (event: ReactMouseEvent) => void;
   onPointerDown: (event: ReactPointerEvent) => void;
+  onPointerMove: (event: ReactPointerEvent) => void;
+  onPointerUp: (event: ReactPointerEvent) => void;
+  onPointerCancel: (event: ReactPointerEvent) => void;
+  onLostPointerCapture: (event: ReactPointerEvent) => void;
 }
 
 export interface SheetBodyProps {
   ref: (node: HTMLElement | null) => void;
   onContextMenu: (event: ReactMouseEvent) => void;
   onScroll: (event: ReactUIEvent<HTMLElement>) => void;
+  onPointerDown: (event: ReactPointerEvent) => void;
+  onPointerMove: (event: ReactPointerEvent) => void;
+  onPointerUp: (event: ReactPointerEvent) => void;
+  onPointerCancel: (event: ReactPointerEvent) => void;
+  onLostPointerCapture: (event: ReactPointerEvent) => void;
 }
 
 /**
@@ -1094,6 +1153,14 @@ export function useSheetGestures({
   // spring-back after it, fade under reduced motion whatever the primary
   // pointer (design:reduced-motion DR2).
   const dragTouchRef = useRef(false);
+  // A drag on the pointer path (see isPointerPath): its pointer, where it
+  // started and its samples for the release velocity.
+  const pointerDragRef = useRef<{
+    pointerId: number;
+    startCoord: number;
+    tracker: VelocityTracker;
+    captured: HTMLElement | null;
+  } | null>(null);
 
   // Moves the sheet to `offset` on the travel channel, holding the layout
   // split it is rendered with (`layoutOffset`) until it lands; landing a
@@ -1916,6 +1983,16 @@ export function useSheetGestures({
   );
   const notePointer = useCallback(
     (recognizer: GestureRecognizer, touch: GestureTouch): boolean => {
+      // The recognizers serve a finger, and a pen, where the primary pointer
+      // is coarse (spec:AST-094 FR19); a mouse, and anything where it is
+      // fine, take the pointer path below (spec:AST-017 FR59).
+      if (
+        touch.pointerType === 'mouse' ||
+        !readTouchPresentation().isTouch ||
+        pointerDragRef.current != null
+      ) {
+        return false;
+      }
       pointerKinds.set(recognizer, touch.pointerType);
       return true;
     },
@@ -1990,8 +2067,9 @@ export function useSheetGestures({
     [beginDrag, cancelDrag, endDrag, measureHeight, moveDrag, pointerKinds],
   );
 
-  // The handle: a vertical pan, for every pointer. A control's drag, so text
-  // selection and the touch callout are off under the finger.
+  // The handle: a vertical pan, for a finger or a pen where the primary
+  // pointer is coarse (the pointer path above serves the rest). A control's
+  // drag, so text selection and the touch callout are off under the finger.
   const handleElRef = useRef<HTMLElement | null>(null);
   useGestureRecognizer(
     handleElRef,
@@ -2000,6 +2078,7 @@ export function useSheetGestures({
         name: 'BottomSheet.handle',
         direction: 'vertical',
         maximumNumberOfTouches: 1,
+        allowedPointerTypes: ['touch', 'pen'],
         preventsTextSelection: true,
         shouldBegin: canBegin,
         shouldReceiveTouch: notePointer,
@@ -2007,7 +2086,8 @@ export function useSheetGestures({
     onPan,
   );
   // The body, pulled down where nothing under the finger can scroll up: the
-  // sheet collapses toward its shortest detent or away. A mouse pulls it too.
+  // sheet collapses toward its shortest detent or away. (A mouse's pull is
+  // the pointer path's.)
   useGestureRecognizer(
     bodyNodeRef,
     () =>
@@ -2015,6 +2095,7 @@ export function useSheetGestures({
         name: 'BottomSheet.bodyDown',
         direction: 'down',
         maximumNumberOfTouches: 1,
+        allowedPointerTypes: ['touch', 'pen'],
         scrollEdge: true,
         // At the edge the pull is the sheet's from the first moves: claimed
         // under WebKit's own slow-drag claim (10–11 px), so a slow pull never
@@ -2076,7 +2157,8 @@ export function useSheetGestures({
         case 'ended':
           if (
             dragStateRef.current != null &&
-            dragStateRef.current.pan == null
+            dragStateRef.current.pan == null &&
+            pointerDragRef.current == null
           ) {
             endDrag(0, 0);
           }
@@ -2084,7 +2166,8 @@ export function useSheetGestures({
         case 'cancelled':
           if (
             dragStateRef.current != null &&
-            dragStateRef.current.pan == null
+            dragStateRef.current.pan == null &&
+            pointerDragRef.current == null
           ) {
             cancelDrag();
           }
@@ -2096,6 +2179,187 @@ export function useSheetGestures({
       }
     },
     {manageStyle: false},
+  );
+
+  // The pointer path: a mouse anywhere, and a pen or a finger where the
+  // primary pointer is fine, drag the sheet as they did before the gesture
+  // recognizers (spec:AST-017 FR59): from the handle 1:1 from the first
+  // pixel, and from the body's top after DRAG_PROMOTION_SLOP, anchored at the
+  // press; today's drag, with the detent magnet, the stretch past the top and
+  // today's release (see moveDrag and readReleaseMotion). Its release reads
+  // the same velocity as every pointer (spec:AST-100 FR4): UIKit's filter over
+  // the events' own timestamps.
+  const isPointerPath = useCallback(
+    (pointerType: string) =>
+      pointerType === 'mouse' || !readTouchPresentation().isTouch,
+    [],
+  );
+  const beginPointerDrag = useCallback(
+    (event: ReactPointerEvent, startCoord: number): boolean => {
+      if (!canDrag() || dragStateRef.current != null) {
+        return false;
+      }
+      if (!beginDrag(event.pointerType, measureHeight())) {
+        return false;
+      }
+      const tracker = new VelocityTracker();
+      tracker.add(0, event.clientY, event.timeStamp);
+      pointerDragRef.current = {
+        pointerId: event.pointerId,
+        startCoord,
+        tracker,
+        captured: null,
+      };
+      // Never capture a finger: a touch drag keeps its own events.
+      if (event.pointerType !== 'touch') {
+        const target = event.currentTarget as HTMLElement;
+        target.setPointerCapture?.(event.pointerId);
+        pointerDragRef.current.captured = target;
+      }
+      return true;
+    },
+    [beginDrag, canDrag, measureHeight],
+  );
+  const movePointerDrag = useCallback(
+    (event: ReactPointerEvent) => {
+      const drag = pointerDragRef.current;
+      if (drag == null || drag.pointerId !== event.pointerId) {
+        return;
+      }
+      drag.tracker.add(0, event.clientY, event.timeStamp);
+      moveDrag(event.clientY - drag.startCoord);
+    },
+    [moveDrag],
+  );
+  const endPointerDrag = useCallback(
+    (event: ReactPointerEvent) => {
+      const drag = pointerDragRef.current;
+      if (drag == null || drag.pointerId !== event.pointerId) {
+        return;
+      }
+      if (drag.tracker.lastSample?.y !== event.clientY) {
+        drag.tracker.add(0, event.clientY, event.timeStamp);
+      }
+      const velocity = drag.tracker.velocity(event.timeStamp).y;
+      pointerDragRef.current = null;
+      drag.captured?.releasePointerCapture?.(event.pointerId);
+      endDrag(event.clientY - drag.startCoord, velocity);
+    },
+    [endDrag],
+  );
+  const cancelPointerDrag = useCallback(() => {
+    const drag = pointerDragRef.current;
+    if (drag == null) {
+      return;
+    }
+    pointerDragRef.current = null;
+    if (drag.captured?.hasPointerCapture?.(drag.pointerId)) {
+      drag.captured.releasePointerCapture(drag.pointerId);
+    }
+    cancelDrag();
+  }, [cancelDrag]);
+  const handlePointerCancel = useCallback(
+    (event: ReactPointerEvent) => {
+      if (pointerDragRef.current?.pointerId === event.pointerId) {
+        cancelPointerDrag();
+      }
+    },
+    [cancelPointerDrag],
+  );
+  // The browser or the page taking the pointer back mid-drag: not a release.
+  const handleLostPointerCapture = useCallback(
+    (event: ReactPointerEvent) => {
+      if (pointerDragRef.current?.pointerId === event.pointerId) {
+        cancelPointerDrag();
+      }
+    },
+    [cancelPointerDrag],
+  );
+  // A blurred window or a hidden page ends a pointer-path drag; the gesture
+  // host does the same for its recognizers.
+  useEffect(() => {
+    const onBlur = () => cancelPointerDrag();
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        cancelPointerDrag();
+      }
+    };
+    window.addEventListener('blur', onBlur);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('blur', onBlur);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [cancelPointerDrag]);
+
+  // The body's pull down from its top, on the pointer path (a mouse, or a pen
+  // where the primary pointer is fine): armed at the press, promoted after
+  // DRAG_PROMOTION_SLOP of downward travel while nothing under the pointer
+  // can scroll up, and anchored at the press so the pull carries over. An
+  // upward move is a scroll: it disarms.
+  const armedBodyRef = useRef<{
+    pointerId: number;
+    startCoord: number;
+    scrollers: HTMLElement[];
+  } | null>(null);
+  const handleBodyPointerDown = useCallback(
+    (event: ReactPointerEvent) => {
+      armedBodyRef.current = null;
+      if (
+        event.button !== 0 ||
+        !event.isPrimary ||
+        event.pointerType === 'touch' ||
+        !isPointerPath(event.pointerType)
+      ) {
+        return;
+      }
+      const scrollers = scrollChainUnder(
+        event.target,
+        event.currentTarget as HTMLElement,
+      );
+      if (!chainAtTop(scrollers)) {
+        return;
+      }
+      armedBodyRef.current = {
+        pointerId: event.pointerId,
+        startCoord: event.clientY,
+        scrollers,
+      };
+    },
+    [isPointerPath],
+  );
+  const handleBodyPointerMove = useCallback(
+    (event: ReactPointerEvent) => {
+      if (pointerDragRef.current != null) {
+        movePointerDrag(event);
+        return;
+      }
+      const armed = armedBodyRef.current;
+      if (armed == null || armed.pointerId !== event.pointerId) {
+        return;
+      }
+      const delta = event.clientY - armed.startCoord;
+      if (delta > DRAG_PROMOTION_SLOP && chainAtTop(armed.scrollers)) {
+        armedBodyRef.current = null;
+        if (beginPointerDrag(event, armed.startCoord)) {
+          movePointerDrag(event);
+        }
+      } else if (delta < 0) {
+        armedBodyRef.current = null;
+      }
+    },
+    [beginPointerDrag, movePointerDrag],
+  );
+  const handleBodyPointerEnd = useCallback(
+    (event: ReactPointerEvent) => {
+      armedBodyRef.current = null;
+      if (event.type === 'pointercancel') {
+        handlePointerCancel(event);
+      } else {
+        endPointerDrag(event);
+      }
+    },
+    [endPointerDrag, handlePointerCancel],
   );
 
   // A context menu interrupts the drag: back to the detent.
@@ -2112,19 +2376,30 @@ export function useSheetGestures({
         state.pan.setEnabled(false);
         state.pan.setEnabled(true);
       }
+      if (pointerDragRef.current != null) {
+        cancelPointerDrag();
+        return;
+      }
       cancelDrag();
     },
-    [cancelDrag],
+    [cancelDrag, cancelPointerDrag],
   );
 
   // The handle has no native focus action: a press on it keeps the focus
   // where it is (a form control's keyboard stays up); once the sheet travels,
   // BottomSheet dismisses the keyboard.
-  const handleHandlePointerDown = useCallback((event: ReactPointerEvent) => {
-    if (event.button === 0 && event.isPrimary) {
+  const handleHandlePointerDown = useCallback(
+    (event: ReactPointerEvent) => {
+      if (event.button !== 0 || !event.isPrimary) {
+        return;
+      }
       event.preventDefault();
-    }
-  }, []);
+      if (isPointerPath(event.pointerType)) {
+        beginPointerDrag(event, event.clientY);
+      }
+    },
+    [beginPointerDrag, isPointerPath],
+  );
 
   const handleRef = useCallback((node: HTMLElement | null) => {
     handleElRef.current = node;
@@ -2203,8 +2478,20 @@ export function useSheetGestures({
       style: {cursor: 'grab'},
       onContextMenu: handleContextMenu,
       onPointerDown: handleHandlePointerDown,
+      onPointerMove: movePointerDrag,
+      onPointerUp: endPointerDrag,
+      onPointerCancel: handlePointerCancel,
+      onLostPointerCapture: handleLostPointerCapture,
     }),
-    [handleContextMenu, handleHandlePointerDown, handleRef],
+    [
+      endPointerDrag,
+      handleContextMenu,
+      handleHandlePointerDown,
+      handleLostPointerCapture,
+      handlePointerCancel,
+      handleRef,
+      movePointerDrag,
+    ],
   );
 
   const bodyProps = useMemo<SheetBodyProps>(
@@ -2212,8 +2499,21 @@ export function useSheetGestures({
       ref: bodyRef,
       onContextMenu: handleContextMenu,
       onScroll: handleBodyScroll,
+      onPointerDown: handleBodyPointerDown,
+      onPointerMove: handleBodyPointerMove,
+      onPointerUp: handleBodyPointerEnd,
+      onPointerCancel: handleBodyPointerEnd,
+      onLostPointerCapture: handleLostPointerCapture,
     }),
-    [bodyRef, handleBodyScroll, handleContextMenu],
+    [
+      bodyRef,
+      handleBodyPointerDown,
+      handleBodyPointerEnd,
+      handleBodyPointerMove,
+      handleBodyScroll,
+      handleContextMenu,
+      handleLostPointerCapture,
+    ],
   );
 
   return {

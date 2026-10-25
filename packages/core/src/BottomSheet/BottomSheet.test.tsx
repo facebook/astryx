@@ -218,9 +218,10 @@ function getHandle(): HTMLElement {
   return handle;
 }
 
-// Input reaches the sheet through the document's gesture host, as in a
-// browser: a mouse (the stubbed primary pointer is fine) on explicit
-// timestamps. The host outlives a test and its clock never runs backwards,
+// Input reaches the sheet as in a browser: a mouse (the stubbed primary
+// pointer is fine) through the handle's and the body's own pointer listeners
+// (spec:AST-017 FR59), a finger (a stubbed coarse primary pointer) through
+// the document's gesture host, on explicit timestamps. The host outlives a test and its clock never runs backwards,
 // so every test's times start past the previous test's.
 let timeBase = 0;
 beforeEach(() => {
@@ -289,10 +290,11 @@ function contact(
   return fireEvent(target, event);
 }
 
-// The handle's pan reports UIKit's translation, which leaves out the travel
-// before the pan begins: a press lands that far behind its first move, so the
-// positions a test moves to are the drag's (one that never moves lifts where
-// it landed).
+// A finger's pan reports UIKit's translation, which leaves out the travel
+// before the pan begins: its press lands that far behind its first move, so
+// the positions a test moves to are the drag's (one that never moves lifts
+// where it landed). A mouse moves the sheet from the first pixel and lands
+// where the test puts it.
 const PAN_THRESHOLD = 10;
 let pendingPress: {y: number; time: number} | null = null;
 
@@ -367,10 +369,11 @@ function fireTimedPointer(
   if (pendingPress != null) {
     const landing = pendingPress;
     pendingPress = null;
+    const behind = matchMedia('(pointer: coarse)').matches ? PAN_THRESHOLD : 0;
     contact(
       target,
       'pointerdown',
-      landing.y - Math.sign(y - landing.y) * PAN_THRESHOLD,
+      landing.y - Math.sign(y - landing.y) * behind,
       landing.time,
     );
   }

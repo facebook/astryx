@@ -35,15 +35,12 @@ import {BottomSheetSwitcher} from './BottomSheetSwitcher';
 // match.
 const modalDialogs = new WeakSet<HTMLDialogElement>();
 
-// Input reaches a sheet through the document's gesture host, as in a browser:
-// a mouse (the stubbed primary pointer is fine) on explicit timestamps. The
-// host outlives a test and its clock never runs backwards, so every test's
-// times start past the previous test's.
+// Input reaches a sheet as in a browser: a mouse (the stubbed primary pointer
+// is fine) through the handle's own pointer listeners (spec:AST-017 FR59), on
+// explicit timestamps that start past the previous test's. A press is sent
+// with its first move, where the test put it: a mouse moves the sheet from
+// the first pixel.
 let timeBase = 0;
-// The handle's pan reports UIKit's translation, which leaves out the travel
-// before the pan begins: a press lands that far behind its first move, so the
-// positions a test moves to are the drag's.
-const PAN_THRESHOLD = 10;
 let pendingPress: {y: number; time: number} | null = null;
 beforeEach(() => {
   timeBase += 1_000_000;
@@ -92,12 +89,7 @@ function fireTimedPointer(
   if (pendingPress != null) {
     const landing = pendingPress;
     pendingPress = null;
-    mouse(
-      target,
-      'pointerdown',
-      landing.y - Math.sign(y - landing.y) * PAN_THRESHOLD,
-      landing.time,
-    );
+    mouse(target, 'pointerdown', landing.y, landing.time);
   }
   return mouse(target, type, y, time);
 }
