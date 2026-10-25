@@ -151,10 +151,6 @@ function restingDismissOffset(
     shortestDetentHeight * (isUIKit ? 0.5 : DEFAULT_DISMISS_OVERSHOOT_RATIO)
   );
 }
-// Under a mouse the release speed is today's: the pointer's speed over
-// its last stretch, not between its last two samples (one slow sample before
-// the lift must not cancel a throw), and none after a pause before the lift.
-const VELOCITY_WINDOW_MS = 100;
 // Within this many px of a detent, the live drag is magnetically eased toward
 // it so it "clicks" into place instead of hovering just off the mark.
 const MAGNET_RANGE = 40;
@@ -633,11 +629,6 @@ export function useSheetGestures({
     // The finger's positions on the timestamps their events carry, for the
     // release velocity (the gesture foundation's estimator, UIKit's filter).
     tracker: VelocityTracker;
-    // Today's estimator, under a mouse: the samples of the last
-    // VELOCITY_WINDOW_MS, the speed over them (px/ms) and the last move's time.
-    samples: {t: number; y: number}[];
-    windowVelocity: number;
-    lastTime: number;
     height: number;
     baseOffset: number;
     baseLayoutOffset: number;
@@ -1374,9 +1365,6 @@ export function useSheetGestures({
         pointerId: event.pointerId,
         startCoord: start,
         tracker,
-        samples: [{t: event.timeStamp, y: event.clientY}],
-        windowVelocity: 0,
-        lastTime: event.timeStamp,
         height: sheetHeight,
         baseOffset,
         baseLayoutOffset,
@@ -1463,23 +1451,6 @@ export function useSheetGestures({
       // event's own timestamp: when the finger was there, however late a busy
       // main thread gets to the event.
       state.tracker.add(0, event.clientY, event.timeStamp);
-      if (event.timeStamp > state.lastTime) {
-        state.lastTime = event.timeStamp;
-        state.samples.push({t: event.timeStamp, y: event.clientY});
-        // Drop what fell out of the window while a partner remains: a throw
-        // that begins after a rest reads its own speed.
-        while (
-          state.samples.length > 2 &&
-          event.timeStamp - state.samples[0].t > VELOCITY_WINDOW_MS
-        ) {
-          state.samples.shift();
-        }
-        const first = state.samples[0];
-        // A lone partner older than the window says only where the finger
-        // rested; the move it precedes is read as if it took the window.
-        const span = Math.min(event.timeStamp - first.t, VELOCITY_WINDOW_MS);
-        state.windowVelocity = span > 0 ? (event.clientY - first.y) / span : 0;
-      }
       const {offsets, peekOffset} = resolveDetents(state.height);
 
       const raw = state.baseOffset + delta;
@@ -1589,14 +1560,13 @@ export function useSheetGestures({
         state.tracker.add(0, event.clientY, event.timeStamp);
       }
       const velocity = state.tracker.velocity(event.timeStamp).y;
-      // Today's inputs, for a release under a mouse.
+      // Today's inputs, for a release under a mouse: the drag's direction
+      // and travel, and the release velocity every pointer reads
+      // (spec:AST-100 FR2, FR4).
       const today = {
         direction: delta === 0 ? 0 : delta > 0 ? 1 : -1,
         travel: Math.abs(delta),
-        velocity:
-          event.timeStamp - state.lastTime < VELOCITY_WINDOW_MS
-            ? state.windowVelocity * 1000
-            : 0,
+        velocity,
       };
       dragStateRef.current = null;
       unlockSelection();

@@ -470,13 +470,29 @@ describe('useSheetGestures', () => {
       expect(onDismiss).toHaveBeenCalledTimes(1);
     });
 
-    it('reads a single move after a hold as a move, not as the whole hold', () => {
+    it('reads a single move after a hold over the hold, as for every pointer (spec:AST-100 FR4)', () => {
       const {hook, onDismiss} = setup({snapHeights: () => [200]});
       const t = makeTarget();
       down(hook, 0, 0, t);
       move(hook, 60, 300, t); // one sample, 300ms after touch-down
       up(hook, 60, 302, t);
-      expect(onDismiss).toHaveBeenCalledTimes(1);
+      // UIKit's filter reads 60 px over the 300 ms since the last sample,
+      // 200 px/s, under a mouse as under a finger: its coast (about 100 px)
+      // ends short of the dismiss line, nearest the 200 px detent.
+      expect(onDismiss).not.toHaveBeenCalled();
+      expect(hook.result.current.settledOffset).toBe(200);
+    });
+
+    it('throws nothing from a mouse held still for over 40 ms before the lift (spec:AST-100 FR2)', () => {
+      const {hook, onDismiss} = setup({snapHeights: () => [200]});
+      const t = makeTarget();
+      down(hook, 0, 0, t);
+      stream(hook, t, {from: 0, to: 60, t0: 0, t1: 40}); // 1500 px/s ...
+      up(hook, 60, 95, t); // ... 55 ms still, then the lift
+      // The speed over the last 100 ms used to keep the throw; the release
+      // velocity every pointer reads is 0 after a still pointer.
+      expect(onDismiss).not.toHaveBeenCalled();
+      expect(hook.result.current.settledOffset).toBe(0);
     });
 
     it('releases no throw from a finger that rested before lifting', () => {
