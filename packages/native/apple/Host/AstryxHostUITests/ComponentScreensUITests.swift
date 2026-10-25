@@ -10,6 +10,16 @@ final class ComponentScreensUITests: XCTestCase {
   /// Every component screen the host app offers, in its order.
   static let screens = ["Banner", "Button", "Card", "Heading", "Icon", "Text", "TextInput"]
 
+  /// Audit issues found when the audit first ran, each with what is known of
+  /// its cause. Any other issue fails, and so does a listed issue that no
+  /// longer occurs, so the list only shrinks.
+  static let knownAuditIssues: [String: String] = [
+    "Button 'Sending': Contrast failed":
+      "A loading button keeps its label at zero opacity under the spinner so its width holds; the audit measures that hidden label.",
+    "TextInput 'Email': Text clipped":
+      "A single-line field scrolls a value wider than itself; the audit reports the value as clipped.",
+  ]
+
   override func setUp() {
     continueAfterFailure = true
   }
@@ -58,8 +68,12 @@ final class ComponentScreensUITests: XCTestCase {
       }
       app.terminate()
     }
-    // One failure listing every issue, so the log shows them all.
-    XCTAssertEqual(issues, [], issues.joined(separator: "; "))
+    // One failure each for new and for fixed issues, listing them all.
+    let new = issues.filter { Self.knownAuditIssues[$0] == nil }
+    let fixed = Self.knownAuditIssues.keys.filter { !issues.contains($0) }.sorted()
+    XCTAssertTrue(new.isEmpty, "New accessibility audit issues: " + new.joined(separator: "; "))
+    XCTAssertTrue(
+      fixed.isEmpty, "Fixed, so remove them from knownAuditIssues: " + fixed.joined(separator: "; "))
   }
 
   /// What VoiceOver reads for Button: its label, the button role, Loading as
