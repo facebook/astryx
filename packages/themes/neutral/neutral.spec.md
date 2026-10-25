@@ -95,8 +95,10 @@ Core components choose semantic roles by surface (`architecture:theme-tokens`
 INV11): strong fills use `--color-*-emphasized` with `--color-on-*`, pale
 surfaces use `--color-*-muted` with `--color-on-*-muted`, and status text,
 icons, and borders on the default surfaces use `--color-text-*`,
-`--color-icon-*`, and `--color-border-*`. The candidate supplies Neutral values
-for those roles; every mapping remains subject to exact-head theme review and
+`--color-icon-*`, and `--color-border-*`. Neutral's status fills
+(`--astryx-theme-neutral-color-status-fill-*`) are its `-emphasized` roles, and
+its accent fill also paints the accent variants of ProgressBar, StatusDot, and
+Stepper indicators. Every new mapping needs exact-head theme review and
 rendered light/dark evidence; shared color alone is not enough.
 
 This work does not add component states. It intentionally excludes

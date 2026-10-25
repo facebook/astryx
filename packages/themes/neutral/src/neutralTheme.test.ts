@@ -394,9 +394,20 @@ describe('neutral semantic status roles', () => {
       ),
     });
     expect(neutralTheme.components?.badge).not.toHaveProperty('variant:info');
-    expect(neutralTheme.components).not.toHaveProperty('status-dot');
+    // Accent variants keep Neutral's reviewed accent fill; status variants
+    // read the -emphasized roles instead of component overrides.
+    expect(neutralTheme.components?.['status-dot']).toEqual({
+      'variant:accent': {
+        backgroundColor: 'var(--astryx-theme-neutral-color-status-fill-accent)',
+      },
+    });
+    expect(neutralTheme.components?.['step-indicator']).toEqual({
+      'status:accent': {
+        '--color-accent':
+          'var(--astryx-theme-neutral-color-status-fill-accent)',
+      },
+    });
     expect(neutralTheme.components).not.toHaveProperty('avatar-status-dot');
-    expect(neutralTheme.components).not.toHaveProperty('step-indicator');
     expect(neutralTheme.components?.['progress-bar']).not.toHaveProperty(
       'variant:warning',
     );
@@ -433,10 +444,21 @@ describe('neutral semantic status roles', () => {
     expect(neutralTheme.components).not.toHaveProperty('text-input');
     expect(neutralTheme.components).not.toHaveProperty('text-area-counter');
     expect(neutralTheme.components?.badge).not.toHaveProperty('variant:info');
-    expect(neutralTheme.components).not.toHaveProperty('status-dot');
+    // Accent variants keep Neutral's reviewed accent fill; status variants
+    // read the -emphasized roles instead of component overrides.
+    expect(neutralTheme.components?.['status-dot']).toEqual({
+      'variant:accent': {
+        backgroundColor: 'var(--astryx-theme-neutral-color-status-fill-accent)',
+      },
+    });
+    expect(neutralTheme.components?.['step-indicator']).toEqual({
+      'status:accent': {
+        '--color-accent':
+          'var(--astryx-theme-neutral-color-status-fill-accent)',
+      },
+    });
     expect(neutralTheme.components).not.toHaveProperty('avatar-status-dot');
-    expect(neutralTheme.components).not.toHaveProperty('step-indicator');
-    expect(neutralTheme.components?.['progress-bar']).not.toHaveProperty(
+    expect(neutralTheme.components?.['progress-bar']).toHaveProperty(
       'variant:accent',
     );
     expect(

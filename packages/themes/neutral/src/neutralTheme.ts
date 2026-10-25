@@ -415,6 +415,25 @@ export const neutralTheme = defineTheme({
       base: {
         '--color-background-muted': 'var(--color-border-emphasized)',
       },
+      // Accent variants keep Neutral's reviewed accent fill; status variants
+      // read the -emphasized roles.
+      'variant:accent': {
+        '--color-accent':
+          'var(--astryx-theme-neutral-color-status-fill-accent)',
+      },
+    },
+
+    'status-dot': {
+      'variant:accent': {
+        backgroundColor: 'var(--astryx-theme-neutral-color-status-fill-accent)',
+      },
+    },
+
+    'step-indicator': {
+      'status:accent': {
+        '--color-accent':
+          'var(--astryx-theme-neutral-color-status-fill-accent)',
+      },
     },
 
     card: {
