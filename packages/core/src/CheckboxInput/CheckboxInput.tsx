@@ -265,8 +265,11 @@ export interface CheckboxInputProps extends Omit<BaseProps, 'onChange'> {
   width?: SizeValue;
   /**
    * The size of the checkbox box: 20 px for 'sm', 24 px for 'md'. The row is
-   * as tall as its label. Under a coarse pointer the row is at least 44 px
-   * and the checkbox's target at least 44 × 44 px, centred on the box.
+   * as tall as its label. Under a coarse pointer a labelled checkbox's row is
+   * at least the theme's touch target tall (`--size-touch-target`, 44 px by
+   * default) and its target at least that square, centred on the box; a
+   * label-hidden checkbox (a marker in another component's row) keeps its
+   * size.
    * - 'sm': Compact size
    * - 'md': Default size
    * @default 'md'
