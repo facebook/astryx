@@ -164,48 +164,6 @@ import Testing
   #expect(Avatar(src: "https://example.com/a.png").tooltipText == nil)
 }
 
-@Test func aStaticAvatarWithANameTooltipIsATabStop() {
-  #expect(Avatar.isTooltipTabStop(tap: .none, hasNameTooltip: true))
-  #expect(!Avatar.isTooltipTabStop(tap: .none, hasNameTooltip: false))
-  // A link or button is a tab stop already.
-  #expect(!Avatar.isTooltipTabStop(tap: .button, hasNameTooltip: true))
-  #expect(!Avatar.isTooltipTabStop(tap: .link, hasNameTooltip: true))
-}
-
-@MainActor
-@Test func onTouchATapOpensAStaticAvatarsTooltipAndLeavesControlsTheirTap() {
-  // A static avatar opens its tooltip on a tap, with the name or given words.
-  #expect(Avatar.opensTooltipOnTap(Avatar("Ada Lovelace").tap))
-  #expect(Avatar("Ada Lovelace").tooltipText == "Ada Lovelace")
-  #expect(Avatar("Ada Lovelace", tooltip: "Ada Lovelace, Mathematician").tooltipText == "Ada Lovelace, Mathematician")
-  // A link or button keeps the tap for its action.
-  #expect(!Avatar.opensTooltipOnTap(Avatar("Ada Lovelace", onClick: {}).tap))
-  #expect(!Avatar.opensTooltipOnTap(Avatar("Ada Lovelace", href: "https://example.com").tap))
-}
-
-@MainActor
-@Test func theDefaultNameTooltipShowsToPointersInABubbleVoiceOverSkips() {
-  // The name is the pointer tooltip and never the hint.
-  #expect(Avatar("Ada Lovelace").pointerTooltipText == "Ada Lovelace")
-  #expect(Avatar("Ada Lovelace").helpText == nil)
-  #expect(Avatar("Ada Lovelace", tooltip: true).pointerTooltipText == "Ada Lovelace")
-  #expect(Avatar("Ada Lovelace", tooltip: "Ada Lovelace, Mathematician").pointerTooltipText == nil)
-  #expect(Avatar("Ada Lovelace", tooltip: false).pointerTooltipText == nil)
-  #expect(AvatarPointerTooltip.delay == .milliseconds(200))
-  // The bubble draws the name in core's inverted tooltip colors.
-  let bubble = Pixels(AvatarTooltipBubble(text: "Ada Lovelace"))
-  #expect(bubble.width > 40)
-  #expect(close(bubble.at(bubble.width / 2, 2), rgba(Theme.default.light.color.textPrimary), within: 6))
-}
-
-@MainActor
-@Test func onlyGivenTooltipWordsBecomeHelpSoTheNameIsNotReadTwice() {
-  #expect(Avatar("Ada Lovelace").helpText == nil)
-  #expect(Avatar("Ada Lovelace", tooltip: true).helpText == nil)
-  #expect(Avatar("Ada Lovelace", tooltip: "Ada Lovelace, Mathematician").helpText == "Ada Lovelace, Mathematician")
-  #expect(Avatar("Ada Lovelace", tooltip: false).helpText == nil)
-}
-
 @Test func tooltipsTravelAsTheWebValue() throws {
   let encoded = try JSONEncoder().encode([AvatarTooltip.on, .off, "Ada"])
   #expect(String(decoding: encoded, as: UTF8.self) == #"[true,false,"Ada"]"#)
@@ -243,3 +201,44 @@ private func onWhite(_ color: Color) -> [Int] {
   let c = rgba(color)
   return (0..<3).map { (c[$0] * c[3] + 255 * (255 - c[3])) / 255 } + [255]
 }
+
+// FR8, one cell at a time: input (pointer, keyboard, touch, VoiceOver) by
+// tooltip value (default name, given words, off).
+
+@MainActor
+@Test func pointerAndKeyboardShowTheBubbleAfterCoresDelay() {
+  // Both inputs show `tooltipText` in the bubble, for the name and given
+  // words alike; a press hides it.
+  #expect(AvatarTooltipPresenter.delay == .milliseconds(200))
+  let bubble = Pixels(AvatarTooltipBubble(text: "Ada Lovelace"))
+  #expect(bubble.width > 40)
+  #expect(close(bubble.at(bubble.width / 2, 2), rgba(Theme.default.light.color.textPrimary), within: 6))
+}
+
+@Test func keyboardTabStopsForEachValueAndControl() {
+  // A static avatar with any tooltip is a tab stop; off, it is not.
+  #expect(Avatar.isTooltipTabStop(tap: .none, hasTooltip: true))
+  #expect(!Avatar.isTooltipTabStop(tap: .none, hasTooltip: false))
+  // A link or button is a tab stop already.
+  #expect(!Avatar.isTooltipTabStop(tap: .button, hasTooltip: true))
+  #expect(!Avatar.isTooltipTabStop(tap: .link, hasTooltip: true))
+}
+
+@MainActor
+@Test func touchTapOpensAStaticAvatarsTooltipOnly() {
+  #expect(Avatar.opensTooltipOnTap(Avatar("Ada Lovelace").tap))
+  #expect(Avatar.opensTooltipOnTap(Avatar("Ada Lovelace", tooltip: "Ada Lovelace, Mathematician").tap))
+  // A link or button keeps the tap for its action.
+  #expect(!Avatar.opensTooltipOnTap(Avatar("Ada Lovelace", onClick: {}).tap))
+  #expect(!Avatar.opensTooltipOnTap(Avatar("Ada Lovelace", href: "https://example.com").tap))
+}
+
+@MainActor
+@Test func voiceOverHearsGivenWordsAsTheHintAndTheNameOnce() {
+  #expect(Avatar("Ada Lovelace").tooltipHint == nil)
+  #expect(Avatar("Ada Lovelace", tooltip: true).tooltipHint == nil)
+  #expect(Avatar("Ada Lovelace", tooltip: "Ada Lovelace, Mathematician").tooltipHint == "Ada Lovelace, Mathematician")
+  #expect(Avatar("Ada Lovelace", tooltip: false).tooltipHint == nil)
+  #expect(Avatar("Ada Lovelace").accessibilityLabel == "Ada Lovelace")
+}
+

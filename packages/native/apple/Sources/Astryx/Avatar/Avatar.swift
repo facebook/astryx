@@ -55,9 +55,11 @@ public struct Avatar: View {
   public var body: some View {
     if props.base.isHidden != true {
       control
-        .modifier(AvatarTooltipModifier(text: helpText))
-        .modifier(AvatarPointerTooltip(text: pointerTooltipText, isTabStop: Avatar.isTooltipTabStop(tap: tap, hasNameTooltip: pointerTooltipText != nil)))
+        // One tooltip path for every tooltip value (FR8): a bubble on a
+        // resting pointer, keyboard focus, and a tap on touch screens.
+        .modifier(AvatarTooltipPresenter(text: tooltipText, isTabStop: Avatar.isTooltipTabStop(tap: tap, hasTooltip: tooltipText != nil)))
         .modifier(AvatarTapTooltip(text: Avatar.opensTooltipOnTap(tap) ? tooltipText : nil))
+        .modifier(AvatarHint(text: tooltipHint))
         .modifier(AvatarIdentifier(id: props.base.id))
         .onAppear(perform: checkInDevelopment)
     }
@@ -88,18 +90,10 @@ public struct Avatar: View {
     }
   }
 
-  /// The words `.help` shows: only words the app gave. SwiftUI's `.help`
-  /// also becomes the VoiceOver hint, and core keeps the default name
-  /// tooltip out of the description, so the name alone is not repeated.
-  var helpText: String? {
+  /// The VoiceOver hint: given tooltip words, as core puts them in the
+  /// description; the default name is the avatar's own name, not repeated.
+  var tooltipHint: String? {
     guard case .text = props.tooltip else { return nil }
-    return tooltipText
-  }
-
-  /// The default name tooltip: shown where there is a pointer, as core's is,
-  /// in a bubble VoiceOver skips, since it already reads the name.
-  var pointerTooltipText: String? {
-    if case .text = props.tooltip { return nil }
     return tooltipText
   }
 
@@ -138,11 +132,11 @@ public struct Avatar: View {
   /// avatar; a link or button keeps the tap for its action, as core's does.
   nonisolated static func opensTooltipOnTap(_ tap: Tap) -> Bool { tap == .none }
 
-  /// Whether a static avatar takes keyboard focus: while it has a name
-  /// tooltip, as core gives it a tab stop, so a keyboard user can see the
-  /// name. A link or button is a tab stop already.
-  nonisolated static func isTooltipTabStop(tap: Tap, hasNameTooltip: Bool) -> Bool {
-    tap == .none && hasNameTooltip
+  /// Whether a static avatar takes keyboard focus: while it has a tooltip,
+  /// as core gives it a tab stop, so a keyboard user can read it. A link or
+  /// button is a tab stop already.
+  nonisolated static func isTooltipTabStop(tap: Tap, hasTooltip: Bool) -> Bool {
+    tap == .none && hasTooltip
   }
 
   var tap: Tap {
@@ -377,27 +371,14 @@ private struct AvatarTarget: ViewModifier {
   }
 }
 
-/// Custom tooltip words where there is a pointer, through SwiftUI `.help`,
-/// which VoiceOver also reads as the hint.
-private struct AvatarTooltipModifier: ViewModifier {
+/// The tooltip where there is a pointer or a keyboard: when the pointer
+/// rests on the avatar, or the avatar has keyboard focus, for core's 200 ms,
+/// a bubble below it shows the tooltip's words in core's tooltip colors; a
+/// press hides it. The bubble is hidden from VoiceOver.
+struct AvatarTooltipPresenter: ViewModifier {
+  /// The tooltip's words: the name or given words.
   let text: String?
-
-  func body(content: Content) -> some View {
-    if let text {
-      content.help(text)
-    } else {
-      content
-    }
-  }
-}
-
-/// The default name tooltip: when the pointer rests on the avatar, or the
-/// avatar has keyboard focus, for core's 200 ms, a bubble below it shows the
-/// name in core's tooltip colors; a press hides it. The bubble is hidden from
-/// VoiceOver, which reads the name as the avatar's own.
-struct AvatarPointerTooltip: ViewModifier {
-  let text: String?
-  /// Makes a static avatar focusable, so keyboard focus can show the name.
+  /// Makes a static avatar focusable, so keyboard focus can show its tooltip.
   let isTabStop: Bool
   @State private var isShown = false
   @State private var isHovering = false
@@ -414,7 +395,7 @@ struct AvatarPointerTooltip: ViewModifier {
         // take focus away from a link or button.
         .modifier(AvatarTabStop(isOn: isTabStop))
         .focused($isFocused)
-        // A press hides the pointer's tooltip, as core's does.
+        // A press hides the tooltip, as core's does.
         .simultaneousGesture(TapGesture().onEnded {
           pending?.cancel()
           isShown = false
@@ -480,6 +461,19 @@ struct AvatarTapTooltip: ViewModifier {
     #else
     content
     #endif
+  }
+}
+
+/// Given tooltip words as the VoiceOver hint, or no hint.
+private struct AvatarHint: ViewModifier {
+  let text: String?
+
+  func body(content: Content) -> some View {
+    if let text {
+      content.accessibilityHint(SwiftUI.Text(text))
+    } else {
+      content
+    }
   }
 }
 
