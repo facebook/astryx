@@ -40,7 +40,7 @@ describe('UIKIT_GESTURES', () => {
         expect('source' in constant).toBe(false);
       } else {
         expect(constant.source).toMatch(
-          /^(apple-docs https:\/\/developer\.apple\.com\/|wwdc \d{4}-\d+ |measured: )/,
+          /^(apple-docs https:\/\/developer\.apple\.com\/|wwdc \d{4}-\d+ |aosp frameworks\/|measured: )/,
         );
       }
     },
@@ -55,6 +55,7 @@ describe('UIKIT_GESTURES', () => {
     expect(UIKIT_GESTURES.pinch.hysteresis.value).toBe(8);
     expect(UIKIT_GESTURES.control.trackingExpansion.value).toBe(70);
     expect(UIKIT_GESTURES.velocity.currentWeight.value).toBe(0.2);
+    expect(UIKIT_GESTURES.velocity.scrollReleaseWeight.value).toBe(0.25);
   });
 
   it('keeps the pan decision within the distance WebKit claims a scroll at', () => {

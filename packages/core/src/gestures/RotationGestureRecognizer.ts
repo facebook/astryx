@@ -36,6 +36,9 @@ export class RotationGestureRecognizer extends GestureRecognizer {
   private lastAngle = 0;
   private rotationValue = 0;
   private readonly tracker = new VelocityTracker();
+  /** The lift's event time, for the stillness reset. */
+  private liftTime: number | undefined;
+  private lastTime = 0;
 
   constructor(options: RotationGestureRecognizerOptions = {}) {
     super(options);
@@ -51,11 +54,15 @@ export class RotationGestureRecognizer extends GestureRecognizer {
   set rotation(value: number) {
     this.initialAngle = this.lastAngle - value;
     this.rotationValue = value;
+    // The velocity continues from the re-based value, without a jump (as
+    // the pinch's scale setter does).
+    this.tracker.reset();
+    this.tracker.add(value, 0, this.lastTime);
   }
 
   /** Radians per second. */
   get velocity(): number {
-    return this.tracker.velocity().x;
+    return this.tracker.velocity(this.liftTime).x;
   }
 
   focalPoint(): Point {
@@ -82,6 +89,7 @@ export class RotationGestureRecognizer extends GestureRecognizer {
       this.rotationValue = 0;
       this.tracker.reset();
       this.tracker.add(0, 0, event.time);
+      this.lastTime = event.time;
     }
   }
 
@@ -96,6 +104,7 @@ export class RotationGestureRecognizer extends GestureRecognizer {
     this.lastAngle = unwrapAngle(angleBetween(a, b), this.lastAngle);
     this.rotationValue = this.lastAngle - this.initialAngle;
     this.tracker.add(this.rotationValue, 0, event.time);
+    this.lastTime = event.time;
     if (this.state === 'possible') {
       if (Math.abs(this.rotationValue) >= this.hysteresis) {
         this.setState('began');
@@ -105,11 +114,16 @@ export class RotationGestureRecognizer extends GestureRecognizer {
     }
   }
 
-  protected override touchesEnded(): void {
+  protected override touchesEnded(
+    _touches: ReadonlyArray<GestureTouch>,
+    event: GestureEventContext,
+  ): void {
+    this.liftTime = event.time;
     this.setState(isActive(this.state) ? 'ended' : 'failed');
   }
 
   protected override reset(): void {
+    this.liftTime = undefined;
     this.initialAngle = 0;
     this.lastAngle = 0;
     this.rotationValue = 0;
