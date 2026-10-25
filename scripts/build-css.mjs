@@ -292,9 +292,10 @@ export async function collectStyleXCSS(target) {
     allRules.push(...(await compileStyleX(file, code, target)));
   }
 
-  // A constant read from a provider's module (lab reading core's touch keys as
-  // a media key) compiles to a placeholder that only the constant's own rule
-  // resolves, and a constant is inlined where it is read. So the constants of
+  // A constant read from a provider's module as a value (lab reading a core
+  // motion duration) compiles to a placeholder that only the constant's own
+  // rule resolves, and a constant is inlined where it is read; at-rule keys
+  // stay literal. So the constants of
   // every provided module this package imports join its rules (they emit no
   // CSS); the module's variables stay in the provider's stylesheet.
   for (const file of providedImports) {
