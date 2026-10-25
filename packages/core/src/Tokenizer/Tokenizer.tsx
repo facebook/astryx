@@ -68,13 +68,14 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {SearchableItem, SearchSource} from '../Typeahead/types';
-import {mergeProps} from '../utils';
+import {isRenderable, mergeProps} from '../utils';
 import {
   getInteractionModality,
   useInteractionModalityTracking,
 } from '../utils/interactionModality';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
+import {VisuallyHidden} from '../VisuallyHidden';
 
 // Re-export status types for convenience
 export type {
@@ -626,6 +627,7 @@ export function Tokenizer<T extends SearchableItem>({
   const inputId = idProp ?? generatedInputId;
   const descriptionId = useId();
   const statusMessageId = useId();
+  const selectionDescriptionId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -1064,9 +1066,18 @@ export function Tokenizer<T extends SearchableItem>({
     }
   }, [isDisabled, isLayerMode, layer]);
 
+  // A selected token stays findable after its one-time announcement: the
+  // token itself carries the description, and so does the input, where
+  // focus is while Delete selects and removes (WCAG 2.2 4.1.2).
+  const selectionDescription =
+    selectedItem == null
+      ? null
+      : t('@astryx.tokenizer.tokenSelected', {label: selectedItem.label});
+
   const ariaDescribedBy =
     [
       description ? descriptionId : null,
+      selectionDescription != null ? selectionDescriptionId : null,
       status?.message ? statusMessageId : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ]
@@ -1095,6 +1106,11 @@ export function Tokenizer<T extends SearchableItem>({
         onRemove={isDisabled ? undefined : onRemoveItem}
         isDisabled={isDisabled}
         data-selected={item.id === selectedItem?.id || undefined}
+        description={
+          item.id === selectedItem?.id
+            ? (selectionDescription ?? undefined)
+            : undefined
+        }
         xstyle={[
           styles.token,
           item.id === selectedItem?.id && styles.tokenSelected,
@@ -1349,6 +1365,11 @@ export function Tokenizer<T extends SearchableItem>({
       labelTooltip={labelTooltip}
       width={width}>
       {tokenizerContent}
+      {isRenderable(selectionDescription) && (
+        <VisuallyHidden id={selectionDescriptionId}>
+          {selectionDescription}
+        </VisuallyHidden>
+      )}
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}
     </Field>

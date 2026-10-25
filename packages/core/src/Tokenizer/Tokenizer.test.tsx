@@ -436,6 +436,22 @@ describe('Tokenizer', () => {
       expect(tokenNamed('Bob')).toHaveAttribute('data-selected', 'true');
     });
 
+    it('keeps the selection findable after its announcement: on the token and on the input', () => {
+      stubPointer(true);
+      render(<Controlled onChange={vi.fn()} />);
+      const input = screen.getByRole('combobox');
+      act(() => input.focus());
+      fireEvent.keyDown(input, {key: 'Backspace'});
+      const message = 'Bob selected. Delete again to remove it.';
+      expect(tokenNamed('Bob')).toHaveAttribute('aria-description', message);
+      expect(tokenNamed('Alice')).not.toHaveAttribute('aria-description');
+      expect(input).toHaveAccessibleDescription(message);
+      // Typing on clears the selection, and the description with it.
+      fireEvent.keyDown(input, {key: 'a'});
+      expect(tokenNamed('Bob')).not.toHaveAttribute('aria-description');
+      expect(input).not.toHaveAccessibleDescription(message);
+    });
+
     it('keeps the selected token when another key is typed', () => {
       stubPointer(true);
       const onChange = vi.fn();

@@ -70,6 +70,14 @@ test('the first Delete selects the last token and the second removes it', async 
   ]);
   // The selected token takes another fill.
   expect(selected[1].fill).not.toBe(before[1].fill);
+  // And stays findable after the announcement: the token and the input,
+  // where focus is, both describe it.
+  const message = 'Charlie Brown selected. Delete again to remove it.';
+  await expect(page.getByRole('combobox')).toHaveAccessibleDescription(message);
+  await expect(page.locator('[data-selected="true"]')).toHaveAttribute(
+    'aria-description',
+    message,
+  );
 
   await page.keyboard.press('Backspace');
   expect((await tokens(page)).map(t => t.label)).toEqual(['Alice Johnson']);
