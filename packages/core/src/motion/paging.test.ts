@@ -528,8 +528,30 @@ describe('solveAnimatedPageScroll: setContentOffset(_:animated:)', () => {
     }
   });
 
-  it('peaks at π/2 times the average speed halfway', () => {
+  it('peaks at π/2 times the average speed halfway (the sinusoid, to 0.2 %)', () => {
     const curve = solveAnimatedPageScroll({from: 0, to: 402});
-    expect(curve.velocity(0.15)).toBeCloseTo((Math.PI / 2) * (402 / 0.3), 6);
+    expect(curve.velocity(0.15) / ((Math.PI / 2) * (402 / 0.3))).toBeCloseTo(
+      1,
+      2,
+    );
+  });
+
+  it('follows the sinusoid to 0.02 % of the distance', () => {
+    const curve = solveAnimatedPageScroll({from: 0, to: 402});
+    for (let t = 0; t <= 0.3; t += 0.01) {
+      const sine = (402 * (1 - Math.cos((Math.PI * t) / 0.3))) / 2;
+      expect(Math.abs(curve.at(t) - sine)).toBeLessThan(0.1);
+    }
+  });
+
+  it("takes a theme's duration and curve", () => {
+    const curve = solveAnimatedPageScroll({
+      from: 0,
+      to: 100,
+      durationMs: 500,
+      curve: [0, 0, 1, 1],
+    });
+    expect(curve.duration).toBe(0.5);
+    expect(curve.at(0.25)).toBeCloseTo(50, 1);
   });
 });

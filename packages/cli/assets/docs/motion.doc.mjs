@@ -190,6 +190,24 @@ const calmTheme = defineTheme({
               'duration',
               '350ms',
             ],
+            [
+              'paging.animatedScroll.curve',
+              '--motion-paging-animated-scroll-curve',
+              'curve',
+              'cubic-bezier(0.364212, 0, 0.635788, 1)',
+            ],
+            [
+              'paging.animatedScroll.durationMs',
+              '--motion-paging-animated-scroll-duration-ms',
+              'duration',
+              '300ms',
+            ],
+            [
+              'paging.settle',
+              '--motion-paging-settle',
+              'spring',
+              '0.3723s 0.1225',
+            ],
             ['scroll.bounce', '--motion-scroll-bounce', 'spring', '0.5s 0'],
             [
               'springs.actionSheetDismiss',
