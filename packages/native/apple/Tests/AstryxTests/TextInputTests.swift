@@ -56,8 +56,10 @@ import Testing
     disabledMessage: "Managed by your admin",
     status: TextInputStatus(type: .error, message: "Not valid")
   )
-  // An error leads, then the description and the disabled reason.
-  #expect(field.accessibilityDescription == "Not valid, Work address, Managed by your admin")
+  // The error is in the label; the description and the disabled reason
+  // follow as the description.
+  #expect(field.accessibilityLabelText == "Email, Not valid")
+  #expect(field.accessibilityDescription == "Work address, Managed by your admin")
   // The reason is read only while the field is disabled.
   let enabled = Astryx.TextInput(label: "Email", value: "", disabledMessage: "Managed by your admin")
   #expect(enabled.accessibilityDescription == "")
@@ -131,17 +133,20 @@ import Testing
 }
 
 @MainActor
-@Test func anErrorLeadsWhatVoiceOverReads() {
+@Test func anErrorIsInTheLabelVoiceOverReads() {
   let withMessage = Astryx.TextInput(
     label: "Email", value: "", description: "Work address",
     status: TextInputStatus(type: .error, message: "Enter a valid email"))
-  #expect(withMessage.accessibilityDescription.hasPrefix("Enter a valid email"))
+  // The error is in the label, which VoiceOver reads with Speak Hints off.
+  #expect(withMessage.accessibilityLabelText == "Email, Enter a valid email")
+  #expect(withMessage.accessibilityDescription == "Work address")
   let bare = Astryx.TextInput(label: "Email", value: "", status: TextInputStatus(type: .error))
-  #expect(bare.accessibilityDescription.hasPrefix(AstryxStrings.statusButton(.error)))
+  #expect(bare.accessibilityLabelText == "Email, \(AstryxStrings.statusButton(.error))")
   let warning = Astryx.TextInput(
     label: "Email", value: "", description: "Work address",
     status: TextInputStatus(type: .warning, message: "Check the domain"))
   #expect(warning.accessibilityDescription == "Work address, Check the domain")
+  #expect(warning.accessibilityLabelText == "Email")
 }
 
 @MainActor

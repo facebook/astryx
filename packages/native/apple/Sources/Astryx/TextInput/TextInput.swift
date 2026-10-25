@@ -8,6 +8,9 @@ public struct TextInput: View {
   public let props: TextInputProps
   @Environment(\.astryx) private var astryx
   @FocusState private var isFocused: Bool
+  /// Set on the first appearance, so a field that scrolls back into view in a
+  /// List or Form does not announce or take focus again.
+  @State private var hasAppeared = false
 
   public init(_ props: TextInputProps) {
     self.props = props
@@ -108,10 +111,10 @@ public struct TextInput: View {
           labelRow
         }
         // A hidden label hides the description with it, as core's field does;
-        // VoiceOver still reads both on the field.
+        // VoiceOver still reads it on the field. A shown description is also
+        // its own text in the reading order, as core's is.
         if props.isLabelHidden != true, let description = props.description {
           Text(description, type: .supporting, color: .secondary)
-            .accessibilityHidden(true)
         }
         SwiftUI.VStack(alignment: .leading, spacing: 0) {
           fieldRow
@@ -119,6 +122,8 @@ public struct TextInput: View {
         }
       }
       .onAppear {
+        guard !hasAppeared else { return }
+        hasAppeared = true
         if props.hasAutoFocus == true { isFocused = true }
         // A field that appears busy says so, as core announces a busy start.
         if props.isLoading == true { AccessibilityNotification.Announcement(AstryxStrings.spinnerLoading).post() }
@@ -191,6 +196,13 @@ public struct TextInput: View {
     labelNote.map { "\(props.label), \($0)" } ?? props.label
   }
 
+  /// The label VoiceOver reads on the field: the name, then an error, since
+  /// SwiftUI has no invalid state and a hint is skipped with Speak Hints off.
+  var accessibilityLabelText: String {
+    guard let status = props.status, status.type == .error else { return accessibilityName }
+    return "\(accessibilityName), \(status.message ?? AstryxStrings.statusButton(.error))"
+  }
+
   /// What VoiceOver reads after the name: the description, the status message,
   /// and the disabled reason, in core's `aria-describedby` order.
   /// An error leads, since SwiftUI has no invalid state to expose: its
@@ -198,9 +210,6 @@ public struct TextInput: View {
   /// says so, as core does where a control cannot expose read-only.
   var accessibilityDescription: String {
     var parts: [String] = []
-    if let status = props.status, status.type == .error {
-      parts.append(status.message ?? AstryxStrings.statusButton(.error))
-    }
     if let description = props.description { parts.append(description) }
     if let status = props.status, status.type != .error, let message = status.message { parts.append(message) }
     if isReadOnly { parts.append(AstryxStrings.inputReadOnly) }
@@ -227,7 +236,7 @@ public struct TextInput: View {
         .foregroundStyle(astryx.tokens.color.textPrimary)
         .focused($isFocused)
         .onSubmit { props.onEnter?() }
-        .accessibilityLabel(SwiftUI.Text(accessibilityName))
+        .accessibilityLabel(SwiftUI.Text(accessibilityLabelText))
         .accessibilityHint(SwiftUI.Text(accessibilityDescription))
         .astryxIdentifier(props.base.id)
       if props.isLoading == true {
@@ -364,9 +373,9 @@ public struct TextInput: View {
     let value = Binding.constant(props.value)
     Group {
       if props.type == .password {
-        SecureField(accessibilityName, text: value)
+        SecureField(accessibilityLabelText, text: value)
       } else {
-        TextField(accessibilityName, text: value)
+        TextField(accessibilityLabelText, text: value)
       }
     }
     .disabled(isDisabled)
@@ -417,8 +426,8 @@ public struct TextInput: View {
         .fill(messageGround(status.type))
       )
       .padding(.top, detached ? astryx.tokens.space.s1 : 0)
-      // VoiceOver reads the message on the field.
-      .accessibilityHidden(true)
+      // The message is also its own text in the reading order, as core's is.
+      .accessibilityElement(children: .combine)
     }
   }
 
@@ -463,7 +472,7 @@ public struct TextInput: View {
       .astryxMinimumHitArea(inField ? 44 : iconSide)
       .accessibilityElement()
       .accessibilityLabel(SwiftUI.Text(label))
-      .astryxTooltip(text, hint: text, focus: .tabStop, touch: .tap)
+      .astryxTooltip(text, hint: label == text ? nil : text, focus: .tabStop, touch: .tap)
   }
 
   /// A shared icon at the supporting text size: the theme's SF Symbol or app
