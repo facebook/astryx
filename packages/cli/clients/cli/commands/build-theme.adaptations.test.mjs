@@ -169,7 +169,7 @@ describe('theme build adaptations', () => {
       );
       // Raw steps follow the reader's text size (spec:AST-102 FR3; 1 elsewhere).
       expect(scaleBlock).toContain(
-        '--font-size-base: min(calc(0.875rem * var(--_dynamic-type-body, 1)), var(--font-size-lg))',
+        '--_scaled-font-size-base: min(calc(0.875rem * var(--_dynamic-type-body, 1)), var(--_scaled-font-size-lg))',
       );
       expect(scaleBlock).not.toContain('.astryx-text');
       expect(scaleBlock).not.toContain('.astryx-heading');
@@ -232,10 +232,10 @@ describe('theme build adaptations', () => {
     const adaptationCSS = generateAdaptationCSS(source).component;
     expect(compact(css)).toContain(compact(adaptationCSS));
     expect(adaptationCSS).toContain(
-      '--font-size-base: min(calc(1rem * var(--_dynamic-type-body, 1)), var(--font-size-lg));',
+      '--_scaled-font-size-base: min(calc(1rem * var(--_dynamic-type-body, 1)), var(--_scaled-font-size-lg));',
     );
     expect(css).toContain(
-      '--font-size-base: min(calc(0.875rem * var(--_dynamic-type-body, 1)), var(--font-size-lg));',
+      '--_scaled-font-size-base: min(calc(0.875rem * var(--_dynamic-type-body, 1)), var(--_scaled-font-size-lg));',
     );
     expect(css).toContain(
       '--text-supporting-size: calc(12px * var(--_dynamic-type-footnote, 1));',
@@ -417,7 +417,7 @@ describe('theme build adaptations', () => {
     );
     expect(rebuiltCss).toContain('@media (width < 700px)');
     expect(rebuiltCss).toContain(
-      '--font-size-lg: min(calc(1.25rem * var(--_dynamic-type-title3, 1)), var(--font-size-xl))',
+      '--_scaled-font-size-lg: min(calc(1.25rem * var(--_dynamic-type-title3, 1)), var(--_scaled-font-size-xl))',
     );
     expect(rebuiltCss).toContain('light-dark(#111111, #eeeeee)');
     expect(rebuiltCss).toContain(':root { color-scheme: light dark; }');

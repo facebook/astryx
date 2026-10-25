@@ -194,9 +194,24 @@ function scaleRuleForColumn(column: number): string {
 }
 
 /**
- * The raw font-size writes a theme scales: each step among `tokens`, as
- * `[token, value]` with its value times its curve's scale (1 when no category
- * is set). The caller emits them through its declaration checks.
+ * The private custom property holding a step's scaled size
+ * (`--_scaled-font-size-base`). Only this module writes it, and only from a
+ * fixed length, so the cap that reads the next step's can never read back a
+ * variable a theme wrote: a theme that sets `--font-size-lg` to
+ * `var(--font-size-base)`, at its root or in any adaptation rule, closes no
+ * reference cycle.
+ */
+export function scaledStepProperty(step: FontSizeToken): string {
+  return `--_scaled-${step.slice(2)}`;
+}
+
+/**
+ * The raw font-size writes a theme scales: for each step among `tokens` set
+ * to a fixed length (`isFixedSize`), its private scaled size (the value times
+ * its curve's scale, 1 when no category is set) and the step itself reading
+ * it, as `[token, value]` pairs. A step written as a variable or relative to
+ * its parent is left as written: it follows what it reads, so it never scales
+ * twice. The caller emits them through its declaration checks.
  *
  * A step never outgrows the step above it. UIKit's curves differ: above
  * Large its smaller styles grow faster than its larger ones (a theme whose
@@ -206,33 +221,42 @@ function scaleRuleForColumn(column: number): string {
  * the next step's scaled size. When the theme's own step is no larger than
  * its next one, as in every ramp `typography.scale` generates, that cap is
  * the theme's own size at Large and binds at every other category; for a
- * ramp that is out of order (or a next step this theme does not set), the cap
- * never goes below the step's own size, so the theme's sizes at Large stay
- * exactly its own.
+ * ramp that is out of order, or a next step this block does not set (it
+ * keeps the scaled size it inherits), the cap never goes below the step's own
+ * size, so the theme's sizes at Large stay exactly its own. A next step the
+ * block writes as a variable caps nothing: the theme tied it to what it reads.
  */
 export function scaledFontSizeEntries(
   tokens: Record<string, string>,
-): [FontSizeToken, string][] {
+): [string, string][] {
   const steps = Object.keys(FONT_SIZE_STEP_STYLES) as FontSizeToken[];
-  return steps
-    .filter(name => tokens[name] !== undefined)
-    .map(name => {
-      const [value, important] = splitImportant(tokens[name]);
-      const scaled = `calc(${value} * var(${dynamicTypeScaleProperty(FONT_SIZE_STEP_STYLES[name])}, 1))`;
-      const next = steps[steps.indexOf(name) + 1];
-      if (next === undefined) {
-        return [name, scaled + important];
-      }
-      const own = lengthInPx(value);
-      const nextOwn = lengthInPx(splitImportant(tokens[next] ?? '')[0]);
-      const inOrder = own !== null && nextOwn !== null && own <= nextOwn;
-      return [
-        name,
-        (inOrder
-          ? `min(${scaled}, var(${next}))`
-          : `min(${scaled}, max(var(${next}), ${value}))`) + important,
-      ];
-    });
+  const fixedValue = (name: FontSizeToken | undefined) => {
+    const [value, important] = splitImportant((name && tokens[name]) || '');
+    return isFixedSize(value) ? {value, important} : null;
+  };
+  return steps.flatMap((name, index): [string, string][] => {
+    const own = fixedValue(name);
+    if (own === null) {
+      return [];
+    }
+    const {value, important} = own;
+    const scaled = `calc(${value} * var(${dynamicTypeScaleProperty(FONT_SIZE_STEP_STYLES[name])}, 1))`;
+    const next = steps[index + 1];
+    const nextOwn = fixedValue(next);
+    let expression = scaled;
+    if (next !== undefined && (tokens[next] === undefined || nextOwn)) {
+      const ownPx = lengthInPx(value);
+      const nextPx = nextOwn && lengthInPx(nextOwn.value);
+      expression =
+        ownPx !== null && nextPx != null && ownPx <= nextPx
+          ? `min(${scaled}, var(${scaledStepProperty(next)}))`
+          : `min(${scaled}, max(var(${scaledStepProperty(next)}, ${value}), ${value}))`;
+    }
+    return [
+      [scaledStepProperty(name), expression],
+      [name, `var(${scaledStepProperty(name)})${important}`],
+    ];
+  });
 }
 
 /**

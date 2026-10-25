@@ -5,10 +5,11 @@
  * @input vitest, dynamicType.ts, the UIKit typography table, defineTheme and
  *   generateThemeCSS
  * @output Proves the Dynamic Type rules: Body's size names the reader's
- *   category, each raw font-size step scales exactly on its UIKit curve and is
- *   the theme's own size at Large, a theme emits the scaled sizes only when it
- *   opts in (root and adaptation rules, behind the capability alone), and the root sync
- *   writes and clears `<html data-astryx-text-size>`
+ *   category; each raw font-size step scales exactly on its UIKit curve, in
+ *   order, and is the theme's own size at Large; every theme writes its sizes
+ *   that way at its root and in its adaptation rules, with no option and no
+ *   reference cycle; and the root sync reads a hidden probe and adopts a
+ *   stylesheet with the category's scales, writing nothing on `<html>`
  * @position Testing; validates theme/dynamicType.ts and its use in
  *   generateThemeRules.ts without a browser (the iOS evidence is the
  *   simulator's)
@@ -26,6 +27,7 @@ import {
   dynamicTypeScaleProperty,
   dynamicTypeScaleRule,
   scaledFontSizeEntries,
+  scaledStepProperty,
   syncReaderTextSize,
   textSizeCategoryForBodySize,
   type DynamicTypeStyle,
@@ -44,21 +46,51 @@ function lengthInPx(value: string | undefined): number {
 }
 
 /**
- * What the browser computes for the emitted font-size steps at one category,
- * in px: each expression evaluated (min, max, calc of a length times a
- * category scale, the next step's variable), from the largest step down.
+ * What the browser computes for emitted custom properties at one category,
+ * in px, aligned with `entries`: each expression evaluated (min, max, calc of
+ * a length times a category scale, variables with their fallbacks), resolving
+ * each variable by name. A reference cycle, which a browser would compute to
+ * nothing, throws.
  */
 function computedSizes(
   entries: ReadonlyArray<readonly [string, string]>,
   category: (typeof TEXT_SIZE_CATEGORIES)[number],
 ): number[] {
-  const variables = new Map<string, number>();
+  const expressions = new Map(entries);
+  const scales = new Map<string, number>();
   for (const style of STYLES) {
-    variables.set(
+    scales.set(
       dynamicTypeScaleProperty(style),
       dynamicTypeScale(style, category),
     );
   }
+  const memo = new Map<string, number>();
+  const visiting = new Set<string>();
+  const resolve = (name: string, fallback: string | undefined): number => {
+    const scale = scales.get(name);
+    if (scale !== undefined) {
+      return scale;
+    }
+    const known = memo.get(name);
+    if (known !== undefined) {
+      return known;
+    }
+    const expression = expressions.get(name);
+    if (expression === undefined) {
+      if (fallback === undefined) {
+        throw new Error(`unset ${name}`);
+      }
+      return evaluate(fallback);
+    }
+    if (visiting.has(name)) {
+      throw new Error(`reference cycle through ${name}`);
+    }
+    visiting.add(name);
+    const value = evaluate(expression.replace(/\s*!important$/, ''));
+    visiting.delete(name);
+    memo.set(name, value);
+    return value;
+  };
   const evaluate = (source: string): number => {
     let at = 0;
     const read = (text: string) => {
@@ -100,21 +132,32 @@ function computedSizes(
       }
       if (source.startsWith('var(', at)) {
         read('var(');
-        const end = source.indexOf(')', at);
-        const [name] = source.slice(at, end).split(',');
-        at = end + 1;
-        const value = variables.get(name.trim());
-        if (value === undefined) {
-          throw new Error(`unset ${name} in ${source}`);
+        let depth = 1;
+        let end = at;
+        while (depth > 0) {
+          if (source[end] === '(') {
+            depth += 1;
+          } else if (source[end] === ')') {
+            depth -= 1;
+          }
+          end += 1;
         }
-        return value;
+        const inner = source.slice(at, end - 1);
+        at = end;
+        const comma = inner.indexOf(',');
+        return comma === -1
+          ? resolve(inner.trim(), undefined)
+          : resolve(
+              inner.slice(0, comma).trim(),
+              inner.slice(comma + 1).trim(),
+            );
       }
-      const match = /^-?[\d.]+(rem|px)/.exec(source.slice(at));
+      const match = /^-?[\d.]+(rem|px)?/.exec(source.slice(at));
       if (match == null) {
         throw new Error(`unexpected input at ${at} in ${source}`);
       }
       at += match[0].length;
-      return lengthInPx(match[0]);
+      return match[1] === undefined ? Number(match[0]) : lengthInPx(match[0]);
     };
     const value = term();
     skipSpaces();
@@ -123,13 +166,16 @@ function computedSizes(
     }
     return value;
   };
-  const sizes: number[] = [];
-  for (let index = entries.length - 1; index >= 0; index -= 1) {
-    const [name, expression] = entries[index];
-    sizes[index] = evaluate(expression);
-    variables.set(name, sizes[index]);
-  }
-  return sizes;
+  return entries.map(([name]) => resolve(name, undefined));
+}
+
+/** The emitted entries' computed sizes at one category, by name. */
+function sizesByName(
+  entries: ReadonlyArray<readonly [string, string]>,
+  category: (typeof TEXT_SIZE_CATEGORIES)[number],
+): Record<string, number> {
+  const sizes = computedSizes(entries, category);
+  return Object.fromEntries(entries.map(([name], i) => [name, sizes[i]]));
 }
 
 describe('the reader text size category', () => {
@@ -248,7 +294,7 @@ describe('the UIKit curves', () => {
     );
   });
 
-  it('scales only the raw font-size steps it is given, each capped by the next', () => {
+  it('scales only the raw font-size steps it is given at a length, each capped by the next', () => {
     expect(
       scaledFontSizeEntries({
         '--font-size-base': '1rem',
@@ -256,15 +302,30 @@ describe('the UIKit curves', () => {
         '--spacing-4': '1rem',
       }),
     ).toEqual([
+      // Each step's scaled size is private; the step reads it.
       [
-        '--font-size-base',
-        'min(calc(1rem * var(--_dynamic-type-body, 1)), max(var(--font-size-lg), 1rem))',
+        '--_scaled-font-size-base',
+        'min(calc(1rem * var(--_dynamic-type-body, 1)), max(var(--_scaled-font-size-lg, 1rem), 1rem))',
       ],
+      ['--font-size-base', 'var(--_scaled-font-size-base)'],
       // The largest step has nothing above it.
       [
-        '--font-size-5xl',
+        '--_scaled-font-size-5xl',
         'calc(2.625rem * var(--_dynamic-type-large-title, 1))',
       ],
+      ['--font-size-5xl', 'var(--_scaled-font-size-5xl)'],
+    ]);
+    // A step written as a variable or relative to its parent follows what it
+    // reads, and the step below it is not capped by it.
+    expect(
+      scaledFontSizeEntries({
+        '--font-size-base': '1rem',
+        '--font-size-lg': 'var(--font-size-base)',
+        '--font-size-xl': '1.25em',
+      }),
+    ).toEqual([
+      ['--_scaled-font-size-base', 'calc(1rem * var(--_dynamic-type-body, 1))'],
+      ['--font-size-base', 'var(--_scaled-font-size-base)'],
     ]);
   });
 
@@ -286,10 +347,13 @@ describe('the UIKit curves', () => {
         typography: {scale},
       });
       const entries = scaledFontSizeEntries(theme.tokens);
-      expect(entries.map(([name]) => name)).toEqual(steps);
+      expect(
+        entries.map(([name]) => name).filter(name => !name.startsWith('--_')),
+      ).toEqual(steps);
       const own = steps.map(name => lengthInPx(theme.tokens[name]));
       for (const category of TEXT_SIZE_CATEGORIES) {
-        const sizes = computedSizes(entries, category);
+        const byName = sizesByName(entries, category);
+        const sizes = steps.map(name => byName[name]);
         const ramp = `${scale.base}/${scale.ratio} at ${category}`;
         for (let index = 1; index < steps.length; index += 1) {
           expect(
@@ -365,18 +429,23 @@ describe('every theme follows the reader text size', () => {
       for (const name of Object.keys(textSizeDefaults)) {
         const value = theme.tokens[name];
         expect(value).toBeDefined();
+        const step = scaledStepProperty(
+          name as keyof typeof FONT_SIZE_STEP_STYLES,
+        );
         expect(
-          winning(css, name, nowhere)?.startsWith(scaled(name, value)),
+          winning(css, step, nowhere)?.startsWith(scaled(name, value)),
         ).toBe(true);
+        expect(winning(css, name, nowhere)).toBe(`var(${step})`);
       }
       // Only sizes follow the reader: no family, line height, spacing or
       // anything else reads a scale.
       const readers = [
-        ...css.matchAll(/(--[a-z0-9-]+|[a-z-]+): [^;]*--_dynamic-type-/g),
+        ...css.matchAll(/(--[a-z0-9_-]+|[a-z-]+): [^;]*--_dynamic-type-/g),
       ].map(match => match[1]);
+      expect(readers.length).toBeGreaterThan(0);
       expect(
         readers.every(name =>
-          /^--(font-size-|text-[a-z0-9-]+-size$)/.test(name),
+          /^--(_scaled-font-size-|text-[a-z0-9-]+-size$)/.test(name),
         ),
       ).toBe(true);
     }
@@ -407,7 +476,11 @@ describe('every theme follows the reader text size', () => {
     const rule = dynamicTypeScaleRule('ax5');
     expect(rule.startsWith('@layer astryx-base {\n:root {')).toBe(true);
     for (const [name, value] of Object.entries(textSizeDefaults)) {
-      expect(rule).toContain(`  ${name}: ${scaled(name, value)}`);
+      const step = scaledStepProperty(
+        name as keyof typeof FONT_SIZE_STEP_STYLES,
+      );
+      expect(rule).toContain(`  ${step}: ${scaled(name, value)}`);
+      expect(rule).toContain(`  ${name}: var(${step});`);
     }
   });
 
@@ -444,11 +517,14 @@ describe('every theme follows the reader text size', () => {
     const css = generateThemeCSS(theme).component;
     const phone = (query: string) => query.includes('pointer: coarse');
     // A full ramp in order: each step is capped at the next one's scaled size.
-    expect(winning(css, '--font-size-base', phone)).toBe(
-      'min(calc(1rem * var(--_dynamic-type-body, 1)), var(--font-size-lg))',
+    expect(winning(css, '--_scaled-font-size-base', phone)).toBe(
+      'min(calc(1rem * var(--_dynamic-type-body, 1)), var(--_scaled-font-size-lg))',
     );
-    expect(winning(css, '--font-size-base', nowhere)).toBe(
-      'min(calc(0.875rem * var(--_dynamic-type-body, 1)), var(--font-size-lg))',
+    expect(winning(css, '--_scaled-font-size-base', nowhere)).toBe(
+      'min(calc(0.875rem * var(--_dynamic-type-body, 1)), var(--_scaled-font-size-lg))',
+    );
+    expect(winning(css, '--font-size-base', phone)).toBe(
+      'var(--_scaled-font-size-base)',
     );
   });
 
@@ -507,6 +583,183 @@ describe('every theme follows the reader text size', () => {
     );
   });
 
+  /**
+   * The custom properties that win where `holds` accepts every media query,
+   * with any `!important` dropped.
+   */
+  const winningAll = (
+    css: string,
+    holds: (query: string) => boolean,
+  ): Map<string, string> => {
+    const names = new Set(
+      [...css.matchAll(/^\s*(--[a-z0-9_-]+):/gim)].map(match => match[1]),
+    );
+    const out = new Map<string, string>();
+    for (const name of names) {
+      const value = winning(css, name, holds);
+      if (value !== undefined) {
+        out.set(name, value.replace(/\s*!important$/, ''));
+      }
+    }
+    return out;
+  };
+  /** The first reference cycle among the winning custom properties, if any. */
+  const cycleIn = (properties: Map<string, string>): string[] | null => {
+    const state = new Map<string, 'open' | 'done'>();
+    const visit = (name: string, path: string[]): string[] | null => {
+      if (state.get(name) === 'done' || !properties.has(name)) {
+        return null;
+      }
+      if (state.get(name) === 'open') {
+        return [...path.slice(path.indexOf(name)), name];
+      }
+      state.set(name, 'open');
+      for (const [, next] of (properties.get(name) ?? '').matchAll(
+        /var\((--[a-z0-9_-]+)/g,
+      )) {
+        const found = visit(next, [...path, name]);
+        if (found) {
+          return found;
+        }
+      }
+      state.set(name, 'done');
+      return null;
+    };
+    for (const name of properties.keys()) {
+      const found = visit(name, []);
+      if (found) {
+        return found;
+      }
+    }
+    return null;
+  };
+  const fontSizes = (properties: Map<string, string>) =>
+    [...properties].filter(([name]) => /^--(_scaled-)?font-size-/.test(name));
+
+  it('follows a step a theme writes as a variable, with no reference cycle', () => {
+    // A scale whose large text is body text: the step follows what it reads,
+    // unscaled, so nothing scales twice and no cap reads it back.
+    const theme = defineTheme({
+      name: 'dt-alias',
+      typography: {scale: {base: 14, ratio: 1.2}},
+      tokens: {'--font-size-lg': 'var(--font-size-base)'},
+    });
+    const css = generateThemeCSS(theme).component;
+    expect(winning(css, '--font-size-lg', nowhere)).toBe(
+      'var(--font-size-base)',
+    );
+    expect(winning(css, '--_scaled-font-size-lg', nowhere)).toBeUndefined();
+    // Body text, whose next step is now a variable, scales uncapped.
+    expect(winning(css, '--_scaled-font-size-base', nowhere)).toBe(
+      'calc(0.875rem * var(--_dynamic-type-body, 1))',
+    );
+    const properties = winningAll(css, nowhere);
+    expect(cycleIn(properties)).toBeNull();
+    // Evaluated: the theme's own sizes at Large, its order at AX5.
+    const large = sizesByName(fontSizes(properties), 'l');
+    expect(large['--font-size-base']).toBeCloseTo(14, 9);
+    expect(large['--font-size-lg']).toBeCloseTo(14, 9);
+    expect(large['--font-size-sm']).toBeCloseTo(
+      lengthInPx(theme.tokens['--font-size-sm']),
+      9,
+    );
+    const ax5 = sizesByName(fontSizes(properties), 'ax5');
+    expect(ax5['--font-size-lg']).toBeCloseTo(ax5['--font-size-base'], 9);
+    expect(ax5['--font-size-sm']).toBeLessThanOrEqual(
+      ax5['--font-size-base'] + 1e-9,
+    );
+  });
+
+  it('closes no reference cycle when an adaptation rule aliases a step the root writes at a length', () => {
+    // A fixed ramp at the root, and a phone rule that makes large text body
+    // text: on a phone the root's cap on body text reads the private scaled
+    // size, never the rule's alias, so the two blocks form no loop.
+    const theme = defineTheme({
+      name: 'dt-alias-rule',
+      typography: {scale: {base: 14, ratio: 1.2}},
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'coarse', width: {below: 'lg'}},
+            value: {tokens: {'--font-size-lg': 'var(--font-size-base)'}},
+          },
+        ],
+      },
+    });
+    const css = generateThemeCSS(theme).component;
+    const phone = (query: string) => query.includes('pointer: coarse');
+    expect(winning(css, '--font-size-lg', phone)).toBe('var(--font-size-base)');
+    for (const holds of [nowhere, phone]) {
+      const properties = winningAll(css, holds);
+      expect(cycleIn(properties)).toBeNull();
+      for (const category of TEXT_SIZE_CATEGORIES) {
+        expect(() =>
+          sizesByName(fontSizes(properties), category),
+        ).not.toThrow();
+      }
+      expect(
+        sizesByName(fontSizes(properties), 'l')['--font-size-base'],
+      ).toBeCloseTo(14, 9);
+    }
+  });
+
+  it('emits no reference cycle with a step aliased at the root and its neighbour aliased in a rule', () => {
+    const steps = Object.keys(FONT_SIZE_STEP_STYLES);
+    const coarse = (query: string) => query.includes('pointer: coarse');
+    const themes = [
+      defineTheme({name: 'dt-acyclic-plain'}),
+      defineTheme({
+        name: 'dt-acyclic-scale',
+        typography: {scale: {base: 15, ratio: 1.25}},
+      }),
+      // Each step aliased to the one below at the root, the next one aliased
+      // to it in a rule.
+      ...steps.slice(1).map((name, at) =>
+        defineTheme({
+          name: `dt-acyclic-alias-${at + 1}`,
+          typography: {scale: {base: 14, ratio: 1.2}},
+          tokens: {[name]: `var(${steps[at]})`},
+          adaptations: {
+            rules:
+              at + 2 < steps.length
+                ? [
+                    {
+                      when: {pointer: 'coarse'},
+                      value: {tokens: {[steps[at + 2]]: `var(${name})`}},
+                    },
+                  ]
+                : [],
+          },
+        }),
+      ),
+      // A fixed ramp at the root and each step aliased to the one below in a
+      // rule (the cross-block case, at every position).
+      ...steps.slice(1).map((name, at) =>
+        defineTheme({
+          name: `dt-acyclic-rule-alias-${at + 1}`,
+          typography: {scale: {base: 14, ratio: 1.2}},
+          adaptations: {
+            rules: [
+              {
+                when: {pointer: 'coarse'},
+                value: {tokens: {[name]: `var(${steps[at]})`}},
+              },
+            ],
+          },
+        }),
+      ),
+    ];
+    for (const theme of themes) {
+      const css = generateThemeCSS(theme).component;
+      for (const holds of [nowhere, coarse]) {
+        expect(cycleIn(winningAll(css, holds)), theme.name).toBeNull();
+      }
+    }
+    expect(
+      cycleIn(winningAll(dynamicTypeScaleRule('ax5'), nowhere)),
+    ).toBeNull();
+  });
+
   it('keeps !important outside the scaling expression, on a fixed size and on a step', () => {
     // `!important` inside calc() makes the value invalid where it is used, so
     // the text would fall back to its parent's size in every browser.
@@ -523,8 +776,9 @@ describe('every theme follows the reader text size', () => {
       'calc(12px * var(--_dynamic-type-footnote, 1)) !important',
     );
     const [[, plain]] = scaledFontSizeEntries({'--font-size-base': '1rem'});
+    expect(winning(css, '--_scaled-font-size-base', nowhere)).toBe(plain);
     expect(winning(css, '--font-size-base', nowhere)).toBe(
-      `${plain} !important`,
+      'var(--_scaled-font-size-base) !important',
     );
     // The importance does not hide a length from the order check.
     expect(
@@ -534,22 +788,21 @@ describe('every theme follows the reader text size', () => {
       }),
     ).toEqual([
       [
-        '--font-size-sm',
-        'min(calc(0.75rem * var(--_dynamic-type-footnote, 1)), var(--font-size-base))',
+        '--_scaled-font-size-sm',
+        'min(calc(0.75rem * var(--_dynamic-type-footnote, 1)), var(--_scaled-font-size-base))',
       ],
+      ['--font-size-sm', 'var(--_scaled-font-size-sm)'],
       [
-        '--font-size-base',
-        'min(calc(0.875rem * var(--_dynamic-type-body, 1)), max(var(--font-size-lg), 0.875rem)) !important',
+        '--_scaled-font-size-base',
+        'min(calc(0.875rem * var(--_dynamic-type-body, 1)), max(var(--_scaled-font-size-lg, 0.875rem), 0.875rem))',
       ],
+      ['--font-size-base', 'var(--_scaled-font-size-base) !important'],
     ]);
-    for (const [name, value] of [
-      [
-        '--text-supporting-size',
-        winning(css, '--text-supporting-size', nowhere),
-      ],
-      ['--font-size-base', winning(css, '--font-size-base', nowhere)],
-    ]) {
-      expect(value, name).not.toMatch(/!important.*\)/);
+    for (const name of ['--text-supporting-size', '--_scaled-font-size-base']) {
+      expect(
+        winning(css, name, nowhere)?.replace(/ !important$/, ''),
+        name,
+      ).not.toContain('!important');
     }
   });
 
