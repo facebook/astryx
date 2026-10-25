@@ -15,9 +15,9 @@
  * the shared one (utils/pressFeedback.ts): the row carries the press marker
  * and the checkbox carries none, so the controller's innermost-wins rule finds
  * the row for a finger on the label, on the description, or on the box
- * itself, and the box's overlay paints the press paint its own row declares
- * (`--_checkbox-row-press-paint`, CheckboxListItem): set only while that row
- * is pressed under a coarse pointer.
+ * itself, and the layer over the box paints the press its own row declares
+ * (indicatorPressOwnerStyles): set only while that row is pressed under a
+ * coarse pointer.
  *
  * Layer-scoped, so content a layer portals out of the row (a popover opened
  * from the row's end content) starts from the default, and provided only

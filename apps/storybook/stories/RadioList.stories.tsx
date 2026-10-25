@@ -3,6 +3,7 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {RadioList, RadioListItem} from '@astryxdesign/core/RadioList';
+import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
 import {Badge} from '@astryxdesign/core/Badge';
 import {Link} from '@astryxdesign/core/Link';
 
@@ -303,6 +304,57 @@ export const WithEndContent: Story = {
   },
   args: {
     label: 'Plan',
+  },
+};
+
+// A RadioList placed in a row's content keeps its own rows' press: holding
+// the outer row leaves the inner list's circles at rest.
+export const RadioListInRowContent: Story = {
+  name: "Radio list in a row's content",
+  render: () => {
+    const [plan, setPlan] = useState('basic');
+    const [billing, setBilling] = useState('monthly');
+    return (
+      <RadioList label="Plan" value={plan} onChange={setPlan}>
+        <RadioListItem
+          label="Pro"
+          value="pro"
+          endContent={
+            <RadioList label="Billing" value={billing} onChange={setBilling}>
+              <RadioListItem label="Monthly" value="monthly" />
+              <RadioListItem label="Yearly" value="yearly" />
+            </RadioList>
+          }
+        />
+        <RadioListItem label="Basic" value="basic" />
+      </RadioList>
+    );
+  },
+};
+
+// A CheckboxInput placed in a radio row's content keeps its own press:
+// holding the row leaves the checkbox's box at rest.
+export const CheckboxInRowContent: Story = {
+  name: "Checkbox in a row's content",
+  render: () => {
+    const [plan, setPlan] = useState('basic');
+    const [backup, setBackup] = useState(false);
+    return (
+      <RadioList label="Plan" value={plan} onChange={setPlan}>
+        <RadioListItem
+          label="Pro"
+          value="pro"
+          endContent={
+            <CheckboxInput
+              label="Daily backup"
+              value={backup}
+              onChange={setBackup}
+            />
+          }
+        />
+        <RadioListItem label="Basic" value="basic" />
+      </RadioList>
+    );
   },
 };
 

@@ -393,38 +393,66 @@ describe('build-css astryx.css', () => {
     });
 
     it('paints the checkbox and radio press on their own layer and releases it by opacity', () => {
-      // The layer over a checkbox box or a radio circle (its owner's
-      // `::after`) answers a press its ancestor holds: the pressed token at
-      // full strength on the on and fading arms, and an opacity animation on
-      // the fading arm, on a control's clock (250 ms) for a standalone
-      // checkbox and a cell's (200 ms) in a row. It reads no strength.
+      // The element that owns a press (a CheckboxInput's control, a
+      // CheckboxList or RadioList row) declares the press's image and release
+      // on itself, inside its own press arms under a coarse pointer
+      // (indicatorPressOwnerStyles); the layer over a checkbox box or a radio
+      // circle (its wrapper's `::after`) reads them, so it answers its
+      // nearest owner only. The release runs on a control's clock (250 ms)
+      // for a standalone checkbox and a cell's (200 ms) in a row, and the
+      // layer reads no strength.
+      const own = arm =>
+        lines().filter(
+          line =>
+            line.includes('@media (pointer: coarse)') &&
+            line.includes(`:is([data-astryx-press="${arm}"])`),
+        );
+      const setsImage = arm =>
+        own(arm).some(line =>
+          line.includes(
+            '{--_indicator-press-image:linear-gradient(var(--color-overlay-pressed)',
+          ),
+        );
+      expect(setsImage('on')).toBe(true);
+      expect(setsImage('fading')).toBe(true);
+      expect(
+        own('fading').some(line =>
+          /\{--_indicator-press-release:(?!none)[\w-]+\}/.test(line),
+        ),
+      ).toBe(true);
       const layer = lines().filter(
         line =>
-          /:where\(\.[\w-]+\[data-astryx-press="(?:on|fading)"\] \*\)/.test(
-            line,
-          ) && line.includes('::after{'),
+          line.includes('@media (pointer: coarse)') &&
+          line.includes('::after{'),
       );
-      const painted = arm =>
-        layer.some(
-          line =>
-            line.includes(`[data-astryx-press="${arm}"]`) &&
-            line.includes(
-              '::after{background-image:linear-gradient(var(--color-overlay-pressed)',
-            ),
+      expect(
+        layer.some(line =>
+          line.includes(
+            '::after{background-image:var(--_indicator-press-image,none)}',
+          ),
+        ),
+      ).toBe(true);
+      expect(
+        layer.some(line =>
+          line.includes(
+            '::after{animation-name:var(--_indicator-press-release,none)}',
+          ),
+        ),
+      ).toBe(true);
+      const durations = lines().flatMap(line => {
+        const match = line.match(
+          /^\s*@media [^{]*pointer: coarse[^{]*\{[^{]*::after\{animation-duration:(\d+)ms\}/,
         );
-      expect(painted('on')).toBe(true);
-      expect(painted('fading')).toBe(true);
-      expect(layer.some(line => /::after\{animation-name:/.test(line))).toBe(
-        true,
-      );
-      const durations = layer.flatMap(line => {
-        const match = line.match(/::after\{animation-duration:(\d+)ms\}/);
         return match == null ? [] : [Number(match[1])];
       });
-      expect(new Set(durations)).toEqual(new Set([200, 250]));
-      expect(layer.some(line => line.includes('var(--_press-paint'))).toBe(
-        false,
-      );
+      expect(durations).toEqual(expect.arrayContaining([200, 250]));
+      expect(
+        lines().some(
+          line =>
+            line.includes('--_indicator-press-image:') &&
+            line.includes('var(--_press-paint'),
+        ),
+      ).toBe(false);
     });
   });
   describe('the press releases under reduced motion (design:reduced-motion)', () => {

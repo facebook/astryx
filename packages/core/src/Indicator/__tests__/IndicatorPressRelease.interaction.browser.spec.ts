@@ -370,6 +370,101 @@ test('the press release of a checkbox does no Layout or Paint per frame', async 
   expect(during.Paint ?? 0, JSON.stringify({during, around})).toBe(0);
 });
 
+test.describe('a mark answers only its own press owner', () => {
+  // Each owner (a CheckboxInput's control, a CheckboxList or RadioList row)
+  // declares the press for the layer over its own mark, and a layer reads
+  // its nearest owner: holding an outer row leaves a mark in its content at
+  // rest (architecture:component-style-authoring INV4).
+  const NESTED: ReadonlyArray<{
+    name: string;
+    story: string;
+    outer: string;
+    outerMark: string;
+    inner: (page: Page) => Locator;
+  }> = [
+    {
+      name: 'a CheckboxList in a CheckboxList row',
+      story: 'core-checkboxlist--checkbox-list-in-row-content',
+      outer: 'Email',
+      outerMark: '.astryx-checkbox-indicator',
+      inner: page => innerMark(page, '.astryx-checkbox-indicator', 'Work'),
+    },
+    {
+      name: 'a RadioList in a RadioList row',
+      story: 'core-radiolist--radio-list-in-row-content',
+      outer: 'Pro',
+      outerMark: '.astryx-radio-indicator',
+      inner: page => innerMark(page, '.astryx-radio-indicator', 'Monthly'),
+    },
+    {
+      name: 'a CheckboxInput in a RadioList row',
+      story: 'core-radiolist--checkbox-in-row-content',
+      outer: 'Pro',
+      outerMark: '.astryx-radio-indicator',
+      inner: page => markWrapper(page, '.astryx-checkbox-indicator'),
+    },
+  ];
+  // The innermost row with this label: rows nest, and an outer row's text
+  // includes its content's, so the last match in document order is the
+  // inner row.
+  const innerMark = (page: Page, selector: string, option: string) =>
+    page
+      .locator('#storybook-root .astryx-item, #storybook-root li')
+      .filter({hasText: option})
+      .last()
+      .locator(selector)
+      .first()
+      .locator('xpath=../..');
+  const imageOf = async (layer: Locator) =>
+    layer.evaluate(el => getComputedStyle(el, '::after').backgroundImage);
+
+  for (const nested of NESTED) {
+    test(`holding the outer row leaves ${nested.name}’s mark at rest`, async ({
+      page,
+    }) => {
+      await openStory(page, storybook(), nested.story);
+      const driver = await touchDriver(page);
+      // The press is the subject, not the toggle.
+      await page.evaluate(() =>
+        window.addEventListener(
+          'click',
+          event => {
+            event.preventDefault();
+            event.stopPropagation();
+          },
+          true,
+        ),
+      );
+      const outerLayer = markWrapper(page, nested.outerMark, nested.outer);
+      const innerLayer = nested.inner(page);
+      await expect(innerLayer).toBeAttached();
+      // The visible label, a span: a checkbox also carries a visually hidden
+      // `<label>` with the same text.
+      const label = await optionRow(page, nested.outer)
+        .locator('span')
+        .filter({hasText: new RegExp(`^${nested.outer}$`)})
+        .first()
+        .boundingBox();
+      if (label == null) {
+        throw new Error(`${nested.story}: no outer label`);
+      }
+      expect(await imageOf(innerLayer)).toBe('none');
+      const held = driver.play(
+        tap(
+          {x: label.x + label.width / 2, y: label.y + label.height / 2},
+          {holdMs: 1500},
+        ),
+      );
+      await page.waitForTimeout(HOLD_MS);
+      const outer = await imageOf(outerLayer);
+      const inner = await imageOf(innerLayer);
+      await held;
+      expect(outer).toContain('gradient');
+      expect(inner).toBe('none');
+    });
+  }
+});
+
 test('a RadioList row stays bare while its circle paints the press', async ({
   page,
 }) => {

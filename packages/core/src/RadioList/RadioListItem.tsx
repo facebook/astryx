@@ -28,6 +28,7 @@ import {RadioListContext} from './RadioList';
 import {colorVars, radiusVars} from '../theme/tokens.stylex';
 import {mergeProps, isRenderable, rtlStyles} from '../utils';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
+import {indicatorPressOwnerStyles} from '../Indicator/indicatorPress.stylex';
 import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useIndicator} from '../Indicator';
@@ -36,17 +37,9 @@ import {themeProps} from '../utils/themeProps';
 import {cellPressConsts} from '../utils/interactionOverlay.stylex';
 import {reducedMotionFadeConsts} from '../motion/reducedMotion.stylex';
 
-/** The pressed token as an image layer, at full strength. */
-const pressedImage = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
 const COARSE = '@media (pointer: coarse)';
 /** The row is a cell: the circle releases on the row's deselect clock. */
 const CELL_RELEASE = `${cellPressConsts.cellReleaseMs}ms`;
-
-/** Opacity 1 → 0: the layer over the circle leaves; the fading arm runs it. */
-const pressRelease = stylex.keyframes({
-  from: {opacity: 1},
-  to: {opacity: 0},
-});
 
 const styles = stylex.create({
   radioWrapper: {
@@ -89,60 +82,34 @@ const styles = stylex.create({
         },
       },
       // An image layer over the colour: an image change is discrete, so no
-      // transition can delay the onset. Coarse pointers only, like the drop
-      // above.
+      // transition can delay the onset. The owner declares the image and the
+      // release (indicatorPressOwnerStyles); the layer reads them, under a
+      // coarse pointer only.
       backgroundImage: {
         default: null,
-        [stylex.when.ancestor('[data-astryx-press="on"]', indicatorScope)]: {
-          default: null,
-          [COARSE]: pressedImage,
-        },
-        [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
-          {
-            default: null,
-            [COARSE]: pressedImage,
-          },
+        '@media (pointer: coarse)': 'var(--_indicator-press-image, none)',
       },
       animationName: {
         default: null,
-        [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
-          {
-            default: null,
-            [COARSE]: pressRelease,
-          },
+        '@media (pointer: coarse)': 'var(--_indicator-press-release, none)',
       },
-      // Reduce Motion: the policy's fade, under the plain query; StyleX drops
-      // the compound `and (pointer: coarse)` key inside `when.ancestor`, and
-      // the release only runs under a coarse pointer anyway.
       animationDuration: {
         default: null,
-        [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
-          {
-            default: null,
-            [COARSE]: {
-              default: CELL_RELEASE,
-              '@media (prefers-reduced-motion: reduce)':
-                reducedMotionFadeConsts.duration,
-            },
-          },
+        '@media (pointer: coarse)': {
+          default: CELL_RELEASE,
+          '@media (prefers-reduced-motion: reduce)':
+            reducedMotionFadeConsts.duration,
+        },
       },
       animationTimingFunction: {
         default: null,
-        [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
-          {
-            default: null,
-            [COARSE]: {
-              default: cellPressConsts.cellReleaseEase,
-              '@media (prefers-reduced-motion: reduce)':
-                reducedMotionFadeConsts.easing,
-            },
-          },
+        '@media (pointer: coarse)': {
+          default: cellPressConsts.cellReleaseEase,
+          '@media (prefers-reduced-motion: reduce)':
+            reducedMotionFadeConsts.easing,
+        },
       },
-      animationFillMode: {
-        default: null,
-        [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
-          {default: null, [COARSE]: 'both'},
-      },
+      animationFillMode: {default: null, '@media (pointer: coarse)': 'both'},
     },
   },
   input: {
@@ -439,6 +406,9 @@ export function RadioListItem({
           // the painting row element (Item), the same element that carries the
           // theme target, so a theme's hover styling stays in step with the tint.
           !isDisabled && indicatorScope,
+          // The row owns its radio's touch press: it declares the press's
+          // image and release for the layer over the circle.
+          !isDisabled && indicatorPressOwnerStyles.owner,
           // Restore the bare default look: zero Item's padding/radius and its
           // interactive hover/press background. Applied after Item's own base
           // styles so it wins within the base layer; a `radio-list-item` theme

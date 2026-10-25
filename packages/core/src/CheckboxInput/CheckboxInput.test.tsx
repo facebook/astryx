@@ -22,11 +22,12 @@ import {
   readsPressStrength,
 } from '../__tests__/pressState';
 import {
+  declaresIndicatorPressOwner,
   layerPressRulesOutsideCoarse,
+  ownerPressRulesOutsideCoarse,
   readIndicatorPressLayer,
+  readsAncestorPress,
 } from '../__tests__/indicatorPressLayer';
-import * as stylex from '@stylexjs/stylex';
-import {indicatorScope} from '../Indicator/indicator.markers.stylex';
 import {pressConsts} from '../utils/interactionOverlay.stylex';
 import {CheckboxInput} from './CheckboxInput';
 import {Theme} from '../theme/Theme';
@@ -947,13 +948,12 @@ describe('pressed state', () => {
         'the checkbox has no pressable control or indicator wrapper',
       );
     }
-    // The controller writes the control; the layer over the box paints the
-    // pressed token at full strength and fades by its own opacity on
-    // UIButton's release, on the compositor.
-    const layer = readIndicatorPressLayer(
-      wrapper,
-      stylex.props(indicatorScope).className ?? '',
-    );
+    // The controller writes the control, which declares the press's image
+    // and release; the layer over the box paints the pressed token at full
+    // strength and fades by its own opacity on UIButton's release, on the
+    // compositor.
+    expect(declaresIndicatorPressOwner(control)).toBe(true);
+    const layer = readIndicatorPressLayer(wrapper, control);
     expect(layer).toEqual({
       paintsOn: true,
       paintsFading: true,
@@ -968,6 +968,9 @@ describe('pressed state', () => {
     expect(declaresPressPaint(control)).toBe(false);
     expect(hasReleaseFade(control)).toBe(false);
     expect(readsPressStrength(wrapper)).toBe(false);
+    // The layer answers its own control only, never an outer element's
+    // press (architecture:component-style-authoring INV4).
+    expect(readsAncestorPress(wrapper)).toBe(false);
   });
 
   it('keeps its touch press, release included, behind the coarse pointer', () => {
@@ -977,11 +980,13 @@ describe('pressed state', () => {
     const {container} = render(
       <CheckboxInput label="Accept terms" value={false} onChange={() => {}} />,
     );
-    const wrapper = container.querySelector('.astryx-checkbox-indicator')
-      ?.parentElement?.parentElement;
-    if (wrapper == null) {
-      throw new Error('the checkbox has no indicator wrapper');
+    const box = container.querySelector('.astryx-checkbox-indicator');
+    const wrapper = box?.parentElement?.parentElement;
+    const control = box?.closest('[data-astryx-pressable]');
+    if (wrapper == null || control == null) {
+      throw new Error('the checkbox has no indicator wrapper or control');
     }
     expect(layerPressRulesOutsideCoarse(wrapper)).toEqual([]);
+    expect(ownerPressRulesOutsideCoarse(control)).toEqual([]);
   });
 });

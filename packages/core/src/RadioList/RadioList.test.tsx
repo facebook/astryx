@@ -21,11 +21,12 @@ import {
   rulesDeclaredFor,
 } from '../__tests__/pressState';
 import {
+  declaresIndicatorPressOwner,
   layerPressRulesOutsideCoarse,
+  ownerPressRulesOutsideCoarse,
   readIndicatorPressLayer,
+  readsAncestorPress,
 } from '../__tests__/indicatorPressLayer';
-import * as stylex from '@stylexjs/stylex';
-import {indicatorScope} from '../Indicator/indicator.markers.stylex';
 import {cellPressConsts} from '../utils/interactionOverlay.stylex';
 import {RadioList} from './RadioList';
 import {RadioListItem} from './RadioListItem';
@@ -934,15 +935,12 @@ describe('pressed state', () => {
     if (wrapper == null || row == null) {
       throw new Error('the radio has no pressable row or indicator wrapper');
     }
-    // The controller writes the row (a cell); the layer over the circle
-    // paints the pressed token at full strength and fades by its own opacity
-    // on the row's deselect clock, on the compositor.
-    expect(
-      readIndicatorPressLayer(
-        wrapper,
-        stylex.props(indicatorScope).className ?? '',
-      ),
-    ).toEqual({
+    // The controller writes the row (a cell), which declares the press's
+    // image and release; the layer over the circle paints the pressed token
+    // at full strength and fades by its own opacity on the row's deselect
+    // clock, on the compositor.
+    expect(declaresIndicatorPressOwner(row)).toBe(true);
+    expect(readIndicatorPressLayer(wrapper, row)).toEqual({
       paintsOn: true,
       paintsFading: true,
       releases: true,
@@ -953,6 +951,10 @@ describe('pressed state', () => {
     // A fine pointer keeps its behavior (spec:AST-017 FR59): the layer's
     // press, release included, is in the coarse media key.
     expect(layerPressRulesOutsideCoarse(wrapper)).toEqual([]);
+    expect(ownerPressRulesOutsideCoarse(row)).toEqual([]);
+    // The circle answers its own row only, never an outer element's press
+    // (architecture:component-style-authoring INV4).
+    expect(readsAncestorPress(wrapper)).toBe(false);
     // The row itself paints nothing under a finger, as under a mouse: only
     // the circle answers. Neither the overlay's image nor the row's press
     // layer (Item's `::before`, removed here) shows.

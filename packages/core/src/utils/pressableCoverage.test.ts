@@ -201,8 +201,9 @@ describe('every surface that paints a press is reachable by the touch press cont
 
   it('marks nothing that does not paint a press', () => {
     // The converse: a marker with no arm would ask the controller to write an
-    // attribute nothing reads. Every marked file must paint a press itself or
-    // apply a scope an indicator reads.
+    // attribute nothing reads. Every marked file must paint a press itself,
+    // compose a styles-only module that does (its arms land on this file's
+    // elements), or apply a scope an indicator reads.
     const marked = [...source.entries()]
       .filter(([, text]) => text.includes('usePressFeedback('))
       .map(([file]) => file)
@@ -212,9 +213,15 @@ describe('every surface that paints a press is reachable by the touch press cont
         [...text.matchAll(ANCESTOR_ARM)].map(m => m[1]),
       ),
     );
+    const pressArmModules = pressArmFiles.filter(file =>
+      file.endsWith('.stylex.ts'),
+    );
     const unexplained = marked.filter(file => {
       const text = source.get(file) ?? '';
       if (PRESS_ARM.test(text)) {
+        return false;
+      }
+      if (pressArmModules.some(module => importers(module).includes(file))) {
         return false;
       }
       return ![...scopeNames].some(scope =>
