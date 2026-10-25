@@ -324,4 +324,40 @@ describe('build-css astryx.css', () => {
       );
     });
   });
+
+  describe('Layout header/footer padding collapse (Layout/layoutEdges.stylex.ts)', () => {
+    it('ships no :has() on the layout followed by a descendant * for the header or footer', () => {
+      // `.anchor:has(…) *` makes engines restyle everything inside the layout
+      // on any change in it; the collapse uses sibling markers instead.
+      const costly = astryxCss
+        .split('\n')
+        .filter(
+          line =>
+            /astryx-layout-(header|footer)/.test(line) && /:has\(/.test(line),
+        );
+      expect(costly).toEqual([]);
+    });
+
+    it("collapses LayoutContent padding through the middle row's sibling markers", () => {
+      const flush = astryxCss
+        .split('\n')
+        .filter(line => line.includes('--_layout-flush-block-'));
+      // The row sets each edge from a preceding header or a following footer
+      // without a divider.
+      expect(
+        flush.some(line =>
+          /:where\(\.[\w-]+:not\(\[data-divider\]\) ~ \*\)\{--_layout-flush-block-start:0px/.test(
+            line,
+          ),
+        ),
+      ).toBe(true);
+      expect(
+        flush.some(line =>
+          /:where\(:has\(~ \.[\w-]+:not\(\[data-divider\]\)\)\)\{--_layout-flush-block-end:0px/.test(
+            line,
+          ),
+        ),
+      ).toBe(true);
+    });
+  });
 });
