@@ -39,7 +39,7 @@ system_specs: [spec:AST-085]
 | Behavior                | One SideNav row: a link or button with optional icon and passive end content, optional row-level actions beside it, and optional nested children that can expand and collapse. In a collapsed rail it is icon-only with a tooltip or a flyout.                |
 | End-user impact         | Users see and hear the current page, reach row actions before nested items, expand or collapse groups without navigating, and return to the page after choosing a destination in the mobile drawer.                                                           |
 | Builder impact          | None.                                                                                                                                                                                                                                                         |
-| Compatibility/readiness | Records shipped behavior; no public change. Three implementation gaps (see Current-state impact).                                                                                                                                                             |
+| Compatibility/readiness | Records shipped behavior; no public change. Four implementation gaps (see Current-state impact).                                                                                                                                                              |
 | Review checks           | Reject an interactive control rendered inside the primary element, a link that also toggles collapse, a toggle or action that activates the row, collapsed children that stay reachable, or a drawer activation that leaves the drawer open after navigating. |
 | Governing rules         | `component:SideNav` FR1–FR5, DD1 (nesting and row geometry); `family:navigation-destinations`; `architecture:interaction-modality`; `architecture:public-component-api`.                                                                                      |
 
@@ -84,6 +84,10 @@ Consumer migration instructions belong in consumer docs and release notes.
   pointer and keyboard behavior disagree, and its disabled state is not exposed
   (`spec:AST-085` FR5). OQ1 asks whether a disabled item's children stay
   expandable.
+- **Reduced motion on touch changes at once.** Under reduced motion the
+  chevron's rotation and the group's height change at once on every pointer;
+  `design:reduced-motion` DR2 has a touch-screen change cross-fade within
+  200 ms.
 
 ## Ownership boundary
 
@@ -132,7 +136,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | FR9  | In a collapsed rail, an item with children (rendered per `component:SideNav` FR2) opens its flyout: on a hover-capable pointer after a hover-intent delay, leaving closes a hover-opened flyout, and a click-opened one stays; a click under a stationary pointer does not spring it back open; no hover timers run on a coarse pointer. Keyboard opening moves focus into the flyout and Escape restores it to the trigger; hover opening does not move focus. The flyout is labeled by `@astryx.sideNavItem.submenuLabel`, shows the parent label as a header, light-dismisses, and closes when anything inside is clicked. Arrow keys inside it are left to the browser. | Current source and tests |
 | FR10 | Inside the mobile drawer, activating a link or button item calls `onClick` and then closes the drawer. Toggling a collapsible parent, clicking a row action, or activating outside the drawer does not close it.                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Current source and tests |
 | FR11 | Every focusable part paints the shared focus outline; a row with actions paints it on the wrapper when the primary element has focus.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Current source and tests |
-| FR12 | The expand chevron's rotation and the nested group's height change animate only without a reduced-motion preference; under reduced motion both change at once (`design:reduced-motion`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Current source           |
+| FR12 | The expand chevron's rotation and the nested group's height change animate only without a reduced-motion preference. Under reduced motion they change at once for a fine pointer, and on a touch screen they MUST cross-fade within 200 ms (`design:reduced-motion` DR2, DR3). Implementation gap: on a touch screen they also change at once.                                                                                                                                                                                                                                                                                                                              | Current source           |
 
 ### Allowed variation
 
@@ -197,15 +201,15 @@ is recorded. Row geometry visual intent is `component:SideNav` DD1.
 
 ## Verification map
 
-| Contract      | Verification                                                        | Representative states                        | Mutation or failure expectation                                                   | Audit section                     |
-| ------------- | ------------------------------------------------------------------- | -------------------------------------------- | --------------------------------------------------------------------------------- | --------------------------------- |
-| FR1–FR3, FR5  | `SideNav.test.tsx` SideNavItem suite                                | Link, button, `as`, provider, disabled       | Wrong element, lost `aria-current`, or a disabled item that runs `onClick` fails. | `audit:SideNavItem/behavior`      |
-| FR4, AR3      | `SideNav.test.tsx` actions-slot suite                               | Actions with toggle, endContent, disabled    | Actions inside the primary element or wrong order fails.                          | `audit:SideNavItem/behavior`      |
-| FR6, FR7, AR2 | `SideNav.test.tsx` collapsible + href suite                         | Split, whole-row, controlled                 | A link that toggles or duplicated `aria-expanded` fails.                          | `audit:SideNavItem/accessibility` |
-| FR8, FR9      | `SideNav.test.tsx` collapsed, hover-intent, and rail-tooltip suites | Leaf, parent, hover, click, keyboard, coarse | Lost delay, focus restore, or tooltip anchor fails.                               | `audit:SideNavItem/behavior`      |
-| FR10          | `SideNav.test.tsx` mobile drawer close-on-activate suite            | Link, button, toggle, action, outside drawer | Wrong close behavior fails.                                                       | `audit:SideNavItem/behavior`      |
-| FR11          | `SideNav.test.tsx` focus ring suite                                 | Plain, split, actions rows                   | Missing shared ring classes fail.                                                 | `audit:SideNavItem/accessibility` |
-| FR3, FR7, FR9 | `SideNav.test.tsx` keyboard operation and focus management suites   | Tab order, Enter/Space toggle, flyout Escape | Lost order, a stranded focus, or no focus return fails.                           | `audit:SideNavItem/accessibility` |
+| Contract      | Verification                                                        | Representative states                                                                                                     | Mutation or failure expectation                                                   | Audit section                     |
+| ------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | --------------------------------- |
+| FR1–FR3, FR5  | `SideNav.test.tsx` SideNavItem suite                                | Link, button, `as`, provider, disabled                                                                                    | Wrong element, lost `aria-current`, or a disabled item that runs `onClick` fails. | `audit:SideNavItem/behavior`      |
+| FR4–FR7, AR3  | `SideNav.test.tsx` actions-slot suite                               | Actions with toggle, endContent, disabled; row-wrapper `data-testid`; `defaultIsCollapsed` with whole-row `aria-controls` | Actions inside the primary element or wrong order fails.                          | `audit:SideNavItem/behavior`      |
+| FR6, FR7, AR2 | `SideNav.test.tsx` collapsible + href suite                         | Split, whole-row, controlled                                                                                              | A link that toggles or duplicated `aria-expanded` fails.                          | `audit:SideNavItem/accessibility` |
+| FR8, FR9      | `SideNav.test.tsx` collapsed, hover-intent, and rail-tooltip suites | Leaf, parent, hover, click, keyboard, coarse                                                                              | Lost delay, focus restore, or tooltip anchor fails.                               | `audit:SideNavItem/behavior`      |
+| FR10          | `SideNav.test.tsx` mobile drawer close-on-activate suite            | Link, button, toggle, action, outside drawer                                                                              | Wrong close behavior fails.                                                       | `audit:SideNavItem/behavior`      |
+| FR11          | `SideNav.test.tsx` focus ring suite                                 | Plain, split, actions rows                                                                                                | Missing shared ring classes fail.                                                 | `audit:SideNavItem/accessibility` |
+| FR3, FR7, FR9 | `SideNav.test.tsx` keyboard operation and focus management suites   | Tab order, Enter/Space toggle, flyout Escape                                                                              | Lost order, a stranded focus, or no focus return fails.                           | `audit:SideNavItem/accessibility` |
 
 Pending conformance: the SideNavItem suite's native-`disabled` assertion and
 the keyboard suite's disabled Tab-skip assertion pin FR1's implementation gap;
@@ -219,11 +223,8 @@ Read from source, with no focused test yet:
   chevron.
 - FR4: the actions' trailing-edge placement and the wrapper for an independent
   toggle without actions.
-- FR5: the forwarded `ref`, `data-testid` on the row wrapper, and `xstyle` on
-  the outer box.
-- FR6: `defaultIsCollapsed`.
-- FR7: the toggle's translated names and the whole-row element's
-  `aria-controls`.
+- FR5: the forwarded `ref` and `xstyle` on the outer box.
+- FR7: the toggle's translated names.
 - FR8: the tooltip's inline-end placement.
 - FR9: the flyout's light dismiss and close on an inner click.
 - FR12; PR1's timer clearing on close; and the `size` and `selected` theme

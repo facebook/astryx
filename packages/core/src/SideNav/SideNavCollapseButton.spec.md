@@ -33,7 +33,7 @@ system_specs: []
 | Behavior                | An icon-only ghost Button that toggles the SideNav rail between expanded and collapsed, inside SideNav or anywhere else on the page. It renders nothing when collapse is unavailable or AppShell is in its mobile layout. |
 | End-user impact         | Users collapse and expand the side rail with one named button whose chevron points the right way in either writing direction.                                                                                             |
 | Builder impact          | None.                                                                                                                                                                                                                     |
-| Compatibility/readiness | Records shipped behavior; no public change.                                                                                                                                                                               |
+| Compatibility/readiness | Records shipped behavior; no public change. One implementation gap (see Current-state impact).                                                                                                                            |
 | Review checks           | Reject a caller `onClick` that replaces the toggle, a button rendered in AppShell's mobile layout, or a chevron that does not mirror in right-to-left.                                                                    |
 | Governing rules         | `architecture:public-component-api` INV7; `design:bidirectionality` DR4; `component:Button`.                                                                                                                              |
 
@@ -55,6 +55,12 @@ Consumer usage lives in `SideNavCollapseButton.doc.mjs`.
 
 Consumer migration instructions belong in consumer docs and release notes.
 
+## Current-state impact
+
+- **Reduced motion on touch changes at once.** Under reduced motion the
+  chevron's rotation changes at once on every pointer; `design:reduced-motion`
+  DR2 has a touch-screen change cross-fade within 200 ms.
+
 ## Ownership boundary
 
 **Owns**
@@ -74,13 +80,13 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Behavioral and layout contract
 
-| ID  | Invariant                                                                                                                                                                                                                                                                                        | Basis                    |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------ |
-| FR1 | State comes from `collapsible` when given (always collapsible; toggling calls `onCollapsedChange` with the opposite of `isCollapsed`), else from the SideNav that the deprecated `handleRef` points at, else from the enclosing SideNav.                                                         | Current source and tests |
-| FR2 | It renders nothing when the state source is not collapsible or AppShell reports its mobile layout.                                                                                                                                                                                               | Current source and tests |
-| FR3 | It renders an icon-only ghost Button named by `label`, else by the translated `@astryx.sideNavCollapseButton.collapseSidebar` or `.expandSidebar` for the current state, at `size`, with the forwarded `ref` and other props.                                                                    | Current source and tests |
-| FR4 | A caller `onClick` runs, then the toggle; a caller `onClick` that calls `preventDefault()` cancels the toggle for that click.                                                                                                                                                                    | Current source and tests |
-| FR5 | The default icon is a chevron pointing toward the inline start while expanded and turned while collapsed; it mirrors in right-to-left; its rotation animates only without a reduced-motion preference and changes at once under reduced motion (`design:reduced-motion`). `children` replace it. | Current source           |
+| ID  | Invariant                                                                                                                                                                                                                                                                                                                                                                                                                                           | Basis                    |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| FR1 | State comes from `collapsible` when given (always collapsible; toggling calls `onCollapsedChange` with the opposite of `isCollapsed`), else from the SideNav that the deprecated `handleRef` points at, else from the enclosing SideNav.                                                                                                                                                                                                            | Current source and tests |
+| FR2 | It renders nothing when the state source is not collapsible or AppShell reports its mobile layout.                                                                                                                                                                                                                                                                                                                                                  | Current source and tests |
+| FR3 | It renders an icon-only ghost Button named by `label`, else by the translated `@astryx.sideNavCollapseButton.collapseSidebar` or `.expandSidebar` for the current state, at `size`, with the forwarded `ref` and other props.                                                                                                                                                                                                                       | Current source and tests |
+| FR4 | A caller `onClick` runs, then the toggle; a caller `onClick` that calls `preventDefault()` cancels the toggle for that click.                                                                                                                                                                                                                                                                                                                       | Current source and tests |
+| FR5 | The default icon is a chevron pointing toward the inline start while expanded and turned while collapsed; it mirrors in right-to-left; its rotation animates only without a reduced-motion preference; under reduced motion it changes at once for a fine pointer, and on a touch screen it MUST cross-fade within 200 ms (`design:reduced-motion` DR2, DR3). Implementation gap: on a touch screen it also changes at once. `children` replace it. | Current source           |
 
 ### Allowed variation
 
