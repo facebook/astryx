@@ -55,7 +55,8 @@ device.
   and system font stacks: a component never applies one directly, on any
   pointer. A font size that sizes an icon, such as a `1em` icon at a
   `spec:AST-087` FR10 size, is not text typography. Native components follow
-  the platform's own text settings (`spec:AST-082` FR11). Typography values come only from the theme. The one
+  the platform's own text settings (`spec:AST-082` FR11). Values a component
+  sets come only from the theme. The one
   exception is a size floor a current family record requires, such as the iOS
   16 px text-entry floor of `family:input-fields` FR9.
 - **FR2 — Unbranded shipped themes may use the system body font.** An Astryx
