@@ -29,7 +29,7 @@
  * A box's height cannot change on the compositor, so the cap changes once,
  * where the keyboard hides the change: a rising keyboard covers the layer's
  * lower part on its way up, and the layer takes its shorter height when the
- * keyboard has arrived (`timing.keyboardNotificationMs` after it started); a
+ * keyboard has arrived (`keyboard.notificationMs` after it started); a
  * falling keyboard uncovers it, so the layer takes its full height back as
  * the keyboard starts down. A keyboard that changes at once is followed at
  * once. A change that would move the layer under a press in progress inside
@@ -48,7 +48,7 @@
 import {useRef, type RefObject} from 'react';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {getKeyboardLayoutGuide, getMobileKeyboardHeight} from '../keyboard';
-import {timing} from '../motion/uikit/timing';
+import {keyboard} from '../motion/uikit/keyboard';
 import {
   keyboardClearanceCap,
   LAYER_KEYBOARD_CLEARANCE_PX,
@@ -284,7 +284,7 @@ export function useLayerKeyboardClearance(
       cancelPending();
       if (transition.animated && transition.to > transition.from) {
         // Rising: the keyboard covers the difference on its way up.
-        const arrival = transition.start + timing.keyboardNotificationMs;
+        const arrival = transition.start + keyboard.notificationMs;
         pending = win.setTimeout(
           () => {
             pending = null;

@@ -18,7 +18,7 @@
 import {fireEvent, render} from '@testing-library/react';
 import React, {useRef} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {timing} from '../motion/uikit/timing';
+import {keyboard} from '../motion/uikit/keyboard';
 import type {KeyboardTransition} from '../keyboard';
 import {
   keyboardClearanceCap,
@@ -46,6 +46,7 @@ const guide = {
         velocity: 0,
         animated: true,
         predicted: false,
+        spring: keyboard.spring,
         ...transition,
       });
     }
@@ -218,14 +219,14 @@ describe('useLayerKeyboardClearance', () => {
     guide.emit({kind: 'show', from: 0, to: COVER});
     // On its way up the keyboard covers the difference.
     expect(capOf(container)).toBe('');
-    vi.advanceTimersByTime(timing.keyboardNotificationMs + 1);
+    vi.advanceTimersByTime(keyboard.notificationMs + 1);
     expect(capOf(container)).toBe(CAPPED);
   });
 
   it('takes the cap off as soon as the keyboard starts down', () => {
     const {container} = render(<Harness />);
     guide.emit({kind: 'show', from: 0, to: COVER});
-    vi.advanceTimersByTime(timing.keyboardNotificationMs + 1);
+    vi.advanceTimersByTime(keyboard.notificationMs + 1);
     guide.emit({kind: 'hide', from: COVER, to: 0});
     expect(capOf(container)).toBe('');
   });
@@ -239,14 +240,14 @@ describe('useLayerKeyboardClearance', () => {
   it('leaves a layer clear of the keyboard as it is', () => {
     const {container} = render(<Harness box={{top: 68, bottom: 300}} />);
     guide.emit({kind: 'show', from: 0, to: COVER});
-    vi.advanceTimersByTime(timing.keyboardNotificationMs + 1);
+    vi.advanceTimersByTime(keyboard.notificationMs + 1);
     expect(capOf(container)).toBe('');
   });
 
   it('leaves a layer in another positioning as it is', () => {
     const {container} = render(<Harness isAnchored={false} />);
     guide.emit({kind: 'show', from: 0, to: COVER});
-    vi.advanceTimersByTime(timing.keyboardNotificationMs + 1);
+    vi.advanceTimersByTime(keyboard.notificationMs + 1);
     expect(capOf(container)).toBe('');
   });
 
@@ -257,7 +258,7 @@ describe('useLayerKeyboardClearance', () => {
     });
     const {container} = render(<Harness focusRow />);
     guide.emit({kind: 'show', from: 0, to: COVER});
-    vi.advanceTimersByTime(timing.keyboardNotificationMs + 1);
+    vi.advanceTimersByTime(keyboard.notificationMs + 1);
     const scroller = container.querySelector<HTMLElement>(
       '[data-testid="scroller"]',
     )!;
@@ -335,7 +336,7 @@ describe('useLayerKeyboardClearance', () => {
       <Harness box={{top: 16, bottom: 505}} heldBottom />,
     );
     guide.emit({kind: 'show', from: 0, to: COVER});
-    vi.advanceTimersByTime(timing.keyboardNotificationMs + 1);
+    vi.advanceTimersByTime(keyboard.notificationMs + 1);
     // A shorter box would move its top down and still end under the keyboard.
     expect(capOf(container)).toBe('');
   });
@@ -344,7 +345,7 @@ describe('useLayerKeyboardClearance', () => {
     const {container, getByTestId} = render(<Harness />);
     const layer = getByTestId('layer');
     guide.emit({kind: 'show', from: 0, to: COVER});
-    vi.advanceTimersByTime(timing.keyboardNotificationMs + 1);
+    vi.advanceTimersByTime(keyboard.notificationMs + 1);
     expect(capOf(container)).toBe(CAPPED);
     // A tap on a button in the layer blurs the field: the keyboard starts
     // down while the finger is still on the button.
@@ -360,7 +361,7 @@ describe('useLayerKeyboardClearance', () => {
   it('a press that makes no click lets the change go a moment after it lifts', () => {
     const {container, getByTestId} = render(<Harness />);
     guide.emit({kind: 'show', from: 0, to: COVER});
-    vi.advanceTimersByTime(timing.keyboardNotificationMs + 1);
+    vi.advanceTimersByTime(keyboard.notificationMs + 1);
     fireEvent.pointerDown(getByTestId('layer'), {pointerId: 4});
     guide.emit({kind: 'hide', from: COVER, to: 0});
     fireEvent.pointerUp(window, {pointerId: 4});
@@ -372,7 +373,7 @@ describe('useLayerKeyboardClearance', () => {
     const {container, rerender} = render(<Harness />);
     guide.emit({kind: 'show', from: 0, to: COVER});
     rerender(<Harness isOpen={false} />);
-    vi.advanceTimersByTime(timing.keyboardNotificationMs + 1);
+    vi.advanceTimersByTime(keyboard.notificationMs + 1);
     expect(capOf(container)).toBe('');
   });
 
