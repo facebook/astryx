@@ -96,7 +96,8 @@ async function openStack(
     | 'carousel'
     | 'declines-pops'
     | 'large-title'
-    | 'search',
+    | 'search'
+    | 'search-keeps-active',
   {
     standalone = false,
     pointer = 'touch',
@@ -1590,7 +1591,10 @@ const readSearch = (page: Page, key: string) =>
       largeY: y(title),
       largeOpacity: opacity(title),
       contentY: y(content),
-      backOpacity: opacity(bar?.firstElementChild),
+      // The stack's one back button (its control wraps the button).
+      backOpacity: opacity(
+        document.querySelector('[data-navigation-back]')?.parentElement,
+      ),
       backgroundOpacity: opacity(background),
     };
   }, key);
@@ -1689,6 +1693,158 @@ test.describe('search in the bar', () => {
     expect(hit).toBe(true);
   });
 
+  /** Activates General's search, then leaves it mid-search (About, Done). */
+  async function leaveGeneralMidSearch(page: Page, driver: TouchDriver) {
+    await driver.tap(await rowCenter(page, 'General'));
+    await waitForRest(card(page, 'screen-General'));
+    await card(page, 'screen-General')
+      .getByRole('searchbox', {name: 'Search'})
+      .click();
+    await expect
+      .poll(async () => (await readSearch(page, 'screen-General')).contentY)
+      .toBeLessThan(-40);
+    await driver.tap(await rowCenter(page, 'About'));
+    await waitForRest(card(page, 'screen-About'));
+    await driver.tap(await rowCenter(page, 'Done'));
+    await expect(card(page, 'screen-General')).toHaveCount(0);
+    // The pop to the root has run: the root is uncovered and at rest.
+    await expect(card(page, 'screen-About')).toHaveCount(0);
+    await waitForRest(card(page, 'root'));
+  }
+
+  test('a screen left mid-search and pushed again starts at rest, with its back button', async ({
+    page,
+  }) => {
+    const {driver} = await openStack(page, 'search');
+    await leaveGeneralMidSearch(page, driver);
+    // The app ended that search as the screen left: pushed again, it is at
+    // rest, its back button and bar showing.
+    await driver.tap(await rowCenter(page, 'General'));
+    await waitForRest(card(page, 'screen-General'));
+    const v = await readSearch(page, 'screen-General');
+    expect(Math.abs(v.contentY), JSON.stringify(v)).toBeLessThan(0.5);
+    expect(Math.abs(v.largeY), JSON.stringify(v)).toBeLessThan(0.5);
+    // The bar's background is back (a stale search record kept it cleared).
+    await expect
+      .poll(
+        async () =>
+          (await readSearch(page, 'screen-General')).backgroundOpacity,
+      )
+      .toBeGreaterThan(0.99);
+    await expect
+      .poll(() =>
+        page
+          .locator('[data-navigation-back]')
+          .evaluate(e =>
+            Number(getComputedStyle(e.parentElement ?? e).opacity),
+          ),
+      )
+      .toBeGreaterThan(0.99);
+  });
+
+  test('on a pushed screen nothing in the bar covers the active field, and the covered bar is back after Cancel', async ({
+    page,
+  }) => {
+    const {driver} = await openStack(page, 'search');
+    await driver.tap(await rowCenter(page, 'General'));
+    const top = card(page, 'screen-General');
+    await waitForRest(top);
+    await top.getByRole('searchbox', {name: 'Search'}).click();
+    const field = top.locator('[data-search-field-active]');
+    const stackBox = await page.getByTestId('navigation-stack').boundingBox();
+    await expect
+      .poll(async () =>
+        Math.abs(((await field.boundingBox())?.y ?? 0) - (stackBox?.y ?? 0)),
+      )
+      .toBeLessThan(2);
+    await waitForRest(top.locator('[data-navigation-search] + div'));
+    // No other bar layer over the field's row shows: the covered screen's
+    // bar is parked at the parallax, right over the row the field rose into.
+    const covering = await page.evaluate(() => {
+      const box = document
+        .querySelector(
+          '[data-navigation-screen="screen-General"] [data-search-field-active]',
+        )
+        ?.getBoundingClientRect();
+      if (box == null) {
+        return ['no field'];
+      }
+      return [...document.querySelectorAll('[data-navigation-bar]')]
+        .filter(bar => {
+          const r = bar.getBoundingClientRect();
+          return (
+            bar.getAttribute('data-navigation-bar') !== 'screen-General' &&
+            r.right > box.left &&
+            r.left < box.right &&
+            r.bottom > box.top &&
+            r.top < box.bottom &&
+            Number(getComputedStyle(bar).opacity) > 0.01
+          );
+        })
+        .map(bar => bar.getAttribute('data-navigation-bar'));
+    });
+    expect(covering).toEqual([]);
+    // After Cancel the covered bar shows again (a pop reveals it).
+    await top.getByRole('button', {name: 'Cancel'}).click();
+    await expect
+      .poll(() =>
+        page
+          .locator('[data-navigation-bar="root"]')
+          .evaluate(element => Number(getComputedStyle(element).opacity)),
+      )
+      .toBe(1);
+  });
+
+  test('no back swipe while the top screen is searching', async ({page}) => {
+    const {driver, left, width} = await openStack(page, 'search');
+    await driver.tap(await rowCenter(page, 'General'));
+    await waitForRest(card(page, 'screen-General'));
+    await card(page, 'screen-General')
+      .getByRole('searchbox', {name: 'Search'})
+      .click();
+    await expect
+      .poll(async () => (await readSearch(page, 'screen-General')).contentY)
+      .toBeLessThan(-40);
+    const before = await card(page, 'screen-General').boundingBox();
+    await driver.play(
+      drag(
+        {x: left + width * 0.3, y: 520},
+        {x: left + width * 0.95, y: 520},
+        {durationMs: 300},
+      ),
+    );
+    await page.waitForTimeout(500);
+    // The bar is the field's (its back button is gone): nothing pops.
+    await expect(card(page, 'screen-General')).toHaveCount(1);
+    expect((await card(page, 'screen-General').boundingBox())?.x).toBeCloseTo(
+      before?.x ?? NaN,
+      0,
+    );
+  });
+
+  test('a screen pushed again still searching gets the bar at once', async ({
+    page,
+  }) => {
+    const {driver} = await openStack(page, 'search-keeps-active');
+    await leaveGeneralMidSearch(page, driver);
+    // This app keeps General's search: pushed again, its large title and
+    // content are already lifted with the field into the bar.
+    await driver.tap(await rowCenter(page, 'General'));
+    await waitForRest(card(page, 'screen-General'));
+    const field = card(page, 'screen-General').locator(
+      '[data-search-field-active]',
+    );
+    const stackBox = await page.getByTestId('navigation-stack').boundingBox();
+    await expect
+      .poll(async () =>
+        Math.abs(((await field.boundingBox())?.y ?? 0) - (stackBox?.y ?? 0)),
+      )
+      .toBeLessThan(2);
+    const v = await readSearch(page, 'screen-General');
+    expect(v.contentY, JSON.stringify(v)).toBeLessThan(-40);
+    expect(v.largeOpacity, JSON.stringify(v)).toBeLessThan(0.05);
+  });
+
   test('on a pushed screen the back button fades by 1 − p / 0.35, and a cancel brings it back at once', async ({
     page,
   }) => {
@@ -1743,11 +1899,7 @@ test.describe('search in the bar', () => {
     await expect
       .poll(async () => (await readSearch(page, 'screen-General')).contentY)
       .toBeCloseTo(0, 0);
-    await expect(
-      page.locator(
-        '[data-navigation-bar="screen-General"] [data-navigation-back]',
-      ),
-    ).toBeVisible();
+    await expect(page.locator('[data-navigation-back]')).toBeVisible();
   });
 
   /** How far the root's field rises into the bar's row, px. */
@@ -1774,7 +1926,17 @@ test.describe('search in the bar', () => {
       'with a mouse the field takes its place at once',
     );
     const lift = await liftOf(page);
-    await rootCard.getByRole('searchbox', {name: 'Search'}).click();
+    const field = rootCard.getByRole('searchbox', {name: 'Search'});
+    // One activation and cancel on this page first: WebKit stops presenting
+    // frames for about half a second when a page's first composited
+    // animation starts, which would swallow the measured rise.
+    await field.click();
+    await page.waitForTimeout(600);
+    await rootCard.getByRole('button', {name: 'Cancel'}).click();
+    await expect
+      .poll(async () => (await readSearch(page, 'root')).contentY)
+      .toBeCloseTo(0, 0);
+    await field.click();
     test.skip(
       !(await resumeFramesIfStalled(page)),
       'no frames to sample in this engine',
@@ -1825,17 +1987,24 @@ test.describe('search in the bar', () => {
     // Partway up when the cancel lands.
     expect(turn.y, detail).toBeLessThan(-0.15 * lift);
     expect(turn.y, detail).toBeGreaterThan(-0.9 * lift);
-    // No jump: no step after the cancel is larger than the rise's own
-    // fastest step, and the bar doesn't run on to the top first.
-    const step = Math.max(
-      ...before.slice(1).map((sample, i) => Math.abs(sample.y - before[i].y)),
+    // No jump: no move after the cancel is faster than the rise's own
+    // fastest (per ms, so a long frame is no jump).
+    const rate = (a: {t: number; y: number}, b: {t: number; y: number}) =>
+      Math.abs(b.y - a.y) / Math.max(1, b.t - a.t);
+    const fastest = Math.max(
+      ...before.slice(1).map((sample, i) => rate(before[i], sample)),
     );
     after.slice(0, 8).forEach((sample, i) => {
       const previous = i === 0 ? turn : after[i - 1];
-      expect(Math.abs(sample.y - previous.y), detail).toBeLessThan(step + 2);
+      expect(rate(previous, sample), detail).toBeLessThan(
+        fastest * 1.15 + 0.05,
+      );
     });
+    // The turn is added to the curve on screen (as the field's is): the bar
+    // keeps its velocity, carries on a little as it slows, and turns back
+    // well short of the top.
     expect(Math.min(...after.map(sample => sample.y)), detail).toBeGreaterThan(
-      turn.y - 2 * step - 2,
+      -0.85 * lift,
     );
     // And it comes all the way back.
     expect(after[after.length - 1].y, detail).toBeCloseTo(0, 0);
@@ -1896,25 +2065,30 @@ test.describe('search in the bar', () => {
   });
 
   test('under a mouse the bar takes its active place at once, as the field does', async ({
-    page,
+    browser,
   }) => {
-    // A fine pointer: the hand-off is touch behaviour.
-    await openStack(page, 'search', {pointer: 'mouse'});
-    const rootCard = card(page, 'root');
-    const lift = await liftOf(page);
-    await rootCard.getByRole('searchbox', {name: 'Search'}).click();
-    // No motion: two frames later the bar already shows the active pose.
-    await page.evaluate(
-      () =>
-        new Promise(resolve =>
-          requestAnimationFrame(() => requestAnimationFrame(resolve)),
-        ),
-    );
-    const state = await readSearch(page, 'root');
-    expect(state.contentY).toBeCloseTo(-lift, 0);
-    expect(state.largeY).toBeCloseTo(-lift, 0);
-    expect(state.largeOpacity).toBe(0);
-    expect(state.backgroundOpacity).toBe(0);
+    const {context, page} = await newFinePage(browser);
+    try {
+      // A fine pointer: the hand-off is touch behaviour.
+      await openStack(page, 'search', {pointer: 'mouse'});
+      const rootCard = card(page, 'root');
+      const lift = await liftOf(page);
+      await rootCard.getByRole('searchbox', {name: 'Search'}).click();
+      // No motion: two frames later the bar already shows the active pose.
+      await page.evaluate(
+        () =>
+          new Promise(resolve =>
+            requestAnimationFrame(() => requestAnimationFrame(resolve)),
+          ),
+      );
+      const state = await readSearch(page, 'root');
+      expect(state.contentY).toBeCloseTo(-lift, 0);
+      expect(state.largeY).toBeCloseTo(-lift, 0);
+      expect(state.largeOpacity).toBe(0);
+      expect(state.backgroundOpacity).toBe(0);
+    } finally {
+      await context.close();
+    }
   });
 
   test('a field that hides when scrolling scrolls away under the bar with the content', async ({

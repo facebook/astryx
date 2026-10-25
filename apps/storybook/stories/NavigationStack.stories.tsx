@@ -275,7 +275,12 @@ export const LargeTitle: Story = {
  * the bar to it; Cancel hands it back. The root scrolls, and its field
  * scrolls away under the bar with the content.
  */
-function SearchStack() {
+function SearchStack({
+  keepsSearchOnLeave = false,
+}: {
+  /** Whether a screen's search stays active after the screen leaves. */
+  keepsSearchOnLeave?: boolean;
+}) {
   const [path, setPath] = useState<string[]>([]);
   const [active, setActive] = useState<Record<string, boolean>>({});
   const [queries, setQueries] = useState<Record<string, string>>({});
@@ -310,7 +315,19 @@ function SearchStack() {
         label="Settings"
         root={screenFor('Settings')}
         path={path}
-        onPathChange={setPath}
+        onPathChange={next => {
+          setPath(next);
+          // Leaving a screen ends its search, unless this app keeps it.
+          if (!keepsSearchOnLeave) {
+            setActive(all =>
+              Object.fromEntries(
+                Object.entries(all).filter(
+                  ([title]) => title === 'Settings' || next.includes(title),
+                ),
+              ),
+            );
+          }
+        }}
         getKey={entry => entry}
         renderScreen={entry => screenFor(entry)}
         data-testid="navigation-stack"
@@ -321,4 +338,10 @@ function SearchStack() {
 
 export const Search: Story = {
   render: () => <SearchStack />,
+};
+
+/** The same, in an app whose screens keep their search when they leave. */
+export const SearchKeepsActive: Story = {
+  name: 'Search that stays active',
+  render: () => <SearchStack keepsSearchOnLeave />,
 };
