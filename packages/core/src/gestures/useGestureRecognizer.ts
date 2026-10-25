@@ -30,7 +30,11 @@ import {PressTracker, type PressTrackerOptions} from './PressTracker';
 
 /** @experimental */
 export interface UseGestureRecognizerOptions {
-  /** Live toggle; turning it off mid-gesture cancels the gesture. @default true */
+  /**
+   * Live toggle. Turning it off mid-gesture cancels the gesture, and the
+   * listener receives `cancelled` from the commit that turned it off, as
+   * UIKit sends the action with `.cancelled`. @default true
+   */
   isEnabled?: boolean;
   /** Let the host set touch-action (and long-press callout) styles. @default true */
   manageStyle?: boolean;
