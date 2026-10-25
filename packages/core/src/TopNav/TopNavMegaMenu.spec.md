@@ -13,7 +13,7 @@ review_triggers: [public-api, behavior, layout, accessibility]
 verified_by:
   [
     packages/core/src/TopNav/TopNavMegaMenu.test.tsx,
-    apps/storybook/stories/TopNav.stories.tsx,
+    apps/storybook/stories/TopNavMenu.stories.tsx,
   ]
 modules: []
 families: [family:overlay-dismissal]
@@ -38,7 +38,7 @@ system_specs: []
 | Behavior                | In the bar, a button that opens a wide panel of links below the whole TopNav on hover or click; the panel is a labeled group, not an ARIA menu. In the drawer, a disclosure that expands items and featured content inline. Hidden in the mobile bar. |
 | End-user impact         | Users browse a grid of destinations with descriptions and a featured card; keyboard users reach the panel's links from the trigger; drawer users expand the group in place.                                                                           |
 | Builder impact          | None.                                                                                                                                                                                                                                                 |
-| Compatibility/readiness | Records shipped behavior; no public change. Three current-state gaps (see Current-state impact).                                                                                                                                                      |
+| Compatibility/readiness | Records shipped behavior; no public change. Four current-state gaps (see Current-state impact).                                                                                                                                                       |
 | Review checks           | Reject exposing the panel as `role="menu"`, wrapping it in a modal dialog, keyboard activation that closes an open panel, or a collapsed drawer group that stays reachable.                                                                           |
 | Governing rules         | `architecture:public-component-api` INV5 and INV7; `architecture:interaction-modality`; `component:TopNav` render modes.                                                                                                                              |
 
@@ -73,6 +73,10 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **Same-label drawer groups share an id.** The drawer group's id is derived
   from `label`, so two mega menus with the same label in one drawer produce
   duplicate ids.
+- **The drawer trigger drops the ref.** In `drawer` mode the disclosure button
+  receives the caller's other DOM props but not `ref`.
+  `architecture:public-component-api` INV8 has the ref reach the element the
+  contract promises.
 
 ## Ownership boundary
 
@@ -170,7 +174,7 @@ map is recorded.
 | FR8               | `TopNavMegaMenu.test.tsx` pass-through and owned-handler suites     | Bar and drawer                              | A replaced handler fails.                            | `audit:TopNavMegaMenu/behavior`      |
 | FR9–FR11, AR3     | `TopNavMegaMenu.test.tsx` mobile-bar, drawer, and focus-ring suites | Collapsed and expanded                      | Reachable collapsed content or a missing ring fails. | `audit:TopNavMegaMenu/behavior`      |
 
-Read from source, with no focused test yet: anchoring below the enclosing `<nav>` and slot alignment (FR2); FR6; and FR7.
+Read from source, with no focused test yet: anchoring below the enclosing `<nav>` and slot alignment (FR2); FR6; FR7; and the bar trigger's focus outline (FR11).
 
 ## Decision log
 

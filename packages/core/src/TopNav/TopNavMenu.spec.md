@@ -38,7 +38,7 @@ system_specs: []
 | Behavior                | In the bar, a button that opens a menu of rich items on hover or click, with APG menu keyboard support. In the drawer, a disclosure that expands its items inline. Hidden in the mobile bar. |
 | End-user impact         | Mouse users preview destinations on hover; keyboard users move through items with arrows and typeahead; drawer users expand the group in place.                                              |
 | Builder impact          | None.                                                                                                                                                                                        |
-| Compatibility/readiness | Records shipped behavior; no public change. Two current-state gaps (see Current-state impact).                                                                                               |
+| Compatibility/readiness | Records shipped behavior; no public change. Three current-state gaps (see Current-state impact).                                                                                             |
 | Review checks           | Reject wrapping the popup in a modal dialog, more than one tab stop among items, a collapsed drawer group that stays reachable, or caller trigger handlers that replace the built-in ones.   |
 | Governing rules         | `architecture:public-component-api` INV5 and INV7; `architecture:interaction-modality`; `component:TopNav` render modes.                                                                     |
 
@@ -70,6 +70,10 @@ Consumer migration instructions belong in consumer docs and release notes.
   drawer chevrons' rotation still animate when reduced motion is requested;
   `design:reduced-motion` DR1–DR3 allow no animated property for a fine pointer
   and only a short opacity change for touch.
+- **The drawer trigger drops the ref.** In `drawer` mode the disclosure button
+  receives the caller's other DOM props but not `ref`.
+  `architecture:public-component-api` INV8 has the ref reach the element the
+  contract promises.
 
 ## Ownership boundary
 
