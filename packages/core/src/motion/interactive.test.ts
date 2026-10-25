@@ -22,6 +22,7 @@ import {
   type ReleaseRule,
   type TrackRule,
 } from './interactive';
+import {solveSpring, toSpring} from './spring';
 
 interface Play {
   curves: Record<string, MotionCurve>;
@@ -487,5 +488,66 @@ describe('createInteractiveTransition: a move\u2019s landing state, and place', 
     expect(look.sets.at(-1)).toEqual({opacity: 0});
     transition.place(40);
     expect(look.sets).toHaveLength(1);
+  });
+});
+
+describe('createInteractiveTransition: an offset layer', () => {
+  // A row's outermost entry: pinned against the row (the map), plus a slide
+  // of 50 when the drag is confirmed (the offset), on one translate.
+  const withOuter = () => {
+    const row = recordingAnimator({x: 0});
+    const outer = recordingAnimator({x: 0});
+    const transition = createInteractiveTransition<'n', object, number>({
+      driver: {animator: row.animator, property: 'x'},
+      layers: [
+        {
+          animator: outer.animator,
+          property: 'x',
+          map: x => -x,
+          offset: confirm => 50 * confirm,
+        },
+      ],
+      rule: () => ({target: 0, motion: SPRING, outcome: 'n'}),
+    });
+    return {row, outer, transition};
+  };
+
+  it('plays the map of the driver plus its offset, landing the offset on the move\u2019s spring from where it is', () => {
+    const {outer, row, transition} = withOuter();
+    transition.to(100, SPRING, {state: 1, now: 0});
+    const driver = row.plays[0].curves.x;
+    const curve = outer.plays[0].curves.x;
+    const slide = solveSpring(toSpring(SPRING), {from: 0, to: 50, velocity: 0});
+    for (const t of [0, 0.05, 0.1, 0.2]) {
+      expect(curve.at(t)).toBeCloseTo(-driver.at(t) + slide.value(t), 3);
+    }
+    expect(curve.at(curve.duration)).toBeCloseTo(-100 + 50, 1);
+    expect(curve.duration).toBeGreaterThanOrEqual(driver.duration);
+  });
+
+  it('keeps its offset through a move that names no state', () => {
+    const {outer, transition} = withOuter();
+    transition.place(0, {state: 1});
+    transition.to(100, SPRING, {now: 0});
+    const curve = outer.plays[0].curves.x;
+    expect(curve.at(0)).toBeCloseTo(50, 3);
+    expect(curve.at(curve.duration)).toBeCloseTo(-100 + 50, 1);
+  });
+
+  it('still lands its offset when the driver is already at the target', () => {
+    const {outer, row, transition} = withOuter();
+    transition.to(0, SPRING, {state: 1, now: 0});
+    expect(row.plays).toHaveLength(0);
+    const curve = outer.plays[0].curves.x;
+    expect(curve.at(0)).toBeCloseTo(0, 3);
+    expect(curve.at(curve.duration)).toBeCloseTo(50, 1);
+  });
+
+  it('places its map and offset at once, and writes them 1:1 without a track rule', () => {
+    const {outer, transition} = withOuter();
+    transition.place(80, {state: 1});
+    expect(outer.sets.at(-1)).toEqual({x: -80 + 50});
+    transition.track(60);
+    expect(outer.sets.at(-1)).toEqual({x: -60 + 50});
   });
 });

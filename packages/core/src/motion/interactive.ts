@@ -33,7 +33,9 @@
  *   where the gesture let go, and that state, into a target and a motion.
  * - Layers follow the driver: a map layer is a pure map of the driver's
  *   value (a scrim's opacity of the sheet's `y`); a state layer follows the
- *   drag's state on its own spring (a full swipe's confirm look).
+ *   drag's state on its own spring (a full swipe's confirm look); an offset
+ *   layer is a map plus a state offset on one channel (the outermost swipe
+ *   entry, pinned with the others plus its full-swipe slide).
  * - A release, or a programmatic move (`to`), plays one progress curve: the
  *   driver along `from + (to − from) · p`, each map layer along its map of
  *   that, all on one clock, so they stay in lockstep by construction. A move
@@ -62,7 +64,7 @@ import {
 } from './animator';
 import {mapProgress, progressCurve} from './progress';
 import {resolveMotion} from './resolveMotion';
-import type {SpringDescription} from './spring';
+import {solveSpring, toSpring, type SpringDescription} from './spring';
 
 /**
  * A timed motion: a duration and an easing of progress, for the theme's
@@ -153,7 +155,21 @@ export interface StateLayer<State> {
   readonly spring: SpringDescription;
 }
 
-export type CompanionLayer<State> = MapLayer | StateLayer<State>;
+/**
+ * A map layer whose channel also carries the drag's state: the driver's map
+ * plus `offset(state)`, one channel, so one curve. A move lands the offset on
+ * its own motion from where it is (presented value less the map, and that
+ * velocity), as a state layer's value lands, while the map part follows the
+ * driver: the outermost swipe entry, pinned with the others plus its full
+ * swipe's slide, with no wrapper element to carry either. A track rule's
+ * moves write it 1:1, the offset stepping to its new value.
+ */
+export interface OffsetLayer<State> extends MapLayer {
+  offset(state: State): number;
+}
+
+export type CompanionLayer<State> =
+  MapLayer | StateLayer<State> | OffsetLayer<State>;
 
 /**
  * Options of a programmatic move (`to`).
@@ -275,6 +291,17 @@ function isStateLayer<State>(
   return typeof (layer as StateLayer<State>).value === 'function';
 }
 
+function isOffsetLayer<State>(
+  layer: CompanionLayer<State>,
+): layer is OffsetLayer<State> {
+  return typeof (layer as OffsetLayer<State>).offset === 'function';
+}
+
+/** A motion curve that stays at `value`. */
+function constant(value: number): MotionCurve {
+  return {duration: 0, at: () => value, velocity: () => 0};
+}
+
 const now = () => performance.now();
 
 /**
@@ -297,6 +324,10 @@ export function createInteractiveTransition<
     (layer): layer is MapLayer => !isStateLayer(layer),
   );
   const stateLayers = layers.filter(isStateLayer);
+  // Each offset layer's offset, as last landed or placed.
+  const offsets = new Map<MapLayer, number>();
+  const valueOf = (layer: MapLayer, position: number) =>
+    layer.map(position) + (offsets.get(layer) ?? 0);
   let state = config.track?.initial as State;
   // A follow in progress: its pending target (coalesced to one retarget a
   // frame) and the frame that applies it.
@@ -307,7 +338,7 @@ export function createInteractiveTransition<
   const write = (position: number) => {
     driver.animator.set({[driver.property]: position});
     for (const layer of mapLayers) {
-      layer.animator.set({[layer.property]: layer.map(position)});
+      layer.animator.set({[layer.property]: valueOf(layer, position)});
     }
   };
   const cancelFrame = () => {
@@ -322,7 +353,7 @@ export function createInteractiveTransition<
     frame = null;
     const position = driver.animator.get(driver.property);
     for (const layer of mapLayers) {
-      layer.animator.set({[layer.property]: layer.map(position)});
+      layer.animator.set({[layer.property]: valueOf(layer, position)});
     }
     if (following != null) {
       const target = following.target;
@@ -400,10 +431,80 @@ export function createInteractiveTransition<
         }
       }
     };
+    // An offset layer's curve: the map part, plus its offset landing from
+    // where it is now (the presented value less the map part, and that
+    // velocity) on the move's motion.
+    const withOffset = (
+      layer: OffsetLayer<State>,
+      mapPart: MotionCurve,
+      progress: MotionCurve | null,
+    ): MotionCurve => {
+      const start = layer.animator.get(layer.property, at) - mapPart.at(0);
+      const startVelocity =
+        layer.animator.getVelocity(layer.property, at) - mapPart.velocity(0);
+      const end =
+        'state' in options
+          ? layer.offset(options.state as State)
+          : (offsets.get(layer) ?? start);
+      offsets.set(layer, end);
+      let offset: MotionCurve;
+      if (!isTiming(motion)) {
+        const curve = solveSpring(
+          toSpring(resolveMotion(layer.animator.element, motion)),
+          {from: start, to: end, velocity: startVelocity},
+        );
+        const settle = curve.settleTime(SETTLE_THRESHOLD[layer.property]);
+        offset = {
+          duration: settle,
+          at: t => (t >= settle ? end : curve.value(t)),
+          velocity: t => (t >= settle ? 0 : curve.velocity(t)),
+        };
+      } else {
+        offset =
+          progress == null
+            ? constant(end)
+            : mapProgress(progress, p => start + (end - start) * p);
+      }
+      return {
+        duration: Math.max(mapPart.duration, offset.duration),
+        at: t =>
+          mapPart.at(Math.min(t, mapPart.duration)) +
+          offset.at(Math.min(t, offset.duration)),
+        velocity: t =>
+          (t >= mapPart.duration ? 0 : mapPart.velocity(t)) +
+          (t >= offset.duration ? 0 : offset.velocity(t)),
+      };
+    };
     const from = driver.animator.get(driver.property, at);
     const distance = target - from;
     if (Math.abs(distance) < LAND_EPSILON) {
+      // The driver stays; an offset layer's offset may still move.
+      const moving = mapLayers.filter(
+        (layer): layer is OffsetLayer<State> =>
+          isOffsetLayer(layer) && 'state' in options && !isTiming(motion),
+      );
+      const curves = moving.map(
+        layer =>
+          [
+            layer,
+            withOffset(layer, constant(layer.map(target)), null),
+          ] as const,
+      );
       write(target);
+      for (const [layer, curve] of curves) {
+        layer.animator.play(
+          {[layer.property]: curve},
+          {...clock, touchRelease},
+        );
+      }
+      if ('state' in options) {
+        for (const layer of mapLayers) {
+          if (isOffsetLayer(layer) && isTiming(motion)) {
+            offsets.set(layer, layer.offset(options.state));
+            layer.animator.set({[layer.property]: valueOf(layer, target)});
+          }
+        }
+      }
       landStateLayers(null);
       return {handle: null, finished: Promise.resolve(true)};
     }
@@ -422,9 +523,14 @@ export function createInteractiveTransition<
     );
     const finishing = [handle.finished];
     for (const layer of mapLayers) {
+      const mapPart = mapProgress(progress, p => layer.map(along(p)));
       finishing.push(
         layer.animator.play(
-          {[layer.property]: mapProgress(progress, p => layer.map(along(p)))},
+          {
+            [layer.property]: isOffsetLayer(layer)
+              ? withOffset(layer, mapPart, progress)
+              : mapPart,
+          },
           {...clock, touchRelease},
         ).finished,
       );
@@ -503,6 +609,13 @@ export function createInteractiveTransition<
       cancelFrame();
       following = null;
       catchingUp = false;
+      if ('state' in options) {
+        for (const layer of mapLayers) {
+          if (isOffsetLayer(layer)) {
+            offsets.set(layer, layer.offset(options.state));
+          }
+        }
+      }
       write(position);
       if ('state' in options) {
         for (const layer of stateLayers) {
