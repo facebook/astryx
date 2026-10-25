@@ -100,7 +100,7 @@ extension Theme {
         dataYellow3: Color(astryxRGBA: 0xFBCE03FF),
         dataYellow4: Color(astryxRGBA: 0xD69804FF),
         dataYellow5: Color(astryxRGBA: 0x8A5001FF),
-        error: Color(astryxRGBA: 0xCF3738FF),
+        error: Color(astryxRGBA: 0xC9303AFF),
         errorMuted: Color(astryxRGBA: 0xFFC4BEFF),
         iconAccent: Color(astryxRGBA: 0x1B1B1BFF),
         iconBlue: Color(astryxRGBA: 0x003978FF),
@@ -139,7 +139,7 @@ extension Theme {
         overlayPressed: Color(astryxRGBA: 0x0000001A),
         shadow: Color(astryxRGBA: 0x0000001A),
         skeleton: Color(astryxRGBA: 0xF1F1F1FF),
-        success: Color(astryxRGBA: 0x2F7D33FF),
+        success: Color(astryxRGBA: 0x198100FF),
         successMuted: Color(astryxRGBA: 0xBCE0BBFF),
         syntaxAdded: Color(astryxRGBA: 0xBCE0BB40),
         syntaxAddedMarker: Color(astryxRGBA: 0x6A6A6AFF),
@@ -180,7 +180,7 @@ extension Theme {
         textYellow: Color(astryxRGBA: 0x4B3900FF),
         tintHover: Color(astryxRGBA: 0x000000FF),
         track: Color(astryxRGBA: 0xCCD3DBFF),
-        warning: Color(astryxRGBA: 0xF8D36AFF),
+        warning: Color(astryxRGBA: 0xFFCE2FFF),
         warningMuted: Color(astryxRGBA: 0xFAE19EFF)
       ),
       space: SpaceTokens(
@@ -372,7 +372,7 @@ extension Theme {
         dataYellow3: Color(astryxRGBA: 0xFBCE03FF),
         dataYellow4: Color(astryxRGBA: 0xD69804FF),
         dataYellow5: Color(astryxRGBA: 0x8A5001FF),
-        error: Color(astryxRGBA: 0xEE736CFF),
+        error: Color(astryxRGBA: 0xFF705DFF),
         errorMuted: Color(astryxRGBA: 0xFF98903D),
         iconAccent: Color(astryxRGBA: 0xF1F1F1FF),
         iconBlue: Color(astryxRGBA: 0x88BCFFFF),
@@ -411,7 +411,7 @@ extension Theme {
         overlayPressed: Color(astryxRGBA: 0xFFFFFF1A),
         shadow: Color(astryxRGBA: 0x0000004D),
         skeleton: Color(astryxRGBA: 0x525252FF),
-        success: Color(astryxRGBA: 0x74AF75FF),
+        success: Color(astryxRGBA: 0x64AF4CFF),
         successMuted: Color(astryxRGBA: 0x90CA903D),
         syntaxAdded: Color(astryxRGBA: 0x90CA900F),
         syntaxAddedMarker: Color(astryxRGBA: 0x9E9E9EFF),
@@ -452,7 +452,7 @@ extension Theme {
         textYellow: Color(astryxRGBA: 0xEEC448FF),
         tintHover: Color(astryxRGBA: 0xFFFFFFFF),
         track: Color(astryxRGBA: 0x5A5E66FF),
-        warning: Color(astryxRGBA: 0xEFD284FF),
+        warning: Color(astryxRGBA: 0xFFCE2FFF),
         warningMuted: Color(astryxRGBA: 0xE2B6233D)
       ),
       space: SpaceTokens(

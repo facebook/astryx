@@ -53,25 +53,17 @@ vocabulary remains owned by `architecture:theme-tokens`.
 
 ## Theme-local role definitions
 
-Neutral emits theme-local status roles as compatibility contracts for Neutral
-extensions. They use named palette stops and are not portable Core tokens:
+Neutral emits one theme-local role, kept as a compatibility contract for
+Neutral extensions. It is deprecated: Neutral paints every status through the
+portable `--color-*` roles and does not read it, and it keeps its exact name,
+meaning, and value:
 
-| Exact name                                                 | Neutral-only meaning                         | Value                                                             |
-| ---------------------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------------- |
-| `--astryx-theme-neutral-color-status-fill-accent`          | Filled accent status                         | `['#0074e2', '#6d9cfe']`                                          |
-| `--astryx-theme-neutral-color-status-fill-success`         | Filled success status                        | `[green.light[45], green.dark[65]]`                               |
-| `--astryx-theme-neutral-color-status-fill-warning`         | Filled warning status                        | `[yellow.light[85], yellow.dark[85]]`                             |
-| `--astryx-theme-neutral-color-status-fill-error`           | Filled error status                          | `[red.light[50], red.dark[65]]`                                   |
-| `--astryx-theme-neutral-color-status-muted-accent`         | Pale accent status surface                   | `[blue.light[85], withAlpha(blue.dark[75], '3D')]`                |
-| `--astryx-theme-neutral-color-on-tint-neutral`             | Neutral content on a semantic tinted surface | `['#fafafa4D', '#0a0a0a4D']`                                      |
-| `--astryx-theme-neutral-color-on-tint-overlay-hover`       | Hover overlay on a semantic tinted surface   | `['#fafafa1A', '#0a0a0a1A']`                                      |
-| `--astryx-theme-neutral-color-on-tint-overlay-pressed`     | Pressed overlay on a semantic tinted surface | `['#fafafa33', '#0a0a0a33']`                                      |
-| `--astryx-theme-neutral-color-destructive-overlay-hover`   | Hover overlay on a pale destructive Button   | `[withAlpha(red.light[70], '0D'), withAlpha(red.dark[65], '0D')]` |
-| `--astryx-theme-neutral-color-destructive-overlay-pressed` | Pressed overlay on a pale destructive Button | `[withAlpha(red.light[70], '1A'), withAlpha(red.dark[65], '1A')]` |
+| Exact name                                        | Neutral-only meaning | Value                    | Status     |
+| ------------------------------------------------- | -------------------- | ------------------------ | ---------- |
+| `--astryx-theme-neutral-color-status-fill-accent` | Filled accent status | `['#0074e2', '#6d9cfe']` | Deprecated |
 
-The exact names and meanings are public Neutral-family compatibility contracts.
-Core components consume the portable `--color-*` semantic roles instead; no
-Core implementation depends on these Neutral-local aliases.
+Core components consume the portable `--color-*` semantic roles; no Core
+implementation or Neutral mapping depends on this alias.
 
 ## Tonal palette definitions
 
@@ -95,11 +87,13 @@ Core components choose semantic roles by surface (`architecture:theme-tokens`
 INV11): strong fills use `--color-<status>` with `--color-on-<status>`, pale
 surfaces use `--color-<status>-muted` with `--color-on-<status>-muted`, and
 status text, icons, and borders on the default surfaces use `--color-text-*`,
-`--color-icon-*`, and `--color-border-*`. Neutral's status fills
-(`--astryx-theme-neutral-color-status-fill-*`) are its `--color-info`,
-`--color-success`, `--color-warning`, and `--color-error`, and its accent fill
-also paints the accent variants of ProgressBar, StatusDot, and Stepper
-indicators. Every new mapping needs exact-head theme review and
+`--color-icon-*`, and `--color-border-*`. Neutral sets the portable status
+fills directly: `--color-info` `['#0074e2', '#6d9cfe']`, `--color-success`
+`['#198100', '#64af4c']`, `--color-warning` `'#ffce2f'`, and `--color-error`
+`['#c9303a', '#ff705d']`, the colours its Badges have always shown. Accent
+variants of ProgressBar, StatusDot, and Stepper indicators paint Neutral's
+accent, and Banner and the pale destructive Button use the portable overlay
+and neutral roles; Neutral adds no component override for any of them. Every new mapping needs exact-head theme review and
 rendered light/dark evidence; shared color alone is not enough.
 
 This work does not add component states. It intentionally excludes
@@ -195,7 +189,9 @@ compatibility contract, despite not being portable across themes or consumed by
 Core.
 
 The token may be applied only where the mapped context genuinely means filled
-accent status. A new component mapping requires rendered light/dark evidence for
+accent status. It is deprecated: Neutral itself maps no component to it and
+uses the portable status roles instead, and it stays defined for Neutral
+extensions. A new component mapping requires rendered light/dark evidence for
 its actual interaction states.
 
 Rejected: treating the role as global, treating it as disposable private output,
@@ -246,8 +242,8 @@ changing semantic token mappings in the palette-value change.
 
 Neutral's semantic, categorical, syntax, and color-bearing effect values use
 named palette-stop references when an approved match exists. Token names and
-meanings remain unchanged. Neutral's `--color-success`, `--color-warning`, and
-`--color-error` are its reviewed status fills, and the text roles of
+meanings remain unchanged. The status fills keep the explicit values Neutral's
+Badges have always shown, which no palette stop matches, and the text roles of
 `architecture:theme-tokens` INV11 carry the darker values readable on the
 page. Alpha
 variants derive from the referenced stop rather than duplicating its hex value.

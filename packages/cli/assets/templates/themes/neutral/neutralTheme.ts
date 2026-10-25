@@ -33,40 +33,10 @@ const neutralSyntax = defineSyntaxTheme({
 });
 
 const neutralLocalTokens: Record<string, TokenValue> = {
+  // Deprecated: kept with its released name, meaning, and value for Neutral
+  // extensions (theme:neutral DEC-1); Neutral itself paints status through the
+  // portable --color-* roles and no longer reads it.
   '--astryx-theme-neutral-color-status-fill-accent': ['#0074e2', '#6d9cfe'],
-  '--astryx-theme-neutral-color-status-fill-success': [
-    green.light[45],
-    green.dark[65],
-  ],
-  '--astryx-theme-neutral-color-status-fill-warning': [
-    yellow.light[85],
-    yellow.dark[85],
-  ],
-  '--astryx-theme-neutral-color-status-fill-error': [
-    red.light[50],
-    red.dark[65],
-  ],
-  '--astryx-theme-neutral-color-status-muted-accent': [
-    blue.light[85],
-    withAlpha(blue.dark[75], '3D'),
-  ],
-  '--astryx-theme-neutral-color-on-tint-neutral': ['#fafafa4D', '#0a0a0a4D'],
-  '--astryx-theme-neutral-color-on-tint-overlay-hover': [
-    '#fafafa1A',
-    '#0a0a0a1A',
-  ],
-  '--astryx-theme-neutral-color-on-tint-overlay-pressed': [
-    '#fafafa33',
-    '#0a0a0a33',
-  ],
-  '--astryx-theme-neutral-color-destructive-overlay-hover': [
-    withAlpha(red.light[70], '0D'),
-    withAlpha(red.dark[65], '0D'),
-  ],
-  '--astryx-theme-neutral-color-destructive-overlay-pressed': [
-    withAlpha(red.light[70], '1A'),
-    withAlpha(red.dark[65], '1A'),
-  ],
 };
 
 export const neutralTheme = defineTheme({
@@ -156,7 +126,7 @@ export const neutralTheme = defineTheme({
     '--color-on-error': [neutral.light[100], neutral.dark[5]],
     '--color-on-warning': neutral.light[5],
 
-    '--color-info': 'var(--astryx-theme-neutral-color-status-fill-accent)',
+    '--color-info': ['#0074e2', '#6d9cfe'],
     '--color-info-muted': [blue.light[85], withAlpha(blue.dark[75], '3D')],
     '--color-on-info': [neutral.light[100], neutral.dark[5]],
 
@@ -178,9 +148,9 @@ export const neutralTheme = defineTheme({
 
     // Strong status fills (architecture:theme-tokens INV11): Neutral's
     // reviewed status-fill colours, with --color-on-<status> above.
-    '--color-success': 'var(--astryx-theme-neutral-color-status-fill-success)',
-    '--color-warning': 'var(--astryx-theme-neutral-color-status-fill-warning)',
-    '--color-error': 'var(--astryx-theme-neutral-color-status-fill-error)',
+    '--color-success': ['#198100', '#64af4c'],
+    '--color-warning': '#ffce2f',
+    '--color-error': ['#c9303a', '#ff705d'],
     '--color-success-muted': [green.dark[85], withAlpha(green.light[75], '3D')],
     '--color-error-muted': [red.light[85], withAlpha(red.dark[75], '3D')],
     '--color-warning-muted': [
@@ -307,10 +277,6 @@ export const neutralTheme = defineTheme({
       'variant:destructive': {
         backgroundColor: 'var(--color-error-muted)',
         color: 'var(--color-on-error-muted)',
-        '--color-overlay-hover':
-          'var(--astryx-theme-neutral-color-destructive-overlay-hover)',
-        '--color-overlay-pressed':
-          'var(--astryx-theme-neutral-color-destructive-overlay-pressed)',
       },
     },
 
@@ -384,20 +350,6 @@ export const neutralTheme = defineTheme({
       },
     },
 
-    banner: {
-      base: {
-        '--color-neutral': 'var(--astryx-theme-neutral-color-on-tint-neutral)',
-        '--color-overlay-hover':
-          'var(--astryx-theme-neutral-color-on-tint-overlay-hover)',
-        '--color-overlay-pressed':
-          'var(--astryx-theme-neutral-color-on-tint-overlay-pressed)',
-      },
-      'status:info': {
-        '--color-info-muted':
-          'var(--astryx-theme-neutral-color-status-muted-accent)',
-      },
-    },
-
     switch: {
       base: {
         '--color-background-gray': 'var(--color-border-emphasized)',
@@ -407,25 +359,6 @@ export const neutralTheme = defineTheme({
     'progress-bar': {
       base: {
         '--color-background-muted': 'var(--color-border-emphasized)',
-      },
-      // Accent variants keep Neutral's reviewed accent fill; status variants
-      // read the -emphasized roles.
-      'variant:accent': {
-        '--color-accent':
-          'var(--astryx-theme-neutral-color-status-fill-accent)',
-      },
-    },
-
-    'status-dot': {
-      'variant:accent': {
-        backgroundColor: 'var(--astryx-theme-neutral-color-status-fill-accent)',
-      },
-    },
-
-    'step-indicator': {
-      'status:accent': {
-        '--color-accent':
-          'var(--astryx-theme-neutral-color-status-fill-accent)',
       },
     },
 
