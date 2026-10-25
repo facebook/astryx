@@ -751,7 +751,7 @@ test.describe('under a finger', () => {
     // In the page, so the frames are read without a round trip: blur (the
     // predicted hide), report the keyboard gone the way the home-screen app
     // does, 30 ms later, and read every frame.
-    const ys = await editable.evaluate(async el => {
+    const {ys, faded} = await editable.evaluate(async el => {
       let host: HTMLElement | null = el as HTMLElement;
       while (host != null && getComputedStyle(host).position !== 'sticky') {
         host = host.parentElement;
@@ -764,9 +764,14 @@ test.describe('under a finger', () => {
         return translate - (parseFloat(style.bottom) || 0);
       };
       const out: number[] = [];
+      // When the dock was less than fully opaque: the fade's span.
+      const faded: number[] = [];
       const until = performance.now() + 900;
-      const sample = () => {
+      const sample = (now: number) => {
         out.push(read());
+        if (parseFloat(getComputedStyle(host as HTMLElement).opacity) < 0.999) {
+          faded.push(now);
+        }
         if (performance.now() < until) {
           requestAnimationFrame(sample);
         }
@@ -776,7 +781,7 @@ test.describe('under a finger', () => {
       await new Promise(resolve => setTimeout(resolve, 30));
       (window as unknown as {__keyboard: (c: number) => void}).__keyboard(0);
       await new Promise(resolve => setTimeout(resolve, 900));
-      return out;
+      return {ys: out, faded};
     });
     for (const y of ys) {
       expect(
@@ -786,6 +791,10 @@ test.describe('under a finger', () => {
     }
     expect(ys.at(-1)).toBeCloseTo(0, 0);
     expect(await dockGap(dock)).toBeCloseTo(0, 0);
+    // An opacity-only fade of at most 200 ms (DR2), give or take a frame
+    // either side.
+    expect(faded.length).toBeGreaterThan(0);
+    expect((faded.at(-1) ?? 0) - (faded[0] ?? 0)).toBeLessThanOrEqual(200 + 34);
     // The fade ends shown: the dock and the transcript are fully opaque.
     const opacities = await dock.evaluate(el => {
       const read = (node: Element) => getComputedStyle(node).opacity;

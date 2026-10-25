@@ -4,7 +4,8 @@
 
 /**
  * @file useMobileKeyboard.ts
- * @input The window's visual viewport, focus events, React effects and refs
+ * @input The window's visual viewport, focus events, React effects and refs,
+ *   the motion module's Reduce Motion queries
  * @output Exports the on-screen keyboard module: measureKeyboardHeight,
  *   isKeyboardMeasurable, subscribeMobileKeyboard, getMobileKeyboardHeight,
  *   useKeyboardHeight, isTextEntryControl, findTextEntryControl,
@@ -43,6 +44,10 @@
  * SYNC: When modified, update /packages/core/src/keyboard/README.md
  */
 
+import {
+  REDUCED_MOTION_FADE_QUERY,
+  REDUCED_MOTION_INSTANT_QUERY,
+} from '../motion/reducedMotion';
 import {useEffect, useRef, useSyncExternalStore, type RefObject} from 'react';
 
 const MOBILE_KEYBOARD_INSET_VAR = '--_sheet-keyboard-inset';
@@ -577,9 +582,13 @@ export function useMobileKeyboard({
         body.scrollTop += distance;
         return;
       }
+      // Reduce Motion, on any pointer (design:reduced-motion): the motion
+      // module's own queries, never a local spelling.
       const reduceMotion =
         typeof window.matchMedia === 'function' &&
-        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        [REDUCED_MOTION_FADE_QUERY, REDUCED_MOTION_INSTANT_QUERY].some(
+          query => window.matchMedia(query).matches,
+        );
       body.scrollBy({
         top: distance,
         // Not 'auto': that defers to the element's computed `scroll-behavior`,

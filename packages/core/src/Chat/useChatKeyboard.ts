@@ -6,7 +6,7 @@
  * @file useChatKeyboard.ts
  * @input React refs, the keyboard module (useKeyboardHeight,
  *   claimTapFocus), the keyboard layout guide, the animator,
- *   `springs.keyboard`
+ *   `springs.keyboard` (registerSpringsTable)
  * @output Exports useChatKeyboard: the lift ChatLayout lays its dock and
  *   keyboard spacer out with, and the refs it puts on its dock, message area
  *   and composer region so the composer rides the software keyboard
@@ -44,7 +44,7 @@
 
 import {useRef, useState, useSyncExternalStore, type RefObject} from 'react';
 import {useAnimator} from '../motion/useAnimator';
-import {springs} from '../motion/uikit';
+import {registerSpringsTable, springs} from '../motion/uikit';
 import {
   bringsUpKeyboard,
   claimTapFocus,
@@ -251,6 +251,9 @@ export function useChatKeyboard({
     };
     commitRef.current = commit;
 
+    // The ride plays `springs.keyboard`: its table registers (once) before
+    // the first animation, so a theme's keyboard spring applies.
+    registerSpringsTable();
     const follow = (transition: KeyboardTransition) => {
       // The ride: the dock goes where the guide says the keyboard will be,
       // from the keyboard's start, relative to the layout it rests in now.
@@ -269,11 +272,9 @@ export function useChatKeyboard({
         return;
       }
       // Under Reduce Motion the animator's default applies: no travel, a
-      // cross-fade on a touch screen (design:reduced-motion DR1, DR2). The
-      // ride names the opacity it ends at: a ride that takes over from one
-      // still fading out would otherwise keep fading to 0 and end hidden.
+      // cross-fade on a touch screen (design:reduced-motion DR1, DR2).
       const timing = {at: transition.start};
-      const shown = {y: target, opacity: 1};
+      const shown = {y: target};
       ridingRef.current = true;
       rideRef.current += 1;
       const ride = rideRef.current;

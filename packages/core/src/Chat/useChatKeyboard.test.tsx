@@ -109,10 +109,11 @@ describe('ChatLayout and the software keyboard', () => {
     report(window.innerHeight - 300);
     await settle();
     // spec:AST-099 FR3: the layout is right with no animation running, and
-    // the ride's translate is handed back to it.
+    // the ride's translate is handed back to it: back at identity, the
+    // animator takes it off the element.
     expect(layoutLift(dockOf(container))).toBe(300);
     expect(layoutLift(spacerOf(container))).toBe(300);
-    expect(dockOf(container).style.translate).toBe('0px 0px');
+    expect(dockOf(container).style.translate).toBe('');
   });
 
   it('keeps a transcript at its newest message there', async () => {
@@ -183,7 +184,7 @@ describe('ChatLayout and the software keyboard', () => {
     await settle();
     expect(layoutLift(dockOf(container))).toBe(0);
     expect(layoutLift(spacerOf(container))).toBe(0);
-    expect(dockOf(container).style.translate).toBe('0px 0px');
+    expect(dockOf(container).style.translate).toBe('');
   });
 
   it('moves nothing while no keyboard is up', async () => {
