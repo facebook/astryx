@@ -91,6 +91,20 @@ async function openCalendar(
     .locator('.astryx-bottom-sheet')
     .first();
   await waitForRest(sheet);
+  // Under a finger the hidden wheels warm up once the sheet has settled
+  // (useWheelsWarmUp): their `visibility` turns visible at opacity 0, with its
+  // own transition. Wait for that and for its end, so a test's first tap
+  // meets a panel at rest: `blockMainThread` and `waitForAnimation` take any
+  // running animation on the panel, and on a slow runner the warm-up's
+  // transition was still running at the toggle, so the block began in the
+  // frame before the tap's click and the fade ran only after it.
+  const wheels = page.locator('[data-panel="wheels"]').first();
+  await expect
+    .poll(async () => wheels.evaluate(e => getComputedStyle(e).visibility), {
+      timeout: SHEET_SETTLE_MS + 2000,
+    })
+    .toBe('visible');
+  await waitForRest(wheels);
   const title = page.locator('[data-title="month-year"]');
   const titleBox = await title.boundingBox();
   if (titleBox == null) {
@@ -99,7 +113,7 @@ async function openCalendar(
   return {
     driver,
     sheet,
-    wheels: page.locator('[data-panel="wheels"]').first(),
+    wheels,
     titleAt: {
       x: titleBox.x + titleBox.width / 2,
       y: titleBox.y + titleBox.height / 2,
