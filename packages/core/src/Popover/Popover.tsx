@@ -57,6 +57,7 @@ import {clampInlineSize, isIntrinsicInlineSize} from '../Layer/clampInlineSize';
 import {spacingVars} from '../theme/tokens.stylex';
 import {InteractiveRoleContext} from '../InteractiveRoleContext/InteractiveRoleContext';
 import type {SpacingStep} from '../utils/types';
+import {BottomSheetEscapeContext} from '../BottomSheet/bottomSheetEscape';
 import {
   PopoverBottomSheet,
   preloadPopoverBottomSheet,
@@ -126,6 +127,15 @@ function findTriggerButton(el: HTMLElement): HTMLElement | null {
     return el;
   }
   return el.querySelector<HTMLElement>(BUTTON_SELECTOR);
+}
+
+/** The trigger's own name: its `aria-label`, else its text. */
+function readTriggerText(trigger: HTMLElement): string {
+  return (
+    trigger.getAttribute('aria-label')?.trim() ||
+    trigger.textContent?.trim() ||
+    ''
+  );
 }
 
 // =============================================================================
@@ -262,7 +272,9 @@ export interface PopoverProps extends Pick<
 
   /**
    * Accessible label for the popover dialog.
-   * Recommended for accessibility when `role` is `'dialog'`.
+   * Recommended for accessibility when `role` is `'dialog'`. A sheet
+   * (`presentation`) without one is named by the trigger's text, so it is
+   * never an unnamed dialog.
    */
   label?: string;
 
@@ -287,15 +299,13 @@ export interface PopoverProps extends Pick<
 
   /**
    * Whether to include a hidden close button for accessibility.
-   * The button appears when keyboard users tab past the last element. In a
-   * sheet without light dismiss (`presentation`), it is a visible Close
-   * button instead.
+   * The button appears when keyboard users tab past the last element.
    * @default true
    */
   hasCloseButton?: boolean;
 
   /**
-   * Label for the hidden close button (the sheet's Close button).
+   * Label for the hidden close button.
    * @default "Close popover"
    */
   closeButtonLabel?: string;
@@ -342,10 +352,10 @@ export interface PopoverProps extends Pick<
    * `hasAutoFocus` do not apply (the sheet is a modal dialog with its own
    * focus handling); `xstyle`, `className` and `style` style the sheet's
    * panel, as they style the anchored surface; `padding` insets the
-   * sheet's content; dismissal follows `hasLightDismiss` and
-   * `hasEscapeDismiss` (a sheet without light dismiss keeps Escape unless
-   * that is off too, and shows a Close button, `hasCloseButton` and
-   * `closeButtonLabel`, since a finger has no Escape). The surface is
+   * sheet's content. The sheet always light-dismisses (a tap outside it or a
+   * swipe down closes it, whatever `hasLightDismiss` says), Escape follows
+   * `hasEscapeDismiss`, and the fallback close stays hidden as on the
+   * anchored surface. The surface is
    * chosen when the popover opens and kept until it closes.
    * @default 'popover'
    */
@@ -370,13 +380,24 @@ const styles = stylex.create({
   anchorWrapper: {
     display: 'inline-flex',
   },
-  // The sheet's Close button when it has no light dismiss: visible, set below
-  // the content. A finger has no Escape key, and such a sheet takes no swipe
-  // or scrim tap, so a hidden control would leave a touch user no way out.
-  // It sits on the Button itself, with no wrapper
-  // (architecture:component-style-authoring INV7).
-  sheetClose: {
-    marginBlockStart: spacingVars['--spacing-3'],
+  // The sheet's fallback close control: hidden until it is reached, as the
+  // anchored surface's is, on the Button itself rather than a wrapper
+  // (architecture:component-style-authoring INV7). Taken out of flow and
+  // clipped at rest, it rejoins the flow when focused, set below the content
+  // with room for its focus ring.
+  sheetFallbackClose: {
+    position: {
+      default: 'absolute',
+      ':focus': 'relative',
+    },
+    clipPath: {
+      default: 'inset(50%)',
+      ':focus': 'none',
+    },
+    marginBlockStart: {
+      default: 0,
+      ':focus': spacingVars['--spacing-3'],
+    },
   },
   // The painted surface is capped to the viewport with the layer runtime's
   // one definition (spec:AST-059 FR2, FR3): the layer box above it caps the
@@ -552,6 +573,8 @@ export function Popover({
   // and its dialog hands focus back to the trigger (component:Popover AR4),
   // and gives way to the anchored layer once its dialog has closed.
   const [hasSheetBeenOpen, setHasSheetBeenOpen] = useState(false);
+  // The trigger's text, which names a sheet that has no `label` (DEC-8).
+  const [triggerText, setTriggerText] = useState('');
   if (isSheetOpen && !hasSheetBeenOpen) {
     setHasSheetBeenOpen(true);
   }
@@ -688,6 +711,9 @@ export function Popover({
         isSheetOpen ||
         (!popover.isOpen && resolvedPresentation === 'bottom-sheet')
       ) {
+        if (trigger instanceof HTMLElement) {
+          setTriggerText(readTriggerText(trigger));
+        }
         setSheetOpen(!isSheetOpen);
         return;
       }
@@ -726,6 +752,10 @@ export function Popover({
         'aria-controls',
         isSheetMounted ? sheetId : popover.triggerProps['aria-controls'],
       );
+      // The trigger's text is in the DOM the caller rendered, read as the
+      // trigger attaches; it names a sheet that has no `label` (DEC-8).
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- reads the caller-rendered trigger's text, which only the DOM holds
+      setTriggerText(readTriggerText(button));
 
       // Event handlers
       button.addEventListener('click', handleTriggerClick);
@@ -869,41 +899,37 @@ export function Popover({
       {isContentInSheet ? null : content}
     </div>
   );
-  const sheetPurpose = hasLightDismiss
-    ? 'info'
-    : hasEscapeDismiss
-      ? 'form'
-      : 'required';
-  // The sheet renders while it is the open surface and through its exit. A
-  // sheet without light dismiss shows a Close button, so a finger can always
-  // close it (`hasCloseButton={false}` leaves that to the content).
+  // The sheet renders while it is the open surface and through its exit. It
+  // always light-dismisses: a tap outside it or a swipe down closes it,
+  // whatever `hasLightDismiss` says, so a finger always has a way out
+  // (DEC-8). Escape follows `hasEscapeDismiss`, and the fallback close stays
+  // hidden until it is reached, as on the anchored surface.
   const sheet = isSheetMounted ? (
-    <PopoverBottomSheet
-      ref={sheetPanelRef}
-      id={sheetId}
-      isOpen={isSheetOpen}
-      onOpenChange={setSheetOpen}
-      label={label ?? ''}
-      height="tall"
-      padding={padding}
-      purpose={sheetPurpose}
-      xstyle={xstyle}
-      className={className}
-      style={style}
-      data-testid={isContentInSheet ? testId : undefined}>
-      {isContentInSheet ? content : null}
-      {isContentInSheet &&
-      sheetPurpose !== 'info' &&
-      hasCloseButton !== false ? (
-        <Button
-          data-astryx-popover-fallback-close=""
-          variant="secondary"
-          label={closeButtonLabel ?? t('@astryx.popover.close')}
-          onClick={() => setSheetOpen(false)}
-          xstyle={styles.sheetClose}
-        />
-      ) : null}
-    </PopoverBottomSheet>
+    <BottomSheetEscapeContext value={hasEscapeDismiss}>
+      <PopoverBottomSheet
+        ref={sheetPanelRef}
+        id={sheetId}
+        isOpen={isSheetOpen}
+        onOpenChange={setSheetOpen}
+        label={label ?? triggerText}
+        height="tall"
+        padding={padding}
+        xstyle={xstyle}
+        className={className}
+        style={style}
+        data-testid={isContentInSheet ? testId : undefined}>
+        {isContentInSheet ? content : null}
+        {isContentInSheet && hasCloseButton !== false ? (
+          <Button
+            data-astryx-popover-fallback-close=""
+            variant="secondary"
+            label={closeButtonLabel ?? t('@astryx.popover.close')}
+            onClick={() => setSheetOpen(false)}
+            xstyle={styles.sheetFallbackClose}
+          />
+        ) : null}
+      </PopoverBottomSheet>
+    </BottomSheetEscapeContext>
   ) : null;
 
   // The anchored layer, unless the sheet is the presentation that is mounted.

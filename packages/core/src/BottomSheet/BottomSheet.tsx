@@ -78,6 +78,7 @@ import {
 
 export type {BottomSheetHeight, BottomSheetSnapPoint} from './BottomSheetPanel';
 import type {BottomSheetHeight, BottomSheetSnapPoint} from './BottomSheetPanel';
+import {BottomSheetEscapeContext} from './bottomSheetEscape';
 
 const styles = stylex.create({
   dialog: {
@@ -339,11 +340,13 @@ function StandaloneBottomSheet({
       ? {kind: 'exiting'}
       : {kind: 'hidden'};
 
+  // Popover's sheet may turn Escape off on its own (bottomSheetEscape.ts).
+  const isEscapeAllowed = use(BottomSheetEscapeContext);
   const dismissOnEscape = useCallback(() => {
-    if (isOpen && purpose !== 'required') {
+    if (isOpen && purpose !== 'required' && isEscapeAllowed) {
       onOpenChange(false);
     }
-  }, [isOpen, onOpenChange, purpose]);
+  }, [isEscapeAllowed, isOpen, onOpenChange, purpose]);
   const dismissOnLightInteraction = useCallback(() => {
     if (purpose === 'info') {
       onOpenChange(false);
@@ -439,7 +442,8 @@ function StandaloneBottomSheet({
   // rather than letting it close a layer behind it. `required` blocks too.
   const {shouldDismissOnCloseRequest} = useLayerDismissal({
     isActive: shouldPresent,
-    escapeBehavior: isOpen && purpose !== 'required' ? 'close' : 'block',
+    escapeBehavior:
+      isOpen && purpose !== 'required' && isEscapeAllowed ? 'close' : 'block',
     onDismiss: dismissOnEscape,
     getContainer: () => dialogRef.current,
     isPresent: () => dialogRef.current?.open ?? false,

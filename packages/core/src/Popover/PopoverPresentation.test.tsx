@@ -275,6 +275,27 @@ describe('Popover presentation', () => {
     expect(document.querySelector('[popover]:popover-open')).toBeNull();
   });
 
+  it('a sheet without a label is named by the trigger\u2019s text, never an unnamed dialog (DEC-8)', async () => {
+    isCompactTouch = true;
+    render(
+      <Popover
+        presentation="adaptive"
+        content={<button type="button">Apply</button>}>
+        <Button label="Sort by">Sort by</Button>
+      </Popover>,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', {name: 'Sort by'}));
+      await Promise.resolve();
+    });
+    const dialog = await vi.waitFor(() => {
+      const element = document.querySelector<HTMLDialogElement>('dialog');
+      expect(element).toHaveAttribute('open');
+      return element!;
+    });
+    expect(dialog).toHaveAttribute('aria-label', 'Sort by');
+  });
+
   it('adaptive: a desktop keeps the anchored popover', async () => {
     render(<Filters presentation="adaptive" />);
     await tapTrigger();
@@ -346,30 +367,6 @@ describe('Popover presentation', () => {
     expect(trigger()).toHaveAttribute('aria-expanded', 'false');
   });
 
-  it('maps dismissal to the sheet: no light dismiss keeps Escape, neither makes it required', async () => {
-    isCompactTouch = true;
-    const {unmount} = render(
-      <Filters presentation="adaptive" hasLightDismiss={false} />,
-    );
-    await tapTrigger();
-    await vi.waitFor(() => {
-      expect(sheetDialog()).toHaveAttribute('open');
-    });
-    expect(sheetDialog()).not.toHaveAttribute('role', 'alertdialog');
-    unmount();
-    render(
-      <Filters
-        presentation="adaptive"
-        hasLightDismiss={false}
-        hasEscapeDismiss={false}
-      />,
-    );
-    await tapTrigger();
-    await vi.waitFor(() => {
-      expect(sheetDialog()).toHaveAttribute('role', 'alertdialog');
-    });
-  });
-
   it('holds one instance of the content: the sheet\u2019s, while the sheet is the surface', async () => {
     isCompactTouch = true;
     render(<Filters presentation="adaptive" />);
@@ -389,78 +386,127 @@ describe('Popover presentation', () => {
     expect(sheetDialog()!.contains(applies[0])).toBe(true);
   });
 
-  it.each([
-    ['without light dismiss', {hasLightDismiss: false}],
-    [
-      'with neither dismissal',
-      {hasLightDismiss: false, hasEscapeDismiss: false},
-    ],
-  ])(
-    'a sheet %s shows a Close button a finger can reach',
-    async (_name, dismissal) => {
-      isCompactTouch = true;
-      const onOpenChange = vi.fn();
-      render(
-        <Filters
-          presentation="adaptive"
-          {...dismissal}
-          onOpenChange={onOpenChange}
-        />,
-      );
-      await tapTrigger();
-      const close = await vi.waitFor(() => {
-        const element = sheetDialog()?.querySelector<HTMLElement>(
-          'button[data-astryx-popover-fallback-close]',
-        );
-        expect(element).not.toBeNull();
-        return element!;
-      });
-      expect(close).toHaveTextContent('Close popover');
-      // Visible at rest: none of the anchored surface's hidden-until-focused
-      // clipping, and no wrapper element
-      // (architecture:component-style-authoring INV7).
-      expect(getComputedStyle(close).clipPath).not.toBe('inset(50%)');
-      expect(getComputedStyle(close).position).not.toBe('absolute');
-      expect(
-        close.parentElement?.closest('[data-astryx-popover-fallback-close]'),
-      ).toBeNull();
-      act(() => {
-        fireEvent.click(close);
-      });
-      expect(onOpenChange).toHaveBeenLastCalledWith(false);
-      expect(trigger()).toHaveAttribute('aria-expanded', 'false');
-    },
-  );
-
-  it('a sheet with light dismiss, or hasCloseButton={false}, adds no Close button', async () => {
+  it('a sheet light-dismisses whatever hasLightDismiss says: a tap outside closes it (DEC-8)', async () => {
     isCompactTouch = true;
-    const {unmount} = render(<Filters presentation="adaptive" />);
-    await tapTrigger();
-    await vi.waitFor(() => {
-      expect(sheetDialog()).toHaveAttribute('open');
-    });
-    expect(
-      sheetDialog()!.querySelector(
-        'button[data-astryx-popover-fallback-close]',
-      ),
-    ).toBeNull();
-    unmount();
+    const onOpenChange = vi.fn();
     render(
       <Filters
         presentation="adaptive"
         hasLightDismiss={false}
-        hasCloseButton={false}
+        hasEscapeDismiss={false}
+        onOpenChange={onOpenChange}
       />,
     );
     await tapTrigger();
-    await vi.waitFor(() => {
-      expect(sheetDialog()).toHaveAttribute('open');
+    const dialog = await vi.waitFor(() => {
+      const element = sheetDialog();
+      expect(element).toHaveAttribute('open');
+      return element!;
     });
-    expect(
-      sheetDialog()!.querySelector(
+    // Never an alertdialog: the sheet always has a way out.
+    expect(dialog).not.toHaveAttribute('role', 'alertdialog');
+    // The scrim is the dialog element itself.
+    act(() => {
+      fireEvent.click(dialog);
+    });
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+    expect(trigger()).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('a swipe down closes a sheet with hasLightDismiss={false} (DEC-8)', async () => {
+    isCompactTouch = true;
+    const onOpenChange = vi.fn();
+    render(
+      <Filters
+        presentation="adaptive"
+        hasLightDismiss={false}
+        hasEscapeDismiss={false}
+        onOpenChange={onOpenChange}
+      />,
+    );
+    await tapTrigger();
+    const handle = await vi.waitFor(() => {
+      const element = sheetDialog()?.querySelector<HTMLElement>(
+        '.astryx-bottom-sheet [aria-hidden="true"]',
+      );
+      expect(element).not.toBeNull();
+      return element!;
+    });
+    // jsdom's PointerEvents carry no clientY, so these carry the coordinates
+    // the sheet's drag reads.
+    act(() => {
+      fireEvent.pointerDown(handle, {
+        pointerId: 1,
+        clientY: 0,
+        button: 0,
+        isPrimary: true,
+      });
+      fireEvent.pointerMove(handle, {pointerId: 1, clientY: 40});
+      fireEvent.pointerMove(handle, {pointerId: 1, clientY: 120});
+      fireEvent.pointerUp(handle, {pointerId: 1, clientY: 120});
+    });
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it('in a sheet, Escape follows hasEscapeDismiss', async () => {
+    isCompactTouch = true;
+    const onOpenChange = vi.fn();
+    const {unmount} = render(
+      <Filters
+        presentation="adaptive"
+        hasEscapeDismiss={false}
+        onOpenChange={onOpenChange}
+      />,
+    );
+    await tapTrigger();
+    const blocked = await vi.waitFor(() => {
+      const element = sheetDialog();
+      expect(element).toHaveAttribute('open');
+      return element!;
+    });
+    onOpenChange.mockClear();
+    act(() => {
+      fireEvent.keyDown(blocked, {key: 'Escape'});
+      fireEvent(blocked, new Event('cancel', {cancelable: true}));
+    });
+    expect(onOpenChange).not.toHaveBeenCalled();
+    unmount();
+
+    render(<Filters presentation="adaptive" onOpenChange={onOpenChange} />);
+    await tapTrigger();
+    const allowed = await vi.waitFor(() => {
+      const element = sheetDialog();
+      expect(element).toHaveAttribute('open');
+      return element!;
+    });
+    act(() => {
+      fireEvent.keyDown(allowed, {key: 'Escape'});
+    });
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it('keeps the fallback close control in the sheet, hidden until reached, as the anchored surface does', async () => {
+    isCompactTouch = true;
+    const onOpenChange = vi.fn();
+    render(<Filters presentation="adaptive" onOpenChange={onOpenChange} />);
+    await tapTrigger();
+    const close = await vi.waitFor(() => {
+      const element = sheetDialog()?.querySelector<HTMLElement>(
         'button[data-astryx-popover-fallback-close]',
-      ),
+      );
+      expect(element).not.toBeNull();
+      return element!;
+    });
+    expect(close).toHaveTextContent('Close popover');
+    // The Button itself carries the hidden-until-focused styles: no wrapper
+    // element (architecture:component-style-authoring INV7).
+    expect(
+      close.parentElement?.closest('[data-astryx-popover-fallback-close]'),
     ).toBeNull();
+    act(() => {
+      fireEvent.click(close);
+    });
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
   });
 
   it('controlled: a phone turned past the compact width keeps its sheet until it closes', async () => {

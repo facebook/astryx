@@ -309,6 +309,12 @@ table owns their semantic effect.
 `Popover surface` and `Touch sheet` are alternative presentations of the same
 content, not simultaneous anatomy.
 
+Any element the open touch sheet renders beyond the anchored popover under a
+fine pointer is part of BottomSheet's frame, with its job in
+`component:BottomSheet`'s element jobs, within the open-layer allowance of
+`spec:AST-017` FR60 (DEC-29). Popover adds only its fallback close control to
+the sheet, as the Button itself.
+
 Every public `usePopover` painted surface belongs to the broad `popover` target.
 A composed component may add its own authoritative refinement target, such as
 `selector-popup` or `multi-selector-popup`, on that same element. New direct hook
@@ -426,16 +432,18 @@ and the anchored popover elsewhere.
 
 **Decider:** pending owner review
 
-The sheet of DEC-6 is a modal BottomSheet labeled by Popover's `label`, at the
-sheet's tall height and inset by Popover's `padding`; `xstyle`, `className`
-and `style` style its panel, and `placement`, `alignment` and `width` do not
-apply. Dismissal maps to the sheet's purpose: `info` with light dismiss,
-`form` without it (Escape still closes), and `required` with neither. A sheet
-without light dismiss shows the fallback close control as a visible Close
-button below the content, since a finger has no Escape. The surface is chosen
-when the popover opens and stays until it closes, and the trigger's expanded
-state and controlled element follow whichever surface is open. The sheet loads
-on demand, so pages whose popovers stay anchored do not load it.
+In a sheet, Popover's content is labeled by its `label`, or by the trigger's
+text when it has none, so the dialog always has a name. The sheet always
+light-dismisses: a tap outside it or a swipe down closes it, whatever
+`hasLightDismiss` says, so a finger always has a way out. Its fallback close
+stays hidden, as in an anchored popover. Everything else follows Popover's
+existing props. The sheet of DEC-6 is a modal BottomSheet at the sheet's tall
+height and inset by Popover's `padding`; `xstyle`, `className` and `style`
+style its panel, and `placement`, `alignment` and `width` do not apply. The
+surface is chosen when the popover opens and stays until it closes, and the
+trigger's expanded state and controlled element follow whichever surface is
+open. The sheet loads on demand, so pages whose popovers stay anchored do not
+load it.
 
 ## Verification gaps
 
