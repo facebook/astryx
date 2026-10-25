@@ -68,6 +68,16 @@ describe('native contracts', () => {
       kind: 'fn',
       args: [],
     });
+    // AST-082 FR4: Button `width` projects the web's size value to the two
+    // values every platform supports; other widths stay on the web.
+    expect(byName.get('Button')!.core.width?.type).toEqual({
+      kind: 'enum',
+      values: ['content', 'fill'],
+    });
+    expect(byName.get('Button')!.projections?.width).toEqual({
+      content: 'auto',
+      fill: '100%',
+    });
     expect(byName.get('Heading')!.core.children?.type).toEqual({
       kind: 'string',
     });
