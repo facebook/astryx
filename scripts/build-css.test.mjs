@@ -459,12 +459,6 @@ describe('build-css astryx.css', () => {
       for (const rule of heights) {
         expect(rule).toMatch(TOUCH_GATED);
       }
-      // The compact row's floor, the control size, sits beside them.
-      expect(
-        rules().some(
-          rule => TOUCH_GATED.test(rule) && rule.includes('{min-height:44px}'),
-        ),
-      ).toBe(true);
     });
   });
 });

@@ -434,13 +434,14 @@ export function ListItem({
           hasDividers && embeddedStyles.noRadius,
           // A list with markers is running text (bullets, numbers, a
           // Markdown list), not a table: its rows keep their own height, and
-          // each marker stays on its text's first line.
+          // each marker stays on its text's first line. A compact list is the
+          // dense case and keeps its density too: its rows already clear the
+          // 24px target minimum (WCAG 2.5.8).
           !hasMarkers &&
-            (density === 'compact'
-              ? listRowStyles.touchCompact
-              : isRenderable(description)
-                ? listRowStyles.touchTwoLine
-                : listRowStyles.touchOneLine),
+            density !== 'compact' &&
+            (isRenderable(description)
+              ? listRowStyles.touchTwoLine
+              : listRowStyles.touchOneLine),
           edge === 'flush' && styles.edgeFlush,
           edge === 'outset' && styles.edgeOutset,
           edge === 'bleed' && styles.edgeBleed,

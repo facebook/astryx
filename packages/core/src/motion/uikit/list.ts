@@ -95,14 +95,6 @@ export const list = {
      *   17 Pro, view frame read (UITableView cells), Oct 23 2026
      */
     subtitleRowHeight: 62,
-    /**
-     * The control size the Human Interface Guidelines recommend on iOS and
-     * iPadOS: the floor for a touch row, however dense.
-     * @source apple-docs https://developer.apple.com/design/human-interface-guidelines/accessibility#Mobility
-     *   ("Default control size … iOS, iPadOS 44x44 pt"; the minimum is 28x28
-     *   pt)
-     */
-    controlSize: 44,
   },
 } as const;
 
