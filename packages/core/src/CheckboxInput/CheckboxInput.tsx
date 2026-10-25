@@ -110,6 +110,9 @@ const styles = stylex.create({
   // checkbox owns the press; a cell's, the row's deselect, when a row does).
   // Opacity runs on the compositor, so the release keeps moving while script
   // runs, in step with a row's own press layer (interactionOverlayStyles.cell).
+  // Every rule for a press the controller writes, the release's clock,
+  // curve and fill included, is in the coarse media key: touch work leaves a
+  // fine pointer's behavior as it is (spec:AST-017 FR59).
   // Under Reduce Motion the release is the policy's fade
   // (reducedMotionFadeConsts; `design:reduced-motion` DR2), like the row's.
   // Its key is the plain Reduce Motion query: StyleX drops the compound
@@ -156,24 +159,30 @@ const styles = stylex.create({
         default: null,
         [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
           {
-            default: CONTROL_RELEASE,
-            '@media (prefers-reduced-motion: reduce)':
-              reducedMotionFadeConsts.duration,
+            default: null,
+            [COARSE]: {
+              default: CONTROL_RELEASE,
+              '@media (prefers-reduced-motion: reduce)':
+                reducedMotionFadeConsts.duration,
+            },
           },
       },
       animationTimingFunction: {
         default: null,
         [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
           {
-            default: pressConsts.controlReleaseEase,
-            '@media (prefers-reduced-motion: reduce)':
-              reducedMotionFadeConsts.easing,
+            default: null,
+            [COARSE]: {
+              default: pressConsts.controlReleaseEase,
+              '@media (prefers-reduced-motion: reduce)':
+                reducedMotionFadeConsts.easing,
+            },
           },
       },
       animationFillMode: {
         default: null,
         [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
-          'both',
+          {default: null, [COARSE]: 'both'},
       },
     },
   },
@@ -230,44 +239,56 @@ const styles = stylex.create({
         default: null,
         [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
           {
-            default: CONTROL_RELEASE,
-            '@media (prefers-reduced-motion: reduce)':
-              reducedMotionFadeConsts.duration,
+            default: null,
+            [COARSE]: {
+              default: CONTROL_RELEASE,
+              '@media (prefers-reduced-motion: reduce)':
+                reducedMotionFadeConsts.duration,
+            },
           },
         [stylex.when.ancestor(
           '[data-astryx-press="fading"]',
           checkboxRowPressScope,
         )]: {
-          default: CELL_RELEASE,
-          '@media (prefers-reduced-motion: reduce)':
-            reducedMotionFadeConsts.duration,
+          default: null,
+          [COARSE]: {
+            default: CELL_RELEASE,
+            '@media (prefers-reduced-motion: reduce)':
+              reducedMotionFadeConsts.duration,
+          },
         },
       },
       animationTimingFunction: {
         default: null,
         [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
           {
-            default: pressConsts.controlReleaseEase,
-            '@media (prefers-reduced-motion: reduce)':
-              reducedMotionFadeConsts.easing,
+            default: null,
+            [COARSE]: {
+              default: pressConsts.controlReleaseEase,
+              '@media (prefers-reduced-motion: reduce)':
+                reducedMotionFadeConsts.easing,
+            },
           },
         [stylex.when.ancestor(
           '[data-astryx-press="fading"]',
           checkboxRowPressScope,
         )]: {
-          default: cellPressConsts.cellReleaseEase,
-          '@media (prefers-reduced-motion: reduce)':
-            reducedMotionFadeConsts.easing,
+          default: null,
+          [COARSE]: {
+            default: cellPressConsts.cellReleaseEase,
+            '@media (prefers-reduced-motion: reduce)':
+              reducedMotionFadeConsts.easing,
+          },
         },
       },
       animationFillMode: {
         default: null,
         [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
-          'both',
+          {default: null, [COARSE]: 'both'},
         [stylex.when.ancestor(
           '[data-astryx-press="fading"]',
           checkboxRowPressScope,
-        )]: 'both',
+        )]: {default: null, [COARSE]: 'both'},
       },
     },
   },

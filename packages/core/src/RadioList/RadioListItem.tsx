@@ -118,24 +118,30 @@ const styles = stylex.create({
         default: null,
         [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
           {
-            default: CELL_RELEASE,
-            '@media (prefers-reduced-motion: reduce)':
-              reducedMotionFadeConsts.duration,
+            default: null,
+            [COARSE]: {
+              default: CELL_RELEASE,
+              '@media (prefers-reduced-motion: reduce)':
+                reducedMotionFadeConsts.duration,
+            },
           },
       },
       animationTimingFunction: {
         default: null,
         [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
           {
-            default: cellPressConsts.cellReleaseEase,
-            '@media (prefers-reduced-motion: reduce)':
-              reducedMotionFadeConsts.easing,
+            default: null,
+            [COARSE]: {
+              default: cellPressConsts.cellReleaseEase,
+              '@media (prefers-reduced-motion: reduce)':
+                reducedMotionFadeConsts.easing,
+            },
           },
       },
       animationFillMode: {
         default: null,
         [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
-          'both',
+          {default: null, [COARSE]: 'both'},
       },
     },
   },

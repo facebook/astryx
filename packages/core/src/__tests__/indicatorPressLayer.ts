@@ -67,3 +67,38 @@ export function readIndicatorPressLayer(
     fillsBoth: fading.some(rule => /animation-fill-mode:\s*both/.test(rule)),
   };
 }
+
+/**
+ * The layer's touch press rules (a `data-astryx-press` arm on its
+ * `::after`) that are NOT behind the coarse-pointer key, as
+ * `conditions | declarations` text. Touch work leaves a fine pointer's
+ * behavior as it is (`spec:AST-017` FR59), so this is empty.
+ */
+export function layerPressRulesOutsideCoarse(el: Element): string[] {
+  const classes = el.className
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(name => `.${name}`);
+  const out: string[] = [];
+  const walk = (list: CSSRuleList, conditions: string[]) => {
+    for (const rule of Array.from(list)) {
+      if (rule instanceof CSSMediaRule) {
+        walk(rule.cssRules, [...conditions, rule.media.mediaText]);
+      } else if (rule instanceof CSSSupportsRule) {
+        walk(rule.cssRules, [...conditions, rule.conditionText]);
+      } else if (
+        rule instanceof CSSStyleRule &&
+        classes.some(cls => rule.selectorText.startsWith(cls)) &&
+        rule.selectorText.includes('data-astryx-press') &&
+        rule.selectorText.includes('::after') &&
+        !conditions.some(condition => condition.includes('pointer: coarse'))
+      ) {
+        out.push(`${conditions.join(' | ')} | ${rule.style.cssText}`);
+      }
+    }
+  };
+  for (const sheet of Array.from(document.styleSheets)) {
+    walk(sheet.cssRules, []);
+  }
+  return out;
+}

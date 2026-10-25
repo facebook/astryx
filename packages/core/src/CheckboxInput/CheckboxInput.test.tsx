@@ -21,7 +21,10 @@ import {
   hasReleaseFade,
   readsPressStrength,
 } from '../__tests__/pressState';
-import {readIndicatorPressLayer} from '../__tests__/indicatorPressLayer';
+import {
+  layerPressRulesOutsideCoarse,
+  readIndicatorPressLayer,
+} from '../__tests__/indicatorPressLayer';
 import * as stylex from '@stylexjs/stylex';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
 import {pressConsts} from '../utils/interactionOverlay.stylex';
@@ -965,5 +968,20 @@ describe('pressed state', () => {
     expect(declaresPressPaint(control)).toBe(false);
     expect(hasReleaseFade(control)).toBe(false);
     expect(readsPressStrength(wrapper)).toBe(false);
+  });
+
+  it('keeps its touch press, release included, behind the coarse pointer', () => {
+    // Touch work leaves a fine pointer's behavior as it is (spec:AST-017
+    // FR59): every rule the layer adds for a press the controller writes,
+    // its release's clock, curve and fill too, is in the coarse media key.
+    const {container} = render(
+      <CheckboxInput label="Accept terms" value={false} onChange={() => {}} />,
+    );
+    const wrapper = container.querySelector('.astryx-checkbox-indicator')
+      ?.parentElement?.parentElement;
+    if (wrapper == null) {
+      throw new Error('the checkbox has no indicator wrapper');
+    }
+    expect(layerPressRulesOutsideCoarse(wrapper)).toEqual([]);
   });
 });

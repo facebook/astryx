@@ -20,7 +20,10 @@ import {
   readsPressStrength,
   rulesDeclaredFor,
 } from '../__tests__/pressState';
-import {readIndicatorPressLayer} from '../__tests__/indicatorPressLayer';
+import {
+  layerPressRulesOutsideCoarse,
+  readIndicatorPressLayer,
+} from '../__tests__/indicatorPressLayer';
 import * as stylex from '@stylexjs/stylex';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
 import {cellPressConsts} from '../utils/interactionOverlay.stylex';
@@ -947,6 +950,9 @@ describe('pressed state', () => {
       fillsBoth: true,
     });
     expect(readsPressStrength(wrapper)).toBe(false);
+    // A fine pointer keeps its behavior (spec:AST-017 FR59): the layer's
+    // press, release included, is in the coarse media key.
+    expect(layerPressRulesOutsideCoarse(wrapper)).toEqual([]);
     // The row itself paints nothing under a finger, as under a mouse: only
     // the circle answers. Neither the overlay's image nor the row's press
     // layer (Item's `::before`, removed here) shows.

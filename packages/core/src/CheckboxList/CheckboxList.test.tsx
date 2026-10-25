@@ -33,7 +33,10 @@ import {
   rulesDeclaredFor,
   showsLayerPress,
 } from '../__tests__/pressState';
-import {readIndicatorPressLayer} from '../__tests__/indicatorPressLayer';
+import {
+  layerPressRulesOutsideCoarse,
+  readIndicatorPressLayer,
+} from '../__tests__/indicatorPressLayer';
 import {cellPressConsts} from '../utils/interactionOverlay.stylex';
 
 // FieldStatus announces status messages through the persistent useAnnounce
@@ -1308,6 +1311,9 @@ describe('CheckboxListItem press surface', () => {
       });
       expect(readsPressStrength(wrapper)).toBe(false);
       expect(showsLayerPress(row)).toBe(true);
+      // The row-owned arms, release included, stay in the coarse media key
+      // too (spec:AST-017 FR59).
+      expect(layerPressRulesOutsideCoarse(wrapper)).toEqual([]);
       // A mouse's press and hover stay the checkbox's own.
       expect(classesOf(control)).toContain(hoverScopeClass);
       expect(classesOf(row)).not.toContain(hoverScopeClass);
