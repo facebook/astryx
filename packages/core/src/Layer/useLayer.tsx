@@ -52,6 +52,16 @@ import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {overlayPaddingReset} from '../Layout/padding.stylex';
 
 const styles = stylex.create({
+  // The software keyboard's block-size cap (spec:AST-059 FR9), on the layer's
+  // own element (react-component-runtime INV11). Every layer sets it, an
+  // uncapped one to a limit no viewport cap reaches, so a layer nested in a
+  // capped one is not clamped by inheriting the outer cap; the surfaces
+  // inside a layer read it through `layerViewportInset.maxBlockSize`.
+  // SYNC: the property is LAYER_KEYBOARD_CAP_PROPERTY
+  // (useLayerKeyboardClearance.ts).
+  keyboardCap: (cap: string) => ({
+    '--astryx-layer-keyboard-max-block-size': cap,
+  }),
   // Base reset for all layers
   base: {
     marginBlockStart: 0,
@@ -1567,7 +1577,7 @@ function useLayerImplementation(
 
   // An anchored layer that would run under the software keyboard keeps its
   // block-start edge and ends clear of the keyboard (FR9, FR10).
-  useLayerKeyboardClearance(
+  const keyboardCap = useLayerKeyboardClearance(
     isOpen && mode === 'context',
     popoverRef,
     isAnchoredRef,
@@ -1688,6 +1698,7 @@ function useLayerImplementation(
         layerStructureReset.reset,
         styles.base,
         overlayPaddingReset.reset,
+        styles.keyboardCap(keyboardCap == null ? '100vh' : `${keyboardCap}px`),
         viewportStyles,
         offsetStyle,
         xstyle,
@@ -1738,6 +1749,7 @@ function useLayerImplementation(
       id,
       isAnchorInView,
       keepsAnchorClear,
+      keyboardCap,
       lightDismiss,
       popoverRefCallback,
       sentinelRefCallback,
@@ -1766,6 +1778,9 @@ function useLayerImplementation(
         layerStructureReset.reset,
         styles.base,
         overlayPaddingReset.reset,
+        // A fixed layer is never capped; it still sets its own limit so it is
+        // not clamped by a capped layer it sits in.
+        styles.keyboardCap('100vh'),
         styles.fixed,
         xstyle,
       );

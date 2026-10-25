@@ -7,8 +7,9 @@
  * @input Whether an anchor-mode layer is open, its element, the keyboard
  *   module (its one height, and its layout guide for timing) and the UIKit
  *   timing table
- * @output Exports `useLayerKeyboardClearance`, which keeps an open anchored
- *   layer clear of the software keyboard, `keyboardClearanceCap`,
+ * @output Exports `useLayerKeyboardClearance`, which returns the block-size
+ *   cap that keeps an open anchored layer clear of the software keyboard (or
+ *   null), `keyboardClearanceCap`,
  *   `LAYER_KEYBOARD_CAP_PROPERTY` and `LAYER_KEYBOARD_CLEARANCE_PX`
  * @position Layer runtime, through the layer's touch module: the software
  *   keyboard's part of the viewport caps (spec:AST-059 FR9, FR10;
@@ -17,10 +18,14 @@
  * While a software keyboard covers the bottom of the viewport, an anchored
  * layer whose block-end edge would run under it keeps its block-start edge
  * and caps its block size so that edge sits `LAYER_KEYBOARD_CLEARANCE_PX`
- * above the keyboard, as a UIKit popover does on iOS 26.2. The cap is a
- * custom property on the layer that the runtime's block-size cap
+ * above the keyboard, as a UIKit popover does on iOS 26.2. The cap is the
+ * hook's value: the runtime applies it to each layer through a StyleX
+ * functional style on that layer's own element (react-component-runtime
+ * INV11), as a custom property that the block-size cap
  * (`layerViewportInset.maxBlockSize`) folds in, so the layer box and every
- * surface capped by that definition shrink together; the composing component
+ * surface inside it capped by that definition shrink together. Every layer
+ * sets its own value, so a layer nested in a capped one is not clamped by
+ * it; the composing component
  * scrolls what no longer fits, and the field being typed into is kept in
  * view. A layer clear of the keyboard does not change, and a layer whose
  * block-end edge the fallback order holds (placed above its trigger) is left
@@ -34,9 +39,10 @@
  * the keyboard starts down. A keyboard that changes at once is followed at
  * once. A change that would move the layer under a press in progress inside
  * it waits for that press's click. A layer opened while a keyboard is up is
- * capped before its first paint. When the runtime replaces the layer element
- * while it is open, the cap and the press tracking move to the new element in
- * the same commit.
+ * capped before its first paint. The cap re-renders the layer once per
+ * keyboard movement, never per frame. When the runtime replaces the layer
+ * element while it is open, the press tracking moves to the new element in
+ * the same commit; the cap follows it as the layer's own style.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Layer/layerKeyboardClearance.ts
@@ -45,7 +51,8 @@
  * - /docs/specs/AST-059-layer-viewport-inset/spec.md
  */
 
-import {useRef, type RefObject} from 'react';
+import {useRef, useState, type RefObject} from 'react';
+import {flushSync} from 'react-dom';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {getKeyboardLayoutGuide, getMobileKeyboardHeight} from '../keyboard';
 import {keyboard} from '../motion/uikit/keyboard';
@@ -60,8 +67,9 @@ export {
 } from './layerKeyboardClearance';
 
 /**
- * The custom property the runtime writes on a layer while the keyboard caps
- * it: the largest block size that keeps the layer clear of the keyboard.
+ * The custom property each layer's style sets: the largest block size that
+ * keeps the layer clear of the keyboard while it caps the layer, and no
+ * limit otherwise (useLayer.tsx's `keyboardCap` style).
  */
 export const LAYER_KEYBOARD_CAP_PROPERTY =
   '--astryx-layer-keyboard-max-block-size';
@@ -136,7 +144,9 @@ function keepInView(layer: HTMLElement, target: Element) {
 }
 
 /**
- * Keeps an open anchor-mode layer clear of the software keyboard.
+ * Keeps an open anchor-mode layer clear of the software keyboard: returns
+ * the block size that does it, or null while no cap applies. The caller
+ * applies it to the layer's own element (useLayer.tsx's `keyboardCap`).
  * `isAnchoredRef` says, at each change, whether the layer renders in anchor
  * positioning; other positionings own their geometry.
  */
@@ -144,7 +154,10 @@ export function useLayerKeyboardClearance(
   isOpen: boolean,
   layerRef: RefObject<HTMLElement | null>,
   isAnchoredRef: RefObject<boolean>,
-): void {
+): number | null {
+  const [cap, setCap] = useState<number | null>(null);
+  // The cap the layer renders with, read by the measurement between commits.
+  const capRef = useRef<number | null>(null);
   // Set while the layer is open: follows the runtime when it replaces the
   // layer element without closing it.
   const resyncRef = useRef<(() => void) | null>(null);
@@ -169,19 +182,56 @@ export function useLayerKeyboardClearance(
         return false;
       }
       layer.removeEventListener('pointerdown', handlePress, true);
-      layer.style.removeProperty(LAYER_KEYBOARD_CAP_PROPERTY);
       layer = next;
       layer.addEventListener('pointerdown', handlePress, true);
+      return true;
+    };
+    // Renders the layer with `next` and returns once that commit has laid it
+    // out, so the measurement after it reads the new box. Runs outside
+    // React's own work: keyboard reports, timers, frames and native events.
+    const commitCap = (next: number | null) => {
+      if (isDisposed || capRef.current === next) {
+        return;
+      }
+      capRef.current = next;
+      // eslint-disable-next-line @eslint-react/dom-no-flush-sync -- the box is measured at its new size in the same task, before the frame paints
+      flushSync(() => setCap(next));
+      sync();
+    };
+    // Measured at the layer's own size, as the fallback order places it:
+    // returns whether the layer is capped.
+    const capFor = (inset: number): boolean => {
+      commitCap(null);
+      if (inset <= 0) {
+        return false;
+      }
+      const height = keyboardClearanceCap(
+        restingBox(layer),
+        win.innerHeight,
+        inset,
+      );
+      if (height == null) {
+        return false;
+      }
+      commitCap(height);
+      // The cap holds the block-start edge: below its trigger the top stays
+      // and the bottom comes up. Placed above its trigger the layer holds its
+      // bottom instead, which a shorter box cannot lift: leave it as it is.
+      const limit = win.innerHeight - inset - LAYER_KEYBOARD_CLEARANCE_PX;
+      if (restingBox(layer).bottom > limit + 1) {
+        commitCap(null);
+        return false;
+      }
       return true;
     };
 
     const avoid = (inset: number) => {
       sync();
       if (!isAnchoredRef.current) {
-        layer.style.removeProperty(LAYER_KEYBOARD_CAP_PROPERTY);
+        commitCap(null);
         return;
       }
-      if (!capFor(layer, win, inset)) {
+      if (!capFor(inset)) {
         return;
       }
       // The composing component makes its surface a scroll container once it
@@ -211,7 +261,7 @@ export function useLayerKeyboardClearance(
             ),
           ).then(() => {
             if (!isDisposed) {
-              capFor(layer, win, getMobileKeyboardHeight(win));
+              capFor(getMobileKeyboardHeight(win));
             }
           });
         }
@@ -314,15 +364,10 @@ export function useLayerKeyboardClearance(
             }
           })
         : null;
-    // A replaced layer element takes the cap for the keyboard of the moment
-    // in the commit that brings it, before it paints.
+    // A replaced layer element keeps the cap as its own style; only the
+    // press tracking moves to it, in the commit that brings it.
     resyncRef.current = () => {
-      if (sync()) {
-        const inset = getMobileKeyboardHeight(win);
-        if (inset > 0) {
-          avoid(inset);
-        }
-      }
+      sync();
     };
     return () => {
       isDisposed = true;
@@ -339,7 +384,11 @@ export function useLayerKeyboardClearance(
       win.removeEventListener('pointerup', handleRelease, true);
       win.removeEventListener('pointercancel', handleRelease, true);
       win.removeEventListener('click', handleClick, true);
-      layer.style.removeProperty(LAYER_KEYBOARD_CAP_PROPERTY);
+      // A closed layer reopens at its own size.
+      if (capRef.current != null) {
+        capRef.current = null;
+        setCap(null);
+      }
     };
   }, [isOpen, layerRef, isAnchoredRef]);
 
@@ -347,35 +396,6 @@ export function useLayerKeyboardClearance(
   useIsomorphicLayoutEffect(() => {
     resyncRef.current?.();
   });
-}
 
-/**
- * Writes the cap that keeps `layer` clear of a keyboard covering `inset` px,
- * or takes it off. Returns whether the layer is capped.
- */
-function capFor(layer: HTMLElement, win: Window, inset: number): boolean {
-  const {style} = layer;
-  // Measured at the layer's own size, as the fallback order places it.
-  style.removeProperty(LAYER_KEYBOARD_CAP_PROPERTY);
-  if (inset <= 0) {
-    return false;
-  }
-  const height = keyboardClearanceCap(
-    restingBox(layer),
-    win.innerHeight,
-    inset,
-  );
-  if (height == null) {
-    return false;
-  }
-  style.setProperty(LAYER_KEYBOARD_CAP_PROPERTY, `${height}px`);
-  // The cap holds the block-start edge: below its trigger the top stays and
-  // the bottom comes up. Placed above its trigger the layer holds its bottom
-  // instead, which a shorter box cannot lift: leave it as it is.
-  const limit = win.innerHeight - inset - LAYER_KEYBOARD_CLEARANCE_PX;
-  if (restingBox(layer).bottom > limit + 1) {
-    style.removeProperty(LAYER_KEYBOARD_CAP_PROPERTY);
-    return false;
-  }
-  return true;
+  return isOpen ? cap : null;
 }

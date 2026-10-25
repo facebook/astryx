@@ -300,9 +300,7 @@ the app reaches every layer instead of the components that happen to read it.
   keyboard moves (FR10), once more when an entrance in progress at that read
   ends (a box measured mid-entrance is only close), and in the commit that
   brings a layer element the runtime swapped in while the layer is open.
-- **FR9 — The software keyboard caps a layer that would run under it.** Where
-  the keyboard module measures a keyboard (`spec:AST-099` FR6–FR8; Chrome for
-  Android reports none, so its layers stay as they are), while
+- **FR9 — The software keyboard caps a layer that would run under it.** While
   a software keyboard covers the bottom of the viewport, an anchor-mode layer
   whose block-end edge would run under it keeps its block-start edge and caps
   its block size so that edge sits 10 px above the keyboard, the clearance
@@ -313,7 +311,9 @@ the app reaches every layer instead of the components that happen to read it.
   they are. The keyboard's height is the keyboard module's one height
   (`packages/core/src/keyboard`); no layer measures the keyboard on its own.
   The cap folds into the block-size cap (FR3), so the layer box and every
-  surface capped by that definition shrink together.
+  surface inside it capped by that definition shrink together. Each layer
+  carries its own cap on its own element: a layer opened inside a capped
+  layer is capped only for its own box, never by its host's.
 - **FR10 — The keyboard cap changes where the keyboard hides the change.** A
   box's height cannot change on the compositor, so the cap changes once per
   keyboard movement: when a rising keyboard has arrived, at once as a falling

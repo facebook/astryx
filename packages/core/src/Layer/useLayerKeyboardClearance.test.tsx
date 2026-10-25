@@ -15,7 +15,7 @@
  *   browser spec and on the iOS simulator
  */
 
-import {fireEvent, render} from '@testing-library/react';
+import {act, fireEvent, render, screen} from '@testing-library/react';
 import React, {useRef} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {keyboard} from '../motion/uikit/keyboard';
@@ -26,6 +26,7 @@ import {
   LAYER_KEYBOARD_CLEARANCE_PX,
   useLayerKeyboardClearance,
 } from './useLayerKeyboardClearance';
+import {useLayer} from './useLayer';
 
 const guide = {
   inset: 0,
@@ -37,6 +38,10 @@ const guide = {
     };
   },
   emit(transition: Partial<KeyboardTransition>) {
+    // A transition re-renders the layer with its cap.
+    act(() => guide.deliver(transition));
+  },
+  deliver(transition: Partial<KeyboardTransition>) {
     for (const listener of guide.listeners) {
       listener({
         kind: 'show',
@@ -86,9 +91,10 @@ function Harness({
   const layerRef = useRef<HTMLDivElement>(null);
   const isAnchoredRef = useRef(isAnchored);
   isAnchoredRef.current = isAnchored;
-  useLayerKeyboardClearance(isOpen, layerRef, isAnchoredRef);
-  // The layer's box: its content height, no taller than the cap the runtime
-  // wrote (the runtime's block-size cap folds it in). Below its trigger the
+  const cap = useLayerKeyboardClearance(isOpen, layerRef, isAnchoredRef);
+  // The layer's box: its content height, no taller than the cap the hook
+  // returned (the runtime applies it as the layer's own style, which its
+  // block-size cap folds in; here the harness applies it the same way). Below its trigger the
   // top stays; above it the bottom does.
   const height = (el: HTMLElement) => {
     const cap = parseFloat(
@@ -100,6 +106,11 @@ function Harness({
   return (
     <div
       key={layerKey}
+      style={
+        cap == null
+          ? undefined
+          : ({[LAYER_KEYBOARD_CAP_PROPERTY]: `${cap}px`} as React.CSSProperties)
+      }
       data-testid="layer"
       ref={el => {
         layerRef.current = el;
@@ -178,6 +189,13 @@ function Harness({
   );
 }
 
+/** Runs the timers a keyboard change scheduled, inside act: they re-render. */
+const advance = (ms: number) => {
+  act(() => {
+    vi.advanceTimersByTime(ms);
+  });
+};
+
 const capOf = (container: HTMLElement) =>
   container
     .querySelector<HTMLElement>('[data-testid="layer"]')!
@@ -199,6 +217,43 @@ describe('keyboardClearanceCap', () => {
   });
 });
 
+/**
+ * The cap a layer's own element declares: its own value of the cap property,
+ * through the StyleX variable its class reads, never one inherited from an
+ * ancestor layer.
+ */
+function ownCap(el: HTMLElement): string {
+  const declared = getComputedStyle(el)
+    .getPropertyValue(LAYER_KEYBOARD_CAP_PROPERTY)
+    .trim();
+  const variable = /^var\((--[^),\s]+)/.exec(declared)?.[1];
+  return variable == null
+    ? el.style.getPropertyValue(LAYER_KEYBOARD_CAP_PROPERTY).trim()
+    : el.style.getPropertyValue(variable).trim();
+}
+
+/** A layer from the runtime that holds a second layer from the runtime. */
+function NestedLayers() {
+  const outer = useLayer({mode: 'context'});
+  const inner = useLayer({mode: 'context'});
+  return (
+    <>
+      <button type="button" ref={outer.ref} onClick={outer.show}>
+        Outer
+      </button>
+      {outer.render(
+        <>
+          <button type="button" ref={inner.ref} onClick={inner.show}>
+            Inner
+          </button>
+          {inner.render(<span>Inner content</span>, {className: 'inner'})}
+        </>,
+        {className: 'outer'},
+      )}
+    </>
+  );
+}
+
 describe('useLayerKeyboardClearance', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -219,14 +274,14 @@ describe('useLayerKeyboardClearance', () => {
     guide.emit({kind: 'show', from: 0, to: COVER});
     // On its way up the keyboard covers the difference.
     expect(capOf(container)).toBe('');
-    vi.advanceTimersByTime(keyboard.notificationMs + 1);
+    advance(keyboard.notificationMs + 1);
     expect(capOf(container)).toBe(CAPPED);
   });
 
   it('takes the cap off as soon as the keyboard starts down', () => {
     const {container} = render(<Harness />);
     guide.emit({kind: 'show', from: 0, to: COVER});
-    vi.advanceTimersByTime(keyboard.notificationMs + 1);
+    advance(keyboard.notificationMs + 1);
     guide.emit({kind: 'hide', from: COVER, to: 0});
     expect(capOf(container)).toBe('');
   });
@@ -240,14 +295,14 @@ describe('useLayerKeyboardClearance', () => {
   it('leaves a layer clear of the keyboard as it is', () => {
     const {container} = render(<Harness box={{top: 68, bottom: 300}} />);
     guide.emit({kind: 'show', from: 0, to: COVER});
-    vi.advanceTimersByTime(keyboard.notificationMs + 1);
+    advance(keyboard.notificationMs + 1);
     expect(capOf(container)).toBe('');
   });
 
   it('leaves a layer in another positioning as it is', () => {
     const {container} = render(<Harness isAnchored={false} />);
     guide.emit({kind: 'show', from: 0, to: COVER});
-    vi.advanceTimersByTime(keyboard.notificationMs + 1);
+    advance(keyboard.notificationMs + 1);
     expect(capOf(container)).toBe('');
   });
 
@@ -258,7 +313,7 @@ describe('useLayerKeyboardClearance', () => {
     });
     const {container} = render(<Harness focusRow />);
     guide.emit({kind: 'show', from: 0, to: COVER});
-    vi.advanceTimersByTime(keyboard.notificationMs + 1);
+    advance(keyboard.notificationMs + 1);
     const scroller = container.querySelector<HTMLElement>(
       '[data-testid="scroller"]',
     )!;
@@ -276,9 +331,11 @@ describe('useLayerKeyboardClearance', () => {
     const {container, rerender} = render(<Harness />);
     // The commit sees the layer unplaced; the next frame places it.
     expect(capOf(container)).toBe('');
-    for (const frame of frames.splice(0)) {
-      frame(0);
-    }
+    act(() => {
+      for (const frame of frames.splice(0)) {
+        frame(0);
+      }
+    });
     expect(capOf(container)).toBe(CAPPED);
     rerender(<Harness isOpen={false} />);
     expect(capOf(container)).toBe('');
@@ -321,22 +378,12 @@ describe('useLayerKeyboardClearance', () => {
     expect(capOf(container)).toBe('');
   });
 
-  it('writes nothing but its own cap on the layer', () => {
-    const {container} = render(<Harness />);
-    const layer = container.querySelector<HTMLElement>(
-      '[data-testid="layer"]',
-    )!;
-    guide.emit({kind: 'change', from: 0, to: COVER, animated: false});
-    expect(layer.style.length).toBe(1);
-    expect(layer.style.item(0)).toBe(LAYER_KEYBOARD_CAP_PROPERTY);
-  });
-
   it('leaves a layer whose bottom the fallback order holds (above its trigger) as it is', () => {
     const {container} = render(
       <Harness box={{top: 16, bottom: 505}} heldBottom />,
     );
     guide.emit({kind: 'show', from: 0, to: COVER});
-    vi.advanceTimersByTime(keyboard.notificationMs + 1);
+    advance(keyboard.notificationMs + 1);
     // A shorter box would move its top down and still end under the keyboard.
     expect(capOf(container)).toBe('');
   });
@@ -345,7 +392,7 @@ describe('useLayerKeyboardClearance', () => {
     const {container, getByTestId} = render(<Harness />);
     const layer = getByTestId('layer');
     guide.emit({kind: 'show', from: 0, to: COVER});
-    vi.advanceTimersByTime(keyboard.notificationMs + 1);
+    advance(keyboard.notificationMs + 1);
     expect(capOf(container)).toBe(CAPPED);
     // A tap on a button in the layer blurs the field: the keyboard starts
     // down while the finger is still on the button.
@@ -361,11 +408,11 @@ describe('useLayerKeyboardClearance', () => {
   it('a press that makes no click lets the change go a moment after it lifts', () => {
     const {container, getByTestId} = render(<Harness />);
     guide.emit({kind: 'show', from: 0, to: COVER});
-    vi.advanceTimersByTime(keyboard.notificationMs + 1);
+    advance(keyboard.notificationMs + 1);
     fireEvent.pointerDown(getByTestId('layer'), {pointerId: 4});
     guide.emit({kind: 'hide', from: COVER, to: 0});
     fireEvent.pointerUp(window, {pointerId: 4});
-    vi.advanceTimersByTime(400);
+    advance(400);
     expect(capOf(container)).toBe('');
   });
 
@@ -373,7 +420,7 @@ describe('useLayerKeyboardClearance', () => {
     const {container, rerender} = render(<Harness />);
     guide.emit({kind: 'show', from: 0, to: COVER});
     rerender(<Harness isOpen={false} />);
-    vi.advanceTimersByTime(keyboard.notificationMs + 1);
+    advance(keyboard.notificationMs + 1);
     expect(capOf(container)).toBe('');
   });
 
@@ -407,5 +454,47 @@ describe('useLayerKeyboardClearance', () => {
     fireEvent.pointerUp(layer, {pointerId: 1});
     fireEvent.click(layer);
     expect(press(removed)).toEqual(['pointerup', 'pointercancel', 'click']);
+  });
+
+  it('caps each layer on its own element, so a layer nested in a capped one is not clamped by it', () => {
+    const natural = BOX.bottom - BOX.top;
+    // The outer layer is tall and below its trigger; the inner one is short.
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: HTMLElement) {
+        if (!this.classList.contains('outer')) {
+          return DOMRect.fromRect({x: 0, y: 100, width: 100, height: 40});
+        }
+        // Only a cap in px limits it; the uncapped limit is out of reach.
+        const cap = ownCap(this);
+        const height = cap.endsWith('px')
+          ? Math.min(natural, parseFloat(cap))
+          : natural;
+        return DOMRect.fromRect({x: 0, y: BOX.top, width: 100, height});
+      },
+    );
+    // A fixed layer is measured from its offset box.
+    vi.spyOn(HTMLElement.prototype, 'offsetTop', 'get').mockImplementation(
+      function (this: HTMLElement) {
+        return this.getBoundingClientRect().top;
+      },
+    );
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(
+      function (this: HTMLElement) {
+        return this.getBoundingClientRect().height;
+      },
+    );
+    render(<NestedLayers />);
+    fireEvent.click(screen.getByText('Outer'));
+    fireEvent.click(screen.getByText('Inner'));
+    const outer = document.querySelector<HTMLElement>('.outer')!;
+    const inner = document.querySelector<HTMLElement>('.inner')!;
+    expect(outer.contains(inner)).toBe(true);
+    guide.emit({kind: 'change', from: 0, to: COVER, animated: false});
+    expect(ownCap(outer)).toBe(CAPPED);
+    // The inner layer declares its own, uncapped limit rather than
+    // inheriting the outer layer's cap.
+    expect(ownCap(inner)).toBe('100vh');
+    guide.emit({kind: 'hide', from: COVER, to: 0, animated: false});
+    expect(ownCap(outer)).toBe('100vh');
   });
 });

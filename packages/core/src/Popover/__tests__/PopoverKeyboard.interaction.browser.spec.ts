@@ -141,17 +141,21 @@ const boxOf = async (locator: Locator) =>
   locator.evaluate(element => {
     const rect = element.getBoundingClientRect();
     const el = element as HTMLElement;
+    const layer = el.closest<HTMLElement>('[popover]');
+    // The cap the layer's own style declares while the keyboard caps it, in
+    // px; an uncapped layer declares a limit out of reach instead.
+    const declared =
+      layer == null
+        ? ''
+        : getComputedStyle(layer)
+            .getPropertyValue('--astryx-layer-keyboard-max-block-size')
+            .trim();
     return {
       top: rect.top,
       bottom: rect.bottom,
       clientHeight: el.clientHeight,
       scrollHeight: el.scrollHeight,
-      // The cap the runtime writes on the layer while the keyboard caps it.
-      keyboardCap:
-        el
-          .closest<HTMLElement>('[popover]')
-          ?.style.getPropertyValue('--astryx-layer-keyboard-max-block-size') ??
-        '',
+      keyboardCap: declared.endsWith('px') ? declared : '',
       innerHeight: window.innerHeight,
     };
   });
