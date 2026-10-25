@@ -483,7 +483,9 @@ function main() {
       '--config',
       'playwright.config.ts',
       '--reporter',
-      'list,json',
+      // In CI, keep the config's `github` reporter so a failing spec still
+      // annotates the pull request.
+      process.env.GITHUB_ACTIONS ? 'list,json,github' : 'list,json',
       '--output',
       'pr-a11y-output',
       '--project',
