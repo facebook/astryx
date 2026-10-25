@@ -41,9 +41,10 @@ Astryx adds no second settings system for an app to keep in step.
 
   So stock SwiftUI controls (`Toggle`, `Picker`, `ProgressView`, `Menu`,
   `List`, `Slider`, `Link`) draw with the brand's accent and text colors.
-  Whether the theme also sets the default font is OQ1. Theme values with no SwiftUI environment equivalent are read only
-  by Astryx components and Astryx's SwiftUI styles: corner radius, spacing,
-  element heights, borders, and backgrounds. Control size has no clean mapping: Astryx sizes are a per-
+  Whether the theme also sets the default font is OQ1. Theme values with no SwiftUI environment equivalent are read by
+  Astryx components and Astryx's SwiftUI styles (corner radius, spacing,
+  element heights, borders, and backgrounds), and an app reads spacing for its
+  own SwiftUI stacks from the typed tokens (`theme.space.s4`). Control size has no clean mapping: Astryx sizes are a per-
   component prop, so the theme sets no `controlSize`.
 
 - **E3 — The mode always follows SwiftUI.** A token value is chosen from the

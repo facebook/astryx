@@ -32,6 +32,7 @@ deciding_specs:
     spec:AST-012/DEC-2,
     spec:AST-071/DEC-1,
     spec:AST-017/DEC-23,
+    spec:AST-012/DEC-6,
   ]
 ---
 
@@ -165,6 +166,12 @@ guidance owns the process used to propose and test APIs.
   When a touch default changes a released component's behavior, that
   `presentation` value is the restoring prop `spec:AST-017` FR3 names
   (`spec:AST-017/DEC-23`).
+- **INV17 — Compact has one shared definition.** A component that chooses a
+  presentation by screen size uses the theme's compact definition: width below
+  the effective `md` point or height below 500, with the same numbers on every
+  platform (`spec:AST-012` FR9). It keeps no compact numbers of its own, as
+  INV14 keeps no parallel breakpoint table. A layout width the caller picks,
+  such as AppShell's `mobileNav.breakpoint`, follows INV14 instead.
 
 This record applies to stable public packages. Lab components are not stable
 public promises until promotion.
@@ -199,7 +206,8 @@ public promises until promotion.
   evidence required by the release process.
 - A component exposing a named theme width point uses the fixed vocabulary and
   exclusive upper-edge behavior from `spec:AST-012`; it does not maintain a
-  parallel hardcoded breakpoint table.
+  parallel hardcoded breakpoint table. A component that chooses a presentation
+  by screen size uses the compact definition (INV17).
 - Changes to a family-owned API update the family contract rather than copying
   its rule into this record or every component.
 - A component that accepts or derives a navigation destination follows
@@ -227,6 +235,7 @@ public promises until promotion.
 - `spec:AST-017/DEC-23` — a touch presentation or open-surface touch mode is
   a default the caller can always override, through one `presentation` prop
   that also restores the previous surface and mode.
+- `spec:AST-012/DEC-6` — compact is one definition, the same on every platform.
 
 Transition Action sequencing and pending behavior belong to their component or
 family contract. This record links that owner once it is current; it does not
@@ -246,6 +255,7 @@ copy the component matrix.
 | INV14                   | `AppShell.test.tsx`                                                                  | A component hardcodes a divergent point or treats equality as below                                                                                                                                                                                                                           |
 | INV15                   | Public-API review of the generated declaration inventory                             | A part or StyleX-typed styling prop ships without class-name and inline-style counterparts on the same element                                                                                                                                                                                |
 | INV16                   | Public-API review of touch presentations plus coarse- and fine-pointer runtime tests | A stable component that presents a different surface or switches an open surface's input mode under a coarse pointer and has no `presentation` value that keeps its fine-pointer surface and mode; such a touch mode callers cannot reach; a default that overrides an explicit caller choice |
+| INV17                   | Resolver tests at the compact edges plus public-API review                           | A component that chooses a presentation by screen size with its own numbers, or disagrees with the theme compact definition at width 768 or height 500                                                                                                                                        |
 | Consumer-doc projection | `docPropReferences.test.ts` and `docPropLiterals.test.ts`                            | Docs name a nonexistent prop or omit public literal choices                                                                                                                                                                                                                                   |
 
 Known verification gaps:

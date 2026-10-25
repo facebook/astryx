@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-10-21
+approved_at: 2026-10-24
 phase: accepted
 owners: [cixzhang]
 affects_architecture:
@@ -251,7 +251,10 @@ depends only on runtimes it can maintain.
   that version's controls and materials. A capability newer than the running OS
   degrades to the closest earlier platform equivalent or to durable intent, never
   to a broken or blank state. Touch targets meet the platform minimum, and text
-  follows the platform's text-size setting. A native platform is supported only
+  follows the platform's text-size setting. When a component chooses between
+  presentations by screen size, compact is `spec:AST-012` FR9 in points or
+  density-independent pixels, not the platform's size classes; the platform's
+  own control still presents the chosen surface. A native platform is supported only
   when it meets the FR12 criteria on its oldest and newest supported OS versions.
 - **FR12 — Approaches are compared on one scorecard.** Every candidate way of
   building a native platform is measured the same way. Candidates include
@@ -363,8 +366,9 @@ depends only on runtimes it can maintain.
   core contract: an icon is decorative unless it carries a label.
 
 - **FR18 — The theme definition has a portable part and a web part.** The
-  portable entry exports `PortableTheme`: a theme's name, tokens, and theme-local
-  tokens, each resolvable without CSS to a concrete value per color mode, such as
+  portable entry exports `PortableTheme`: a theme's name, tokens, theme-local
+  tokens, and the compact definition of `spec:AST-012` FR9 (the effective `md`
+  width point and the 500 height edge), each resolvable without CSS to a concrete value per color mode, such as
   a color, a length in density-independent units, a number, or a font name. The
   web part holds what only the web compiles or renders: component overrides keyed
   by web theme targets, icon and indicator registries of React elements,
@@ -427,8 +431,10 @@ depends only on runtimes it can maintain.
 - `architecture:theme-compilation` gains the native theme boundary when a native
   platform ships (INV9, INV10).
 - `architecture:theme-authoring-contract` gains `PortableTheme` as the portable
-  part of `DefinedTheme` when the portable entry ships. `DefineThemeInput` and
-  `DefinedTheme` are unchanged for web callers.
+  part of `DefinedTheme` when the portable entry ships. `DefineThemeInput` is
+  unchanged for web callers; `DefinedTheme` gains the compact definition
+  (`spec:AST-012` FR9) additively, derived from the theme's effective `md` point,
+  and is otherwise unchanged.
 - The `theme` and `cli` consumer docs and every component's documentation gain
   platform marking when the first native contract ships.
 - `@astryxdesign/native` ships on the canary channel with the FR19 wire: the
@@ -463,7 +469,7 @@ depends only on runtimes it can maintain.
 | FR15     | Package metadata and release-channel checks                                                                                                                   | native package manifest; a stable release; a canary release                                                                                                                                                                                                                                                                                                                    | The native package is publishable as a stable release before a platform is supported                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | FR16     | Package-boundary check, plus a native fixture app installed and bundled without `react-dom` or StyleX                                                         | an import of the portable entry; an import of a core component or the web theme entry from native; a listed build-time read from a native build script; an unlisted one; a core import of native; a core contract change                                                                                                                                                       | Native resolves a DOM type, `react-dom`, StyleX, or a web module; either direction of the boundary is crossed, an unlisted build-time read passes; or a core contract change does not reach native contracts on the next build                                                                                                                                                                                                                                                                                                                                                     |
 | FR17     | Icon map coverage check per native platform, plus override resolution tests                                                                                   | every built-in name; a namespaced name; a theme platform icon with and without a version range; an app-registered icon; an icon slot given an unknown name in a development and a release build; an asset icon the app ships and one it does not; a missing asset icon in a development and a release build                                                                    | A built-in name has no platform default, a theme or app icon fails to replace the default, a scoped icon applies outside its range, a web icon is substituted, or an unknown name draws something in a release build or does not stop a development build with its name, or a missing asset icon draws a substitute, or a development build does not stop with a missing asset’s name                                                                                                                                                                                              |
-| FR18     | Type tests over `PortableTheme` and `DefinedTheme`, token resolution tests per color mode, and `defineNativeTheme` reporting tests                            | each maintained theme; a theme with component overrides, icons, indicators, media surfaces, and adaptations; light and dark; a length, a color, and a font token                                                                                                                                                                                                               | `DefinedTheme` changes for a web caller, a portable token needs CSS to resolve, `PortableTheme` references a React or DOM type, or a web part with content is dropped without a report                                                                                                                                                                                                                                                                                                                                                                                             |
+| FR18     | Type tests over `PortableTheme` and `DefinedTheme`, token resolution tests per color mode, and `defineNativeTheme` reporting tests                            | each maintained theme; a theme with component overrides, icons, indicators, media surfaces, and adaptations; light and dark; a length, a color, and a font token; a theme that overrides `md`, whose compact definition follows the override                                                                                                                                   | A `DefinedTheme` member a web caller uses is removed or changes, a portable token needs CSS to resolve, `PortableTheme` references a React or DOM type, a web part with content is dropped without a report, or the compact definition does not follow a theme's effective `md`                                                                                                                                                                                                                                                                                                    |
 | FR19     | Wire type tests per platform condition, Swift decoding tests, host tests in a JavaScript engine, and a logic core run with no host globals                    | a tree with a content slot; a listed and an unlisted callback; an unknown component; an unknown closed-set value; a missing required prop; a node carrying a prop the host does not know; input that is not an action; a bundle with no entry; a JavaScript error; a bridge version mismatch; a tree the host cannot read at all; a tree sent after a failure                  | A view gets an unlisted callback, an action carries a different key or arguments, one unreadable node blanks its siblings, a prop the host does not know makes its node unsupported, the logic core accepts input that is not an action, or a failed host draws a tree or sends an action                                                                                                                                                                                                                                                                                          |
 
 ## Decision log
@@ -614,8 +620,9 @@ foreign next to system controls.
 
 Native platforms need a theme's identity, not its CSS. Splitting `DefinedTheme`
 into `PortableTheme` and a web part gives native the shared identity through the
-portable entry, keeps React elements and CSS out of native apps, and changes
-nothing for web callers, because `DefinedTheme` is still the whole.
+portable entry, keeps React elements and CSS out of native apps, and removes
+nothing for web callers, because `DefinedTheme` is still the whole; the portable
+compact definition it gains is additive.
 
 Rejected: native reading the whole `DefinedTheme`, because it carries React
 elements, CSS maps, and DOM-typed imports native cannot use.

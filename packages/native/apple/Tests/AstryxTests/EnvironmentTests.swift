@@ -9,7 +9,7 @@ import Testing
 
 @MainActor
 @Test func withoutAThemeComponentsFollowDarkMode() {
-  let card = AstryxCard { Color.clear.frame(width: 80, height: 40) }.frame(width: 120)
+  let card = Astryx.Card { Color.clear.frame(width: 80, height: 40) }.frame(width: 120)
   let light = Pixels(card, scheme: .light)
   let dark = Pixels(card, scheme: .dark)
   #expect(close(light.at(60, light.height / 2), rgba(Theme.default.light.color.backgroundCard)))
@@ -18,8 +18,8 @@ import Testing
 
 @MainActor
 @Test func withoutAThemeTextFollowsDynamicType() {
-  let large = Pixels(AstryxText("Hello").fixedSize())
-  let larger = Pixels(AstryxText("Hello").fixedSize(), typeSize: .xxxLarge)
+  let large = Pixels(Astryx.Text("Hello").fixedSize())
+  let larger = Pixels(Astryx.Text("Hello").fixedSize(), typeSize: .xxxLarge)
   #expect(larger.width > large.width)
 }
 
@@ -63,4 +63,25 @@ import Testing
   #expect(environment.astryx.isBoldText == false)
   environment.legibilityWeight = .bold
   #expect(environment.astryx.isBoldText)
+}
+
+// Theme generator spec D4 and theme environment spec E1: with Increase
+// Contrast on, borders use the emphasized border color.
+
+@Test func increaseContrastEmphasizesBorders() {
+  for scheme in [ColorScheme.light, .dark] {
+    let mode = scheme == .dark ? Theme.default.dark : Theme.default.light
+    let standard = astryxTokens(.default, scheme: scheme, contrast: .standard)
+    let increased = astryxTokens(.default, scheme: scheme, contrast: .increased)
+    #expect(standard.color.border == mode.color.border)
+    #expect(increased.color.border == mode.color.borderEmphasized)
+    #expect(increased.color.textPrimary == mode.color.textPrimary)
+  }
+}
+
+@Test func theStyleCardsDrawWithFollowsContrast() {
+  var environment = EnvironmentValues()
+  #expect(environment.astryx.color("color-border") == Theme.default.light.color.border)
+  environment.astryxTheme = .neutral
+  #expect(environment.astryx.color("color-border") == Theme.neutral.light.color.border)
 }
