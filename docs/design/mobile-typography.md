@@ -14,7 +14,7 @@ verified_by: [scripts/check-knowledge.mjs]
 architecture: [architecture:theme-tokens, architecture:theme-authoring-contract]
 components: []
 families: []
-deciding_specs: []
+deciding_specs: [spec:AST-102/DEC-2]
 ---
 
 # Mobile typography design specification
@@ -26,7 +26,7 @@ minimum on coarse-pointer iOS devices.
 
 ## Design principles
 
-- **DR1 — Reading base.** The mobile base MUST be `M = max(B, 16)`; 16px-reference is `1rem`.
+- **DR1 — Reading base.** The mobile base MUST be `M = max(B, 16)`; 16px-reference is `1rem`. When the person has set a text size, it replaces this base (`spec:AST-102` FR3).
 - **DR2 — Pin target.** The selected role MUST retain its desktop size; other roles follow the derived scale.
 
 ## Anatomy and hierarchy

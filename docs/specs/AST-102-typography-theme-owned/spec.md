@@ -7,10 +7,10 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-10-24
+approved_at: 2026-10-25
 phase: accepted
 owners: [cixzhang]
-affects_architecture: []
+affects_architecture: [architecture:theme-tokens]
 affects_families: [family:input-fields]
 affects_contributing: []
 affects_consumer_docs: []
@@ -72,7 +72,10 @@ the person's device.
   person has not set one, or the platform gives no signal, text uses exactly
   the theme's family and size. Following the setting adds no public theme
   option, prop, or document attribute and does not change the document-root
-  font size (`design:mobile-typography` DR4).
+  font size (`design:mobile-typography` DR4). A size the person set
+  replaces the mobile reading base of `design:mobile-typography` DR1, smaller
+  or larger; DR1 applies when none is set, and the iOS text-entry floor of
+  `family:input-fields` FR9 still holds.
 - **FR4 — Larger text stays usable.** Up to 200% of the theme's sizes, every
   component keeps all of its content and function (WCAG 2.2 success criterion
   1.4.4). Above 200%, reading text keeps growing; a label inside a dense,
@@ -104,8 +107,9 @@ the person's device.
   - On iOS and iPadOS, text ignores Dynamic Type in every theme.
   - Butter, Stone, and Y2K fix supporting text at 12 px, so it does not follow
     a larger browser or Android text size.
-  - Controls hold fixed heights, such as 40 px elements, so a larger label can
-    overflow.
+  - Controls hold fixed heights, such as 40 px elements, `component:Badge`
+    FR1's fixed block size, and the fixed row height `family:input-fields`
+    gives InputGroup, so a larger label can overflow.
   - Whether Chrome on Android carries the system font scale to Astryx text is
     unverified until the emulator check FR3 names.
 
@@ -158,8 +162,7 @@ on. Core reads it where the platform exposes it only through a system text
 style, as on iOS, and lets the root font size carry it elsewhere; neither read
 is a theme option, prop, or document attribute.
 
-Rejected: a public theme option to opt in, and a public document attribute
-carrying the size.
+Rejected: a public opt-in option or document attribute for the size.
 
 ## Open questions
 
