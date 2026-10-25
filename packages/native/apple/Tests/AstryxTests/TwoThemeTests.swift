@@ -73,6 +73,8 @@ private let secondTheme: Theme = {
   let second = Pixels(field, theme: secondTheme)
   #expect(second.contains { close($0, rgba("#FF0000FF"), within: 24) })
   #expect(!standard.contains { close($0, rgba("#FF0000FF"), within: 24) })
-  // A larger body size makes the field taller.
-  #expect(second.height > standard.height)
+  // A body size past the 44-point minimum makes the field taller.
+  var large = secondTheme
+  large.light.font.body.size = 60
+  #expect(Pixels(field, theme: large).height > standard.height)
 }
