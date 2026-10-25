@@ -137,7 +137,7 @@ const trackX = async (track: Locator) =>
 
 /**
  * The pager's release velocity for a script: the shared tracker read as a
- * scroll view reads it (ScrollViewPanGestureRecognizer), x only.
+ * scroll view reads it (a pan's `scrollVelocity()`), x only.
  */
 async function releaseVelocities(
   page: Page,
@@ -150,13 +150,13 @@ async function releaseVelocities(
       if (event.type === 'touchEnd' || event.type === 'touchCancel') {
         // Read at the lift's time, as the recognizer reads it (the
         // stillness reset).
-        current = tracker.scrollReleaseVelocity(event.t).x;
+        current = tracker.scrollVelocity(event.t).x;
         break;
       }
       const finger = event.changed[0];
       tracker.add(finger.x, finger.y, event.t);
       if (event.type === 'touchMove') {
-        current = tracker.scrollReleaseVelocity().x;
+        current = tracker.scrollVelocity(event.t).x;
       }
     }
     return {current};
