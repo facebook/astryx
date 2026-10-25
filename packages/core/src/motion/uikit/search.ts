@@ -53,7 +53,7 @@ export const search = {
   activationMs: 383.3,
   /**
    * The activation's curve: the animator's UICubicTimingParameters control
-   * points, UIKit's ease-in-ease-out (`timing.curves.easeInOut`).
+   * points, UIKit's ease-in-ease-out (`timing.curves.move`).
    * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
    *   iPhone 17 Pro, UICubicTimingParameters read at setup, Oct 24 2026
    */

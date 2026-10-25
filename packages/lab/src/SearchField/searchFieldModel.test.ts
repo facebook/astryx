@@ -31,7 +31,7 @@ const IPHONE = {restWidth: 370, height: 44, lift: 99, isRtl: false};
 describe('searchFieldModel', () => {
   it('runs on the UIKit activation clock and curve', () => {
     expect(ACTIVATION_S).toBeCloseTo(0.3833, 4);
-    expect(search.activationCurve).toEqual(timing.curves.easeInOut);
+    expect(search.activationCurve).toEqual(timing.curves.move);
     expect(activationEase(0.5)).toBeCloseTo(0.5, 6);
   });
 
