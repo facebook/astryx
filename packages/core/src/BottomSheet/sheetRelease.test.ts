@@ -494,6 +494,7 @@ describe('sheetReleaseRule (the interactive-transition driver\u2019s rule)', () 
   });
 
   it('is today\u2019s rule under a mouse, and keeps a sheet that cannot be dismissed', () => {
+    expect(matchMedia('(pointer: coarse)').matches).toBe(false);
     const today = {direction: 1, travel: 300, velocity: 900};
     const landing = sheetReleaseRule(
       {position: 700, finger: 700, velocity: 1200},
