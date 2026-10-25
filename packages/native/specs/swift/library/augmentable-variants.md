@@ -19,7 +19,7 @@ draws the component's base look, with no value style, instead of failing.
 ## Requirements
 
 - **V1 — An augmentable prop is an open, string-backed type.** For every prop
-  the core contract marks augmentable, the contract generator emits a
+  the platform's contract keeps that the core contract marks augmentable, the contract generator emits a
   `struct <Name><Prop>: RawRepresentable, Hashable, Codable, Sendable,
 ExpressibleByStringLiteral` holding the web value as its raw string, instead
   of a closed `enum`. Each built-in value is a static constant named by the

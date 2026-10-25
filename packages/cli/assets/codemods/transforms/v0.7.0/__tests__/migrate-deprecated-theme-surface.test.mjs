@@ -475,6 +475,21 @@ const theme = {name: 'brand', components: {[oldTarget]: {base: {color: 'red'}}}}
     expect(apply(output, 'theme.css')).toBe(output);
   });
 
+  it('maps only the column values MetadataList emitted, not app classes', () => {
+    const output = apply(
+      `.astryx-metadata-list.app-compact-list { gap: 4px; }
+.astryx-metadata-list.columns-3, .astryx-metadata-list.multi { gap: 8px; }`,
+      'theme.css',
+    );
+    expect(output).toContain('.astryx-metadata-list.app-compact-list');
+    expect(output).not.toContain('data-columns="app-compact-list"');
+    expect(output).toContain('.astryx-metadata-list:is([data-columns="3"])');
+    expect(output).not.toContain('data-columns="columns-3"');
+    expect(output).toContain(
+      '.astryx-metadata-list:is([data-columns="multi"])',
+    );
+  });
+
   it('leaves unqualified and unknown consumer classes unchanged', () => {
     const input = `.primary { color: red; }
 .astryx-button.brand { color: blue; }`;
