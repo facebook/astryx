@@ -280,7 +280,9 @@ a measured, sourced difference exists.
 FR26–FR28 and FR30 apply to every surface that carries the press model of
 `module:DropdownMenu/useMenuPress` (DropdownMenu, ContextMenu, their sub-menus,
 and Selector's listbox, whose options count as rows) when a finger or pen
-drives it; FR29 applies to DropdownMenu's trigger; FR34 applies to menus;
+drives it and the primary pointer is coarse (FR19); where the primary pointer
+is fine, a finger in a menu keeps today's behavior (`spec:AST-017` FR59,
+DEC-25), and menus make no per-gesture pointer read; FR29 applies to DropdownMenu's trigger; FR34 applies to menus;
 FR31–FR33 and FR35 apply to anchored menus and to Popover under a finger. A mouse keeps today's behavior.
 
 - **FR26 — The lift decides.** A menu row MUST act when the finger lifts over
@@ -400,13 +402,14 @@ FR31–FR33 and FR35 apply to anchored menus and to Popover under a finger. A mo
 - **FR25 — A moved default keeps a way back.** Where a touch presentation
   moves a released default, the way back and its release note are governed by
   `architecture:public-component-api` INV16 and `spec:AST-017` DEC-23 and FR3.
-  This record moves four: Selector's `adaptive` presentation policy;
+  This record moves five: Selector's `adaptive` presentation policy;
   DropdownMenu's omitted `presentation`, released as `'popover'`, which
   `presentation="popover"` keeps (FR29); ContextMenu's omitted
   `presentation`, released as `'popover'`, which `presentation="popover"`
   keeps without the lift (FR33); and `module:DropdownMenu/useMenuPress`'s
   released 500 ms `longPressDelayMs`, which a caller keeps by passing it
-  (FR29).
+  (FR29); and Popover's outside dismissal, which a pan outside now triggers
+  under a finger and which `hasLightDismiss={false}` turns off (FR32).
   This replaces `component:Selector` DEC-1's width-and-pointer query with the
   FR13 rule for `adaptive`.
 
@@ -448,6 +451,9 @@ FR31–FR33 and FR35 apply to anchored menus and to Popover under a finger. A mo
 - `component:DropdownMenu` and `component:ContextMenu`: an omitted
   `presentation`, released as `'popover'`, follows FR29 and FR33 under a
   finger; `presentation="popover"` keeps the released behavior (FR25).
+- `component:Popover`: under a finger a pan outside dismisses it while its
+  outside dismissal is on (FR32); `hasLightDismiss={false}` keeps it open
+  (FR25).
 - `module:DropdownMenu/useMenuPress`: the released 500 ms `longPressDelayMs`
   default gives way to FR29's timing; a caller that passes it keeps it (FR25).
 - `module:DropdownMenu/useMenuPress`: its finger rules (FR1–FR3, FR6, FR7

@@ -57,7 +57,11 @@ rung, so a caller whose content owns its own edges can ask for a flush surface.
 
 ## Compatibility and migration
 
-- Released default preserved: `yes`
+- Released default preserved: `no` under a finger. Where the primary pointer
+  is coarse, a pan that starts outside an open Popover dismisses it while its
+  outside dismissal is on (`spec:AST-094` FR32); a caller that needs it to stay
+  open passes `hasLightDismiss={false}` (`spec:AST-094` FR25). A mouse is
+  unchanged.
 - Canonical target: `popover` owns the broad painted-surface contract for
   `<Popover>` and public `usePopover` compositions
 - Removed alias: 0.7.0 removes `popover-surface`; themes and CSS selectors migrate
