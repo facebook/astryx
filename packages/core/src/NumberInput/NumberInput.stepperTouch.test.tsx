@@ -29,12 +29,27 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {NumberInput} from './NumberInput';
 import {pointerQuery} from '../gestures/__tests__/pointerQuery';
 
+interface Box {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+}
+
 // The column sits at x 200–224; + is its top half (y 0–16), − the bottom.
-const RECTS: Record<string, {top: number; bottom: number}> = {
-  column: {top: 0, bottom: 32},
-  increment: {top: 0, bottom: 16},
-  decrement: {top: 16, bottom: 32},
+const COLUMN: Record<string, Box> = {
+  column: {top: 0, bottom: 32, left: 200, right: 224},
+  increment: {top: 0, bottom: 16, left: 200, right: 224},
+  decrement: {top: 16, bottom: 32, left: 200, right: 224},
 };
+// The touch control at md, left to right: a 94 x 32 capsule beside the
+// field, − left, + right.
+const CAPSULE: Record<string, Box> = {
+  column: {top: 0, bottom: 32, left: 300, right: 394},
+  decrement: {top: 0, bottom: 32, left: 300, right: 347},
+  increment: {top: 0, bottom: 32, left: 347, right: 394},
+};
+let RECTS = COLUMN;
 const INCREMENT = {x: 212, y: 8};
 const DECREMENT = {x: 212, y: 24};
 
@@ -48,9 +63,9 @@ function rectOf(element: Element): DOMRect {
             element.querySelector('input') == null
           ? 'column'
           : null;
-  const rect = name == null ? {top: 0, bottom: 0} : RECTS[name];
-  const left = name == null ? 0 : 200;
-  const right = name == null ? 0 : 224;
+  const rect =
+    name == null ? {top: 0, bottom: 0, left: 0, right: 0} : RECTS[name];
+  const {left, right} = rect;
   return {
     x: left,
     y: rect.top,
@@ -194,6 +209,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  RECTS = COLUMN;
   vi.restoreAllMocks();
   vi.useRealTimers();
 });
@@ -837,5 +853,77 @@ describe('NumberInput steppers on every touch device', () => {
     const {increment, decrement} = setup();
     expect(increment).not.toHaveAttribute('data-astryx-pressable');
     expect(decrement).not.toHaveAttribute('data-astryx-pressable');
+  });
+});
+
+describe('NumberInput steppers as the touch control', () => {
+  // The touch presentation lays the halves side by side; the half under a
+  // finger is the nearer one, whatever the layout.
+  const MINUS = {x: 312, y: 16};
+  const PLUS = {x: 380, y: 16};
+
+  beforeEach(() => {
+    coarsePrimaryPointer();
+    RECTS = CAPSULE;
+  });
+
+  it('a tap on the left half steps down, on the right half up', () => {
+    const {onChange, increment, decrement} = setup();
+    let id = fingerDown(decrement, MINUS);
+    expect(press(decrement)).toBe('on');
+    expect(press(increment)).toBeNull();
+    touch('touchend', decrement, MINUS, id);
+    // Each tap steps on the click its engine sends after the lift (FR11).
+    expect(onChange).not.toHaveBeenCalled();
+    act(() => {
+      decrement.dispatchEvent(clickNaming('mouse', 1));
+    });
+    expect(onChange).toHaveBeenLastCalledWith(4);
+    id = fingerDown(increment, PLUS);
+    touch('touchend', increment, PLUS, id);
+    act(() => {
+      increment.dispatchEvent(clickNaming('mouse', 1));
+    });
+    expect(onChange).toHaveBeenLastCalledWith(5);
+  });
+
+  it('a slide across the divider carries the paint and the repeat', () => {
+    const {onChange, input, increment, decrement} = setup();
+    const id = fingerDown(decrement, MINUS);
+    wait(800);
+    expect(shown(input)).toBe('3');
+    touch('touchmove', decrement, PLUS, id);
+    expect(press(decrement)).toBeNull();
+    expect(press(increment)).toBe('on');
+    // The next beat, at 975 ms, steps +.
+    wait(175);
+    expect(shown(input)).toBe('4');
+    touch('touchend', decrement, PLUS, id);
+    expect(committed(onChange)).toEqual([4]);
+  });
+
+  it('a finger just past the capsule’s end stays on the press', () => {
+    // The control profile's tracking area reaches past the capsule.
+    const {onChange, increment} = setup();
+    const id = fingerDown(increment, PLUS);
+    wait(60);
+    touch('touchmove', increment, {x: 395, y: 16}, id);
+    expect(press(increment)).toBe('on');
+    touch('touchend', increment, {x: 395, y: 16}, id);
+    // The lift names +, so the click an engine sends within its tap slop
+    // steps it.
+    act(() => {
+      increment.dispatchEvent(clickNaming('mouse', 1));
+    });
+    expect(committed(onChange)).toEqual([6]);
+  });
+
+  it('a finger past the tracking area beyond the capsule’s end is outside it', () => {
+    const {onChange, increment} = setup();
+    const id = fingerDown(increment, PLUS);
+    wait(60);
+    touch('touchmove', increment, {x: 480, y: 16}, id);
+    touch('touchend', increment, {x: 480, y: 16}, id);
+    expect(onChange).not.toHaveBeenCalled();
   });
 });

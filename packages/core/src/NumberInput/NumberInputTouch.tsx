@@ -63,7 +63,7 @@ import {
 import {lockSelection} from '../gestures/selectionLock';
 import {UIKIT_CLICK, UIKIT_PRESS} from '../motion/uikit/gestures';
 import {paintPress, readPressPaint} from '../utils/pressFeedback';
-import {StepperTracking, type StepperHalf} from './stepperTracking';
+import {halfAt, StepperTracking, type StepperHalf} from './stepperTracking';
 
 /** What the press layer reads from NumberInput, current at every render. */
 export interface StepperTouchState {
@@ -123,10 +123,15 @@ export function useStepperTouch(
     downTime: number;
     isDelayed: boolean;
     /**
-     * Client y where the decrement half begins, read once at touch-down;
-     * null with no layout (nothing is laid out to tell the halves apart).
+     * The halves' centres in client px, read once at touch-down; null with
+     * no layout (nothing is laid out to tell the halves apart). A point
+     * belongs to the nearer one: the decrement half is below the increment in
+     * the column and beside it in the touch control.
      */
-    split: number | null;
+    centers: {
+      increment: {x: number; y: number};
+      decrement: {x: number; y: number};
+    } | null;
     /** The half the press landed on. */
     landedOn: StepperHalf;
     /** The half under the pointer, kept through the lift for a quick tap's flash. */
@@ -136,7 +141,7 @@ export function useStepperTouch(
   }>({
     downTime: 0,
     isDelayed: false,
-    split: null,
+    centers: null,
     landedOn: 'increment',
     half: null,
     isReleased: false,
@@ -176,22 +181,31 @@ export function useStepperTouch(
     return decrementRef.current?.contains(target) === true ? 'decrement' : null;
   };
 
-  // The half above or below the split; with no layout, the one the press
-  // landed on.
-  const halfAt = (y: number): StepperHalf => {
-    const {split, landedOn} = pressRef.current;
-    if (split == null) {
-      return landedOn;
-    }
-    return y < split ? 'increment' : 'decrement';
+  // The half nearer the point; with no layout, the one the press landed on.
+  const halfUnder = (point: {x: number; y: number}): StepperHalf => {
+    const {centers, landedOn} = pressRef.current;
+    return centers == null ? landedOn : halfAt(centers, point);
   };
 
-  // The one layout read of a press: client y where the decrement half begins.
-  const readSplit = (): number | null => {
-    const decrementBox = decrementRef.current?.getBoundingClientRect();
-    return decrementBox == null || decrementBox.height === 0
+  // The one layout read of a press: each half's centre; null with no layout
+  // (nothing is laid out to tell the halves apart).
+  const readCenters = (): {
+    increment: {x: number; y: number};
+    decrement: {x: number; y: number};
+  } | null => {
+    const boxOf = (button: HTMLButtonElement | null) =>
+      button?.getBoundingClientRect() ?? null;
+    const incrementBox = boxOf(incrementRef.current);
+    const decrementBox = boxOf(decrementRef.current);
+    const centerOf = (box: DOMRect) => ({
+      x: box.left + box.width / 2,
+      y: box.top + box.height / 2,
+    });
+    return incrementBox == null ||
+      decrementBox == null ||
+      (decrementBox.width === 0 && decrementBox.height === 0)
       ? null
-      : decrementBox.top;
+      : {increment: centerOf(incrementBox), decrement: centerOf(decrementBox)};
   };
 
   const paint = (half: StepperHalf | null) => {
@@ -262,16 +276,16 @@ export function useStepperTouch(
         press.isReleased = false;
         liftRef.current = null;
         pressValueRef.current = null;
-        press.split = readSplit();
+        press.centers = readCenters();
         press.downTime = touch.time;
         // PressTracker's control profile delays a finger's highlight inside a
         // scroll view; the press reaches the stepper when it lights.
         press.isDelayed =
           touch.pointerType === 'touch' &&
           touch.scroll?.isInsideScroller === true;
-        // The half the press landed on; a press on the column itself (its
-        // border) takes the half above or below the split.
-        press.landedOn = halfOf(touch.target) ?? halfAt(touch.y);
+        // The half the press landed on; a press on the control itself (around
+        // or between its halves) takes the nearer half.
+        press.landedOn = halfOf(touch.target) ?? halfAt(press.centers, touch);
         press.half = press.landedOn;
         tracking.begin(press.half);
         return;
@@ -287,7 +301,7 @@ export function useStepperTouch(
         event === 'touchDragInside' ||
         event === 'touchDragEnter' ||
         event === 'touchUpInside';
-      const half: StepperHalf | null = isInside ? halfAt(touch.y) : null;
+      const half: StepperHalf | null = isInside ? halfUnder(touch) : null;
       if (event === 'touchCancel') {
         // No click follows a touch a scroll or the system took.
         liftRef.current = null;
@@ -360,7 +374,7 @@ export function useStepperTouch(
   const pointerIdRef = useRef<number | null>(null);
   const isHeldHere = (event: ReactPointerEvent<HTMLElement>) =>
     !isCoarse && (event.pointerType === 'mouse' || event.pointerType === 'pen');
-  const halfUnder = (
+  const pointerHalf = (
     event: ReactPointerEvent<HTMLElement>,
   ): StepperHalf | null => {
     const box = columnRef.current?.getBoundingClientRect();
@@ -370,7 +384,7 @@ export function useStepperTouch(
       event.clientX <= box.right &&
       event.clientY >= box.top &&
       event.clientY <= box.bottom;
-    return isInside ? halfAt(event.clientY) : null;
+    return isInside ? halfUnder({x: event.clientX, y: event.clientY}) : null;
   };
   // A press whose owner goes away mid-hold lets go at once, as a disabled
   // field's does: the steppers unmounting (`hasNumberSteppers` turning false),
@@ -413,8 +427,10 @@ export function useStepperTouch(
       pressValueRef.current = null;
       const press = pressRef.current;
       press.isReleased = false;
-      press.split = readSplit();
-      press.landedOn = halfOf(event.target) ?? halfAt(event.clientY);
+      press.centers = readCenters();
+      press.landedOn =
+        halfOf(event.target) ??
+        halfAt(press.centers, {x: event.clientX, y: event.clientY});
       press.half = press.landedOn;
       tracking.begin(press.half);
       tracking.deliver(browserClock.now());
@@ -425,7 +441,7 @@ export function useStepperTouch(
       if (event.pointerId !== pointerIdRef.current || press.isReleased) {
         return;
       }
-      press.half = halfUnder(event);
+      press.half = pointerHalf(event);
       tracking.move(press.half);
       paint(press.half);
     },
@@ -442,7 +458,7 @@ export function useStepperTouch(
       press.half = null;
       liftRef.current = {
         at: browserClock.now(),
-        tap: tracking.end(halfUnder(event)),
+        tap: tracking.end(pointerHalf(event)),
       };
       paint(null);
       commit();

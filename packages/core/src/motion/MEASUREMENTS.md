@@ -222,12 +222,16 @@ Done (iOS 26.2 simulator, Oct 23–24 2026; in the stepper's own table,
 count-based phases, the cadence across a slide between the halves, leaving
 and re-entering the frame after a repeat, bounds and wraps, the delayed
 delivery inside a scroll view, the tracking area (the frame, no margin), the
-pressed fill (one frame on, one frame off, no animation) and the haptics
-(none). NumberInput departs from three of them: leaving the frame pauses
-the cadence and coming back resumes it (never a step at once), the press
-keeps tracking within the control profile's expanded area (AST-094 FR11),
-and one steady ramp replaces the count-based phases; the area and the
-ramp's values are proposed, pending owner review (M-STP20). Still open:
+pressed fill (one frame on, one frame off, no animation), the shape (a 94 x 32
+capsule, a 1 x 24 divider, 13 pt glyphs with 1.67 pt strokes; colours are
+theme values) and the haptics (none). NumberInput departs from three of them:
+leaving the frame pauses the cadence and coming back resumes it (never a step
+at once), the press keeps tracking within the control profile's expanded area
+(AST-094 FR11), and one steady ramp replaces the count-based phases; the area
+and the ramp's values are proposed, pending owner review (M-STP20). Its touch
+control's shape departs twice: the height follows the field size (md is
+UIKit's 32), and − and + follow the page's direction
+(`design:bidirectionality` DR3). Still open:
 
 | ID      | Scene                   | Gesture                                                                                                              | Extract                                                                                                                 | Method |
 | ------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------ |
