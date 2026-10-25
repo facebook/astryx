@@ -16,7 +16,7 @@ export const docs = {
     'paging',
   ],
   description:
-    'A row of page indicators under a paging view, as on iOS: one dot per page, the current one highlighted. A tap to either side of the current dot moves one page that way. Under a finger on iOS, sliding the finger across the dots scrubs straight to the page under it, and with more than ten pages the row is a window whose edge dots shrink to show there is more; elsewhere (Android, a mouse) a long row is cropped to the control. Experimental: lands in lab first.',
+    'A row of page indicators under a paging view, as on iOS: one dot per page, the current one highlighted. A tap to either side of the current dot moves one page that way. Under a finger (any touch device, iOS and Android alike), sliding the finger across the dots scrubs straight to the page under it, and with more than ten pages the row is a window whose edge dots shrink to show there is more; with a mouse a long row is cropped to the control. Experimental: lands in lab first.',
   props: [
     {
       name: 'count',
