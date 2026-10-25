@@ -63,11 +63,10 @@ same generated contract.
   adapting per device where the device differs; a prop is never accepted
   without that meaning (`architecture:public-component-api` INV2). A prop only
   one platform can honor is that platform's prop, such as Switch's `size`,
-  which only macOS can honor with the system switch. A prop that sets a layout
-  the platform's own control fixes belongs to the web contract: Switch's
-  `labelPosition` and `labelSpacing` are web-only, because an Apple switch row
-  follows the system toggle layout, the label leading, the switch trailing, and
-  the system's spacing between them. A `content` slot, which `<Name>Props` leaves out, is a
+  which only macOS can honor with the system switch. Switch's `labelPosition` and
+  `labelSpacing` are web-only: an Apple switch row follows the system toggle
+  layout, the label leading, the switch trailing, and the system's spacing
+  between them. A `content` slot, which `<Name>Props` leaves out, is a
   parameter of both initializers instead: the labeled one takes it as a
   `@ViewBuilder` closure and the props one as the slot's generated node type
   (A3, A4). The view
