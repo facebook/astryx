@@ -104,13 +104,20 @@ import {isRtlElement} from '../hooks/isRtlElement';
 import {
   createAnimator,
   type Animator,
-  type MotionCurve,
   type MotionHandle,
 } from '../motion/animator';
-import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
+import {createInteractiveTransition} from '../motion/interactive';
+import type {SpringDescription} from '../motion/spring';
 import {reducedMotionFade} from '../motion/reducedMotion';
 import {swipeActions as SWIPE} from '../motion/uikit/swipeActions';
-import {confirmedOffset, confirmPoint, resolveRelease} from './swipeRelease';
+import {
+  confirmPoint,
+  swipeReleaseRule,
+  swipeTrackRule,
+  type SwipeRelease,
+  type SwipeReleaseContext,
+  type SwipeTrack,
+} from './swipeRelease';
 
 export type SwipeSide = 'leading' | 'trailing';
 export type SwipeBehavior = 'reveal' | 'commit';
@@ -256,55 +263,6 @@ export function swipeParts(
   };
 }
 
-/** A curve's end, where the animator's own spring curves end (its settle threshold for x). */
-const SETTLE_PX = 0.05;
-
-/**
- * The travel parts' curves for one spring of the row, from its presentation
- * value and velocity (physical px, px/s) to `travel`. Every part is a
- * function of the root's curve at every instant, so they cannot drift
- * apart: the window and the track are affine images of it, and the entries
- * follow the same piecewise rule as `swipeParts`, pinned up to the open
- * width and riding the row past it, even when a spring crosses the open
- * width mid-flight. The spring is the motion foundation's own solution,
- * played by the shared animator.
- */
-export function swipeCurves(
-  layout: SwipeLayout,
-  spring: SpringDescription,
-  from: number,
-  velocity: number,
-  travel: number,
-): {
-  root: MotionCurve;
-  panel: MotionCurve;
-  track: MotionCurve;
-  entries: MotionCurve;
-} {
-  const sign = physicalSign(layout.side, layout.inlineSign);
-  const curve = solveSpring(toSpring(spring), {
-    from,
-    to: sign * travel,
-    velocity,
-  });
-  const duration = curve.settleTime(SETTLE_PX);
-  // The end state is the target itself, as the animator's own springs end.
-  const x = (t: number) => (t >= duration ? sign * travel : curve.value(t));
-  const v = (t: number) => (t >= duration ? 0 : curve.velocity(t));
-  const root: MotionCurve = {duration, at: x, velocity: v};
-  const {openWidth} = layout;
-  return {
-    root,
-    panel: {duration, at: t => -x(t), velocity: t => -v(t)},
-    track: root,
-    entries: {
-      duration,
-      at: t => sign * (openWidth - Math.min(sign * x(t), openWidth)),
-      velocity: t => (sign * x(t) < openWidth ? -v(t) : 0),
-    },
-  };
-}
-
 /** The longest a slide-out takes to leave the row's box (ms): beyond it, never. */
 const SLIDE_OUT_HORIZON_MS = 3000;
 
@@ -435,30 +393,6 @@ function createEntries(): EntryAnimators {
       }
       return width;
     },
-  };
-}
-
-/**
- * The outermost entry's curve: the entries' pin plus its own slide toward
- * `slide` (physical px) on `spring`, from the slide it has now (where it is,
- * less the pin) and that slide's velocity. One translate, so one curve.
- */
-function withSlide(
-  pin: MotionCurve,
-  outer: Animator,
-  slide: number,
-  spring: SpringDescription,
-): MotionCurve {
-  const curve = solveSpring(toSpring(spring), {
-    from: outer.get('x') - pin.at(0),
-    to: slide,
-    velocity: outer.getVelocity('x') - pin.velocity(0),
-  });
-  const settle = curve.settleTime(SETTLE_PX);
-  return {
-    duration: Math.max(pin.duration, settle),
-    at: t => pin.at(t) + (t >= settle ? slide : curve.value(t)),
-    velocity: t => pin.velocity(t) + (t >= settle ? 0 : curve.velocity(t)),
   };
 }
 
@@ -677,6 +611,65 @@ export function useSwipeAction({
   );
 
   /**
+   * The side's moving parts as one interactive transition
+   * (motion/interactive.ts): the root's translation drives; the window, the
+   * track and the entries follow it (`swipeParts`: the window cancels it,
+   * the track rides with it, the entries stay pinned up to the open width and
+   * ride past it), and the full swipe's look follows the drag's confirmation.
+   */
+  const transitionFor = useCallback(
+    (layout: SwipeLayout) => {
+      const sign = physicalSign(layout.side, layout.inlineSign);
+      const side = animators[layout.side];
+      const {openWidth, outerWidth} = layout;
+      const confirmOf = (track: SwipeTrack) => (track.isConfirmed ? 1 : 0);
+      // The entries' pin: at the outer edge up to the open width, riding the
+      // row past it (`swipeParts`).
+      const pin = (x: number) =>
+        sign * (openWidth - Math.min(sign * x, openWidth));
+      return createInteractiveTransition<
+        SwipeRelease,
+        SwipeReleaseContext,
+        SwipeTrack
+      >({
+        driver: {animator: animators.root, property: 'x'},
+        layers: [
+          {animator: side.panel, property: 'x', map: x => -x},
+          {animator: side.track, property: 'x', map: x => x},
+          // Each entry other than the outermost: pinned, and fading on a
+          // confirmed full swipe, on its own opacity.
+          ...side.entries.members().flatMap(entry => [
+            {animator: entry, property: 'x' as const, map: pin},
+            {
+              animator: entry,
+              property: 'opacity' as const,
+              value: (track: SwipeTrack) => 1 - confirmOf(track),
+              spring: SWIPE.tracking,
+            },
+          ]),
+          // The outermost entry: the pin plus its full-swipe slide, one
+          // translate (an offset layer).
+          {
+            animator: side.outer,
+            property: 'x',
+            map: pin,
+            offset: track => sign * (openWidth - outerWidth) * confirmOf(track),
+          },
+          // The track's confirm fill shows through the fading entries.
+          {
+            animator: side.fill,
+            property: 'opacity',
+            value: track => confirmOf(track),
+            spring: SWIPE.tracking,
+          },
+        ],
+        rule: swipeReleaseRule,
+      });
+    },
+    [animators],
+  );
+
+  /**
    * Spring every part of the side to `travel` on one clock, from the
    * presentation values and velocities. Resolves with the root's completion.
    */
@@ -692,36 +685,22 @@ export function useSwipeAction({
     ): Promise<boolean> => {
       layoutRef.current = layout;
       motionRef.current += 1;
-      const parts = swipeParts(travel, layout, confirm);
-      const side = animators[layout.side];
+      const sign = physicalSign(layout.side, layout.inlineSign);
       // No explicit start: a settle from rest starts when the browser commits
       // it, so a frame held back (iOS during a smooth scroll) delays it
       // instead of skipping into it; one that continues motion keeps the
-      // frame on screen. Calls in one task share one clock either way.
-      const options = {touchRelease};
-      const curves = swipeCurves(
-        layout,
-        spring,
-        animators.root.get('x'),
-        animators.root.getVelocity('x'),
-        travel,
-      );
-      const handle = animators.root.play({x: curves.root}, options);
-      rootMotionRef.current = handle;
-      side.panel.play({x: curves.panel}, options);
-      side.track.play({x: curves.track}, options);
-      side.entries.play({x: curves.entries}, options);
-      // UIKit sets the full swipe's look inside the same per-move animator:
-      // the outermost entry's slide rides its pin, the others fade.
-      side.outer.play(
-        {x: withSlide(curves.entries, side.outer, parts.outer, spring)},
-        options,
-      );
-      side.entries.animate({opacity: parts.fade}, {spring}, options);
-      side.fill.animate({opacity: 1 - parts.fade}, {spring}, options);
-      return handle.finished;
+      // frame on screen. Calls in one task share one clock either way. UIKit
+      // sets the full swipe's look inside the same per-move animator.
+      const run = transitionFor(layout).to(sign * travel, spring, {
+        velocity: animators.root.getVelocity('x'),
+        touchRelease,
+        startAtCommit: true,
+        state: {isConfirmed: confirm === 1, wasConfirmed: confirm === 1},
+      });
+      rootMotionRef.current = run.handle;
+      return run.handle?.finished ?? run.finished;
     },
-    [animators],
+    [animators, transitionFor],
   );
 
   /**
@@ -733,16 +712,12 @@ export function useSwipeAction({
       layoutRef.current = layout;
       motionRef.current += 1;
       rootMotionRef.current = null;
-      const parts = swipeParts(travel, layout, confirm);
-      const side = animators[layout.side];
-      animators.root.set({x: parts.root});
-      side.panel.set({x: parts.panel});
-      side.track.set({x: parts.track});
-      side.entries.set({x: parts.entries, opacity: parts.fade});
-      side.outer.set({x: parts.entries + parts.outer});
-      side.fill.set({opacity: 1 - parts.fade});
+      const sign = physicalSign(layout.side, layout.inlineSign);
+      transitionFor(layout).place(sign * travel, {
+        state: {isConfirmed: confirm === 1, wasConfirmed: confirm === 1},
+      });
     },
-    [animators],
+    [transitionFor],
   );
 
   /**
@@ -841,8 +816,9 @@ export function useSwipeAction({
         }
       };
       if (
-        fade == null &&
-        timeToPass(animators.root, performance.now(), edge) === 0
+        handle == null ||
+        (fade == null &&
+          timeToPass(animators.root, performance.now(), edge) === 0)
       ) {
         fireIfStill();
         return;
@@ -853,7 +829,7 @@ export function useSwipeAction({
       // it lands out of its box at the bottom of the cross-fade, and fires
       // there; otherwise when the curve the animator plays carries it past
       // the edge, read back from the animator itself.
-      void handle?.started.then(startedAt => {
+      void handle.started.then(startedAt => {
         if (motionRef.current !== motion) {
           return;
         }
@@ -1047,28 +1023,38 @@ export function useSwipeAction({
     const swipe = along - drag.startSign * threshold;
     const raw = Math.max(0, drag.baseTravel + swipe);
     drag.raw = raw;
-    // The full swipe confirms on the finger's travel, not the row's (which
-    // trails it on the spring), and only when the outermost entry can fire.
-    const isArmed = drag.canConfirm && raw >= drag.confirmAt;
+    // The swipe's track rule (swipeRelease.ts): the full swipe confirms on
+    // the finger's travel, not the row's (which trails it on the spring), and
+    // only when the outermost entry can fire; confirmed, the row runs ahead
+    // of the finger to UIKit's confirmation offset; backed out, it follows
+    // the finger again.
+    const sign = physicalSign(layout.side, layout.inlineSign);
+    const step = swipeTrackRule({
+      sign,
+      confirmAt: drag.confirmAt,
+      canConfirm: drag.canConfirm,
+      rowWidth: drag.rowWidth,
+    })(sign * raw, {
+      isConfirmed: drag.isArmed,
+      wasConfirmed: drag.wasConfirmed,
+    });
+    const isArmed = step.state.isConfirmed;
     const flipped = isArmed !== drag.isArmed;
+    drag.isArmed = isArmed;
+    drag.wasConfirmed = step.state.wasConfirmed;
     if (flipped) {
-      drag.isArmed = isArmed;
-      drag.wasConfirmed ||= isArmed;
       setSwipeState({isArmed, phase: 'dragging', side: layout.side});
     }
-    // Confirmed, the row runs ahead of the finger to UIKit's confirmation
-    // offset; backed out, it follows the finger again.
-    const travel = isArmed
-      ? Math.max(raw, confirmedOffset(drag.rowWidth))
-      : raw;
+    const travel = step.position * sign;
     const confirm = isArmed ? 1 : 0;
+    const follow = step.follow ?? SWIPE.tracking;
     if (animators.root.reducedMotion() === 'off') {
-      void springTo(layout, travel, SWIPE.tracking, confirm);
+      void springTo(layout, travel, follow, confirm);
     } else if (flipped) {
       // Confirming and backing out are changes of state, not the finger's
       // drag: under Reduce Motion they cross-fade (design:reduced-motion
       // DR2), and the moves leave that fade alone until it ends.
-      void springTo(layout, travel, SWIPE.tracking, confirm);
+      void springTo(layout, travel, follow, confirm);
       const fade = reducedMotionFade(rootRef.current);
       drag.dipUntil =
         fade == null ? undefined : performance.now() + fade.duration;
@@ -1096,16 +1082,23 @@ export function useSwipeAction({
       return;
     }
     const {layout} = drag;
-    const velocity =
-      pan.velocity().x * physicalSign(layout.side, layout.inlineSign);
-    const landing = resolveRelease({
-      behavior: latestRef.current.behavior,
-      isConfirmed: drag.isArmed,
-      openWidth: layout.openWidth,
-      travel: drag.raw,
-      velocity,
-      wasConfirmed: drag.wasConfirmed,
-    });
+    // The swipe's release rule (swipeRelease.ts), on the finger's travel and
+    // the drag's confirmation, in the row's physical px.
+    const sign = physicalSign(layout.side, layout.inlineSign);
+    const landing = swipeReleaseRule(
+      {
+        position: animators.root.get('x'),
+        finger: sign * drag.raw,
+        velocity: pan.velocity().x,
+      },
+      {
+        behavior: latestRef.current.behavior,
+        openWidth: layout.openWidth,
+        outTravel: outTravel(),
+        sign,
+        track: {isConfirmed: drag.isArmed, wasConfirmed: drag.wasConfirmed},
+      },
+    ).outcome;
     if (landing === 'perform') {
       slideOutAndFire(layout, 'release');
     } else if (landing === 'open') {

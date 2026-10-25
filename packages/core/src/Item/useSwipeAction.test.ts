@@ -6,20 +6,15 @@
  * @output The geometry every moving part follows (the window never moves on
  *   screen, the track moves with the row, the entries stay pinned until the
  *   open width and ride the row past it, the full swipe's look) for both
- *   sides in both directions, and the curves that keep every part a function
- *   of the root's at every instant
+ *   sides in both directions. The moving parts' curves come from the
+ *   interactive-transition driver, which keeps every part a function of the
+ *   root's at every instant (motion/interactive.test.ts)
  * @position Unit tests of packages/core/src/Item/useSwipeAction.ts; the hook
  *   itself is tested through Item.test.tsx and the interaction spec
  */
 
 import {describe, expect, it} from 'vitest';
-import {swipeActions} from '../motion/uikit/swipeActions';
-import {
-  physicalSign,
-  swipeCurves,
-  swipeParts,
-  type SwipeLayout,
-} from './useSwipeAction';
+import {physicalSign, swipeParts, type SwipeLayout} from './useSwipeAction';
 
 const LAYOUTS: SwipeLayout[] = [
   {inlineSign: 1, openWidth: 144, outerWidth: 72, side: 'leading'},
@@ -78,53 +73,4 @@ describe('swipeParts', () => {
       expect(parts.fade).toBe(0);
     },
   );
-});
-
-describe('swipeCurves', () => {
-  it.each(LAYOUTS)(
-    'keeps every part a function of the root at every instant, also on a spring that crosses the open width ($side, inline sign $inlineSign)',
-    layout => {
-      const sign = physicalSign(layout.side, layout.inlineSign);
-      // Closing from a full swipe (300 px) and opening from rest, each
-      // crossing the 144 px open width mid-flight; one starts moving.
-      for (const [from, velocity, travel] of [
-        [300, -400, 0],
-        [0, 0, 300],
-        [100, 900, 150],
-      ]) {
-        const curves = swipeCurves(
-          layout,
-          swipeActions.settle,
-          sign * from,
-          sign * velocity,
-          travel,
-        );
-        for (let t = 0; t <= curves.root.duration; t += 0.01) {
-          const x = curves.root.at(t);
-          const parts = swipeParts(sign * x, layout);
-          expect(curves.panel.at(t)).toBeCloseTo(parts.panel, 9);
-          expect(curves.track.at(t)).toBeCloseTo(parts.track, 9);
-          expect(curves.entries.at(t)).toBeCloseTo(parts.entries, 9);
-        }
-        // They start where the row is and end where it lands.
-        expect(curves.root.at(0)).toBeCloseTo(sign * from, 9);
-        expect(curves.root.at(curves.root.duration)).toBeCloseTo(
-          sign * travel,
-          1,
-        );
-      }
-    },
-  );
-
-  it('gives each part the velocity of its own curve', () => {
-    const layout = LAYOUTS[1];
-    const curves = swipeCurves(layout, swipeActions.settle, 0, 0, 300);
-    for (const t of [0.05, 0.1, 0.3, 0.6]) {
-      const dt = 1e-5;
-      for (const curve of [curves.root, curves.panel, curves.entries]) {
-        const numeric = (curve.at(t + dt) - curve.at(t - dt)) / (2 * dt);
-        expect(curve.velocity(t)).toBeCloseTo(numeric, 2);
-      }
-    }
-  });
 });

@@ -16,7 +16,14 @@ import {
   toSpring,
 } from '../motion/spring';
 import {swipeActions} from '../motion/uikit/swipeActions';
-import {confirmedOffset, confirmPoint, resolveRelease} from './swipeRelease';
+import {
+  confirmedOffset,
+  confirmPoint,
+  resolveRelease,
+  SWIPE_TRACK_START,
+  swipeReleaseRule,
+  swipeTrackRule,
+} from './swipeRelease';
 
 describe('resolveRelease', () => {
   // The UIKit lab's releases (batch 10a: plain table, 402 pt rows, two
@@ -234,6 +241,102 @@ describe('the swipe spring', () => {
       // UIKit's settlingDuration for it, within the 0.02 % the solver's
       // critically damped branch is documented to land.
       expect(settlingDuration(spring)).toBeCloseTo(0.9235, 3);
+    }
+  });
+});
+
+describe('swipeTrackRule (the interactive-transition driver\u2019s track rule)', () => {
+  it('confirms on the finger\u2019s travel, runs ahead to the confirmation offset, and remembers it confirmed', () => {
+    const rowWidth = 375;
+    const openWidth = 144;
+    const confirmAt = confirmPoint(openWidth, rowWidth);
+    for (const sign of [1, -1] as const) {
+      for (const canConfirm of [true, false]) {
+        const rule = swipeTrackRule({sign, confirmAt, canConfirm, rowWidth});
+        let track = SWIPE_TRACK_START;
+        for (const swipe of [
+          0,
+          50,
+          144,
+          200,
+          confirmAt - 1,
+          confirmAt,
+          330,
+          300,
+          120,
+        ]) {
+          const step = rule(sign * swipe, track);
+          const isConfirmed = canConfirm && swipe >= confirmAt;
+          expect(step.state.isConfirmed).toBe(isConfirmed);
+          expect(step.state.wasConfirmed).toBe(
+            track.wasConfirmed || isConfirmed,
+          );
+          expect(step.position).toBe(
+            sign *
+              (isConfirmed
+                ? Math.max(swipe, confirmedOffset(rowWidth))
+                : swipe),
+          );
+          expect(step.follow).toBe(swipeActions.tracking);
+          track = step.state;
+        }
+        // Confirmed once, then backed out: it remembers.
+        expect(track.wasConfirmed).toBe(canConfirm);
+      }
+    }
+  });
+});
+
+describe('swipeReleaseRule (the interactive-transition driver\u2019s release rule)', () => {
+  it('lands where resolveRelease says, as the row\u2019s physical translation, on the settle spring', () => {
+    const openWidth = 144;
+    const outTravel = 395;
+    for (const sign of [1, -1] as const) {
+      for (const behavior of ['reveal', 'commit'] as const) {
+        for (const [isConfirmed, wasConfirmed] of [
+          [false, false],
+          [false, true],
+          [true, true],
+        ]) {
+          for (const travel of [0, 30, 71, 72, 140, 260]) {
+            for (const velocity of [-600, -48, -20, 0, 20, 48, 600]) {
+              const landing = resolveRelease({
+                behavior,
+                isConfirmed,
+                openWidth,
+                travel,
+                velocity,
+                wasConfirmed,
+              });
+              const outcome = swipeReleaseRule(
+                {
+                  position: sign * travel,
+                  finger: sign * travel,
+                  velocity: sign * velocity,
+                },
+                {
+                  behavior,
+                  openWidth,
+                  outTravel,
+                  sign,
+                  track: {isConfirmed, wasConfirmed},
+                },
+              );
+              expect(outcome.outcome).toBe(landing);
+              expect(outcome.target).toBe(
+                sign *
+                  (landing === 'perform'
+                    ? outTravel
+                    : landing === 'open'
+                      ? openWidth
+                      : 0),
+              );
+              expect(outcome.motion).toBe(swipeActions.settle);
+              expect(outcome.exits).toBeUndefined();
+            }
+          }
+        }
+      }
     }
   });
 });
