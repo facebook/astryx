@@ -66,13 +66,13 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type ReactElement,
   type ReactNode,
+  type SyntheticEvent,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {Animator} from '@astryxdesign/core/motion/animator';
@@ -511,6 +511,19 @@ function BackControl({
   );
 }
 
+/** Whether the focused element shows its focus indicator (a keyboard's). */
+function isFocusVisible(element: Element | null): boolean {
+  if (element == null || element === element.ownerDocument.body) {
+    return false;
+  }
+  try {
+    return element.matches(':focus-visible');
+  } catch {
+    // An engine without :focus-visible: keep its own heuristic.
+    return true;
+  }
+}
+
 // =============================================================================
 // Screen
 // =============================================================================
@@ -580,11 +593,12 @@ export function NavigationStack<T>({
   // Sources of pushes, by screen key (focus returns there on the pop).
   const sourcesRef = useRef(new Map<string, Element | null>());
   // The last control activated inside the stack: what a push it starts came
-  // from.
-  const lastActivationRef = useRef<{target: Element; at: number} | null>(null);
-  // How the person last interacted: the focus a transition moves keeps that
-  // modality (interaction-modality INV1), so a tap draws no focus ring.
-  const modalityRef = useRef<'keyboard' | 'pointer'>('keyboard');
+  // from, and whether a key activated it.
+  const lastActivationRef = useRef<{
+    target: Element;
+    at: number;
+    isKeyboard: boolean;
+  } | null>(null);
   // A pending push source handed to push(): applied to the new top.
   const pendingSourceRef = useRef<Element | null | undefined>(undefined);
   // An interactive release in flight: the pop it commits continues from the
@@ -898,12 +912,19 @@ export function NavigationStack<T>({
       ) {
         return;
       }
-      // After pointer input the browser's focus option keeps the element from
-      // matching `:focus-visible` (iOS Safari otherwise rings a programmatic
-      // focus after a tap).
+      // The focus a transition moves keeps the modality of the input that
+      // started it (interaction-modality INV1): after a key, or from a focus
+      // that showed its indicator, the new target shows it too. After a tap
+      // the browser's focus option keeps the target from matching
+      // `:focus-visible` (iOS Safari otherwise rings a programmatic focus).
+      // (The control that started a push is usually inert by now, so its
+      // own state is read from the activation.)
+      const isKeyboard =
+        lastActivationRef.current?.isKeyboard === true ||
+        isFocusVisible(active);
       const focusOptions: FocusOptions & {focusVisible?: boolean} = {
         preventScroll: true,
-        ...(modalityRef.current === 'pointer' ? {focusVisible: false} : null),
+        ...(isKeyboard ? null : {focusVisible: false}),
       };
       if (kind === 'pop') {
         const source = sourcesRef.current.get(key);
@@ -1074,42 +1095,20 @@ export function NavigationStack<T>({
     }
   }, [view.transition]);
 
-  // The control a push starts from: the last click or key press in the stack.
-  useEffect(() => {
-    const container = containerRef.current;
-    if (container == null) {
-      return undefined;
+  // The control a push starts from: the last click or key press in the stack
+  // (the container's own capture handlers; nothing listens on the document).
+  // A click a key produced (Enter or Space on a button) has no clicks counted.
+  const rememberActivation = useCallback((event: SyntheticEvent) => {
+    if (event.target instanceof Element) {
+      lastActivationRef.current = {
+        target: event.target,
+        at: performance.now(),
+        isKeyboard:
+          event.type === 'keydown' ||
+          (event.nativeEvent instanceof MouseEvent &&
+            event.nativeEvent.detail === 0),
+      };
     }
-    const remember = (event: Event) => {
-      if (event.target instanceof Element) {
-        lastActivationRef.current = {
-          target: event.target,
-          at: performance.now(),
-        };
-      }
-    };
-    container.addEventListener('click', remember, true);
-    container.addEventListener('keydown', remember, true);
-    // The page's last input, wherever it happened (a push may come from a
-    // control outside the stack).
-    const doc = container.ownerDocument;
-    const onPointer = () => {
-      modalityRef.current = 'pointer';
-    };
-    const onKey = (event: KeyboardEvent) => {
-      // A modifier held for a click is not navigation.
-      if (!event.metaKey && !event.altKey && !event.ctrlKey) {
-        modalityRef.current = 'keyboard';
-      }
-    };
-    doc.addEventListener('pointerdown', onPointer, true);
-    doc.addEventListener('keydown', onKey, true);
-    return () => {
-      container.removeEventListener('click', remember, true);
-      container.removeEventListener('keydown', remember, true);
-      doc.removeEventListener('pointerdown', onPointer, true);
-      doc.removeEventListener('keydown', onKey, true);
-    };
   }, []);
 
   // ---------------------------------------------------------------------------
@@ -1223,6 +1222,8 @@ export function NavigationStack<T>({
         role="region"
         aria-label={label}
         data-testid={testId}
+        onClickCapture={rememberActivation}
+        onKeyDownCapture={rememberActivation}
         {...stylex.props(styles.stack)}>
         <div {...stylex.props(styles.bar)}>
           {rendered.map(model =>
