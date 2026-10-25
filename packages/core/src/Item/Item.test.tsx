@@ -9,9 +9,12 @@
  * SYNC: When Item component changes, update tests to match new behavior
  */
 
+import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'node:fs';
+import {dirname, join} from 'node:path';
 import {use, useRef} from 'react';
 import {
   afterEach,
+  afterAll,
   beforeAll,
   beforeEach,
   describe,
@@ -2095,5 +2098,330 @@ describe('swipeActions', () => {
     } finally {
       spy.mockRestore();
     }
+  });
+
+  describe('the release storyboards (interactive-transition driver)', () => {
+    // Frame-by-frame values of each release: every curve the row plays on its
+    // parts (the root, the window, the track, the entries, the outermost
+    // entry and the others), every 20 ms over 800 ms, and when a full swipe
+    // fires, against a fixture recorded from the swipe before it moved onto
+    // the interactive-transition driver (motion/interactive.ts).
+    // UPDATE_STORYBOARDS=1 rewrites the fixture.
+    interface Played {
+      part: string;
+      keyframes: Keyframe[];
+      options: KeyframeAnimationOptions;
+    }
+    interface Board {
+      curves: {part: string; property: string; values: number[]}[];
+      firedAtMs: number | null;
+    }
+    const FIXTURE = join(
+      __dirname,
+      '__fixtures__/swipe-release-storyboards.json',
+    );
+    const STEP_MS = 20;
+    const SPAN_MS = 800;
+    const recorded: Record<string, Board> = {};
+
+    function valueAt(
+      animation: Played,
+      ms: number,
+      read: (frame: Keyframe) => number,
+    ): number {
+      const duration = animation.options.duration as number;
+      const frames = animation.keyframes.map(frame => ({
+        t: (frame.offset as number) * duration,
+        v: read(frame),
+      }));
+      for (let i = 1; i < frames.length; i++) {
+        if (ms <= frames[i].t) {
+          const a = frames[i - 1];
+          const b = frames[i];
+          return b.t > a.t
+            ? a.v + ((b.v - a.v) * (ms - a.t)) / (b.t - a.t)
+            : b.v;
+        }
+      }
+      return frames[frames.length - 1].v;
+    }
+    const readers: Record<string, (frame: Keyframe) => number> = {
+      translate: frame => Number.parseFloat(String(frame.translate)),
+      opacity: frame => Number(frame.opacity),
+    };
+
+    /**
+     * Records every animation the row plays, naming the part it moves; with
+     * `lateStart`, the browser starts them only when the test commits them.
+     */
+    function recordParts(row: HTMLElement, {lateStart = false} = {}) {
+      const played: Played[] = [];
+      const pending: {commit: (at: number) => void}[] = [];
+      const panel = panelOf(row, 'leading');
+      const track = trackOf(row, 'leading');
+      // Window > track > entries; the outermost entry is the track's last.
+      const entries = entriesOf(row, 'leading');
+      const partOf = (element: Element): string =>
+        element === row
+          ? 'root'
+          : element === panel
+            ? 'panel'
+            : element === track
+              ? 'track'
+              : element === entries[entries.length - 1]
+                ? 'outer'
+                : entries.includes(element as HTMLElement)
+                  ? `entry ${entries.indexOf(element as HTMLElement)}`
+                  : 'other';
+      HTMLElement.prototype.animate = function (
+        this: HTMLElement,
+        keyframes: Keyframe[] | PropertyIndexedKeyframes | null,
+        options?: number | KeyframeAnimationOptions,
+      ) {
+        const pseudo =
+          typeof options === 'object' ? (options.pseudoElement ?? '') : '';
+        played.push({
+          part: partOf(this) + pseudo,
+          keyframes: keyframes as Keyframe[],
+          options: options as KeyframeAnimationOptions,
+        });
+        let start: number | null = lateStart ? null : performance.now();
+        let cancelled = false;
+        let resolveReady: () => void = () => {};
+        const ready = new Promise<void>(resolve => {
+          resolveReady = resolve;
+        });
+        if (!lateStart) {
+          resolveReady();
+        }
+        const animation = {
+          get startTime() {
+            return start;
+          },
+          set startTime(value: number | null) {
+            start = value;
+            resolveReady();
+          },
+          get playState() {
+            return cancelled ? 'idle' : 'running';
+          },
+          ready,
+          commit(at: number) {
+            if (!cancelled && start == null) {
+              start = at;
+            }
+            resolveReady();
+          },
+          cancel() {
+            cancelled = true;
+          },
+        };
+        pending.push(animation);
+        return animation as unknown as Animation;
+      };
+      return {played, pending};
+    }
+
+    /** Lets the promise chains a start resolves run (no time passes). */
+    async function flush() {
+      for (let i = 0; i < 5; i++) {
+        await act(async () => {});
+      }
+    }
+
+    function board(played: Played[], firedAtMs: number | null): Board {
+      const curves: Board['curves'] = [];
+      for (const animation of played) {
+        // A curve, not a one-step write.
+        if (animation.keyframes.length <= 2) {
+          continue;
+        }
+        for (const property of Object.keys(readers)) {
+          if (animation.keyframes[0][property] == null) {
+            continue;
+          }
+          curves.push({
+            part: animation.part,
+            property,
+            values: Array.from(
+              {length: SPAN_MS / STEP_MS + 1},
+              (_, i) =>
+                Math.round(
+                  valueAt(animation, i * STEP_MS, readers[property]) * 1000,
+                ) / 1000,
+            ),
+          });
+        }
+      }
+      return {curves, firedAtMs};
+    }
+
+    /**
+     * A drag on the leading side by `travel` px of swipe from where the swipe
+     * begins, held still for `restMs` (0: a flick lifted while moving), then
+     * lifted; records from the lift.
+     */
+    function release(
+      name: string,
+      {
+        travel,
+        restMs = 320,
+        backTo,
+        lateStart = false,
+      }: {
+        travel: number;
+        restMs?: number;
+        backTo?: number;
+        lateStart?: boolean;
+      },
+    ) {
+      it(name, async () => {
+        try {
+          const fired: number[] = [];
+          const {row} = renderRow({
+            leading: [
+              {label: 'Unread', onActivate: vi.fn()},
+              {label: 'Pin', onActivate: () => fired.push(performance.now())},
+            ],
+          });
+          const parts = recordParts(row, {lateStart});
+          const f = finger(row);
+          f.down(10);
+          f.move(20);
+          f.move(35);
+          f.move(35 + travel / 2);
+          f.move(35 + travel);
+          if (backTo != null) {
+            f.move(35 + (travel + backTo) / 2);
+            f.move(35 + backTo);
+          }
+          if (restMs > 0) {
+            f.rest(restMs);
+          }
+          parts.played.length = 0;
+          f.up({afterMs: restMs > 0 ? 16 : 0});
+          let startedAt = performance.now();
+          await flush();
+          if (lateStart) {
+            // The browser starts the release 300 ms after the lift.
+            await act(async () => {
+              vi.advanceTimersByTime(300);
+            });
+            startedAt = performance.now();
+            for (const animation of parts.pending) {
+              animation.commit(startedAt);
+            }
+            await flush();
+          }
+          await act(async () => {
+            vi.advanceTimersByTime(1500);
+          });
+          recorded[name] = board(
+            parts.played,
+            fired.length > 0 ? Math.round(fired[0] - startedAt) : null,
+          );
+        } finally {
+          Reflect.deleteProperty(HTMLElement.prototype, 'animate');
+        }
+      });
+    }
+
+    // Slow, past half the open width: it opens.
+    release('a slow release past half opens', {travel: 110});
+    // Slow, short of half: it closes.
+    release('a slow release short of half closes', {travel: 50});
+    // A flick from a short drag: it opens on its speed.
+    release('a flick opens', {travel: 60, restMs: 0});
+    // Confirmed, then backed out past half: it closes.
+    release('a full swipe backed out closes', {travel: 240, backTo: 120});
+    // A confirmed full swipe: out with the outermost entry, which fires as the
+    // row's content leaves its box; then it springs back.
+    release('a full swipe slides out and fires', {travel: 240});
+    // The same, the browser starting the slide-out late: it fires timed from
+    // that start.
+    release('a late-started slide-out fires from its start', {
+      travel: 240,
+      lateStart: true,
+    });
+    it('reduced motion: a release cross-fades', async () => {
+      reduceMotion();
+      try {
+        const {row} = renderRow({
+          leading: [
+            {label: 'Unread', onActivate: vi.fn()},
+            {label: 'Pin', onActivate: vi.fn()},
+          ],
+        });
+        const parts = recordParts(row);
+        const f = finger(row);
+        f.down(10);
+        f.move(20);
+        f.move(35);
+        f.move(35 + 55);
+        f.move(35 + 110);
+        f.rest();
+        parts.played.length = 0;
+        f.up();
+        await act(async () => {
+          vi.advanceTimersByTime(1500);
+        });
+        recorded['reduced motion: a release cross-fades'] = board(
+          parts.played,
+          null,
+        );
+      } finally {
+        Reflect.deleteProperty(HTMLElement.prototype, 'animate');
+      }
+    });
+
+    afterAll(async () => {
+      if (process.env.UPDATE_STORYBOARDS === '1') {
+        // Written as the repository formats JSON, so the fixture stays stable.
+        const {format, resolveConfig} = await import('prettier');
+        const options = (await resolveConfig(FIXTURE)) ?? {};
+        mkdirSync(dirname(FIXTURE), {recursive: true});
+        writeFileSync(
+          FIXTURE,
+          await format(JSON.stringify(recorded), {...options, parser: 'json'}),
+        );
+      }
+    });
+
+    it('matches the storyboards recorded before the driver (within 0.5 px, 0.005 opacity and 1 ms)', () => {
+      if (process.env.UPDATE_STORYBOARDS === '1') {
+        // Recording: afterAll writes the fixture from this run.
+        return;
+      }
+      // A missing fixture fails: the proof is against curves recorded before
+      // the move, never against this run's own.
+      expect(
+        existsSync(FIXTURE),
+        'the storyboard fixture is missing (UPDATE_STORYBOARDS=1 records it)',
+      ).toBe(true);
+      const fixture = JSON.parse(readFileSync(FIXTURE, 'utf8')) as Record<
+        string,
+        Board
+      >;
+      expect(Object.keys(recorded).sort()).toEqual(Object.keys(fixture).sort());
+      for (const [name, before] of Object.entries(fixture)) {
+        const after = recorded[name];
+        expect(after.firedAtMs, `${name}: fired at`).toBe(before.firedAtMs);
+        expect(
+          after.curves.map(curve => `${curve.part}.${curve.property}`),
+          `${name}: curves`,
+        ).toEqual(
+          before.curves.map(curve => `${curve.part}.${curve.property}`),
+        );
+        before.curves.forEach((curve, k) => {
+          const tolerance = curve.property === 'opacity' ? 0.005 : 0.5;
+          curve.values.forEach((value, i) => {
+            expect(
+              Math.abs(after.curves[k].values[i] - value),
+              `${name}: ${curve.part}.${curve.property} at ${i * STEP_MS} ms`,
+            ).toBeLessThanOrEqual(tolerance);
+          });
+        });
+      }
+    });
   });
 });
